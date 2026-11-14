@@ -1,0 +1,217 @@
+{
+ "ask": {
+  "title": "W1044 made up: a reading-list planner",
+  "description": "W1044 made up: plans a term's reading from the books a class already owns",
+  "realm": "enterprise",
+  "domain": "product"
+ },
+ "empty": {
+  "status": 200,
+  "body": []
+ },
+ "created": {
+  "status": 201,
+  "body": {
+   "id": "d336688d74cb4e729023d60b31f88ba6",
+   "owner_id": "default",
+   "title": "W1044 made up: a reading-list planner",
+   "description": "W1044 made up: plans a term's reading from the books a class already owns",
+   "realm": "enterprise",
+   "domain": "product",
+   "taxonomy_realm": "enterprise",
+   "realm_source": "taxonomy realm",
+   "stage": "concept",
+   "status": "idle",
+   "created_at": 1794685719.164295,
+   "updated_at": 1794685719.164306,
+   "outputs": [],
+   "first_description": "W1044 made up: plans a term's reading from the books a class already owns",
+   "first_description_at": 1794685719.1642528,
+   "waiting_on_person": {
+    "waiting": false,
+    "on": [],
+    "where": "the Governance Hub's proposals",
+    "basis": "no proposal for this project is pending."
+   }
+  }
+ },
+ "refused": {
+  "status": 422,
+  "body": {
+   "detail": [
+    {
+     "type": "missing",
+     "loc": [
+      "body",
+      "title"
+     ],
+     "msg": "Field required",
+     "input": {
+      "description": "W1044 made up: plans a term's reading from the books a class already owns",
+      "realm": "enterprise",
+      "domain": "product"
+     }
+    }
+   ]
+  }
+ },
+ "stream": {
+  "status": 200,
+  "text": "data: {\"token\": \"_[Workstation native structured engine \\u2014 owned, no external dependency]_\\\\n\\\\n_Composed for the \"}\n\ndata: {\"token\": \"enterprise realm. This engine RECORDS the realm and does not act on it: it composes from the \"}\n\ndata: {\"token\": \"text the calling tool identified as yours, and a house style is a directive only a served model \"}\n\ndata: {\"token\": \"can follow._\\\\n\\\\n## Understanding\\\\nThe request concerns: W1044 made up: a reading-list planner W1044 \"}\n\ndata: {\"token\": \"made up: plans a term's reading from the books a class already owns (domain: product \\u00b7 Realm: \"}\n\ndata: {\"token\": \"enterprise).\\\\n\\\\n## Terms most frequent in the text you wrote\\\\n_Extracted by counting words and \"}\n\ndata: {\"token\": \"adjacent pairs \\u2014 not an analysis of the subject. Counted over the text the calling tool \"}\n\ndata: {\"token\": \"identified as yours, and over nothing else._\\\\n- reading-list planner\\\\n- made reading-list\\\\n- class \"}\n\ndata: {\"token\": \"already\\\\n- term reading\\\\n- already owns\\\\n- books class\\\\n\\\\n## Native approach\\\\nWorkstation composes a \"}\n\ndata: {\"token\": \"structured response from its own process-intelligence and knowledge for the agent 'projects', \"}\n\ndata: {\"token\": \"framing the request above rather than analysing it.\\\\n\\\\n## Next steps\\\\n- Validate the structured \"}\n\ndata: {\"token\": \"outputs above against the stated objective.\\\\n- Route richer generation to a model resource \"}\n\ndata: {\"token\": \"(local-first; external only if enabled).\\\\n- Iterate via the orchestrator's cascade for product \\u00b7 \"}\n\ndata: {\"token\": \"Realm: enterprise; record outcomes to memory/UEG.\"}\n\ndata: {\"done\": true, \"output_id\": \"b6f690ed1bd441c399b9897541f8f9ee\", \"download_url\": \"/api/v1/synthesis/download/b6f690ed1bd441c399b9897541f8f9ee\", \"served_by\": \"native\", \"is_external\": false, \"profile_applied\": false, \"model_tokens\": null, \"model_tokens_basis\": \"NOT COUNTED - the deterministic floor served this and runs no model, so there are no tokens to count; null, never 0\", \"preview\": \"_[Workstation native structured engine \\u2014 owned, no external dependency]_\\n\\n_Composed for the enterprise realm. This engine RECORDS the realm and does not act on it: it composes from the text the calling tool identified as yours, and a house style is a directive only a served model can follow._\\n\\n## Understanding\\nThe request concerns: W1044 made up: a reading-list planner W1044 made up: plans a term'\"}\n\n"
+ },
+ "ran": {
+  "status": 200,
+  "body": {
+   "id": "d336688d74cb4e729023d60b31f88ba6",
+   "owner_id": "default",
+   "title": "W1044 made up: a reading-list planner",
+   "description": "W1044 made up: plans a term's reading from the books a class already owns",
+   "realm": "enterprise",
+   "domain": "product",
+   "taxonomy_realm": "enterprise",
+   "realm_source": "taxonomy realm",
+   "stage": "concept",
+   "status": "done",
+   "created_at": 1794685719.164295,
+   "updated_at": 1794685719.2202065,
+   "outputs": [
+    {
+     "output_id": "b6f690ed1bd441c399b9897541f8f9ee",
+     "stage": "concept",
+     "created_at": 1794685719.2201679,
+     "download_url": "/api/v1/synthesis/download/b6f690ed1bd441c399b9897541f8f9ee",
+     "preview": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Composed for the enterprise realm. This engine RECORDS the realm and does not act on it: it composes from the text the calling tool identified as yours, and a house style is a directive only a served model can follow._\n\n## Understanding\nThe request concerns: W1044 made up: a reading-list planner W1044 made up: plans a term'",
+     "served_by": "native",
+     "is_external": false,
+     "provenance_basis": "composed by the deterministic in-house floor - not model-generated analysis"
+    }
+   ],
+   "first_description": "W1044 made up: plans a term's reading from the books a class already owns",
+   "first_description_at": 1794685719.1642528,
+   "waiting_on_person": {
+    "waiting": false,
+    "on": [],
+    "where": "the Governance Hub's proposals",
+    "basis": "no proposal for this project is pending."
+   }
+  }
+ },
+ "proposed": {
+  "status": 201,
+  "body": {
+   "id": "0485d22fb308492da544fec87ded86f4",
+   "project_id": "d336688d74cb4e729023d60b31f88ba6",
+   "project_title": "W1044 made up: a reading-list planner",
+   "from_stage": "concept",
+   "to_stage": "prototype",
+   "status": "pending",
+   "votes_for": 0,
+   "votes_against": 0,
+   "created_at": 1794685719.2262523,
+   "project_deleted_at": null
+  }
+ },
+ "again": {
+  "status": 409,
+  "body": {
+   "detail": "A pending proposal to advance this project from 'concept' already exists (0485d22fb308492da544fec87ded86f4). Approve or reject that one rather than raising a second."
+  }
+ },
+ "waiting": {
+  "status": 200,
+  "body": {
+   "id": "d336688d74cb4e729023d60b31f88ba6",
+   "owner_id": "default",
+   "title": "W1044 made up: a reading-list planner",
+   "description": "W1044 made up: plans a term's reading from the books a class already owns",
+   "realm": "enterprise",
+   "domain": "product",
+   "taxonomy_realm": "enterprise",
+   "realm_source": "taxonomy realm",
+   "stage": "concept",
+   "status": "done",
+   "created_at": 1794685719.164295,
+   "updated_at": 1794685719.2202065,
+   "outputs": [
+    {
+     "output_id": "b6f690ed1bd441c399b9897541f8f9ee",
+     "stage": "concept",
+     "created_at": 1794685719.2201679,
+     "download_url": "/api/v1/synthesis/download/b6f690ed1bd441c399b9897541f8f9ee",
+     "preview": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Composed for the enterprise realm. This engine RECORDS the realm and does not act on it: it composes from the text the calling tool identified as yours, and a house style is a directive only a served model can follow._\n\n## Understanding\nThe request concerns: W1044 made up: a reading-list planner W1044 made up: plans a term'",
+     "served_by": "native",
+     "is_external": false,
+     "provenance_basis": "composed by the deterministic in-house floor - not model-generated analysis"
+    }
+   ],
+   "first_description": "W1044 made up: plans a term's reading from the books a class already owns",
+   "first_description_at": 1794685719.1642528,
+   "waiting_on_person": {
+    "waiting": true,
+    "on": [
+     {
+      "proposal_id": "0485d22fb308492da544fec87ded86f4",
+      "what": "a decision on the proposal to move it from 'concept' to 'prototype'",
+      "since": 1794685719.2262523
+     }
+    ],
+    "where": "the Governance Hub's proposals",
+    "basis": "read now from the proposals pending for this project; never stored."
+   }
+  }
+ },
+ "listed": {
+  "status": 200,
+  "body": [
+   {
+    "id": "d336688d74cb4e729023d60b31f88ba6",
+    "owner_id": "default",
+    "title": "W1044 made up: a reading-list planner",
+    "description": "W1044 made up: plans a term's reading from the books a class already owns",
+    "realm": "enterprise",
+    "domain": "product",
+    "taxonomy_realm": "enterprise",
+    "realm_source": "taxonomy realm",
+    "stage": "concept",
+    "status": "done",
+    "created_at": 1794685719.164295,
+    "updated_at": 1794685719.2202065,
+    "outputs": [
+     {
+      "output_id": "b6f690ed1bd441c399b9897541f8f9ee",
+      "stage": "concept",
+      "created_at": 1794685719.2201679,
+      "download_url": "/api/v1/synthesis/download/b6f690ed1bd441c399b9897541f8f9ee",
+      "preview": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Composed for the enterprise realm. This engine RECORDS the realm and does not act on it: it composes from the text the calling tool identified as yours, and a house style is a directive only a served model can follow._\n\n## Understanding\nThe request concerns: W1044 made up: a reading-list planner W1044 made up: plans a term'",
+      "served_by": "native",
+      "is_external": false,
+      "provenance_basis": "composed by the deterministic in-house floor - not model-generated analysis"
+     }
+    ],
+    "first_description": "W1044 made up: plans a term's reading from the books a class already owns",
+    "first_description_at": 1794685719.1642528,
+    "waiting_on_person": {
+     "waiting": true,
+     "on": [
+      {
+       "proposal_id": "0485d22fb308492da544fec87ded86f4",
+       "what": "a decision on the proposal to move it from 'concept' to 'prototype'",
+       "since": 1794685719.2262523
+      }
+     ],
+     "where": "the Governance Hub's proposals",
+     "basis": "read now from the proposals pending for this project; never stored."
+    }
+   }
+  ]
+ },
+ "list_failed": {
+  "status": 500,
+  "body": {
+   "detail": "GET /api/v1/projects/ failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/projects/",
+   "cause_established": false
+  }
+ }
+}

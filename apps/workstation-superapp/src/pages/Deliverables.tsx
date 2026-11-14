@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { FileText, Loader2, Sparkles, RefreshCw, Layers, Download } from 'lucide-react';
 import { downloadExport } from '../lib/download';
-import { apiJson, errorMessage, provenanceBadge, qmsChip, qmsStubFlag, complianceChip, immuneReading } from '../lib/api';
+import { apiJson, ApiError, errorMessage, provenanceBadge, qmsChip, qmsStubFlag, complianceChip, immuneReading } from '../lib/api';
+import { ReadFailures, useReadFailures } from '../components/ReadFailures';   // W928
 
 interface DType { id: string; sections: string[] }
 interface DeliverableSummary {
@@ -30,8 +31,8 @@ interface Deliverable {
   // W574 (M1 R2.5) — the payload has always carried `atp_measured` and `atp_basis` saying the ratio
   // is a simulation that cannot fall; the type stopped at the number, so the only fields that could
   // have qualified it were invisible to the page that claimed ATP had been "expended".
-  homeostasis?: { posture?: string; organism?: { atp_ratio?: number; circadian?: string;
-                                                 atp_measured?: boolean; atp_basis?: string } } | null;
+  homeostasis?: { posture?: string; organism?: { circadian?: string;
+                                                 energy_ratio?: number | null; energy_basis?: string } } | null;
   // §13 (W-versions) — each version carries its full stored text (the API already returns it);
   // the UI now lets the user read any prior version, not just the count.
   versions: { created_at: string; content?: string; brief?: string }[];
@@ -50,6 +51,7 @@ interface Deliverable {
 }
 
 export const Deliverables: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W928 - a read that fails is said
   const [types, setTypes] = useState<DType[]>([]);
   const [list, setList] = useState<DeliverableSummary[]>([]);
   const [type, setType] = useState('report');
@@ -75,17 +77,23 @@ export const Deliverables: React.FC = () => {
   // dropping its oldest reads as complete. The API now says whether it is AT its cap; this page is
   // where a reader meets the number, so it is said here rather than only in the payload.
   const [listBasis, setListBasis] = useState<{ truncated?: boolean; total_basis?: string } | null>(null);
+  //  W989 (FU-399 part 21) - AN UNREAD LIST IS NOT AN EMPTY ONE. A refused read left the list at none, so under the
+  //  failure the page said "Deliverables (0)" and "None yet — produce one above." It says the list was not read.
+  const [listUnread, setListUnread] = useState(false);
   const loadList = () =>
-    fetch('/api/v1/deliverables').then(r => r.json()).then(d => {
+    apiJson('/api/v1/deliverables').then(d => {
       setList(d.deliverables || []);
       setListBasis({ truncated: d.truncated, total_basis: d.total_basis });
-    }).catch(() => {});
+      setListUnread(false);
+      clearRead('the deliverables');
+    }).catch(e => { setListUnread(true); noteRead('the deliverables')(e); });
 
   useEffect(() => {
-    fetch('/api/v1/deliverables/types').then(r => r.json()).then(d => setTypes(d.types || [])).catch(() => setError('Failed to load types'));
-    fetch('/api/v1/deliverables/output-formats').then(r => r.json())
+    //  W989 - this said "Failed to load types", with no reason, as the action error the next action cleared
+    apiJson('/api/v1/deliverables/types').then(d => setTypes(d.types || [])).catch(noteRead('the deliverable types'));
+    apiJson('/api/v1/deliverables/output-formats')
       .then(d => { if (Array.isArray(d.live) && d.live.length) setFormats(d.live.map((f: any) => ({ id: f.id, label: f.label, basis: typeof f.basis === 'string' ? f.basis : undefined }))); })
-      .catch(() => {});
+      .catch(noteRead('the output formats'));
     loadList().finally(() => setLoading(false));
   }, []);
 
@@ -127,45 +135,55 @@ export const Deliverables: React.FC = () => {
   const refineToNextVersion = async () => {
     if (!selected || !refineInstr.trim() || refining) return;
     setRefining(true); setError('');
+    //  W989 (FU-399 part 21) - a refusal said only "refine HTTP 503" or "version HTTP 409". Both calls go through
+    //  apiJson: the page says which step stopped and the server's reason; its own messages stand as written.
+    let step: 'refine' | 'version' = 'refine';
     try {
-      const rr = await fetch('/api/v1/refine', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      const rj = await apiJson('/api/v1/refine', {
+        method: 'POST',
         // W671 (Owner ruling 2026-10-11) - a religion-domain deliverable is named as one, so the route's scholar rule applies
-        body: JSON.stringify({ previous: selected.content, instruction: refineInstr, context: selected.title,
-                               source_endpoint: String((selected as any).domain || '').toLowerCase() === 'religion' ? '/api/v1/religion/deliverable' : '' }),
+        body: { previous: selected.content, instruction: refineInstr, context: selected.title,
+                source_endpoint: String((selected as any).domain || '').toLowerCase() === 'religion' ? '/api/v1/religion/deliverable' : '' },
       });
-      if (!rr.ok) throw new Error(`refine HTTP ${rr.status}`);
-      const rj = await rr.json();
       // a withheld rewrite is NOT a new version: the route returned the draft unchanged, so nothing is saved
       if (rj?.refine_withheld) throw new Error(`Scholar review — the rewrite is withheld and no new version was saved: ${String(rj?.review_note || 'it awaits a named scholar\'s review')}`);
       const refined = String(rj?.refined ?? '');
       if (!refined.trim()) throw new Error('refine returned empty content');
-      const vr = await fetch(`/api/v1/deliverables/${selected.id}/regenerate`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      step = 'version';
+      setSelected(await apiJson(`/api/v1/deliverables/${selected.id}/regenerate`, {
+        method: 'POST',
         // W449 — the next version is the refiner's text verbatim: the gate is told who refined it
-        body: JSON.stringify({ content: refined, source_served_by: rj?.ai_provenance?.served_by ?? null }),
-      });
-      if (!vr.ok) throw new Error(`version HTTP ${vr.status}`);
-      setSelected(await vr.json());
+        body: { content: refined, source_served_by: rj?.ai_provenance?.served_by ?? null },
+      }));
       setRefineInstr('');
       await loadList();
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+    } catch (e) {
+      setError(e instanceof ApiError || e instanceof TypeError
+        ? `${step === 'refine' ? 'The refine was not done' : 'The refined text was not saved as a new version'}: ${errorMessage(e)}`
+        : (e instanceof Error ? e.message : String(e)));
+    }
     setRefining(false);
   };
 
   return (
     <div className="space-y-8 pb-24">
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Living Deliverables</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Living Deliverables</h1>
-        <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
-          Reports · presentations · websites · apps · services — produced on Workstation's <span className="text-highlight">own</span> AI
-          fabric and kept <span className="text-highlight">living</span>: re-generate and reconfigure any deliverable at any time, with full
-          version history and in-house provenance.
+        {/* W830 (FU-855, ledger v16 R2.15) - every type is ONE text document under its type's section headings
+            (GET /api/v1/deliverables/types). The heading listed websites and apps as if they were built, and said
+            each deliverable was kept living; it now says what is produced and what re-running it does. */}
+        <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed" data-testid="deliverables-what-is-produced">
+          One text document per deliverable, under its type's section headings: a report, a presentation, website copy,
+          an app specification, a service description or a brief. An app or a website here is a document that describes
+          it; nothing is built, hosted or deployed. A deliverable can be re-run from its stored brief or refined; every
+          run is kept as a version that records what wrote it, and the current version can be exported in the formats
+          offered.
         </p>
       </header>
 
-      {error && <p className="text-vital text-xs font-bold">{error}</p>}
+      {error && <p className="text-vital text-xs font-bold" data-testid="deliverables-error">{error}</p>}
 
       {/* Produce */}
       <Card className="p-6 border-aura/30">
@@ -173,6 +191,7 @@ export const Deliverables: React.FC = () => {
         <div className="flex flex-wrap gap-2 mb-3">
           {types.map(t => (
             <button key={t.id} onClick={() => setType(t.id)}
+              title={`one document with the sections: ${(t.sections || []).join(' · ')}`}
               className={`text-[10px] font-black uppercase px-3 py-1.5 rounded-lg ${type === t.id ? 'bg-aura text-sovereign' : 'bg-slate-900 text-slate-400'}`}>
               {t.id}
             </button>
@@ -192,7 +211,7 @@ export const Deliverables: React.FC = () => {
       <div className="grid grid-cols-1 @[900px]:grid-cols-[280px_1fr] gap-6">
         {/* List */}
         <div>
-          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><Layers size={14} /> Deliverables ({list.length})
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><Layers size={14} /> Deliverables ({listUnread && list.length === 0 ? 'not read' : list.length})
             {listBasis?.truncated && (
               <span data-testid="deliverables-truncated" title={listBasis.total_basis}
                     className="normal-case tracking-normal text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">
@@ -202,7 +221,9 @@ export const Deliverables: React.FC = () => {
           </h3>
           <div className="space-y-2">
             {loading && <p className="text-[11px] text-slate-600">Loading…</p>}
-            {!loading && list.length === 0 && <p className="text-[11px] text-slate-600">None yet — produce one above.</p>}
+            {!loading && list.length === 0 && (listUnread
+              ? <p className="text-[11px] text-amber-400/90 font-bold" data-testid="deliverables-unread">The deliverables could not be read, so this is not a list of none.</p>
+              : <p className="text-[11px] text-slate-600">None yet — produce one above.</p>)}
             {list.map(d => (
               <button key={d.id} onClick={() => open(d.id)}
                 className={`w-full text-left p-3 rounded-xl border ${selected?.id === d.id ? 'border-aura/50 bg-aura/5' : 'border-slate-900 bg-slate-950'}`}>
@@ -302,9 +323,8 @@ Document-controlled under the QMS (DCMS) · record ${selected.quality_assurance.
                          posture is real and is still shown; the ATP figure is labelled as what it
                          is, and the payload's own basis is carried here rather than summarised. */
                       title={`§8→§13 — produced under the organism's homeostatic posture (${selected.homeostasis.organism?.circadian}). `
-                        + `Simulated ATP ratio ${Math.round((selected.homeostasis.organism?.atp_ratio ?? 0) * 100)}% — `
-                        + `${selected.homeostasis.organism?.atp_measured === false ? 'not measured, and nothing here was expended: ' : ''}`
-                        + `${selected.homeostasis.organism?.atp_basis ?? 'no basis recorded for this figure'}`}>
+                        + `Work budget left ${selected.homeostasis.organism?.energy_ratio != null ? Math.round((selected.homeostasis.organism?.energy_ratio ?? 0) * 100) + '%' : 'not recorded (this deliverable ran before W902)'} — `
+                        + `${selected.homeostasis.organism?.energy_basis ?? 'no basis recorded for this figure'}`}>
                       §8 homeostasis: {selected.homeostasis.posture}
                       {/* W756 (FU-1114) — while the work budget holds, the reason the posture is what it is */}
                       {(selected.homeostasis as any).work_budget?.holds && <span data-testid="deliverable-work-budget-reason"> · held at 1 by the work budget: {(selected.homeostasis as any).work_budget.basis}</span>}
@@ -347,8 +367,10 @@ Document-controlled under the QMS (DCMS) · record ${selected.quality_assurance.
                 </select>
                 {/* W338 — bearer-carrying download (a raw anchor 401s under auth) */}
                 <button type="button" onClick={async () => {
+                    setError('');
                     try { await downloadExport(`/api/v1/deliverables/${selected.id}/export?format=${dlFormat}`, `${selected.title || 'deliverable'}.${dlFormat}`); }
-                    catch (e: any) { alert(e?.message ?? 'Export failed'); }
+                    //  W989 (FU-399 part 21) - a failed export is said on the page, with the server's reason, not in an alert
+                    catch (e: any) { setError(errorMessage(e)); }
                   }}
                   title={selected.quality_assurance?.quality?.compliance?.overall === 'fail' ? 'This export carries the COMPLIANCE FAIL verdict on page one — the artifact is not cleared for use' : undefined}
                   className={`flex items-center gap-1.5 text-[11px] font-bold px-3 py-2 rounded-xl hover:opacity-90 ${selected.quality_assurance?.quality?.compliance?.overall === 'fail' ? 'bg-vital/20 text-vital border border-vital/40' : 'bg-aura text-sovereign'}`}>

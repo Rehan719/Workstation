@@ -153,6 +153,10 @@ class Project(BaseModel):
     #  description: that would present an edited text as the first one.
     first_description: Optional[str] = None
     first_description_at: Optional[float] = None
+    #  W867 (FU-1043) - WHETHER THIS PROJECT WAITS ON A PERSON. Derived on each read from the proposals pending for
+    #  it - the one place this application records a decision a person owes - and never written to its file (_save
+    #  leaves it out), so it cannot outlive the proposal it was read from.
+    waiting_on_person: Optional[dict] = None
 
 
 class CreateProjectRequest(BaseModel):
@@ -200,7 +204,7 @@ def _load_scoped(project_id: str, user: dict | None) -> Project:
 
 def _save(project: Project) -> None:
     project.updated_at = time.time()
-    _path(project.id).write_text(project.model_dump_json(indent=2))
+    _path(project.id).write_text(project.model_dump_json(indent=2, exclude={"waiting_on_person"}))   # W867: derived
 
 
 def _all_projects() -> list[Project]:
@@ -281,22 +285,63 @@ def _load_proposal(proposal_id: str) -> Proposal:
     return Proposal(**json.loads(f.read_text()))
 
 
-def _all_proposals() -> list[Proposal]:
-    out = []
+def _proposals_read() -> tuple[list[Proposal], int]:
+    """Every proposal record, newest first, and how many could not be read (W867): a skipped record is counted."""
+    out, unread = [], 0
     for f in sorted(_PROPOSALS_DIR.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True):
         try:
             out.append(Proposal(**json.loads(f.read_text())))
         except Exception:
-            pass
-    return out
+            unread += 1
+    return out, unread
+
+
+def _all_proposals() -> list[Proposal]:
+    return _proposals_read()[0]
+
+
+def _waiting_on_person(project: "Project", read: tuple[list[Proposal], int] | None = None) -> dict:
+    """W867 (FU-1043) - whether this project waits on a person's decision, from the proposals pending for it. A
+    proposal raised from a stage the project has left is still pending, and is said so: approving it is refused, so
+    a person's rejection is what closes it. When a record could not be read, a pending one may be among them, and
+    that is said rather than answered as nothing waiting."""
+    proposals, unread = read if read is not None else _proposals_read()
+    pending = [p for p in proposals
+               if p.status == "pending" and p.project_id == project.id and p.project_deleted_at is None]
+    unread_said = (f" {unread} proposal record(s) could not be read, so another pending one may not be shown."
+                   if unread else "")
+    where = "the Governance Hub's proposals"
+    if pending:
+        on = []
+        for p in pending:
+            what = f"a decision on the proposal to move it from '{p.from_stage}' to '{p.to_stage}'"
+            if p.from_stage != project.stage:
+                what += (f"; the project is now at '{project.stage}', so approving it is refused and rejecting "
+                         f"it closes it")
+            on.append({"proposal_id": p.id, "what": what, "since": p.created_at})
+        return {"waiting": True, "on": on, "where": where,
+                "basis": "read now from the proposals pending for this project; never stored." + unread_said}
+    if unread:
+        return {"waiting": None, "on": [], "where": where,
+                "basis": (f"{unread} proposal record(s) could not be read, so whether one of them is pending for "
+                          f"this project is not known.")}
+    return {"waiting": False, "on": [], "where": where, "basis": "no proposal for this project is pending."}
+
+
+def _with_waiting(project: "Project", read: tuple[list[Proposal], int] | None = None) -> "Project":
+    project.waiting_on_person = _waiting_on_person(project, read)
+    return project
 
 
 # ── Static-path routes MUST come before /{project_id} ─────────────────────────
 
 @router.get("/stats/summary")
-async def project_stats() -> dict:
-    """Aggregated portfolio metrics derived from all projects on disk."""
-    projects = _all_projects()
+async def project_stats(user: dict | None = Depends(get_current_user)) -> dict:
+    """Aggregated portfolio metrics derived from the projects on disk the caller may see. W883 (FU-1061) - with
+    sign-in on they are the caller's own: these figures counted every person's portfolio."""
+    if user is not None and not isinstance(user, dict):
+        user = None
+    projects = [p for p in _all_projects() if user_can_access(user, p.owner_id)]
     by_stage: dict[str, int] = {"concept": 0, "prototype": 0, "commercialise": 0}
     by_realm: dict[str, int] = {}
     total_outputs = 0
@@ -332,13 +377,30 @@ async def project_stats() -> dict:
 
 
 @router.get("/governance/proposals", response_model=list[Proposal])
-async def list_proposals() -> list[Proposal]:
-    return _all_proposals()
+async def list_proposals(user: dict | None = Depends(get_current_user)) -> list[Proposal]:
+    """W883 (FU-1061) - the proposals on projects the caller may see. With sign-in on this listed every person's
+    proposals, and with them their project ids. A proposal whose project is gone has no owner to match, so it is
+    shown only to whoever may see unowned records."""
+    if user is not None and not isinstance(user, dict):
+        user = None
+    owners = {p.id: p.owner_id for p in _all_projects()}
+    return [pr for pr in _all_proposals() if user_can_access(user, owners.get(pr.project_id))]
 
 
 @router.post("/governance/proposals/{proposal_id}/vote", response_model=Proposal)
-async def vote_proposal(proposal_id: str, approve: bool = True) -> Proposal:
+async def vote_proposal(proposal_id: str, approve: bool = True,
+                        user: dict | None = Depends(get_current_user)) -> Proposal:
+    if user is not None and not isinstance(user, dict):
+        user = None
     proposal = _load_proposal(proposal_id)
+    #  W883 (FU-1061) - a proposal is decided only by someone who may see its project. Any signed-in person could
+    #  approve another person's proposal, and so advance their project. Not found, never forbidden (W364).
+    try:
+        _owner883 = _load(proposal.project_id).owner_id
+    except HTTPException:
+        _owner883 = None
+    if not user_can_access(user, _owner883):
+        raise HTTPException(status_code=404, detail=f"Proposal {proposal_id} not found")
     if proposal.status != "pending":
         raise HTTPException(status_code=400, detail=f"Proposal already {proposal.status}.")
     # §5 (W495, FU-131, S10.1) — this approved first and applied blindly. The proposal RECORDS the
@@ -402,18 +464,19 @@ async def create_project(req: CreateProjectRequest,
     _save(project)
     biobus.fire_signal("sensory", "projects.create",
                        f"New project: {req.title} [{req.realm}/{req.domain}]", 0.5)
-    return project
+    return _with_waiting(project)                             # W867 (FU-1043)
 
 
 @router.get("/", response_model=list[Project])
 async def list_projects(user: dict | None = Depends(get_current_user)) -> list[Project]:
     # W364 — a tenant sees only their own projects (auth-off returns everything, unchanged)
-    return [p for p in _all_projects() if user_can_access(user, p.owner_id)]
+    _read867 = _proposals_read()                      # W867 (FU-1043) - read once for the whole list
+    return [_with_waiting(p, _read867) for p in _all_projects() if user_can_access(user, p.owner_id)]
 
 
 @router.get("/{project_id}", response_model=Project)
 async def get_project(project_id: str, user: dict | None = Depends(get_current_user)) -> Project:
-    return _load_scoped(project_id, user)
+    return _with_waiting(_load_scoped(project_id, user))      # W867 (FU-1043)
 
 
 @router.patch("/{project_id}", response_model=Project)
@@ -425,14 +488,21 @@ async def update_project(project_id: str, req: UpdateProjectRequest,
     if req.description is not None:
         project.description = req.description
     _save(project)
-    return project
+    return _with_waiting(project)                             # W867 (FU-1043) - an edit says it too
 
 
 @router.delete("/{project_id}", status_code=204)
-async def delete_project(project_id: str, user: dict | None = Depends(get_current_user)) -> None:
+async def delete_project(project_id: str, confirm_title: str | None = None,
+                         user: dict | None = Depends(get_current_user)) -> None:
     # W364 — deletion is destructive and was previously unscoped: any signed-in user could
     # permanently delete another user's project. Scoped now (404 when not the caller's).
-    _load_scoped(project_id, user)
+    project = _load_scoped(project_id, user)
+    #  W971 (P5.14 clause 6) - an act that cannot be undone is not performed on a general yes: the project's title,
+    #  typed back, is what deletes it. Asked only of the caller who may delete it, so the store cannot be probed.
+    if confirm_title != project.title:
+        raise HTTPException(status_code=409, detail=(
+            "Not deleted: deleting a project cannot be undone, so it needs the project's title typed back exactly "
+            "(confirm_title), and it was not."))
     _path(project_id).unlink()
     #  W678 - a proposal still pending for this project is told so, with the time. Nothing else about it changes:
     #  approving it already refuses (the project is gone), and now the record says why.

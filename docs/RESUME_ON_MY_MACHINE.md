@@ -1,7 +1,10 @@
 # Resume on my machine — the one prompt to paste
 
-When the weekly allowance resets, open Claude Code (Claude Opus 5.5) **in your local clone** (`C:\Users\rehan\Workstation`)
+When you want to continue locally, open Claude Code (Claude Opus 5.5) **in your local clone** (`C:\Users\rehan\Workstation`)
 and paste the block below as your first message. Nothing else is needed.
+
+Updated 2026-11-10 (W787). The cloud session is working through November in 8-hour cycles; if it is still running,
+check the open pull request first so the two sessions do not edit the same branch at once.
 
 ---
 
@@ -10,20 +13,26 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
 
 1. Sync first, and stash nothing blindly:
    git fetch --all --prune && git status --short
-   If PR #355 (main-l1fsqo -> main) is merged, work on main: git checkout main && git pull.
+   If PR #462 (main-l1fsqo -> main) is merged, work on main: git checkout main && git pull.
    Otherwise: git checkout main-l1fsqo && git pull origin main-l1fsqo, and keep pushing there.
    Never push to main without me.
-2. Read, in this order: docs/HANDOVER_W626.md (the "UPDATED" notes at the top of section 2 are the current state),
-   then docs/FABLE_DELIVERY_PROMPT.md. Follow the round discipline in HANDOVER section 3 exactly.
+2. Read, in this order: docs/REMAINING_WORK_MEASURED.md (every open item, measured 2026-11-10),
+   docs/HANDOVER_W626.md section 3 (the round discipline - follow it exactly), then docs/FABLE_DELIVERY_PROMPT.md.
 3. Set up once if needed: a Python 3.12 venv with
    pip install -r requirements.txt pytest pytest-xdist==3.8.0, then npm install at the repo root.
 4. Check for an unfinished round: if `git status` shows uncommitted changes, they are the last round's
    work in progress. Read `git diff`, finish it (its guard tests and blinds are in
    integration_tests/test_mvp_spine.py), run the full suite once, then commit and push.
-5. Then continue the plan: python scripts/followups.py priority | head -30 lists the open rows. Work the open
-   P2.x milestone rows round by round. When a milestone item's rows are all closed, re-run M1+M2 as section 4
-   of the handover describes: check :8031 is free first, then launch exactly one twelve-agent run.
-6. Ask me only for an Owner decision (anything marked OWNER, or anything touching real money, live Stripe,
+5. First, the two rows only this machine can do (both slotted OWNER and listed in the plan's open decisions):
+   - FU-1046: drive the section-11 screen on the text kept in data/_moved_books_20261012-155706 and find why
+     five change records of 2026-09-01 failed; record the reason.
+   - FU-1151: the two committed audit records under docs/fidelity_runs/ that carry text of a private kind.
+     Recommended: edit each note to say only what kind of place or matter it was; leave git history as ruled
+     on 2026-10-14.
+6. Then continue the plan: python scripts/followups.py priority | head -30 lists the open rows. No capped
+   fidelity re-run is held before the final audit (P5.22): the Owner allowed one mid-way audit (W675) and ruled
+   that the next is the final, uncapped one, after the fifth phase and the sign-in readiness round.
+7. Ask me only for an Owner decision (anything marked OWNER, or anything touching real money, live Stripe,
    managed Postgres, production deploy, external AI keys, deleting an entity, or the AUTH/SIGNUP/AI_EXTERNAL/
    REAL_MONEY switches). Everything else: decide, build, verify, commit, push, and report briefly in chat.
 ```
@@ -32,19 +41,16 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
 
 ## What the cloud session left (the short version)
 
-- **All work is in git** on `main-l1fsqo`, carried by **PR #355** into `main`.
-- **Rounds W602–W634 are committed.** W635 is the round in progress when credit ran out: if it is not in
-  `git log`, it is uncommitted in the cloud container and lost. In that case its fourteen rows are still OPEN in
-  the register (P2.30 and P2.31) and are simply worked again.
-- **Fidelity series** (twelve-agent M1+M2): v7 20 → v8 18 → v9 11 → v10 4 → v11 4 → v12 6 tier-1. Every row each
-  audit filed was closed before the next. The count does not reach 0 because each run samples new surfaces.
-- **Owner rulings in force (2026-10-07b):**
-  - FU-301, FU-417 and FU-399 ride P5.1.
-  - M1 may run locally.
-  - FU-283's dependency removal is approved. It was tried and reverted, and the retry plan is in
-    `docs/DEPENDENCY_VERDICTS.md`.
-  - Vercel is retired; Google Cloud (free tier, dev/beta/release) is the planned target. See `docs/DEPLOYMENT.md`.
+- **All work is in git.** PR #461 (rounds W754–W784) was merged into `main` on 2026-11-10 on your instruction.
+  Later rounds are on `main-l1fsqo`, carried by **PR #462**.
+- **The plan:** 87 of 119 items done (P1 18/18 · P2 39/41 · P3 30/32 · P4 0/6 · P5 0/22). P2.40 and P2.41 have
+  every row closed or with you, and close on the final audit.
+- **Measured remaining work:** about 214–392 rounds across the 32 open items, most of it in the fifth phase
+  (143–265). Much of that phase is ruled to come after sign-in, which is your switch (P4.1), and the final audit
+  runs after it. Details per item in `docs/REMAINING_WORK_MEASURED.md`.
+- **Owner rulings in force:** those recorded in the plan, including 2026-11-06 (five decisions taken as
+  recommended) and 2026-11-10 (decisions go with the recommendation; PR #461 merged).
 - **Still yours:**
-  - Merge PR #355 when you are ready.
-  - Roll the Stripe key (P4.6).
-  - FU-559: whether to build an app-wide constitutional gate.
+  - Merge PR #462 when you are ready.
+  - FU-1046 and FU-1151 (above).
+  - The P4 switches, in the order you ruled on 2026-10-12: sign-in on your own machine first, real money last.

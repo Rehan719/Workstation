@@ -354,9 +354,50 @@ class RefreshRequest(BaseModel):
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
+#  W865 (FU-1089) - A LIMIT ON ATTEMPTS. A failed sign-in counts against the name tried and the address it came from;
+#  past either limit within the window the next attempt is answered 429, before any password is checked. Signup counts
+#  the accounts created from an address. Kept in this process's memory: a restart clears the counts and each worker counts its own. The address
+#  is the connection's peer: a forwarded-for header is not trusted, because anyone can write one.
+SIGNIN_FAILS_PER_NAME = 5
+SIGNIN_FAILS_PER_ADDRESS = 20
+SIGNUPS_PER_ADDRESS = 5
+ATTEMPT_WINDOW_S = 15 * 60
+_ATTEMPTS: dict = {}
+
+
+def _attempt_address(request: Request | None) -> str:
+    return str(getattr(getattr(request, "client", None), "host", None) or "unknown")
+
+
+def _attempt_wait(key: str, limit: int) -> int:
+    """Seconds until `key` may try again, or 0 when it is under its limit within the window."""
+    now = time.monotonic()
+    stamps = [t for t in _ATTEMPTS.get(key, []) if now - t < ATTEMPT_WINDOW_S]
+    _ATTEMPTS[key] = stamps
+    if len(stamps) < limit:
+        return 0
+    return max(1, int(ATTEMPT_WINDOW_S - (now - stamps[-limit])) + 1)
+
+
+def _attempt_count(key: str) -> None:
+    _ATTEMPTS.setdefault(key, []).append(time.monotonic())
+
+
+def _too_many(what: str, wait: int) -> HTTPException:
+    return HTTPException(status_code=429, headers={"Retry-After": str(wait)}, detail=(
+        f"Too many {what}: try again in {wait} second(s). Nothing was checked or created. The count is kept "
+        f"for {ATTEMPT_WINDOW_S // 60} minutes."))
+
+
 @router.post("/token", response_model=TokenResponse)
-async def login(form: OAuth2PasswordRequestForm = Depends()):
+async def login(request: Request, form: OAuth2PasswordRequestForm = Depends()):
     _require_auth_deps()
+    _name865 = "signin:name:" + " ".join(str(form.username or "").split()).casefold()
+    _addr865 = "signin:addr:" + _attempt_address(request)
+    _wait865 = (_attempt_wait(_name865, SIGNIN_FAILS_PER_NAME)
+                or _attempt_wait(_addr865, SIGNIN_FAILS_PER_ADDRESS))
+    if _wait865:
+        raise _too_many("failed sign-ins for this name or from this address", _wait865)
     user = _get_user(form.username)
     # Self-heal: an admin created with a random password (ADMIN_PASSWORD was unset at bootstrap)
     # adopts the env password once the operator sets it — no hardcoded default ever exists.
@@ -370,11 +411,14 @@ async def login(form: OAuth2PasswordRequestForm = Depends()):
                 _save_users(users)
                 user = users["admin"]
     if not user or not _pwd_ctx.verify(form.password, user["hashed_password"]):
+        _attempt_count(_name865)
+        _attempt_count(_addr865)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    _ATTEMPTS.pop(_name865, None)                 # W865 - a successful sign-in clears its name's count
     access = _make_token({"sub": user["username"], "role": user["role"], "type": "access"}, _ACCESS_TTL)
     refresh = _make_token({"sub": user["username"], "type": "refresh"}, _REFRESH_TTL)
     return TokenResponse(access_token=access, refresh_token=refresh, expires_in=_ACCESS_TTL * 60)
@@ -394,10 +438,32 @@ async def refresh(req: RefreshRequest):
     return TokenResponse(access_token=access, refresh_token=new_refresh, expires_in=_ACCESS_TTL * 60)
 
 
+#  W864 (FU-1152) - NAMES NO PERSON MAY HOLD. Records made while sign-in was off are owned under the label 'default'
+#  (older ones) or the configured single-user owner (W753), and user_can_access compares a record's owner with the
+#  username: an account under either name would be shown every such record. The label is refused at register and
+#  signup; the configured owner's name is refused at signup and allowed only at the admin register route, where the
+#  Owner creates their own account.
+def _reserved_name_refusal(username: str, *, admin_register: bool) -> str | None:
+    from agentic_core.config import SINGLE_USER_LABEL, single_user_owner
+    name = " ".join(str(username or "").split()).casefold()
+    if name == SINGLE_USER_LABEL.casefold():
+        return (f"'{SINGLE_USER_LABEL}' is the label records made while sign-in was off carry, so an account under it "
+                f"would be shown every one of them: it cannot be an account's name. Nothing was created.")
+    owner = str(single_user_owner().get("owner_id") or "").casefold()
+    if not admin_register and owner and name == owner:
+        return ("that is the name records made while sign-in was off are owned under (this deployment's single-user "
+                "owner), so an account under it would be shown every one of them. Only the Owner's own account, "
+                "created by an admin, may hold it. Nothing was created.")
+    return None
+
+
 @router.post("/register")
 async def register(req: RegisterRequest, _admin: dict = Depends(require_admin)):
     """Register a new user. Admin only."""
     _require_auth_deps()
+    _why864 = _reserved_name_refusal(req.username, admin_register=True)
+    if _why864:
+        raise HTTPException(status_code=409, detail=_why864)
     with _users_mutation():                      # W369
         users = _load_users()
         if req.username in users:
@@ -436,7 +502,7 @@ class SignupRequest(BaseModel):
 
 
 @router.post("/signup")
-async def self_serve_signup(req: SignupRequest):
+async def self_serve_signup(req: SignupRequest, request: Request = None):
     """§14 (W297) — PUBLIC self-serve signup, active ONLY when the Owner enables
     SELF_SERVE_SIGNUP_ENABLED (403 otherwise — never silently open). Always creates role 'user'
     (self-serve can never mint admins); auth must also be enabled for signup to be meaningful."""
@@ -449,9 +515,17 @@ async def self_serve_signup(req: SignupRequest):
                             detail="Self-serve signup is not enabled — accounts are Owner-curated. "
                                    "Ask the Owner for access.")
     _require_auth_deps()
+    #  W865 (FU-1089) - signup counts the accounts created from an address: mass creation is what a limit stops
+    _addr_su865 = "signup:addr:" + _attempt_address(request)
+    _wait_su865 = _attempt_wait(_addr_su865, SIGNUPS_PER_ADDRESS)
+    if _wait_su865:
+        raise _too_many("accounts created from this address", _wait_su865)
     if len(req.username.strip()) < 3 or len(req.password) < 8:
         raise HTTPException(status_code=422,
                             detail="Username must be ≥3 chars and password ≥8 chars.")
+    _why864 = _reserved_name_refusal(req.username, admin_register=False)
+    if _why864:
+        raise HTTPException(status_code=409, detail=_why864)
     with _users_mutation():                      # W369
         users = _load_users()
         if req.username in users:
@@ -465,6 +539,7 @@ async def self_serve_signup(req: SignupRequest):
             "api_keys": [],
         }
         _save_users(users)
+    _attempt_count(_addr_su865)                  # W865 - an account was created from this address
     try:
         from agentic_core.gaas.v5 import UEGLogger
         UEGLogger().log({"type": "auth.self_serve_signup", "username": req.username.strip()})

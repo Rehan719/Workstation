@@ -10,6 +10,40 @@ def _now() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
+#  W853 (FU-1038) - THE LABELS A LIVE SURFACE OPENS A DEFECT UNDER, as fixed at each call site: every
+#  run_quality_gates / assure_delivery call (no label is "delivery"), the management-system generators' agents, and the
+#  reported-nonconformance door. test_w853 reads every call site so this list cannot fall behind or keep a dead entry.
+#  Labels composed at run time from a prefix (tool:<agent>) cannot be listed: whether their surface is live is not
+#  readable from the label.
+LIVE_GATE_LABELS = (
+    "delivery", "cockpit-what-if", "reported-nonconformance", "experiment", "petri", "studio", "composition",
+    "composition_run", "vsb_repo", "vsb_website", "vsb_webapp", "vsb_mobile", "board_pack", "delegate", "cascade",
+    "genesis", "deliverable", "mgmt_qms", "mgmt_bms", "mgmt_dcs", "mgmt_audit", "mgmt_risk", "mgmt_ems", "mgmt_capa")
+COMPOSED_LABEL_PREFIXES = ("tool:",)
+
+
+def label_is_live(label: Any) -> Optional[bool]:
+    """True: a live surface opens defects under this label. False: none does. None: the label is composed at run time,
+    so the label alone cannot say."""
+    s = str(label or "")
+    if s in LIVE_GATE_LABELS:
+        return True
+    if any(s.startswith(p) for p in COMPOSED_LABEL_PREFIXES):
+        return None
+    return False
+
+
+#  W853 (FU-1038) - the two ways out of the loop that are not a re-verification, and what each one is
+DISPOSITIONS = {
+    "closed_source_retired": (
+        "closed because the surface that opened it has been retired, on the statement of the person recorded here. "
+        "It was not re-verified: it is not a gate pass and moves no count in the non-conformance rate"),
+    "not_reproducible": (
+        "reported as not reproducible by the person recorded here, with what they tried. It was not re-verified: it "
+        "is not a gate pass and moves no count in the non-conformance rate"),
+}
+
+
 class QualityManagementSystem:
     """
     VBS: QMS Gatekeeper.
@@ -233,9 +267,31 @@ class QualityManagementSystem:
                 return {"defect": d, "passed": passed}
         return None
 
+    #  W853 (FU-1038; OWNER RULING 2026-10-12) - a defect leaves the loop without a re-verification only as one of
+    #  DISPOSITIONS: its own status (so `closed` still means re-verified and passed), `reverified` left false, no gate
+    #  counter moved, and the person's reason, name and time kept on the row. Only an open or corrected defect.
+    def dispose_defect(self, defect_id: str, how: str, reason: str, by: str, by_verified: bool,
+                       source_check: Optional[str] = None,
+                       retired_route: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        if how not in DISPOSITIONS:
+            raise ValueError(f"not a disposition: {how!r}")
+        st = self._load_state()
+        for d in st["defects"]:
+            if d["id"] == defect_id and d.get("status") in ("open", "corrected"):
+                _before = d.get("status")
+                d["status"] = how
+                d["closure"] = {"how": how, "reason": str(reason)[:2000], "by": str(by)[:120],
+                                "by_verified": bool(by_verified), "at": _now(), "status_before": _before,
+                                **({"retired_route": retired_route} if retired_route else {}),
+                                **({"source_check": source_check} if source_check else {}),
+                                "basis": DISPOSITIONS[how]}
+                self._save_state()
+                return d
+        return None
+
     def defect_summary(self) -> Dict[str, Any]:
         st = self._load_state()
-        by = {"open": 0, "corrected": 0, "closed": 0}
+        by = {"open": 0, "corrected": 0, "closed": 0, "closed_source_retired": 0, "not_reproducible": 0}
         for d in st["defects"]:
             by[d.get("status", "open")] = by.get(d.get("status", "open"), 0) + 1
         #  P3.30 (R1.12; OWNER RULING 2026-10-11) - how much of the rate rests on typed figures. Two counts
@@ -262,6 +318,20 @@ class QualityManagementSystem:
                 "person_reported_open": sum(1 for d in st["defects"]
                                             if d.get("person_reported") and d.get("status") == "open"),
                 "what_if_failures": int(st.get("what_if_failures", 0)),
+                #  W853 (FU-1038) - the open defects whose label no live surface uses: the first ones read when the
+                #  loop is turned, the candidates to close because their source was retired
+                "open_from_retired_labels": sum(1 for d in st["defects"]
+                                                if d.get("status") in ("open", "corrected")
+                                                and label_is_live(d.get("label")) is False),
+                "closed_basis": ("'closed' counts defects re-verified and passed. A defect closed because its source "
+                                 "was retired, or reported not reproducible, was not re-verified: each is counted "
+                                 "apart and moves nothing in the rate"),
+                "dispositions_basis": (
+                    f"{by['closed_source_retired']} defect(s) closed because the surface that opened them was "
+                    f"retired and {by['not_reproducible']} reported not reproducible, each with the reason, name "
+                    f"and time its person gave; neither is a re-verification, so neither is counted as closed above, "
+                    f"as a gate pass or in the rate. Open now under a label no live surface opens a defect under: "
+                    f"{sum(1 for d in st['defects'] if d.get('status') in ('open', 'corrected') and label_is_live(d.get('label')) is False)}"),
                 "attested_reverifications": _att,
                 "attested_counted_since": _att_since,
                 "defects_closed_on_attestation": _closed_att,

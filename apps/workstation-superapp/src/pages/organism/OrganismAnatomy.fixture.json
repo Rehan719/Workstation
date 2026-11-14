@@ -1,0 +1,403 @@
+{
+ "health": {
+  "composite_health": 0.872,
+  "composite_health_measured_only": null,
+  "composite_health_terms": {
+   "immune_health": {
+    "weight": 0.4,
+    "value": 1.0,
+    "measured": false,
+    "observations": 0,
+    "basis": "no call was observed in the sensor's window - this value is the absence of failures, not a measurement"
+   },
+   "self_healing_health": {
+    "weight": 0.4,
+    "value": 1.0,
+    "measured": false,
+    "basis": "no circuits tracked yet — defaulted to 1.0, not a measurement"
+   },
+   "metabolic": {
+    "weight": 0.2,
+    "value": 0.358,
+    "measured": false,
+    "basis": "ATPSimulator on a constant metabolic_load — simulated, not a measurement of this platform"
+   }
+  },
+  "health_basis": "0% measured; not measured: immune_health (no call was observed in the sensor's window - this value is the absence of failures, not a measurement); self_healing_health (no circuits tracked yet — defaulted to 1.0, not a measurement); metabolic (ATPSimulator on a constant metabolic_load — simulated, not a measurement of this platform)",
+  "mode": "NOMINAL",
+  "should_throttle": false,
+  "max_parallel_agents": 3,
+  "circadian_cycle": "MAINTENANCE_REST",
+  "is_peak_focus": false,
+  "summary": "Nothing was measured in the last 5 minutes: no call was observed and no circuit is tracked. The mode shown (NOMINAL) is the default, not an assessment; health-gated changes are held for an explicit decision."
+ },
+ "life": {
+  "lifecycle_stages_reached": [],
+  "farthest_stage": "none",
+  "stages_note": "project stages are cumulative over concept-prototype-commercialise; NOTE the known vocabulary issue (ledger item 2, Owner decision pending): project stage advances only when set, and VSB records hold their own status",
+  "vsb_spawned": false,
+  "vsb_operational": false,
+  "projects": {
+   "total_projects": 0,
+   "by_stage": {
+    "concept": 0,
+    "prototype": 0,
+    "commercialise": 0
+   },
+   "running": 0,
+   "commercialisation_rate": 0.0,
+   "pipeline_health": "DORMANT",
+   "pipeline_health_basis": "FLOURISHING: >30% commercialised · GROWING: any project touched in 30 days (0 were) · STATIC: projects exist but idle · DORMANT: none"
+  },
+  "vsb_entities": {
+   "total": 0,
+   "operational": 0,
+   "operating": 0,
+   "legacy_operating": 0,
+   "operational_basis": "counts status == 'operating', which is what _derived_status returns today (0 entit(ies)), plus 0 written by pre-W496 paths that still carry ['operational', 'active'] on disk. Statuses NOT counted as operating: none",
+   "by_status": {},
+   "domains": [],
+   "domains_total": 0
+  },
+  "organism_mode": "NOMINAL",
+  "commercialisation_readiness": 0.0,
+  "commercialisation_readiness_basis": "project commercialisation_rate alone (0.0) - no VSBs"
+ },
+ "systems": {
+  "immune": {
+   "health": 1.0,
+   "threat_level": "NOMINAL",
+   "hot_endpoint_errors": 0,
+   "hot_endpoint_tied": [],
+   "errors_in_window": 0,
+   "review_flags_in_window": 0,
+   "events_in_window": 0,
+   "health_basis": "health and threat are computed from 0 failure(s) in the window; 0 compliance review flag(s) are reported beside them and are NOT counted — a flag asks a human to look, it is not a finding of harm",
+   "window_seconds": 300,
+   "observations_in_window": 0,
+   "observed_basis": "NO call was observed in the last 5 minutes, so the health figure is the absence of failures and not a reading of anything",
+   "by_type": {},
+   "hot_endpoint": null,
+   "response_playbook": [
+    "recommended: passive surveillance"
+   ]
+  },
+  "nervous": {
+   "arousal_state": "DORMANT",
+   "arousal_thresholds": {
+    "HYPERACTIVE": "> 2.0/s",
+    "ALERT": "> 0.5/s",
+    "RESTING": "> 0.1/s",
+    "DORMANT": "<= 0.1/s"
+   },
+   "signal_rate_per_second": 0.017,
+   "signals_last_60s": 1,
+   "by_type_last_60s": {
+    "reflex": 1
+   },
+   "total_signals": {
+    "reflex": 1
+   },
+   "reflex_arcs_registered": 2,
+   "buffer_size": 1,
+   "buffer_capacity": 200,
+   "scope": "in-memory, this server process since start",
+   "process_started_at": "2026-11-14T01:49:10Z"
+  },
+  "self_healing": {
+   "overall_health": null,
+   "health_basis": "no circuit has carried a call yet — nothing measured, health unknown",
+   "measured_endpoints": 0,
+   "circuits": {},
+   "open_circuits": 0,
+   "tracked_endpoints": 0,
+   "healing_log": [],
+   "thresholds": {
+    "failure_threshold": 5,
+    "window_seconds": 60.0,
+    "recovery_timeout": 30.0
+   },
+   "scope": "in-memory, this server process since start",
+   "process_started_at": "2026-11-14T01:49:10Z",
+   "pid": 31019
+  },
+  "scope": "in-memory, this server process since start"
+ },
+ "signals": {
+  "signals": [
+   {
+    "age_seconds": 0.9,
+    "signal_type": "reflex",
+    "source": "organism.heartbeat",
+    "payload": "beat 1 [MAINTENANCE_REST]",
+    "intensity": 0.3
+   }
+  ],
+  "count": 1,
+  "requested": 25,
+  "limit": 25
+ },
+ "heal_log": {
+  "events": [],
+  "count": 0,
+  "capacity": 50,
+  "events_ever": 0,
+  "scope": "in-memory, this server process since start",
+  "process_started_at": "2026-11-14T01:49:10Z"
+ },
+ "genome": {
+  "genomes": [],
+  "total": 0,
+  "population": {
+   "mean_fitness": null,
+   "mean_fitness_basis": "no genomes stored yet",
+   "mean_declared_fitness": null,
+   "fitness_composition": {}
+  },
+  "entity_genomes": {
+   "count": 0,
+   "unread_records": 0,
+   "basis": "0 living entities carry a genome spec written when the entity was established. That is a SEPARATE record from the 0 trait-vector genome(s) listed here: the two are not yet one identity, and nothing on this page mutates or crosses an entity's spec."
+  }
+ },
+ "config": {
+  "config": {
+   "version": "1.0.0",
+   "gateway": {
+    "rpm_limit": 20,
+    "preferred_provider": "auto",
+    "max_tokens": 4096,
+    "temperature_bias": "neutral"
+   },
+   "domains": {
+    "religion": {
+     "enabled": true,
+     "priority": "high"
+    },
+    "science": {
+     "enabled": true,
+     "priority": "high"
+    },
+    "education": {
+     "enabled": true,
+     "priority": "high"
+    },
+    "law": {
+     "enabled": true,
+     "priority": "high"
+    },
+    "care": {
+     "enabled": true,
+     "priority": "high"
+    },
+    "career": {
+     "enabled": true,
+     "priority": "high"
+    }
+   },
+   "features": {
+    "immune_system": true,
+    "self_healing": true,
+    "nervous_system": true,
+    "genome_encoding": true,
+    "evolution_engine": true,
+    "digital_twin": true,
+    "swarm_orchestration": true,
+    "synthesis_studio": true,
+    "capital_fund": true
+   },
+   "organism": {
+    "circadian_adaptation": true,
+    "metabolic_throttle": false,
+    "immune_quarantine": false,
+    "evolution_auto_apply": false
+   },
+   "qep_recommendation": {
+    "weights": "0.4,0.35,0.25"
+   },
+   "last_updated": null,
+   "updated_by": "system"
+  },
+  "key_wiring": [
+   {
+    "section": "gateway",
+    "key": "rpm_limit",
+    "wired": true,
+    "consumer": "ai.gateway rate limiter (re-synced ~30s via _sync_reconfig)",
+    "governed": true
+   },
+   {
+    "section": "gateway",
+    "key": "preferred_provider",
+    "wired": false,
+    "consumer": "stored-only — nothing reads this key back",
+    "governed": false
+   },
+   {
+    "section": "gateway",
+    "key": "max_tokens",
+    "wired": false,
+    "consumer": "stored-only — nothing reads this key back",
+    "governed": false
+   },
+   {
+    "section": "gateway",
+    "key": "temperature_bias",
+    "wired": false,
+    "consumer": "stored-only — nothing reads this key back",
+    "governed": false
+   },
+   {
+    "section": "domains",
+    "key": "religion",
+    "wired": false,
+    "consumer": "stored-only — nothing reads this key back",
+    "governed": false
+   },
+   {
+    "section": "domains",
+    "key": "science",
+    "wired": false,
+    "consumer": "stored-only — nothing reads this key back",
+    "governed": false
+   },
+   {
+    "section": "domains",
+    "key": "education",
+    "wired": false,
+    "consumer": "stored-only — nothing reads this key back",
+    "governed": false
+   },
+   {
+    "section": "domains",
+    "key": "law",
+    "wired": false,
+    "consumer": "stored-only — nothing reads this key back",
+    "governed": false
+   },
+   {
+    "section": "domains",
+    "key": "care",
+    "wired": false,
+    "consumer": "stored-only — nothing reads this key back",
+    "governed": false
+   },
+   {
+    "section": "domains",
+    "key": "career",
+    "wired": false,
+    "consumer": "stored-only — nothing reads this key back",
+    "governed": false
+   },
+   {
+    "section": "features",
+    "key": "immune_system",
+    "wired": false,
+    "consumer": "stored-only — nothing reads this key back",
+    "governed": false
+   },
+   {
+    "section": "features",
+    "key": "self_healing",
+    "wired": false,
+    "consumer": "stored-only — nothing reads this key back",
+    "governed": false
+   },
+   {
+    "section": "features",
+    "key": "nervous_system",
+    "wired": false,
+    "consumer": "stored-only — nothing reads this key back",
+    "governed": false
+   },
+   {
+    "section": "features",
+    "key": "genome_encoding",
+    "wired": false,
+    "consumer": "stored-only — nothing reads this key back",
+    "governed": false
+   },
+   {
+    "section": "features",
+    "key": "evolution_engine",
+    "wired": false,
+    "consumer": "stored-only — nothing reads this key back",
+    "governed": false
+   },
+   {
+    "section": "features",
+    "key": "digital_twin",
+    "wired": false,
+    "consumer": "stored-only — nothing reads this key back",
+    "governed": false
+   },
+   {
+    "section": "features",
+    "key": "swarm_orchestration",
+    "wired": false,
+    "consumer": "stored-only — nothing reads this key back",
+    "governed": false
+   },
+   {
+    "section": "features",
+    "key": "synthesis_studio",
+    "wired": false,
+    "consumer": "stored-only — nothing reads this key back",
+    "governed": false
+   },
+   {
+    "section": "features",
+    "key": "capital_fund",
+    "wired": false,
+    "consumer": "stored-only — nothing reads this key back",
+    "governed": false
+   },
+   {
+    "section": "organism",
+    "key": "circadian_adaptation",
+    "wired": false,
+    "consumer": "stored-only — nothing reads this key back",
+    "governed": false
+   },
+   {
+    "section": "organism",
+    "key": "metabolic_throttle",
+    "wired": true,
+    "consumer": "organism.heartbeat — evolve tick suppressed at low ATP (W310)",
+    "governed": true,
+    "consumer_can_act": false,
+    "consumer_can_act_basis": "its consumer acts only at low ATP, and ATP cannot fall on this deployment, so setting it changes nothing"
+   },
+   {
+    "section": "organism",
+    "key": "immune_quarantine",
+    "wired": true,
+    "consumer": "self_healing — OPEN circuits contained, no half-open probes (W318)",
+    "governed": true
+   },
+   {
+    "section": "organism",
+    "key": "evolution_auto_apply",
+    "wired": true,
+    "consumer": "organism.heartbeat — post-approval auto-apply (W310/W346)",
+    "governed": true
+   },
+   {
+    "section": "qep_recommendation",
+    "key": "weights",
+    "wired": true,
+    "consumer": "qep_intelligence — the explanation's display weights and the audit's sum check (W687)",
+    "governed": true
+   }
+  ],
+  "governed_keys": [
+   "gateway.rpm_limit",
+   "organism.evolution_auto_apply",
+   "organism.immune_quarantine",
+   "organism.metabolic_throttle",
+   "qep_recommendation.weights"
+  ],
+  "store_unreadable": null,
+  "note": "only the wired keys change live behaviour; stored-only keys persist but nothing consults them — displayed so a settings panel cannot pass a dead switch off as a control"
+ }
+}

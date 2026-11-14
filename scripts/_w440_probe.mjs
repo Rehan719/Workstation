@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W440 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W440 — drive the VBS systems panel in a real browser against the built bundle: the operating
 // management systems must render on the cockpit (with or without a VSB), the QMS defect loop must
 // walk end-to-end through the UI, and the disclosed-simulation framing must be on screen.

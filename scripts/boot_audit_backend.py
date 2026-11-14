@@ -22,9 +22,12 @@ import os
 import pathlib
 import socket
 import sys
+import tempfile
 
 PORT = int(os.environ.get("M1_PORT", "8031"))
-STORE = pathlib.Path(os.environ.get("M1_STORE", r"C:\tmp\m1_audit"))
+#  W785 - the default store is the machine's temp directory, not a path written for one machine (on Linux the old
+#  default, a Windows drive path, made a folder named after that whole path inside the working directory)
+STORE = pathlib.Path(os.environ.get("M1_STORE", str(pathlib.Path(tempfile.gettempdir()) / "m1_audit")))
 
 
 def _port_in_use(port: int) -> bool:

@@ -24,10 +24,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # omitting them made the shipped image die at import. Verified by a boot-path import audit —
 # every top-level package app_mvp imports at boot is now in the COPY set (test_dockerfile_copies_
 # every_boot_path_package). The image's own COPY list is the contract; keep it in sync.
+# W883b - no `COPY core ./core`: W877 moved core/ out of the tree (its live module into agentic_core), and a COPY with
+# no source fails the build. Every COPY source must exist (test_w883b).
+# W896 (FU-1168) - no `COPY src ./src`: src/'s three live modules moved into agentic_core, the rest to _archive/.
 COPY agentic_core ./agentic_core
-COPY core ./core
 COPY config ./config
-COPY src ./src
 
 # Persistent data dir — mount a volume here (or set DATA_DIR) in production so data survives redeploys.
 RUN mkdir -p /app/data && useradd -m app && chown -R app:app /app

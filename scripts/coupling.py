@@ -85,6 +85,11 @@ def main(argv: List[str]) -> int:
         print(__doc__)
         return 2
     r = coupling(argv)
+    #  W808 (FU-1154) - no commit sampled means no coupling was measured, which is not the same as none existing
+    if not r["commits_analysed"]:
+        print(f"REFUSING: examined nothing - no commit touching {MAX_FILES} files or fewer was found in the "
+              f"sampled history, so no change coupling could be measured.")
+        return 1
     print(f"# change coupling — {r['commits_analysed']} commits sampled "
           f"(commits touching >{MAX_FILES} files skipped as sweeps)\n")
     for path, info in r["files"].items():          # type: ignore[union-attr]

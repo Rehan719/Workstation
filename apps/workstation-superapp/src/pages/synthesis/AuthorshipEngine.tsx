@@ -1,3 +1,4 @@
+import { streamPost } from '../../lib/stream';   // W1008 - one reader of a streamed answer
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import {
@@ -16,44 +17,7 @@ interface APEvent {
   data?: Record<string, any>;
 }
 
-// ── SSE stream helper ─────────────────────────────────────────────────────────
-
-async function streamPost(
-  url: string,
-  body: object,
-  onChunk: (ev: APEvent) => void,
-  onDone: () => void,
-  onError: (e: string) => void,
-) {
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) { onError(`HTTP ${res.status}`); return; }
-    const reader = res.body!.getReader();
-    const dec = new TextDecoder();
-    let buf = '';
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += dec.decode(value, { stream: true });
-      const lines = buf.split('\n');
-      buf = lines.pop()!;
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const raw = line.slice(6).trim();
-          if (raw === '[DONE]') continue;
-          try { onChunk(JSON.parse(raw)); } catch {}
-        }
-      }
-    }
-    onDone();
-  } catch (e: any) {
-    onError(e?.message ?? String(e));
-  }
-}
+//  W1008 - the stream reader is lib/stream.ts, one for the five pages that each carried a copy
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -86,7 +50,9 @@ export const AuthorshipEngine: React.FC = () => {
   const [running, setRunning] = useState(false);
   const [events, setEvents] = useState<APEvent[]>([]);
   const [error, setError] = useState('');
-  const [expanded, setExpanded] = useState<number | null>(null);
+  //  W1036 - which stages' cards are open, by stage number. One index held one card, so "Expand All" opened the
+  //  first and left the other eight shut
+  const [open, setOpen] = useState<Set<number>>(new Set());
   const feedRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -98,9 +64,9 @@ export const AuthorshipEngine: React.FC = () => {
     setRunning(true);
     setEvents([]);
     setError('');
-    setExpanded(null);
+    setOpen(new Set());
 
-    await streamPost(
+    await streamPost<APEvent>(
       '/api/v1/intelligence/authorship',
       { topic, genre, domain, audience, citation_style: citationStyle, word_count: wordCount, rigor },
       ev => setEvents(prev => [...prev, ev]),
@@ -117,6 +83,13 @@ export const AuthorshipEngine: React.FC = () => {
   const completeEvent = events.find(ev => ev.stage === 'complete');
   const currentStageNum = stageEvents.length;
   const progress = Math.min(100, Math.round((currentStageNum / APIE_STAGES.length) * 100));
+  const numOf = (ev: APEvent, i: number): number => (ev.data?.stage_num as number | undefined) ?? i + 1;
+  const allOpen = stageEvents.length > 0 && stageEvents.every((ev, i) => open.has(numOf(ev, i)));
+  const toggle = (n: number) => setOpen(prev => {
+    const next = new Set(prev);
+    if (!next.delete(n)) next.add(n);
+    return next;
+  });
 
   return (
     <div className="space-y-10 pb-24">
@@ -344,22 +317,24 @@ export const AuthorshipEngine: React.FC = () => {
             {stageEvents.length > 0 && (
               <button
                 type="button"
-                onClick={() => setExpanded(expanded === null ? 0 : null)}
+                onClick={() => setOpen(allOpen ? new Set() : new Set(stageEvents.map(numOf)))}
                 className="text-[9px] font-black uppercase text-slate-500 hover:text-aura tracking-widest transition-colors"
               >
-                {expanded !== null ? 'Collapse All' : 'Expand All'}
+                {allOpen ? 'Collapse All' : 'Expand All'}
               </button>
             )}
           </div>
 
           {stageEvents.map((ev, i) => {
-            const stageInfo = APIE_STAGES[(ev.data?.stage_num ?? i + 1) - 1];
+            const num = numOf(ev, i);
+            const stageInfo = APIE_STAGES[num - 1];
             const StageIcon = stageInfo?.icon ?? FileText;
             return (
               <Card key={ev.data?.stage_num ?? i} className="p-0 overflow-hidden border-slate-800/80">
                 <button
                   type="button"
-                  onClick={() => setExpanded(expanded === i ? null : i)}
+                  onClick={() => toggle(num)}
+                  aria-expanded={open.has(num)}
                   className="w-full flex items-center justify-between p-5 text-left hover:bg-slate-800/30 transition-all"
                 >
                   <div className="flex items-center gap-3">
@@ -375,11 +350,11 @@ export const AuthorshipEngine: React.FC = () => {
                     </div>
                     <StageMark data={ev.data as StageData} className="ml-2" />
                   </div>
-                  {expanded === i
+                  {open.has(num)
                     ? <ChevronUp size={14} className="text-slate-500 shrink-0" />
                     : <ChevronDown size={14} className="text-slate-500 shrink-0" />}
                 </button>
-                {expanded === i && (
+                {open.has(num) && (
                   <div className="px-5 pb-6 border-t border-slate-800/50">
                     {stageOutcome(ev.data as StageData) === 'floor' && (
                       <p className="text-[10px] font-bold text-amber-400/80 mt-4">{FLOOR_STAGE_NOTE}</p>

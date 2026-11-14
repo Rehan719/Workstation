@@ -92,6 +92,10 @@ class HomeostaticController:
         _dep = atp_depletion_state()
         _atp_raw = _met.get("atp_ratio")
         atp = float(_atp_raw) if _atp_raw is not None else 1.0   # W438: the biobus fallback carries None
+        #  W900 (FU-1112, S18.1) - the conserve threshold reads the work budget's remaining share while the budget is
+        #  switched on, and the simulator's figure while it is off (inert, as ruled)
+        _acts900 = bool(_met.get("energy_acts")) and _met.get("energy_ratio") is not None
+        _energy = float(_met["energy_ratio"]) if _acts900 else atp
 
         # Cap concurrency by the WHOLE-organism recommendation (composite health: immune·self-healing·
         # metabolic), then apply the survival-instinct immune floor (preserves prior protective behaviour).
@@ -100,7 +104,7 @@ class HomeostaticController:
             cap = 1
         elif immune_threat == "ELEVATED":
             cap = min(cap, 2)
-        if atp < _ATP_CONSERVE_AT:          # metabolic survival instinct: protect remaining energy
+        if _energy < _ATP_CONSERVE_AT:      # metabolic survival instinct: protect remaining energy
             cap = 1
         if _wb.get("holds"):                # W742 (S18.1) — the work budget is spent (or unreadable): serial
             cap = 1
@@ -109,7 +113,7 @@ class HomeostaticController:
         #  W638 (FU-596) — A CAP THE CALLER ASKED FOR IS NOT A DEFENCE. `cap == 1` alone made every sequential
         #  cascade (which requests 1) report the organism as defending itself while immune was NOMINAL and the
         #  throttle off. Protected means the ORGANISM forced the floor, or cut a larger request down to it.
-        _forced_floor = ((immune_threat in ("HIGH", "CRITICAL")) or atp < _ATP_CONSERVE_AT
+        _forced_floor = ((immune_threat in ("HIGH", "CRITICAL")) or _energy < _ATP_CONSERVE_AT
                          or bool(_wb.get("holds")))
         _cut_to_one = cap == 1 and int(requested_parallel) > 1
         if bool(rec.get("should_throttle")) or _forced_floor or _cut_to_one:
@@ -146,9 +150,14 @@ class HomeostaticController:
                 "atp_can_fall": _dep["can_deplete"],
                 # ...and the posture the ATP term selects is UNREACHABLE on the current model, said rather
                 # than silently never chosen (the same dead branch P2.7(4) found in the heartbeat).
-                "conserving_posture_reachable": _dep["can_deplete"],
+                "conserving_posture_reachable": _dep["can_deplete"] or _acts900,
+                #  W900 (FU-1112, S18.1) - the figure derived from the budget, and which one the threshold read
+                "energy_ratio": _met.get("energy_ratio"),
+                "energy_acts": _acts900,
+                "energy_basis": _met.get("energy_basis"),
+                "conserve_reads": "work_budget" if _acts900 else "atp_simulator",
                 "conserving_posture_basis": (
-                    None if _dep["can_deplete"] else
+                    None if (_dep["can_deplete"] or _acts900) else
                     "the 'conserving' posture is selected below an ATP of "
                     f"{_ATP_CONSERVE_AT} and the figure cannot fall to it: " + _dep["basis"]),
                 "immune_threat": immune_threat,

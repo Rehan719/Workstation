@@ -30,6 +30,17 @@ def main(argv) -> int:
     except RuntimeError as exc:
         print(f"PRIVACY CHECK COULD NOT RUN: {exc}. Nothing was scanned, so this is not a pass.")
         return 2
+    #  W808 (FU-1154) - a scan that read no file has found nothing because it looked at nothing. For the hook
+    #  (--staged) that is a commit that adds or changes no file - a deletion, say - which can carry no new text, so
+    #  it is allowed and says nothing was scanned; refusing it would block a harmless commit. A whole-tree scan that
+    #  read no file is refused: git listed no tracked file, and "0 findings" would be a reading of nothing.
+    if not report.get("files_read"):
+        if "--staged" in argv:
+            print("privacy check: this commit adds or changes no file (nothing staged carries content), so it can "
+                  "carry no new text; nothing was scanned.")
+            return 0
+        print("PRIVACY CHECK REFUSING: examined nothing - git listed no tracked file, so this is not a pass.")
+        return 2
     for f in report["findings"]:
         where = f"{f['path']}:{f['line']}" if f["line"] else f["path"]
         print(f"  {f['kind']:<18} {where}  ({f['what']})")

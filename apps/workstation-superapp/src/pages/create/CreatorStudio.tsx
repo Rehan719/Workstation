@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
+import { errorMessage } from '../../lib/api';   // W1015 - a caught failure, said as what it was
 import { REALMS as CANON_REALMS } from '../../lib/taxonomy';
 import ReactFlow, {
   addEdge,
@@ -16,7 +17,8 @@ import {
   Wand2, Database, Plus, Save, Play, Sparkles,
   Download, X, ChevronRight, Loader2, CheckCircle2
 } from 'lucide-react';
-import { provenanceBadge, provenanceLine, provenanceField } from '../../lib/api';
+import { axiosDetail, provenanceBadge, provenanceLine, provenanceField } from '../../lib/api';   // W1011: axiosDetail
+import { AskPerson } from '../../components/AskPerson';   // W968 (P5.14 clause 6)
 import { motion, AnimatePresence } from 'framer-motion';
 import componentRegistry from '@workstation/shared/data/component_registry.json';
 
@@ -47,6 +49,7 @@ const STAGES = ['concept', 'design', 'build', 'launch', 'commercialise'];
 
 export const CreatorStudio: React.FC = () => {
   const [nodes, setNodes] = useState<Node[]>([]);
+  const [askingRegenerate, setAskingRegenerate] = useState(false);   // W968 - the question before a built graph is replaced
   const [edges, setEdges] = useState<Edge[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [intent, setIntent]       = useState('');
@@ -117,10 +120,19 @@ export const CreatorStudio: React.FC = () => {
       setNodes(newNodes);
       setEdges(newEdges);
     } catch (err: any) {
-      setError(err?.response?.data?.detail ?? err?.message ?? 'Blueprint generation failed.');
+      setError(axiosDetail(err, errorMessage(err)));
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  //  W1038 - every way to generate asks first over a graph a person built (W968). The intent bar's button and the
+  //  intent's Enter replaced the canvas with no question; only the canvas's own button asked. An empty canvas
+  //  loses nothing
+  const requestGenerate = () => {
+    if (isGenerating || !intent.trim()) return;
+    if (nodes.length > 0) { setAskingRegenerate(true); return; }
+    void handleAIGenerate();
   };
 
   const handleExport = () => {
@@ -229,7 +241,7 @@ export const CreatorStudio: React.FC = () => {
               <input
                 value={intent}
                 onChange={(e) => setIntent(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAIGenerate()}
+                onKeyDown={(e) => { if (e.key === 'Enter') requestGenerate(); }}
                 placeholder="Describe what you want to build…"
                 aria-label="Blueprint intent"
                 className="flex-1 bg-transparent border-none outline-none font-bold text-sm placeholder-slate-600 text-white"
@@ -254,7 +266,7 @@ export const CreatorStudio: React.FC = () => {
               </select>
               <button
                 type="button"
-                onClick={handleAIGenerate}
+                onClick={requestGenerate}
                 disabled={isGenerating || !intent.trim()}
                 className="ml-auto px-5 py-1.5 bg-aura text-sovereign font-black rounded-xl flex items-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-40 text-[10px] uppercase tracking-widest"
               >
@@ -264,6 +276,17 @@ export const CreatorStudio: React.FC = () => {
             </div>
             {error && (
               <p className="text-[10px] text-red-400 px-1">{error}</p>
+            )}
+            {/* W1038 - the question is here, under the button a generation is asked from; it was only beside the
+                canvas's own button, and the intent bar's button asked nothing */}
+            {askingRegenerate && (
+              <AskPerson question="Regenerate the blueprint from the intent text?" kind="confirmation"
+                options={[
+                  { id: 'regenerate', label: 'Regenerate and replace the canvas', differs: 'the nodes and edges on the canvas are replaced by a new blueprint from the intent text; the graph you built is not executed', undo: 'it cannot be undone: the graph on the canvas is discarded and no copy is kept' },
+                  { id: 'keep', label: 'Keep the canvas', differs: 'the graph you built stays as it is', undo: 'there is nothing to undo', recommended: true },
+                ]}
+                typeBack={{ optionId: 'regenerate', text: 'replace', label: 'Type "replace" to discard the graph you built' }}
+                onChoose={id => { setAskingRegenerate(false); if (id === 'regenerate') void handleAIGenerate(); }} />
             )}
             {blueprint && !error && (
               <div className="flex items-center gap-2 text-[9px] font-black text-aura uppercase tracking-widest">
@@ -329,11 +352,7 @@ export const CreatorStudio: React.FC = () => {
                   user built is discarded, not executed. No backend route takes a canvas graph. */}
               <button
                 type="button"
-                onClick={() => {
-                  if (nodes.length > 0 &&
-                      !window.confirm('Regenerate from the intent text? This REPLACES the nodes and edges on the canvas — the graph you built is not executed and will be discarded.')) return;
-                  void handleAIGenerate();
-                }}
+                onClick={requestGenerate}
                 disabled={isGenerating || !intent.trim()}
                 title="Regenerates a blueprint from the intent text and replaces the canvas. It does not execute the graph — no pipeline runner exists yet."
                 data-testid="regenerate-blueprint"

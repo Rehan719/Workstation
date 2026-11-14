@@ -1,0 +1,92 @@
+{
+ "ask": {
+  "intent": "W1038 made up: a lending library of garden tools for one street",
+  "realm": "learning",
+  "stage": "design",
+  "domain": "learning"
+ },
+ "blueprint": {
+  "status": 200,
+  "body": {
+   "status": "complete",
+   "blueprint_id": "db97e02be3a344b6a1b8be62a4d356a3",
+   "name": "W1038 made up: a lending library of garden tools for one… — Design Blueprint",
+   "stage": "design",
+   "realm": "learning",
+   "domain": "learning",
+   "deliverable": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Composed for the Learning realm. This engine RECORDS the realm and does not act on it: it composes from the text the calling tool identified as yours, and a house style is a directive only a served model can follow._\n\n## Understanding\nThe request concerns: W1038 made up: a lending library of garden tools for one street (domain: learning  |  Stage: design).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- lending library\n- library garden\n- made lending\n- garden tools\n- one street\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'ceo_blueprint', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for learning  |  Stage: design; record outcomes to memory/UEG.",
+   "nodes": [
+    {
+     "id": "node-1",
+     "type": "default",
+     "label": "W1038 Made Up: Input",
+     "position": {
+      "x": 120,
+      "y": 180
+     },
+     "source": "template_fallback"
+    },
+    {
+     "id": "node-2",
+     "type": "default",
+     "label": "AI Analysis Engine",
+     "position": {
+      "x": 340,
+      "y": 180
+     },
+     "source": "template_fallback"
+    },
+    {
+     "id": "node-3",
+     "type": "default",
+     "label": "W1038 Made Up: Processor",
+     "position": {
+      "x": 560,
+      "y": 180
+     },
+     "source": "template_fallback"
+    },
+    {
+     "id": "node-4",
+     "type": "default",
+     "label": "Output Synthesiser",
+     "position": {
+      "x": 780,
+      "y": 180
+     },
+     "source": "template_fallback"
+    }
+   ],
+   "nodes_source": "template_fallback",
+   "nodes_basis": "A TEMPLATE, not this blueprint's pipeline: the document holds no pipeline section, so these boxes were made from the first words of the intent and two fixed names. Nothing was extracted or designed.",
+   "generated_at": 1794675514.5557463,
+   "ai_provenance": {
+    "evidence_level": "behaviour",
+    "evidence_level_number": 1,
+    "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+    "served_by": "native",
+    "is_external": false
+   }
+  }
+ },
+ "refused": {
+  "status": 422,
+  "body": {
+   "detail": [
+    {
+     "type": "missing",
+     "loc": [
+      "body",
+      "intent"
+     ],
+     "msg": "Field required",
+     "input": {
+      "realm": "learning",
+      "stage": "design",
+      "domain": "learning"
+     }
+    }
+   ]
+  }
+ }
+}

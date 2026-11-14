@@ -27,6 +27,15 @@ export interface ApiOptions {
   signal?: AbortSignal;
 }
 
+//  W959 (FU-1181) - THE ONE PLACE A BODY THAT IS NOT JSON IS SILENT. Each caller of bodyOrNull checks the answer's
+//  status itself and says a refusal with it, so a body that cannot be parsed - a proxy's HTML 502, an empty 204, a
+//  cut stream - is not a second failure to report: it reads as no body.
+const notJson = (): null => null;
+/** The body of an answer, or null when it is not JSON. The caller says the status either way. */
+export function bodyOrNull<T = any>(r: Response): Promise<T | null> {
+  return r.json().then((b: T) => b, notJson);
+}
+
 /** fetch → checked JSON. Throws ApiError (with the backend's own `detail`) on any non-2xx,
  *  and TypeError on network failure — never lets an error body flow into a success path. */
 export async function apiJson<T = any>(url: string, opts: ApiOptions = {}): Promise<T> {
@@ -39,12 +48,10 @@ export async function apiJson<T = any>(url: string, opts: ApiOptions = {}): Prom
   });
   if (!res.ok) {
     let detail = res.statusText || 'request failed';
-    try {
-      const j = await res.json();
-      if (j && typeof j === 'object' && 'detail' in j) {
-        detail = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail);
-      }
-    } catch { /* non-JSON error body — keep the status text */ }
+    const j = await bodyOrNull(res);              // W960 (FU-1181) - a body that is not JSON keeps the status text
+    if (j && typeof j === 'object' && 'detail' in j) {
+      detail = bodyDetail(j, detail);   // W1013 - a field check by its field, an object by its message (it said JSON)
+    }
     throw new ApiError(res.status, detail.slice(0, 300));
   }
   return res.json() as Promise<T>;
@@ -87,12 +94,29 @@ export function axiosDetail(e: any, fallback: string): string {
   return fallback;
 }
 
+/** W1012 - the reason in a refused answer's body that a page read by hand (a fetch, or axios told to accept every
+ *  status), as text whatever its shape: axiosDetail's reading, so a sentence is itself, a field check is said by
+ *  its field and an object by its message. String() of a field check's list said "[object Object]". */
+export function bodyDetail(body: unknown, fallback: string): string {
+  return axiosDetail({ response: { data: body } }, fallback);
+}
+
 /** Honest, user-facing message for anything a failed call can throw. */
 export function errorMessage(e: unknown): string {
   if (e instanceof ApiError) return e.status === 401
     ? 'Not signed in — your session may have expired.'
     : `Failed (HTTP ${e.status}): ${e.detail}`;
+  //  W1015 - axios says a refusal and an unreachable server in its own words ("Request failed with status code
+  //  409", "Network Error"): a refusal is said by its status and reason, a call that reached no server as one
+  const ax = e as { isAxiosError?: boolean; response?: { status?: number }; name?: string } | null;
+  if (ax?.isAxiosError) {
+    if (typeof ax.response?.status === 'number') return `Failed (HTTP ${ax.response.status}): ${axiosDetail(e, 'no reason given')}`;
+    return ax.name === 'CanceledError' ? 'Cancelled.' : 'Failed — backend unreachable.';
+  }
   if (e instanceof Error && e.name === 'AbortError') return 'Cancelled.';
+  //  W1015 - a sentence a page threw itself (a plain Error) is said as itself; fetch's TypeError is a server that
+  //  could not be reached, and so is anything else this cannot read
+  if (e instanceof Error && e.name === 'Error' && e.message) return e.message;
   return 'Failed — backend unreachable.';
 }
 

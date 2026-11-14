@@ -1,16 +1,11 @@
 # Files with pre-existing dangling first-party imports, recorded so that
 # scripts/check_import_integrity.py fails only on NEW breaks.
 # Removing a line here is how you assert a file has been fixed.
-agentic_core/business/pipelines.py  # missing: agentic_core.business.pipelines.legal_services_pipeline, agentic_core.business.pipelines.religious_research_pipeline, agentic_core.business.pipelines.scientific_research_pipeline
 agentic_core/evolution/evolution_engine.py  # missing: agentic_core.incubator.petri_dish, agentic_core.incubator.population, agentic_core.incubator.simulation_loop
 agentic_core/evolution/prompt_evolver.py  # missing: agentic_core.ethics.constitutional_enforcer
 agentic_core/governance/verifiable_governance.py  # missing: agentic_core.purpose.evaluator
-core/identity.py  # missing: agentic_core.data.kernel, agentic_core.identity.core, core.hardware_abstraction, core.nemoclaw_runtime
 products/enterprise-file-hub/agentic/file_agent.py  # missing: agentic_core.tools.file_operations
 products/enterprise-file-hub/cli/main.py  # missing: agentic_core.tools.file_operations
 products/mjm-intelligence-engine/tests/verification/test_mjm_biomimetic.py  # missing: core.verification_harness
 products/scraping_suite/sdk/dual_mode_scraper.py  # missing: agentic_core.biochemical.molecular_comm
 products/uviap/sdk/uviap.py  # missing: agentic_core.biochemical.rectification_engine
-src/dashboard/app.py  # missing: agentic_core.orchestrator.conscious_organism_v99
-src/organism/python/neural/legacy_adapter.py  # missing: agentic_core.nervous_system.nervous_system
-src/organism/python/organs/nematron_adapter.py  # missing: agentic_core.ai_ceo.c_suite

@@ -1,0 +1,58 @@
+{
+  "schools": {
+    "faith_traditions": [
+      "Islam",
+      "Christianity",
+      "Judaism",
+      "Hinduism",
+      "Buddhism",
+      "Sikhism",
+      "Zoroastrianism",
+      "Baha'i",
+      "Jainism",
+      "Taoism"
+    ],
+    "madhabs": [
+      {
+        "founder": "Abu Hanifa (699\u2013767 CE)",
+        "id": "hanafi",
+        "name": "Hanafi",
+        "region": "South Asia, Turkey, Central Asia"
+      },
+      {
+        "founder": "Malik ibn Anas (711\u2013795 CE)",
+        "id": "maliki",
+        "name": "Maliki",
+        "region": "North Africa, West Africa, Andalusia"
+      },
+      {
+        "founder": "Muhammad al-Shafi'i (767\u2013820 CE)",
+        "id": "shafi",
+        "name": "Shafi'i",
+        "region": "East Africa, Southeast Asia, Egypt"
+      },
+      {
+        "founder": "Ahmad ibn Hanbal (780\u2013855 CE)",
+        "id": "hanbali",
+        "name": "Hanbali",
+        "region": "Arabian Peninsula"
+      },
+      {
+        "founder": "Ja'far al-Sadiq (702\u2013765 CE)",
+        "id": "jafari",
+        "name": "Ja'fari (Shia)",
+        "region": "Iran, Iraq, Lebanon"
+      }
+    ],
+    "total_madhabs": 5
+  },
+  "schools_failed": {
+    "body": {
+      "cause_established": false,
+      "detail": "GET /api/v1/religion/schools failed with TypeError. The failure is recorded; the cause is not established.",
+      "failure_class": "TypeError",
+      "route": "/api/v1/religion/schools"
+    },
+    "status": 500
+  }
+}

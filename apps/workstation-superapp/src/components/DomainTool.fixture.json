@@ -1,0 +1,158 @@
+{
+ "status": {
+  "evidence_level": "configuration",
+  "evidence_level_number": null,
+  "evidence_basis": "which resource is listed first and which one served the last recorded completion. Configuration - what is configured, declared or reachable; below level 1 and not a statement about behaviour",
+  "posture": "in-house-first",
+  "external_allowed": false,
+  "owned_resources_available": [
+   "native"
+  ],
+  "selection_order": [
+   "native"
+  ],
+  "active_model": "native",
+  "active_model_label": "native",
+  "is_real_model": false,
+  "mode": "deterministic_floor",
+  "mode_predicted": "deterministic_floor",
+  "mode_measured": "unmeasured",
+  "measured_recent_server": null,
+  "mode_note": "mode follows the most recent completion that actually SERVED (a successful recorded row) when history exists, prediction only until then — the two disagree when a listed model keeps failing, or is disabled by configuration and skipped",
+  "floor_active": true,
+  "floor_active_basis": "no successful completion has been recorded yet; predicted from whether a real model is listed",
+  "floor_note": "The deterministic native floor is serving — honest structured reasoning, NOT an LLM. Run a local Ollama model (or enable an external accelerant) for generative prose.",
+  "guarantee": "Workstation always produces a real, structured result from its OWN resources with NO external dependency; external providers are optional accelerants (flag-gated by AI_ALLOW_EXTERNAL).",
+  "resources": [
+   {
+    "name": "native",
+    "kind": "native",
+    "available": true,
+    "is_external": false,
+    "note": "Workstation's own structured engine — always available, owned."
+   },
+   {
+    "name": "ollama",
+    "kind": "local",
+    "available": false,
+    "is_external": false,
+    "model": null,
+    "configured_model": "llama3.2",
+    "local_models": [],
+    "promoted_default": null,
+    "retired": [],
+    "note": "Self-hosted local model(s) — owned capability when running. Route to a specific one with model='ollama:<name>'."
+   },
+   {
+    "name": "anthropic",
+    "kind": "external",
+    "available": false,
+    "is_external": true,
+    "model": "claude-sonnet-4-6",
+    "note": "Optional accelerant — only with a key AND AI_ALLOW_EXTERNAL=true."
+   },
+   {
+    "name": "openai",
+    "kind": "external",
+    "available": false,
+    "is_external": true,
+    "model": "gpt-4o-mini",
+    "note": "Optional accelerant — only with a key AND AI_ALLOW_EXTERNAL=true."
+   }
+  ]
+ },
+ "care": {
+  "endpoint": "/api/v1/care/care-plan",
+  "status": 200,
+  "body": {
+   "endpoint": "/api/v1/care/care-plan",
+   "tool": "care_planner",
+   "discipline": "care",
+   "review": {
+    "tier": "unreviewed",
+    "label": "Unreviewed",
+    "known": true,
+    "records_counted": 0,
+    "records_not_counted": 0,
+    "of_tiers": [
+     "Checked by rule",
+     "Reviewed by Workstation's specialist agent",
+     "Signed by a qualified person"
+    ],
+    "basis": "no review of this tool is recorded: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed"
+   },
+   "person": {
+    "option": "A qualified person's review is an option for anything this tool gives. Workstation does not arrange one. When a person signs a review of this tool, it is recorded as the third tier, with their credential as they stated it.",
+    "warranted_when": "Before anything it gives is used in a person's direct care, a registered professional who knows that person checks it.",
+    "release": "Release is the Owner's switch. Even then, a clinical score used in someone's direct care keeps a qualified person.",
+    "kept_by_the_ruling": "a clinical score used in someone's direct care",
+    "basis": "The release sentence is the Owner's ruling of 2026-10-12 (P5.15). When a person is warranted is Workstation's own statement (W925): it claims no professional's role, and it does not say that any person has reviewed anything."
+   }
+  }
+ },
+ "religion": {
+  "endpoint": "/api/v1/religion/fatwa-research",
+  "status": 200,
+  "body": {
+   "endpoint": "/api/v1/religion/fatwa-research",
+   "tool": "religion_fiqh",
+   "discipline": "religion",
+   "review": {
+    "tier": "unreviewed",
+    "label": "Unreviewed",
+    "known": true,
+    "records_counted": 0,
+    "records_not_counted": 0,
+    "of_tiers": [
+     "Checked by rule",
+     "Reviewed by Workstation's specialist agent",
+     "Signed by a qualified person"
+    ],
+    "basis": "no review of this tool is recorded: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed"
+   },
+   "person": {
+    "option": "A qualified person's review is an option for anything this tool gives. Workstation does not arrange one. When a person signs a review of this tool, it is recorded as the third tier, with their credential as they stated it.",
+    "warranted_when": "Before you rely on an answer for a ruling on your own situation, ask a qualified scholar.",
+    "release": "Release is the Owner's switch. Even then, model-written religious text keeps a named scholar's approval.",
+    "kept_by_the_ruling": "religious content: a named scholar approves model-written text",
+    "basis": "The release sentence is the Owner's ruling of 2026-10-12 (P5.15). When a person is warranted is Workstation's own statement (W925): it claims no professional's role, and it does not say that any person has reviewed anything."
+   }
+  }
+ },
+ "signed": {
+  "endpoint": "/api/v1/science/synthesise",
+  "status": 200,
+  "body": {
+   "endpoint": "/api/v1/science/synthesise",
+   "tool": "science_synthesiser",
+   "discipline": "science",
+   "review": {
+    "tier": "signed_by_a_qualified_person",
+    "label": "Signed by a qualified person",
+    "known": true,
+    "records_counted": 1,
+    "records_not_counted": 0,
+    "of_tiers": [
+     "Checked by rule",
+     "Reviewed by Workstation's specialist agent",
+     "Signed by a qualified person"
+    ],
+    "basis": "the highest tier a record supports: signed by a qualified person, dated 2026-11-13, by A. Tester (a test fixture, not a person) (none - stated for this fixture only - as stated; this platform does not verify a person's credential; it records what the person stated), until 2027-11-13"
+   },
+   "person": {
+    "option": "A qualified person's review is an option for anything this tool gives. Workstation does not arrange one. When a person signs a review of this tool, it is recorded as the third tier, with their credential as they stated it.",
+    "warranted_when": "Before a design from it is carried out with people or animals, or a result is relied on for health or safety, a qualified person and any approval the work needs come first.",
+    "release": "Release is the Owner's switch. A released tool may answer on the review of Workstation's calibrated specialist agent alone, and each answer then says that no qualified person reviewed it.",
+    "kept_by_the_ruling": null,
+    "basis": "The release sentence is the Owner's ruling of 2026-10-12 (P5.15). When a person is warranted is Workstation's own statement (W925): it claims no professional's role, and it does not say that any person has reviewed anything."
+   }
+  }
+ },
+ "none": {
+  "endpoint": "/api/v1/reactor/experiment",
+  "status": 404,
+  "body": {
+   "detail": "No tool is declared at /api/v1/reactor/experiment, so no tier of review or option of a person can be stated for it."
+  }
+ }
+}

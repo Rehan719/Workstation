@@ -44,7 +44,10 @@ class ReviewRecord(BaseModel):
     test: Optional[str] = None
     # reviewed by Workstation's specialist agent
     checklist: Optional[str] = None
-    sources_read: Optional[List[str]] = None
+    #  W921 (P5.15 clause 2) - each source read is {"source": a register id, "page": what was read, "read_on": a date};
+    #  a bare string is accepted at the door only so the refusal can say what it lacks
+    sources_read: Optional[List[Any]] = None
+    tool_version: Optional[str] = None
     model: Optional[str] = None
     #  W691 - the agent is NAMED; whether it is calibrated is read from its recorded run, never sent here
     agent: Optional[str] = None

@@ -14,9 +14,11 @@
  *     never a green badge over controls that did not run.
  */
 import React, { useEffect, useState } from 'react';
+import { errorMessage } from '../../lib/api';   // W1015 - a caught failure, said as what it was
+import { refusalOf } from '../../lib/stream';   // W1025 - a refused read by its reason
 import { Card, Button } from '@workstation/ui';
 import { Brain, Loader2, AlertCircle, ShieldCheck, GitBranch, Scale } from 'lucide-react';
-import { provenanceBadge } from '../../lib/api';
+import { provenanceBadge, bodyOrNull, bodyDetail } from '../../lib/api';
 import { DOMAINS as CANON_DOMAINS, DOMAIN_LABELS } from '../../lib/taxonomy';   // W758 (FU-969)
 
 const Chip: React.FC<{ tone: 'ok' | 'warn' | 'bad' | 'dim'; children: React.ReactNode; title?: string }> = ({ tone, children, title }) => (
@@ -39,11 +41,15 @@ const QEPIntelligence: React.FC = () => {
   const [err, setErr] = useState('');
   const [loadErr, setLoadErr] = useState('');
 
-  const jget = (url: string) => fetch(url).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); });
+  const jget = (url: string) => fetch(url).then(async r => { if (!r.ok) throw new Error(await refusalOf(r)); return r.json(); });   // W1025
   const loadAll = () => {
     setLoadErr('');
-    jget('/api/v1/qep/adaptation/registry').then(setReg).catch(() => setLoadErr('registry unavailable'));
-    jget('/api/v1/qep/compliance/audit').then(setAudit).catch(() => setLoadErr(e => e ? `${e} · audit unavailable` : 'audit unavailable'));
+    //  W1025 - each read says why it was not read; both said only "unavailable"
+    jget('/api/v1/qep/adaptation/registry').then(setReg).catch(e => setLoadErr(`the registry was not read: ${errorMessage(e)}`));
+    jget('/api/v1/qep/compliance/audit').then(setAudit).catch(e => {
+      const why = `the audit was not read: ${errorMessage(e)}`;
+      setLoadErr(prev => (prev ? `${prev} · ${why}` : why));
+    });
   };
   useEffect(() => { loadAll(); }, []);
 
@@ -52,11 +58,12 @@ const QEPIntelligence: React.FC = () => {
     try {
       const q = new URLSearchParams(Object.entries(xaiIn).map(([k, v]) => [k, String(v)]));
       const r = await fetch(`/api/v1/qep/xai/explanations?${q}`);
-      const d = await r.json();
-      if (!r.ok) { setErr(typeof d.detail === 'string' ? d.detail : JSON.stringify(d.detail).slice(0, 200)); setBusy(''); return; }
+      //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
+      const d = r.ok ? await r.json() : await bodyOrNull(r);
+      if (!r.ok) { setErr(bodyDetail(d, `HTTP ${r.status}`)); setBusy(''); return; }   // W1013 - a field check by its field (it said JSON)
       setXai(d);
       setWeights({ ease_weight: d.model_weights.ease_weight, interval_weight: d.model_weights.interval_weight, quality_weight: d.model_weights.quality_weight });
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+    } catch (e: any) { setErr(errorMessage(e)); }
     setBusy('');
   };
 
@@ -66,13 +73,14 @@ const QEPIntelligence: React.FC = () => {
       const r = await fetch('/api/v1/qep/recommendation/update', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(weights),
       });
-      const d = await r.json();
-      if (!r.ok) { setErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); setBusy(''); return; }
+      //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
+      const d = r.ok ? await r.json() : await bodyOrNull(r);
+      if (!r.ok) { setErr(bodyDetail(d, `HTTP ${r.status}`)); setBusy(''); return; }   // W1013 - a field check by its field
       //  W687 (OWNER RULING 2026-10-12) - nothing was applied: the shared weights change only through a change
       //  record. The sentence is the server's own, with the record's id and its state.
       setMsg(`${d.status} — ${d.basis} Change record ${d.cca_id ?? 'not filed'}${d.change_status ? ` (${d.change_status})` : ''}.`);
       loadAll();
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+    } catch (e: any) { setErr(errorMessage(e)); }
     setBusy('');
   };
 
@@ -82,11 +90,12 @@ const QEPIntelligence: React.FC = () => {
       const r = await fetch('/api/v1/qep/adaptation/execute', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(adapt),
       });
-      const d = await r.json();
-      if (!r.ok) { setErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); setBusy(''); return; }
+      //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
+      const d = r.ok ? await r.json() : await bodyOrNull(r);
+      if (!r.ok) { setErr(bodyDetail(d, `HTTP ${r.status}`)); setBusy(''); return; }   // W1013 - a field check by its field
       setBlueprint(d);
       loadAll();
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+    } catch (e: any) { setErr(errorMessage(e)); }
     setBusy('');
   };
 

@@ -700,10 +700,12 @@ _FORMS: List[Dict[str, Any]] = [
             "setting": "str (default 'community')",
             "person_context": "str (default '')",
             "jurisdiction": "str (default 'England (Care Act 2014)')",
-            "realm": "str (default '')"
+            "realm": "str (default '')",
+            "concern_about": "str ('an adult' or 'a child or young person'; asked of the person, never assumed)"
         },
         "required": [
-            "concern"
+            "concern",
+            "concern_about"
         ],
         "material": [
             "concern",
@@ -1122,6 +1124,163 @@ def _save_compositions(rows: List[Dict[str, Any]]) -> None:
     atomic_write_json(_STORE, rows)
 
 
+#  W915 (FU-609 part 2) - THE LIFECYCLE IS ON A SAVED COMPOSITION, where W914's census put it: no registered
+#  resource keeps anything between calls, and a saved composition is the one fabric object with a life of its own.
+#  Its state is DERIVED ON EACH READ and never stored. It comes from the composition's own declared expiry and
+#  from the runs of it that the history keeps. A state those cannot settle is "not known", never "provisioned".
+#  The clock is this module's own attribute, so a test moves it without moving the process's clock (W900).
+_RUN_HISTORY_KEEPS = 100        # composition_runs.json keeps the last 100 runs (the run route writes _cr[-100:])
+_lifecycle_clock = time.time
+
+
+def _utc_stamp(epoch: float) -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(epoch))
+
+
+def _expiry_epoch(stamp: Any) -> Optional[float]:
+    """A stored expiry as epoch seconds, or None when it cannot be read."""
+    import calendar
+    try:
+        return float(calendar.timegm(time.strptime(str(stamp), "%Y-%m-%dT%H:%M:%SZ")))
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def _parse_expiry(text: str) -> str:
+    """A declared expiry as a UTC stamp in the future, or a 422 that says what to give. Nothing is saved on a 422."""
+    from datetime import datetime, timezone
+    raw = (text or "").strip()
+    try:
+        when = datetime.fromisoformat(raw[:-1] + "+00:00" if raw.endswith(("Z", "z")) else raw)
+    except ValueError:
+        raise HTTPException(status_code=422, detail=(
+            f"expires_at {raw!r} cannot be read as a time. Give an ISO-8601 time with its zone, for example "
+            f"2026-11-14T08:00:00Z. Nothing was saved.")) from None
+    if when.tzinfo is None:
+        raise HTTPException(status_code=422, detail=(
+            f"expires_at {raw!r} names no time zone, so when it falls cannot be known. Give it with its zone, "
+            f"for example {raw}Z for UTC. Nothing was saved."))
+    epoch = when.astimezone(timezone.utc).timestamp()
+    if epoch <= _lifecycle_clock():
+        raise HTTPException(status_code=422, detail=(
+            f"expires_at {raw!r} has already passed, so the composition could never run. Give a later time, or "
+            f"leave expires_at out for a composition that does not expire. Nothing was saved."))
+    return _utc_stamp(epoch)
+
+
+_LIFECYCLE_BASIS = (
+    "Derived on this read and never stored, from the composition's own declared expiry and from the runs of it "
+    "that the history keeps. expired: its declared expires_at has passed, and a run of it is refused before "
+    "anything runs (renew it with a later expires_at, or retire it). operating: the history keeps at least one run "
+    "of it. provisioned: saved, and the history, which covers its whole life, keeps no run of it. A state the "
+    "stores cannot settle is 'not known'. A simulation (POST /api/v1/resources/compose/simulate) stores nothing, "
+    "so no saved composition is ever 'requested'. Retiring (DELETE) removes the design from the store and keeps "
+    "the rows of its runs, so no saved composition reads 'retired'. The beat records an expiry once, on the first "
+    "beat after it passes, as the service identity (expiry_recorded); a run is refused at the expiry whether or not "
+    "that record has been written yet. A change to the expiry is kept in the composition's own lifecycle_events.")
+
+
+def _composition_lifecycle(comp: Dict[str, Any], runs: Optional[List[Any]],
+                           runs_why: Optional[str]) -> Dict[str, Any]:
+    """One saved composition's lifecycle state, derived now. `runs` is the run history as read (None when it
+    could not be read as a list), and `runs_why` is the reason it was not read whole."""
+    now = _lifecycle_clock()
+    declared = comp.get("expires_at")
+    exp = _expiry_epoch(declared) if declared else None
+    unreadable_expiry = bool(declared) and exp is None
+    expired = bool(exp is not None and now >= exp)
+    kept: Optional[List[Dict[str, Any]]] = None
+    if isinstance(runs, list) and not runs_why:
+        kept = [r for r in runs if isinstance(r, dict) and r.get("composition_id") == comp.get("id")
+                and not r.get("refused")]
+    #  the history keeps the last 100 runs: it covers this composition's whole life only while it has never
+    #  filled, or when its oldest kept run is no newer than the composition itself
+    _oldest = runs[0].get("created_at") if kept is not None and runs and isinstance(runs[0], dict) else None
+    covers_life = kept is not None and (
+        len(runs) < _RUN_HISTORY_KEEPS or str(_oldest or "~") <= str(comp.get("created_at") or ""))
+    why = None
+    if unreadable_expiry:
+        state = "not known"
+        why = (f"its declared expiry {declared!r} cannot be read, so whether it has passed is not known. A run is "
+               f"refused until it is renewed with a readable expires_at.")
+    elif expired:
+        state = "expired"
+    elif kept is None:
+        state = "not known"
+        why = f"the run history could not be read ({runs_why or 'it does not hold a list'})"
+    elif kept:                                         # the history keeps a run of it
+        state = "operating"
+    elif covers_life:
+        state = "provisioned"
+    else:
+        state = "not known"
+        why = (f"the run history keeps the last {_RUN_HISTORY_KEEPS} runs and its oldest is newer than this "
+               f"composition, so whether it ran before then cannot be read")
+    return {"state": state, "runnable": not (expired or unreadable_expiry),
+            "expires_at": declared or None, "expired": None if unreadable_expiry else expired,
+            "runs_kept": len(kept) if kept is not None else None,
+            "last_run_at": max((str(r.get("created_at") or "") for r in kept), default=None) if kept else None,
+            "not_known_because": why, "read_at": _utc_stamp(now), "basis": _LIFECYCLE_BASIS,
+            #  W916 (FU-609 part 3) - the beat's record of this expiry, once it has written one
+            "expiry_recorded": comp.get("expiry_recorded") if isinstance(comp.get("expiry_recorded"), dict) else None}
+
+
+def _composition_runs_read() -> tuple:
+    """The run history for lifecycle reads: (rows or None, the reason it was not read whole)."""
+    from agentic_core.config import read_json_reported
+    runs, why = read_json_reported(data_path("composition_runs.json"), [])
+    return (runs if isinstance(runs, list) else None), (why if isinstance(runs, list) else
+                                                       (why or "the run history does not hold a list"))
+
+
+def _lifecycle_counts(comps: List[Dict[str, Any]]) -> Dict[str, int]:
+    """How many saved compositions are in each lifecycle state, derived on this read."""
+    runs, why = _composition_runs_read()
+    out: Dict[str, int] = {}
+    for c in comps:
+        s = _composition_lifecycle(c, runs, why)["state"]
+        out[s] = out.get(s, 0) + 1
+    return dict(sorted(out.items()))
+
+
+_LIFECYCLE_EVENTS_KEPT = 50     # a composition keeps the last 50 events of its own lifecycle
+
+
+def record_expired_compositions(by: str) -> List[str]:
+    """W916 (FU-609 part 3) - AN EXPIRY IS HONOURED ON THE BEAT, AND RECORDED ONCE. A run of an expired composition
+    is refused at its run (W915). This writes the fact on the composition itself: when it expired, when the beat
+    saw it, and who recorded it. It also goes into the tamper-evident trail, so the page and the trail say when an
+    ephemeral composition ended without anyone having to try to run it. It runs nothing and deletes nothing. An
+    expiry that cannot be read is left alone: the lifecycle already says it is not known, and its run is refused.
+    Returns the ids recorded on this call. A store that cannot be read raises, and the beat records the failure."""
+    now = _lifecycle_clock()
+    recorded: List[str] = []
+    with _compositions_lock():
+        rows = _compositions_for_write()
+        for c in rows:
+            exp = _expiry_epoch(c.get("expires_at")) if c.get("expires_at") else None
+            if exp is None or now < exp:
+                continue
+            if isinstance(c.get("expiry_recorded"), dict) and c["expiry_recorded"].get("expired_at") == c.get("expires_at"):
+                continue                                         # recorded once, never twice
+            rec = {"expired_at": c["expires_at"], "recorded_at": _utc_stamp(now), "recorded_by": by}
+            c["expiry_recorded"] = rec
+            c["lifecycle_events"] = (list(c.get("lifecycle_events") or [])
+                                     + [{"event": "expired", **rec}])[-_LIFECYCLE_EVENTS_KEPT:]
+            recorded.append(c["id"])
+        if recorded:
+            _save_compositions(rows)                     # W916 - the record is kept on the composition
+    if recorded:
+        try:
+            from agentic_core.gaas.v5 import UEGLogger
+            for _cid in recorded:
+                UEGLogger().log({"type": "resource_fabric.composition.expired", "composition_id": _cid,
+                                 "recorded_by": by})
+        except Exception:
+            pass
+    return recorded
+
+
 async def _omnimedia_live_sentence() -> str:
     try:
         from agentic_core.api.deliverables import output_formats as _of
@@ -1181,10 +1340,69 @@ async def list_resources(resource_class: Optional[str] = None, usable_in: Option
     }
 
 
+#  W914 (FU-609 part 1) - MEASURED FIRST, as the row asks: which fabric resources keep any state between calls,
+#  because a lifecycle on a handler that keeps nothing would be a label. Read on each request from the module's own
+#  classifications (what each handler does when read, and what each facility run persists), never typed. It is
+#  declared before GET /{resource_id}, which would otherwise take "state-census" for a resource id.
+@router.get("/state-census")
+async def state_census():
+    """Which fabric resources keep anything between calls, counted from each one's own declaration."""
+    from agentic_core.config import read_json_reported
+    by_class: Dict[str, List[str]] = {}
+    for _r in _REGISTRY:
+        _rid = _r["id"]
+        _kind = _resource_kind(_rid)
+        _cls = (f"facility_run:{_FACILITY_PERSISTS.get(_rid, ('not_declared',))[0]}" if _kind == "facility_run"
+                else _kind)
+        by_class.setdefault(_cls, []).append(_rid)
+    counts = {k: len(v) for k, v in sorted(by_class.items())}
+    comps = _load_compositions()
+    runs, runs_why = read_json_reported(data_path("composition_runs.json"), [])
+    run_rows = len(runs) if isinstance(runs, list) else None
+    reads_only = sum(counts.get(k, 0) for k in ("status_read", "query", "blueprint", "narrative"))
+    undeclared = sorted(by_class.get("facility_run:not_declared", []))
+    return {
+        "resources": len(_REGISTRY),
+        "by_class": {k: sorted(v) for k, v in sorted(by_class.items())},
+        "counts": counts,
+        "reads_that_change_live_state": dict(sorted(_READ_SIDE_EFFECTS.items())),
+        "undeclared_facility_runs": undeclared,
+        "objects_that_keep_state_between_calls": [
+            {"object": "saved composition", "store": "resource_compositions.json", "count": len(comps),
+             "verbs": ["define (POST /api/v1/resources/compose)", "update", "retire"],
+             #  W915 (FU-609 part 2) - each saved composition's state, derived on this read
+             "by_state": _lifecycle_counts(comps),
+             "lifecycle": ("each composition's state is derived on each read and served with it at GET "
+                           "/api/v1/resources/compositions; " + _LIFECYCLE_BASIS)},
+            {"object": "composition run row", "store": "composition_runs.json", "count": run_rows,
+             "unreadable": runs_why},
+        ],
+        "conclusion": (
+            f"Of {len(_REGISTRY)} registered resources, {reads_only} only read, assess, specify or narrate what is "
+            f"already there and persist nothing; {counts.get('facility_run:nothing', 0)} facility runs persist "
+            f"nothing; {counts.get('facility_run:records', 0)} write a record of each run into a store their engine "
+            f"owns; and {counts.get('facility_run:side_effect', 0)} changes live state and writes no store. "
+            + (f"{len(undeclared)} facility run(s) declare nothing and are not counted: {', '.join(undeclared)}. "
+               if undeclared else "")
+            + "None is provisioned: each is called once per composition run, and nothing of it remains between "
+              f"calls but the records its runs wrote. The only fabric objects with a life of their own are saved "
+              f"compositions ({len(comps)} saved) and the rows of their runs. A lifecycle with provisioned, "
+              "operating, expired and retired states belongs on a saved composition; on a resource it would be a "
+              "label."),
+        "basis": ("each resource's class is _resource_kind (what its handler does when read: a status read, a query, "
+                  "a blueprint, a narrative or a facility run), and a facility run's is what it declares it persists "
+                  "(_FACILITY_PERSISTS, W835). The handlers are dispatched per run by _run_real_resource_handler, "
+                  "which keeps no instance between calls. Reads that advance the ATP simulator are listed under "
+                  "reads_that_change_live_state."),
+    }
+
+
 @router.get("/compositions")
 async def list_compositions(user: dict | None = Depends(get_current_user)):
     _u = user if isinstance(user, dict) else None
-    return {"compositions": [c for c in _load_compositions()
+    _runs, _runs_why = _composition_runs_read()                          # W915 (FU-609 part 2)
+    return {"compositions": [{**c, "lifecycle": _composition_lifecycle(c, _runs, _runs_why)}
+                             for c in _load_compositions()
                              if user_can_access(_u, c.get("owner_id"))]}   # §14 (W324)
 
 
@@ -1215,7 +1433,7 @@ async def get_composition(cid: str, user: dict | None = Depends(get_current_user
     for c in _load_compositions():
         if c["id"] == cid:
             _require_design_access(c, user, "Composition", cid)
-            return c
+            return {**c, "lifecycle": _composition_lifecycle(c, *_composition_runs_read())}   # W915 (FU-609)
     raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
 
 
@@ -1224,6 +1442,9 @@ class UpdateCompositionRequest(BaseModel):
     usage_area: Optional[str] = None
     resource_ids: Optional[List[str]] = None
     config: Optional[Dict[str, Dict[str, Any]]] = None
+    #  W915 (FU-609 part 2) - renew the expiry with a later time, or clear it so the composition does not expire
+    expires_at: Optional[str] = None
+    clear_expiry: bool = False
 
 
 @router.put("/compositions/{cid}")
@@ -1238,6 +1459,11 @@ async def update_composition(cid: str, req: UpdateCompositionRequest,
     if not comp:
         raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
     _require_design_access(comp, user, "Composition", cid)   # §14 (W324)
+    #  W915 (FU-609 part 2) - an expiry is read before the re-simulation, so a bad one is refused before any work
+    if req.clear_expiry and req.expires_at:
+        raise HTTPException(status_code=422, detail=(
+            "give a new expires_at or clear_expiry, not both. Nothing was saved."))
+    _expiry_new = _parse_expiry(req.expires_at) if req.expires_at is not None else None
     rids = req.resource_ids if req.resource_ids is not None else [r["id"] for r in comp.get("resources", [])]
     unknown = [rid for rid in rids if rid not in _BY_ID]
     if unknown:
@@ -1266,11 +1492,24 @@ async def update_composition(cid: str, req: UpdateCompositionRequest,
             "version": int(comp.get("version", 1)) + 1,
             "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         })
+        _expiry_before = comp.get("expires_at")
+        if _expiry_new:                                           # W915 (FU-609 part 2) - renewed
+            comp["expires_at"] = _expiry_new
+        elif req.clear_expiry:                                    # W915 - no longer expires
+            comp.pop("expires_at", None)
+        if comp.get("expires_at") != _expiry_before:             # W916 (FU-609 part 3) - its own history
+            comp.pop("expiry_recorded", None)                     # W916 - a change closes the beat's record
+            _event = {"event": ("expiry cleared" if not comp.get("expires_at") else
+                                "renewed" if _expiry_before else "expiry declared"),
+                      "at": _utc_stamp(_lifecycle_clock()), "by": _fabric_owner(user),
+                      "expires_at": comp.get("expires_at"), "previous_expiry": _expiry_before}
+            comp["lifecycle_events"] = (list(comp.get("lifecycle_events") or []) + [_event])[-_LIFECYCLE_EVENTS_KEPT:]
         _save_compositions(rows)
     try:
         from agentic_core.gaas.v5 import UEGLogger
         UEGLogger().log({"type": "resource_fabric.composition.reconfigured", "composition_id": cid,
-                         "version": comp["version"], "resources": rids, "commit_ready": commit_ready})
+                         "version": comp["version"], "resources": rids, "commit_ready": commit_ready,
+                         "expires_at": comp.get("expires_at")})                  # W915 (FU-609 part 2)
     except Exception:
         pass
     return comp
@@ -1359,6 +1598,38 @@ def _stage_checkpoint(agent: str, output) -> Dict[str, Any]:
     """...and the checkpoint such a completion carries, recorded as the console's is."""
     from agentic_core.ai.gateway import console_post_gate
     return console_post_gate(agent, str(output or ""))
+
+
+#  W815 (FU-911) - WHAT A COMPOSED RESOURCE RUNS, where that is not its declared endpoint. Each run already says what
+#  ran (its "ran" field), while the registration a composer reads before composing still named another route: one
+#  declared a write and only read status, another declared a read and encoded and saved. This table, beside the
+#  handler, puts the run's own words on the registration; a guard derives the set from the handler's "ran" values,
+#  so a resource whose handler drifts from its endpoint without saying so is caught.
+RUNS_INSTEAD: Dict[str, Dict[str, str]] = {
+    "sovereign_evolution": {"runs": "/api/v1/sovereign-evolution/status",
+                            "basis": ("a bounded reading of the office's last cycle and roadmap; composing it runs no "
+                                      "self-improvement cycle")},
+    "genome": {"runs": "/api/v1/organism/genome/encode",
+               "basis": "encodes a genome for the objective and saves it; the declared route only reads one"},
+    "capital_fund": {"runs": "/api/v1/fund/status",
+                     "basis": "reads the fund's status and portfolio; composing it allocates nothing"},
+    "change_control": {"runs": "/api/v1/cca/submit (assess · not persisted)",
+                       "basis": "classifies the change and reads the organism gate; no change record is filed"},
+    "immune": {"runs": "organism.immune.status() (in-process)",
+               "basis": "the immune system's own reading; the declared route is the self-healing system's"},
+    "nervous_system": {"runs": "/api/v1/organism/nervous/stimulate",
+                       "basis": ("fires one real nervous signal and reads the organism back; the declared route "
+                                 "only reads")},
+    "synthesis_studio": {"runs": "run_lab_cascade (the laboratory cascade; no entity is saved)",
+                         "basis": ("the laboratory cascade as a function; the declared Studio route is retired and "
+                                   "is not called")},
+    "digital_twin": {"runs": "orchestrator.complete with a simulator persona",
+                     "basis": "a completion with a simulator persona; /api/v1/twin/simulate is NOT called"},
+}
+for _rid815, _ri815 in RUNS_INSTEAD.items():
+    if _rid815 in _BY_ID:
+        _BY_ID[_rid815]["runs_instead"] = _ri815["runs"]
+        _BY_ID[_rid815]["runs_instead_basis"] = _ri815["basis"]
 
 
 async def _run_real_resource_handler(rid: str, config: dict, objective: str, domain: str) -> Optional[Dict[str, Any]]:
@@ -1709,7 +1980,8 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
         if rid == "mega_project":
             from agentic_core.api.mega_project import synthesise as mega_synthesise, SynthesiseRequest as MegaReq
             r = await mega_synthesise(MegaReq(concept=str(cfg.get("concept") or objective), domain=domain))
-            out = r.get("synthesis") or r.get("deliverables") or {k: v for k, v in r.items() if k != "posture"}
+            #  W836 - the engine returns its text as "deliverable"; reading other keys filed a JSON dump as the output
+            out = r.get("deliverable") or {k: v for k, v in r.items() if k != "posture"}
             return {"resource": "mega_project", "ran": "/api/v1/mega-project/synthesise",
                     "synthesis_id": r.get("synthesis_id"),
                     "output": (out if isinstance(out, str) else json.dumps(out, default=str))[:600]}
@@ -1737,28 +2009,37 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
             _halt651 = _stage_pre_gate("native_orchestrator", _agent651)      # W651 (FU-683)
             if _halt651:
                 return _halt651
-            res = await orchestrator.complete(str(cfg.get("prompt") or objective),
-                                              agent=str(cfg.get("agent") or "fabric-composition"),
-                                              prefer_external=bool(cfg.get("prefer_external", False)),
-                                              prefer=str(cfg.get("model") or "auto"),
-                                              #  W641 - the run's objective is the person's; a saved
-                                              #  design prompt is not passed off as theirs
-                                              user_text=(objective or None))
+            from agentic_core.ai import data_class as _dc899
+            with _dc899.declared("person_entered"):    # W899 (FU-610) - what a person typed or saved in a design
+                res = await orchestrator.complete(str(cfg.get("prompt") or objective),
+                                                  agent=str(cfg.get("agent") or "fabric-composition"),
+                                                  prefer_external=bool(cfg.get("prefer_external", False)),
+                                                  prefer=str(cfg.get("model") or "auto"),
+                                                  #  W641 - the run's objective is the person's; a saved
+                                                  #  design prompt is not passed off as theirs
+                                                  user_text=(objective or None))
             return {**_reply_evidence(res.get('served_by')), "resource": "native_orchestrator", "ran": "/api/v1/native-ai/complete",
                     "governance_checkpoint": _stage_checkpoint(_agent651, res.get("output")),
                     "served_by": res.get("served_by"), "is_external": res.get("is_external"),
                     "output": (res.get("output") or "")[:600]}
         if rid == "native_ensemble":
             from agentic_core.ai.native import orchestrator
+            #  W836 - the gates its siblings run: the declared /native-ai/ensemble route gates, and so does the
+            #  native_orchestrator stage above (W651); this branch reached the orchestrator with neither
+            _halt836 = _stage_pre_gate("native_ensemble", "fabric-ensemble")
+            if _halt836:
+                return _halt836
             res = await orchestrator.ensemble(str(cfg.get("prompt") or objective),
                                               agent="fabric-ensemble", models=_csv(cfg.get("models")) or None,
-                                              synthesize=bool(cfg.get("synthesize", True)))
+                                              synthesize=bool(cfg.get("synthesize", True)),
+                                              user_text=(objective or None))      # W836 - the person's words
             members = res.get("members") or []
             # synthesis when >1 member produced; else fall back to the single member's output
             out = (res.get("synthesis") or {}).get("output") or ""
             if not out:
                 out = next((m.get("output", "") for m in members if m.get("output")), "")
             return {**_reply_evidence(), "resource": "native_ensemble", "ran": "/api/v1/native-ai/ensemble",
+                    "governance_checkpoint": _stage_checkpoint("fabric-ensemble", out),        # W836
                     "models_run": res.get("models_run"), "members": len(members),
                     "served_by": ",".join(sorted({str(m.get("served_by")) for m in members if m.get("served_by")})),
                     "output": out[:600]}
@@ -1979,6 +2260,85 @@ _FACILITY_PERSISTS = {
     "incubator": ("nothing", _ENGINE_WRITES_NO_STORE),
     "vsb_spawn": ("nothing", _NOTHING_STARTS),
     "genesis_establish": ("nothing", _NOTHING_STARTS),
+}
+#  W835 (FU-910) - THE OTHER FORTY-SIX, each declared from its engine function as read, from this module's dispatch
+#  down to the writes its domain helpers make. What the completion layer keeps (the gateway, the orchestrator, the
+#  outcome store, the work budget, and the shared AI wrapper's own quality and audit bookkeeping) stays outside the
+#  declaration, as _ENGINE_WRITES_NO_STORE says. A resource that both writes and changes live state is "records",
+#  and its sentence names the rest.
+_QMS_SEALS = ("its own QMS gate seals a quality record in the document-control registry and logs the compliance "
+              "screen to the UEG audit log on every run, including a floor-served run the gate could not assess; it "
+              "also fires a QMS signal")
+_CHECKPOINTED = ("its engine is the completion layer itself; this handler chains each completed run's governance "
+                 "checkpoint to the UEG audit log (a refused pre-gate is logged as a halt) and writes no store of its own")
+_SCHOLAR_QUEUED = ("whenever a model composes it - not the floor, and not a refusal by the constitutional gate - the "
+                   "composed text is queued for a named scholar's review, unless that exact text is already queued or "
+                   "the tool's queue is full; on the floor, and on a refusal, nothing is written")
+_FACILITY_PERSISTS.update({
+    #  intelligence engines and route functions: one or more completion calls, no write of their own
+    "bdp": ("nothing", _ENGINE_WRITES_NO_STORE),
+    "spi": ("nothing", _ENGINE_WRITES_NO_STORE),
+    "apie": ("nothing", _ENGINE_WRITES_NO_STORE),
+    "ddpie": ("nothing", _ENGINE_WRITES_NO_STORE),
+    "nexus": ("nothing", _ENGINE_WRITES_NO_STORE),
+    "mjm": ("nothing", _ENGINE_WRITES_NO_STORE),
+    "cognitive_cascade": ("nothing", _ENGINE_WRITES_NO_STORE),
+    "mega_project": ("nothing", _ENGINE_WRITES_NO_STORE),
+    "synthesis_studio": ("nothing", _ENGINE_WRITES_NO_STORE + "; composed here it runs the lab cascade, which saves "
+                                                              "no entity"),
+    "native_ensemble": ("records", _CHECKPOINTED),          # W836 - it runs the gates now, so it writes the checkpoint
+    "resource_optimizer": ("nothing", ("it builds a fresh optimiser for each call and holds the pool, the computed share "
+                                       "and any queued task on that instance, which is discarded with the response; it "
+                                       "makes no completion call and writes nothing")),
+    "compliance": ("nothing", ("a deterministic screen: its rules and its halal, UK-legal, ethical and gaas.v5 checks "
+                               "compute verdicts and write nothing; the certificate store is only read, and it makes "
+                               "no completion call")),
+    #  product engines that call the QMS gate themselves
+    "petri_dish": ("records", _QMS_SEALS),
+    "experimentation": ("records", _QMS_SEALS),
+    "studio": ("records", "with a configured series, " + _QMS_SEALS + "; with none, the handler declines and nothing "
+                                                                      "runs"),
+    "reactor": ("records", ("its experimentation stage seals a QMS quality record and logs the compliance screen to "
+                            "the UEG audit log on every run, and its studio stage does the same when a variant was "
+                            "scored; its incubator stage writes nothing")),
+    "genesis": ("records", ("the journey saves its own record on every run, including one the floor served throughout "
+                            "or the screen blocked; it logs the gate's checkpoint and the compliance screen to the UEG "
+                            "audit log, seals a QMS quality record, and stores a bill of materials only when a model "
+                            "served the develop stage; composed here, it establishes nothing")),
+    "native_orchestrator": ("records", _CHECKPOINTED),
+    "native_swarm": ("records", _CHECKPOINTED + "; a run over the stage ceiling is refused before anything runs"),
+    "truth_consensus": ("records", ("with claims configured, it appends each consensus cycle's results to the VSB UEG "
+                                    "audit log, including a cycle that accepted nothing; with none, the handler "
+                                    "declines and nothing runs")),
+    "vsb_org_swarm": ("records", ("the org cascade files its run record, a proposed-catalogue row, the tiers' identity "
+                                  "and development records and four document-control artefacts on every run, seals a "
+                                  "QMS quality record and logs its governance gate, compliance screen and provenance to "
+                                  "the UEG ledgers; it also fires live signals, spends ATP, and may requisition fabric "
+                                  "resources that write their own")),
+    #  the religion forms: a model's composition is queued for a named scholar
+    "form_rel_fiqh_research": ("records", _SCHOLAR_QUEUED),
+    "form_rel_hadith": ("records", _SCHOLAR_QUEUED),
+    "form_rel_halal": ("records", _SCHOLAR_QUEUED),
+    "form_rel_tafsir": ("records", ("it caches the sourced Arabic of each ayah not fetched before, on every path and "
+                                    "before anything is composed; and " + _SCHOLAR_QUEUED.replace(
+                                        "the composed text is", "the composed exegesis, its sacred sections cut first, is"))),
+})
+#  the other twenty-one domain forms: each calls its form's own route function, which makes one completion call
+#  through the shared AI wrapper and writes nothing of its own
+_FACILITY_PERSISTS.update({_rid: ("nothing", _ENGINE_WRITES_NO_STORE) for _rid in (
+    "form_law_analyse", "form_law_research", "form_law_generate",
+    "form_edu_curriculum", "form_edu_lesson_plan", "form_edu_feedback", "form_edu_assessment",
+    "form_care_plan", "form_care_risk_assess", "form_care_safeguarding", "form_care_handover",
+    "form_sci_synthesise", "form_sci_hypothesis", "form_sci_experiment", "form_sci_literature",
+    "form_emp_cv", "form_emp_cover_letter", "form_emp_interview", "form_emp_career_path", "form_emp_salary",
+    "form_emp_application")})
+#  W835 (FU-910) - A RESOURCE OF ANOTHER KIND WHOSE HANDLER WRITES NONETHELESS. A narrative persists nothing by its
+#  kind's sentence; the digital twin's handler chains the console's governance checkpoint, as the two native handlers
+#  above do, so its contract says that instead of the kind's default.
+_OTHER_KIND_PERSISTS = {
+    "digital_twin": ("records", ("it writes a scenario narrative from a persona prompt, and no simulator runs; this "
+                                 "handler chains each completed run's governance checkpoint to the UEG audit log (a "
+                                 "refused pre-gate is logged as a halt)")),
 }
 
 _KIND_PHRASE = {
@@ -2372,7 +2732,11 @@ async def get_specification(sid: str, request: Request, user: dict | None = Depe
                                  "equivalent is tried by the runner only for a status read that fails, once")}}
 
 
+from agentic_core.api.operational_excellence import spans_run    # W847 (FU-1121)
+
+
 @router.post("/compositions/{cid}/run")
+@spans_run("composition_run")      # W847 (FU-1121) - the stages' runs inside are held
 async def run_composition(cid: str, req: RunCompositionRequest,
                           user: dict | None = Depends(get_current_user)):
     """Run a saved configuration end-to-end on Workstation's OWN native swarm (§6): each composed resource
@@ -2384,6 +2748,14 @@ async def run_composition(cid: str, req: RunCompositionRequest,
     if not comp:
         raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
     _require_design_access(comp, user, "Composition", cid)   # §14 (W324)
+    #  W915 (FU-609 part 2) - A COMPOSITION'S DECLARED EXPIRY IS HONOURED BEFORE ANYTHING RUNS. Its state is read
+    #  from its own record now, so the refusal does not wait on any beat.
+    _life = _composition_lifecycle(comp, [], None)
+    if not _life["runnable"]:
+        raise HTTPException(status_code=409, detail=(
+            (f"This composition expired at {comp.get('expires_at')}, its declared expiry, so nothing was run. "
+             if _life["expired"] else f"This composition cannot run: {_life['not_known_because']} Nothing was run. ")
+            + f"Renew it with PUT /api/v1/resources/compositions/{cid} and a later expires_at, or retire it."))
     #  W640 (P3.31) — THE CEILING IS ENFORCED BEFORE ANYTHING RUNS. A run had a per-call timeout and no bound
     #  on how many resources it would attempt.
     from agentic_core.api.instrument_cell import MAX_STAGES as _max_stages, MAX_STAGES_BASIS as _max_basis
@@ -2410,6 +2782,9 @@ async def run_composition(cid: str, req: RunCompositionRequest,
         from agentic_core.api import instrument_cell as _spec_cell
         _spec_now = _spec_cell.recheck(_spec)
     _spec_composed = [r["id"] for r in comp.get("resources", [])]
+
+    #  W810 (FU-900) - a composition saved with a spawner before this round is refused at its run, as at compose
+    _refuse_spawners([x.get("id") for x in comp.get("resources", [])])
 
     def _eff_cfg(r: Dict[str, Any]) -> Dict[str, Any]:
         # W273 — the effective config for THIS run: saved design params + per-run overrides.
@@ -2489,9 +2864,11 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                 #  P3.31 - a refused run from a specification says that NOTHING proposed was attempted
                 **({"specification": _refused_spec} if _spec is not None else {}),
                 "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
-    res = await orchestrator.swarm("composition-run", stages, context=objective,
-                                   prefer_external=req.prefer_external, timeout=req.timeout,
-                                   user_text=(req.objective or None))   # W640 - the objective the person typed
+    from agentic_core.ai import data_class as _dc899
+    with _dc899.declared("person_entered"):            # W899 (FU-610) - what the composition's stages carry
+        res = await orchestrator.swarm("composition-run", stages, context=objective,
+                                       prefer_external=req.prefer_external, timeout=req.timeout,
+                                       user_text=(req.objective or None))   # W640 - the objective the person typed
     _gov_checkpoint = console_post_gate("composition-run", str(res.get("final") or ""))
     # §10/§8 — the combined run is gated by the living QMS + document-controlled under the QMS
     qa = await assure_delivery(res.get("final", ""), [r["name"] for r in comp["resources"]],
@@ -2511,7 +2888,11 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                        duration_ms=int((time.time() - _t0) * 1000),
                        # W495 (FU-125, S7.3) — a non-empty trace is not a quality verdict
                        success=bool(res.get("trace")),
-                       quality_gate=(res.get("quality") or {}).get("qms_gate_passed"), ref=cid)
+                       quality_gate=(res.get("quality") or {}).get("qms_gate_passed"), ref=cid,
+                       # W829 (FU-1119) - the caller it checked design access with: the run's seconds are that
+                       # entity's own, as the fabric swarm run's are (W743). The facility rows nested inside this
+                       # run name no owner, so the nest is booked to the entity once.
+                       owner_id=_fabric_owner(user))
     except Exception:
         pass
     try:
@@ -2602,7 +2983,12 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                 _alts = [a for a in _equivalents(r["id"]) if a not in _in_run and a not in _READ_SIDE_EFFECTS]
                 if _alts:
                     _a0 = time.time()
-                    _alt = await _run_real_resource(_alts[0], {}, objective, domain)
+                    #  W810 (FU-898) - THE STAND-IN'S OWN CONFIGURATION: it held none in this composition, so it runs
+                    #  with what composing it would give it - its registered parameters and any per-run override for
+                    #  it. An empty one was harmless only while every possible stand-in took none.
+                    _alt_cfg = {**((_BY_ID.get(_alts[0]) or {}).get("reconfigurable_params") or {}),
+                                **(((req.params or {}).get(_alts[0])) or {})}
+                    _alt = await _run_real_resource(_alts[0], _alt_cfg, objective, domain)
                     if _alt is not None:
                         _alt["duration_ms"] = int((time.time() - _a0) * 1000)
                         _alt["alternative_for"] = r["id"]
@@ -2647,6 +3033,7 @@ async def run_composition(cid: str, req: RunCompositionRequest,
             # come from the run, never 'real-engine' / False by default.
             _calls, _failed = rr.get("calls") or 0, rr.get("failed_calls") or 0
             _ok = not rr.get("error") and not (_calls and _failed >= _calls)
+            #  W829 (FU-1119) - no owner here: the composition_run row books this nest to its entity
             _ro("fabric_resource", f"fabric:{rr['resource']}",
                 served_by=str(rr.get("served_by") or ("real-engine" if _ok and not _calls else "none")),
                 is_external=bool(rr.get("is_external")),
@@ -2749,6 +3136,9 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                                 "The calls each REAL resource made are NOT in this figure: they are on that "
                                 "resource's row in real_resources"),
             "qms_gate_passed": qa["quality"].get("qms_gate_passed"),
+            #  W838 (FU-746) - WHAT WAS HASHED: the gate seals this run's quality record in the document-control
+            #  registry, and its hash was not kept on the run
+            "quality_record_hash": qa["quality"].get("quality_record_hash"),
             "plan_binding": plan_binding,
             "duration_ms": int((time.time() - _t0) * 1000),
             "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -3141,6 +3531,7 @@ async def delete_swarm(sid: str, user: dict | None = Depends(get_current_user)):
 
 
 @router.post("/swarm/run")
+@spans_run("swarm_run")            # W847 (FU-1121) - the stages' model attempts inside are held
 async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_current_user)):
     """Run a swarm cascade (saved via swarm_id, or ad-hoc stages) on Workstation's OWN resources.
     Returns the per-stage trace with served_by + whether any external accelerant was used."""
@@ -3199,9 +3590,11 @@ async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_curren
     #  living entity's grounding, which the person did not type, so it is not passed as theirs (the engine's
     #  own rule, W640). What they typed for THIS run is `req.context`, and that is what the floor is told is
     #  theirs; with none typed it is told nothing was said.
-    res = await orchestrator.swarm(req.agent, stages, context=context,
-                                   prefer_external=req.prefer_external, timeout=req.timeout,
-                                   user_text=((req.context or "").strip() or None))
+    from agentic_core.ai import data_class as _dc899
+    with _dc899.declared("person_entered"):            # W899 (FU-610) - what the saved swarm's stages carry
+        res = await orchestrator.swarm(req.agent, stages, context=context,
+                                       prefer_external=req.prefer_external, timeout=req.timeout,
+                                       user_text=((req.context or "").strip() or None))
     res["governance_checkpoint"] = console_post_gate(req.agent, str(res.get("final") or ""))
     _ms = int((time.time() - _t0) * 1000)
     # W509 (FU-009) — what genuinely served each stage, and what each stage ASKED for. A stage whose
@@ -3280,6 +3673,8 @@ class ComposeRequest(BaseModel):
     resource_ids: List[str]
     usage_area: str = "synthesis"
     config: Dict[str, Dict[str, Any]] = {}   # per-resource param overrides {id: {param: value}}
+    #  W915 (FU-609 part 2) - an ephemeral composition declares when it expires (ISO-8601 with its zone)
+    expires_at: Optional[str] = None
 
 
 def _model_configuration(resource_ids: List[str], usage_area: str,
@@ -3383,6 +3778,19 @@ async def _simulate_configuration(name: str, resource_ids: List[str], usage_area
     return resolved, model, qa, commit_ready
 
 
+#  W810 (FU-900) - A SPAWNER IS NOT A STAGE. Two registered spawners (a VSB spawn pipeline and Genesis's establish)
+#  were selectable and composable, and the listing said the fabric runs no engine for them: composing one ran a
+#  prompt stage under its name and created nothing. Refused at every door a composition passes, naming the door that
+#  does establish an entity.
+def _refuse_spawners(resource_ids: List[str]) -> None:
+    _sp = [rid for rid in resource_ids if (_BY_ID.get(rid) or {}).get("type") == "spawner"]
+    if _sp:
+        raise HTTPException(status_code=422, detail=(
+            f"{', '.join(_sp)} {'establishes' if len(_sp) == 1 else 'establish'} an entity, and the fabric does not "
+            f"start one: composed, a spawner ran a prompt stage under its name and created nothing. Nothing was "
+            f"modelled, saved or run. Establish an entity through Genesis (/genesis)."))
+
+
 @router.post("/compose/simulate")
 async def simulate_composition(req: ComposeRequest):
     """§7 — MODEL + SIMULATE a configuration BEFORE commit. Returns the modelled structure + a living-QMS
@@ -3392,6 +3800,7 @@ async def simulate_composition(req: ComposeRequest):
         raise HTTPException(status_code=400, detail=f"Unknown resource ids: {unknown}")
     if not req.resource_ids:
         raise HTTPException(status_code=400, detail="Select at least one resource to model.")
+    _refuse_spawners(req.resource_ids)          # W810 (FU-900)
     resolved, model, qa, commit_ready = await _simulate_configuration(
         req.name or "(unnamed)", req.resource_ids, req.usage_area, req.config)
     return {"name": req.name, "usage_area": req.usage_area, "resources": resolved,
@@ -3412,6 +3821,8 @@ async def compose(req: ComposeRequest, user: dict | None = Depends(get_current_u
     unknown = [rid for rid in req.resource_ids if rid not in _BY_ID]
     if unknown:
         raise HTTPException(status_code=400, detail=f"Unknown resource ids: {unknown}")
+    _refuse_spawners(req.resource_ids)          # W810 (FU-900)
+    _expires = _parse_expiry(req.expires_at) if req.expires_at is not None else None   # W915 (FU-609 part 2)
 
     resolved, model, qa, commit_ready = await _simulate_configuration(
         req.name, req.resource_ids, req.usage_area, req.config)
@@ -3428,6 +3839,7 @@ async def compose(req: ComposeRequest, user: dict | None = Depends(get_current_u
         "reusable": True,
         "rerunnable": True,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        **({"expires_at": _expires} if _expires else {}),        # W915 (FU-609 part 2)
     }
     with _compositions_lock():                                   # W728 - whole read, inside the lock
         rows = _compositions_for_write()

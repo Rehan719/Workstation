@@ -76,13 +76,16 @@ def _load_or_503(scope: str) -> Dict[str, Any]:
     try:
         return _load(scope)
     except StoreUnavailable as e:
+        #  W988 (FU-399 part 20) - the store's own sentence already ends "nothing was written"; the page showed it twice
         raise HTTPException(status_code=503, detail=(
-            f"{e} — the business plan was NOT read and nothing was written. Fix or restore the file; "
+            f"{e} — the business plan was NOT read. Fix or restore the file; "
             f"it is never replaced with an empty plan."))
 
 
 def _fresh(scope: str) -> Dict[str, Any]:
-    return {"scope": scope, "owner": "Rehan",
+    #  W812 (FU-1153) - a plan with no record belongs to the configured single-user owner, not a name in the code
+    from agentic_core.config import single_user_owner as _suo812
+    return {"scope": scope, "owner": _suo812()["owner_id"],
             # Chief-owned opening sections (the founder's idea, framed by the digital-twin Chief)
             "executive_summary": "", "concept": "", "vision": "",
             "mission": "", "strategy": "", "aims": [], "objectives": [], "updated_at": None}
@@ -439,7 +442,7 @@ def _pending_fields(plan: Dict[str, Any]) -> List[str]:
 
 class SetPlanRequest(BaseModel):
     scope: str = "workstation"
-    owner: str = "Rehan"
+    owner: str = ""                  # W812 (FU-1153) - none named: the plan's own owner, else the configured one
     executive_summary: str = ""      # Chief-owned opening sections (the founder's idea, framed by the Chief)
     concept: str = ""
     vision: str = ""
@@ -459,11 +462,15 @@ async def set_plan(req: SetPlanRequest, user: dict | None = Depends(_get_current
     # vision, mission and strategy and re-stamped `owner` from the request body, with no auth dependency: any
     # authenticated caller could take over the Owner's plan. Inert in single-user mode (the caller's own label
     # is kept), server-side with auth on.
-    _owner = _request_owner_id(user, req.owner or plan.get("owner", "Rehan"))
+    #  W812 (FU-1153) - a request naming no owner leaves the plan's own; a plan with none takes the configured owner
+    from agentic_core.config import single_user_owner as _suo812
+    _owner = _request_owner_id(user, req.owner or plan.get("owner") or _suo812()["owner_id"])
     plan.update({"owner": _owner,
                  "owner_source": ("the authenticated principal (a client-supplied owner is not trusted while "
                                   "auth is enabled)" if _auth_enabled() else
-                                  "the caller's own label — single-user mode has no principal to stamp")})
+                                  "the caller's own label — single-user mode has no principal to stamp" if req.owner
+                                  else "the request named no owner, so the plan keeps the owner it has (a plan with "
+                                       "none takes " + _suo812()["basis"] + ")")})
     ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     edits = plan.setdefault("owner_edits", {})
     # WHO edited, beside WHEN. The per-field trail recorded a timestamp and nothing about the principal, so

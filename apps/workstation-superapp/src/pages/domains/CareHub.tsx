@@ -1,17 +1,55 @@
 import { StartProjectCTA } from '../../components/StartProjectCTA';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Badge, Button } from '@workstation/ui';
 import { Layers, HeartPulse, History } from 'lucide-react';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 import { DomainTool } from '../../components/DomainTool';
 import { toolsFor } from '../../lib/toolRegistry';
+import { useTab } from '../../lib/useTab';   // W1027 - the tab is in the address
+import { apiJson, errorMessage } from '../../lib/api';     // W955 (P5.13 clause 1)
+
+const CARE_TABS = ['clinical', 'care-plan', 'risk', 'safeguarding'] as const;
 
 export const CareHub: React.FC = () => {
   const T = toolsFor('/care');   // W470 — the one tool registry the front doors count from
   const navigate = useNavigate();
   const { layout, emotionalAdjustment } = useAdaptiveUI();
-  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'clinical');
+  const [activeTab, setActiveTab] = useTab(CARE_TABS, 'clinical');
+  // W825 (FU-862) - the tools the API lists (GET /api/v1/care/tools had no caller): the select shows each runnable
+  // tool's name and sends its id. Withheld and retired instruments stay out of the select, as its label says.
+  const [toolNames, setToolNames] = useState<Record<string, string>>({});
+  //  W955 (P5.13 clause 1) - each tool with its rows of the register of sources. A failed read is said, in the
+  //  server's words, and the ids stay as the select's labels: nothing is claimed about a list that was not read
+  const [tools, setTools] = useState<any[]>([]);
+  const [sourcesBasis, setSourcesBasis] = useState('');
+  const [toolsNote, setToolsNote] = useState('');
+  useEffect(() => {
+    let alive = true;
+    apiJson<any>('/api/v1/care/tools')
+      .then(d => {
+        if (!alive || !Array.isArray(d?.tools)) return;
+        const names: Record<string, string> = {};
+        d.tools.forEach((t: any) => { if (t?.id && t?.name && t?.type !== 'withheld' && t?.type !== 'retired') names[String(t.id)] = String(t.name); });
+        setToolNames(names);
+        setTools(d.tools);
+        setSourcesBasis(typeof d.sources_basis === 'string' ? d.sources_basis : '');
+      })
+      .catch(e => { if (alive) setToolsNote(`The tools and their sources could not be read: ${errorMessage(e)}`); });
+    return () => { alive = false; };
+  }, []);
+
+  //  W863 (FU-1056) - the open hazard log: each hazard with its guard, or said to be unguarded
+  const [hazards, setHazards] = useState<any>(null);
+  //  W976 (FU-399 part 10) - a refused read of the log is said in its place. It was dropped in silence, so a log the
+  //  server refused to give read the same as a page that has none.
+  const [hazardsNote, setHazardsNote] = useState('');
+  useEffect(() => {
+    let alive = true;
+    apiJson<any>('/api/v1/care/hazards').then(d => { if (alive) setHazards(d); })
+      .catch(e => { if (alive) setHazardsNote(`The open hazard log could not be read: ${errorMessage(e)}`); });
+    return () => { alive = false; };
+  }, []);
 
   return (
     <div className="space-y-12 pb-24">
@@ -57,7 +95,7 @@ export const CareHub: React.FC = () => {
             {activeTab === 'care-plan' ? (
               <DomainTool
                 title={T['care-plan'].title}
-                description={<>Describe the person and their needs — Workstation's <span className="text-vital">own</span> AI drafts a structured, person-centred care plan (goals, interventions, review schedule), in-house.</>}
+                description={<>Describe the person and their needs — Workstation's <span className="text-vital">own</span> AI drafts an organiser of what you supply (goals, interventions, review schedule), in-house. It is a draft, not a care plan.</>}
                 endpoint="/api/v1/care/care-plan"
                 resultKey="care_plan"
                 submitLabel="Build care plan"
@@ -72,7 +110,7 @@ export const CareHub: React.FC = () => {
             ) : activeTab === 'risk' ? (
               <DomainTool
                 title={T['risk'].title}
-                description={<>Pick a tool and enter the observations — the score is <span className="text-vital">computed in-house from the published table</span> (NEWS2 · MUST · Waterlow) and shown first; Workstation's own AI interprets it. A decision aid — clinical judgement by a qualified professional is required.</>}
+                description={<>Pick a tool and enter the observations — the score is <span className="text-vital">computed in-house from the published chart</span> for NEWS2 and shown first (MUST and Waterlow are withheld on their owners' terms, and say so if picked); Workstation's own AI interprets it. A decision aid — clinical judgement by a qualified professional is required.</>}
                 endpoint="/api/v1/care/risk-assess"
                 resultKey="assessment"
                 submitLabel="Assess risk"
@@ -112,7 +150,7 @@ export const CareHub: React.FC = () => {
                   </div>
                 )}
                 fields={[
-                  { name: 'tool', label: 'Tool (news2 computes a score; the other four are narrative only; must and waterlow are withheld on their owners terms and the falls count is retired)', type: 'select', options: ['news2', 'dementia_care', 'mental_health', 'discharge', 'safeguarding'], default: 'news2' },
+                  { name: 'tool', label: 'Tool (news2 computes a score; the other four are narrative only; must and waterlow are withheld on their owners terms and the falls count is retired)', type: 'select', options: ['news2', 'dementia_care', 'mental_health', 'discharge', 'safeguarding'], optionLabels: toolNames, default: 'news2' },
                   { name: 'patient_data', label: 'Observations / data (key: value per line)', type: 'keyvalue', default: 'resp_rate: \nspo2: \noxygen: air\nsystolic_bp: \npulse: \ntemp: \nconsciousness: alert' },
                   { name: 'clinical_context', label: 'Clinical context (optional)', type: 'textarea', placeholder: 'e.g. 72yo post-op day 2, query chest infection' },
                 ]}
@@ -123,8 +161,12 @@ export const CareHub: React.FC = () => {
                 description={<>Describe a safeguarding concern — Workstation's <span className="text-vital">own</span> AI structures the right response under the Care Act 2014 (immediate-safety check, category, who to notify, what to record, consent &amp; Making Safeguarding Personal), in-house. Process guidance only — if anyone is in immediate danger, call 999.</>}
                 endpoint="/api/v1/care/safeguarding"
                 resultKey="guidance"
-                submitLabel="Triage concern"
+                submitLabel="Set out the process"
                 fields={[
+                  // W950 (P5.13 clause 4) - who the concern is about is asked, never assumed: a child's concern gets
+                  // the children's route and nothing is composed
+                  { name: 'concern_about', label: 'Who is the concern about?', type: 'select', options: ['', 'an adult', 'a child or young person'],
+                    optionLabels: { '': 'Choose one', 'an adult': 'An adult', 'a child or young person': 'A child or young person' }, default: '' },
                   { name: 'concern', label: 'Safeguarding concern', type: 'textarea', placeholder: 'e.g. an elderly client has unexplained bruising and seems fearful of a relative who manages their finances' },
                   { name: 'setting', label: 'Setting', type: 'select', options: ['community', 'hospital', 'care_home', 'domiciliary'], default: 'community' },
                   { name: 'person_context', label: 'Context (optional)', type: 'textarea', placeholder: 'adult at risk, capacity, who is involved…' },
@@ -150,6 +192,56 @@ export const CareHub: React.FC = () => {
             )}
          </div>
       </Card>
+      {/* W955 (P5.13 clause 1) - WHERE EACH TOOL'S STANDARD COMES FROM: the rows of the one register of sources each
+          entry points at, in the server's sentences (status, the date read, whether within the review period) */}
+      {(toolsNote || tools.length > 0) && (
+        <Card className="p-6" data-testid="care-sources">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Where each tool's standard comes from</h3>
+          {toolsNote && <p data-testid="care-sources-refusal" className="text-[10px] text-amber-300">{toolsNote}</p>}
+          {sourcesBasis && <p className="text-[10px] text-slate-500 mb-3">{sourcesBasis}</p>}
+          <ul className="space-y-2">
+            {tools.map((t: any) => (
+              <li key={t.id} data-testid="care-source-tool" className="text-[10px] text-slate-300">
+                <span className="font-bold text-white">{t.name}</span>: {t.standard}
+                {(t.sources ?? []).length === 0
+                  ? <span className="text-slate-500"> - no row of the register is named for this entry.</span>
+                  : (
+                    <ul className="ml-4 mt-1 space-y-0.5">
+                      {t.sources.map((s: any) => (
+                        <li key={s.id} data-testid="care-source-row" className="text-slate-400">
+                          <span className="font-mono text-slate-500">{s.id}</span> · {s.status_said}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+      {hazardsNote && (
+        <Card className="p-6" data-testid="care-hazard-refusal">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Hazard log - open</h3>
+          <p role="alert" className="text-[10px] text-amber-300">{hazardsNote}</p>
+        </Card>
+      )}
+      {hazards?.hazards && (
+        <Card className="p-6" data-testid="care-hazard-log">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Hazard log - open</h3>
+          <p className="text-[10px] text-slate-500 mb-3">{hazards.basis}</p>
+          <ul className="space-y-2">
+            {hazards.hazards.map((h: any) => (
+              <li key={h.id} className="text-[10px] text-slate-300" data-testid="care-hazard">
+                <span className="font-mono text-slate-500">{h.id}</span> · {h.tool} · {h.hazard} -{' '}
+                {h.guarded
+                  ? <span className="text-emerald-400">guarded: {h.how}</span>
+                  : <span className="text-amber-400">{h.guard && h.guard_present === false ? `GUARD MISSING (${h.guard}): ` : ''}{h.how}</span>}
+                {h.residual && <span className="text-slate-500"> Not covered: {h.residual}.</span>}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
     </div>
   );
 };

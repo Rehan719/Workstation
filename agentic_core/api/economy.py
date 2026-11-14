@@ -22,7 +22,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from agentic_core.api._strict_models import STRICT
-from agentic_core.auth.core import get_current_user, user_can_access
+from agentic_core.auth.core import get_current_user, require_admin, user_can_access   # W879: require_admin
 from agentic_core.economy.entities import ENTITY_TEMPLATES, DEFAULT_ENTITY, get_template
 from agentic_core.economy.metabolism import (
     EconomicMetabolism, validate_waterfall, _load_waterfall_overrides,
@@ -122,6 +122,16 @@ async def unmarked_debit_audit(vsb_id: Optional[str] = None, limit: int = 200,
     """
     if vsb_id:
         _require_economy_access(vsb_id, user)
+    else:
+        #  W884 (FU-1061) - asked without an entity this read EVERY entity's ledgers for any signed-in person. The
+        #  list across all of them is the Owner's to decide from, so under sign-in it is an administrator's; a
+        #  person names their own entity.
+        from agentic_core.auth.core import auth_enabled as _auth_on884
+        _u884 = user if isinstance(user, dict) else None
+        if _auth_on884() and not (_u884 and _u884.get("role") == "admin"):
+            raise HTTPException(status_code=403, detail=(
+                "Listing the unmarked debits of every entity is an administrator's, because each one is the "
+                "Owner's to decide. Name your own entity with vsb_id."))
     from agentic_core.economy.transfers import audit_unmarked_debits
     return audit_unmarked_debits(from_vsb=vsb_id, limit=limit)
 
@@ -151,7 +161,9 @@ async def economy_status(vsb_id: str = "workstation-idbo", entity_type: str | No
     _require_economy_access(vsb_id, user)
     _claimed_type = entity_type
     entity_type, et_source = _resolve_entity_type(vsb_id, entity_type)
-    owner, owner_source = "Rehan", "platform_default"
+    #  W813 (FU-887) - an entity with no registration is shown under the configured owner, not a name in the code
+    from agentic_core.config import single_user_owner as _suo813
+    owner, owner_source = _suo813()["owner_id"], _suo813()["source"]
     try:
         from agentic_core.economy.living_vsbs import _load as _lv_load
         rec = _lv_load().get(vsb_id)
@@ -183,7 +195,7 @@ class CycleRequest(BaseModel):
     revenue: float = Field(default=0.0, ge=0.0, le=1e15, allow_inf_nan=False)
     costs: float = Field(default=0.0, ge=0.0, le=1e15, allow_inf_nan=False)
     reserve_rate: float = Field(default=0.20, ge=0.0, le=1.0, allow_inf_nan=False)
-    owner: str = "Rehan"
+    owner: str = ""                  # W813 (FU-887) - none named: the registry's owner, else the configured one
 
 
 def _intake_not_back(e: BaseException) -> str:
@@ -259,7 +271,7 @@ async def run_cycle(req: CycleRequest, user: dict | None = Depends(get_current_u
             owner = reg.get("owner") or owner
             entity_type = reg.get("entity_type") or entity_type
             attribution = "living_registration"
-            if req.owner != "Rehan" and req.owner != owner:
+            if req.owner and req.owner != owner:          # W813 (FU-887) - an owner the request named
                 attribution = f"living_registration (request owner '{req.owner}' overridden)"
             # W488 (sweep S1.8, C5) — the OWNER override was disclosed and the FORM override was not.
             # The page highlighted a 'Charity · non-profit' card, sent entity_type='charity', and this
@@ -574,6 +586,8 @@ async def set_waterfall(req: WaterfallRequest, user: dict | None = Depends(get_c
     except TimeoutError as e:
         raise HTTPException(status_code=503, detail=f"the waterfall store is busy ({e}); nothing was written")
     # Constitutional audit — the Owner adjusting the distribution policy is a material, logged act.
+    #  W790 (FU-1159) - WHETHER IT WAS LOGGED IS SAID, NEVER ASSUMED. The reply said "logged to the UEG" after a
+    #  try/except that swallowed a failed write, so a change the constitutional log never received read as logged.
     try:
         from agentic_core.gaas.v5 import UEGLogger
         UEGLogger().log({
@@ -581,14 +595,18 @@ async def set_waterfall(req: WaterfallRequest, user: dict | None = Depends(get_c
             "entity_type_source": et_source,
             "entity_type_claimed": req.entity_type if req.entity_type != entity_type else None,
             "waterfall": waterfall, "by": "owner"})
-    except Exception:
-        pass
+        _ueg_logged, _ueg_basis = True, "written to the constitutional log (the UEG)"
+    except Exception as _exc:                       # noqa: BLE001 - the change stands; the failed log is said
+        _ueg_logged, _ueg_basis = False, (f"NOT written to the constitutional log ({_exc.__class__.__name__}); "
+                                          f"the proportions were saved all the same")
     return {
         "vsb_id": req.vsb_id, **_form_disclosure(req.entity_type, entity_type, et_source),
         "waterfall": waterfall,
         "source": "owner_override", "applied": True,
-        "note": "Owner-set proportions persisted (virtual). Effective next cycle; logged to the UEG. "
-                "Reset by posting the template defaults.",
+        "ueg_logged": _ueg_logged, "ueg_basis": _ueg_basis,
+        "note": ("Owner-set proportions persisted (virtual). Effective next cycle; "
+                 + ("logged to the UEG. " if _ueg_logged else "NOT logged to the UEG - see ueg_basis. ")
+                 + "Reset by posting the template defaults."),
     }
 
 
@@ -605,7 +623,9 @@ async def owner_payments(vsb_id: str = "workstation-idbo", user: dict | None = D
         raise HTTPException(status_code=503, detail=str(e))
     #  Owner ruling 2026-10-12 - the payout requests for this account and where each stands, read from the
     #  Change Control records every time (a request's state is never stored on the account)
-    return {**account, **_payout_requests(vsb_id)}
+    #  W880 (FU-1009) - the owner's share on the book of record, beside what this account accrued, read every time
+    from agentic_core.economy.populations import owner_share as _owner_share880
+    return {**account, **_payout_requests(vsb_id), "owner_share_reconciliation": _owner_share880(vsb_id)}
 
 
 class PayoutRequest(BaseModel):
@@ -877,8 +897,8 @@ def _payout_governed(req: "PayoutRequest", user: dict | None) -> dict:
                  " (a name the platform did not check)")
               + f" as an explicit decision, and this payout spent that approval. {amount} WST left the "
                 f"owner-payments account '{_shown}'"
-              + (f" for its recorded owner '{out.get('payee')}'" if out.get("payee_recorded") else
-                 "; the account records no owner, so no payee is named")
+              + (f" for '{out.get('payee')}', the owner the entity's record names" if out.get("payee_recorded") else
+                 "; the entity has no owner record, so no payee is named")
               + ". No real money moved.")
     return {
         **out,
@@ -965,6 +985,27 @@ async def living_vsb_propose_removal(vsb_id: str, req: RemovalRequest, user: dic
     from agentic_core.economy.turnover import propose_removal
     _who = ((user.get("username") or user.get("user_id")) if isinstance(user, dict) else None)
     res = await propose_removal(vsb_id, req.why, by=str(_who or "owner (single-user mode)"))
+    if not res.get("filed"):
+        raise HTTPException(status_code=409, detail=res)
+    return res
+
+
+class RestoreRequest(BaseModel):
+    why: str
+
+
+@router.post("/living-vsbs/{vsb_id}/propose-restore")
+async def living_vsb_propose_restore(vsb_id: str, req: RestoreRequest, user: dict | None = Depends(get_current_user)):
+    """FU-869 (W833, Owner ruling 2026-10-11) — PROPOSE returning a retired entity to the living roster, through
+    Change Control: the way back from a removal, built before any removal can be performed. The Owner's alone, as a
+    removal is. Refused (409) for an entity that is not retired, or whose state before retirement is not recorded;
+    nothing changes until the change is approved and implemented, which re-checks before it restores anything. The
+    balance its retirement moved to the Capital Fund stays in the fund."""
+    _require_economy_access(vsb_id, user)
+    _owner_only_r5(user, "propose the restore of an entity")
+    from agentic_core.economy.turnover import propose_restore
+    _who = ((user.get("username") or user.get("user_id")) if isinstance(user, dict) else None)
+    res = await propose_restore(vsb_id, req.why, by=str(_who or "owner (single-user mode)"))
     if not res.get("filed"):
         raise HTTPException(status_code=409, detail=res)
     return res
@@ -1223,6 +1264,15 @@ def _debited_phrase(reused_id: Optional[str]) -> str:
     return "Nothing was debited"
 
 
+def _refusal_reason(e: Exception) -> str:
+    """W1000 - the reason a transfer refusal gives, without the sentence its answer adds for itself. Both answers
+    that carry a ledger refusal say whether anything was debited, and a reason that said "Nothing was debited."
+    as well was answered "... from the postings.. Nothing was debited - retry again ..."; the two read it one way,
+    here."""
+    return (str(e).replace("; nothing was written", "").replace("; nothing was debited", "")
+            .replace(" Nothing was debited.", "") or type(e).__name__).strip("'\"")
+
+
 async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None, *,
                          context: str = "transfer", gate_source: Optional[str] = None) -> dict:
     """The transfer itself, after the caller's access check. W465: a service-contract settlement passes the
@@ -1241,8 +1291,8 @@ async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None
         await asyncio.to_thread(validate_transfer, req.from_vsb, req.to_vsb, req.amount)
     except SenderLedgerUnavailable as e:
         # W468 (register FU-041) — an unreadable sender ledger read as empty books and answered 400 "insufficient funds"
-        why = str(e).replace("; nothing was debited", "")
-        again = "settle" if context == "settlement" else "retry"
+        why = _refusal_reason(e).rstrip(".")          # W1000: its answer ends the sentence
+        again = "settle" if context == "settlement" else "try"
         raise HTTPException(status_code=503,
                             headers={"X-Transfer-Debited": "unknown" if transfer_id else "false",
                                      **({"X-Transfer-Id": transfer_id} if transfer_id else {})},
@@ -1320,11 +1370,10 @@ async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None
         except Exception:
             debited = None
         settling = context == "settlement"
-        why = (str(e).replace("; nothing was written", "").replace("; nothing was debited", "")
-               or type(e).__name__).strip("'\"")
+        why = _refusal_reason(e)                      # W1000
         headers = {"X-Transfer-Id": _xfer_id,
                    "X-Transfer-Debited": "true" if debited else ("false" if debited is False else "unknown")}
-        again = "settle" if settling else "retry"
+        again = "settle" if settling else "try"
         if isinstance(e, StoreUnavailable) and debited is False:
             headers["X-Transfer-Debited"] = "false"
             return HTTPException(status_code=503, headers=headers, detail=(
@@ -2090,7 +2139,7 @@ async def settle_contract(cid: str, user: dict | None = Depends(get_current_user
 class ClosePeriodRequest(BaseModel):
     vsb_id: str = "workstation-idbo"
     entity_type: str | None = None
-    owner: str = "Rehan"
+    owner: str = ""                  # W813 (FU-887) - none named: the configured single-user owner
 
 
 @router.post("/close-period")
@@ -2171,7 +2220,8 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str | None =
     # /status and /close-period, left live on the surface the UI actually renders.
     _claimed_type = entity_type
     entity_type, _et_source = _resolve_entity_type(vsb_id, entity_type)
-    _owner, _owner_source = "Rehan", "platform_default"
+    from agentic_core.config import single_user_owner as _suo813      # W813 (FU-887) - as /status resolves it
+    _owner, _owner_source = _suo813()["owner_id"], _suo813()["source"]
     try:
         from agentic_core.economy.living_vsbs import _load as _lv_load
         _rec = _lv_load().get(vsb_id)
@@ -2211,7 +2261,11 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str | None =
                     "composite_health_measured_only": ctx.get("composite_health_measured_only"),
                     "composite_health_measured_weight": ctx.get("composite_health_measured_weight"),
                     "composite_health_basis": ctx.get("composite_health_basis"),
-                    "atp_ratio": (ctx.get("metabolic") or {}).get("atp_ratio")}
+                    "atp_ratio": (ctx.get("metabolic") or {}).get("atp_ratio"),
+                    #  W901 (FU-1112, S18.1) - the figure derived from the work budget, for the economy page
+                    "energy_ratio": (ctx.get("metabolic") or {}).get("energy_ratio"),
+                    "energy_acts": bool((ctx.get("metabolic") or {}).get("energy_acts")),
+                    "energy_basis": (ctx.get("metabolic") or {}).get("energy_basis")}
     except Exception:
         organism = {}
 
@@ -2251,7 +2305,13 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str | None =
                               "funding_state": ventures.get("funding_state"),
                               "funding_basis": ventures.get("funding_basis"),
                               "holdings": ventures.get("holdings", [])[:5]},
-        "charitable_giving": {"total_given_wst": round(bal.get("charity", 0.0), 2)},
+        #  W804 (FU-985, ledger v17 R6[5]) - WHAT THE FIGURE IS. Its key and the card under it read as money given;
+        #  it is the charity pot's balance in virtual WST. The key stays (the page reads it) and the pack says the rest.
+        "charitable_giving": {"total_given_wst": round(bal.get("charity", 0.0), 2),
+                              "label": "allocated (virtual, every grant unassessed)",
+                              "basis": ("the charity pot's balance in virtual WST: allocated, not given - no real "
+                                        "money moves here - and each grant carries the compliance screen's verdict, "
+                                        "which can refuse a grant and cannot clear one ('review' means unassessed)")},
         "organism_posture": organism,
         # §9.1 — the CFO's three statements (current period, from the REAL double-entry postings)
         "statements": m.ledger.statements(),
@@ -2291,6 +2351,15 @@ async def repair_ledger(vsb_id: str, user: dict | None = Depends(get_current_use
         return _ledger.repair(_ledger._STORE / f"{vsb_id}_ledger.json", vsb_id)
     except LedgerUnavailable as e:
         raise HTTPException(status_code=409, detail=str(e))
+
+
+@router.get("/reconciliation")
+async def books_reconciliation(user: dict = Depends(require_admin)):
+    """W879 (FU-1008) - THE FOUR POPULATIONS, READ TOGETHER: the roster, the entity records, the ledgers and the
+    owner accounts. For every id any of them holds, which stores hold it and what that shape means, with the ids a
+    person must explain. Read only. Admin-only under sign-in, because it lists every entity's id."""
+    from agentic_core.economy.populations import reconcile
+    return reconcile()
 
 
 @router.get("/charity/candidates")

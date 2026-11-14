@@ -47,6 +47,11 @@ const DATE = A.date || 'UNSTATED'
 // W652 - THE CAP IS AN ARGUMENT OF THE RUN (Owner ruling 2026-10-09: 20 after the fix rounds). It is said to the
 // assessor and returned on every region, so the ledger prints the number this run was given, not one typed here.
 const CAP = Number(A.cap) || 20
+// W785 - THE REPOSITORY'S LOCATION IS AN ARGUMENT TOO. The brief named one machine's home directory as the repo, so a
+// run anywhere else pointed twelve agents at a path that did not exist, and every finding that quoted a file carried
+// that home directory into the run record (which edition 18's renderer refuses in a residue line). Absent, the
+// agents are told to read the working directory they run in, which is the repository root.
+const REPO = A.repo || 'the working directory you run in (the repository root)'
 // W664 (Owner ruling 2026-10-10) - A RUN CAN BE POINTED. `args.unexercised` is the output of
 // scripts/audit_unexercised.py: the routes and pages an earlier run did not exercise. Each assessor is told to
 // exercise those first, within its region, and every region of the record carries what the run was pointed at,
@@ -91,7 +96,7 @@ Give why_this_tier for EVERY finding: the specific sentence or figure a reader i
 the tier you chose rather than the one above or below it.`
 
 const COMMON = `
-Repo: C:/Users/rehan/Workstation (HEAD ${HEAD}, ${DATE}). A backend booted from HEAD is LIVE at
+Repo: ${REPO} (HEAD ${HEAD}, ${DATE}). Cite files by their path RELATIVE to the repo root. A backend booted from HEAD is LIVE at
 ${BASE} (single-user mode, AUTH off, AI_DISABLE_LOCAL=1 -> only the deterministic native floor serves
 model calls — that is the environment, not a defect; what IS assessable is whether every floor-served
 surface DISCLOSES it honestly). The built frontend is served by the same backend at ${BASE}/ (use

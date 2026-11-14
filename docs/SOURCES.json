@@ -1,5 +1,5 @@
 {
- "about": "Every authority this platform NAMES, as a row: the publisher's page, the date it was read, who read it, its status and what replaced it. A row is entered by whoever read the page, in a round. Nothing fetches a page on a timer; a row is current for `review_days` after it was read and is shown as not recently checked after that. A name the code uses with no row here fails scripts/sources_check.py.",
+ "about": "Every authority this platform NAMES, as a row: the publisher's page, the date it was read, who read it, its status and what replaced it. A row is entered by whoever read the page, in a round. Nothing fetches a page on a timer; a row is current for `review_days` after it was read and is shown as not recently checked after that. A name the code uses with no row here fails scripts/sources_check.py. W948 (FU-1066): a row that names `hosts` says what its terms, as read, `permits` this platform to do; an empty `permits` means NOT TO BE USED, and the check fails if any of its hosts appears in the code.",
  "review_days": 90,
  "scan": [
   {
@@ -559,6 +559,11 @@
    "not_read": "the page's exact wording character for character; the Tanzil translations page's separate terms",
    "used_by": [
     "agentic_core/religious_domain/api.py"
+   ],
+   "hosts": [],
+   "permits": [
+    "show the text verbatim, unchanged, crediting the Tanzil Project with a link to tanzil.net and keeping its copyright notice",
+    "bundle verbatim copies in an application on those conditions"
    ]
   },
   {
@@ -582,7 +587,18 @@
     "agentic_core/religious_domain/api.py"
    ],
    "how_each_condition_is_kept": "Nothing fetched is written to disk and each answer is fetched for its request (no copy, nothing kept a week); the credentials are read from the server's environment at the call and are never returned or logged; the answer goes to the caller only (no model is trained); the environment is pre-production unless the Owner sets production, which needs the publisher's approval.",
-   "not_yet_established": "the two content paths are from the publisher's reference pages and had not been called from this machine with real credentials when this row was written"
+   "not_yet_established": "the two content paths are from the publisher's reference pages and had not been called from this machine with real credentials when this row was written",
+   "hosts": [
+    "apis.quran.foundation",
+    "oauth2.quran.foundation",
+    "apis-prelive.quran.foundation",
+    "prelive-oauth2.quran.foundation"
+   ],
+   "permits": [
+    "fetch text, translations, metadata, audio and reflections for an app, free or paid, with the credentials held on a server",
+    "keep nothing longer than one week, except through Content Sync or as a font file or mushaf image",
+    "serve audio in production only once the publisher has approved it"
+   ]
   },
   {
    "id": "alquran-cloud-terms",
@@ -601,6 +617,14 @@
    "not_read": "the page itself by a second reader - re-read before any audio from this source is used",
    "used_by": [
     "agentic_core/religious_domain/api.py"
+   ],
+   "hosts": [
+    "api.alquran.cloud"
+   ],
+   "permits": [
+    "fetch the text and its editions without a key, within a soft limit per address",
+    "keep a copy of what was fetched (caching is encouraged)",
+    "on condition of crediting Tanzil and Quran Academy and naming the translators"
    ]
   },
   {
@@ -634,7 +658,12 @@
    "read_on": "2026-10-12",
    "read_by": "one research reader; NOT re-read",
    "says": "The library offers mushaf page layouts, recitations with word timings, similar-verse lists, morphology and fonts. Its code repository is under an open licence. NO licence for the DATA was found on any page read.",
-   "not_read": "any terms for the data - none was found. NOT TO BE USED until written permission is held (a letter is drafted for the Owner to send)"
+   "not_read": "any terms for the data - none was found. NOT TO BE USED until written permission is held (a letter is drafted for the Owner to send)",
+   "hosts": [
+    "qul.tarteel.ai"
+   ],
+   "permits": [],
+   "permits_basis": "nothing: no terms permitting a use were read, so it is not to be used until written permission is held or its terms are read and entered"
   },
   {
    "id": "kfgqpc-recitations-fonts",
@@ -649,7 +678,12 @@
    "status": "named_not_read",
    "says": "NOT READ. A search summary says recordings are offered for free general use in applications and websites; that is a summary of a page nobody here opened.",
    "not_read": "everything. NOT TO BE USED until the page is read or written permission is held (a letter is drafted for the Owner to send)",
-   "where_to_read": "https://qurancomplex.gov.sa/"
+   "where_to_read": "https://qurancomplex.gov.sa/",
+   "hosts": [
+    "qurancomplex.gov.sa"
+   ],
+   "permits": [],
+   "permits_basis": "nothing: no terms permitting a use were read, so it is not to be used until written permission is held or its terms are read and entered"
   },
   {
    "id": "everyayah-audio",
@@ -666,7 +700,12 @@
    "read_on": "2026-10-12",
    "read_by": "one research reader; NOT re-read",
    "says": "No licence, terms or statement of source was found on the home page. The rights in a recitation usually rest with the reciter or the recording company.",
-   "not_read": "any terms - none was found. NOT TO BE USED"
+   "not_read": "any terms - none was found. NOT TO BE USED",
+   "hosts": [
+    "everyayah.com"
+   ],
+   "permits": [],
+   "permits_basis": "nothing: no terms permitting a use were read, so it is not to be used until written permission is held or its terms are read and entered"
   },
   {
    "id": "cpfair-quran-data",
@@ -683,7 +722,14 @@
    "read_on": "2026-10-12",
    "read_by": "one research reader; NOT re-read",
    "says": "Word-timing data files and tajweed annotation data are stated to be under Creative Commons Attribution 4.0. The timings do not license the recordings they were made from.",
-   "not_read": "the licence files themselves; which reciters the timings cover"
+   "not_read": "the licence files themselves; which reciters the timings cover",
+   "hosts": [
+    "cpfair/quran-align",
+    "cpfair/quran-tajweed"
+   ],
+   "permits": [
+    "use the word-timing and tajweed annotation data, crediting it (Creative Commons Attribution 4.0); the recordings the timings were made from are not licensed by it"
+   ]
   },
   {
    "id": "ico-biometric-voice",
@@ -1181,6 +1227,35 @@
    "read_by": "round W724, by one request to the address on 2026-10-13; the page's content was NOT read",
    "says": "The address resolved (status 200) when opened. It is listed as a place a person may go; nothing of the page is quoted or relied on.",
    "not_read": "the page's content; whether the body covers Scotland or Northern Ireland; its opening hours and eligibility rules"
+  },
+  {
+   "id": "hifz-method-primary-text",
+   "names": [
+    "a primary text on the memorisation method"
+   ],
+   "kind": "method source",
+   "nation": [
+    "any"
+   ],
+   "status": "named_not_read",
+   "says": "NOT READ. No primary text on a memorisation method has been opened, so the platform proposes no default portion: a portion is whatever the learner or their teacher sets.",
+   "not_read": "every text on the method; a person enters one here, with its page and the date read, before any default portion is proposed",
+   "used_by": [
+    "agentic_core/religious_domain/api.py"
+   ]
+  },
+  {
+   "id": "quran-competition-marking-scheme",
+   "names": [
+    "a Quran competition's marking scheme"
+   ],
+   "kind": "competition rules",
+   "nation": [
+    "any"
+   ],
+   "status": "named_not_read",
+   "says": "NOT READ. No competition's marking scheme has been opened, so nothing here judges or marks a recitation, and a judged event waits for a real scheme read by a person.",
+   "not_read": "every marking scheme; a judged event is not built until one is read and entered"
   }
  ]
 }

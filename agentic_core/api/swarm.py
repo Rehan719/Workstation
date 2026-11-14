@@ -20,6 +20,7 @@ from agentic_core.config import data_path
 
 from fastapi import APIRouter, HTTPException, Depends
 from agentic_core.api._ai_provenance import reply_evidence as _reply_evidence   # W698: the level travels with the record
+from agentic_core.api.operational_excellence import spans_run    # W847 (FU-1121)
 # W505 (P2.6) - owner scoping on the cascade: a scope naming a VSB must belong to the principal.
 from agentic_core.auth.core import get_current_user
 from pydantic import BaseModel
@@ -125,6 +126,7 @@ async def delegate_task(req: DelegateRequest):
     # registers its honest cognitive demand with the homeostatic controller.
     provenance: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False, **_reply_evidence()}
 
+    @spans_run("ai_call")          # W847 (FU-1121) - the model attempt inside is held
     async def _dq(prompt: str, agent: str) -> str:
         _t0 = time.time()
         res = await gateway.query_meta(prompt, agent=agent, augment=False,
@@ -385,13 +387,82 @@ async def cascade_runs(limit: int = 10):
     from agentic_core.config import data_path, read_json_reported
     rows, _why = read_json_reported(data_path("org_cascade_runs.json"), [])
     rows = rows if isinstance(rows, list) else []
-    return {"runs": list(reversed(rows[-max(1, min(limit, 50)):])), "total": len(rows),
+    return {"runs": _with_acceptance(list(reversed(rows[-max(1, min(limit, 50)):]))), "total": len(rows),
             # W577 (FU-298) — `total` is the figure a reader takes as "how many cascades have run".
             "store_incomplete": _why,
             "total_is_incomplete": bool(_why),
             "total_basis": ("the runs this store could not be read whole are MISSING from this total, "
                             "so at least this many have run and possibly more"
                             if _why else "every run persisted in the cascade history")}
+
+
+#  W851 (FU-1049) - A PERSON ACCEPTS A DELIVERY: who, when and which version, recorded once. What acceptance earns
+#  follows the recommendation the Owner's standing instruction adopts: only an accepted contract's agreed amount is
+#  earned (through the contract's own settlement), and a constant never is - so acceptance alone earns nothing.
+_ACCEPTANCES_STORE = data_path("delivery_acceptances.json")
+_ACCEPTANCE_EARNS = ("acceptance records that a person accepted this version of this delivery. By itself it earns "
+                     "nothing: only an accepted contract's agreed amount is earned, through the contract's own "
+                     "settlement, and a constant never is (FU-1049, the recommendation followed)")
+
+
+def _acceptances() -> list:
+    from agentic_core.config import read_json_strict
+    rows = read_json_strict(_ACCEPTANCES_STORE, [], expect=list)
+    return [r for r in rows if isinstance(r, dict)]
+
+
+def _with_acceptance(runs: list) -> list:
+    try:
+        by_run = {a.get("run_id"): a for a in _acceptances()}
+    except Exception as _e851:                       # noqa: BLE001 - said, never read as "nobody accepted"
+        return [{**r, "acceptance": None,
+                 "acceptance_basis": f"the acceptance record could not be read ({type(_e851).__name__})"} for r in runs]
+    return [{**r, "acceptance": by_run.get(r.get("run_id"))} for r in runs]
+
+
+class AcceptDeliveryRequest(BaseModel):
+    delivery_sha256: str
+
+
+@router.post("/cascade/runs/{run_id}/accept")
+async def accept_delivery(run_id: str, req: AcceptDeliveryRequest,
+                          user: dict | None = Depends(get_current_user)):
+    """W851 (FU-1049) - accept THIS version of an entity's delivery. The entity's owner when sign-in is on; with
+    sign-in off, whoever operates this single-user deployment, said to be unverified. Recorded once."""
+    from agentic_core.config import read_json_strict, atomic_write_json, store_lock
+    from agentic_core.auth.core import auth_enabled
+    run = next((r for r in read_json_strict(data_path("org_cascade_runs.json"), [], expect=list)
+                if isinstance(r, dict) and r.get("run_id") == run_id), None)
+    if run is None:
+        raise HTTPException(status_code=404, detail=f"no cascade run {run_id}")
+    scope = str(run.get("business_plan_scope") or "")
+    if not scope or scope == "workstation":
+        raise HTTPException(status_code=409, detail=(
+            "this run was scoped to the platform itself, not delivered to an entity, so there is nothing to accept"))
+    from agentic_core.api.economy import _require_economy_access
+    _require_economy_access(scope, user)              # the entity's owner, under sign-in; 404 for anyone else
+    if not run.get("delivery_sha256"):
+        raise HTTPException(status_code=409, detail=(
+            "this run recorded no version of its delivery (it ran before versions were kept), so an acceptance "
+            "could not say which version was accepted"))
+    if req.delivery_sha256 != run["delivery_sha256"]:
+        raise HTTPException(status_code=409, detail=(
+            "that is not the version this run delivered, so nothing was accepted"))
+    signed = auth_enabled() and isinstance(user, dict) and user.get("username")
+    with store_lock(_ACCEPTANCES_STORE):
+        rows = _acceptances()
+        prior = next((a for a in rows if a.get("run_id") == run_id), None)
+        if prior:
+            raise HTTPException(status_code=409, detail=(
+                f"this delivery was already accepted by {prior.get('accepted_by')} at {prior.get('at')}"))
+        rec = {"run_id": run_id, "scope": scope, "delivery_sha256": run["delivery_sha256"],
+               "accepted_by": str(user["username"]) if signed else "the operator of this single-user deployment",
+               "accepted_by_verified": bool(signed),
+               "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+               "earned_wst": None, "earns_basis": _ACCEPTANCE_EARNS}
+        rows.append(rec)
+        atomic_write_json(_ACCEPTANCES_STORE, rows)
+    return {"accepted": True, **rec}
 
 
 @router.post("/cascade")
@@ -413,6 +484,13 @@ async def cascade_orchestration(req: CascadeRequest,
     start = time.time()
     # W452 (P1.4) — a cascade scoped to a VSB consults its Mode 3 review gates before a single
     # tier runs: a pending or rejected human review is a 409 with the gate named.
+    #  W829 (FU-1118) - an INTERNAL call (a VSB's repository cascade, a contract delivery, a composition's org
+    #  cascade) passes no user, so `user` is FastAPI's Depends marker, not a person: it is read as nobody, as
+    #  _require_vsb_access reads it. Under sign-in the scope check below called .get on the marker and raised; the
+    #  outer route has already checked access.
+    if user is not None and not isinstance(user, dict):
+        user = None
+    _gated_vsb = None             # W829 (FU-1118) - read again below: whose work the tier calls are
     if req.scope and req.scope != "workstation":
         from agentic_core.api.vsb import _load_vsb as _gate_load, _refuse_gated
         _gated_vsb = _gate_load(req.scope)
@@ -431,6 +509,15 @@ async def cascade_orchestration(req: CascadeRequest,
                     raise HTTPException(status_code=403, detail=(
                         f"the scope '{req.scope}' belongs to {_vsb_owner}; a cascade writes objectives into "
                         f"its business plan and records revenue against it, so it runs only for its owner."))
+
+    #  W829 (FU-1118) - WHOSE WORK THE TIER CALLS ARE, for the work budget (S18.6). A cascade scoped to a VSB is that
+    #  entity's work, so its tier calls are booked to the VSB under its registered owner, whoever called: a VSB's own
+    #  repository cascade and a contract delivery call this holding no user, and under sign-in the check above runs
+    #  a scoped cascade only for its owner. An unscoped cascade, or a VSB with no registered owner, books to the
+    #  caller when one is known, else to the platform total alone (W743: an owner is never guessed). The memory
+    #  layer still receives the caller's identity.
+    _book_vsb829 = req.scope if _gated_vsb else None
+    _book_owner829 = (_gated_vsb.get("owner_id") or None) if _gated_vsb else None
 
     biobus.fire_signal("cognitive", "swarm.cascade", f"CEO cascade: {req.mission[:80]}", 0.8)
 
@@ -502,6 +589,7 @@ async def cascade_orchestration(req: CascadeRequest,
 
     _served_by_agent: dict = {}
 
+    @spans_run("ai_call")          # W847 (FU-1121) - the model attempt inside is held
     async def _q(prompt: str, agent: str) -> str:
         _qt0 = time.time()
         # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what
@@ -522,7 +610,8 @@ async def cascade_orchestration(req: CascadeRequest,
             record_outcome("ai_call", f"agent:{agent}", served_by=sb,
                            is_external=bool(res.get("is_external")),
                            duration_ms=int((time.time() - _qt0) * 1000),
-                           owner_id=_owner_id,     # S18.6 (W743) - the caller's own budget, when known
+                           owner_id=(_book_owner829 or _owner_id),     # S18.6 (W743); the VSB's, W829
+                           vsb_id=_book_vsb829,                         # W829 (FU-1118) - the scope's VSB
                            # W495 (FU-125, S7.3) - no quality gate assesses a single AI call, so
                            # this records that it PRODUCED output and claims no verdict
                            success=bool((res.get("output") or "").strip()),
@@ -848,8 +937,13 @@ async def cascade_orchestration(req: CascadeRequest,
 
     # ── §10 Solution-Quality Bar + the living QMS gate — run BEFORE the appraisal pass (W268) so the
     # appraising tiers judge against this run's REAL measured outcomes, not just same-run prose.
+    #  W851 (FU-1049) - the VERSION of what this run delivered: the hash of the very text the gate reads, so an
+    #  acceptance names the version it accepted and a later text cannot inherit it
+    _delivered851 = f"{build_to_order}\n{products_services_catalogue}"
+    import hashlib as _hl851
+    delivery_sha256 = _hl851.sha256(_delivered851.encode("utf-8")).hexdigest()
     _qa = await assure_delivery(
-        f"{build_to_order}\n{products_services_catalogue}",
+        _delivered851,
         ["Operational Delivery Resources", "Work Breakdown", "Quality Gates", "Go-Live"],
         label="cascade", served_by=provenance["served_by"])
     quality: dict = _qa["quality"]
@@ -1176,9 +1270,14 @@ async def cascade_orchestration(req: CascadeRequest,
     if req.scope != "workstation" and quality.get("qms_gate_passed") is True and not DELIVERY_EARNS_ON_GATE_PASS:
         economic_event = {"revenue_recorded": False, "revenue_wst": None, "cost_wst": None,
                           "earns_on": "a person's acceptance of this delivery",
+                          #  W851 (FU-1049) - the acceptance route exists; what acceptance earns is said beside it
                           "basis": ("no revenue or cost was recorded for this delivery: the quality gate passed on "
                                     "structure (declared sections present, no stub marker), and a delivery earns "
-                                    "only when a person accepts it. No acceptance route exists yet. Virtual WST only.")}
+                                    "only when a person accepts it. The entity's owner accepts it at "
+                                    f"POST /api/v1/swarm/cascade/runs/{run_id}/accept, "
+                                    "naming the version (delivery_sha256); acceptance by itself earns nothing - only "
+                                    "an accepted contract's agreed amount is earned, through the contract's own "
+                                    "settlement, and a constant never is. Virtual WST only.")}
     if req.scope != "workstation" and quality.get("qms_gate_passed") is True and DELIVERY_EARNS_ON_GATE_PASS:   # W449 — never on None
         _rev, _cost = None, None
         try:
@@ -1219,6 +1318,7 @@ async def cascade_orchestration(req: CascadeRequest,
         _runs = read_json_strict(_runs_store, list, expect=list)    # W472 (FU-053) — refused, never replaced
         _runs.append({**_reply_evidence(provenance['served_by']), 
             "run_id": run_id, "mission": req.mission[:200], "domain": req.domain,
+            "delivery_sha256": delivery_sha256,          # W851 (FU-1049) - the version a person may accept
             "csuite_engaged": selected, "appraisals": appraisals,
             "csuite_requested": _roles_requested, "csuite_not_run": _roles_not_run,       # W660 (FU-715)
             "quality": {**{k: quality.get(k) for k in ("qms_gate_passed", "qms_basis", "delivery_coverage",
@@ -1246,6 +1346,7 @@ async def cascade_orchestration(req: CascadeRequest,
     return {
         "run_id": run_id,
         "mission": req.mission,
+        "delivery_sha256": delivery_sha256,                   # W851 (FU-1049) - the version a person may accept
         "persistence": _persistence,                          # W472 — which stores took this run's record
         # §5 (W280) — which living plan grounded the apex tiers + the objective this run delivered.
         "business_plan_scope": req.scope,
@@ -1279,9 +1380,16 @@ async def cascade_orchestration(req: CascadeRequest,
                                       "is honoured, a custom officer is not.")},
         # §5 — each tier manages, APPRAISES and DEVELOPS the tier below (arms-length upward appraisal).
         "appraisals": appraisals,
-        # §5 DEVELOP (W269) — which tiers received + applied the PREVIOUS cycle's Development Action
-        # (key → the run_id that set it); empty on a first run.
+        # §5 DEVELOP (W269) — which tiers were GIVEN the PREVIOUS cycle's Development Action in their prompt
+        # (key → the run_id that set it); empty on a first run. W818 (FU-909): given, which is all the key shows
         "development_applied": development_applied,
+        #  W818 (FU-909) - what the field records. It was read as an outcome ("applied"); it is an injection, and
+        #  nothing compares a tier's response with the action it was given
+        "development_applied_basis": (
+            "each listed tier was given, in its prompt, the development action its managing tier set after the "
+            "previous cycle's appraisal (key -> the run that set it). That it was given is recorded; whether the "
+            "tier's response acted on it is NOT assessed"
+            if any(k != "not_persisted" for k in development_applied) else None),
         # §5 (W281) — persistent tier identity: which tiers carried their accumulated record into
         # this run (edge → runs served so far); empty on a first run.
         "tier_identity_applied": tier_identity_applied,

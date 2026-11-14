@@ -11,12 +11,13 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from agentic_core.auth.core import get_current_user, user_can_access
 from agentic_core.vbs.registry import bms, qms, ems, dcms, backbone, CATALOGUE
 from agentic_core.vbs.backbone import ProtocolType
+from agentic_core.vbs.qms import LIVE_GATE_LABELS, label_is_live
 
 router = APIRouter(prefix="/api/v1/vbs", tags=["vbs-living-systems"])
 
@@ -97,7 +98,9 @@ async def qms_defects(status: str = "", user: dict | None = Depends(get_current_
     # W534 (FU-298) — a truncated store yields FEWER defect rows, so the list is short for a reason the
     # reader cannot see from its length. The reason is lifted beside the rows, not left inside the summary
     # only, because a caller rendering the list may never look at the summary.
-    return {"summary": _sum, "defects": rows[-100:][::-1],
+    #  W853 (FU-1038) - each row says whether its label is one a live surface still opens defects under
+    return {"summary": _sum,
+            "defects": [{**d, "label_live": label_is_live(d.get("label"))} for d in rows[-100:][::-1]],
             **({"store_incomplete": _sum["store_incomplete"], "listing_is_incomplete": True}
                if _sum.get("store_incomplete") else {}),
             "real": True}
@@ -198,6 +201,90 @@ async def qms_reverify_defect(defect_id: str, req: DefectReverify,
                     "the count of attested re-verifications in it." if _d_t2b.get("what_if") else
                     "By ruling it stays in the non-conformance rate, and it is counted in "
                     "`attested_reverifications` beside that rate.")))}
+
+
+# ── W853 (FU-1038; OWNER RULING 2026-10-12) - the two ways out of the loop that are not a re-verification ──
+
+class DefectRetired(BaseModel):
+    reason: str = Field(min_length=12, max_length=2000)
+    actor: str = "owner"                      # with sign-in off: typed, and recorded as unverified
+    retired_route: str | None = None          # the route it came through; needed when its label is still in use
+
+
+class DefectNotReproducible(BaseModel):
+    tried: str = Field(min_length=12, max_length=2000)   # what was done to reproduce it
+    actor: str = "owner"
+
+
+def _disposer(actor: str, user: dict | None) -> tuple[str, bool]:
+    """Who takes a defect out of the loop: the signed-in user; with sign-in off, the typed name, unverified."""
+    _u = user if isinstance(user, dict) else None
+    if _u and _u.get("username"):
+        return str(_u["username"]), True
+    return (str(actor or "").strip() or "owner"), False
+
+
+def _api_route_mounted(app: Any, path: str) -> bool:
+    for r in getattr(app, "routes", []) or []:
+        rx = getattr(r, "path_regex", None)
+        if rx is not None and str(getattr(r, "path", "")).startswith("/api/") and rx.match(path):
+            return True
+    return False
+
+
+@router.post("/qms/defects/{defect_id}/close-source-retired")
+async def qms_close_source_retired(defect_id: str, req: DefectRetired, request: Request,
+                                   user: dict | None = Depends(get_current_user)):
+    """Close an open or corrected defect because the surface that opened it has been retired, with the reason. Not a
+    re-verification: nothing in the rate moves. A defect whose label a live surface still uses closes this way only
+    when the route it came through is named and is not a route this platform mounts."""
+    _require_defect_access(defect_id, user)
+    target = next((d for d in qms.defects if d.get("id") == defect_id), None)
+    if not target or target.get("status") not in ("open", "corrected"):
+        raise HTTPException(status_code=404, detail=f"No OPEN or CORRECTED defect '{defect_id}'.")
+    label = str(target.get("label") or "")
+    live = label_is_live(label)
+    route = (req.retired_route or "").split("?")[0].strip() or None
+    if route is not None and not route.startswith("/api/"):
+        raise HTTPException(status_code=422, detail=(
+            "retired_route is the path the defect came through, starting /api/ - it is checked against the routes "
+            "this platform mounts"))
+    if route is not None and _api_route_mounted(request.app, route):
+        raise HTTPException(status_code=409, detail=(
+            f"'{route}' is mounted on this platform: the surface is live, so the defect is not closed as retired. "
+            f"Correct and re-verify it, or report it not reproducible with what was tried."))
+    if live is not False and route is None:
+        raise HTTPException(status_code=409, detail=(
+            (f"'{label}' is a label a live surface still opens defects under" if live else
+             f"'{label}' is composed at run time, so whether its surface is live cannot be read from it")
+            + ": name the route it came through (retired_route), which is checked against the routes this platform "
+              "mounts, or correct and re-verify it, or report it not reproducible."))
+    _fixed = f"the {len(LIVE_GATE_LABELS)} fixed labels live surfaces open a defect under"
+    check = "; ".join(s for s in (
+        (f"checked: '{route}' is not a route this platform mounts" if route else ""),
+        (f"checked: '{label}' is not among {_fixed}" if live is False else
+         f"its label '{label}' is " + ("still used by a live surface" if live else "composed at run time")
+         + ", so the route is what was checked")) if s)
+    by, verified = _disposer(req.actor, user)
+    d = qms.dispose_defect(defect_id, "closed_source_retired", req.reason, by, verified,
+                           source_check=check, retired_route=route)
+    if not d:
+        raise HTTPException(status_code=404, detail=f"No OPEN or CORRECTED defect '{defect_id}'.")
+    return {"defect": d, "source_check": check, "measured": False, "counted_in_rate": False,
+            "basis": d["closure"]["basis"]}
+
+
+@router.post("/qms/defects/{defect_id}/not-reproducible")
+async def qms_not_reproducible(defect_id: str, req: DefectNotReproducible,
+                               user: dict | None = Depends(get_current_user)):
+    """Report an open or corrected defect as not reproducible, with what was tried. Not a re-verification: nothing in
+    the rate moves, and the row keeps who reported it and when."""
+    _require_defect_access(defect_id, user)
+    by, verified = _disposer(req.actor, user)
+    d = qms.dispose_defect(defect_id, "not_reproducible", req.tried, by, verified)
+    if not d:
+        raise HTTPException(status_code=404, detail=f"No OPEN or CORRECTED defect '{defect_id}'.")
+    return {"defect": d, "measured": False, "counted_in_rate": False, "basis": d["closure"]["basis"]}
 
 
 class DCMSCommit(BaseModel):

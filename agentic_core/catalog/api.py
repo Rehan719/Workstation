@@ -195,8 +195,13 @@ def list_products() -> List[Dict[str, Any]]:
     have = {entry.name for entry in entries}
     entries += [PRODUCTS_DIR / slug for slug in SERVED_WITHOUT_DIRECTORY
                 if slug not in have and ROUTE_OVERRIDES.get(slug)]
-    #  W782 (FU-888) - an entry SAYS whether it has a directory: one listed from its route alone has none
-    return [{**_load_product(entry.name, entry), "has_directory": entry.is_dir()} for entry in sorted(entries)]
+    #  W782 (FU-888) - an entry SAYS whether it has a directory: one listed from its route alone has none.
+    #  W1035 - ordered by the name's own characters, which compare the same on every platform. A path orders by
+    #  its platform's rule (a Windows path compares lowercased), so Care and Religion sorted before
+    #  business_incubator on Linux and after it on Windows, and every list read from the catalogue had a second
+    #  order on the Owner's machine
+    return [{**_load_product(entry.name, entry), "has_directory": entry.is_dir()}
+            for entry in sorted(entries, key=lambda e: e.name)]
 
 
 def catalogue_counts(products: List[Dict[str, Any]]) -> Dict[str, int]:

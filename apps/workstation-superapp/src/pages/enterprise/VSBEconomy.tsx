@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { errorMessage } from '../../lib/api';   // W1015 - a caught failure, said as what it was
 import { useSearchParams } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import {
@@ -8,7 +9,8 @@ import {
 import { ServiceContracts } from './ServiceContracts';
 import { CharityDirectives } from './CharityDirectives';
 import { VenturePortfolioPanel, TransferPanel } from './EconomyOperations';
-import { complianceChip, fundingLabel } from '../../lib/api';
+import { complianceChip, fundingLabel, apiJson, bodyOrNull, bodyDetail } from '../../lib/api';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W928
 import { domainLabel } from '../../lib/taxonomy';   // W735 (FU-831)
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -55,6 +57,7 @@ const STAGE_LABEL: Record<string, string> = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const VSBEconomy: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W928 - a read that fails is said
   const [types, setTypes] = useState<EntityType[]>([]);
   // W298 - the economy surface is SCOPE-AWARE: manage the workstation apex OR any of YOUR
   // established VSBs (the backend was already fully per-VSB; only this UI pinned the apex).
@@ -100,19 +103,19 @@ export const VSBEconomy: React.FC = () => {
     const issuedFor = vsbId;
     return fetch(`/api/v1/economy/owner-payments?vsb_id=${encodeURIComponent(issuedFor)}`)
       .then(async r => {
-        const d = await r.json().catch(() => null);
+        const d = await bodyOrNull(r);
         if (issuedFor !== currentVsb.current) return;   // a late answer for another entity
         // an error answer, or a body that is not an account, is never stored as one (it rendered as 0 WST)
         if (!r.ok || !d || typeof d.balance_wst !== 'number') {
           setPay(null);
-          setPayLoadErr(typeof d?.detail === 'string' ? d.detail : `Could not load the owner payments (HTTP ${r.status}).`);
+          setPayLoadErr(bodyDetail(d, `Could not load the owner payments (HTTP ${r.status}).`));   // W1013 - a field check by its field
           return;
         }
         setPayLoadErr('');
         setPay(d);
-      }).catch(() => {
+      }).catch((e: unknown) => {   // W1047 - with what happened: a call that reached no server said nothing of it
         if (issuedFor !== currentVsb.current) return;
-        setPay(null); setPayLoadErr('Could not load the owner payments — showing nothing rather than zero balances.');
+        setPay(null); setPayLoadErr(`Could not load the owner payments, so nothing is shown rather than zero balances: ${errorMessage(e)}`);
       });
   };
   // §7 — the live financial Board Pack (capstone statement)
@@ -124,14 +127,14 @@ export const VSBEconomy: React.FC = () => {
     if (issuedFor === currentVsb.current) setBpLoading(true);
     fetch(`/api/v1/economy/board-pack?vsb_id=${encodeURIComponent(issuedFor)}&entity_type=${entity}`)
       .then(async r => {
-        const d = await r.json().catch(() => null);
+        const d = await bodyOrNull(r);
         if (issuedFor !== currentVsb.current) return;   // a late answer for another entity
-        if (!r.ok || !d) { setBp(null); setBpLoadErr(typeof d?.detail === 'string' ? d.detail : `Could not load the board pack (HTTP ${r.status}).`); return; }
+        if (!r.ok || !d) { setBp(null); setBpLoadErr(bodyDetail(d, `Could not load the board pack (HTTP ${r.status}).`)); return; }   // W1013 - a field check by its field
         setBpLoadErr('');
         setBp(d);
-      }).catch(() => {
+      }).catch((e: unknown) => {   // W1047 - with what happened
         if (issuedFor !== currentVsb.current) return;
-        setBp(null); setBpLoadErr('Could not load the board pack — showing nothing rather than stale figures.');
+        setBp(null); setBpLoadErr(`Could not load the board pack, so nothing is shown rather than stale figures: ${errorMessage(e)}`);
       }).finally(() => { if (issuedFor === currentVsb.current) setBpLoading(false); });
   };
   // a transfer that finishes after an entity switch refreshes the pack of the entity ON SCREEN, not the one its
@@ -140,15 +143,17 @@ export const VSBEconomy: React.FC = () => {
   loadBoardPackRef.current = loadBoardPack;
   // §4 — the established living VSB enterprises the organism autonomously tends
   const [living, setLiving] = useState<any>(null);
-  // W395 — these loads used to fail silently (`.catch(() => {})`), leaving the page's headline
+  // W395 — these loads used to fail silently (an empty catch), leaving the page's headline
   // figures simply absent with no indication anything had gone wrong. An empty panel that means
   // "the request failed" is indistinguishable from one that means "there is no data".
   const [loadErr, setLoadErr] = useState('');
   const loadLiving = () =>
-    fetch('/api/v1/economy/living-vsbs').then(r => r.json()).then(setLiving).catch(() => setLoadErr('Could not load the living entities — showing nothing rather than stale figures.'));
+    //  W1047 - with the route's reason: every refusal reached this fixed sentence with what it said dropped
+    apiJson('/api/v1/economy/living-vsbs').then(setLiving)
+      .catch((e: unknown) => setLoadErr(`Could not load the living entities, so nothing is shown rather than stale figures: ${errorMessage(e)}`));
 
   useEffect(() => {
-    fetch('/api/v1/economy/entity-types').then(r => r.json()).then(d => setTypes(d.types ?? [])).catch(() => {});
+    apiJson('/api/v1/economy/entity-types').then(d => setTypes(d.types ?? [])).catch(noteRead('the entity types'));
     loadOwnerPay();
     loadBoardPack();
     loadLiving();
@@ -175,15 +180,16 @@ export const VSBEconomy: React.FC = () => {
     setWfMsg(''); setWfErr([]);
     fetch(`/api/v1/economy/waterfall?vsb_id=${encodeURIComponent(vsbId)}&entity_type=${entity}`)
       .then(async r => {
-        const d = await r.json().catch(() => null) as WaterfallState | null;
+        const d = await bodyOrNull(r) as WaterfallState | null;
         if (!live) return;
         if (!r.ok || !d || !Array.isArray(d.stages) || !d.waterfall) {
-          setWfLoadErr(`Could not load the waterfall (HTTP ${r.status}) — showing nothing rather than another entity's split.`);
+          //  W1025 - with the server's reason when it gave one
+          setWfLoadErr(`Could not load the waterfall (HTTP ${r.status}): ${bodyDetail(d, 'no reason given')} — showing nothing rather than another entity's split.`);
           return;
         }
         setWf(d);
         setWfDraft(Object.fromEntries(d.stages.map(s => [s, Math.round((d.waterfall[s] ?? 0) * 100)])));
-      }).catch(() => { if (live) setWfLoadErr("Could not load the waterfall — showing nothing rather than another entity's split."); });
+      }).catch((e: unknown) => { if (live) setWfLoadErr(`Could not load the waterfall, so nothing is shown rather than another entity's split: ${errorMessage(e)}`); });   // W1047
     return () => { live = false; };
   }, [entity, vsbId]);
 
@@ -202,12 +208,16 @@ export const VSBEconomy: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ vsb_id: vsbId, entity_type: entity, proportions }),
       });
-      const d = await r.json();
-      if (!r.ok) { setWfErr((d?.detail?.violations) || (typeof d?.detail === 'string' ? [d.detail] : [`HTTP ${r.status}`])); setWfSaving(false); return; }
+      //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
+      const d = r.ok ? await r.json() : await bodyOrNull(r);
+      if (!r.ok) { setWfErr((d?.detail?.violations) || [bodyDetail(d, `HTTP ${r.status}`)]); setWfSaving(false); return; }   // W1013 - a field check by its field
       setWf(prev => prev ? { ...prev, waterfall: d.waterfall, source: d.source } : prev);
       setWfDraft(Object.fromEntries(Object.entries(d.waterfall as Record<string, number>).map(([k, v]) => [k, Math.round(v * 100)])));
-      setWfMsg('Saved — effective from the next cycle (virtual; logged to the UEG).');
-    } catch (e: any) { setWfErr([e?.message ?? String(e)]); }
+      //  W790 (FU-1159) - whether the change reached the constitutional log is the route's answer, not this page's
+      setWfMsg(d.ueg_logged === false
+        ? `Saved — effective from the next cycle (virtual). NOT logged to the UEG: ${d.ueg_basis ?? 'the log write failed'}.`
+        : 'Saved — effective from the next cycle (virtual; logged to the UEG).');
+    } catch (e: any) { setWfErr([errorMessage(e)]); }
     setWfSaving(false);
   };
 
@@ -222,7 +232,7 @@ export const VSBEconomy: React.FC = () => {
       });
       if (!r.ok) {
         // W468 — the server says why (e.g. a ledger that could not be read, and that nothing was posted); a bare status hid it
-        const fail = await r.json().catch(() => null);
+        const fail = await bodyOrNull(r);
         // a refused input (422) carries a list of reasons, not a string
         const reasons = Array.isArray(fail?.detail)
           ? fail.detail.map((d: any) => d?.msg && `${Array.isArray(d.loc) && d.loc.length ? `${d.loc[d.loc.length - 1]}: ` : ''}${d.msg}`)
@@ -240,7 +250,7 @@ export const VSBEconomy: React.FC = () => {
       setHold(d.cycle == null ? (d.governance ?? { status: 'no_cycle', note: 'The cycle returned no result.' }) : null);
       loadOwnerPay();   // refresh the ledger (the cycle's report says whether the Owner's §4 share was recorded)
       loadBoardPack();  // refresh the live financial Board Pack
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+    } catch (e: any) { setError(errorMessage(e)); }
     setRunning(false);
   };
 
@@ -260,17 +270,17 @@ export const VSBEconomy: React.FC = () => {
       // W503 (FU-059) — this parsed the body as JSON BEFORE testing r.ok and with no catch, so a
       // non-JSON error body (a proxy's HTML 502, say) threw and the founder was shown a JSON syntax
       // error instead of why the close was refused.
-      const d = await r.json().catch(() => null);
+      const d = await bodyOrNull(r);
       if (!r.ok) {
-        setCloseErr((typeof d?.detail === 'string' && d.detail)
-          || `HTTP ${r.status} — the server's reply could not be read; the books were NOT closed.`);
+        setCloseErr(bodyDetail(d,   // W1013 - a field check by its field; "could not be read" only when it could not
+          `HTTP ${r.status} — the server's reply could not be read; the books were NOT closed.`));
         setClosing(false); return;
       }
       if (!d) { setCloseErr('The close returned a reply that could not be read — check the books before retrying.'); setClosing(false); return; }
       setCloseMsg(`Books closed — surplus after distributions ${(d.close?.net_profit_wst ?? 0).toLocaleString()} WST → retained earnings ${(d.retained_earnings_wst ?? 0).toLocaleString()} WST (the waterfall's pots are counted as spent in this chart). `
         + `Next period starts clean.${d.ueg_logged ? ' UEG-logged.' : ' (UEG event did NOT land — logging was unavailable.)'}`);
       loadBoardPack();
-    } catch (e: any) { setCloseErr(e?.message ?? String(e)); }
+    } catch (e: any) { setCloseErr(errorMessage(e)); }
     setClosing(false);
   };
 
@@ -282,15 +292,15 @@ export const VSBEconomy: React.FC = () => {
         body: JSON.stringify({ vsb_id: vsbId, amount: payoutAmt }),
       });
       // a refusal's body may be absent or structured (a 422 carries a list): it is never rendered as a child
-      const d = await r.json().catch(() => null);
+      const d = await bodyOrNull(r);
       if (!r.ok || !d) {
-        setPayErr(typeof d?.detail === 'string' ? d.detail : `HTTP ${r.status} — the payout request was refused; nothing was paid.`);
+        setPayErr(bodyDetail(d, `HTTP ${r.status} — the payout request was refused; nothing was paid.`));   // W1013 - a field check by its field
         setPayingOut(false); return;
       }
       const left = typeof d.remaining_balance_wst === 'number' ? d.remaining_balance_wst.toLocaleString() : 'not stated';
       if (d.applied === true) {
         // PAID: an approval was spent for this payout. Who was paid and on what basis are the server's words.
-        setPayMsg(`Virtual payout applied — released by Change Control ${String(d.cca_id)}. Payee: ${d.payee_recorded ? String(d.payee) : 'none recorded on this account'} (${String(d.payee_basis)}). No real money moved. Remaining ${left} WST. Audit event: ${String(d.audit_event)}.`);
+        setPayMsg(`Virtual payout applied — released by Change Control ${String(d.cca_id)}. Payee: ${d.payee_recorded ? String(d.payee) : 'none - the entity has no owner record'} (${String(d.payee_basis)}). No real money moved. Remaining ${left} WST. Audit event: ${String(d.audit_event)}.`);
         setPayoutAmt(0);
       } else {
         // HELD or REJECTED: nothing was paid. The amount stays in the box, so the same payout can be requested
@@ -299,17 +309,18 @@ export const VSBEconomy: React.FC = () => {
           basis: String(d.governance?.basis ?? d.status_label ?? 'Held — not paid.') });
       }
       loadOwnerPay();
-    } catch (e: any) { setPayErr(e?.message ?? String(e)); }
+    } catch (e: any) { setPayErr(errorMessage(e)); }
     setPayingOut(false);
   };
 
   return (
     <div className="space-y-10 pb-24">
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">VSB · Living Economy</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Economic Metabolism</h1>
         {loadErr && (
-          <p role="alert" className="text-[10px] font-bold text-vital mt-2">{loadErr}</p>
+          <p role="alert" className="text-[10px] font-bold text-vital mt-2" data-testid="living-error">{loadErr}</p>
         )}
         {bpLoadErr && (
           <p role="alert" className="text-[10px] font-bold text-vital mt-2" data-testid="board-pack-error">{bpLoadErr}</p>
@@ -474,6 +485,12 @@ export const VSBEconomy: React.FC = () => {
             <Metric label="Paid out (virtual)" value={`${(pay.paid_out_total_wst ?? 0).toLocaleString()} WST`} />
             <Metric label="Balance" value={`${(pay.balance_wst ?? 0).toLocaleString()} WST`} tone="good" />
           </div>
+          {/* W880 (FU-1009) - the owner's share on the book of record beside what this account accrued */}
+          {pay.owner_share_reconciliation?.basis && (
+            <p data-testid="owner-share-reconciliation" className="text-[9px] text-slate-400 mt-2 leading-snug">
+              {String(pay.owner_share_reconciliation.basis)}
+            </p>
+          )}
           <div className="flex items-end gap-3 mt-5 flex-wrap">
             <div className="flex-1 min-w-[160px]">
               <label className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2 block">Virtual payout (WST)</label>
@@ -490,9 +507,20 @@ export const VSBEconomy: React.FC = () => {
           {payMsg && <p className="text-emerald-400 text-[10px] font-bold mt-2 flex items-center gap-1.5"><ShieldCheck size={12} /> {payMsg}</p>}
           {payErr && <p className="text-vital text-[10px] font-bold mt-2 flex items-center gap-1.5"><AlertCircle size={12} /> {payErr}</p>}
           <p className="text-[9px] text-slate-500 mt-2" data-testid="owner-payout-governed">
-            {'Every payout is held at Change Control for the decision of a person, whatever its amount. A request pays nothing; once it is approved there, request the same amount again to apply it. The payee is the recorded owner of the account: '}
-            {pay.owner_recorded ? String(pay.owner) : 'none is recorded on this account'}.
+            {'Every payout is held at Change Control for the decision of a person, whatever its amount. A request pays nothing; once it is approved there, request the same amount again to apply it. The payee is the owner the entity\'s record names, not the name stored on the account: '}
+            <span title={pay.owner_basis}>{pay.owner_recorded ? String(pay.owner) : 'none - the entity has no owner record'}</span>.
+            {/* W860 (FU-1007) - the account's own name, kept as history */}
+            {pay.account_name && pay.account_name !== pay.owner && (
+              <span data-testid="owner-payout-account-name"> The account's own name, {String(pay.account_name)}, is kept as history and is not paid.</span>
+            )}
           </p>
+          {/* W813 (FU-887) - the recorded owner, checked against the living registry: a disagreement is said here,
+              and the account is not rewritten */}
+          {pay.owner_matches_registry === false && (
+            <p className="text-amber-400 text-[10px] font-bold mt-2" data-testid="owner-payout-registry-differs">
+              {pay.owner_registry_basis}
+            </p>
+          )}
           {payHold && (
             <p role="status" data-testid="owner-payout-held" className="text-amber-400 text-[10px] font-bold mt-2">
               {payHold.status === 'rejected' ? 'Rejected' : 'Held'} — NOT PAID. {payHold.basis}
@@ -754,17 +782,21 @@ export const VSBEconomy: React.FC = () => {
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
               <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-1">Charitable giving (§5)</p>
               <p className="text-sm font-black text-aura">{(bp.charitable_giving?.total_given_wst ?? 0).toLocaleString()} WST</p>
-              <p className="text-[9px] text-slate-600 mt-0.5">nutrient-return loop</p>
+              {/* W804 (FU-985 R6[5]) - the figure is an allocation in virtual WST, and the pack says so */}
+              <p data-testid="pack-charity-label" className="text-[9px] text-slate-600 mt-0.5" title={bp.charitable_giving?.basis ?? ''}>
+                {bp.charitable_giving?.label ?? 'allocated (virtual)'}
+              </p>
             </div>
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
               <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-1">§8 organism posture</p>
               <p className="text-sm font-black text-white capitalize">{bp.organism_posture?.mode ?? '—'}</p>
               {/* W494 (refutation) - this printed the BLENDED composite as plain "health NN%". The blend
                   is held up by a defaulted self-healing term and a simulated ATP term, so the measured
-                  figure and the basis travel with it (clause 3). ATP is a simulation in every state. */}
+                  figure and the basis travel with it (clause 3). ATP is a simulation in every state, so since W902 the
+                  energy shown is the work budget's. */}
               <p className="text-[9px] text-slate-500 mt-0.5" data-testid="vsb-organism-posture"
                  title={bp.organism_posture?.composite_health_basis}>
-                ATP {bp.organism_posture?.atp_ratio != null ? `${Math.round(bp.organism_posture.atp_ratio * 100)}% (sim)` : '—'}
+                work budget left {bp.organism_posture?.energy_ratio != null ? `${Math.round(bp.organism_posture.energy_ratio * 100)}%` : '—'}
                 {' · '}
                 {bp.organism_posture?.composite_health_measured_only != null
                   ? `measured health ${Math.round(bp.organism_posture.composite_health_measured_only * 100)}%`

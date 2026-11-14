@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W495 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W495 (P1.18, the residue batch) — a score nothing computed is not a fitness, a switch wired to
 // nothing is not a parameter, and a count map is not a token.
 //   node scripts/_w495_probe.mjs http://127.0.0.1:8100

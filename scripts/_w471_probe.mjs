@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W471 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W471 (P1.14 Board pack + Chief's Opening honesty) — in a real browser against the built bundle on a FRESH backend
 // (AI_DISABLE_LOCAL=1: every generation is the native floor). No seed.
 //   node scripts/_w471_probe.mjs http://127.0.0.1:8080

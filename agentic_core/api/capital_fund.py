@@ -36,6 +36,54 @@ router = APIRouter(prefix="/api/v1", tags=["capital-fund"])
 _FUND_STORE = data_path("capital_fund.json")
 
 
+#  W814 (FU-877) - THE SECOND WITNESS. A missing store was read as first creation, so a deleted fund came back as a
+#  new one of ten million and the next write made that permanent. This record says only THAT the fund was created
+#  and when - never a balance - so a missing store can be told apart from one that never existed. It sits beside
+#  the store (found from it, so a store moved for isolation takes its record with it).
+def _created_record_path() -> Path:
+    return _FUND_STORE.with_name(_FUND_STORE.stem + "_created.json")
+
+
+def _created_record() -> dict | None:
+    """The record that the fund was created, or None when there is none. A record that exists and cannot be read
+    is still a witness: the fund was created, and only its date is unknown."""
+    p = _created_record_path()
+    if not p.exists():
+        return None
+    try:
+        d = json.loads(p.read_text(encoding="utf-8"))
+        return d if isinstance(d, dict) else {"created_at": None}
+    except Exception:
+        return {"created_at": None, "record_unreadable": True}
+
+
+def _record_created(created_at: str | None) -> None:
+    """Write the record if it is not there. Best-effort and never raises: it runs after a save or a whole read
+    has already succeeded, and the fund's own answer must not fail on its witness."""
+    try:
+        p = _created_record_path()
+        if p.exists():
+            return
+        atomic_write_json(p, {
+            "created_at": created_at or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "basis": ("the Capital Fund's store existed by this time. This record holds no balance: it "
+                      "only lets a missing store be told apart from one that never existed (W814, FU-877)")})
+    except Exception:
+        pass
+
+
+def _missing_store_problem(record: dict) -> str:
+    _when = (f" on {record['created_at']}" if record.get("created_at") else
+             " (its record exists and could not be read, so when is not known)" if record.get("record_unreadable")
+             else "")
+    _q = sorted(_FUND_STORE.parent.glob(_FUND_STORE.stem + ".corrupt-*"))
+    _qtxt = f"; a quarantined copy is at {_q[-1].name}" if _q else ""
+    return (f"the capital fund was created{_when} (recorded in {_created_record_path().name}) and its store is "
+            f"not there: it was deleted or moved{_qtxt}. No balance is shown and none is reseeded - restore the "
+            f"store, or remove {_created_record_path().name} to seed a new fund deliberately")
+
+
 def _load_fund(strict: bool = False) -> dict:
     # W444 (comment corrected by the refuter round: load_json_tolerant recovers a truncated
     # tail but does NOT quarantine) — on unrecoverable corruption the corrupt file is now
@@ -54,8 +102,16 @@ def _load_fund(strict: bool = False) -> dict:
     # allocated, available - and a dropped tail is dropped ALLOCATIONS, which makes the fund read as
     # having more available than it has. A writer refuses; a reader is told, on the dict it reads.
     from agentic_core.config import read_json_reported
+    #  W814 (FU-877) - a missing store that the record says was created is refused to readers and writers alike
+    if not _FUND_STORE.exists():
+        _rec814 = _created_record()
+        if _rec814 is not None:
+            from agentic_core.config import StoreUnavailable
+            raise StoreUnavailable(_FUND_STORE, _missing_store_problem(_rec814))
     d, _why = read_json_reported(_FUND_STORE, None) if _FUND_STORE.exists() else (None, None)
     if isinstance(d, dict):
+        if not _why:
+            _record_created(d.get("created_at"))     # W814 - a store made before the record gets one
         if _why:
             if strict:
                 from agentic_core.config import StoreUnavailable
@@ -101,6 +157,7 @@ def _load_fund(strict: bool = False) -> dict:
 def _save_fund(fund: dict) -> None:
     _FUND_STORE.parent.mkdir(parents=True, exist_ok=True)
     atomic_write_json(_FUND_STORE, fund)
+    _record_created(fund.get("created_at"))          # W814 (FU-877) - the fund now exists, and that is recorded
 
 
 def contribute_from_cycle(vsb_id: str, amount_wst: float) -> dict:
@@ -139,6 +196,60 @@ def contribute_from_cycle(vsb_id: str, amount_wst: float) -> dict:
     return entry
 
 
+def set_aside_reconciliation() -> dict:
+    """W876 (FU-1006) - WHERE THE SHARES CYCLES SET ASIDE FOR THE FUND WENT, read from the stores and never guessed.
+
+    Every ledger's capital_fund pot is what its cycles set aside for the fund; the fund keeps the running total it
+    received (cycle contributions, retirements included). Read from the code, a share set aside and not received has
+    three possible causes: the scope was not a registered entity, so its cycle was a simulation whose share is never
+    paid in (the Owner's ruling of 2026-10-10, said on each such cycle since W658); the cycle ran before W294, when the
+    stage only wrote a ledger row; or the write failed, which was silent until W814 and is said on the cycle since.
+    The first is counted here by entity, as the roster reads now. The other two cannot be told apart from the stores,
+    so what remains is said as not received, with both causes named."""
+    from agentic_core.economy import ledger as _led876
+    from agentic_core.economy.living_vsbs import is_registered as _reg876
+    rows, unreadable = [], []
+    for f in sorted(_led876._STORE.glob("*_ledger.json")):
+        vsb = f.name[: -len("_ledger.json")]
+        try:
+            pot = round(float((((json.loads(f.read_text(encoding="utf-8")) or {}).get("balances") or {})
+                               .get("capital_fund", 0.0)) or 0.0), 2)
+        except Exception:                                # noqa: BLE001 - counted and named, never skipped silently
+            unreadable.append(vsb)
+            continue
+        if pot <= 0:
+            continue
+        try:
+            reg = bool(_reg876(vsb))
+        except Exception:                                # the roster could not be read: not known, never "no"
+            reg = None
+        rows.append({"vsb_id": vsb, "set_aside_wst": pot, "registered": reg})
+    try:
+        received = round(float((_load_fund() or {}).get("cycle_contributions_total_wst", 0) or 0), 2)
+    except Exception as _e876:                           # noqa: BLE001 - said
+        return {"known": False, "basis": f"the fund could not be read ({type(_e876).__name__}), so nothing is reconciled"}
+    set_aside = round(sum(r["set_aside_wst"] for r in rows), 2)
+    sims = round(sum(r["set_aside_wst"] for r in rows if r["registered"] is False), 2)
+    unknown = round(sum(r["set_aside_wst"] for r in rows if r["registered"] is None), 2)
+    registered = round(set_aside - sims - unknown, 2)
+    not_received = round(max(registered - received, 0.0), 2)
+    basis = (f"Cycles set aside {set_aside:,.2f} WST for the fund across {len(rows)} ledger(s), and the fund recorded "
+             f"{received:,.2f} WST received. {sims:,.2f} WST was set aside by scopes that are not registered entities: "
+             f"simulations, whose share is never paid in (ruled 2026-10-10). {registered:,.2f} WST was set aside by "
+             f"registered entities, as the roster reads now, and {not_received:,.2f} WST of it is not recorded as "
+             f"received: set aside before W294, when nothing was paid in, or a write that failed silently before W814. "
+             f"The stores cannot tell those two apart.")
+    if unknown:
+        basis += f" For {unknown:,.2f} WST the roster could not be read, so whether its scope is registered is not known."
+    if unreadable:
+        basis += f" {len(unreadable)} ledger(s) could not be read and are not counted: {', '.join(unreadable[:10])}."
+    return {"known": True, "set_aside_wst": set_aside, "received_wst": received,
+            "set_aside_by_simulations_wst": sims, "set_aside_by_registered_wst": registered,
+            "registration_not_known_wst": unknown, "registered_not_received_wst": not_received,
+            "ledgers_counted": len(rows), "ledgers_unreadable": unreadable,
+            "largest": sorted(rows, key=lambda r: -r["set_aside_wst"])[:10], "basis": basis}
+
+
 
 # ── Capital Fund ──────────────────────────────────────────────────────────────
 
@@ -170,15 +281,29 @@ def _organism_posture() -> dict:
                         f"a blend; {round(_unmeasured_weight * 100)}% of it is not measured "
                         f"({', '.join(sorted(_unmeasured))})" if _unmeasured else
                         "every term in this figure is measured")),
-                "atp_ratio": (ctx.get("metabolic") or {}).get("atp_ratio")}
+                "atp_ratio": (ctx.get("metabolic") or {}).get("atp_ratio"),
+                #  W901 (FU-1112, S18.1) - the figure derived from the work budget, and whether a threshold reads it
+                "energy_ratio": (ctx.get("metabolic") or {}).get("energy_ratio"),
+                "energy_acts": bool((ctx.get("metabolic") or {}).get("energy_acts")),
+                "energy_basis": (ctx.get("metabolic") or {}).get("energy_basis")}
     except Exception:
         return {}
+
+
+def _load_fund_or_503() -> dict:
+    """W814 (FU-877) - a reader's load: a fund that cannot be known answers 503 in the store's own words, never a
+    seeded pool presented as this fund."""
+    from agentic_core.config import StoreUnavailable
+    try:
+        return _load_fund()
+    except StoreUnavailable as e:
+        raise HTTPException(status_code=503, detail=f"{e}")
 
 
 @router.get("/fund/status")
 async def fund_status():
     """Return Capital Fund health and overview, including the living organism's §8 posture."""
-    fund = _load_fund()
+    fund = _load_fund_or_503()
     allocation_count = len(fund.get("allocations", []))
     utilisation = round(fund["allocated"] / fund["total_capital"] * 100, 1) if fund["total_capital"] else 0
     # §12 (W496, FU-119a) - the page captioned this "the real capital fund", and 10,000,000 of it is a
@@ -206,6 +331,8 @@ async def fund_status():
         "seed_capital_wst": _seed,
         "contributed_wst": _contrib,
         "capital_basis": _basis,
+        #  W876 (FU-1006) - what cycles set aside for the fund, what it received, and where the rest went
+        "set_aside_reconciliation": set_aside_reconciliation(),
         "fund_health": "HEALTHY" if utilisation < 80 else "CONSTRAINED" if utilisation < 95 else "DEPLETED",
         # the health is a ratio of allocations to the POOL, and the pool is mostly the seed - so on a
         # freshly seeded store it cannot come out anything but HEALTHY
@@ -343,6 +470,31 @@ def _request_view(c: dict, allocation: dict | None) -> dict:
     }
 
 
+def _reversal_requests() -> tuple[list | None, str]:
+    """W861 (FU-1005) - every reversal request, read from the Change Control records the fund's gate filed for it:
+    its state, the allocation, the amount, the reason, who asked and when. None, with the reason, when the records
+    could not be read: an unreadable list is never answered as an empty one."""
+    try:
+        from agentic_core.api import change_control as _cca
+        from agentic_core.economy import governance as _gov
+        rows = []
+        for x in _cca._list_changes():
+            if not str(x.get("title") or "").startswith(_gov.FUND_REVERSAL_HOLD_TITLE_PREFIX):
+                continue
+            c = _cca._load_change(x["cca_id"]) or {}
+            if (c.get("vsb_id") != _gov.FUND_ENTITY_ID or not str(c.get("submitted_by") or "").startswith(
+                    "economy:" + _gov.FUND_REVERSAL_SOURCE_PREFIX)):
+                continue
+            rq = c.get("reversal_request") if isinstance(c.get("reversal_request"), dict) else {}
+            rows.append({"cca_id": c.get("cca_id"), "status": c.get("status"), "allocation_id": c.get("counterparty"),
+                         "amount": c.get("est_distributable_wst"), "reason": rq.get("reason"),
+                         "requested_by": rq.get("requested_by"), "requested_at": rq.get("requested_at")})
+        return rows, ("every reversal request the fund's gate filed, as its Change Control record stands now; a "
+                      "request moves nothing until it is approved and the same reversal is requested again")
+    except Exception as _err:                            # noqa: BLE001 - said, never an empty list
+        return None, f"the reversal requests could not be read ({type(_err).__name__})"
+
+
 def _fund_requests(fund: dict) -> tuple[list | None, str]:
     """Every allocation request, newest first, read from the Change Control records the gate filed for the
     fund. (requests, basis) - requests is None, with the reason, when the records could not be read: an
@@ -408,6 +560,21 @@ async def allocate_capital(req: AllocateRequest, user: dict | None = Depends(get
     return _allocate_governed(req, fund, user if isinstance(user, dict) else None)
 
 
+def _energy_caution(posture: dict, amount: float, available: float) -> "str | None":
+    """§8 survival instinct (advisory, virtual WST): restraint is flagged when the organism is energy-depleted and the
+    tranche is a large fraction of the capital available BEFORE this draw. It decides nothing. W901 (FU-1112, S18.1):
+    the energy is the work budget's remaining share while the budget is switched on, and the simulated ATP while it
+    is off, and the caution names which."""
+    acts = bool(posture.get("energy_acts")) and posture.get("energy_ratio") is not None
+    energy = posture.get("energy_ratio") if acts else posture.get("atp_ratio")
+    frac = amount / available if available else 1.0
+    if isinstance(energy, (int, float)) and energy < 0.3 and frac > 0.25:
+        what = "work budget left" if acts else "simulated ATP"
+        return (f"§8 survival instinct: the organism is energy-depleted ({what} {energy:.0%}); this tranche is "
+                f"{frac:.0%} of available capital. Consider a smaller tranche or deferring until recovery.")
+    return None
+
+
 def _allocate_governed(req: "AllocateRequest", fund: dict, user: dict | None):
     import math
     from agentic_core.api import change_control as _cca
@@ -447,12 +614,7 @@ def _allocate_governed(req: "AllocateRequest", fund: dict, user: dict | None):
     # the organism is energy-depleted and the tranche is a large fraction of remaining capital. It decides
     # nothing; the decision is Change Control's.
     posture = _organism_posture()
-    atp = posture.get("atp_ratio")
-    frac = amount / fund["available"] if fund["available"] else 1.0   # of capital available BEFORE this draw
-    caution = None
-    if isinstance(atp, (int, float)) and atp < 0.3 and frac > 0.25:
-        caution = (f"§8 survival instinct: the organism is energy-depleted (ATP {atp:.0%}); this tranche is "
-                   f"{frac:.0%} of available capital. Consider a smaller tranche or deferring until recovery.")
+    caution = _energy_caution(posture, amount, fund["available"])     # W901 (FU-1112) - of capital BEFORE this draw
 
     #  THE GOVERNED PATH - the economy's own gate, with the fund as the actor and the recipient as the
     #  counterparty. It returns (held, consumed): held -> nothing may run; consumed -> an approval was spent
@@ -628,15 +790,133 @@ def _allocate_governed(req: "AllocateRequest", fund: dict, user: dict | None):
     }
 
 
+#  W861 (FU-1005; OWNER RULING 2026-10-12) - AN ALLOCATION IS REVERSED BY A RECORDED REVERSAL. A reversal is a governed
+#  action of its own class: requested with a reason, held at Change Control for a person's explicit decision whatever
+#  its amount, applied once when it is requested again after approval. Applying it marks the allocation reversed - with
+#  its reason, who asked, when and the change that released it - and returns its amount to the fund's available capital.
+#  The allocation row is kept; nothing is deleted. Virtual WST only.
+class ReverseAllocationRequest(BaseModel):
+    reason: str = Field(min_length=12, max_length=2000)
+
+
+@router.post("/fund/allocations/{allocation_id}/reverse")
+async def reverse_allocation(allocation_id: str, req: ReverseAllocationRequest,
+                             user: dict | None = Depends(get_current_user)):
+    """Request the reversal of an ACTIVE allocation. Held at Change Control until a person approves it; applied -
+    once - when the same reversal is requested again and the economy's gate spends that approval."""
+    from agentic_core.api import change_control as _cca
+    from agentic_core.auth.core import auth_enabled, request_owner_id
+    from agentic_core.config import StoreUnavailable, store_lock as _sl
+    from agentic_core.economy import governance as _gov
+    _u = user if isinstance(user, dict) else None
+    _shown = str(allocation_id)[:80]
+    with _sl(_FUND_STORE):
+        try:
+            fund = _load_fund(strict=True)
+        except StoreUnavailable as e:
+            raise HTTPException(status_code=503, detail=f"{e}. Nothing was reversed.")
+    target = next((a for a in fund.get("allocations", []) if a.get("allocation_id") == allocation_id), None)
+    if target is None:
+        raise HTTPException(status_code=404, detail=f"No allocation '{_shown}' is recorded in the fund.")
+    if target.get("status") != "active":
+        raise HTTPException(status_code=409, detail=(
+            f"Allocation '{_shown}' is {target.get('status')!r}, not active, so there is nothing to reverse."))
+    amount = round(float(target.get("amount") or 0.0), 2)
+    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    requester = request_owner_id(_u, "single-user-mode")
+    requester_verified = bool(auth_enabled() and _u)
+    held, consumed = _gov._materiality_gate(_gov.FUND_ENTITY_ID, amount,
+                                            source=_gov.FUND_REVERSAL_SOURCE_PREFIX + allocation_id,
+                                            counterparty=allocation_id)
+    if held is not None:
+        cca_id = held.get("cca_id")
+        rejected = held.get("status") == "rejected_by_change_control"
+        request_recorded = None
+        if cca_id and not rejected:
+            asked = {"allocation_id": allocation_id, "amount": amount, "reason": req.reason,
+                     "project_id": target.get("project_id"), "project_name": target.get("project_name"),
+                     "requested_by": requester, "requested_by_verified": requester_verified, "requested_at": now}
+
+            def _note(fresh: dict) -> None:
+                if fresh.get("status") == "submitted":
+                    fresh["reversal_request"] = asked
+            try:
+                _cca._update_change(cca_id, _note)
+                request_recorded = "recorded"
+            except Exception as _note_err:               # noqa: BLE001 - said, never silent
+                request_recorded = f"NOT recorded ({type(_note_err).__name__})"
+        _basis = (
+            (f"REJECTED, NOT REVERSED: Change Control record {cca_id} rejected this reversal. The allocation stays "
+             f"active and the fund is unchanged.") if rejected else
+            (f"HELD, NOT REVERSED: this request is Change Control record {cca_id}. Nothing moves until an explicit "
+             f"decision approves it and the reversal is then requested again; the allocation stays active and the "
+             f"fund's available figure is unchanged at {fund['available']} {fund.get('currency')}.") if cca_id else
+            ("HELD, NOT REVERSED: the governed path could not file or read a hold for this reversal, and a reversal "
+             "is never applied without one. The fund is unchanged."))
+        return {"allocation_id": allocation_id, "applied": False, "status": "rejected" if rejected else "held",
+                "amount": amount, "cca_id": cca_id, "available": fund["available"],
+                "request_recorded": request_recorded, "basis": _basis, "real_money_moved": False}
+    if not consumed or not consumed.get("cca_id"):
+        raise HTTPException(status_code=503, detail=(
+            "The governed path returned neither a hold nor an approval for this reversal, so nothing was reversed: "
+            "a reversal is applied only against an approved Change Control record."))
+    cca_id, consume_id = consumed["cca_id"], consumed.get("consume_id")
+
+    def _give_back(reason: str) -> str:
+        _r = _gov._restore_consumed_approval(consumed, vsb_id=_gov.FUND_ENTITY_ID, reason=reason)
+        return (f"the approval {cca_id} was given back and can be applied again" if _r == "restored" else
+                f"the approval {cca_id} was NOT given back ({_r}) and stays spent; a new request files a new hold")
+
+    with _sl(_FUND_STORE):
+        try:
+            fresh = _load_fund(strict=True)
+        except StoreUnavailable as e:
+            raise HTTPException(status_code=503, detail=(
+                f"{e}. Nothing was reversed; " + _give_back("the fund store could not be read whole") + "."))
+        row = next((a for a in fresh.get("allocations", []) if a.get("allocation_id") == allocation_id), None)
+        if row is None or row.get("status") != "active":
+            raise HTTPException(status_code=409, detail=(
+                f"Allocation '{_shown}' is no longer active, so nothing was reversed; "
+                + _give_back("the allocation is no longer active") + "."))
+        row["status"] = "reversed"
+        row["reversal"] = {"reason": req.reason, "amount": amount, "reversed_at": now, "requested_by": requester,
+                           "requested_by_verified": requester_verified, "cca_id": cca_id, "consume_id": consume_id}
+        fresh["allocated"] = round(float(fresh["allocated"]) - amount, 2)
+        fresh["available"] = round(float(fresh["available"]) + amount, 2)
+        try:
+            _save_fund(fresh)
+        except Exception as _save_err:                   # noqa: BLE001 - the approval is not spent on nothing
+            raise HTTPException(status_code=503, detail=(
+                f"The fund store could not be written ({type(_save_err).__name__}). Nothing was reversed; "
+                + _give_back("the fund store could not be written") + "."))
+    _gov._mark_action_ran(consumed, _gov.FUND_ENTITY_ID, "capital fund reversal stored")
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "economy.capital_fund.reversal", "allocation_id": allocation_id,
+                         "amount_wst": amount, "cca_id": cca_id, "consume_id": consume_id,
+                         "requested_by": requester, "requested_by_verified": requester_verified})
+        _audit = "recorded"
+    except Exception as _ueg_err:                        # noqa: BLE001 - said, never silent
+        _audit = f"NOT recorded ({type(_ueg_err).__name__})"
+    return {"allocation_id": allocation_id, "applied": True, "status": "reversed", "amount": amount,
+            "cca_id": cca_id, "available": fresh["available"], "allocated": fresh["allocated"],
+            "audit_event": _audit, "real_money_moved": False,
+            "basis": (f"REVERSED (VIRTUAL): Change Control record {cca_id} approved this reversal and was spent on "
+                      f"it. {amount} {fresh.get('currency')} returned to the fund's available capital; the "
+                      f"allocation is kept, marked reversed, with its reason. No real money moved.")}
+
+
 @router.get("/fund/portfolio")
 async def fund_portfolio():
     """Portfolio view of all capital allocations."""
-    fund = _load_fund()
+    fund = _load_fund_or_503()
     allocations = fund.get("allocations", [])
 
     by_domain: dict[str, float] = {}
     by_realm: dict[str, float] = {}
     for a in allocations:
+        if a.get("status", "active") != "active":
+            continue                    # W861 (FU-1005) - a reversed allocation holds nothing of the fund now
         by_domain[a.get("domain", "unknown")] = by_domain.get(a.get("domain", "unknown"), 0) + a["amount"]
         by_realm[a.get("realm", "unknown")] = by_realm.get(a.get("realm", "unknown"), 0) + a["amount"]
 
@@ -644,6 +924,7 @@ async def fund_portfolio():
     #  `allocation_requests` and never in `allocations`: every total on this page sums `allocations`, and a
     #  request has moved nothing.
     _requests, _requests_basis = _fund_requests(fund)
+    _reversals861, _reversals_basis861 = _reversal_requests()          # W861 (FU-1005)
     return {
         "total_capital": fund["total_capital"],
         "allocated": fund["allocated"],
@@ -653,6 +934,9 @@ async def fund_portfolio():
         "allocation_count": len(allocations),
         "allocation_requests": _requests,
         "allocation_requests_basis": _requests_basis,
+        #  W861 (FU-1005) - the reversal requests, each as its Change Control record stands
+        "reversal_requests": _reversals861,
+        "reversal_requests_basis": _reversals_basis861,
         "by_domain": by_domain,
         "by_realm": by_realm,
         # W577 (FU-298) — a PORTFOLIO is the one place a missing allocation is most invisible: every
@@ -675,7 +959,7 @@ class FundReportRequest(BaseModel):
 @router.post("/fund/report")
 async def generate_fund_report(req: FundReportRequest):
     """AI-generated Capital Fund performance report."""
-    fund = _load_fund()
+    fund = _load_fund_or_503()
     portfolio_summary = (
         f"Total capital: {fund['total_capital']} WST\n"
         f"Allocated: {fund['allocated']} WST ({round(fund['allocated']/fund['total_capital']*100, 1)}%)\n"

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { provenanceBadge, qmsChip, provenanceMapBadge, provenanceMapFromTrace, complianceChip, immuneReading } from '../../lib/api';
+import { provenanceBadge, qmsChip, provenanceMapBadge, provenanceMapFromTrace, complianceChip, immuneReading, apiJson, bodyDetail } from '../../lib/api';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W929
 import { useNavigate } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import {
@@ -40,7 +41,32 @@ interface Resource {
   methods: string[]; reusable: boolean; rerunnable: boolean; biomimetic: boolean; usable_in: string[];
   // W641 (FU-674) — whether composing this resource runs its engine; null = the server could not check
   fabric_runs_engine?: boolean | null; fabric_runs_basis?: string; fabric_handler_kind?: string | null;
+  // W815 (FU-911) - what composing it runs, where that is not its declared endpoint
+  runs_instead?: string; runs_instead_basis?: string;
 }
+// W917 (FU-609) — a saved composition's lifecycle, as GET /resources/compositions serves it: derived on each read
+// and never stored (W915). expiry_recorded is the beat's record of an expiry, once it has written one (W916).
+interface CompositionLifecycle {
+  state: string;                      // provisioned · operating · expired · not known
+  runnable: boolean;
+  expires_at: string | null;
+  expired: boolean | null;
+  runs_kept: number | null;
+  last_run_at: string | null;
+  not_known_because: string | null;
+  read_at: string;
+  basis: string;
+  expiry_recorded: { expired_at: string; recorded_at: string; recorded_by: string } | null;
+}
+
+// W917 — a refusal's own sentence (the API's detail), so a refused action is never read as done
+async function refusalOf(r: Response): Promise<string> {
+  try {
+    const d = await r.json();
+    return bodyDetail(d, `Refused (${r.status}); nothing changed.`);   // W1013 - a field check by its field
+  } catch { return `Refused (${r.status}); nothing changed.`; }
+}
+
 interface Composition {
   id: string; name: string; usage_area: string;
   resources: { id: string; name: string; resource_class: string }[];
@@ -48,6 +74,11 @@ interface Composition {
   // W273/W284 — living-design lifecycle + the params still unset (for per-run entry)
   version?: number;
   model?: { unset_params?: Record<string, string[]> };
+  // W917 (FU-609) — the declared expiry, the lifecycle derived from it, and the composition's own history of it
+  expires_at?: string;
+  lifecycle?: CompositionLifecycle;
+  lifecycle_events?: { event: string; at?: string; by?: string; expires_at?: string | null;
+                       previous_expiry?: string | null; recorded_at?: string; recorded_by?: string }[];
 }
 // W274/W284 — a persisted composition run (GET /resources/compositions/runs)
 interface HistoryRun {
@@ -80,7 +111,7 @@ interface Simulation {
     // §7→§8 — projected living-organism capacity for this config's cognitive load (read-only, pre-commit).
     organism_capacity?: {
       projected_posture?: string; admitted_max_parallel?: number; demand_nodes?: number;
-      fits_current_capacity?: boolean; organism?: { mode?: string; circadian?: string; atp_ratio?: number; atp_can_fall?: boolean };
+      fits_current_capacity?: boolean; organism?: { mode?: string; circadian?: string; energy_ratio?: number | null; energy_acts?: boolean };
     } | null;
   };
   simulation: {
@@ -214,6 +245,7 @@ const RUN_CONFIGS: Record<string, React.ComponentProps<typeof DomainTool>> = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const ResourceFabric: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W929 - a read that fails is said
   const navigate = useNavigate();
   const [resources, setResources] = useState<Resource[]>([]);
   const [usageAreas, setUsageAreas] = useState<string[]>([]);
@@ -223,6 +255,9 @@ export const ResourceFabric: React.FC = () => {
   const [selected, setSelected] = useState<string[]>([]);
   const [name, setName] = useState('');
   const [actErr, setActErr] = useState('');   // W344 — actions never fail silently
+  // W917 (FU-609) — an optional expiry for a new composition, and a renewal per saved one (local time, sent as UTC)
+  const [expiresAt, setExpiresAt] = useState('');
+  const [renewAt, setRenewAt] = useState<Record<string, string>>({});
   const [usageArea, setUsageArea] = useState('synthesis');
   const [composing, setComposing] = useState(false);
   const [compositions, setCompositions] = useState<Composition[]>([]);
@@ -251,15 +286,16 @@ export const ResourceFabric: React.FC = () => {
     const qs = new URLSearchParams();
     if (filterClass) qs.set('resource_class', filterClass);
     if (filterArea) qs.set('usable_in', filterArea);
-    fetch(`/api/v1/resources?${qs.toString()}`).then(r => r.json()).then(d => {
+    apiJson(`/api/v1/resources?${qs.toString()}`).then(d => {
       setResources(d.resources ?? []);
       setUsageAreas(d.usage_areas ?? []);
       setClasses(d.classes ?? {});
-    }).catch(() => {});
+      clearRead('the resources');
+    }).catch(noteRead('the resources'));
   };
   const loadCompositions = () =>
-    fetch('/api/v1/resources/compositions').then(r => r.json())
-      .then(d => setCompositions(d.compositions ?? [])).catch(() => {});
+    apiJson('/api/v1/resources/compositions')
+      .then(d => { clearRead('the saved compositions'); setCompositions(d.compositions ?? []); }).catch(noteRead('the saved compositions'));
 
   useEffect(() => { load(); }, [filterArea, filterClass]);
   useEffect(() => { loadCompositions(); }, []);
@@ -291,7 +327,9 @@ export const ResourceFabric: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name || '(unnamed)', resource_ids: selected, usage_area: usageArea, config: buildConfig() }),
       });
-      setSim(await r.json());
+      //  W1029 - a refused simulation is said in the API's own words: its {detail} was taken as the simulation, which
+      //  has no model, so nothing was shown and nothing was said
+      if (r.ok) { setSim(await r.json()); setActErr(''); } else setActErr(await refusalOf(r));
     } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
     setSimulating(false);
   };
@@ -315,6 +353,7 @@ export const ResourceFabric: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ objective: runObjective || undefined, params: cleanRunParams() }),
       });
+      if (!r.ok) { setActErr(await refusalOf(r)); setRunningComp(false); return; }   // W917 - e.g. expired (409)
       setRunResult(await r.json());
     } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
     setRunningComp(false);
@@ -327,39 +366,68 @@ export const ResourceFabric: React.FC = () => {
     if (!cfg) return;
     setSavingParams(true);
     try {
-      await fetch(`/api/v1/resources/compositions/${cid}`, {
+      const r = await fetch(`/api/v1/resources/compositions/${cid}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ config: cfg }),
       });
-      loadCompositions();
+      //  W1029 - a refused save is said, and the designs are not read again as if it were saved: the answer was
+      //  never read
+      if (!r.ok) setActErr(await refusalOf(r));
+      else { setActErr(''); loadCompositions(); }
     } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
     setSavingParams(false);
   };
 
+  // W917 (FU-609) — renew a composition's expiry with a later time, or clear it so it does not expire. A refusal
+  // (an expiry that has passed, one that cannot be read) is shown in the API's own words and nothing is cleared.
+  const changeExpiry = async (cid: string, clear: boolean) => {
+    const when = renewAt[cid];
+    if (!clear && !when) return;
+    try {
+      const r = await fetch(`/api/v1/resources/compositions/${cid}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(clear ? { clear_expiry: true } : { expires_at: new Date(when).toISOString() }),
+      });
+      if (!r.ok) { setActErr(await refusalOf(r)); return; }
+      setActErr('');
+      setRenewAt(p => ({ ...p, [cid]: '' }));
+      loadCompositions();
+    } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
+  };
+
   const deleteComposition = async (cid: string) => {
     try {
-      await fetch(`/api/v1/resources/compositions/${cid}`, { method: 'DELETE' });
+      const r = await fetch(`/api/v1/resources/compositions/${cid}`, { method: 'DELETE' });
+      //  W1029 - a refused retirement is said, and the design stays chosen: the answer was never read, so a refusal
+      //  read as retired
+      if (!r.ok) { setActErr(await refusalOf(r)); return; }
+      setActErr('');
       if (runCompId === cid) setRunCompId(null);
       loadCompositions();
     } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
   };
 
   const loadRunsHistory = () =>
-    fetch('/api/v1/resources/compositions/runs?limit=10').then(r => r.json())
+    apiJson('/api/v1/resources/compositions/runs?limit=10')
       .then(d => {
         setHistRuns(d.runs ?? []);
         setHistBasis({ incomplete: !!d.listing_is_incomplete, basis: d.listing_basis });
-      }).catch(() => {});
+        clearRead('the run history');
+      }).catch(noteRead('the run history'));
 
   const compose = async () => {
     if (!name.trim() || selected.length === 0) return;
     setComposing(true);
     try {
-      await fetch('/api/v1/resources/compose', {
+      const r = await fetch('/api/v1/resources/compose', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, resource_ids: selected, usage_area: usageArea, config: buildConfig() }),
+        body: JSON.stringify({ name, resource_ids: selected, usage_area: usageArea, config: buildConfig(),
+                               //  W917 (FU-609) - an optional expiry: the local time chosen, sent as UTC
+                               expires_at: expiresAt ? new Date(expiresAt).toISOString() : undefined }),
       });
-      setName(''); setSelected([]); setSim(null); setParamConfig({});
+      if (!r.ok) { setActErr(await refusalOf(r)); setComposing(false); return; }   // W917 - said; the form is kept
+      setActErr('');
+      setName(''); setSelected([]); setSim(null); setParamConfig({}); setExpiresAt('');
       loadCompositions();
     } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
     setComposing(false);
@@ -367,6 +435,7 @@ export const ResourceFabric: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-24">
+      <ReadFailures failures={readFailures} />
       {actErr && <p className="text-vital text-xs font-bold">{actErr}</p>}
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Resource Fabric</p>
@@ -430,7 +499,8 @@ export const ResourceFabric: React.FC = () => {
           const runnable = !!RUN_CONFIGS[r.id];
           return (
             <div key={r.id} className="relative">
-              <button type="button" onClick={() => toggle(r.id)}
+              {/* W810 (FU-900) - a spawner establishes an entity, and a composition cannot hold one */}
+              <button type="button" onClick={() => { if (r.type !== 'spawner') toggle(r.id); }} disabled={r.type === 'spawner'}
                 className={`w-full h-full text-left p-5 rounded-2xl border transition-all ${sel ? 'bg-highlight/10 border-highlight/50' : 'bg-slate-900 border-slate-800 hover:border-slate-700'}`}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="w-9 h-9 rounded-xl bg-highlight/10 flex items-center justify-center"><Icon size={15} className="text-highlight" /></div>
@@ -453,6 +523,17 @@ export const ResourceFabric: React.FC = () => {
                         : r.fabric_handler_kind === 'query' ? 'queries records — no engine run'
                         : r.fabric_handler_kind === 'blueprint' ? 'blueprint only — nothing provisioned'
                         : 'prompt stage only — engine not run'}
+                    </span>
+                  )}
+                  {r.runs_instead && (
+                    <span data-testid="resource-runs-instead" title={r.runs_instead_basis}
+                      className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                      runs {r.runs_instead}, not {r.endpoint}
+                    </span>
+                  )}
+                  {r.type === 'spawner' && (
+                    <span data-testid="resource-spawner" className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                      establishes an entity — use Genesis, not a composition
                     </span>
                   )}
                   {r.fabric_runs_engine === null && (
@@ -484,7 +565,7 @@ export const ResourceFabric: React.FC = () => {
             </h3>
             <button type="button" onClick={() => setRunningId(null)} className="text-slate-500 hover:text-white"><X size={16} /></button>
           </div>
-          <DomainTool {...RUN_CONFIGS[runningId]} />
+          <DomainTool {...RUN_CONFIGS[runningId]} claimable={false} />
         </Card>
       )}
 
@@ -502,6 +583,13 @@ export const ResourceFabric: React.FC = () => {
             className="bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-highlight/50">
             {usageAreas.map(a => <option key={a} value={a}>{a.replace(/_/g, ' ')}</option>)}
           </select>
+          {/* W917 (FU-609) - an optional expiry: past it a run is refused, and the beat records when it expired */}
+          <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-500">
+            Expires (optional)
+            <input type="datetime-local" data-testid="compose-expires-at" value={expiresAt}
+              onChange={e => setExpiresAt(e.target.value)}
+              className="bg-slate-900 border border-slate-800 rounded-xl p-2 text-xs text-white focus:outline-none focus:border-highlight/50" />
+          </label>
           <Button onClick={simulate} disabled={simulating || selected.length === 0} className="flex items-center gap-2 bg-slate-800 text-highlight">
             {simulating ? <Loader2 size={16} className="animate-spin" /> : <FlaskConical size={16} />}
             Model before commit
@@ -580,7 +668,7 @@ export const ResourceFabric: React.FC = () => {
                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${sim.model.organism_capacity.fits_current_capacity ? 'bg-violet-500/15 text-violet-300' : 'bg-amber-500/15 text-amber-400'}`}
                   /* W506 (FU-265d) — the ATP figure is simulated and this tooltip presented it as
                      capacity 'now'. The immune and circadian terms are live; that one is not. */
-                  title={`§8 living-organism capacity now — mode ${sim.model.organism_capacity.organism?.mode}, ATP ${Math.round((sim.model.organism_capacity.organism?.atp_ratio ?? 0) * 100)}% (simulated — it does not fall, so it never limits a run), ${sim.model.organism_capacity.organism?.circadian}. The run will be homeostatically governed at execution time.`}>
+                  title={`§8 living-organism capacity now — mode ${sim.model.organism_capacity.organism?.mode}, work budget left ${sim.model.organism_capacity.organism?.energy_ratio != null ? Math.round((sim.model.organism_capacity.organism?.energy_ratio ?? 0) * 100) + '%' : 'unknown'} (${sim.model.organism_capacity.organism?.energy_acts ? 'the budget is switched on, so below 30% it holds the run to one node at a time' : 'the budget is switched off, so it limits nothing'}), ${sim.model.organism_capacity.organism?.circadian}. The run will be homeostatically governed at execution time.`}>
                   §8 capacity: {sim.model.organism_capacity.projected_posture} · admits {sim.model.organism_capacity.admitted_max_parallel} {sim.model.organism_capacity.fits_current_capacity ? '· fits' : '· over capacity'}
                   {/* W756 (FU-1114) — while the work budget holds, the reason the figure is 1 */}
                   {(sim.model.organism_capacity as any).work_budget?.holds && <span data-testid="fabric-work-budget-reason"> · held at 1 by the work budget: {(sim.model.organism_capacity as any).work_budget.basis}</span>}
@@ -588,9 +676,10 @@ export const ResourceFabric: React.FC = () => {
               )}
               {/* P3.30 r6 (ledger v16 R4.15) - the tooltip above says the energy figure is simulated; this says it
                   in text, and only while the server reports that it cannot fall */}
-              {sim.model.organism_capacity?.organism?.atp_can_fall === false && (
-                <span className="text-[8px] font-bold text-amber-400/90" data-testid="fabric-atp-cannot-fall">
-                  the energy (ATP) figure in this capacity is simulated and cannot fall, so it never limits a run
+              {/* W902 (FU-1112, S18.1) - the energy figure is the work budget's; while the budget is off, said */}
+              {sim.model.organism_capacity?.organism && !sim.model.organism_capacity.organism.energy_acts && (
+                <span className="text-[8px] font-bold text-amber-400/90" data-testid="fabric-budget-off">
+                  the work budget is switched off, so the energy figure in this capacity limits nothing
                 </span>
               )}
             </div>
@@ -694,9 +783,44 @@ export const ResourceFabric: React.FC = () => {
                 <div>
                   <p className="font-black text-white text-sm">{c.name}</p>
                   <p className="text-[9px] font-black uppercase text-slate-500 mt-0.5">{c.usage_area} · {c.resources.length} resources · {c.id}{c.version ? ` · v${c.version}` : ''}</p>
+                  {/* W917 (FU-609) — the lifecycle the API derived on this read: its state (the basis on hover), its
+                      expiry, the runs the history keeps, the beat's record of an expiry, and why a state is not known */}
+                  {c.lifecycle && (
+                    <div data-testid={`comp-lifecycle-${c.id}`} title={c.lifecycle.basis}
+                      className="flex flex-wrap items-center gap-2 mt-1.5 text-[9px] font-black uppercase">
+                      <span data-testid="comp-state" className={`px-2 py-0.5 rounded border ${
+                        c.lifecycle.state === 'expired' ? 'text-vital border-vital/40'
+                          : c.lifecycle.state === 'not known' ? 'text-amber-400 border-amber-400/40'
+                            : 'text-highlight border-highlight/40'}`}>{c.lifecycle.state}</span>
+                      {c.lifecycle.expires_at && (
+                        <span data-testid="comp-expiry" className="text-slate-400">
+                          {c.lifecycle.expired ? 'expired at' : 'expires at'} {c.lifecycle.expires_at}
+                        </span>
+                      )}
+                      {c.lifecycle.runs_kept !== null && (
+                        <span data-testid="comp-runs-kept" className="text-slate-500">
+                          {c.lifecycle.runs_kept} run{c.lifecycle.runs_kept === 1 ? '' : 's'} kept
+                          {c.lifecycle.last_run_at ? `, last ${c.lifecycle.last_run_at}` : ''}
+                        </span>
+                      )}
+                      {c.lifecycle.expiry_recorded && (
+                        <span data-testid="comp-expiry-recorded" className="text-slate-500 normal-case">
+                          recorded by {c.lifecycle.expiry_recorded.recorded_by} at {c.lifecycle.expiry_recorded.recorded_at}
+                        </span>
+                      )}
+                      {c.lifecycle.not_known_because && (
+                        <span data-testid="comp-not-known" className="text-amber-400 normal-case">
+                          {c.lifecycle.not_known_because}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <button type="button"
+                  <button type="button" data-testid={`comp-run-${c.id}`}
+                    disabled={c.lifecycle?.runnable === false}
+                    title={c.lifecycle?.runnable === false
+                      ? 'A run would be refused: renew the expiry below, or retire the design.' : undefined}
                     onClick={() => { setRunCompId(runCompId === c.id ? null : c.id); setRunResult(null); setRunParams({}); }}
                     className="flex items-center gap-1.5 text-[9px] font-black uppercase text-highlight border border-highlight/40 px-2.5 py-1 rounded-lg hover:bg-highlight/10 transition-colors">
                     <Play size={11} /> Run
@@ -711,6 +835,22 @@ export const ResourceFabric: React.FC = () => {
               <div className="flex flex-wrap gap-1.5 mt-3">
                 {c.resources.map(r => <Tag key={r.id}>{r.name}</Tag>)}
               </div>
+              {/* W917 (FU-609) — renew the expiry with a later time, or clear it; a refusal is shown in the API's words */}
+              {c.lifecycle?.expires_at && (
+                <div data-testid={`comp-renew-${c.id}`} className="flex flex-wrap items-center gap-2 mt-3">
+                  <input type="datetime-local" aria-label={`New expiry for ${c.name}`} value={renewAt[c.id] ?? ''}
+                    onChange={e => setRenewAt(p => ({ ...p, [c.id]: e.target.value }))}
+                    className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-white focus:outline-none focus:border-highlight/50" />
+                  <button type="button" onClick={() => changeExpiry(c.id, false)} disabled={!renewAt[c.id]}
+                    className="text-[9px] font-black uppercase text-highlight border border-highlight/40 px-2.5 py-1 rounded-lg disabled:opacity-40">
+                    Renew
+                  </button>
+                  <button type="button" onClick={() => changeExpiry(c.id, true)}
+                    className="text-[9px] font-black uppercase text-slate-400 border border-slate-700 px-2.5 py-1 rounded-lg">
+                    Clear expiry
+                  </button>
+                </div>
+              )}
 
               {/* §7↔§6↔§5 — run this configuration end-to-end on Workstation's OWN native swarm */}
               {runCompId === c.id && (

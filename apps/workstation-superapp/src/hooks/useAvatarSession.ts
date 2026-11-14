@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { describeReadFailure, silenceIsRight } from '../components/ReadFailures';   // W931
 import { useLocation } from 'react-router-dom';
 import axios from 'axios';
+import { axiosDetail, errorMessage } from '../lib/api';   // W1011 - a refusal's detail as text, whatever its shape
 import { getPrefs } from '../lib/userPrefs';
 
 export interface AvatarSuggestedArea {
@@ -16,6 +18,7 @@ export interface AvatarMessage {
   servedBy?: string;     // which OWNED resource answered (in-house provenance)
   isExternal?: boolean;
   suggestedAreas?: AvatarSuggestedArea[];  // §5/§9 guided navigation — "Take me there"
+  suggestedAreasBasis?: string;            // W820 (FU-826) - how the areas were matched, as the server says
   // W490 (sweep S10.11, C7) — the backend ALREADY says when it could not honour the request:
   // image_understood=false when no vision model read the attachment, and language=null when the
   // deterministic floor could not answer in the language asked for. The hook dropped all of it, so a
@@ -46,6 +49,9 @@ async function resolveGroundingVsb(): Promise<string | null> {
   if (_groundingVsb !== undefined) return _groundingVsb ?? null;
   try {
     const r = await fetch('/api/v1/vsb');
+    //  W1029 - a refused read of the entities is not "no entity": it is not kept, so the next message asks again (its
+    //  {detail} was read as a list of none, and none was kept for the page's whole life)
+    if (!r.ok) return null;
     const d = await r.json();
     const rows: any[] = d.entities ?? [];
     // W625 (FU-535, M2 v9 R5.2) — /api/v1/vsb lists MOST RECENT FIRST, so rows[0] is the latest; this took the last
@@ -216,15 +222,13 @@ export function useAvatarSession() {
         source.connect(analyser);
         analyser.connect(ctx.destination);
         analyserRef.current = analyser;
-      } catch {
-        // Web Audio graph is best-effort visual flair; playback still works without it.
-      }
+      } catch { silenceIsRight('the Web Audio level graph is optional visual flair; playback works without it')(); }
 
       audio.onended = () => { setSpeaking(false); setAmplitude(0); };
       await audio.play();
     } catch (err: any) {
       setSpeaking(false);
-      setNotice(err?.response?.data?.detail || 'Voice output is currently unavailable.');
+      setNotice(axiosDetail(err, 'Voice output is currently unavailable.'));
     }
   }, [volume]);
 
@@ -256,6 +260,7 @@ export function useAvatarSession() {
         role: 'assistant', content: replyText,
         servedBy: resp.data.served_by, isExternal: resp.data.is_external,
         suggestedAreas: resp.data.suggested_areas || [],
+        suggestedAreasBasis: resp.data.suggested_areas_basis ?? undefined,
         // W490 — carried, because a reply that did not read the image must not look like one that did
         imageRequested: Boolean(imageBase64),
         imageUnderstood: Boolean(resp.data.image_understood),
@@ -279,10 +284,13 @@ export function useAvatarSession() {
       setAiStatus('online');
     } catch (err: any) {
       const detail: string =
-        err?.response?.data?.detail ||
-        (err?.code === 'ECONNREFUSED' || err?.code === 'ERR_NETWORK'
+        axiosDetail(err, '') ||
+        //  W1028 - a server that answered with no reason is said by its status: it was "Could not reach the avatar
+        //  backend"; only a call that reached no server is said as one
+        (err?.response ? errorMessage(err)
+          : err?.code === 'ECONNREFUSED' || err?.code === 'ERR_NETWORK'
           ? 'Backend server is not running. Start the Workstation API server.'
-          : 'Could not reach the avatar backend.');
+          : errorMessage(err));
       setAiStatus('offline');
       setMessages(prev => [...prev, { role: 'assistant', content: detail }]);
     } finally {
@@ -312,7 +320,7 @@ export function useAvatarSession() {
         rec.start();
         setRecording(true);
         return;
-      } catch { /* fall through to the recorder path */ }
+      } catch { silenceIsRight('browser speech recognition could not start, so the recorder path below is used instead')(); }
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -324,9 +332,7 @@ export function useAvatarSession() {
         micAnalyser.fftSize = 64;
         micSource.connect(micAnalyser);
         micAnalyserRef.current = micAnalyser;
-      } catch {
-        // best-effort; recording still works without the live level visual
-      }
+      } catch { silenceIsRight('the live microphone level is optional visual flair; recording works without it')(); }
 
       const recorder = new MediaRecorder(stream);
       audioChunksRef.current = [];
@@ -343,7 +349,7 @@ export function useAvatarSession() {
           const text: string = resp.data.text;
           if (text) sendMessage(text);
         } catch (err: any) {
-          setNotice(err?.response?.data?.detail || 'Voice transcription is currently unavailable.');
+          setNotice(axiosDetail(err, 'Voice transcription is currently unavailable.'));
         } finally {
           setTranscribing(false);
         }
@@ -357,7 +363,7 @@ export function useAvatarSession() {
   }, [sendMessage]);
 
   const stopRecording = useCallback(() => {
-    try { speechRecRef.current?.stop?.(); } catch { /* browser STT may already be stopped */ }
+    try { speechRecRef.current?.stop?.(); } catch { silenceIsRight('the browser speech recognition may already have stopped')(); }
     mediaRecorderRef.current?.stop();
     setRecording(false);
   }, []);
@@ -374,7 +380,9 @@ export function useAvatarSession() {
 
   const clearConversation = useCallback(() => {
     if (sessionId) {
-      axios.delete(`/api/v1/avatar/session/${sessionId}`).catch(() => {});
+      //  W931 - the screen is emptied at once; a delete the server refuses is said, never left as a clear that happened
+      axios.delete(`/api/v1/avatar/session/${sessionId}`)
+        .catch(e => setNotice(`The conversation was cleared here, but not on the server: ${describeReadFailure(e)}`));
     }
     setMessages([]);
     setSessionId(null);

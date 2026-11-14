@@ -1,0 +1,362 @@
+{
+ "vsb_id": "vsb-8ead223401",
+ "list": {
+  "status": 200,
+  "body": {
+   "entities": [
+    {
+     "vsb_id": "vsb-8ead223401",
+     "name": "W1039 Bakery Van",
+     "domain": "enterprise",
+     "status": "registered - not operating",
+     "stage": "",
+     "owner_id": "owner",
+     "created_at": "2026-11-14T17:24:27Z",
+     "has_board": true,
+     "entity_type": "waqf_ltd_hybrid",
+     "business_plan_scope": "vsb-8ead223401",
+     "has_native_swarm": true
+    }
+   ],
+   "total": 1
+  }
+ },
+ "detail": {
+  "status": 200,
+  "body": {
+   "vsb_id": "vsb-8ead223401",
+   "name": "W1039 Bakery Van",
+   "challenge": "W1039 made up: a delivery van shared by four village bakeries",
+   "domain": "enterprise",
+   "realm": "enterprise",
+   "realm_used": "enterprise",
+   "realm_recognised": true,
+   "product": "reactor",
+   "product_label": "Reactor — rapid AI generation",
+   "product_source": "the default - no product was chosen",
+   "scope": "commercialise",
+   "owner_id": "owner",
+   "owner_stamped": true,
+   "owner_stamp_basis": "WORKSTATION_OWNER_ID is not set to an identity, so the record carries the role word 'owner': the one person this single-user deployment serves (no name is written in the code)",
+   "status": "registered - not operating",
+   "stage": null,
+   "genome_spec": {
+    "vsb_id": "vsb-8ead223401",
+    "origin": "genesis_journey",
+    "problem": "W1039 made up: a delivery van shared by four village bakeries",
+    "domain": "enterprise",
+    "realm": "enterprise",
+    "realm_used": "enterprise",
+    "realm_recognised": true,
+    "product": "reactor",
+    "product_label": "Reactor — rapid AI generation",
+    "product_source": "the default - no product was chosen",
+    "concept": "",
+    "design": "",
+    "commercialisation": "",
+    "constitutional_alignment": null,
+    "constitutional_gate": {
+     "status": "allowed",
+     "screened": "intent + domain",
+     "content_screened": false,
+     "checkpoint": "CHK-1794677067145",
+     "scope": "intent + domain only — this gate screened the request's intent label against the prohibited list and its own constant attestation sentence. The delivery's content was NOT screened, so this verdict is not a judgement on what was produced."
+    }
+   },
+   "epigenetic_traits": {
+    "domain": "enterprise",
+    "origin": "genesis"
+   },
+   "generation": 0,
+   "established_through": "genesis_journey",
+   "established_through_basis": "established by the Genesis journey (POST /api/v1/genesis/establish or its streaming door), which keeps a journey record, evidence and review gates before the entity exists",
+   "ceo_specification": "",
+   "ceo_specification_source": "absent",
+   "swarm_config": {
+    "CEO": "AI CEO — W1039 Bakery Van",
+    "CFO": "Financial modelling and capital allocation",
+    "CTO": "Technical architecture and system health",
+    "CMO": "Go-to-market and demand generation",
+    "CLO": "Legal and regulatory compliance",
+    "CoE": [
+     "Research",
+     "Design",
+     "Engineering",
+     "Science",
+     "Commercial",
+     "Compliance"
+    ]
+   },
+   "genesis_blueprint": {
+    "concept": "",
+    "design": "",
+    "commercialisation": ""
+   },
+   "genesis_journey": {
+    "research": "",
+    "operations": "",
+    "selected_candidate": {},
+    "stage_verifications": {},
+    "evidence_source": {
+     "source": "none",
+     "journey_id": null,
+     "basis": "no candidate or stage evidence was supplied"
+    }
+   },
+   "ai_provenance": {},
+   "review_gates": {
+    "stages": [],
+    "decisions": {}
+   },
+   "name_source": "founder",
+   "name_pending": false,
+   "body_pending": {
+    "concept": false,
+    "design": false,
+    "commercialisation": false,
+    "operations": false
+   },
+   "body_absent": {
+    "concept": true,
+    "design": true,
+    "commercialisation": true,
+    "operations": true
+   },
+   "ship_requested": false,
+   "governance": {
+    "status": "allowed",
+    "screened": "intent + domain",
+    "content_screened": false,
+    "checkpoint": "CHK-1794677067145",
+    "scope": "intent + domain only — this gate screened the request's intent label against the prohibited list and its own constant attestation sentence. The delivery's content was NOT screened, so this verdict is not a judgement on what was produced."
+   },
+   "created_at": "2026-11-14T17:24:27Z",
+   "board": {
+    "owner": "owner",
+    "chief": {
+     "title": "Chief of the Board — owner's standing charter, instructions and recorded decisions on the owned fabric (no twin model is trained; the Chief reports whether it is a modelled twin or a role)",
+     "fidelity_charter": "Represent the Owner precisely, effectively, efficiently, systematically and punctually — reflecting their exact wishes and instructions, perfectly understood and remembered, with due diligence, honesty, sincerity, loyalty, determination, resilience and perfectionism."
+    },
+    "directors": [
+     {
+      "id": "dir_strategy",
+      "title": "Director of Strategy & Vision",
+      "mandate": "Business plan, strategy, aims, mission, objectives — coherence with the Owner's vision."
+     },
+     {
+      "id": "dir_technology",
+      "title": "Director of Technology & Architecture",
+      "mandate": "Technical direction, architecture integrity, build quality, scalability."
+     },
+     {
+      "id": "dir_governance",
+      "title": "Director of Governance & Compliance",
+      "mandate": "Constitutional alignment, gaas.v5 gate, risk, change control, audit integrity."
+     },
+     {
+      "id": "dir_biomimetic",
+      "title": "Director of Biomimetic Systems",
+      "mandate": "Highest authority to monitor/change/control all VSB living processes (immune/nervous/genome/evolution)."
+     },
+     {
+      "id": "dir_operations",
+      "title": "Director of Operations & Delivery",
+      "mandate": "BTO, Build-to-Order, facilities management, operational delivery to timeline."
+     },
+     {
+      "id": "dir_finance",
+      "title": "Director of Finance & Capital",
+      "mandate": "Capital allocation, unit economics, commercial sustainability."
+     },
+     {
+      "id": "dir_evolution",
+      "title": "Director of Evolution & Learning",
+      "mandate": "Continual self-improvement; ties the Sovereign Evolution Office to board direction."
+     }
+    ],
+    "governance": "arms-length: AI CEO cannot instruct the board; board directs the AI CEO",
+    "vision_summary": "Commercialise: W1039 made up: a delivery van shared by four village bakeries"
+   },
+   "economy": {
+    "entity_type": "waqf_ltd_hybrid",
+    "entity_name": "Waqf-Ltd Hybrid (recommended)",
+    "waterfall": {
+     "owner": 0.2,
+     "self_investment": 0.3,
+     "capital_fund": 0.2,
+     "user_projects": 0.15,
+     "charity": 0.15
+    },
+    "capital_preserved": true,
+    "currency": "WST (virtual)"
+   },
+   "living": {
+    "autonomous_operation": "registered on the living roster — autonomous economy cycles are OFF (the heartbeat's Self-run lever is off); enable Self-run and start the heartbeat on the Heartbeat page for the organism to tend this VSB",
+    "autonomous_cycles": false,
+    "virtual": true,
+    "read_at": "2026-11-14T17:24:27Z"
+   },
+   "business_plan_scope": "vsb-8ead223401",
+   "native_swarm": {
+    "cascade_id": "swarm-63db6f6f",
+    "name": "W1039 Bakery Van — delivery swarm",
+    "org": [
+     "Chief (the Owner's standing charter; no twin model is trained)",
+     "AI CEO",
+     "C-Suite",
+     "Centre of Excellence",
+     "Build-to-Order"
+    ],
+    "stages": [
+     "ai-ceo",
+     "c-suite",
+     "centre-of-excellence",
+     "build-to-order"
+    ],
+    "run": "/api/v1/resources/swarm/run",
+    "posture": "in-house-first"
+   },
+   "status_basis": "registered on the living roster — autonomous economy cycles are OFF (the heartbeat's Self-run lever is off); enable Self-run and start the heartbeat on the Heartbeat page for the organism to tend this VSB. None of its body was ever provided (concept, design, operations, commercialisation); this status is read from the review gates, the pending map and the heartbeat, and does not read whether a section was provided",
+   "stage_basis": "no §4 lifecycle stage is reached: the first section (concept) was never provided",
+   "body_provided": [],
+   "status_derived_at": "2026-11-14T17:24:27Z",
+   "owner_stamp": {
+    "stamped_at_creation": true,
+    "label": null,
+    "basis": "WORKSTATION_OWNER_ID is not set to an identity, so the record carries the role word 'owner': the one person this single-user deployment serves (no name is written in the code)"
+   },
+   "operating_means": null,
+   "founder_writable_sections": {
+    "concept": "POST /api/v1/vsb/vsb-8ead223401/concept",
+    "commercialisation": "POST /api/v1/vsb/vsb-8ead223401/body/commercialisation",
+    "design": "POST /api/v1/vsb/vsb-8ead223401/body/design",
+    "operations": "POST /api/v1/vsb/vsb-8ead223401/body/operations"
+   }
+  }
+ },
+ "missing": {
+  "status": 404,
+  "body": {
+   "detail": "VSB w1039-made-up-nothing not found."
+  }
+ },
+ "deliverables": {
+  "status": 200,
+  "body": {
+   "deliverables": [],
+   "total": 0,
+   "truncated": false,
+   "total_basis": "every deliverable held: 0 of a 300-row cap, so none has been dropped"
+  }
+ },
+ "types": {
+  "status": 200,
+  "body": {
+   "types": [
+    {
+     "id": "report",
+     "sections": [
+      "Executive Summary",
+      "Background",
+      "Analysis",
+      "Findings",
+      "Recommendations",
+      "Next Steps"
+     ]
+    },
+    {
+     "id": "presentation",
+     "sections": [
+      "Title & Hook",
+      "Problem",
+      "Solution",
+      "Market",
+      "Business Model",
+      "Traction",
+      "The Ask"
+     ]
+    },
+    {
+     "id": "website",
+     "sections": [
+      "Hero",
+      "Value Proposition",
+      "Features",
+      "How It Works",
+      "Pricing",
+      "Call To Action"
+     ]
+    },
+    {
+     "id": "app",
+     "sections": [
+      "Overview",
+      "Core Features",
+      "User Flows",
+      "Solution Architecture",
+      "MVP Scope",
+      "Roadmap"
+     ]
+    },
+    {
+     "id": "service",
+     "sections": [
+      "Service Overview",
+      "Offering",
+      "Delivery Model",
+      "Pricing",
+      "SLA & Quality",
+      "Next Steps"
+     ]
+    },
+    {
+     "id": "brief",
+     "sections": [
+      "Objective",
+      "Context",
+      "Key Factors",
+      "Approach",
+      "Next Steps"
+     ]
+    }
+   ],
+   "posture": "in-house-first"
+  }
+ },
+ "list_failed": {
+  "status": 500,
+  "body": {
+   "detail": "GET /api/v1/vsb failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/vsb",
+   "cause_established": false
+  }
+ },
+ "detail_failed": {
+  "status": 500,
+  "body": {
+   "detail": "GET /api/v1/vsb/vsb-8ead223401 failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/vsb/vsb-8ead223401",
+   "cause_established": false
+  }
+ },
+ "orch_failed": {
+  "status": 500,
+  "body": {
+   "detail": "POST /api/v1/transformation/orchestrate failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/transformation/orchestrate",
+   "cause_established": false
+  }
+ },
+ "deliv_failed": {
+  "status": 500,
+  "body": {
+   "detail": "GET /api/v1/deliverables failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/deliverables",
+   "cause_established": false
+  }
+ }
+}

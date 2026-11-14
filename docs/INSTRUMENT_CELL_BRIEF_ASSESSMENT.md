@@ -402,6 +402,21 @@ standing instruction.
   run"). Nobody has checked ONE deliverable against all eight. REGISTERED as a tier-3 row: take the eight as a
   checklist against the three kinds of stored output (a deliverable, a composition run, a Board Pack) and
   record which each lacks.
+
+  **Measured in W838 (FU-746), 2026-11-11.** One of each kind was produced and read field by field. Two gaps were
+  found and closed in the same round: the run's quality-record hash and the pack's owner. The guard
+  (test_w838) reads this table off real records, so a field that stops being written fails it.
+
+  | Evidence | Deliverable | Composition run | Board Pack |
+  |---|---|---|---|
+  | requested | `type`, `brief` | `objective`, `composed` | `vsb_id`, `kind` (made on demand; nothing else is asked) |
+  | ran | `versions` | `real_resources`, each with its `outcome` | `layers_present`, `layers_state` |
+  | served by | `ai_provenance.served_by` | `served_by`, and each resource's own | `ai_provenance.served_by` |
+  | measured | `quality_assurance.quality.bar_measured` | `duration_ms`, and each resource's | `quality_assurance.quality.bar_measured` |
+  | not assessed | `quality_assurance.quality.qms_basis` | `needs_unmet_at_run`; what was composed and not attempted is read by `/cell/verify` | `layers_state` |
+  | gate | `quality_assurance.quality.qms_gate_passed` | `qms_gate_passed` | `quality_assurance.quality.qms_gate_passed` |
+  | hashed | `quality_assurance.quality.quality_record_hash` | `quality_record_hash` (added in W838) | `content_hash`, `dcs_hash` |
+  | owner | `owner_id` | `owner_id` | `owner_id` (added in W838; the pack had named only the entity) |
 - **"Forever" as bounded operational promises:** backup and restore, a protected shutdown, retirement that
   keeps obligations. Belongs in the founder's guide (P5.6) and the deployment pre-flight (P4.5), stated as what
   is and is not built. Carried into both; no new item.
@@ -2242,14 +2257,20 @@ Kept after both refuters (the register rows are added by this round, each with t
    builds or runs it. Put to the Owner as a decision (below).
 2. Model promotion: the lifecycle promote route makes any installed model the serving default after checking only
    that it is installed - no evaluation, licence, digest or health gate. (Prepared round RF on P3.32.)
+   Built W841 (FU-1087): a promotion needs a recorded evaluation of that build on the pinned probe set, and keeps
+   its digest, so a re-pulled build is not served as the promoted default.
 3. The ruled routing tie-break order is encoded nowhere and no guard holds it, so the ruling cannot fail. (P4.3,
    whose bar is the in-house-first order proven by test.)
 4. Sign-in and signup have no limit on attempts. (P4.1.)
 5. The held-out evaluation set (`agentic_core/ai/native/heldout_cases.json`) has three cases; injection, refusal without a source, malformed output and
-   unsupported claims are unmeasured. (P3.32.)
+   unsupported claims are unmeasured. (P3.32.) Built W843 (FU-1090): version 2 of the set keeps those three
+   cases and adds one per behaviour, each scored by the computed check it names, never a model's opinion.
 6. A baseline of a served model records no runtime settings, so P3.32's "reproducible from its recorded
-   versions" cannot hold. (P3.32.)
+   versions" cannot hold. (P3.32.) Built W844 (FU-1091): the options sent (none) and the runtime whose
+   defaults applied, with its version, are recorded, and a re-run under other settings is refused.
 7. An answer names its server ("ollama") but never the model or build that answered, or where it ran. (P3.32.)
+   Built W842 (FU-1092): an answer's provenance names the model, the build digest the runtime reports and, where
+   the runtime reports the loaded model's sizes, the processor.
 8. The ensemble counts the deterministic floor as a second server, so one model can write a "consensus" of
    itself. (P3.30.)
 9. The plan still names an old fidelity instrument as the measure in three places. (P2.40.)

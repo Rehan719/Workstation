@@ -2,13 +2,14 @@ import os
 import shutil
 import logging
 from typing import List, Dict, Any, Optional
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
+from agentic_core.auth.core import get_current_user, request_owner_id, user_can_access   # W885 (FU-1061)
 from pydantic import BaseModel
 import datetime
 import uuid
 import json
 
-from config.paths import DATA_DIR
+from agentic_core.store_paths import DATA_DIR
 from agentic_core.ai.ceo.memory_v01 import memory_v01
 
 logger = logging.getLogger(__name__)
@@ -68,6 +69,7 @@ class IngestedFile(BaseModel):
     extraction_method: Optional[str] = None
     extraction_basis: str = ""
     in_knowledge_base: bool = False
+    owner_id: Optional[str] = None          # W885 (FU-1061) - who sent it; None on rows written before
     category: Optional[str] = None
 
 class IngestionManager:
@@ -87,7 +89,8 @@ class IngestionManager:
         with open(self.registry_path, "w") as f:
             json.dump(self.registry, f, indent=2)
 
-    async def ingest_file(self, file: UploadFile, category: Optional[str] = None) -> Dict[str, Any]:
+    async def ingest_file(self, file: UploadFile, category: Optional[str] = None,
+                          owner_id: Optional[str] = None) -> Dict[str, Any]:
         file_id = str(uuid.uuid4())
         file_path = self.upload_dir / f"{file_id}_{file.filename}"
 
@@ -150,7 +153,11 @@ class IngestionManager:
         #    memory_v01 as their invented text, which the AI CEO and the avatars then recalled as
         #    knowledge, and synthesis pasted into prompts as "Knowledge base".
         if status == "EXTRACTED" and extracted_text.strip():
-            memory_v01.add_exchange(f"INGEST: {file.filename}", extracted_text)
+            #  W885 (FU-1061) - under sign-in the text is its sender's to recall: added with no owner it went into the
+            #  platform's shared namespace, which every person's generation reads
+            from agentic_core.auth.core import auth_enabled as _auth_on885
+            memory_v01.add_exchange(f"INGEST: {file.filename}", extracted_text,
+                                    owner_id=owner_id if _auth_on885() else None)
 
         # 4. Registry Entry
         entry = {
@@ -165,14 +172,16 @@ class IngestionManager:
             "extraction_method": extraction_method,
             "extraction_basis": extraction_basis,
             "in_knowledge_base": bool(status == "EXTRACTED" and extracted_text.strip()),
-            "category": category
+            "category": category,
+            "owner_id": owner_id,                   # W885 (FU-1061)
         }
         self.registry.append(entry)
         self._save_registry()
 
         return entry
 
-    def ingest_text(self, text: str, filename: str, category: Optional[str] = None) -> Dict[str, Any]:
+    def ingest_text(self, text: str, filename: str, category: Optional[str] = None,
+                    owner_id: Optional[str] = None) -> Dict[str, Any]:
         """Registers raw text content (e.g. a fetched job listing) without requiring a file upload."""
         file_id = str(uuid.uuid4())
         entry = {
@@ -183,7 +192,8 @@ class IngestionManager:
             "timestamp": datetime.datetime.utcnow().isoformat(),
             "extracted_text": text[:1000],
             "status": "INGESTED",
-            "category": category
+            "category": category,
+            "owner_id": owner_id,                   # W885 (FU-1061)
         }
         self.registry.append(entry)
         self._save_registry()
@@ -195,10 +205,13 @@ class IngestURLRequest(BaseModel):
     url: str
 
 @router.post("/", response_model=IngestedFile)
-async def upload_content(file: UploadFile = File(...), category: Optional[str] = Form(None)):
-    """v1.0: Multi-format Content Ingestion Endpoint."""
+async def upload_content(file: UploadFile = File(...), category: Optional[str] = Form(None),
+                         user: dict | None = Depends(get_current_user)):
+    """v1.0: Multi-format Content Ingestion Endpoint. W885 (FU-1061) - the upload records who sent it."""
+    if user is not None and not isinstance(user, dict):
+        user = None
     try:
-        return await ingestion_manager.ingest_file(file, category=category)
+        return await ingestion_manager.ingest_file(file, category=category, owner_id=request_owner_id(user))
     except Exception as e:
         logger.error(f"Ingestion Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -231,14 +244,18 @@ async def ingest_url(request: IngestURLRequest):
 
 
 @router.get("/list", response_model=List[IngestedFile])
-async def list_ingested_content(category: Optional[str] = None):
-    """Returns ingested files in the knowledge base, optionally filtered by category."""
+async def list_ingested_content(category: Optional[str] = None, user: dict | None = Depends(get_current_user)):
+    """Returns the ingested files the caller may see, optionally filtered by category. W885 (FU-1061) - with
+    sign-in on this returned every person's files, with the first thousand characters of each one's text."""
+    if user is not None and not isinstance(user, dict):
+        user = None
+    rows = [e for e in ingestion_manager.registry if user_can_access(user, e.get("owner_id"))]
     if category:
-        return [entry for entry in ingestion_manager.registry if entry.get("category") == category]
-    return ingestion_manager.registry
+        return [entry for entry in rows if entry.get("category") == category]
+    return rows
 
 @router.delete("/{file_id}")
-async def delete_ingested_content(file_id: str):
+async def delete_ingested_content(file_id: str, user: dict | None = Depends(get_current_user)):
     """Remove an ingested item: its registry row AND the uploaded bytes — and say what remains.
 
     W507 (FU-167, second half) — this used to remove the registry ROW and nothing else, then answer
@@ -253,8 +270,11 @@ async def delete_ingested_content(file_id: str):
     recalled instead of claiming a deletion it did not perform. Answering DELETED over a recallable copy is
     the over-claim this whole programme exists to remove.
     """
+    if user is not None and not isinstance(user, dict):
+        user = None
     row = next((e for e in ingestion_manager.registry if e.get("file_id") == file_id), None)
-    if row is None:
+    #  W885 (FU-1061) - another person's upload is not found, never forbidden: anyone signed in could delete it
+    if row is None or not user_can_access(user, row.get("owner_id")):
         raise HTTPException(status_code=404, detail="File not found")
 
     # the bytes first: if the row goes and this fails, the file is orphaned with no pointer to it

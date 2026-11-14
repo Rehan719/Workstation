@@ -1,3 +1,4 @@
+import { silenceIsRight } from './ReadFailures';   // W961 (FU-1181)
 import React, { useEffect, useRef, useState } from 'react';
 import { Mic, Loader2 } from 'lucide-react';
 
@@ -23,12 +24,12 @@ export const DictateButton: React.FC<DictateButtonProps> = ({ onTranscript, lang
   const [err, setErr] = useState('');
   const recRef = useRef<any>(null);
 
-  useEffect(() => () => { try { recRef.current?.abort?.(); } catch { /* ignore */ } }, []);
+  useEffect(() => () => { try { recRef.current?.abort?.(); } catch { silenceIsRight('the browser speech recognition may already have stopped when the button unmounts')(); } }, []);
 
   if (!SR) return null; // honest: no Web Speech support → no button
 
   const toggle = () => {
-    if (listening) { try { recRef.current?.stop?.(); } catch { /* ignore */ } return; }
+    if (listening) { try { recRef.current?.stop?.(); } catch { silenceIsRight('the browser speech recognition may already have stopped when it is stopped again')(); } return; }
     setErr('');
     try {
       const rec = new SR();

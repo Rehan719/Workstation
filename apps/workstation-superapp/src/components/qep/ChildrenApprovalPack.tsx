@@ -9,7 +9,8 @@ import { apiJson, errorMessage } from '../../lib/api';
 // any part re-opens review. No children's tool opens until sign-in is on AND the current pack is approved.
 
 interface Rule { id: string; rule: string }
-interface Tool { id: string; name: string; run_by: string; what_a_child_sees: string; steps?: string[]; wording?: string[]; arabic_from?: string }
+interface Tool { id: string; name: string; run_by: string; what_a_child_sees: string; steps?: string[]; wording?: string[]; arabic_from?: string;
+  questions?: { id: string; question: string; answers: string[] }[] }   // W947 - a tool's questions, word for word
 interface Pack {
   pack_hash: string; state: string; basis: string; whole: string;
   sections: { rules: Rule[]; tools: Tool[]; learner_content: unknown[] };
@@ -65,6 +66,7 @@ export const ChildrenApprovalPack: React.FC<{ roster: [string, { name: string }]
               <p className="text-[11px] text-slate-300 mt-1">{t.what_a_child_sees}</p>
               {t.steps && <ol className="list-decimal ml-5 mt-1 text-[11px] text-slate-400">{t.steps.map((s, i) => <li key={i}>{s}</li>)}</ol>}
               {t.wording && <div className="mt-1">{t.wording.map((w, i) => <p key={i} className="text-[11px] text-slate-300 italic">“{w}”</p>)}</div>}
+              {t.questions && <ul className="mt-1 space-y-0.5" data-testid="pack-tool-questions">{t.questions.map(q => <li key={q.id} className="text-[11px] text-slate-300">{q.question} <span className="text-slate-500">({q.answers.join(' / ')})</span></li>)}</ul>}
               {t.arabic_from && <p className="text-[10px] text-slate-500 mt-1">Arabic from: {t.arabic_from}</p>}
             </div>
           ))}

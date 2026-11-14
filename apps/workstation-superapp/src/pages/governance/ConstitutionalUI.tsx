@@ -2,13 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { Card, Badge, Button } from '@workstation/ui';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Sparkles, FileText, Send, History, CheckCircle2, AlertTriangle, Search, Activity, Zap, TrendingUp, Clock, Terminal } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { apiJson } from '../../lib/api';   // W927 - a read is used only on a 2xx
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W931
 
 export const ConstitutionalUI: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W931 - a read that fails is said
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'articles' | 'timeline' | 'history'>('articles');
   const [search, setSearch] = useState('');
   const [articles, setArticles] = useState<any[]>([]);
+  const [articlesUnread, setArticlesUnread] = useState(false);   // W985 - not read is not none
   // W495 (FU-126, S10.3) - the endpoint's own report: whether a canon is present, why not, and what
   // governs in its place. A missing canon is a state, not an occasion to show one invented article.
   const [summary, setSummary] = useState<{ breach?: string[]; noMechanism?: string[]; note?: string }>({});
@@ -32,9 +36,11 @@ export const ConstitutionalUI: React.FC = () => {
     // archive, and the archived copy is the inherited Jules-era document, excluded as dated. The
     // endpoint now reports canon_present:false with a basis and names what governs instead; the page
     // shows that rather than presenting an invented article as the constitution.
-    fetch('/api/v1/gaas/ueg/verify').then(r => r.json()).then(setIntegrity).catch(() => setIntegrity(null));
-    fetch('/api/v154/constitution/articles')
-      .then(res => res.json())
+    //  W985 (FU-399 part 17) - a failed integrity check, and a failed read of the articles, are said: the verdict was a
+    //  bare dash, and an unread constitution was shown as an empty one
+    apiJson('/api/v1/gaas/ueg/verify').then(setIntegrity)
+      .catch(e => { setIntegrity(null); noteRead("the ledger's integrity check")(e); });
+    apiJson('/api/v154/constitution/articles')
       .then(data => {
         // the endpoint used to return a bare array; it now returns an object carrying the basis
         if (Array.isArray(data)) { setArticles(data); setCanon(null); return; }
@@ -44,22 +50,26 @@ export const ConstitutionalUI: React.FC = () => {
                      note: data?.verification_note });
         setCanon(data ?? null);
       })
-      .catch(() => { setArticles([]); setCanon(null); });
+      .catch(e => { setArticles([]); setCanon(null); setArticlesUnread(true); noteRead("the constitution's articles")(e); });
   }, []);
 
   // Live GaaS v5 constitutional engine (v16-Omega interceptor + UEG audit log)
   const refreshGaas = () => {
     // W460 — a failing poll clears the verdict (a stale green NOMINAL used to outlive the backend)
-    fetch('/api/v1/gaas/status').then(r => (r.ok ? r.json() : null)).then(setGaas).catch(() => setGaas(null));
+    //  W985 - the refusal's status and reason are said, and cleared by a later read that succeeds
+    apiJson('/api/v1/gaas/status')
+      .then(d => { setGaas(d); clearRead("the constitutional engine's status"); })
+      .catch(e => { setGaas(null); noteRead("the constitutional engine's status")(e); });
     // W491 (sweep S10.14, C10) — the badge counted these 40 fetched rows and read as the trail's
     // total, freezing at 40 however large the chain grew (the same page showed 177+ elsewhere). The
     // response already carries summary.total_events and this threw it away.
-    fetch('/api/v1/gaas/ueg/events?limit=40').then(r => r.json())
+    apiJson('/api/v1/gaas/ueg/events?limit=40')
       .then(d => {
         setUeg(Array.isArray(d?.events) ? [...d.events].reverse() : []);
         setUegTotal(typeof d?.summary?.total_events === 'number' ? d.summary.total_events : null);
         setUegUnreadable(d?.summary?.unreadable ? String(d.summary.unreadable) : null);
-      }).catch(() => {});
+        clearRead('the ledger events');
+      }).catch(noteRead('the ledger events'));
   };
   useEffect(() => {
     refreshGaas();
@@ -79,6 +89,7 @@ export const ConstitutionalUI: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
+      <ReadFailures failures={readFailures} />
       <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
           <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black mb-1 text-white tracking-tighter uppercase italic break-words">Constitutional Core</h1>
@@ -248,6 +259,11 @@ export const ConstitutionalUI: React.FC = () => {
                     {/* W515 (FU-295) - Article 33 says this document names its own unmet articles, so a
                         reader must see that without diffing every card. A zero here is stated as a zero, never
                         as compliance: when no canon is present these lists are empty for that reason. */}
+                    {articlesUnread && (
+                      <p data-testid="articles-unread" className="text-[11px] font-bold px-2 py-1 rounded bg-amber-500/20 text-amber-400">
+                        The constitution's articles could not be read, so none is shown. This is not an empty constitution.
+                      </p>
+                    )}
                     {articles.length > 0 && (
                       <div className="mb-8 p-6 rounded-3xl bg-slate-950/60 border border-slate-900 text-[11px] font-bold">
                         <span className="text-slate-400">{articles.length} articles · </span>

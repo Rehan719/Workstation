@@ -217,9 +217,9 @@ app.include_router(ceo_v138.router, prefix="/api/v138", dependencies=[_Depends(_
 from agentic_core.api.v290 import ceo_generate
 app.include_router(ceo_generate.router, prefix="/api/v290", dependencies=[_Depends(_get_current_user)])
 
-# 4. C-Suite metrics (CFO/CTO — computed from project store)
-from agentic_core.api import csuite
-app.include_router(csuite.router, prefix="/api", dependencies=[_Depends(_get_current_user)])
+# 4. C-Suite metrics - W807 (FU-856): ARCHIVED (_archive/agentic_core/api/csuite.py). Two routes outside the versioned
+#    API that no page read; the CFO figure was a fixed demo user's token balance, and the host figures are the
+#    organism vitals' own.
 
 # 5. Synthesis (upload → AI → download)
 from agentic_core.synthesis import api as synthesis_api
@@ -285,9 +285,9 @@ app.include_router(payments_v310.router, prefix="/api/v310", dependencies=[_Depe
 from agentic_core.api.v310 import fund as fund_v310
 app.include_router(fund_v310.router, prefix="/api/v310", dependencies=[_Depends(_get_current_user)])
 
-# 19. Gamification (XP / quests / levels) — called by gamificationStore.ts
-from agentic_core.api.v280 import gamification as gamification_api
-app.include_router(gamification_api.router, prefix="/api/v280", dependencies=[_Depends(_get_current_user)])
+# 19. (W793, FU-984 R5[6]) the v280 gamification router is ARCHIVED (_archive/agentic_core/api/v280/): a stub
+#     whose only caller was the archived gamificationStore.ts behind PlayfulEffectsManager. The Quran platform's own
+#     persisted awards live at /api/v1/qep/gamification and are untouched.
 
 # 20. Evolution proposals (v191) — called by Proposals + EvolutionDashboard pages
 from agentic_core.api.v191 import evolution as evolution_v191
@@ -344,10 +344,8 @@ app.include_router(qep_analytics.router, prefix="/api", dependencies=[_Depends(_
 from agentic_core.api import tools as tools_api
 app.include_router(tools_api.router, prefix="/api", dependencies=[_Depends(_get_current_user)])
 
-# 32. Cross-Platform Bridge (wearable, voice, AR — Phase 3 scaffolding)
-#     Refactored from FastAPI() sub-app to APIRouter (2026-06-18)
-from agentic_core.api import cross_platform
-app.include_router(cross_platform.api, prefix="/api", dependencies=[_Depends(_get_current_user)])
+# 32. (W793, FU-984 R5[6]) the Cross-Platform Bridge (wearable, voice, AR scaffolding) is ARCHIVED
+#     (_archive/agentic_core/api/cross_platform.py): stubs nothing in the product called.
 
 # 33. Religion domain (fiqh research, Quran tafsir, halal review, interfaith)
 from agentic_core.api import religion as religion_api
@@ -410,6 +408,10 @@ app.include_router(auth_api.router)
 # 44. QEP — Quran Education Platform (Hifz SM-2 + Tajweed + Gamification)
 from agentic_core.religious_domain import api as qep_api
 app.include_router(qep_api.router)
+#  W943 (P5.21) - the children's tools: every route under one prefix, held by the gate until sign-in is on and a
+#  scholar on the roster has approved the current pack
+from agentic_core.api import qep_children as qep_children_api
+app.include_router(qep_children_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 45. IDBO Nervous System (signal routing, reflex arcs, arousal state)
 from agentic_core.organism import nervous as nervous_api
@@ -483,6 +485,26 @@ app.include_router(instrument_cell_api.router, dependencies=[_Depends(_get_curre
 #  W689 - the review cell's records: the one door that writes a review, the administrator's alone
 from agentic_core.api import review_cell as review_cell_api
 app.include_router(review_cell_api.router, dependencies=[_Depends(_require_admin)])
+#  W925 (P5.15, release) - both options where a tool is offered: the tier it has reached, and when a qualified person
+#  is warranted. Every signed-in person reads it before using a tool; the records above stay the administrator's
+from agentic_core.api import review_options as review_options_api
+app.include_router(review_options_api.router, dependencies=[_Depends(_get_current_user)])
+#  W932 (P5.15 clause 6) - an entity's own specialists: a short roster per entity, not a registry of people. Under
+#  sign-in only the entity's owner, or an administrator, reaches it
+from agentic_core.api import entity_specialists as entity_specialists_api
+app.include_router(entity_specialists_api.router, dependencies=[_Depends(_get_current_user)])
+#  W939 (P5.2) - a price in WST is recomputed on read from inputs it names, null while any is absent; the cost a
+#  deliverable carries is a person's declaration. Owner-scoped like the rest of the economy
+from agentic_core.api import pricing as pricing_api
+app.include_router(pricing_api.router, dependencies=[_Depends(_get_current_user)])
+#  W941 (P5.3) - a claim that an output is wrong: recorded with its provenance, filed with Change Control at a tier
+#  only a person decides, logged to the UEG, and OPEN until a person answers it
+from agentic_core.api import support_claims as support_claims_api
+app.include_router(support_claims_api.router, dependencies=[_Depends(_get_current_user)])
+#  W953 (P5.20 clause 6) - the one page of where help is: how to find a qualified scholar, where regulated and free
+#  legal help is, and how to complain about an answer. Links and the platform's own words only
+from agentic_core.api import where_help as where_help_api
+app.include_router(where_help_api.router, dependencies=[_Depends(_get_current_user)])
 from agentic_core.api import board as board_api
 app.include_router(board_api.router, dependencies=[_Depends(_require_admin)])   # W505 (P2.6): the Board is the apex governance tier
 
@@ -702,13 +724,23 @@ async def biometrics_status():
     else:
         neurotransmitter = "Oxytocin"
 
-    # Metabolic: ATP ratio + project stage ratio combined
+    #  W901 (FU-1112, S18.1) - the figure the self-report page shows is derived from the work budget: the share of
+    #  the window's stated capacity left. The simulator's figure stays in atp_ratio, with its basis, for the record
+    try:
+        from agentic_core.molecular import work_budget as _wb901
+        _energy901 = _wb901.energy()
+    except Exception as _exc901:            # said, never substituted
+        _energy901 = {"ratio": None, "acts": False,
+                      "basis": f"the work budget could not be read ({_exc901.__class__.__name__})"}
+    _e901 = _energy901["ratio"] if _energy901.get("ratio") is not None else atp_ratio
+
+    # Metabolic: the energy figure + project stage ratio combined
     total_projects = len(projects)
     concept_count = sum(1 for p in projects if p.stage == "concept")
     stage_efficiency = round(
         1.0 - (concept_count / total_projects) if total_projects > 0 else 1.0, 3
     )
-    metabolic_efficiency = round((atp_ratio + stage_efficiency) / 2, 3)
+    metabolic_efficiency = round((_e901 + stage_efficiency) / 2, 3)
 
     return {
         "circadian":      {"cycle": _circadian_cycle()},
@@ -746,8 +778,16 @@ async def biometrics_status():
         "metabolic":      {"efficiency": metabolic_efficiency, "atp_ratio": atp_ratio,
                            "atp_measured": atp_basis.startswith("measured"),
                            "atp_basis": atp_basis,
-                           "efficiency_basis": ("the mean of atp_ratio and stage_efficiency, so it "
-                                                "inherits atp_ratio's basis and is not a measured vital"),
+                           "efficiency_basis": (("the mean of energy_ratio (the work budget's remaining share, "
+                                                 "derived from the seconds spent) and stage_efficiency")
+                                                if _energy901.get("ratio") is not None else
+                                                ("the mean of atp_ratio and stage_efficiency, because the work "
+                                                 "budget could not be read, so it inherits atp_ratio's basis and "
+                                                 "is not a measured vital")),
+                           #  W901 (FU-1112, S18.1) - the figure derived from the work budget, with its basis
+                           "energy_ratio": _energy901.get("ratio"),
+                           "energy_acts": bool(_energy901.get("acts")),
+                           "energy_basis": _energy901.get("basis"),
                            "concept_projects": concept_count, "total_projects": total_projects},
         "nervous":        {"arousal_state": nervous_status["arousal_state"], "signal_rate": nervous_status["signal_rate_per_second"]},
     }
@@ -773,6 +813,10 @@ async def system_info():
                                   "(see external_use_permitted) and not a working key"),
         "external_use_permitted": os.getenv("AI_ALLOW_EXTERNAL", "false").lower() == "true",
         "gateway_rpm": settings.gateway_rpm,
+        #  W891 (FU-1141) - what the figure is, beside it
+        "gateway_rpm_basis": ("GATEWAY_RPM: the default the governed rpm_limit lever starts from. A governed change "
+                              "to the lever replaces it at run time; the lever's value is at "
+                              "/api/v1/organism/config"),
         "default_model": settings.default_model,
         "default_model_basis": ("the configured DEFAULT_MODEL name, echoed. It is NOT what serves a request: "
                                 "an owned local model serves when one is reachable, an external model only "

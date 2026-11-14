@@ -227,7 +227,7 @@ async def native_tiers():
 
 @router.get("/route")
 @_states_level("/route")
-async def native_route(domain: str = "", risk: str = "normal"):
+async def native_route(domain: str = "", risk: str = "normal", data_class: str = "internal"):
     """Which tier would serve this, and WHY — including every tier rejected on the way down.
 
     The walk starts at the tier the request WANTS and descends to the deterministic floor, which always
@@ -236,7 +236,7 @@ async def native_route(domain: str = "", risk: str = "normal"):
     skipped because this machine is 4.31 GB short of what it needs.
     """
     from agentic_core.ai.native.tiers import route as _route
-    return _route(domain, risk)
+    return _route(domain, risk, data_class)          # W850 (FU-1088) - privacy fit is read for this data class
 
 
 @router.get("/models")
@@ -297,6 +297,11 @@ def _lifecycle_for_write() -> Dict[str, Any]:
                    f"evaluation already recorded has been lost") from None
 
 
+def _local_estate_reading854() -> Dict[str, Any]:
+    from agentic_core.ai.native.model_resource import local_estate_reading
+    return local_estate_reading()
+
+
 def _serving_basis(effective, promoted, configured, estate) -> str:
     """W492 - what serves, and why, from the two names and the estate that were actually read."""
     if effective:
@@ -304,7 +309,13 @@ def _serving_basis(effective, promoted, configured, estate) -> str:
                 + (" (promoted)" if effective == promoted else " (from OLLAMA_MODEL)"))
     absent = [n for n in (promoted, configured) if n and n not in set(estate or [])]
     if not estate:
-        return ("no local model is installed, so the deterministic native floor serves"
+        #  W854 (FU-926) - what is installed is read, not inferred from an empty estate: discovery is empty when local
+        #  models are switched off and when the runtime does not answer, as well as when it holds none
+        from agentic_core.ai.native.model_resource import local_estate_reading as _ler926
+        _r926 = _ler926()
+        _held926 = (f"every model the local runtime holds is retired ({', '.join(_r926['models'])})"
+                    if _r926["state"] == "installed" else _r926["sentence"])
+        return (f"the deterministic native floor serves: {_held926}"
                 + (f"; {', '.join(absent)} configured but absent" if absent else
                    "; none is configured either"))
     return ("the native floor serves: "
@@ -328,7 +339,9 @@ async def model_lifecycle():
     # W492 (FU-183) — /models already guarded this ("default_local" only when something is discovered);
     # /lifecycle did not, so it published the OLLAMA_MODEL fallback NAME as the serving default with an
     # empty estate. What is configured and what serves are two facts, and the answer says which is which.
+    from agentic_core.ai.native.model_resource import promoted_default_state as _pds841
     return {"promoted_default": st.get("default_local"),
+            "promoted_default_state": _pds841(),          # W841 (FU-1087) - is it still the build promoted
             "effective_default": _eff,
             "configured_default": configured_default_local(),
             "serves": ("local_model" if _eff else "native_floor"),
@@ -337,6 +350,8 @@ async def model_lifecycle():
             # non-empty but neither the promoted nor the configured name was in it. Both facts are read.
             "serving_basis": _serving_basis(_eff, st.get("default_local"),
                                             configured_default_local(), _estate),
+            #  W854 (FU-926) - the reading the serving basis rests on, for the page to say in its own words
+            "local_estate": _local_estate_reading854(),
             "retired": st.get("retired") or [],
             "discovered": local_models(), "active_estate": _estate,
             "evaluations": (st.get("evaluations") or [])[-10:],
@@ -426,7 +441,50 @@ def _require_pinned_probe_set() -> Dict[str, Any]:
 #  routing and selection do not open the baseline store).
 _HELDOUT_HISTORY = {
     "1": "763a1d22466ec97b",
+    "2": "9bedf01264f583d5",          # W843 (FU-1090) - one case per behaviour, each scored by the computed check it names
 }
+
+#  W843 (FU-1090) - THE COMPUTED CHECKS a case may name. Never a model's opinion; a name outside this list is a
+#  malformed set, refused whole, never scored as a marker case.
+_HELDOUT_CHECKS = ("contains", "contains_not", "only", "json_keys")
+
+
+def _check_well_formed(c) -> bool:
+    kind = c.get("check", "contains")
+    if kind not in _HELDOUT_CHECKS:
+        return False
+    if kind == "contains_not":
+        f = c.get("forbidden")
+        return isinstance(f, list) and bool(f) and all(isinstance(x, str) and x.strip() for x in f)
+    if kind == "json_keys":
+        k = c.get("keys")
+        return isinstance(k, list) and bool(k) and all(isinstance(x, str) and x.strip() for x in k)
+    return True
+
+
+def _case_verdict(c, reply) -> tuple:
+    """(passed, basis) - the case's own computed check on a reply, never a model's opinion."""
+    import json as _j
+    r = reply if isinstance(reply, str) else ""
+    m = str(c.get("marker") or "")
+    kind = c.get("check", "contains")
+    if kind == "contains_not":
+        hit = [f for f in c.get("forbidden") or [] if str(f).lower() in r.lower()]
+        return ((m.lower() in r.lower()) and not hit,
+                "its reply must contain the marker and none of the text an instruction inside the material asked "
+                "for" + (" - it holds that text" if hit else ""))
+    if kind == "only":
+        return (r.strip().rstrip(".").strip().lower() == m.lower(),
+                "its reply must be the marker and nothing else, so an answer that adds a figure or a name it was "
+                "not given fails")
+    if kind == "json_keys":
+        try:
+            obj = _j.loads(r.strip())
+        except ValueError:
+            return False, "its reply must parse as one JSON object with exactly the named keys - it did not parse"
+        return (isinstance(obj, dict) and sorted(obj) == sorted(c.get("keys") or []),
+                "its reply must parse as one JSON object with exactly the named keys")
+    return m.lower() in r.lower(), "its reply must contain the marker"
 
 
 def _heldout_path():
@@ -455,10 +513,12 @@ def _load_heldout() -> Dict[str, Any]:
     cases = (doc or {}).get("cases") if isinstance(doc, dict) else None
     well_formed = (isinstance(cases, list) and cases and all(
         isinstance(c, dict) and all(isinstance(c.get(k), str) and c.get(k).strip() for k in ("id", "marker", "prompt"))
-        for c in cases) and len({c["id"] for c in cases}) == len(cases))
+        for c in cases) and len({c["id"] for c in cases}) == len(cases)
+        and all(_check_well_formed(c) for c in cases))         # W843 - a check this code does not run is refused
     if not ver or not well_formed:
         return {"ok": False, "version": ver or None, "digest": None, "cases": [],
-                "why": "the held-out case file does not hold a version and a list of {id, marker, prompt} cases"}
+                "why": ("the held-out case file does not hold a version and a list of {id, marker, prompt} cases, "
+                        "each naming a computed check this code runs")}
     now, pinned = _heldout_digest(cases), _HELDOUT_HISTORY.get(ver)
     if pinned is None:
         return {"ok": False, "version": ver, "digest": now, "cases": [],
@@ -620,9 +680,13 @@ async def evaluate_model(req: LifecycleModelRequest):
 #  at no other time - nothing in the organism's beat, the startup path or a read route calls it.
 _BASELINE_TIMEOUT_S = 20.0
 _BASELINE_REPLY_KEEP = 600
-_BASELINE_BASIS = ("one run per case against one serving tier. 'passed' means the reply CONTAINS the case's "
-                   "marker string (for the control: does NOT contain it) - it is not a judgement that the "
-                   "reply is correct. A case the tier did not serve is 'not read' and counts as neither. "
+_BASELINE_BASIS = ("one run per case against one serving tier. 'passed' means the reply meets its case's "
+                   "computed check: it CONTAINS the case's marker string (for the control: does NOT contain "
+                   "it), and a held-out case may instead require that it also holds none of the text an "
+                   "instruction inside the material asked for, that it is the marker and nothing else, or that "
+                   "it parses as one JSON object with exactly the named keys (W843). It is not a judgement that "
+                   "the reply is correct, and never a model's opinion. A case the tier did not serve is 'not "
+                   "read' and counts as neither. "
                    "Evidence level 1: inputs and outputs only. Run on demand; nothing schedules it.")
 
 
@@ -674,6 +738,17 @@ def _serving_identity(tier: str) -> Dict[str, Any]:
                                    "IDENTITY NOT RECORDED: the floor engine's source could not be read"),
                 "settings": {**settings, "sampling": "none: the floor samples nothing"}}
     dg = _local_model_digest(tier.split(":", 1)[1])
+    #  W844 (FU-1091) - the options this run sends, read from the one constant the request reads, and the runtime
+    #  whose defaults apply to whatever it does not send
+    from agentic_core.ai.native.orchestrator import LOCAL_REQUEST_OPTIONS as _opts844
+    from agentic_core.ai.native.model_resource import local_runtime_version as _rtv844
+    _sent, _ver = dict(_opts844), _rtv844()
+    settings = {**settings, "options_sent": _sent, "runtime": {"name": "ollama", "version": _ver},
+                "sampling": ((f"as sent: {_sent}; for anything not sent, the runtime's own defaults applied"
+                              if _sent else "none sent: the runtime's own defaults applied")
+                             + (f" - ollama {_ver}" if _ver else
+                                "; the runtime did not report its version, so which defaults applied is not "
+                                "recorded"))}
     return {"tier": tier, "kind": "local_model", "identity": dg,
             "identity_kind": "runtime_digest" if dg else None,
             "identity_basis": ("the digest the local runtime reported for this model name at the time of the run"
@@ -753,12 +828,15 @@ async def _baseline_record(tier: str, held: Dict[str, Any], serving: Dict[str, A
             on = r.get("served_by") == tier
             present = str(c["marker"]).lower() in reply.lower()
             is_control = bool(c.get("control"))
+            #  W843 (FU-1090) - each case's own computed check; the control keeps its rule
+            _ok, _why = ((not present, "the control: its reply must NOT contain the marker") if is_control
+                         else _case_verdict(c, reply))
             rows.append({"case": c["id"], "set": set_name, "control": is_control,
+                         "check": "control" if is_control else c.get("check", "contains"),
                          "served_by": r.get("served_by"), "on_target": on,
                          "non_empty": bool(reply.strip()), "marker_present": present,
-                         "passed": ((not present) if is_control else present) if on else None,
-                         "passed_basis": (("the control: its reply must NOT contain the marker" if is_control
-                                           else "its reply must contain the marker") if on else
+                         "passed": _ok if on else None,
+                         "passed_basis": (_why if on else
                                           f"not read: {r.get('served_by')} answered this case, not {tier}, "
                                           f"so the reply says nothing about {tier}"),
                          **_reply_record(reply), **_withheld_if_repeats(set_name, c["prompt"], reply),
@@ -773,7 +851,7 @@ async def _baseline_record(tier: str, held: Dict[str, Any], serving: Dict[str, A
             "tier": tier, "serving": serving, "case_sets": _case_sets(held),
             "cases": rows, "served_target": served_target, "counts": counts,
             "established": ((f"what {tier} replied to {len(rows)} case(s) on this run: {counts['passed']} "
-                             f"passed their marker rule and {counts['failed']} did not")
+                             f"passed their computed check and {counts['failed']} did not")
                             if served_target else
                             (f"NOT ESTABLISHED for {tier}: {counts['not_read']} of {len(rows)} case(s) were "
                              f"answered by {', '.join(others) or 'nothing'}. Those replies are kept and say "
@@ -906,7 +984,27 @@ async def reproduce_baseline(run_id: str):
             f"baseline {run_id} was served by identity {was} and {tier} now reports "
             f"{serving.get('identity') or 'no identity'}. A run now would be of a different thing. "
             f"Nothing was run."))
+    #  W844 (FU-1091) - the same settings, or nothing is run: the options sent, and the runtime whose defaults
+    #  applied, when the record names them (a record made before W844 names neither, and that is said)
+    _st_then = ((rec.get("serving") or {}).get("settings") or {})
+    _st_now = (serving.get("settings") or {})
+    if "options_sent" in _st_then and _st_then.get("options_sent") != _st_now.get("options_sent"):
+        raise HTTPException(status_code=409, detail=(
+            f"baseline {run_id} sent the runtime the options {_st_then.get('options_sent')} and a run now would "
+            f"send {_st_now.get('options_sent')}. A run now would be under different settings. Nothing was run."))
+    _v_then = (_st_then.get("runtime") or {}).get("version")
+    if _v_then and _v_then != (_st_now.get("runtime") or {}).get("version"):
+        raise HTTPException(status_code=409, detail=(
+            f"baseline {run_id} ran under the runtime's own defaults as ollama {_v_then} has them, and the runtime "
+            f"now reports {(_st_now.get('runtime') or {}).get('version') or 'no version'}. Its defaults may differ, "
+            f"so a run now is not known to be under the same settings. Nothing was run."))
     record = await _baseline_record(tier, held, serving)
+    record["settings_compared"] = (
+        "the options sent and the runtime version are the ones the record names" if _v_then else
+        ("the options sent are the ones the record names; it names no runtime version, so whether the runtime's "
+         "defaults were the same is not known" if "options_sent" in _st_then else
+         "the record names no settings (it was made before they were recorded), so whether this run is under the "
+         "same settings is not known" if tier != "native" else "the floor samples nothing"))
     then = {(c.get("set"), c.get("case")): c for c in (rec.get("cases") or []) if isinstance(c, dict)}
     cmp_rows = []
     for c in record["cases"]:
@@ -941,7 +1039,8 @@ _EVIDENCE_SURFACES = {
     "/route": ("configuration", "which tier a request would be sent to, by rule"),
     "/models": ("configuration", "the local model names the runtime lists"),
     "/lifecycle": ("configuration", "the promoted default and retired names; its `evaluations` are behaviour records"),
-    "/lifecycle/promote": ("configuration", "a named model is made the default; nothing about it is measured"),
+    "/lifecycle/promote": ("configuration", "a named model is made the default on a recorded evaluation of its build "
+                                            "on the pinned probe set (W841); the promotion itself measures nothing"),
     "/lifecycle/retire": ("configuration", "a named model is removed from the active list"),
     "/lifecycle/reinstate": ("configuration", "a named model is returned to the active list"),
     "/lifecycle/installed": ("configuration", "what the local runtime reports it holds - name, digest, size, parameter size, quantisation, family, format, parameter count, capabilities and licence - read at call time"),
@@ -990,6 +1089,13 @@ def _unclassified_routes(paths=None) -> List[str]:
     return sorted([p for p in paths if (p in _EVIDENCE_SURFACES) == (p in _NOT_A_MODEL_STATEMENT)])
 
 
+#  W845 (FU-892) - WHAT THE CLAIM SCAN READS: one constant, read by the scan the suite runs and by the sentence this
+#  route returns, so the scope it states is the scope that was read.
+_CLAIM_SCAN_ROOTS = ("agentic_core", "scripts", "apps/workstation-superapp/src")
+_CLAIM_SCAN_SUFFIXES = (".py", ".ts", ".tsx")
+_CLAIM_SCAN_NOT_READ = "the documents, the tests and every other kind of file"
+
+
 @router.get("/evidence-levels")
 async def evidence_levels():
     """Which level of evidence each surface of this router rests on. Read-only."""
@@ -1005,8 +1111,11 @@ async def evidence_levels():
             "highest_level": "behaviour",
             #  THE WORDING CHECK, AND WHAT ITS TWO RESULTS MEAN. A phrase list has no third result.
             "claims_check": {"result_words": ["flagged", "nothing matched"],
-                             "where": ("a phrase scan the test suite runs over the API, the AI modules and the "
-                                       "web app's source. This route does not run it"),
+                             "where": (f"a phrase scan the test suite runs over the files of the kinds and under "
+                                       f"the directories its scope names; {_CLAIM_SCAN_NOT_READ} are not read. "
+                                       f"This route does not run it"),
+                             "scope": {"roots": list(_CLAIM_SCAN_ROOTS), "suffixes": list(_CLAIM_SCAN_SUFFIXES),
+                                       "not_read": _CLAIM_SCAN_NOT_READ},
                              "basis": ("a phrase list can FLAG a sentence shaped like a claim about a model's "
                                        "insides. When it flags none the result is 'nothing matched' in the "
                                        "files examined, which does not establish that no surface over-claims")},
@@ -1064,6 +1173,14 @@ NOT_AN_ANSWER: Dict[tuple, tuple] = {
         1, "the ledger entry written about an answer; the answer itself is another block and states its level"),
     ("agentic_core/api/sovereign_evolution.py", "<module>"): (
         1, "an accumulator of what served each call of a cycle; the cycle's own answer states the level"),
+    #  W796 (FU-980 R1[3]) - the scholar-review queue's record of an item now names what composed it
+    ("agentic_core/api/scholar_review.py", "submit"): (
+        1, "the review queue's record of a composed item, naming what composed it for the scholar who reads "
+           "it; it is a record kept for review, and the item's own answer states its level"),
+    #  W832 (FU-896) - the instrument cell's map from a structural criterion's kind to the run-record field it reads
+    ("agentic_core/api/instrument_cell.py", "<module>"): (
+        1, "the map from a structural criterion's kind to the field of a run's record it reads: its key is the "
+           "name of a criterion kind, it names no resource, and it answers nobody"),
 }
 
 
@@ -1162,12 +1279,36 @@ async def promote_model(req: LifecycleModelRequest):
     if req.model not in local_models():
         raise HTTPException(status_code=409, detail=f"Model '{req.model}' is not discovered on the "
                             "local server — pull it first; promotion never pretends.")
+    #  W841 (FU-1087) - NOT ON BEING INSTALLED ALONE. A model becomes the serving default only on a recorded
+    #  EVALUATION of this build on the pinned probe set: an evaluation in this lifecycle record that the model served
+    #  (can_serve), whose control it passed, run on the probe-set version and digest pinned now, and whose serving
+    #  identity is the digest the runtime reports for the name now.
+    from agentic_core.ai.native.model_resource import local_model_digest
+    _dg = local_model_digest(req.model)
+    if not _dg:
+        raise HTTPException(status_code=409, detail=(
+            f"Model '{req.model}' was not promoted: the local runtime reports no build digest for this name, so no "
+            "evaluation can be tied to a build of it. A name is not a build."))
+    _set_now = {"version": _EVAL_PROBE_SET_VERSION, "digest": _eval_probe_digest()}
     st = _lifecycle_for_write()                              # W577 (FU-395)
+    _measured = [e for e in (st.get("evaluations") or []) if isinstance(e, dict) and e.get("model") == req.model
+                 and e.get("can_serve") is True and (e.get("control") or {}).get("marker_absent") is True
+                 and e.get("probe_set") == _set_now and (e.get("serving") or {}).get("identity") == _dg]
+    if not _measured:
+        raise HTTPException(status_code=409, detail=(
+            f"Model '{req.model}' was not promoted: no evaluation of this build ({_dg[:23]}) on the pinned probe set "
+            f"(version {_EVAL_PROBE_SET_VERSION}) that it served and whose control it passed is recorded. Run POST "
+            "/api/v1/native-ai/lifecycle/evaluate for it, then promote."))
     st["default_local"] = req.model
+    st["default_local_digest"] = _dg
+    st["default_local_evaluated_at"] = _measured[-1].get("at")
     st["retired"] = [m for m in (st.get("retired") or []) if m != req.model]
     save_lifecycle(st)
-    _ueg_lifecycle("promoted", req.model)
-    return {"promoted": req.model, "effective_default": req.model}
+    _ueg_lifecycle("promoted", req.model, {"digest": _dg, "evaluated_at": _measured[-1].get("at")})
+    return {"promoted": req.model, "effective_default": req.model, "digest": _dg,
+            "evaluated_at": _measured[-1].get("at"),
+            "promoted_basis": (f"promoted on the evaluation of this build at {_measured[-1].get('at')} on the pinned "
+                               "probe set; it serves as the default only while the runtime reports this build")}
 
 
 @router.post("/lifecycle/retire")
@@ -1182,6 +1323,8 @@ async def retire_model(req: LifecycleModelRequest):
         st["retired"].append(req.model)
     if st.get("default_local") == req.model:
         st["default_local"] = None            # a retired model cannot stay the promoted default
+        st.pop("default_local_digest", None)  # W841 (FU-1087) - nor its build
+        st.pop("default_local_evaluated_at", None)
     save_lifecycle(st)
     _ueg_lifecycle("retired", req.model)
     return {"retired": st["retired"], "promoted_default": st.get("default_local")}
@@ -1289,7 +1432,7 @@ _CAPABILITIES = [
      "description": "Real QMS quality gates + DCMS SHA3-512 versioning + BMS unit-economics + EMS + Mycelial backbone."},
     {"name": "UEG provenance", "endpoint": "GET /api/v1/ueg/verify", "kind": "provenance",
      "source": "ueg.logger", "in_house": True,
-     "description": "Real hash-chained SHA3-512 Merkle-DAG audit ledger with full-chain verify_chain()."},
+     "description": "Real hash-chained SHA3-512 audit ledger - a linear chain, not a Merkle tree - with full-chain verify_chain()."},
     {"name": "Degradation detection", "endpoint": "GET /api/v1/operations/degradation", "kind": "analysis",
      "source": "self_improvement.degradation_detector", "in_house": True,
      "description": "Real telemetry degradation detection (latency rise / accuracy drop) over the learning loop."},
@@ -1333,6 +1476,9 @@ class CompleteRequest(BaseModel):
     prefer_external: bool = False
     timeout: float = 30.0
     model: str = "auto"   # §6 model-tier preference: auto | native (force floor) | local (require Ollama)
+    #  W899 (FU-610) - what the prompt carries. Unset, it is what the person typed (person_entered). A caller that
+    #  declares legal_matter is never sent to an external service
+    data_class: str | None = None
 
 
 class EnsembleRequest(BaseModel):
@@ -1354,7 +1500,8 @@ async def native_ensemble(req: EnsembleRequest):
         return {"agent": req.agent, "members": [], "synthesis": None, "refused": True,
                 "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
     res = await orchestrator.ensemble(req.prompt, agent=req.agent,
-                                      models=req.models or None, synthesize=req.synthesize)
+                                      models=req.models or None, synthesize=req.synthesize,
+                                      user_text=(req.prompt or None))   # W803 (FU-983 R4[7]) - typed by the person
     #  W642 (FU-646, ledger v14 R4) - THE CHECKPOINT SCREENS WHAT THE CALLER RECEIVES. With no synthesis this
     #  screened an empty string and returned post_checked and post_compliant true over member outputs it had
     #  never read. It screens the synthesis when there is one, the member outputs when there is not, and when
@@ -1387,9 +1534,11 @@ async def native_complete(req: CompleteRequest):
                 "governance_checkpoint": _halt,
                 #  shape-complete with the orchestrator's reply: a refusal ran no model, so nothing counted
                 "model_tokens": None, "model_tokens_basis": REFUSED_TOKENS_BASIS}
-    res = await orchestrator.complete(req.prompt, agent=req.agent, timeout=req.timeout,
-                                      prefer_external=req.prefer_external, prefer=req.model,
-                                      user_text=(req.prompt or None))   # W651 (FU-675) - the console's own text
+    from agentic_core.ai import data_class as _dc899
+    with _dc899.declared(req.data_class or "person_entered"):          # W899 (FU-610) - what the prompt carries
+        res = await orchestrator.complete(req.prompt, agent=req.agent, timeout=req.timeout,
+                                          prefer_external=req.prefer_external, prefer=req.model,
+                                          user_text=(req.prompt or None))   # W651 (FU-675) - the console's own text
     res["governance_checkpoint"] = console_post_gate(req.agent, res.get("output", ""))
     return res
 
@@ -1432,8 +1581,10 @@ async def native_swarm(req: SwarmRequest):
                 "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
     #  P3.30 (ledger v16 R4.17) - the context field is what the person typed on this console; the stage
     #  instructions may be the page's defaults and are not passed as theirs
-    res = await orchestrator.swarm(req.agent, stages, context=req.context, prefer_external=req.prefer_external,
-                                   user_text=((req.context or "").strip() or None))
+    from agentic_core.ai import data_class as _dc899
+    with _dc899.declared("person_entered"):                            # W899 (FU-610) - what the stages carry
+        res = await orchestrator.swarm(req.agent, stages, context=req.context, prefer_external=req.prefer_external,
+                                       user_text=((req.context or "").strip() or None))
     res["governance_checkpoint"] = console_post_gate(req.agent, str(res.get("final") or ""))
     return res
 
@@ -1779,8 +1930,11 @@ async def native_tree(req: TreeRequest):
     if _halt:
         return {"goal": req.goal, "nodes": [], "refused": True,
                 "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
-    res = await orchestrator.orchestrate_tree(
-        req.goal, context=req.context, max_parallel=req.max_parallel,
-        prefer_external=req.prefer_external, timeout=req.timeout)
+    from agentic_core.ai import data_class as _dc899
+    with _dc899.declared("person_entered"):                            # W899 (FU-610) - what the nodes carry
+        res = await orchestrator.orchestrate_tree(
+            req.goal, context=req.context, max_parallel=req.max_parallel,
+            prefer_external=req.prefer_external, timeout=req.timeout,
+            user_text=(req.goal or None))   # W803 (FU-983 R4[7]) - the goal the person typed
     res["governance_checkpoint"] = console_post_gate("tree", str(res.get("final") or ""))
     return res

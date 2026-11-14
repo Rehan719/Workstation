@@ -1,0 +1,500 @@
+{
+ "verify": {
+  "valid": true,
+  "outcome": "verified",
+  "events": 1,
+  "root_hash": "f006dc973510971df30194617292547e2f365dfed667dcd6d7f2df75715eb290f7bf9792404f3f1f9eec6baa6b89105bfdcbfcc97da01f6aa8711c6ad721bae1",
+  "anchor_checked": true,
+  "anchor_state": "present",
+  "anchor_reason": null,
+  "verified_basis": "every stored hash recomputed, and the chain head matches the tail anchor, so truncation and rollback are ruled out"
+ },
+ "articles": {
+  "articles": [
+   {
+    "id": "1",
+    "title": "A PLATFORM MAY ONLY REPORT WHAT IT DID",
+    "category": "CORE",
+    "content": "No surface, record, export or figure may state an outcome the platform did not produce. Where something was not\ndone, the record says so.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "the three-state verdict discipline (`MET` / `UNMET` / `NOT_ASSESSABLE`, each with a basis) across `agentic_core/api/method.py` and the delivery gate; the truth sweeps in `docs/TRUTH_SWEEP_W477.md`.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "2",
+    "title": "A FIGURE CARRIES ONLY THE NAME OF WHAT IT MEASURED",
+    "category": "CORE",
+    "content": "A number may not be reported under the name of a quantity it did not measure.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "`vbs/quality.py` reports `delivery_coverage` with a `delivery_coverage_basis`, and returns `None` rather than a length check when no structure was declared (`_delivery_coverage`).",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "3",
+    "title": "A VERDICT HAS THREE STATES, NEVER TWO",
+    "category": "CORE",
+    "content": "Any assessment may return not-assessable with a reason. A binary pass/fail forces a verdict where none was\nreached.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "`ValidationResult` / `ConsultationResponse` three-state work under P3.12; `assure_delivery` returns `qms_gate_passed: None` with `qms_basis` when the gate could not run.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "4",
+    "title": "A SCREEN MAY FLAG AND ESCALATE; IT MAY NEVER CLEAR",
+    "category": "CORE",
+    "content": "A word list, regex or heuristic may raise a concern. The absence of a match is not evidence of safety.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "`compliance/ethical_engine.py` — every dimension returns `review` or `not_assessed`, never `pass`, and `_LEXICON_NOT_A_VERDICT` states the limit in each reason.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "5",
+    "title": "AN INSTRUMENT THAT CANNOT FAIL IS NOT EVIDENCE",
+    "category": "CORE",
+    "content": "A check is admissible only if its red state is reachable. Green from an instrument that cannot go red reports\nnothing.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "the blind harness (`scripts/blind_sweep.py`) separates BLIND(red) from VACUOUS from BAD BLIND, deciding between them on pytest's exit code and classifying exit 5 — a selector that collected nothing — as BAD BLIND rather than as a pass; and every new guard is driven red before it is trusted, with the edit named, the file restored from bytes and the restore verified against a sha taken before it. Committed W537, after W536 found this line citing that path while the file had never existed — the article against unfalsifiable evidence resting on evidence nobody could run. The harness carries its own controls (`scripts/blinds_core.json`) and was measured against them before this line was restored: a known defect reported BLIND(red), the same defect under a selector matching no test reported BAD BLIND, an anchor occurring twice was refused without a run, and a log message no guard asserts reported VACUOUS. Those four are the three verdicts plus the refusal, each reached by a control rather than claimed. What the harness does NOT measure is whether a guard asserts the RIGHT property, and its coverage is the blind list and not the codebase.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "6",
+    "title": "A GUARD DRIVES ITS PRECONDITION AND ITS SUBJECT",
+    "category": "CORE",
+    "content": "A check may not rely on the ambient environment, nor on whichever record a store happens to hold, to create the\ncondition it tests.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "W514 corrected `test_w473`'s FU-070 leg, which chose its subject ambiently and went red against correct code when that subject became an `OWNER`-slotted row.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "7",
+    "title": "PROSE IS NEVER THE MEASUREMENT",
+    "category": "CORE",
+    "content": "A check asserts a field, a binding or an AST node. Source text, comments and basis strings are not evidence,\nbecause a comment naming a forbidden thing satisfies a search for it.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "the AST-based legs throughout `integration_tests/test_mvp_spine.py`; `scripts/selfcheck_diff.py` detects an assertion that matches its own text.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "8",
+    "title": "A COUNT IS COMPUTED, NOT ASSERTED",
+    "category": "CORE",
+    "content": "A quantity stated in a sentence must be derived from the state it describes.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "open — `api/method.py:719` states \"eleven of seventy were defended\" as prose beside a computed `f\"{len(wanted)} of {len(classes)}\"` nine lines above (FU-305). This article is currently **UNMET** and names its own breach.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "9",
+    "title": "PROVENANCE TRAVELS WITH THE OUTPUT",
+    "category": "CORE",
+    "content": "Whatever produced a result is recorded where a reader meets the result — in the file, the export, the download\nand the card, not only in the DOM.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "`served_by` / `is_external` threaded through the gateway writers; provenance headers on exports (`provenanceHeader`, `provHeader`).",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "10",
+    "title": "AN ABSENCE IS RECORDED AS AN ABSENCE, AND \"NOBODY\" IS NOT \"NOT RECORDED\"",
+    "category": "CORE",
+    "content": "A missing value is stored as a stated absence with a reason, never omitted and never defaulted.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "`/bto/configure` distinguishes a deterministic absence of provenance from an unrecorded one; FU-276's 39 owner-less call sites are to record `owner_id=None` **with a reason**.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "11",
+    "title": "A STORE THAT COULD NOT BE READ WHOLE SAYS SO WHERE ITS NUMBERS ARE READ",
+    "category": "CORE",
+    "content": "Tolerant reading keeps a surface up; it may not present a partial count as a complete one.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "`config.read_json_reported(path, default) -> (value, reason)`; `economy/revenue.py` surfaces `counts_are_incomplete`. Thirteen callers remain (FU-075 / FU-298) and this article is **partially UNMET**.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": true,
+    "unmet_reason": "thirteen tolerant readers still do not surface an incomplete store (FU-075 / FU-298)"
+   },
+   {
+    "id": "12",
+    "title": "A SHARED STORE IS WRITTEN UNDER A LOCK, ATOMICALLY",
+    "category": "CORE",
+    "content": "",
+    "content_basis": "this article has no text between its heading and its Verified line",
+    "verified": "`store_lock` + `atomic_write_json` at every shared-store writer.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "13",
+    "title": "AN EVICTION IS DISCLOSED WHERE THE COUNT IS READ",
+    "category": "CORE",
+    "content": "A capped store that has discarded rows may not present its contents as the whole population.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "`economy.py:1089` records the fix for `rows[-500:]`. `deliverables.py:72` (`rows[-300:]`) and `resource_fabric.py:1485` (`rows[-200:]`) still do not say so — measured W514, both sitting exactly on their cap. **UNMET**, and it is why FU-302's population is unrecoverable.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": true,
+    "unmet_reason": "two capped stores do not disclose that their oldest rows are gone (registered W515)"
+   },
+   {
+    "id": "14",
+    "title": "ALL MONEY IN THIS PLATFORM IS VIRTUAL WST",
+    "category": "CORE",
+    "content": "No real value moves. The economic model, waterfall, ledger and payments are simulated.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "`REAL_MONEY_ENABLED` defaults off and gates the rails; the binding virtual-only disclaimer on the Board Pack; `docs/VSB_ECONOMIC_LEGAL_MODEL.md`.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "15",
+    "title": "THE REAL-MONEY RAILS, A LIVE AI KEY, MANAGED POSTGRES AND PRODUCTION DEPLOY ARE OWNER-GATED",
+    "category": "CORE",
+    "content": "No round may enable any of them, and no agent may flip `AUTH_ENABLED`, `SELF_SERVE_SIGNUP`, `AI_ALLOW_EXTERNAL`\nor `REAL_MONEY_ENABLED` in configuration.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "config defaults plus the standing prohibition in `docs/FABLE_DELIVERY_PROMPT.md`; the Owner rulings are constitution, not preference.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "16",
+    "title": "THE OWNER ADJUSTS THE WATERFALL; THE PLATFORM DOES NOT",
+    "category": "CORE",
+    "content": "Distribution proportions are the Owner's, bounded by the entity template, and every change is logged.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "`GET`/`POST /api/v1/economy/waterfall`, template-bounded, UEG-logged.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "17",
+    "title": "NO AI VERDICT IS PASSED ON A PERSON'S SPIRITUAL STATE (RULING A.9.5)",
+    "category": "CORE",
+    "content": "The Fitrah Spectrum is never a measurement. No virtue, gratitude, barakah or spiritual-outcome field is computed\nabout a person. An Owner-typed reflection is the Owner's own words and is not an inference.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "asserted on the binding across `agentic_core` and the Horizon surfaces — not on a word list, since a comment naming a forbidden field would satisfy a search.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "18",
+    "title": "QURAN ARABIC IS NEVER GENERATED",
+    "category": "CORE",
+    "content": "Quranic text comes only from quran.com, alquran.cloud or tanzil.net, with provenance.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "the source allow-list; no generation path emits scripture; scripture is never typed into a test.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "19",
+    "title": "RECITATION IS NEVER SCORED",
+    "category": "CORE",
+    "content": "",
+    "content_basis": "this article has no text between its heading and its Verified line",
+    "verified": "no scoring path exists over recitation audio.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "20",
+    "title": "AI-PRODUCED CONTENT IS LABELLED AS SUCH",
+    "category": "CORE",
+    "content": "",
+    "content_basis": "this article has no text between its heading and its Verified line",
+    "verified": "the AI-content labelling on generated surfaces; `served_by` naming the producer.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "21",
+    "title": "A RELIGIOUS RULING IS REFERRED TO A QUALIFIED HUMAN SCHOLAR",
+    "category": "CORE",
+    "content": "The platform does not issue one, and does not claim scientific proof over a theological truth.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "two phrase gates in `agentic_core/gaas/v5/horizon_guardrails.py` (religious ruling, theological proof): every `gaas.v5` interception reports their verdicts, and five routes refuse the request (HTTP 409) when one fires on a faith question — deliverable produce, swarm delegate, swarm cascade, synthesis generate and synthesis stream. A phrase screen can refuse; it cannot clear.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": true,
+    "unmet_reason": "in part: the gates are built and refuse at the five routes named; other routes that compose text do not call them yet (FU-932)"
+   },
+   {
+    "id": "22",
+    "title": "ON A DISTRESS SIGNAL THE PLATFORM WITHHOLDS AI COUNSEL AND NAMES A HUMAN ROUTE",
+    "category": "CORE",
+    "content": "It says plainly that it is not a person. Where the route list is unsupplied it renders NOT SUPPLIED — never a\ndefault, never a placeholder, never a plausible-looking number a person in distress might dial.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "Owner ruling FU-270 (2026-09-28). The refusal ships; the list is supplied later with its reviewer.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "23",
+    "title": "CROSS-REQUEST RECALL IS OFF BY DEFAULT AND EXPLICIT AT EVERY CALL SITE",
+    "category": "CORE",
+    "content": "One request's content is never prepended to another's and presented as analysis of its subject.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "`augment=False` explicit at all 57 gateway call sites (W511); a row written from an augmented prompt is marked at all four writers (W507).",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "24",
+    "title": "ATTRIBUTION IS NOT RECALL",
+    "category": "CORE",
+    "content": "An account identifier records who produced something. It is never used to retrieve another request's content.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "the FU-276 split keeps `owner_id` for attribution only; conflating the two caused W489's twenty-nine-caller defect.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "25",
+    "title": "NO EGRESS THE OWNER DID NOT ASK FOR",
+    "category": "CORE",
+    "content": "Indexed content is local data, never committed and never sent anywhere. Only what the Owner copies into a named\ninbox is read; the four desktop archives are not.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "Owner rulings FU-167 (no egress) and FU-268 (an explicit inbox only). One archive holds a `.env`, and a narrower true claim beats a wider one resting on a skip list.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "26",
+    "title": "HALAL IS ASSESSED BY CERTIFICATE VERIFICATION; THE BODY CLEARS, NEVER THE PLATFORM",
+    "category": "CORE",
+    "content": "",
+    "content_basis": "this article has no text between its heading and its Verified line",
+    "verified": "Owner ruling FU-239 (2026-09-29).",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "27",
+    "title": "WHAT MAY CHANGE IS DECIDED AT ARM'S LENGTH",
+    "category": "CORE",
+    "content": "A material change is proposed, reviewed and ratified through the Change Control Agency, and the decision is\nlogged in the universal evidence ledger. A proposer does not approve its own proposal.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "`/api/v1/cca`; CCA decisions → UEG (FU-013); `economy_material` CRITICAL and `code_change` HIGH (FU-014); the Board ratifies review-approved HIGH changes (FU-012).",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "28",
+    "title": "THE ORGANISM MAY NOT APPLY A GUARDRAIL, A GATE, A SCHEMA, MONEY, FAITH CONTENT OR A LAW DOMAIN TO ITSELF",
+    "category": "CORE",
+    "content": "Self-improvement is proposed and submitted, never self-applied, above the lowest risk tiers.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "the Sovereign Evolution Office routes to Change Control; `change_control_handoff` records `requested` / `directives_considered` / `met_the_rule` / `submitted`, with the rule verbatim — \"AN EMPTY LIST IS NOT AN ANSWER\".",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "29",
+    "title": "A DECLARED CAPABILITY THAT NOTHING REACHES IS RECORDED AS UNREACHED",
+    "category": "CORE",
+    "content": "A layer, engine or resource that exists in code but is never called says so rather than counting as working.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "`vbs/quality.py`'s `LAYER_STATE` table (`code_exists_unreached`, `implemented_not_on_this_path`, `measurement_under_this_name`) and the `layers_note` rendered to the viewer via `layerTitle()`.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "30",
+    "title": "A DEFECT FOUND AND NOT FIXED IS REGISTERED IN THE SAME COMMIT",
+    "category": "CORE",
+    "content": "",
+    "content_basis": "this article has no text between its heading and its Verified line",
+    "verified": "`docs/FOLLOWUPS.json` via `scripts/followups.py`, slotted to a plan item; `plan_followups.check` refuses drift between an item's text and the rows riding it.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "31",
+    "title": "AN ITEM CLOSES ON ITS STATED ACCEPTANCE CRITERIA, NOT ON ACTIVITY",
+    "category": "CORE",
+    "content": "Zero rows against an item means unexamined, not nearly done.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "every open build item in `docs/FABLE_DELIVERY_PROMPT.md` states an ACCEPT clause — measured W514, the only exception being `P3.0`, which holds an Owner ruling and has no build bar.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "32",
+    "title": "A REPEATED BREACH OF THIS METHOD ESCALATES TO CHANGE CONTROL AUTOMATICALLY",
+    "category": "CORE",
+    "content": "",
+    "content_basis": "this article has no text between its heading and its Verified line",
+    "verified": "`POST /api/v1/method/breach`; `ESCALATE_AT = 3` in `api/method.py`; it has fired three times on this project's own repeated mistakes.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   },
+   {
+    "id": "33",
+    "title": "THIS DOCUMENT NAMES ITS OWN UNMET ARTICLES",
+    "category": "CORE",
+    "content": "A constitution that cannot record its own breaches is a claim, not a governance instrument. Articles 8, 11, 13\nand 21 are currently unmet or unbuilt and say so above.",
+    "content_basis": "the article's own text in the canon, from its heading to its Verified line, whole",
+    "verified": "a guard asserts that at least one article carries an explicit UNMET state, so the document cannot quietly become self-congratulatory; and the endpoint's `canon_present: False` branch remains reachable.",
+    "verified_whole": true,
+    "verified_basis": "named in the article",
+    "unmet": false,
+    "unmet_reason": null
+   }
+  ],
+  "canon_present": true,
+  "canon_basis": "parsed 33 article heading(s) from the canonical markdown",
+  "articles_recording_a_breach": [
+   "11",
+   "13",
+   "21"
+  ],
+  "articles_naming_no_mechanism": [],
+  "verification_note": "every article should name how it is checked. The ids listed in articles_naming_no_mechanism do not, and that is a gap in the document rather than evidence that the platform complies",
+  "what_governs_instead": [],
+  "categories_available": [
+   "CORE"
+  ]
+ },
+ "status": {
+  "engine": "agentic_core.gaas.v5",
+  "interceptor": "UnifiedConstitutionalInterceptorV16Omega",
+  "node": "sovereign-node",
+  "circuit_breaker": {
+   "domain": "sovereign-node",
+   "tripped": false,
+   "reason": null,
+   "threshold": 0.2,
+   "error_rate": 0.0,
+   "events_in_window": 0,
+   "violations_in_window": 0,
+   "escalations_in_window": 0,
+   "error_rate_basis": "failures over the attempts in the window; escalations (actions awaiting a human approval) are in the history and counted on neither side",
+   "violation_trip_count": 2,
+   "trips_on_first_violation_only_if_declared_severe": true
+  },
+  "circuit_breaker_node": "sovereign-node",
+  "circuit_breaker_covers": [
+   "POST /api/v1/gaas/intercept",
+   "the resource fabric's gaas_v5 requisition (/api/v1/resources/compose, /compositions/{cid}/run)"
+  ],
+  "circuit_breaker_scope": "the 'sovereign-node' interceptor only, which is driven by POST /api/v1/gaas/intercept and by the resource fabric's gaas_v5 requisition. Every other governed path constructs its own interceptor per call with its own breaker (board-node, economy-node, forge-node and others); none of those is reflected here and no surface aggregates them. This is not a platform-wide constitutional health figure.",
+  "ueg": {
+   "total_events": 1,
+   "root_hash": "f006dc973510971df30194617292547e2f365dfed667dcd6d7f2df75715eb290f7bf9792404f3f1f9eec6baa6b89105bfdcbfcc97da01f6aa8711c6ad721bae1",
+   "by_type": {
+    "heartbeat": 1
+   }
+  },
+  "articles_enforced": [
+   "11.1 (UCI)",
+   "7.3 (human escalation)",
+   "5.2 (self-tuning breaker)"
+  ]
+ },
+ "events": {
+  "events": [
+   {
+    "id": "event_0",
+    "timestamp": 1794609507.1430795,
+    "data": {
+     "type": "heartbeat",
+     "beat": 1,
+     "phase": "MAINTENANCE_FOCUS",
+     "realisation": 0.849,
+     "health": 1.0,
+     "health_observations": 0,
+     "health_measured": false,
+     "health_basis": "NOT A MEASUREMENT - no call was observed in the immune window, so 1.0 is the absence of failures and not a reading of anything",
+     "self_healing": null,
+     "actions": [
+      "pulse",
+      "homeostasis",
+      "cadence_refresh",
+      "transformation_tick"
+     ]
+    },
+    "previous_hash": null,
+    "hash": "f006dc973510971df30194617292547e2f365dfed667dcd6d7f2df75715eb290f7bf9792404f3f1f9eec6baa6b89105bfdcbfcc97da01f6aa8711c6ad721bae1",
+    "flag": {
+     "level": "recorded",
+     "nature": "routine",
+     "why": null
+    }
+   }
+  ],
+  "summary": {
+   "total_events": 1,
+   "root_hash": "f006dc973510971df30194617292547e2f365dfed667dcd6d7f2df75715eb290f7bf9792404f3f1f9eec6baa6b89105bfdcbfcc97da01f6aa8711c6ad721bae1",
+   "by_type": {
+    "heartbeat": 1
+   }
+  }
+ }
+}

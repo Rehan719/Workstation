@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W494 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W494 (P1.18, the gate's own batch) — a verdict is not an assessment if it cannot come out otherwise,
 // and a figure is decided on what was measured.
 //   node scripts/_w494_probe.mjs http://127.0.0.1:8100

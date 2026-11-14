@@ -1,5 +1,7 @@
+import { silenceIsRight } from './ReadFailures';   // W961 (FU-1181)
 import React, { useState } from 'react';
-import { provenanceBadge, qmsChip, provenanceLine, axiosDetail} from '../lib/api';
+import { provenanceBadge, qmsChip, provenanceLine, axiosDetail, apiJson, errorMessage } from '../lib/api';
+import { sha256Hex } from '../lib/fingerprint';   // W965 (FU-1190)
 import { useT } from '../lib/i18n';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -10,12 +12,14 @@ import { DictateButton } from './DictateButton';
 import { listOutputs, saveOutput } from '../lib/outputHistory';
 import { getPrefs } from '../lib/userPrefs';
 import { ServingNow } from './ServingNow';   // W737 (FU-1020, FU-1013)
+import { ReviewOptions } from './ReviewOptions';   // W925 (P5.15 release)
 
 export interface DomainField {
   name: string;
   label: string;
   type?: 'text' | 'textarea' | 'select' | 'keyvalue' | 'list' | 'claims';
   options?: string[];
+  optionLabels?: Record<string, string>;   // W816 (FU-835) - what a select shows for an option; its value is sent
   placeholder?: string;
   default?: string;
 }
@@ -60,6 +64,9 @@ interface DomainToolProps {
   // W456 — a tool whose response carries MORE than its text (sourced scripture, a range cap, a floor
   // note) renders it here, above the text; the Tafsir tab was dropping all of it on the floor.
   renderExtra?: (result: any) => React.ReactNode;
+  // W965 (FU-1190) - a person can say an answer is wrong (a claim, P5.3). Off only where the route declares no
+  // tool, as the Resource Fabric's engine runs do: there is no tool for a claim to name.
+  claimable?: boolean;
 }
 
 /**
@@ -104,6 +111,9 @@ const withDisclosures = (body: string, data: any): string =>
   + (!data?.floor_note && data?.ai_provenance?.floor_note ? `\n\n[${data.ai_provenance.floor_note}]` : '')
   // W688 (Owner ruling 2026-10-12) — the tier of review travels with the text a person keeps, as the floor note does
   + (data?.ai_provenance?.review?.label ? `\n\n[Review: ${data.ai_provenance.review.label} — ${data.ai_provenance.review.basis}]` : '')
+  // W842 (FU-1092) — which model and which build answered travels with the text a person keeps
+  + (data?.ai_provenance?.served_identity?.model
+      ? `\n\n[Answered by: ${data.ai_provenance.served_identity.model} — build ${data.ai_provenance.served_identity.build_digest || 'not known'} — ran on ${data.ai_provenance.served_identity.processor || 'not known'}]` : '')
   // REL (Owner ruling 2026-10-11) — the scholar gate's statement travels with the text a person keeps, exactly as
   // the floor note does: why a model's answer is withheld, or who approved the text that is shown
   + (typeof data?.review_note === 'string' && data.review_note ? `\n\n[${data.review_note}]` : '')
@@ -113,7 +123,7 @@ const withDisclosures = (body: string, data: any): string =>
       ? `\n\n[profile: ${data.ai_provenance.profile_basis}]` : '')
   + (data?.disclaimer ? `\n\n_${data.disclaimer}_` : '');
 
-export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endpoint, fields, resultKey, submitLabel = 'Generate', renderExtra }) => {
+export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endpoint, fields, resultKey, submitLabel = 'Generate', renderExtra, claimable = true }) => {
   //  P3.6 clause (1) — this surface READS the translation; the fallback is the English it hardcoded
   const { t } = useT();
   const navigate = useNavigate();
@@ -141,13 +151,22 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
   const [refineText, setRefineText] = useState('');
   const [refining, setRefining] = useState(false);
   const [refineNote, setRefineNote] = useState('');   // W671 - why a rewrite was withheld, in the server's words
+  // W806 (FU-840) - the refine's own response: its review note and scholar review travel with the refined text
+  const [refineData, setRefineData] = useState<any>(null);
   const [refinedText, setRefinedText] = useState<string | null>(null);
   const [refineProv, setRefineProv] = useState<Record<string, any> | null>(null);
   const [refineCount, setRefineCount] = useState(0);
   const [historyId, setHistoryId] = useState<string | null>(null);   // W337 — the My Work record refines update
+  // W965 (FU-1190) - a claim that this answer is wrong: what was raised, what the claim holds, or why not
+  const [claimWrong, setClaimWrong] = useState('');
+  const [claimBusy, setClaimBusy] = useState(false);
+  const [claimDone, setClaimDone] = useState('');
+  const [claimBasis, setClaimBasis] = useState('');
+  const [claimRefused, setClaimRefused] = useState('');
 
   const run = async () => {
     setBusy(true); setError(''); setResult(null);
+    setClaimDone(''); setClaimBasis(''); setClaimRefused('');   // W965 - a claim spoke of the answer it was raised on
     setRefinedText(null); setRefineProv(null); setRefineText(''); setRefineCount(0);
     try {
       const body: Record<string, any> = {};
@@ -185,9 +204,9 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
         const rec = saveOutput({ kind: 'domain-tool', title, domain: domainSeed, endpoint,
           input: primary ? form[primary] : undefined, output: text, provenance: r.data?.ai_provenance ?? null });
         setHistoryId(rec.id);   // W337 — refines update THIS record in place
-      } catch { /* history is best-effort */ }
+      } catch { silenceIsRight('the local history of outputs is browser storage is a per-browser convenience that nothing else depends on')(); }
     } catch (e: any) {
-      setError(axiosDetail(e, 'Request failed — the backend may be unavailable.'));
+      setError(axiosDetail(e, errorMessage(e)));   // W1042 - by what it was: the fallback guessed at a backend that was down
     }
     setBusy(false);
   };
@@ -199,8 +218,37 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
   // W457 - copy/download carry the computed score line (the on-screen block is rendered separately)
   // W506 (FU-161) - ...AND the disclosures, through the same composition the save uses. `displayText` is
   // the refined text when a refine has run, so a refine no longer strips them either (S9.8).
-  const exportText = withDisclosures(displayText, result);
+  // W806 (FU-840) - after a refine, the review fields are the REFINE's: the original's note described other text
+  const exportText = withDisclosures(displayText, refineData
+    ? { ...result, review_note: refineData.review_note, scholar_review: refineData.scholar_review,
+        ai_provenance: refineData.ai_provenance ?? result?.ai_provenance }
+    : result);
   const effectiveProv = refineProv ?? prov;
+  // W965 (FU-1190, P5.20 clause 6) - say this answer is wrong. The claim names the answer by the sha256 of the one
+  // composition the save, the copy and every download carry (exportText, refined or not), the route that gave it and
+  // what served it. The text itself is never sent. What was raised and what the claim holds are the server's words.
+  const raiseClaim = async () => {
+    setClaimBusy(true); setClaimDone(''); setClaimBasis(''); setClaimRefused('');
+    let fingerprint = '';
+    try {
+      fingerprint = await sha256Hex(exportText);
+    } catch {
+      setClaimRefused('Not raised: this browser could not compute the answer\'s fingerprint here (it needs a secure connection), so nothing was sent.');
+      setClaimBusy(false);
+      return;
+    }
+    try {
+      const c = await apiJson<any>('/api/v1/support/claims', { method: 'POST', body: {
+        artefact_kind: 'answer', artefact_id: fingerprint, endpoint,
+        served_by: (effectiveProv as any)?.served_by ?? undefined, what_is_wrong: claimWrong } });
+      setClaimDone(`Raised: ${c.claim_id} — ${c.state}.`);
+      setClaimBasis(c.artefact?.basis ?? '');
+      setClaimWrong('');
+    } catch (e) {
+      setClaimRefused(errorMessage(e));
+    }
+    setClaimBusy(false);
+  };
 
   const refine = async () => {
     if (!refineText.trim() || refining) return;
@@ -213,6 +261,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
       const newText = String(r.data.refined ?? displayText);
       setRefinedText(newText);
       setRefineProv(r.data.ai_provenance ?? null);
+      setRefineData(r.data ?? null);
       setRefineCount(c => c + 1);
       setRefineText('');
       // §3A (W337) — the refined version PERSISTS: My Work previously kept only v1, so every
@@ -225,9 +274,10 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
             versions: [...(prior?.versions ?? []), { output: displayText, refinedAt: Date.now() }],
             refineCount: (prior?.refineCount ?? 0) + 1 });
         }
-      } catch { /* history is best-effort */ }
+      } catch { silenceIsRight('the local history of a refined output is browser storage is a per-browser convenience that nothing else depends on')(); }
     } catch (e: any) {
-      setError(axiosDetail(e, 'Refine failed — the backend may be unavailable. Your current output is unchanged.'));   // W337 — never a silent click
+      //  W337 - never a silent click; W1042 - by what it was, not a guess at a backend that was down
+      setError(axiosDetail(e, `${errorMessage(e)} (your current output is unchanged)`));
     }
     setRefining(false);
   };
@@ -240,7 +290,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
   const provHeader = () => provenanceLine((effectiveProv as any)?.served_by, provExternal);
 
   const copyResult = async () => {
-    try { await navigator.clipboard.writeText(provHeader() + exportText); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
+    try { await navigator.clipboard.writeText(provHeader() + exportText); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { silenceIsRight('the button shows Copied only when the copy succeeded, so a failed copy is seen as no confirmation')(); }
   };
   // E4 — output-format selection (§4.9): export the result in any real, in-house-producible text format.
   const downloadAs = (fmt: 'md' | 'txt' | 'html' | 'json') => {
@@ -275,6 +325,9 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
         </p>
         {/* W737 - and which of the two it is on this deployment NOW, from the server's status, before the form */}
         <ServingNow />
+        {/* W925 (P5.15 release, the Owner's ruling of 2026-10-12) - BOTH OPTIONS, before the form: the tier of review
+            this tool has reached and the option of a qualified person with when one is warranted, in the server's words */}
+        <ReviewOptions endpoint={endpoint} />
       </div>
 
       {fields.map(f => (
@@ -283,7 +336,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
           {f.type === 'select' ? (
             <select aria-label={f.label} value={form[f.name]} onChange={e => setForm({ ...form, [f.name]: e.target.value })}
               className="block mt-1 text-[11px] font-black uppercase bg-slate-900 border border-slate-800 rounded-lg text-slate-300 px-3 py-2">
-              {(f.options || []).map(o => <option key={o} value={o}>{o}</option>)}
+              {(f.options || []).map(o => <option key={o} value={o}>{f.optionLabels?.[o] ?? o}</option>)}
             </select>
           ) : (f.type === 'textarea' || f.type === 'keyvalue' || f.type === 'list' || f.type === 'claims') ? (
             <textarea aria-label={f.label} value={form[f.name]} onChange={e => setForm({ ...form, [f.name]: e.target.value })} rows={3}
@@ -393,6 +446,16 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
               {' — '}{(effectiveProv as any).review.basis}.
             </p>
           )}
+          {/* W842 (FU-1092) — which model and which build answered, in the server's words. The floor names no
+              model, and its own note below says what it did not do. */}
+          {(effectiveProv as any)?.served_identity?.model && (
+            <p data-testid="domain-served-identity" className="text-[10px] text-slate-400 leading-relaxed border border-slate-800 rounded-lg p-2">
+              <span className="font-black uppercase tracking-widest text-[9px] text-slate-300">Answered by: {(effectiveProv as any).served_identity.model}</span>
+              {' — build '}{(effectiveProv as any).served_identity.build_digest || 'not known'}
+              {' — ran on '}<span data-testid="domain-served-processor">{(effectiveProv as any).served_identity.processor || 'not known'}</span>
+              {' — '}{(effectiveProv as any).served_identity.basis}.
+            </p>
+          )}
           {/* W627 (FU-536) — floor output says what was NOT done, where the output is, not only in a badge */}
           {(effectiveProv as any)?.floor_note && !result.floor_note && (
             <p data-testid="domain-floor-note" className="text-[10px] text-amber-400 leading-relaxed border border-amber-500/30 rounded-lg p-2">
@@ -413,6 +476,10 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
           <div className="pt-3 border-t border-slate-800/60 space-y-2">
             <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Refine this output</label>
             {refineNote && <p role="status" data-testid="refine-withheld" className="text-[10px] text-amber-400 font-semibold leading-relaxed">Scholar review — the rewrite is withheld: {refineNote}</p>}
+            {/* W806 (FU-840) - an approved rewrite says who approved it, as the original answer's note did */}
+            {!refineNote && refineData?.scholar_review?.state === 'approved' && typeof refineData?.scholar_review?.basis === 'string' && (
+              <p role="status" data-testid="refine-approved" className="text-[10px] text-emerald-400 font-semibold leading-relaxed">Scholar review — this rewrite was approved: {refineData.scholar_review.basis}</p>
+            )}
             <div className="flex items-center gap-2 flex-wrap">
               <input aria-label="Refinement instruction" value={refineText} onChange={e => setRefineText(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') refine(); }}
@@ -424,6 +491,23 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
             </div>
           </div>
 
+          {/* W965 (FU-1190) - say this answer is wrong: a claim a person decides, raised on the answer as it is shown */}
+          {claimable && (
+            <div data-testid="domain-claim" className="pt-3 border-t border-slate-800/60 space-y-2">
+              <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Say this answer is wrong</label>
+              <div className="flex items-center gap-2 flex-wrap">
+                <input aria-label="What is wrong with this answer" value={claimWrong} onChange={e => setClaimWrong(e.target.value)}
+                  className="flex-1 min-w-[220px] text-xs bg-slate-950 border border-slate-900 rounded-xl p-2.5 text-slate-300" />
+                <Button type="button" onClick={raiseClaim} disabled={claimBusy || !claimWrong.trim()} className="bg-slate-800 text-slate-300 text-xs">
+                  Raise a claim about this answer
+                </Button>
+              </div>
+              {claimDone && <p role="status" data-testid="domain-claim-done" className="text-[10px] text-emerald-400">{claimDone}</p>}
+              {claimBasis && <p data-testid="domain-claim-basis" className="text-[10px] text-slate-500 leading-relaxed">{claimBasis}</p>}
+              {claimRefused && <p role="alert" data-testid="domain-claim-refused" className="text-[10px] text-vital">{claimRefused}</p>}
+            </div>
+          )}
+
           {/* Offering 1 -> Offering 2 (§3A): take this work end-to-end into a living VSB IDBO enterprise */}
           {primary && (form[primary] || '').trim() && (
             <div className="pt-3 border-t border-slate-800/60 flex items-center justify-between gap-3 flex-wrap">
@@ -431,7 +515,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
                 Want to take this further? Commercialise it end-to-end into your own <span className="text-highlight font-bold">VSB IDBO enterprise</span>, run by the heartbeat levers you turn on.
               </p>
               <Button type="button"
-                onClick={() => { const sid = `seed_${Date.now().toString(36)}`; try { sessionStorage.setItem(`ws_genesis_${sid}`, JSON.stringify({ title, domain: domainSeed, input: primary ? form[primary] : '', output: String(result?.[resultKey] ?? result?.deliverable ?? '') })); } catch { /* seed best-effort */ } navigate(`/genesis?seed=${sid}${domainSeed ? `&domain=${encodeURIComponent(domainSeed)}` : ''}`); }}
+                onClick={() => { const sid = `seed_${Date.now().toString(36)}`; try { sessionStorage.setItem(`ws_genesis_${sid}`, JSON.stringify({ title, domain: domainSeed, input: primary ? form[primary] : '', output: String(result?.[resultKey] ?? result?.deliverable ?? ''), output_withheld: (!String(result?.[resultKey] ?? result?.deliverable ?? '').trim() && typeof result?.review_note === 'string' && result.review_note ? result.review_note : '') })); } catch { silenceIsRight('the seed handed to the Genesis journey is browser storage is a per-browser convenience that nothing else depends on')(); } navigate(`/genesis?seed=${sid}${domainSeed ? `&domain=${encodeURIComponent(domainSeed)}` : ''}`); }}
                 className="bg-highlight text-sovereign flex items-center gap-2 text-xs shrink-0">
                 <Rocket size={14} /> Commercialise via Genesis
               </Button>

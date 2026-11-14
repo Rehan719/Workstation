@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional
 from agentic_core.ai.native.engine import native_engine
 from agentic_core.ai.native.model_resource import registry
 from agentic_core.ai.native.homeostasis import homeostasis
+from agentic_core.ai import data_class as _dc899      # W899 (FU-610) - the class of what an external call carries
 
 
 def _fire(signal_type: str, source: str, msg: str, intensity: float = 0.5) -> None:
@@ -39,6 +40,19 @@ class ResourceSkipped(RuntimeError):
         super().__init__(f"{name}: {reason}")
         self.name = name
         self.reason = reason
+
+
+class DataClassRefused(ResourceSkipped):
+    """W899 (FU-610) - an external call refused BEFORE TRANSMISSION for the class of what it carries: it declared
+    none, or a class this platform does not name, or a barred one, or it read the legal matter. A skip, like the
+    hourly cap's: nothing was sent, so nothing is recorded against the provider."""
+
+
+def _dc_send899(provider: str) -> None:
+    """W899 (FU-610) - refuse before the provider's client is built when the call's material may not leave."""
+    _pf = _dc899.preflight(provider)
+    if not _pf["send"]:
+        raise DataClassRefused(provider, _pf["why"])
 
 
 def _record_model(name: str, success: bool, t0: float, tokens: Optional[int] = None) -> None:
@@ -74,6 +88,11 @@ FLOOR_TOKENS_BASIS = ("NOT COUNTED - the deterministic floor served this and run
                       "tokens to count; null, never 0")
 REFUSED_TOKENS_BASIS = "NOT COUNTED - the request was refused before any model ran; null, never 0"
 
+#  W844 (FU-1091) - THE OPTIONS this platform sends the local runtime with a generation: none. One constant, read by
+#  both requests to the runtime and by the record a baseline keeps, so the record cannot say other than what was
+#  sent. Empty means the runtime's own defaults apply - and the record names the runtime and its version.
+LOCAL_REQUEST_OPTIONS: Dict[str, Any] = {}
+
 
 def ollama_counted(text: str, final: Optional[Dict[str, Any]]) -> CountedText:
     """`text`, carrying the tokens Ollama reported in its FINAL object (the one with `done: true`).
@@ -93,6 +112,33 @@ def ollama_counted(text: str, final: Optional[Dict[str, Any]]) -> CountedText:
         out.model_tokens_basis = ("NOT COUNTED - " + ("no final object was read from the local model's stream"
                                                       if final is None else
                                                       "the local model's final object named no token count")
+                                  + "; null, never 0")
+    return out
+
+
+#  W870 (FU-1100) - THE TWO EXTERNAL ACCELERANTS' ANSWERS CARRY THE USAGE THEIR OWN SERVERS REPORTED, and both were
+#  dropped. Anthropic names input_tokens and output_tokens; OpenAI names prompt_tokens and completion_tokens.
+EXTERNAL_USAGE_FIELDS: Dict[str, tuple] = {"anthropic": ("input_tokens", "output_tokens"),
+                                           "openai": ("prompt_tokens", "completion_tokens")}
+
+
+def external_counted(text: str, usage: Any, provider: str) -> CountedText:
+    """`text`, carrying the tokens an external accelerant's server reported in its answer's usage object. The count
+    sums only the fields the usage actually carries, and the basis names them. An answer naming neither field, or
+    carrying no usage at all, is None: not counted, never 0."""
+    out = CountedText(text)
+
+    def _field(k):
+        v = usage.get(k) if isinstance(usage, dict) else getattr(usage, k, None)
+        return v if type(v) is int and v >= 0 else None
+    fields = [k for k in EXTERNAL_USAGE_FIELDS.get(provider, ()) if _field(k) is not None]
+    if fields:
+        out.model_tokens = sum(_field(k) for k in fields)
+        out.model_tokens_basis = (f"measured - {out.model_tokens} token(s) {provider} reported in its answer's "
+                                  f"usage ({' + '.join(fields)})")
+    else:
+        out.model_tokens_basis = (f"NOT COUNTED - {provider}'s answer "
+                                  + ("carried no usage" if usage is None else "named no token count in its usage")
                                   + "; null, never 0")
     return out
 
@@ -312,9 +358,15 @@ class NativeOrchestrator:
     async def complete(self, prompt: str, agent: str = "assistant",
                        timeout: float = 30.0, prefer_external: bool = False,
                        prefer: str = "auto", user_text: Optional[str] = None,
-                       language: Optional[str] = None) -> Dict[str, Any]:
-        res = await self._complete(prompt, agent=agent, timeout=timeout, prefer_external=prefer_external,
-                                   prefer=prefer, user_text=user_text)
+                       language: Optional[str] = None, data_class: Optional[str] = None) -> Dict[str, Any]:
+        #  W899 (FU-610) - `data_class` declares what the prompt carries (None keeps a declaration the caller is
+        #  inside). An external resource is sent it only for a declared class that is not barred, and the reply
+        #  says what was declared and what each check decided
+        _checks899: List[Dict[str, Any]] = []
+        with _dc899.declared(data_class):
+            res = await self._complete(prompt, agent=agent, timeout=timeout, prefer_external=prefer_external,
+                                       prefer=prefer, user_text=user_text, _dc_checks=_checks899)
+            res["data_class"] = _dc899.provenance(data_class, _checks899, bool(res.get("is_external")))
         #  W738 - the Arabic rule, once, on whatever served (refusals carry no composed text)
         if not res.get("refused"):
             from agentic_core.religious_domain.composed_text import apply_arabic_rule
@@ -323,7 +375,8 @@ class NativeOrchestrator:
 
     async def _complete(self, prompt: str, agent: str = "assistant",
                         timeout: float = 30.0, prefer_external: bool = False,
-                        prefer: str = "auto", user_text: Optional[str] = None) -> Dict[str, Any]:
+                        prefer: str = "auto", user_text: Optional[str] = None,
+                        _dc_checks: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
         #  W640 - `user_text` is the caller's statement of which words the PERSON wrote. Only the floor
         #  reads it (a served model is given the whole prompt and nothing is duplicated into it); without
         #  it the floor attributes nothing to the person.
@@ -381,6 +434,9 @@ class NativeOrchestrator:
                              or f"NOT COUNTED - {name} served this and this platform reads no token count from "
                                 "it; null, never 0")
                 if out and out.strip():
+                    if name in ("anthropic", "openai") and _dc_checks is not None:   # W899 (FU-610) - what was sent
+                        _pf899 = _dc899.preflight(name)
+                        _dc_checks.append({"provider": name, "send": _pf899["send"], "why": _pf899["why"]})
                     _record_model(name, True, _t, tokens=_mt)    # learned: this model performed
                     _organism_report(name, True)         # §6×§8 (W278) — breaker heals on success
                     _fire("motor", f"native.{agent}", f"served by {name}", 0.5)
@@ -392,6 +448,8 @@ class NativeOrchestrator:
             except ResourceSkipped as sk:
                 # W458 — not attempted ≠ failed: annotate like the circuit-open skip, record NOTHING
                 tried[-1] = f"{name} ({sk.reason}, skipped)"
+                if isinstance(sk, DataClassRefused) and _dc_checks is not None:      # W899 (FU-610)
+                    _dc_checks.append({"provider": name, "send": False, "why": sk.reason})
                 continue
             except Exception:
                 _record_model(name, False, _t)           # error/timeout = failure
@@ -404,7 +462,8 @@ class NativeOrchestrator:
                 "model_tokens": None, "model_tokens_basis": FLOOR_TOKENS_BASIS}   # W741 (S18.1)
 
     async def ensemble(self, prompt: str, agent: str = "ensemble", models: Optional[List[str]] = None,
-                       synthesize: bool = True, timeout: float = 30.0) -> Dict[str, Any]:
+                       synthesize: bool = True, timeout: float = 30.0,
+                       user_text: Optional[str] = None) -> Dict[str, Any]:
         """§6 — run a prompt across MULTIPLE owned models in parallel, then synthesise a consensus. Owned
         orchestration as a composable resource. Defaults to the discovered local models (each routed by name)
         plus the native floor; every member reports which owned resource served it."""
@@ -416,7 +475,9 @@ class NativeOrchestrator:
         models = [m for m in models if m][:5]
         _fire("cognitive", f"native.{agent}", f"ensemble across {len(models)} owned models", 0.6)
         results = await asyncio.gather(
-            *[self.complete(prompt, agent=f"{agent}-{i}", prefer=m, timeout=timeout) for i, m in enumerate(models)],
+            #  W803 (FU-983 R4[7]) - the person's words travel with each member, so the floor states their subject
+            *[self.complete(prompt, agent=f"{agent}-{i}", prefer=m, timeout=timeout, user_text=user_text)
+              for i, m in enumerate(models)],
             return_exceptions=True)
         members: List[Dict[str, Any]] = []
         for m, r in zip(models, results):
@@ -523,7 +584,9 @@ class NativeOrchestrator:
                 final: Optional[Dict[str, Any]] = None     # W741 - Ollama's last object carries its count
                 async with httpx.AsyncClient(timeout=to) as client:
                     async with client.stream("POST", url, json={"model": model, "prompt": prompt,
-                                                                "stream": True}) as r:
+                                                                "stream": True,
+                                                                **({"options": dict(LOCAL_REQUEST_OPTIONS)}
+                                                                   if LOCAL_REQUEST_OPTIONS else {})}) as r:
                         async for line in r.aiter_lines():
                             if not line.strip():
                                 continue
@@ -539,20 +602,22 @@ class NativeOrchestrator:
 
             return await asyncio.wait_for(_stream_generate(), timeout=budget)
         if name == "anthropic":
+            _dc_send899("anthropic")                   # W899 (FU-610) - the class of what it carries, first
             self._external_budget_check("anthropic")   # §6 (W335) — spend guard on the REAL spend path
             import anthropic
             client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
             msg = await client.messages.create(model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
                                                max_tokens=int(os.getenv("GATEWAY_MAX_TOKENS", "4096")),
                                                messages=[{"role": "user", "content": prompt}])
-            return msg.content[0].text
+            return external_counted(msg.content[0].text, getattr(msg, "usage", None), "anthropic")   # W870
         if name == "openai":
+            _dc_send899("openai")                      # W899 (FU-610) - the class of what it carries, first
             self._external_budget_check("openai")      # §6 (W335) — spend guard on the REAL spend path
             from openai import AsyncOpenAI
             client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             comp = await client.chat.completions.create(model="gpt-4o-mini", timeout=25,
                                                         messages=[{"role": "user", "content": prompt}])
-            return comp.choices[0].message.content or ""
+            return external_counted(comp.choices[0].message.content or "", getattr(comp, "usage", None), "openai")   # W870
         raise ResourceSkipped(name, "unknown resource")   # W458 — nothing was attempted
 
     _external_calls: List[float] = []   # timestamps of external attempts (sliding hour window)
@@ -698,7 +763,8 @@ class NativeOrchestrator:
         return self._plan_tree(goal), "deterministic_template"
 
     async def orchestrate_tree(self, goal: str, context: str = "", max_parallel: int = 4,
-                               prefer_external: bool = False, timeout: float = 30.0) -> Dict[str, Any]:
+                               prefer_external: bool = False, timeout: float = 30.0,
+                               user_text: Optional[str] = None) -> Dict[str, Any]:
         """Plan + run an autonomous workflow TREE for a goal — the living-organism cascade: the goal is
         decomposed into a dependency tree, executed IN-HOUSE-FIRST per node with PARALLEL branches,
         biomimetically mediated (immune-throttled parallelism + biobus nervous signals + the learning
@@ -739,7 +805,9 @@ class NativeOrchestrator:
                 + dep_block
                 + f"Your task: {n['task']}\n\n## {nid} output"
             )
-            res = await self.complete(prompt, agent=f"tree:{nid}", timeout=timeout, prefer_external=prefer_external)
+            #  W803 (FU-983 R4[7]) - each node carries the goal the person typed, so a floor node states its subject
+            res = await self.complete(prompt, agent=f"tree:{nid}", timeout=timeout, prefer_external=prefer_external,
+                                      user_text=user_text)
             # §6↔§7 — when a fabric resource genuinely matches this node's task, ALSO invoke its REAL
             # handler in-process and fold the genuine result into the node (honest provenance: resource
             # id + the kind the handler is + the endpoint serving the same logic + the word-overlap
@@ -956,7 +1024,7 @@ class NativeOrchestrator:
         except Exception:
             signal_response = None
 
-        # UEG PROVENANCE (owned ledger): record this run to the real hash-chained SHA3-512 Merkle-DAG
+        # UEG PROVENANCE (owned ledger): record this run to the real hash-chained SHA3-512 log (a linear chain)
         # audit ledger — the in-house AI's actions get verifiable, tamper-evident provenance. Best-effort.
         ueg_hash = None
         try:
@@ -989,7 +1057,7 @@ class NativeOrchestrator:
             "consensus": consensus,
             "signal_response": signal_response,
             "ueg_hash": ueg_hash,
-            "ueg_ledger": "hash-chained SHA3-512 Merkle-DAG (owned, verifiable)" if ueg_hash else None,
+            "ueg_ledger": ("hash-chained SHA3-512 log (owned; a linear chain - each event carries its parent's hash, so re-hashing verifies it; no Merkle tree is built)") if ueg_hash else None,
             "fabric_resources_drawn": sorted({(results[nid].get("fabric") or {}).get("resource")
                                               for nid in order if nid in results and results[nid].get("fabric")}
                                              - {None}),
@@ -998,6 +1066,7 @@ class NativeOrchestrator:
             "planner": planner,
             "nodes": [{"id": nid, "role": by_id[nid]["role"], "depends_on": by_id[nid]["depends_on"],
                        "served_by": results[nid]["served_by"], "is_external": results[nid]["is_external"],
+                       "data_class": results[nid].get("data_class"),     # W899 (FU-610) - declared, and decided
                        "fabric": results[nid].get("fabric"),
                        "output": results[nid]["output"]} for nid in order if nid in results],
             "final": final,
@@ -1041,6 +1110,7 @@ class NativeOrchestrator:
             carry = res["output"]
             trace.append({"step": i + 1, "role": role, "served_by": res["served_by"],
                           **({"requested_model": requested} if requested != "auto" else {}),
+                          "data_class": res.get("data_class"),     # W899 (FU-610) - declared, and decided
                           "output": res["output"]})
         return {"agent": agent, "stages": len(stages), "trace": trace,
                 "final": carry, "any_external": external_used, "homeostasis": homeo}

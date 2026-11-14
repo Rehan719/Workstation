@@ -39,7 +39,9 @@ Every deliverable is produced **in-house first** on Workstation's own native AI 
 - Real-money rails (the WST economy is **virtual/simulated only** — Stripe/KYC stay Owner-gated)
 - Database (file-based atomic JSON persistence — functional, not queryable at scale)
 - Native mobile app (entities ship a PWA scaffold, not a store app)
-- Analytics / error monitoring
+- Analytics, and error alerting: failures are recorded, not alerted. Every route failure is recorded in the
+  outcome ledger and the event chain and shown on the Operations page; nothing sends one to anyone. The uptime
+  check for the first deploy is in `docs/DEPLOYMENT.md`
 
 ## Run locally
 
@@ -110,7 +112,7 @@ and `npm run build` produces the static `dist/`.
 
 ```
 agentic_core/          — FastAPI backend (the real code)
-  app_mvp.py           — entrypoint; 602 API operations (method+path; 572 distinct paths, /api/ only — the SPA catch-all mounts only when the frontend is built), boots clean
+  app_mvp.py           — entrypoint; 632 API operations (method+path; 597 distinct paths, /api/ only — the SPA catch-all mounts only when the frontend is built), boots clean
   ai/                  — the NATIVE fabric: owned models, orchestration, swarm, memory, homeostasis
   ai/gateway.py        — in-house-first routing (native fabric → optional external providers)
   gaas/v5/             — constitutional interceptor engine + hash-chained UEG audit log

@@ -163,10 +163,32 @@ def _auth_on() -> bool:
         return False
 
 
-def _identity(uid: str) -> dict:
+def _learner_key(uid: str, user) -> str:
+    """W848 (FU-1064) - WHOSE RECORD a learner route reads or writes, resolved once per call. With sign-in on, the id
+    is the signed-in caller's own: an id that is not their username is answered as not found (another learner's
+    record is never offered), and the record is kept under the username - or, when the username holds characters a
+    store path may not, under a store-safe key derived from it. With sign-in off, the id the caller sent, refused
+    when it is not an id."""
+    if _auth_on() and isinstance(user, dict) and user.get("username"):
+        own = str(user["username"])
+        if str(uid or "") != own:
+            raise HTTPException(status_code=404, detail="no learner record with this id for the signed-in caller")
+        if _UID_RE.fullmatch(own):
+            return own
+        import hashlib as _h848
+        return "u-" + _h848.sha256(own.encode("utf-8")).hexdigest()[:24]
+    return _safe_uid(uid)
+
+
+def _identity(uid: str, user=None) -> dict:
     """WHOSE RECORD THIS IS, said on EVERY answer that carries a learner's id (OWNER RULING 2026-10-12: the
     record is kept, and said to be unverified; it is offered to no one else until sign-in exists, and is then
     the learner's to export and delete). One function, so no answer can say it differently or not at all."""
+    if _auth_on() and isinstance(user, dict) and user.get("username"):
+        #  W848 (FU-1064) - with sign-in on, the record is the caller's own and said so
+        return {"identity_verified": True,
+                "identity_basis": ("this record is the signed-in caller's own: it is kept under their username, "
+                                   "and an id that is not theirs is answered as not found")}
     return {
         "identity_verified": False,
         "identity_basis": (f"this record is keyed by the id the caller sent ({uid!r}). It is not tied to a "
@@ -745,12 +767,23 @@ async def get_ayah_translation(surah_number: int, ayah_number: int, edition: str
 class HifzScheduleRequest(BaseModel):
     uid: str
     surah_number: int
-    ayaat_range: list[int]  # [start, end] — ayah numbers to memorise
+    ayaat_range: list[int]  # [start, end] — the ayaat of ONE trouble spot (W957: at most TROUBLE_SPOT_MOST)
+
+
+#  W957 (P5.17 clause 1) - THE CARD SCHEDULER IS KEPT ONLY FOR ISOLATED TROUBLE SPOTS. A card is made for each
+#  ayah of a spot the learner marks, at most TROUBLE_SPOT_MOST ayaat at a time; a portion is practised on the
+#  plan's three tracks, not as cards. The bound is this platform's own, not a memorisation method's.
+TROUBLE_SPOT_MOST = 5
+TROUBLE_SPOTS_ONLY = ("The card scheduler is kept only for isolated trouble spots: mark the few ayaat you keep "
+                      f"stumbling on, at most {TROUBLE_SPOT_MOST} at a time (this platform's own bound, not a "
+                      "method's). A portion is practised on the plan's three tracks - new lesson, recent "
+                      "revision, old revision - not as cards.")
 
 
 @router.post("/hifz/schedule", dependencies=_ASKS)
-async def hifz_schedule(req: HifzScheduleRequest):
-    """Generate SM-2 memorisation schedule for a range of ayaat."""
+async def hifz_schedule(req: HifzScheduleRequest, user: dict | None = Depends(get_current_user)):
+    """SM-2 cards for ONE isolated trouble spot of at most TROUBLE_SPOT_MOST ayaat (W957, P5.17 clause 1)."""
+    req.uid = _learner_key(req.uid, user)          # W848 (FU-1064) - the caller's own record
     if not 1 <= req.surah_number <= 114:
         raise HTTPException(status_code=400, detail="Invalid surah number.")
     if len(req.ayaat_range) != 2 or req.ayaat_range[0] > req.ayaat_range[1]:
@@ -764,6 +797,10 @@ async def hifz_schedule(req: HifzScheduleRequest):
         raise HTTPException(status_code=422,
                             detail=f"surah {req.surah_number} has {max_ayah} ayaat — "
                                    f"range must lie within [1, {max_ayah}]")
+    _asked = req.ayaat_range[1] - req.ayaat_range[0] + 1
+    if _asked > TROUBLE_SPOT_MOST:                  # W957 (P5.17 clause 1) - a spot, never a portion
+        raise HTTPException(status_code=422, detail=(f"{_asked} ayaat were asked for. " + TROUBLE_SPOTS_ONLY
+                                                     + " Nothing was scheduled."))
 
     with store_lock(_hifz_path(req.uid)):
         hifz = _load_hifz(req.uid)
@@ -791,10 +828,11 @@ async def hifz_schedule(req: HifzScheduleRequest):
         _save_hifz(req.uid, hifz)
     return {
         "uid": req.uid,
-        **_identity(req.uid),
+        **_identity(req.uid, user),
         "surah_number": req.surah_number,
         "ayaat_scheduled": len(schedule),
         "schedule": schedule,
+        "kept_for": TROUBLE_SPOTS_ONLY,             # W957 (P5.17 clause 1)
     }
 
 
@@ -837,8 +875,9 @@ class HifzReviewRequest(BaseModel):
 
 
 @router.post("/hifz/review", dependencies=_ASKS)
-async def hifz_review(req: HifzReviewRequest):
+async def hifz_review(req: HifzReviewRequest, user: dict | None = Depends(get_current_user)):
     """Record a review session. Updates SM-2 interval for the ayah."""
+    req.uid = _learner_key(req.uid, user)          # W848 (FU-1064) - the caller's own record
     if not 0 <= req.quality <= 5:
         raise HTTPException(status_code=400, detail="Quality must be 0-5.")
 
@@ -904,7 +943,7 @@ async def hifz_review(req: HifzReviewRequest):
 
     return {
         "uid": req.uid,
-        **_identity(req.uid),
+        **_identity(req.uid, user),
         "ayah_ref": req.ayah_ref,
         "quality": req.quality,
         "new_interval_days": new_interval,
@@ -918,9 +957,58 @@ async def hifz_review(req: HifzReviewRequest):
     }
 
 
+#  W852 (FU-1167) - THE LEARNER'S TO EXPORT AND DELETE (Owner ruling 2026-10-12), once sign-in exists.
+_EXPORT_DELETE_NEEDS_SIGN_IN = (
+    "export and delete are the learner's once sign-in is on (Owner ruling 2026-10-12). With sign-in off a record is "
+    "keyed by whatever id is sent and is tied to no person, so it is neither handed out nor removed as anyone's")
+
+
+def _signed_in_learner(user) -> None:
+    if not (_auth_on() and isinstance(user, dict) and user.get("username")):
+        raise HTTPException(status_code=409, detail=_EXPORT_DELETE_NEEDS_SIGN_IN)
+
+
+@router.get("/learner/{uid}/export", dependencies=_ASKS)
+async def learner_export(uid: str, user: dict | None = Depends(get_current_user)):
+    """W852 (FU-1167) - the signed-in learner's whole record, theirs to keep."""
+    _signed_in_learner(user)
+    key = _learner_key(uid, user)
+    has_hifz, has_gami = _hifz_path(key).exists(), _gami_path(key).exists()
+    return {"uid": uid, "exported_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "hifz": _load_hifz(key) if has_hifz else None,
+            "gamification": _load_gami(key) if has_gami else None,
+            "basis": ("the whole of the record this platform keeps for this learner: memorisation cards, review "
+                      "sessions, set portions and recorded awards"
+                      + ("" if (has_hifz and has_gami) else
+                         "; " + " and ".join(n for n, has in (("no memorisation record", has_hifz),
+                                                               ("no award record", has_gami)) if not has)
+                         + " exists, so that part is null")),
+            **_identity(uid, user)}
+
+
+@router.delete("/learner/{uid}", dependencies=_ASKS)
+async def learner_delete(uid: str, user: dict | None = Depends(get_current_user)):
+    """W852 (FU-1167) - remove the signed-in learner's record at their request, with any copy a corrupt read set
+    aside. Says what it removed."""
+    _signed_in_learner(user)
+    key = _learner_key(uid, user)
+    removed = []
+    for part, path in (("memorisation record", _hifz_path(key)), ("award record", _gami_path(key))):
+        with store_lock(path):
+            for p in [path, *sorted(path.parent.glob(f"{path.stem}.corrupt-*.json"))]:
+                if p.exists():
+                    p.unlink()
+                    removed.append(part if p == path else f"{part} (a copy set aside after a corrupt read)")
+    return {"uid": uid, "deleted": bool(removed), "removed": removed,
+            "basis": ("removed at the learner's own request; nothing of it is kept on this platform's stores"
+                      if removed else "there was no record for this learner to remove"),
+            **_identity(uid, user)}
+
+
 @router.get("/hifz/progress/{uid}", dependencies=_ASKS)
-async def hifz_progress(uid: str):
+async def hifz_progress(uid: str, user: dict | None = Depends(get_current_user)):
     """Get full memorisation progress for a user."""
+    uid = _learner_key(uid, user)                  # W848 (FU-1064) - the caller's own record
     hifz = _load_hifz(uid)
     today = time.strftime("%Y-%m-%d")
     due_today = [ref for ref, c in hifz["cards"].items() if c.get("next_review_date", "") <= today]
@@ -938,9 +1026,10 @@ async def hifz_progress(uid: str):
         "last_session": hifz["sessions"][-1] if hifz.get("sessions") else None,
         "progress_matrix": hifz.get("cards", {}),
         #  W648 (FU-627; Owner ruling 2026-10-09 late: no workaround is built, the page says so) - WHOSE
-        #  RECORD THIS IS. It is keyed by the id the caller sent, and no identity is checked on these routes.
+        #  RECORD THIS IS. With sign-in off it is keyed by the id the caller sent and no identity is checked; with
+        #  sign-in on it is the caller's own (W848, FU-1064).
         #  W686 - said by the one function every learner answer uses.
-        **_identity(uid),
+        **_identity(uid, user),
     }
 
 
@@ -1049,8 +1138,9 @@ class PortionRequest(BaseModel):
 
 
 @router.post("/hifz/portion", dependencies=_ASKS)
-async def hifz_set_portion(req: PortionRequest):
+async def hifz_set_portion(req: PortionRequest, user: dict | None = Depends(get_current_user)):
     """Set one track's portion. The platform sets nothing of its own."""
+    req.uid = _learner_key(req.uid, user)          # W848 (FU-1064) - the caller's own record
     if req.set_by not in ("learner", "teacher"):
         raise HTTPException(status_code=422, detail="set_by is 'learner' or 'teacher'")
     checked = _practice.validate_portion(req.track, req.unit, req.start, req.end)
@@ -1071,12 +1161,14 @@ async def hifz_set_portion(req: PortionRequest):
         portions[req.track] = entry
         _save_hifz(req.uid, hifz)
     return {"uid": req.uid, "track": req.track, "portion": entry, "proposed_by_platform": False,
-            "defaults_basis": _NO_DEFAULTS, **_identity(req.uid),
-            "set_by_basis": "who set this is what the caller stated; no identity is checked on these routes"}
+            "defaults_basis": _NO_DEFAULTS, **_identity(req.uid, user),
+            "set_by_basis": ("who set this - the learner or a teacher - is what the caller stated; it is not "
+                             "verified (whose record it is, is said under identity_basis)")}
 
 
 @router.get("/hifz/portions/{uid}", dependencies=_ASKS)
-async def hifz_portions(uid: str):
+async def hifz_portions(uid: str, user: dict | None = Depends(get_current_user)):
+    uid = _learner_key(uid, user)                  # W848 (FU-1064) - the caller's own record
     hifz = _load_hifz(uid)
     portions = hifz.get("portions") if isinstance(hifz.get("portions"), dict) else {}
     return {"uid": uid, "tracks": list(_practice.TRACKS),
@@ -1084,7 +1176,7 @@ async def hifz_portions(uid: str):
             "tracks_set": sum(1 for t in _practice.TRACKS if portions.get(t)),
             "proposed_by_platform": False, "defaults_basis": _NO_DEFAULTS,
             "earlier_portions_kept": len(hifz.get("portion_history") or []),
-            **_identity(uid)}
+            **_identity(uid, user)}
 
 
 # ── Tajweed ───────────────────────────────────────────────────────────────────
@@ -1194,7 +1286,7 @@ async def tajweed_lesson(req: TajweedLessonRequest):
     from agentic_core.api import scholar_review as _sr
     _key = f"tajweed_lesson:{req.rule_name}:{req.level}"
     #  submit_if_new, never submit: `submit` overwrites, so the request after an approval would reset it
-    _sr.submit_if_new(_key, "qep/tajweed/lesson", lesson, reference=req.rule_name)
+    _sr.submit_if_new(_key, "qep/tajweed/lesson", lesson, reference=req.rule_name, served_by=served_by)   # W796
     _published, _review_state, _review_why = _sr.published_body(_key, lesson)
 
     return {**_reply_evidence(served_by), 
@@ -1240,14 +1332,15 @@ async def tajweed_lesson(req: TajweedLessonRequest):
 # ── Gamification ──────────────────────────────────────────────────────────────
 
 @router.get("/gamification/{uid}", dependencies=_ASKS)
-async def get_gamification(uid: str):
+async def get_gamification(uid: str, user: dict | None = Depends(get_current_user)):
     """Learner gamification state — REAL recorded awards only.
 
     W439 — the old handler probed GamifiedLearning for methods that do not exist
     (get_learner_state/award_achievement), so it ALWAYS fell to a zeros dict: every learner read
     xp 0, level 1, streak 0 forever, whatever they had done. State now comes from the persisted
     award store, and every derived figure (level, streak) carries its formula."""
-    return {**_gami_state(_load_gami(uid)), **_identity(uid)}
+    uid = _learner_key(uid, user)                  # W848 (FU-1064) - the caller's own record
+    return {**_gami_state(_load_gami(uid)), **_identity(uid, user)}
 
 
 _RESERVED_ACHIEVEMENT_PREFIXES = ("hafiz", "hifz", "surah_complete", "ayah_memorised", "ayah_memorized",
@@ -1261,7 +1354,7 @@ class AwardRequest(BaseModel):
 
 
 @router.post("/gamification/award", dependencies=_ASKS)
-async def award_xp(req: AwardRequest):
+async def award_xp(req: AwardRequest, user: dict | None = Depends(get_current_user)):
     """Award XP for a learning achievement — persisted, then reported.
 
     W439 — the old fallback returned "Achievement recorded" while persisting NOTHING (the engine
@@ -1274,7 +1367,9 @@ async def award_xp(req: AwardRequest):
         raise HTTPException(status_code=422, detail=(
             f"'{req.achievement}' claims memorisation or completion, which only the platform's own review path "
             f"records - an explicit award may not assert it"))
-    _safe_uid(req.uid)          # an id that is not an id is still refused AS that (400), before the ruling's 409
+    #  an id that is not an id is still refused AS that, before the ruling's 409; with sign-in on, an id that is not
+    #  the caller's is not found (W848, FU-1064)
+    req.uid = _learner_key(req.uid, user)
     if EXPLICIT_AWARDS_REFUSED:
         #  refused BEFORE anything is written, where the caller receives it
         raise HTTPException(status_code=409, detail=(
@@ -1412,7 +1507,7 @@ async def qep_curriculum(req: QepCurriculumRequest):
 
     #  submit_if_new, never submit: a second request for the same subject must not reset an approval
     _key = f"qep_curriculum:{req.subject}:{req.level}:{_weeks}"
-    _sr.submit_if_new(_key, "qep/curriculum", body, reference=req.subject)
+    _sr.submit_if_new(_key, "qep/curriculum", body, reference=req.subject, served_by=served_by)   # W796
     _published, _state, _why = _sr.published_body(_key, body)
 
     return {**_reply_evidence(served_by), 

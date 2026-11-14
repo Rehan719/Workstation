@@ -1,0 +1,581 @@
+{
+ "basis": "P5.10 clause 4 (W966): every typed outcome word and figure in the answer of a mounted route, by place (file, function, key, literal), with how many times it is typed there and the reason it is true where it is said. An entry with defect is NOT true where it is said: it names the open row that holds the fix, and excuses nothing once that row is closed. scripts/literal_outcomes.py fails on any place not carried here, on a count that differs, on a reason under thirty characters, and on an entry no mounted handler types any more.",
+ "entries": [
+  {
+   "file": "agentic_core/api/agent_hub.py",
+   "function": "create_handoff",
+   "key": "status",
+   "literal": "recorded",
+   "occurrences": 3,
+   "reason": "the handoff is written to the hub's store before this is said, and status_note beside it says no executor is subscribed, so nothing runs it"
+  },
+  {
+   "file": "agentic_core/api/agent_hub.py",
+   "function": "deregister_agent",
+   "key": "status",
+   "literal": "deregistered",
+   "occurrences": 1,
+   "reason": "said after the agent's registry file is unlinked and its leaving is broadcast"
+  },
+  {
+   "file": "agentic_core/api/board.py",
+   "function": "chief_instruct",
+   "key": "status",
+   "literal": "ungated_bypass_logged",
+   "occurrences": 1,
+   "reason": "said only in the branch where the Chief's governance gate raised and the bypass was logged, with the error beside it"
+  },
+  {
+   "file": "agentic_core/api/business_plan.py",
+   "function": "add_objective",
+   "key": "status",
+   "literal": "planned",
+   "occurrences": 1,
+   "reason": "the initial state of the objective this call creates; progress 0 and no review stand beside it"
+  },
+  {
+   "file": "agentic_core/api/business_plan.py",
+   "function": "ratified_enter",
+   "key": "status",
+   "literal": "planned",
+   "occurrences": 1,
+   "reason": "the initial state of each ratified objective this call enters into the plan; no review is recorded yet"
+  },
+  {
+   "file": "agentic_core/api/capital_fund.py",
+   "function": "reverse_allocation",
+   "key": "status",
+   "literal": "reversed",
+   "occurrences": 1,
+   "reason": "said after the reversal is applied to the fund's store, with applied true and the fresh available and allocated figures read back"
+  },
+  {
+   "file": "agentic_core/api/career.py",
+   "function": "mark_listing_used",
+   "key": "status",
+   "literal": "attached",
+   "occurrences": 1,
+   "reason": "said after the listing's text is ingested as a job ad, with the file id the ingestion returned and illustrative true"
+  },
+  {
+   "file": "agentic_core/api/change_control.py",
+   "function": "implement_change",
+   "key": "decision",
+   "literal": "withdrawn",
+   "occurrences": 1,
+   "reason": "the ledger entry written in the branch where this call retired the change, with the reason it was retired"
+  },
+  {
+   "file": "agentic_core/api/change_control.py",
+   "function": "review_change",
+   "key": "decision",
+   "literal": "approved",
+   "occurrences": 1,
+   "reason": "written to the ledger entry in the branch where the person's decision is approved"
+  },
+  {
+   "file": "agentic_core/api/change_control.py",
+   "function": "review_change",
+   "key": "decision",
+   "literal": "rejected",
+   "occurrences": 1,
+   "reason": "written to the ledger entry in the branch where the person's decision is rejected"
+  },
+  {
+   "file": "agentic_core/api/cognitive.py",
+   "function": "run_cascade",
+   "key": "status",
+   "literal": "complete",
+   "occurrences": 1,
+   "reason": "said after the cascade has run and returned, with its elapsed seconds and whether the engines computed beside it"
+  },
+  {
+   "file": "agentic_core/api/cognitive.py",
+   "function": "run_cascade",
+   "key": "status",
+   "literal": "mjm_failed_cascade_ok",
+   "occurrences": 1,
+   "reason": "said only in the branch where the MJM lifecycle raised after the cascade completed, with the error beside it"
+  },
+  {
+   "file": "agentic_core/api/cognitive.py",
+   "function": "run_mjm",
+   "key": "status",
+   "literal": "complete",
+   "occurrences": 1,
+   "reason": "said after the MJM lifecycle returned its response, whose reasoning trace stands beside it"
+  },
+  {
+   "file": "agentic_core/api/cognitive.py",
+   "function": "run_single_engine",
+   "key": "status",
+   "literal": "complete",
+   "occurrences": 1,
+   "reason": "said after the engine's mapped method ran and returned its result, which stands beside it"
+  },
+  {
+   "file": "agentic_core/api/cognitive.py",
+   "function": "run_single_engine",
+   "key": "status",
+   "literal": "planned",
+   "occurrences": 1,
+   "reason": "said in the branch for an engine the registry marks not implemented, with ran false and a note saying so"
+  },
+  {
+   "file": "agentic_core/api/cognitive.py",
+   "function": "run_single_engine",
+   "key": "status",
+   "literal": "ran",
+   "occurrences": 1,
+   "reason": "said in the branch where the engine's call returned, with ran true and what served it"
+  },
+  {
+   "file": "agentic_core/api/cognitive.py",
+   "function": "run_single_engine",
+   "key": "status",
+   "literal": "unmapped",
+   "occurrences": 1,
+   "reason": "said in the branch for a cascade engine with no method mapped here, with ran false and a note saying nothing ran"
+  },
+  {
+   "file": "agentic_core/api/constitutional_gaas.py",
+   "function": "gaas_breaker_reset",
+   "key": "status",
+   "literal": "reset",
+   "occurrences": 1,
+   "reason": "said after the circuit breaker is reset, with its state read back and the state before the reset beside it"
+  },
+  {
+   "file": "agentic_core/api/economy.py",
+   "function": "complete_transfer",
+   "key": "status",
+   "literal": "already_credited",
+   "occurrences": 2,
+   "reason": "said in the two branches where the receiver already holds the credit, with a note saying nothing more was done"
+  },
+  {
+   "file": "agentic_core/api/economy.py",
+   "function": "complete_transfer",
+   "key": "status",
+   "literal": "completed",
+   "occurrences": 1,
+   "reason": "said in the branch where the transfer's own outcome reads completed, with what was credited beside it"
+  },
+  {
+   "file": "agentic_core/api/economy.py",
+   "function": "offer_contract",
+   "key": "status",
+   "literal": "offered",
+   "occurrences": 1,
+   "reason": "the initial state of the contract this call creates; no delivery or settlement is recorded yet"
+  },
+  {
+   "file": "agentic_core/api/economy.py",
+   "function": "settle_contract",
+   "key": "outcome",
+   "literal": "paid",
+   "occurrences": 1,
+   "reason": "written to the settlement in the branch where the transfer was posted and the contract moved to settled"
+  },
+  {
+   "file": "agentic_core/api/economy.py",
+   "function": "settle_contract",
+   "key": "outcome",
+   "literal": "unknown",
+   "occurrences": 1,
+   "reason": "written when a settlement attempt ended in an error, with the error and a note that whether it paid is not known"
+  },
+  {
+   "file": "agentic_core/api/economy.py",
+   "function": "settle_contract",
+   "key": "state",
+   "literal": "claimed",
+   "occurrences": 1,
+   "reason": "said after this call claimed the settlement with its token and transfer id"
+  },
+  {
+   "file": "agentic_core/api/economy.py",
+   "function": "settle_contract",
+   "key": "state",
+   "literal": "settled",
+   "occurrences": 1,
+   "reason": "said in the branch where the contract's own record already reads settled"
+  },
+  {
+   "file": "agentic_core/api/economy.py",
+   "function": "settle_contract",
+   "key": "status",
+   "literal": "replay_of_posted_debit",
+   "occurrences": 1,
+   "reason": "the governance status when an earlier attempt had already debited the client, with a note saying so; nothing is paid twice"
+  },
+  {
+   "file": "agentic_core/api/entity_specialists.py",
+   "function": "attach",
+   "key": "state",
+   "literal": "active",
+   "occurrences": 1,
+   "reason": "the state of the place this call has just written to the entity's roster"
+  },
+  {
+   "file": "agentic_core/api/entity_specialists.py",
+   "function": "retire",
+   "key": "state",
+   "literal": "retired",
+   "occurrences": 1,
+   "reason": "said after the retirement is written; a specialist already retired is refused before this"
+  },
+  {
+   "file": "agentic_core/api/genesis.py",
+   "function": "genesis_establish",
+   "key": "status",
+   "literal": "pending derivation",
+   "occurrences": 1,
+   "reason": "a placeholder that says what it is; the handler derives the status from the gates before the record is returned"
+  },
+  {
+   "file": "agentic_core/api/genesis.py",
+   "function": "genesis_establish_stream",
+   "key": "status",
+   "literal": "pending derivation",
+   "occurrences": 1,
+   "reason": "a placeholder that says what it is; the stream derives the status once the facets attach, before the record is returned"
+  },
+  {
+   "file": "agentic_core/api/heartbeat.py",
+   "function": "stop",
+   "key": "status",
+   "literal": "stopped",
+   "occurrences": 1,
+   "reason": "said after the heartbeat is stopped, with its running flag read back beside it"
+  },
+  {
+   "file": "agentic_core/api/integration_surface.py",
+   "function": "bounty_submit",
+   "key": "status",
+   "literal": "received",
+   "occurrences": 1,
+   "reason": "the state of the submission this call has just written to the bounty store"
+  },
+  {
+   "file": "agentic_core/api/integration_surface.py",
+   "function": "federation_twins",
+   "key": "status",
+   "literal": "registered_reference",
+   "occurrences": 1,
+   "reason": "names what each listed row is: a twin reference read from the federation registry, not a running twin"
+  },
+  {
+   "file": "agentic_core/api/integration_surface.py",
+   "function": "spawn_twin",
+   "key": "status",
+   "literal": "registered",
+   "occurrences": 1,
+   "reason": "said after the twin reference is written to the federation registry, with a note saying it is a reference"
+  },
+  {
+   "file": "agentic_core/api/marketplace.py",
+   "function": "purchase_listing",
+   "key": "status",
+   "literal": "confirmed",
+   "occurrences": 1,
+   "reason": "the receipt's state after the charge and the sale were recorded; a failed save refunds before this is reached"
+  },
+  {
+   "file": "agentic_core/api/method.py",
+   "function": "derive_lesson",
+   "key": "state",
+   "literal": "CANDIDATE",
+   "occurrences": 1,
+   "reason": "the state of a lesson this call proposes; not_yet beside it says it is not part of the method until ratified"
+  },
+  {
+   "file": "agentic_core/api/products.py",
+   "function": "intelligence_insights",
+   "key": "score",
+   "literal": 0.5,
+   "occurrences": 1,
+   "reason": "a sort weight, not a measurement, and score_basis beside it says so: a fixed constant for this insight type"
+  },
+  {
+   "file": "agentic_core/api/products.py",
+   "function": "intelligence_insights",
+   "key": "score",
+   "literal": 0.82,
+   "occurrences": 1,
+   "reason": "a sort weight, not a measurement, and score_basis beside it says so: a fixed constant for this insight type"
+  },
+  {
+   "file": "agentic_core/api/products.py",
+   "function": "intelligence_insights",
+   "key": "score",
+   "literal": 0.91,
+   "occurrences": 1,
+   "reason": "a sort weight, not a measurement, and score_basis beside it says so: a fixed constant for this insight type"
+  },
+  {
+   "file": "agentic_core/api/products.py",
+   "function": "intelligence_insights",
+   "key": "score",
+   "literal": 1.0,
+   "occurrences": 1,
+   "reason": "a sort weight that puts a failed computation first, and score_basis beside it says it measures nothing"
+  },
+  {
+   "file": "agentic_core/api/qep_intelligence.py",
+   "function": "compliance_audit",
+   "key": "status",
+   "literal": "not_checked",
+   "occurrences": 2,
+   "reason": "says the control was not checked, with the reason beside it: no check for it exists to run"
+  },
+  {
+   "file": "agentic_core/api/qep_intelligence.py",
+   "function": "recommendation_update",
+   "key": "status",
+   "literal": "proposed, not applied",
+   "occurrences": 1,
+   "reason": "said after the weights are filed with Change Control and not applied, with applied false and the change's status beside it"
+  },
+  {
+   "file": "agentic_core/api/resource_fabric.py",
+   "function": "run_composition",
+   "key": "result",
+   "literal": "review_written",
+   "occurrences": 1,
+   "reason": "said after the plan binding's review is written and saved, with the target's status read back beside it"
+  },
+  {
+   "file": "agentic_core/api/swarm.py",
+   "function": "cascade_orchestration",
+   "key": "outcome",
+   "literal": "raised",
+   "occurrences": 2,
+   "reason": "said in the two branches where a requisitioned resource's handler raised or returned nothing, with the error beside it"
+  },
+  {
+   "file": "agentic_core/api/swarm.py",
+   "function": "cascade_orchestration",
+   "key": "result",
+   "literal": "review_written",
+   "occurrences": 1,
+   "reason": "said after the plan binding's review is written and saved, with the target's status read back beside it"
+  },
+  {
+   "file": "agentic_core/api/swarm.py",
+   "function": "cascade_orchestration",
+   "key": "status",
+   "literal": "ungoverned",
+   "occurrences": 2,
+   "reason": "the governance status until the gate answers, and in the branch where the gate raised, with the error beside it"
+  },
+  {
+   "file": "agentic_core/api/synthesis_studio.py",
+   "function": "spawn_vsb_entity",
+   "key": "status",
+   "literal": "active",
+   "occurrences": 1,
+   "reason": "kept code behind a door retired by ruling (410 first); a reversal would make it the state of the record just created"
+  },
+  {
+   "file": "agentic_core/api/synthesis_studio.py",
+   "function": "spawn_vsb_entity",
+   "key": "status",
+   "literal": "spawned",
+   "occurrences": 1,
+   "reason": "kept code behind a door retired by ruling (410 first); a reversal would say it after the entity's record is written"
+  },
+  {
+   "file": "agentic_core/api/synthesis_studio.py",
+   "function": "synthesise",
+   "key": "status",
+   "literal": "active",
+   "occurrences": 1,
+   "reason": "kept code behind a door retired by ruling (410 first); a reversal would make it the state of the record just created"
+  },
+  {
+   "file": "agentic_core/api/transformation_orchestration.py",
+   "function": "orchestrate",
+   "key": "status",
+   "literal": "ungoverned",
+   "occurrences": 1,
+   "reason": "said only in the branch where the governance gate raised, with the gate's error beside it"
+  },
+  {
+   "file": "agentic_core/api/v191/evolution.py",
+   "function": "approve_proposal",
+   "key": "status",
+   "literal": "under_change_control",
+   "occurrences": 1,
+   "reason": "said in the branch where the proposal's own record already reads under change control, with its change id"
+  },
+  {
+   "file": "agentic_core/api/v191/evolution.py",
+   "function": "generate_proposals",
+   "key": "status",
+   "literal": "pending",
+   "occurrences": 1,
+   "reason": "the initial state of each proposal this call generates; nothing has reviewed it yet"
+  },
+  {
+   "file": "agentic_core/api/v191/evolution.py",
+   "function": "reject_proposal",
+   "key": "status",
+   "literal": "rejected",
+   "occurrences": 1,
+   "reason": "said after the proposal's record is marked rejected and saved"
+  },
+  {
+   "file": "agentic_core/api/v200/contribute.py",
+   "function": "submit_feedback",
+   "key": "status",
+   "literal": "ingested",
+   "occurrences": 1,
+   "reason": "said after the submission is appended to the process's list, which received beside it counts"
+  },
+  {
+   "file": "agentic_core/api/v250/treaties.py",
+   "function": "draft_treaty",
+   "key": "status",
+   "literal": "drafting",
+   "occurrences": 1,
+   "reason": "the initial state of the draft this call appends to the process's list of drafts"
+  },
+  {
+   "file": "agentic_core/api/v250/treaties.py",
+   "function": "sign_treaty",
+   "key": "status",
+   "literal": "signed",
+   "occurrences": 1,
+   "reason": "said after the node is added to the signatures of a draft this process holds, which are returned with it; any other id is refused 404 and nothing is signed"
+  },
+  {
+   "file": "agentic_core/api/v290/realms.py",
+   "function": "create_realm_v2",
+   "key": "status",
+   "literal": "realm_instantiated",
+   "occurrences": 1,
+   "reason": "said after the realm's file is written to the realms store"
+  },
+  {
+   "file": "agentic_core/api/v310/governance.py",
+   "function": "cast_vote",
+   "key": "status",
+   "literal": "vote_recorded",
+   "occurrences": 1,
+   "reason": "said after the vote is added to a proposal in the process's list, which no route fills, so in practice every vote is refused first"
+  },
+  {
+   "file": "agentic_core/api/v310/payments.py",
+   "function": "create_checkout_session",
+   "key": "status",
+   "literal": "error",
+   "occurrences": 1,
+   "reason": "said in the branch where the payment provider's call raised, with the error beside it"
+  },
+  {
+   "file": "agentic_core/api/v310/payments.py",
+   "function": "create_checkout_session",
+   "key": "status",
+   "literal": "session_created",
+   "occurrences": 1,
+   "reason": "said after the payment provider returned a session, with its id and address beside it"
+  },
+  {
+   "file": "agentic_core/api/v310/payments.py",
+   "function": "create_checkout_session",
+   "key": "status",
+   "literal": "simulated_session",
+   "occurrences": 1,
+   "reason": "said on the simulation path, where the mode says simulation and no payment address exists"
+  },
+  {
+   "file": "agentic_core/api/v310/payments.py",
+   "function": "create_checkout_session",
+   "key": "status",
+   "literal": "unavailable",
+   "occurrences": 1,
+   "reason": "said when the payment library is not installed, with an error saying so"
+  },
+  {
+   "file": "agentic_core/api/v310/payments.py",
+   "function": "request_payout",
+   "key": "status",
+   "literal": "prepared",
+   "occurrences": 1,
+   "reason": "said in live mode, where nothing is executed and the note says execution needs the Owner's configuration"
+  },
+  {
+   "file": "agentic_core/api/v310/payments.py",
+   "function": "request_payout",
+   "key": "status",
+   "literal": "simulated",
+   "occurrences": 1,
+   "reason": "said when the mode is not live, with a note saying real payouts need a live key"
+  },
+  {
+   "file": "agentic_core/api/vsb.py",
+   "function": "spawn_vsb",
+   "key": "status",
+   "literal": "pending derivation",
+   "occurrences": 1,
+   "reason": "a placeholder that says what it is; the handler derives the status from the gates before the record is returned"
+  },
+  {
+   "file": "agentic_core/app_mvp.py",
+   "function": "health",
+   "key": "status",
+   "literal": "healthy",
+   "occurrences": 1,
+   "reason": "a liveness answer: the process answering is all it reports, and the deploy runbook says the body is fixed (W904)"
+  },
+  {
+   "file": "agentic_core/auth/core.py",
+   "function": "register",
+   "key": "status",
+   "literal": "created",
+   "occurrences": 1,
+   "reason": "said after the account is saved to the user store"
+  },
+  {
+   "file": "agentic_core/auth/core.py",
+   "function": "self_serve_signup",
+   "key": "status",
+   "literal": "created",
+   "occurrences": 1,
+   "reason": "said after the account is saved to the user store"
+  },
+  {
+   "file": "agentic_core/catalog/bto.py",
+   "function": "build_to_order",
+   "key": "status",
+   "literal": "FAILED",
+   "occurrences": 1,
+   "reason": "said for a build that raised, with what served it null and the error beside it"
+  },
+  {
+   "file": "agentic_core/catalog/bto.py",
+   "function": "build_to_order",
+   "key": "status",
+   "literal": "NOT_BUILT",
+   "occurrences": 1,
+   "reason": "said for an asked product that is a legacy archive or a pointer, with the reason it is not served"
+  },
+  {
+   "file": "agentic_core/ingestion/api.py",
+   "function": "delete_ingested_content",
+   "key": "status",
+   "literal": "REMOVED",
+   "occurrences": 1,
+   "reason": "said after the uploaded bytes and the registry row are removed; a failed removal is a 503 before this"
+  },
+  {
+   "file": "agentic_core/organism/reconfiguration.py",
+   "function": "update_config",
+   "key": "status",
+   "literal": "applied",
+   "occurrences": 1,
+   "reason": "said after the setting is written to the store; a failed write is a 503 that leaves the store as it was"
+  }
+ ]
+}

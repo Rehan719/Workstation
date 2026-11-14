@@ -1,0 +1,181 @@
+{
+ "filed": {
+  "cca_id": "cca-9cbe5f31a5",
+  "impact_tier": "HIGH",
+  "change_type_unrecognised": "'documentation' is not a known change type, so it was filed at HIGH (a review, never an auto-approval). Known types: ['capability_add', 'capability_remove', 'code_change', 'config_major', 'config_minor', 'constitutional', 'data_schema', 'economy_material', 'entity_mitosis', 'entity_restore', 'entity_retirement', 'genome_edit', 'integration_add', 'integration_remove', 'organism_mutation', 'platform_upgrade', 'policy_amendment', 'security_change', 'support_claim', 'vsb_evolution']",
+  "status": "submitted",
+  "health_gate": {
+   "decided_on": null,
+   "measured_health": null,
+   "measured_weight": 0.0,
+   "verdict": "held_not_decidable",
+   "basis": "nothing was measured: no call was observed in the immune sensor's window and no circuit is tracked, so the auto-approval is HELD for review rather than granted on absent evidence"
+  },
+  "immune_threat_at_submit": "NOMINAL",
+  "commitment": null,
+  "variance": null,
+  "variance_basis": "no commitment was recorded, so no variance is defined",
+  "method_check": {
+   "method_available": true,
+   "checked_at": "2026-11-13T23:44:42Z",
+   "requirements": [
+    {
+     "requirement": "states-a-rationale",
+     "lesson": "M-DELIV-01",
+     "state": "UNMET",
+     "basis": "the record carries no rationale of substance, so what this change is FOR is not recorded",
+     "checkable_from": "the change record"
+    },
+    {
+     "requirement": "names-what-it-touches",
+     "lesson": "M-EXEC-03",
+     "state": "UNMET",
+     "basis": "names no affected system, so the writers and readers it reaches cannot be reviewed",
+     "checkable_from": "the change record"
+    },
+    {
+     "requirement": "a-decision-names-its-mechanism",
+     "lesson": "M-DELIV-01",
+     "state": "NOT_ASSESSABLE",
+     "basis": "no decision has been taken yet, so there is no decider to name",
+     "checkable_from": "the change record"
+    },
+    {
+     "requirement": "every-open-row-rides-an-item",
+     "lesson": "M-EXEC-06",
+     "state": "MET",
+     "basis": "all 43 open rows ride a plan item",
+     "checkable_from": "docs/FOLLOWUPS.json"
+    },
+    {
+     "requirement": "m-verif-01",
+     "lesson": "M-VERIF-01",
+     "state": "NOT_ASSESSABLE",
+     "basis": "Green is evidence only if red was reachable. Make every new instrument fail first. — NOT VISIBLE in a change record. Only running the blind proves the guard can fail; no artefact records that it was run.",
+     "checkable_from": null
+    },
+    {
+     "requirement": "m-verif-02",
+     "lesson": "M-VERIF-02",
+     "state": "NOT_ASSESSABLE",
+     "basis": "A guard must DRIVE its precondition, never observe the ambient environment. — NOT VISIBLE in a change record. Whether a guard drives or observes is a property of its logic, not of its text.",
+     "checkable_from": null
+    },
+    {
+     "requirement": "m-verif-05",
+     "lesson": "M-VERIF-05",
+     "state": "NOT_ASSESSABLE",
+     "basis": "A basis string is code. Compute a claim from state; never assert a universal in prose. — NOT VISIBLE in a change record. This is the largest unenforced class (30 of 98 in the labelled set); FU-262 proposes extending the pre-flight to it.",
+     "checkable_from": null
+    },
+    {
+     "requirement": "m-verif-06",
+     "lesson": "M-VERIF-06",
+     "state": "NOT_ASSESSABLE",
+     "basis": "Refute the round's OWN fix before shipping it, as hard as the code it changed. — NOT VISIBLE in a change record. Adversarial refutation is a process; the artefacts do not record that it ran.",
+     "checkable_from": null
+    },
+    {
+     "requirement": "m-meas-01",
+     "lesson": "M-MEAS-01",
+     "state": "NOT_ASSESSABLE",
+     "basis": "An item closes on its ACCEPT bar. No bar means UNEXAMINED, never nearly done. — NOT VISIBLE in a change record. Whether a bar's clauses match an item's body is a reading, not a parse. An audit can count items with no bar at all; it cannot judge a bar's fidelity.",
+     "checkable_from": null
+    },
+    {
+     "requirement": "m-meas-02",
+     "lesson": "M-MEAS-02",
+     "state": "NOT_ASSESSABLE",
+     "basis": "Write the bar against the DEFECT, never against correct output. A criterion satisfied by the thing being fixed is not a criterion. — NOT VISIBLE in a change record. Judging whether a clause can fail requires reasoning about the code it describes.",
+     "checkable_from": null
+    },
+    {
+     "requirement": "m-exec-01",
+     "lesson": "M-EXEC-01",
+     "state": "NOT_ASSESSABLE",
+     "basis": "Measure each row's LIVE state before building. A row may accuse working code. — NOT VISIBLE in a change record. A row's truth is established by reading the code it points at.",
+     "checkable_from": null
+    },
+    {
+     "requirement": "m-exec-02",
+     "lesson": "M-EXEC-02",
+     "state": "NOT_ASSESSABLE",
+     "basis": "Fix the CLASS once, at the chokepoint — and grep the CALL, not the method name. — NOT VISIBLE in a change record. Identifying the true chokepoint is a reading of the call graph.",
+     "checkable_from": null
+    },
+    {
+     "requirement": "m-deliv-03",
+     "lesson": "M-DELIV-03",
+     "state": "NOT_ASSESSABLE",
+     "basis": "A row closes only when EVERY finding in it is fixed. Partial is open. — NOT VISIBLE in a change record. A row's completeness is a reading of its body against the diff.",
+     "checkable_from": null
+    }
+   ],
+   "counts": {
+    "met": 1,
+    "unmet": 2,
+    "not_assessable": 10
+   },
+   "may_auto_approve": false,
+   "why_not_approvable": "2 mechanically-checkable requirement(s) are UNMET: states-a-rationale; names-what-it-touches",
+   "limits": "this check reads the change record, the register and the tree. It CANNOT see whether a blind was added, whether a refutation ran, whether a basis string was computed rather than asserted, or whether every writer of a changed field was found — 10 of 13 requirements are NOT ASSESSABLE for that reason. A green result here is NOT a statement that this change follows the method.",
+   "never": "no requirement is reported MET because the submitter said so; every MET above was read from an artefact"
+  },
+  "scope_appraisal": {
+   "scope": null,
+   "why_this_scope": "the change names no affected system, so there is no scope to appraise",
+   "not_a_gate": "no scope was inferred, so none is appraised"
+  },
+  "message": "Change request cca-9cbe5f31a5 submitted. Tier: HIGH. Status: submitted."
+ },
+ "verify": {
+  "valid": true,
+  "outcome": "verified",
+  "events": 1,
+  "root_hash": "a14f0cbf792c00f54d86f279385c9e881b9bac9c66b3c7bca01de3859c2e850a69e4086903f7c1113c819b1c48315a544a2977c7649f5814aee4045fbcd22197",
+  "anchor_checked": true,
+  "anchor_state": "present",
+  "anchor_reason": null,
+  "verified_basis": "every stored hash recomputed, and the chain head matches the tail anchor, so truncation and rollback are ruled out"
+ },
+ "events": {
+  "events": [
+   {
+    "id": "event_0",
+    "timestamp": 1794613482.3621266,
+    "data": {
+     "type": "heartbeat",
+     "beat": 1,
+     "phase": "MAINTENANCE_REST",
+     "realisation": 0.849,
+     "health": 1.0,
+     "health_observations": 0,
+     "health_measured": false,
+     "health_basis": "NOT A MEASUREMENT - no call was observed in the immune window, so 1.0 is the absence of failures and not a reading of anything",
+     "self_healing": null,
+     "actions": [
+      "pulse",
+      "homeostasis",
+      "cadence_refresh",
+      "transformation_tick"
+     ]
+    },
+    "previous_hash": null,
+    "hash": "a14f0cbf792c00f54d86f279385c9e881b9bac9c66b3c7bca01de3859c2e850a69e4086903f7c1113c819b1c48315a544a2977c7649f5814aee4045fbcd22197",
+    "flag": {
+     "level": "recorded",
+     "nature": "routine",
+     "why": null
+    }
+   }
+  ],
+  "summary": {
+   "total_events": 1,
+   "root_hash": "a14f0cbf792c00f54d86f279385c9e881b9bac9c66b3c7bca01de3859c2e850a69e4086903f7c1113c819b1c48315a544a2977c7649f5814aee4045fbcd22197",
+   "by_type": {
+    "heartbeat": 1
+   }
+  }
+ },
+ "proposals": []
+}

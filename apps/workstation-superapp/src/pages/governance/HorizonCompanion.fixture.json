@@ -1,0 +1,322 @@
+{
+ "records_empty": {
+  "records": [],
+  "total": 0,
+  "not_compressed": 0,
+  "observed_not_enforced": 0,
+  "history_cap": 2000,
+  "basis": "no request has been observed yet, which is not the same as none having been refused"
+ },
+ "archive_unscanned": {
+  "manifest": {},
+  "recount": {
+   "stated": null,
+   "recounted": null,
+   "total_stated": null,
+   "total_recounted": null,
+   "agrees": null,
+   "basis": "no scan of the inbox is recorded, so there are no published counts to check against a recount; nothing is indexed until a scan runs"
+  }
+ },
+ "records": {
+  "records": [
+   {
+    "intent_id": "intent-e97fd4d33d23",
+    "observation_id": "obs-d3e295541373",
+    "surface": "POST /api/v1/care/handover",
+    "source": "domain_route",
+    "asked": "POST /api/v1/care/handover",
+    "asked_basis": "the text this record was made from, exactly as it arrived. For a request a user sent to /observe that is what they typed; for a row the observing seam wrote it is the METHOD AND PATH only, because the seam never reads a request body",
+    "created_at": 1794602930.124419,
+    "compression": "NOT_COMPRESSED",
+    "served_by": null,
+    "compression_basis": "NOT COMPRESSED: NO COMPRESSOR WAS CALLED ON THIS PATH. This record comes from the observing seam, which watches domain requests and run outcomes without asking a model what any of them meant — a model call in front of every domain request would make each one wait on an LLM, and the only answer available on this deployment would come from the deterministic floor, which composes rather than compresses. The absence here is the seam's design and is DISTINCT from a call that was made and did not compress",
+    "is_external": false,
+    "reflection_tag": null,
+    "reflection_tag_by": null,
+    "reflection_tag_at": null,
+    "reflection_tag_basis": "NOT SET: this field holds the USER'S OWN WORDS about their intent and no AI ever writes it. There is no default, no suggestion is persisted as a value, and nothing is inferred from the observation's text. Post to /api/v1/horizon/reflection to set or clear it",
+    "fields_present": [],
+    "fields_absent": [
+     "asked_for",
+     "domain",
+     "escalations",
+     "missing",
+     "stakes"
+    ],
+    "fields_basis": "NO FIELD IS FILLED: nothing compressed this request, so asked_for, domain, stakes, missing and escalations are absent rather than empty. An empty string or an empty list here would read as a finding — that there is nothing missing, or nothing to escalate",
+    "gated": false,
+    "gating_basis": "OBSERVED, NOT ENFORCED. This record was written by the Horizon seam, which watches and records. Nothing acted on its decision: the request was served exactly as it would have been with no seam present, and no downstream component reads this row. AN ESCALATE HERE DID NOT ESCALATE ANYTHING — it is the decision the kernel's stated terms reach over what was observed, recorded as a fact, and it must never be read as evidence that this platform stopped, reviewed, re-routed or refused the request. Whether the seam should gate a named list of grave routes is an open question (P2.11); gating on this decision as it stands would refuse every request this platform serves, because nothing compresses and an uncompressed request of unknown domain fails closed",
+    "observed_because": "a mutating request on the care domain route",
+    "body_read": false,
+    "body_basis": "the request BODY was not read. A domain request body may carry a medical note, a legal matter or a financial detail, and this is a long-lived store with no reader-level rules of its own, so the observation is the method and the path only. This is a deliberate narrowing of what is recorded, not a failure to capture it",
+    "route_domain": "care",
+    "route_domain_basis": "the domain this request's ROUTE belongs to, recorded under its own key and deliberately NOT written into the kernel's `domain` field. `domain` is a COMPRESSION field — it means 'the domain a model determined this request to be about' — and the kernel's escalation test matches that vocabulary: its list is money / legal / faith / medical / safety. Writing a route name there would make a request on the LAW route stop failing closed, because the string 'law' contains none of those words, so the record would read PROCEED on a legal matter nobody compressed. A route name is a true fact about where a request arrived and a false answer to what it was about",
+    "response_status": 200,
+    "handler_raised": null,
+    "served": true,
+    "served_basis": "the handler answered 200",
+    "decision": "ESCALATE",
+    "decision_terms": [
+     {
+      "term": "guardrail_escalation",
+      "fired": null,
+      "basis": "NOT AVAILABLE: nothing compressed this request, so no escalation list exists. Its absence is not an absence of escalations"
+     },
+     {
+      "term": "required_field_missing",
+      "fired": null,
+      "basis": "NOT AVAILABLE: nothing compressed this request, so no missing-input list exists"
+     },
+     {
+      "term": "uncompressed_and_grave_or_unknown_domain",
+      "fired": true,
+      "basis": "nothing compressed this request and its domain is UNKNOWN, so it cannot be shown to be outside the escalation list. Fail closed: not understanding a request is precisely when proceeding is worst"
+     }
+    ],
+    "decision_basis": "ESCALATE on 1 stated term(s): uncompressed_and_grave_or_unknown_domain. Each term's own basis is above; no term was weighted against another and no score was computed"
+   },
+   {
+    "intent_id": "intent-0935480b0ade",
+    "observation_id": "obs-4fc65a60f630",
+    "surface": "record_outcome:ai_call",
+    "source": "run_outcome",
+    "asked": "ai_call agent:care_handover",
+    "asked_basis": "the text this record was made from, exactly as it arrived. For a request a user sent to /observe that is what they typed; for a row the observing seam wrote it is the METHOD AND PATH only, because the seam never reads a request body",
+    "created_at": 1794602930.1236966,
+    "compression": "NOT_COMPRESSED",
+    "served_by": null,
+    "compression_basis": "NOT COMPRESSED: NO COMPRESSOR WAS CALLED ON THIS PATH. This record comes from the observing seam, which watches domain requests and run outcomes without asking a model what any of them meant — a model call in front of every domain request would make each one wait on an LLM, and the only answer available on this deployment would come from the deterministic floor, which composes rather than compresses. The absence here is the seam's design and is DISTINCT from a call that was made and did not compress",
+    "is_external": false,
+    "reflection_tag": null,
+    "reflection_tag_by": null,
+    "reflection_tag_at": null,
+    "reflection_tag_basis": "NOT SET: this field holds the USER'S OWN WORDS about their intent and no AI ever writes it. There is no default, no suggestion is persisted as a value, and nothing is inferred from the observation's text. Post to /api/v1/horizon/reflection to set or clear it",
+    "fields_present": [],
+    "fields_absent": [
+     "asked_for",
+     "domain",
+     "escalations",
+     "missing",
+     "stakes"
+    ],
+    "fields_basis": "NO FIELD IS FILLED: nothing compressed this request, so asked_for, domain, stakes, missing and escalations are absent rather than empty. An empty string or an empty list here would read as a finding — that there is nothing missing, or nothing to escalate",
+    "gated": false,
+    "gating_basis": "OBSERVED, NOT ENFORCED. This record was written by the Horizon seam, which watches and records. Nothing acted on its decision: the request was served exactly as it would have been with no seam present, and no downstream component reads this row. AN ESCALATE HERE DID NOT ESCALATE ANYTHING — it is the decision the kernel's stated terms reach over what was observed, recorded as a fact, and it must never be read as evidence that this platform stopped, reviewed, re-routed or refused the request. Whether the seam should gate a named list of grave routes is an open question (P2.11); gating on this decision as it stands would refuse every request this platform serves, because nothing compresses and an uncompressed request of unknown domain fails closed",
+    "run_kind": "ai_call",
+    "run_resource": "agent:care_handover",
+    "run_served_by": "native",
+    "run_success": true,
+    "run_provenance_basis": "run_served_by names who served THE RUN. It is deliberately not used as the compression's provenance: nobody compressed this request, and treating a run's server as a compressor would manufacture a COMPRESSED record for a compression that never happened",
+    "decision": "ESCALATE",
+    "decision_terms": [
+     {
+      "term": "guardrail_escalation",
+      "fired": null,
+      "basis": "NOT AVAILABLE: nothing compressed this request, so no escalation list exists. Its absence is not an absence of escalations"
+     },
+     {
+      "term": "required_field_missing",
+      "fired": null,
+      "basis": "NOT AVAILABLE: nothing compressed this request, so no missing-input list exists"
+     },
+     {
+      "term": "uncompressed_and_grave_or_unknown_domain",
+      "fired": true,
+      "basis": "nothing compressed this request and its domain is UNKNOWN, so it cannot be shown to be outside the escalation list. Fail closed: not understanding a request is precisely when proceeding is worst"
+     }
+    ],
+    "decision_basis": "ESCALATE on 1 stated term(s): uncompressed_and_grave_or_unknown_domain. Each term's own basis is above; no term was weighted against another and no score was computed"
+   }
+  ],
+  "total": 2,
+  "not_compressed": 2,
+  "observed_not_enforced": 2,
+  "history_cap": 2000,
+  "basis": "2 of 2 record(s) were NOT compressed. That is the expected proportion on a deployment with no model provisioned, and it is reported rather than smoothed: a membrane that claimed to compress what it did not would make every decision below it rest on a sentence the platform invented. 2 of them were written by the OBSERVING SEAM and nothing acted on their decision — each carries gated=False with the reason, because an ESCALATE nobody enforced is not an escalation. The stored history is capped at 2000 rows, oldest dropped first, so the earliest row here is not necessarily the first thing that ever happened"
+ },
+ "consumption": {
+  "records": [
+   {
+    "consumption_id": "consumed-ab7fbe19c10a",
+    "run_id": null,
+    "intent_id": "intent-e97fd4d33d23",
+    "created_at": 1794602930.1251125,
+    "wall_ms": {
+     "value": 31.335,
+     "measured": true,
+     "basis": "the elapsed time around the handler, measured by the observing seam's own clock (agentic_core/horizon/membrane.py). It is wall time, not CPU time, and it includes whatever the handler waited on"
+    },
+    "calls": {
+     "value": null,
+     "measured": false,
+     "basis": "NOT MEASURED (calls): the number of entries in the run's provenance map — the record of model calls this platform already keeps. It counts CALLS RECORDED, which is not the same as calls made if something failed to record one — and nothing supplied it for this run. This is not zero"
+    },
+    "served_by": {
+     "value": null,
+     "measured": false,
+     "basis": "NOT MEASURED (served_by): who served each recorded call, read from that same provenance map. A call whose server was not recorded appears as null rather than being attributed to the floor — and nothing supplied it for this run. This is not zero"
+    },
+    "stores_read": {
+     "value": null,
+     "measured": false,
+     "basis": "NOT MEASURED (stores_read): the JSON stores a run opened, as the run itself reported them. Nothing instruments the filesystem, so this is a declaration by the caller and not an observation of it — and nothing supplied it for this run. This is not zero"
+    },
+    "whose_data": {
+     "value": null,
+     "measured": false,
+     "basis": "NOT MEASURED (whose_data): the account the run was attributed to, from the owner id threaded through the call. None means the run was not attributed — which is the ordinary state on the 52 gateway sites that thread no owner id (FU-276), not a claim that the data belonged to nobody — and nothing supplied it for this run. This is not zero"
+    },
+    "used_well": null,
+    "used_well_basis": "NOT FILLED: this is the Owner's own field and nothing but the Owner may write it. There is no default, no suggestion is persisted as a value, and nothing is inferred from the run's figures — a platform that guessed what a person had formed would be doing what Ruling A.9.5 forbids in a friendlier vocabulary. Empty here means the Owner has not written it, and nothing else",
+    "used_well_by": null,
+    "what_was_formed": null,
+    "what_was_formed_basis": "NOT FILLED: this is the Owner's own field and nothing but the Owner may write it. There is no default, no suggestion is persisted as a value, and nothing is inferred from the run's figures — a platform that guessed what a person had formed would be doing what Ruling A.9.5 forbids in a friendlier vocabulary. Empty here means the Owner has not written it, and nothing else",
+    "what_was_formed_by": null,
+    "computed_fields": [
+     "calls",
+     "served_by",
+     "stores_read",
+     "wall_ms",
+     "whose_data"
+    ],
+    "owner_fields": [
+     "used_well",
+     "what_was_formed"
+    ],
+    "basis": "1 of 5 computed field(s) were measured for this run; the rest say what did not measure them rather than reporting zero. The 2 Owner field(s) are the Owner's own words and are computed by nothing"
+   }
+  ],
+  "total": 1,
+  "measured_fields": 1,
+  "possible_fields": 5,
+  "owner_fields_filled": 0,
+  "basis": "1 of 5 computed field(s) across 1 record(s) were measured; the rest name what did not measure them rather than reporting zero. A MEASURED ZERO AND AN UNMEASURED FIELD ARE DIFFERENT STATES and are reported differently — calls=0 is a run whose provenance map was present and empty, calls=null is a run nothing instrumented. 0 Owner field(s) are filled; the rest are the Owner's to write and are computed by nothing",
+  "states": {
+   "computed_fields": {
+    "wall_ms": "the elapsed time around the handler, measured by the observing seam's own clock (agentic_core/horizon/membrane.py). It is wall time, not CPU time, and it includes whatever the handler waited on",
+    "calls": "the number of entries in the run's provenance map — the record of model calls this platform already keeps. It counts CALLS RECORDED, which is not the same as calls made if something failed to record one",
+    "served_by": "who served each recorded call, read from that same provenance map. A call whose server was not recorded appears as null rather than being attributed to the floor",
+    "stores_read": "the JSON stores a run opened, as the run itself reported them. Nothing instruments the filesystem, so this is a declaration by the caller and not an observation of it",
+    "whose_data": "the account the run was attributed to, from the owner id threaded through the call. None means the run was not attributed — which is the ordinary state on the 52 gateway sites that thread no owner id (FU-276), not a claim that the data belonged to nobody"
+   },
+   "owner_fields": {
+    "used_well": "what the Owner judges was used well in this run. Their words, written by them, or empty",
+    "what_was_formed": "what the Owner judges was formed by this run. Their words, written by them, or empty"
+   },
+   "owner_field_basis": "NOT FILLED: this is the Owner's own field and nothing but the Owner may write it. There is no default, no suggestion is persisted as a value, and nothing is inferred from the run's figures — a platform that guessed what a person had formed would be doing what Ruling A.9.5 forbids in a friendlier vocabulary. Empty here means the Owner has not written it, and nothing else",
+   "never_computed": [
+    "virtue",
+    "gratitude",
+    "barakah",
+    "spiritual",
+    "piety",
+    "sincerity",
+    "fitrah",
+    "righteous",
+    "devotion",
+    "faith_level"
+   ],
+   "never_computed_basis": "Ruling A.9.5 — the Fitrah Spectrum is never a measurement and no AI verdict is passed on anyone's spiritual state. These are not a word filter: the record's COMPUTED set is closed to the fields above, so a field about any of them would have to be declared there, naming what measures it. A guard asserts the closure, which a comment cannot satisfy",
+   "zero_is_not_absence": "a measured zero and an unmeasured field are different states and are reported differently. calls=0 means a run whose provenance map was present and empty; calls=null means nothing recorded a map at all. Collapsing the second into the first is the defect this item names",
+   "store_cap": 2000
+  }
+ },
+ "archive_scanned": {
+  "manifest": {
+   "scanned_at": 1794602930.132816,
+   "inbox": "/tmp/w978cap_6zxvqmod/horizon/inbox",
+   "files": [
+    {
+     "path": "w978-notes.md",
+     "state": "INDEXED",
+     "ext": ".md",
+     "bytes": 62,
+     "tokens": 8,
+     "passages": 2,
+     "passages_capped": false,
+     "basis": "INDEXED: read as UTF-8 text and reduced to 8 lexical token(s) and 2 located passage(s), each carrying its line number so a claim can be traced to a place in the document and not merely to the document. No embedding was computed"
+    },
+    {
+     "path": "w978-report.pdf",
+     "state": "NOT_READ",
+     "ext": ".pdf",
+     "needs": "pypdf",
+     "basis": "NOT_READ: pypdf is installed but this module does not yet call it. Reporting INDEXED here would claim a read that did not happen"
+    },
+    {
+     "path": "w978-secret-plan.txt",
+     "state": "EXCLUDED",
+     "rule": "the name contains 'secret'",
+     "ext": ".txt",
+     "basis": "EXCLUDED by rule: the name contains 'secret'. The file is LISTED so the exclusion is visible — an exclusion nobody can see looks exactly like a file that was never there — and its content was never read"
+    }
+   ],
+   "counts": {
+    "INDEXED": 1,
+    "NOT_READ": 1,
+    "EXCLUDED": 1
+   },
+   "total": 3,
+   "file_cap_reached": false,
+   "bounds": {
+    "max_files": 2000,
+    "max_bytes": 2097152,
+    "max_passages_per_file": 400,
+    "passage_basis": "a document contributes at most 400 located passages; a file longer than that is indexed to that line and the file's own entry says so, because a cap nobody is told about reads as a complete index",
+    "exclusion_rules": [
+     "a .env file holds configuration secrets",
+     "a .env file holds configuration secrets",
+     "the name contains 'key'",
+     "the name contains 'secret'",
+     "the name begins 'credentials'",
+     "the name begins 'id_rsa' (a private key)",
+     "a .pem file is a certificate or private key"
+    ],
+    "text_extensions": [
+     ".txt",
+     ".md",
+     ".json",
+     ".csv",
+     ".yaml",
+     ".yml",
+     ".log",
+     ".ini",
+     ".cfg",
+     ".tsv"
+    ],
+    "extractor_extensions": {
+     ".pdf": "pypdf",
+     ".docx": "python-docx",
+     ".pptx": "python-pptx"
+    },
+    "basis": "at most 2000 files are listed and at most 2097152 bytes are read from any one of them. A file beyond the size cap is listed as NOT_READ with the cap named, not silently truncated, because a half-read file in a search index answers questions about a document nobody has"
+   },
+   "extractors": {
+    "pypdf": true,
+    "python-docx": true,
+    "python-pptx": true
+   },
+   "embedding_backend": null,
+   "search_basis": "search is this platform's OWN LEXICAL index — exact token matching, no embedding, no stemming and no synonyms. There is no embedding backend installed, so this is not semantic recall and must not be read as it",
+   "counts_basis": "1 indexed, 1 not read, 1 excluded, 3 listed in total. Every listed file carries exactly one state and the three counts sum to the total — a file in no state would be a file this manifest had lost",
+   "locality_basis": "this index is LOCAL DATA under the data directory. It is never committed and nothing in this module sends it anywhere"
+  },
+  "recount": {
+   "stated": {
+    "INDEXED": 1,
+    "NOT_READ": 1,
+    "EXCLUDED": 1
+   },
+   "recounted": {
+    "INDEXED": 1,
+    "NOT_READ": 1,
+    "EXCLUDED": 1
+   },
+   "total_stated": 3,
+   "total_recounted": 3,
+   "agrees": true,
+   "basis": "the published counts were derived again from the file list and agree"
+  }
+ }
+}

@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { silenceIsRight } from '../../components/ReadFailures';   // W931 - a silence with its reason
+import { provenanceBadge } from '../../lib/api';   // W1023 - what composed the deck, as the result's card says it
 import { Card, Button, Badge } from '@workstation/ui';
 import { Play, Pause, SkipForward, SkipBack, Volume2, Maximize2, X, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,7 +15,9 @@ interface Slide {
   visual?: string;
 }
 
-export const PresentationPlayer: React.FC<{ slides: Slide[]; onClose: () => void }> = ({ slides, onClose }) => {
+export const PresentationPlayer: React.FC<{
+  slides: Slide[]; onClose: () => void; servedBy?: string | null; isExternal?: boolean;
+}> = ({ slides, onClose, servedBy, isExternal }) => {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
@@ -23,9 +27,9 @@ export const PresentationPlayer: React.FC<{ slides: Slide[]; onClose: () => void
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      playerRef.current?.requestFullscreen().catch(() => {});
+      playerRef.current?.requestFullscreen().catch(silenceIsRight('a refused fullscreen leaves the player as it is, which the person sees'));
     } else {
-      document.exitFullscreen().catch(() => {});
+      document.exitFullscreen().catch(silenceIsRight('a refused exit leaves the player full screen, which the person sees'));
     }
   };
 
@@ -50,6 +54,19 @@ export const PresentationPlayer: React.FC<{ slides: Slide[]; onClose: () => void
     return () => clearInterval(interval);
   }, [playing, currentIdx, slides.length]);
 
+  // W1023 - a deck with no slide took the player down: its first slide was read unchecked
+  if (!currentSlide) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-sovereign flex flex-col items-center justify-center gap-6 p-10">
+        <p role="status" data-testid="player-nothing-to-play" className="text-sm font-bold text-amber-400">
+          This deck has no slide, so there is nothing to play.
+        </p>
+        <button type="button" onClick={onClose} className="px-5 py-3 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 text-xs font-black uppercase">Close</button>
+      </div>
+    );
+  }
+  const prov = provenanceBadge(servedBy, isExternal);
+
   return (
     <div ref={playerRef} className="fixed inset-0 z-[100] bg-sovereign flex flex-col p-10 animate-in fade-in duration-500">
       <header className="flex justify-between items-center mb-10">
@@ -58,7 +75,13 @@ export const PresentationPlayer: React.FC<{ slides: Slide[]; onClose: () => void
                <Sparkles size={24} />
             </div>
             <div>
-               <h2 className="text-xl font-black text-white uppercase tracking-tighter">AI CEO Presentation</h2>
+               {/* W1023 - this called every deck an "AI CEO Presentation", whatever composed it: a deck is the
+                   studio's, and the badge says what composed it, from the result it was opened from */}
+               <h2 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
+                 Presentation
+                 <span data-testid="player-provenance" title={prov.title}
+                       className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${prov.cls}`}>{prov.label}</span>
+               </h2>
                {/* W489 (sweep S5.14, C3) — the header claimed an active autonomous narration that does not exist:
     nothing in this player or anything it imports plays sound at all — the guard checks that by
     name. The narration is a SCRIPT, shown as text, and the header now says only that. */}
@@ -90,9 +113,10 @@ export const PresentationPlayer: React.FC<{ slides: Slide[]; onClose: () => void
                   <p className="text-2xl text-slate-400 font-bold max-w-4xl mx-auto leading-relaxed">
                     {currentSlide.content}
                   </p>
+                  {/* W1023 - a named image was drawn as a box holding its file name, as if it were shown */}
                   {currentSlide.visual && (
                     <div className="w-64 h-64 bg-slate-900 border border-slate-800 rounded-3xl mx-auto flex items-center justify-center italic text-slate-700 uppercase font-black text-[10px] tracking-widest">
-                       [ {currentSlide.visual.split('/').pop()} ]
+                       An image is named for this slide ({currentSlide.visual.split('/').pop()}); the player does not show images.
                     </div>
                   )}
                </motion.div>
@@ -106,8 +130,9 @@ export const PresentationPlayer: React.FC<{ slides: Slide[]; onClose: () => void
                   <Volume2 size={18} />
                   <span className="text-[10px] font-black uppercase tracking-[0.2em]">AI Narration Script</span>
                </div>
-               <p className="text-sm text-slate-300 font-bold leading-relaxed italic">
-                  "{currentSlide.narration}"
+               {/* W1023 - a slide with no narration showed an empty pair of quotes as its script */}
+               <p data-testid="player-narration" className="text-sm text-slate-300 font-bold leading-relaxed italic">
+                  {currentSlide.narration ? `"${currentSlide.narration}"` : 'This slide has no narration.'}
                </p>
             </Card>
 

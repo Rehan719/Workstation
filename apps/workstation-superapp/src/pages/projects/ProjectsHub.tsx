@@ -1,3 +1,5 @@
+import { silenceIsRight } from '../../components/ReadFailures';   // W961 (FU-1181)
+import { errorMessage } from '../../lib/api';   // W1015 - a caught failure, said as what it was
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { REALMS as CANON_REALMS, REALM_LABELS, DOMAIN_LABELS } from '../../lib/taxonomy';
 import { useSearchParams } from 'react-router-dom';
@@ -7,7 +9,9 @@ import axios from 'axios';
 import { downloadExport } from '../../lib/download';
 // W495 (FU-131, S12.6) - the shared provenance helpers, so this page labels output the same way
 // every other surface does rather than inventing its own wording
-import { provenanceBadge, provenanceLine } from '../../lib/api';
+import { axiosDetail, provenanceBadge, provenanceLine } from '../../lib/api';   // W1011: axiosDetail
+import { refusalOf } from '../../lib/stream';   // W1012
+import { AskPerson } from '../../components/AskPerson';   // W968 (P5.14 clause 6)
 import {
   Plus, Play, ChevronRight, Download, Loader2, Trash2,
   Sparkles, FolderOpen, AlertCircle, CheckCircle2, Clock
@@ -37,6 +41,8 @@ interface Project {
   description: string;
   first_description?: string | null;
   first_description_at?: number | null;
+  // W867 (FU-1043) - whether it waits on a person: derived by the server on each read from the pending proposals
+  waiting_on_person?: { waiting?: boolean | null; on?: { proposal_id: string; what: string; since: number }[]; where?: string; basis?: string } | null;
   realm: string;
   domain: string;
   stage: Stage;
@@ -82,11 +88,13 @@ const StagePill: React.FC<{ stage: Stage }> = ({ stage }) => (
   </span>
 );
 
+//  W1044 - the status is said in words as well as by its icon's colour
 const StatusDot: React.FC<{ status: Status }> = ({ status }) => {
-  if (status === 'running') return <Loader2 size={10} className="animate-spin text-aura" />;
-  if (status === 'done')    return <CheckCircle2 size={10} className="text-emerald-400" />;
-  if (status === 'error')   return <AlertCircle  size={10} className="text-red-400" />;
-  return <Clock size={10} className="text-slate-600" />;
+  const said = { role: 'img', 'aria-label': `status: ${status}` };
+  if (status === 'running') return <Loader2 size={10} className="animate-spin text-aura" {...said} />;
+  if (status === 'done')    return <CheckCircle2 size={10} className="text-emerald-400" {...said} />;
+  if (status === 'error')   return <AlertCircle  size={10} className="text-red-400" {...said} />;
+  return <Clock size={10} className="text-slate-600" {...said} />;
 };
 
 // ── Create-project form ────────────────────────────────────────────────────
@@ -99,7 +107,9 @@ interface CreateFormProps {
   taxonomyRealm?: string;     // W505 (P2.5): the canonical realm axis, carried separately
 }
 
-const CreateForm: React.FC<CreateFormProps> = ({ onCreated, onCancel, initialRealm = 'technology', initialDomain = 'product', taxonomyRealm = '' }) => {
+// W786 (FU-969) - a plain New project opened on 'technology', a legacy value outside the taxonomy, and the picker then
+// listed it as the subject; it opens on the first canonical realm. A hub's CTA still passes its own domain.
+const CreateForm: React.FC<CreateFormProps> = ({ onCreated, onCancel, initialRealm = CANON_REALMS[0], initialDomain = 'product', taxonomyRealm = '' }) => {
   const [title,       setTitle]       = useState('');
   const [description, setDescription] = useState('');
   const [realm,       setRealm]       = useState(initialRealm);
@@ -121,7 +131,9 @@ const CreateForm: React.FC<CreateFormProps> = ({ onCreated, onCancel, initialRea
       });
       onCreated(res.data);
     } catch (err: any) {
-      setError(err?.response?.data?.detail ?? 'Failed to create project.');
+      //  W1044 - the fallback says what happened: a fixed sentence said nothing of a server that was not reached, or
+      //  that answered without a reason
+      setError(axiosDetail(err, `Could not create the project: ${errorMessage(err)}`));
     } finally {
       setSaving(false);
     }
@@ -190,7 +202,7 @@ const CreateForm: React.FC<CreateFormProps> = ({ onCreated, onCancel, initialRea
         </div>
       </div>
 
-      {error && <p className="text-[9px] text-red-400 font-bold">{error}</p>}
+      {error && <p data-testid="project-create-error" className="text-[9px] text-red-400 font-bold">{error}</p>}
 
       <div className="flex gap-2 pt-1">
         <button
@@ -230,6 +242,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
   const [error,      setError]        = useState('');
   const [advancing,  setAdvancing]    = useState(false);
   const [deleting,   setDeleting]     = useState(false);
+  const [asking,     setAsking]       = useState(false);   // W968 - the question before a delete
   const streamRef = useRef<HTMLPreElement>(null);
   const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
 
@@ -267,10 +280,9 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
 
     try {
       const response = await fetch(`/api/v1/projects/${project.id}/run`, { method: 'POST' });
-      if (!response.ok) {
-        const body = await response.json();
-        throw new Error(body.detail ?? `HTTP ${response.status}`);
-      }
+      //  W1012 - a refused run says the server's status and reason in lib/stream.ts's sentence: a field check's list
+      //  read "[object Object]", and a refusal whose body was not JSON said the parser's words
+      if (!response.ok) throw new Error(await refusalOf(response));
       if (!response.body) throw new Error('No response body');
 
       const reader = response.body.getReader();
@@ -308,8 +320,15 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
             setStreamServedBy(payload.served_by ?? null);
             setStreamIsExternal(Boolean(payload.is_external));
             // Reload full project to get outputs list updated
-            const updated = await axios.get<Project>(`/api/v1/projects/${project.id}`);
-            onUpdate(updated.data);
+            //  W1044 - the run completed and the server saved its output, so a failed re-read is said as that. It fell
+            //  to the catch below as the run's own failure, which marked the project as in error over a saved output
+            try {
+              const updated = await axios.get<Project>(`/api/v1/projects/${project.id}`);
+              onUpdate(updated.data);
+            } catch (e) {
+              onUpdate({ ...project, status: 'done' });
+              setError(`The run completed and its output was saved, but the project could not be read again to show it: ${errorMessage(e)}`);
+            }
             setStreaming(false);
             return;
           }
@@ -318,7 +337,8 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
       // W492 (FU-216) — the reader can finish without a `done` frame ever arriving (a dropped or
       // truncated stream). The optimistic status 'running' then stood forever, so re-read the
       // project and report whatever the API actually holds rather than leaving a spinner turning.
-      const after = await axios.get<Project>(`/api/v1/projects/${project.id}`).catch(() => null);
+      //  W959 (FU-1181) - a failed re-read is said just below ("could not be re-read"), so it reads as no answer
+      const after = await axios.get<Project>(`/api/v1/projects/${project.id}`).then(r => r, () => null);
       if (after) {
         onUpdate(after.data);
         // W492 (refutation) - 'idle' is the status the backend actually writes when a run is reset or
@@ -332,7 +352,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
         setError('The stream closed before completing, and the project could not be re-read.');
       }
     } catch (err: any) {
-      setError(err?.message ?? 'Stream failed');
+      setError(errorMessage(err));
       onUpdate({ ...project, status: 'error' });
     } finally {
       setStreaming(false);
@@ -348,21 +368,26 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
       setError('');
       // Show inline confirmation (not an error)
       setError('✓ Proposal submitted — go to Governance Hub to approve or reject.');
+      // W867 (FU-1043) - the project now waits on a person: re-read it so the page says so without a reload. A
+      // failed re-read leaves the confirmation standing, and the next read of the list says it.
+      try { const again = await axios.get(`/api/v1/projects/${project.id}`); onUpdate(again.data); } catch { silenceIsRight('a failed re-read leaves the confirmation standing, and the next read of the list says it')(); }
     } catch (err: any) {
-      setError(err?.response?.data?.detail ?? 'Cannot propose advance yet.');
+      //  W1044 - by what happened: the fallback said the project was not ready yet, of a call that reached no server
+      setError(axiosDetail(err, `Could not propose the advance: ${errorMessage(err)}`));
     } finally {
       setAdvancing(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm(`Delete project "${project.title}"? This cannot be undone.`)) return;
+    setAsking(false);
     setDeleting(true);
     try {
-      await axios.delete(`/api/v1/projects/${project.id}`);
+      //  W971 - the server deletes only with the title typed back, which the question above held the act for
+      await axios.delete(`/api/v1/projects/${project.id}`, { params: { confirm_title: project.title } });
       onDelete(project.id);
     } catch (err: any) {
-      setError(err?.response?.data?.detail ?? 'Delete failed.');
+      setError(axiosDetail(err, `Delete failed: ${errorMessage(err)}`));   // W1044 - and by what happened
       setDeleting(false);
     }
   };
@@ -388,6 +413,17 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
               The words this project was first described in were not kept: it was made before they were recorded.
             </p>
           )}
+          {/* W867 (FU-1043) - WHETHER THIS PROJECT WAITS ON A PERSON, as the server read it from the proposals pending
+              for it. A state it could not read is said; nothing waiting prints nothing. */}
+          {project.waiting_on_person?.waiting === true && (project.waiting_on_person.on ?? []).map(w => (
+            <p key={w.proposal_id} data-testid="project-waiting-on-person" className="text-[10px] font-bold text-amber-400 mt-1 leading-relaxed"
+               title={project.waiting_on_person?.basis}>
+              Waiting on a person: {w.what}, raised {new Date(w.since * 1000).toLocaleString()}. It is decided in {project.waiting_on_person?.where}.
+            </p>
+          ))}
+          {project.waiting_on_person?.waiting === null && (
+            <p data-testid="project-waiting-not-known" className="text-[10px] text-amber-400 mt-1 leading-relaxed">{project.waiting_on_person.basis}</p>
+          )}
           <div className="flex items-center gap-2 mt-2">
             {/* W628 (FU-537) — a project's `realm` field holds the taxonomy DOMAIN and `domain` a sub-area; labelled as what they are */}
             <span className="text-[9px] font-bold text-slate-600 uppercase" title="domain · area (the project record stores the domain in its 'realm' field)">{project.realm} · {project.domain}</span>
@@ -397,7 +433,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
         </div>
         <button
           type="button"
-          onClick={handleDelete}
+          onClick={() => setAsking(true)}
           disabled={deleting || streaming}
           title="Delete project"
           aria-label="Delete project"
@@ -406,6 +442,16 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
           {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
         </button>
       </div>
+      {/* W968 (P5.14 clause 6) - a delete that cannot be undone waits for the project's title, typed back */}
+      {asking && (
+        <AskPerson question={`Delete the project "${project.title}"?`} kind="confirmation"
+          options={[
+            { id: 'delete', label: 'Delete the project', differs: "the project's record is removed from this platform, and a proposal still pending for it is marked as for a deleted project", undo: 'it cannot be undone: no copy of the record is kept' },
+            { id: 'keep', label: 'Keep it', differs: 'nothing changes', undo: 'there is nothing to undo', recommended: true },
+          ]}
+          typeBack={{ optionId: 'delete', text: project.title, label: "Type the project's title to delete it" }}
+          onChoose={id => { if (id === 'delete') void handleDelete(); else setAsking(false); }} />
+      )}
 
       {/* Stage rail */}
       <div className="shrink-0 flex items-center gap-1">
@@ -451,7 +497,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
       {error && (
         <div className={`shrink-0 flex items-start gap-2 rounded-xl border px-3 py-2 ${error.startsWith('✓') ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-red-500/30 bg-red-500/10'}`}>
           <AlertCircle size={12} className={`shrink-0 mt-0.5 ${error.startsWith('✓') ? 'text-emerald-400' : 'text-red-400'}`} />
-          <p className={`text-[10px] leading-relaxed ${error.startsWith('✓') ? 'text-emerald-300' : 'text-red-300'}`}>{error}</p>
+          <p data-testid="project-message" className={`text-[10px] leading-relaxed ${error.startsWith('✓') ? 'text-emerald-300' : 'text-red-300'}`}>{error}</p>
         </div>
       )}
 
@@ -515,7 +561,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
                 <button
                   type="button"
                   onClick={() => downloadExport(out.download_url, String(out.output_id ?? 'output'))
-                    .catch((e: any) => alert(`Download failed: ${e?.message ?? 'backend unreachable'}`))}
+                    .catch((e: any) => alert(`Download failed: ${errorMessage(e)}`))}
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-aura/30 text-aura text-[8px] font-black uppercase tracking-widest hover:bg-aura/10 transition-colors"
                 >
                   <Download size={9} /> Download
@@ -545,7 +591,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
 
 export const ProjectsHub: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const urlRealm  = searchParams.get('realm')  ?? 'technology';
+  const urlRealm  = searchParams.get('realm')  ?? CANON_REALMS[0];   // W786 (FU-969) - not the legacy 'technology'
   const urlDomain = searchParams.get('domain') ?? 'product';
   // W505 (P2.5) — the canonical realm a hub CTA carried, kept apart from `realm` above (which is a
   // taxonomy DOMAIN on that path). Falls back to the user's preference, then to the API's own default.
@@ -556,21 +602,26 @@ export const ProjectsHub: React.FC = () => {
 
   // Project list — tanstack-query for caching + background refetch
   const {
-    data: projectsData = [],
+    data: projectsData,
     isLoading: loading,
     isError: hasFetchError,
+    error: listError,
   } = useQuery<Project[]>({
     queryKey: ['projects'],
     queryFn: () => axios.get<Project[]>('/api/v1/projects/').then(r => r.data ?? []),
   });
-  const fetchError = hasFetchError ? 'Could not load projects. Is the backend running?' : '';
+  //  W1044 - said with its reason: one fixed sentence asked whether the backend was running, of a server that answered
+  const fetchError = hasFetchError ? `The projects could not be read, so the list is not what is there: ${errorMessage(listError)}` : '';
 
   const [projects,   setProjects]   = useState<Project[]>([]);
   const [selected,   setSelected]   = useState<Project | null>(null);
   const [showCreate, setShowCreate] = useState(openNew);
 
   // Sync query data into local state (local state allows optimistic mutations)
-  useEffect(() => { setProjects(projectsData); }, [projectsData]);
+  //  W1044 - only an answer is copied. A default of [] was a new list on every render while the list was unread, so
+  //  this set it on every render and the page rendered again without end: while the read was pending, and after
+  //  it had failed
+  useEffect(() => { if (projectsData) setProjects(projectsData); }, [projectsData]);
 
   // Clear the ?new=1 param once we've consumed it
   useEffect(() => {
@@ -632,7 +683,7 @@ export const ProjectsHub: React.FC = () => {
 
           {fetchError && (
             <div className="px-3 py-3 rounded-xl border border-red-500/20 bg-red-500/10 mx-1">
-              <p className="text-[9px] text-red-400 font-bold">{fetchError}</p>
+              <p data-testid="projects-unread" className="text-[9px] text-red-400 font-bold">{fetchError}</p>
             </div>
           )}
 
@@ -659,6 +710,9 @@ export const ProjectsHub: React.FC = () => {
               <div className="flex items-start justify-between gap-1 mb-1">
                 <span className="text-[10px] font-black text-white line-clamp-1 flex-1">{p.title}</span>
                 <StatusDot status={p.status} />
+                {p.waiting_on_person?.waiting === true && (
+                  <span data-testid="project-list-waiting" className="text-[8px] font-bold text-amber-400" title={p.waiting_on_person.basis}>waiting on a person</span>
+                )}
               </div>
               <div className="flex items-center gap-1.5">
                 <StagePill stage={p.stage} />

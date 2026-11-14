@@ -13,12 +13,13 @@ the token, and a model's answer has no part in that.
 """
 import os
 import pathlib
+import tempfile
 import secrets
 import socket
 import sys
 
 PORT = int(os.environ.get("SIGNIN_CHECK_PORT", "8032"))
-STORE = pathlib.Path(os.environ.get("SIGNIN_CHECK_STORE", r"C:\tmp\signin_check"))
+STORE = pathlib.Path(os.environ.get("SIGNIN_CHECK_STORE", str(pathlib.Path(tempfile.gettempdir()) / "signin_check")))   # W788
 
 
 def _port_in_use(port: int) -> bool:

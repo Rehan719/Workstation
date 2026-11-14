@@ -1,3 +1,4 @@
+import { silenceIsRight } from '../components/ReadFailures';   // W961 (FU-1181)
 // E5 — personalisation (§9 "personalised to each user's instructions, history, preferences"). Stored
 // locally in this browser (honest: no server profile). Used to greet the user and pre-seed defaults.
 
@@ -55,11 +56,11 @@ export function setPrefs(next: UserPrefs) {
   try {
     localStorage.setItem(KEY, JSON.stringify(next));
     window.dispatchEvent(new CustomEvent('ws:user-prefs'));
-  } catch { /* quota — ignore */ }
+  } catch { silenceIsRight('saved preferences are browser storage is a per-browser convenience that nothing else depends on')(); }
 }
 
 export function clearPrefs() {
-  try { localStorage.removeItem(KEY); window.dispatchEvent(new CustomEvent('ws:user-prefs')); } catch { /* ignore */ }
+  try { localStorage.removeItem(KEY); window.dispatchEvent(new CustomEvent('ws:user-prefs')); } catch { silenceIsRight('saved preferences are browser storage is a per-browser convenience that nothing else depends on')(); }
 }
 
 // §9 — user-customisable interface: pin/unpin nav items for a personal quick-access section.

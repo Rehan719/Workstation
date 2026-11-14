@@ -8,6 +8,7 @@ import { Card, Badge } from '@workstation/ui';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { apiJson, errorMessage, provenanceBadge, complianceChip } from '../../lib/api';
+import { AskPerson } from '../../components/AskPerson';   // W968 (P5.14 clause 6)
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 //
@@ -89,27 +90,31 @@ export const LivingMarketplace: React.FC = () => {
 
   const [catalogProducts, setCatalogProducts] = useState<CatalogProduct[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
-  const [catalogError, setCatalogError] = useState(false);
+  //  W1040 - the catalogue's failure, by what it was: one fixed sentence was said for every failure
+  const [catalogError, setCatalogError] = useState('');
   const [productSearch, setProductSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>('tier');
 
   const [listings, setListings] = useState<Listing[]>([]);
   const [listingsError, setListingsError] = useState('');
+  //  W1040 - a failed read of the listings, held apart from a failed purchase: the list beneath its notice said none
+  //  were registered when nothing had been read
+  const [listingsUnread, setListingsUnread] = useState('');
   const [buying, setBuying] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<string>('');
 
   useEffect(() => {
     axios.get('/api/v1/catalog/products')
       .then(r => setCatalogProducts(r.data.products))
-      .catch(() => setCatalogError(true))
+      .catch(e => setCatalogError(errorMessage(e)))
       .finally(() => setCatalogLoading(false));
   }, []);
 
   const loadListings = () => {
     apiJson<Listing[]>('/api/v1/marketplace/listings')
-      .then(d => { setListings(Array.isArray(d) ? d : []); setListingsError(''); })
-      .catch(e => setListingsError(errorMessage(e)));
+      .then(d => { setListings(Array.isArray(d) ? d : []); setListingsUnread(''); })
+      .catch(e => setListingsUnread(`The listings could not be read: ${errorMessage(e)}`));
   };
   useEffect(loadListings, []);
 
@@ -260,9 +265,9 @@ export const LivingMarketplace: React.FC = () => {
         </div>
       )}
       {catalogError && (
-        <div className="flex items-center justify-center py-20 gap-3 text-red-400">
+        <div role="alert" data-testid="catalog-unread" className="flex items-center justify-center py-20 gap-3 text-red-400">
           <AlertTriangle size={18} />
-          <span className="text-xs font-black uppercase tracking-widest">Failed to load catalog.</span>
+          <span className="text-xs font-black tracking-wide">The catalogue could not be read: {catalogError}</span>
         </div>
       )}
 
@@ -366,6 +371,12 @@ export const LivingMarketplace: React.FC = () => {
           for sale</span>; only a listing with a WST price can be bought.
         </p>
 
+        {listingsUnread && (
+          <div role="alert" data-testid="listings-unread" className="mt-4 flex items-start gap-2 rounded-xl border border-vital/30 bg-vital/10 px-3 py-2">
+            <AlertTriangle size={12} className="text-vital shrink-0 mt-0.5" />
+            <p className="text-[10px] font-bold text-vital leading-relaxed">{listingsUnread}</p>
+          </div>
+        )}
         {listingsError && (
           <div role="alert" className="mt-4 flex items-start gap-2 rounded-xl border border-vital/30 bg-vital/10 px-3 py-2">
             <AlertTriangle size={12} className="text-vital shrink-0 mt-0.5" />
@@ -385,9 +396,9 @@ export const LivingMarketplace: React.FC = () => {
             Open any listing to set its price (virtual WST), edit it, or get an AI valuation.
           </p>
         )}
-        {listings.length === 0 ? (
+        {listings.length === 0 ? (listingsUnread ? null : (
           <p className="text-xs text-slate-500 italic py-8">No listings are registered.</p>
-        ) : (
+        )) : (
           <>
             {/* W491 (refutation) - `tradeable` excludes BOTH unpriced and held listings, so this sentence
                 described every registered listing as an unpriced catalogue entry; with a priced-but-held
@@ -459,6 +470,7 @@ const ListingDrawer: React.FC<{ id: string; onClose: () => void }> = ({ id, onCl
   const [dErr, setDErr] = useState('');
   const [edit, setEdit] = useState<{ name: string; description: string; price_wst: number } | null>(null);
   const [busy, setBusy] = useState('');
+  const [askingRemove, setAskingRemove] = useState(false);   // W968 - the question before a listing is deleted
   const [notice, setNotice] = useState('');
   const [held, setHeld] = useState(false);
   const [valuation, setValuation] = useState<any>(null);
@@ -489,7 +501,7 @@ const ListingDrawer: React.FC<{ id: string; onClose: () => void }> = ({ id, onCl
   };
 
   const remove = async () => {
-    if (!window.confirm('Delete this listing? A listing with recorded sales is retired to draft instead (its receipts keep resolving).')) return;
+    setAskingRemove(false);
     setBusy('del'); setDErr('');
     try {
       const d = await apiJson<any>(`/api/v1/marketplace/listings/${id}`, { method: 'DELETE' });
@@ -603,12 +615,21 @@ const ListingDrawer: React.FC<{ id: string; onClose: () => void }> = ({ id, onCl
                   {busy === 'save' ? 'Saving…' : 'Save'}
                 </button>
                 {detail.origin === 'user' && (
-                  <button type="button" onClick={remove} disabled={busy === 'del'}
+                  <button type="button" onClick={() => setAskingRemove(true)} disabled={busy === 'del'}
                     className="px-3 py-2 bg-vital/20 text-vital font-black rounded-xl text-[9px] uppercase tracking-widest disabled:opacity-40">
                     Delete listing
                   </button>
                 )}
               </div>
+              {askingRemove && (
+                <AskPerson question={`Delete the listing "${detail.name}"?`} kind="confirmation"
+                  options={[
+                    { id: 'delete', label: 'Delete the listing', differs: 'a listing with no recorded sales is removed; one with recorded sales is retired to draft instead, and its receipts keep resolving', undo: 'a removed listing cannot be restored; one retired to draft can be published again' },
+                    { id: 'keep', label: 'Keep it', differs: 'nothing changes', undo: 'there is nothing to undo', recommended: true },
+                  ]}
+                  typeBack={{ optionId: 'delete', text: String(detail.name ?? ''), label: "Type the listing's name to delete it" }}
+                  onChoose={id => { if (id === 'delete') void remove(); else setAskingRemove(false); }} />
+              )}
               {detail.origin !== 'user' && (
                 <p className="text-[9px] text-slate-600 italic">catalog-derived listing — it mirrors a registered platform product and cannot be deleted here (edit or unprice it instead)</p>
               )}

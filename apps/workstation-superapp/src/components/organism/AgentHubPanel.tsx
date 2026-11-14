@@ -12,6 +12,10 @@
  *     means recorded: no executor is subscribed and nothing runs these automatically.
  */
 import React, { useEffect, useRef, useState } from 'react';
+import { errorMessage } from '../../lib/api';   // W1015 - a caught failure, said as what it was
+import { refusalOf } from '../../lib/stream';   // W1025 - a refused read by its reason
+import { ReadFailures, useReadFailures, silenceIsRight } from '../../components/ReadFailures';   // W931
+import { bodyOrNull, bodyDetail } from '../../lib/api';   // W982; W1013: bodyDetail
 import { Card, Button } from '@workstation/ui';
 import { Radio, Loader2, AlertCircle, ShieldCheck, Send, Inbox, Users } from 'lucide-react';
 
@@ -26,6 +30,7 @@ interface Handoff {
 }
 
 const AgentHubPanel: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W931 - a read that fails is said
   const [agents, setAgents] = useState<any>(null);
   const [msgs, setMsgs] = useState<HubMsg[]>([]);
   // W443 refuter catch: a failed message load was swallowed into msgs=[] and rendered the
@@ -43,8 +48,8 @@ const AgentHubPanel: React.FC = () => {
   const esRef = useRef<EventSource | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const jget = (url: string) => fetch(url).then(r => {
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const jget = (url: string) => fetch(url).then(async r => {
+    if (!r.ok) throw new Error(await refusalOf(r));   // W1025
     return r.json();
   });
 
@@ -55,7 +60,8 @@ const AgentHubPanel: React.FC = () => {
 
   const loadAll = () => {
     setLoadErr('');
-    jget('/api/v1/hub/agents').then(setAgents).catch(e => setLoadErr(`Hub unreachable — ${e.message}`));
+    //  W1025 - it said "Hub unreachable" over a refusal too
+    jget('/api/v1/hub/agents').then(setAgents).catch(e => setLoadErr(`The hub's agents were not read: ${errorMessage(e)}`));
     loadMsgs();
     jget('/api/v1/hub/handoffs?limit=20').then(d => setHandoffs(d.handoffs)).catch(() => setHandoffs(null));
   };
@@ -86,7 +92,7 @@ const AgentHubPanel: React.FC = () => {
         if (payload.event === 'message' && payload.data) {
           setMsgs(prev => [payload.data, ...prev].slice(0, 50));
         }
-      } catch { /* heartbeats/gaps are not renderable messages */ }
+      } catch { silenceIsRight('a hub stream frame that is not a message (a heartbeat or a gap) has nothing to render')(); }
     };
     return () => { es.close(); if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
@@ -98,8 +104,9 @@ const AgentHubPanel: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sender_id: 'owner-console', sender_role: 'USER', content: draft }),
       });
-      const d = await r.json();
-      if (!r.ok) { setErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); setBusy(false); return; }
+      //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
+      const d = r.ok ? await r.json() : await bodyOrNull(r);
+      if (!r.ok) { setErr(bodyDetail(d, `HTTP ${r.status}`)); setBusy(false); return; }   // W1013 - a field check by its field
       // W443 refuter catch: "(including this panel)" was claimed unconditionally — it is only
       // true when THIS panel's stream is actually connected; and without the SSE echo the
       // poster's own message never appeared until a remount, so refetch when not live.
@@ -108,7 +115,7 @@ const AgentHubPanel: React.FC = () => {
         : 'Stored — no live subscribers received it (nothing on the platform consumes hub messages by itself).');
       setDraft('');
       if (feedMode !== 'sse') loadMsgs();
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+    } catch (e: any) { setErr(errorMessage(e)); }
     setBusy(false);
   };
 
@@ -119,13 +126,14 @@ const AgentHubPanel: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       });
-      if (!r.ok) { const d = await r.json(); setErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); return; }
-      jget('/api/v1/hub/handoffs?limit=20').then(d => setHandoffs(d.handoffs)).catch(() => {});
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+      if (!r.ok) { const d = await bodyOrNull(r); setErr(bodyDetail(d, `HTTP ${r.status}`)); return; }   // W1013 - and a body that is not JSON
+      jget('/api/v1/hub/handoffs?limit=20').then(d => { clearRead('the handoffs'); setHandoffs(d.handoffs); }).catch(noteRead('the handoffs'));
+    } catch (e: any) { setErr(errorMessage(e)); }
   };
 
   return (
     <div className="space-y-6">
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-1">Respiratory layer · Agent Hub</p>
         <h2 className="text-2xl font-black tracking-tight text-white uppercase italic">Agent Collaboration Hub</h2>

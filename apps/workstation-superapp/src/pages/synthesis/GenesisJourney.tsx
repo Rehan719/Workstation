@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { GenerationPrice } from '../../components/GenerationPrice';
-import { qmsChip, provenanceMapBadge, complianceChip, layerTitle, immuneReading } from '../../lib/api';
+import { qmsChip, provenanceMapBadge, complianceChip, layerTitle, immuneReading, apiJson, errorMessage, bodyOrNull, bodyDetail } from '../../lib/api';
+import { refusalOf } from '../../lib/stream';   // W1025 - a refusal by its reason, not its status alone
+import { ReadFailures, useReadFailures, silenceIsRight } from '../../components/ReadFailures';   // W928
 import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS, PRODUCTS, PRODUCT_LABELS } from '../../lib/taxonomy';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { saveOutput } from '../../lib/outputHistory';
@@ -28,8 +30,9 @@ interface JourneyResult {
     // W485 — `selected` is null when every candidate was vetoed; nothing is carried forward then.
     method: string; selected: string | null; selection_basis: string;
     vetoed?: string[]; blocked_by_screen?: boolean; blocked_reason?: string | null;
-    candidates: { id: string; framing: string; rank: number; score: number; coverage: number;
-      specificity: number; structure: number; approach: string }[];
+    // W797 - rank and score are null when the candidates are not alternatives: nothing was compared
+    candidates: { id: string; framing: string; rank: number | null; score: number | null; coverage: number;
+      specificity: number; structure: number; approach: string; not_ranked_basis?: string }[];
     // W434/W436 — whether the "alternatives" genuinely differ. When they do not, ranking them is a
     // comparison that never happened, and the note replaces the ranked cards.
     candidates_are_alternatives?: boolean;
@@ -51,7 +54,8 @@ interface JourneyResult {
   // veto stops it after Stage 5). It is ABSENT on a complete journey, so "absent" means ran, and
   // `verified: null` means ran-but-not-assessable. Three different things, none of them "done".
   journey_id?: string;   // W668 - the server keeps its own record of the journey under this id
-  stage_verifications?: Record<string, { verified: boolean | null; ran?: boolean; score: number; sections_present: string; basis?: string }>;
+  // W800 - floor_served: the deterministic floor, not a model, served this stage
+  stage_verifications?: Record<string, { verified: boolean | null; ran?: boolean; score: number; sections_present: string; basis?: string; floor_served?: boolean }>;
   stages_verified?: string;
   stages_floor_served?: number;
   stages_note?: string | null;
@@ -173,7 +177,8 @@ interface ReviewGates {
 
 // W303 — idempotent seed reader: module-level cache survives React StrictMode's double-mount
 // (a side-effectful useState initializer would consume the seed on the discarded first mount).
-const _seedCache: Record<string, { title?: string; domain?: string; input?: string; output?: string } | null> = {};
+// W806 (FU-837) - output_withheld: why the domain tool's answer is absent (the scholar gate withheld it)
+const _seedCache: Record<string, { title?: string; domain?: string; input?: string; output?: string; output_withheld?: string } | null> = {};
 function readGenesisSeed(sid: string) {
   if (!(sid in _seedCache)) {
     try {
@@ -192,6 +197,7 @@ const DOMAINS: string[] = [...CANON_DOMAINS];
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const GenesisJourney: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W928 - a read that fails is said
   const navigate = useNavigate();
   const [sp] = useSearchParams();   // seedable from a domain tool (offering 1 -> offering 2, §3A)
   // W303 - the bridge carries the user's actual WORK PRODUCT (not a truncated input slice):
@@ -209,6 +215,12 @@ export const GenesisJourney: React.FC = () => {
       }
     }
     return sp.get('problem') || '';
+  });
+  // W806 (FU-837) - a withheld answer is said, so a journey seeded from the question alone does not read as a full seed
+  const [seedWithheld] = useState<string>(() => {
+    const sid = sp.get('seed');
+    const s = sid ? readGenesisSeed(sid) : null;
+    return s?.output_withheld ? String(s.output_withheld) : '';
   });
   const [domain, setDomain] = useState(() => { const d = sp.get('domain') || 'science'; return DOMAINS.includes(d) ? d : 'science'; });
   const [realm, setRealm] = useState(() => { const r = sp.get('realm') || 'enterprise'; return REALMS.includes(r) ? r : 'enterprise'; });
@@ -238,10 +250,10 @@ export const GenesisJourney: React.FC = () => {
       const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/name`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: enterpriseName.trim() }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) throw new Error(await refusalOf(res));   // W1025
       const d = await res.json();
       setVsb({ ...vsb, name: d.name, name_pending: false, name_source: 'founder', initial_ship: d.ship ?? vsb.initial_ship });
-    } catch (e: any) { setError(`Naming failed — ${e?.message ?? 'backend unreachable'}; nothing changed.`); }
+    } catch (e: any) { setError(`Naming failed: ${errorMessage(e)} Nothing changed.`); }
     setNaming(false);
   };
   // §2 — the VSB's legal/economic form, selected by the user at generation (wired to the economy templates)
@@ -250,9 +262,9 @@ export const GenesisJourney: React.FC = () => {
   const [establishOnComplete, setEstablishOnComplete] = useState(false);   // §5 — one continuous workflow → living enterprise
 
   useEffect(() => {
-    fetch('/api/v1/economy/entity-types').then(r => r.json())
+    apiJson('/api/v1/economy/entity-types')
       .then(d => { setEntityTypes(d.types ?? []); if (d.default) setEntityType(d.default); })
-      .catch(() => {});
+      .catch(noteRead('the entity types'));
   }, []);
   // §13 — the VSB IDBO Entity Repository (integrated Website · Web app · Phone app scaffold)
   const [repo, setRepo] = useState<RepoManifest | null>(null);
@@ -287,7 +299,7 @@ export const GenesisJourney: React.FC = () => {
               ...(enterpriseName.trim() ? { name: enterpriseName.trim() } : {}) }   // W450 — the founder's name, when given
           : { problem, domain, realm, ...(product ? { product } : {}) }),
       });
-      if (!res.ok) { setError(`HTTP ${res.status}`); setRunning(false); return; }
+      if (!res.ok) { setError(await refusalOf(res)); setRunning(false); return; }   // W1025
       const data = await res.json();
       setResult(data);
       if (data?.established_vsb && !data.established_vsb.error) setVsb(data.established_vsb);   // one-call living enterprise
@@ -300,9 +312,9 @@ export const GenesisJourney: React.FC = () => {
           output: (stages || JSON.stringify(data).slice(0, 4000)),
           provenance: data?.ai_provenance ?? null,
           vsb_id: data?.established_vsb?.vsb_id });
-      } catch { /* history is best-effort */ }
+      } catch { silenceIsRight('the local history of outputs is browser storage is a per-browser convenience that nothing else depends on')(); }
     } catch (e: any) {
-      setError(e?.message ?? String(e));
+      setError(errorMessage(e));
     }
     setRunning(false);
   };
@@ -314,10 +326,20 @@ export const GenesisJourney: React.FC = () => {
     if (!result) return;
     setExporting(kind);
     try {
+      // W849 (FU-454) - the stage that chose what the design is built on travels with the document too
+      const r5 = result?.stage_5_model_simulate_rank;
+      const rankSection = !r5 ? 'This stage did not run on this journey.'
+        : r5.candidates_are_alternatives === false
+          ? String(r5.comparison_note || 'The candidates returned the same text, so no comparison was possible and no ranking is given.')
+          : [`Selected: ${r5.selected ?? 'none - every candidate was vetoed'}. ${r5.selection_basis}`,
+             ...(r5.candidates ?? []).map(c => `- ${c.framing}${c.id === r5.selected ? ' (selected)' : ''}`
+               + `${(r5.vetoed ?? []).includes(c.id) ? ' (vetoed by the section 11 screen)' : ''} - `
+               + (c.rank != null ? `rank ${c.rank}, score ${c.score}` : (c.not_ranked_basis || 'not ranked')))].join('\n');
       const content = [
         `# Genesis: ${problem.slice(0, 80)}`,
         '## Concept', String(result?.phase_1_conceptualisation?.concept ?? ''),
         '## Innovate & Research', String(result?.stage_3_innovate_research ?? ''),
+        '## Model · Simulate · Optimise · Rank', rankSection,
         '## Design & Development', String(result?.phase_2_design_development ?? ''),
         // P3.1 - the 6.4.6 Develop stage and its costed bill of materials. An export that skipped it
         // would hand a founder five stages of a six-stage journey.
@@ -341,12 +363,12 @@ export const GenesisJourney: React.FC = () => {
           source_served_by: (result?.ai_provenance as any)?.body_served_by ?? result?.ai_provenance?.served_by ?? null,
         }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) throw new Error(await refusalOf(res));   // W1025
       const d = await res.json();
       // W338 — bearer-carrying open (a raw window.open 401s under auth)
       await openExport(`/api/v1/deliverables/${d.id}/export?format=${kind === 'presentation' ? 'slides' : 'html'}`);
     } catch (e: any) {
-      setError(e?.message ?? String(e));
+      setError(errorMessage(e));
     }
     setExporting('');
   };
@@ -379,7 +401,9 @@ export const GenesisJourney: React.FC = () => {
       const res = await fetch('/api/v1/genesis/establish/stream', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
       });
-      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+      //  W1025 - a refusal by its reason; a 2xx with no stream is said as one
+      if (!res.ok) throw new Error(await refusalOf(res));
+      if (!res.body) throw new Error('The establishment answered with no stream, so nothing is shown as established.');
       const reader = res.body.getReader();
       const dec = new TextDecoder();
       let buf = '';
@@ -396,7 +420,7 @@ export const GenesisJourney: React.FC = () => {
             const ev = JSON.parse(raw.slice(6));
             setBirthStages(s => [...s, { stage: ev.stage, label: ev.label, content: ev.content }]);
             if (ev.stage === 'complete' && ev.data) complete = ev.data;
-          } catch { /* skip malformed frame */ }
+          } catch { silenceIsRight('a stream frame that is not JSON, a heartbeat or a cut line, carries nothing to show')(); }
         }
       }
       if (!complete) throw new Error('stream ended without completion');
@@ -409,8 +433,8 @@ export const GenesisJourney: React.FC = () => {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
         });
         if (!res.ok) {
-          const detail = await res.json().then(d => d?.detail).catch(() => null);
-          setError(`Establishment failed (HTTP ${res.status})${detail ? `: ${String(detail).slice(0, 160)}` : ''}.`);
+          const detail = bodyDetail(await bodyOrNull(res), '');   // W1012 - text, whatever its shape
+          setError(`Establishment failed (HTTP ${res.status})${detail ? `: ${detail.slice(0, 160)}` : ''}.`);
         } else {
           setVsb(await res.json());
         }
@@ -468,9 +492,11 @@ export const GenesisJourney: React.FC = () => {
   // W669 (ledger v16 R3.3) - a refusal's detail is a string from some routes and an object from the review
   // gates ({error, clear_by}); an object was dropped and the founder shown only the status number.
   const refusalText = async (res: Response): Promise<string> => {
-    const d = await res.json().catch(() => null);
+    const d = await bodyOrNull(res);
     const det = d?.detail;
     if (typeof det === 'string' && det) return det;
+    //  W1013 - a field check (a list) by its field; it was said as "the server gave no reason"
+    if (Array.isArray(det)) return bodyDetail(d, `Action failed (HTTP ${res.status}) and the server gave no reason.`);
     if (det && typeof det === 'object') {
       const parts = [det.error, det.reason, det.clear_by ? `Clear by: ${det.clear_by}` : ''].filter(x => typeof x === 'string' && x);
       if (parts.length) return parts.join(' ');
@@ -494,7 +520,7 @@ export const GenesisJourney: React.FC = () => {
   const openGates = async () => {
     setGatesOpen(true);
     if (!vsb) return;
-    try { setGates(await fetch(`/api/v1/vsb/${vsb.vsb_id}/review-gates`).then(r => r.json())); } catch { setError('Could not load review gates — backend unreachable.'); }
+    try { setGates(await apiJson(`/api/v1/vsb/${vsb.vsb_id}/review-gates`)); } catch (e) { setError(`Could not load review gates — ${errorMessage(e)}`); }
   };
   const toggleGate = async (stageId: string) => {
     if (!vsb || !gates) return;
@@ -513,10 +539,13 @@ export const GenesisJourney: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ decision }),
       });
       // Ledger cluster 1 — the Owner's gate decision must never silently no-op on a 4xx/5xx
-      if (!res.ok) { setError(`Gate ${decision} failed (HTTP ${res.status}).`); return; }
+      //  W1030 - the refusal's reason (it said the status alone, so a refused decision gave the Owner no reason)
+      if (!res.ok) { setError(`Gate ${decision} failed (HTTP ${res.status}): ${await refusalText(res)}`); return; }
       const dj = await res.json();
       setEntityStatus({ status: dj.entity_status, basis: dj.entity_status_basis });
-      setGates(await fetch(`/api/v1/vsb/${vsb.vsb_id}/review-gates`).then(r => r.json()));
+      //  W927 - the decision is recorded by now: a failed re-read is said as that, never as "nothing changed"
+      try { setGates(await apiJson(`/api/v1/vsb/${vsb.vsb_id}/review-gates`)); }
+      catch (e) { setError(`The decision was recorded, but the gates could not be read again — ${errorMessage(e)}`); }
     } catch { setError('Action failed — backend unreachable; nothing changed.'); }   // W344
   };
 
@@ -566,6 +595,7 @@ export const GenesisJourney: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-24">
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">
           Workstation IDBO · Offering 2 · Build an Enterprise
@@ -690,6 +720,11 @@ export const GenesisJourney: React.FC = () => {
             rows={4}
             className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-highlight/50 resize-none"
           />
+          {seedWithheld && (
+            <p role="status" data-testid="genesis-seed-withheld" className="mt-2 text-[10px] text-amber-400 font-semibold leading-relaxed">
+              The domain tool's answer was withheld, so this journey starts from your question only: {seedWithheld}
+            </p>
+          )}
           {/* §9 — multimodal input: attach your own data and/or dictate the challenge by voice */}
           <div className="mt-2 flex items-start gap-2 flex-wrap">
             <AttachDocument
@@ -866,7 +901,14 @@ export const GenesisJourney: React.FC = () => {
                 <Eye size={15} className="text-aura" />
                 <h3 className="text-xs font-black uppercase tracking-widest text-aura">Innovate &amp; Research (§4.3)</h3>
               </div>
-              <p className="text-[10px] text-slate-600 mb-2">Best &amp; latest approaches + innovative options across science · technology · business · operations · law — feeding the candidate solutions below.</p>
+              {/* W800 (FU-981, ledger v17 R2[1]) - the subtitle follows what served the stage. It promised the
+                  best and latest approaches across five fields over a frame the floor built from the founder's
+                  own words. */}
+              <p data-testid="genesis-research-subtitle" className="text-[10px] text-slate-600 mb-2">
+                {result.stage_verifications?.research?.floor_served === true
+                  ? 'The structured floor served this stage, not a model: what follows is a frame built from your own words under the requested headings. No approach was found, researched or compared.'
+                  : 'Best & latest approaches + innovative options across science · technology · business · operations · law — feeding the candidate solutions below.'}
+              </p>
               <PlainText text={result.stage_3_innovate_research} />
             </Card>
           )}
@@ -884,7 +926,7 @@ export const GenesisJourney: React.FC = () => {
                   this renders it IN PLACE OF the ranked cards, which would otherwise imply three
                   distinct options were weighed. */}
               {result.stage_5_model_simulate_rank.candidates_are_alternatives === false ? (
-                <div role="status" className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/5 mb-2">
+                <div role="status" data-testid="rank-not-alternatives" className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/5 mb-2">
                   <p className="text-[10px] font-bold text-amber-400 leading-relaxed">
                     {result.stage_5_model_simulate_rank.comparison_note ||
                       'All candidates returned identical text — no comparison was possible, so no ranking is shown.'}
@@ -895,16 +937,16 @@ export const GenesisJourney: React.FC = () => {
                 {result.stage_5_model_simulate_rank.candidates.map(c => {
                   const isWin = c.id === result.stage_5_model_simulate_rank!.selected;
                   return (
-                    <div key={c.id} className={`p-3 rounded-xl border ${isWin ? 'border-aura/50 bg-aura/10' : 'border-slate-800 bg-slate-950'}`}>
+                    <div key={c.id} data-testid={`rank-candidate-${c.id}`} className={`p-3 rounded-xl border ${isWin ? 'border-aura/50 bg-aura/10' : 'border-slate-800 bg-slate-950'}`}>
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className={`text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center ${isWin ? 'bg-aura text-sovereign' : 'bg-slate-800 text-slate-400'}`}>{c.rank}</span>
                           <span className="text-[11px] font-black text-white uppercase tracking-wide truncate">{c.id}</span>
-                          {isWin && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/20 text-aura shrink-0">selected</span>}
+                          {isWin && <span data-testid="rank-selected" className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/20 text-aura shrink-0">selected</span>}
                           {/* W485 — a vetoed candidate is SHOWN as vetoed. The page used to print the veto
                               sentence while chipping the same candidate 'selected' and carrying it into Design. */}
                           {(result.stage_5_model_simulate_rank!.vetoed || []).includes(c.id) &&
-                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-vital/20 text-vital shrink-0"
+                            <span data-testid="rank-vetoed" className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-vital/20 text-vital shrink-0"
                               title="§11 screen FAIL — this candidate cannot be selected">vetoed</span>}
                         </div>
                         <span className="text-[9px] font-mono text-slate-500 shrink-0" title={`coverage ${c.coverage} · specificity ${c.specificity} · structure ${c.structure}`}>
@@ -922,16 +964,18 @@ export const GenesisJourney: React.FC = () => {
                 })}
               </div>
               )}
-              <p className="text-[9px] text-slate-600 mt-2">
+              <p data-testid="rank-selection-basis" className="text-[9px] text-slate-600 mt-2">
                 {result.stage_5_model_simulate_rank.selection_basis}
                 {result.stage_5_model_simulate_rank.blocked_by_screen
                   ? " — nothing is carried into Design: the journey stops here."
-                  : " — the winner is carried into Design."}
+                  : result.stage_5_model_simulate_rank.candidates_are_alternatives === false
+                    ? " — that one text is carried into Design; nothing was chosen over anything."
+                    : " — the winner is carried into Design."}
               </p>
               {/* W485 (ledger v5 R1.3) — every candidate vetoed means the journey STOPPED. Said where the
                   reader is, not only in the payload. */}
               {result.stage_5_model_simulate_rank.blocked_by_screen && (
-                <div role="status" className="mt-2 p-3 rounded-xl border border-vital/40 bg-vital/5">
+                <div role="status" data-testid="rank-blocked" className="mt-2 p-3 rounded-xl border border-vital/40 bg-vital/5">
                   <p className="text-[10px] font-black uppercase tracking-widest text-vital mb-1">Blocked by the §11 screen</p>
                   <p className="text-[10px] font-bold text-slate-300 leading-relaxed">
                     {result.stage_5_model_simulate_rank.blocked_reason
@@ -961,7 +1005,12 @@ export const GenesisJourney: React.FC = () => {
                 <ShieldCheck size={15} className="text-aura" />
                 <h3 className="text-xs font-black uppercase tracking-widest text-aura">Operational Intelligence (§4.7)</h3>
               </div>
-              <p className="text-[10px] text-slate-600 mb-2">Addresses deliverability, compliance (legal · regulatory · EHS · Sharia · ethical) and operability before commercialisation. The §11 screen below reads the design and commercialisation text — a keyword and vocabulary screen, not a certification.</p>
+              <p data-testid="genesis-operations-subtitle" className="text-[10px] text-slate-600 mb-2">
+                {result.stage_verifications?.operations?.floor_served === true
+                  ? 'The structured floor served this stage, not a model: the headings below name deliverability, compliance and operability, and nothing under them assessed any of the three.'
+                  : 'Addresses deliverability, compliance (legal · regulatory · EHS · Sharia · ethical) and operability before commercialisation.'}
+                {' '}The §11 screen below reads the design and commercialisation text — a keyword and vocabulary screen, not a certification.
+              </p>
               <PlainText text={result.stage_7_operational_intelligence} />
             </Card>
           )}
@@ -1251,7 +1300,7 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                             )}
                           </div>
                           <p className="text-[9px] text-slate-500">Pages: {site.nav.map(n => n.label).join(' · ')}</p>
-                          <button type="button" onClick={() => openExport(site.preview).catch(e => setError(`Preview failed: ${e.message}`))}
+                          <button type="button" onClick={() => openExport(site.preview).catch(e => setError(`Preview failed: ${errorMessage(e)}`))}
                             className="inline-block text-[10px] font-black uppercase tracking-widest text-aura border border-aura/40 px-3 py-1.5 rounded-lg hover:bg-aura/10 transition-colors">
                               Open the live site →
                             </button>
@@ -1284,7 +1333,7 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                             <p className="text-[9px] text-amber-400/80 leading-relaxed" data-testid="webapp-template-note">
                               {typeof webapp.note === 'string' && webapp.note ? webapp.note : 'The server sent no note saying what this app is.'}
                             </p>
-                            <button type="button" onClick={() => openExport(webapp.preview).catch(e => setError(`Preview failed: ${e.message}`))}
+                            <button type="button" onClick={() => openExport(webapp.preview).catch(e => setError(`Preview failed: ${errorMessage(e)}`))}
                               className="inline-block text-[10px] font-black uppercase tracking-widest text-highlight border border-highlight/40 px-3 py-1.5 rounded-lg hover:bg-highlight/10 transition-colors">
                                 Open the web app →
                               </button>
@@ -1320,7 +1369,7 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                             <p className="text-[9px] text-amber-400/80 leading-relaxed" data-testid="pwa-template-note">
                               {typeof pwa.note === 'string' && pwa.note ? pwa.note : 'The server sent no note saying what this app is.'}
                             </p>
-                            <button type="button" onClick={() => openExport(pwa.preview).catch(e => setError(`Preview failed: ${e.message}`))}
+                            <button type="button" onClick={() => openExport(pwa.preview).catch(e => setError(`Preview failed: ${errorMessage(e)}`))}
                               className="inline-block text-[10px] font-black uppercase tracking-widest text-aura border border-aura/40 px-3 py-1.5 rounded-lg hover:bg-aura/10 transition-colors">
                                 Open the phone app →
                               </button>

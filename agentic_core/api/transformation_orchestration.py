@@ -133,7 +133,7 @@ class OrchestrateRequest(BaseModel):
     model_config = STRICT   # W628 (FU-398): an undeclared field here is a lost instruction - see _strict_models
     objective: str = ""                 # the transformation objective (defaults to the live vision gap)
     scope: str = "workstation"          # business-plan scope (a vsb_id or 'workstation')
-    owner_id: str = "Rehan"
+    owner_id: str = ""               # W812 (FU-1153) - none named: the plan's own owner, else the configured one
     domain: str = "enterprise"
     deep: bool = False                  # also run the Chief's cognition on Workstation's OWN native AI swarm (in-house, always works)
     # W581 (FU-313) — DECLARED, because an undeclared field is DISCARDED and the caller still gets a 200.
@@ -146,7 +146,11 @@ class OrchestrateRequest(BaseModel):
 
 
 # ── The cascade ───────────────────────────────────────────────────────────────
+from agentic_core.api.operational_excellence import spans_run    # W847 (FU-1121)
+
+
 @router.post("/orchestrate")
+@spans_run("transformation")       # W847 (FU-1121) - every run inside it is held
 async def orchestrate(req: OrchestrateRequest):
     _t0 = time.time()
     signals = 0
@@ -196,13 +200,17 @@ async def orchestrate(req: OrchestrateRequest):
                                   "Close the remaining vision→realisation gap and reach launch-ready.")
 
     # ── 1 · Chief (Owner's digital twin) sets the mandate from the living plan ──
+    #  W812 (FU-1153) - the owner the request named, else the plan's own (an entity's plan carries its owner), else
+    #  the configured single-user owner; never a name in the code
+    from agentic_core.config import single_user_owner as _suo812
+    _owner812 = req.owner_id or plan.get("owner") or _suo812()["owner_id"]
     board = {}
     try:
         from agentic_core.api.board import board_for_owner
-        board = board_for_owner(req.owner_id, plan.get("vision", ""))
+        board = board_for_owner(_owner812, plan.get("vision", ""))
     except Exception:
         pass
-    chief = board.get("chief", {"title": f"Chief — {req.owner_id}'s charter and instructions (no twin model)"})
+    chief = board.get("chief", {"title": f"Chief — {_owner812}'s charter and instructions (no twin model)"})
     stage(1, "Chief (the Owner's charter)", "Board",
           f"Set the transformation mandate: {objective}",
           {"chief": chief.get("title"),
@@ -683,6 +691,10 @@ def _generate_vsb_twin(req, chief, directors, action_items, organism, realisatio
 @router.get("/orchestrate/runs")
 async def orchestrate_runs():
     runs = []
+    #  W987 (FU-399 part 19) - A RUN RECORD THAT CANNOT BE READ IS SAID. One that did not parse was skipped in
+    #  silence and `total` counted only the others, so the Transformation Dashboard listed fewer runs than were
+    #  recorded and nothing said one was missing. Each is named, with what stopped it being read.
+    unreadable = []
     if _RUNS.exists():
         for p in sorted(_RUNS.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True)[:50]:
             try:
@@ -690,6 +702,6 @@ async def orchestrate_runs():
                 runs.append({"transformation_id": r["transformation_id"], "scope": r.get("scope"),
                              "objective": r.get("objective"), "validated": r.get("validation", {}).get("validated"),
                              "created_at": r.get("created_at")})
-            except Exception:
-                pass
-    return {"runs": runs, "total": len(runs)}
+            except Exception as exc:
+                unreadable.append({"record": p.name, "error": type(exc).__name__})
+    return {"runs": runs, "total": len(runs), "unreadable": len(unreadable), "unreadable_records": unreadable}

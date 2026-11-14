@@ -4,7 +4,8 @@ W482. Three rounds in a row (W480, W481, W482) an outside proposal offered to bu
 repository already contained: the nine-engine registry and the five-gate clearance chain (W480), the
 transformation cascade's own verdict (W481), and the Biomimetic Minimisation Engine — whose Schrödinger
 bridge and diffusion engine had been DELETED but are recoverable from git, and whose Landauer meter still
-exists as `core/transcendent_subsystems/tfel.py` (W482). Rebuilding these would have produced a second
+exists as `core/transcendent_subsystems/tfel.py` (W482; moved into agentic_core/transcendent_subsystems/ in
+W877, under the ruling against a parallel source tree). Rebuilding these would have produced a second
 implementation of each, and the new one would have been the weaker.
 
 This script finds those cases mechanically, and prints the command that recovers each one. It reads; it

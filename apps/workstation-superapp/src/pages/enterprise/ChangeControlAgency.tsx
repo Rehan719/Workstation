@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W931
 import axios from 'axios';
+import { axiosDetail, errorMessage } from '../../lib/api';   // W1011 - a refusal's detail as text, whatever its shape
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   GitBranch, CheckCircle2, XCircle, Clock, Loader2,
@@ -167,6 +169,7 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
 }) {
   const [expanded, setExpanded] = useState(false);
   const [detail, setDetail] = useState<CCADetail | null>(null);
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W931 - a read that fails is said
   const Icon = STATUS_ICONS[entry.status] ?? Clock;
 
   // The list row is intentionally thin — the description/review live on the detail record.
@@ -177,7 +180,8 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
       try {
         const r = await axios.get(`/api/v1/cca/${entry.cca_id}`);
         setDetail(r.data);
-      } catch { /* the row still renders; detail pane shows an honest fallback below */ }
+        clearRead("the change's details");
+      } catch (e) { noteRead("the change's details")(e); }   // W931 - said in the pane, never "Loading" for ever
     }
   };
 
@@ -185,7 +189,7 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
   // pre-validation lines stayed stale until a reload; refetch whenever the row itself moves
   useEffect(() => {
     if (!expanded) return;
-    axios.get(`/api/v1/cca/${entry.cca_id}`).then(r => setDetail(r.data)).catch(() => {});
+    axios.get(`/api/v1/cca/${entry.cca_id}`).then(r => { clearRead("the change's details"); setDetail(r.data); }).catch(noteRead("the change's details"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entry.status, entry.reviewed_at]);
 
@@ -312,9 +316,10 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
             className="overflow-hidden border-t border-white/8"
           >
             <div className="p-4 space-y-3">
+              <ReadFailures failures={readFailures} />
               {detail
                 ? <p className="text-sm text-white/60">{detail.description || 'No description recorded.'}</p>
-                : <p className="text-sm text-white/30">Loading details…</p>}
+                : !Object.keys(readFailures).length && <p className="text-sm text-white/30">Loading details…</p>}
 
               {detail?.review_result && (
                 <div className="bg-white/3 border border-white/8 rounded-lg p-3">
@@ -381,8 +386,13 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
                   {detail.recommendation?.verdict
                     ? ` (recommendation: ${detail.recommendation.verdict}, from ${detail.recommendation.source === 'model_decision_marker' ? 'the reviewing model' : 'the organism-health rule'})`
                     : ''}
+                  {/* W802 (FU-982 R3[1]) - a MEDIUM change no model decided is held whoever asks for the review */}
+                  {detail.hold_reason === 'nothing_read_the_change'
+                    ? ' — nothing read this change (no model returned a decision), so the rule\u2019s verdict is only a recommendation'
+                    : ''}
                   {/* W463 — a hold that follows a rejection is held again by any review; only an explicit decision moves it */}
                   {detail.impact_tier === 'CRITICAL' || detail.hold_reason === 'follows_rejection_requires_explicit_decision'
+                    || detail.hold_reason === 'nothing_read_the_change'
                     ? ' — decide it in the Governance hub\u2019s Sovereign Sanctum'
                     : ' — a review requested by an admin decides it'}
                 </p>
@@ -477,10 +487,11 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
   const [systems, setSystems] = useState('');
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [ledger, setLedger] = useState('');   // W1043 - the ledger's word, said apart from the outcome
 
   const submit = async () => {
     if (!title.trim() || !desc.trim()) return;
-    setLoading(true); setMsg(null);
+    setLoading(true); setMsg(null); setLedger('');
     try {
       const res = await axios.post('/api/v1/cca/submit', {
         title, description: desc, change_type: type, submitted_by: 'workstation-ui',
@@ -512,20 +523,30 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
       // whole purpose is to show that a change was recorded. false is the case that matters, so it
       // is said loudly; true is said quietly, because silence there is what hid the failure.
       const logged = (res.data as any).ueg_logged as boolean | undefined;
-      const ledger = logged === false
-        ? ' ⚠ NOT RECORDED IN THE GOVERNANCE LEDGER: the decision stands but its append to the UEG failed, so the audit trail does not carry it.'
+      //  W1043 - said apart from the outcome, as the warning it is when the append failed: it was folded into the
+      //  outcome and read in the outcome's green
+      setLedger(logged === false
+        ? '⚠ NOT RECORDED IN THE GOVERNANCE LEDGER: the decision stands but its append to the UEG failed, so the audit trail does not carry it.'
         : logged === true
-          ? ' Recorded in the governance ledger.'
-          : '';
+          ? 'Recorded in the governance ledger.'
+          : '');
+      //  W1043 - a LOW change the health gate did not approve says the gate's own reason; it was said only as
+      //  waiting for review, though the route says why
+      const healthHeld = res.data.status !== 'approved' && res.data.impact_tier === 'LOW' && hg && hg.verdict !== 'pass'
+        ? String(hg.basis ?? hg.verdict) : '';
       setMsg((res.data.status === 'approved'
         ? `✓ Auto-approved: LOW tier, ${measured}, immune threat ${res.data.immune_threat_at_submit ?? 'unknown'}`
         : withheld
           ? `✓ Change submitted — the automatic approval was withheld by the delivery-method gate: ${withheld}. It may still be approved by review.`
-          : '✓ Change submitted — awaiting review') + raised + ledger);
+          : healthHeld
+            ? `✓ Change submitted — the health gate did not approve it automatically: ${healthHeld}.`
+            : '✓ Change submitted — awaiting review') + raised);
       setTitle(''); setDesc(''); setType('config_minor'); setRationale(''); setSystems('');
-      setTimeout(() => { onSubmitted(); setOpen(false); setMsg(null); }, 1500);
+      //  W1043 - the queue is read again at once, and the outcome stays until the person closes the form or submits
+      //  again: it closed and cleared itself after a second and a half
+      onSubmitted();
     } catch (e: any) {
-      setMsg(`Error: ${e?.response?.data?.detail ?? 'request failed'}`);
+      setMsg(`Error: ${axiosDetail(e, 'request failed')}`);
     } finally { setLoading(false); }
   };
 
@@ -636,6 +657,10 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
               {msg && (
                 <p className={`text-sm ${msg.startsWith('Error') ? 'text-red-400' : 'text-green-400'}`}>{msg}</p>
               )}
+              {ledger && (
+                <p role={ledger.startsWith('⚠') ? 'alert' : undefined} data-testid="cca-ledger"
+                  className={`text-sm ${ledger.startsWith('⚠') ? 'text-amber-400 font-bold' : 'text-white/50'}`}>{ledger}</p>
+              )}
 
               <div className="flex gap-2">
                 <button
@@ -646,7 +671,7 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
                   {loading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                   Submit
                 </button>
-                <button onClick={() => setOpen(false)} className="px-4 py-2 rounded-xl text-sm text-white/40 hover:text-white/60 hover:bg-white/5">
+                <button onClick={() => { setOpen(false); setMsg(null); setLedger(''); }} className="px-4 py-2 rounded-xl text-sm text-white/40 hover:text-white/60 hover:bg-white/5">
                   Cancel
                 </button>
               </div>
@@ -691,8 +716,9 @@ export const ChangeControlAgency: React.FC = () => {
       setStats({ total: all.length, pending, awaiting, approved, rejected, implemented,
         implementedApplied, implementedRecordedOnly,
         implementedEffectNotRecorded: implemented - implementedApplied - implementedRecordedOnly });
-    } catch {
-      setLoadError('Could not load the change queue — backend unreachable.');
+    } catch (e) {
+      //  W1028 - a refused read is said by its reason: this said every failure as an unreachable server
+      setLoadError(`The change queue could not be read: ${errorMessage(e)}`);
     } finally { setLoading(false); }
   }, []);
 
@@ -701,12 +727,12 @@ export const ChangeControlAgency: React.FC = () => {
   // W459 — a 403 is the governance gate answering, not an unreachable backend
   const actionMessage = (e: any): string => {
     const status = e?.response?.status;
-    const detail = e?.response?.data?.detail;
+    const detail = axiosDetail(e, '');   // W1011 - text, whatever shape the reason came in
     if (status === 403) return detail || 'Refused — an admin decision is required for this action.';
     if (status === 401) return 'Sign in required — this action records an identity.';
     if (status === 409) return detail || 'The record changed while this action was running — reload and retry.';
     if (status === 503) return detail || 'The change record is busy — retry in a moment.';
-    return detail || 'Action failed — the backend may be unavailable.';
+    return detail || errorMessage(e);   // W1042 - by what it was: the fallback guessed at a backend that was down
   };
 
   const runAction = async (id: string, act: () => Promise<unknown>) => {

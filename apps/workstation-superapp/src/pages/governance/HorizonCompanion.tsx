@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { bodyDetail } from '../../lib/api';   // W1013
 import { Eye, HelpCircle } from 'lucide-react';
 import ArchiveSearchPanel from '../../components/ArchiveSearchPanel';
 
@@ -63,6 +64,12 @@ interface Records {
 }
 
 const NOT_EVALUATED = 'Not evaluated';
+
+//  W978 (FU-399 part 11) - a refusal is said with the server's reason, when it gave one
+const said = (body: unknown): string => {
+  const d = bodyDetail(body, '');   // W1013 - a field check by its field (it said nothing for one)
+  return d.trim() ? `: ${d}` : '';
+};
 
 /** A list field's three states, rendered as three DIFFERENT things. */
 const ListField: React.FC<{ label: string; items?: string[] }> = ({ label, items }) => {
@@ -130,20 +137,26 @@ export const HorizonCompanion: React.FC = () => {
   // installed` rather than implying semantic recall", and measured W598: no page read the archive at all,
   // so the statement was true in the payload and absent from every screen (the FU-420 class).
   const [archive, setArchive] = useState<any | null>(null);
+  //  W978 - a read of what each run consumed that FAILED is said on each card. It was dropped, so every card said
+  //  "No ConsumptionRecord was joined to this run" about records nothing had read.
+  const [consumptionErr, setConsumptionErr] = useState('');
 
   useEffect(() => {
     axios.get<Records>('/api/v1/horizon/records?limit=25', { validateStatus: () => true })
       .then(r => {
         if (r.status === 200 && r.data) { setD(r.data); setErr(''); }
-        else { setD(null); setErr(`The records are not reporting (HTTP ${r.status}).`); }
+        else { setD(null); setErr(`The records are not reporting (HTTP ${r.status}${said(r.data)}).`); }
       })
       .catch(() => { setD(null); setErr('The records could not be reached.'); });
-    // Fetched SEPARATELY and failing separately: a consumption store that cannot be read must leave
-    // the card saying "not recorded", which is true, rather than blanking the record above it.
+    // Fetched SEPARATELY and failing separately: a consumption store that cannot be read must not blank the record
+    // above it, and W978 - it must not read as "not recorded" either, which is a claim about the store nothing read.
     axios.get<{ records: Record<string, unknown>[] }>('/api/v1/horizon/consumption?limit=100',
       { validateStatus: () => true })
-      .then(r => { if (r.status === 200 && r.data?.records) setConsumption(byIntent(r.data.records)); })
-      .catch(() => { /* leaves the card at "Not recorded", which is what is true */ });
+      .then(r => {
+        if (r.status === 200 && Array.isArray(r.data?.records)) { setConsumption(byIntent(r.data.records)); setConsumptionErr(''); }
+        else setConsumptionErr(`What each run consumed could not be read (HTTP ${r.status}${said(r.data)}).`);
+      })
+      .catch(() => setConsumptionErr('What each run consumed could not be read: the store could not be reached.'));
     // Fetched separately for the same reason: an unreadable index must not blank the records above it.
     axios.get<any>('/api/v1/horizon/archive', { validateStatus: () => true })
       .then(r => { if (r.status === 200 && r.data) setArchive(r.data); })
@@ -274,6 +287,10 @@ export const HorizonCompanion: React.FC = () => {
                   ))}
                 </div>
               </>
+            ) : consumptionErr ? (
+              <p role="alert" data-testid="consumption-unread" className="text-amber-300 font-bold">
+                {consumptionErr} Nothing is shown, because nothing was received - not that nothing was recorded.
+              </p>
             ) : (
               <>
                 <p className="text-slate-300 font-bold">Not recorded</p>
@@ -318,41 +335,50 @@ export const HorizonCompanion: React.FC = () => {
         <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-2">
           the owned knowledge index
         </p>
+        {/* W978 (FU-399 part 11) - THE ROUTE ANSWERS {manifest, recount}. This read counts, embedding_backend, bounds
+            and files from the top of the answer, where none of them are, so it printed "0 file(s) indexed" whatever the
+            index held, with none of its caps and none of the files it could not read. It reads the manifest now, and
+            an index never scanned says so: three zeros there would be counts nobody computed. */}
         {!archive ? (
           <p data-testid="horizon-archive-unavailable" className="text-[10px] text-slate-500 leading-relaxed">
             The index is not reporting. That is a statement about reachability, not about what is indexed —
             nothing here should be read as "the archive is empty".
           </p>
+        ) : !(archive.manifest && archive.manifest.counts) ? (
+          <p data-testid="horizon-archive-not-scanned" className="text-[10px] text-slate-400 leading-relaxed">
+            No scan of the inbox is recorded, so nothing is indexed and no count is shown. A count here would be one
+            nobody computed. {archive.recount?.basis}
+          </p>
         ) : (
           <>
-            <p className="text-[10px] text-slate-300 leading-relaxed font-medium">
-              {(archive.counts?.INDEXED ?? 0)} file(s) indexed · {(archive.counts?.NOT_READ ?? 0)} not read ·
-              {' '}{(archive.counts?.EXCLUDED ?? 0)} excluded by a secret rule.
+            <p data-testid="horizon-archive-counts" className="text-[10px] text-slate-300 leading-relaxed font-medium">
+              {archive.manifest.counts.INDEXED} file(s) indexed · {archive.manifest.counts.NOT_READ} not read ·
+              {' '}{archive.manifest.counts.EXCLUDED} excluded by a secret rule.
             </p>
-            {/* embeddings: none installed — the clause's own words, and the reason beside it */}
+            <p data-testid="horizon-archive-recount" className="text-[9px] text-slate-500 mt-1 leading-relaxed">
+              {archive.recount?.basis}
+            </p>
+            {/* embeddings: none installed — the clause's own words, and the server's reason beside it */}
             <p data-testid="horizon-archive-embeddings" className="text-[10px] text-amber-400/80 mt-2 leading-relaxed font-bold">
-              embeddings: {archive.embedding_backend === null || archive.embedding_backend === undefined
-                ? 'none installed' : String(archive.embedding_backend)}
+              embeddings: {archive.manifest.embedding_backend === null || archive.manifest.embedding_backend === undefined
+                ? 'none installed' : String(archive.manifest.embedding_backend)}
             </p>
             <p data-testid="horizon-archive-embeddings-basis" className="text-[9px] text-slate-500 mt-1 leading-relaxed">
-              {archive.embedding_basis ?? ('Search here is this platform’s own LEXICAL index: a passage '
-                + 'matches when it contains one of the query’s words. There is no embedding backend '
-                + 'installed, so nothing here is semantic recall — a document that says the same thing in '
-                + 'different words will NOT be found.')}
+              {archive.manifest.search_basis}
             </p>
             {/* the caps, published — a cap nobody is told about reads as a complete index */}
-            {archive.bounds && (
+            {archive.manifest.bounds && (
               <p data-testid="horizon-archive-bounds" className="text-[9px] text-slate-600 mt-2 leading-relaxed">
-                Bounds: at most {archive.bounds.max_files} file(s), {archive.bounds.max_bytes} byte(s) per
-                file, {archive.bounds.max_passages_per_file} located passage(s) per document.
-                {' '}{archive.bounds.passage_basis}
+                Bounds: at most {archive.manifest.bounds.max_files} file(s), {archive.manifest.bounds.max_bytes} byte(s)
+                per file, {archive.manifest.bounds.max_passages_per_file} located passage(s) per document.
+                {' '}{archive.manifest.bounds.passage_basis}
               </p>
             )}
             {/* what it could NOT look inside, named — the FU-124 rule made visible */}
-            {Array.isArray(archive.files) && archive.files.some((f: any) => f.state !== 'INDEXED') && (
+            {Array.isArray(archive.manifest.files) && archive.manifest.files.some((f: any) => f.state !== 'INDEXED') && (
               <p data-testid="horizon-archive-not-read" className="text-[9px] text-slate-500 mt-2 leading-relaxed">
                 NOT in the index, and therefore never searched:{' '}
-                {archive.files.filter((f: any) => f.state !== 'INDEXED').slice(0, 6)
+                {archive.manifest.files.filter((f: any) => f.state !== 'INDEXED').slice(0, 6)
                   .map((f: any) => `${f.path} (${f.state})`).join(' · ')}
                 . Nothing unread is in the knowledge base.
               </p>

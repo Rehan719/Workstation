@@ -1,0 +1,1163 @@
+{
+ "answers": {
+  "/api/v1/native-ai/status": {
+   "status": 200,
+   "body": {
+    "evidence_level": "configuration",
+    "evidence_level_number": null,
+    "evidence_basis": "which resource is listed first and which one served the last recorded completion. Configuration - what is configured, declared or reachable; below level 1 and not a statement about behaviour",
+    "posture": "in-house-first",
+    "external_allowed": false,
+    "owned_resources_available": [
+     "native"
+    ],
+    "selection_order": [
+     "native"
+    ],
+    "active_model": "native",
+    "active_model_label": "native",
+    "is_real_model": false,
+    "mode": "deterministic_floor",
+    "mode_predicted": "deterministic_floor",
+    "mode_measured": "unmeasured",
+    "measured_recent_server": null,
+    "mode_note": "mode follows the most recent completion that actually SERVED (a successful recorded row) when history exists, prediction only until then — the two disagree when a listed model keeps failing, or is disabled by configuration and skipped",
+    "floor_active": true,
+    "floor_active_basis": "no successful completion has been recorded yet; predicted from whether a real model is listed",
+    "floor_note": "The deterministic native floor is serving — honest structured reasoning, NOT an LLM. Run a local Ollama model (or enable an external accelerant) for generative prose.",
+    "guarantee": "Workstation always produces a real, structured result from its OWN resources with NO external dependency; external providers are optional accelerants (flag-gated by AI_ALLOW_EXTERNAL).",
+    "resources": [
+     {
+      "name": "native",
+      "kind": "native",
+      "available": true,
+      "is_external": false,
+      "note": "Workstation's own structured engine — always available, owned."
+     },
+     {
+      "name": "ollama",
+      "kind": "local",
+      "available": false,
+      "is_external": false,
+      "model": null,
+      "configured_model": "llama3.2",
+      "local_models": [],
+      "promoted_default": null,
+      "retired": [],
+      "note": "Self-hosted local model(s) — owned capability when running. Route to a specific one with model='ollama:<name>'."
+     },
+     {
+      "name": "anthropic",
+      "kind": "external",
+      "available": false,
+      "is_external": true,
+      "model": "claude-sonnet-4-6",
+      "note": "Optional accelerant — only with a key AND AI_ALLOW_EXTERNAL=true."
+     },
+     {
+      "name": "openai",
+      "kind": "external",
+      "available": false,
+      "is_external": true,
+      "model": "gpt-4o-mini",
+      "note": "Optional accelerant — only with a key AND AI_ALLOW_EXTERNAL=true."
+     }
+    ]
+   }
+  },
+  "/api/v1/native-ai/capabilities": {
+   "status": 200,
+   "body": {
+    "evidence_level": "configuration",
+    "evidence_level_number": null,
+    "evidence_basis": "a catalogue of what is built. Configuration - what is configured, declared or reachable; below level 1 and not a statement about behaviour",
+    "posture": "in-house-first",
+    "count": 16,
+    "note": "Every capability is backed by a real, integrated agentic_core module — see docs/AGENTIC_CORE_INTEGRATION_AUDIT.md for the full real-vs-mock sweep.",
+    "capabilities": [
+     {
+      "name": "Workflow tree",
+      "endpoint": "POST /api/v1/native-ai/tree",
+      "kind": "orchestration",
+      "source": "ai.native.orchestrator",
+      "in_house": true,
+      "description": "Autonomously decompose a goal into a dependency DAG and run it in-house-first with parallel branches, biomimetically governed + logged."
+     },
+     {
+      "name": "Agent swarm cascade",
+      "endpoint": "POST /api/v1/native-ai/swarm",
+      "kind": "orchestration",
+      "source": "ai.native.orchestrator",
+      "in_house": true,
+      "description": "Run a bespoke linear agent-cascade over owned resources."
+     },
+     {
+      "name": "In-house completion",
+      "endpoint": "POST /api/v1/native-ai/complete",
+      "kind": "orchestration",
+      "source": "ai.native.orchestrator",
+      "in_house": true,
+      "description": "In-house-first completion with health-based resource selection + the always-available native floor."
+     },
+     {
+      "name": "Minimax decision",
+      "endpoint": "POST /api/v1/native-ai/decide",
+      "kind": "decision",
+      "source": "cognition.minimax_optimizer",
+      "in_house": true,
+      "description": "Maximin over caller-supplied per-action utilities under worst-case stressors; without action_utilities every action ties and NO winner is invented."
+     },
+     {
+      "name": "Validation",
+      "endpoint": "POST /api/v1/native-ai/validate",
+      "kind": "validation",
+      "source": "validation.accuracy_validator",
+      "in_house": true,
+      "description": "Real difflib semantic-similarity / numerical-tolerance / code-presence checks against a reference."
+     },
+     {
+      "name": "Statistical rigor",
+      "endpoint": "POST /api/v1/native-ai/rigor",
+      "kind": "analysis",
+      "source": "statistics.live_rigor_monitor",
+      "in_house": true,
+      "description": "Real scipy 95% CI + one-sample t-test over an accumulated metric series — reports n, and returns null (with the reason) when the data cannot support a test."
+     },
+     {
+      "name": "Swarm consensus",
+      "endpoint": "POST /api/v1/native-ai/consensus",
+      "kind": "swarm",
+      "source": "swarm.conflict_resolution",
+      "in_house": true,
+      "description": "Real threshold vote-tally — the STRONGEST clearing choice wins, ties are disclosed, and the tally travels with the verdict."
+     },
+     {
+      "name": "Signal transduction",
+      "endpoint": "POST /api/v1/native-ai/transduce",
+      "kind": "biomimetic",
+      "source": "signaling.empirical_transduction",
+      "in_house": true,
+      "description": "Hill saturation transform (K50=0.5) — where a signal sits on a sigmoidal dose-response curve. Nothing is timed; supra-threshold means input ≥ K50."
+     },
+     {
+      "name": "Quorum threshold",
+      "endpoint": "POST /api/v1/native-ai/quorum",
+      "kind": "biomimetic",
+      "source": "quorum.sensing",
+      "in_house": true,
+      "description": "Threshold model over the platform's defined agent catalog (or a supplied population, echoed as such) — arithmetic density × threshold, not an observation of behaviour."
+     },
+     {
+      "name": "Intent inference",
+      "endpoint": "POST /api/v1/native-ai/intent",
+      "kind": "nlp",
+      "source": "nlp.nli_engine",
+      "in_house": true,
+      "description": "Real regex keyword-pattern intent classification (deterministic, not LLM)."
+     },
+     {
+      "name": "Entailment",
+      "endpoint": "POST /api/v1/native-ai/entailment",
+      "kind": "nlp",
+      "source": "nlp.nli_engine",
+      "in_house": true,
+      "description": "Real word-overlap natural-language inference (ENTAILED / PARTIAL / NEUTRAL)."
+     },
+     {
+      "name": "Seed derivation",
+      "endpoint": "POST /api/v1/native-ai/entropy",
+      "kind": "crypto",
+      "source": "crypto.entropy_pool",
+      "in_house": true,
+      "description": "SHA3-512 + XOR deterministic seed derivation over caller-supplied metadata — reproducible seeding; reads NO system entropy, never for keys/nonces/tokens."
+     },
+     {
+      "name": "Graph topology",
+      "endpoint": "POST /api/v1/native-ai/topology",
+      "kind": "topology",
+      "source": "topology.defense",
+      "in_house": true,
+      "description": "Real Betti numbers — β₀ components (union-find) + β₁ cycles over APPLIED edges; discarded edges and the β₁ threshold are disclosed in the payload."
+     },
+     {
+      "name": "VBS governance",
+      "endpoint": "POST /api/v1/vbs/*",
+      "kind": "governance",
+      "source": "vbs",
+      "in_house": true,
+      "description": "Real QMS quality gates + DCMS SHA3-512 versioning + BMS unit-economics + EMS + Mycelial backbone."
+     },
+     {
+      "name": "UEG provenance",
+      "endpoint": "GET /api/v1/ueg/verify",
+      "kind": "provenance",
+      "source": "ueg.logger",
+      "in_house": true,
+      "description": "Real hash-chained SHA3-512 audit ledger - a linear chain, not a Merkle tree - with full-chain verify_chain()."
+     },
+     {
+      "name": "Degradation detection",
+      "endpoint": "GET /api/v1/operations/degradation",
+      "kind": "analysis",
+      "source": "self_improvement.degradation_detector",
+      "in_house": true,
+      "description": "Real telemetry degradation detection (latency rise / accuracy drop) over the learning loop."
+     }
+    ]
+   }
+  },
+  "/api/v1/native-ai/homeostasis": {
+   "status": 200,
+   "body": {
+    "max_parallel": 3,
+    "posture": "reduced",
+    "metabolic_load": 0.2,
+    "atp_mode": "projection",
+    "organism": {
+     "mode": "NOMINAL",
+     "composite_health": 0.872,
+     "circadian": "MAINTENANCE_FOCUS",
+     "is_peak_focus": false,
+     "atp_ratio": 0.358,
+     "atp_measured": false,
+     "atp_basis": "the metabolic term is an ATPSimulator on a load clamped to its declared 0-1 domain, where production (0.5 x efficiency, efficiency 0.8 or 1.0) always exceeds consumption (0.1 x load), so within that domain it only rises — from 0.333 at boot to 1.0 — and the thresholds written against it cannot fire. It is a simulation, not a reading of this platform's energy.",
+     "atp_can_fall": false,
+     "conserving_posture_reachable": false,
+     "energy_ratio": 1.0,
+     "energy_acts": false,
+     "energy_basis": "1 - 0.0s spent / 3600s stated capacity this window (the capacity is a stated assumption); the work budget is switched off (WORKSTATION_WORK_BUDGET), so nothing reads this figure: the energy thresholds read the ATP simulator, which cannot fall, and stay inert as ruled",
+     "conserve_reads": "atp_simulator",
+     "conserving_posture_basis": "the 'conserving' posture is selected below an ATP of 0.3 and the figure cannot fall to it: consumption is at most 0.10 per tick (0.1 x a load clamped to 1.0) and production at least 0.40 (0.5 x the lowest efficiency this code passes, 0.8), so production exceeds consumption at every reachable combination and the ratio only RISES to its ceiling. It does not deplete - and NOT because of the 0.5 floor, which never binds.",
+     "immune_threat": "NOMINAL",
+     "should_throttle": false
+    },
+    "work_budget": {
+     "enabled": false,
+     "holds": false,
+     "reason": null,
+     "fraction_spent": 0.0,
+     "basis": "0.0s of a stated 3600s capacity is recorded spent this window, from 0 run(s) whose duration was measured — and it GATES NOTHING: the budget ships inert until WORKSTATION_WORK_BUDGET=true, per the Owner's ruling",
+     "spend_basis": "the sum of the run durations the platform recorded, each nest counted once (W847): a run recorded inside a marked run (a model attempt inside the AI call that made it; an AI call inside a deliverable, a composition, a swarm, a cascade tier, the board or a transformation) is held by the outermost run, which spends its own duration with the tokens its inner runs counted. A run made where the mark does not reach (a worker thread started without it) can still be counted at two levels. Durations a caller reported through /api/v1/operations/record are not counted"
+    },
+    "governed_by": "homeostatic controller (§8 organism → §6 cognition). The immune, self-healing and circadian terms are read from live state; the metabolic (ATP) term is simulated and says so in organism.atp_basis"
+   }
+  },
+  "/api/v1/native-ai/selfcheck": {
+   "status": 200,
+   "body": {
+    "evidence_level": "configuration",
+    "evidence_level_number": null,
+    "evidence_basis": "whether each backing module imports. Configuration - what is configured, declared or reachable; below level 1 and not a statement about behaviour",
+    "posture": "in-house-first",
+    "total": 13,
+    "live": 13,
+    "all_live": true,
+    "modules": [
+     {
+      "source": "ai.native.orchestrator",
+      "live": true
+     },
+     {
+      "source": "cognition.minimax_optimizer",
+      "live": true
+     },
+     {
+      "source": "crypto.entropy_pool",
+      "live": true
+     },
+     {
+      "source": "nlp.nli_engine",
+      "live": true
+     },
+     {
+      "source": "quorum.sensing",
+      "live": true
+     },
+     {
+      "source": "self_improvement.degradation_detector",
+      "live": true
+     },
+     {
+      "source": "signaling.empirical_transduction",
+      "live": true
+     },
+     {
+      "source": "statistics.live_rigor_monitor",
+      "live": true
+     },
+     {
+      "source": "swarm.conflict_resolution",
+      "live": true
+     },
+     {
+      "source": "topology.defense",
+      "live": true
+     },
+     {
+      "source": "ueg.logger",
+      "live": true
+     },
+     {
+      "source": "validation.accuracy_validator",
+      "live": true
+     },
+     {
+      "source": "vbs",
+      "live": true
+     }
+    ]
+   }
+  },
+  "/api/v1/native-ai/evidence-levels": {
+   "status": 200,
+   "body": {
+    "levels": {
+     "configuration": "what is configured, declared or reachable; not a statement about behaviour",
+     "behaviour": "what came back for an input (level 1). The highest level anything here reaches"
+    },
+    "surfaces": [
+     {
+      "path": "/api/v1/native-ai/baseline",
+      "level": "behaviour",
+      "rests_on": "the stored baseline records",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/baseline/run",
+      "level": "behaviour",
+      "rests_on": "replies to the public and held-out case sets, by marker",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/baseline/{run_id}",
+      "level": "behaviour",
+      "rests_on": "one stored baseline record with its replies",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/baseline/{run_id}/reproduce",
+      "level": "behaviour",
+      "rests_on": "whether a second run gave byte-identical replies",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/capabilities",
+      "level": "configuration",
+      "rests_on": "a catalogue of what is built",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/complete",
+      "level": "behaviour",
+      "rests_on": "one reply and which resource gave it",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/ensemble",
+      "level": "behaviour",
+      "rests_on": "several replies and which resource gave each",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/inventory",
+      "level": "configuration",
+      "rests_on": "what is registered and measured about this machine; each block names its own kind",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/lifecycle",
+      "level": "configuration",
+      "rests_on": "the promoted default and retired names; its `evaluations` are behaviour records",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/lifecycle/candidates",
+      "level": "configuration",
+      "rests_on": "research leads with the licence the research named; downloaded is read from the runtime's list and evaluated from the stored evaluation and baseline records (behaviour records); this route measures nothing about a lead",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/lifecycle/evaluate",
+      "level": "behaviour",
+      "rests_on": "replies to the public probe set, by marker",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/lifecycle/installed",
+      "level": "configuration",
+      "rests_on": "what the local runtime reports it holds - name, digest, size, parameter size, quantisation, family, format, parameter count, capabilities and licence - read at call time",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/lifecycle/promote",
+      "level": "configuration",
+      "rests_on": "a named model is made the default on a recorded evaluation of its build on the pinned probe set (W841); the promotion itself measures nothing",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/lifecycle/reinstate",
+      "level": "configuration",
+      "rests_on": "a named model is returned to the active list",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/lifecycle/retire",
+      "level": "configuration",
+      "rests_on": "a named model is removed from the active list",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/models",
+      "level": "configuration",
+      "rests_on": "the local model names the runtime lists",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/resources",
+      "level": "configuration",
+      "rests_on": "the model resources configured and whether each is reachable",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/route",
+      "level": "configuration",
+      "rests_on": "which tier a request would be sent to, by rule",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/selfcheck",
+      "level": "configuration",
+      "rests_on": "whether each backing module imports",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/status",
+      "level": "configuration",
+      "rests_on": "which resource is listed first and which one served the last recorded completion",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/swarm",
+      "level": "behaviour",
+      "rests_on": "a chain of replies and which resource gave each",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/tiers",
+      "level": "configuration",
+      "rests_on": "the declared tiers and whether this machine can run each",
+      "stated_in_its_own_answer": true
+     },
+     {
+      "path": "/api/v1/native-ai/tree",
+      "level": "behaviour",
+      "rests_on": "a tree of replies and which resource gave each",
+      "stated_in_its_own_answer": true
+     }
+    ],
+    "not_stating_their_level": [],
+    "not_model_statements": [
+     {
+      "path": "/api/v1/native-ai/consensus",
+      "why": "a vote tally over caller-supplied votes"
+     },
+     {
+      "path": "/api/v1/native-ai/decide",
+      "why": "maximin arithmetic over caller-supplied utilities"
+     },
+     {
+      "path": "/api/v1/native-ai/entailment",
+      "why": "a word-overlap measure"
+     },
+     {
+      "path": "/api/v1/native-ai/entropy",
+      "why": "a hash of caller-supplied metadata"
+     },
+     {
+      "path": "/api/v1/native-ai/evidence-levels",
+      "why": "this inventory"
+     },
+     {
+      "path": "/api/v1/native-ai/evidence-levels/routers",
+      "why": "a count of written answer blocks by router file; it describes the source, not a model"
+     },
+     {
+      "path": "/api/v1/native-ai/homeostasis",
+      "why": "the organism's admission posture, not a statement about a model"
+     },
+     {
+      "path": "/api/v1/native-ai/intent",
+      "why": "a regular-expression classifier"
+     },
+     {
+      "path": "/api/v1/native-ai/quorum",
+      "why": "threshold arithmetic over a catalogue count"
+     },
+     {
+      "path": "/api/v1/native-ai/rigor",
+      "why": "statistics over a caller-supplied series"
+     },
+     {
+      "path": "/api/v1/native-ai/topology",
+      "why": "graph arithmetic on caller-supplied nodes and edges"
+     },
+     {
+      "path": "/api/v1/native-ai/transduce",
+      "why": "arithmetic on a number the caller supplies (a Hill function); its `activation` field is that function's value, not a reading of a model"
+     },
+     {
+      "path": "/api/v1/native-ai/validate",
+      "why": "a text-similarity measure against a caller-supplied reference"
+     }
+    ],
+    "unclassified": [],
+    "highest_level": "behaviour",
+    "claims_check": {
+     "result_words": [
+      "flagged",
+      "nothing matched"
+     ],
+     "where": "a phrase scan the test suite runs over the files of the kinds and under the directories its scope names; the documents, the tests and every other kind of file are not read. This route does not run it",
+     "scope": {
+      "roots": [
+       "agentic_core",
+       "scripts",
+       "apps/workstation-superapp/src"
+      ],
+      "suffixes": [
+       ".py",
+       ".ts",
+       ".tsx"
+      ],
+      "not_read": "the documents, the tests and every other kind of file"
+     },
+     "basis": "a phrase list can FLAG a sentence shaped like a claim about a model's insides. When it flags none the result is 'nothing matched' in the files examined, which does not establish that no surface over-claims"
+    },
+    "boundary": "Level 1 only. The study of a model's insides is not built and not scheduled (Owner, 2026-10-10); no route here does it.",
+    "scope": "the tables above are the routes of /api/v1/native-ai. Every other router that names a model is counted in `routers_naming_a_model`, by written block",
+    "routers_naming_a_model_route": "GET /api/v1/native-ai/evidence-levels/routers"
+   }
+  },
+  "/api/v1/native-ai/resources": {
+   "status": 200,
+   "body": {
+    "evidence_level": "configuration",
+    "evidence_level_number": null,
+    "evidence_basis": "the model resources configured and whether each is reachable. Configuration - what is configured, declared or reachable; below level 1 and not a statement about behaviour",
+    "resources": [
+     {
+      "name": "native",
+      "kind": "native",
+      "available": true,
+      "is_external": false,
+      "note": "Workstation's own structured engine — always available, owned."
+     },
+     {
+      "name": "ollama",
+      "kind": "local",
+      "available": false,
+      "is_external": false,
+      "model": null,
+      "configured_model": "llama3.2",
+      "local_models": [],
+      "promoted_default": null,
+      "retired": [],
+      "note": "Self-hosted local model(s) — owned capability when running. Route to a specific one with model='ollama:<name>'."
+     },
+     {
+      "name": "anthropic",
+      "kind": "external",
+      "available": false,
+      "is_external": true,
+      "model": "claude-sonnet-4-6",
+      "note": "Optional accelerant — only with a key AND AI_ALLOW_EXTERNAL=true."
+     },
+     {
+      "name": "openai",
+      "kind": "external",
+      "available": false,
+      "is_external": true,
+      "model": "gpt-4o-mini",
+      "note": "Optional accelerant — only with a key AND AI_ALLOW_EXTERNAL=true."
+     }
+    ],
+    "selection_order": [
+     "native"
+    ]
+   }
+  },
+  "/api/v1/native-ai/inventory": {
+   "status": 200,
+   "body": {
+    "evidence_level": "configuration",
+    "evidence_level_number": null,
+    "evidence_basis": "what is registered and measured about this machine; each block names its own kind. Configuration - what is configured, declared or reachable; below level 1 and not a statement about behaviour",
+    "machine": {
+     "known": true,
+     "basis_kind": "measured",
+     "basis": "read from this machine at call time; each field carries its own source in the data",
+     "data": {
+      "ram_gb": 15.71,
+      "ram_basis": "psutil.virtual_memory().total, read at call time",
+      "cpu_count": 4,
+      "cpu_basis": "os.cpu_count(), which counts LOGICAL processors — it is not a measure of how fast any of them is",
+      "cuda": false,
+      "cuda_basis": "torch.cuda.is_available(), consulted because torch happened to be importable; nvidia-smi is not on PATH",
+      "not_probed": [
+       "NPU",
+       "QPU",
+       "PPU"
+      ],
+      "not_probed_basis": "no probe for a neural, quantum or photonic processing unit exists here; their absence from this reading is not a finding that none is present"
+     }
+    },
+    "tiers": {
+     "known": true,
+     "basis_kind": "measured",
+     "basis": "each tier's `runnable here` is decided from the machine block above and the local model runtime, at call time",
+     "data": {
+      "machine": {
+       "ram_gb": 15.71,
+       "ram_basis": "psutil.virtual_memory().total, read at call time",
+       "cpu_count": 4,
+       "cpu_basis": "os.cpu_count(), which counts LOGICAL processors — it is not a measure of how fast any of them is",
+       "cuda": false,
+       "cuda_basis": "torch.cuda.is_available(), consulted because torch happened to be importable; nvidia-smi is not on PATH",
+       "not_probed": [
+        "NPU",
+        "QPU",
+        "PPU"
+       ],
+       "not_probed_basis": "no probe for a neural, quantum or photonic processing unit exists here; their absence from this reading is not a finding that none is present"
+      },
+      "tiers": {
+       "deterministic_logic": {
+        "serves": "structured composition from the request itself — no model, no inference",
+        "needs": {
+         "ram_gb": 0.0,
+         "gpu": false
+        },
+        "runnable": "RUNNABLE",
+        "runnable_basis": "this machine has 15.71 GB against about 0.0 GB needed (psutil.virtual_memory().total, read at call time)",
+        "resources": [
+         "the deterministic floor (in-process, no model)"
+        ],
+        "resource_count": 1,
+        "resources_basis": "the floor runs in this process and is always present"
+       },
+       "reflex_routing": {
+        "serves": "short classification and routing decisions where a 1–3B local model is enough",
+        "needs": {
+         "ram_gb": 3.0,
+         "gpu": false
+        },
+        "runnable": "RUNNABLE",
+        "runnable_basis": "this machine has 15.71 GB against about 3.0 GB needed (psutil.virtual_memory().total, read at call time)",
+        "resources": [],
+        "resource_count": 0,
+        "resources_basis": "the local model runtime is not answering, so no local model can be reached right now — which is a statement about reachability, not about what is pulled"
+       },
+       "domain_specialist": {
+        "serves": "a domain answer from a model trained or tuned for it",
+        "needs": {
+         "ram_gb": 12.0,
+         "gpu": false
+        },
+        "runnable": "RUNNABLE",
+        "runnable_basis": "this machine has 15.71 GB against about 12.0 GB needed (psutil.virtual_memory().total, read at call time)",
+        "resources": [],
+        "resource_count": 0,
+        "resources_basis": "NO RESOURCE IS ASSIGNED TO THIS TIER, and that is the honest state rather than an omission: this machine has 15.71 GB against about 12.0 GB needed (psutil.virtual_memory().total, read at call time)"
+       },
+       "synthesis": {
+        "serves": "long-form reasoning across several sources",
+        "needs": {
+         "ram_gb": 20.0,
+         "gpu": true
+        },
+        "runnable": "NOT_RUNNABLE",
+        "runnable_basis": "this tier needs a CUDA device and none is visible. torch.cuda.is_available(), consulted because torch happened to be importable; nvidia-smi is not on PATH. the roadmap's 14B reasoning model needs roughly 9–12 GB at 4-bit for weights alone, which exceeds this machine's entire memory, and it is unusable without a discrete GPU",
+        "resources": [],
+        "resource_count": 0,
+        "resources_basis": "NO RESOURCE IS ASSIGNED TO THIS TIER, and that is the honest state rather than an omission: this tier needs a CUDA device and none is visible. torch.cuda.is_available(), consulted because torch happened to be importable; nvidia-smi is not on PATH. the roadmap's 14B reasoning model needs roughly 9–12 GB at 4-bit for weights alone, which exceeds this machine's entire memory, and it is unusable without a discrete GPU"
+       },
+       "perception": {
+        "serves": "reading an image or a document as an image",
+        "needs": {
+         "ram_gb": 16.0,
+         "gpu": true
+        },
+        "runnable": "NOT_RUNNABLE",
+        "runnable_basis": "this tier needs a CUDA device and none is visible. torch.cuda.is_available(), consulted because torch happened to be importable; nvidia-smi is not on PATH. a vision-language model carries an image encoder beside the language weights and is not practical on integrated graphics",
+        "resources": [],
+        "resource_count": 0,
+        "resources_basis": "NO RESOURCE IS ASSIGNED TO THIS TIER, and that is the honest state rather than an omission: this tier needs a CUDA device and none is visible. torch.cuda.is_available(), consulted because torch happened to be importable; nvidia-smi is not on PATH. a vision-language model carries an image encoder beside the language weights and is not practical on integrated graphics"
+       }
+      },
+      "runnable_tiers": [
+       "deterministic_logic",
+       "reflex_routing",
+       "domain_specialist"
+      ],
+      "basis": "3 of 5 tier(s) are runnable on this machine, measured now rather than recorded. A tier that is not runnable carries what it needs, what this machine has and the difference — and it holds NO resources, because listing a model the machine cannot run is the same defect as a leaderboard nothing scored",
+      "owner_decision": "FU-271 default (a): design the fabric for a 1–3B local tier plus the deterministic floor, and have every higher tier report that it is not runnable here with the measured reason. Provisioning hardware or enabling an Owner-gated external accelerant are the other two options and neither is taken here"
+     }
+    },
+    "models": {
+     "known": true,
+     "basis_kind": "declared",
+     "basis": "the model resource registry: what is configured and reachable; `available` is checked at call time, the model names are configuration",
+     "data": {
+      "resources": [
+       {
+        "name": "native",
+        "kind": "native",
+        "available": true,
+        "is_external": false,
+        "note": "Workstation's own structured engine — always available, owned."
+       },
+       {
+        "name": "ollama",
+        "kind": "local",
+        "available": false,
+        "is_external": false,
+        "model": null,
+        "configured_model": "llama3.2",
+        "local_models": [],
+        "promoted_default": null,
+        "retired": [],
+        "note": "Self-hosted local model(s) — owned capability when running. Route to a specific one with model='ollama:<name>'."
+       },
+       {
+        "name": "anthropic",
+        "kind": "external",
+        "available": false,
+        "is_external": true,
+        "model": "claude-sonnet-4-6",
+        "note": "Optional accelerant — only with a key AND AI_ALLOW_EXTERNAL=true."
+       },
+       {
+        "name": "openai",
+        "kind": "external",
+        "available": false,
+        "is_external": true,
+        "model": "gpt-4o-mini",
+        "note": "Optional accelerant — only with a key AND AI_ALLOW_EXTERNAL=true."
+       }
+      ],
+      "selection_order": [
+       "native"
+      ]
+     }
+    },
+    "fabric": {
+     "known": true,
+     "basis_kind": "declared",
+     "basis": "the Resource Fabric's registered resources, counted by class; a count of what is registered, not of what has run",
+     "data": {
+      "total": 66,
+      "by_class": {
+       "process_intelligence": 11,
+       "digital_resource": 10,
+       "organism_system": 8,
+       "enterprise_org": 7,
+       "ai_native": 3,
+       "output_media": 1,
+       "federation": 1,
+       "domain_form": 25
+      }
+     }
+    },
+    "homeostasis": {
+     "known": true,
+     "basis_kind": "measured",
+     "basis": "the organism's current admission posture for cognitive work",
+     "data": {
+      "max_parallel": 3,
+      "posture": "reduced",
+      "metabolic_load": 0.2,
+      "atp_mode": "projection",
+      "organism": {
+       "mode": "NOMINAL",
+       "composite_health": 0.872,
+       "circadian": "MAINTENANCE_FOCUS",
+       "is_peak_focus": false,
+       "atp_ratio": 0.358,
+       "atp_measured": false,
+       "atp_basis": "the metabolic term is an ATPSimulator on a load clamped to its declared 0-1 domain, where production (0.5 x efficiency, efficiency 0.8 or 1.0) always exceeds consumption (0.1 x load), so within that domain it only rises — from 0.333 at boot to 1.0 — and the thresholds written against it cannot fire. It is a simulation, not a reading of this platform's energy.",
+       "atp_can_fall": false,
+       "conserving_posture_reachable": false,
+       "energy_ratio": 1.0,
+       "energy_acts": false,
+       "energy_basis": "1 - 0.0s spent / 3600s stated capacity this window (the capacity is a stated assumption); the work budget is switched off (WORKSTATION_WORK_BUDGET), so nothing reads this figure: the energy thresholds read the ATP simulator, which cannot fall, and stay inert as ruled",
+       "conserve_reads": "atp_simulator",
+       "conserving_posture_basis": "the 'conserving' posture is selected below an ATP of 0.3 and the figure cannot fall to it: consumption is at most 0.10 per tick (0.1 x a load clamped to 1.0) and production at least 0.40 (0.5 x the lowest efficiency this code passes, 0.8), so production exceeds consumption at every reachable combination and the ratio only RISES to its ceiling. It does not deplete - and NOT because of the 0.5 floor, which never binds.",
+       "immune_threat": "NOMINAL",
+       "should_throttle": false
+      },
+      "work_budget": {
+       "enabled": false,
+       "holds": false,
+       "reason": null,
+       "fraction_spent": 0.0,
+       "basis": "0.0s of a stated 3600s capacity is recorded spent this window, from 0 run(s) whose duration was measured — and it GATES NOTHING: the budget ships inert until WORKSTATION_WORK_BUDGET=true, per the Owner's ruling",
+       "spend_basis": "the sum of the run durations the platform recorded, each nest counted once (W847): a run recorded inside a marked run (a model attempt inside the AI call that made it; an AI call inside a deliverable, a composition, a swarm, a cascade tier, the board or a transformation) is held by the outermost run, which spends its own duration with the tokens its inner runs counted. A run made where the mark does not reach (a worker thread started without it) can still be counted at two levels. Durations a caller reported through /api/v1/operations/record are not counted"
+      },
+      "governed_by": "homeostatic controller (§8 organism → §6 cognition). The immune, self-healing and circadian terms are read from live state; the metabolic (ATP) term is simulated and says so in organism.atp_basis"
+     }
+    },
+    "optimizer_baseline": {
+     "known": true,
+     "basis_kind": "simulated",
+     "basis": "a single-node SIMULATED capacity baseline with no real quota behind it - not a measurement of this machine; the machine block is",
+     "data": {
+      "compute": {
+       "total": 1000,
+       "available": 1000
+      },
+      "memory": {
+       "total": 8192,
+       "available": 8192
+      },
+      "gpu": {
+       "total": 64,
+       "available": 64
+      },
+      "api_quotas": {
+       "total": 100000,
+       "available": 100000
+      }
+     }
+    },
+    "read_only": true,
+    "note": "composed from existing producers; this route stores nothing and allocates nothing. People are not a resource class here."
+   }
+  },
+  "/api/v1/native-ai/models": {
+   "status": 200,
+   "body": {
+    "evidence_level": "configuration",
+    "evidence_level_number": null,
+    "evidence_basis": "the local model names the runtime lists. Configuration - what is configured, declared or reachable; below level 1 and not a statement about behaviour",
+    "local_models": [],
+    "default_local": null,
+    "promoted_default": null,
+    "retired": [],
+    "tiers": [
+     {
+      "id": "auto",
+      "label": "Auto (in-house-first)",
+      "kind": "policy"
+     },
+     {
+      "id": "native",
+      "label": "Native floor (deterministic)",
+      "kind": "native"
+     }
+    ],
+    "store_incomplete": null,
+    "retired_is_incomplete": false,
+    "note": "Owned models. Route a completion to any with model=<id>. External providers are opt-in accelerants (AI_ALLOW_EXTERNAL); the native floor is always available."
+   }
+  },
+  "/api/v1/resources/swarm": {
+   "status": 200,
+   "body": {
+    "cascades": [],
+    "total": 0,
+    "truncated": false,
+    "unavailable": null,
+    "note": null,
+    "total_basis": "every cascade held that this caller may see: 0 of 0, under a 200-row cap, so none has been dropped"
+   }
+  },
+  "/api/v1/native-ai/lifecycle": {
+   "status": 200,
+   "body": {
+    "evidence_level": "configuration",
+    "evidence_level_number": null,
+    "evidence_basis": "the promoted default and retired names; its `evaluations` are behaviour records. Configuration - what is configured, declared or reachable; below level 1 and not a statement about behaviour",
+    "promoted_default": null,
+    "promoted_default_state": {
+     "promoted": null,
+     "digest_then": null,
+     "digest_now": null,
+     "holds": null,
+     "basis": "no model is promoted"
+    },
+    "effective_default": null,
+    "configured_default": "llama3.2",
+    "serves": "native_floor",
+    "serving_basis": "the deterministic native floor serves: local models are switched off on this process (AI_DISABLE_LOCAL is set), so whether any is installed was not read; llama3.2 configured but absent",
+    "local_estate": {
+     "state": "switched_off",
+     "models": [],
+     "sentence": "local models are switched off on this process (AI_DISABLE_LOCAL is set), so whether any is installed was not read"
+    },
+    "retired": [],
+    "discovered": [],
+    "active_estate": [],
+    "evaluations": [],
+    "evaluations_held": 0,
+    "evaluations_kept_at_most": 50,
+    "evaluations_basis": "every evaluation recorded is held: 0, under the cap of 50 beyond which the oldest are dropped",
+    "store_incomplete": null,
+    "retired_is_incomplete": false,
+    "retired_basis": "every retirement in the lifecycle record"
+   }
+  },
+  "/api/v1/native-ai/lifecycle/installed": {
+   "status": 200,
+   "body": {
+    "evidence_level": "configuration",
+    "evidence_level_number": null,
+    "evidence_basis": "what the local runtime reports it holds - name, digest, size, parameter size, quantisation, family, format, parameter count, capabilities and licence - read at call time. Configuration - what is configured, declared or reachable; below level 1 and not a statement about behaviour",
+    "read": false,
+    "read_at": "2026-11-14T21:13:29Z",
+    "read_from": null,
+    "models": [],
+    "basis": "NOT READ: AI_DISABLE_LOCAL is set, so the local runtime is not asked. This says nothing about what is installed on this machine"
+   }
+  },
+  "/api/v1/native-ai/lifecycle/candidates": {
+   "status": 200,
+   "body": {
+    "evidence_level": "configuration",
+    "evidence_level_number": null,
+    "evidence_basis": "research leads with the licence the research named; downloaded is read from the runtime's list and evaluated from the stored evaluation and baseline records (behaviour records); this route measures nothing about a lead. Configuration - what is configured, declared or reachable; below level 1 and not a statement about behaviour",
+    "leads": [
+     {
+      "id": "qwen3.5-4b",
+      "name": "Qwen3.5-4B",
+      "licence": "Apache-2.0",
+      "runtime_tag": "qwen3.5:4b-q4_K_M",
+      "notes": "multimodal; the runtime library lists its 4-bit build (qwen3.5:4b-q4_K_M) at 3.3 GB",
+      "downloaded": null,
+      "downloaded_basis": "NOT CHECKED: NOT READ: AI_DISABLE_LOCAL is set, so the local runtime is not asked. This says nothing about what is installed on this machine",
+      "evaluated": false,
+      "evaluated_basis": "no evaluation or baseline run recorded here names it",
+      "state": "not known whether downloaded, not evaluated",
+      "configured_default": false,
+      "configured_default_basis": "the configured default model name is llama3.2, not qwen3.5:4b-q4_K_M",
+      "licence_basis": "the licence the research named when the lead was recorded (2026-10-16); this platform has not read its text"
+     },
+     {
+      "id": "qwen3.5-2b",
+      "name": "Qwen3.5-2B",
+      "licence": "Apache-2.0",
+      "runtime_tag": null,
+      "notes": "multimodal; about 2B parameters by its name; no file size and no runtime tag were recorded for it",
+      "downloaded": null,
+      "downloaded_basis": "NOT CHECKED: no runtime tag is recorded for this lead, so the runtime's list cannot be matched against it",
+      "evaluated": null,
+      "evaluated_basis": "NOT CHECKED: an evaluation names a runtime model, and no runtime tag is recorded for this lead",
+      "state": "not known whether downloaded, not known whether evaluated",
+      "configured_default": null,
+      "configured_default_basis": "NOT CHECKED: no runtime tag is recorded for this lead, so it cannot be matched against the configured default model name",
+      "licence_basis": "the licence the research named when the lead was recorded (2026-10-16); this platform has not read its text"
+     },
+     {
+      "id": "qwen3.5-0.8b",
+      "name": "Qwen3.5-0.8B",
+      "licence": "Apache-2.0",
+      "runtime_tag": null,
+      "notes": "multimodal; about 0.8B parameters by its name; no file size and no runtime tag were recorded for it",
+      "downloaded": null,
+      "downloaded_basis": "NOT CHECKED: no runtime tag is recorded for this lead, so the runtime's list cannot be matched against it",
+      "evaluated": null,
+      "evaluated_basis": "NOT CHECKED: an evaluation names a runtime model, and no runtime tag is recorded for this lead",
+      "state": "not known whether downloaded, not known whether evaluated",
+      "configured_default": null,
+      "configured_default_basis": "NOT CHECKED: no runtime tag is recorded for this lead, so it cannot be matched against the configured default model name",
+      "licence_basis": "the licence the research named when the lead was recorded (2026-10-16); this platform has not read its text"
+     },
+     {
+      "id": "qwen3-4b-instruct-2507",
+      "name": "Qwen3-4B-Instruct-2507",
+      "licence": "Apache-2.0",
+      "runtime_tag": null,
+      "notes": "about 4B parameters by its name; no file size and no runtime tag were recorded for it",
+      "downloaded": null,
+      "downloaded_basis": "NOT CHECKED: no runtime tag is recorded for this lead, so the runtime's list cannot be matched against it",
+      "evaluated": null,
+      "evaluated_basis": "NOT CHECKED: an evaluation names a runtime model, and no runtime tag is recorded for this lead",
+      "state": "not known whether downloaded, not known whether evaluated",
+      "configured_default": null,
+      "configured_default_basis": "NOT CHECKED: no runtime tag is recorded for this lead, so it cannot be matched against the configured default model name",
+      "licence_basis": "the licence the research named when the lead was recorded (2026-10-16); this platform has not read its text"
+     },
+     {
+      "id": "phi-4-mini-instruct",
+      "name": "Phi-4-mini-instruct",
+      "licence": "MIT",
+      "runtime_tag": null,
+      "notes": "its published model code is custom and needs trust_remote_code to load",
+      "downloaded": null,
+      "downloaded_basis": "NOT CHECKED: no runtime tag is recorded for this lead, so the runtime's list cannot be matched against it",
+      "evaluated": null,
+      "evaluated_basis": "NOT CHECKED: an evaluation names a runtime model, and no runtime tag is recorded for this lead",
+      "state": "not known whether downloaded, not known whether evaluated",
+      "configured_default": null,
+      "configured_default_basis": "NOT CHECKED: no runtime tag is recorded for this lead, so it cannot be matched against the configured default model name",
+      "licence_basis": "the licence the research named when the lead was recorded (2026-10-16); this platform has not read its text"
+     },
+     {
+      "id": "gemma-4-e2b-it",
+      "name": "Gemma-4-E2B-it",
+      "licence": "Apache-2.0",
+      "runtime_tag": null,
+      "notes": "10.2 GB as published, in one file, with 5.1B parameters in total: a file that size may not fit in a small machine's memory, so compare it with this machine's memory (GET /api/v1/native-ai/inventory measures it) before any download",
+      "downloaded": null,
+      "downloaded_basis": "NOT CHECKED: no runtime tag is recorded for this lead, so the runtime's list cannot be matched against it",
+      "evaluated": null,
+      "evaluated_basis": "NOT CHECKED: an evaluation names a runtime model, and no runtime tag is recorded for this lead",
+      "state": "not known whether downloaded, not known whether evaluated",
+      "configured_default": null,
+      "configured_default_basis": "NOT CHECKED: no runtime tag is recorded for this lead, so it cannot be matched against the configured default model name",
+      "licence_basis": "the licence the research named when the lead was recorded (2026-10-16); this platform has not read its text"
+     },
+     {
+      "id": "qwen2.5-coder-3b",
+      "name": "Qwen2.5-Coder-3B",
+      "licence": "a research-only licence",
+      "runtime_tag": null,
+      "notes": "NOT for commercial use: its licence is for research only",
+      "downloaded": null,
+      "downloaded_basis": "NOT CHECKED: no runtime tag is recorded for this lead, so the runtime's list cannot be matched against it",
+      "evaluated": null,
+      "evaluated_basis": "NOT CHECKED: an evaluation names a runtime model, and no runtime tag is recorded for this lead",
+      "state": "not known whether downloaded, not known whether evaluated",
+      "configured_default": null,
+      "configured_default_basis": "NOT CHECKED: no runtime tag is recorded for this lead, so it cannot be matched against the configured default model name",
+      "licence_basis": "the licence the research named when the lead was recorded (2026-10-16); this platform has not read its text"
+     },
+     {
+      "id": "llama-3.2",
+      "name": "Llama 3.2",
+      "licence": "Llama 3.2 Community License",
+      "runtime_tag": "llama3.2",
+      "notes": "the licence carries attribution and naming duties. An installed build's own licence text is read from the runtime: GET /api/v1/native-ai/lifecycle/installed",
+      "downloaded": null,
+      "downloaded_basis": "NOT CHECKED: NOT READ: AI_DISABLE_LOCAL is set, so the local runtime is not asked. This says nothing about what is installed on this machine",
+      "evaluated": false,
+      "evaluated_basis": "no evaluation or baseline run recorded here names it",
+      "state": "not known whether downloaded, not evaluated",
+      "configured_default": true,
+      "configured_default_basis": "llama3.2 is the configured default model name (llama3.2), read at this call. Configured is not serving: GET /api/v1/native-ai/lifecycle says what serves",
+      "licence_basis": "the licence the research named when the lead was recorded (2026-10-16); this platform has not read its text"
+     }
+    ],
+    "counts": {
+     "downloaded": 0,
+     "not_downloaded": 0,
+     "not_checked": 8,
+     "evaluated": 0
+    },
+    "recorded_on": "2026-10-16",
+    "download_decision": "Registering a lead downloads nothing. Downloading one is the Owner's decision.",
+    "basis": "8 research lead(s) recorded 2026-10-16, each with the licence the research named: 0 downloaded, 0 not downloaded, 8 not checked; 0 evaluated. Downloaded is read from the local runtime's list, evaluated from the stored records and the configured default from the configured model name at this call; none of them is written on a lead"
+   }
+  },
+  "/api/v1/native-ai/baseline?limit=6": {
+   "status": 200,
+   "body": {
+    "runs": [],
+    "total": 0,
+    "tiers": [
+     {
+      "tier": "native",
+      "serves_now": true,
+      "runs": 0,
+      "reproduction_attempts": 0,
+      "reproduced_runs": 0,
+      "reproducibility": "NOT SHOWN for this tier: no baseline of it has been run again",
+      "latest_run_id": null,
+      "basis": "NO BASELINE has been run for this tier"
+     }
+    ],
+    "store_incomplete": null,
+    "listing_is_incomplete": false,
+    "listing_basis": "every baseline run in the store",
+    "case_sets_now": {
+     "public": {
+      "ok": true,
+      "version": "2",
+      "digest": "4917359cd4051532",
+      "pinned": "4917359cd4051532",
+      "why": null
+     },
+     "heldout": {
+      "ok": true,
+      "version": "2",
+      "digest": "9bedf01264f583d5",
+      "why": null
+     }
+    },
+    "trigger": "on demand only: POST /api/v1/native-ai/baseline/run. Nothing schedules a baseline.",
+    "reproducibility_shown_for": [],
+    "reproducibility_basis": "reproducibility has been shown for no tier: no stored re-run gave byte-identical replies. A baseline record supports a re-run; only a stored re-run shows one",
+    "evidence_level": "behaviour",
+    "basis": "one run per case against one serving tier. 'passed' means the reply meets its case's computed check: it CONTAINS the case's marker string (for the control: does NOT contain it), and a held-out case may instead require that it also holds none of the text an instruction inside the material asked for, that it is the marker and nothing else, or that it parses as one JSON object with exactly the named keys (W843). It is not a judgement that the reply is correct, and never a model's opinion. A case the tier did not serve is 'not read' and counts as neither. Evidence level 1: inputs and outputs only. Run on demand; nothing schedules it."
+   }
+  }
+ },
+ "ask": {
+  "prompt": "Outline a halal, zero-waste weekly meal plan for an elderly resident",
+  "agent": "console",
+  "model": "auto"
+ },
+ "completed": {
+  "status": 200,
+  "body": {
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "one reply and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches",
+   "output": "_[Workstation native structured engine — owned, no external dependency]_\n\n## Understanding\nThe request concerns: Outline a halal, zero-waste weekly meal plan for an elderly resident (domain: WITHHELD — no domain was declared for this call).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- zero-waste weekly\n- halal zero-waste\n- elderly resident\n- outline halal\n- weekly meal\n- meal plan\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'console', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.",
+   "served_by": "native",
+   "is_external": false,
+   "resources_tried": [
+    "native"
+   ],
+   "model_tokens": null,
+   "model_tokens_basis": "NOT COUNTED - the deterministic floor served this and runs no model, so there are no tokens to count; null, never 0",
+   "data_class": {
+    "declared": "person_entered",
+    "class_basis": "what a person typed for this request, or saved in a design they run, with the platform's own instructions and records composed around it",
+    "legal_matter_read": false,
+    "external": "not attempted",
+    "checks": [],
+    "barred": [
+     "legal_matter"
+    ]
+   },
+   "arabic": {
+    "arabic_passages_withheld": 0,
+    "basis": null,
+    "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else",
+    "labelled": false,
+    "language": null
+   },
+   "governance_checkpoint": {
+    "gate": "constitutional_policy_gate_v5",
+    "pre_allowed": true,
+    "post_checked": true,
+    "post_compliant": true,
+    "violations": [],
+    "post_screened": "unsafe_payload_patterns",
+    "post_coverage_limit": "screened for a small set of unsafe payload patterns only (a destructive shell command, DROP / TRUNCATE, an unbounded DELETE, a private-key header). `compliant` means none of those matched. It is NOT an assessment of the output against the constitution, the law or any framework.",
+    "response_screen_withheld": false,
+    "recorded": true,
+    "event_hash": "efd6b36eb19731ac541cc7a037172720cad1dd9180a6b005ea98e573c2e9c105a316aab4df115a2c2635d47a241ae7f33e1bcaccf113a2b6804f11b2ac40c970"
+   }
+  }
+ },
+ "status_failed": {
+  "status": 500,
+  "body": {
+   "detail": "GET /api/v1/native-ai/status failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/native-ai/status",
+   "cause_established": false
+  }
+ }
+}

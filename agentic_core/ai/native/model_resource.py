@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import os
 import time
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 _OLLAMA_CACHE = {"at": 0.0, "up": False}
 _OLLAMA_TTL = 30.0
@@ -28,6 +28,20 @@ def external_allowed() -> bool:
 def _ollama_base() -> str:
     url = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
     return url.rsplit("/api/", 1)[0] if "/api/" in url else url
+
+
+def local_runtime_version() -> Optional[str]:
+    """W844 (FU-1091) - the version the local runtime reports (its /api/version), or None when it cannot be read.
+    Its defaults are what a request that sends no options runs under, so a record names them by this."""
+    if os.getenv("AI_DISABLE_LOCAL", "").lower() in ("1", "true", "yes"):
+        return None
+    try:
+        import httpx
+        r = httpx.get(f"{_ollama_base()}/api/version", timeout=1.0)
+        v = r.json().get("version") if r.status_code == 200 else None
+        return str(v) if v else None
+    except Exception:
+        return None
 
 
 def ollama_up() -> bool:
@@ -55,7 +69,8 @@ def ollama_up() -> bool:
     return up
 
 
-_MODELS_CACHE = {"at": 0.0, "models": []}
+_MODELS_CACHE = {"at": 0.0, "models": [], "digests": {},      # W841 (FU-1087) - each build's digest, same fetch
+                 "capabilities": {}}                            # W846 (FU-1129) - what the runtime says each can do
 
 
 def local_models() -> List[str]:
@@ -67,17 +82,173 @@ def local_models() -> List[str]:
     if now - _MODELS_CACHE["at"] < _OLLAMA_TTL:
         return list(_MODELS_CACHE["models"])
     models: List[str] = []
+    digests: Dict[str, str] = {}
+    caps: Dict[str, List[str]] = {}
+    #  W854 (FU-926) - whether this read of the runtime succeeded: an empty list from a runtime that did not answer
+    #  is not a runtime that holds nothing
+    _read926, _why926 = False, "no answer"
     try:
         import httpx
         r = httpx.get(f"{_ollama_base()}/api/tags", timeout=1.0)
+        _why926 = f"HTTP {r.status_code}"
         if r.status_code == 200:
+            _read926 = True
+            _rows = r.json().get("models") or []
             models = [m.get("name", "").split(":")[0] if ":latest" in m.get("name", "") else m.get("name", "")
-                      for m in (r.json().get("models") or [])]
+                      for m in _rows]
             models = sorted({m for m in models if m})
-    except Exception:
-        models = []
-    _MODELS_CACHE.update(at=now, models=models)
+            #  W841 (FU-1087) - the build each name is, read from the same list (a name is not a build)
+            for m in _rows:
+                n = str(m.get("name") or "")
+                short = n.split(":")[0] if ":latest" in n else n
+                if short and m.get("digest"):
+                    digests[short] = str(m.get("digest"))
+                #  W846 (FU-1129) - the capabilities the runtime states for each model, from the same row
+                if short and isinstance(m.get("capabilities"), list):
+                    caps[short] = [str(c) for c in m["capabilities"]]
+    except Exception as _e926:
+        models, digests, caps = [], {}, {}
+        _read926, _why926 = False, _e926.__class__.__name__
+    _MODELS_CACHE.update(at=now, models=models, digests=digests, capabilities=caps, read=_read926, why=_why926)
     return models
+
+
+def local_estate_reading() -> Dict[str, Any]:
+    """W854 (FU-926) - what is known of the installed local models, from the read discovery makes: switched off on
+    this process, not read (the runtime did not answer), read and empty, or read with models. "None is installed" is
+    said only when the runtime answered with an empty list."""
+    if os.getenv("AI_DISABLE_LOCAL", "").lower() in ("1", "true", "yes"):
+        return {"state": "switched_off", "models": [],
+                "sentence": ("local models are switched off on this process (AI_DISABLE_LOCAL is set), so whether "
+                             "any is installed was not read")}
+    models = local_models()
+    if not _MODELS_CACHE.get("read"):
+        return {"state": "not_read", "models": [],
+                "sentence": (f"the local runtime at {_ollama_base()} did not give its model list "
+                             f"({_MODELS_CACHE.get('why') or 'no answer'}), so whether any model is installed "
+                             f"was not read")}
+    if not models:
+        return {"state": "none_installed", "models": [],
+                "sentence": "the local runtime answered and holds no model, so none is installed"}
+    return {"state": "installed", "models": list(models),
+            "sentence": f"the local runtime holds {', '.join(models)}"}
+
+
+def local_model_capabilities(name: str) -> Optional[List[str]]:
+    """W846 (FU-1129) - the capabilities the local runtime states for a discovered name (for example completion,
+    tools, vision), or None when its model list states none for it. Read from the same cached list, never guessed."""
+    local_models()
+    got = (_MODELS_CACHE.get("capabilities") or {}).get(name)
+    return list(got) if isinstance(got, list) else None
+
+
+def local_model_digest(name: str) -> Optional[str]:
+    """W841 (FU-1087) - the build digest the local runtime reports for a discovered name, or None. Read from the same
+    cached list discovery reads, never guessed."""
+    local_models()
+    return (_MODELS_CACHE.get("digests") or {}).get(name)
+
+
+_EXTERNAL_SERVERS = ("anthropic", "claude", "openai")      # the names the gateway gives an external answer
+
+
+def _running_models() -> Optional[List[Dict[str, Any]]]:
+    """W842 (FU-1092) - the models the local runtime reports as LOADED now (its /api/ps), or None when it cannot be
+    read. Read when an answer is labelled, not cached: the row is what is loaded at that moment."""
+    if os.getenv("AI_DISABLE_LOCAL", "").lower() in ("1", "true", "yes"):
+        return None
+    try:
+        import httpx
+        r = httpx.get(f"{_ollama_base()}/api/ps", timeout=1.0)
+        return list(r.json().get("models") or []) if r.status_code == 200 else None
+    except Exception:
+        return None
+
+
+def _running_row(name: str) -> Optional[Dict[str, Any]]:
+    """The runtime's own row for a loaded model, matched by its name with or without the ':latest' tag."""
+    want = {name, name[:-len(":latest")] if name.endswith(":latest") else f"{name}:latest"}
+    for m in _running_models() or []:
+        if str(m.get("name") or m.get("model") or "") in want:
+            return m
+    return None
+
+
+def _processor_of(row: Dict[str, Any]) -> Optional[str]:
+    """Where a loaded model runs, from the sizes the runtime reports (the split its own `ps` prints), or None."""
+    size, vram = row.get("size"), row.get("size_vram")
+    if not isinstance(size, (int, float)) or not isinstance(vram, (int, float)) or size <= 0:
+        return None
+    if vram <= 0:
+        return "100% CPU"
+    if vram >= size:
+        return "100% GPU"
+    gpu = round(100 * vram / size)
+    return f"{100 - gpu}%/{gpu}% CPU/GPU"
+
+
+def served_identity(served_by: Any) -> Dict[str, Any]:
+    """W842 (FU-1092) - WHICH MODEL AND WHICH BUILD answered, and where it ran, as the local runtime reports them,
+    beside the server name an answer already carries. A name is not a build: a tag can be pulled again to a
+    different one. The loaded model's own row is read first; the installed list only when it is not loaded."""
+    sb = str(served_by or "")
+    if sb == "ollama" or sb.startswith("ollama:"):
+        #  the same resolution the orchestrator's _run_model makes for the bare runtime name
+        name = (sb.split(":", 1)[1].strip() if ":" in sb
+                else (effective_default_local() or configured_default_local()))
+        if not name:
+            return {"model": None, "build_digest": None, "processor": None,
+                    "basis": "the local runtime was named and no local model is its default, so which model answered "
+                             "is not known"}
+        run = _running_row(name)
+        if run and run.get("digest"):
+            dg, src = str(run["digest"]), "the runtime's list of loaded models"
+        else:
+            dg = local_model_digest(name) or (local_model_digest(name[:-len(":latest")])
+                                              if name.endswith(":latest") else None)
+            src = "the runtime's list of installed models"
+        proc = _processor_of(run) if run else None
+        return {"model": name, "build_digest": dg, "processor": proc,
+                "basis": ((f"the model the answer was routed to, and the build digest {src} reports for it now"
+                           if dg else
+                           "the model the answer was routed to; the runtime reports no digest for it, so which build "
+                           "answered is not known")
+                          + "; " + (f"it ran on {proc}, as the runtime reports the loaded model" if proc else
+                                    "where it ran (the processor) is not known: the runtime did not report the model "
+                                    "as loaded with its sizes"))}
+    if sb == "constitutional_policy_gate":
+        return {"model": None, "build_digest": None, "processor": None,
+                "basis": "refused by the platform's own rule before any model ran"}
+    if not sb or sb == "native":
+        return {"model": None, "build_digest": None, "processor": None,
+                "basis": "the deterministic floor answered: no model ran"}
+    if sb in _EXTERNAL_SERVERS:
+        return {"model": sb, "build_digest": None, "processor": None,
+                "basis": "an external provider answered; this platform reads no model build or device from it"}
+    return {"model": None, "build_digest": None, "processor": None,
+            "basis": f"the server name {sb!r} is not one this platform resolves to a model, so which model answered "
+                     "is not known"}
+
+
+def promoted_default_state() -> Dict[str, Any]:
+    """W841 (FU-1087) - whether the promoted serving default is still the build that was measured and promoted."""
+    st = lifecycle_state()
+    name, then = st.get("default_local"), st.get("default_local_digest")
+    if not name:
+        return {"promoted": None, "digest_then": None, "digest_now": None, "holds": None,
+                "basis": "no model is promoted"}
+    now = local_model_digest(name)
+    if not then:
+        return {"promoted": name, "digest_then": None, "digest_now": now, "holds": None,
+                "basis": ("promoted before a promotion recorded the build it promoted: no evaluation ties this default "
+                          "to a build, so whether the installed build is the one that was chosen is not known")}
+    holds = bool(now) and now == then
+    return {"promoted": name, "digest_then": then, "digest_now": now, "holds": holds,
+            "evaluated_at": st.get("default_local_evaluated_at"),
+            "basis": ("the runtime reports the build that was measured and promoted" if holds else
+                      "the runtime reports another build under this name, or none: the promoted default was measured "
+                      "on a build that is not the one installed now, so it is not served as the default until this "
+                      "build is evaluated and promoted again")}
 
 
 # ── Owned-model LIFECYCLE (W276) — the registry is a managed estate, not a static enumeration:
@@ -165,7 +336,10 @@ def effective_default_local() -> Optional[str]:
     _present = set(active_local_models())
     promoted = st.get("default_local")
     if promoted and promoted not in set(st.get("retired") or []) and promoted in _present:
-        return promoted
+        #  W841 (FU-1087) - a promotion that recorded its build holds only while that build is installed
+        _then = st.get("default_local_digest")
+        if not _then or local_model_digest(promoted) == _then:
+            return promoted
     env_name = configured_default_local()
     return env_name if env_name and env_name in _present else None
 

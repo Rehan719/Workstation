@@ -2,7 +2,7 @@ from typing import List, Dict, Any
 import json
 import os
 import tempfile
-from config.paths import MEMORY_FILE
+from agentic_core.store_paths import MEMORY_FILE
 import logging
 
 logger = logging.getLogger(__name__)

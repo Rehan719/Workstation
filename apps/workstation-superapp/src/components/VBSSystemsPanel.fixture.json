@@ -1,0 +1,353 @@
+{
+ "systems": {
+  "posture": "in-house",
+  "owned": true,
+  "count": 5,
+  "systems": [
+   {
+    "id": "bms",
+    "name": "Business Management System",
+    "owned": true,
+    "real": [
+     "unit economics arithmetic (cost-per-insight)"
+    ],
+    "simulated": [
+     "energy $/Wh rate constant",
+     "insight $0.50 value constant (inside ROI)",
+     "viral k-factor formula"
+    ]
+   },
+   {
+    "id": "qms",
+    "name": "Quality Management System",
+    "owned": true,
+    "owns": [
+     "dcms"
+    ],
+    "real": [
+     "ISO-9001-aligned quality gates: coverage against DECLARED sections, plus a zero-stub screen",
+     "persistent traceable defects + the §8.7/§10.2 correct→re-verify loop (W307)",
+     "non-conformance rate (gate failures / gates run)",
+     "owns document control (ISO 9001 §7.5) — quality records placed under DCMS control"
+    ],
+    "limits": [
+     "a delivery that declares NO required sections has no coverage to measure: the gate returns not-assessable and a defect opened that way cannot be re-verified from content (W497) — only a caller-attested figure closes it, recorded as that"
+    ],
+    "simulated": []
+   },
+   {
+    "id": "ems",
+    "name": "Environmental Management System",
+    "owned": true,
+    "real": [
+     "CO2 accumulation (kgCO2 per Wh)"
+    ],
+    "simulated": [
+     "efficiency-gain constant",
+     "resource-gain constant"
+    ]
+   },
+   {
+    "id": "dcms",
+    "name": "Document Control Management System",
+    "owned": true,
+    "owned_by": "qms",
+    "real": [
+     "SHA3-512 cryptographic versioning",
+     "multi-version audit trail",
+     "operated as the QMS's document-control subsystem (ISO 9001 §7.5)"
+    ],
+    "simulated": []
+   },
+   {
+    "id": "backbone",
+    "name": "Mycelial Backbone",
+    "owned": true,
+    "real": [
+     "DID agent registry (in-memory, per-process)"
+    ],
+    "simulated": [
+     "transport latency (fixed 40ms sleep; the health figure is an EWMA of it, not a measured p95)"
+    ]
+   }
+  ],
+  "integrated_into_ai": "QMS + DCMS govern the native workflow-tree synthesis"
+ },
+ "document_control": {
+  "qms_owns_dcms": true,
+  "owned_subsystem": "DCMS (Document Control Management System)",
+  "controlled_documents": 0,
+  "registered_artifacts": 0,
+  "audit_integrity": 0.0,
+  "real": true,
+  "note": "registered_artifacts and audit_integrity are PERSISTENT (dcms store); controlled_documents is a per-process counter since start"
+ },
+ "backbone": {
+  "latency_ewma_ms": 0.0,
+  "latency_note": "EWMA over SIMULATED transport (fixed 40ms sleep) — not a measured p95",
+  "active_nodes": 0,
+  "failure_rate": null,
+  "failure_rate_basis": "no nodes registered — nothing measured",
+  "scope": "in-memory, this server process since start",
+  "protocol_stack": [
+   "MCP",
+   "A2A",
+   "ACP",
+   "ANP"
+  ]
+ },
+ "defects_empty": {
+  "summary": {
+   "gates_run": 0,
+   "defects_total": 0,
+   "gate_failures": 0,
+   "open": 0,
+   "corrected": 0,
+   "closed": 0,
+   "closed_source_retired": 0,
+   "not_reproducible": 0,
+   "non_conformance_rate": null,
+   "what_if_gates": 0,
+   "reported_total": 0,
+   "person_reported_open": 0,
+   "what_if_failures": 0,
+   "open_from_retired_labels": 0,
+   "closed_basis": "'closed' counts defects re-verified and passed. A defect closed because its source was retired, or reported not reproducible, was not re-verified: each is counted apart and moves nothing in the rate",
+   "dispositions_basis": "0 defect(s) closed because the surface that opened them was retired and 0 reported not reproducible, each with the reason, name and time its person gave; neither is a re-verification, so neither is counted as closed above, as a gate pass or in the rate. Open now under a label no live surface opens a defect under: 0",
+   "attested_reverifications": 0,
+   "attested_counted_since": null,
+   "defects_closed_on_attestation": 0,
+   "attested_basis": "No caller-attested re-verification has been counted: the counter starts at the first one after it was added, and any run before that is in the rate and not in this count. 0 defect(s) closed now were last re-verified on typed figures. By ruling (OWNER 2026-10-11) attested re-verifications STAY in the rate: these counts stand beside it and change it by nothing.",
+   "rate_basis": "gate failures / gates run across ALL deliveries on this platform (every entity and tenant share one QMS store) — not one entity's record. What-if gates run on typed metrics, and re-verifications of the defects they open, are counted separately and excluded. A re-verification of a DELIVERY defect does count, including one attested by its caller (W316: a correction that does not hold must raise the rate)."
+  },
+  "defects": [],
+  "real": true
+ },
+ "gate_failed": {
+  "passed": false,
+  "min_coverage": 0.95,
+  "figures_supplied": [
+   "coverage",
+   "stubs_found"
+  ],
+  "figures_defaulted": [],
+  "figures_basis": "typed by the caller: coverage, stubs_found",
+  "counted_in_rate": false,
+  "basis": "a what-if gate over the coverage and stub figures you supplied — it is recorded separately and does not move the platform non-conformance rate",
+  "non_conformance_rate": null,
+  "real": false,
+  "measured": false,
+  "real_basis": "NOT measured here: the gate's rule was run on a coverage figure and a stub flag that were typed into the request (or defaulted), not read from a delivery. It is a what-if and is not counted in the non-conformance rate"
+ },
+ "defects_open": {
+  "summary": {
+   "gates_run": 0,
+   "defects_total": 2,
+   "gate_failures": 0,
+   "open": 2,
+   "corrected": 0,
+   "closed": 0,
+   "closed_source_retired": 0,
+   "not_reproducible": 0,
+   "non_conformance_rate": null,
+   "what_if_gates": 2,
+   "reported_total": 0,
+   "person_reported_open": 0,
+   "what_if_failures": 2,
+   "open_from_retired_labels": 1,
+   "closed_basis": "'closed' counts defects re-verified and passed. A defect closed because its source was retired, or reported not reproducible, was not re-verified: each is counted apart and moves nothing in the rate",
+   "dispositions_basis": "0 defect(s) closed because the surface that opened them was retired and 0 reported not reproducible, each with the reason, name and time its person gave; neither is a re-verification, so neither is counted as closed above, as a gate pass or in the rate. Open now under a label no live surface opens a defect under: 1",
+   "attested_reverifications": 0,
+   "attested_counted_since": null,
+   "defects_closed_on_attestation": 0,
+   "attested_basis": "No caller-attested re-verification has been counted: the counter starts at the first one after it was added, and any run before that is in the rate and not in this count. 0 defect(s) closed now were last re-verified on typed figures. By ruling (OWNER 2026-10-11) attested re-verifications STAY in the rate: these counts stand beside it and change it by nothing.",
+   "rate_basis": "gate failures / gates run across ALL deliveries on this platform (every entity and tenant share one QMS store) — not one entity's record. What-if gates run on typed metrics, and re-verifications of the defects they open, are counted separately and excluded. A re-verification of a DELIVERY defect does count, including one attested by its caller (W316: a correction that does not hold must raise the rate)."
+  },
+  "defects": [
+   {
+    "id": "DEF-532c4219",
+    "label": "w983-retired-door",
+    "owner_id": null,
+    "delivery_ref": null,
+    "meta": {
+     "coverage": 0.1,
+     "stubs_found": true
+    },
+    "what_if": true,
+    "status": "open",
+    "opened_at": "2026-11-13T21:59:39Z",
+    "correction": null,
+    "reverified": false,
+    "label_live": false
+   },
+   {
+    "id": "DEF-0d077024",
+    "label": "cockpit-what-if",
+    "owner_id": null,
+    "delivery_ref": null,
+    "meta": {
+     "coverage": 0.5,
+     "stubs_found": true
+    },
+    "what_if": true,
+    "status": "open",
+    "opened_at": "2026-11-13T21:59:39Z",
+    "correction": null,
+    "reverified": false,
+    "label_live": true
+   }
+  ],
+  "real": true
+ },
+ "refused_live_label": {
+  "status": 409,
+  "body": {
+   "detail": "'cockpit-what-if' is a label a live surface still opens defects under: name the route it came through (retired_route), which is checked against the routes this platform mounts, or correct and re-verify it, or report it not reproducible."
+  }
+ },
+ "closed_retired": {
+  "defect": {
+   "id": "DEF-532c4219",
+   "label": "w983-retired-door",
+   "owner_id": null,
+   "delivery_ref": null,
+   "meta": {
+    "coverage": 0.1,
+    "stubs_found": true
+   },
+   "what_if": true,
+   "status": "closed_source_retired",
+   "opened_at": "2026-11-13T21:59:39Z",
+   "correction": null,
+   "reverified": false,
+   "closure": {
+    "how": "closed_source_retired",
+    "reason": "w983 the surface that opened this was retired, for the capture",
+    "by": "owner",
+    "by_verified": false,
+    "at": "2026-11-13T21:59:39Z",
+    "status_before": "open",
+    "source_check": "checked: 'w983-retired-door' is not among the 24 fixed labels live surfaces open a defect under",
+    "basis": "closed because the surface that opened it has been retired, on the statement of the person recorded here. It was not re-verified: it is not a gate pass and moves no count in the non-conformance rate"
+   }
+  },
+  "source_check": "checked: 'w983-retired-door' is not among the 24 fixed labels live surfaces open a defect under",
+  "measured": false,
+  "counted_in_rate": false,
+  "basis": "closed because the surface that opened it has been retired, on the statement of the person recorded here. It was not re-verified: it is not a gate pass and moves no count in the non-conformance rate"
+ },
+ "not_reproducible": {
+  "defect": {
+   "id": "DEF-0d077024",
+   "label": "cockpit-what-if",
+   "owner_id": null,
+   "delivery_ref": null,
+   "meta": {
+    "coverage": 0.5,
+    "stubs_found": true
+   },
+   "what_if": true,
+   "status": "not_reproducible",
+   "opened_at": "2026-11-13T21:59:39Z",
+   "correction": null,
+   "reverified": false,
+   "closure": {
+    "how": "not_reproducible",
+    "reason": "w983 the surface that opened this was retired, for the capture",
+    "by": "owner",
+    "by_verified": false,
+    "at": "2026-11-13T21:59:39Z",
+    "status_before": "open",
+    "basis": "reported as not reproducible by the person recorded here, with what they tried. It was not re-verified: it is not a gate pass and moves no count in the non-conformance rate"
+   }
+  },
+  "measured": false,
+  "counted_in_rate": false,
+  "basis": "reported as not reproducible by the person recorded here, with what they tried. It was not re-verified: it is not a gate pass and moves no count in the non-conformance rate"
+ },
+ "defects_after": {
+  "summary": {
+   "gates_run": 0,
+   "defects_total": 2,
+   "gate_failures": 0,
+   "open": 0,
+   "corrected": 0,
+   "closed": 0,
+   "closed_source_retired": 1,
+   "not_reproducible": 1,
+   "non_conformance_rate": null,
+   "what_if_gates": 2,
+   "reported_total": 0,
+   "person_reported_open": 0,
+   "what_if_failures": 2,
+   "open_from_retired_labels": 0,
+   "closed_basis": "'closed' counts defects re-verified and passed. A defect closed because its source was retired, or reported not reproducible, was not re-verified: each is counted apart and moves nothing in the rate",
+   "dispositions_basis": "1 defect(s) closed because the surface that opened them was retired and 1 reported not reproducible, each with the reason, name and time its person gave; neither is a re-verification, so neither is counted as closed above, as a gate pass or in the rate. Open now under a label no live surface opens a defect under: 0",
+   "attested_reverifications": 0,
+   "attested_counted_since": null,
+   "defects_closed_on_attestation": 0,
+   "attested_basis": "No caller-attested re-verification has been counted: the counter starts at the first one after it was added, and any run before that is in the rate and not in this count. 0 defect(s) closed now were last re-verified on typed figures. By ruling (OWNER 2026-10-11) attested re-verifications STAY in the rate: these counts stand beside it and change it by nothing.",
+   "rate_basis": "gate failures / gates run across ALL deliveries on this platform (every entity and tenant share one QMS store) — not one entity's record. What-if gates run on typed metrics, and re-verifications of the defects they open, are counted separately and excluded. A re-verification of a DELIVERY defect does count, including one attested by its caller (W316: a correction that does not hold must raise the rate)."
+  },
+  "defects": [
+   {
+    "id": "DEF-532c4219",
+    "label": "w983-retired-door",
+    "owner_id": null,
+    "delivery_ref": null,
+    "meta": {
+     "coverage": 0.1,
+     "stubs_found": true
+    },
+    "what_if": true,
+    "status": "closed_source_retired",
+    "opened_at": "2026-11-13T21:59:39Z",
+    "correction": null,
+    "reverified": false,
+    "closure": {
+     "how": "closed_source_retired",
+     "reason": "w983 the surface that opened this was retired, for the capture",
+     "by": "owner",
+     "by_verified": false,
+     "at": "2026-11-13T21:59:39Z",
+     "status_before": "open",
+     "source_check": "checked: 'w983-retired-door' is not among the 24 fixed labels live surfaces open a defect under",
+     "basis": "closed because the surface that opened it has been retired, on the statement of the person recorded here. It was not re-verified: it is not a gate pass and moves no count in the non-conformance rate"
+    },
+    "label_live": false
+   },
+   {
+    "id": "DEF-0d077024",
+    "label": "cockpit-what-if",
+    "owner_id": null,
+    "delivery_ref": null,
+    "meta": {
+     "coverage": 0.5,
+     "stubs_found": true
+    },
+    "what_if": true,
+    "status": "not_reproducible",
+    "opened_at": "2026-11-13T21:59:39Z",
+    "correction": null,
+    "reverified": false,
+    "closure": {
+     "how": "not_reproducible",
+     "reason": "w983 the surface that opened this was retired, for the capture",
+     "by": "owner",
+     "by_verified": false,
+     "at": "2026-11-13T21:59:39Z",
+     "status_before": "open",
+     "basis": "reported as not reproducible by the person recorded here, with what they tried. It was not re-verified: it is not a gate pass and moves no count in the non-conformance rate"
+    },
+    "label_live": true
+   }
+  ],
+  "real": true
+ },
+ "refused_unknown": {
+  "status": 404,
+  "body": {
+   "detail": "No OPEN or CORRECTED defect 'w983-no-such-defect'."
+  }
+ }
+}

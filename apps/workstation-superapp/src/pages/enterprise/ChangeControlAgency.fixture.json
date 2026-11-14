@@ -1,0 +1,209 @@
+{
+ "ask": {
+  "title": "W1043 made up: raise the reading-list page size",
+  "description": "W1043 made up: show twenty items per page instead of ten",
+  "change_type": "config_minor",
+  "submitted_by": "workstation-ui",
+  "rationale": "W1043 made up: people page through the list too often to find a book",
+  "affected_systems": [
+   "reading_list"
+  ]
+ },
+ "submitted": {
+  "status": 200,
+  "body": {
+   "cca_id": "cca-fda0631c90",
+   "impact_tier": "LOW",
+   "status": "submitted",
+   "health_gate": {
+    "decided_on": null,
+    "measured_health": null,
+    "measured_weight": 0.0,
+    "verdict": "held_not_decidable",
+    "basis": "nothing was measured: no call was observed in the immune sensor's window and no circuit is tracked, so the auto-approval is HELD for review rather than granted on absent evidence"
+   },
+   "immune_threat_at_submit": "NOMINAL",
+   "commitment": null,
+   "variance": null,
+   "variance_basis": "no commitment was recorded, so no variance is defined",
+   "method_check": {
+    "method_available": true,
+    "checked_at": "2026-11-14T19:19:56Z",
+    "requirements": [
+     {
+      "requirement": "states-a-rationale",
+      "lesson": "M-DELIV-01",
+      "state": "MET",
+      "basis": "the record carries a rationale of 68 characters",
+      "checkable_from": "the change record"
+     },
+     {
+      "requirement": "names-what-it-touches",
+      "lesson": "M-EXEC-03",
+      "state": "MET",
+      "basis": "names 1 affected system(s): reading_list",
+      "checkable_from": "the change record"
+     },
+     {
+      "requirement": "a-decision-names-its-mechanism",
+      "lesson": "M-DELIV-01",
+      "state": "NOT_ASSESSABLE",
+      "basis": "no decision has been taken yet, so there is no decider to name",
+      "checkable_from": "the change record"
+     },
+     {
+      "requirement": "every-open-row-rides-an-item",
+      "lesson": "M-EXEC-06",
+      "state": "MET",
+      "basis": "all 43 open rows ride a plan item",
+      "checkable_from": "docs/FOLLOWUPS.json"
+     },
+     {
+      "requirement": "m-verif-01",
+      "lesson": "M-VERIF-01",
+      "state": "NOT_ASSESSABLE",
+      "basis": "Green is evidence only if red was reachable. Make every new instrument fail first. — NOT VISIBLE in a change record. Only running the blind proves the guard can fail; no artefact records that it was run.",
+      "checkable_from": null
+     },
+     {
+      "requirement": "m-verif-02",
+      "lesson": "M-VERIF-02",
+      "state": "NOT_ASSESSABLE",
+      "basis": "A guard must DRIVE its precondition, never observe the ambient environment. — NOT VISIBLE in a change record. Whether a guard drives or observes is a property of its logic, not of its text.",
+      "checkable_from": null
+     },
+     {
+      "requirement": "m-verif-05",
+      "lesson": "M-VERIF-05",
+      "state": "NOT_ASSESSABLE",
+      "basis": "A basis string is code. Compute a claim from state; never assert a universal in prose. — NOT VISIBLE in a change record. This is the largest unenforced class (30 of 98 in the labelled set); FU-262 proposes extending the pre-flight to it.",
+      "checkable_from": null
+     },
+     {
+      "requirement": "m-verif-06",
+      "lesson": "M-VERIF-06",
+      "state": "NOT_ASSESSABLE",
+      "basis": "Refute the round's OWN fix before shipping it, as hard as the code it changed. — NOT VISIBLE in a change record. Adversarial refutation is a process; the artefacts do not record that it ran.",
+      "checkable_from": null
+     },
+     {
+      "requirement": "m-meas-01",
+      "lesson": "M-MEAS-01",
+      "state": "NOT_ASSESSABLE",
+      "basis": "An item closes on its ACCEPT bar. No bar means UNEXAMINED, never nearly done. — NOT VISIBLE in a change record. Whether a bar's clauses match an item's body is a reading, not a parse. An audit can count items with no bar at all; it cannot judge a bar's fidelity.",
+      "checkable_from": null
+     },
+     {
+      "requirement": "m-meas-02",
+      "lesson": "M-MEAS-02",
+      "state": "NOT_ASSESSABLE",
+      "basis": "Write the bar against the DEFECT, never against correct output. A criterion satisfied by the thing being fixed is not a criterion. — NOT VISIBLE in a change record. Judging whether a clause can fail requires reasoning about the code it describes.",
+      "checkable_from": null
+     },
+     {
+      "requirement": "m-exec-01",
+      "lesson": "M-EXEC-01",
+      "state": "NOT_ASSESSABLE",
+      "basis": "Measure each row's LIVE state before building. A row may accuse working code. — NOT VISIBLE in a change record. A row's truth is established by reading the code it points at.",
+      "checkable_from": null
+     },
+     {
+      "requirement": "m-exec-02",
+      "lesson": "M-EXEC-02",
+      "state": "NOT_ASSESSABLE",
+      "basis": "Fix the CLASS once, at the chokepoint — and grep the CALL, not the method name. — NOT VISIBLE in a change record. Identifying the true chokepoint is a reading of the call graph.",
+      "checkable_from": null
+     },
+     {
+      "requirement": "m-deliv-03",
+      "lesson": "M-DELIV-03",
+      "state": "NOT_ASSESSABLE",
+      "basis": "A row closes only when EVERY finding in it is fixed. Partial is open. — NOT VISIBLE in a change record. A row's completeness is a reading of its body against the diff.",
+      "checkable_from": null
+     }
+    ],
+    "counts": {
+     "met": 3,
+     "unmet": 0,
+     "not_assessable": 10
+    },
+    "may_auto_approve": true,
+    "why_not_approvable": null,
+    "limits": "this check reads the change record, the register and the tree. It CANNOT see whether a blind was added, whether a refutation ran, whether a basis string was computed rather than asserted, or whether every writer of a changed field was found — 10 of 13 requirements are NOT ASSESSABLE for that reason. A green result here is NOT a statement that this change follows the method.",
+    "never": "no requirement is reported MET because the submitter said so; every MET above was read from an artefact"
+   },
+   "scope_appraisal": {
+    "scope": null,
+    "why_this_scope": "no open row names a file matching this change's affected systems, so it is not appraised against an item chosen for it",
+    "not_a_gate": "no scope was inferred, so none is appraised"
+   },
+   "message": "Change request cca-fda0631c90 submitted. Tier: LOW. Status: submitted."
+  }
+ },
+ "refused": {
+  "status": 422,
+  "body": {
+   "detail": [
+    {
+     "type": "missing",
+     "loc": [
+      "body",
+      "title"
+     ],
+     "msg": "Field required",
+     "input": {
+      "description": "W1043 made up: show twenty items per page instead of ten",
+      "change_type": "config_minor",
+      "submitted_by": "workstation-ui",
+      "rationale": "W1043 made up: people page through the list too often to find a book",
+      "affected_systems": [
+       "reading_list"
+      ]
+     }
+    }
+   ]
+  }
+ },
+ "queue": {
+  "status": 200,
+  "body": {
+   "changes": [
+    {
+     "cca_id": "cca-fda0631c90",
+     "title": "W1043 made up: raise the reading-list page size",
+     "change_type": "config_minor",
+     "impact_tier": "LOW",
+     "status": "submitted",
+     "submitted_by": "workstation-ui",
+     "submitted_at": "2026-11-14T19:19:56Z",
+     "reviewed_at": null,
+     "decision": null,
+     "decision_source": null,
+     "decision_source_inferred": false,
+     "awaiting_board_ratification": false,
+     "board_ratification": null,
+     "hold_reason": null,
+     "est_distributable_wst": null,
+     "auto_approval_withheld": null,
+     "decision_account": null,
+     "commitment": null,
+     "variance": null,
+     "variance_basis": "no commitment was recorded, so no variance is defined",
+     "implementation_effect": null,
+     "implementation_effect_basis": null,
+     "follows_rejection": null
+    }
+   ],
+   "total": 1,
+   "by_status": {
+    "submitted": 1
+   },
+   "implemented_by_effect": {
+    "applied": 0,
+    "recorded_only": 0,
+    "effect_not_recorded": 0
+   },
+   "implemented_by_effect_basis": "of 0 implemented record(s): 0 applied something to the platform, 0 recorded the decision and applied nothing, and 0 carry no record of the effect (a lever set by the immune reflex, or a record implemented before the effect was kept)"
+  }
+ }
+}

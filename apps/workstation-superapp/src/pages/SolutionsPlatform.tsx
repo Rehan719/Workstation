@@ -9,7 +9,7 @@ import {
   MonitorPlay, Database, Cloud, GitBranch, Wrench,
 } from 'lucide-react';
 import { Card } from '@workstation/ui';
-import { apiJson, errorMessage, axiosDetail } from '../lib/api';
+import { apiJson, errorMessage, axiosDetail, provenanceBadge } from '../lib/api';   // W1045: provenanceBadge
 import { DOMAINS as CANON_DOMAINS, DOMAIN_LABELS } from '../lib/taxonomy';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -112,6 +112,9 @@ export const SolutionsPlatform: React.FC = () => {
   const [building, setBuilding] = useState(false);
   const [builtConfig, setBuiltConfig] = useState<any>(null);
   const [designErr, setDesignErr] = useState('');   // cluster 3 — a failed design is now visible
+  //  W1045 - what composed the specification, as the route's answer says: the page showed it as generated whatever
+  //  served it
+  const [specServedBy, setSpecServedBy] = useState<{ by: string | null; external: boolean } | null>(null);
 
   // Launch state
   const [missionName, setMissionName] = useState('');
@@ -130,7 +133,7 @@ export const SolutionsPlatform: React.FC = () => {
 
   const handleDesign = async () => {
     if (!spec.description.trim()) return;
-    setDesigning(true); setDesignErr('');
+    setDesigning(true); setDesignErr(''); setSpecServedBy(null);
     setStatus(s => ({ ...s, design: 'running' }));
     try {
       const prompt = `You are a sovereign solutions architect. Design a concise technical specification for the following solution.
@@ -163,12 +166,16 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
         return;
       }
       setSpec(s => ({ ...s, generated_spec: generatedSpec }));
+      setSpecServedBy({ by: resp.data?.served_by ?? null, external: Boolean(resp.data?.is_external) });
       setStatus(s => ({ ...s, design: 'done' }));
     } catch (e: any) {
       // Ledger cluster 3 — this catch used to FABRICATE a canned specification and mark the phase
       // 'done', so a failed AI call looked like a successful design. Surface the failure instead.
       setSpec(s => ({ ...s, generated_spec: '' }));
-      setDesignErr(`Specification generation failed: ${axiosDetail(e, 'the AI fabric did not respond')}. Nothing was generated.`);
+      //  W1045 - by what happened: the fallback named a layer that had not answered, for a call that reached no server
+      //  or a server that gave no reason; and the sentence ends once
+      const why = axiosDetail(e, errorMessage(e));
+      setDesignErr(`Specification generation failed: ${why}${/[.!?]$/.test(why) ? '' : '.'} Nothing was generated.`);
       setStatus(s => ({ ...s, design: 'idle' }));
     } finally {
       setDesigning(false);
@@ -266,7 +273,7 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
       ? 'Readiness check: every service queried above answered. That is reachability, not readiness '
         + '\u2014 nothing here provisioned or tested infrastructure, and this page produces a plan only.'
       : 'Readiness check found problems above. No infrastructure was provisioned.', ready ? 'info' : 'warn');
-    appendLog('To establish something that actually runs, use Genesis \u2014 it creates a living VSB IDBO entity.', 'info');
+    appendLog('To establish an entity, use Genesis \u2014 it registers a living VSB IDBO entity; whether that entity then runs depends on the heartbeat and the levers you turn on.', 'info');
 
     setLaunching(false);
     setStatus(s => ({ ...s, launch: 'done' }));
@@ -452,6 +459,11 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
                     <div className="flex items-center gap-2">
                       <TerminalSquare size={14} className="text-violet-400" />
                       <span className="text-[9px] font-black text-violet-400 uppercase tracking-[0.25em]">Generated Specification</span>
+                      {spec.generated_spec && specServedBy && (() => {
+                        const b = provenanceBadge(specServedBy.by, specServedBy.external);
+                        return <span data-testid="spec-provenance" title={b.title}
+                                     className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`}>{b.label}</span>;
+                      })()}
                     </div>
                     {spec.generated_spec && (
                       <button type="button" onClick={() => setActivePhase('build')}
@@ -468,7 +480,7 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
                       <div>
                         <p className="text-sm font-black text-slate-700 uppercase tracking-tight italic">No Specification Yet</p>
                         <p className="text-xs text-slate-600 font-bold mt-1 max-w-xs">Fill in the solution brief and click Generate Specification.</p>
-                        {designErr && <p className="text-[11px] text-vital font-bold mt-3 max-w-xs">{designErr}</p>}
+                        {designErr && <p data-testid="spec-error" className="text-[11px] text-vital font-bold mt-3 max-w-xs">{designErr}</p>}
                       </div>
                     </div>
                   )}
@@ -639,7 +651,8 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
                         : 'bg-slate-800 text-slate-600 cursor-not-allowed'
                     }`}
                   >
-                    {building ? <><Loader2 size={14} className="animate-spin" /> Provisioning Infrastructure...</> : <><Server size={14} /> Build Infrastructure</>}
+                    {/* W1045 - named for what it does: it records a plan in the browser and provisions nothing */}
+                    {building ? <><Loader2 size={14} className="animate-spin" /> Recording the plan...</> : <><Server size={14} /> Record the deployment plan</>}
                   </button>
                 </Card>
               </div>

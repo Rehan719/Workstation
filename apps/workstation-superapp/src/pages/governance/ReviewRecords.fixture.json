@@ -1,0 +1,78 @@
+{
+ "records": {
+  "records": [
+   {
+    "tool": "care_handover",
+    "tier": "reviewed_by_workstation_agent",
+    "date": "2026-10-20",
+    "checklist": "care checklist v1",
+    "sources_read": [
+     "nice-ng249"
+    ],
+    "model": "local-model",
+    "agent": "care-reviewer",
+    "record_id": "rev-before-clause2",
+    "entered_by": "single-user-mode",
+    "entered_at": "2026-10-20T09:00:00Z",
+    "counts": false,
+    "why_not": "it does not say which version of the tool it reviewed"
+   },
+   {
+    "tool": "care_risk_assess",
+    "tier": "checked_by_rule",
+    "date": "2026-11-13",
+    "rule": "a score with no observation behind it answers its refusal",
+    "test": "test_w688",
+    "record_id": "rev-5ede027ca4",
+    "entered_by": "single-user-mode",
+    "entered_at": "2026-11-13T10:11:01Z",
+    "counts": true,
+    "why_not": null
+   },
+   {
+    "tool": "care_risk_assess",
+    "tier": "signed_by_a_qualified_person",
+    "date": "2026-11-13",
+    "name": "A. Reviewer",
+    "credential_as_stated": "registered nurse",
+    "reviewed": "the risk assessment tool, as built today",
+    "lapses_on": "2027-11-13",
+    "record_id": "rev-f3574ed8d8",
+    "entered_by": "single-user-mode",
+    "entered_at": "2026-11-13T10:11:01Z",
+    "counts": true,
+    "why_not": null
+   },
+   {
+    "tool": "care_handover",
+    "tier": "reviewed_by_workstation_agent",
+    "date": "2026-11-13",
+    "checklist": "care checklist v2",
+    "sources_read": [
+     {
+      "source": "nice-ng249",
+      "page": "recommendations 1.1 to 1.3",
+      "read_on": "2026-11-13"
+     }
+    ],
+    "tool_version": "care_handover as built today",
+    "model": "local-model",
+    "agent": "care-reviewer-draft",
+    "could_not_check": "nothing beyond the guideline's own text",
+    "record_id": "rev-18284a6500",
+    "entered_by": "single-user-mode",
+    "entered_at": "2026-11-13T10:11:01Z",
+    "counts": false,
+    "why_not": "the agent that reviewed is not calibrated on planted defects and clean answers: the calibration set cannot be run yet: its cases are described, not written out in full, so no agent has been calibrated on it"
+   }
+  ],
+  "total": 4,
+  "counted": 2,
+  "tools": {
+   "care_handover": "Unreviewed",
+   "care_risk_assess": "Signed by a qualified person"
+  },
+  "credential_basis": "this platform does not verify a person's credential; it records what the person stated",
+  "basis": "every stored record, each judged now by the rule of the tier it claims; a signature that has lapsed since it was entered no longer counts"
+ }
+}

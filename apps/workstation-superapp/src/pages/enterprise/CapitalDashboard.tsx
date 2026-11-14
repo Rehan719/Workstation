@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { apiJson, errorMessage } from '../../lib/api';
-import { Card, Button, Badge, notImplemented } from '@workstation/ui';
+import { apiJson, errorMessage, ApiError, bodyDetail } from '../../lib/api';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W928
+import { Card, Button, Badge } from '@workstation/ui';
 import {
   TrendingUp, ShieldAlert, PieChart, Activity,
   BarChart3, MessageCircle, AlertTriangle, RefreshCw,
@@ -44,6 +45,8 @@ interface FundStatus {
   seed_capital_wst?: number | null;
   contributed_wst?: number | null;
   capital_basis?: string | null;
+  // W876 (FU-1006) - what cycles set aside for the fund, what it received, and where the rest went, read from the stores
+  set_aside_reconciliation?: { known?: boolean; basis?: string; set_aside_wst?: number; received_wst?: number } | null;
   fund_health_basis?: string | null;
   // W577 (FU-298) — an unreadable tail is dropped ALLOCATIONS, so `allocated` and `utilisation_pct`
   // are understated and `fund_health` is computed from them: the page can read HEALTHY of a fund
@@ -68,6 +71,7 @@ interface CcaChange {
 }
 
 export const CapitalDashboard: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W928 - a read that fails is said
   const [portfolio, setPortfolio] = useState<PortfolioStats | null>(null);
   const [fund, setFund] = useState<FundStatus | null>(null);
   const [fundError, setFundError] = useState('');
@@ -107,8 +111,12 @@ export const CapitalDashboard: React.FC = () => {
       .catch(() => { setAutoEconomy(null); setHeartbeatRunning(null); });
 
     axios.get<PortfolioStats>("/api/v1/projects/stats/summary", { validateStatus: () => true })
-      .then(res => { if (res.status === 200) setPortfolio(res.data); })
-      .catch(() => {});
+      .then(res => {
+        if (res.status === 200) { setPortfolio(res.data); return; }
+        //  W928 - a refusal was dropped here without a word: it is said, with the server's reason
+        noteRead('the portfolio summary')(new ApiError(res.status, bodyDetail(res.data, 'no reason given')));   // W1013 - a field check by its field
+      })
+      .catch(noteRead('the portfolio summary'));
 
     // W415 — the Evolution tab used to render two hardcoded "constitutional articles" (see below).
     // The real record of governance change is the Change Control Agency store, so read that.
@@ -119,6 +127,7 @@ export const CapitalDashboard: React.FC = () => {
 
   return (
     <div className="space-y-10">
+      <ReadFailures failures={readFailures} />
       <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
           <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-5xl font-black text-white uppercase italic break-words">Sovereign Capital</h1>
@@ -219,6 +228,11 @@ export const CapitalDashboard: React.FC = () => {
               {fund?.capital_basis && (
                 <p data-testid="fund-capital-basis" className="text-[9px] font-bold text-amber-400/90 mt-1 leading-snug">
                   {fund.capital_basis}
+                </p>
+              )}
+              {fund?.set_aside_reconciliation?.basis && (
+                <p data-testid="fund-set-aside" className="text-[9px] text-slate-400 mt-1 leading-snug">
+                  {fund.set_aside_reconciliation.basis}
                 </p>
               )}
             </Card>
@@ -340,7 +354,9 @@ export const CapitalDashboard: React.FC = () => {
                     <div className="p-3 bg-highlight text-slate-950 rounded-2xl"><Code size={24} /></div>
                     <h3 className="text-xl font-black text-white uppercase italic">Constitutional Evolution</h3>
                 </div>
-                <Button onClick={() => notImplemented('Propose Amendment')} size="sm" className="bg-aura text-slate-950 font-black uppercase italic">Propose Amendment</Button>
+                {/* W1033 - an amendment is proposed at Change Control, where the Constitution page's own "Propose Amendment"
+                    goes: this one said "not implemented" */}
+                <a href="/change-control" data-testid="capital-propose-amendment" className="px-3 py-1.5 rounded-lg bg-aura text-slate-950 text-xs font-black uppercase italic">Propose Amendment</a>
             </div>
             {/* W415 — this panel rendered two literal objects as constitutional articles:
                   { id: '1130', title: 'Concentration Limit Increase', status: 'UNDER REVIEW', ... }

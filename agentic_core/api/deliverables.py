@@ -255,7 +255,11 @@ async def output_formats():
     }
 
 
+from agentic_core.api.operational_excellence import spans_run    # W847 (FU-1121)
+
+
 @router.post("/produce")
+@spans_run("deliverable")          # W847 (FU-1121) - the AI call and model attempts inside are held
 async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_user)):
     """Produce a new LIVING deliverable on the native fabric (in-house provenance)."""
     if req.type not in _TYPES and not req.sections:
@@ -329,6 +333,10 @@ async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_u
         "versions": [{"brief": req.brief, "content": gen["content"],
                       "ai_provenance": gen["ai_provenance"], "quality_assurance": qa, "created_at": now}],
         "reusable": True, "rerunnable": True, "living": True,
+        #  W800 (FU-981, ledger v17 R2[7]) - a constant with nothing saying what it means is a claim nobody can check
+        "living_basis": ("re-runnable from its stored brief and versioned on each run; re-screened by the "
+                         "heartbeat's section 11 rotation, one deliverable a beat, only while the organism's "
+                         "re-screen lever is on and at least one living entity is on the roster"),
         "created_at": now, "updated_at": now,
     }
     rows = _load()

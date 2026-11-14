@@ -1,0 +1,22 @@
+{
+ "narrated": {
+  "status": 200,
+  "content_type": "text/event-stream; charset=utf-8",
+  "stream": "data: {\"token\": \"_[Workstation native structured engine \\u2014 owned, no external dependency]_\\\\n\\\\n## Understanding\\\\nThis \"}\n\ndata: {\"token\": \"engine was not told which part of its input you wrote, so it states no subject for your request \"}\n\ndata: {\"token\": \"and attributes nothing to you. That is a limit of the tool that called it, not of what you asked \"}\n\ndata: {\"token\": \"(domain: ENTERPRISE | Label: enterprise narrative).\\\\n\\\\n## Terms most frequent in the text you \"}\n\ndata: {\"token\": \"wrote\\\\n_WITHHELD: the calling tool did not identify which text is yours, so any list here would \"}\n\ndata: {\"token\": \"be counted over the platform's own prompt._\\\\n\\\\n## Native approach\\\\nWorkstation composes a \"}\n\ndata: {\"token\": \"structured response from its own process-intelligence and knowledge for the agent 'reactor', \"}\n\ndata: {\"token\": \"framing the request above rather than analysing it.\\\\n\\\\n## Next steps\\\\n- Validate the structured \"}\n\ndata: {\"token\": \"outputs above against the stated objective.\\\\n- Route richer generation to a model resource \"}\n\ndata: {\"token\": \"(local-first; external only if enabled).\\\\n- Iterate via the orchestrator's cascade for ENTERPRISE \"}\n\ndata: {\"token\": \"| Label: enterprise narrative; record outcomes to memory/UEG.\"}\n\ndata: {\"done\": true, \"run_id\": \"fdcb5c7a6ca2\", \"duration_ms\": 1, \"served_by\": \"native\", \"is_external\": false}\n\n"
+ },
+ "refused": {
+  "status": 422,
+  "body": {
+   "detail": [
+    {
+     "type": "missing",
+     "loc": [
+      "body"
+     ],
+     "msg": "Field required",
+     "input": null
+    }
+   ]
+  }
+ }
+}

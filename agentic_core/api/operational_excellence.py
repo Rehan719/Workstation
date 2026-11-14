@@ -17,6 +17,9 @@ an empty store reports zero (never invented numbers).
 """
 from __future__ import annotations
 
+import contextvars
+import functools
+import inspect
 import json
 import time
 import uuid
@@ -32,14 +35,106 @@ router = APIRouter(prefix="/api/v1/operations", tags=["operational-excellence"])
 _STORE = data_path("operations_outcomes.json")
 _CAP = 2000
 
+#  W847 (FU-1121) - ONLY THE OUTERMOST RUN OF A NEST SPENDS. Runs nest (an AI call around the orchestrator's
+#  model_attempt for the same call; a deliverable around an AI call; a composition, swarm, cascade tier, board or
+#  transformation run around model attempts), and each fed spend(), so the platform total counted the same seconds
+#  more than once whenever a real model served. A span marks a nest; see record_outcome for what each run does.
+_RUN_SPAN: "contextvars.ContextVar[Optional[Dict[str, Any]]]" = contextvars.ContextVar("w847_run_span", default=None)
+
+
+def _span_new(kind: str) -> Dict[str, Any]:
+    return {"id": f"span-{uuid.uuid4().hex[:8]}", "kind": kind, "parent": _open_span(_RUN_SPAN.get()),
+            "recorded": False, "closed": False,
+            "held_seconds": 0.0, "held_tokens": None, "held_answers": 0, "owner_id": None, "vsb_id": None}
+
+
+def _open_span(sp: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """The nearest span that is still open. Work started inside a span can outlive it (a task created there runs on):
+    a closed span spends nothing more, so what that work does goes to the next open span out, or is spent."""
+    while sp is not None and sp.get("closed"):
+        sp = sp.get("parent")
+    return sp
+
+
+def _span_hold(sp: Dict[str, Any], seconds: float, tokens: Optional[int], owner_id, vsb_id,
+               answers: Optional[int] = None) -> None:
+    """What an inner run did, held by the span around it rather than spent. `answers` is how many counted model
+    answers `tokens` sums (one, unless a span handed up several)."""
+    sp["held_seconds"] = round(float(sp.get("held_seconds") or 0.0) + max(0.0, float(seconds or 0.0)), 3)
+    if tokens is not None:
+        sp["held_tokens"] = int(sp.get("held_tokens") or 0) + int(tokens)
+        sp["held_answers"] = int(sp.get("held_answers") or 0) + (int(answers) if answers else 1)
+    if owner_id and not sp.get("owner_id"):
+        sp["owner_id"], sp["vsb_id"] = owner_id, vsb_id
+
+
+def _span_close(sp: Dict[str, Any]) -> None:
+    """The run that opened the span recorded nothing (it raised, or records no outcome of its kind): what its inner
+    runs held is handed to the span around it, or spent here when there is none - never lost."""
+    if sp.get("recorded") or not (sp.get("held_seconds") or sp.get("held_tokens") is not None):
+        return
+    _up = _open_span(sp.get("parent"))
+    if _up is not None:
+        _span_hold(_up, sp.get("held_seconds") or 0.0, sp.get("held_tokens"), sp.get("owner_id"), sp.get("vsb_id"),
+                   answers=sp.get("held_answers") or None)
+        return
+    try:
+        from agentic_core.molecular import work_budget as _wb
+        _wb.spend(seconds=float(sp.get("held_seconds") or 0.0), tokens=sp.get("held_tokens"),
+                  owner_id=sp.get("owner_id"), vsb_id=sp.get("vsb_id"), answers=sp.get("held_answers") or None)
+    except Exception:                                    # noqa: BLE001 - accounting is not the work
+        pass
+
+
+class run_span:
+    """`with run_span("deliverable"):` around a run that records one outcome of that kind. Never raises into the run
+    it marks; set and reset in the same context, so concurrent requests never see each other's span."""
+
+    def __init__(self, kind: str):
+        self.kind = kind
+
+    def __enter__(self) -> Dict[str, Any]:
+        self.sp = _span_new(self.kind)
+        self._tok = _RUN_SPAN.set(self.sp)
+        return self.sp
+
+    def __exit__(self, *_exc) -> bool:
+        try:
+            _RUN_SPAN.reset(self._tok)
+        finally:
+            self.sp["closed"] = True
+            _span_close(self.sp)
+        return False
+
+
+def spans_run(kind: str):
+    """The decorator form of run_span, for a route or a helper, async or not."""
+    def _deco(fn):
+        if inspect.iscoroutinefunction(fn):
+            @functools.wraps(fn)
+            async def _aw(*a, **k):
+                with run_span(kind):
+                    return await fn(*a, **k)
+            return _aw
+
+        @functools.wraps(fn)
+        def _w(*a, **k):
+            with run_span(kind):
+                return fn(*a, **k)
+        return _w
+    return _deco
+
 
 def _load() -> List[Dict[str, Any]]:
-    if _STORE.exists():
-        try:
-            return json.loads(_STORE.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
-            return []
-    return []
+    """The record, for READING. W895 - through read_json_strict, the reader the writer uses, so a file the OS will
+    not hand over for a moment (a sharing violation on Windows, just after a replace) is retried rather than read
+    as no rows. A store that cannot be read whole is still answered as no rows: nothing that lists it goes down."""
+    from agentic_core.config import StoreUnavailable, read_json_strict
+    try:
+        rows = read_json_strict(_STORE, [], expect=list)
+    except StoreUnavailable:
+        return []
+    return rows
 
 
 def _save(rows: List[Dict[str, Any]]) -> None:
@@ -89,6 +184,7 @@ def record_outcome(kind: str, resource: str, *, served_by: str = "native",
     #  not work this platform did (W672 stamps that row reported_by="caller"), and with the S18.1 gate built a
     #  claim large enough to exhaust the budget would serialise the native workflow tree and the org cascade
     #  once the switch is on.
+    _spend = "not spent: a caller's reported duration is a claim, not work this platform did"
     try:
         if reported_by != "caller":
             from agentic_core.molecular import work_budget as _wb
@@ -98,8 +194,28 @@ def record_outcome(kind: str, resource: str, *, served_by: str = "native",
             #  capacity is derived from measured per-entity spend. `owner_id` is FORWARDED, never written to the
             #  outcome row below (that row is read by every reader of the learning loop); a run that names no
             #  owner is booked to the platform total alone, and a caller's /record duration is not spent at all.
-            _wb.spend(seconds=max(0, int(duration_ms)) / 1000.0, tokens=tokens,
-                      owner_id=owner_id, vsb_id=vsb_id)
+            #  W847 (FU-1121) - only the outermost run of a nest spends
+            _secs = max(0, int(duration_ms)) / 1000.0
+            _sp = _open_span(_RUN_SPAN.get())
+            if _sp is not None and _sp["kind"] == kind and not _sp["recorded"]:
+                #  the run the span marks: its own duration covers what ran inside it; it brings what they counted
+                _sp["recorded"] = True
+                _tk = tokens if _sp["held_tokens"] is None else int(tokens or 0) + int(_sp["held_tokens"])
+                _an = (1 if tokens is not None else 0) + int(_sp.get("held_answers") or 0)
+                _ow, _vs = (owner_id, vsb_id) if owner_id else (_sp["owner_id"], _sp["vsb_id"])
+                _up = _open_span(_sp["parent"])
+                if _up is not None:
+                    _span_hold(_up, _secs, _tk, _ow, _vs, answers=_an or None)
+                    _spend = f"held by the {_up['kind']} run around it, which spends the whole"
+                else:
+                    _wb.spend(seconds=_secs, tokens=_tk, owner_id=_ow, vsb_id=_vs, answers=_an or None)
+                    _spend = "spent: the outermost run of its nest, its own duration covering what ran inside it"
+            elif _sp is not None:
+                _span_hold(_sp, _secs, tokens, owner_id, vsb_id)
+                _spend = f"held by the {_sp['kind']} run around it, which spends the whole"
+            else:
+                _wb.spend(seconds=_secs, tokens=tokens, owner_id=owner_id, vsb_id=vsb_id)
+                _spend = "spent: no run around it"
     except Exception:                                    # noqa: BLE001
         pass
     _produced = bool(success)
@@ -135,6 +251,8 @@ def record_outcome(kind: str, resource: str, *, served_by: str = "native",
         # that field keeps its meaning (M-EXEC-04) and this one is added beside it. None means the caller
         # did not say; a single-server run lists that one server.
         "served_by_all": sorted(set(served_by_all)) if served_by_all else None,
+        #  W847 (FU-1121) - whether this run's seconds reached the work budget, or the run around it spent them
+        "budget": _spend,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     #  W757 (FU-1104) - the writer reads STRICTLY and under the store's lock (W728's rule): an unreadable store is
@@ -434,9 +552,26 @@ async def degradation(resource: Optional[str] = None, cycles: int = 3, window: i
             "method": "PerformanceDegradationDetector (owned self_improvement)"}
 
 
+def rankings_basis(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """W873 (FU-1039, ruled) - WHAT THE RANKING RANKS, from the rows it ranks. A resource is ordered by its gate pass
+    rate where a gate assessed it, then by in-house rate, speed and volume; where nothing assessed it, its place says
+    how it ran and that it produced output, not how good the output was."""
+    assessed = sum(1 for r in rows if r.get("quality_verdict") is not None)
+    return {"rows": len(rows), "assessed_rows": assessed,
+            "basis": (f"{assessed} of {len(rows)} recorded run(s) carry a quality gate's verdict. Resources are "
+                      f"ordered by their gate pass rate where a gate assessed them, then by how much ran in-house, "
+                      f"speed and volume. A resource no gate assessed is ranked by how it ran and that it produced "
+                      f"output, which is not how good its output was."
+                      if assessed else
+                      f"None of {len(rows)} recorded run(s) carries a quality gate's verdict, so this ranks what "
+                      f"produced output - by how much ran in-house, speed and volume - and not how good any output "
+                      f"was.")}
+
+
 @router.get("/rankings")
 async def rankings():
-    return {"rankings": _rankings([r for r in _load() if r.get("kind") != "model_attempt"])}
+    _rows873 = [r for r in _load() if r.get("kind") != "model_attempt"]
+    return {"rankings": _rankings(_rows873), **rankings_basis(_rows873)}      # W873 (FU-1039)
 
 
 class RebaselineRequest(BaseModel):
@@ -536,6 +671,28 @@ async def model_health_view():
     }
 
 
+#  W855 (FU-1142) - the day the suite's store was isolated (W394). Suite runs before it wrote into the real store.
+SUITE_ISOLATED_ON = "2026-08-31"
+
+
+def _before_isolation(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """W855 (FU-1142; decided on the recommendation under the Owner's standing instruction of 2026-11-10) - the rows
+    recorded before the suite's store was isolated STAY: real floor outcomes of that period, nothing marks which were
+    test runs, and the store keeps only the newest rows, so they leave as new outcomes arrive. How many are read is said."""
+    n = len(rows)
+    pre = sum(1 for r in rows if r.get("created_at") and str(r["created_at"]) < SUITE_ISOLATED_ON)
+    undated = sum(1 for r in rows if not r.get("created_at"))
+    basis = ((f"{pre} of the {n} row(s) read here were recorded before {SUITE_ISOLATED_ON}, when the test suite's "
+              f"store was isolated (W394). Suite runs before then wrote into this store, and nothing on a row marks "
+              f"which were test runs, so they are counted with the rest. They stay by decision (FU-1142) and leave as "
+              f"newer outcomes are recorded.") if pre else
+             f"None of the {n} row(s) read here was recorded before {SUITE_ISOLATED_ON}, when the test suite's store "
+             f"was isolated (W394).")
+    if undated:
+        basis += f" {undated} row(s) carry no date, so when they were recorded is not known."
+    return {"rows_before_suite_isolation": pre, "rows_undated": undated, "rows_before_suite_isolation_basis": basis}
+
+
 @router.get("/summary")
 async def summary():
     rows = [r for r in _load() if r.get("kind") != "model_attempt"]
@@ -565,12 +722,15 @@ async def summary():
             if assessed else
             f"NOT ASSESSED — no quality gate evaluated any of these {n} run(s). {produced} returned "
             f"output, which the deterministic floor always does, so it is not a success measure."),
-        "produced_rate": round(produced / n, 3) if n else 0.0,
-        "in_house_rate": round(in_house / n, 3) if n else 0.0,
+        #  W986 (FU-399 part 18) - A RATE OVER NO RUN IS NOT MEASURED. Both were 0.0 with nothing recorded, and the
+        #  Learning Loop printed "In-house rate 0%" over an empty record. None, as success_rate is with nothing assessed.
+        "produced_rate": round(produced / n, 3) if n else None,
+        "in_house_rate": round(in_house / n, 3) if n else None,
         "caller_reported_runs": len(_claimed),
         "in_house_rate_excluding_caller_reported": (
             round(sum(1 for r in _own if not r.get("is_external")) / len(_own), 3) if _own else None),
-        "in_house_rate_basis": (
+        #  W986 - with no run recorded there is no rate, and nothing about rows to say
+        "in_house_rate_basis": "No run is recorded, so there is no in-house rate." if not n else (
             f"{in_house} of {n} row(s) are not marked external. "
             + (f"{len(_claimed)} of the {n} were written through POST /operations/record: what served them, "
                f"and whether that was external, is the CALLER'S claim and not something this platform observed. "
@@ -583,4 +743,5 @@ async def summary():
         #  run of it had failed. Only a resource that produced output is named; otherwise none is.
         "top_resource": next((r["resource"] for r in ranks if (r.get("produced_rate") or 0) > 0), None),
         "kinds": sorted({r.get("kind") for r in rows if r.get("kind")}),
+        **_before_isolation(rows),
     }

@@ -62,6 +62,17 @@ def _ontology_rules() -> List[str]:
     return [str(r) for r in (d.get("rules") or []) if isinstance(r, str) and r.strip()]
 
 
+def _authorities_held() -> Dict[str, Any]:
+    """W821 (FU-1001) - how many provisions an authority can be resolved against, and of which statutes."""
+    rules = _ontology_rules()
+    statutes = sorted({_statute_of(r) for r in rules})
+    return {"provisions": len(rules), "statutes": statutes,
+            "basis": (f"an authority is resolved only against the {len(rules)} provision(s) the employment-law "
+                      f"corpus's ontology lists by name ({'; '.join(statutes) or 'none'}); the ontology's other "
+                      f"concepts are not read, and anything else named is refused" if rules else
+                      "the ontology lists no provision (or could not be read), so every authority is refused")}
+
+
 def _norm_authority(s: str) -> str:
     return " ".join(str(s or "").lower().split())
 
@@ -157,6 +168,9 @@ def assemble(template_id: str, particulars: List[Dict[str, Any]], authorities: L
            "filing_shaped": filing, "particulars": filled, "authorities": auth,
            "sourced": sourced, "blanks": blanks, "unresolved_checks": unresolved_checks,
            "authorities_refused": [a["authority"] for a in auth if not a["resolved"]],
+           #  W821 (FU-1001) - what an authority is resolved against, said beside the result: the ontology's
+           #  named provisions alone (its machine-made concepts are not read), however few they are
+           "authorities_held": _authorities_held(),
            "is_template": not sourced,
            "bundle": bundle.status(), "not_legal_advice": NOT_LEGAL_ADVICE,
            "face": (f"{len(sourced)} particular(s) from a document, {len(blanks)} BLANK for you to fill"

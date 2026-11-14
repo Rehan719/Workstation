@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { qmsChip, provenanceMapBadge, complianceChip, errorMessage, layerTitle, axiosDetail, immuneReading } from '../../lib/api';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W931
+import { qmsChip, provenanceMapBadge, complianceChip, errorMessage, layerTitle, axiosDetail, immuneReading, bodyOrNull, bodyDetail } from '../../lib/api';
 import axios from 'axios';
 import { Loader2, Send, Cpu, RefreshCw, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -71,6 +72,7 @@ const CSUITE_POOL = ['CSO', 'CFO', 'CTO', 'CPO', 'COO', 'CIO', 'CLO', 'Forecasti
 const CASCADE_AXIS = { domain: 'enterprise', realm: 'enterprise' } as const;
 
 const SwarmIntelligence: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W931 - a read that fails is said
   const [runs, setRuns] = useState<SwarmRun[]>([]);
   // W493 (FU-202) - a read that FAILED is not an empty store; the panel must say which it has
   const [runsErr, setRunsErr] = useState('');
@@ -130,7 +132,7 @@ const SwarmIntelligence: React.FC = () => {
     axios.get('/api/v1/vsb').then(res => {
       const rows = res.data?.entities ?? res.data?.vsbs ?? [];
       setScopes(Array.isArray(rows) ? rows.filter((v: any) => v?.vsb_id) : []);
-    }).catch(() => {});
+    }).catch(noteRead('the entities'));
   }, []);
 
   // W292 — when a VSB scope is chosen, offer its living plan's OPEN objectives for binding
@@ -182,12 +184,12 @@ const SwarmIntelligence: React.FC = () => {
         // the UNGATED delegate route, so a Mode 3 review gate that refused the cascade (409) was hidden and
         // the mission ran anyway by another door. The server's own reason is shown and nothing else is run.
         let reason = `the cascade was refused (HTTP ${response.status})`;
-        try {
-          const body = await response.json();
-          const d = body?.detail ?? body;
-          reason = typeof d === 'string' ? d
-            : [d?.error, d?.message, d?.note, d?.clear_by && `clear by: ${d.clear_by}`].filter(Boolean).join(' — ') || reason;
-        } catch { /* the body was not JSON; the status line above stands */ }
+        //  W960 (FU-1181) - a body that is not JSON leaves the status line above standing
+        const body = await bodyOrNull(response);
+        const d = body?.detail ?? body;
+        //  W1013 - a field check (a list) by its field; it was said by the status line alone
+        reason = typeof d === 'string' ? d : Array.isArray(d) ? bodyDetail(body, reason)
+          : [d?.error, d?.message, d?.note, d?.clear_by && `clear by: ${d.clear_by}`].filter(Boolean).join(' — ') || reason;
         setStreamOutput(`NOT RUN — ${reason}\n\nNothing was delegated by another route.`);
       }
       setStreaming(false);
@@ -195,7 +197,7 @@ const SwarmIntelligence: React.FC = () => {
       await loadCascadeRuns();
       setTask('');
     } catch (e: any) {
-      setStreamOutput(`Error: ${axiosDetail(e, e.message)}`);
+      setStreamOutput(`Error: ${axiosDetail(e, errorMessage(e))}`);
       setStreaming(false);
     } finally {
       setDelegating(false);
@@ -221,6 +223,7 @@ const SwarmIntelligence: React.FC = () => {
 
   return (
     <div className="p-5 bg-[#050505] text-white rounded-2xl border border-[#1a1a1a]">
+      <ReadFailures failures={readFailures} />
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-fuchsia-500 text-lg font-bold uppercase">Swarm Intelligence Hub</h2>
         <button onClick={loadRuns} className="p-1.5 rounded hover:bg-white/5 text-white/30 hover:text-white/60">
@@ -416,8 +419,12 @@ const SwarmIntelligence: React.FC = () => {
             {/* §5 — each tier manages, appraises and develops the tier below (arms-length upward pass) */}
             {cascade.appraisals && Object.keys(cascade.appraisals).length > 0 && (
               <details className="bg-black/40 rounded-lg border border-white/5">
-                <summary className="text-[9px] font-black uppercase tracking-widest text-white/60 px-3 py-2 cursor-pointer">
-                  Management appraisal &amp; development (each tier develops the one below)
+                {/* W801 (FU-982, ledger v17 R3[6]) - the heading follows what the run applied. It said each tier
+                    develops the one below on runs that applied no development action at all. */}
+                <summary data-testid="cascade-appraisal-heading" title={cascade.development_applied_basis ?? undefined} className="text-[9px] font-black uppercase tracking-widest text-white/60 px-3 py-2 cursor-pointer">
+                  {Object.keys(cascade.development_applied ?? {}).filter((k: string) => k !== 'not_persisted').length > 0
+                    ? `Management appraisal & development (an earlier cycle's development action was given to ${Object.keys(cascade.development_applied ?? {}).filter((k: string) => k !== 'not_persisted').length} tier(s); whether each acted on it is not assessed)`
+                    : 'Management appraisal (this run applied no development action from an earlier cycle)'}
                 </summary>
                 <div className="px-3 pb-3 space-y-2">
                   {Object.entries(cascade.appraisals).map(([k, v]: any) => (
@@ -538,6 +545,27 @@ const SwarmIntelligence: React.FC = () => {
                     ))}
                     {cr.plan_binding?.result && <span className="text-[8px] text-emerald-400/70">plan: {cr.plan_binding.result}</span>}
                   </div>
+                  {/* W851 (FU-1049) - a person accepts THIS version of an entity's delivery; acceptance earns nothing by itself */}
+                  {cr.acceptance ? (
+                    <p data-testid="cascade-run-accepted" className="text-[8px] text-emerald-400/80" title={cr.acceptance.earns_basis}>
+                      accepted by {cr.acceptance.accepted_by}{cr.acceptance.accepted_by_verified ? '' : ' (not verified)'} at {cr.acceptance.at} — version {String(cr.acceptance.delivery_sha256).slice(0, 12)}
+                      {' — '}{cr.acceptance.earned_wst == null ? 'earned nothing by itself' : `earned ${cr.acceptance.earned_wst} WST`}
+                    </p>
+                  ) : cr.acceptance_basis ? (
+                    <p data-testid="cascade-run-acceptance-unread" className="text-[8px] text-amber-400">{cr.acceptance_basis}</p>
+                  ) : cr.delivery_sha256 && cr.business_plan_scope && cr.business_plan_scope !== 'workstation' ? (
+                    <button type="button" data-testid="cascade-run-accept"
+                      title="Records that you accepted this version of the delivery. Acceptance by itself earns nothing: only an accepted contract's agreed amount is earned."
+                      onClick={async () => {
+                        try {
+                          await axios.post(`/api/v1/swarm/cascade/runs/${cr.run_id}/accept`, { delivery_sha256: cr.delivery_sha256 });
+                          loadCascadeRuns();
+                        } catch (e) { setCascadeErr(errorMessage(e)); }
+                      }}
+                      className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-white/10 text-white/50 hover:text-emerald-300">
+                      accept this delivery
+                    </button>
+                  ) : null}
                 </div>
               ))}
             </div>

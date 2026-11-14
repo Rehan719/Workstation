@@ -1,0 +1,329 @@
+{
+ "basis": "P5.22 (W970): the slices the final audit's census is partitioned into. Each holds the routes of the router modules it names (the module a route's handler is written in) and the pages of the folders it names (the folder of the file App.tsx imports a page from; inline is a page App.tsx writes itself). scripts/audit_census_partition.py holds that every census surface is in exactly one slice or a stated overlap, that the slices together are the census, and that no slice is empty.",
+ "slices": [
+  {
+   "id": "entities",
+   "holds": "an entity's record, its systems and its repository",
+   "modules": [
+    "agentic_core.api.vsb",
+    "agentic_core.api.vbs_systems"
+   ],
+   "pages": [
+    "./pages/enterprise"
+   ]
+  },
+  {
+   "id": "deliverables-and-specialists",
+   "holds": "what an entity delivers and who signs it",
+   "modules": [
+    "agentic_core.api.deliverables",
+    "agentic_core.api.entity_specialists"
+   ],
+   "pages": []
+  },
+  {
+   "id": "economy",
+   "holds": "the economy's cycles, ledgers, transfers and contracts",
+   "modules": [
+    "agentic_core.api.economy",
+    "agentic_core.api.v310.fund",
+    "agentic_core.api.v310.business"
+   ],
+   "pages": []
+  },
+  {
+   "id": "capital-pricing-payments",
+   "holds": "the capital fund, a price in WST and the payment rail's simulation",
+   "modules": [
+    "agentic_core.api.capital_fund",
+    "agentic_core.api.pricing",
+    "agentic_core.api.v310.payments"
+   ],
+   "pages": []
+  },
+  {
+   "id": "marketplace",
+   "holds": "listings and purchases",
+   "modules": [
+    "agentic_core.api.marketplace"
+   ],
+   "pages": [
+    "./pages/marketplace"
+   ]
+  },
+  {
+   "id": "genesis",
+   "holds": "a founder's journey to an entity, and refining an answer",
+   "modules": [
+    "agentic_core.api.genesis",
+    "agentic_core.api.synthesis_studio",
+    "agentic_core.api.refine"
+   ],
+   "pages": [
+    "./pages/synthesis"
+   ]
+  },
+  {
+   "id": "synthesis-and-ingestion",
+   "holds": "uploads, synthesis and the general AI query doors",
+   "modules": [
+    "agentic_core.synthesis.api",
+    "agentic_core.ingestion.api",
+    "agentic_core.api.ai_query",
+    "agentic_core.api.ai_orchestration"
+   ],
+   "pages": []
+  },
+  {
+   "id": "projects-and-workspace",
+   "holds": "a person's projects and workspace",
+   "modules": [
+    "agentic_core.projects.api",
+    "agentic_core.api.user_workspace"
+   ],
+   "pages": [
+    "./pages/projects"
+   ]
+  },
+  {
+   "id": "law",
+   "holds": "the Law tools and the page of where help is",
+   "modules": [
+    "agentic_core.api.law",
+    "agentic_core.api.where_help"
+   ],
+   "pages": []
+  },
+  {
+   "id": "care",
+   "holds": "the Care tools",
+   "modules": [
+    "agentic_core.api.care"
+   ],
+   "pages": []
+  },
+  {
+   "id": "education",
+   "holds": "the Education tools",
+   "modules": [
+    "agentic_core.api.education"
+   ],
+   "pages": []
+  },
+  {
+   "id": "employment-and-career",
+   "holds": "the Employment and career tools",
+   "modules": [
+    "agentic_core.api.employment",
+    "agentic_core.api.career"
+   ],
+   "pages": []
+  },
+  {
+   "id": "science",
+   "holds": "the Science tools",
+   "modules": [
+    "agentic_core.api.science"
+   ],
+   "pages": []
+  },
+  {
+   "id": "religion",
+   "holds": "the religion tools and the Quran platform's routes",
+   "modules": [
+    "agentic_core.api.religion",
+    "agentic_core.religious_domain.api"
+   ],
+   "pages": []
+  },
+  {
+   "id": "quran-children-and-scholar",
+   "holds": "the children's tools, the Quran platform's intelligence and the scholar's review",
+   "modules": [
+    "agentic_core.api.qep_children",
+    "agentic_core.api.qep_intelligence",
+    "agentic_core.api.qep_analytics",
+    "agentic_core.api.scholar_review"
+   ],
+   "pages": []
+  },
+  {
+   "id": "domain-pages-and-review",
+   "holds": "the domain pages and the review cell they show",
+   "modules": [
+    "agentic_core.api.review_options",
+    "agentic_core.api.review_cell"
+   ],
+   "pages": [
+    "./pages/domains"
+   ]
+  },
+  {
+   "id": "support",
+   "holds": "support and claims",
+   "modules": [
+    "agentic_core.api.support",
+    "agentic_core.api.support_claims"
+   ],
+   "pages": [
+    "./pages/support"
+   ]
+  },
+  {
+   "id": "governance",
+   "holds": "Change Control, the Board, the constitution, attestation and the ledger",
+   "modules": [
+    "agentic_core.api.change_control",
+    "agentic_core.api.board",
+    "agentic_core.api.constitutional_gaas",
+    "agentic_core.api.attestation",
+    "agentic_core.api.ueg",
+    "agentic_core.api.compliance"
+   ],
+   "pages": [
+    "./pages/governance"
+   ]
+  },
+  {
+   "id": "method-and-plans",
+   "holds": "the delivery method, the living plan, the business plan and the registers",
+   "modules": [
+    "agentic_core.api.method",
+    "agentic_core.api.living_plan",
+    "agentic_core.api.business_plan",
+    "agentic_core.api.registers",
+    "agentic_core.api.instrument_cell",
+    "agentic_core.api.minimisation"
+   ],
+   "pages": []
+  },
+  {
+   "id": "native-ai",
+   "holds": "the owned models and their tools",
+   "modules": [
+    "agentic_core.api.native_ai",
+    "agentic_core.api.tools"
+   ],
+   "pages": []
+  },
+  {
+   "id": "cognition",
+   "holds": "the cognitive engines and intelligence surfaces",
+   "modules": [
+    "agentic_core.api.cognitive",
+    "agentic_core.api.cognition",
+    "agentic_core.api.intelligence",
+    "agentic_core.api.v260.intelligence",
+    "agentic_core.api.collective",
+    "agentic_core.api.optimizer"
+   ],
+   "pages": [
+    "./pages/cognitive"
+   ]
+  },
+  {
+   "id": "organism",
+   "holds": "the organism, its heartbeat and its configuration",
+   "modules": [
+    "agentic_core.organism.genome",
+    "agentic_core.organism.nervous",
+    "agentic_core.organism.reconfiguration",
+    "agentic_core.organism.self_healing",
+    "agentic_core.api.organism_status",
+    "agentic_core.api.heartbeat"
+   ],
+   "pages": [
+    "./pages/organism"
+   ]
+  },
+  {
+   "id": "horizon-and-evolution",
+   "holds": "the horizon guardrails and self-evolution",
+   "modules": [
+    "agentic_core.api.horizon",
+    "agentic_core.api.sovereign_evolution",
+    "agentic_core.api.v191.evolution"
+   ],
+   "pages": [
+    "./pages/evolution"
+   ]
+  },
+  {
+   "id": "transformation",
+   "holds": "transformation runs, mega-projects and cycles",
+   "modules": [
+    "agentic_core.api.transformation",
+    "agentic_core.api.transformation_orchestration",
+    "agentic_core.api.mega_project",
+    "agentic_core.api.cycles"
+   ],
+   "pages": []
+  },
+  {
+   "id": "fabric-and-operations",
+   "holds": "the resource fabric, operations, management systems and digital twins",
+   "modules": [
+    "agentic_core.api.resource_fabric",
+    "agentic_core.api.operational_excellence",
+    "agentic_core.api.management_systems",
+    "agentic_core.api.digital_twin",
+    "agentic_core.api.mesh"
+   ],
+   "pages": []
+  },
+  {
+   "id": "agents-and-swarm",
+   "holds": "the swarm, the agent hub, the forge and the avatars",
+   "modules": [
+    "agentic_core.api.swarm",
+    "agentic_core.api.agent_hub",
+    "agentic_core.api.forge",
+    "agentic_core.avatars.api"
+   ],
+   "pages": [
+    "./pages/developers"
+   ]
+  },
+  {
+   "id": "ceo-and-older-surfaces",
+   "holds": "the AI-CEO and the older versioned surfaces",
+   "modules": [
+    "agentic_core.api.v138.ceo",
+    "agentic_core.api.v290.ceo_generate",
+    "agentic_core.api.v290.realms",
+    "agentic_core.api.v310.governance",
+    "agentic_core.api.v200.contribute",
+    "agentic_core.api.v250.treaties",
+    "agentic_core.api.partnerships"
+   ],
+   "pages": [
+    "./pages/create",
+    "./pages/coe"
+   ]
+  },
+  {
+   "id": "catalogue-and-integration",
+   "holds": "the catalogue, build-to-order, products and the integration surface",
+   "modules": [
+    "agentic_core.api.integration_surface",
+    "agentic_core.api.products",
+    "agentic_core.catalog.api",
+    "agentic_core.catalog.bto"
+   ],
+   "pages": []
+  },
+  {
+   "id": "platform",
+   "holds": "sign-in, health and the top-level pages",
+   "modules": [
+    "agentic_core.auth.core",
+    "agentic_core.app_mvp"
+   ],
+   "pages": [
+    "./pages",
+    "inline"
+   ]
+  }
+ ],
+ "overlap": []
+}

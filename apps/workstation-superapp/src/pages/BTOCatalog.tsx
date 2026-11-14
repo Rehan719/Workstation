@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { qmsChip, provenanceMapBadge, provenanceBadge } from '../lib/api';
+import { qmsChip, provenanceMapBadge, provenanceBadge, errorMessage } from '../lib/api';
 import {
   Settings2, Fingerprint, Dna, Building2, Users, Award, Globe,
   ShoppingBag, Wrench, Box, Cpu, CheckSquare, Square,
@@ -80,8 +80,10 @@ export const BTOCatalog: React.FC = () => {
       });
       setBlueprint(resp.data);
       setExpandedKeys(new Set(Object.keys(resp.data.components || {})));
-    } catch {
-      setErrorMsg('Build failed — check the API server is running.');
+      //  W1032 - a failure is said by what it was: every failure, a refusal included, was "check the API server
+      //  is running"
+    } catch (e) {
+      setErrorMsg(`Build failed: ${errorMessage(e)}`);
     } finally {
       setBuilding(false);
     }
@@ -102,8 +104,9 @@ export const BTOCatalog: React.FC = () => {
         objective: `Build-to-order delivery for ${blueprint.entity_name || 'Sovereign Entity'}`,
       });
       setBtoResult(resp.data);
-    } catch {
-      setErrorMsg('Build-to-Order failed — check the API server is running.');
+      //  W1032 - and the build-to-order's, the same way
+    } catch (e) {
+      setErrorMsg(`Build-to-Order failed: ${errorMessage(e)}`);
     } finally {
       setBtoBuilding(false);
     }

@@ -25,9 +25,9 @@
 
 ## 🏗️ Architecture & Domains
 - **[Architecture Mapping v154.0](../_archive/docs/architecture/ARCHITECTURE_MAP_v154.md)**: The v3.0 Unified 12-Layer Architecture (L1-L12).
-- **[Sovereign AI Integration](../src/organism/AI_INTEGRATION.md)** *(lives under `src/organism/`)*: Details on the Nematron (Brain), Nemoclaw (Immune), and OpenClaw (Execution) adapters.
-- **[Law Domain: Predictive Litigation](../src/organism/python/evidence/law_orchestrator.py)** *(lives under `src/organism/`)*: Documentation on the v6.0 Law Domain enhancements.
-- **[Science Domain: Science Reactor](../src/organism/python/evidence/science_reactor.py)** *(lives under `src/organism/`)*: Documentation on the v6.0 Science Domain enhancements.
+- **[Sovereign AI Integration](../_archive/src/organism/AI_INTEGRATION.md)** *(archived under `_archive/src/organism/`, W896)*: Details on the Nematron (Brain), Nemoclaw (Immune), and OpenClaw (Execution) adapters.
+- **[Law Domain: Predictive Litigation](../_archive/src/organism/python/evidence/law_orchestrator.py)** *(archived under `_archive/src/organism/`, W896)*: Documentation on the v6.0 Law Domain enhancements.
+- **[Science Domain: Science Reactor](../_archive/src/organism/python/evidence/science_reactor.py)** *(archived under `_archive/src/organism/`, W896)*: Documentation on the v6.0 Science Domain enhancements.
 
 ## 📚 User & Developer Guides
 - **[Quick Start Guide](../_archive/docs/guides/QUICKSTART.md)**: One-click setup instructions.

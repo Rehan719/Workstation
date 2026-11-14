@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Button, toast } from '@workstation/ui';
 import { useNavigate } from 'react-router-dom';
 import { apiJson, errorMessage, provenanceBadge } from '../lib/api';
@@ -21,7 +21,19 @@ export const LearnTeachModule: React.FC = () => {
   //  P3.10 — the gate's verdict on this text and its reason, which a learner must be able to read
   const [reviewState, setReviewState] = useState<string>("");
   const [reviewNote, setReviewNote] = useState<string>("");
-  const [gateScholars, setGateScholars] = useState<number | null>(null);
+  //  W797 (FU-980, ledger v17 R1[3]) - THE ROSTER IS READ WHEN THE PAGE LOADS. The sentence at the foot said the
+  //  roster was EMPTY whatever it held, and the count arrived only after a plan had been requested.
+  //  undefined: not read yet · null: the read failed · a number: what the roster holds
+  const [gateScholars, setGateScholars] = useState<number | null | undefined>(undefined);
+  const [rosterFooting, setRosterFooting] = useState<string>("");
+  useEffect(() => {
+    apiJson<{ scholars_on_roster?: number; footing?: { authentication?: string } }>("/api/v1/scholar-review/status")
+      .then(d => {
+        setGateScholars(typeof d.scholars_on_roster === "number" ? d.scholars_on_roster : null);
+        setRosterFooting(d.footing?.authentication ?? "");
+      })
+      .catch(() => setGateScholars(null));
+  }, []);
 
   const generateReport = async () => {
     setReportLoading(true);
@@ -51,7 +63,9 @@ export const LearnTeachModule: React.FC = () => {
       setReportServedBy(data.served_by ?? "");
       setReviewState(data.review_state ?? "");
       setReviewNote(data.review_note ?? "");
-      setGateScholars(data.gate?.scholars_on_roster ?? null);
+      //  W797 - a response without the count leaves the count read on load in place, rather than unsaying it
+      const _onRoster = data.gate?.scholars_on_roster;
+      if (typeof _onRoster === "number") setGateScholars(_onRoster);
       // A WITHHELD PLAN IS NOT AN ERROR. The old code set an error string whenever the text was blank,
       // which would present a deliberate withholding as a service fault — the reader would think the
       // platform had broken rather than that a review is required. The two are kept apart.
@@ -182,13 +196,32 @@ export const LearnTeachModule: React.FC = () => {
             reviewer. So the old sentence is now false in its reason while still true in its conclusion:
             the registry exists and NOBODY IS ON IT. Narrowing a true statement is a defect of its own,
             so the conclusion is kept and only the reason is corrected. */}
+        {/* W797 (FU-980, ledger v17 R1[3]) - THE SENTENCE FOLLOWS THE ROSTER. It said the roster was EMPTY
+            whatever the roster held: true on a deployment with nobody on it, false the day the Owner adds a
+            scholar. Each of the three states (not read, empty, some on it) has its own sentence. */}
         <p data-testid="learnteach-scholar-board" className="text-xs text-slate-500 font-semibold leading-relaxed max-w-2xl">
-           No scholars are verified on this deployment{typeof gateScholars === "number" ? ` — the roster holds ${gateScholars}` : ""}.
-           A scholar registry now exists: a roster, an approval bound to the exact text it approved, and a
-           refusal that tells an empty roster apart from an unrecognised reviewer. It is EMPTY, which is
-           why no names are shown and why no religious curriculum is servable here — nothing can be
-           approved until the Owner engages a reviewer. That is the designed state, not a fault, and it
-           is not papered over with a disclaimer: a disclaimer is not a review.
+          {gateScholars === undefined ? (
+            <>Reading the scholar roster…</>
+          ) : gateScholars === null ? (
+            <>Whether any scholar is on the roster could not be read here, so nothing is said about who reviews.
+              A scholar registry exists (a roster, an approval bound to the exact text it approved, and a refusal
+              that tells an empty roster apart from an unrecognised reviewer), and religious curriculum is
+              servable only once a scholar on it has approved that exact text. A disclaimer is not a review.</>
+          ) : gateScholars === 0 ? (
+            <>No scholars are verified on this deployment — the roster holds none.
+              A scholar registry now exists: a roster, an approval bound to the exact text it approved, and a
+              refusal that tells an empty roster apart from an unrecognised reviewer. It is EMPTY, which is
+              why no names are shown and why no religious curriculum is servable here — nothing can be
+              approved until the Owner engages a reviewer. That is the designed state, not a fault, and it
+              is not papered over with a disclaimer: a disclaimer is not a review.</>
+          ) : (
+            <>{gateScholars} {gateScholars === 1 ? "scholar is" : "scholars are"} on the roster
+              {rosterFooting === "off" ? ", each entered by the Owner on the scholar's behalf — attested, not verified"
+                : rosterFooting === "on" ? ", each added by an administrator" : ""}.
+              A religious text reaches a learner only after one of them approves that exact text; an edit
+              afterwards withholds it again, and anything not yet approved is withheld with its reason. A
+              disclaimer is not a review.</>
+          )}
         </p>
       </Card>
     </div>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { provenanceBadge } from '../lib/api';
+import { provenanceBadge, apiJson } from '../lib/api';
+import { ReadFailures, useReadFailures } from '../components/ReadFailures';   // W986
 import { Card } from '@workstation/ui';
 import { Gauge, TrendingUp, Cpu, CheckCircle2, Loader2 } from 'lucide-react';
 
@@ -7,12 +8,14 @@ import { Gauge, TrendingUp, Cpu, CheckCircle2, Loader2 } from 'lucide-react';
 // floor always does, so every rate here was 1.0 by construction. The rate now covers gate-ASSESSED runs
 // only and is NULL when none were assessed; `produced` is the separate, weaker fact.
 interface Summary {
-  total_runs: number; success_rate: number | null; in_house_rate: number;
+  total_runs: number; success_rate: number | null; in_house_rate: number | null;   // W986 - null: no run recorded
   distinct_resources: number; top_resource: string | null; kinds: string[];
   assessed_runs?: number; unassessed_runs?: number;
   success_rate_basis?: string; produced_rate?: number;
   // W672 (ledger v16 R4.7) - how much of the in-house rate is a caller's claim
   caller_reported_runs?: number; in_house_rate_excluding_caller_reported?: number | null; in_house_rate_basis?: string;
+  // W855 (FU-1142) - how many of the rows read were recorded before the suite's store was isolated; they stay by decision
+  rows_before_suite_isolation?: number; rows_undated?: number; rows_before_suite_isolation_basis?: string;
 }
 // W583 (P3.25) — what the platform records when it FAILS. `state` is three-valued on purpose and the
 // page MUST distinguish the last two: no failures over a populated ledger is a reliability statement; no
@@ -42,6 +45,7 @@ interface Outcome {
   is_external: boolean; duration_ms: number; success: boolean | null; created_at: string;
   produced?: boolean; quality_gate?: boolean | null; success_basis?: string;
   reported_by?: string;   // W672 - 'caller' when the row was written over the public route
+  budget?: string;        // W847 (FU-1121) - whether this run's seconds were spent, or held by the run around it
 }
 interface ModelHealth { name: string; runs: number; success_rate: number; avg_ms: number; deprioritised: boolean;
   // W577 (FU-298) — a declared baseline that could not be read does not leave a model unscored: it
@@ -49,30 +53,35 @@ interface ModelHealth { name: string; runs: number; success_rate: number; avg_ms
   // and the colour below — which means "the orchestrator demoted this" — can be wrong.
   success_rate_is_incomplete?: boolean; success_rate_basis?: string }
 
-const pct = (n: number) => `${Math.round((n ?? 0) * 100)}%`;
+//  W986 - a rate the server did not give is not a zero
+const pct = (n: number | null | undefined) => (typeof n === 'number' ? `${Math.round(n * 100)}%` : 'not measured');
 
 export const OperationalExcellence: React.FC = () => {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [rankings, setRankings] = useState<Ranking[]>([]);
+  const [rankingsBasis, setRankingsBasis] = useState('');   // W873 (FU-1039) - what the ranking ranks
   const [outcomes, setOutcomes] = useState<Outcome[]>([]);
   const [models, setModels] = useState<ModelHealth[]>([]);
   const [failures, setFailures] = useState<Failures | null>(null);   // W583 (P3.25)
-  const [error, setError] = useState('');
+  const { failures: readFailures, note: noteRead } = useReadFailures();
   const [loading, setLoading] = useState(true);
 
+  //  W986 (FU-399 part 18) - EACH READ STANDS ON ITS OWN. The five sat in one Promise.all, so a refusal of any one
+  //  showed "Failed to load operational metrics" in place of all five, without saying which or why. A failure is
+  //  said by what it was reading, with the server's reason, and the other sections show what was read.
   useEffect(() => {
-    Promise.all([
-      fetch('/api/v1/operations/summary').then(r => r.json()),
-      fetch('/api/v1/operations/rankings').then(r => r.json()),
-      fetch('/api/v1/operations/outcomes?limit=40').then(r => r.json()),
-      fetch('/api/v1/operations/model-health').then(r => r.json()),
-      fetch('/api/v1/operations/failures?limit=20').then(r => r.json()),
-    ]).then(([s, r, o, m, f]) => {
-      setSummary(s); setRankings(r.rankings || []); setOutcomes(o.outcomes || []); setModels(m.models || []);
-      setFailures(f && typeof f === 'object' && 'state' in f ? (f as Failures) : null);
-    })
-      .catch(() => setError('Failed to load operational metrics'))
-      .finally(() => setLoading(false));
+    Promise.allSettled([
+      apiJson('/api/v1/operations/summary').then(setSummary).catch(noteRead('the summary')),
+      apiJson('/api/v1/operations/rankings').then(r => {
+        setRankings(r.rankings || []);
+        setRankingsBasis(typeof r.basis === 'string' ? r.basis : 'What this ranking ranks was not stated by the server.');
+      }).catch(noteRead('the rankings')),
+      apiJson('/api/v1/operations/outcomes?limit=40').then(o => setOutcomes(o.outcomes || [])).catch(noteRead('the outcomes')),
+      apiJson('/api/v1/operations/model-health').then(m => setModels(m.models || [])).catch(noteRead('the model health')),
+      apiJson('/api/v1/operations/failures?limit=20')
+        .then(f => setFailures(f && typeof f === 'object' && 'state' in f ? (f as Failures) : null))
+        .catch(noteRead('the failures')),
+    ]).finally(() => setLoading(false));
   }, []);
 
   return (
@@ -82,14 +91,15 @@ export const OperationalExcellence: React.FC = () => {
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Learning Loop</h1>
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
           The real, recorded outcomes of every run on Workstation's <span className="text-highlight">own</span> resources —
-          swarm cascades, deliverables, transformations — aggregated into honest per-resource rankings the platform learns from.
+          swarm cascades, deliverables, transformations — aggregated per resource: what ran, what produced output and,
+          only where a quality gate assessed it, what passed.
           Empty until runs happen; never fabricated.
         </p>
       </header>
 
-      {error && <p className="text-vital text-xs font-bold">{error}</p>}
+      <ReadFailures failures={readFailures} />
 
-      {loading && !error && (
+      {loading && (
         <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500"><Loader2 size={14} className="animate-spin" /> Loading operational metrics…</div>
       )}
 
@@ -113,6 +123,11 @@ export const OperationalExcellence: React.FC = () => {
             ? ` Without those rows the rate is ${pct(summary.in_house_rate_excluding_caller_reported)}.` : ''}
         </p>
       )}
+      {summary?.rows_before_suite_isolation_basis && ((summary.rows_before_suite_isolation ?? 0) > 0 || (summary.rows_undated ?? 0) > 0) && (
+        <p className="text-[10px] text-slate-500 leading-relaxed" data-testid="ops-before-isolation">
+          {summary.rows_before_suite_isolation_basis}
+        </p>
+      )}
       {summary?.success_rate_basis && (
         <p className="text-[10px] text-amber-400/80 leading-relaxed" data-testid="ops-success-basis">
           {summary.success_rate_basis}
@@ -125,6 +140,9 @@ export const OperationalExcellence: React.FC = () => {
       <div>
         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><TrendingUp size={14} /> Resource rankings</h3>
         {!loading && rankings.length === 0 && <p className="text-[11px] text-slate-600">No runs recorded yet — run a swarm, produce a deliverable, or orchestrate a transformation, and outcomes will appear here.</p>}
+        {rankings.length > 0 && rankingsBasis && (
+          <p data-testid="rankings-basis" className="text-[10px] text-slate-500 mb-2 max-w-3xl leading-relaxed">{rankingsBasis}</p>
+        )}
         {rankings.length > 0 && (
           <Card className="p-0 overflow-hidden">
             <table className="w-full text-left">
@@ -288,7 +306,9 @@ export const OperationalExcellence: React.FC = () => {
                       title="written through POST /operations/record: what served this run is the caller's claim, not something the platform observed">caller-reported</span>
               )}
               {(() => { const b = provenanceBadge(o.served_by, o.is_external); return <span className={`ml-auto text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
-              <span className="text-slate-600">{o.duration_ms}ms</span>
+              <span className="text-slate-600" data-testid="outcome-budget" title={o.budget ?? 'recorded before W847 said whether its seconds were spent'}>
+                {o.duration_ms}ms{o.budget?.startsWith('held') ? ' · held by the run around it' : ''}
+              </span>
             </div>
           ))}
           {!loading && outcomes.length === 0 && <p className="text-[11px] text-slate-600">No outcomes recorded yet.</p>}

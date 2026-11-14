@@ -1,0 +1,122 @@
+{
+  "floor": {
+    "answer": {
+      "content": "{\n  \"title\": \"Simulation: W1019 made up: a delivery cooperative for village bakeries\",\n  \"generated\": false,\n  \"detail\": \"The model did not return a parseable simulation for this topic, so none is shown. A template was previously substituted here.\",\n  \"timestamp\": \"2026-11-14T09:10:02.435144\",\n  \"sim_results\": null,\n  \"sim_results_note\": \"The model did not return simulation results. None are shown, because any shown here would be invented.\",\n  \"projections\": null,\n  \"projections_note\": \"The model did not return financial projections. None are shown.\"\n}",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "format": "json",
+        "instructions": "W1019 made up: a delivery cooperative for village bakeries",
+        "title": "Simulation: W1019 made up: a delivery cooperative for village bakeries",
+        "type": "simulation"
+      },
+      "owner_id": "default",
+      "served_by": "native",
+      "timestamp": "2026-11-14T09:10:02.435144"
+    },
+    "simulation": {
+      "detail": "The model did not return a parseable simulation for this topic, so none is shown. A template was previously substituted here.",
+      "generated": false,
+      "projections": null,
+      "projections_note": "The model did not return financial projections. None are shown.",
+      "sim_results": null,
+      "sim_results_note": "The model did not return simulation results. None are shown, because any shown here would be invented.",
+      "timestamp": "2026-11-14T09:10:02.435144",
+      "title": "Simulation: W1019 made up: a delivery cooperative for village bakeries"
+    }
+  },
+  "model": {
+    "answer": {
+      "content": "{\n  \"title\": \"W1019 made up: a bakery delivery cooperative\",\n  \"market_summary\": \"W1019 made up: twelve village bakeries share two vans and one booking line.\",\n  \"projections\": {\n    \"year_1\": 180000,\n    \"year_3\": 420000,\n    \"year_5\": 760000\n  },\n  \"roi_analysis\": \"W1019 made up: the vans pay back in the second year.\",\n  \"sim_results\": {\n    \"ese_adoption\": {\n      \"early_adopter\": {\n        \"revenue\": 90000,\n        \"market_share\": 0.04\n      },\n      \"fast_follower\": {\n        \"revenue\": 60000,\n        \"market_share\": 0.03\n      },\n      \"laggard\": {\n        \"revenue\": 30000,\n        \"market_share\": 0.01\n      }\n    },\n    \"aro_efficiency\": {\n      \"resource_optimization_gain\": 0.18\n    },\n    \"bto_roadmap\": {\n      \"implementation_speed_multiplier\": 1.5,\n      \"milestone_confidence\": 0.6\n    },\n    \"drad_resilience\": {\n      \"adaptation_latency_ms\": 120\n    }\n  },\n  \"timestamp\": \"2026-11-14T09:10:02.460224\"\n}",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "format": "json",
+        "instructions": "W1019 made up: a delivery cooperative for village bakeries",
+        "title": "W1019 made up: a bakery delivery cooperative",
+        "type": "simulation"
+      },
+      "owner_id": "default",
+      "served_by": "ollama:w1019-made-up",
+      "timestamp": "2026-11-14T09:10:02.460224"
+    },
+    "simulation": {
+      "market_summary": "W1019 made up: twelve village bakeries share two vans and one booking line.",
+      "projections": {
+        "year_1": 180000,
+        "year_3": 420000,
+        "year_5": 760000
+      },
+      "roi_analysis": "W1019 made up: the vans pay back in the second year.",
+      "sim_results": {
+        "aro_efficiency": {
+          "resource_optimization_gain": 0.18
+        },
+        "bto_roadmap": {
+          "implementation_speed_multiplier": 1.5,
+          "milestone_confidence": 0.6
+        },
+        "drad_resilience": {
+          "adaptation_latency_ms": 120
+        },
+        "ese_adoption": {
+          "early_adopter": {
+            "market_share": 0.04,
+            "revenue": 90000
+          },
+          "fast_follower": {
+            "market_share": 0.03,
+            "revenue": 60000
+          },
+          "laggard": {
+            "market_share": 0.01,
+            "revenue": 30000
+          }
+        }
+      },
+      "timestamp": "2026-11-14T09:10:02.460224",
+      "title": "W1019 made up: a bakery delivery cooperative"
+    }
+  },
+  "partial": {
+    "answer": {
+      "content": "{\n  \"title\": \"W1019 made up: a bakery delivery cooperative\",\n  \"market_summary\": \"W1019 made up: twelve village bakeries share two vans and one booking line.\",\n  \"projections\": {\n    \"year_1\": 180000,\n    \"year_3\": 420000,\n    \"year_5\": 760000\n  },\n  \"roi_analysis\": \"W1019 made up: the vans pay back in the second year.\",\n  \"timestamp\": \"2026-11-14T09:10:02.463944\",\n  \"sim_results\": null,\n  \"sim_results_note\": \"The model did not return simulation results. None are shown, because any shown here would be invented.\"\n}",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "format": "json",
+        "instructions": "W1019 made up: a delivery cooperative for village bakeries",
+        "title": "W1019 made up: a bakery delivery cooperative",
+        "type": "simulation"
+      },
+      "owner_id": "default",
+      "served_by": "ollama:w1019-made-up",
+      "timestamp": "2026-11-14T09:10:02.463944"
+    },
+    "simulation": {
+      "market_summary": "W1019 made up: twelve village bakeries share two vans and one booking line.",
+      "projections": {
+        "year_1": 180000,
+        "year_3": 420000,
+        "year_5": 760000
+      },
+      "roi_analysis": "W1019 made up: the vans pay back in the second year.",
+      "sim_results": null,
+      "sim_results_note": "The model did not return simulation results. None are shown, because any shown here would be invented.",
+      "timestamp": "2026-11-14T09:10:02.463944",
+      "title": "W1019 made up: a bakery delivery cooperative"
+    }
+  }
+}

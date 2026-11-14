@@ -1,6 +1,6 @@
 """W473 (register FU-026) — relocate the live AI data store from the repository's PARENT directory to the repository.
 
-config/paths.py resolved BASE_DIR one level above the repository, so the live memory store, the interactions
+config/paths.py (agentic_core/store_paths.py since W897) resolved BASE_DIR one level above the repository, so the live memory store, the interactions
 database, the L7 registry, the meeting log and the chroma store lived at <repo-parent>/data. W473 points
 BASE_DIR at the repository. This script moves the store the only honest way: COPY each file into the new
 location, VERIFY the copy byte for byte, and only then does the code SWITCH (paths.py reads the new location;

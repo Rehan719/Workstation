@@ -6,30 +6,79 @@ import { Layers, GraduationCap, History } from 'lucide-react';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 import { DomainTool } from '../../components/DomainTool';
 import { toolsFor } from '../../lib/toolRegistry';
+import { useTab } from '../../lib/useTab';   // W1027 - the tab is in the address
+import { useServingStatus, servingIsFloor } from '../../components/ServingNow';   // W956 (P5.12 clause 5)
+import { apiJson, errorMessage } from '../../lib/api';
+
+const EDUCATION_TABS = ['lessons', 'curriculum', 'assessment', 'feedback'] as const;
 
 export const EducationHub: React.FC = () => {
   const T = toolsFor('/education');   // W470 — the one tool registry the front doors count from
   const navigate = useNavigate();
   const { layout, emotionalAdjustment } = useAdaptiveUI();
-  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'lessons');
+  const [activeTab, setActiveTab] = useTab(EDUCATION_TABS, 'lessons');
   // P3.30 (ledger v16 R5.10) — the curriculum frameworks the API lists (GET /api/v1/education/frameworks had no
   // caller: this select offered four typed values, three of which that list does not hold). Null = not read
   // yet; a failed read is SAID, and only the default is offered then.
   const [frameworks, setFrameworks] = useState<string[] | null>(null);
+  // W816 (FU-835) - the select showed each framework's id; it shows the name the API gives and still sends the id
+  const [frameworkNames, setFrameworkNames] = useState<Record<string, string>>({});
   const [frameworksNote, setFrameworksNote] = useState('');
   useEffect(() => {
     let alive = true;
-    fetch('/api/v1/education/frameworks')
-      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+    //  W1004 - a refusal says the server's reason (it said "HTTP 503" alone), and a list read empty is said as
+    //  empty: it was said as one that could not be read
+    apiJson<any>('/api/v1/education/frameworks')
       .then(d => {
         if (!alive) return;
-        const ids = (Array.isArray(d?.frameworks) ? d.frameworks : []).map((f: any) => String(f?.id ?? '')).filter(Boolean);
-        if (ids.length === 0) throw new Error('the list came back empty');
-        setFrameworks(ids); setFrameworksNote('');
+        if (!Array.isArray(d?.frameworks)) {
+          setFrameworks(null);
+          setFrameworksNote('The framework list could not be read (the answer held no list), so only the default framework is offered below.');
+          return;
+        }
+        const list = d.frameworks;
+        const ids = list.map((f: any) => String(f?.id ?? '')).filter(Boolean);
+        if (ids.length === 0) {
+          setFrameworks(null);
+          setFrameworksNote('The server lists no frameworks, so only the default framework is offered below.');
+          return;
+        }
+        const names: Record<string, string> = {};
+        list.forEach((f: any) => { if (f?.id && f?.name) names[String(f.id)] = String(f.name); });
+        setFrameworks(ids); setFrameworkNames(names); setFrameworksNote('');
       })
-      .catch(e => { if (alive) { setFrameworks(null); setFrameworksNote(`The framework list could not be read (${String(e?.message ?? e)}), so only the default framework is offered below.`); } });
+      .catch(e => { if (alive) { setFrameworks(null); setFrameworksNote(`The framework list could not be read (${errorMessage(e)}), so only the default framework is offered below.`); } });
     return () => { alive = false; };
   }, []);
+
+  // W956 (P5.12 clause 5) - WHAT EACH FORM DOES ON THIS MACHINE NOW, said before it is filled: the server's sentence
+  // for the form, with the sentence its answer carries with a model or without one, chosen by the serving status.
+  // Nothing here is typed about a form; a failed read is said, and nothing is claimed in its place.
+  const serving = useServingStatus();
+  const [eduTools, setEduTools] = useState<Record<string, any> | null>(null);
+  const [eduToolsNote, setEduToolsNote] = useState('');
+  useEffect(() => {
+    let alive = true;
+    apiJson<any>('/api/v1/education/tools')
+      .then(d => {
+        if (!alive) return;
+        const byId: Record<string, any> = {};
+        (Array.isArray(d?.forms) ? d.forms : []).forEach((f: any) => { if (f?.id) byId[String(f.id)] = f; });
+        setEduTools(byId); setEduToolsNote('');
+      })
+      .catch(e => { if (alive) { setEduTools(null); setEduToolsNote(`What each form does could not be read (${errorMessage(e)}), so nothing is said about it here. Each answer still says what composed it.`); } });
+    return () => { alive = false; };
+  }, []);
+  const floorNow = serving ? servingIsFloor(serving) : null;
+  const formSays = (id: string) => {
+    const f = eduTools?.[id];
+    if (!f) return <span data-testid="education-form-not-read" className="text-amber-400">{eduToolsNote}</span>;
+    const now = serving === undefined ? ''
+      : serving === null ? `Whether a model is serving could not be read just now; without one, its answer says: ${f.when_no_model_serves}`
+      : floorNow ? `No model is serving on this deployment now, so its answer says: ${f.when_no_model_serves}`
+      : `A model is serving now (${serving.active_model_label || 'a local model'}), so its answer says: ${f.with_a_model}`;
+    return <span data-testid="education-form-says">{f.does} {now}</span>;
+  };
 
   return (
     <div className="space-y-12 pb-24">
@@ -75,7 +124,7 @@ export const EducationHub: React.FC = () => {
             {activeTab === 'curriculum' ? (
               <DomainTool
                 title={T['curriculum'].title}
-                description={<>Design a full course — Workstation's <span className="text-highlight">own</span> AI drafts a structured curriculum outline (week-by-week plan, objectives, assessment), in-house. Only a framework's NAME is held, so nothing is checked against one. For a teacher or an adult learner.{frameworksNote && <span className="block mt-1 text-amber-400" data-testid="education-frameworks-note">{frameworksNote}</span>}</>}
+                description={<>{formSays('curriculum')}{frameworksNote && <span className="block mt-1 text-amber-400" data-testid="education-frameworks-note">{frameworksNote}</span>}</>}
                 endpoint="/api/v1/education/curriculum"
                 resultKey="curriculum"
                 submitLabel="Design curriculum"
@@ -83,14 +132,14 @@ export const EducationHub: React.FC = () => {
                   { name: 'subject', label: 'Subject', type: 'text', placeholder: 'e.g. Introduction to Machine Learning', default: 'Introduction to Machine Learning' },
                   { name: 'level', label: 'Level', type: 'text', placeholder: 'e.g. GCSE / A-Level / University Year 1', default: 'University Year 1' },
                   { name: 'duration_weeks', label: 'Duration (weeks)', type: 'text', default: '12' },
-                  { name: 'framework', label: 'Framework', type: 'select', options: (frameworks && frameworks.length > 0 ? frameworks : ['bloom']), default: 'bloom' },
+                  { name: 'framework', label: 'Framework', type: 'select', options: (frameworks && frameworks.length > 0 ? frameworks : ['bloom']), optionLabels: frameworkNames, default: 'bloom' },
                   { name: 'learning_objectives_count', label: 'Learning objectives', type: 'text', default: '6' },
                 ]}
               />
             ) : activeTab === 'assessment' ? (
               <DomainTool
                 title={T['assessment'].title}
-                description={<>Generate a ready-to-use assessment — Workstation's <span className="text-highlight">own</span> AI builds quizzes, rubrics, exams, project briefs or formative checks with mark schemes, in-house.</>}
+                description={<>{formSays('assessment')}</>}
                 endpoint="/api/v1/education/assessment"
                 resultKey="assessment"
                 submitLabel="Build assessment"
@@ -105,7 +154,7 @@ export const EducationHub: React.FC = () => {
             ) : activeTab === 'feedback' ? (
               <DomainTool
                 title={T['feedback'].title}
-                description={<>Paste a student's work — Workstation's <span className="text-highlight">own</span> AI marks it against the task and any rubric and returns constructive, actionable feedback with an indicative level, in-house. An aid for your judgement — indicative only, never a final grade.</>}
+                description={<>{formSays('feedback')}</>}
                 endpoint="/api/v1/education/feedback"
                 resultKey="feedback"
                 submitLabel="Mark & give feedback"
@@ -121,7 +170,7 @@ export const EducationHub: React.FC = () => {
             ) : (
               <DomainTool
                 title={T['lessons'].title}
-                description={<>Describe a lesson — Workstation's <span className="text-highlight">own</span> AI produces a classroom-ready plan (objectives, sequence, differentiation, assessment), in-house.</>}
+                description={<>{formSays('lesson_plan')}</>}
                 endpoint="/api/v1/education/lesson-plan"
                 resultKey="lesson_plan"
                 submitLabel="Generate lesson plan"
@@ -130,6 +179,9 @@ export const EducationHub: React.FC = () => {
                   { name: 'topic', label: 'Topic', type: 'textarea', placeholder: 'e.g. Photosynthesis — light-dependent reactions' },
                   { name: 'level', label: 'Level', type: 'text', placeholder: 'e.g. GCSE / KS3 / A-Level', default: 'GCSE' },
                   { name: 'duration_minutes', label: 'Duration (minutes)', type: 'text', default: '60' },
+                  // W949 (P5.12 clause 6) - a pupil is not named: the form says so where the needs are typed
+                  { name: 'special_needs', label: 'Needs to plan for (do not name a pupil)', type: 'textarea',
+                    placeholder: 'e.g. two learners need large print. Never a name: what you type is sent as typed.' },
                 ]}
               />
             )}

@@ -1,0 +1,384 @@
+{
+ "plan_empty": {
+  "scope": "workstation",
+  "owner": "owner",
+  "executive_summary": "",
+  "concept": "",
+  "vision": "",
+  "mission": "",
+  "strategy": "[as of 2026-11-13 23:20 UTC] Strategic position derived from the plan itself: 0 aim(s) and 0 objective(s) on the roadmap; no vision is on record; no mission is on record.",
+  "aims": [],
+  "objectives": [],
+  "updated_at": "2026-11-13T23:20:56Z",
+  "provenance": {
+   "field_sources": {
+    "strategy": "cadence_derived",
+    "action_plan": "cadence_derived"
+   }
+  },
+  "refreshes": [
+   {
+    "id": "refresh-a4ba2722ab",
+    "layer": "strategic",
+    "at": "2026-11-13T23:20:56Z",
+    "trigger": "never_refreshed",
+    "forced": false,
+    "reason": "this layer has NEVER been refreshed, which is not the same as refreshed long ago - there is no previous quarterly refresh to measure from",
+    "signal": null,
+    "plan_field": "strategy",
+    "content": "[as of 2026-11-13 23:20 UTC] Strategic position derived from the plan itself: 0 aim(s) and 0 objective(s) on the roadmap; no vision is on record; no mission is on record.",
+    "replaced": null,
+    "replaced_was_empty": true,
+    "served_by": "deterministic-floor",
+    "is_external": false,
+    "provenance_basis": "DERIVED from the plan's own stored state by this module - no model composed it, and nothing here is an analysis of the business. A model-composed refresh carries the resource that served it instead",
+    "applied": true,
+    "withheld_reason": null
+   },
+   {
+    "id": "refresh-d3ae687f74",
+    "layer": "action_plan",
+    "at": "2026-11-13T23:20:56Z",
+    "trigger": "never_refreshed",
+    "forced": false,
+    "reason": "this layer has NEVER been refreshed, which is not the same as refreshed long ago - there is no previous weekly refresh to measure from",
+    "signal": null,
+    "plan_field": "action_plan",
+    "content": "[as of 2026-11-13 23:20 UTC] Action position derived from the plan itself: 0 open objective(s), of which 0 record no progress at all; the roadmap carries no open objective.",
+    "replaced": null,
+    "replaced_was_empty": true,
+    "served_by": "deterministic-floor",
+    "is_external": false,
+    "provenance_basis": "DERIVED from the plan's own stored state by this module - no model composed it, and nothing here is an analysis of the business. A model-composed refresh carries the resource that served it instead",
+    "applied": true,
+    "withheld_reason": null
+   }
+  ],
+  "action_plan": "[as of 2026-11-13 23:20 UTC] Action position derived from the plan itself: 0 open objective(s), of which 0 record no progress at all; the roadmap carries no open objective.",
+  "roadmap": {
+   "living": true,
+   "phases": [],
+   "phase_count": 0,
+   "objective_count": 0,
+   "overall_progress_pct": 0,
+   "current_phase": null,
+   "next_milestone": null,
+   "unscheduled_count": 0,
+   "unparsed_timelines": [],
+   "note": "Living roadmap derived from the plan's objectives — it updates as objectives progress. PHASES ARE IN TIME ORDER, parsed from each objective's timeline (Q1 2026 / 2026 Q1, a month and year, 2026-01, or a bare year). A timeline that does not parse is NOT a phase: those objectives are listed under Unscheduled, which is excluded from current_phase and next_milestone and counted in unscheduled_count — so the roadmap never drops them silently, and never claims an unplaceable objective comes next."
+  }
+ },
+ "cadence": {
+  "scope": "workstation",
+  "layers": {
+   "strategic": {
+    "period": "quarterly",
+    "signal_trigger": "market signal",
+    "plan_field": "strategy",
+    "last_refresh_at": "2026-11-13T23:20:56Z",
+    "refresh_count": 1,
+    "ever_refreshed": true,
+    "due": {
+     "due": false,
+     "trigger": null,
+     "signal": null,
+     "reason": "not due: 0.0 day(s) since the last refresh, quarterly period is 91 day(s). A market signal would fire it regardless, but only one a caller SUPPLIES - nothing in this platform observes markets or KPIs, so a signal fires only when someone supplies one (POST /api/v1/organism/cadence/refresh?layer=...&signal=...)",
+     "last_refresh_at": "2026-11-13T23:20:56Z",
+     "elapsed_seconds": 1.979,
+     "period_seconds": 7862400
+    },
+    "latest": {
+     "id": "refresh-a4ba2722ab",
+     "layer": "strategic",
+     "at": "2026-11-13T23:20:56Z",
+     "trigger": "never_refreshed",
+     "forced": false,
+     "reason": "this layer has NEVER been refreshed, which is not the same as refreshed long ago - there is no previous quarterly refresh to measure from",
+     "signal": null,
+     "plan_field": "strategy",
+     "content": "[as of 2026-11-13 23:20 UTC] Strategic position derived from the plan itself: 0 aim(s) and 0 objective(s) on the roadmap; no vision is on record; no mission is on record.",
+     "replaced": null,
+     "replaced_was_empty": true,
+     "served_by": "deterministic-floor",
+     "is_external": false,
+     "provenance_basis": "DERIVED from the plan's own stored state by this module - no model composed it, and nothing here is an analysis of the business. A model-composed refresh carries the resource that served it instead",
+     "applied": true,
+     "withheld_reason": null
+    }
+   },
+   "action_plan": {
+    "period": "weekly",
+    "signal_trigger": "KPI trigger",
+    "plan_field": "action_plan",
+    "last_refresh_at": "2026-11-13T23:20:56Z",
+    "refresh_count": 1,
+    "ever_refreshed": true,
+    "due": {
+     "due": false,
+     "trigger": null,
+     "signal": null,
+     "reason": "not due: 0.0 day(s) since the last refresh, weekly period is 7 day(s). A KPI trigger would fire it regardless, but only one a caller SUPPLIES - nothing in this platform observes markets or KPIs, so a signal fires only when someone supplies one (POST /api/v1/organism/cadence/refresh?layer=...&signal=...)",
+     "last_refresh_at": "2026-11-13T23:20:56Z",
+     "elapsed_seconds": 1.98,
+     "period_seconds": 604800
+    },
+    "latest": {
+     "id": "refresh-d3ae687f74",
+     "layer": "action_plan",
+     "at": "2026-11-13T23:20:56Z",
+     "trigger": "never_refreshed",
+     "forced": false,
+     "reason": "this layer has NEVER been refreshed, which is not the same as refreshed long ago - there is no previous weekly refresh to measure from",
+     "signal": null,
+     "plan_field": "action_plan",
+     "content": "[as of 2026-11-13 23:20 UTC] Action position derived from the plan itself: 0 open objective(s), of which 0 record no progress at all; the roadmap carries no open objective.",
+     "replaced": null,
+     "replaced_was_empty": true,
+     "served_by": "deterministic-floor",
+     "is_external": false,
+     "provenance_basis": "DERIVED from the plan's own stored state by this module - no model composed it, and nothing here is an analysis of the business. A model-composed refresh carries the resource that served it instead",
+     "applied": true,
+     "withheld_reason": null
+    }
+   }
+  },
+  "signals_basis": "nothing in this platform observes markets or KPIs, so a signal fires only when someone supplies one (POST /api/v1/organism/cadence/refresh?layer=...&signal=...)",
+  "basis": "each layer reports when it was last refreshed, how many refreshes are on record and whether it is due now. A layer that has NEVER been refreshed says so rather than reporting an age of zero - never and just-now are opposite facts",
+  "history": [
+   {
+    "id": "refresh-a4ba2722ab",
+    "layer": "strategic",
+    "at": "2026-11-13T23:20:56Z",
+    "trigger": "never_refreshed",
+    "forced": false,
+    "reason": "this layer has NEVER been refreshed, which is not the same as refreshed long ago - there is no previous quarterly refresh to measure from",
+    "signal": null,
+    "plan_field": "strategy",
+    "content": "[as of 2026-11-13 23:20 UTC] Strategic position derived from the plan itself: 0 aim(s) and 0 objective(s) on the roadmap; no vision is on record; no mission is on record.",
+    "replaced": null,
+    "replaced_was_empty": true,
+    "served_by": "deterministic-floor",
+    "is_external": false,
+    "provenance_basis": "DERIVED from the plan's own stored state by this module - no model composed it, and nothing here is an analysis of the business. A model-composed refresh carries the resource that served it instead",
+    "applied": true,
+    "withheld_reason": null
+   },
+   {
+    "id": "refresh-d3ae687f74",
+    "layer": "action_plan",
+    "at": "2026-11-13T23:20:56Z",
+    "trigger": "never_refreshed",
+    "forced": false,
+    "reason": "this layer has NEVER been refreshed, which is not the same as refreshed long ago - there is no previous weekly refresh to measure from",
+    "signal": null,
+    "plan_field": "action_plan",
+    "content": "[as of 2026-11-13 23:20 UTC] Action position derived from the plan itself: 0 open objective(s), of which 0 record no progress at all; the roadmap carries no open objective.",
+    "replaced": null,
+    "replaced_was_empty": true,
+    "served_by": "deterministic-floor",
+    "is_external": false,
+    "provenance_basis": "DERIVED from the plan's own stored state by this module - no model composed it, and nothing here is an analysis of the business. A model-composed refresh carries the resource that served it instead",
+    "applied": true,
+    "withheld_reason": null
+   }
+  ],
+  "history_count": 2,
+  "last_beat": {
+   "ran": true,
+   "beat": 1,
+   "heartbeat_beats": 1,
+   "is_the_latest_beat": true,
+   "nothing_was_due": false,
+   "refreshed": [
+    {
+     "scope": "workstation",
+     "layer": "strategic",
+     "trigger": "never_refreshed",
+     "reason": "this layer has NEVER been refreshed, which is not the same as refreshed long ago - there is no previous quarterly refresh to measure from",
+     "at": "2026-11-13T23:20:56Z",
+     "served_by": "deterministic-floor"
+    },
+    {
+     "scope": "workstation",
+     "layer": "action_plan",
+     "trigger": "never_refreshed",
+     "reason": "this layer has NEVER been refreshed, which is not the same as refreshed long ago - there is no previous weekly refresh to measure from",
+     "at": "2026-11-13T23:20:56Z",
+     "served_by": "deterministic-floor"
+    }
+   ],
+   "scopes": [
+    "workstation"
+   ],
+   "scope_basis": "the apex only",
+   "could_not_run": null,
+   "at": "2026-11-13T23:20:56Z",
+   "beat_basis": "`beat` is the beat this record was written on and `heartbeat_beats` is the count now; when they differ the record is NOT the latest beat and this says so rather than calling it the most recent. Between W589 and W593 the record was only written when a layer refreshed or failed, so on a quiet beat it was an earlier beat's record presented as the current one (MILESTONE M1, R3.4)",
+   "basis": "2 layer(s) refreshed on beat 1 across 1 scope(s) (the apex only) and 0 could not run. A layer that could not run is still DUE - this is not 'nothing was due'"
+  },
+  "method": "each layer is due on elapsed time (quarterly for strategic, weekly for the action plan) or on its own signal (a market signal, a KPI trigger), whichever comes first. The due check is a pure function of the last refresh, the time and the signals, so a trigger can be FORCED rather than waited for. A layer never refreshed says so rather than reporting an age of zero",
+  "last_beat_basis": "`layers` is the plan's own record of when each layer last refreshed; `last_beat` is what the most recent heartbeat managed. A layer that is DUE while last_beat.could_not_run is set means the cadence is not firing, which an absent action alone could never distinguish from nothing being due"
+ },
+ "objective": {
+  "id": "obj-71be0d40",
+  "title": "W988 made-up objective: two pilot teachers use the planner weekly",
+  "kpi": "two pilots, four weeks",
+  "timeline": "Q1 2027",
+  "owner_role": "AI CEO",
+  "progress_pct": 0,
+  "status": "planned",
+  "reviews": [],
+  "created_at": "2026-11-13T23:20:57Z"
+ },
+ "review": {
+  "id": "obj-71be0d40",
+  "title": "W988 made-up objective: two pilot teachers use the planner weekly",
+  "kpi": "two pilots, four weeks",
+  "timeline": "Q1 2027",
+  "owner_role": "AI CEO",
+  "progress_pct": 25,
+  "status": "in_progress",
+  "reviews": [
+   {
+    "at": "2026-11-13T23:20:57Z",
+    "progress_pct": 25,
+    "note": "",
+    "status": "in_progress"
+   }
+  ],
+  "created_at": "2026-11-13T23:20:57Z"
+ },
+ "plan_one": {
+  "scope": "workstation",
+  "owner": "owner",
+  "executive_summary": "",
+  "concept": "",
+  "vision": "",
+  "mission": "",
+  "strategy": "[as of 2026-11-13 23:20 UTC] Strategic position derived from the plan itself: 0 aim(s) and 0 objective(s) on the roadmap; no vision is on record; no mission is on record.",
+  "aims": [],
+  "objectives": [
+   {
+    "id": "obj-71be0d40",
+    "title": "W988 made-up objective: two pilot teachers use the planner weekly",
+    "kpi": "two pilots, four weeks",
+    "timeline": "Q1 2027",
+    "owner_role": "AI CEO",
+    "progress_pct": 25,
+    "status": "in_progress",
+    "reviews": [
+     {
+      "at": "2026-11-13T23:20:57Z",
+      "progress_pct": 25,
+      "note": "",
+      "status": "in_progress"
+     }
+    ],
+    "created_at": "2026-11-13T23:20:57Z"
+   }
+  ],
+  "updated_at": "2026-11-13T23:20:57Z",
+  "provenance": {
+   "field_sources": {
+    "strategy": "cadence_derived",
+    "action_plan": "cadence_derived"
+   }
+  },
+  "refreshes": [
+   {
+    "id": "refresh-a4ba2722ab",
+    "layer": "strategic",
+    "at": "2026-11-13T23:20:56Z",
+    "trigger": "never_refreshed",
+    "forced": false,
+    "reason": "this layer has NEVER been refreshed, which is not the same as refreshed long ago - there is no previous quarterly refresh to measure from",
+    "signal": null,
+    "plan_field": "strategy",
+    "content": "[as of 2026-11-13 23:20 UTC] Strategic position derived from the plan itself: 0 aim(s) and 0 objective(s) on the roadmap; no vision is on record; no mission is on record.",
+    "replaced": null,
+    "replaced_was_empty": true,
+    "served_by": "deterministic-floor",
+    "is_external": false,
+    "provenance_basis": "DERIVED from the plan's own stored state by this module - no model composed it, and nothing here is an analysis of the business. A model-composed refresh carries the resource that served it instead",
+    "applied": true,
+    "withheld_reason": null
+   },
+   {
+    "id": "refresh-d3ae687f74",
+    "layer": "action_plan",
+    "at": "2026-11-13T23:20:56Z",
+    "trigger": "never_refreshed",
+    "forced": false,
+    "reason": "this layer has NEVER been refreshed, which is not the same as refreshed long ago - there is no previous weekly refresh to measure from",
+    "signal": null,
+    "plan_field": "action_plan",
+    "content": "[as of 2026-11-13 23:20 UTC] Action position derived from the plan itself: 0 open objective(s), of which 0 record no progress at all; the roadmap carries no open objective.",
+    "replaced": null,
+    "replaced_was_empty": true,
+    "served_by": "deterministic-floor",
+    "is_external": false,
+    "provenance_basis": "DERIVED from the plan's own stored state by this module - no model composed it, and nothing here is an analysis of the business. A model-composed refresh carries the resource that served it instead",
+    "applied": true,
+    "withheld_reason": null
+   }
+  ],
+  "action_plan": "[as of 2026-11-13 23:20 UTC] Action position derived from the plan itself: 0 open objective(s), of which 0 record no progress at all; the roadmap carries no open objective.",
+  "roadmap": {
+   "living": true,
+   "phases": [
+    {
+     "timeline": "Q1 2027",
+     "progress_pct": 25,
+     "complete": false,
+     "count": 1,
+     "objectives": [
+      {
+       "id": "obj-71be0d40",
+       "title": "W988 made-up objective: two pilot teachers use the planner weekly",
+       "progress_pct": 25,
+       "status": "in_progress",
+       "kpi": "two pilots, four weeks",
+       "owner_role": "AI CEO"
+      }
+     ]
+    }
+   ],
+   "phase_count": 1,
+   "objective_count": 1,
+   "overall_progress_pct": 25,
+   "current_phase": "Q1 2027",
+   "next_milestone": {
+    "phase": "Q1 2027",
+    "title": "W988 made-up objective: two pilot teachers use the planner weekly",
+    "progress_pct": 25
+   },
+   "unscheduled_count": 0,
+   "unparsed_timelines": [],
+   "note": "Living roadmap derived from the plan's objectives — it updates as objectives progress. PHASES ARE IN TIME ORDER, parsed from each objective's timeline (Q1 2026 / 2026 Q1, a month and year, 2026-01, or a bare year). A timeline that does not parse is NOT a phase: those objectives are listed under Unscheduled, which is excluded from current_phase and next_milestone and counted in unscheduled_count — so the roadmap never drops them silently, and never claims an unplaceable objective comes next."
+  }
+ },
+ "review_refused": {
+  "status": 404,
+  "body": {
+   "detail": "Objective obj-w988none not found in workstation."
+  }
+ },
+ "set_refused": {
+  "status": 422,
+  "body": {
+   "detail": "mission: the floor's pending marker is not an owner's edit"
+  }
+ },
+ "plan_unreadable": {
+  "status": 503,
+  "body": {
+   "detail": "workstation.json could not be read whole (not valid JSON: Unterminated string starting at: line 1 column 48 (char 47)) — nothing was written — the business plan was NOT read. Fix or restore the file; it is never replaced with an empty plan."
+  }
+ },
+ "objective_refused": {
+  "status": 503,
+  "body": {
+   "detail": "workstation.json could not be read whole (not valid JSON: Unterminated string starting at: line 1 column 48 (char 47)) — nothing was written — the business plan was NOT read. Fix or restore the file; it is never replaced with an empty plan."
+  }
+ }
+}

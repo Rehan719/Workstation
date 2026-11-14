@@ -1,0 +1,22 @@
+{
+ "produced": {
+  "status": 200,
+  "content_type": "text/event-stream; charset=utf-8",
+  "stream": "data: {\"token\": \"_[Workstation native structured engine \\u2014 owned, no external dependency]_\\\\n\\\\n## Understanding\\\\nThe \"}\n\ndata: {\"token\": \"request concerns: W1009 made-up order tracker W1009 made up: a page where a bakery cooperative \"}\n\ndata: {\"token\": \"tracks the morning's orders (domain: enterprise).\\\\n\\\\n## Terms most frequent in the text you \"}\n\ndata: {\"token\": \"wrote\\\\n_Extracted by counting words and adjacent pairs \\u2014 not an analysis of the subject. Counted \"}\n\ndata: {\"token\": \"over the text the calling tool identified as yours, and over nothing else._\\\\n- made-up order\\\\n- \"}\n\ndata: {\"token\": \"order tracker\\\\n- bakery cooperative\\\\n- cooperative tracks\\\\n- morning orders\\\\n- where bakery\\\\n\\\\n## \"}\n\ndata: {\"token\": \"Native approach\\\\nWorkstation composes a structured response from its own process-intelligence and \"}\n\ndata: {\"token\": \"knowledge for the agent 'factory', framing the request above rather than analysing it.\\\\n\\\\n## Next \"}\n\ndata: {\"token\": \"steps\\\\n- Validate the structured outputs above against the stated objective.\\\\n- Route richer \"}\n\ndata: {\"token\": \"generation to a model resource (local-first; external only if enabled).\\\\n- Iterate via the \"}\n\ndata: {\"token\": \"orchestrator's cascade for enterprise; record outcomes to memory/UEG.\"}\n\ndata: {\"done\": true, \"run_id\": \"eb7bc0355698\", \"output_id\": \"4c3ff488899243919e2389266605c8db\", \"duration_ms\": 17, \"served_by\": \"native\", \"is_external\": false}\n\n"
+ },
+ "refused": {
+  "status": 422,
+  "body": {
+   "detail": [
+    {
+     "type": "missing",
+     "loc": [
+      "body"
+     ],
+     "msg": "Field required",
+     "input": null
+    }
+   ]
+  }
+ }
+}

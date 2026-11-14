@@ -1,6 +1,9 @@
+import { silenceIsRight } from '../../components/ReadFailures';   // W961 (FU-1181)
 import React, { useState, useRef, useCallback } from 'react';
 import { WORKSPACE_DOMAINS } from '../../lib/taxonomy';
 import { provenanceLine } from '../../lib/api';
+import { errorMessage } from '../../lib/api';   // W1009
+import { refusalOf } from '../../lib/stream';   // W1009
 import { useSearchParams } from 'react-router-dom';
 import { Card, Badge } from '@workstation/ui';
 import { Database, Plus, Settings, Play, Square, Download, Loader2, CheckCircle2, X, FileText } from 'lucide-react';
@@ -85,7 +88,9 @@ export const Factory: React.FC = () => {
           description: line.description,
         }),
       });
-      if (!response.ok || !response.body) throw new Error(`HTTP ${response.status}`);
+      //  W1009 - a refusal says the server's status and reason (it said "HTTP 422" alone), in lib/stream.ts's sentence
+      if (!response.ok) { updateLine(id, { status: 'error', output: `[ERROR] ${await refusalOf(response)}` }); return; }
+      if (!response.body) { updateLine(id, { status: 'error', output: '[ERROR] The server answered without a stream, so nothing ran here.' }); return; }
 
       const reader = response.body.getReader();
       readerRefs.current.set(id, reader);
@@ -113,11 +118,11 @@ export const Factory: React.FC = () => {
             } else if (ev.error) {
               updateLine(id, { status: 'error', output: accumulated + `\n\n[ERROR] ${ev.error}` });
             }
-          } catch { /* skip */ }
+          } catch { silenceIsRight('a stream frame that is not JSON, a heartbeat or a cut line, carries nothing to show')(); }
         }
       }
-    } catch (err: any) {
-      updateLine(id, { status: 'error', output: `[ERROR] ${err.message}` });
+    } catch (err) {
+      updateLine(id, { status: 'error', output: `[ERROR] ${errorMessage(err)}` });   // W1009 - an unreachable server, as one
     } finally {
       readerRefs.current.delete(id);
     }

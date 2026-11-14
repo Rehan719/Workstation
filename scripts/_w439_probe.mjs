@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W439 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W439 — drive the QEP-in-Religion-domain surface in a real browser against the built bundle:
 // the Owner-directed placement must render, the studio must genuinely schedule + review through
 // the UI, and the honesty framing (false-witness footer, provenance chips, refusals) must show.

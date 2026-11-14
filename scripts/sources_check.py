@@ -58,6 +58,9 @@ def row_problems(d):
                 out.append(f"{i}: does not say who read it")
         elif r.get("page") or r.get("read_on"):
             out.append(f"{i}: says it was not read and carries a page or a date - it is one or the other")
+        #  W948 (FU-1066) - a row that names the hosts this platform would reach says what its terms permit
+        if r.get("hosts") and not isinstance(r.get("permits"), list):
+            out.append(f"{i}: names hosts and does not say what its terms permit")
         if r.get("status") in ("replaced", "withdrawn") and not r.get("replaced_by") and r.get("status") == "replaced":
             out.append(f"{i}: is replaced and does not say by what")
     return out
@@ -83,6 +86,44 @@ def scan(d, root=None):
     return found, files
 
 
+#  W948 (FU-1066) - A SOURCE NOT TO BE USED IS NEVER REACHED. A row whose `permits` is empty is not to be used; each of
+#  its hosts is searched for in the whole backend and frontend source, and any hit fails the check.
+REACH_PLACES = (("agentic_core", (".py",)), ("apps/workstation-superapp/src", (".ts", ".tsx")))
+
+
+def reached_but_not_permitted(d, root=None):
+    root = root or ROOT
+    banned = [(r["id"], h) for r in d["rows"] if r.get("permits") == [] for h in (r.get("hosts") or [])]
+    hits, files = [], 0
+    for place, exts in REACH_PLACES:
+        for f in sorted((root / place).rglob("*")):
+            if f.suffix not in exts or any(p in ("__pycache__", "node_modules", "dist") for p in f.parts):
+                continue
+            files += 1
+            text = f.read_text(encoding="utf-8", errors="replace")
+            for rid, host in banned:
+                if host in text:
+                    hits.append((f.relative_to(root).as_posix(), host, rid))
+    return hits, files, len(banned)
+
+
+def row_standing(d, today=None):
+    """W955 (P5.13 clause 1) - each row's standing now, by the one rule check() uses: a current row read more than
+    review_days ago is not recently checked; a row of any other status has no 'recently checked' to say."""
+    today = today or _dt.date.today()
+    review = int(d.get("review_days") or 90)
+    out = {}
+    for r in d["rows"]:
+        try:
+            age = (today - _dt.date.fromisoformat(str(r.get("read_on")))).days
+        except ValueError:
+            age = None
+        out[r.get("id")] = {"status": r.get("status"), "age_days": age,
+                            "recently_checked": (None if r.get("status") != "current" or age is None
+                                                 else age <= review)}
+    return out
+
+
 def check(d, root=None, today=None):
     today = today or _dt.date.today()
     found, files = scan(d, root)
@@ -100,19 +141,15 @@ def check(d, root=None, today=None):
         elif r.get("status") in ("replaced", "withdrawn") and rel not in (r.get("named_as_replaced_in") or []):
             replaced_readers.append((rel, n, name, r["id"]))
     review = int(d.get("review_days") or 90)
-    stale = []
-    for r in d["rows"]:
-        if r.get("status") == "current":
-            try:
-                age = (today - _dt.date.fromisoformat(str(r.get("read_on")))).days
-            except ValueError:
-                continue
-            if age > review:
-                stale.append((r["id"], age))
+    #  W955 - the one staleness rule, shared with every reader of a row's standing (row_standing)
+    stale = [(i, s["age_days"]) for i, s in row_standing(d, today).items() if s["recently_checked"] is False]
+    _reached = reached_but_not_permitted(d, root)
     return {"files_examined": files, "names_found": len(found), "distinct_names": len({n.lower() for _, _, n in found}),
             "rows": len(d["rows"]), "row_problems": row_problems(d), "names_with_no_row": no_row,
             "readers_of_a_replaced_source": replaced_readers, "not_recently_checked": stale,
             "named_not_read": sorted(r["id"] for r in d["rows"] if r.get("status") == "named_not_read"),
+            "not_to_be_used_but_reached": _reached[0], "files_searched_for_hosts": _reached[1],
+            "hosts_not_to_be_reached": _reached[2],
             "review_days": review}
 
 
@@ -133,12 +170,20 @@ def main(argv=None):
             print(f"  READS A REPLACED SOURCE  {name!r} ({i})  {rel}:{n}")
         for i, age in res["not_recently_checked"]:
             print(f"  not recently checked: {i}, read {age} days ago (a row is current for {res['review_days']})")
+        for rel, host, i in res["not_to_be_used_but_reached"]:
+            print(f"  REACHES A SOURCE NOT TO BE USED  {host!r} ({i})  {rel}")
+        print(f"  {res['hosts_not_to_be_reached']} host(s) of sources not to be used, searched for in "
+              f"{res['files_searched_for_hosts']} file(s)")
         if res["named_not_read"]:
             print(f"  named and not yet read at its publisher's page: {', '.join(res['named_not_read'])}")
     if not res["files_examined"] or not res["rows"]:
         print("EXAMINED NOTHING - this is not a pass.")
         return 2
-    bad = res["row_problems"] or res["names_with_no_row"] or res["readers_of_a_replaced_source"] or (
+    if not res["files_searched_for_hosts"]:
+        print("SEARCHED NO FILE FOR THE HOSTS OF SOURCES NOT TO BE USED - this is not a pass.")
+        return 2
+    bad = res["row_problems"] or res["names_with_no_row"] or res["readers_of_a_replaced_source"] or res[
+        "not_to_be_used_but_reached"] or (
         res["not_recently_checked"] and "--strict-stale" in argv)
     return 1 if bad else 0
 

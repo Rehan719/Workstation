@@ -5,17 +5,14 @@ import json
 import asyncio
 import os
 import logging
-from datetime import datetime
 from typing import Dict, Any, List, Optional
-from config.paths import DATA_DIR
+from agentic_core.store_paths import DATA_DIR
 from pydantic import BaseModel
 from agentic_core.ai.ceo.memory_v01 import memory_v01, meeting_log
 from agentic_core.ai.native.orchestrator import orchestrator
 from agentic_core.layers.ueg import ueg
 from agentic_core.simulation.ese import get_ese_instance
 from agentic_core.biomimicry.geospheric.drad import get_drad_instance
-from agentic_core.bto.religion_bto import get_religion_bto
-from agentic_core.swarm.signaling_protocol import SignalingProtocol
 from agentic_core.reactor.religion.qep_flagship import qep_flagship_service
 from agentic_core.ai.ceo.autonomy_pipelines import autonomy_pipelines
 from agentic_core.synthesis.content_production import content_pipeline
@@ -44,7 +41,6 @@ class ToolRegistry:
             "call_meeting": self.call_meeting,
             "discover_tools": self.discover_tools,
             "run_qep_simulation": self.run_qep_simulation,
-            "orchestrate_qep_swarm": self.orchestrate_qep_swarm,
             "check_qep_fabric_health": self.check_qep_fabric_health,
             "qep_tajwid_coach": self.qep_tajwid_coach,
             "qep_memorization": self.qep_memorization,
@@ -54,10 +50,13 @@ class ToolRegistry:
             "qep_community": self.qep_community,
             "qep_analytics": self.qep_analytics,
             "qep_certifications": self.qep_certifications,
-            "qep_offline_access": self.qep_offline_access,
             "qep_billing_donations": self.qep_billing_donations,
             "qep_guidance_assistant": self.qep_guidance_assistant,
             "qep_swarm_learning": self.qep_swarm_learning,
+            #  W798 (FU-1160) - orchestrate_qep_swarm and qep_offline_access unregistered and archived
+            #  (_archive/agentic_core/api/v138/ceo_broken_tools.py): the first reported a swarm as active for
+            #  work nothing starts, the second called a service method without the argument it requires, and no
+            #  dispatch reached either
             #  W778 (FU-1126) - run_introspection / run_retrospection / run_extrospection unregistered and
             #  archived (_archive/agentic_core/api/v138/ceo_fixed_pipelines.py): each returned a fixed analysis
             #  as if a pipeline had run, and no dispatch reached them
@@ -79,23 +78,6 @@ class ToolRegistry:
     #  and call_meeting), and nothing read its 'allocation'. Its objective was linear, so the answer was always
     #  "everything on the largest demand", and two of its four demands were typed constants. An allocator that
     #  allocates nothing is not kept as a capability.
-
-    async def orchestrate_qep_swarm(self, topic: str, domain: str = "religion"):
-        """v1.0: Orchestrate specialized cross-domain research swarm (BTO)."""
-        # Mock signaling for tool execution
-        signaling = SignalingProtocol("CEO-ORCHESTRATOR")
-        if domain == "religion":
-             bto = get_religion_bto("AI-CEO", signaling)
-             return bto.orchestrate_research(topic)
-        else:
-             # v1.0: Generic Domain BTO Adapter
-             return {
-                 "status": "SWARM_ACTIVE",
-                 "domain": domain,
-                 "topic": topic,
-                 "engine": "BTO",
-                 "timestamp": datetime.utcnow().isoformat()
-             }
 
     async def check_qep_fabric_health(self):
         """v0.8: Check Dynamic Reactive Adaptive Fabric (DRAD) health."""
@@ -133,10 +115,6 @@ class ToolRegistry:
     async def qep_certifications(self, user_id: str, course_id: str):
         """v0.9: Certifications & Credentials."""
         return await qep_flagship_service.certifications(user_id, course_id)
-
-    async def qep_offline_access(self):
-        """v0.9: Offline & Global Access."""
-        return await qep_flagship_service.offline_global_access()
 
     async def qep_billing_donations(self):
         """v0.9: Secure Billing & Donations."""
@@ -358,6 +336,29 @@ def _cited(answer: str, facts: dict) -> dict:
     return out
 
 
+def _floor_recital(facts: dict) -> str:
+    """W801 (FU-982, ledger v17 R3[9]) - ON THE FLOOR, THE HANDED RECORDS ARE RECITED AS STORED.
+
+    The AI CEO is handed the Board's latest directives and the plan's objectives, and the floor's reply framed
+    the question and named none of them, so a reader learned nothing the CEO had been given. On the floor the
+    stream now ends with the latest directive and the objective titles quoted as stored. It is a recital, not an
+    answer, and is counted apart from what the reply itself cited. Empty when nothing was handed."""
+    #  the Owner's instruction as typed, where the record holds one; the composed directive otherwise. Each is
+    #  flattened to one line, so a stored text with line breaks cannot break the list it is quoted in.
+    _said = [" ".join(str(t).split()) for t in facts.get("_instruction_texts") or [] if str(t).strip()]
+    dirs = _said or [" ".join(str(t).split()) for t in facts.get("_directive_texts") or [] if str(t).strip()]
+    objs = [" ".join(str(t).split()) for t in facts.get("_objective_titles") or [] if str(t).strip()]
+    if not dirs and not objs:
+        return ""
+    lines = ["", "", "## What the CEO was handed (quoted as stored, not answered from)",
+             "The structured floor served the reply above, so nothing in it was reasoned from these records."]
+    if dirs:
+        lines.append(f'- Latest Board instruction: "{dirs[0]}"')
+    if objs:
+        lines.append("- Objectives in the plan: " + "; ".join(objs))
+    return "\n".join(lines) + "\n"
+
+
 def _ungrounded_sections(answer: str, facts: dict) -> list:
     """Headings the answer filled with items while the grounding counted none. Empty when clean."""
     out = []
@@ -416,6 +417,8 @@ def _ceo_grounding(prompt: str, scope: str, owner_id: Optional[str]) -> tuple:
                 pass
             return raw[:240]
         facts["_directive_texts"] = [_directive_text(r) for r in rows[-3:][::-1]]
+        #  W801 (FU-982 R3[9]) - the Owner's own words, kept apart from the composed directive, for the floor's recital
+        facts["_instruction_texts"] = [str(r.get("instruction") or "").strip()[:240] for r in rows[-3:][::-1]]
         if rows:
             parts.append("## Board directives (most recent first)\n" + "\n".join(
                 f"- {_directive_text(r)}" for r in rows[-3:][::-1]))
@@ -558,12 +561,25 @@ async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
                 _answer.append(str(ev["token"]))
                 yield f"data: {json.dumps({'content': ev['token'], 'done': False})}\n\n"
             elif ev.get("done"):
+                #  W801 (FU-982 R3[9]) - on the floor, what the CEO was handed, quoted as stored, after the reply
+                _recital801 = _floor_recital(facts) if ev.get("served_by") == "native" else ""
+                if _recital801:
+                    yield f"data: {json.dumps({'content': _recital801, 'done': False})}\n\n"
+                _grounding801 = _cited("".join(_answer), facts)
+                if _recital801:
+                    _grounding801["recited"] = {"directives": 1 if (facts.get("_instruction_texts")
+                                                                     or facts.get("_directive_texts")) else 0,
+                                                "objectives": len([t for t in facts.get("_objective_titles") or []
+                                                                   if str(t).strip()])}
+                    _grounding801["recited_basis"] = ("quoted as stored after the floor's reply; a recited record "
+                                                      "was not answered from, and `cited` counts only what the "
+                                                      "reply itself named")
                 yield "data: " + json.dumps({**_reply_evidence(ev.get('served_by')), 
                     "content": "", "done": True,
                     "served_by": ev.get("served_by"), "is_external": bool(ev.get("is_external")),
                     "guardrail_passed": ev.get("guardrail_passed"), "profile_applied": ev.get("profile_applied"),
                     "model_tokens": ev.get("model_tokens"), "model_tokens_basis": ev.get("model_tokens_basis"),   # W776 (FU-1105)
-                    "grounding": _cited("".join(_answer), facts),
+                    "grounding": _grounding801,
                     "grounding_conflicts": _ungrounded_sections("".join(_answer), facts),
                 }) + "\n\n"
     except Exception as exc:

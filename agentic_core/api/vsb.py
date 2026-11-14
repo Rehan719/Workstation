@@ -121,6 +121,34 @@ def _owner_written(vsb: dict) -> dict:
     return out
 
 
+def _plan_objectives_md(vsb: dict) -> str:
+    """W800 (FU-981, ledger v17 R2[8]) - the aims and objectives in this entity's plan record, for BUSINESS_PLAN.md.
+
+    The repo plan had no aims or objectives while the plan record held seeded ones, so the two said different
+    things about one entity. Each objective is written as recorded; one the platform seeded at establishment is
+    labelled as a draft nobody has measured, because it is not an objective anyone set. A plan that cannot be read
+    is said, never shown as an entity with no objectives."""
+    try:
+        from agentic_core.api.business_plan import _load as _bp_load800, is_seeded_draft as _seeded800
+        plan = _bp_load800(vsb.get("business_plan_scope") or vsb.get("vsb_id")) or {}
+    except Exception as exc:                     # noqa: BLE001 - said in the file, never read as "none"
+        return (f"## Aims & Objectives\n_The entity's plan could not be read ({type(exc).__name__}), so its aims "
+                f"and objectives are NOT shown here; this is not a statement that it has none._\n\n")
+    aims = [str(a).strip() for a in (plan.get("aims") or []) if str(a).strip()]
+    objs = [o for o in (plan.get("objectives") or []) if isinstance(o, dict)]
+    lines = [f"- Aim: {a[:300]}" for a in aims]
+    for o in objs:
+        _kpi = str(o.get("kpi") or "").strip()
+        lines.append(f"- {str(o.get('title') or 'untitled')[:200]} — "
+                     + (f"KPI: {_kpi[:200]}" if _kpi else "no KPI set")
+                     + f"; timeline: {o.get('timeline') or 'not set'}; owner: {o.get('owner_role') or 'not set'}"
+                     + (" — SEEDED by the platform at establishment: a draft nobody has measured, not an "
+                        "objective anyone set" if _seeded800(o) else ""))
+    if not lines:
+        lines = ["_No aims or objectives are recorded in this entity's plan._"]
+    return "## Aims & Objectives\n" + "\n".join(lines) + "\n\n"
+
+
 def _autonomy_phrase(vsb: dict) -> str:
     """W623 (FU-518) — the entity's operating state in words, read from its derived status, never a constant."""
     st = str(vsb.get("status") or "").strip()
@@ -215,7 +243,11 @@ def _build_repo_files(vsb: dict) -> dict:
         _ev_lines += [("## Candidate Supplied by the Caller (NOT measured by this platform)" if _caller668 else
                        "## Selected Candidate (§4.5 evidence-ranked)" if _ranked else
                        "## Candidate Carried Forward (NOT evidence-ranked — see comparison below)"),
-                      f"- id: {_cand.get('id')} · rank: {_cand.get('rank')} · score: {_cand.get('score')}",
+                      #  W797 (FU-980 R1[2]) - a candidate that was not ranked has no rank to print
+                      (f"- id: {_cand.get('id')} · rank: {_cand.get('rank')} · score: {_cand.get('score')}"
+                       if _cand.get("rank") is not None else
+                       f"- id: {_cand.get('id')} · NOT RANKED: "
+                       + str(_cand.get("not_ranked_basis") or "the candidate carries no rank, so none is printed")),
                       f"- coverage {_cand.get('coverage')} · specificity {_cand.get('specificity')} · structure {_cand.get('structure')}",
                       f"- framing: {str(_cand.get('framing') or '')[:160]}"]
         if _caller668:
@@ -283,7 +315,12 @@ def _build_repo_files(vsb: dict) -> dict:
                                 f"## Founder's Problem Statement\n{challenge}\n\n_No vision has been written by "
                                 f"the Owner; this is the problem the entity was founded on, not a vision._\n\n")
                              + f"## Design & Development\n{str(design)[:2000]}\n\n"
-                             f"## Commercialisation\n{str(commercial)[:2000]}\n")
+                             f"## Commercialisation\n{str(commercial)[:2000]}\n\n"
+                             #  W800 (FU-981 R2[8]) - the plan record's aims and objectives, and what was not written
+                             + _plan_objectives_md(vsb)
+                             + ("" if (_ow.get("mission") and _ow.get("strategy")) else
+                                "_No " + " or ".join(k for k in ("mission", "strategy") if not _ow.get(k))
+                                + " has been written by the Owner, so none is shown._\n"))
     import re as _re615
     f["README.md"] = f["README.md"].replace("{BP_SECTIONS}", " · ".join(
         _re615.findall(r"(?m)^## (.+)$", f["BUSINESS_PLAN.md"])))
@@ -314,6 +351,15 @@ def _build_repo_files(vsb: dict) -> dict:
                              "entity. Spec → scaffold; built in a later increment (not a compiled app).\n")
     f["mobile/manifest.webmanifest"] = json.dumps({"name": name, "short_name": str(name or "VSB")[:12],
                                                     "start_url": "/", "display": "standalone"}, indent=2)
+    #  W938 (P5.4) - the website links to the web app and the phone app as its siblings (W627); until one is
+    #  generated, its link lands on a page that says so instead of on a file that is not there
+    for _folder, _label in (("webapp", "Web app"), ("mobile", "Phone app")):
+        f[f"{_folder}/index.html"] = (
+            f"<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+            f"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+            f"<title>{_esc(name)} - {_label}</title></head><body><h1>{_esc(name)} - {_label}</h1>"
+            f"<p>The {_label.lower()} has not been generated yet. This page is a placeholder in the entity's "
+            f"repository.</p><p><a href=\"../web/index.html\">Website</a></p></body></html>")
     return f
 
 
@@ -424,6 +470,157 @@ def _version_control_commit(root, vsb_id: str, surface: str, qa: Dict[str, Any] 
                 "message": msg, "note": f"git unavailable ({str(exc)[:60]})"}
 
 
+#  W936 (P5.4) - THE REPOSITORY'S VERSION, FROM WHAT ACTUALLY CHANGED. These files are records of one generation (the
+#  manifest, the version and the changelog describe the tree; the quality record is sealed per generation), so they
+#  are not compared: the version moves only when a file of the entity's own changes.
+_GENERATION_RECORDS = ("manifest.json", "VERSION", "CHANGELOG.md", "compliance/QUALITY.md")
+_VERSION_BASIS = ("the version is 1 on the first generation and moves by one only when a file of the entity's own "
+                  "changed since the last version, compared by sha256 (digests); manifest.json, VERSION, CHANGELOG.md "
+                  "and compliance/QUALITY.md are records of a generation and are not compared. CHANGELOG.md names "
+                  "every file added, changed or removed in each version")
+
+
+def _repo_digests(root) -> Dict[str, str]:
+    """sha256 of every file of the entity's own under the repository root: not .git, not a generation's records."""
+    import hashlib
+    out: Dict[str, str] = {}
+    for p in sorted(root.rglob("*")):
+        if p.is_file() and ".git" not in p.parts:
+            rel = p.relative_to(root).as_posix()
+            if rel not in _GENERATION_RECORDS:
+                out[rel] = hashlib.sha256(p.read_bytes()).hexdigest()
+    return out
+
+
+def _prior_repo_manifest(vsb_id: str, root) -> Dict[str, Any] | None:
+    """The last manifest: the platform's copy, else the one the repository carries; None when neither exists. When
+    one exists and neither can be read, only the version the repository's VERSION file holds is known."""
+    found = False
+    for p in (_REPO_STORE / f"{vsb_id}.manifest.json", root / "manifest.json"):
+        if p.exists():
+            found = True
+            try:
+                m = json.loads(p.read_text(encoding="utf-8"))
+            except Exception:                       # noqa: BLE001 - the other copy is tried
+                continue
+            if isinstance(m, dict):
+                return m
+    if not found:
+        return None
+    try:
+        return {"version": int((root / "VERSION").read_text(encoding="utf-8").strip())}
+    except Exception:                               # noqa: BLE001 - no version is known: said in the changelog
+        return {}
+
+
+def _repo_version(prior: Dict[str, Any] | None, digests: Dict[str, str]) -> Dict[str, Any]:
+    """The version this generation carries, whether it moved, and the files added, changed and removed."""
+    before = dict((prior or {}).get("digests") or {})
+    try:
+        last = int((prior or {}).get("version") or 0)
+    except (TypeError, ValueError):
+        last = 0
+    added = sorted(set(digests) - set(before))
+    removed = sorted(set(before) - set(digests))
+    changed = sorted(k for k in set(digests) & set(before) if digests[k] != before[k])
+    moved = prior is None or not last or bool(added or removed or changed)
+    if prior is None:
+        note = "The first version: every file is new."
+    elif "digests" not in prior:
+        note = ("The generation before this one recorded no digests, so every file is listed as added"
+                + (" and the version is counted again from 1." if not last else "."))
+    else:
+        note = None
+    return {"version": last + 1 if moved else last, "moved": moved, "added": added, "changed": changed,
+            "removed": removed, "note": note}
+
+
+def _write_changelog(root, name: str, ver: Dict[str, Any]) -> None:
+    """Prepend this version's entry to CHANGELOG.md: every file added, changed or removed, by name."""
+    p = root / "CHANGELOG.md"
+    try:
+        old = p.read_text(encoding="utf-8") if p.exists() else ""
+    except OSError:
+        old = ""
+    earlier = old[old.index("## Version "):] if "## Version " in old else ""
+    head = (f"# Changelog - {name}\n\n"
+            "Each version is a generation of this repository in which a file of the entity's own changed, compared by "
+            "sha256. manifest.json, VERSION, CHANGELOG.md and compliance/QUALITY.md are records of a generation and are "
+            "not compared.\n\n")
+    lines = [f"## Version {ver['version']} - {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}"]
+    if ver.get("note"):
+        lines.append(ver["note"])
+    lines += [f"- {k}: {f}" for k in ("added", "changed", "removed") for f in ver[k]]
+    p.write_bytes((head + "\n".join(lines) + "\n\n" + earlier).encode("utf-8"))
+
+
+#  W937 (P5.4) - WHICH PART OF THE REPOSITORY EACH FILE IS, so a reader is not handed a template as a business
+_PART_SAYS = {
+    "own": "the entity's own: its record, or the body its founder or the model composed for it",
+    "template": ("the platform's template: this entity has no body of its own yet, so these sections are the "
+                 "template's and not a business plan"),
+    "layout": "the platform's standard layout, filled from this entity's record",
+    "generated": "generated from this entity's data by Workstation's {surface} generator: source, not a built or running app",
+    "scaffold": "a placeholder for the {surface}, which has not been generated",
+    "board_pack": "the entity's latest board pack, assembled from its live data (version {version})",
+    "record": "a record of this generation of the repository, not part of the entity",
+    "unknown": "not written by Workstation's generators, so what it is is not known",
+}
+_LAYOUT_FILES = ("README.md", "ORGANISATION.md", "OPERATIONS.md", "EVIDENCE.md", "resources/cascades.json",
+                 "RUN.md")   # W938 (P5.4)
+#  W938 (P5.4) - WHAT EACH SURFACE IS, WHERE IT OPENS, AND A WORD ON HOW. One static server from the repository's
+#  folder serves all three, so the links between them resolve.
+_RUN_PORT = 8000
+_RUN_SURFACES = (("website", "web/index.html", "Its pages link to each other and to the two apps."),
+                 ("webapp", "webapp/index.html", "It reads data.json, so it is served rather than opened as a file."),
+                 ("mobile", "mobile/index.html", "Open it in a phone's browser to install it as an app."))
+
+
+def _run_instruction(name: str, generated: Dict[str, bool]) -> str:
+    """RUN.md: how this repository runs on its own, said from what is on disk."""
+    out = [f"# Running {name} on its own\n",
+           "This repository needs nothing from Workstation to be read or run. Its website is static pages, and its web "
+           "app and phone app run in a browser: none of them is a server-side app, and nothing here is deployed.\n",
+           "From this repository's folder, serve it with Python's own static server:\n",
+           f"    python3 -m http.server {_RUN_PORT}\n"]
+    for surface, page, note in _RUN_SURFACES:
+        label = _SURFACE_NAMES[surface]
+        if generated.get(surface):
+            out.append(f"- The {label}: open http://localhost:{_RUN_PORT}/{page}. {note}")
+        else:
+            out.append(f"- The {label} has not been generated yet: {page} is a placeholder page that says so.")
+    return "\n".join(out) + "\n"
+_OWN_FILES = ("IDENTITY.md", "genome.json")
+_SURFACES = {"web": "website", "webapp": "webapp", "mobile": "mobile"}
+_SURFACE_NAMES = {"website": "website", "webapp": "web app", "mobile": "phone app"}
+_SCAFFOLD_FILES = ("web/index.html", "webapp/README.md", "mobile/README.md", "mobile/manifest.webmanifest",
+                   "webapp/index.html", "mobile/index.html")   # W938 - the placeholder pages the website links to
+#  a pack's per-assembly fields: its quality record is sealed per assembly, and when it was assembled is not its content
+_PACK_PER_ASSEMBLY = ("generated_at", "unchanged", "quality_assurance", "narrative_record_hash", "owner_id")
+
+
+def _repo_part(path: str, generated: Dict[str, bool], body_is_template: bool, board_version: Any) -> Dict[str, str]:
+    """Which part of the repository one file is, and the sentence that says so."""
+    top = path.split("/", 1)[0]
+    if path in _GENERATION_RECORDS:
+        part = "record"
+    elif path == "board/BOARD_PACK.json":
+        part = "board_pack"
+    elif top in _SURFACES and "/" in path:
+        surface = _SURFACES[top]
+        part = "generated" if generated.get(surface) else ("scaffold" if path in _SCAFFOLD_FILES else "unknown")
+        return {"part": part, "part_says": _PART_SAYS[part].format(surface=_SURFACE_NAMES[surface], version=board_version)}
+    elif path == "BUSINESS_PLAN.md":
+        part = "template" if body_is_template else "own"
+    elif path in _OWN_FILES:
+        part = "own"
+    elif path in _LAYOUT_FILES:
+        part = "layout"
+    else:
+        part = "unknown"
+    return {"part": part, "part_says": _PART_SAYS[part].format(surface="", version=board_version)}
+
+
 def _manifest_history(vsb_id: str, kind: str = "manifest") -> list:
     """§13 (W289) — the prior manifest is APPENDED to history instead of silently overwritten."""
     p = _REPO_STORE / f"{vsb_id}.{kind}.json"
@@ -460,7 +657,8 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
                   "webapp": (root / "webapp" / "app.json").exists(),
                   "mobile": (root / "mobile" / "app.json").exists()}
     for _scaffold, _surface in (("web/index.html", "website"), ("webapp/README.md", "webapp"),
-                                ("mobile/README.md", "mobile"), ("mobile/manifest.webmanifest", "mobile")):
+                                ("mobile/README.md", "mobile"), ("mobile/manifest.webmanifest", "mobile"),
+                                ("webapp/index.html", "webapp"), ("mobile/index.html", "mobile")):   # W938
         if _generated[_surface]:
             files.pop(_scaffold, None)
             #  W667 (ledger v16 R2.4) - dropping the placeholder from THIS write left the one an earlier write
@@ -518,6 +716,38 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
         _data = content.encode("utf-8")
         fp.write_bytes(_data)
         written.append({"path": path, "bytes": len(_data)})
+    #  W938 (P5.4) - THE REPOSITORY SAYS HOW IT RUNS ON ITS OWN, from what is on disk now
+    (root / "RUN.md").write_bytes(_run_instruction(vsb.get("name") or vsb_id, _generated).encode("utf-8"))
+    #  W937 (P5.4) - THE BOARD PACK IS IN THE REPOSITORY IT IS PART OF: the latest assembled pack, in the fields that
+    #  describe its content and version. Its per-assembly quality record and timestamps stay on the platform, so an
+    #  unchanged pack assembled again leaves the repository's version where it was.
+    _pack_file = _BOARDPACK_STORE / vsb_id / "latest.json"
+    _board937: Dict[str, Any] = {"in_repository": False, "says": (
+        f"no board pack has been assembled for this entity yet (POST /api/v1/vsb/{vsb_id}/board-pack), so the "
+        f"repository carries none")}
+    if _pack_file.exists():
+        try:
+            _pack = json.loads(_pack_file.read_text(encoding="utf-8"))
+            (root / "board").mkdir(parents=True, exist_ok=True)
+            (root / "board" / "BOARD_PACK.json").write_bytes(json.dumps(
+                {k: v for k, v in _pack.items() if k not in _PACK_PER_ASSEMBLY}, indent=2).encode("utf-8"))
+            _board937 = {"in_repository": True, "path": "board/BOARD_PACK.json", "version": _pack.get("version"),
+                         "content_hash": _pack.get("content_hash"), "says": (
+                f"board/BOARD_PACK.json is the entity's latest board pack, version {_pack.get('version')}; its "
+                f"per-assembly quality record and timestamps stay on the platform")}
+        except Exception as _e937:                   # noqa: BLE001 - said in the manifest, never read as no pack
+            _board937 = {"in_repository": False, "says": (
+                f"the latest board pack could not be read ({type(_e937).__name__}), so the repository's copy was "
+                f"not written this generation")}
+    #  W936 (P5.4) - A VERSION AND A CHANGELOG FROM WHAT ACTUALLY CHANGED, written before the tree is counted and
+    #  before the commit, so the repository and any clone of it carry them
+    _prior936 = _prior_repo_manifest(vsb_id, root)
+    _digests = _repo_digests(root)
+    _ver = _repo_version(_prior936, _digests)
+    (root / "VERSION").write_bytes(f"{_ver['version']}\n".encode("utf-8"))
+    if _ver["moved"] or not (root / "CHANGELOG.md").exists():
+        _write_changelog(root, vsb.get("name") or vsb_id, _ver if _ver["moved"] else {**_ver, "note": (
+            "CHANGELOG.md was not on disk and is written again; the entries before this version are not held.")})
     #  §13 (W574, M1 R2.2) — THE REPOSITORY IS WHAT IS ON DISK, not what this call wrote. The count,
     #  the byte total and the tree were all built from `written` — the files THIS generator produced
     #  — while the website, web-app and phone-app generators write their own and never update the
@@ -539,7 +769,10 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
             _on_disk.append({"path": _p.relative_to(root).as_posix(),
                              "bytes": _p.stat().st_size})
     _history = _manifest_history(vsb_id)                       # W289 — never silently overwritten
-    _vc = _version_control_commit(root, vsb_id, "repo", qa)    # W289 — a real commit per generation
+    #  W937 (P5.4) - every file on disk, with the part it is
+    _template937 = _body_served_by(vsb) == "template"
+    _parts = [{"path": x["path"], **_repo_part(x["path"], _generated, _template937, _board937.get("version"))}
+              for x in _on_disk]
     manifest = {
         "vsb_id": vsb_id, "name": vsb.get("name"), "slug": _repo_slug(vsb.get("name") or vsb_id),
         "domain": vsb.get("domain"), "realm": vsb.get("realm"),
@@ -560,7 +793,14 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
             "mobile": "mobile/ (generated PWA)" if _generated["mobile"] else "mobile/ (scaffold)"},
         "quality_assurance": qa, "posture": "in-house-first",
         # §13 (W289) — genuine version control + manifest lineage
-        "version_control": _vc,
+        #  W936 (P5.4) - the version, what it compared, and what changed since the last one
+        "version": _ver["version"], "version_moved": _ver["moved"], "version_basis": _VERSION_BASIS,
+        "changes": {k: _ver[k] for k in ("added", "changed", "removed")}, "digests": _digests,
+        #  W937 (P5.4) - which part each file is, and the board pack the repository carries
+        "parts": _parts, "board_pack": _board937,
+        "parts_basis": ("every file on disk except .git and manifest.json, each with the part it is: the entity's own, "
+                        "the platform's layout or template filled from its record, a generated surface, a scaffold, "
+                        "the board pack, a record of this generation, or not known"),
         "manifest_history": _history,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         # §13 (W574, M1 R2.1/R2.4) — THE SURFACE CLAUSE IS COMPUTED, from the same `_generated` map
@@ -581,7 +821,13 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
                      + ". ") if not all(_generated.values()) else "")
                  + "None of the three is a built, compiled or running app — they are source."),
     }
-    (root / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    #  W936 (P5.4) - THE COMMIT CARRIES THE MANIFEST THAT DESCRIBES IT: written first, then committed. A commit's id
+    #  cannot be written inside the commit it names, so the platform's copy records it and this copy says so.
+    manifest["version_control_basis"] = ("the commit that carries this manifest is the repository's HEAD; a commit's "
+                                         "id cannot be written inside that commit, so the platform's copy of this "
+                                         "manifest records it (version_control)")
+    (root / "manifest.json").write_bytes(json.dumps(manifest, indent=2).encode("utf-8"))
+    manifest["version_control"] = _version_control_commit(root, vsb_id, "repo", qa)   # W289 — a real commit per generation
     _REPO_STORE.mkdir(parents=True, exist_ok=True)
     (_REPO_STORE / f"{vsb_id}.manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     try:
@@ -2077,6 +2323,7 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
         _pack_dcs, _pack_dcs_why = None, f"{type(_exc656).__name__}: {str(_exc656)[:120]}"
     pack = {
         "vsb_id": vsb_id, "name": name, "kind": "board_pack", "generated_at": ts,
+        "owner_id": vsb.get("owner_id"),       # W838 (FU-746) - who owns the record: the entity's owner, stamped on it
         "layers": layers,
         # W496 (FU-104) - the page chipped all four names as present; this is the measured list
         "layers_present": layers_present,

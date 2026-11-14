@@ -1,0 +1,77 @@
+{
+  "amount_refused": {
+    "body": {
+      "detail": "Amount must be positive."
+    },
+    "status": 400
+  },
+  "ask": {
+    "amount": 1000,
+    "project_id": "8676a47a39164272b500b3310462199d",
+    "project_name": "W1033 made up: a bakery's second oven",
+    "purpose": "W1033 made up: the second oven's deposit"
+  },
+  "held": {
+    "allocation_id": null,
+    "amount": 1000.0,
+    "applied": false,
+    "cca_id": "cca-7af60beaf4",
+    "change": {
+      "allocation_id": null,
+      "amount": 1000.0,
+      "applied_amount": null,
+      "cca_id": "cca-7af60beaf4",
+      "change_status": "submitted",
+      "decided_at": null,
+      "decided_by": null,
+      "decided_by_verified": null,
+      "decision": null,
+      "decision_source": null,
+      "domain": "general",
+      "fund_available_at_request": 10000000,
+      "project_id": "8676a47a39164272b500b3310462199d",
+      "project_name": "W1033 made up: a bakery's second oven",
+      "purpose": "W1033 made up: the second oven's deposit",
+      "realm": "enterprise",
+      "requested_at": "2026-11-14T15:13:51Z",
+      "requested_by": "single-user-mode",
+      "requested_by_verified": false,
+      "state": "held",
+      "state_label": "held - awaiting decision"
+    },
+    "currency": "WST",
+    "governance": {
+      "basis": "HELD, NOT ALLOCATED: this request is Change Control record cca-7af60beaf4. Nothing moves until an explicit decision approves it and the allocation is then requested again; the fund's available figure is unchanged at 10000000 WST.",
+      "cca_id": "cca-7af60beaf4",
+      "change_control": "held",
+      "credited_to": null,
+      "gate": "not applied",
+      "note": "Governed action \u2014 Change Control hold cca-7af60beaf4 was filed and the action is held until the Owner approves it. A review never decides a material economy action: only an explicit decision of the Owner does (the Governance hub's Sovereign Sanctum).",
+      "recipient_kind": "project",
+      "recipient_registered": false,
+      "request_recorded": "recorded"
+    },
+    "homeostasis_caution": null,
+    "organism": {
+      "atp_ratio": 0.396,
+      "composite_health": 0.879,
+      "composite_health_basis": "0% of this figure's weight is measured (nothing); the rest is an immune term with NO call observed in its window (the absence of failures, not a reading), a self-healing term defaulted to 1.0 and a simulated metabolic term. The measured-only score is None, and that is what decides the mode and every gate.",
+      "composite_health_measured_only": null,
+      "composite_health_measured_weight": 0.0,
+      "composite_health_unmeasured_weight": 1.0,
+      "energy_acts": false,
+      "energy_basis": "1 - 0.0s spent / 3600s stated capacity this window (the capacity is a stated assumption); the work budget is switched off (WORKSTATION_WORK_BUDGET), so nothing reads this figure: the energy thresholds read the ATP simulator, which cannot fall, and stay inert as ruled",
+      "energy_ratio": 1.0,
+      "mode": "NOMINAL"
+    },
+    "remaining_available": 10000000,
+    "status": "held",
+    "status_label": "held - awaiting decision"
+  },
+  "unknown_refused": {
+    "body": {
+      "detail": "'w1033-made-up-nothing' is neither a registered entity nor a project, so there is nothing for the fund to allocate to. Nothing was filed with Change Control and the fund is unchanged."
+    },
+    "status": 404
+  }
+}

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { errorMessage } from '../lib/api';   // W1015 - a caught failure, said as what it was
 import { apiJson } from '../lib/api';
 
 type Dict = Record<string, any>;
@@ -20,12 +21,12 @@ export const QepDonorStatement: React.FC = () => {
         const q = (r.living_vsbs || []).filter((v: Dict) => v.entity_type === 'qep_waqf_trust').map((v: Dict) => String(v.vsb_id));
         setIds(q); if (q.length) setSel(q[0]);
       })
-      .catch(e => setErr(`The roster could not be read: ${String(e?.message ?? e)}`));
+      .catch(e => setErr(`The roster could not be read: ${errorMessage(e)}`));
   }, []);
   useEffect(() => {
     if (!sel) { setSt(null); return; }
     apiJson<Dict>(`/api/v1/qep/contribute/statement/${sel}`).then(r => { setSt(r); setErr(''); })
-      .catch(e => { setSt(null); setErr(`No statement: ${String(e?.message ?? e)}`); });
+      .catch(e => { setSt(null); setErr(`No statement: ${errorMessage(e)}`); });
   }, [sel]);
 
   return (

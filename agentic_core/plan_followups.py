@@ -46,7 +46,7 @@ import re
 import subprocess
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 # the CLI's tests point this at a scratch copy; nothing else sets it
 ROOT = Path(os.environ.get("WORKSTATION_FOLLOWUPS_ROOT") or Path(__file__).resolve().parents[1])
@@ -273,6 +273,20 @@ ROUND_ID = _re_round.compile(r"W\d{3,}[a-z]?")
 def is_round_id(value: Any) -> bool:
     """True when `value` is a round id the pace mechanism can attribute a closure to."""
     return bool(value and ROUND_ID.fullmatch(str(value).strip()))
+
+
+#  W999 - A ROUND ID IS READ PAST THREE DIGITS, AND ORDERED AS A NUMBER. The round a row's source names was read
+#  as exactly three digits, so from W1000 on no round would have found a row; and the pace window was the last
+#  six build rounds of sorted() over the ids as text, where W1000 sorts between W100 and W101, so from W1000 on
+#  the window would have held W994-W999 for good and every rate and projection would have been measured over
+#  rounds that had stopped, with nothing saying so. Both read the id the way ROUND_ID does.
+ROUND_IN_TEXT = _re_round.compile(r"\b(" + ROUND_ID.pattern + r")\b")
+
+
+def round_key(value: Any) -> Tuple[int, str]:
+    """Where a round id falls in the order rounds ran: W999 before W1000, and W883 before W883b before W884."""
+    m = _re_round.fullmatch(r"W(\d+)([a-z]?)", str(value or "").strip())
+    return (int(m.group(1)), m.group(2)) if m else (-1, str(value or ""))
 
 
 def raw_items(register: Any) -> List[Any]:
@@ -597,7 +611,6 @@ MIN_OBSERVED = 3             # fewer than this and the rate is not assessable
 
 def _round_activity(register: Any) -> Dict[str, Dict[str, int]]:
     """{round_id: {closed, found}} from the register's own record of each row."""
-    import re as _re
     act: Dict[str, Dict[str, int]] = {}
 
     def _slot(rid: str) -> Dict[str, int]:
@@ -609,9 +622,9 @@ def _round_activity(register: Any) -> Dict[str, Dict[str, int]]:
         by = str(r.get("closed_by") or "").strip()
         if by and is_round_id(by):
             _slot(by)["closed"] += 1
-        m = _re.search(r"\bW(\d{3})\b", f"{r.get('source') or ''} {r.get('found') or ''}")
+        m = ROUND_IN_TEXT.search(f"{r.get('source') or ''} {r.get('found') or ''}")   # W999: W1000 on, too
         if m:
-            _slot("W" + m.group(1))["found"] += 1
+            _slot(m.group(1))["found"] += 1
     return act
 
 
@@ -653,7 +666,7 @@ def forecast(register: Any, prompt_text: str, window: int = FORECAST_WINDOW) -> 
 
     # A BUILD round is one that closed at least one row. Rounds that only registered findings (a
     # sweep, an interrogation) are counted as what they were — they add work, they do not burn it.
-    build = sorted([r for r, a in act.items() if a["closed"] > 0])
+    build = sorted([r for r, a in act.items() if a["closed"] > 0], key=round_key)   # W999: as numbers, not text
     recent = build[-window:]
     closed = [act[r]["closed"] for r in recent]
     found = [act[r]["found"] for r in recent]
@@ -1172,7 +1185,7 @@ def largest_round_closed(register: Any) -> Dict[str, Any]:
         return {"rows": None, "rounds": [], "median": None, "rounds_measured": 0,
                 "basis": "no round has closed a row, so there is no ceiling."}
     top = max(per.values())
-    who = sorted(k for k, v in per.items() if v == top)
+    who = sorted((k for k, v in per.items() if v == top), key=round_key)
     vals = sorted(per.values(), reverse=True)
     med = vals[len(vals) // 2]
     return {"rows": top, "rounds": who, "median": med, "rounds_measured": len(per),
@@ -1636,8 +1649,10 @@ def check(register: Any, prompt_text: str, living_text: Optional[str] = None,
             problems.append(f"{rid}: id must look like FU-001")
         slot = r["slot"]
         if r["status"] == "done":
-            if not _ROUND.match(r.get("closed_by") or ""):
-                problems.append(f"{rid}: done without closed_by naming the round (W###)")
+            #  W894 (FU-1170) - read the way the planner counts it (is_round_id: W### or W###a). This used _ROUND
+            #  (W### only), so a close the command had accepted, W883b, was refused when the register was saved
+            if not is_round_id(r.get("closed_by")):
+                problems.append(f"{rid}: done without closed_by naming the round (W### or W###a)")
             continue
         if r["status"] == "dropped":
             if not (r.get("note") or "").strip():
@@ -1706,7 +1721,7 @@ def check(register: Any, prompt_text: str, living_text: Optional[str] = None,
     for slot, text in _item_blocks(body).items():
         if slot not in open_by_slot:
             continue
-        for fid in sorted(set(re.findall(r"\bFU-\d{3}\b", text))):
+        for fid in sorted(set(re.findall(r"\bFU-\d{3,}\b", text))):   # W999: FU-1000 on, too
             where = row_slot.get(fid)
             if where and where[1] == "open" and where[0] not in (slot, "OWNER"):   # a gated row rides no item
                 problems.append(f"{slot}'s text names {fid}, which rides {where[0]} — an item's text does not list its "

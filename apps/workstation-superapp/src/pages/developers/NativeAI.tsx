@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Cpu, Network, Loader2, CheckCircle2, Circle, ShieldCheck, Server, Globe, Plus, Trash2, Play, Save, Activity } from 'lucide-react';
-import { apiJson, errorMessage, provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, qmsChip } from '../../lib/api';
+import { apiJson, errorMessage, provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, qmsChip, bodyOrNull, bodyDetail } from '../../lib/api';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W929
 
 interface ModelResource {
   name: string; kind: string; available: boolean; is_external: boolean; model?: string; note?: string;
@@ -42,13 +43,18 @@ interface TreeSignal { input_strength: number; activation: number; supra_thresho
 interface BaselineCase {
   case: string; set: string; control: boolean; served_by?: string | null; on_target: boolean;
   marker_present: boolean; passed: boolean | null; passed_basis?: string;
+  check?: string;     // W843 (FU-1090) - the computed check the case was read on (contains, contains_not, only, json_keys)
   reply_excerpt: string; reply_chars: number; reply_truncated?: boolean; reply_sha256: string;
   reply_withheld?: string;
 }
 interface BaselineRun {
   run_id: string; at: string; tier: string; trigger?: string; served_target: boolean;
   counts: { passed: number; failed: number; not_read: number }; established: string; basis?: string;
-  serving: { identity: string | null; identity_basis: string };
+  serving: { identity: string | null; identity_basis: string;
+             //  W844 (FU-1091) - the options sent, and the runtime whose defaults applied, in the server's words
+             settings?: { sampling?: string; options_sent?: Record<string, unknown>;
+                          runtime?: { name: string; version: string | null } } };
+  settings_compared?: string;
   case_sets: { public: { version: string; digest: string; cases: number };
                heldout: { version: string; digest: string; cases: number } };
   cases: BaselineCase[]; reproduction_of?: string | null;
@@ -63,7 +69,9 @@ interface BaselineList {
 interface EvidenceLevels {
   surfaces: { path: string; level: string; rests_on: string; stated_in_its_own_answer?: boolean }[];
   boundary: string; scope?: string;
-  claims_check?: { result_words: string[]; where: string; basis: string };
+  claims_check?: { result_words: string[]; where: string; basis: string;
+                   //  W845 (FU-892) - what the scan reads, and what it does not
+                   scope?: { roots: string[]; suffixes: string[]; not_read: string } };
 }
 // P3.32 (W745) - the installed models as the local runtime describes them (GET /lifecycle/installed). Each
 // field is the runtime's own; null means it was not reported, and `not_reported` names each such field.
@@ -441,6 +449,7 @@ function PrimitiveConsole() {
 }
 
 export const NativeAI: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W929 - a read that fails is said
   const [status, setStatus] = useState<Status | null>(null);
   const [capabilities, setCapabilities] = useState<Capability[]>([]);
   const [context, setContext] = useState('a halal, zero-waste community meal service for elderly Londoners');
@@ -449,7 +458,16 @@ export const NativeAI: React.FC = () => {
   const [goal, setGoal] = useState('Build and launch a halal compliance review service for SME food businesses');
   const [tree, setTree] = useState<TreeRun | null>(null);
   const [treeRunning, setTreeRunning] = useState(false);
-  const [error, setError] = useState('');
+  //  W1048 - each failure is said beside the action that met it, and cleared when that action is tried again. One
+  //  line under the header said them all, far above their buttons, and kept a failure on screen over a later success
+  const [statusErr, setStatusErr] = useState('');
+  const [completeErr, setCompleteErr] = useState('');
+  const [ensembleErr, setEnsembleErr] = useState('');
+  const [swarmErr, setSwarmErr] = useState('');
+  const [treeErr, setTreeErr] = useState('');
+  const [lcActErr, setLcActErr] = useState('');
+  const [saveErr, setSaveErr] = useState('');
+  const [runSavedErr, setRunSavedErr] = useState<{ id: string; msg: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [homeo, setHomeo] = useState<any>(null);   // §8→§6 live homeostatic posture
   // W437 — fabric integrity: a REAL import probe of every capability's backing module, plus the
@@ -479,10 +497,11 @@ export const NativeAI: React.FC = () => {
   // been dropping its oldest reads as complete. This heading is where a reader meets the number.
   const [cascadeBasis, setCascadeBasis] = useState<{ truncated?: boolean; total_basis?: string } | null>(null);
   const loadCascades = () =>
-    fetch('/api/v1/resources/swarm').then(r => r.json()).then(d => {
+    apiJson('/api/v1/resources/swarm').then(d => {
       setCascades(d.cascades || []);
       setCascadeBasis({ truncated: d.truncated, total_basis: d.total_basis });
-    }).catch(() => {});
+      clearRead('the swarm cascades');
+    }).catch(noteRead('the swarm cascades'));
 
   // W276/W284 — the owned-model estate's LIFECYCLE (evaluate · promote · retire · reinstate)
   const [lifecycle, setLifecycle] = useState<{
@@ -495,6 +514,10 @@ export const NativeAI: React.FC = () => {
     // empty estate, so this card said "Serving default: llama3.2" beside the page's own
     // "Deterministic floor active". What serves and what is configured are two fields now.
     configured_default?: string | null; serves?: string; serving_basis?: string;
+    // W854 (FU-926) - what is known of the installed local models, read: switched off, not read, none, or installed
+    local_estate?: { state: string; sentence: string; models?: string[] } | null;
+    // W841 (FU-1087) - whether the promoted default is still the build that was evaluated and promoted
+    promoted_default_state?: { promoted?: string | null; holds?: boolean | null; basis?: string } | null;
     discovered?: string[]; active_estate?: string[];
     // FU-894 - how many evaluations the record holds against the cap that drops older ones, in the server's words
     evaluations_held?: number; evaluations_kept_at_most?: number; evaluations_basis?: string;
@@ -513,6 +536,15 @@ export const NativeAI: React.FC = () => {
   const [blOpen, setBlOpen] = useState<string | null>(null);
   const [evLevels, setEvLevels] = useState<EvidenceLevels | null>(null);
   const [evErr, setEvErr] = useState('');
+  //  W850 (FU-1088) - which tier would serve a request, why, and the Owner's ruled tie-break that ordered its resources
+  const [rtForm, setRtForm] = useState({ domain: 'classification', risk: 'normal', data_class: 'internal' });
+  const [rtRes, setRtRes] = useState<any>(null);
+  const [rtErr, setRtErr] = useState('');
+  const askRoute = () => {
+    setRtErr('');
+    const q = new URLSearchParams(rtForm as Record<string, string>).toString();
+    apiJson(`/api/v1/native-ai/route?${q}`).then(setRtRes).catch(e => { setRtRes(null); setRtErr(errorMessage(e)); });
+  };
   // P3.32 (W745) - the installed models as the runtime describes them, and the candidate leads; each read has its
   // own error line. FU-918 - and the lifecycle read now says when it failed instead of drawing nothing.
   const [installed, setInstalled] = useState<InstalledModels | null>(null);
@@ -540,28 +572,28 @@ export const NativeAI: React.FC = () => {
     apiJson<CandidateRegister>('/api/v1/native-ai/lifecycle/candidates').then(d => { setCandidates(d); setCandErr(''); })
       .catch(e => { setCandidates(null); setCandErr(errorMessage(e)); });
   const lifecycleAction = async (action: 'evaluate' | 'promote' | 'retire' | 'reinstate', model: string) => {
-    setLcBusy(`${action}:${model}`);
+    setLcBusy(`${action}:${model}`); setLcActErr('');
     try {
       // Ledger cluster 2 — a failed retire/promote must be visible, never a silent reload
       await apiJson(`/api/v1/native-ai/lifecycle/${action}`, { method: 'POST', body: { model } });
       loadLifecycle();
       loadCandidates();
-    } catch (e) { setError(errorMessage(e)); }
+    } catch (e) { setLcActErr(errorMessage(e)); }
     setLcBusy('');
   };
 
   useEffect(() => {
-    fetch('/api/v1/native-ai/status').then(r => r.json()).then(setStatus)
-      .catch(() => setError('Failed to load fabric status'))
+    apiJson('/api/v1/native-ai/status').then(setStatus)
+      .catch((e: unknown) => setStatusErr(`The fabric's status could not be read: ${errorMessage(e)}`))   // W1048 - with its reason
       .finally(() => setLoading(false));
-    fetch('/api/v1/native-ai/capabilities').then(r => r.json()).then(d => setCapabilities(d.capabilities || [])).catch(() => {});
-    fetch('/api/v1/native-ai/homeostasis').then(r => r.json()).then(setHomeo).catch(() => {});
-    fetch('/api/v1/native-ai/selfcheck').then(r => r.json()).then(setSelfcheck).catch(() => {});
+    apiJson('/api/v1/native-ai/capabilities').then(d => setCapabilities(d.capabilities || [])).catch(noteRead('the capabilities'));
+    apiJson('/api/v1/native-ai/homeostasis').then(setHomeo).catch(noteRead('the homeostasis reading'));
+    apiJson('/api/v1/native-ai/selfcheck').then(setSelfcheck).catch(noteRead('the self-check'));
     apiJson<EvidenceLevels>('/api/v1/native-ai/evidence-levels').then(setEvLevels).catch(e => setEvErr(errorMessage(e)));
-    fetch('/api/v1/native-ai/resources').then(r => r.json()).then(setFabricRes).catch(() => {});
-    fetch('/api/v1/native-ai/inventory').then(r => r.json()).then(setInventory).catch(() => {});
-    fetch('/api/v1/native-ai/models').then(r => r.json())
-      .then(d => setModelTiers(d.tiers || [])).catch(() => {});
+    apiJson('/api/v1/native-ai/resources').then(setFabricRes).catch(noteRead('the fabric resources'));
+    apiJson('/api/v1/native-ai/inventory').then(setInventory).catch(noteRead('the model inventory'));
+    apiJson('/api/v1/native-ai/models')
+      .then(d => setModelTiers(d.tiers || [])).catch(noteRead('the model tiers'));
     loadCascades();
     loadLifecycle();
     apiJson<InstalledModels>('/api/v1/native-ai/lifecycle/installed').then(setInstalled).catch(e => setInstErr(errorMessage(e)));
@@ -577,11 +609,11 @@ export const NativeAI: React.FC = () => {
   const [completing, setCompleting] = useState(false);
   const runComplete = async () => {
     if (!cPrompt.trim()) return;
-    setCompleting(true); setCRes(null);
+    setCompleting(true); setCRes(null); setCompleteErr('');
     try {
       setCRes(await apiJson('/api/v1/native-ai/complete', {
         method: 'POST', body: { prompt: cPrompt, agent: 'console', model: cModel } }));
-    } catch (e) { setError(errorMessage(e)); }
+    } catch (e) { setCompleteErr(errorMessage(e)); }
     setCompleting(false);
   };
 
@@ -590,39 +622,41 @@ export const NativeAI: React.FC = () => {
   const [ensembling, setEnsembling] = useState(false);
   const runEnsemble = async () => {
     if (!cPrompt.trim()) return;
-    setEnsembling(true); setEnsRes(null);
+    setEnsembling(true); setEnsRes(null); setEnsembleErr('');
     try {
       setEnsRes(await apiJson('/api/v1/native-ai/ensemble', {
         method: 'POST', body: { prompt: cPrompt, agent: 'console' } }));
-    } catch (e) { setError(errorMessage(e)); }
+    } catch (e) { setEnsembleErr(errorMessage(e)); }
     setEnsembling(false);
   };
 
   const runSwarm = async () => {
-    setRunning(true); setRun(null);
+    setRunning(true); setRun(null); setSwarmErr('');
     try {
       setRun(await apiJson('/api/v1/native-ai/swarm', {
         method: 'POST', body: { agent: 'demo', context } }));
-    } catch (e) { setError(errorMessage(e)); }
+    } catch (e) { setSwarmErr(errorMessage(e)); }
     setRunning(false);
   };
 
   const runTree = async () => {
     if (!goal.trim()) return;
-    setTreeRunning(true); setTree(null); setError('');
+    setTreeRunning(true); setTree(null); setTreeErr('');
     try {
       const r = await fetch('/api/v1/native-ai/tree', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ goal }),
       });
-      const data = await r.json();
+      //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
+      const data = r.ok ? await r.json() : await bodyOrNull(r);
       // only render a well-formed tree run; surface anything else (404/500/error) as a message
       if (r.ok && Array.isArray(data?.levels) && Array.isArray(data?.nodes)) {
         setTree(data);
       } else {
-        setError(data?.detail || `Workflow-tree run failed (HTTP ${r.status}).`);
+        //  W982 - the server's sentence when it gave one; an object detail is never put into the text
+        setTreeErr(bodyDetail(data, `Workflow-tree run failed (HTTP ${r.status}).`));   // W1013 - a field check by its field
       }
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+    } catch (e: any) { setTreeErr(errorMessage(e)); }
     setTreeRunning(false);
   };
 
@@ -669,7 +703,7 @@ export const NativeAI: React.FC = () => {
   };
 
   const saveCascade = async () => {
-    setSaving(true);
+    setSaving(true); setSaveErr('');
     try {
       const valid = stages.filter(s => s.role.trim() && s.instruction.trim());
       const url = editingId ? `/api/v1/resources/swarm/${editingId}` : '/api/v1/resources/swarm/define';
@@ -679,27 +713,28 @@ export const NativeAI: React.FC = () => {
                                        : { name, context: designContext, stages: valid, usage_area: 'synthesis' }),
       });
       if (!r.ok) {   // W344 — never a silent click; W460 — and say why when the backend says why
-        const detail = await r.json().then(d => d?.detail).catch(() => null);
-        setError(`Save failed (HTTP ${r.status})${detail ? `: ${String(detail)}` : ''}.`);
+        const detail = bodyDetail(await bodyOrNull(r), '');   // W1012 - text, whatever its shape
+        setSaveErr(`Save failed (HTTP ${r.status})${detail ? `: ${detail}` : ''}.`);
       }
       // W460 — a cascade removed elsewhere (404) used to trap the designer in edit mode against a missing id
       if (r.ok || (editingId && r.status === 404)) { setEditingId(null); if (r.ok) setDesignContext(''); }
       await loadCascades();
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+    } catch (e: any) { setSaveErr(errorMessage(e)); }
     setSaving(false);
   };
 
   const runSaved = async (id: string) => {
-    setRunningId(id); setSavedRun(null);
+    setRunningId(id); setSavedRun(null); setRunSavedErr(null);
     try {
       setSavedRun({ id, run: await apiJson('/api/v1/resources/swarm/run', {
         method: 'POST', body: { swarm_id: id } }) });
-    } catch (e) { setError(errorMessage(e)); }
+    } catch (e) { setRunSavedErr({ id, msg: errorMessage(e) }); }
     setRunningId('');
   };
 
   return (
     <div className="space-y-8 pb-24">
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Native AI Fabric</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">In-House AI Resources</h1>
@@ -710,9 +745,9 @@ export const NativeAI: React.FC = () => {
         </p>
       </header>
 
-      {error && <p className="text-vital text-xs font-bold">{error}</p>}
+      {statusErr && <p role="alert" data-testid="native-status-error" className="text-vital text-xs font-bold">{statusErr}</p>}
 
-      {loading && !status && !error && (
+      {loading && !status && !statusErr && (
         <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500"><Loader2 size={14} className="animate-spin" /> Loading the native AI fabric…</div>
       )}
 
@@ -818,10 +853,14 @@ export const NativeAI: React.FC = () => {
                     consumption at every efficiency the code passes, so it only rises: it cannot lower the cap,
                     and the posture it would select is unreachable. Stated from the server below rather than
                     asserted here, so it corrects itself if the model ever changes. */}
-                {homeo.organism.atp_can_fall
+                {homeo.organism.energy_acts
+                  ? <> The work budget is switched on: what is left of it is the energy term, and below 30% it
+                      lowers the cap.</>
+                  : homeo.organism.atp_can_fall
                   ? <> The metabolic (ATP) term can fall and contributes to that cap.</>
-                  : <span className="text-amber-400"> The metabolic (ATP) term is simulated and cannot fall,
-                      so it never lowers the cap{homeo.organism.conserving_posture_basis ? ' — ' : ''}
+                  : <span className="text-amber-400"> The work budget is switched off, so the energy term is the
+                      simulated one, which cannot fall and never lowers the cap
+                      {homeo.organism.conserving_posture_basis ? ' — ' : ''}
                       {homeo.organism.conserving_posture_basis}</span>}
               </p>
               {/* W742 — the work budget (Owner ruling S18.1), the energy figure that CAN run down, printed from
@@ -842,9 +881,10 @@ export const NativeAI: React.FC = () => {
                     for them would otherwise pass on the comment after the real binding below was deleted,
                     which is how a presence check comes to see nothing (W503). */}
                 <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-900 text-slate-400"
-                      title={homeo.organism.atp_basis ?? 'this response states no basis for the ATP figure'}>
-                  ATP: {Math.round((homeo.organism.atp_ratio ?? 0) * 100)}%
-                  <span className="text-amber-400">{homeo.organism.atp_measured ? '' : ' · simulated'}</span>
+                      data-testid="native-work-budget-left"
+                      title={homeo.organism.energy_basis ?? 'this response states no basis for the work budget figure'}>
+                  work budget left: {homeo.organism.energy_ratio != null ? `${Math.round(homeo.organism.energy_ratio * 100)}%` : '—'}
+                  <span className="text-amber-400">{homeo.organism.energy_acts ? '' : ' · read by nothing while the budget is off'}</span>
                 </span>
                 <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-900 text-slate-400">immune: {homeo.organism.immune_threat}</span>
                 {/* W491 (refutation) - the same part-simulated blend, named as such */}
@@ -949,6 +989,8 @@ export const NativeAI: React.FC = () => {
                 {ensembling ? <Loader2 size={12} className="animate-spin" /> : <Network size={12} />} Ensemble (all owned models)
               </button>
             </div>
+            {completeErr && <p data-testid="native-complete-error" role="alert" className="text-[10px] font-bold text-vital mb-3">{completeErr}</p>}
+            {ensembleErr && <p data-testid="native-ensemble-error" role="alert" className="text-[10px] font-bold text-vital mb-3">{ensembleErr}</p>}
             {ensRes && (
               <div className="p-3 rounded-xl bg-slate-950 border border-aura/20 mb-3">
                 {/* W491 (sweep S7.12, C10) — this read "Ensemble · 1 owned models in parallel →
@@ -1010,12 +1052,20 @@ export const NativeAI: React.FC = () => {
                 {lifecycle.effective_default ? (
                   <>
                     Serving: <span className="text-white font-black" data-testid="serving-default">{lifecycle.effective_default}</span>
-                    {lifecycle.promoted_default ? <span className="text-sky-300"> (promoted)</span> : <span> (env default, installed)</span>}
+                    {/* W841 (FU-1087) - "(promoted)" only of the model the promotion serves: a promotion whose build
+                        is no longer installed leaves the configured default serving, and that is said */}
+                    {lifecycle.promoted_default && lifecycle.promoted_default === lifecycle.effective_default
+                      ? <span className="text-sky-300"> (promoted)</span> : <span> (env default, installed)</span>}
+                    {lifecycle.promoted_default_state?.holds === false && (
+                      <span className="block text-amber-400/90" data-testid="promoted-default-not-held">
+                        Promoted {lifecycle.promoted_default_state.promoted}: {lifecycle.promoted_default_state.basis}
+                      </span>
+                    )}
                   </>
                 ) : (
                   <span data-testid="serving-default" title={lifecycle.serving_basis}>
                     Serving: <span className="text-white font-black">the native floor</span>
-                    <span className="text-amber-400/80"> — no local model is installed
+                    <span className="text-amber-400/80" data-testid="local-estate-reading"> — {lifecycle.local_estate?.sentence ?? 'what is installed was not read'}
                       {lifecycle.configured_default ? ` (${lifecycle.configured_default} is configured but absent)` : ''}</span>
                   </span>
                 )}
@@ -1052,6 +1102,7 @@ export const NativeAI: React.FC = () => {
                   </div>
                 ))}
               </div>
+              {lcActErr && <p data-testid="lifecycle-action-error" role="alert" className="text-[10px] font-bold text-vital mt-2">{lcActErr}</p>}
             </Card>
           )}
 
@@ -1084,6 +1135,38 @@ export const NativeAI: React.FC = () => {
                 </p>
               ))}
             </div>
+              {/* W850 (FU-1088) - the router's decision in its own words: the tier, every tier rejected and why, and
+                  the Owner's ruled tie-break (privacy fit, risk fit, domain match, resource headroom) - no score */}
+              <div data-testid="route-decision" className="mt-3 space-y-1 border-t border-slate-900 pt-2">
+                <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">Which tier would serve a request, and why</p>
+                <div className="flex flex-wrap gap-1 items-center">
+                  <input aria-label="Domain" value={rtForm.domain} onChange={e => setRtForm({ ...rtForm, domain: e.target.value })}
+                    className="bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-[10px] text-slate-200 w-36" />
+                  <select aria-label="Risk" value={rtForm.risk} onChange={e => setRtForm({ ...rtForm, risk: e.target.value })}
+                    className="bg-slate-900 border border-slate-800 rounded px-1 py-0.5 text-[10px] text-slate-200">
+                    {['normal', 'elevated', 'high'].map(r => <option key={r} value={r}>{r} risk</option>)}
+                  </select>
+                  <select aria-label="Data class" value={rtForm.data_class} onChange={e => setRtForm({ ...rtForm, data_class: e.target.value })}
+                    className="bg-slate-900 border border-slate-800 rounded px-1 py-0.5 text-[10px] text-slate-200">
+                    {['public', 'internal', 'personal', 'special'].map(d => <option key={d} value={d}>{d} data</option>)}
+                  </select>
+                  <button type="button" data-testid="route-ask" onClick={askRoute}
+                    className="text-[9px] font-black uppercase px-2 py-0.5 rounded border border-slate-800 text-slate-400 hover:text-aura">ask the router</button>
+                </div>
+                {rtErr && <p role="alert" className="text-[9px] font-bold text-vital">{rtErr}</p>}
+                {rtRes && (
+                  <div className="text-[9px] text-slate-400 space-y-0.5">
+                    <p data-testid="route-chosen"><span className="font-mono text-slate-200">{rtRes.tier}</span> — {rtRes.basis}</p>
+                    {(rtRes.considered ?? []).map((c: any) => <p key={c.tier} className="text-slate-600">rejected {c.tier}: {c.why_not}</p>)}
+                    {rtRes.tie_break && (
+                      <p data-testid="route-tie-break">
+                        Tie-break, in the ruled order {(rtRes.tie_break.order ?? []).join(' → ')}: {rtRes.tie_break.basis}
+                        {rtRes.tie_break.decided_by ? ` (decided by ${rtRes.tie_break.decided_by})` : ''}. Resources in order: {(rtRes.tie_break.ordered ?? []).join(', ') || 'none'}. {rtRes.tie_break.data_class_basis}. {rtRes.tie_break.no_score}.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
               <div data-testid="evidence-levels" className="mt-3 space-y-1 border-t border-slate-900 pt-2">
                 <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">What each statement about a model on this page rests on</p>
                 {evErr && <p role="alert" data-testid="evidence-levels-error" className="text-[9px] font-bold text-vital">{evErr}</p>}
@@ -1096,6 +1179,9 @@ export const NativeAI: React.FC = () => {
                 {evLevels?.claims_check && (
                   <p data-testid="evidence-claims-check" className="text-[9px] text-slate-500">
                     Wording check — it reports {evLevels.claims_check.result_words.join(' or ')}: {evLevels.claims_check.basis}. {evLevels.claims_check.where}.
+                    {evLevels.claims_check.scope && (
+                      <span data-testid="evidence-claims-scope"> Its scope: {evLevels.claims_check.scope.suffixes.join(', ')} files under {evLevels.claims_check.scope.roots.join(', ')}.</span>
+                    )}
                   </p>
                 )}
               </div>
@@ -1123,7 +1209,10 @@ export const NativeAI: React.FC = () => {
                     </p>
                     <p className="text-[9px] text-slate-500">{b.established}</p>
                     <p data-testid="baseline-identity" className="text-[9px] text-slate-500">Serving identity: {b.serving.identity ?? 'not recorded'} — {b.serving.identity_basis}</p>
-                    {b.reproduction && <p className="text-[9px] text-slate-500">Re-run of {String(b.reproduction_of ?? '')}: {b.reproduction.basis}</p>}
+                    {b.serving.settings?.sampling && <p data-testid="baseline-settings" className="text-[9px] text-slate-500">Settings: {b.serving.settings.sampling}
+                      {b.serving.settings.runtime && <span data-testid="baseline-runtime"> · runtime {b.serving.settings.runtime.name} {b.serving.settings.runtime.version ?? '(its version was not reported)'}</span>}
+                      {b.serving.settings.options_sent && <span data-testid="baseline-options-sent"> · options sent: {Object.keys(b.serving.settings.options_sent).length ? JSON.stringify(b.serving.settings.options_sent) : 'none'}</span>}</p>}
+                    {b.reproduction && <p className="text-[9px] text-slate-500">Re-run of {String(b.reproduction_of ?? '')}: {b.reproduction.basis}{b.settings_compared ? ` Settings: ${b.settings_compared}.` : ''}</p>}
                     <button type="button" onClick={() => setBlOpen(blOpen === b.run_id ? null : b.run_id)}
                       className="text-[9px] text-sky-400 underline underline-offset-2">
                       {blOpen === b.run_id ? 'hide the replies' : 'read the replies'}
@@ -1131,7 +1220,7 @@ export const NativeAI: React.FC = () => {
                     {blOpen === b.run_id && b.cases.map(c => (
                       <div key={`${c.set}:${c.case}`} data-testid="baseline-case" className="pl-2 border-l border-slate-800 mt-1">
                         <p className="text-[9px] text-slate-400">
-                          {c.case} ({c.set}{c.control ? ', control' : ''}) — {c.passed === true ? 'passed' : c.passed === false ? 'FAILED' : 'not read'} · served by {String(c.served_by ?? 'nothing')} · {c.reply_chars} characters{c.reply_truncated ? ', excerpt shown' : ''}
+                          {c.case} ({c.set}{c.control ? ', control' : ''}{c.check && !c.control ? `, check ${c.check}` : ''}) — {c.passed === true ? 'passed' : c.passed === false ? 'FAILED' : 'not read'} · served by {String(c.served_by ?? 'nothing')} · {c.reply_chars} characters{c.reply_truncated ? ', excerpt shown' : ''}
                         </p>
                         {c.passed_basis && <p className="text-[9px] text-slate-600">{c.passed_basis}</p>}
                         {c.reply_withheld
@@ -1164,6 +1253,7 @@ export const NativeAI: React.FC = () => {
             <Button onClick={runSwarm} disabled={running} className="flex items-center gap-2 bg-aura text-sovereign text-xs">
               {running ? <Loader2 size={13} className="animate-spin" /> : <Network size={13} />} Run quick swarm
             </Button>
+            {swarmErr && <p data-testid="native-swarm-error" role="alert" className="text-[10px] font-bold text-vital mt-2">{swarmErr}</p>}
             {run && <Trace run={run} />}
           </Card>
 
@@ -1181,6 +1271,7 @@ export const NativeAI: React.FC = () => {
             <Button onClick={runTree} disabled={treeRunning || !goal.trim()} className="flex items-center gap-2 bg-highlight text-sovereign text-xs">
               {treeRunning ? <Loader2 size={13} className="animate-spin" /> : <Network size={13} />} Plan + run workflow tree
             </Button>
+            {treeErr && <p data-testid="native-tree-error" role="alert" className="text-[10px] font-bold text-vital mt-2">{treeErr}</p>}
             {tree && <TreeView run={tree} />}
           </Card>
 
@@ -1233,6 +1324,7 @@ export const NativeAI: React.FC = () => {
                 {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save cascade
               </Button>
             </div>
+            {saveErr && <p data-testid="cascade-save-error" role="alert" className="text-[10px] font-bold text-vital mt-2">{saveErr}</p>}
           </Card>
 
           {/* Saved cascades */}
@@ -1279,6 +1371,7 @@ export const NativeAI: React.FC = () => {
                       </Button>
                     </div>
                   </div>
+                  {runSavedErr?.id === c.id && <p data-testid="cascade-run-error" role="alert" className="text-[10px] font-bold text-vital mt-2">{runSavedErr.msg}</p>}
                   {confirmDelete === c.id && (
                     <div className="mt-3 p-3 rounded-xl bg-vital/5 border border-vital/30" data-testid="cascade-delete-confirm">
                       <p className="text-[10px] font-bold text-vital">
@@ -1295,11 +1388,11 @@ export const NativeAI: React.FC = () => {
                                   try {
                                     const r = await fetch(`/api/v1/resources/swarm/${c.id}`, { method: 'DELETE' });
                                     const b = await r.json().catch(() => ({}));
-                                    if (!r.ok) throw new Error(typeof b.detail === 'string' ? b.detail : `HTTP ${r.status}`);
+                                    if (!r.ok) throw new Error(bodyDetail(b, `HTTP ${r.status}`));   // W1013 - a field check by its field
                                     setCascades(prev => prev.filter(x => x.id !== c.id));
                                     setConfirmDelete(null);
                                     if (editingId === c.id) setEditingId(null);
-                                  } catch (e: any) { setDeleteErr(e?.message ?? String(e)); }
+                                  } catch (e: any) { setDeleteErr(errorMessage(e)); }
                                   setDeletingId(null);
                                 }}>
                           Retire it

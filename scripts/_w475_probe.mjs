@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W475 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W475 (P1.17 The second truth pass) — the fourteen ledger-v4 entries, the UI halves in a real browser against the
 // built bundle on a FRESH backend (AI_DISABLE_LOCAL=1), the API halves by fetch. No seed.
 //   node scripts/_w475_probe.mjs http://127.0.0.1:8084

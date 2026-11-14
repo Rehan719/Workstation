@@ -1,21 +1,16 @@
 @echo off
-TITLE Workstation v0.9 - Start Backend
-echo 🚀 Starting Workstation Backend (v0.9) using local venv...
-
-:: Set PYTHONPATH to the current directory for module resolution
+TITLE Workstation - backend
+rem W919 (FU-742) - starts the app every deployment starts (agentic_core.app_mvp:app; the Dockerfile and render.yaml
+rem run the same one), with the Python environment setup.ps1 makes in .\venv, on http://127.0.0.1:8000.
+rem It is running when http://127.0.0.1:8000/health answers. Stop it with Ctrl+C.
+cd /d "%~dp0"
 set "PYTHONPATH=%~dp0;%PYTHONPATH%"
-:: Ensure we use the local venv's packages only
 set PYTHONNOUSERSITE=1
-
-:: Locate the venv's python executable
 set "VENV_PYTHON=%~dp0venv\Scripts\python.exe"
-
-if exist "%VENV_PYTHON%" (
-    echo Using Virtual Environment: "%VENV_PYTHON%"
-    "%VENV_PYTHON%" -c "import sys; print(f'Interpreter: {sys.executable}')"
-    "%VENV_PYTHON%" -m uvicorn agentic_core.main:app --reload --host 127.0.0.1 --port 8000
-) else (
-    echo ❌ ERROR: Virtual environment not found at "%VENV_PYTHON%"
-    echo Please run setup.ps1 first.
+if not exist "%VENV_PYTHON%" (
+    echo The Python environment is not there yet: %VENV_PYTHON%
+    echo Run the set-up first:  powershell -ExecutionPolicy Bypass -File .\setup.ps1
     pause
+    exit /b 1
 )
+"%VENV_PYTHON%" -m uvicorn agentic_core.app_mvp:app --host 127.0.0.1 --port 8000
