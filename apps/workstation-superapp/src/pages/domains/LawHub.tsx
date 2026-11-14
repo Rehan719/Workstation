@@ -9,6 +9,7 @@ import StatutePanel from '../../components/StatutePanel';
 import TimeLimitPanel from '../../components/TimeLimitPanel';   // W875 (FU-1012)
 import { DomainTool } from '../../components/DomainTool';
 import { toolsFor } from '../../lib/toolRegistry';
+import { useTab } from '../../lib/useTab';   // W1027 - the tab is in the address
 import { useServingStatus, servingIsFloor } from '../../components/ServingNow';   // W866 (FU-1013)
 import { apiJson, ApiError, errorMessage } from '../../lib/api';   // W996
 
@@ -17,11 +18,13 @@ import { apiJson, ApiError, errorMessage } from '../../lib/api';   // W996
 const readFailure = (e: unknown) => (e instanceof ApiError || e instanceof TypeError ? errorMessage(e)
   : String((e as { message?: string } | null)?.message ?? e));
 
+const LAW_TABS = ['compliance', 'draft', 'research'] as const;
+
 export const LawHub: React.FC = () => {
   const T = toolsFor('/law');   // W470 — the one tool registry the front doors count from
   const navigate = useNavigate();
   const { layout, emotionalAdjustment } = useAdaptiveUI();
-  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'compliance');
+  const [activeTab, setActiveTab] = useTab(LAW_TABS, 'compliance');
   // W825 (FU-862) - the templates the API lists (GET /api/v1/law/templates had no caller), with the one it HOLDS for a
   // qualified read said on the page. A failed read is said, and the typed ids are offered.
   const [templates, setTemplates] = useState<string[] | null>(null);

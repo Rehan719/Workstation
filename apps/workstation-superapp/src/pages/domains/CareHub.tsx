@@ -6,13 +6,16 @@ import { Layers, HeartPulse, History } from 'lucide-react';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 import { DomainTool } from '../../components/DomainTool';
 import { toolsFor } from '../../lib/toolRegistry';
+import { useTab } from '../../lib/useTab';   // W1027 - the tab is in the address
 import { apiJson, errorMessage } from '../../lib/api';     // W955 (P5.13 clause 1)
+
+const CARE_TABS = ['clinical', 'care-plan', 'risk', 'safeguarding'] as const;
 
 export const CareHub: React.FC = () => {
   const T = toolsFor('/care');   // W470 — the one tool registry the front doors count from
   const navigate = useNavigate();
   const { layout, emotionalAdjustment } = useAdaptiveUI();
-  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'clinical');
+  const [activeTab, setActiveTab] = useTab(CARE_TABS, 'clinical');
   // W825 (FU-862) - the tools the API lists (GET /api/v1/care/tools had no caller): the select shows each runnable
   // tool's name and sends its id. Withheld and retired instruments stay out of the select, as its label says.
   const [toolNames, setToolNames] = useState<Record<string, string>>({});

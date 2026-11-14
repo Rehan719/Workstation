@@ -10063,7 +10063,7 @@ def test_w454_employment_default_tab_is_honest(client, monkeypatch):
         assert needle not in tsx, needle
     assert "not a live job board" in tsx and "illustrative · no live URL" in tsx and tsx.count("provenanceBadge(") >= 2
     hub = Path("apps/workstation-superapp/src/pages/domains/EmploymentHub.tsx").read_text(encoding="utf-8")
-    assert "get('tab') || 'cv'" in hub and "get('tab') || 'studio'" not in hub
+    assert "useTab(EMPLOYMENT_TABS, 'cv')" in hub and "useTab(EMPLOYMENT_TABS, 'studio')" not in hub   # W1027
     # the other way: the CV tool on the new default tab still generates with provenance
     cv = client.post("/api/v1/employment/cv", json={"target_role": "Bakery operations manager", "experience": "five years running a halal bakery in Leeds", "skills": ["operations", "food safety"], "seniority": "mid"}).json()
     assert (cv.get("ai_provenance") or {}).get("served_by"), cv
@@ -55007,7 +55007,8 @@ def test_p3b_r4_domain_qep_and_genesis_surfaces_say_what_exists(client, monkeypa
     _app = (_src / "App.tsx").read_text(encoding="utf-8")       # raw: a route path may hold the two characters /*
     _rh = _page("pages/domains/ReligionHub.tsx")
     assert re.search(r'path="/religion"\s+element=\{<ReligionHub />\}', _app), "/religion no longer renders the Religion hub"
-    assert "new URLSearchParams(window.location.search).get('tab') || 'wisdom'" in _rh, "the hub no longer opens the tab a link names"
+    assert "useTab(RELIGION_TABS, 'wisdom')" in _rh and "'qep'" in _between(_rh, "const RELIGION_TABS = [", "]"), (
+        "the hub no longer opens the tab a link names")   # W1027 - the tab is in the address
     assert "<QEPFlagshipFeatures />" in _between(_rh, "{activeTab === 'qep' ? (", ") : activeTab === 'dialogue' ? ("), (
         "the link's target tab does not render the roadmap")
     assert "<QEPFlagshipFeatures" not in _qh or 'href="/religion?tab=qep"' not in _hdr, (
@@ -85205,3 +85206,89 @@ def test_w1026_fu399_the_application_studio_is_rendered_and_says_each_failure_by
     t = (src / "ApplicationStudio.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './ApplicationStudio.fixture.json';" in t and "<ApplicationStudio " in t
     assert "expect(alert).not.toHaveBeenCalled();" in t
+
+
+def test_w1027_fu399_a_pages_tab_is_in_its_address_and_the_religion_hub_says_a_failed_read(client, monkeypatch):
+    """FU-399 parts 52 and 53 (W1027). The Employment and Religion hubs are rendered (EmploymentHub.test.tsx,
+    ReligionHub.test.tsx), their tools stood in for, and the Religion hub against its one read's own answers: the
+    schools of jurisprudence, and the server's own 500 when that route fails inside. Rendering found three defects.
+    Six domain hubs and the entity cockpit read ?tab= once, when they mounted, and never wrote it, and the Quran
+    platform's hub did not read it at all: a tool chosen on a hub was lost on a reload, a link could not name it, and an
+    address that changed while the hub was open was not followed. An address naming a tab the Employment hub does not
+    have showed "Select an engine to begin." with no tab chosen. And the Religion hub said every failed read of the
+    schools, a server's refusal included, as "Backend unreachable". All eight now keep the tab in the address through
+    one hook (lib/useTab.ts), a tab a page does not have opens its first, and the failed read is said by what it was.
+
+    Held here: the fixture is the route's answer, read again, and the server's 500 its own; the hook's readings; each
+    of the eight reads its tab through it, over the tabs it shows; tree-wide, no page reads its tab off
+    window.location; and the Religion hub's sentences."""
+    import json
+    import pathlib
+    import re
+    from fastapi.testclient import TestClient
+    from agentic_core.api import religion as _rel
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/domains/ReligionHub.fixture.json").read_text(encoding="utf-8"))
+
+    #  the route's answer, read again, and the server's own answer when the route fails inside
+    assert client.get("/api/v1/religion/schools").json() == fx["schools"]
+    monkeypatch.setattr(_rel, "_MADHABS", None)
+    #  a client of the same app that answers a failure as the server does, not as a raised exception (no lifespan run)
+    failed = TestClient(client.app, raise_server_exceptions=False).get("/api/v1/religion/schools")
+    assert (failed.status_code, failed.json()) == (fx["schools_failed"]["status"], fx["schools_failed"]["body"]), (
+        failed.status_code, failed.text[:200])
+    assert failed.status_code == 500 and failed.json()["cause_established"] is False, failed.text[:200]
+
+    #  the hook reads the address on every render, opens the first tab for one the page does not have, writes the
+    #  one chosen without a history entry, clears it for the first, and keeps the rest of the address
+    hook = _code_only((src / "lib/useTab.ts").read_text(encoding="utf-8"))
+    for line in ("const [sp, setSp] = useSearchParams();",
+                 "const active = asked !== null && ids.includes(asked) ? asked : first;",
+                 "const next = new URLSearchParams(prev);", "if (id === first) next.delete('tab');",
+                 "else next.set('tab', id);", "}, { replace: true });"):
+        assert line in hook, line
+    assert "useState" not in hook and "window.location" not in hook
+
+    #  each of the eight reads its tab through the hook, over exactly the tabs it shows, the one it opens on among them
+    pages = {"pages/domains/CareHub.tsx": ("CARE_TABS", "clinical"),
+             "pages/domains/EducationHub.tsx": ("EDUCATION_TABS", "lessons"),
+             "pages/domains/EmploymentHub.tsx": ("EMPLOYMENT_TABS", "cv"),
+             "pages/domains/LawHub.tsx": ("LAW_TABS", "compliance"),
+             "pages/domains/ReligionHub.tsx": ("RELIGION_TABS", "wisdom"),
+             "pages/domains/ScienceHub.tsx": ("SCIENCE_TABS", "research"),
+             "pages/domains/QEPReligionHub.tsx": ("QEP_TABS", "coach")}
+    for rel, (const, first) in pages.items():
+        page = _code_only((src / rel).read_text(encoding="utf-8").replace("\r\n", "\n"))
+        assert f"const [activeTab, setActiveTab] = useTab({const}, '{first}');" in page, rel
+        declared = re.search(rf"const {const} = \[([^\]]*)\] as const;", page)
+        assert declared, rel
+        ids = re.findall(r"'([a-z-]+)'", declared.group(1))
+        shown = set(re.findall(r"activeTab === '([a-z-]+)'", page)) | set(re.findall(r"setActiveTab\('([a-z-]+)'\)", page))
+        assert first in ids and set(ids) == shown and len(ids) == len(set(ids)), (rel, ids, sorted(shown))
+    cockpit = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8"))
+    assert "const [tab, setTab] = useTab(TAB_IDS, 'org');" in cockpit and "const TAB_IDS = TABS.map(([id]) => id);" in cockpit
+    emp = _code_only((src / "pages/domains/EmploymentHub.tsx").read_text(encoding="utf-8"))
+    assert "Select an engine" not in emp, "an address naming a tab the hub does not have leaves no tab chosen"
+
+    #  tree-wide: no page reads its tab off window.location, once, at mount
+    readers, scanned = [], 0
+    for f in sorted(p for ext in ("*.ts", "*.tsx") for p in src.rglob(ext)):
+        if ".test." in f.name:
+            continue
+        scanned += 1
+        text = _code_only(f.read_text(encoding="utf-8").replace("\r\n", "\n"))
+        if re.search(r"URLSearchParams\(\s*window\.location\.search\s*\)\.get\(\s*'tab'\s*\)", text):
+            readers.append(f.relative_to(src).as_posix())
+    assert scanned > 100, ("this scanned almost nothing, so it would pass on an empty tree", scanned)
+    assert readers == [], ("a page reads its tab once from window.location and never writes it; read it through "
+                           "lib/useTab.ts", readers)
+
+    #  the Religion hub says a failed read by what it was, and a read of none as none
+    rh = _code_only((src / "pages/domains/ReligionHub.tsx").read_text(encoding="utf-8"))
+    assert ".catch(e => setSchoolsError(errorMessage(e)));" in rh and "Backend unreachable" not in rh
+    assert ('<div role="alert" data-testid="religion-schools-failed" className="text-center py-8 text-amber-400 '
+            'text-sm">The schools of jurisprudence could not be read: {schoolsError}</div>') in rh
+    assert "const [madhabs, setMadhabs] = useState<Madhab[] | null>(null);" in rh and 'data-testid="religion-schools-none"' in rh
+    for name in ("EmploymentHub", "ReligionHub"):
+        t = (src / f"pages/domains/{name}.test.tsx").read_text(encoding="utf-8")
+        assert f"import {{ {name} }} from './{name}';" in t and "<MemoryRouter initialEntries={[at]}>" in t, name

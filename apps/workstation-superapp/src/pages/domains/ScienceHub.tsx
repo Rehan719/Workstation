@@ -7,13 +7,16 @@ import { useStore } from '@workstation/shared';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 import { DomainTool } from '../../components/DomainTool';
 import { toolsFor } from '../../lib/toolRegistry';
+import { useTab } from '../../lib/useTab';   // W1027 - the tab is in the address
 import { apiJson, errorMessage } from '../../lib/api';   // W1004
+
+const SCIENCE_TABS = ['research', 'hypothesis', 'design', 'literature'] as const;
 
 export const ScienceHub: React.FC = () => {
   const T = toolsFor('/science');   // W470 — the one tool registry the front doors count from
   const navigate = useNavigate();
   const { layout, emotionalAdjustment } = useAdaptiveUI();
-  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'research');
+  const [activeTab, setActiveTab] = useTab(SCIENCE_TABS, 'research');
   // W824 (FU-862) - the methodologies the API lists (GET /api/v1/science/methodologies had no caller: the design select
   // typed eight of its ten and the synthesis form offered none). Null = not read; a failed read is SAID.
   const [methods, setMethods] = useState<string[] | null>(null);

@@ -11,6 +11,8 @@ import { LearnTeachModule } from '../../components/LearnTeachModule';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 import { DomainTool } from '../../components/DomainTool';
 import { toolsFor } from '../../lib/toolRegistry';
+import { useTab } from '../../lib/useTab';   // W1027 - the tab is in the address
+import { errorMessage } from '../../lib/api';   // W1027 - a failed read said as what it was
 
 interface Madhab { id: string; name: string; region: string; founder: string }
 
@@ -36,19 +38,23 @@ const MODEL_ANSWER_RULE = 'When a model serves instead, everything it composes i
 // ...and the tafsir blurb said nothing of the floor, which writes no study notes at all.
 const TAFSIR_FLOOR_RULE = 'When only the deterministic floor is serving, no study notes are written: the notes, a translation and a transliteration are withheld, and the result names them.';
 
+const RELIGION_TABS = ['wisdom', 'dialogue', 'tafsir', 'halal', 'hadith', 'qep'] as const;
+
 export const ReligionHub: React.FC = () => {
   const T = toolsFor('/religion');   // W470 — the one tool registry the front doors count from
   const navigate = useNavigate();
    const { layout, emotionalAdjustment } = useAdaptiveUI();
   const { user } = useStore();
-  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'wisdom');
-  const [madhabs, setMadhabs] = useState<Madhab[]>([]);
+  const [activeTab, setActiveTab] = useTab(RELIGION_TABS, 'wisdom');
+  //  W1027 - null until the schools are read, so a list of none would be said as none and never as "Loading"
+  const [madhabs, setMadhabs] = useState<Madhab[] | null>(null);
 
-  const [schoolsError, setSchoolsError] = useState(false);
+  //  W1027 - a failed read is said by what it was: every failure, a refusal included, read "Backend unreachable"
+  const [schoolsError, setSchoolsError] = useState('');
   useEffect(() => {
     axios.get('/api/v1/religion/schools')
       .then(res => setMadhabs(res.data.madhabs ?? []))
-      .catch(() => setSchoolsError(true));   // W439: a failed fetch used to pulse "Loading…" forever
+      .catch(e => setSchoolsError(errorMessage(e)));   // W439: a failed fetch used to pulse "Loading…" forever
   }, []);
 
   return (
@@ -329,7 +335,7 @@ export const ReligionHub: React.FC = () => {
                         { name: 'madhab', label: 'Jurisprudential lens (optional)', type: 'select', options: ['', 'hanafi', 'maliki', 'shafi', 'hanbali', 'jafari'], default: '' },
                       ]}
                     />
-                  ) : madhabs.length > 0 ? madhabs.map((madhab, i) => (
+                  ) : madhabs && madhabs.length > 0 ? madhabs.map((madhab, i) => (
                     <motion.div
                       key={madhab.id}
                       initial={{ opacity: 0, x: -20 }}
@@ -356,7 +362,9 @@ export const ReligionHub: React.FC = () => {
                        </div>
                     </motion.div>
                   )) : schoolsError ? (
-                    <div className="text-center py-8 text-amber-400 text-sm">Backend unreachable — jurisprudential reference data could not be loaded.</div>
+                    <div role="alert" data-testid="religion-schools-failed" className="text-center py-8 text-amber-400 text-sm">The schools of jurisprudence could not be read: {schoolsError}</div>
+                  ) : madhabs ? (
+                    <div data-testid="religion-schools-none" className="text-center py-8 text-slate-500 text-sm">No school of jurisprudence is listed.</div>
                   ) : (
                     <div className="text-center py-8 text-slate-600 text-sm animate-pulse">Loading jurisprudential traditions…</div>
                   )}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, Badge, Button } from '@workstation/ui';
 import { Layers, Briefcase, History } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -6,13 +6,17 @@ import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 import { ApplicationStudio } from '../../components/employment/ApplicationStudio';
 import { DomainTool } from '../../components/DomainTool';
 import { toolsFor } from '../../lib/toolRegistry';
+import { useTab } from '../../lib/useTab';   // W1027 - the tab is in the address
+
+const EMPLOYMENT_TABS = ['studio', 'cv', 'cover', 'application', 'interview', 'path', 'salary'] as const;
 
 export const EmploymentHub: React.FC = () => {
   const T = toolsFor('/employment');   // W470 — the one tool registry the front doors count from
   const { layout, emotionalAdjustment } = useAdaptiveUI();
   // W454 (P1.6, ledger 1.6) — the hub opens on the CV tools; the Application Studio (whose job search is
   // AI-synthesised examples, not a live board) is one click away and says what it is.
-  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'cv');
+  //  W1027 - and the tab is in the address: a tab the hub does not have opens the CV tools
+  const [activeTab, setActiveTab] = useTab(EMPLOYMENT_TABS, 'cv');
 
   const scrollToSection = (id: string) => {
     // Defer until the tab's content has mounted.
@@ -165,11 +169,8 @@ export const EmploymentHub: React.FC = () => {
                   { name: 'leverage', label: 'Leverage (optional)', type: 'textarea', placeholder: 'e.g. competing offer, scarce skills, strong performance' },
                 ]}
               />
-            ) : (
-              <div className="p-20 text-center border-2 border-dashed border-slate-900 rounded-[3rem]">
-                 <p className="text-slate-600 font-black uppercase tracking-widest">Select an engine to begin.</p>
-              </div>
-            )}
+            ) : null /* W1027 - an address naming a tab the hub does not have opens the CV tools, so none is left
+                        unchosen ("Select an engine to begin." stood here with no tab chosen) */}
          </div>
       </Card>
     </div>

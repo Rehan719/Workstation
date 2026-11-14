@@ -24449,6 +24449,34 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: each failure is said beside its action (the files, the listing, the generation) and by what it was, through errorMessage, and the search's through it too; what a reply leaves out comes back as null and is said as not given ('employer not stated', 'no title given', 'Not specified'), and posted back as empty, since the attach route refuses a null; and the route always says why a search has no listing. ApplicationStudio.test.tsx drives the floor's search, two replies made up for the capture, three refusals and an unreachable server (seven vitest blinds); test_w1026 holds the fixture, read again, and the studio's readings (five blinds)."
+    },
+    {
+      "id": "FU-1211",
+      "title": "Six domain hubs and the entity cockpit read their tab once from the address and never wrote it, the Quran platform's hub not at all; the Religion hub said a refused read as an unreachable server",
+      "why": "Found rendering the Employment and Religion hubs (FU-399 parts 52 and 53). Each domain hub (Care, Education, Employment, Law, Religion, Science) and the entity cockpit read ?tab= once, when it mounted, and never wrote it, and the Quran platform's hub kept its tab in state only: a tool chosen on a hub was lost on a reload, a link could not name it (no link could open the scholar review), and an address that changed while the hub was open was not followed. The four tab hubs W1017 rendered already read and wrote it. An address naming a tab the Employment hub does not have showed 'Select an engine to begin.' with no tab chosen. And the Religion hub said every failed read of the schools of jurisprudence, a server's refusal included, as 'Backend unreachable — jurisprudential reference data could not be loaded.'",
+      "source": "W1027 (FU-399 parts 52 and 53, the Employment and Religion hubs rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/domains/EmploymentHub.tsx",
+        "apps/workstation-superapp/src/pages/domains/ReligionHub.tsx",
+        "apps/workstation-superapp/src/pages/domains/CareHub.tsx",
+        "apps/workstation-superapp/src/pages/domains/EducationHub.tsx",
+        "apps/workstation-superapp/src/pages/domains/LawHub.tsx",
+        "apps/workstation-superapp/src/pages/domains/ScienceHub.tsx",
+        "apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1027",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the Employment and Religion hubs; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the eight pages read and write their tab through one hook, lib/useTab.ts (the router's search params, read on every render; a tab a page does not have opens its first; the first tab is the address with no ?tab=; the rest of the address is kept; no history entry per tab). The Employment hub's unchosen state is gone, and the Religion hub says a failed read by what it was, through errorMessage. EmploymentHub.test.tsx and ReligionHub.test.tsx drive the tab, the address and the read (five vitest blinds); test_w1027 holds the fixture, read again, the hook, the eight pages and, tree-wide, that no page reads its tab off window.location (six blinds)."
     }
   ],
   "routes": [

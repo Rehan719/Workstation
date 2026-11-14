@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { errorMessage } from '../../lib/api';   // W1015 - a caught failure, said as what it was
+import { useTab } from '../../lib/useTab';   // W1027 - the tab is in the address
 import { axiosDetail, bodyDetail, provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, bodyOrNull } from '../../lib/api';   // W1011: axiosDetail; W1012: bodyDetail
 import { ReadFailures, useReadFailures, silenceIsRight } from '../../components/ReadFailures';   // W928
 import { VBSSystemsPanel } from '../../components/VBSSystemsPanel';
@@ -34,6 +35,7 @@ const TABS = [
   ['transform', 'Transformation', Workflow],
   ['chat', 'Converse', MessageCircle],
 ] as const;
+const TAB_IDS = TABS.map(([id]) => id);
 
 interface ChatMsg { role: 'you' | 'vsb'; text: string; served_by?: string; is_external?: boolean; attached?: boolean; image_understood?: boolean; image_served_by?: string | null; image_is_external?: boolean;
   // W490 (refutation) — the cockpit is the SECOND reader of these avatar fields and had neither of
@@ -177,11 +179,9 @@ export const VSBCockpit: React.FC = () => {
   const [delivFormat, setDelivFormat] = useState('md');
   const [delivFormats, setDelivFormats] = useState<{ id: string; label: string }[]>([{ id: 'md', label: 'Markdown (.md)' }]);
   const [standards, setStandards] = useState<Dict[]>([]);
-  // W440 — deep-linkable (?tab=), matching the app's hub pattern
-  const [tab, setTab] = useState<string>(() => {
-    const want = new URLSearchParams(window.location.search).get('tab');
-    return want && TABS.some(([id]) => id === want) ? want : 'org';
-  });
+  // W440 — deep-linkable (?tab=), matching the app's hub pattern. W1027 - and written back, as on the hubs: a tab
+  // chosen here was lost on a reload
+  const [tab, setTab] = useTab(TAB_IDS, 'org');
   const [loading, setLoading] = useState(false);
   const [cascadeTick, setCascadeTick] = useState(0);   // W508 (P2.8(2)) — bumped when a cascade edit saves
   const [tx, setTx] = useState<Dict | null>(null);

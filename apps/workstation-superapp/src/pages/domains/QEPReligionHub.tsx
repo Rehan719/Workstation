@@ -6,9 +6,13 @@ import { Mic, MicOff, Play, CheckCircle2, AlertCircle, Sparkles, BookOpen, Troph
 import QEPIntelligence from '../../components/qep/QEPIntelligence';
 import QepDonorStatement from '../../components/QepDonorStatement';
 import ScholarReviewPanel from '../../components/qep/ScholarReviewPanel';
+import { useTab } from '../../lib/useTab';   // W1027 - the tab is in the address
+
+const QEP_TABS = ['coach', 'mem', 'comp', 'intel', 'lab', 'review'] as const;
 
 export const QEPReligionHub: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('coach');
+  //  W1027 - the tab is in the address (it was kept in state only, so no link could open the scholar review)
+  const [activeTab, setActiveTab] = useTab(QEP_TABS, 'coach');
 
   return (
     <div className="space-y-10 pb-24">

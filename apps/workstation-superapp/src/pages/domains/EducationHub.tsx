@@ -6,14 +6,17 @@ import { Layers, GraduationCap, History } from 'lucide-react';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 import { DomainTool } from '../../components/DomainTool';
 import { toolsFor } from '../../lib/toolRegistry';
+import { useTab } from '../../lib/useTab';   // W1027 - the tab is in the address
 import { useServingStatus, servingIsFloor } from '../../components/ServingNow';   // W956 (P5.12 clause 5)
 import { apiJson, errorMessage } from '../../lib/api';
+
+const EDUCATION_TABS = ['lessons', 'curriculum', 'assessment', 'feedback'] as const;
 
 export const EducationHub: React.FC = () => {
   const T = toolsFor('/education');   // W470 — the one tool registry the front doors count from
   const navigate = useNavigate();
   const { layout, emotionalAdjustment } = useAdaptiveUI();
-  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'lessons');
+  const [activeTab, setActiveTab] = useTab(EDUCATION_TABS, 'lessons');
   // P3.30 (ledger v16 R5.10) — the curriculum frameworks the API lists (GET /api/v1/education/frameworks had no
   // caller: this select offered four typed values, three of which that list does not hold). Null = not read
   // yet; a failed read is SAID, and only the default is offered then.
