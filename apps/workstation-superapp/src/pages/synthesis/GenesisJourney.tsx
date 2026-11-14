@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GenerationPrice } from '../../components/GenerationPrice';
 import { qmsChip, provenanceMapBadge, complianceChip, layerTitle, immuneReading, apiJson, errorMessage, bodyOrNull, bodyDetail } from '../../lib/api';
+import { refusalOf } from '../../lib/stream';   // W1025 - a refusal by its reason, not its status alone
 import { ReadFailures, useReadFailures, silenceIsRight } from '../../components/ReadFailures';   // W928
 import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS, PRODUCTS, PRODUCT_LABELS } from '../../lib/taxonomy';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -249,7 +250,7 @@ export const GenesisJourney: React.FC = () => {
       const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/name`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: enterpriseName.trim() }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) throw new Error(await refusalOf(res));   // W1025
       const d = await res.json();
       setVsb({ ...vsb, name: d.name, name_pending: false, name_source: 'founder', initial_ship: d.ship ?? vsb.initial_ship });
     } catch (e: any) { setError(`Naming failed: ${errorMessage(e)} Nothing changed.`); }
@@ -298,7 +299,7 @@ export const GenesisJourney: React.FC = () => {
               ...(enterpriseName.trim() ? { name: enterpriseName.trim() } : {}) }   // W450 — the founder's name, when given
           : { problem, domain, realm, ...(product ? { product } : {}) }),
       });
-      if (!res.ok) { setError(`HTTP ${res.status}`); setRunning(false); return; }
+      if (!res.ok) { setError(await refusalOf(res)); setRunning(false); return; }   // W1025
       const data = await res.json();
       setResult(data);
       if (data?.established_vsb && !data.established_vsb.error) setVsb(data.established_vsb);   // one-call living enterprise
@@ -362,7 +363,7 @@ export const GenesisJourney: React.FC = () => {
           source_served_by: (result?.ai_provenance as any)?.body_served_by ?? result?.ai_provenance?.served_by ?? null,
         }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) throw new Error(await refusalOf(res));   // W1025
       const d = await res.json();
       // W338 — bearer-carrying open (a raw window.open 401s under auth)
       await openExport(`/api/v1/deliverables/${d.id}/export?format=${kind === 'presentation' ? 'slides' : 'html'}`);
@@ -400,7 +401,9 @@ export const GenesisJourney: React.FC = () => {
       const res = await fetch('/api/v1/genesis/establish/stream', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
       });
-      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+      //  W1025 - a refusal by its reason; a 2xx with no stream is said as one
+      if (!res.ok) throw new Error(await refusalOf(res));
+      if (!res.body) throw new Error('The establishment answered with no stream, so nothing is shown as established.');
       const reader = res.body.getReader();
       const dec = new TextDecoder();
       let buf = '';

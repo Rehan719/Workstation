@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { BookOpen, Brain, Loader2, Sparkles, Trophy, Languages, CheckCircle2 } from 'lucide-react';
 import { apiJson, bodyDetail, errorMessage } from '../lib/api';
+import { refusalOf } from '../lib/stream';   // W1025 - the surah list's refusal by its reason
 import { whoami } from '../lib/auth';
 import { HifzPractice } from './HifzPractice';
 import { AskPerson } from './AskPerson';   // W968 (P5.14 clause 6)
@@ -73,13 +74,14 @@ export const QEPStudio: React.FC = () => {
       .then(setTrStatus)
       .catch(() => setTrStatus(null));   // unknown availability is shown as unknown, never assumed
   };
-  const [suwarFailed, setSuwarFailed] = useState(false);
+  //  W1025 - why the list was not read: it said "source unreachable" for a refusal too
+  const [suwarFailed, setSuwarFailed] = useState<string | false>(false);
   const loadSuwar = () => {
     setSuwarFailed(false);
     fetch('/api/v1/qep/suwar')
-      .then(r => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(async r => (r.ok ? r.json() : Promise.reject(new Error(await refusalOf(r)))))
       .then(d => setSuwar(d.suwar || []))
-      .catch(() => setSuwarFailed(true));   // refuter catch: a failed load showed 'loading…' forever
+      .catch(e => setSuwarFailed(errorMessage(e)));   // refuter catch: a failed load showed 'loading…' forever
   };
   useEffect(() => {
     loadSuwar();
@@ -324,7 +326,7 @@ export const QEPStudio: React.FC = () => {
               className="text-[11px] bg-slate-950 border border-slate-900 rounded-lg p-2 text-slate-300 max-w-56">
               {(suwar ?? []).map(s => <option key={s.number} value={s.number}>{s.number}. {s.name_transliteration} ({s.ayah_count} ayaat)</option>)}
               {suwar === null && !suwarFailed && <option>loading surahs…</option>}
-              {suwarFailed && <option>surah list unavailable — source unreachable</option>}
+              {suwarFailed && <option>surah list not read — {suwarFailed}</option>}
             </select>
             {suwarFailed && (
               <button type="button" onClick={loadSuwar} className="text-[9px] font-black uppercase px-2 py-1 rounded border border-slate-700 text-slate-400 hover:text-white">Retry</button>

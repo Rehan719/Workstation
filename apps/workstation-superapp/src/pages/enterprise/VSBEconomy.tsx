@@ -181,7 +181,8 @@ export const VSBEconomy: React.FC = () => {
         const d = await bodyOrNull(r) as WaterfallState | null;
         if (!live) return;
         if (!r.ok || !d || !Array.isArray(d.stages) || !d.waterfall) {
-          setWfLoadErr(`Could not load the waterfall (HTTP ${r.status}) — showing nothing rather than another entity's split.`);
+          //  W1025 - with the server's reason when it gave one
+          setWfLoadErr(`Could not load the waterfall (HTTP ${r.status}): ${bodyDetail(d, 'no reason given')} — showing nothing rather than another entity's split.`);
           return;
         }
         setWf(d);

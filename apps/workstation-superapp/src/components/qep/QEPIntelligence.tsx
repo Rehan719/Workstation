@@ -15,6 +15,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { errorMessage } from '../../lib/api';   // W1015 - a caught failure, said as what it was
+import { refusalOf } from '../../lib/stream';   // W1025 - a refused read by its reason
 import { Card, Button } from '@workstation/ui';
 import { Brain, Loader2, AlertCircle, ShieldCheck, GitBranch, Scale } from 'lucide-react';
 import { provenanceBadge, bodyOrNull, bodyDetail } from '../../lib/api';
@@ -40,11 +41,15 @@ const QEPIntelligence: React.FC = () => {
   const [err, setErr] = useState('');
   const [loadErr, setLoadErr] = useState('');
 
-  const jget = (url: string) => fetch(url).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); });
+  const jget = (url: string) => fetch(url).then(async r => { if (!r.ok) throw new Error(await refusalOf(r)); return r.json(); });   // W1025
   const loadAll = () => {
     setLoadErr('');
-    jget('/api/v1/qep/adaptation/registry').then(setReg).catch(() => setLoadErr('registry unavailable'));
-    jget('/api/v1/qep/compliance/audit').then(setAudit).catch(() => setLoadErr(e => e ? `${e} · audit unavailable` : 'audit unavailable'));
+    //  W1025 - each read says why it was not read; both said only "unavailable"
+    jget('/api/v1/qep/adaptation/registry').then(setReg).catch(e => setLoadErr(`the registry was not read: ${errorMessage(e)}`));
+    jget('/api/v1/qep/compliance/audit').then(setAudit).catch(e => {
+      const why = `the audit was not read: ${errorMessage(e)}`;
+      setLoadErr(prev => (prev ? `${prev} · ${why}` : why));
+    });
   };
   useEffect(() => { loadAll(); }, []);
 

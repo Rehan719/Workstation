@@ -85036,3 +85036,66 @@ def test_w1024_fu399_the_ceo_chat_is_rendered_and_says_a_refusal_by_its_reason(c
     t = (src / "CEOChat.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './CEOChat.fixture.json';" in t and "<CEOChat />" in t
     assert "expect(screen.queryByText(/currently unreachable/)).toBeNull();" in t
+
+
+def test_w1025_a_refusal_is_said_by_its_reason_never_by_its_status_alone(client):
+    """W1025. W1011 to W1015 said a refusal by its reason wherever a page read one. Seventeen more places in ten files
+    built their sentence from the status alone and dropped the reason the server gave: a thrown `HTTP 409`, a
+    "(HTTP 409)" in a sentence, or a fixed word ("unavailable", "unreachable") in its place. Among them were My Work's
+    sync, whose push the server refuses with a reason over a history it could read only in part (W577); the Genesis
+    journey's naming, run, deliverable and establishment; the Board's instruction; the heartbeat's actions; the
+    Quran studio's surah list; and the entity cockpit's repository, listing, archive and roster. Each now says the
+    reason: refusalOf for a fetch, bodyDetail for a body already read, errorMessage for axios.
+
+    Held here, tree-wide: no template whose only interpolation is a status after "HTTP " is said, unless it is the
+    fallback bodyDetail or axiosDetail falls back to, the alternative when no reason came (after `||`, `??` or a
+    ternary's `:`), or a sentence that itself says the reason is absent. One stays, named: the swarm's cascade line,
+    the fallback its next lines replace with the reason."""
+    import pathlib
+    import re
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    tmpl = re.compile(r"`((?:[^`\\]|\\.)*)`")
+    hole = re.compile(r"\$\{([^{}]*)\}")
+    status_after_http = re.compile(r"HTTP \$\{\s*[\w.?]+\.status\s*\}")
+    named = {("components/organism/SwarmIntelligence.tsx", "the cascade was refused (HTTP ${response.status})")}
+    offenders, kept, scanned = [], [], 0
+    for f in sorted(p for ext in ("*.ts", "*.tsx") for p in src.rglob(ext)):
+        rel = f.relative_to(src).as_posix()
+        if ".test." in f.name or rel == "lib/api.ts":
+            continue
+        scanned += 1
+        for line in _code_only(f.read_text(encoding="utf-8").replace("\r\n", "\n")).splitlines():
+            for m in tmpl.finditer(line):
+                body = m.group(1)
+                if not status_after_http.search(body):
+                    continue
+                holes = hole.findall(body)
+                if body.count("${") != len(holes) or any(not re.fullmatch(r"\s*[\w.?]+\.status\s*", h) for h in holes):
+                    continue                     # something besides the status is said in it
+                before = line[:m.start()].rstrip()
+                if re.search(r"\b(bodyDetail|axiosDetail)\([^()]*,$", before):
+                    continue                     # the fallback, when the server's body gave no reason
+                if before.endswith(("||", "??", ":")):
+                    continue                     # the alternative, when no reason came
+                if re.search(r"no reason|returned no details|reply could not be read", body):
+                    continue                     # the sentence says the reason is absent
+                if (rel, body) in named:
+                    kept.append(rel)
+                    continue
+                offenders.append(f"{rel}: {line.strip()[:160]}")
+    assert scanned > 100, ("this scanned almost nothing, so it would pass on an empty tree", scanned)
+    assert offenders == [], ("a refusal is said by its status alone; say its reason through refusalOf, bodyDetail "
+                             "or errorMessage", offenders)
+    assert kept == ["components/organism/SwarmIntelligence.tsx"], kept
+
+    #  a few of the seventeen, read where they are
+    hist = _code_only((src / "lib/outputHistory.ts").read_text(encoding="utf-8"))
+    assert hist.count("await refusalOf(res)") == 3 and "import { refusalOf } from './stream';" in hist
+    gj = _code_only((src / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
+    assert gj.count("await refusalOf(res)") == 4, gj.count("await refusalOf(res)")
+    spawn = _code_only((src / "pages/enterprise/VSBSpawnStudio.tsx").read_text(encoding="utf-8"))
+    assert "setError(`Orchestration failed: ${errorMessage(e)}`);" in spawn and "backend unreachable or entity missing" not in spawn
+    qep = _code_only((src / "components/QEPStudio.tsx").read_text(encoding="utf-8"))
+    assert ".catch(e => setSuwarFailed(errorMessage(e)));" in qep and "source unreachable" not in qep
+    cockpit = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8"))
+    assert "await (r.data as Blob).text().then(t => bodyDetail(JSON.parse(t), 'no reason given'), () => 'no reason given')" in cockpit

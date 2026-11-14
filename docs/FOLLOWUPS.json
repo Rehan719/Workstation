@@ -24397,6 +24397,36 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: a refusal is said by its status and reason through lib/stream.ts refusalOf, and returns before anything turns the pill offline; the avatar keeps one colour. CEOChat.test.tsx drives the floor's stream, both refusals and an unreachable server (three vitest blinds); test_w1024 holds the fixture, read again, and the chat's readings (three blinds)."
+    },
+    {
+      "id": "FU-1209",
+      "title": "Seventeen refusals in ten files were said by their HTTP status alone, the server's reason dropped",
+      "why": "Found by a census of the sentences built from a status (W1024's staging). My Work's sync said 'Sync failed (HTTP 409)' over the reason W577 made the server give for refusing a push over a history it could read only in part; the Genesis journey threw 'HTTP 409' at its naming, run, deliverable and establishment; the Board's instruction, the heartbeat's actions and the spawn studio's orchestration said only the status; the Quran studio's surah list and the QEP panel said 'unavailable' or 'source unreachable' for a refusal; the cockpit's repository, listing, archive and roster and the economy's waterfall said '(HTTP n)'.",
+      "source": "W1025 (a census of refusals said by their status)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/lib/outputHistory.ts",
+        "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx",
+        "apps/workstation-superapp/src/pages/organism/HeartbeatMonitor.tsx",
+        "apps/workstation-superapp/src/components/QEPStudio.tsx",
+        "apps/workstation-superapp/src/components/qep/QEPIntelligence.tsx",
+        "apps/workstation-superapp/src/components/organism/AgentHubPanel.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/VSBSpawnStudio.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1025",
+      "note": "",
+      "slot_source": "the failure sentences FU-399's rendered pages say, read one way; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: each of the seventeen says the server's reason, through refusalOf for a fetch, bodyDetail for a body already read and errorMessage for axios. test_w1025 holds it tree-wide: no template whose only interpolation is a status after 'HTTP ' is said, except as a fallback when no reason came or a sentence saying the reason is absent; one named (the swarm's cascade line). Five blinds turn it red."
     }
   ],
   "routes": [

@@ -1,4 +1,5 @@
 import { provenanceMapBadge, apiJson, errorMessage } from '../../lib/api';
+import { refusalOf } from '../../lib/stream';   // W1025 - a refused instruction by its reason
 import { DictateButton } from '../../components/DictateButton';   // P3.30 (ledger v16 R3.14)
 import { getPrefs } from '../../lib/userPrefs';
 import React, { useState, useEffect } from 'react';
@@ -195,7 +196,7 @@ export const BoardOfDirectors: React.FC = () => {
         // W812 (FU-1153) - no owner is sent: the server records the configured owner and says it was not asked for
         body: JSON.stringify({ instruction, cascade_to_ceo: cascade }),
       });
-      if (!r.ok) { setError(`HTTP ${r.status}`); setRunning(false); return; }
+      if (!r.ok) { setError(await refusalOf(r)); setRunning(false); return; }   // W1025
       setResult(await r.json());
     } catch (e: any) { setError(errorMessage(e)); }
     setRunning(false);

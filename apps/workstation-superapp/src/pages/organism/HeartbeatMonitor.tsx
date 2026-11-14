@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { HeartPulse, Loader2, Play, Square, Activity, Sun, Moon, ShieldCheck, Zap } from 'lucide-react';
 import { apiJson } from '../../lib/api';   // W927 - a read is used only on a 2xx
+import { refusalOf } from '../../lib/stream';   // W1025 - a refused action by its reason
 import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W929
 
 // W617 (FU-506, M2 v8 R6.2) — steps_failed is recorded per beat since W611 and was rendered by nothing
@@ -89,7 +90,7 @@ export const HeartbeatMonitor: React.FC = () => {
     setActErr('');
     try {
       const r = await fetch(`/api/v1/heartbeat/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
-      if (!r.ok) setActErr(`Action failed (HTTP ${r.status}) — nothing changed`);
+      if (!r.ok) setActErr(`${await refusalOf(r)} — nothing changed`);   // W1025
       await load();
     } catch {
       setActErr('Backend unreachable — nothing changed');

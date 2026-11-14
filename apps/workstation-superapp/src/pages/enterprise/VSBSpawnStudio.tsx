@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { streamPost } from '../../lib/stream';   // W1008 - one reader of a streamed answer
 import { provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, axiosDetail} from '../../lib/api';
+import { errorMessage } from '../../lib/api';   // W1025 - a failure said as what it was
 import { ReadFailures, useReadFailures, describeReadFailure, silenceIsRight } from '../../components/ReadFailures';   // W928, W960
 import { DOMAINS as CANON_DOMAINS, domainLabel } from '../../lib/taxonomy';   // W735 (FU-831): domainLabel
 import { useNavigate } from 'react-router-dom';
@@ -119,7 +120,7 @@ export const VSBSpawnStudio: React.FC = () => {
       try {
         const r = await axios.get(`/api/v1/vsb/${vsbId}`);
         setDetail(prev => ({ ...prev, [vsbId]: r.data }));
-      } catch { setError(`Could not load ${vsbId} — backend unreachable or entity missing`); }   // W329
+      } catch (e) { setError(`Could not load ${vsbId}: ${errorMessage(e)}`); }   // W329; W1025 - it guessed between two
     }
   };
   const orchestrateVsb = async (vsbId: string) => {
@@ -127,7 +128,7 @@ export const VSBSpawnStudio: React.FC = () => {
     try {
       const r = await axios.post('/api/v1/transformation/orchestrate', { scope: vsbId /* W812 (FU-1153): no owner is sent - the server takes the entity plan's own */ });
       setOrch(prev => ({ ...prev, [vsbId]: r.data }));
-    } catch (e: any) { setError(`Orchestration failed — ${e?.response?.status ? `HTTP ${e.response.status}` : 'backend unreachable'}`); }   // W329
+    } catch (e: any) { setError(`Orchestration failed: ${errorMessage(e)}`); }   // W329; W1025 - by its reason, not its status
     setOrchBusy(null);
   };
 

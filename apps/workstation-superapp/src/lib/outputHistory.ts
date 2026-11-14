@@ -87,6 +87,7 @@ export function clearOutputs() {
 
 import { silenceIsRight } from '../components/ReadFailures';   // W961 (FU-1181)
 import { getToken } from './auth';
+import { refusalOf } from './stream';   // W1025 - a refused sync by its reason, not its status alone
 import { getPrefs, setPrefs } from './userPrefs';
 
 const WORKSPACE_URL = '/api/v1/user/workspace';
@@ -111,7 +112,8 @@ export function scheduleWorkspacePush(): void {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ history: read(), prefs: getPrefs() }),
       });
-      _lastSyncError = res.ok ? '' : `Sync failed (HTTP ${res.status}) — your work is still saved in this browser.`;
+      //  W1025 - the reason: a push over a history the server could read only in part is refused with one (W577)
+      _lastSyncError = res.ok ? '' : `Sync refused, and your work is still saved in this browser: ${await refusalOf(res)}`;
     } catch {
       _lastSyncError = 'Sync failed — offline. Your work is still saved in this browser.';
     }
@@ -126,7 +128,7 @@ export async function syncWorkspaceFromServer(): Promise<number | null> {
   try {
     const res = await fetch(WORKSPACE_URL);
     if (!res.ok) {
-      _lastSyncError = `Could not load your saved work (HTTP ${res.status}).`;
+      _lastSyncError = `Could not load your saved work: ${await refusalOf(res)}`;   // W1025
       return null;
     }
     const doc = await res.json();
@@ -164,6 +166,6 @@ export async function clearWorkspaceEverywhere(): Promise<void> {
   if (!signedIn()) return;
   try {
     const res = await fetch(WORKSPACE_URL, { method: 'DELETE' });
-    _lastSyncError = res.ok ? '' : `Server copy not cleared (HTTP ${res.status}).`;
+    _lastSyncError = res.ok ? '' : `Server copy not cleared: ${await refusalOf(res)}`;   // W1025
   } catch { _lastSyncError = 'Server copy not cleared — offline.'; }
 }

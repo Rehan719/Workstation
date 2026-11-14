@@ -13,6 +13,7 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { errorMessage } from '../../lib/api';   // W1015 - a caught failure, said as what it was
+import { refusalOf } from '../../lib/stream';   // W1025 - a refused read by its reason
 import { ReadFailures, useReadFailures, silenceIsRight } from '../../components/ReadFailures';   // W931
 import { bodyOrNull, bodyDetail } from '../../lib/api';   // W982; W1013: bodyDetail
 import { Card, Button } from '@workstation/ui';
@@ -47,8 +48,8 @@ const AgentHubPanel: React.FC = () => {
   const esRef = useRef<EventSource | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const jget = (url: string) => fetch(url).then(r => {
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const jget = (url: string) => fetch(url).then(async r => {
+    if (!r.ok) throw new Error(await refusalOf(r));   // W1025
     return r.json();
   });
 
@@ -59,7 +60,8 @@ const AgentHubPanel: React.FC = () => {
 
   const loadAll = () => {
     setLoadErr('');
-    jget('/api/v1/hub/agents').then(setAgents).catch(e => setLoadErr(`Hub unreachable — ${errorMessage(e)}`));
+    //  W1025 - it said "Hub unreachable" over a refusal too
+    jget('/api/v1/hub/agents').then(setAgents).catch(e => setLoadErr(`The hub's agents were not read: ${errorMessage(e)}`));
     loadMsgs();
     jget('/api/v1/hub/handoffs?limit=20').then(d => setHandoffs(d.handoffs)).catch(() => setHandoffs(null));
   };

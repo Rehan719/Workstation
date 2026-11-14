@@ -270,7 +270,7 @@ export const VSBCockpit: React.FC = () => {
     axios.get(`/api/v1/vsb/${vid}/repo`, { validateStatus: () => true }).then(r => {
       if (r.status === 200 && Array.isArray(r.data?.tree)) { setRepoTree(r.data.tree as string[]); }
       else if (r.status === 404) { setRepoNone(bodyDetail(r.data, 'This entity has no repository.')); }   // W1012
-      else { setRepoErr(`The repository could not be read (HTTP ${r.status}). No tree is shown.`); }
+      else { setRepoErr(`The repository could not be read (HTTP ${r.status}): ${bodyDetail(r.data, 'no reason given')}. No tree is shown.`); }   // W1025
     }).catch(() => setRepoErr('The repository could not be reached. No tree is shown.'));
   };
   const loadShipState = (vid: string) =>
@@ -336,7 +336,7 @@ export const VSBCockpit: React.FC = () => {
     axios.post(`/api/v1/marketplace/listings/from-entity/${selected}`, {}, { validateStatus: () => true })
       .then(r => {
         if (r.status === 200) setListedResult(r.data as Dict);
-        else setRepoErr(`The products were not listed (HTTP ${r.status}). Nothing was added to the marketplace.`);
+        else setRepoErr(`The products were not listed (HTTP ${r.status}): ${bodyDetail(r.data, 'no reason given')}. Nothing was added to the marketplace.`);   // W1025
       })
       .catch(() => setRepoErr('The marketplace could not be reached. Nothing was listed.'))
       .finally(() => setRepoBusy(''));
@@ -348,8 +348,13 @@ export const VSBCockpit: React.FC = () => {
     if (!selected) return;
     setRepoBusy('zip'); setRepoErr('');
     axios.get(`/api/v1/vsb/${selected}/repo/zip`, { responseType: 'blob', validateStatus: () => true })
-      .then(r => {
-        if (r.status !== 200) { setRepoErr(`The archive was not produced (HTTP ${r.status}).`); return; }
+      .then(async r => {
+        //  W1025 - the archive is asked for as a blob, so a refusal's body is a blob too: its reason is read from it
+        if (r.status !== 200) {
+          const why = await (r.data as Blob).text().then(t => bodyDetail(JSON.parse(t), 'no reason given'), () => 'no reason given');
+          setRepoErr(`The archive was not produced (HTTP ${r.status}): ${why}`);
+          return;
+        }
         const url = URL.createObjectURL(r.data as Blob);
         const a = document.createElement('a');
         a.href = url; a.download = `${selected}-repo.zip`;
@@ -568,7 +573,8 @@ export const VSBCockpit: React.FC = () => {
       .then(r => {
         if (r.status !== 200 || !r.data) {
           setOperating(null);
-          setOperatingErr(`The living roster is not reporting (HTTP ${r.status}). That is a statement about `
+          //  W1025 - with the server's reason when it gave one
+          setOperatingErr(`The living roster is not reporting (HTTP ${r.status}): ${bodyDetail(r.data, 'no reason given')}. That is a statement about `
             + `reachability, not about whether this entity has operated.`);
           return;
         }
