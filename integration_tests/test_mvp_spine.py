@@ -83122,3 +83122,47 @@ def test_w990_fu399_the_governance_audit_tab_says_each_failed_read_and_never_sho
     assert "<ReadFailures failures={readFailures} />" in code
     fx = json.loads((src / "pages/governance/GovernanceHub.fixture.json").read_text(encoding="utf-8"))
     assert fx["proposals"] == [] and fx["verify"]["valid"] is True and len(fx["events"]["events"]) >= 1
+
+
+def test_w991_fu399_the_compliance_page_says_a_refusals_reason_and_never_shows_unread_frameworks_as_none(client):
+    """FU-399 part 23 (W991). The Compliance page lists the frameworks the federated screen covers and runs the screen on
+    a subject: an overall verdict, what assessed it and what did not, and each framework's verdict with its reason.
+    ComplianceChecker.test.tsx mounts the real page against the answers its two routes gave on a fresh store, and has the
+    server refuse each. Rendering it found three defects, fixed:
+    - a refused check said only "HTTP 503", and an unreachable server the browser's "Failed to fetch"; the check goes
+      through apiJson and says the server's status and reason, or that the backend was unreachable;
+    - a refused read left the Frameworks card empty under its heading; it now says the frameworks were not read;
+    - the screen answers not_assessed for an area only a word list looked at, and neither of the page's maps knew it,
+      so the icon carried the class "undefined"; it is drawn as an area nothing assessed.
+    Held here: every status the screen answers is one the page draws; and the page's code."""
+    import json
+    import pathlib
+    import re
+    c = client.post("/api/v1/compliance/check", json={"subject": "A halal meal-prep subscription"}).json()
+    statuses = {v["status"] for v in c["verdicts"]}
+    assert "not_assessed" in statuses, statuses
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    page = (src / "pages/governance/ComplianceChecker.tsx").read_text(encoding="utf-8")
+    shared = (src / "components/ReadFailures.tsx").read_text(encoding="utf-8")
+    t = (src / "pages/governance/ComplianceChecker.test.tsx").read_text(encoding="utf-8")
+    assert "import { ComplianceChecker } from './ComplianceChecker';" in t and "<ComplianceChecker />" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"compliance-error", "frameworks-unread", "compliance-coverage-line", "read-failure"} <= read, sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in page or f'data-testid="{tid}"' in shared, tid
+    code = _code_only(page)
+    #  every status the screen answers has an icon and a tone of its own
+    icons = re.search(r"const STATUS_ICON: Record<string, React.ComponentType<any>> = \{([^}]*)\};", code).group(1)
+    tones = re.search(r"const STATUS_TONE: Record<string, string> = \{([^}]*)\};", code).group(1)
+    for s in statuses | {"pass", "review", "fail", "not_checked", "error"}:
+        assert f"{s}:" in icons and f"{s}:" in tones, s
+    #  a refused check: the server's reason, through apiJson
+    assert "setResult(await apiJson<Result>('/api/v1/compliance/check', { method: 'POST', body: { subject } }));" in code
+    assert "setError(`The check was not run: ${errorMessage(e)}`)" in code and "setError(`HTTP ${r.status}`)" not in code
+    #  an unread list of frameworks is said, not drawn empty
+    assert ".catch(e => { setFrameworksUnread(true); noteRead('the frameworks')(e); });" in code
+    assert "The frameworks could not be read, so this is not a list of none." in code
+    fx = json.loads((src / "pages/governance/ComplianceChecker.fixture.json").read_text(encoding="utf-8"))
+    assert fx["check"]["subject"] == "A halal meal-prep subscription" and fx["check"]["compliant"] is None

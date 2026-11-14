@@ -1,0 +1,108 @@
+{
+ "frameworks": {
+  "frameworks": [
+   {
+    "id": "sharia_halal",
+    "name": "Sharia / Halal",
+    "engine": "haram-term screen (riba, alcohol, gambling, pork, …) + a three-term officer check; a matched term refuses the subject, and a subject that merely calls itself halal is reviewed, never passed — not a certification; a halal verdict comes from a certifying body, not from here"
+   },
+   {
+    "id": "uk_legal",
+    "name": "UK Legal (London)",
+    "engine": "keyword screen (fraud, laundering, bribery, …) fails; employment-statute vocabulary (Equality Act 2010 / ERA 1996 / ACAS Code) flags for review; SHA3-512 audit over the subject — not legal advice"
+   },
+   {
+    "id": "regulatory",
+    "name": "Regulatory",
+    "engine": "keyword screen for regulated-activity triggers (financial advice, medical, personal data, weapons, …) — flags for review; matching nothing is 'not assessed', never a clearance"
+   },
+   {
+    "id": "ehs",
+    "name": "Environment / Health / Safety",
+    "engine": "keyword screen for hazard terms (toxic, emission, waste, …) — flags for review; matching nothing is 'not assessed', never a clearance"
+   },
+   {
+    "id": "ethical",
+    "name": "Ethical (beneficence, honesty, no-harm)",
+    "engine": "four dimensions (human · environment · quality · value); three are word-list indicators that escalate for a human and never clear a subject, and quality is measured from the delivery's own QMS figures when they are supplied"
+   },
+   {
+    "id": "constitutional",
+    "name": "Constitutional (gaas.v5)",
+    "engine": "an ACTION gate over nine prohibited agent intents (delete_all, wire_funds, …) plus an output screen for unsafe shell / SQL / private-key patterns; it does not read content for policy — content is 'not checked' here"
+   }
+  ],
+  "jurisdiction_default": "UK / London"
+ },
+ "check": {
+  "subject": "A halal meal-prep subscription",
+  "jurisdiction": "UK / London",
+  "overall": "review",
+  "verdicts": [
+   {
+    "framework": "sharia_halal",
+    "status": "review",
+    "reason": "the text screened contains halal vocabulary ('halal') and no prohibited (haram) term matched — the screen cannot tell whether that word is the subject's own claim or wording this platform composed around it; either way it is not a certification and not an assessment; a halal verdict comes from a certifying body (engine ran and produced no finding here, so it backs no verdict)",
+    "coverage": "vocabulary"
+   },
+   {
+    "framework": "uk_legal",
+    "status": "review",
+    "reason": "no engine covers this area — keyword screen + employment-statute vocabulary matched nothing (jurisdiction UK / London); not legal advice (UK engine ran and produced no finding here, so it backs no verdict · audit 9f3c128c59ea8ae3… over the subject)",
+    "coverage": "none"
+   },
+   {
+    "framework": "regulatory",
+    "status": "not_assessed",
+    "reason": "keyword screen found no regulated-activity trigger — the absence of a trigger word is not a regulatory clearance; nothing here assessed this subject",
+    "coverage": "screen"
+   },
+   {
+    "framework": "ehs",
+    "status": "not_assessed",
+    "reason": "keyword screen found no hazard term — the absence of a hazard word is not an EHS clearance; nothing here assessed this subject",
+    "coverage": "screen"
+   },
+   {
+    "framework": "ethical",
+    "status": "not_assessed",
+    "reason": "human: not_assessed; environment: not_assessed; quality: not_assessed; value: not_assessed (engine ran and produced no finding here, so it backs no verdict)",
+    "coverage": "none",
+    "dimensions_not_assessed": [
+     "human",
+     "environment",
+     "quality",
+     "value"
+    ]
+   },
+   {
+    "framework": "constitutional",
+    "status": "not_checked",
+    "reason": "not applicable to content — gaas.v5 gates agent actions (nine prohibited intents); the output screen found no unsafe shell / SQL / private-key pattern in this subject",
+    "coverage": "none"
+   }
+  ],
+  "coverage_gaps": [
+   "constitutional",
+   "ehs",
+   "ethical",
+   "regulatory",
+   "uk_legal"
+  ],
+  "assessed_by": [],
+  "vocabulary_only": [
+   "sharia_halal"
+  ],
+  "frameworks_screened": [
+   "constitutional",
+   "ehs",
+   "ethical",
+   "regulatory",
+   "sharia_halal",
+   "uk_legal"
+  ],
+  "compliant": null,
+  "basis": "keyword and vocabulary screens plus the ethical dimensions. A screen can refuse and can escalate; it cannot clear — so only a row with coverage 'engine' can carry a pass, and `coverage_gaps` names every area nothing here assessed. Matched only by a word list, which establishes nothing either way: sharia_halal — NOTHING here assessed this subject, so the overall is 'review' and no part of it may be reported as compliant",
+  "note": "Federated compliance screen: Sharia/Halal · UK Legal · Regulatory · EHS · Ethical · Constitutional — keyword and vocabulary screens plus engines where one exists. A screen can refuse a subject and can escalate one for a human; it cannot clear one, so an area nothing assessed is named in coverage_gaps and is never reported as compliant."
+ }
+}
