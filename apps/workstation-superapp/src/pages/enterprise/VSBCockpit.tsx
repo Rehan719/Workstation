@@ -165,6 +165,7 @@ export const VSBCockpit: React.FC = () => {
   const [deliverables, setDeliverables] = useState<Dict[]>([]); // this VSB's living outputs (§13)
   const [delivReadErr, setDelivReadErr] = useState('');   // W1050 - a list that could not be read is not a list of none
   const [delivErr, setDelivErr] = useState('');           // W1050 - a production's failure, beside its button
+  const [delivDlErr, setDelivDlErr] = useState<{ id: string; msg: string } | null>(null);   // W1054 - an export's, under its row
   //  P3.2 clause (3) — THE OPERATING STATE, read from the server. Measured W598: this page showed none of
   //  last_operated, operating_cycles or the governing flags, so the clause's own failure case ("a page that
   //  shows 0 cycles for an entity that has run") was not even reachable — there was no cycle count to be
@@ -1312,11 +1313,14 @@ export const VSBCockpit: React.FC = () => {
                               ? `COULD NOT BE SCREENED: ${String(d.last_screened_error)}`
                               : 'not screened yet — the compliance beat screens one deliverable per beat and has not reached this one. That is not a clean verdict.'}
                         </p>
+                        {delivDlErr && delivDlErr.id === d.id && <p data-testid="cockpit-export-error" role="alert" className="text-[10px] font-bold text-vital mt-1">{delivDlErr.msg}</p>}
                       </div>
                       {/* W338 — bearer-carrying export (a raw anchor 401s under auth) */}
                       <button type="button" onClick={async () => {
+                          setDelivDlErr(null);
                           try { await downloadExport(`/api/v1/deliverables/${d.id}/export?format=${delivFormat}`, `${d.title || 'deliverable'}.${delivFormat}`); }
-                          catch (e: any) { alert(errorMessage(e)); }
+                          //  W1054 - under its row: a browser alert said nothing on the page about which row failed
+                          catch (e: any) { setDelivDlErr({ id: d.id, msg: errorMessage(e) }); }
                         }}
                         className="shrink-0 text-[10px] font-black uppercase text-sovereign bg-aura px-3 py-1.5 rounded-lg flex items-center gap-1 hover:opacity-90"><Download size={11} /> Export</button>
                     </div>

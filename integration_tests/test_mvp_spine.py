@@ -86521,3 +86521,66 @@ def test_w1053_fu399_the_cockpit_s_life_cycle_and_restore_say_a_call_that_reache
     assert 'data-testid="cockpit-lifecycle-error"' in page
     t = (src / "pages/enterprise/VSBCockpit.lifecycle.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './VSBCockpit.lifecycle.fixture.json';" in t and "<VSBCockpit />" in t
+
+
+def test_w1054_no_failure_is_said_in_a_browser_alert_the_two_downloads_say_theirs_under_their_row(client):
+    """W1054. A census of alert() in the app found two left, both a failed download: the cockpit's export of a
+    deliverable and the Projects hub's download of a saved output. An alert is a box that is gone once it is
+    dismissed, and says nothing on the page about which row failed. Each is said under its own row now, and cleared
+    when that row is downloaded again. Downloads.test.tsx renders both against the routes' own answers: the two rows
+    asked of a store that does not hold their records, and the same two asked of records made as the fixtures made
+    theirs.
+
+    Held here: no code in the app calls alert(); the two catches say their row's failure and the two presses clear
+    it first; the fixture's refusals are the routes' own, asked again for the same two rows (each a read, changing
+    nothing); and its two files are the ones the routes send for those rows."""
+    import json
+    import pathlib
+    import re
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    callers, scanned = [], 0
+    for f in sorted(list(src.rglob("*.ts")) + list(src.rglob("*.tsx"))):
+        if ".test." in f.name:
+            continue
+        scanned += 1
+        if re.search(r"\balert\(", _code_only(f.read_text(encoding="utf-8", errors="replace").replace("\r\n", "\n"))):
+            callers.append(f.relative_to(src).as_posix())
+    assert scanned > 100, ("this scanned almost nothing, so it would pass on an empty tree", scanned)
+    assert callers == [], ("a failure is said in a browser alert, gone once it is dismissed; say it beside what failed",
+                           callers)
+
+    cockpit = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "catch (e: any) { setDelivDlErr({ id: d.id, msg: errorMessage(e) }); }" in cockpit
+    assert "setDelivDlErr(null);\n                          try { await downloadExport(" in cockpit
+    assert "{delivDlErr && delivDlErr.id === d.id && <p data-testid=\"cockpit-export-error\"" in cockpit
+    hub = _code_only((src / "pages/projects/ProjectsHub.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert ".catch((e: unknown) => setDlErr({ id: out.output_id, msg: errorMessage(e) }));" in hub
+    assert "setDlErr(null);\n                    downloadExport(out.download_url" in hub
+    assert "{dlErr && dlErr.id === out.output_id && <p data-testid=\"project-download-error\"" in hub
+
+    pages = src / "pages"
+    fx = json.loads((pages / "enterprise/Downloads.fixture.json").read_text(encoding="utf-8"))
+    row = json.loads((pages / "enterprise/VSBCockpit.deliverables.fixture.json").read_text(encoding="utf-8"))
+    row = row["after"]["body"]["deliverables"][0]
+    out = json.loads((pages / "projects/ProjectsHub.fixture.json").read_text(encoding="utf-8"))["ran"]["body"]["outputs"][0]
+    #  the two rows the rendered test lists, asked again of this store, which holds neither record
+    assert fx["export_refused"]["url"] == f"/api/v1/deliverables/{row['id']}/export?format=md"
+    assert fx["download_refused"]["url"] == out["download_url"]
+    for k in ("export_refused", "download_refused"):
+        a = fx[k]
+        r = client.get(a["url"])
+        assert (r.status_code, r.json()) == (a["status"], a["body"]), (k, r.status_code, r.text[:200])
+        assert a["status"] == 404, a
+    #  the two files are what the routes send for such a row: the export named from the row's own title, as the route
+    #  names it, and beginning with that title; the download named from its output
+    ex, dl = fx["exported"], fx["downloaded"]
+    slug = "".join(c if c.isalnum() else "-" for c in row["title"]).strip("-")[:60]
+    assert (ex["status"], ex["content_type"]) == (200, "text/markdown; charset=utf-8"), ex["content_type"]
+    assert ex["content_disposition"] == f'attachment; filename="{slug}.md"', ex["content_disposition"]
+    assert ex["text"].startswith(f"# {row['title']}\n"), ex["text"][:120]
+    assert (dl["status"], dl["content_type"]) == (200, "text/plain; charset=utf-8"), dl["content_type"]
+    assert dl["content_disposition"] == f'attachment; filename="{dl["url"].rsplit("/", 1)[1]}.txt"', dl["content_disposition"]
+
+    t = (pages / "enterprise/Downloads.test.tsx").read_text(encoding="utf-8")
+    assert "import files from './Downloads.fixture.json';" in t and "<VSBCockpit />" in t and "<ProjectsHub />" in t
+    assert t.count("expect(alerted).not.toHaveBeenCalled();") == 2

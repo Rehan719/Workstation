@@ -243,6 +243,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
   const [advancing,  setAdvancing]    = useState(false);
   const [deleting,   setDeleting]     = useState(false);
   const [asking,     setAsking]       = useState(false);   // W968 - the question before a delete
+  const [dlErr,      setDlErr]        = useState<{ id: string; msg: string } | null>(null);   // W1054 - a download's, under its row
   const streamRef = useRef<HTMLPreElement>(null);
   const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
 
@@ -560,14 +561,19 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
                     401s under auth; downloadExport fetches through the patched window.fetch. */}
                 <button
                   type="button"
-                  onClick={() => downloadExport(out.download_url, String(out.output_id ?? 'output'))
-                    .catch((e: any) => alert(`Download failed: ${errorMessage(e)}`))}
+                  onClick={() => {
+                    setDlErr(null);
+                    //  W1054 - under its row: a browser alert said nothing on the page about which output failed
+                    downloadExport(out.download_url, String(out.output_id ?? 'output'))
+                      .catch((e: unknown) => setDlErr({ id: out.output_id, msg: errorMessage(e) }));
+                  }}
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-aura/30 text-aura text-[8px] font-black uppercase tracking-widest hover:bg-aura/10 transition-colors"
                 >
                   <Download size={9} /> Download
                 </button>
               </div>
               <p className="text-[10px] text-slate-400 leading-relaxed line-clamp-3">{out.preview}</p>
+              {dlErr && dlErr.id === out.output_id && <p data-testid="project-download-error" role="alert" className="text-[9px] text-red-400 font-bold">{dlErr.msg}</p>}
             </div>
           ))}
         </div>

@@ -25035,6 +25035,28 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: both actions say a call that reached no server; a refused life-cycle change is said beside the toggle and cleared when pressed again; both messages are cleared when another entity is opened. VSBCockpit.lifecycle.test.tsx drives each against the routes' own answers (three vitest blinds); test_w1053 holds the two refusals at the routes, the captured change and the page (four blinds)."
+    },
+    {
+      "id": "FU-1238",
+      "title": "Two downloads said their failure in a browser alert: the cockpit's export of a deliverable and the Projects hub's download of a saved output",
+      "why": "Found by a census of alert() in the app after FU-399's renders of the cockpit and the Projects hub. Both were the last two callers. An alert is a box that is gone once it is dismissed, and says nothing on the page about which row failed; the hub's also doubled its own wording onto the export's (Download failed: Export failed (HTTP 404): ...).",
+      "source": "W1054 (the alert() census after FU-399's renders of the cockpit and the Projects hub)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx",
+        "apps/workstation-superapp/src/pages/projects/ProjectsHub.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1054",
+      "note": "",
+      "slot_source": "found by the alert() census that followed FU-399's renders; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: each download says its failure under its own row and clears it when the row is downloaded again; no code in the app calls alert(). Downloads.test.tsx drives both against the routes' own refusals and files (four vitest blinds); test_w1054 holds the census, both pages, and the refusals asked again at the routes (five blinds)."
     }
   ],
   "routes": [
