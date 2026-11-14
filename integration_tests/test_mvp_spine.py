@@ -15921,8 +15921,9 @@ def test_w468_an_unreadable_vsb_ledger_is_refused_never_replaced(client, monkeyp
     _gated = _gated[:_gated.index("\n      }")]
     for _setter in ("setLastCycle(r.data.cycle || null);", "setLedger(l.data);", "setLedgerErr(l.err);"):
         assert _setter in _gated, f"{_setter} is not inside the entity gate"
-    assert "setActErr((issuedFor !== selectedRef.current ? `${issuedFor}: ` : '') + serverDetail(e, 'The cycle failed'));" in cockpit
-    assert "setLastCycle(null); setLedgerErr(''); setActErr('');" in cockpit and "setCycling(true); setActErr('');" in cockpit
+    #  W1051 - said beside its own button
+    assert "setCycleErr((issuedFor !== selectedRef.current ? `${issuedFor}: ` : '') + serverDetail(e, 'The cycle failed'));" in cockpit
+    assert "setLastCycle(null); setLedgerErr(''); setTxErr(''); setOrchErr({}); setCycleErr(''); setBtoErr('');" in cockpit and "setCycling(true); setCycleErr('');" in cockpit
     assert 'data-testid="ledger-error">{ledgerErr}</p>' in cockpit
     assert "{v.economy_held?.last_visit_error && (" in econ and 'data-testid="living-visit-error">' in econ
 
@@ -85424,8 +85425,8 @@ def test_w1028_a_server_that_answered_is_never_said_as_unreachable(client):
     #  W1031 - said as a failure where the form is, never handed to the result panel
     assert msh.count("onFailed(`Nothing was generated: ${errorMessage(e)}`);") == 6 and "axiosDetail" not in msh
     vsb = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8"))
-    for line in ("setActErr(`The transformation failed: ${errorMessage(e)}`);",
-                 "setActErr(`The configuration failed: ${errorMessage(e)}`);",
+    for line in ("setTxErr(`The transformation failed: ${errorMessage(e)}`);",   # W1051 - beside its button
+                 "setBtoErr(`The configuration failed: ${errorMessage(e)}`);",
                  "setDelivErr(`Produce failed: ${errorMessage(e)}`);"):   # W1050 - beside its button
         assert vsb.count(line) == 1, line
     cca = _code_only((src / "pages/enterprise/ChangeControlAgency.tsx").read_text(encoding="utf-8"))
@@ -86413,3 +86414,36 @@ def test_w1050_fu399_the_cockpit_s_deliverables_say_an_unread_list_as_unread_and
     assert "setDelivErr(`Produce failed: ${errorMessage(e)}`);" in page and "setActErr(`Produce failed" not in page
     t = (src / "pages/enterprise/VSBCockpit.deliverables.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './VSBCockpit.deliverables.fixture.json';" in t and "<VSBCockpit />" in t
+
+
+def test_w1051_fu399_the_cockpit_s_actions_say_their_failure_beside_their_own_button(client):
+    """FU-399 part 70 (W1051). The cockpit's actions are rendered on their tabs (VSBCockpit.actions.test.tsx), on the
+    reads W1049 captured for an entity established on a fresh store: the Chief delivering an objective on the plan tab,
+    an economic cycle on the economy tab, and the transformation and the build configuration on the transformation tab,
+    each failing as a call can fail. Every one of those failures was said in one line above the entity picker, away
+    from the tab its action is on, and three of the four never cleared it, so a failure stood over a later success.
+    Each is said beside its own button now, cleared when its action runs again and when another entity is opened, and
+    the line is gone.
+
+    Held here: the page's code. No action is run: each is a gateway call or a ledger write that the rendered test
+    drives through its own answers."""
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    page = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "setActErr" not in page and "actErr" not in page, "an action's failure is said in the line above the picker again"
+    for start, setter, testid in (
+            ("setTxRunning(true); setTx(null); setTxErr('');", "setTxErr(`The transformation failed: ${errorMessage(e)}`);",
+             "cockpit-transformation-error"),
+            ("setBtoBusy(true); setBtoErr('');", "setBtoErr(`The configuration failed: ${errorMessage(e)}`);",
+             "cockpit-configuration-error"),
+            ("setCycling(true); setCycleErr('');", "serverDetail(e, 'The cycle failed'));", "cockpit-cycle-error"),
+            ("setObjOrch(oid); setOrchErr(m => ({ ...m, [oid]: '' }));",
+             "setOrchErr(m => ({ ...m, [oid]: `Orchestration failed: ${detailText(e?.response?.data?.detail ?? errorMessage(e))}` }));",
+             "cockpit-orchestration-error")):
+        assert start in page, (testid, "is not cleared when its action runs again")
+        assert setter in page and f'data-testid="{testid}"' in page, testid
+    #  another entity's failures are never left on screen under this one
+    assert "setLedgerErr(''); setTxErr(''); setOrchErr({}); setCycleErr(''); setBtoErr(''); setPlanErr('');" in page
+    assert "{orchErr[o.id] && <p data-testid=\"cockpit-orchestration-error\"" in page, "an objective's failure is said under another"
+    t = (src / "pages/enterprise/VSBCockpit.actions.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './VSBCockpit.fixture.json';" in t and "<VSBCockpit />" in t

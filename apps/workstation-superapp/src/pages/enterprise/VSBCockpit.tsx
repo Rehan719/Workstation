@@ -292,7 +292,7 @@ export const VSBCockpit: React.FC = () => {
 
   useEffect(() => {
     if (!selected) return;
-    setLoading(true); setTx(null); setMessages([]); setLastCycle(null); setLedgerErr(''); setActErr(''); setPlanErr('');
+    setLoading(true); setTx(null); setMessages([]); setLastCycle(null); setLedgerErr(''); setTxErr(''); setOrchErr({}); setCycleErr(''); setBtoErr(''); setPlanErr('');
     setCycleHold(null); setGrowthResult(null);   // W503 (FU-059) — never another entity's answer
     const issuedFor = selected;
     Promise.all([
@@ -318,7 +318,12 @@ export const VSBCockpit: React.FC = () => {
   // W299 — the §13 GROWTH machinery reaches the user for THEIR entity (repo ship · repo cascade ·
   // evolve had zero UI callers); W300 — instruct THEIR Chief (apex delegation scoped to this VSB).
   const [growthBusy, setGrowthBusy] = useState('');
-  const [actErr, setActErr] = useState('');   // W344 — actions never fail silently
+  //  W344 - actions never fail silently. W1051 - and each says its failure beside its own button: one line above the
+  //  entity picker said all four, away from the tab each is on, and three of them never cleared it
+  const [txErr, setTxErr] = useState('');
+  const [orchErr, setOrchErr] = useState<Record<string, string>>({});
+  const [cycleErr, setCycleErr] = useState('');
+  const [btoErr, setBtoErr] = useState('');
   const [growthResult, setGrowthResult] = useState<Dict | null>(null);
 
   //  P3.7 (W586) — a tree entry opens its file THROUGH axios, so the Bearer that lib/auth.ts's request
@@ -561,14 +566,14 @@ export const VSBCockpit: React.FC = () => {
 
   const runTransformation = async () => {
     if (!selected) return;
-    setTxRunning(true); setTx(null);
+    setTxRunning(true); setTx(null); setTxErr('');
     try {
       const objective = plan?.mission || detail?.challenge || `Advance ${detail?.name || 'the venture'}`;
       const r = await axios.post('/api/v1/transformation/orchestrate',
         { objective, scope: selected, owner_id: detail?.owner_id || 'Owner', deep: false });
       setTx(r.data);
       //  W1028 - a refusal is said by its reason: this said every failure, a refusal included, as an unreachable server
-    } catch (e) { setActErr(`The transformation failed: ${errorMessage(e)}`); }   // W344
+    } catch (e) { setTxErr(`The transformation failed: ${errorMessage(e)}`); }   // W344
     setTxRunning(false);
   };
 
@@ -576,12 +581,12 @@ export const VSBCockpit: React.FC = () => {
   // VSB (scope=selected), governed + sealed into the UEG chain. Mirrors the Business Plan page action.
   const orchestrateObjective = async (oid: string) => {
     if (!selected) return;
-    setObjOrch(oid);
+    setObjOrch(oid); setOrchErr(m => ({ ...m, [oid]: '' }));
     try {
       const r = await axios.post(`/api/v1/business-plan/objective/${oid}/orchestrate`, { scope: selected });
       if (r.data?.tree) setObjOrchResult(m => ({ ...m, [oid]: r.data.tree }));
-      else setActErr('Orchestration ran but returned no delivery tree.');
-    } catch (e: any) { setActErr(`Orchestration failed: ${detailText(e?.response?.data?.detail ?? errorMessage(e))}`); }   // W1028
+      else setOrchErr(m => ({ ...m, [oid]: 'Orchestration ran but returned no delivery tree.' }));
+    } catch (e: any) { setOrchErr(m => ({ ...m, [oid]: `Orchestration failed: ${detailText(e?.response?.data?.detail ?? errorMessage(e))}` })); }   // W1028
     setObjOrch('');
   };
 
@@ -685,7 +690,7 @@ export const VSBCockpit: React.FC = () => {
   const runCycle = async () => {
     if (!selected || cycling) return;
     const issuedFor = selected;
-    setCycling(true); setActErr('');
+    setCycling(true); setCycleErr('');
     try {
       // W414 — this posted only { vsb_id }, and the backend defaulted revenue to 10000.0. Every
       // click therefore ran a cycle on ten thousand WST that nobody earned, writing the resulting
@@ -707,20 +712,20 @@ export const VSBCockpit: React.FC = () => {
       }
     } catch (e: any) {
       // W344 · W468 — the server's reason, when it gave one; named for its entity when another is on screen by now
-      setActErr((issuedFor !== selectedRef.current ? `${issuedFor}: ` : '') + serverDetail(e, 'The cycle failed'));
+      setCycleErr((issuedFor !== selectedRef.current ? `${issuedFor}: ` : '') + serverDetail(e, 'The cycle failed'));
     }
     setCycling(false);
   };
 
   const configureBto = async () => {
     if (btoBusy) return;
-    setBtoBusy(true);
+    setBtoBusy(true); setBtoErr('');
     try {
       const r = await axios.post('/api/v1/bto/configure',
         { entity_name: detail?.name || 'Enterprise', components: btoSel, product_resources: [] });
       setBtoBlueprint(r.data);
       //  W1028 - a refusal is said by its reason: this said every failure, a refusal included, as an unreachable server
-    } catch (e) { setActErr(`The configuration failed: ${errorMessage(e)}`); }   // W344
+    } catch (e) { setBtoErr(`The configuration failed: ${errorMessage(e)}`); }   // W344
     setBtoBusy(false);
   };
 
@@ -734,7 +739,6 @@ export const VSBCockpit: React.FC = () => {
   return (
     <div className="space-y-8 pb-24">
       <ReadFailures failures={readFailures} />
-      {actErr && <p className="text-vital text-xs font-bold">{actErr}</p>}
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · VSB Enterprise</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">VSB Cockpit</h1>
@@ -1223,6 +1227,7 @@ export const VSBCockpit: React.FC = () => {
                         className="mt-2 text-[9px] font-black uppercase tracking-widest text-aura border border-aura/30 px-2 py-1 rounded flex items-center gap-1 disabled:opacity-50">
                         {objOrch === o.id ? <Loader2 size={10} className="animate-spin" /> : <Crown size={10} />} Chief: deliver via tree
                       </button>
+                      {orchErr[o.id] && <p data-testid="cockpit-orchestration-error" role="alert" className="text-[10px] font-bold text-vital mt-1">{orchErr[o.id]}</p>}
                       {objOrchResult[o.id] && (
                         <div className="mt-2 p-2 rounded-lg bg-aura/5 border border-aura/20">
                           <div className="flex items-center flex-wrap gap-1.5">
@@ -1402,6 +1407,7 @@ export const VSBCockpit: React.FC = () => {
                     {cycling ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />} Run economic cycle
                   </Button>
                 </div>
+                {cycleErr && <p data-testid="cockpit-cycle-error" role="alert" className="text-[10px] font-bold text-vital">{cycleErr}</p>}
                 {ledger ? (
                   <>
                     <div className="grid grid-cols-2 @[560px]:grid-cols-4 gap-3">
@@ -1862,6 +1868,7 @@ export const VSBCockpit: React.FC = () => {
                     {txRunning ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />} Run transformation
                   </Button>
                 </div>
+                {txErr && <p data-testid="cockpit-transformation-error" role="alert" className="text-[10px] font-bold text-vital mt-2">{txErr}</p>}
               </Card>
               {tx && (
                 <>
@@ -1930,6 +1937,7 @@ export const VSBCockpit: React.FC = () => {
                 <Button type="button" onClick={configureBto} disabled={btoBusy || btoSel.length === 0} className="bg-aura text-sovereign flex items-center gap-2 text-xs">
                   {btoBusy ? <Loader2 size={14} className="animate-spin" /> : <Boxes size={14} />} Configure build ({btoSel.length})
                 </Button>
+                {btoErr && <p data-testid="cockpit-configuration-error" role="alert" className="text-[10px] font-bold text-vital">{btoErr}</p>}
                 {btoBlueprint && (
                   <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
                     <p className="text-[11px] text-slate-300"><span className="text-white font-black">{btoBlueprint.entity_name}</span> — {btoBlueprint.component_count} components · {btoBlueprint.resource_count} product resources</p>

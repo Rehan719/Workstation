@@ -24972,6 +24972,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: an unread list is said as unread with what happened; a production's failure is said beside its button and cleared when pressed again; a title taken from a brief is cut between words and marked. VSBCockpit.deliverables.test.tsx drives the production as captured, the list's own 500 and a production that reached no server (four vitest blinds); test_w1050 holds the title rule at the route, the captured production and list, the 500 and the page (four blinds); test_w1011's and test_w1028's readings of the production's failure move with it."
+    },
+    {
+      "id": "FU-1235",
+      "title": "The cockpit said four actions' failures in one line above its entity picker, away from each action's tab, and three never cleared it",
+      "why": "Found rendering the cockpit's plan, economy and transformation tabs (FU-399 part 70) for an entity established on a fresh store. The Chief's delivery of an objective, an economic cycle, the transformation and the build configuration each said its failure in one line above the entity picker, away from the tab the action is on; the transformation, the configuration and the objective's delivery never cleared it, so a failure stood over a later success.",
+      "source": "W1051 (FU-399 part 70, the cockpit's actions rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1051",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the cockpit's actions; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: each of the four says its failure beside its own button, cleared when it runs again and when another entity is opened; the line above the picker is gone. VSBCockpit.actions.test.tsx drives each failure on its tab (four vitest blinds); test_w1051 holds the page (three blinds); test_w468's and test_w1028's readings of the moved sentences move with them."
     }
   ],
   "routes": [
