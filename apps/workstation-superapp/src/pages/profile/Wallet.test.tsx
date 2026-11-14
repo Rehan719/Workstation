@@ -5,7 +5,7 @@
 // the real page against the answers the fund routes gave on a fresh store (Wallet.fixture.json, captured by
 // w981_capture.py from a made-up fund of two allocations, one reversal held, approved and applied, and two refusals),
 // drives the reversal as a person would, and has the server refuse each read and each request.
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within, waitFor } from '@testing-library/react';
 import axios from 'axios';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -56,7 +56,7 @@ describe('Wallet, rendered against the fund routes\' own answers', () => {
     serve();
     render(<Wallet />);
     const s = captured.status;
-    expect((await screen.findByTestId('wallet-allocated')).textContent).toBe(s.allocated.toLocaleString());
+    await waitFor(() => expect(screen.getByTestId('wallet-allocated').textContent).toBe(s.allocated.toLocaleString()));
     expect(screen.getByText(s.available.toLocaleString())).toBeTruthy();
     expect(card('Utilisation')).toBe(`${s.utilisation_pct}%`);
     expect(card('Fund Health')).toBe(s.fund_health);
@@ -68,8 +68,8 @@ describe('Wallet, rendered against the fund routes\' own answers', () => {
   it('a refused status read is said, and every figure it would have given is a dash, never a zero', async () => {
     serve({ status: refused(503, 'the fund store is locked') });
     render(<Wallet />);
-    expect((await screen.findByTestId('wallet-status-unread')).textContent).toBe(
-      'The fund\'s status could not be read (HTTP 503): the fund store is locked');
+    await waitFor(() => expect(screen.getByTestId('wallet-status-unread').textContent).toBe(
+      'The fund\'s status could not be read (HTTP 503): the fund store is locked'));
     expect(screen.getByTestId('wallet-allocated').textContent).toBe('—');
     expect(card('Utilisation')).toBe('—');
     expect(card('Fund Health')).toBe('NOT READ');
@@ -80,8 +80,8 @@ describe('Wallet, rendered against the fund routes\' own answers', () => {
   it('a portfolio that could not be read is said in both cards, never as nothing allocated or requested', async () => {
     serve({ portfolio: refused(503, 'the fund store could not be read') });
     render(<Wallet />);
-    expect((await screen.findByTestId('wallet-portfolio-error')).textContent).toBe(
-      'The portfolio could not be read (HTTP 503): the fund store could not be read');
+    await waitFor(() => expect(screen.getByTestId('wallet-portfolio-error').textContent).toBe(
+      'The portfolio could not be read (HTTP 503): the fund store could not be read'));
     expect(screen.getByTestId('wallet-allocations-unread').textContent).toContain(
       'The portfolio was not read, so whether any capital has been allocated is not known.');
     expect(screen.queryByTestId('wallet-allocations-none')).toBeNull();
@@ -91,8 +91,8 @@ describe('Wallet, rendered against the fund routes\' own answers', () => {
   it('an unreachable server is said, never as an empty portfolio', async () => {
     serve({ unreachable: true });
     render(<Wallet />);
-    expect((await screen.findByTestId('wallet-portfolio-error')).textContent).toBe(
-      'The portfolio could not be read: the server could not be reached.');
+    await waitFor(() => expect(screen.getByTestId('wallet-portfolio-error').textContent).toBe(
+      'The portfolio could not be read: the server could not be reached.'));
     expect(card('Fund Health')).toBe('BACKEND UNREACHABLE');
     expect(screen.getByTestId('wallet-allocations-unread')).toBeTruthy();
     expect(screen.queryByText('No allocation has been requested.')).toBeNull();
@@ -104,7 +104,7 @@ describe('Wallet, rendered against the fund routes\' own answers', () => {
     empty.allocations = [];
     serve({ portfolio: ok(empty) });
     render(<Wallet />);
-    expect((await screen.findByTestId('wallet-allocations-none')).textContent?.trim()).toBe('No capital has been allocated.');
+    await waitFor(() => expect(screen.getByTestId('wallet-allocations-none').textContent?.trim()).toBe('No capital has been allocated.'));
     expect(screen.queryByTestId('wallet-allocations-unread')).toBeNull();
   });
 

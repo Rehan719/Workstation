@@ -5,7 +5,7 @@
 // the middle state is the one that matters. Three guards read the page's source. This mounts the real page against the
 // answers the three routes gave on a fresh store (HorizonCompanion.fixture.json, captured by w978_capture.py from one
 // made-up request and three planted inbox files), reads each claim in the DOM, and has the server refuse each read.
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, waitFor } from '@testing-library/react';
 import axios from 'axios';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -159,8 +159,8 @@ describe('HorizonCompanion, rendered against the horizon routes\' own answers', 
   it('an index that cannot be read is said to be unreachable, not empty', async () => {
     serve({ archive: refused('the index could not be read') });
     render(<HorizonCompanion />);
-    expect((await screen.findByTestId('horizon-archive-unavailable')).textContent).toContain(
-      'nothing here should be read as "the archive is empty"');
+    await waitFor(() => expect(screen.getByTestId('horizon-archive-unavailable').textContent).toContain(
+      'nothing here should be read as "the archive is empty"'));
     expect(screen.queryByTestId('horizon-archive-counts')).toBeNull();
   });
 });

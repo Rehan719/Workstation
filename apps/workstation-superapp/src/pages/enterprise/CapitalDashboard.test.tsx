@@ -6,7 +6,7 @@
 // What a person sees on the page is a claim about what is RENDERED, the kind FU-399 converts. This mounts the real
 // page against the API's own answers, captured from the app's routes (CapitalDashboard.fixture.json), and reads the
 // figures in the DOM: each basis beside its figure, and a chip that says so when the store could not be read whole.
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import axios from 'axios';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -57,7 +57,7 @@ describe('CapitalDashboard, the fund figures, rendered', () => {
   it('shows the seed split and the health basis the API states, and no chip when the store was read whole', async () => {
     const f = serve();                                               // as the app answers on an empty store
     mount();
-    expect((await screen.findByTestId('fund-capital-basis')).textContent).toBe(f.capital_basis);
+    await waitFor(() => expect(screen.getByTestId('fund-capital-basis').textContent).toBe(f.capital_basis));
     expect(screen.getByTestId('fund-health-basis').textContent).toBe(`${f.fund_health}: ${f.fund_health_basis}`);
     expect(screen.getByTestId('fund-contributed').textContent).toContain('contributed by cycles:');
     expect(screen.getByTestId('fund-set-aside').textContent).toBe(

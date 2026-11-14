@@ -55,30 +55,30 @@ describe('EducationHub, rendered against the education routes\' own answers', ()
     mount();
     await waitFor(() => expect(offered()).toEqual(captured.frameworks.frameworks.map(f => [f.id, f.name])));
     const form = captured.tools.forms.find(f => f.id === 'curriculum');
-    expect((await screen.findByTestId('education-form-says')).textContent).toContain(form?.does ?? 'no such form');
+    await waitFor(() => expect(screen.getByTestId('education-form-says').textContent).toContain(form?.does ?? 'no such form'));
     expect(screen.queryByTestId('education-frameworks-note')).toBeNull();
   });
 
   it('a refused read of the frameworks says the server\'s reason', async () => {
     serve({ [FRAMEWORKS]: refused(502, 'the framework register did not answer') });
     mount();
-    expect((await screen.findByTestId('education-frameworks-note')).textContent).toBe(
+    await waitFor(() => expect(screen.getByTestId('education-frameworks-note').textContent).toBe(
       'The framework list could not be read (Failed (HTTP 502): the framework register did not answer), so only the '
-      + 'default framework is offered below.');
+      + 'default framework is offered below.'));
   });
 
   it('an empty list of frameworks is said as empty, not as unread', async () => {
     serve({ [FRAMEWORKS]: ok({ ...captured.frameworks, frameworks: [] }) });
     mount();
-    expect((await screen.findByTestId('education-frameworks-note')).textContent).toBe(
-      'The server lists no frameworks, so only the default framework is offered below.');
+    await waitFor(() => expect(screen.getByTestId('education-frameworks-note').textContent).toBe(
+      'The server lists no frameworks, so only the default framework is offered below.'));
   });
 
   it('a refused read of what each form does is said with its reason, and no form claims it', async () => {
     serve({ [TOOLS]: refused(503, 'the form register is locked') });
     mount();
-    expect((await screen.findByTestId('education-form-not-read')).textContent).toContain(
-      'Failed (HTTP 503): the form register is locked');
+    await waitFor(() => expect(screen.getByTestId('education-form-not-read').textContent).toContain(
+      'Failed (HTTP 503): the form register is locked'));
     expect(screen.queryByTestId('education-form-says')).toBeNull();
   });
 });

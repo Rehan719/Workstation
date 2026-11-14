@@ -5,7 +5,7 @@
 // read. This mounts the real page against the answers its reads gave on a fresh store (LawHub.fixture.json, captured
 // by w996_capture.py), and has the server refuse each read. A refusal says the server's reason, and a count on the
 // page is the server's.
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -64,30 +64,30 @@ describe('LawHub, rendered against the Law routes\' own answers', () => {
     const one = { ...captured.tools, needs_a_model: captured.tools.needs_a_model.slice(0, 1) };
     serve({ [TOOLS]: ok(one) });
     mount();
-    expect((await screen.findByTestId('law-forms-need-a-model')).textContent).toMatch(/^The one form further down needs a model\./);
+    await waitFor(() => expect(screen.getByTestId('law-forms-need-a-model').textContent).toMatch(/^The one form further down needs a model\./));
   });
 
   it('a refused read of the tools says the server\'s reason', async () => {
     serve({ [TOOLS]: refused(503, 'the tools register is being rebuilt') });
     mount();
-    expect((await screen.findByTestId('law-tools-note')).textContent).toBe(
-      'What each Law tool does could not be read (Failed (HTTP 503): the tools register is being rebuilt), so nothing is said about it here. Each answer still says what composed it.');
+    await waitFor(() => expect(screen.getByTestId('law-tools-note').textContent).toBe(
+      'What each Law tool does could not be read (Failed (HTTP 503): the tools register is being rebuilt), so nothing is said about it here. Each answer still says what composed it.'));
   });
 
   it('a refused read of the templates says the server\'s reason on the draft tab', async () => {
     serve({ [TEMPLATES]: refused(502, 'the template store did not answer') });
     mount();
     fireEvent.click(await screen.findByRole('button', { name: 'Draft' }));
-    expect((await screen.findByTestId('law-templates-note')).textContent).toMatch(
-      /^The template list could not be read \(Failed \(HTTP 502\): the template store did not answer\), so the templates typed/);
+    await waitFor(() => expect(screen.getByTestId('law-templates-note').textContent).toMatch(
+      /^The template list could not be read \(Failed \(HTTP 502\): the template store did not answer\), so the templates typed/));
   });
 
   it('an answer that is not JSON is said by its status, not by the parser', async () => {
     serve({ [TOOLS]: { status: 502, body: null, notJson: true } });
     mount();
-    const note = (await screen.findByTestId('law-tools-note')).textContent ?? '';
-    expect(note).toMatch(/^What each Law tool does could not be read \(Failed \(HTTP 502\): /);
-    expect(note).not.toContain('Unexpected token');
+    await waitFor(() => expect(screen.getByTestId('law-tools-note').textContent)
+      .toMatch(/^What each Law tool does could not be read \(Failed \(HTTP 502\): /));
+    expect(screen.getByTestId('law-tools-note').textContent).not.toContain('Unexpected token');   // once it has settled
   });
 
   it('the templates held for a qualified read are said on the draft tab', async () => {
@@ -95,6 +95,6 @@ describe('LawHub, rendered against the Law routes\' own answers', () => {
     mount();
     fireEvent.click(await screen.findByRole('button', { name: 'Draft' }));
     const held = captured.templates.held;
-    expect((await screen.findByTestId('law-templates-held')).textContent).toContain(held.reason);
+    await waitFor(() => expect(screen.getByTestId('law-templates-held').textContent).toContain(held.reason));
   });
 });

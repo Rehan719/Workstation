@@ -67,8 +67,8 @@ describe('ConstitutionalUI, rendered against its routes\' own answers', () => {
   it('an unread constitution is said, never shown as an empty one', async () => {
     serve({ '/api/v154/constitution/articles': refused(503, 'the canon could not be read') });
     mount();
-    expect((await screen.findByTestId('articles-unread')).textContent).toContain(
-      'The constitution\'s articles could not be read, so none is shown. This is not an empty constitution.');
+    await waitFor(() => expect(screen.getByTestId('articles-unread').textContent).toContain(
+      'The constitution\'s articles could not be read, so none is shown. This is not an empty constitution.'));
     expect(await failures()).toContain(
       'Could not read the constitution\'s articles — Failed (HTTP 503): the canon could not be read');
     expect(screen.queryByText('articles ·', { exact: false })).toBeNull();

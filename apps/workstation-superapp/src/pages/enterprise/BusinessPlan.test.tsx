@@ -46,16 +46,16 @@ describe('BusinessPlan, rendered against the plan routes\' own answers', () => {
     serve(ok(captured.plan_empty));
     mount();
     expect(captured.plan_empty.objectives).toHaveLength(0);
-    expect((await screen.findByTestId('plan-overall')).textContent).toBe(
-      'No objective is recorded on this plan yet, so there is no progress to measure.');
+    await waitFor(() => expect(screen.getByTestId('plan-overall').textContent).toBe(
+      'No objective is recorded on this plan yet, so there is no progress to measure.'));
     expect(screen.queryByText('0%')).toBeNull();
   });
 
   it('one objective, reviewed once: the figure and the roadmap are the plan\'s own', async () => {
     serve(ok(captured.plan_one));
     mount();
-    expect((await screen.findByTestId('plan-overall')).textContent).toBe(
-      `${one.progress_pct}%overall objective progress · 1 objective`);
+    await waitFor(() => expect(screen.getByTestId('plan-overall').textContent).toBe(
+      `${one.progress_pct}%overall objective progress · 1 objective`));
     //  the objective's card, and the roadmap's next milestone, which names it
     expect(screen.getAllByText(one.title).length).toBeGreaterThanOrEqual(1);
     const rm = captured.plan_one.roadmap;
@@ -68,8 +68,8 @@ describe('BusinessPlan, rendered against the plan routes\' own answers', () => {
     const title = await screen.findByPlaceholderText('Objective');
     fireEvent.change(title, { target: { value: 'An objective the server will refuse' } });
     fireEvent.click(screen.getByRole('button', { name: /Add/ }));
-    expect((await screen.findByTestId('plan-action-error')).textContent).toBe(
-      `The objective was NOT saved: ${said(captured.objective_refused)}`);
+    await waitFor(() => expect(screen.getByTestId('plan-action-error').textContent).toBe(
+      `The objective was NOT saved: ${said(captured.objective_refused)}`));
     expect((screen.getByPlaceholderText('Objective') as HTMLInputElement).value).toBe('An objective the server will refuse');
   });
 
@@ -77,8 +77,8 @@ describe('BusinessPlan, rendered against the plan routes\' own answers', () => {
     serve(ok(captured.plan_one), { [REVIEW]: captured.review_refused });
     mount();
     fireEvent.click(await screen.findByRole('button', { name: '+25% progress' }));
-    expect((await screen.findByTestId('plan-action-error')).textContent).toBe(
-      `The review was NOT recorded: ${said(captured.review_refused)}`);
+    await waitFor(() => expect(screen.getByTestId('plan-action-error').textContent).toBe(
+      `The review was NOT recorded: ${said(captured.review_refused)}`));
   });
 
   it('a refused owner edit says the field the server refused', async () => {
@@ -95,7 +95,7 @@ describe('BusinessPlan, rendered against the plan routes\' own answers', () => {
     const r = captured.plan_unreadable;
     serve(r);
     mount();
-    expect((await screen.findByTestId('plan-unreadable')).textContent).toContain(r.body.detail);
+    await waitFor(() => expect(screen.getByTestId('plan-unreadable').textContent).toContain(r.body.detail));
     expect(r.body.detail.match(/nothing was written/g)).toHaveLength(1);
     expect(screen.queryByTestId('plan-overall')).toBeNull();
   });

@@ -56,8 +56,8 @@ describe('Introspection (Self Vision), rendered against the biometrics route\'s 
   it('a refused read says the server\'s reason, and that none was received', async () => {
     serve(refused(503, 'the immune sensor is restarting'));
     render(<Introspection />);
-    expect((await screen.findByRole('alert')).textContent?.trim()).toBe(
-      'The organism is not reporting (HTTP 503: the immune sensor is restarting). No vitals are shown, because none were received.');
+    await waitFor(() => expect(screen.getByRole('alert').textContent?.trim()).toBe(
+      'The organism is not reporting (HTTP 503: the immune sensor is restarting). No vitals are shown, because none were received.'));
   });
 
   it('a refused read after a good one does not say none was received', async () => {

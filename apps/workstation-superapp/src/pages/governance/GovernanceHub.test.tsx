@@ -85,8 +85,8 @@ describe('GovernanceHub (audit), rendered against the ledger and proposal routes
   it('a refused read of the proposals is not shown as none', async () => {
     serve({ [PROPOSALS]: refused(503, 'the proposals store could not be read') });
     mount();
-    expect((await screen.findByTestId('proposals-unread')).textContent?.trim()).toBe(
-      'The proposals could not be read (Failed (HTTP 503): the proposals store could not be read), so this is not a list of none.');
+    await waitFor(() => expect(screen.getByTestId('proposals-unread').textContent?.trim()).toBe(
+      'The proposals could not be read (Failed (HTTP 503): the proposals store could not be read), so this is not a list of none.'));
     expect(screen.queryByText('No proposals yet.')).toBeNull();
   });
 });

@@ -5,7 +5,7 @@
 // the kind FU-399 converts. This mounts the real page against the API's own answer, captured from the record route
 // after four records were made (a rule check and a signature that count, an uncalibrated agent's whole review that
 // is kept and not counted, and an agent's review stored before clause 2), and drives the form against the door.
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -36,8 +36,7 @@ describe('ReviewRecords, the records and the form, rendered', () => {
     const listing = captured.records;
     serve(listing);
     render(<ReviewRecords />);
-    expect((await screen.findByTestId('review-records-count')).textContent)
-      .toBe(`${listing.counted} of ${listing.total} record(s) count.`);
+    await waitFor(() => expect(screen.getByTestId('review-records-count').textContent).toBe(`${listing.counted} of ${listing.total} record(s) count.`));
     expect(screen.getByTestId('review-records-basis').textContent).toBe(`${listing.basis}.`);
     expect(screen.getByTestId('review-records-credential').textContent).toBe(`${listing.credential_basis}.`);
     for (const r of listing.records) {
@@ -70,7 +69,7 @@ describe('ReviewRecords, the records and the form, rendered', () => {
     for (const [label, value] of Object.entries(fill)) fireEvent.change(screen.getByLabelText(label), { target: { value } });
     fireEvent.click(screen.getByText('Record'));
     //  the status and the door's own sentence, as the shared helper words every refusal (errorMessage)
-    expect((await screen.findByTestId('review-record-refused')).textContent).toBe(`Failed (HTTP 422): ${said}`);
+    await waitFor(() => expect(screen.getByTestId('review-record-refused').textContent).toBe(`Failed (HTTP 422): ${said}`));
     const post = sent.find(s => s.init?.method === 'POST');
     const body = JSON.parse(String(post?.init?.body));
     expect(post?.url).toBe('/api/v1/review/record');
@@ -85,7 +84,7 @@ describe('ReviewRecords, the records and the form, rendered', () => {
   it('with no record, the page says none has been recorded', async () => {
     serve({ ...captured.records, records: [], total: 0, counted: 0, tools: {} });
     render(<ReviewRecords />);
-    expect((await screen.findByTestId('review-records-none')).textContent).toBe('No review has been recorded for any tool.');
+    await waitFor(() => expect(screen.getByTestId('review-records-none').textContent).toBe('No review has been recorded for any tool.'));
   });
 
   it('a record store that cannot be read is said, and never shown as empty', async () => {
@@ -93,7 +92,7 @@ describe('ReviewRecords, the records and the form, rendered', () => {
       + 'treated as reviewed.';
     serve({ status: 503, detail });
     render(<ReviewRecords />);
-    expect((await screen.findByTestId('review-records-unread')).textContent).toBe(`Failed (HTTP 503): ${detail}`);
+    await waitFor(() => expect(screen.getByTestId('review-records-unread').textContent).toBe(`Failed (HTTP 503): ${detail}`));
     expect(screen.queryByTestId('review-records-none')).toBeNull();
     expect(screen.queryByTestId('review-records-count')).toBeNull();
   });

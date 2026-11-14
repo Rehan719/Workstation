@@ -92,8 +92,8 @@ describe('VBSSystemsPanel, rendered against the VBS routes\' own answers', () =>
     fireEvent.change(screen.getByTestId('defect-dispose-reason'), { target: { value: REASON } });
     fireEvent.click(close);
     const c1 = captured.closed_retired.defect.closure;
-    expect((await screen.findByTestId('defect-closure')).textContent).toBe(
-      `closed — its source was retired by ${c1.by} (typed, sign-in off) at ${c1.at} (it was ${c1.status_before}): ${c1.reason} · ${c1.source_check}`);
+    await waitFor(() => expect(screen.getByTestId('defect-closure').textContent).toBe(
+      `closed — its source was retired by ${c1.by} (typed, sign-in off) at ${c1.at} (it was ${c1.status_before}): ${c1.reason} · ${c1.source_check}`));
     expect(posts[0]).toEqual({ url: `/api/v1/vbs/qms/defects/${RETIRED?.id}/close-source-retired`, body: { reason: REASON } });
 
     //  the next one: its label is live, so the route field is offered; the reason is still there, typed once

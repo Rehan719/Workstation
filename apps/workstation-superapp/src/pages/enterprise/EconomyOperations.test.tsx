@@ -105,16 +105,16 @@ describe('TransferPanel, rendered against the transfer routes\' own answers', ()
   it('a refused check for debited transfers says the server\'s reason, and Transfer stays locked', async () => {
     serve({ [URL.open]: refused(503, 'the ledger store is locked') });
     transfers();
-    expect((await screen.findByTestId('transfer-open-error')).textContent).toContain(
-      'Could not check for debited transfers awaiting completion — Failed (HTTP 503): the ledger store is locked');
+    await waitFor(() => expect(screen.getByTestId('transfer-open-error').textContent).toContain(
+      'Could not check for debited transfers awaiting completion — Failed (HTTP 503): the ledger store is locked'));
     expect((screen.getByRole('button', { name: /Transfer/ }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('a refused read of where the credits came from is said, not hidden', async () => {
     serve({ [URL.intake]: refused(500, 'the transfer record could not be read') });
     transfers();
-    expect((await screen.findByTestId('transfer-intake-unread')).textContent).toBe(
-      'Where this entity\'s recorded credits came from could not be read — Failed (HTTP 500): the transfer record could not be read');
+    await waitFor(() => expect(screen.getByTestId('transfer-intake-unread').textContent).toBe(
+      'Where this entity\'s recorded credits came from could not be read — Failed (HTTP 500): the transfer record could not be read'));
     expect(screen.queryByTestId('transfer-intake-sources')).toBeNull();
   });
 });

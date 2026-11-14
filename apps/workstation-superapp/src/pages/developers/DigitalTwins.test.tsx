@@ -59,8 +59,8 @@ describe('DigitalTwins, rendered against the twin routes\' own answers', () => {
     serve({ [URL.model]: captured.missing });
     render(<DigitalTwins />);
     await openTheModel();
-    expect((await screen.findByTestId('twin-load-error')).textContent?.trim()).toBe(
-      `This model could not be read: Failed (HTTP ${captured.missing.status}): ${captured.missing.body.detail} — showing the summary row only.`);
+    await waitFor(() => expect(screen.getByTestId('twin-load-error').textContent?.trim()).toBe(
+      `This model could not be read: Failed (HTTP ${captured.missing.status}): ${captured.missing.body.detail} — showing the summary row only.`));
   });
 
   it('a refused compose says the server\'s status and reason', async () => {
@@ -69,8 +69,8 @@ describe('DigitalTwins, rendered against the twin routes\' own answers', () => {
     fireEvent.change(await screen.findByPlaceholderText('System name'), { target: { value: 'A system' } });
     fireEvent.change(screen.getByPlaceholderText('What the system is and does'), { target: { value: 'It does a thing.' } });
     fireEvent.click(screen.getByRole('button', { name: /Compose the model text/ }));
-    expect((await screen.findByTestId('twin-action-error')).textContent).toBe(
-      'The model was not composed: Failed (HTTP 422): system_description: the description is empty');
+    await waitFor(() => expect(screen.getByTestId('twin-action-error').textContent).toBe(
+      'The model was not composed: Failed (HTTP 422): system_description: the description is empty'));
   });
 
   it('a refused scenario says the server\'s status and reason', async () => {
@@ -80,8 +80,8 @@ describe('DigitalTwins, rendered against the twin routes\' own answers', () => {
     fireEvent.change(await screen.findByPlaceholderText('Scenario name'), { target: { value: 'Twice' } });
     fireEvent.change(screen.getByPlaceholderText('What changes in this scenario'), { target: { value: 'Doubles.' } });
     fireEvent.click(screen.getByRole('button', { name: /Compose the scenario text/ }));
-    expect((await screen.findByTestId('twin-action-error')).textContent).toBe(
-      `The scenario was not run: Failed (HTTP 404): Model ${id} not found.`);
+    await waitFor(() => expect(screen.getByTestId('twin-action-error').textContent).toBe(
+      `The scenario was not run: Failed (HTTP 404): Model ${id} not found.`));
   });
 
   it('a scenario that ran, and a model that could not then be read again, is said', async () => {
@@ -92,8 +92,8 @@ describe('DigitalTwins, rendered against the twin routes\' own answers', () => {
     fireEvent.change(await screen.findByPlaceholderText('Scenario name'), { target: { value: 'Twice' } });
     fireEvent.change(screen.getByPlaceholderText('What changes in this scenario'), { target: { value: 'Doubles.' } });
     fireEvent.click(screen.getByRole('button', { name: /Compose the scenario text/ }));
-    expect((await screen.findByTestId('twin-load-error')).textContent?.trim()).toBe(
-      'This model could not be read: Failed (HTTP 503): the twin store is locked — the list of scenarios is the one read before this one ran.');
+    await waitFor(() => expect(screen.getByTestId('twin-load-error').textContent?.trim()).toBe(
+      'This model could not be read: Failed (HTTP 503): the twin store is locked — the list of scenarios is the one read before this one ran.'));
     expect(screen.queryByTestId('twin-action-error')).toBeNull();
   });
 });

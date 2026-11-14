@@ -6,7 +6,7 @@
 // server refused. This mounts the real component against the answers GET/POST /api/v1/entity-specialists gave on a
 // fresh store (EntitySpecialists.fixture.json, captured by w933_capture.py): an entity the Genesis journey generated,
 // one whose record names no generating door, a roster with a specialist in each state, and the route's refusals.
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -47,7 +47,7 @@ describe("EntitySpecialists, rendered against the roster route's own answers", (
     const r = captured.generated_empty;
     serve([ok(r)]);
     render(<EntitySpecialists vsbId={captured.vsb_id} />);
-    expect((await screen.findByTestId('specialists-recommendation')).textContent).toBe(r.recommendation.said);
+    await waitFor(() => expect(screen.getByTestId('specialists-recommendation').textContent).toBe(r.recommendation.said));
     expect(r.recommendation.recommended).toBe(true);
     expect(text('specialists-charge')).toBe(r.recommendation.charge);
     expect(text('specialists-when')).toBe(r.recommendation.when_warranted);
@@ -61,7 +61,7 @@ describe("EntitySpecialists, rendered against the roster route's own answers", (
     const r = captured.not_generated;
     serve([ok(r)]);
     render(<EntitySpecialists vsbId={captured.vsb_id} />);
-    expect((await screen.findByTestId('specialists-recommendation')).textContent).toBe(r.recommendation.said);
+    await waitFor(() => expect(screen.getByTestId('specialists-recommendation').textContent).toBe(r.recommendation.said));
     expect(r.recommendation.recommended).toBe(false);
     expect(text('specialists-recommendation')).not.toBe(captured.generated_empty.recommendation.said);
   });
@@ -105,7 +105,7 @@ describe("EntitySpecialists, rendered against the roster route's own answers", (
     await screen.findByTestId('specialists-recommendation');
     fill(captured.attach_request);
     fireEvent.click(screen.getByText('Attach a specialist'));
-    expect((await screen.findByTestId('specialists-refused')).textContent).toBe(`Failed (HTTP 409): ${captured.refused_full}`);
+    await waitFor(() => expect(screen.getByTestId('specialists-refused').textContent).toBe(`Failed (HTTP 409): ${captured.refused_full}`));
     expect(screen.queryByTestId('specialists-done')).toBeNull();
   });
 
@@ -116,7 +116,7 @@ describe("EntitySpecialists, rendered against the roster route's own answers", (
     await screen.findByTestId(`specialist-${a.specialist_id}`);
     fireEvent.change(screen.getByLabelText(`Reason for retiring ${a.name}`), { target: { value: 'the engagement ended' } });
     fireEvent.click(screen.getByText('Retire'));
-    expect((await screen.findByTestId('specialists-refused')).textContent).toBe(`Failed (HTTP 422): ${captured.refused_reason}`);
+    await waitFor(() => expect(screen.getByTestId('specialists-refused').textContent).toBe(`Failed (HTTP 422): ${captured.refused_reason}`));
     expect(sent).toEqual([{ url: `/api/v1/entity-specialists/${captured.vsb_id}/${a.specialist_id}/retire`,
       body: { reason: 'the engagement ended' } }]);
   });
@@ -124,8 +124,8 @@ describe("EntitySpecialists, rendered against the roster route's own answers", (
   it('a refused read is said, and never drawn as an empty roster or a recommendation', async () => {
     serve([{ status: 503, body: { detail: captured.unreadable } }]);
     render(<EntitySpecialists vsbId={captured.vsb_id} />);
-    expect((await screen.findByTestId('specialists-unread')).textContent).toBe(
-      `Could not read this entity's roster — Failed (HTTP 503): ${captured.unreadable}`);
+    await waitFor(() => expect(screen.getByTestId('specialists-unread').textContent).toBe(
+      `Could not read this entity's roster — Failed (HTTP 503): ${captured.unreadable}`));
     expect(screen.queryByTestId('specialists-none')).toBeNull();
     expect(screen.queryByTestId('specialists-recommendation')).toBeNull();
     expect(screen.queryByTestId('specialists-places')).toBeNull();

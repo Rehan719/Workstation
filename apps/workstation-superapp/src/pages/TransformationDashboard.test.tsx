@@ -98,7 +98,7 @@ describe('TransformationDashboard, rendered against its routes\' own answers', (
     render(<TransformationDashboard />);
     await screen.findByText(captured.picture.vision_summary);
     fireEvent.click(button('Tick'));
-    expect((await screen.findByTestId('action-error')).textContent).toBe(' Failed (HTTP 503): the heartbeat is paused');
+    await waitFor(() => expect(screen.getByTestId('action-error').textContent).toBe(' Failed (HTTP 503): the heartbeat is paused'));
     fireEvent.click(button('Tick'));
     await waitFor(() => expect(screen.queryByTestId('action-error')).toBeNull());
   });
@@ -108,7 +108,7 @@ describe('TransformationDashboard, rendered against its routes\' own answers', (
     render(<TransformationDashboard />);
     await screen.findByText(captured.picture.vision_summary);
     fireEvent.click(button('Orchestrate'));
-    expect((await screen.findByTestId('action-error')).textContent).toBe(' Failed (HTTP 500): the board did not answer');
+    await waitFor(() => expect(screen.getByTestId('action-error').textContent).toBe(' Failed (HTTP 500): the board did not answer'));
     fireEvent.click(button('Orchestrate'));
     await screen.findByText('Transformation Cascade · Chief → Build-to-Order', { exact: false });
     expect(screen.queryByTestId('action-error')).toBeNull();
@@ -137,13 +137,13 @@ describe('TransformationDashboard, rendered against its routes\' own answers', (
   it('the register not shipped is said as the route says it, and a refused read keeps its reason', async () => {
     serve({ [URL.followups]: ok(captured.followups_unavailable) });
     const { unmount } = render(<TransformationDashboard />);
-    expect((await screen.findByTestId('followups-card')).textContent).toContain(captured.followups_unavailable.reason);
+    await waitFor(() => expect(screen.getByTestId('followups-card').textContent).toContain(captured.followups_unavailable.reason));
     expect(screen.getByTestId('plan-live-stamp').textContent).toBe(
       'The delivery plan has not been read yet · retrying every minute');
     unmount();
     serve({ [URL.followups]: refused(500, 'the register is locked') });
     render(<TransformationDashboard />);
-    expect((await screen.findByTestId('followups-card')).textContent).toContain(
-      'The follow-up register could not be loaded (Failed (HTTP 500): the register is locked).');
+    await waitFor(() => expect(screen.getByTestId('followups-card').textContent).toContain(
+      'The follow-up register could not be loaded (Failed (HTTP 500): the register is locked).'));
   });
 });

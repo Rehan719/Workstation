@@ -73,7 +73,7 @@ describe('OperationalExcellence (the Learning Loop), rendered against the operat
     await waitFor(() => expect(screen.getAllByTestId('read-failure').map(p => p.textContent)).toContain(
       'Could not read the summary — Failed (HTTP 503): the operations record could not be read'));
     //  the ranking and the outcomes were read, and are shown
-    expect((await screen.findByTestId('rankings-basis')).textContent).toBe(captured.rankings.basis);
+    await waitFor(() => expect(screen.getByTestId('rankings-basis').textContent).toBe(captured.rankings.basis));
     expect(screen.getAllByTestId('outcome-mark')).toHaveLength(captured.outcomes.outcomes.length);
     expect(screen.queryByText('Failed to load operational metrics')).toBeNull();
     expect(screen.queryByText('Total runs')).toBeNull();

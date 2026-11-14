@@ -71,8 +71,8 @@ describe('Support, rendered against the support routes\' own answers', () => {
     render(<Support />);
     await askAndAnswer();
     fireEvent.click(screen.getByRole('button', { name: /It did not/ }));
-    expect((await screen.findByTestId('support-confirm-error')).textContent).toBe(
-      `What you said was not recorded (HTTP 404: ${captured.confirm_refused.body.detail}).`);
+    await waitFor(() => expect(screen.getByTestId('support-confirm-error').textContent).toBe(
+      `What you said was not recorded (HTTP 404: ${captured.confirm_refused.body.detail}).`));
     expect(screen.queryByText('Recorded as unresolved. It stays open.')).toBeNull();
   });
 
@@ -82,8 +82,8 @@ describe('Support, rendered against the support routes\' own answers', () => {
     await askAndAnswer();
     vi.spyOn(axios, 'post').mockImplementation(async () => { throw new Error('Network Error'); });
     fireEvent.click(screen.getByRole('button', { name: /This resolved it/ }));
-    expect((await screen.findByTestId('support-confirm-error')).textContent).toBe(
-      'What you said was not recorded — the support surface could not be reached.');
+    await waitFor(() => expect(screen.getByTestId('support-confirm-error').textContent).toBe(
+      'What you said was not recorded — the support surface could not be reached.'));
   });
 
   it('a refused read of each record says the server\'s reason', async () => {
@@ -108,7 +108,7 @@ describe('Support, rendered against the support routes\' own answers', () => {
     serve({ [`POST ${SAT}`]: captured.rate_refused });
     render(<Support />);
     fireEvent.click(await screen.findByRole('button', { name: '5' }));
-    expect((await screen.findByTestId('support-rating-result')).textContent).toBe(
-      `Not recorded (HTTP 422: ${captured.rate_refused.body.detail}).`);
+    await waitFor(() => expect(screen.getByTestId('support-rating-result').textContent).toBe(
+      `Not recorded (HTTP 422: ${captured.rate_refused.body.detail}).`));
   });
 });

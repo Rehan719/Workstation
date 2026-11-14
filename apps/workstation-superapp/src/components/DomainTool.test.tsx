@@ -6,7 +6,7 @@
 // mounts the real DomainTool against answers GET /api/v1/review-options gave on a fresh store
 // (DomainTool.fixture.json, captured by w925_capture.py): an unreviewed Care tool, a Religion tool the ruling keeps
 // with a scholar, a Science tool after a person's signature was recorded, and an engine that declares no tool.
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import axios from 'axios';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -175,7 +175,7 @@ describe('DomainTool, a claim that an answer is wrong, rendered', () => {
     await runThenClaim();
     fireEvent.change(screen.getByLabelText('What is wrong with this answer'), { target: { value: 'w965 it leaves out the evening dose' } });
     fireEvent.click(screen.getByRole('button', { name: 'Raise a claim about this answer' }));
-    expect((await screen.findByTestId('domain-claim-done')).textContent).toBe(`Raised: ${claim.claim_id} — OPEN.`);
+    await waitFor(() => expect(screen.getByTestId('domain-claim-done').textContent).toBe(`Raised: ${claim.claim_id} — OPEN.`));
     expect(text('domain-claim-basis')).toBe(claim.artefact.basis);
     expect(sent).toEqual([{ url: '/api/v1/support/claims', body: {
       artefact_kind: 'answer', artefact_id: EXPORTED_SHA256,
@@ -189,7 +189,7 @@ describe('DomainTool, a claim that an answer is wrong, rendered', () => {
     await runThenClaim();
     fireEvent.change(screen.getByLabelText('What is wrong with this answer'), { target: { value: 'w965 something' } });
     fireEvent.click(screen.getByRole('button', { name: 'Raise a claim about this answer' }));
-    expect((await screen.findByTestId('domain-claim-refused')).textContent).toBe(`Failed (HTTP 422): ${detail}`);
+    await waitFor(() => expect(screen.getByTestId('domain-claim-refused').textContent).toBe(`Failed (HTTP 422): ${detail}`));
     expect(screen.queryByTestId('domain-claim-done')).toBeNull();
   });
 

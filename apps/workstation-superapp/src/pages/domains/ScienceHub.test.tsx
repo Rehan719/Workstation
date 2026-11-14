@@ -56,15 +56,15 @@ describe('ScienceHub, rendered against the science routes\' own answers', () => 
   it('a refused read of the methodologies says the server\'s reason', async () => {
     serve({ [METHODS]: refused(503, 'the methodology register is locked') });
     mount();
-    expect((await screen.findByTestId('science-methods-note')).textContent).toBe(
+    await waitFor(() => expect(screen.getByTestId('science-methods-note').textContent).toBe(
       'The methodology list could not be read (Failed (HTTP 503): the methodology register is locked), so only the '
-      + 'methodologies typed on this page are offered.');
+      + 'methodologies typed on this page are offered.'));
   });
 
   it('an empty list of methodologies is said as empty, not as unread', async () => {
     serve({ [METHODS]: ok({ ...captured.methodologies, methodologies: [] }) });
     mount();
-    expect((await screen.findByTestId('science-methods-note')).textContent).toBe(
-      'The server lists no methodologies, so only the methodologies typed on this page are offered.');
+    await waitFor(() => expect(screen.getByTestId('science-methods-note').textContent).toBe(
+      'The server lists no methodologies, so only the methodologies typed on this page are offered.'));
   });
 });

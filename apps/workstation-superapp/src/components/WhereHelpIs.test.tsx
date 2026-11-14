@@ -1,7 +1,7 @@
 // W953 (P5.20 clause 6) — the one page of where help is, rendered against the route's own answer
 // (WhereHelpIs.fixture.json is written from agentic_core/api/where_help.page() by the round that built it, and the
 // suite holds it equal to what GET /api/v1/support/where-help-is returns).
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -54,7 +54,7 @@ describe("WhereHelpIs, rendered against the route's own answer", () => {
   it('says how to complain and what this platform is not, in the server\'s words', async () => {
     serve({ status: 200, body: captured.page });
     render(<WhereHelpIs />);
-    expect((await screen.findByTestId('where-help-complain')).textContent).toBe(captured.page.to_complain);
+    await waitFor(() => expect(screen.getByTestId('where-help-complain').textContent).toBe(captured.page.to_complain));
     const not = screen.getByTestId('where-help-not');
     expect(Array.from(not.querySelectorAll('li')).map(li => li.textContent)).toEqual(captured.page.this_platform_is_not);
     expect(screen.getByTestId('where-help-basis').textContent).toBe(captured.page.basis);

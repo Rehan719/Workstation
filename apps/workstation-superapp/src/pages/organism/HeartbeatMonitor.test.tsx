@@ -5,7 +5,7 @@
 // reason, and the Heartbeat page shows it as a chip on the beat's row. A chip is a claim about what a person SEES,
 // the kind FU-399 converts. This mounts the real page against the heartbeat's own answers, captured from the app's
 // route before and after one real beat (HeartbeatMonitor.fixture.json), and reads the beat rows in the DOM.
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -69,8 +69,7 @@ describe('HeartbeatMonitor, the beat rows, rendered', () => {
   it('a refused status read is said, with the server\'s reason', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 503, json: async () => ({ detail: 'the heartbeat store could not be read' }) })));
     mount();
-    expect((await screen.findByTestId('read-failure')).textContent)
-      .toBe('Could not read the heartbeat status — Failed (HTTP 503): the heartbeat store could not be read');
+    await waitFor(() => expect(screen.getByTestId('read-failure').textContent).toBe('Could not read the heartbeat status — Failed (HTTP 503): the heartbeat store could not be read'));
     expect(screen.queryByTestId('beat-steps-failed')).toBeNull();
   });
 });

@@ -78711,7 +78711,8 @@ def test_w928_the_pages_a_founder_uses_most_say_when_a_read_fails():
                  for f in list(src.rglob("*.tsx")) + list(src.rglob("*.ts")) if not f.name.endswith((".test.tsx", ".test.ts")))
     assert silent <= 29, ("more calls end in a catch that says nothing than are left after W928", silent)
     gj = (src / "pages/synthesis/GenesisJourney.test.tsx").read_text(encoding="utf-8")
-    assert "findByTestId('read-failure')" in gj and "Failed (HTTP 503): the entity type register could not be read" in gj
+    #  W1014 - the failed read is waited for, then read (a found element was read as found)
+    assert "waitFor(() => expect(screen.getByTestId('read-failure')" in gj and "Failed (HTTP 503): the entity type register could not be read" in gj
 
 
 def test_w929_the_developer_and_organism_pages_say_when_a_read_fails():
@@ -78751,7 +78752,8 @@ def test_w929_the_developer_and_organism_pages_say_when_a_read_fails():
                  for f in list(src.rglob("*.tsx")) + list(src.rglob("*.ts")) if not f.name.endswith((".test.tsx", ".test.ts")))
     assert silent <= 13, ("more calls end in a catch that says nothing than are left after W929", silent)
     hb = (src / "pages/organism/HeartbeatMonitor.test.tsx").read_text(encoding="utf-8")
-    assert "findByTestId('read-failure')" in hb and "Failed (HTTP 503): the heartbeat store could not be read" in hb
+    #  W1014 - the failed read is waited for, then read (a found element was read as found)
+    assert "waitFor(() => expect(screen.getByTestId('read-failure')" in hb and "Failed (HTTP 503): the heartbeat store could not be read" in hb
 
 
 def test_w930_auth_off_is_said_only_when_the_server_says_sign_in_is_off(client):
@@ -83759,7 +83761,8 @@ def test_w1003_fu399_the_appraisal_says_how_every_reading_was_read_and_a_refused
     assert "import { MethodAppraisal } from './MethodAppraisal';" in t and "<MethodAppraisal />" in t
     for tid in set(re.findall(r"ByTestId\('([^']+)'\)", t)):
         assert f'data-testid="{tid}"' in page, tid
-    assert "findByTestId(`send-refused-${first.id}`)" in t and "data-testid={`send-refused-${r.id}`}" in page
+    #  W1014 - the refused send is waited for, then read
+    assert "waitFor(() => expect(screen.getByTestId(`send-refused-${first.id}`)" in t and "data-testid={`send-refused-${r.id}`}" in page
     code = _code_only(page)
     #  the send is read whole: its status first, then its reason in its own words, never its JSON
     assert "apiJson<any>('/api/v1/method/appraise/recommend'" not in code
@@ -84383,4 +84386,40 @@ def test_w1013_one_reading_of_a_refusal_a_field_check_is_said_by_its_field(clien
     #  its test read it at once; on a loaded runner it still said "Reading whether self-serve signup is on..."
     lt = (src / "pages/Login.test.tsx").read_text(encoding="utf-8")
     assert "findByTestId('signup-state')" not in lt, "a read of the signup element races the setting's answer"
+    assert lt.count("await waitFor(() => expect(screen.getByTestId('signup-state').textContent)") == 2
+
+
+def test_w1014_a_rendered_test_waits_for_what_an_element_says_and_never_reads_it_as_found(client):
+    """W1014. `(await screen.findByTestId(x)).textContent` resolves when the element EXISTS, and reads it then. An
+    element on the page while its read is pending is read in its pending state: the sign-in page's signup element
+    said "Reading whether self-serve signup is on…" when its test read it on the loaded frontend job (W1013 fixed
+    it). Ninety-nine more reads in thirty-six rendered tests had the form, and each was safe only because its element
+    first appears with its final text: delaying the dashboard plan's answer by 40 ms leaves its two found-then-read
+    tests green, because the plan card is rendered only once the plan is read. A page change that shows such an
+    element before its read settles would make its test race on a loaded runner, as the sign-in page's did, with no
+    guard to say so. Each now waits for what the element says (`await waitFor(() => expect(screen.getByTestId(x)
+    .textContent)...)`), which is at least as strong for every positive assertion; none was a negative one. Held
+    here: no rendered test reads an element's text as it was found, and the waited reads are the ones converted."""
+    import pathlib
+    import re
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    found_then_read = re.compile(r"\(await screen\.findBy\w+\((?:[^()]|\([^()]*\))*\)\)\.textContent")
+    waited = re.compile(r"await waitFor\(\(\) => expect\(screen\.getBy\w+\(")
+    offenders, n_waited, scanned = [], 0, 0
+    for f in sorted(src.rglob("*.test.tsx")):
+        scanned += 1
+        t = f.read_text(encoding="utf-8").replace("\r\n", "\n")
+        for m in found_then_read.finditer(t):
+            offenders.append(f"{f.relative_to(src).as_posix()}:{t[:m.start()].count(chr(10)) + 1}")
+        n_waited += len(waited.findall(t))
+        if waited.search(t):
+            assert re.search(r"^import \{[^}]*\bwaitFor\b[^}]*\} from '@testing-library/react';", t, re.M), (
+                f.name, "waits without importing waitFor")
+    assert scanned > 40, ("this scanned almost nothing, so it would pass on an empty tree", scanned)
+    assert offenders == [], ("a rendered test reads an element's text as it was found, before its read settles; "
+                             "wait for what it says", offenders)
+    assert n_waited == 114, n_waited   # 99 converted, 1 by hand (the law page's note), the sign-in page's 2 (W1013), 12 written so
+    td = (src / "pages/TransformationDashboard.test.tsx").read_text(encoding="utf-8")
+    assert td.count("await waitFor(() => expect(screen.getByTestId('followups-card').textContent).toContain(") == 2
+    lt = (src / "pages/Login.test.tsx").read_text(encoding="utf-8")
     assert lt.count("await waitFor(() => expect(screen.getByTestId('signup-state').textContent)") == 2

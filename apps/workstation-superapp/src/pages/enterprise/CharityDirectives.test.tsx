@@ -43,8 +43,8 @@ describe('CharityDirectives, rendered against the charity routes\' own answers',
   it('a fresh store: the defaults are said as defaults, and the pool is listed', async () => {
     serve();
     render(<CharityDirectives />);
-    expect((await screen.findByTestId('directives-provenance')).textContent).toBe(
-      `still on defaults · ${captured.directives.source}`);
+    await waitFor(() => expect(screen.getByTestId('directives-provenance').textContent).toBe(
+      `still on defaults · ${captured.directives.source}`));
     expect(field('Charity priorities').value).toBe(captured.directives.priorities.join(', '));
     expect(await screen.findByText(captured.candidates.candidates[0].cause)).toBeTruthy();
     expect(failures()).toEqual([]);
@@ -67,8 +67,8 @@ describe('CharityDirectives, rendered against the charity routes\' own answers',
     await screen.findByTestId('directives-provenance');
     fireEvent.change(field('Charity priorities'), { target: { value: 'clean_water' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save directives' }));
-    expect((await screen.findByTestId('directives-save-error')).textContent).toBe(
-      'The directives were not saved — Failed (HTTP 400): priorities must name cause ids');
+    await waitFor(() => expect(screen.getByTestId('directives-save-error').textContent).toBe(
+      'The directives were not saved — Failed (HTTP 400): priorities must name cause ids'));
   });
 
   it('a refused read of the pool is said, and the ids typed are said to be unchecked', async () => {
@@ -76,8 +76,8 @@ describe('CharityDirectives, rendered against the charity routes\' own answers',
     render(<CharityDirectives />);
     await waitFor(() => expect(failures()).toEqual([
       'Could not read the charity candidates — Failed (HTTP 502): the cause register did not answer']));
-    expect((await screen.findByTestId('directives-ids-unchecked')).textContent).toBe(
-      'The ids typed here are not checked against the causes: the charity candidates could not be read.');
+    await waitFor(() => expect(screen.getByTestId('directives-ids-unchecked').textContent).toBe(
+      'The ids typed here are not checked against the causes: the charity candidates could not be read.'));
   });
 
   it('a saved exclusion that matches no cause is answered with the server\'s own note', async () => {

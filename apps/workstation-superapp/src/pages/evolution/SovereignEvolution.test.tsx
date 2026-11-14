@@ -47,8 +47,8 @@ describe('SovereignEvolution, rendered against its routes\' own answers', () => 
   it('no cycle run is said, and the levers are said as the heartbeat reports them', async () => {
     serve();
     render(<SovereignEvolution />);
-    expect((await screen.findByTestId('evolution-no-cycle')).textContent?.trim()).toBe(
-      'No evolution cycle has run yet, so there is no roadmap to show. Run one above.');
+    await waitFor(() => expect(screen.getByTestId('evolution-no-cycle').textContent?.trim()).toBe(
+      'No evolution cycle has run yet, so there is no roadmap to show. Run one above.'));
     expect(captured.heartbeat.auto_evolve).toBe(false);
     await waitFor(() => expect(basis()).toBe(
       'Running on the beat is OFF (the Self-evolve lever on the heartbeat), so a cycle happens only when you press the button below.'));
@@ -85,8 +85,8 @@ describe('SovereignEvolution, rendered against its routes\' own answers', () => 
     render(<SovereignEvolution />);
     await screen.findByTestId('evolution-no-cycle');
     fireEvent.click(screen.getByRole('button', { name: /Run a Curation Cycle Now/ }));
-    expect((await screen.findByTestId('evolution-error')).textContent).toBe(
-      ' The cycle was not run: Failed (HTTP 503): the introspection could not be read');
+    await waitFor(() => expect(screen.getByTestId('evolution-error').textContent).toBe(
+      ' The cycle was not run: Failed (HTTP 503): the introspection could not be read'));
     expect(screen.getByTestId('evolution-no-cycle')).toBeTruthy();
   });
 });

@@ -58,8 +58,8 @@ describe('CognitionIntegration, rendered against the cognition routes\' own answ
     serve();
     mount();
     const w = captured.wiring as { routes_mounted?: number; connected: number; total: number };
-    expect((await screen.findByTestId('wiring-count')).textContent).toBe(
-      `${w.routes_mounted ?? w.connected}/${w.total} tiers have a route mounted`);
+    await waitFor(() => expect(screen.getByTestId('wiring-count').textContent).toBe(
+      `${w.routes_mounted ?? w.connected}/${w.total} tiers have a route mounted`));
     expect(failures()).toEqual([]);
   });
 
@@ -68,8 +68,8 @@ describe('CognitionIntegration, rendered against the cognition routes\' own answ
     mount();
     await screen.findByTestId('wiring-count');
     runCascade();
-    expect((await screen.findByTestId('solve-error')).textContent).toBe(
-      'The cascade did not run: Failed (HTTP 503): the cascade is held while the engines are rebuilt');
+    await waitFor(() => expect(screen.getByTestId('solve-error').textContent).toBe(
+      'The cascade did not run: Failed (HTTP 503): the cascade is held while the engines are rebuilt'));
     expect(screen.queryByTestId('align-error')).toBeNull();
   });
 
@@ -77,8 +77,8 @@ describe('CognitionIntegration, rendered against the cognition routes\' own answ
     serve({ [ALIGN]: refused(502, 'the pillar register did not answer') });
     mount();
     fireEvent.click(await screen.findByRole('button', { name: /Route Gaps/ }));
-    expect((await screen.findByTestId('align-error')).textContent).toBe(
-      'The alignment could not be read: Failed (HTTP 502): the pillar register did not answer');
+    await waitFor(() => expect(screen.getByTestId('align-error').textContent).toBe(
+      'The alignment could not be read: Failed (HTTP 502): the pillar register did not answer'));
     expect(screen.queryByTestId('solve-error')).toBeNull();
   });
 

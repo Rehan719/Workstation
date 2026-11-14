@@ -50,7 +50,7 @@ describe('ServiceContracts, rendered against the contract routes\' own answers',
   it('a refused read of the list is not shown as an empty one', async () => {
     serve({ [LIST]: refused(503, 'the contracts store is locked') });
     mount();
-    expect((await screen.findByTestId('contracts-load-error')).textContent).toBe('Failed (HTTP 503): the contracts store is locked');
+    await waitFor(() => expect(screen.getByTestId('contracts-load-error').textContent).toBe('Failed (HTTP 503): the contracts store is locked'));
     expect(screen.getByTestId('contracts-unread').textContent?.trim()).toBe('The contracts could not be read, so this is not a list of none.');
     expect(screen.queryByText(/^No contracts yet\./)).toBeNull();
   });

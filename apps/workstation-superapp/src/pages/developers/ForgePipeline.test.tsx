@@ -5,7 +5,7 @@
 // configuration. Six guards read the page's source. This mounts the real page against the answers the routes gave on
 // a fresh store (ForgePipeline.fixture.json, captured by w979_capture.py: the stages, one run of a made-up objective
 // with a configured stage, its rerun, and two refusals), drives it as a person would, and reads each claim in the DOM.
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -111,7 +111,7 @@ describe('ForgePipeline, rendered against the forge routes\' own answers', () =>
     mount();
     await runIt();
     const run = captured.run;
-    expect((await screen.findByTestId('forge-ceo-framing')).textContent).toBe(run.ceo_framing);
+    await waitFor(() => expect(screen.getByTestId('forge-ceo-framing').textContent).toBe(run.ceo_framing));
     expect(screen.getByTestId('forge-ceo-served-by').textContent).toBe(`Served by: ${run.ceo_served_by}.`);
     const toggles = screen.getAllByTestId('forge-stage-toggle');
     expect(toggles).toHaveLength(run.stage_outputs.length);
@@ -141,7 +141,7 @@ describe('ForgePipeline, rendered against the forge routes\' own answers', () =>
     serve({ run: ok(failed) });
     const first = mount();
     await runIt();
-    expect((await screen.findByTestId('forge-ceo-served-by')).textContent).toBe('Served by: nothing — the call failed.');
+    await waitFor(() => expect(screen.getByTestId('forge-ceo-served-by').textContent).toBe('Served by: nothing — the call failed.'));
     expect(screen.getByTestId('forge-integration-served-by').textContent).toBe(`Served by: ${served}.`);
     fireEvent.click(screen.getAllByTestId('forge-stage-toggle')[0]);
     expect(screen.getByTestId('forge-stage-scope').textContent).toContain('served by nothing — the call failed.');
@@ -152,7 +152,7 @@ describe('ForgePipeline, rendered against the forge routes\' own answers', () =>
     serve({ run: ok(integrationFailed) });
     const second = mount();
     await runIt();
-    expect((await screen.findByTestId('forge-integration-served-by')).textContent).toBe('Served by: nothing — the call failed.');
+    await waitFor(() => expect(screen.getByTestId('forge-integration-served-by').textContent).toBe('Served by: nothing — the call failed.'));
     expect(screen.getByTestId('forge-ceo-served-by').textContent).toBe(`Served by: ${captured.run.ceo_served_by}.`);
     second.unmount();
 
@@ -161,7 +161,7 @@ describe('ForgePipeline, rendered against the forge routes\' own answers', () =>
     serve({ run: ok(before) });
     mount();
     await runIt();
-    expect((await screen.findByTestId('forge-integration-served-by')).textContent).toBe('Served by: not recorded.');
+    await waitFor(() => expect(screen.getByTestId('forge-integration-served-by').textContent).toBe('Served by: not recorded.'));
     expect(screen.getByTestId('forge-ceo-served-by').textContent).toBe(`Served by: ${captured.run.ceo_served_by}.`);
   });
 
@@ -178,7 +178,7 @@ describe('ForgePipeline, rendered against the forge routes\' own answers', () =>
     const a = mount();
     await runIt();
     fireEvent.click(await screen.findByTestId('forge-rerun'));
-    expect((await screen.findByTestId('forge-rerun-basis')).textContent).toBe(captured.rerun.rerun_basis);
+    await waitFor(() => expect(screen.getByTestId('forge-rerun-basis').textContent).toBe(captured.rerun.rerun_basis));
     a.unmount();
 
     serve({ rerun: { status: captured.refused_rerun.status, body: captured.refused_rerun.body } });
@@ -199,8 +199,8 @@ describe('ForgePipeline, rendered against the forge routes\' own answers', () =>
   it('a failed read of the stages is said, and no stage\'s keys are claimed', async () => {
     serve({ resources: { status: 503, body: { detail: 'the forge registry could not be read' } } });
     mount();
-    expect((await screen.findByTestId('read-failure')).textContent).toBe(
-      'Could not read the Forge resources — Failed (HTTP 503): the forge registry could not be read');
+    await waitFor(() => expect(screen.getByTestId('read-failure').textContent).toBe(
+      'Could not read the Forge resources — Failed (HTTP 503): the forge registry could not be read'));
     const declared = screen.getAllByTestId('forge-stage-declared');
     expect(declared).toHaveLength(DEFAULT.length);
     declared.forEach(d => expect(d.textContent).toBe('its keys were not read'));

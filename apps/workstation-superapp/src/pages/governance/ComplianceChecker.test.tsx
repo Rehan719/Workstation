@@ -43,8 +43,8 @@ describe('ComplianceChecker, rendered against the compliance routes\' own answer
     render(<ComplianceChecker />);
     for (const f of captured.frameworks.frameworks) expect(await screen.findByText(f.name)).toBeTruthy();
     await runTheCheck();
-    expect((await screen.findByTestId('compliance-coverage-line')).textContent).toContain(
-      'NOTHING here assessed this subject.');
+    await waitFor(() => expect(screen.getByTestId('compliance-coverage-line').textContent).toContain(
+      'NOTHING here assessed this subject.'));
     expect(captured.check.assessed_by).toEqual([]);
     for (const v of captured.check.verdicts) {
       const reason = screen.getByText(v.reason);
@@ -59,8 +59,8 @@ describe('ComplianceChecker, rendered against the compliance routes\' own answer
     render(<ComplianceChecker />);
     await screen.findByText(captured.frameworks.frameworks[0].name);
     await runTheCheck();
-    expect((await screen.findByTestId('compliance-error')).textContent).toBe(
-      ' The check was not run: Failed (HTTP 503): the word lists could not be loaded');
+    await waitFor(() => expect(screen.getByTestId('compliance-error').textContent).toBe(
+      ' The check was not run: Failed (HTTP 503): the word lists could not be loaded'));
   });
 
   it('a check the backend never answered is said as that', async () => {
@@ -69,8 +69,8 @@ describe('ComplianceChecker, rendered against the compliance routes\' own answer
     await screen.findByText(captured.frameworks.frameworks[0].name);
     vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch'); }));
     await runTheCheck();
-    expect((await screen.findByTestId('compliance-error')).textContent).toBe(
-      ' The check was not run: Failed — backend unreachable.');
+    await waitFor(() => expect(screen.getByTestId('compliance-error').textContent).toBe(
+      ' The check was not run: Failed — backend unreachable.'));
   });
 
   it('an unread list of frameworks is not an empty card', async () => {

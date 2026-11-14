@@ -57,8 +57,8 @@ describe('Deliverables, rendered against the deliverables routes\' own answers',
   it('a refused list is not shown as an empty one', async () => {
     serve(refused(503, 'the deliverables store could not be read'));
     render(<Deliverables />);
-    expect((await screen.findByTestId('deliverables-unread')).textContent).toBe(
-      'The deliverables could not be read, so this is not a list of none.');
+    await waitFor(() => expect(screen.getByTestId('deliverables-unread').textContent).toBe(
+      'The deliverables could not be read, so this is not a list of none.'));
     expect(failures()).toContain('Could not read the deliverables — Failed (HTTP 503): the deliverables store could not be read');
     expect(heading()).toBe('Deliverables (not read)');
     expect(screen.queryByText('None yet — produce one above.')).toBeNull();
@@ -91,8 +91,8 @@ describe('Deliverables, rendered against the deliverables routes\' own answers',
     await openTheDeliverable();
     fireEvent.change(screen.getByPlaceholderText(/^Refine this deliverable/), { target: { value: 'Shorter.' } });
     fireEvent.click(screen.getByRole('button', { name: /Refine → new version/ }));
-    expect((await screen.findByTestId('deliverables-error')).textContent).toBe(
-      'The refine was not done: Failed (HTTP 503): the refiner is paused');
+    await waitFor(() => expect(screen.getByTestId('deliverables-error').textContent).toBe(
+      'The refine was not done: Failed (HTTP 503): the refiner is paused'));
   });
 
   it('a refused version says the step and the server\'s reason', async () => {
@@ -101,8 +101,8 @@ describe('Deliverables, rendered against the deliverables routes\' own answers',
     await openTheDeliverable();
     fireEvent.change(screen.getByPlaceholderText(/^Refine this deliverable/), { target: { value: 'Shorter.' } });
     fireEvent.click(screen.getByRole('button', { name: /Refine → new version/ }));
-    expect((await screen.findByTestId('deliverables-error')).textContent).toBe(
-      'The refined text was not saved as a new version: Failed (HTTP 409): the quality gate refused this version');
+    await waitFor(() => expect(screen.getByTestId('deliverables-error').textContent).toBe(
+      'The refined text was not saved as a new version: Failed (HTTP 409): the quality gate refused this version'));
   });
 
   it('a refused export is said on the page with the server\'s reason, not in an alert', async () => {
@@ -112,8 +112,8 @@ describe('Deliverables, rendered against the deliverables routes\' own answers',
     await openTheDeliverable();
     fireEvent.click(screen.getByRole('button', { name: /^Download/ }));
     const r = captured.export_missing;
-    expect((await screen.findByTestId('deliverables-error')).textContent).toBe(
-      `Export failed (HTTP ${r.status}): ${r.body.detail}`);
+    await waitFor(() => expect(screen.getByTestId('deliverables-error').textContent).toBe(
+      `Export failed (HTTP ${r.status}): ${r.body.detail}`));
     expect(alert).not.toHaveBeenCalled();
   });
 });

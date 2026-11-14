@@ -5,7 +5,7 @@
 // and what became of a change a review approved. This mounts the real page against the answers the board routes gave
 // on a fresh store (BoardOfDirectors.fixture.json, captured by w926_capture.py) and reads each claim in the DOM, then
 // the same answers changed the ways the server changes them, and the reads the server refuses.
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -88,7 +88,7 @@ describe('BoardOfDirectors, rendered against the board routes\' own answers', ()
     render(<BoardOfDirectors />);
     fireEvent.change(screen.getByTestId('board-topic'), { target: { value: captured.topic } });
     fireEvent.click(screen.getByTestId('board-topic-submit'));
-    expect((await screen.findByTestId('board-topic-status')).textContent).toBe('Framed by the floor — not deliberated');
+    await waitFor(() => expect(screen.getByTestId('board-topic-status').textContent).toBe('Framed by the floor — not deliberated'));
     expect(text('board-topic-status-basis')).toBe(t.status_basis);
     const chips = await screen.findAllByTestId('deliberation-status');
     expect(chips.map(c => c.textContent)).toContain('framed by the floor — not deliberated');
@@ -100,8 +100,7 @@ describe('BoardOfDirectors, rendered against the board routes\' own answers', ()
     render(<BoardOfDirectors />);
     fireEvent.change(screen.getByTestId('board-topic'), { target: { value: 'x' } });
     fireEvent.click(screen.getByTestId('board-topic-submit'));
-    expect((await screen.findByTestId('board-topic-error')).textContent)
-      .toBe('Not put to the Board: Failed (HTTP 422): a topic names what the Board is to decide');
+    await waitFor(() => expect(screen.getByTestId('board-topic-error').textContent).toBe('Not put to the Board: Failed (HTTP 422): a topic names what the Board is to decide'));
     expect(screen.queryByTestId('board-topic-result')).toBeNull();
   });
 
@@ -128,8 +127,7 @@ describe('BoardOfDirectors, rendered against the board routes\' own answers', ()
     expect((within(card).getByTestId('board-ratify') as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(within(card).getByTestId('board-ratification-owner-direction'));
     fireEvent.click(within(card).getByTestId('board-ratify'));
-    expect((await screen.findByTestId('board-ratification-result')).textContent)
-      .toBe(`${row.cca_id}: ${r.decision.toUpperCase()} — ${r.note} Recorded on the constitutional ledger.`);
+    await waitFor(() => expect(screen.getByTestId('board-ratification-result').textContent).toBe(`${row.cca_id}: ${r.decision.toUpperCase()} — ${r.note} Recorded on the constitutional ledger.`));
     expect(screen.queryByTestId('board-ratification-row')).toBeNull();
   });
 
@@ -169,7 +167,7 @@ describe('BoardOfDirectors, rendered against the board routes\' own answers', ()
     render(<BoardOfDirectors />);
     fireEvent.change(screen.getByPlaceholderText(/Give your Chief an instruction/), { target: { value: captured.instruction } });
     fireEvent.click(screen.getByText('Issue Instruction'));
-    expect((await screen.findByTestId('chief-directive-reason')).textContent).toBe(a.directive_reason);
+    await waitFor(() => expect(screen.getByTestId('chief-directive-reason').textContent).toBe(a.directive_reason));
     expect(within(screen.getByTestId('chief-standing-with-output')).getByTestId('chief-model-twin')).toBeTruthy();
   });
 });

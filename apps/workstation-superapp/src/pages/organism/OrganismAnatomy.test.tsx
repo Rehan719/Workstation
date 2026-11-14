@@ -56,16 +56,16 @@ describe('OrganismAnatomy, rendered against the organism routes\' own answers', 
     render(<OrganismAnatomy />);
     await waitFor(() => expect(failures()).toContain(
       'Could not read the healing log — Failed (HTTP 503): the healing record is locked'));
-    expect((await screen.findByTestId('anatomy-heal-log-unread')).textContent).toBe(
-      'The healing log could not be read, so this is not a log of none.');
+    await waitFor(() => expect(screen.getByTestId('anatomy-heal-log-unread').textContent).toBe(
+      'The healing log could not be read, so this is not a log of none.'));
     expect(screen.queryByText('no healing events this process')).toBeNull();
   });
 
   it('a refused signal feed is not shown as an empty feed', async () => {
     serve({ [URL.signals]: refused(502, 'the nervous system did not answer') });
     render(<OrganismAnatomy />);
-    expect((await screen.findByTestId('anatomy-signals-unread')).textContent).toBe(
-      'The signal feed could not be read, so this is not a feed of none.');
+    await waitFor(() => expect(screen.getByTestId('anatomy-signals-unread').textContent).toBe(
+      'The signal feed could not be read, so this is not a feed of none.'));
   });
 
   it('every failed read is named with its reason, not three of them by URL', async () => {

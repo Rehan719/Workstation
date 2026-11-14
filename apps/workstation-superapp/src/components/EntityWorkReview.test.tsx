@@ -6,7 +6,7 @@
 // counts. This mounts the real component against the answers GET/POST /api/v1/entity-specialists/{id}/signatures and
 // .../sign gave on a fresh store (EntityWorkReview.fixture.json, captured by w935_capture.py): before a signature,
 // after one, after the deliverable was run again, an entity with no specialist, and the routes' refusals.
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -71,8 +71,8 @@ describe("EntityWorkReview, rendered against the signature routes' own answers",
     fill();
     fireEvent.click(screen.getByText('Record the signature'));
     const [s] = signatures(captured.after);
-    expect((await screen.findByTestId(`signature-${s.signature_id}`)).textContent).toBe(
-      `${s.name} signed ${s.deliverable_title} (version ${s.version}) on ${s.date}, until ${s.lapses_on}: ${s.reviewed}. It counts.`);
+    await waitFor(() => expect(screen.getByTestId(`signature-${s.signature_id}`).textContent).toBe(
+      `${s.name} signed ${s.deliverable_title} (version ${s.version}) on ${s.date}, until ${s.lapses_on}: ${s.reviewed}. It counts.`));
     const [held] = captured.roster.active;
     expect(sent).toEqual([{ url: `/api/v1/entity-specialists/${captured.vsb_id}/${held.specialist_id}/sign`,
       body: captured.sign_request }]);
@@ -85,7 +85,7 @@ describe("EntityWorkReview, rendered against the signature routes' own answers",
     serve([ok(captured.rerun)], [ok(captured.roster)]);
     render(<EntityWorkReview vsbId={captured.vsb_id} />);
     const [s] = signatures(captured.rerun);
-    expect((await screen.findByTestId(`signature-${s.signature_id}`)).textContent).toContain(` It does not count: ${s.why_not}.`);
+    await waitFor(() => expect(screen.getByTestId(`signature-${s.signature_id}`).textContent).toContain(` It does not count: ${s.why_not}.`));
     const r = review(captured.rerun);
     expect(text(`work-review-${did}`)).toContain(`Review reached: ${r.label} — ${r.basis}.`);
   });
@@ -96,7 +96,7 @@ describe("EntityWorkReview, rendered against the signature routes' own answers",
     await screen.findByTestId(`work-review-${did}`);
     fill();
     fireEvent.click(screen.getByText('Record the signature'));
-    expect((await screen.findByTestId('work-review-refused')).textContent).toBe(`Failed (HTTP 422): ${captured.refused_empty}`);
+    await waitFor(() => expect(screen.getByTestId('work-review-refused').textContent).toBe(`Failed (HTTP 422): ${captured.refused_empty}`));
     expect(screen.queryByTestId('work-review-done')).toBeNull();
   });
 
@@ -111,8 +111,8 @@ describe("EntityWorkReview, rendered against the signature routes' own answers",
   it('a refused read is said, and never drawn as nothing being signed', async () => {
     serve([{ status: 503, body: { detail: captured.unreadable } }], [ok(captured.roster)]);
     render(<EntityWorkReview vsbId={captured.vsb_id} />);
-    expect((await screen.findByTestId('work-review-unread')).textContent).toBe(
-      `Could not read the review of this entity's work — Failed (HTTP 503): ${captured.unreadable}`);
+    await waitFor(() => expect(screen.getByTestId('work-review-unread').textContent).toBe(
+      `Could not read the review of this entity's work — Failed (HTTP 503): ${captured.unreadable}`));
     expect(screen.queryByTestId('work-review-none')).toBeNull();
     expect(screen.queryByTestId(`work-review-${did}`)).toBeNull();
     expect(screen.queryByTestId('work-review-basis')).toBeNull();

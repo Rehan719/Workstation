@@ -6,7 +6,7 @@
 // says when the journey stopped at the section 11 screen. This mounts the real page, runs one journey against the
 // answer the journey route gave (GenesisJourney.fixture.json, captured on the native floor), and reads the rail and
 // the rank stage in the DOM, then the same answer changed the ways the server changes it.
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -128,7 +128,6 @@ describe('GenesisJourney, the stage rail and the rank stage, rendered', () => {
         <GenesisJourney />
       </MemoryRouter>,
     );
-    expect((await screen.findByTestId('read-failure')).textContent)
-      .toBe('Could not read the entity types — Failed (HTTP 503): the entity type register could not be read');
+    await waitFor(() => expect(screen.getByTestId('read-failure').textContent).toBe('Could not read the entity types — Failed (HTTP 503): the entity type register could not be read'));
   });
 });

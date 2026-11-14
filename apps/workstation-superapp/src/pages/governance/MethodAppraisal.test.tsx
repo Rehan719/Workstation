@@ -6,7 +6,7 @@
 // (MethodAppraisal.fixture.json, captured by w1003_capture.py: the whole plan, one phase, a recommendation sent, and
 // one the readings do not make), and has the server refuse an appraisal. Every reading says how it was read, and a
 // refused send is said by its reason, not as its JSON.
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -51,17 +51,17 @@ describe('MethodAppraisal, rendered against the method routes\' own answers', ()
     serve();
     render(<MethodAppraisal />);
     fireEvent.click(await screen.findByTestId(`send-${first.id}`));
-    expect((await screen.findByTestId(`sent-${first.id}`)).textContent).toBe(
+    await waitFor(() => expect(screen.getByTestId(`sent-${first.id}`).textContent).toBe(
       `Change record ${captured.sent.change_control.cca_id} filed (${captured.sent.change_control.status}). `
-      + captured.sent.basis);
+      + captured.sent.basis));
   });
 
   it('a refused send is said by its reason, not as its JSON', async () => {
     serve({ [SEND]: { status: captured.refused_send.status, body: captured.refused_send.body } });
     render(<MethodAppraisal />);
     fireEvent.click(await screen.findByTestId(`send-${first.id}`));
-    expect((await screen.findByTestId(`send-refused-${first.id}`)).textContent).toBe(
-      `Not sent: Failed (HTTP 409): ${captured.refused_send.body.detail.message}`);
+    await waitFor(() => expect(screen.getByTestId(`send-refused-${first.id}`).textContent).toBe(
+      `Not sent: Failed (HTTP 409): ${captured.refused_send.body.detail.message}`));
     expect(screen.queryByTestId(`sent-${first.id}`)).toBeNull();
   });
 
@@ -80,8 +80,8 @@ describe('MethodAppraisal, rendered against the method routes\' own answers', ()
     await screen.findByTestId('appraisal-readings');
     fireEvent.change(screen.getByLabelText('Scope to appraise'), { target: { value: 'P3' } });
     fireEvent.click(screen.getByTestId('appraisal-run'));
-    expect((await screen.findByTestId('appraisal-unavailable')).textContent).toBe(
-      'The appraisal could not be read: Failed (HTTP 503): the register could not be read');
+    await waitFor(() => expect(screen.getByTestId('appraisal-unavailable').textContent).toBe(
+      'The appraisal could not be read: Failed (HTTP 503): the register could not be read'));
     expect(screen.queryByTestId('appraisal-readings')).toBeNull();
   });
 });

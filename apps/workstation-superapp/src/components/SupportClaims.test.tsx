@@ -1,7 +1,7 @@
 // W942 (P5.3 part 2) — claims that an output is wrong, on the support page, rendered against the claim routes' own
 // answers (SupportClaims.fixture.json, captured by w942_capture.py on a fresh store): before any claim, a claim OPEN,
 // the same claim ANSWERED by a person with its decision in the ledger, and the routes' refusals.
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -37,7 +37,7 @@ describe("SupportClaims, rendered against the claim routes' own answers", () => 
   it('with no claim raised, it says so, with the rule in the server\'s words', async () => {
     serve([ok(captured.empty)], [ok(captured.deliverables)]);
     render(<SupportClaims />);
-    expect((await screen.findByTestId('claims-basis')).textContent).toBe(captured.empty.basis);
+    await waitFor(() => expect(screen.getByTestId('claims-basis').textContent).toBe(captured.empty.basis));
     expect(text('claims-open')).toBe('0 open of 0');
     expect(screen.getByTestId('claims-none')).toBeTruthy();
   });
@@ -64,7 +64,7 @@ describe("SupportClaims, rendered against the claim routes' own answers", () => 
     serve([ok(captured.after_answer)], [ok(captured.deliverables)]);
     render(<SupportClaims />);
     const [c] = claims(captured.after_answer);
-    expect((await screen.findByTestId(`claim-${c.claim_id}`)).textContent).toContain(`ANSWERED — ${c.artefact.title}`);
+    await waitFor(() => expect(screen.getByTestId(`claim-${c.claim_id}`).textContent).toContain(`ANSWERED — ${c.artefact.title}`));
     expect(text(`claim-logged-${c.claim_id}`)).toBe(`${c.answer_logged_basis}.`);
     expect(text('claims-open')).toBe('0 open of 1');
   });
@@ -89,7 +89,7 @@ describe("SupportClaims, rendered against the claim routes' own answers", () => 
     await screen.findByTestId('claims-basis');
     fireEvent.change(screen.getByLabelText('Deliverable the claim is about'), { target: { value: captured.raise_request.artefact_id } });
     fireEvent.click(screen.getByText('Raise a claim'));
-    expect((await screen.findByTestId('claims-refused')).textContent).toBe(`Failed (HTTP 422): ${captured.refused_blank}`);
+    await waitFor(() => expect(screen.getByTestId('claims-refused').textContent).toBe(`Failed (HTTP 422): ${captured.refused_blank}`));
     expect(screen.queryByTestId('claims-done')).toBeNull();
   });
 
@@ -103,8 +103,8 @@ describe("SupportClaims, rendered against the claim routes' own answers", () => 
   it('a refused read is said, and never drawn as no claims', async () => {
     serve([{ status: 503, body: { detail: captured.unreadable } }], [ok(captured.deliverables)]);
     render(<SupportClaims />);
-    expect((await screen.findByTestId('claims-unread')).textContent).toBe(
-      `Could not read the claims — Failed (HTTP 503): ${captured.unreadable}`);
+    await waitFor(() => expect(screen.getByTestId('claims-unread').textContent).toBe(
+      `Could not read the claims — Failed (HTTP 503): ${captured.unreadable}`));
     expect(screen.queryByTestId('claims-none')).toBeNull();
     expect(screen.queryByTestId('claims-open')).toBeNull();
   });

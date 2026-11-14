@@ -131,16 +131,16 @@ describe('Settings, rendered against its routes\' own answers', () => {
   it('approvals: none is said only when they were read, an unread list is said as unread, and a recorded one is listed', async () => {
     serve();
     const a = render(<Settings />);
-    expect((await screen.findByTestId('avatar-ratifications-none')).textContent).toBe(
-      'No approval is recorded, so replies are not cleared by the chain.');
+    await waitFor(() => expect(screen.getByTestId('avatar-ratifications-none').textContent).toBe(
+      'No approval is recorded, so replies are not cleared by the chain.'));
     expect(screen.getByTestId('avatar-clearance-panel').textContent).toContain(
       `High-impact modes (${captured.ratifications_empty.high_impact_modes.join(', ')}) also need the Owner's co-signature.`);
     a.unmount();
 
     serve({ 'GET /api/v1/avatar/ratifications': refused(503, 'the approvals store could not be read') });
     const b = render(<Settings />);
-    expect((await screen.findByTestId('avatar-ratifications-unread')).textContent).toBe(
-      'The approvals were not read, so whether one is recorded is not known.');
+    await waitFor(() => expect(screen.getByTestId('avatar-ratifications-unread').textContent).toBe(
+      'The approvals were not read, so whether one is recorded is not known.'));
     expect(screen.getByTestId('avatar-clearance-error').textContent).toBe(
       'The avatar\'s clearance records could not be read: Failed (HTTP 503): the approvals store could not be read');
     expect(screen.queryByTestId('avatar-ratifications-none')).toBeNull();
@@ -167,7 +167,7 @@ describe('Settings, rendered against its routes\' own answers', () => {
     const a = render(<Settings />);
     await waitFor(() => expect(screen.getByTestId('avatar-balance-goals').textContent).toBe(
       `Reply goals (set by the Owner): none recorded — ${captured.goals.basis}`));
-    expect((await screen.findByTestId('avatar-approval-without-goals')).textContent).toContain(captured.goals.basis);
+    await waitFor(() => expect(screen.getByTestId('avatar-approval-without-goals').textContent).toContain(captured.goals.basis));
     a.unmount();
 
     serve({ 'GET /api/v1/avatar/balance-objectives': refused(503, 'the goals record could not be read') });
@@ -187,7 +187,7 @@ describe('Settings, rendered against its routes\' own answers', () => {
       'PUT /api/v1/economy/protected-entities': () => { named = true; return ok(captured.protected_put); },
     });
     const a = render(<Settings />);
-    expect((await screen.findByTestId('protected-entities-rule')).textContent).toBe(captured.protected_unnamed.rule);
+    await waitFor(() => expect(screen.getByTestId('protected-entities-rule').textContent).toBe(captured.protected_unnamed.rule));
     expect(screen.getByTestId('protected-entities-state').textContent).toBe(captured.protected_unnamed.basis);
     const save = screen.getByTestId('protected-entities-save') as HTMLButtonElement;
     expect(save.disabled).toBe(true);
@@ -197,7 +197,7 @@ describe('Settings, rendered against its routes\' own answers', () => {
     expect(save.disabled).toBe(true);
     fireEvent.click(screen.getByLabelText('This is the Owner\'s own direction.'));
     fireEvent.click(save);
-    expect((await screen.findByTestId('protected-entities-saved')).textContent).toBe(captured.protected_put.basis);
+    await waitFor(() => expect(screen.getByTestId('protected-entities-saved').textContent).toBe(captured.protected_put.basis));
     expect(calls.find(c => c.method === 'PUT' && c.url === '/api/v1/economy/protected-entities')?.body).toEqual(
       { entities: { [id]: why }, owner_confirms: true });
     await waitFor(() => expect(screen.getByTestId('protected-entities-list').textContent).toContain(`${id} · ${why}`));

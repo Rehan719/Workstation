@@ -5,7 +5,7 @@
 // (Generator.fixture.json, captured by w1006_capture.py: an artefact, and the route's refusal of a request with no
 // description), and has the server be unreachable. A refusal says the server's reason, a field check by its field,
 // and an answer that holds no artefact is not shown as nothing having run.
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -60,8 +60,8 @@ describe('Generator, rendered against the generator route\'s own answers', () =>
     //  written here: the route has not been seen to answer an empty artefact, so this is its answer with the output emptied
     serve({ status: 200, body: { ...(captured.produced.body as object), output: '' } });
     generate();
-    expect((await screen.findByTestId('generator-no-artefact')).textContent).toBe(
-      'The generator answered, and its answer held no artefact.');
+    await waitFor(() => expect(screen.getByTestId('generator-no-artefact').textContent).toBe(
+      'The generator answered, and its answer held no artefact.'));
     expect(screen.queryByText('Describe an artefact and click Generate')).toBeNull();
   });
 });
