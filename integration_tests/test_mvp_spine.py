@@ -85761,3 +85761,38 @@ def test_w1035_the_catalogue_is_in_the_same_order_on_every_platform(client, monk
     got = client.post("/api/v1/bto/configure", json=fx["request"])
     assert got.status_code == 200, got.text[:200]
     assert got.json()["components"]["products"] == fx["blueprint"]["components"]["products"]
+
+
+def test_w1036_fu399_authorship_intelligence_expands_every_stage_it_says_it_expands(client):
+    """FU-399 part 57 (W1036). Authorship Intelligence is rendered against its route's own stream
+    (AuthorshipEngine.test.tsx): the nine stages the route streamed for a made-up topic on a fresh store with no model
+    installed, and its refusal of a request with no topic. Rendering found one defect: the page kept which card was
+    open as one index, so "Expand All" opened the first stage's card and left the other eight shut. Which cards are open
+    is now a set of stage numbers: "Expand All" opens every stage that streamed in, "Collapse All" shuts them, and each
+    card says whether it is open.
+
+    Held here: the refusal is the route's own, read again; the stream's completion line agrees with its own stages
+    (the stream is not run again: each stage is a gateway call, which the operations record counts); and the page's
+    code."""
+    import json
+    import pathlib
+    from agentic_core.api import intelligence as _intel
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/synthesis/AuthorshipEngine.fixture.json").read_text(encoding="utf-8"))
+
+    r = client.post("/api/v1/intelligence/authorship", json={k: v for k, v in fx["ask"].items() if k != "topic"})
+    assert (r.status_code, r.json()) == (fx["refused"]["status"], fx["refused"]["body"]), r.text[:200]
+    events = [json.loads(line[6:]) for line in fx["authorship"]["stream"].split("\n") if line.startswith("data: ")]
+    stages = [e for e in events if isinstance((e.get("data") or {}).get("stage_num"), int)]
+    assert [e["data"]["stage_num"] for e in stages] == list(range(1, 10)), [e["stage"] for e in stages]
+    done = [e for e in events if e["stage"] == "complete"]
+    assert len(done) == 1 and done[0]["content"] == _intel._run_summary_text(9, [e["data"] for e in stages]), done
+    assert (done[0]["data"]["genre"], done[0]["data"]["citation_style"]) == (fx["ask"]["genre"], fx["ask"]["citation_style"])
+
+    page = _code_only((src / "pages/synthesis/AuthorshipEngine.tsx").read_text(encoding="utf-8"))
+    assert "const [open, setOpen] = useState<Set<number>>(new Set());" in page and "setExpanded" not in page
+    assert "onClick={() => setOpen(allOpen ? new Set() : new Set(stageEvents.map(numOf)))}" in page
+    assert "const allOpen = stageEvents.length > 0 && stageEvents.every((ev, i) => open.has(numOf(ev, i)));" in page
+    assert "onClick={() => toggle(num)}" in page and "aria-expanded={open.has(num)}" in page
+    t = (src / "pages/synthesis/AuthorshipEngine.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './AuthorshipEngine.fixture.json';" in t and "render(<AuthorshipEngine />);" in t

@@ -24654,6 +24654,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the catalogue orders its directories by the name's own characters, which compare the same on every platform. test_w1035 holds it on any platform: with the products directory as a path that orders as a Windows path does, the catalogue keeps its names' order, and the blueprint's product lists are the fixture's, read again (three blinds)."
+    },
+    {
+      "id": "FU-1220",
+      "title": "Authorship Intelligence's 'Expand All' opened the first stage's card and left the other eight shut",
+      "why": "Found rendering Authorship Intelligence (FU-399 part 57) against its route's own stream. The page kept which card was open as one index, so 'Expand All' set it to the first card: the control said all and opened one, and the person read eight stages as not there to open.",
+      "source": "W1036 (FU-399 part 57, Authorship Intelligence rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/AuthorshipEngine.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1036",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of Authorship Intelligence; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: which cards are open is a set of stage numbers; 'Expand All' opens every stage that streamed in, 'Collapse All' shuts them, and each card says whether it is open. AuthorshipEngine.test.tsx drives it against the route's own stream (three vitest blinds); test_w1036 holds the refusal, the stream's completion line against its own stages, and the page's code (four blinds)."
     }
   ],
   "routes": [
