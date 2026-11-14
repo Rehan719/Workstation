@@ -24887,6 +24887,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: both routes refuse a field they do not read, by its name, and a request with no text to ask, before any call. test_w1046 drives each refusal on both routes, holds that none reaches the gateway and that a question is still answered (three blinds); test_w640's probe of the route asks in the field it reads."
+    },
+    {
+      "id": "FU-1231",
+      "title": "The VSB Economy page said four failed reads in fixed sentences: the living entities' dropped every refusal's reason",
+      "why": "Found rendering the VSB Economy page (FU-399 part 66) against its routes' own answers. A failed read of the living entities said only that they could not be loaded: the read goes through apiJson, so every refusal, the route's own 500 among them, reached that sentence with its reason dropped. A read of the apex's owner payments, its board pack or its waterfall that reached no server said each one's fixed sentence, with nothing to say no server had been reached.",
+      "source": "W1047 (FU-399 part 66, the VSB Economy page rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1047",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the VSB Economy page; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: each of the four reads says its failure through errorMessage and keeps what it says about the panel it leaves empty. VSBEconomy.test.tsx drives the reads as captured, the living entities' own 500 and three reads that reach no server (four vitest blinds); test_w1047 holds the reads, the 500 and the page (three blinds)."
     }
   ],
   "routes": [

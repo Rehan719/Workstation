@@ -113,9 +113,9 @@ export const VSBEconomy: React.FC = () => {
         }
         setPayLoadErr('');
         setPay(d);
-      }).catch(() => {
+      }).catch((e: unknown) => {   // W1047 - with what happened: a call that reached no server said nothing of it
         if (issuedFor !== currentVsb.current) return;
-        setPay(null); setPayLoadErr('Could not load the owner payments — showing nothing rather than zero balances.');
+        setPay(null); setPayLoadErr(`Could not load the owner payments, so nothing is shown rather than zero balances: ${errorMessage(e)}`);
       });
   };
   // §7 — the live financial Board Pack (capstone statement)
@@ -132,9 +132,9 @@ export const VSBEconomy: React.FC = () => {
         if (!r.ok || !d) { setBp(null); setBpLoadErr(bodyDetail(d, `Could not load the board pack (HTTP ${r.status}).`)); return; }   // W1013 - a field check by its field
         setBpLoadErr('');
         setBp(d);
-      }).catch(() => {
+      }).catch((e: unknown) => {   // W1047 - with what happened
         if (issuedFor !== currentVsb.current) return;
-        setBp(null); setBpLoadErr('Could not load the board pack — showing nothing rather than stale figures.');
+        setBp(null); setBpLoadErr(`Could not load the board pack, so nothing is shown rather than stale figures: ${errorMessage(e)}`);
       }).finally(() => { if (issuedFor === currentVsb.current) setBpLoading(false); });
   };
   // a transfer that finishes after an entity switch refreshes the pack of the entity ON SCREEN, not the one its
@@ -148,7 +148,9 @@ export const VSBEconomy: React.FC = () => {
   // "the request failed" is indistinguishable from one that means "there is no data".
   const [loadErr, setLoadErr] = useState('');
   const loadLiving = () =>
-    apiJson('/api/v1/economy/living-vsbs').then(setLiving).catch(() => setLoadErr('Could not load the living entities — showing nothing rather than stale figures.'));
+    //  W1047 - with the route's reason: every refusal reached this fixed sentence with what it said dropped
+    apiJson('/api/v1/economy/living-vsbs').then(setLiving)
+      .catch((e: unknown) => setLoadErr(`Could not load the living entities, so nothing is shown rather than stale figures: ${errorMessage(e)}`));
 
   useEffect(() => {
     apiJson('/api/v1/economy/entity-types').then(d => setTypes(d.types ?? [])).catch(noteRead('the entity types'));
@@ -187,7 +189,7 @@ export const VSBEconomy: React.FC = () => {
         }
         setWf(d);
         setWfDraft(Object.fromEntries(d.stages.map(s => [s, Math.round((d.waterfall[s] ?? 0) * 100)])));
-      }).catch(() => { if (live) setWfLoadErr("Could not load the waterfall — showing nothing rather than another entity's split."); });
+      }).catch((e: unknown) => { if (live) setWfLoadErr(`Could not load the waterfall, so nothing is shown rather than another entity's split: ${errorMessage(e)}`); });   // W1047
     return () => { live = false; };
   }, [entity, vsbId]);
 
@@ -318,7 +320,7 @@ export const VSBEconomy: React.FC = () => {
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">VSB · Living Economy</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Economic Metabolism</h1>
         {loadErr && (
-          <p role="alert" className="text-[10px] font-bold text-vital mt-2">{loadErr}</p>
+          <p role="alert" className="text-[10px] font-bold text-vital mt-2" data-testid="living-error">{loadErr}</p>
         )}
         {bpLoadErr && (
           <p role="alert" className="text-[10px] font-bold text-vital mt-2" data-testid="board-pack-error">{bpLoadErr}</p>

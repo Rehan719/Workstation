@@ -86235,3 +86235,47 @@ def test_w1046_the_query_routes_refuse_a_request_that_asks_nothing(client, monke
     assert src.count("    _refuse_nothing_asked(prompt)   # W1046\n") == 2
     sol = (root / "apps/workstation-superapp/src/pages/SolutionsPlatform.tsx").read_text(encoding="utf-8")
     assert "axios.post('/api/v1/ai/query', { query: prompt })" in sol
+
+
+def test_w1047_fu399_the_vsb_economy_page_says_what_happened_when_a_read_fails(client):
+    """FU-399 part 66 (W1047). The VSB Economy page is rendered against its routes' own answers (VSBEconomy.test.tsx):
+    every read it and its panels make on opening, as each route answered on a fresh store with nothing posted, and the
+    living entities' route's own 500 when its read fails inside. Rendering found four reads whose failure was a fixed
+    sentence:
+    - a failed read of the living entities said only that they could not be loaded: the read goes through apiJson, so
+      every refusal reached that sentence with its reason dropped;
+    - a read of the apex's owner payments, its board pack or its waterfall that reached no server said each one's fixed
+      sentence, with nothing to say no server had been reached.
+    Each says the failure through errorMessage now, and keeps what it says about the panel it leaves empty.
+
+    Held here: the captured reads are the routes' own, read again; the living entities' 500 is the global handler's
+    (made inside the route, so not run again); and the page's code."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/enterprise/VSBEconomy.fixture.json").read_text(encoding="utf-8"))
+    for path in ("/api/v1/economy/entity-types", "/api/v1/economy/living-vsbs", "/api/v1/economy/contracts"):
+        r = client.get(path)
+        assert r.status_code == fx["answers"][path]["status"] == 200, (path, r.text[:200])
+    assert client.get("/api/v1/economy/entity-types").json()["types"] == fx["answers"]["/api/v1/economy/entity-types"]["body"]["types"]
+    pay = fx["answers"]["/api/v1/economy/owner-payments?vsb_id=workstation-idbo"]["body"]
+    assert (pay["account_exists"], pay["balance_wst"], pay["real_money_enabled"]) == (False, 0.0, False), pay
+    lf = fx["living_failed"]
+    assert (lf["status"], lf["body"]["detail"], lf["body"]["cause_established"]) == (
+        500, "GET /api/v1/economy/living-vsbs failed with RuntimeError. The failure is recorded; the cause is not "
+             "established.", False), lf
+
+    page = _code_only((src / "pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    for line in (
+            "setPayLoadErr(`Could not load the owner payments, so nothing is shown rather than zero balances: ${errorMessage(e)}`);",
+            "setBpLoadErr(`Could not load the board pack, so nothing is shown rather than stale figures: ${errorMessage(e)}`);",
+            ".catch((e: unknown) => setLoadErr(`Could not load the living entities, so nothing is shown rather than stale figures: ${errorMessage(e)}`));",
+            "setWfLoadErr(`Could not load the waterfall, so nothing is shown rather than another entity's split: ${errorMessage(e)}`);"):
+        assert page.count(line) == 1, line
+    for fixed in ("'Could not load the owner payments — showing nothing rather than zero balances.'",
+                  "'Could not load the board pack — showing nothing rather than stale figures.'",
+                  "'Could not load the living entities — showing nothing rather than stale figures.'",
+                  "\"Could not load the waterfall — showing nothing rather than another entity's split.\""):
+        assert fixed not in page, ("a read's failure is a fixed sentence again", fixed)
+    t = (src / "pages/enterprise/VSBEconomy.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './VSBEconomy.fixture.json';" in t and "<VSBEconomy />" in t
