@@ -83419,3 +83419,48 @@ def test_w997_fu399_a_contracts_withdrawal_names_the_party_the_server_names_and_
     assert "entities.filter(e => e.vsb_id !== client)" in code
     fx = json.loads((pdir / "ServiceContracts.fixture.json").read_text(encoding="utf-8"))
     assert fx["cancelled"]["withdrawn"]["by"] == "client" and fx["declined"]["withdrawn"]["by"] == "provider"
+
+
+def test_w998_fu399_organism_anatomy_names_every_failed_read_and_never_shows_an_unread_log_as_empty(client):
+    """FU-399 part 30 (W998). The Organism Anatomy page shows the organism's health and lifecycle, its systems, the signal
+    feed, the healing log, the genome population and the config. OrganismAnatomy.test.tsx mounts the real page against
+    the answers its seven reads gave on a fresh store, and has the server refuse each. Rendering it found two defects,
+    fixed:
+    - a failed read was named by its URL ("/api/v1/organism/systems -> HTTP 503"), without the server's reason, and
+      `slice(0, 3)` left any fourth failure unnamed; each read now says its failure by what it was reading, every one;
+    - a refused healing log said "no healing events this process" and a refused signal feed was an empty feed; each
+      says it was not read, and the genome list's failure note fires only on the genome population's own failure.
+    Held here: the seven routes answer; and the page's code."""
+    import json
+    import pathlib
+    import re
+    for u in ("/api/v1/organism/health-summary", "/api/v1/organism/lifecycle", "/api/v1/organism/systems",
+              "/api/v1/organism/nervous/signals?n=25", "/api/v1/organism/self-healing/log", "/api/v1/organism/genome",
+              "/api/v1/organism/config"):
+        assert client.get(u).status_code == 200, u
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    page = (src / "pages/organism/OrganismAnatomy.tsx").read_text(encoding="utf-8")
+    shared = (src / "components/ReadFailures.tsx").read_text(encoding="utf-8")
+    t = (src / "pages/organism/OrganismAnatomy.test.tsx").read_text(encoding="utf-8")
+    assert "import { OrganismAnatomy } from './OrganismAnatomy';" in t and "<OrganismAnatomy />" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"read-failure", "anatomy-heal-log-unread", "anatomy-signals-unread", "anatomy-genomes-unread"} <= read, sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in page or f'data-testid="{tid}"' in shared, tid
+    code = _code_only(page)
+    #  every read through apiJson, each failure said by what it was reading
+    assert "loadErrs" not in code and "slice(0, 3)" not in code and "→ HTTP ${r.status}" not in code
+    names = re.findall(r"read\('/api/v1/organism/[^']+', '([^']+)'", code)
+    assert names == ["the health summary", "the lifecycle", "the systems", "the signal feed", "the healing log",
+                     "the genome population", "the organism config"], names
+    assert "apiJson(url).then(d => { set(d); unread?.(false); clearRead(what); })" in code
+    assert "<ReadFailures failures={readFailures} />" in code
+    #  an unread log or feed is said as unread; the genome note is the genome read's own
+    assert "The healing log could not be read, so this is not a log of none." in code
+    assert "{healUnread && !healLog" in code and "{signalsUnread && signals.length === 0 && (" in code
+    assert "The signal feed could not be read, so this is not a feed of none." in code
+    assert "{genomes === null && readFailures['the genome population'] && " in code
+    fx = json.loads((src / "pages/organism/OrganismAnatomy.fixture.json").read_text(encoding="utf-8"))
+    assert set(fx) == {"health", "life", "systems", "signals", "heal_log", "genome", "config"}, sorted(fx)
