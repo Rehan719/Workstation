@@ -83266,15 +83266,23 @@ def test_w994_fu399_self_vision_draws_the_figure_each_bar_names_and_says_a_refus
     - a refused read said "(HTTP 503)" alone; the server's reason is said beside the status;
     - a refused poll after a reading said "No vitals are shown, because none were received."; that is said only when
       none was, and otherwise the last reading is said not to be shown because it may no longer be current.
-    Held here: the route's two figures differ once a run is recorded on the test's own store; and the page's code."""
+    Held here: the route's two figures differ once a run is recorded on the test's own store; and the page's code.
+    W1012b: the work budget and the project list are the test's own too. On the session's shared store the tests
+    before it had spent the window's capacity (the Windows job runs fourteen minutes) and every project sat in
+    concept, so both figures read 0.0 and could not differ."""
     import json
     import pathlib
     import re
     from agentic_core.api import operational_excellence as _oe
+    from agentic_core.molecular import work_budget as _wb
+    from agentic_core.projects import api as _projects
     monkeypatch.setattr(_oe, "_STORE", tmp_path / "operations_outcomes.json")
+    monkeypatch.setattr(_wb, "_store", lambda: tmp_path / "work_budget.json")
+    monkeypatch.setattr(_projects, "_all_projects", lambda: [])
     _oe.record_outcome("w994-probe", "w994-probe-resource", served_by="native", duration_ms=360000, success=True)
     m = client.get("/api/v1/biometrics/status").json()["metabolic"]
-    assert m["energy_ratio"] is not None and m["efficiency"] != m["energy_ratio"], m
+    #  the probe's 360 s of the window's 3600 s leave 0.9; with no project the stage figure is 1.0; their mean 0.95
+    assert m["energy_ratio"] == 0.9 and m["efficiency"] == 0.95, m
     assert "the mean of energy_ratio" in m["efficiency_basis"], m["efficiency_basis"]
 
     root = pathlib.Path(__file__).resolve().parents[1]
@@ -84222,3 +84230,33 @@ def test_w1012_a_refusal_read_by_hand_is_never_said_as_object_object(client):
     assert scanned > 100, ("this scanned almost nothing, so it would pass on an empty tree", scanned)
     assert offenders == [], ("a refusal's reason is turned into text as it came; read it through bodyDetail", offenders)
     assert named == ["pages/enterprise/VSBCockpit.tsx"], named
+
+
+def test_w1012b_test_w994_reads_the_stores_it_sets_and_not_the_sessions(client, monkeypatch, tmp_path):
+    """W1012b. PR #462's Windows job went red at test_w994: the status route's two metabolic figures both read 0.0, so
+    the guard's premise that they differ failed. test_w994 recorded its probe run on its own outcomes store but read
+    the work budget and the project list from the session's shared store; on the Windows job (a fourteen-minute
+    suite) the tests before it had spent the window's 3600 s, and every project sat in concept, so both figures read
+    0.0. Held here: under exactly that condition, on stores of this test's own, the two figures are equal (so a guard
+    that reads the shared store passes or fails by the order the tests ran in); and test_w994 gives the work budget
+    and the project list stores of its own."""
+    import json
+    import pathlib
+    import time
+    from agentic_core.molecular import work_budget as _wb
+    from agentic_core.projects import api as _projects
+    spent = tmp_path / "work_budget.json"
+    spent.write_text(json.dumps({"window_started": time.time(), "seconds_spent": 3600.0, "tokens_spent": None,
+                                 "calls": 1}), encoding="utf-8")
+    monkeypatch.setattr(_wb, "_store", lambda: spent)
+    monkeypatch.setattr(_projects, "_all_projects",
+                        lambda: [_projects.Project(title="W1012b made up", description="made up, in concept")])
+    m = client.get("/api/v1/biometrics/status").json()["metabolic"]
+    assert m["energy_ratio"] == 0.0 and m["efficiency"] == 0.0, m
+
+    t = (pathlib.Path(__file__).resolve()).read_text(encoding="utf-8")
+    i = t.index("def test_w994_fu399_self_vision_draws_the_figure_each_bar_names_and_says_a_refusals_reason(")
+    w994 = t[i:t.index("\ndef ", i + 10)]
+    assert 'monkeypatch.setattr(_wb, "_store", lambda: tmp_path / "work_budget.json")' in w994
+    assert 'monkeypatch.setattr(_projects, "_all_projects", lambda: [])' in w994
+    assert 'assert m["energy_ratio"] == 0.9 and m["efficiency"] == 0.95, m' in w994
