@@ -83292,3 +83292,40 @@ def test_w994_fu399_self_vision_draws_the_figure_each_bar_names_and_says_a_refus
     fx = json.loads((pdir / "Introspection.fixture.json").read_text(encoding="utf-8"))
     fm = fx["status"]["metabolic"]
     assert fm["energy_ratio"] is not None and fm["efficiency"] != fm["energy_ratio"], fm
+
+
+def test_w995_fu399_support_never_drops_a_refused_confirmation_and_says_each_refusals_reason(client):
+    """FU-399 part 27 (W995). The Support page takes a technical question, shows the answer with what served it, records
+    whether it resolved anything only when the person says so, and shows the resolution and satisfaction records.
+    Support.test.tsx mounts the real page against the answers its routes gave on a fresh store, and has the server
+    refuse each read and each action. Rendering it found two defects, fixed:
+    - a refused confirmation ("This resolved it" / "It did not") left the buttons as they were with nothing said, and a
+      server that could not be reached was not caught; the page says what the person said was not recorded, and why;
+    - a refused read of either record, and a refused question, said "(HTTP 503)" and dropped the server's reason; each
+      says it beside the status, through the shared axiosDetail, and the rating's refusal goes through it too.
+    Held here: the confirm route's refusal is a reason worth carrying; and the page's code."""
+    import json
+    import pathlib
+    import re
+    r = client.post("/api/v1/support/confirm", json={"ticket_id": "tkt-w995-none", "resolved": True, "by": ""})
+    assert r.status_code == 404 and r.json()["detail"] == "no ticket tkt-w995-none", r.text
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    pdir = root / "apps/workstation-superapp/src/pages/support"
+    page = (pdir / "Support.tsx").read_text(encoding="utf-8")
+    t = (pdir / "Support.test.tsx").read_text(encoding="utf-8")
+    assert "import { Support } from './Support';" in t and "<Support />" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"support-confirm-error", "support-rating-result"} <= read, sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in page, tid
+    code = _code_only(page)
+    #  a refused confirmation is said, and one that could not be sent is caught
+    assert "else setConfirmErr(`What you said was not recorded (${said(r)}).`);" in code
+    assert ".catch(() => setConfirmErr('What you said was not recorded — the support surface could not be reached.'))" in code
+    #  every refusal says the server's reason beside its status, through the shared helper
+    assert "const why = axiosDetail({ response: r }, '');" in code and code.count("${said(r)}") >= 5
+    assert "return `HTTP ${r.status}${why ? `: ${why}` : ''}`;" in code, "the reason is not said beside the status"
+    assert "(HTTP ${r.status})" not in code and "(r.data as {detail?: string}).detail" not in code
+    fx = json.loads((pdir / "Support.fixture.json").read_text(encoding="utf-8"))
+    assert fx["confirm_refused"]["status"] == 404 and fx["rate_refused"]["status"] == 422, fx["rate_refused"]

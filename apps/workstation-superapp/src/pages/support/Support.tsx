@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { LifeBuoy, CheckCircle2, XCircle, AlertTriangle, FileText } from 'lucide-react';
-import { provenanceBadge } from '../../lib/api';
+import { provenanceBadge, axiosDetail } from '../../lib/api';
 import { SupportClaims } from '../../components/SupportClaims';   // W942 (P5.3)
 import { WhereHelpIs } from '../../components/WhereHelpIs';       // W953 (P5.20 clause 6)
 
@@ -70,6 +70,13 @@ interface Satisfaction {
   inferred_from_behaviour: boolean;
 }
 
+//  W995 (FU-399 part 27) - a refusal said only its status. The server's reason travels beside it, read through the
+//  shared helper, so a structured or validation reason is words and never an object.
+const said = (r: { status: number; data: unknown }) => {
+  const why = axiosDetail({ response: r }, '');
+  return `HTTP ${r.status}${why ? `: ${why}` : ''}`;
+};
+
 export const Support: React.FC = () => {
   const [query, setQuery] = useState('');
   const [asking, setAsking] = useState(false);
@@ -87,7 +94,7 @@ export const Support: React.FC = () => {
     axios.get<Sla>('/api/v1/support/sla', { validateStatus: () => true })
       .then(r => {
         if (r.status === 200 && r.data) { setSla(r.data); setSlaErr(''); }
-        else { setSla(null); setSlaErr(`The support record is not reporting (HTTP ${r.status}).`); }
+        else { setSla(null); setSlaErr(`The support record is not reporting (${said(r)}).`); }
       })
       .catch(() => { setSla(null); setSlaErr('The support record could not be reached.'); });
   };
@@ -95,7 +102,7 @@ export const Support: React.FC = () => {
     axios.get<Satisfaction>('/api/v1/support/satisfaction', { validateStatus: () => true })
       .then(r => {
         if (r.status === 200 && r.data) { setSat(r.data); setSatErr(''); }
-        else { setSat(null); setSatErr(`The satisfaction record is not reporting (HTTP ${r.status}).`); }
+        else { setSat(null); setSatErr(`The satisfaction record is not reporting (${said(r)}).`); }
       })
       .catch(() => { setSat(null); setSatErr('The satisfaction record could not be reached.'); });
   };
@@ -109,7 +116,7 @@ export const Support: React.FC = () => {
         //  a refusal is shown AS a refusal. The store refuses rather than clamping, so a rejected
         //  rating must not leave the page looking as though something was recorded.
         if (r.status === 200) setRatingMsg('Recorded. Thank you — this is the only satisfaction signal this platform has.');
-        else setRatingMsg(`Not recorded (HTTP ${r.status}). ${(r.data && (r.data as {detail?: string}).detail) || ''}`);
+        else setRatingMsg(`Not recorded (${said(r)}).`);
       })
       .catch(() => setRatingMsg('Not recorded — the surface could not be reached.'))
       .finally(() => loadSat());
@@ -121,17 +128,25 @@ export const Support: React.FC = () => {
     axios.post<AskResponse>('/api/v1/support/ask', { query }, { validateStatus: () => true })
       .then(r => {
         if (r.status === 200 && r.data) setAns(r.data);
-        else setErr(`The support surface did not answer (HTTP ${r.status}). Nothing was recorded as an answer.`);
+        else setErr(`The support surface did not answer (${said(r)}). Nothing was recorded as an answer.`);
       })
       .catch(() => setErr('The support surface could not be reached. Nothing was recorded as an answer.'))
       .finally(() => { setAsking(false); loadSla(); });
   };
 
+  //  W995 - a refused confirmation was silent, and a server that could not be reached was not caught: the person said
+  //  whether it resolved anything and nothing on the page said it was not recorded
+  const [confirmErr, setConfirmErr] = useState('');
   const confirm = (resolved: boolean) => {
     if (!ans) return;
+    setConfirmErr('');
     axios.post('/api/v1/support/confirm',
       { ticket_id: ans.ticket_id, resolved, by: '' }, { validateStatus: () => true })
-      .then(r => { if (r.status === 200) setConfirmed(resolved); })
+      .then(r => {
+        if (r.status === 200) setConfirmed(resolved);
+        else setConfirmErr(`What you said was not recorded (${said(r)}).`);
+      })
+      .catch(() => setConfirmErr('What you said was not recorded — the support surface could not be reached.'))
       .finally(() => loadSla());
   };
 
@@ -208,6 +223,7 @@ export const Support: React.FC = () => {
                     <XCircle className="w-4 h-4" /> It did not
                   </button>
                 </div>
+                {confirmErr && <p role="alert" className="text-vital text-xs font-bold" data-testid="support-confirm-error">{confirmErr}</p>}
               </>
             ) : (
               <p className={`font-black text-sm uppercase ${confirmed ? 'text-emerald-400' : 'text-rose-400'}`}>
