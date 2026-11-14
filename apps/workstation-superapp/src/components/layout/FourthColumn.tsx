@@ -3,6 +3,7 @@ import axios from 'axios';
 import { History, Bot, GitCommit, ChevronRight, ChevronLeft } from 'lucide-react';
 import { CommandCenter } from '@workstation/ui';
 import { NativeAgentPanel } from '../NativeAgentPanel';
+import { errorMessage } from '../../lib/api';   // W1028 - a failed read said as what it was
 
 type DockTab = 'channels' | 'projects' | 'agents';
 
@@ -47,7 +48,8 @@ export const FourthColumn: React.FC<FourthColumnProps> = ({ isCollapsed, onToggl
                      ? g.data.repository_commits_total : null });
       setSessions(s.data || []);
       setDataLoaded(true);
-    }).catch(() => setDataError('Could not load data — backend unreachable.'))
+    //  W1028 - either read refused said by its reason: this said every failure as an unreachable server
+    }).catch(e => setDataError(`The recent commits and the avatar sessions could not be read: ${errorMessage(e)}`))
       .finally(() => setDataLoading(false));
   }, [dataLoaded, dataLoading]);
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W931
 import axios from 'axios';
-import { axiosDetail } from '../../lib/api';   // W1011 - a refusal's detail as text, whatever its shape
+import { axiosDetail, errorMessage } from '../../lib/api';   // W1011 - a refusal's detail as text, whatever its shape
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   GitBranch, CheckCircle2, XCircle, Clock, Loader2,
@@ -701,8 +701,9 @@ export const ChangeControlAgency: React.FC = () => {
       setStats({ total: all.length, pending, awaiting, approved, rejected, implemented,
         implementedApplied, implementedRecordedOnly,
         implementedEffectNotRecorded: implemented - implementedApplied - implementedRecordedOnly });
-    } catch {
-      setLoadError('Could not load the change queue — backend unreachable.');
+    } catch (e) {
+      //  W1028 - a refused read is said by its reason: this said every failure as an unreachable server
+      setLoadError(`The change queue could not be read: ${errorMessage(e)}`);
     } finally { setLoading(false); }
   }, []);
 

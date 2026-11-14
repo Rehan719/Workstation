@@ -24477,6 +24477,32 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the eight pages read and write their tab through one hook, lib/useTab.ts (the router's search params, read on every render; a tab a page does not have opens its first; the first tab is the address with no ?tab=; the rest of the address is kept; no history entry per tab). The Employment hub's unchosen state is gone, and the Religion hub says a failed read by what it was, through errorMessage. EmploymentHub.test.tsx and ReligionHub.test.tsx drive the tab, the address and the read (five vitest blinds); test_w1027 holds the fixture, read again, the hook, the eight pages and, tree-wide, that no page reads its tab off window.location (six blinds)."
+    },
+    {
+      "id": "FU-1212",
+      "title": "Fourteen sentences said a server that answered as unreachable: catches behind axios, and refusal readers whose fallback named an unreachable server",
+      "why": "Found by a census of every sentence that names an unreachable server, after W1027 found the Religion hub saying a refusal as 'Backend unreachable'. Fourteen, in six files, sat where the catch receives a server's answer too, because axios throws on a refusal or the sentence was the reason's fallback: the management systems hub's six generators ('Generation failed: backend unreachable' for a refusal with no reason), the entity cockpit's transformation and configuration ('Action failed — backend unreachable; nothing changed' for any failure), its objective orchestration and deliverable production, the change queue ('Could not load the change queue — backend unreachable'), the side column's commits and sessions ('Could not load data — backend unreachable'), the synthesis studio's delete, and the avatar session's reply ('Could not reach the avatar backend' for a refusal with no reason). The sentences behind a fetch whose answer is read first, or an axios call that accepts every status, were right: only a failure to reach the server reaches them.",
+      "source": "W1028 (the census of sentences that name an unreachable server)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/ManagementSystemsHub.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/ChangeControlAgency.tsx",
+        "apps/workstation-superapp/src/components/layout/FourthColumn.tsx",
+        "apps/workstation-superapp/src/pages/synthesis/SynthesisStudio.tsx",
+        "apps/workstation-superapp/src/hooks/useAvatarSession.ts"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1028",
+      "note": "",
+      "slot_source": "found by the census FU-399's rendering led to; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: each of the fourteen says the failure through errorMessage, which says a refusal by its status and reason and only a call that reached no server as an unreachable one. SynthesisStudio.test.tsx drives the delete: the ingest route's own refusal and an answer with no reason (two vitest blinds). test_w1028 holds it tree-wide, in a try's catch and a promise's .catch, with the avatar session's network sentence named (five blinds); test_w1011's two lines and test_w1015's count moved with them."
     }
   ],
   "routes": [

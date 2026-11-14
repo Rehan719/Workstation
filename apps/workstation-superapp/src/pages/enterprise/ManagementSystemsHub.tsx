@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { provenanceBadge, provenanceLine, axiosDetail} from '../../lib/api';
+//  W1028 - a failed generation is said through errorMessage: axiosDetail's fallback said a refusal that gave no
+//  reason as an unreachable server
+import { provenanceBadge, provenanceLine, errorMessage } from '../../lib/api';
 import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W931
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -139,7 +141,7 @@ function QMSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
       onResult(res.data.framework, res.data.ai_provenance);
     } catch (e: any) {
       // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
-      onResult(`⚠ Generation failed: ${axiosDetail(e, 'backend unreachable')}. Nothing was generated.`);
+      onResult(`⚠ Nothing was generated: ${errorMessage(e)}`);
     } finally { setLoading(false); }
   };
 
@@ -174,7 +176,7 @@ function BMSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
       onResult(res.data.framework, res.data.ai_provenance);
     } catch (e: any) {
       // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
-      onResult(`⚠ Generation failed: ${axiosDetail(e, 'backend unreachable')}. Nothing was generated.`);
+      onResult(`⚠ Nothing was generated: ${errorMessage(e)}`);
     } finally { setLoading(false); }
   };
 
@@ -208,7 +210,7 @@ function DCSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
       onResult(res.data.framework, res.data.ai_provenance);
     } catch (e: any) {
       // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
-      onResult(`⚠ Generation failed: ${axiosDetail(e, 'backend unreachable')}. Nothing was generated.`);
+      onResult(`⚠ Nothing was generated: ${errorMessage(e)}`);
     } finally { setLoading(false); }
   };
 
@@ -241,7 +243,7 @@ function EMSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
       onResult(res.data.framework, res.data.ai_provenance);
     } catch (e: any) {
       // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
-      onResult(`⚠ Generation failed: ${axiosDetail(e, 'backend unreachable')}. Nothing was generated.`);
+      onResult(`⚠ Nothing was generated: ${errorMessage(e)}`);
     } finally { setLoading(false); }
   };
 
@@ -274,7 +276,7 @@ function AuditPanel({ onResult }: { onResult: (r: string, prov?: any) => void })
       onResult(res.data.schedule, res.data.ai_provenance);
     } catch (e: any) {
       // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
-      onResult(`⚠ Generation failed: ${axiosDetail(e, 'backend unreachable')}. Nothing was generated.`);
+      onResult(`⚠ Nothing was generated: ${errorMessage(e)}`);
     } finally { setLoading(false); }
   };
 
@@ -308,7 +310,7 @@ function RiskPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) 
       onResult(res.data.register, res.data.ai_provenance);
     } catch (e: any) {
       // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
-      onResult(`⚠ Generation failed: ${axiosDetail(e, 'backend unreachable')}. Nothing was generated.`);
+      onResult(`⚠ Nothing was generated: ${errorMessage(e)}`);
     } finally { setLoading(false); }
   };
 

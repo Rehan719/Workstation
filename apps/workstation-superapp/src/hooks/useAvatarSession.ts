@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { describeReadFailure, silenceIsRight } from '../components/ReadFailures';   // W931
 import { useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { axiosDetail } from '../lib/api';   // W1011 - a refusal's detail as text, whatever its shape
+import { axiosDetail, errorMessage } from '../lib/api';   // W1011 - a refusal's detail as text, whatever its shape
 import { getPrefs } from '../lib/userPrefs';
 
 export interface AvatarSuggestedArea {
@@ -282,9 +282,12 @@ export function useAvatarSession() {
     } catch (err: any) {
       const detail: string =
         axiosDetail(err, '') ||
-        (err?.code === 'ECONNREFUSED' || err?.code === 'ERR_NETWORK'
+        //  W1028 - a server that answered with no reason is said by its status: it was "Could not reach the avatar
+        //  backend"; only a call that reached no server is said as one
+        (err?.response ? errorMessage(err)
+          : err?.code === 'ECONNREFUSED' || err?.code === 'ERR_NETWORK'
           ? 'Backend server is not running. Start the Workstation API server.'
-          : 'Could not reach the avatar backend.');
+          : errorMessage(err));
       setAiStatus('offline');
       setMessages(prev => [...prev, { role: 'assistant', content: detail }]);
     } finally {

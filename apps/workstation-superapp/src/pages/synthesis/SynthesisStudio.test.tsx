@@ -14,6 +14,9 @@
 // - every failed generation, a refusal included, was said as "check the API server is running";
 // - an unread knowledge base read "No files ingested yet", and an unread history "No synthesis runs yet";
 // - a streamed result's text was read back off the page, so it could miss the last frames.
+//
+// W1028 - a refused delete is said by its status and reason, and one whose answer gave no reason is never said as an
+// unreachable server: the delete's fallback was "backend unreachable".
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import axios from 'axios';
 import React from 'react';
@@ -21,6 +24,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import captured from './SynthesisStudio.fixture.json';
+import ingest from '../../components/employment/ApplicationStudio.fixture.json';   // W1028 - the ingest route's own refusal
 import { SynthesisStudio } from './SynthesisStudio';
 
 const FILE = captured.files[0];
@@ -143,6 +147,25 @@ describe('SynthesisStudio, rendered against the routes it reads', () => {
     const said = `Generation failed for report: Failed (HTTP 409): ${captured.refused.body.detail.message}`;
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain(said));
     expect(screen.getByRole('alert').textContent).not.toContain('check the API server is running');
+  });
+
+  it('says a refused delete by its status and reason, and one with no reason never as an unreachable server', async () => {
+    serve();
+    //  the ingest route's own refusal of a file it no longer holds (captured by W1026), then a proxy's answer in front
+    //  of the server, made up for this test: a 429 whose body is a page, so it carries no reason
+    const del = vi.spyOn(axios, 'delete')
+      .mockImplementationOnce(async () => { throw axiosRefusal(ingest.delete_refused.status, ingest.delete_refused.body); })
+      .mockImplementationOnce(async () => { throw axiosRefusal(429, '<html><body>W1028 made up: too many requests</body></html>'); });
+    mount();
+    const remove = await waitFor(() => screen.getByRole('button', { name: `Remove ${FILE.filename} from knowledge base` }));
+    fireEvent.click(remove);
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain(
+      `Delete failed: Failed (HTTP 404): ${ingest.delete_refused.body.detail}`));
+    fireEvent.click(remove);
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('Delete failed: Failed (HTTP 429): no reason given'));
+    expect(screen.getByRole('alert').textContent).not.toMatch(/unreachable/);
+    expect(del).toHaveBeenCalledTimes(2);
+    expect(screen.getAllByText(FILE.filename).length).toBeGreaterThan(0);
   });
 
   it('says an unread knowledge base as unread, never as empty', async () => {

@@ -228,7 +228,7 @@ export const SynthesisStudio: React.FC = () => {
       setSelectedIds(prev => prev.filter(id => id !== fileId));
     } catch (e: any) {
       // Ledger cluster 2 — a failed delete leaves the file in the list; say so
-      setErrorMsg(`Delete failed: ${axiosDetail(e, 'backend unreachable')}`);
+      setErrorMsg(`Delete failed: ${errorMessage(e)}`);   // W1028 - a refusal with no reason was said as an unreachable server
     }
   };
 

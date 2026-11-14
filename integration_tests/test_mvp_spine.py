@@ -84075,9 +84075,9 @@ def test_w1011_no_page_puts_a_refusal_s_detail_into_the_page_as_it_came(client):
             "const detail = axiosDetail(e, '');"],
         "pages/enterprise/VSBCockpit.tsx": [
             "setChiefResult({ error: axiosDetail(e, errorMessage(e)) });",   # W1015 - axios's own words were the fallback
-            "setActErr(`Produce failed: ${axiosDetail(e, 'backend unreachable')}`);"],
+            "setActErr(`Produce failed: ${errorMessage(e)}`);"],   # W1028 - its fallback said a refusal as unreachable
         "pages/synthesis/SynthesisStudio.tsx": [
-            "setErrorMsg(`Delete failed: ${axiosDetail(e, 'backend unreachable')}`);"],
+            "setErrorMsg(`Delete failed: ${errorMessage(e)}`);"],   # W1028
         "pages/create/CreatorStudio.tsx": [
             "setError(axiosDetail(err, errorMessage(err)));"],   # W1015 - axios's own words were the fallback
     }
@@ -84508,7 +84508,8 @@ def test_w1015_a_caught_failure_is_said_as_what_it_was(client):
     assert sorted(named) == ["pages/CEOChat.tsx", "pages/Deliverables.tsx"], named
     #  a few of the fifty-four, read where they are
     vsb = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8"))
-    assert vsb.count("detailText(e?.response?.data?.detail ?? errorMessage(e))") == 7, vsb.count("detailText(e?.response?.data?.detail ?? errorMessage(e))")
+    #  W1028 - and an eighth, whose fallback said a refusal with no reason as an unreachable server
+    assert vsb.count("detailText(e?.response?.data?.detail ?? errorMessage(e))") == 8, vsb.count("detailText(e?.response?.data?.detail ?? errorMessage(e))")
     gj = _code_only((src / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
     assert "setError(`Naming failed: ${errorMessage(e)} Nothing changed.`);" in gj
 
@@ -85292,3 +85293,129 @@ def test_w1027_fu399_a_pages_tab_is_in_its_address_and_the_religion_hub_says_a_f
     for name in ("EmploymentHub", "ReligionHub"):
         t = (src / f"pages/domains/{name}.test.tsx").read_text(encoding="utf-8")
         assert f"import {{ {name} }} from './{name}';" in t and "<MemoryRouter initialEntries={[at]}>" in t, name
+
+
+def test_w1028_a_server_that_answered_is_never_said_as_unreachable(client):
+    """W1028. W984 and W1010 said a refusal by its reason where a page read one, and W1015 made errorMessage read
+    every shape a failure comes in. A census of every sentence that names an unreachable server found fourteen, in six
+    files, whose catch receives a server's answer too, because axios throws on a refusal or the sentence was the
+    reason's fallback: the management systems hub's six generators, the entity cockpit's transformation,
+    configuration, objective orchestration and deliverable production, the change queue, the side column's commits and
+    sessions, the synthesis studio's delete, and the avatar session's reply. Each said a refusal, or a server's own
+    500, as a server that could not be reached. Each now says the failure through errorMessage, which says a call
+    that reached no server as one. SynthesisStudio.test.tsx drives the delete: the ingest route's own refusal, and an
+    answer with no reason.
+
+    Held here, tree-wide: no reader of a refusal falls back to a sentence naming an unreachable server; and no catch
+    whose call throws on a server's answer (axios without validateStatus, or apiJson) says one, in a try's catch or
+    in a promise's .catch. One is named: the avatar session's, which says "not running" only when no server
+    answered."""
+    import pathlib
+    import re
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    said = re.compile(r"unreachable|could not be reached|could not reach|not running|is offline", re.I)
+
+    def code(f):
+        #  whole-line comments go (_code_only), and a trailing one after whitespace; a URL's // stays
+        return re.sub(r"[ \t]+//[ \t][^\n]*", "", _code_only(f.read_text(encoding="utf-8").replace("\r\n", "\n")))
+
+    def group(s, i, o, c):
+        """the index just past the group opened at s[i] == o"""
+        d, j = 0, i
+        while j < len(s):
+            d += (s[j] == o) - (s[j] == c)
+            j += 1
+            if d == 0:
+                return j
+        return j
+
+    def throws_on_an_answer(body):
+        return ("axios." in body and "validateStatus" not in body) or "apiJson(" in body
+
+    def without_nested(body):
+        """a try body with its own inner try/catch pairs cut out: a call those catch is not this catch's"""
+        out, i = [], 0
+        while True:
+            k = body.find("try {", i)
+            if k == -1:
+                out.append(body[i:])
+                return "".join(out)
+            out.append(body[i:k])
+            e = group(body, body.index("{", k), "{", "}")
+            m = re.match(r"\s*catch\s*(\([^)]*\))?\s*\{", body[e:])
+            i = group(body, e + m.end() - 1, "{", "}") if m else e
+
+    fallback = re.compile(r"(?:axiosDetail|bodyDetail|detailText)\([^()]*?,\s*'[^']*(?:unreachable|could not be "
+                          r"reached|not running)|\?\?\s*'[^']*(?:unreachable|could not be reached|not running)", re.I)
+    named = {("hooks/useAvatarSession.ts", "Backend server is not running. Start the Workstation API server.")}
+    offenders, kept, scanned, pairs, chains = [], [], 0, 0, 0
+    for f in sorted(p for ext in ("*.ts", "*.tsx") for p in src.rglob(ext)):
+        rel = f.relative_to(src).as_posix()
+        if ".test." in f.name or rel == "lib/api.ts":
+            continue
+        scanned += 1
+        s = code(f)
+        for m in fallback.finditer(s):
+            offenders.append(f"{rel}: a refusal's reader falls back to an unreachable server: {m.group(0)[:90]}")
+        #  a try's catch
+        for m in re.finditer(r"\btry\s*\{", s):
+            t_end = group(s, m.end() - 1, "{", "}")
+            c = re.match(r"\s*catch\s*(\([^)]*\))?\s*\{", s[t_end:])
+            if not c:
+                continue
+            c_end = group(s, t_end + c.end() - 1, "{", "}")
+            pairs += 1
+            if not throws_on_an_answer(without_nested(s[m.end():t_end])):
+                continue
+            for line in s[t_end:c_end].splitlines():
+                if said.search(line):
+                    if any(rel == r and t in line for r, t in named):
+                        kept.append(rel)
+                    else:
+                        offenders.append(f"{rel}: {line.strip()[:140]}")
+        #  a promise's .catch: the chain it ends is read back to where its expression starts
+        for m in re.finditer(r"\.catch\(", s):
+            j = m.start() - 1
+            while j >= 0:
+                ch = s[j]
+                if ch in ")]}":
+                    o = {")": "(", "]": "[", "}": "{"}[ch]
+                    d = 0
+                    while j >= 0:
+                        d += (s[j] == ch) - (s[j] == o)
+                        if d == 0:
+                            break
+                        j -= 1
+                    j -= 1
+                elif ch.isalnum() or ch in "_.$ \t\n?!":
+                    j -= 1
+                else:
+                    break
+            chain = s[j + 1:m.start()]
+            handler = s[m.end() - 1:group(s, m.end() - 1, "(", ")")]
+            chains += 1
+            if throws_on_an_answer(chain) and said.search(handler):
+                offenders.append(f"{rel}: .catch{handler.strip()[:140]}")
+    assert scanned > 100 and pairs > 100 and chains > 100, ("this read almost nothing", scanned, pairs, chains)
+    assert offenders == [], ("a server that answered is said as unreachable; say the failure through errorMessage",
+                             offenders)
+    assert kept == ["hooks/useAvatarSession.ts"], kept
+
+    #  the fourteen, read where they are
+    msh = _code_only((src / "pages/enterprise/ManagementSystemsHub.tsx").read_text(encoding="utf-8"))
+    assert msh.count("onResult(`⚠ Nothing was generated: ${errorMessage(e)}`);") == 6 and "axiosDetail" not in msh
+    vsb = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8"))
+    for line in ("setActErr(`The transformation failed: ${errorMessage(e)}`);",
+                 "setActErr(`The configuration failed: ${errorMessage(e)}`);",
+                 "setActErr(`Produce failed: ${errorMessage(e)}`);"):
+        assert vsb.count(line) == 1, line
+    cca = _code_only((src / "pages/enterprise/ChangeControlAgency.tsx").read_text(encoding="utf-8"))
+    assert "setLoadError(`The change queue could not be read: ${errorMessage(e)}`);" in cca
+    side = _code_only((src / "components/layout/FourthColumn.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert ".catch(e => setDataError(`The recent commits and the avatar sessions could not be read: ${errorMessage(e)}`))" in side
+    studio = _code_only((src / "pages/synthesis/SynthesisStudio.tsx").read_text(encoding="utf-8"))
+    assert "setErrorMsg(`Delete failed: ${errorMessage(e)}`);" in studio
+    avatar = _code_only((src / "hooks/useAvatarSession.ts").read_text(encoding="utf-8"))
+    assert "(err?.response ? errorMessage(err)" in avatar and "Could not reach the avatar backend" not in avatar
+    t = (src / "pages/synthesis/SynthesisStudio.test.tsx").read_text(encoding="utf-8")
+    assert "'Delete failed: Failed (HTTP 429): no reason given'" in t and "ingest.delete_refused" in t

@@ -549,7 +549,8 @@ export const VSBCockpit: React.FC = () => {
       const r = await axios.post('/api/v1/transformation/orchestrate',
         { objective, scope: selected, owner_id: detail?.owner_id || 'Owner', deep: false });
       setTx(r.data);
-    } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
+      //  W1028 - a refusal is said by its reason: this said every failure, a refusal included, as an unreachable server
+    } catch (e) { setActErr(`The transformation failed: ${errorMessage(e)}`); }   // W344
     setTxRunning(false);
   };
 
@@ -562,7 +563,7 @@ export const VSBCockpit: React.FC = () => {
       const r = await axios.post(`/api/v1/business-plan/objective/${oid}/orchestrate`, { scope: selected });
       if (r.data?.tree) setObjOrchResult(m => ({ ...m, [oid]: r.data.tree }));
       else setActErr('Orchestration ran but returned no delivery tree.');
-    } catch (e: any) { setActErr(`Orchestration failed: ${detailText(e?.response?.data?.detail ?? 'backend unreachable')}`); }
+    } catch (e: any) { setActErr(`Orchestration failed: ${detailText(e?.response?.data?.detail ?? errorMessage(e))}`); }   // W1028
     setObjOrch('');
   };
 
@@ -603,7 +604,7 @@ export const VSBCockpit: React.FC = () => {
       await axios.post('/api/v1/deliverables/produce', { type: delivType, brief: delivBrief, vsb_id: selected });
       setDelivBrief('');
       await loadDeliverables(selected);
-    } catch (e: any) { setActErr(`Produce failed: ${axiosDetail(e, 'backend unreachable')}`); }
+    } catch (e: any) { setActErr(`Produce failed: ${errorMessage(e)}`); }   // W1028 - a refusal with no reason was said as an unreachable server
     setDelivProducing(false);
   };
 
@@ -698,7 +699,8 @@ export const VSBCockpit: React.FC = () => {
       const r = await axios.post('/api/v1/bto/configure',
         { entity_name: detail?.name || 'Enterprise', components: btoSel, product_resources: [] });
       setBtoBlueprint(r.data);
-    } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
+      //  W1028 - a refusal is said by its reason: this said every failure, a refusal included, as an unreachable server
+    } catch (e) { setActErr(`The configuration failed: ${errorMessage(e)}`); }   // W344
     setBtoBusy(false);
   };
 
