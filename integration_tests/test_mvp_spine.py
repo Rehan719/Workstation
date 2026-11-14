@@ -83166,3 +83166,44 @@ def test_w991_fu399_the_compliance_page_says_a_refusals_reason_and_never_shows_u
     assert "The frameworks could not be read, so this is not a list of none." in code
     fx = json.loads((src / "pages/governance/ComplianceChecker.fixture.json").read_text(encoding="utf-8"))
     assert fx["check"]["subject"] == "A halal meal-prep subscription" and fx["check"]["compliant"] is None
+
+
+def test_w992_fu399_sovereign_evolution_says_a_refusals_reason_reads_before_it_says_unread_and_says_no_cycle(client):
+    """FU-399 part 24 (W992). The Sovereign Evolution page shows the evolution roadmap a curation cycle leaves, says
+    whether a cycle also runs on the heartbeat, and runs a cycle. SovereignEvolution.test.tsx mounts the real page
+    against the answers its three routes gave on a fresh store, and has the server refuse each. Rendering it found three
+    defects, fixed:
+    - a refused cycle said only "HTTP 503", and an unreachable server the browser's "Failed to fetch"; the cycle goes
+      through apiJson and says the server's status and reason;
+    - the levers' sentence started from null, so it said "could not be read" before the read had answered, and a
+      refused read was caught in silence; not yet read is its own state, and a refusal is said with its reason;
+    - with no cycle run the route says none has (roadmap null), and the page dropped that answer and showed nothing;
+      it now says no cycle has run, so there is no roadmap.
+    Held here: the route's answer with no cycle run; and the page's code."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    page = (src / "pages/evolution/SovereignEvolution.tsx").read_text(encoding="utf-8")
+    shared = (src / "components/ReadFailures.tsx").read_text(encoding="utf-8")
+    t = (src / "pages/evolution/SovereignEvolution.test.tsx").read_text(encoding="utf-8")
+    assert "import { SovereignEvolution } from './SovereignEvolution';" in t and "<SovereignEvolution />" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"evolution-no-cycle", "evolution-error", "evolution-autonomy-basis", "read-failure"} <= read, sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in page or f'data-testid="{tid}"' in shared, tid
+    code = _code_only(page)
+    #  a refused cycle: the server's reason
+    assert "setRoadmap(await apiJson('/api/v1/sovereign-evolution/cycle', {" in code
+    assert "setError(`The cycle was not run: ${errorMessage(e)}`);" in code and "setError(`HTTP ${res.status}`)" not in code
+    #  not yet read is its own state; a refused read is said
+    assert "useState<boolean | null | undefined>(undefined);" in code
+    assert "? 'Reading whether a cycle also runs on the beat…'" in code
+    assert ".catch(e => { setAutoEvolve(null); setBeating(null); noteRead(\"the heartbeat's levers\")(e); });" in code
+    #  no cycle run is said
+    assert "else if (d && 'roadmap' in d && d.roadmap === null) setNoCycle(true);" in code
+    assert "No evolution cycle has run yet, so there is no roadmap to show." in code
+    fx = json.loads((src / "pages/evolution/SovereignEvolution.fixture.json").read_text(encoding="utf-8"))
+    assert fx["roadmap_none"]["roadmap"] is None and fx["roadmap_none"]["message"], fx["roadmap_none"]
+    assert "ceo_directives" in fx["cycle"] and isinstance(fx["heartbeat"]["auto_evolve"], bool)

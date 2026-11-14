@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
-import { provenanceMapBadge, apiJson } from '../../lib/api';
+import { provenanceMapBadge, apiJson, errorMessage } from '../../lib/api';
 import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W931
 import {
   Dna, Loader2, AlertCircle, Crown, Briefcase, Award, GitBranch,
@@ -65,36 +65,39 @@ export const SovereignEvolution: React.FC = () => {
   // button said "Run Autonomous Cycle", while the ONLY autonomous caller is the heartbeat gated on
   // auto_evolve, which is False by default. The page never read that lever. It reads it now, and a
   // lever set to true still does nothing while the heartbeat is stopped, so both are read.
-  const [autoEvolve, setAutoEvolve] = useState<boolean | null>(null);
-  const [beating, setBeating] = useState<boolean | null>(null);
+  //  W992 (FU-399 part 24) - undefined: not yet read; null: the read failed or did not say
+  const [autoEvolve, setAutoEvolve] = useState<boolean | null | undefined>(undefined);
+  const [beating, setBeating] = useState<boolean | null | undefined>(undefined);
+  const [noCycle, setNoCycle] = useState(false);   // W992 - the route says no cycle has run
   const [error, setError] = useState('');
   const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
 
   useEffect(() => {
     apiJson('/api/v1/sovereign-evolution/roadmap')
-      .then(d => { if (d && d.ceo_directives) setRoadmap(d); })
+      .then(d => {
+        if (d && d.ceo_directives) setRoadmap(d);
+        //  W992 - with no cycle run the route says so (roadmap null), and the page said nothing at all
+        else if (d && 'roadmap' in d && d.roadmap === null) setNoCycle(true);
+      })
       .catch(noteRead('the roadmap'));
     apiJson('/api/v1/heartbeat/status')
       .then(h => {
         setAutoEvolve(typeof h?.auto_evolve === 'boolean' ? h.auto_evolve : null);
         setBeating(typeof h?.running === 'boolean' ? h.running : null);
       })
-      .catch(() => { setAutoEvolve(null); setBeating(null); });
+      //  W992 - a refused read was caught in silence; it is said where the page's reads are said
+      .catch(e => { setAutoEvolve(null); setBeating(null); noteRead("the heartbeat's levers")(e); });
   }, []);
 
   const runCycle = async () => {
     setRunning(true);
     setError('');
+    //  W992 (FU-399 part 24) - a refusal said only "HTTP 503"; apiJson carries the server's status and reason
     try {
-      const res = await fetch('/api/v1/sovereign-evolution/cycle', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ focus, submit_to_change_control: submitCC }),
-      });
-      if (!res.ok) { setError(`HTTP ${res.status}`); setRunning(false); return; }
-      setRoadmap(await res.json());
-    } catch (e: any) {
-      setError(e?.message ?? String(e));
+      setRoadmap(await apiJson('/api/v1/sovereign-evolution/cycle', {
+        method: 'POST', body: { focus, submit_to_change_control: submitCC } }));   // the roadmap replaces no-cycle
+    } catch (e) {
+      setError(`The cycle was not run: ${errorMessage(e)}`);
     }
     setRunning(false);
   };
@@ -114,7 +117,9 @@ export const SovereignEvolution: React.FC = () => {
           that roadmap; it does not change the organism by itself.
           {' '}
           <span data-testid="evolution-autonomy-basis">
-            {autoEvolve === null
+            {autoEvolve === undefined
+              ? 'Reading whether a cycle also runs on the beat…'
+              : autoEvolve === null
               ? 'Whether a cycle also runs on the beat could not be read.'
               : !autoEvolve
               ? 'Running on the beat is OFF (the Self-evolve lever on the heartbeat), so a cycle happens only when you press the button below.'
@@ -176,9 +181,15 @@ export const SovereignEvolution: React.FC = () => {
                 thing it is not. */}
             {running ? 'Curating Evolution Cycle…' : 'Run a Curation Cycle Now'}
           </Button>
-          {error && <p className="text-vital text-xs font-bold flex items-center gap-2"><AlertCircle size={14} /> {error}</p>}
+          {error && <p className="text-vital text-xs font-bold flex items-center gap-2" data-testid="evolution-error"><AlertCircle size={14} /> {error}</p>}
         </div>
       </Card>
+
+      {!roadmap && noCycle && (
+        <p className="text-[11px] font-bold text-slate-400" data-testid="evolution-no-cycle">
+          No evolution cycle has run yet, so there is no roadmap to show. Run one above.
+        </p>
+      )}
 
       {roadmap && (
         <div className="space-y-6">
