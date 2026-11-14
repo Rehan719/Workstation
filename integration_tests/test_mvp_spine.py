@@ -83659,3 +83659,47 @@ def test_w1001_the_retrospection_refuses_in_the_shape_it_answers_in(monkeypatch)
     assert set(refusal) == set(answer), sorted(set(answer) ^ set(refusal))
     assert refusal["closure_kinds"] is None and refusal["closures_with_a_kind"] is None, refusal
     assert refusal["closure_kind_basis"].startswith("not measured"), refusal["closure_kind_basis"]
+
+
+def test_w1002_fu399_charity_directives_say_a_refused_read_as_one_and_never_offer_a_form_nothing_read(client):
+    """FU-399 part 32 (W1002). The charity directives panel holds where the charity stage of the profit waterfall is
+    directed, what it must never fund and whether all of an allocation must reach the cause, beside the ranked pool
+    of causes. CharityDirectives.test.tsx mounts the real component against the answers its routes gave on a fresh
+    store, and has the server refuse each read and a save. Rendering it found three defects, fixed:
+    - a refused read of the directives shared one alert with a failed save, and the form under it showed values
+      nothing had read ("none set", the 100% box ticked, "No changes"); the read is said as the read it was, and an
+      unread form says so and cannot be edited or saved;
+    - a refused save read the same as a refused read; it says the directives were not saved;
+    - a refused read of the pool silently turned off the check of the ids typed; it is said, and so is the check.
+    Held here: the two reads and the save answer; and the panel's code."""
+    import json
+    import pathlib
+    import re
+    assert client.get("/api/v1/economy/charity/directives").status_code == 200
+    assert client.get("/api/v1/economy/charity/candidates?top=12").status_code == 200
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    page = (src / "pages/enterprise/CharityDirectives.tsx").read_text(encoding="utf-8")
+    shared = (src / "components/ReadFailures.tsx").read_text(encoding="utf-8")
+    t = (src / "pages/enterprise/CharityDirectives.test.tsx").read_text(encoding="utf-8")
+    assert "import { CharityDirectives } from './CharityDirectives';" in t and "<CharityDirectives />" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"read-failure", "directives-provenance", "directives-save-error", "directives-ids-unchecked"} <= read, \
+        sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in page or f'data-testid="{tid}"' in shared, tid
+    code = _code_only(page)
+    #  each read says itself where the reads are said; a save says it was not saved
+    assert "poolErr" not in code and ".catch(e => setError(errorMessage(e)))" not in code
+    assert ".catch(noteRead('the charity directives'));" in code and ".catch(noteRead('the charity candidates'));" in code
+    assert "<ReadFailures failures={readFailures} />" in code
+    assert "setError(`The directives were not saved — ${errorMessage(e)}`);" in code
+    #  an unread form holds nothing read and is not offered
+    assert code.count("disabled={!loaded}") == 3, code.count("disabled={!loaded}")
+    assert "placeholder={loaded ? 'none set' : 'not read'}" in code and 'placeholder="none set"' not in code
+    assert "'Nothing to save: the directives were not read'" in code
+    assert "{readFailures['the charity candidates'] && (" in code
+    fx = json.loads((src / "pages/enterprise/CharityDirectives.fixture.json").read_text(encoding="utf-8"))
+    assert set(fx) == {"directives", "candidates", "saved", "candidates_after"}, sorted(fx)
+    assert fx["directives"]["priorities_source"] == "never_set" and fx["saved"]["exclusions_unknown"], fx["saved"]

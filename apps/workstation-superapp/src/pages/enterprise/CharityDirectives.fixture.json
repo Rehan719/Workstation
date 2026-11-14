@@ -1,0 +1,282 @@
+{
+ "directives": {
+  "priorities": [
+   "clean_water",
+   "orphan_sponsorship",
+   "conflict_relief",
+   "dawah"
+  ],
+  "priorities_owner_named": [],
+  "priorities_source": "never_set",
+  "priorities_note": "no directives have ever been saved, so allocation uses this platform's editorial defaults",
+  "exclusions": [],
+  "require_100pct": true,
+  "source": "defaults (2026-06-21 Owner directive)",
+  "directives_readable": true,
+  "priorities_unknown": [],
+  "exclusions_unknown": [],
+  "directives_match_note": "the record names no cause id",
+  "updated_at": null,
+  "live_signals": {
+   "enabled": false,
+   "approved_signal_count": 0,
+   "note": "Owner-gated — no fabricated feeds; sources must be Owner-approved."
+  }
+ },
+ "candidates": {
+  "candidates": [
+   {
+    "id": "clean_water",
+    "cause": "Clean water & wells (WATER)",
+    "region": "global",
+    "urgency": 0.85,
+    "gravity": 0.9,
+    "reach": 0.92,
+    "trust": 0.92,
+    "donation_100pct": true,
+    "weights_source": "curated",
+    "score": 1.0,
+    "marginal_impact": 0.875,
+    "donation_100pct_verified": "not_checked"
+   },
+   {
+    "id": "conflict_relief",
+    "cause": "Conflict & natural-disaster relief",
+    "region": "global",
+    "urgency": 0.97,
+    "gravity": 0.97,
+    "reach": 0.85,
+    "trust": 0.88,
+    "donation_100pct": true,
+    "weights_source": "curated",
+    "score": 1.0,
+    "marginal_impact": 0.97,
+    "donation_100pct_verified": "not_checked"
+   },
+   {
+    "id": "orphan_sponsorship",
+    "cause": "Orphan sponsorship & welfare",
+    "region": "global",
+    "urgency": 0.8,
+    "gravity": 0.92,
+    "reach": 0.85,
+    "trust": 0.92,
+    "donation_100pct": true,
+    "weights_source": "curated",
+    "score": 0.9845,
+    "marginal_impact": 0.86,
+    "donation_100pct_verified": "not_checked"
+   },
+   {
+    "id": "famine_food",
+    "cause": "Famine & food security",
+    "region": "global",
+    "urgency": 0.9,
+    "gravity": 0.95,
+    "reach": 0.8,
+    "trust": 0.85,
+    "donation_100pct": true,
+    "weights_source": "curated",
+    "score": 0.8987,
+    "marginal_impact": 0.925,
+    "donation_100pct_verified": "not_checked"
+   },
+   {
+    "id": "emergency_health",
+    "cause": "Emergency healthcare",
+    "region": "global",
+    "urgency": 0.85,
+    "gravity": 0.9,
+    "reach": 0.8,
+    "trust": 0.88,
+    "donation_100pct": true,
+    "weights_source": "curated",
+    "score": 0.8642,
+    "marginal_impact": 0.875,
+    "donation_100pct_verified": "not_checked"
+   },
+   {
+    "id": "refugee_support",
+    "cause": "Refugee & displacement support",
+    "region": "global",
+    "urgency": 0.85,
+    "gravity": 0.9,
+    "reach": 0.75,
+    "trust": 0.8,
+    "donation_100pct": true,
+    "weights_source": "curated",
+    "score": 0.8487,
+    "marginal_impact": 0.875,
+    "donation_100pct_verified": "not_checked"
+   },
+   {
+    "id": "dawah",
+    "cause": "Dawah & Islamic education",
+    "region": "global",
+    "urgency": 0.55,
+    "gravity": 0.8,
+    "reach": 0.88,
+    "trust": 0.9,
+    "donation_100pct": true,
+    "weights_source": "curated",
+    "score": 0.8482,
+    "marginal_impact": 0.675,
+    "donation_100pct_verified": "not_checked"
+   }
+  ],
+  "all_cause_ids": [
+   "clean_water",
+   "conflict_relief",
+   "dawah",
+   "emergency_health",
+   "famine_food",
+   "orphan_sponsorship",
+   "refugee_support"
+  ],
+  "method": "weighted rank over CURATED priority weights (urgency · gravity · reach · marginal-impact · trust) — editorial values, not measurements",
+  "pool": {
+   "curated": 7,
+   "ingested_signals": 0
+  },
+  "disclaimer": "Virtual/simulated. Sources curated; live feeds pending Owner approval."
+ },
+ "saved": {
+  "priorities": [
+   "clean_water"
+  ],
+  "priorities_owner_named": [
+   "clean_water"
+  ],
+  "priorities_source": "owner",
+  "priorities_note": "the Owner named these",
+  "exclusions": [
+   "w1002-no-such-cause"
+  ],
+  "require_100pct": true,
+  "source": "owner_set",
+  "directives_readable": true,
+  "priorities_unknown": [],
+  "exclusions_unknown": [
+   "w1002-no-such-cause"
+  ],
+  "directives_match_note": "1 named exclusion id(s) match no known cause (w1002-no-such-cause): each is stored as written and EXCLUDES NOTHING. The known cause ids are: clean_water, conflict_relief, dawah, emergency_health, famine_food, orphan_sponsorship, refugee_support",
+  "updated_at": "2026-11-14T03:25:12Z"
+ },
+ "candidates_after": {
+  "candidates": [
+   {
+    "id": "clean_water",
+    "cause": "Clean water & wells (WATER)",
+    "region": "global",
+    "urgency": 0.85,
+    "gravity": 0.9,
+    "reach": 0.92,
+    "trust": 0.92,
+    "donation_100pct": true,
+    "weights_source": "curated",
+    "score": 1.0,
+    "marginal_impact": 0.875,
+    "donation_100pct_verified": "not_checked"
+   },
+   {
+    "id": "conflict_relief",
+    "cause": "Conflict & natural-disaster relief",
+    "region": "global",
+    "urgency": 0.97,
+    "gravity": 0.97,
+    "reach": 0.85,
+    "trust": 0.88,
+    "donation_100pct": true,
+    "weights_source": "curated",
+    "score": 0.943,
+    "marginal_impact": 0.97,
+    "donation_100pct_verified": "not_checked"
+   },
+   {
+    "id": "famine_food",
+    "cause": "Famine & food security",
+    "region": "global",
+    "urgency": 0.9,
+    "gravity": 0.95,
+    "reach": 0.8,
+    "trust": 0.85,
+    "donation_100pct": true,
+    "weights_source": "curated",
+    "score": 0.8987,
+    "marginal_impact": 0.925,
+    "donation_100pct_verified": "not_checked"
+   },
+   {
+    "id": "orphan_sponsorship",
+    "cause": "Orphan sponsorship & welfare",
+    "region": "global",
+    "urgency": 0.8,
+    "gravity": 0.92,
+    "reach": 0.85,
+    "trust": 0.92,
+    "donation_100pct": true,
+    "weights_source": "curated",
+    "score": 0.8645,
+    "marginal_impact": 0.86,
+    "donation_100pct_verified": "not_checked"
+   },
+   {
+    "id": "emergency_health",
+    "cause": "Emergency healthcare",
+    "region": "global",
+    "urgency": 0.85,
+    "gravity": 0.9,
+    "reach": 0.8,
+    "trust": 0.88,
+    "donation_100pct": true,
+    "weights_source": "curated",
+    "score": 0.8642,
+    "marginal_impact": 0.875,
+    "donation_100pct_verified": "not_checked"
+   },
+   {
+    "id": "refugee_support",
+    "cause": "Refugee & displacement support",
+    "region": "global",
+    "urgency": 0.85,
+    "gravity": 0.9,
+    "reach": 0.75,
+    "trust": 0.8,
+    "donation_100pct": true,
+    "weights_source": "curated",
+    "score": 0.8487,
+    "marginal_impact": 0.875,
+    "donation_100pct_verified": "not_checked"
+   },
+   {
+    "id": "dawah",
+    "cause": "Dawah & Islamic education",
+    "region": "global",
+    "urgency": 0.55,
+    "gravity": 0.8,
+    "reach": 0.88,
+    "trust": 0.9,
+    "donation_100pct": true,
+    "weights_source": "curated",
+    "score": 0.7282,
+    "marginal_impact": 0.675,
+    "donation_100pct_verified": "not_checked"
+   }
+  ],
+  "all_cause_ids": [
+   "clean_water",
+   "conflict_relief",
+   "dawah",
+   "emergency_health",
+   "famine_food",
+   "orphan_sponsorship",
+   "refugee_support"
+  ],
+  "method": "weighted rank over CURATED priority weights (urgency · gravity · reach · marginal-impact · trust) — editorial values, not measurements",
+  "pool": {
+   "curated": 7,
+   "ingested_signals": 0
+  },
+  "disclaimer": "Virtual/simulated. Sources curated; live feeds pending Owner approval."
+ }
+}

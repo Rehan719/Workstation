@@ -19,6 +19,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { HeartHandshake, Loader2, AlertTriangle } from 'lucide-react';
 import { apiJson, errorMessage } from '../../lib/api';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W1002
 
 interface Directives {
   priorities: string[];
@@ -55,6 +56,9 @@ export const CharityDirectives: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  //  W1002 - a read that fails is said as the read it was, apart from a save that fails: the two shared one alert,
+  //  so a refused read read as a failed save, and the form under it showed values nothing had read
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();
 
   const apply = (d: Directives) => {
     setLoaded(d);
@@ -65,16 +69,15 @@ export const CharityDirectives: React.FC = () => {
 
   const [pool, setPool] = useState<Candidate[]>([]);
   const [allIds, setAllIds] = useState<string[]>([]);
-  const [poolErr, setPoolErr] = useState('');
 
   const load = () =>
     apiJson<Directives>('/api/v1/economy/charity/directives')
-      .then(d => { apply(d); setError(''); })
-      .catch(e => setError(errorMessage(e)));
+      .then(d => { apply(d); clearRead('the charity directives'); })
+      .catch(noteRead('the charity directives'));
   const loadPool = () =>
     apiJson<{ candidates: Candidate[]; all_cause_ids?: string[] }>('/api/v1/economy/charity/candidates?top=12')
-      .then(d => { setPool(d.candidates || []); setAllIds(d.all_cause_ids || []); setPoolErr(''); })
-      .catch(e => setPoolErr(errorMessage(e)));
+      .then(d => { setPool(d.candidates || []); setAllIds(d.all_cause_ids || []); clearRead('the charity candidates'); })
+      .catch(noteRead('the charity candidates'));
 
   useEffect(() => { load(); loadPool(); }, []);
 
@@ -104,7 +107,7 @@ export const CharityDirectives: React.FC = () => {
       setNotice('Directives saved — they apply to allocations made by the next metabolic cycle that RUNS. '
                 + 'Cycles are not automatic unless Self-run is on and the heartbeat is beating (Heartbeat page).');
     } catch (e) {
-      setError(errorMessage(e));
+      setError(`The directives were not saved — ${errorMessage(e)}`);   // W1002: a save, not a read
     } finally {
       setSaving(false);
     }
@@ -155,24 +158,26 @@ export const CharityDirectives: React.FC = () => {
         )}
       </div>
 
+      <ReadFailures failures={readFailures} />
+      {/* W1002 - until the directives are read the form holds nothing read: it says so, and is not offered */}
       <label className="flex flex-col gap-1">
         <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">Priorities (comma-separated)</span>
         <input value={priorities} onChange={e => setPriorities(e.target.value)}
-          aria-label="Charity priorities"
-          placeholder="clean_water, orphan_sponsorship, …"
+          aria-label="Charity priorities" disabled={!loaded}
+          placeholder={loaded ? 'clean_water, orphan_sponsorship, …' : 'not read'}
           className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-white" />
       </label>
 
       <label className="flex flex-col gap-1">
         <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">Exclusions — never funded (comma-separated)</span>
         <input value={exclusions} onChange={e => setExclusions(e.target.value)}
-          aria-label="Charity exclusions"
-          placeholder="none set"
+          aria-label="Charity exclusions" disabled={!loaded}
+          placeholder={loaded ? 'none set' : 'not read'}
           className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-white" />
       </label>
 
       <label className="flex items-center gap-2 cursor-pointer">
-        <input type="checkbox" checked={require100} onChange={e => setRequire100(e.target.checked)}
+        <input type="checkbox" checked={require100} onChange={e => setRequire100(e.target.checked)} disabled={!loaded}
           aria-label="Require 100% of the charity allocation to reach the cause"
           className="accent-aura" />
         <span className="text-[10px] font-bold text-slate-400">
@@ -183,7 +188,7 @@ export const CharityDirectives: React.FC = () => {
       {error && (
         <div role="alert" className="flex items-start gap-2 rounded-xl border border-vital/30 bg-vital/10 px-3 py-2">
           <AlertTriangle size={12} className="text-vital shrink-0 mt-0.5" />
-          <p className="text-[10px] font-bold text-vital leading-relaxed">{error}</p>
+          <p className="text-[10px] font-bold text-vital leading-relaxed" data-testid="directives-save-error">{error}</p>
         </div>
       )}
       {notice && (
@@ -203,7 +208,10 @@ export const CharityDirectives: React.FC = () => {
       )}
 
       <Button type="button" onClick={save} disabled={saving || !dirty}>
-        {saving ? <Loader2 size={13} className="animate-spin" /> : dirty ? 'Save directives' : 'No changes'}
+        {saving ? <Loader2 size={13} className="animate-spin" />
+          : !loaded ? (readFailures['the charity directives'] ? 'Nothing to save: the directives were not read'
+                       : 'Reading the directives…')
+          : dirty ? 'Save directives' : 'No changes'}
       </Button>
 
       {/* W442 — the ranked pool these directives act on, rendered where they are edited so the
@@ -212,7 +220,12 @@ export const CharityDirectives: React.FC = () => {
         <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-2">
           Charity candidates — the ranked pool (weights are curated editorial values, not measurements)
         </p>
-        {poolErr && <p role="alert" className="text-[10px] font-bold text-vital">{poolErr}</p>}
+        {/* W1002 - with the pool unread, the ids typed are checked against nothing: said, not left silent */}
+        {readFailures['the charity candidates'] && (
+          <p className="text-[10px] font-bold text-amber-400" data-testid="directives-ids-unchecked">
+            The ids typed here are not checked against the causes: the charity candidates could not be read.
+          </p>
+        )}
         <div className="space-y-1.5">
           {pool.map(c => (
             <div key={c.id} className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-900 text-[10px]">
