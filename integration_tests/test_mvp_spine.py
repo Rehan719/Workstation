@@ -85405,7 +85405,8 @@ def test_w1028_a_server_that_answered_is_never_said_as_unreachable(client):
 
     #  the fourteen, read where they are
     msh = _code_only((src / "pages/enterprise/ManagementSystemsHub.tsx").read_text(encoding="utf-8"))
-    assert msh.count("onResult(`⚠ Nothing was generated: ${errorMessage(e)}`);") == 6 and "axiosDetail" not in msh
+    #  W1031 - said as a failure where the form is, never handed to the result panel
+    assert msh.count("onFailed(`Nothing was generated: ${errorMessage(e)}`);") == 6 and "axiosDetail" not in msh
     vsb = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8"))
     for line in ("setActErr(`The transformation failed: ${errorMessage(e)}`);",
                  "setActErr(`The configuration failed: ${errorMessage(e)}`);",
@@ -85571,3 +85572,41 @@ def test_w1030_a_refusal_is_said_by_its_reason_in_a_sentence_that_says_more(clie
     assert "return e?.response ? `${fallback} (HTTP ${e.response.status}): ${axiosDetail(e, 'no reason given')}.`" in vsb
     gj = _code_only((src / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
     assert "setError(`Gate ${decision} failed (HTTP ${res.status}): ${await refusalText(res)}`);" in gj
+
+
+def test_w1031_fu399_the_management_hub_says_a_failure_as_one_and_keeps_its_tab_in_the_address(client):
+    """FU-399 part 54 (W1031). The Management Systems hub is rendered against its routes' own answers
+    (ManagementSystemsHub.test.tsx): the standards, the floor's QMS framework and risk register for a made-up
+    organisation, and the field check the QMS route gives a request that names no organisation. Rendering found two
+    defects. A failed generation was handed to the result panel as if it were a framework: it sat under "Result",
+    above the forms, with a Download button that saved the failure sentence as management_framework.txt. And the hub
+    kept its tab in state only (W1027's class), so a reload went back to QMS and no link could name a generator. A
+    failure is now said where the form is, as a failure, and the tab is in the address (lib/useTab.ts).
+
+    Held here: the fixture is the routes' answers, read again; and the hub's readings."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/enterprise/ManagementSystemsHub.fixture.json").read_text(encoding="utf-8"))
+
+    assert client.get("/api/v1/mgmt/standards").json() == fx["standards"]
+    q = client.post("/api/v1/mgmt/qms/generate", json={"organisation_name": fx["org"], "domain": "general", "size": "small"})
+    assert q.status_code == 200, q.text[:200]
+    assert q.json()["framework"] == fx["qms"]["framework"], "the fixture's framework is not the floor's"
+    assert (q.json()["ai_provenance"] or {}).get("served_by") == fx["qms"]["ai_provenance"]["served_by"] == "native"
+    bad = client.post("/api/v1/mgmt/qms/generate", json={"domain": "general", "size": "small"})
+    assert bad.status_code == fx["qms_refused"]["status"] == 422, bad.text[:200]
+    assert [(e["loc"], e["msg"]) for e in bad.json()["detail"]] == [
+        (e["loc"], e["msg"]) for e in fx["qms_refused"]["body"]["detail"]], bad.text[:200]
+
+    hub = _code_only((src / "pages/enterprise/ManagementSystemsHub.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert hub.count("onFailed(`Nothing was generated: ${errorMessage(e)}`);") == 6
+    assert "onResult(`⚠" not in hub, "a failure is handed to the result panel as a framework"
+    assert hub.count("onFailed={handleFailed}") == 6
+    assert ('{failed && <p role="alert" data-testid="mgmt-generate-failed" className="mt-4 text-sm font-semibold '
+            'text-vital">{failed}</p>}') in hub
+    assert "const handleFailed = (why: string) => { setFailed(why); setResult(null); setResultProv(null); };" in hub
+    assert "const [tabId, chooseTab] = useTab(TABS.map(t => t.id), 'qms');" in hub
+    assert "useState<Tab>(" not in hub, "the tab is kept in state only"
+    t = (src / "pages/enterprise/ManagementSystemsHub.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './ManagementSystemsHub.fixture.json';" in t and "<ManagementSystemsHub />" in t

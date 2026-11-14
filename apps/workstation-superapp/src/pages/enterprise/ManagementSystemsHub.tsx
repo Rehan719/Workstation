@@ -4,6 +4,7 @@ import axios from 'axios';
 //  reason as an unreachable server
 import { provenanceBadge, provenanceLine, errorMessage } from '../../lib/api';
 import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W931
+import { useTab } from '../../lib/useTab';   // W1031 - the tab is in the address
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, BarChart3, FileText, Leaf, Calendar, AlertTriangle,
@@ -127,7 +128,7 @@ const DOMAIN_OPTIONS = [
   { value: 'manufacturing', label: 'Manufacturing' },
 ];
 
-function QMSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
+function QMSPanel({ onResult, onFailed }: { onResult: (r: string, prov?: any) => void; onFailed: (why: string) => void }) {
   const [org, setOrg] = useState('');
   const [domain, setDomain] = useState('general');
   const [size, setSize] = useState('small');
@@ -141,7 +142,7 @@ function QMSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
       onResult(res.data.framework, res.data.ai_provenance);
     } catch (e: any) {
       // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
-      onResult(`⚠ Nothing was generated: ${errorMessage(e)}`);
+      onFailed(`Nothing was generated: ${errorMessage(e)}`);
     } finally { setLoading(false); }
   };
 
@@ -161,7 +162,7 @@ function QMSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
   );
 }
 
-function BMSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
+function BMSPanel({ onResult, onFailed }: { onResult: (r: string, prov?: any) => void; onFailed: (why: string) => void }) {
   const [org, setOrg] = useState('');
   const [mission, setMission] = useState('');
   const [domain, setDomain] = useState('general');
@@ -176,7 +177,7 @@ function BMSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
       onResult(res.data.framework, res.data.ai_provenance);
     } catch (e: any) {
       // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
-      onResult(`⚠ Nothing was generated: ${errorMessage(e)}`);
+      onFailed(`Nothing was generated: ${errorMessage(e)}`);
     } finally { setLoading(false); }
   };
 
@@ -197,7 +198,7 @@ function BMSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
   );
 }
 
-function DCSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
+function DCSPanel({ onResult, onFailed }: { onResult: (r: string, prov?: any) => void; onFailed: (why: string) => void }) {
   const [org, setOrg] = useState('');
   const [domain, setDomain] = useState('general');
   const [loading, setLoading] = useState(false);
@@ -210,7 +211,7 @@ function DCSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
       onResult(res.data.framework, res.data.ai_provenance);
     } catch (e: any) {
       // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
-      onResult(`⚠ Nothing was generated: ${errorMessage(e)}`);
+      onFailed(`Nothing was generated: ${errorMessage(e)}`);
     } finally { setLoading(false); }
   };
 
@@ -229,7 +230,7 @@ function DCSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
   );
 }
 
-function EMSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
+function EMSPanel({ onResult, onFailed }: { onResult: (r: string, prov?: any) => void; onFailed: (why: string) => void }) {
   const [org, setOrg] = useState('');
   const [domain, setDomain] = useState('general');
   const [sector, setSector] = useState('services');
@@ -243,7 +244,7 @@ function EMSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
       onResult(res.data.framework, res.data.ai_provenance);
     } catch (e: any) {
       // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
-      onResult(`⚠ Nothing was generated: ${errorMessage(e)}`);
+      onFailed(`Nothing was generated: ${errorMessage(e)}`);
     } finally { setLoading(false); }
   };
 
@@ -263,7 +264,7 @@ function EMSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
   );
 }
 
-function AuditPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
+function AuditPanel({ onResult, onFailed }: { onResult: (r: string, prov?: any) => void; onFailed: (why: string) => void }) {
   const [org, setOrg] = useState('');
   const [standard, setStandard] = useState('ISO 9001');
   const [loading, setLoading] = useState(false);
@@ -276,7 +277,7 @@ function AuditPanel({ onResult }: { onResult: (r: string, prov?: any) => void })
       onResult(res.data.schedule, res.data.ai_provenance);
     } catch (e: any) {
       // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
-      onResult(`⚠ Nothing was generated: ${errorMessage(e)}`);
+      onFailed(`Nothing was generated: ${errorMessage(e)}`);
     } finally { setLoading(false); }
   };
 
@@ -295,7 +296,7 @@ function AuditPanel({ onResult }: { onResult: (r: string, prov?: any) => void })
   );
 }
 
-function RiskPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
+function RiskPanel({ onResult, onFailed }: { onResult: (r: string, prov?: any) => void; onFailed: (why: string) => void }) {
   const [org, setOrg] = useState('');
   const [domain, setDomain] = useState('general');
   const [context, setContext] = useState('');
@@ -310,7 +311,7 @@ function RiskPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) 
       onResult(res.data.register, res.data.ai_provenance);
     } catch (e: any) {
       // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
-      onResult(`⚠ Nothing was generated: ${errorMessage(e)}`);
+      onFailed(`Nothing was generated: ${errorMessage(e)}`);
     } finally { setLoading(false); }
   };
 
@@ -335,22 +336,30 @@ function RiskPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) 
 
 export const ManagementSystemsHub: React.FC = () => {
   const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W931 - a read that fails is said
-  const [activeTab, setActiveTab] = useState<Tab>('qms');
+  //  W1031 - the tab is in the address (it was kept in state only, so a reload went back to QMS)
+  const [tabId, chooseTab] = useTab(TABS.map(t => t.id), 'qms');
+  const activeTab = tabId as Tab;
   const [standards, setStandards] = useState<Standard[]>([]);
   const [result, setResult] = useState<string | null>(null);
   const [resultProv, setResultProv] = useState<any>(null);
   const [expanded, setExpanded] = useState(true);
+  //  W1031 - a failed generation is said as a failure where the form is: it was handed to the result panel, under
+  //  "Result", with a Download button that saved the failure sentence as management_framework.txt
+  const [failed, setFailed] = useState('');
 
   useEffect(() => {
     axios.get('/api/v1/mgmt/standards').then(r => setStandards(r.data.standards ?? [])).catch(noteRead('the management standards'));
   }, []);
 
   const handleResult = (r: string, prov?: any) => {
+    setFailed('');
     setResult(r);
     setResultProv(prov ?? null);
     setExpanded(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const handleFailed = (why: string) => { setFailed(why); setResult(null); setResultProv(null); };
 
   const current = TABS.find(t => t.id === activeTab)!;
 
@@ -399,7 +408,7 @@ export const ManagementSystemsHub: React.FC = () => {
         {TABS.map(tab => (
           <button
             key={tab.id}
-            onClick={() => { setActiveTab(tab.id); setResult(null); }}
+            onClick={() => { chooseTab(tab.id); setResult(null); setFailed(''); }}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
               activeTab === tab.id
                 ? 'bg-white/10 border-white/20 text-white'
@@ -423,12 +432,13 @@ export const ManagementSystemsHub: React.FC = () => {
           <current.icon size={18} className={current.color} />
           <h2 className="text-white font-bold">{current.label}</h2>
         </div>
-        {activeTab === 'qms'   && <QMSPanel   onResult={handleResult} />}
-        {activeTab === 'bms'   && <BMSPanel   onResult={handleResult} />}
-        {activeTab === 'dcs'   && <DCSPanel   onResult={handleResult} />}
-        {activeTab === 'ems'   && <EMSPanel   onResult={handleResult} />}
-        {activeTab === 'audit' && <AuditPanel onResult={handleResult} />}
-        {activeTab === 'risk'  && <RiskPanel  onResult={handleResult} />}
+        {activeTab === 'qms'   && <QMSPanel   onResult={handleResult} onFailed={handleFailed} />}
+        {activeTab === 'bms'   && <BMSPanel   onResult={handleResult} onFailed={handleFailed} />}
+        {activeTab === 'dcs'   && <DCSPanel   onResult={handleResult} onFailed={handleFailed} />}
+        {activeTab === 'ems'   && <EMSPanel   onResult={handleResult} onFailed={handleFailed} />}
+        {activeTab === 'audit' && <AuditPanel onResult={handleResult} onFailed={handleFailed} />}
+        {activeTab === 'risk'  && <RiskPanel  onResult={handleResult} onFailed={handleFailed} />}
+        {failed && <p role="alert" data-testid="mgmt-generate-failed" className="mt-4 text-sm font-semibold text-vital">{failed}</p>}
       </motion.div>
     </div>
   );

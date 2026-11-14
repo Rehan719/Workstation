@@ -1,0 +1,680 @@
+{
+  "org": "W1031 made up: a village bakery cooperative",
+  "qms": {
+    "ai_provenance": {
+      "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+      "evidence_level": "behaviour",
+      "evidence_level_number": 1,
+      "floor_note": "structured floor \u2014 the owned fabric composed this frame from the inputs you typed; it is not model analysis. Review every clause before use.",
+      "is_external": false,
+      "language_basis": "no language was requested, so no claim is made about the output's language",
+      "language_delivered": null,
+      "language_requested": null,
+      "model_tokens": null,
+      "model_tokens_basis": "NOT COUNTED - the deterministic floor served this and runs no model, so there are no tokens to count; null, never 0",
+      "posture": "in-house-first",
+      "profile_applied": false,
+      "profile_basis": "you have not written a profile",
+      "profile_state": "none_written",
+      "quality": {
+        "bar": [
+          "specifically designed",
+          "modelled",
+          "simulated",
+          "optimised",
+          "categorised",
+          "ranked",
+          "best-in-class",
+          "innovative",
+          "effective",
+          "safe",
+          "efficient",
+          "commercially viable",
+          "compliant",
+          "verified",
+          "tested",
+          "validated"
+        ],
+        "bar_measured": {
+          "attested": 0,
+          "attested_criteria": [],
+          "criteria": {
+            "best-in-class": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "categorised": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "commercially viable": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "compliant": {
+              "attested": false,
+              "basis": "\u00a711 screen verdicts: {'sharia_halal': 'review', 'uk_legal': 'review', 'regulatory': 'not_assessed', 'ehs': 'not_assessed', 'ethical': 'not_assessed'} \u2014 not established: ehs, ethical, regulatory, sharia_halal, uk_legal could not assess this subject (a keyword screen can refuse, not clear)",
+              "measured": false,
+              "met": null,
+              "source": "screen"
+            },
+            "effective": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "efficient": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "innovative": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "modelled": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "optimised": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "ranked": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "safe": {
+              "attested": false,
+              "basis": "\u00a711 safety-bearing frameworks: {'sharia_halal': 'review', 'ehs': 'not_assessed', 'ethical': 'not_assessed'} \u2014 not established: ehs, ethical, sharia_halal could not assess this subject (a keyword screen can refuse, not clear)",
+              "measured": false,
+              "met": null,
+              "source": "screen"
+            },
+            "simulated": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "specifically designed": {
+              "attested": false,
+              "basis": "not assessable \u2014 floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "tested": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "validated": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "verified": {
+              "attested": false,
+              "basis": "not assessable \u2014 floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            }
+          },
+          "gate_measurements": {},
+          "gate_measurements_basis": "structure only: whether every declared section heading is present, and whether a stub marker (or too little text) was found. The content was not read, so a pass here is not a finding that the delivery is specifically designed or verified",
+          "gate_measurements_summary": "none - the gate did not run on this output (see the criteria's basis)",
+          "measured": 0,
+          "measured_criteria": [],
+          "met": 0,
+          "not_measured": 16,
+          "not_measured_basis": "16 = 14 with no source + 2 screen-only: a criterion only a screen read is not measured either. The summary prints the two as separate buckets so that its figures add up to the bar's 16",
+          "screen_only": 2,
+          "screen_only_criteria": [
+            "compliant",
+            "safe"
+          ],
+          "summary": "0 measured \u00b7 0 attested \u00b7 2 screen-only \u00b7 14 not measured (of 16)",
+          "total": 16
+        },
+        "compliance": {
+          "assessed_by": [],
+          "basis": "keyword and vocabulary screens plus the ethical dimensions. A screen can refuse and can escalate; it cannot clear \u2014 so only a row with coverage 'engine' can carry a pass, and `coverage_gaps` names every area nothing here assessed. Matched only by a word list, which establishes nothing either way: sharia_halal \u2014 NOTHING here assessed this subject, so the overall is 'review' and no part of it may be reported as compliant",
+          "compliant": null,
+          "coverage_gaps": [
+            "ehs",
+            "ethical",
+            "regulatory",
+            "uk_legal"
+          ],
+          "overall": "review",
+          "verdicts": [
+            {
+              "coverage": "vocabulary",
+              "framework": "sharia_halal",
+              "reason": "the text screened contains halal vocabulary ('halal') and no prohibited (haram) term matched \u2014 the screen cannot tell whether that word is the subject's own claim or wording this platform composed around it; either way it is not a certification and not an assessment; a halal verdict comes from a certifying body (engine ran and produced no finding here, so it backs no verdict)",
+              "status": "review"
+            },
+            {
+              "coverage": "none",
+              "framework": "uk_legal",
+              "reason": "no engine covers this area \u2014 keyword screen + employment-statute vocabulary matched nothing (jurisdiction UK / London); not legal advice (UK engine ran and produced no finding here, so it backs no verdict \u00b7 audit 1020e04918ea1301\u2026 over the subject)",
+              "status": "review"
+            },
+            {
+              "coverage": "screen",
+              "framework": "regulatory",
+              "reason": "keyword screen found no regulated-activity trigger \u2014 the absence of a trigger word is not a regulatory clearance; nothing here assessed this subject",
+              "status": "not_assessed"
+            },
+            {
+              "coverage": "screen",
+              "framework": "ehs",
+              "reason": "keyword screen found no hazard term \u2014 the absence of a hazard word is not an EHS clearance; nothing here assessed this subject",
+              "status": "not_assessed"
+            },
+            {
+              "coverage": "none",
+              "dimensions_not_assessed": [
+                "human",
+                "environment",
+                "quality",
+                "value"
+              ],
+              "framework": "ethical",
+              "reason": "human: not_assessed; environment: not_assessed; quality: not_assessed; value: not_assessed (engine ran and produced no finding here, so it backs no verdict)",
+              "status": "not_assessed"
+            }
+          ]
+        },
+        "delivery_coverage": null,
+        "delivery_coverage_basis": "NOT MEASURED \u2014 this delivery declared no required sections, so there is no coverage to compute; what ran was the length and stub screen, which cannot stand in for it",
+        "document_controlled": true,
+        "not_assessable": true,
+        "qms_basis": "not assessable \u2014 floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+        "qms_defects": {
+          "attested_basis": "No caller-attested re-verification has been counted: the counter starts at the first one after it was added, and any run before that is in the rate and not in this count. 0 defect(s) closed now were last re-verified on typed figures. By ruling (OWNER 2026-10-11) attested re-verifications STAY in the rate: these counts stand beside it and change it by nothing.",
+          "attested_counted_since": null,
+          "attested_reverifications": 0,
+          "closed": 0,
+          "closed_basis": "'closed' counts defects re-verified and passed. A defect closed because its source was retired, or reported not reproducible, was not re-verified: each is counted apart and moves nothing in the rate",
+          "closed_source_retired": 0,
+          "corrected": 0,
+          "defects_closed_on_attestation": 0,
+          "defects_total": 0,
+          "dispositions_basis": "0 defect(s) closed because the surface that opened them was retired and 0 reported not reproducible, each with the reason, name and time its person gave; neither is a re-verification, so neither is counted as closed above, as a gate pass or in the rate. Open now under a label no live surface opens a defect under: 0",
+          "gate_failures": 0,
+          "gates_run": 0,
+          "non_conformance_rate": null,
+          "not_reproducible": 0,
+          "open": 0,
+          "open_from_retired_labels": 0,
+          "person_reported_open": 0,
+          "rate_basis": "gate failures / gates run across ALL deliveries on this platform (every entity and tenant share one QMS store) \u2014 not one entity's record. What-if gates run on typed metrics, and re-verifications of the defects they open, are counted separately and excluded. A re-verification of a DELIVERY defect does count, including one attested by its caller (W316: a correction that does not hold must raise the rate).",
+          "reported_total": 0,
+          "what_if_failures": 0,
+          "what_if_gates": 0
+        },
+        "qms_gate_passed": null,
+        "qms_min_coverage": 0.95,
+        "qms_non_conformance_rate": null,
+        "quality_record_hash": "34663178f4797840ca385e33957a919a5dd7b30b3d5f3fa008f5dfe2d8c4c991059303b1fa2d60006a33218d9fdeb684e9c62fd4380458c6b83b496b3394b9cc",
+        "served_by": "native",
+        "stub_found": false,
+        "stub_marker_found": false,
+        "stub_screen_basis": "the length and stub screen ran on this text, whether or not the coverage gate could: no stub marker matched and the text is not under the minimum length",
+        "substantive_length": true
+      },
+      "quality_assurance": {
+        "compliance_basis": "keyword and vocabulary screens plus the ethical dimensions. A screen can refuse and can escalate; it cannot clear \u2014 so only a row with coverage 'engine' can carry a pass, and `coverage_gaps` names every area nothing here assessed. Matched only by a word list, which establishes nothing either way: sharia_halal \u2014 NOTHING here assessed this subject, so the overall is 'review' and no part of it may be reported as compliant",
+        "compliance_echo_only": false,
+        "compliance_overall": "review",
+        "delivery_coverage": 1.0,
+        "qms_basis": "not assessable \u2014 floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+        "qms_gate_passed": null,
+        "quality_record_hash": "6d983845be099dee97734dc4f1b973f3113edfed292b41ccbac4f49a9401b289c23d3eb111dde7f481514f1d8a9558c0a0948cc24e4552f9c30a573407922c6c",
+        "stub_found": false
+      },
+      "review": {
+        "basis": "no review of this tool is recorded: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed",
+        "known": true,
+        "label": "Unreviewed",
+        "of_tiers": [
+          "Checked by rule",
+          "Reviewed by Workstation's specialist agent",
+          "Signed by a qualified person"
+        ],
+        "records_counted": 0,
+        "records_not_counted": 0,
+        "tier": "unreviewed"
+      },
+      "served_by": "native",
+      "served_identity": {
+        "basis": "the deterministic floor answered: no model ran",
+        "build_digest": null,
+        "model": null,
+        "processor": null
+      }
+    },
+    "doc_id": "f42ccc13d1",
+    "editions": {
+      "read_by": "round W676, in a browser at the publisher's pages",
+      "read_on": "2026-10-12",
+      "says": "the publisher lists 2026 editions of its quality and environmental management standards as current"
+    },
+    "framework": "_[Workstation native structured engine \u2014 owned, no external dependency]_\n\n## 1. Quality Policy Statement\nStructured service frame for: W1031 made up: a village bakery cooperative.\n- Offering: what is delivered and the scope boundary.\n- Delivery model: how it is provided (cadence, channel, roles).\n- Quality measure for bakery cooperative.\n- Quality measure for village bakery.\n- Quality measure for made village.\n- SLAs & assurance: the commitments and how they're governed for general.\n\n## 2. Quality Objectives\nStructured service frame for: W1031 made up: a village bakery cooperative.\n- Offering: what is delivered and the scope boundary.\n- Delivery model: how it is provided (cadence, channel, roles).\n- Quality measure for bakery cooperative.\n- Quality measure for village bakery.\n- Quality measure for made village.\n- SLAs & assurance: the commitments and how they're governed for general.\n\n## 3. Process Map\nNative structured frame for '3. Process Map' over: W1031 made up: a village bakery cooperative (domain: general). The list below is the request's most frequent terms, not findings about them.\n- bakery cooperative\n- village bakery\n- made village\n\n## 4. Document Control Procedure\nNative structured frame for '4. Document Control Procedure' over: W1031 made up: a village bakery cooperative (domain: general). The list below is the request's most frequent terms, not findings about them.\n- bakery cooperative\n- village bakery\n- made village\n\n## 5. Non-Conformance and CAPA Procedure\nNative structured frame for '5. Non-Conformance and CAPA Procedure' over: W1031 made up: a village bakery cooperative (domain: general). The list below is the request's most frequent terms, not findings about them.\n- bakery cooperative\n- village bakery\n- made village\n\n## 6. Internal Audit Programme\nNative structured frame for '6. Internal Audit Programme' over: W1031 made up: a village bakery cooperative (domain: general). The list below is the request's most frequent terms, not findings about them.\n- bakery cooperative\n- village bakery\n- made village\n\n## 7. Management Review Agenda Template\nNative structured frame for '7. Management Review Agenda Template' over: W1031 made up: a village bakery cooperative (domain: general). The list below is the request's most frequent terms, not findings about them.\n- bakery cooperative\n- village bakery\n- made village\n\n## 8. Customer Satisfaction Measurement Approach\nStructured go-to-market frame for: W1031 made up: a village bakery cooperative.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from bakery cooperative.\n- Positioning wedge from village bakery.\n- Positioning wedge from made village.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.\n\n## 9. Supplier Evaluation Criteria\nStructured option frame for: W1031 made up: a village bakery cooperative.\n- Generate \u22653 distinct variants of the approach.\n- Score each against value, feasibility, risk, and values-fit (halal/beneficence).\n- Recommend the highest-scoring; record why \u2014 to be enriched by a model resource.\n\n## 10. Continual Improvement Log Template\nNative structured frame for '10. Continual Improvement Log Template' over: W1031 made up: a village bakery cooperative (domain: general). The list below is the request's most frequent terms, not findings about them.\n- bakery cooperative\n- village bakery\n- made village\n\n## 11. Certification Readiness Checklist\nNative structured frame for '11. Certification Readiness Checklist' over: W1031 made up: a village bakery cooperative (domain: general). The list below is the request's most frequent terms, not findings about them.\n- bakery cooperative\n- village bakery\n- made village\n\n_A generated outline to complete and review - not a conformity assessment, and not a statement that anything is aligned to, compliant with or certified against a standard. This platform holds no standard's text; check the current edition at its publisher._",
+    "generated_at": "2026-11-14T14:22:30Z",
+    "organisation_name": "W1031 made up: a village bakery cooperative",
+    "standard": "ISO 9001",
+    "standard_note": "A generated outline to complete and review - not a conformity assessment, and not a statement that anything is aligned to, compliant with or certified against a standard. This platform holds no standard's text; check the current edition at its publisher."
+  },
+  "qms_refused": {
+    "body": {
+      "detail": [
+        {
+          "input": {
+            "domain": "general",
+            "size": "small"
+          },
+          "loc": [
+            "body",
+            "organisation_name"
+          ],
+          "msg": "Field required",
+          "type": "missing"
+        }
+      ]
+    },
+    "status": 422
+  },
+  "risk": {
+    "ai_provenance": {
+      "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+      "evidence_level": "behaviour",
+      "evidence_level_number": 1,
+      "floor_note": "structured floor \u2014 the owned fabric composed this frame from the inputs you typed; it is not model analysis. Review every clause before use.",
+      "is_external": false,
+      "language_basis": "no language was requested, so no claim is made about the output's language",
+      "language_delivered": null,
+      "language_requested": null,
+      "model_tokens": null,
+      "model_tokens_basis": "NOT COUNTED - the deterministic floor served this and runs no model, so there are no tokens to count; null, never 0",
+      "posture": "in-house-first",
+      "profile_applied": false,
+      "profile_basis": "you have not written a profile",
+      "profile_state": "none_written",
+      "quality": {
+        "bar": [
+          "specifically designed",
+          "modelled",
+          "simulated",
+          "optimised",
+          "categorised",
+          "ranked",
+          "best-in-class",
+          "innovative",
+          "effective",
+          "safe",
+          "efficient",
+          "commercially viable",
+          "compliant",
+          "verified",
+          "tested",
+          "validated"
+        ],
+        "bar_measured": {
+          "attested": 0,
+          "attested_criteria": [],
+          "criteria": {
+            "best-in-class": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "categorised": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "commercially viable": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "compliant": {
+              "attested": false,
+              "basis": "\u00a711 screen verdicts: {'sharia_halal': 'review', 'uk_legal': 'review', 'regulatory': 'not_assessed', 'ehs': 'not_assessed', 'ethical': 'not_assessed'} \u2014 not established: ehs, ethical, regulatory, sharia_halal, uk_legal could not assess this subject (a keyword screen can refuse, not clear)",
+              "measured": false,
+              "met": null,
+              "source": "screen"
+            },
+            "effective": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "efficient": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "innovative": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "modelled": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "optimised": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "ranked": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "safe": {
+              "attested": false,
+              "basis": "\u00a711 safety-bearing frameworks: {'sharia_halal': 'review', 'ehs': 'not_assessed', 'ethical': 'not_assessed'} \u2014 not established: ehs, ethical, sharia_halal could not assess this subject (a keyword screen can refuse, not clear)",
+              "measured": false,
+              "met": null,
+              "source": "screen"
+            },
+            "simulated": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "specifically designed": {
+              "attested": false,
+              "basis": "not assessable \u2014 floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "tested": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "validated": {
+              "attested": false,
+              "basis": "not measured by this gate",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            },
+            "verified": {
+              "attested": false,
+              "basis": "not assessable \u2014 floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+              "measured": false,
+              "met": null,
+              "source": "none"
+            }
+          },
+          "gate_measurements": {},
+          "gate_measurements_basis": "structure only: whether every declared section heading is present, and whether a stub marker (or too little text) was found. The content was not read, so a pass here is not a finding that the delivery is specifically designed or verified",
+          "gate_measurements_summary": "none - the gate did not run on this output (see the criteria's basis)",
+          "measured": 0,
+          "measured_criteria": [],
+          "met": 0,
+          "not_measured": 16,
+          "not_measured_basis": "16 = 14 with no source + 2 screen-only: a criterion only a screen read is not measured either. The summary prints the two as separate buckets so that its figures add up to the bar's 16",
+          "screen_only": 2,
+          "screen_only_criteria": [
+            "compliant",
+            "safe"
+          ],
+          "summary": "0 measured \u00b7 0 attested \u00b7 2 screen-only \u00b7 14 not measured (of 16)",
+          "total": 16
+        },
+        "compliance": {
+          "assessed_by": [],
+          "basis": "keyword and vocabulary screens plus the ethical dimensions. A screen can refuse and can escalate; it cannot clear \u2014 so only a row with coverage 'engine' can carry a pass, and `coverage_gaps` names every area nothing here assessed \u2014 NOTHING here assessed this subject, so the overall is 'review' and no part of it may be reported as compliant",
+          "compliant": null,
+          "coverage_gaps": [
+            "ehs",
+            "ethical",
+            "regulatory",
+            "sharia_halal",
+            "uk_legal"
+          ],
+          "overall": "review",
+          "verdicts": [
+            {
+              "coverage": "none",
+              "framework": "sharia_halal",
+              "reason": "no engine covers this area \u2014 the haram-term screen matched nothing and no halal vocabulary is present; not a certification (engine ran and produced no finding here, so it backs no verdict)",
+              "status": "review"
+            },
+            {
+              "coverage": "none",
+              "framework": "uk_legal",
+              "reason": "no engine covers this area \u2014 keyword screen + employment-statute vocabulary matched nothing (jurisdiction UK / London); not legal advice (UK engine ran and produced no finding here, so it backs no verdict \u00b7 audit 8cb328bb5717fc1e\u2026 over the subject)",
+              "status": "review"
+            },
+            {
+              "coverage": "screen",
+              "framework": "regulatory",
+              "reason": "keyword screen found no regulated-activity trigger \u2014 the absence of a trigger word is not a regulatory clearance; nothing here assessed this subject",
+              "status": "not_assessed"
+            },
+            {
+              "coverage": "screen",
+              "framework": "ehs",
+              "reason": "keyword screen found no hazard term \u2014 the absence of a hazard word is not an EHS clearance; nothing here assessed this subject",
+              "status": "not_assessed"
+            },
+            {
+              "coverage": "none",
+              "dimensions_not_assessed": [
+                "human",
+                "environment",
+                "quality",
+                "value"
+              ],
+              "framework": "ethical",
+              "reason": "human: not_assessed; environment: not_assessed; quality: not_assessed; value: not_assessed (engine ran and produced no finding here, so it backs no verdict)",
+              "status": "not_assessed"
+            }
+          ]
+        },
+        "delivery_coverage": null,
+        "delivery_coverage_basis": "NOT MEASURED \u2014 this delivery declared no required sections, so there is no coverage to compute; what ran was the length and stub screen, which cannot stand in for it",
+        "document_controlled": true,
+        "not_assessable": true,
+        "qms_basis": "not assessable \u2014 floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+        "qms_defects": {
+          "attested_basis": "No caller-attested re-verification has been counted: the counter starts at the first one after it was added, and any run before that is in the rate and not in this count. 0 defect(s) closed now were last re-verified on typed figures. By ruling (OWNER 2026-10-11) attested re-verifications STAY in the rate: these counts stand beside it and change it by nothing.",
+          "attested_counted_since": null,
+          "attested_reverifications": 0,
+          "closed": 0,
+          "closed_basis": "'closed' counts defects re-verified and passed. A defect closed because its source was retired, or reported not reproducible, was not re-verified: each is counted apart and moves nothing in the rate",
+          "closed_source_retired": 0,
+          "corrected": 0,
+          "defects_closed_on_attestation": 0,
+          "defects_total": 0,
+          "dispositions_basis": "0 defect(s) closed because the surface that opened them was retired and 0 reported not reproducible, each with the reason, name and time its person gave; neither is a re-verification, so neither is counted as closed above, as a gate pass or in the rate. Open now under a label no live surface opens a defect under: 0",
+          "gate_failures": 0,
+          "gates_run": 0,
+          "non_conformance_rate": null,
+          "not_reproducible": 0,
+          "open": 0,
+          "open_from_retired_labels": 0,
+          "person_reported_open": 0,
+          "rate_basis": "gate failures / gates run across ALL deliveries on this platform (every entity and tenant share one QMS store) \u2014 not one entity's record. What-if gates run on typed metrics, and re-verifications of the defects they open, are counted separately and excluded. A re-verification of a DELIVERY defect does count, including one attested by its caller (W316: a correction that does not hold must raise the rate).",
+          "reported_total": 0,
+          "what_if_failures": 0,
+          "what_if_gates": 0
+        },
+        "qms_gate_passed": null,
+        "qms_min_coverage": 0.95,
+        "qms_non_conformance_rate": null,
+        "quality_record_hash": "32900adccff0423502ced36d1e3a76a2b258e11536d0c5539deea0030a498dea1361ba6b1ba2c780c64fe841bccba4b6abb636cb3a0a6e4acdaf79afffa9284e",
+        "served_by": "native",
+        "stub_found": false,
+        "stub_marker_found": false,
+        "stub_screen_basis": "the length and stub screen ran on this text, whether or not the coverage gate could: no stub marker matched and the text is not under the minimum length",
+        "substantive_length": true
+      },
+      "quality_assurance": {
+        "compliance_basis": "keyword and vocabulary screens plus the ethical dimensions. A screen can refuse and can escalate; it cannot clear \u2014 so only a row with coverage 'engine' can carry a pass, and `coverage_gaps` names every area nothing here assessed \u2014 NOTHING here assessed this subject, so the overall is 'review' and no part of it may be reported as compliant",
+        "compliance_echo_only": false,
+        "compliance_overall": "review",
+        "delivery_coverage": 1.0,
+        "qms_basis": "not assessable \u2014 floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+        "qms_gate_passed": null,
+        "quality_record_hash": "16ed2304118f0db3292697edecf708e66f2319f62c601ac7ecaf2a57e4d254453b83824400153cef02de20cf1d057ebb0ed601cceb4b43494932456580daea95",
+        "stub_found": false
+      },
+      "review": {
+        "basis": "no review of this tool is recorded: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed",
+        "known": true,
+        "label": "Unreviewed",
+        "of_tiers": [
+          "Checked by rule",
+          "Reviewed by Workstation's specialist agent",
+          "Signed by a qualified person"
+        ],
+        "records_counted": 0,
+        "records_not_counted": 0,
+        "tier": "unreviewed"
+      },
+      "served_by": "native",
+      "served_identity": {
+        "basis": "the deterministic floor answered: no model ran",
+        "build_digest": null,
+        "model": null,
+        "processor": null
+      }
+    },
+    "domain": "general",
+    "generated_at": "2026-11-14T14:22:30Z",
+    "organisation_name": "W1031 made up: a village bakery cooperative",
+    "register": "_[Workstation native structured engine \u2014 owned, no external dependency]_\n\n## Risk Heat Map Summary\nStructured risk frame for this dimension \u2014 surface, don't invent. The items below are terms taken from the request to CHECK, not risks this engine identified:\n- Check: bakery cooperative.\n- Check: village bakery.\n- Check: made village.\n- Likelihood \u00d7 impact to be scored; mitigations and owners to be assigned.\n- The native engine flags areas needing attention; a model resource details them.\n\n## Top 3 Priority Risks\nStructured risk frame for this dimension \u2014 surface, don't invent. The items below are terms taken from the request to CHECK, not risks this engine identified:\n- Check: bakery cooperative.\n- Check: village bakery.\n- Check: made village.\n- Likelihood \u00d7 impact to be scored; mitigations and owners to be assigned.\n- The native engine flags areas needing attention; a model resource details them.\n\n## Risk Appetite Statement\nStructured risk frame for this dimension \u2014 surface, don't invent. The items below are terms taken from the request to CHECK, not risks this engine identified:\n- Check: bakery cooperative.\n- Check: village bakery.\n- Check: made village.\n- Likelihood \u00d7 impact to be scored; mitigations and owners to be assigned.\n- The native engine flags areas needing attention; a model resource details them.\n\n## Risk Review Cadence\nStructured risk frame for this dimension \u2014 surface, don't invent. The items below are terms taken from the request to CHECK, not risks this engine identified:\n- Check: bakery cooperative.\n- Check: village bakery.\n- Check: made village.\n- Likelihood \u00d7 impact to be scored; mitigations and owners to be assigned.\n- The native engine flags areas needing attention; a model resource details them.",
+    "register_id": "552cf59c0f"
+  },
+  "standards": {
+    "editions": {
+      "read_by": "round W676, in a browser at the publisher's pages",
+      "read_on": "2026-10-12",
+      "says": "the publisher lists 2026 editions of its quality and environmental management standards as current"
+    },
+    "note": "A generated outline to complete and review - not a conformity assessment, and not a statement that anything is aligned to, compliant with or certified against a standard. This platform holds no standard's text; check the current edition at its publisher.",
+    "standards": [
+      {
+        "description": "Quality Management Systems",
+        "id": "iso9001",
+        "name": "ISO 9001",
+        "type": "QMS"
+      },
+      {
+        "description": "Environmental Management Systems",
+        "id": "iso14001",
+        "name": "ISO 14001",
+        "type": "EMS"
+      },
+      {
+        "description": "Information Security Management",
+        "id": "iso27001",
+        "name": "ISO/IEC 27001",
+        "type": "ISMS"
+      },
+      {
+        "description": "Occupational Health and Safety",
+        "id": "iso45001",
+        "name": "ISO 45001",
+        "type": "OH&S"
+      },
+      {
+        "description": "Strategic performance management",
+        "id": "bsc",
+        "name": "Balanced Scorecard",
+        "type": "BMS"
+      },
+      {
+        "description": "Objectives and Key Results framework",
+        "id": "okr",
+        "name": "OKRs",
+        "type": "BMS"
+      },
+      {
+        "description": "Capability Maturity Model Integration",
+        "id": "cmmi",
+        "name": "CMMI",
+        "type": "Process"
+      },
+      {
+        "description": "Data protection compliance framework",
+        "id": "gdpr",
+        "name": "UK GDPR / GDPR",
+        "type": "Compliance"
+      },
+      {
+        "description": "UK government cybersecurity scheme",
+        "id": "cyber_essentials",
+        "name": "Cyber Essentials",
+        "type": "Security"
+      }
+    ],
+    "total": 9
+  }
+}

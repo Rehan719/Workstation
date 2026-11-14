@@ -24547,6 +24547,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the repository file's refusal is read from the text the read asked for, the cockpit's reader says an object reason through axiosDetail, and the gate decision says its refusal through the journey's refusalText. test_w1030 holds it tree-wide: a template with a status after 'HTTP ' and more says the reason, says none came, or is a reader's fallback or the alternative when none came (four blinds)."
+    },
+    {
+      "id": "FU-1215",
+      "title": "The Management Systems hub handed a failed generation to its result panel as a framework, with a Download that saved the failure, and kept its tab in state only",
+      "why": "Found rendering the Management Systems hub against its routes' own answers (FU-399 part 54). A failed generation (a refusal, a server's own 500, an unreachable server) was handed to the result panel as if it were a framework: it sat under the header 'Result', above the forms and away from the button pressed, with a Download button that saved the failure sentence as management_framework.txt. And the hub kept its tab in state only, W1027's class: a reload went back to QMS and no link could name a generator.",
+      "source": "W1031 (FU-399 part 54, the Management Systems hub rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/ManagementSystemsHub.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1031",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the Management Systems hub; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: each of the six generators hands a failure to onFailed, and the hub says it as a failure where the form is, clearing any earlier result, with nothing offered for download; the tab is in the address through lib/useTab.ts. ManagementSystemsHub.test.tsx drives the standards, the floor's QMS framework, the route's field check and the address (three vitest blinds); test_w1031 holds the fixture, read again, and the hub's readings (four blinds)."
     }
   ],
   "routes": [
