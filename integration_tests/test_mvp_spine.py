@@ -6059,8 +6059,17 @@ def test_stale_repo_loop_closes_and_records_honestly(client):
     try:
         # auto_ship re-ships ONE stale repo per beat, OLDEST first — in a full-suite context other
         # entities' older stale repos are served before ours, so beat until ours refreshes.
+        # W1039 - as many beats as there are stale repos in the store, ours among them: a fixed eight went red
+        # whenever the worker's store held eight older ones, which depended on the tests run before this one
+        from agentic_core.api.vsb import _REPO_STORE as _rs319
+        _stale319 = 0
+        for _p319 in _rs319.glob("*.ship.json"):
+            try:
+                _stale319 += bool(json.loads(_p319.read_text(encoding="utf-8")).get("stale"))
+            except (OSError, ValueError):
+                continue
         reshipped_any = False
-        for _ in range(8):
+        for _ in range(max(8, _stale319 + 1)):
             beat = _ensure_loop().run_until_complete(heartbeat.beat())
             reshipped_any = reshipped_any or ("reshipped_stale_repo" in (beat.get("actions") or []))
             s2 = client.get(f"/api/v1/vsb/{vid}/repo/ship").json()
@@ -81144,10 +81153,12 @@ def test_w960_fu1181_three_reads_that_failed_silently_are_said_and_four_body_par
     assert "setUploadsErr(`Your uploads could not be read, so the list below may not be what is there: ${describeReadFailure(e)}`);" in st
     assert "{uploadsErr && <p role=\"alert\" data-testid=\"uploads-read-failed\"" in st and "setUploadsErr('');" in st
     sp = code("pages/enterprise/VSBSpawnStudio.tsx")
-    assert "setError(`The entities could not be read, so the list is not what is there: ${describeReadFailure(e)}`);" in sp
+    #  W1039 - said in the list it failed to fill
+    assert "setListFailed(`The entities could not be read, so the list is not what is there: ${describeReadFailure(e)}`);" in sp
     assert "setDelivErr(`Not produced, or the list could not be read again: ${describeReadFailure(e)}`);" in sp
     assert "{delivErr && <p role=\"alert\" data-testid=\"deliverable-produce-failed\"" in sp
-    assert "{deliverables.length === 0 && !delivErr && <p" in sp, "'None yet' is still shown over a failure"
+    #  W1039 - nor over a list that could not be read
+    assert "{deliverables.length === 0 && !delivErr && !(\"this entity's deliverables\" in readFailures) && <p" in sp, "'None yet' is still shown over a failure"
 
     #  the four parses: through bodyOrNull, with no catch block of their own
     assert "const j = await bodyOrNull(res);" in code("lib/api.ts")
@@ -85098,7 +85109,8 @@ def test_w1025_a_refusal_is_said_by_its_reason_never_by_its_status_alone(client)
     gj = _code_only((src / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
     assert gj.count("await refusalOf(res)") == 4, gj.count("await refusalOf(res)")
     spawn = _code_only((src / "pages/enterprise/VSBSpawnStudio.tsx").read_text(encoding="utf-8"))
-    assert "setError(`Orchestration failed: ${errorMessage(e)}`);" in spawn and "backend unreachable or entity missing" not in spawn
+    #  W1039 - said under the entity's own button
+    assert "[vsbId]: `Orchestration failed: ${errorMessage(e)}` }));" in spawn and "backend unreachable or entity missing" not in spawn
     qep = _code_only((src / "components/QEPStudio.tsx").read_text(encoding="utf-8"))
     assert ".catch(e => setSuwarFailed(errorMessage(e)));" in qep and "source unreachable" not in qep
     cockpit = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8"))
@@ -85879,3 +85891,60 @@ def test_w1038_fu399_the_creator_studio_asks_before_any_generation_replaces_a_bu
     assert code.count("handleAIGenerate") == 3, code.count("handleAIGenerate")
     t = (src / "pages/create/CreatorStudio.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './CreatorStudio.fixture.json';" in t and "render(<CreatorStudio />);" in t
+
+
+def test_w1039_fu399_the_vsb_spawn_studio_says_each_failure_where_it_happened(client):
+    """FU-399 part 60 (W1039). The VSB Spawn Studio is rendered against its routes' own answers
+    (VSBSpawnStudio.test.tsx): one made-up entity established through Genesis on a fresh store with no model
+    installed, its record and its deliverables, and the server's own 500 when reading the entities, reading the
+    entity, orchestrating it or reading its deliverables fails inside. Rendering found five failures said in the
+    wrong place, or as something else:
+    - a failed read of the entities was said at the Genesis form, while the list beneath it said "No VSB entities yet"
+      and counted none. It is said in the list, which counts nothing it did not read;
+    - an entity whose own read failed said "Loading org…" for as long as the page was open. It is said in its panel;
+    - a failed orchestration was said at the form, away from the entity. It is said under the entity's own button;
+    - deliverables that could not be read were said as "None yet", and counted none;
+    - the swarm's failure, with no reason given, said the backend might be down for a server that had answered. It
+      is said through errorMessage.
+    test_w960's and test_w1025's readings of the moved sentences moved with them.
+
+    Held here: the refusal of an entity nothing knows is the route's own, read again; the server's own 500s are what
+    the global handler says (the failures are made inside the routes, so they are not run again); and the page."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/enterprise/VSBSpawnStudio.fixture.json").read_text(encoding="utf-8"))
+
+    r = client.get("/api/v1/vsb/w1039-made-up-nothing")
+    assert (r.status_code, r.json()) == (fx["missing"]["status"], fx["missing"]["body"]), r.text[:200]
+    vid = fx["vsb_id"]
+    for key, said in (("list_failed", "GET /api/v1/vsb"), ("detail_failed", f"GET /api/v1/vsb/{vid}"),
+                      ("orch_failed", "POST /api/v1/transformation/orchestrate"),
+                      ("deliv_failed", "GET /api/v1/deliverables")):
+        a = fx[key]
+        assert a["status"] == 500 and a["body"]["cause_established"] is False, (key, a)
+        assert a["body"]["detail"] == (f"{said} failed with RuntimeError. The failure is recorded; the cause is not "
+                                       "established."), (key, a["body"]["detail"])
+    assert [e["vsb_id"] for e in fx["list"]["body"]["entities"]] == [vid] == [fx["detail"]["body"]["vsb_id"]]
+    assert fx["deliverables"]["body"]["deliverables"] == []
+
+    page = _code_only((src / "pages/enterprise/VSBSpawnStudio.tsx").read_text(encoding="utf-8"))
+    #  the list's failure, in the list, which claims no entity and counts none it did not read
+    assert ("setListFailed(`The entities could not be read, so the list is not what is there: "
+            "${describeReadFailure(e)}`);") in page
+    assert "{entities.length === 0 ? (listFailed ? null : (" in page
+    assert "Spawned Entities ({listFailed ? 'not read' : entities.length})" in page
+    #  the entity's, in its panel; the orchestration's, under its button
+    assert "if (!d) return failed" in page and 'data-testid="spawn-detail-failed"' in page
+    assert "failed={detailFailed[e.vsb_id]}" in page and "orchFailed={orchFailed[e.vsb_id]}" in page
+    assert '{orchFailed && <p role="alert" data-testid="spawn-orchestrate-failed"' in page
+    #  the deliverables that could not be read: not "None yet", not counted
+    unread = "\"this entity's deliverables\" in readFailures"
+    assert f"!({unread}) && <p" in page and f"({{{unread} ? 'not read' : deliverables.length}})" in page
+    #  the form says only its own: the legacy spawn's two, and nothing of the list, an entity or a run
+    assert page.count("setError(") == 2, page.count("setError(")
+    #  the swarm's failure, by what it was
+    assert "setSwarmErr(`Could not run this VSB’s swarm: ${errorMessage(e)}`);" in page
+    assert "may be unavailable" not in page and "axiosDetail" not in page
+    t = (src / "pages/enterprise/VSBSpawnStudio.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './VSBSpawnStudio.fixture.json';" in t and "<VSBSpawnStudio />" in t

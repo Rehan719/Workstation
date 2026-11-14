@@ -24718,6 +24718,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: 'AI Generate', the intent's Enter and 'Regenerate blueprint' go through one request, which asks over a built graph (the question under the intent bar) and generates straight away over an empty canvas; the blueprint's name is the intent, whole when it fits, a cut falling between words and marked. CreatorStudio.test.tsx drives it against the route's own answers, canvas and all (three vitest blinds); test_w1038 holds the refusal and the name read again and every call of the generation (five blinds)."
+    },
+    {
+      "id": "FU-1223",
+      "title": "The VSB Spawn Studio said each failure in the wrong place, or as something else",
+      "why": "Found rendering the VSB Spawn Studio (FU-399 part 60) against its routes' own answers. A failed read of the entities was said at the Genesis form while the list beneath it said 'No VSB entities yet' and counted none; an entity whose own read failed said 'Loading org…' for as long as the page was open; a failed orchestration was said at the form, away from the entity's button; deliverables that could not be read were said as 'None yet' and counted none; and the swarm's failure, with no reason given, guessed the backend was down for a server that had answered.",
+      "source": "W1039 (FU-399 part 60, the VSB Spawn Studio rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBSpawnStudio.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1039",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the VSB Spawn Studio; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the list's failure is said in the list (no 'No VSB entities yet' beneath it, the count 'not read'); an entity's failure in its own panel, not 'Loading org…'; an orchestration's under the entity's button; unread deliverables are not 'None yet' or counted; the swarm's failure through errorMessage. VSBSpawnStudio.test.tsx drives each against the routes' own answers (four vitest blinds); test_w1039 holds the refusal read again, the server's own 500s and the page (five blinds). test_w960's and test_w1025's readings moved with the sentences."
     }
   ],
   "routes": [

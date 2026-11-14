@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { streamPost } from '../../lib/stream';   // W1008 - one reader of a streamed answer
-import { provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, axiosDetail} from '../../lib/api';
+import { provenanceBadge, provenanceMapBadge, provenanceMapFromTrace } from '../../lib/api';
 import { errorMessage } from '../../lib/api';   // W1025 - a failure said as what it was
 import { ReadFailures, useReadFailures, describeReadFailure, silenceIsRight } from '../../components/ReadFailures';   // W928, W960
 import { DOMAINS as CANON_DOMAINS, domainLabel } from '../../lib/taxonomy';   // W735 (FU-831): domainLabel
@@ -100,6 +100,17 @@ export const VSBSpawnStudio: React.FC = () => {
   const [detail, setDetail] = useState<Record<string, VSBDetail>>({});
   const [orch, setOrch] = useState<Record<string, OrchRun>>({});
   const [orchBusy, setOrchBusy] = useState<string | null>(null);
+  //  W1039 - each failure is said where it happened: the list's in the list, an entity's in its own panel. All
+  //  three were said at the Genesis form above, the list beneath it saying "No VSB entities yet" and an entity
+  //  whose read had failed saying "Loading org…" for as long as the page was open
+  const [listFailed, setListFailed] = useState('');
+  const [detailFailed, setDetailFailed] = useState<Record<string, string>>({});
+  const [orchFailed, setOrchFailed] = useState<Record<string, string>>({});
+  const without = (rec: Record<string, string>, key: string): Record<string, string> => {
+    const rest = { ...rec };
+    delete rest[key];
+    return rest;
+  };
   const feedRef = useRef<HTMLDivElement>(null);
 
   const fetchEntities = async () => {
@@ -107,9 +118,10 @@ export const VSBSpawnStudio: React.FC = () => {
     try {
       const r = await axios.get('/api/v1/vsb');
       setEntities(r.data.entities ?? []);
+      setListFailed('');
     } catch (e) {
       //  W960 (FU-1181) - an empty list read as "no entities yet" when the read had failed
-      setError(`The entities could not be read, so the list is not what is there: ${describeReadFailure(e)}`);
+      setListFailed(`The entities could not be read, so the list is not what is there: ${describeReadFailure(e)}`);
     }
     setLoadingEntities(false);
   };
@@ -117,18 +129,26 @@ export const VSBSpawnStudio: React.FC = () => {
   const openDetail = async (vsbId: string) => {
     setSelected(prev => (prev === vsbId ? null : vsbId));
     if (!detail[vsbId]) {
+      setDetailFailed(prev => without(prev, vsbId));
       try {
         const r = await axios.get(`/api/v1/vsb/${vsbId}`);
         setDetail(prev => ({ ...prev, [vsbId]: r.data }));
-      } catch (e) { setError(`Could not load ${vsbId}: ${errorMessage(e)}`); }   // W329; W1025 - it guessed between two
+      } catch (e) {
+        //  W329; W1025 - it guessed between two; W1039 - said in the entity's own panel
+        setDetailFailed(prev => ({ ...prev, [vsbId]: `Could not load ${vsbId}: ${errorMessage(e)}` }));
+      }
     }
   };
   const orchestrateVsb = async (vsbId: string) => {
     setOrchBusy(vsbId);
+    setOrchFailed(prev => without(prev, vsbId));
     try {
       const r = await axios.post('/api/v1/transformation/orchestrate', { scope: vsbId /* W812 (FU-1153): no owner is sent - the server takes the entity plan's own */ });
       setOrch(prev => ({ ...prev, [vsbId]: r.data }));
-    } catch (e: any) { setError(`Orchestration failed: ${errorMessage(e)}`); }   // W329; W1025 - by its reason, not its status
+    } catch (e: any) {
+      //  W329; W1025 - by its reason, not its status; W1039 - said under the entity's own button
+      setOrchFailed(prev => ({ ...prev, [vsbId]: `Orchestration failed: ${errorMessage(e)}` }));
+    }
     setOrchBusy(null);
   };
 
@@ -330,7 +350,7 @@ export const VSBSpawnStudio: React.FC = () => {
       <Card className="p-6">
         <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
           <h3 className="text-sm font-black uppercase tracking-widest text-white">
-            Spawned Entities ({entities.length})
+            Spawned Entities ({listFailed ? 'not read' : entities.length})
           </h3>
           <div className="flex items-center gap-2">
             {entities.length > 8 && (
@@ -354,11 +374,14 @@ export const VSBSpawnStudio: React.FC = () => {
           </div>
         </div>
 
-        {entities.length === 0 ? (
+        {listFailed && (
+          <p role="alert" data-testid="spawn-entities-unread" className="text-vital text-xs font-bold mb-4">{listFailed}</p>
+        )}
+        {entities.length === 0 ? (listFailed ? null : (
           <p className="text-slate-600 text-sm font-bold uppercase tracking-widest text-center py-10">
             No VSB entities yet. Establish your first one in Genesis.
           </p>
-        ) : (() => {
+        )) : (() => {
           const q = entityFilter.trim().toLowerCase();
           const matched = q
             ? entities.filter(e => `${e.name || ''} ${e.domain || ''} ${e.stage || ''} ${e.vsb_id}`.toLowerCase().includes(q))
@@ -421,7 +444,8 @@ export const VSBSpawnStudio: React.FC = () => {
                 </div>
               </div>
               {selected === e.vsb_id && (
-                <VSBDetailPanel d={detail[e.vsb_id]} orch={orch[e.vsb_id]}
+                <VSBDetailPanel d={detail[e.vsb_id]} failed={detailFailed[e.vsb_id]} orch={orch[e.vsb_id]}
+                  orchFailed={orchFailed[e.vsb_id]}
                   busy={orchBusy === e.vsb_id} onOrchestrate={() => orchestrateVsb(e.vsb_id)} />
               )}
               </React.Fragment>
@@ -442,8 +466,8 @@ export const VSBSpawnStudio: React.FC = () => {
 
 // ── Per-VSB org detail: Board · Economy · Living Plan · Transformation cascade ──
 const VSBDetailPanel: React.FC<{
-  d?: VSBDetail; orch?: OrchRun; busy: boolean; onOrchestrate: () => void;
-}> = ({ d, orch, busy, onOrchestrate }) => {
+  d?: VSBDetail; failed?: string; orch?: OrchRun; orchFailed?: string; busy: boolean; onOrchestrate: () => void;
+}> = ({ d, failed, orch, orchFailed, busy, onOrchestrate }) => {
   const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W928 - a read that fails is said
   const [swarmRun, setSwarmRun] = useState<SwarmRunResult | null>(null);
   const [swarmBusy, setSwarmBusy] = useState(false);
@@ -459,7 +483,10 @@ const VSBDetailPanel: React.FC<{
     axios.get('/api/v1/deliverables/types')
       .then(r => setDelivTypes((r.data.types || []).map((t: { id: string }) => t.id))).catch(noteRead('the deliverable types'));
   }, [d?.vsb_id]);
-  if (!d) return <div className="ml-4 px-4 py-3 text-[10px] text-slate-600 font-bold uppercase tracking-widest">Loading org…</div>;
+  //  W1039 - a read that failed is said here, where the entity was opened; it said "Loading org…" for good
+  if (!d) return failed
+    ? <p role="alert" data-testid="spawn-detail-failed" className="ml-4 px-4 py-3 text-[10px] text-vital font-bold">{failed}</p>
+    : <div className="ml-4 px-4 py-3 text-[10px] text-slate-600 font-bold uppercase tracking-widest">Loading org…</div>;
   const directors = d.board?.directors ?? [];
   const ns = d.native_swarm;
 
@@ -486,7 +513,8 @@ const VSBDetailPanel: React.FC<{
       const r = await axios.post('/api/v1/resources/swarm/run', { swarm_id: ns.cascade_id });
       setSwarmRun(r.data);
     } catch (e: any) {
-      setSwarmErr(axiosDetail(e, 'Could not run this VSB’s swarm — the backend may be unavailable.'));
+      //  W1039 - when no reason came, it guessed the backend was down, for a server that had answered
+      setSwarmErr(`Could not run this VSB’s swarm: ${errorMessage(e)}`);
     }
     setSwarmBusy(false);
   };
@@ -519,6 +547,7 @@ const VSBDetailPanel: React.FC<{
         <Button onClick={onOrchestrate} disabled={busy} className="flex items-center gap-2 bg-aura text-sovereign text-xs">
           {busy ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />} Orchestrate transformation (Chief → BTO)
         </Button>
+        {orchFailed && <p role="alert" data-testid="spawn-orchestrate-failed" className="mt-2 text-[10px] text-vital font-bold">{orchFailed}</p>}
         {orch && (
           <div className="mt-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
             <div className="flex items-center justify-between mb-1.5">
@@ -574,7 +603,7 @@ const VSBDetailPanel: React.FC<{
 
       <div className="pt-1 border-t border-slate-900">
         <div className="flex items-center justify-between mb-1 mt-3">
-          <p className="text-[9px] font-black uppercase tracking-widest text-highlight flex items-center gap-1.5"><FileText size={11} /> Living deliverables ({deliverables.length})</p>
+          <p className="text-[9px] font-black uppercase tracking-widest text-highlight flex items-center gap-1.5"><FileText size={11} /> Living deliverables ({"this entity's deliverables" in readFailures ? 'not read' : deliverables.length})</p>
           <div className="flex items-center gap-1.5">
             <select aria-label="Deliverable type" value={delivType} onChange={e => setDelivType(e.target.value)}
               className="text-[9px] font-black uppercase bg-slate-900 border border-slate-800 rounded text-slate-300 px-1.5 py-0.5">
@@ -586,7 +615,8 @@ const VSBDetailPanel: React.FC<{
           </div>
         </div>
         {delivErr && <p role="alert" data-testid="deliverable-produce-failed" className="text-[9px] text-vital font-bold">{delivErr}</p>}
-        {deliverables.length === 0 && !delivErr && <p className="text-[9px] text-slate-600">None yet — produce one, or use the Deliverables page.</p>}
+        {/* W1039 - an unread list is not said as "None yet" beneath the notice that it was not read */}
+        {deliverables.length === 0 && !delivErr && !("this entity's deliverables" in readFailures) && <p className="text-[9px] text-slate-600">None yet — produce one, or use the Deliverables page.</p>}
         <div className="space-y-1">
           {deliverables.map(dv => (
             <a key={dv.id} href="/deliverables" className="flex items-center gap-2 text-[10px] p-1.5 rounded-lg bg-slate-950 border border-slate-900 hover:border-aura/30">
