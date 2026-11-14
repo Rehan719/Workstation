@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, ThumbsUp, ThumbsDown, MoreHorizontal, X, WifiOff, RefreshCw, ChevronLeft, FolderPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { provenanceBadge } from '../lib/api';
+import { refusalOf } from '../lib/stream';   // W1024 - a refused answer, said by its status and reason
 
 // W451 (P1.3) — the CEO answers from the owned fabric, grounded in the Board + living plan; the pill
 // and every assistant message say WHO served it (amber on the floor). No persona, no roleplay copy.
@@ -19,20 +20,13 @@ export const CEOChat: React.FC = () => {
   const [lastProv, setLastProv] = useState<{ servedBy: string | null; isExternal: boolean } | null>(null);
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
-  const [sentiment, setSentiment] = useState('analytical');
   const [showMenu, setShowMenu] = useState(false);
   const [feedback, setFeedback] = useState<Record<number, 'up' | 'down'>>({});
   const [aiStatus, setAiStatus] = useState<'online' | 'offline'>('online');
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const getAvatarColor = () => {
-    switch (sentiment) {
-      case 'joyful': return 'text-emerald-400';
-      case 'frustrated': return 'text-vital';
-      case 'curious': return 'text-highlight';
-      default: return 'text-aura';
-    }
-  };
+  // W1024 - the avatar's colour said a mood read off the person's own words ("great" joyful, "error" frustrated,
+  // "why" curious). The page says it has no persona (W451); the colour no longer moves.
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -62,7 +56,13 @@ export const CEOChat: React.FC = () => {
 
       clearTimeout(timeoutId);
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      //  W1024 - a refusal is said by its reason, and the AI is not said offline over it: this threw `HTTP 404`, which
+      //  the catch below said as "The AI backend is currently unreachable", and the pill went to AI Offline
+      if (!response.ok) {
+        const why = await refusalOf(response);
+        setMessages(prev => [...prev, { role: 'assistant', content: `Not answered. ${why}` }]);
+        return;
+      }
       if (!response.body) throw new Error('No response body');
 
       const reader = response.body.getReader();
@@ -70,11 +70,6 @@ export const CEOChat: React.FC = () => {
       let assistantMessage: CeoMessage = { role: 'assistant', content: '' };
       let pending = '';   // a `data:` line split across chunks is completed, not dropped
       let streamError = false;
-
-      if (input.toLowerCase().includes("great") || input.toLowerCase().includes("good")) setSentiment('joyful');
-      else if (input.toLowerCase().includes("error") || input.toLowerCase().includes("fail")) setSentiment('frustrated');
-      else if (input.toLowerCase().includes("how") || input.toLowerCase().includes("why")) setSentiment('curious');
-      else setSentiment('analytical');
 
       setMessages(prev => [...prev, assistantMessage]);
 
@@ -165,8 +160,8 @@ export const CEOChat: React.FC = () => {
           </button>
 
           <div className={`p-1 rounded-2xl transition-all duration-700 relative group bg-aura/20 shadow-[0_0_20px_rgba(100,255,218,0.2)] overflow-hidden`}>
-            <div className="w-14 h-14 bg-slate-950 rounded-xl flex items-center justify-center relative">
-               <Bot size={28} className={`${getAvatarColor()} relative z-10 transition-colors duration-500`} />
+            <div data-testid="ceo-avatar" className="w-14 h-14 bg-slate-950 rounded-xl flex items-center justify-center relative">
+               <Bot size={28} className="text-aura relative z-10" />
                <motion.div
                  animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
                  transition={{ duration: 4, repeat: Infinity }}

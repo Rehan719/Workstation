@@ -84990,3 +84990,49 @@ def test_w1023_fu399_the_deck_player_is_rendered_and_says_what_composed_the_deck
     t = (src / "PresentationPlayer.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './PresentationPlayer.fixture.json';" in t and "<PresentationPlayer slides={deck}" in t
     assert "servedBy={answer.served_by} isExternal={answer.is_external}" in t
+
+
+def test_w1024_fu399_the_ceo_chat_is_rendered_and_says_a_refusal_by_its_reason(client):
+    """FU-399 part 50 (W1024). The AI CEO chat is rendered against its route's own answers (CEOChat.test.tsx): the
+    stream's frames for a made-up question on a fresh store with no model installed, played back as a network
+    delivers them, and the two refusals the route gives before any stream, a scope nothing holds (404) and a request
+    with no message (422). Rendering found two defects. A refusal was said as an unreachable server: the chat threw
+    `HTTP 404` on a refused answer, its catch said "The AI backend is currently unreachable. Ensure the Workstation
+    backend server is running", and the pill went to "AI Offline" over a server that had answered. And the avatar's
+    colour said a mood read off the person's own words ("great" joyful, "error" frustrated, "why" curious), on a page
+    that says it has no persona. A refusal is now said by its status and reason (lib/stream.ts refusalOf), and the
+    avatar keeps one colour.
+
+    Held here: the fixture is the route's own answer, read again; the chat reads a refusal through refusalOf and
+    returns before anything says the AI is offline; and no colour is chosen from the person's words."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages"
+    fx = json.loads((src / "CEOChat.fixture.json").read_text(encoding="utf-8"))
+    frames = [json.loads(ln[6:]) for ln in fx["stream"].splitlines() if ln.startswith("data: ")]
+    assert frames[-1].get("done") and frames[-1].get("served_by") == "native" and not frames[-1].get("error"), frames[-1]
+    assert "".join(str(f.get("content") or "") for f in frames).strip(), "the captured stream carries no answer"
+    nf = client.post("/api/v138/ceo/chat", json={"message": fx["ask"], "context": [], "scope": "vsb-w1024-none"})
+    assert (nf.status_code, nf.json()) == (fx["scope_refused"]["status"], fx["scope_refused"]["body"]), nf.text[:200]
+    fc = client.post("/api/v138/ceo/chat", json={"context": [], "scope": "workstation"})
+    assert (fc.status_code, fc.json()["detail"][0]["loc"], fc.json()["detail"][0]["msg"]) == (
+        fx["field_refused"]["status"], fx["field_refused"]["body"]["detail"][0]["loc"],
+        fx["field_refused"]["body"]["detail"][0]["msg"]), fc.text[:200]
+    live = client.post("/api/v138/ceo/chat", json={"message": fx["ask"], "context": [], "scope": "workstation"})
+    assert live.status_code == 200 and "text/event-stream" in live.headers.get("content-type", "")
+    last = [json.loads(ln[6:]) for ln in live.text.splitlines() if ln.startswith("data: ")][-1]
+    assert {k: last.get(k) for k in ("done", "served_by", "is_external")} == {
+        k: frames[-1].get(k) for k in ("done", "served_by", "is_external")}, last
+
+    chat = _code_only((src / "CEOChat.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    block = chat[chat.index("      if (!response.ok) {"):]
+    block = block[:block.index("      }\n") + 8]
+    assert "const why = await refusalOf(response);" in block and "return;" in block, block
+    assert "setAiStatus" not in block, "a refusal says the AI is offline"
+    assert "throw new Error(`HTTP ${response.status}`)" not in chat
+    assert "import { refusalOf } from '../lib/stream';" in chat
+    assert "setSentiment" not in chat and "getAvatarColor" not in chat, "a colour is chosen from the person's words"
+    assert '<Bot size={28} className="text-aura relative z-10" />' in chat and 'data-testid="ceo-avatar"' in chat
+    t = (src / "CEOChat.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './CEOChat.fixture.json';" in t and "<CEOChat />" in t
+    assert "expect(screen.queryByText(/currently unreachable/)).toBeNull();" in t

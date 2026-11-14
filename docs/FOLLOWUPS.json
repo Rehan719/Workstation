@@ -24376,6 +24376,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the header says what composed the deck (the result's provenance, handed in by the studio); a deck with no slide says there is nothing to play; a slide with no narration says so; a named image is said as not shown; the studio hands over the slides. PresentationPlayer.test.tsx drives it on the route's answer to a made-up reply (three vitest blinds); test_w1023 holds the fixture, made again, and the studio's and the player's readings (three blinds)."
+    },
+    {
+      "id": "FU-1208",
+      "title": "The AI CEO chat said a refusal as an unreachable server and the AI as offline, and coloured its avatar by a mood read off the person's words",
+      "why": "Found rendering the AI CEO chat against its route's own answers (FU-399 part 50). A refused answer (a scope nothing holds, 404; a field check, 422) was thrown as 'HTTP 404' and said by the catch as 'The AI backend is currently unreachable. Ensure the Workstation backend server is running', and the pill turned to 'AI Offline' over a server that had answered. The avatar's colour was chosen from keywords in the person's own message ('great' joyful, 'error' or 'fail' frustrated, 'how' or 'why' curious), on a page whose header says it has no persona.",
+      "source": "W1024 (FU-399 part 50, the AI CEO chat rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/CEOChat.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1024",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the AI CEO chat; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: a refusal is said by its status and reason through lib/stream.ts refusalOf, and returns before anything turns the pill offline; the avatar keeps one colour. CEOChat.test.tsx drives the floor's stream, both refusals and an unreachable server (three vitest blinds); test_w1024 holds the fixture, read again, and the chat's readings (three blinds)."
     }
   ],
   "routes": [
