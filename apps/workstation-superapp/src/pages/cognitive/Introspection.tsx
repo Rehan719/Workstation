@@ -24,13 +24,19 @@ interface Biometrics {
 export const Introspection: React.FC = () => {
   const [bio, setBio] = useState<Biometrics | null>(null);
   const [bioError, setBioError] = useState("");
+  const [everRead, setEverRead] = useState(false);   // W994 - a reading has been shown before
 
   useEffect(() => {
     const load = () => {
       axios.get<Biometrics>('/api/v1/biometrics/status', { validateStatus: () => true })
         .then(res => {
-          if (res.status === 200 && res.data) { setBio(res.data); setBioError(""); }
-          else { setBio(null); setBioError(`The organism is not reporting (HTTP ${res.status}).`); }
+          if (res.status === 200 && res.data) { setBio(res.data); setBioError(""); setEverRead(true); }
+          else {
+            //  W994 (FU-399 part 26) - the server's reason beside its status; it said the status alone
+            const d = (res.data as { detail?: unknown } | null)?.detail;
+            setBio(null);
+            setBioError(`The organism is not reporting (HTTP ${res.status}${d ? `: ${typeof d === 'string' ? d : JSON.stringify(d)}` : ''}).`);
+          }
         })
         .catch(() => { setBio(null); setBioError("The organism is not reporting — it could not be reached."); });
     };
@@ -47,7 +53,10 @@ export const Introspection: React.FC = () => {
   if (bioError) {
     return (
       <div role="alert" className="p-8 text-vital font-bold">
-        {bioError} No vitals are shown, because none were received.
+        {/* W994 - a failed poll after a reading said none was received */}
+        {bioError} {everRead
+          ? 'The last reading is not shown, because it may no longer be current.'
+          : 'No vitals are shown, because none were received.'}
       </div>
     );
   }
@@ -117,7 +126,10 @@ export const Introspection: React.FC = () => {
              {/* W574 (M1 R4.0) — the ATP ratio was shown among the live vitals. The payload that
                  carries it says in its own basis that it is simulated, is not measured and cannot
                  fall, and is "not a live vital". Labelled as the simulation it is. */}
-             <LoadVisual label={`Metabolic (work budget left ${bio.metabolic.energy_ratio != null ? (bio.metabolic.energy_ratio * 100).toFixed(0) + '%' : 'unknown'})`} value={Math.round(bio.metabolic.efficiency * 100)} color="bg-aura" />
+             {/* W994 (FU-399 part 26) - labelled the work budget left, this bar drew `efficiency`, the mean of the
+                 budget and the stages' efficiency (95% where the budget was 90%). It draws the budget, and no
+                 figure when the budget is not known. */}
+             <LoadVisual label="Work budget left" value={bio.metabolic.energy_ratio != null ? Math.round(bio.metabolic.energy_ratio * 100) : null} color="bg-aura" />
              {/* W489 (sweep S11.14, C3) — this bar is 100 − host CPU%: a full bar means the HOST IS
                  IDLE, which read as a healthy platform. Labelled for what it measures. */}
              <LoadVisual label={`Host CPU headroom${(bio.cardiovascular as any).host_cpu_window_seconds != null ? ` (over ${(bio.cardiovascular as any).host_cpu_window_seconds} s)` : ''}`} value={Math.round(bio.cardiovascular.resource_flow)} color="bg-highlight" />
@@ -177,15 +189,15 @@ const ResonanceBall = ({ label, value, color, icon: Icon }: any) => {
 };
 
 const LoadVisual = ({ label, value, color }: any) => (
-  <div>
+  <div data-testid="load-visual">
     <div className="flex justify-between text-[10px] font-black uppercase text-slate-500 tracking-widest mb-4">
       <span>{label}</span>
-      <span className="text-white">{value}%</span>
+      <span className="text-white">{typeof value === 'number' ? `${value}%` : 'not measured'}</span>
     </div>
     <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden shadow-inner">
       <motion.div
         initial={{ width: 0 }}
-        animate={{ width: `${value}%` }}
+        animate={{ width: `${typeof value === 'number' ? value : 0}%` }}
         transition={{ duration: 1.5, ease: "circOut" }}
         className={`h-full ${color} shadow-[0_0_15px_rgba(100,255,218,0.3)]`}
       />

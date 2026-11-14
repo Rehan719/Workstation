@@ -83249,3 +83249,46 @@ def test_w993_fu399_digital_twins_shows_a_refused_read_and_says_each_refusals_st
     assert "the list of scenarios is the one read before this one ran" in code
     fx = json.loads((src / "pages/developers/DigitalTwins.fixture.json").read_text(encoding="utf-8"))
     assert fx["missing"]["status"] == 404 and len(fx["model_after"]["simulations"]) == len(fx["model"].get("simulations", [])) + 1
+
+
+def test_w994_fu399_self_vision_draws_the_figure_each_bar_names_and_says_a_refusals_reason(client, monkeypatch, tmp_path):
+    """FU-399 part 26 (W994). The Self Vision page shows the organism's vitals from GET /api/v1/biometrics/status, read
+    every ten seconds. Introspection.test.tsx mounts the real page against the route's answer with one made-up run
+    recorded, and has the server refuse a read, first and after a good one. Rendering it found three defects, fixed:
+    - the Metabolic bar was labelled the work budget left and drew `efficiency`, the mean of the budget and the stages'
+      efficiency (95% where the budget was 90%); it draws the budget, and not measured when that is not known;
+    - a refused read said "(HTTP 503)" alone; the server's reason is said beside the status;
+    - a refused poll after a reading said "No vitals are shown, because none were received."; that is said only when
+      none was, and otherwise the last reading is said not to be shown because it may no longer be current.
+    Held here: the route's two figures differ once a run is recorded on the test's own store; and the page's code."""
+    import json
+    import pathlib
+    import re
+    from agentic_core.api import operational_excellence as _oe
+    monkeypatch.setattr(_oe, "_STORE", tmp_path / "operations_outcomes.json")
+    _oe.record_outcome("w994-probe", "w994-probe-resource", served_by="native", duration_ms=360000, success=True)
+    m = client.get("/api/v1/biometrics/status").json()["metabolic"]
+    assert m["energy_ratio"] is not None and m["efficiency"] != m["energy_ratio"], m
+    assert "the mean of energy_ratio" in m["efficiency_basis"], m["efficiency_basis"]
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    pdir = root / "apps/workstation-superapp/src/pages/cognitive"
+    page = pdir.joinpath("Introspection.tsx").read_bytes().decode("utf-8").replace("\r\n", "\n")
+    t = (pdir / "Introspection.test.tsx").read_text(encoding="utf-8")
+    assert "import { Introspection } from './Introspection';" in t and "<Introspection />" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert "load-visual" in read, sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in page, tid
+    code = _code_only(page)
+    #  the bar under the work budget's label draws the work budget
+    assert ("<LoadVisual label=\"Work budget left\" value={bio.metabolic.energy_ratio != null ? "
+            "Math.round(bio.metabolic.energy_ratio * 100) : null}") in code
+    assert "bio.metabolic.efficiency" not in code
+    assert "{typeof value === 'number' ? `${value}%` : 'not measured'}" in code
+    #  a refusal's reason, and "none were received" only when none was
+    assert "setBioError(`The organism is not reporting (HTTP ${res.status}${d ? `: ${typeof d === 'string' ? d : JSON.stringify(d)}` : ''}).`);" in code
+    assert "setEverRead(true);" in code and "'The last reading is not shown, because it may no longer be current.'" in code
+    fx = json.loads((pdir / "Introspection.fixture.json").read_text(encoding="utf-8"))
+    fm = fx["status"]["metabolic"]
+    assert fm["energy_ratio"] is not None and fm["efficiency"] != fm["energy_ratio"], fm
