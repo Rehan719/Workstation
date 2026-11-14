@@ -6,7 +6,7 @@
 // subject was absent. Six guards read the page's source. This mounts the real page against the answers the routes gave
 // on a fresh store (HorizonGuardrails.fixture.json, captured by w975_capture.py from TEST RECORDS that name no service
 // and reach no one), reads each claim in the DOM, and has the server refuse each read.
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, waitFor } from '@testing-library/react';
 import axios from 'axios';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -137,6 +137,6 @@ describe('HorizonGuardrails, rendered against the guardrails and seam routes\' o
     render(<HorizonGuardrails />);
     expect(await screen.findByText(/The guardrails could not be reached\./)).toBeTruthy();
     const seam = await screen.findByTestId('horizon-seam');
-    expect((await within(seam).findByRole('alert')).textContent).toContain('The seam is not reporting (HTTP 502).');
+    await waitFor(() => expect(within(seam).getByRole('alert').textContent).toContain('The seam is not reporting (HTTP 502).'));
   });
 });

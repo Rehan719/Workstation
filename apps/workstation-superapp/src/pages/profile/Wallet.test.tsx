@@ -131,7 +131,7 @@ describe('Wallet, rendered against the fund routes\' own answers', () => {
     const target = within(rowOf(String(REVERSED?.project_name))).getByTestId('wallet-allocation-reverse');
     fireEvent.change(within(target).getByPlaceholderText('why this allocation is reversed…'), { target: { value: WHY } });
     fireEvent.click(within(target).getByRole('button', { name: 'request reversal' }));
-    expect((await within(target).findByTestId('wallet-allocation-reverse-said')).textContent).toBe(captured.reverse_held.basis);
+    await waitFor(() => expect(within(target).getByTestId('wallet-allocation-reverse-said').textContent).toBe(captured.reverse_held.basis));
     expect(posts).toEqual([{ url: `/api/v1/fund/allocations/${captured.reverse_held.allocation_id}/reverse`, body: { reason: WHY } }]);
   });
 
@@ -141,8 +141,8 @@ describe('Wallet, rendered against the fund routes\' own answers', () => {
     let offer = (await screen.findAllByTestId('wallet-allocation-reverse'))[0];
     fireEvent.change(within(offer).getByPlaceholderText('why this allocation is reversed…'), { target: { value: WHY } });
     fireEvent.click(within(offer).getByRole('button', { name: 'request reversal' }));
-    expect((await within(offer).findByTestId('wallet-allocation-reverse-said')).textContent).toBe(
-      `Not requested (HTTP ${captured.refused_unknown.status}): ${captured.refused_unknown.body.detail}`);
+    await waitFor(() => expect(within(offer).getByTestId('wallet-allocation-reverse-said').textContent).toBe(
+      `Not requested (HTTP ${captured.refused_unknown.status}): ${captured.refused_unknown.body.detail}`));
     a.unmount();
     vi.restoreAllMocks();
 
@@ -151,8 +151,8 @@ describe('Wallet, rendered against the fund routes\' own answers', () => {
     offer = (await screen.findAllByTestId('wallet-allocation-reverse'))[0];
     fireEvent.change(within(offer).getByPlaceholderText('why this allocation is reversed…'), { target: { value: WHY } });
     fireEvent.click(within(offer).getByRole('button', { name: 'request reversal' }));
-    expect((await within(offer).findByTestId('wallet-allocation-reverse-said')).textContent).toBe(
-      'Not requested: the server could not be reached, so nothing was asked of Change Control.');
+    await waitFor(() => expect(within(offer).getByTestId('wallet-allocation-reverse-said').textContent).toBe(
+      'Not requested: the server could not be reached, so nothing was asked of Change Control.'));
   });
 
   it('a held reversal is listed with its reason; a reversed allocation is shown reversed and offers no reversal', async () => {

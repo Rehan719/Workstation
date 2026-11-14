@@ -84505,3 +84505,29 @@ def test_w1015_a_caught_failure_is_said_as_what_it_was(client):
     assert vsb.count("detailText(e?.response?.data?.detail ?? errorMessage(e))") == 7, vsb.count("detailText(e?.response?.data?.detail ?? errorMessage(e))")
     gj = _code_only((src / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
     assert "setError(`Naming failed: ${errorMessage(e)} Nothing changed.`);" in gj
+
+
+def test_w1016_a_read_made_through_within_waits_for_what_its_element_says_too(client):
+    """W1016. W1014 held that no rendered test reads an element's text as it was found, but read only the reads made
+    on the whole screen: `(await screen.findBy...(x)).textContent`. Five more were made inside a part of the page,
+    `(await within(part).findBy...(x)).textContent` - the guardrails' seam alert, the archive panel's counts, and
+    the wallet's three reversal sentences - and race the same way when their element is there before its read
+    settles. Each now waits for what the element says, inside its part. Held here: no rendered test reads an
+    element's text as found through within(), and the five waited reads are the ones converted."""
+    import pathlib
+    import re
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    found = re.compile(r"\(await within\([^()]*\)\.findBy\w+\((?:[^()]|\([^()]*\))*\)\)\.textContent")
+    waited = re.compile(r"await waitFor\(\(\) => expect\(within\([^()]*\)\.getBy\w+\(")
+    offenders, n, scanned = [], 0, 0
+    for f in sorted(src.rglob("*.test.tsx")):
+        scanned += 1
+        t = f.read_text(encoding="utf-8").replace("\r\n", "\n")
+        offenders += [f"{f.relative_to(src).as_posix()}:{t[:m.start()].count(chr(10)) + 1}" for m in found.finditer(t)]
+        n += len(waited.findall(t))
+    assert scanned > 40, scanned
+    assert offenders == [], ("a rendered test reads an element's text as found inside a part of the page; wait for "
+                             "what it says", offenders)
+    assert n == 5, n
+    w = (src / "pages/profile/Wallet.test.tsx").read_text(encoding="utf-8")
+    assert w.count("await waitFor(() => expect(within(offer).getByTestId('wallet-allocation-reverse-said').textContent).toBe(") == 2

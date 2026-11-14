@@ -133,8 +133,8 @@ describe('HorizonCompanion, rendered against the horizon routes\' own answers', 
     render(<HorizonCompanion />);
     const m = captured.archive_scanned.manifest;
     const panel = await screen.findByTestId('horizon-archive-index');
-    expect((await within(panel).findByTestId('horizon-archive-counts')).textContent).toBe(
-      `${m.counts.INDEXED} file(s) indexed · ${m.counts.NOT_READ} not read · ${m.counts.EXCLUDED} excluded by a secret rule.`);
+    await waitFor(() => expect(within(panel).getByTestId('horizon-archive-counts').textContent).toBe(
+      `${m.counts.INDEXED} file(s) indexed · ${m.counts.NOT_READ} not read · ${m.counts.EXCLUDED} excluded by a secret rule.`));
     expect(within(panel).getByTestId('horizon-archive-recount').textContent).toBe(captured.archive_scanned.recount.basis);
     expect(within(panel).getByTestId('horizon-archive-embeddings').textContent).toBe('embeddings: none installed');
     expect(within(panel).getByTestId('horizon-archive-embeddings-basis').textContent).toBe(m.search_basis);

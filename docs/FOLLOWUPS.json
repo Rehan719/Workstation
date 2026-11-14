@@ -24243,6 +24243,29 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: errorMessage says an axios refusal by its status and reason, an axios call that reached no server as one, and a plain Error (a page's own sentence) as itself; describeReadFailure is errorMessage; each of the fifty-four catches says its failure through it. src/lib/api.test.ts drives every shape (two vitest blinds); test_w1015 holds that no catch says the caught error's own message (six blinds)."
+    },
+    {
+      "id": "FU-1202",
+      "title": "Five rendered-test reads made inside a part of the page took an element's text as it was found, which W1014's guard did not see",
+      "why": "Found by W1014's own census past its guard: W1014 held the found-then-read form only on the whole screen (screen.findBy...); five reads made through within(part).findBy... had the same form - the guardrails' seam alert, the archive panel's counts, the wallet's three reversal sentences - and race the same way when their element is there before its read settles.",
+      "source": "W1016 (the reads W1014's guard did not see)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/governance/HorizonCompanion.test.tsx",
+        "apps/workstation-superapp/src/pages/governance/HorizonGuardrails.test.tsx",
+        "apps/workstation-superapp/src/pages/profile/Wallet.test.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1016",
+      "note": "",
+      "slot_source": "the rendered tests FU-399 writes, held to one form of read; it rides P5.1 as FU-399 does",
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the five reads wait for what their element says inside its part; test_w1016 holds that no rendered test reads an element's text as found through within() (one blind)."
     }
   ],
   "routes": [
