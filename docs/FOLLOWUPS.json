@@ -24568,6 +24568,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: each of the six generators hands a failure to onFailed, and the hub says it as a failure where the form is, clearing any earlier result, with nothing offered for download; the tab is in the address through lib/useTab.ts. ManagementSystemsHub.test.tsx drives the standards, the floor's QMS framework, the route's field check and the address (three vitest blinds); test_w1031 holds the fixture, read again, and the hub's readings (four blinds)."
+    },
+    {
+      "id": "FU-1216",
+      "title": "The BTO catalogue said every failure of its blueprint and its build-to-order, a server's refusal included, as 'check the API server is running'",
+      "why": "Found rendering the BTO catalogue against its routes' own answers (FU-399 part 55). Composing the blueprint and building to order both caught every failure with one fixed sentence, 'check the API server is running', so a server's own 500, which names the failure's class and says its cause is not established, was said as a server that had not answered. W1028 had said such sentences through errorMessage tree-wide; its census read 'unreachable', 'could not be reached' and 'not running', and not this wording.",
+      "source": "W1032 (FU-399 part 55, the BTO catalogue rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/BTOCatalog.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1032",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the BTO catalogue; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: both actions say the failure through errorMessage, and test_w1028's census reads the wording. BTOCatalog.test.tsx drives the blueprint, the build-to-order answer, the server's own 500 and an unreachable server (two vitest blinds); test_w1032 holds the blueprint and the 500, read again, and the catalogue's readings (three blinds)."
     }
   ],
   "routes": [

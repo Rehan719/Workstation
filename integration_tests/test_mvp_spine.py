@@ -85315,7 +85315,8 @@ def test_w1028_a_server_that_answered_is_never_said_as_unreachable(client):
     import pathlib
     import re
     src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
-    said = re.compile(r"unreachable|could not be reached|could not reach|not running|is offline", re.I)
+    #  W1032 - and "check the API server is running", which the BTO catalogue said for every failure
+    said = re.compile(r"unreachable|could not be reached|could not reach|not running|server is running|is offline", re.I)
 
     def code(f):
         #  whole-line comments go (_code_only), and a trailing one after whitespace; a URL's // stays
@@ -85610,3 +85611,44 @@ def test_w1031_fu399_the_management_hub_says_a_failure_as_one_and_keeps_its_tab_
     assert "useState<Tab>(" not in hub, "the tab is kept in state only"
     t = (src / "pages/enterprise/ManagementSystemsHub.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './ManagementSystemsHub.fixture.json';" in t and "<ManagementSystemsHub />" in t
+
+
+def test_w1032_fu399_the_bto_catalogue_says_a_failure_by_what_it_was(client, monkeypatch):
+    """FU-399 part 55 (W1032). The BTO catalogue is rendered against its routes' own answers (BTOCatalog.test.tsx):
+    the blueprint for a made-up entity with three components, the build-to-order answer for that blueprint's first
+    live products, and what the server answers when the configure route fails inside. Rendering found one defect:
+    both actions said every failure, a server's refusal included, as "check the API server is running", a wording
+    W1028's census did not read. Each now says the failure through errorMessage, and test_w1028 reads the wording.
+
+    Held here: the blueprint and the server's 500 are the routes' answers, read again; the build-to-order answer
+    agrees with its own rows; and the catalogue's readings."""
+    import json
+    import pathlib
+    from fastapi.testclient import TestClient
+    from agentic_core.catalog import bto as _bto
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/BTOCatalog.fixture.json").read_text(encoding="utf-8"))
+
+    bp = client.post("/api/v1/bto/configure", json=fx["request"])
+    assert bp.status_code == 200, bp.text[:200]
+    got = bp.json()
+    for key in ("entity_name", "component_count", "provisioned", "note", "components", "unknown_components",
+                "unknown_slugs"):
+        assert got[key] == fx["blueprint"][key], (key, str(got[key])[:200])
+    assert got["provisioned"] is False and "provisions, activates and integrates nothing" in got["note"]
+    #  the build is not run again here: it writes deliverables into the session's store, which other tests count.
+    #  Its answer is held by its own sums: what it says it delivered and composed is what its rows say
+    b = fx["build"]
+    assert b["delivered_count"] == sum(x["status"] == "BUILT" for x in b["built"]), b["delivered_count"]
+    assert b["composed_not_assessed_count"] == sum(x["status"] == "COMPOSED_NOT_ASSESSED" for x in b["built"])
+    assert [x["slug"] for x in b["built"]] == fx["slugs"] and all(x["served_by"] == "native" for x in b["built"])
+    monkeypatch.setattr(_bto, "_build_component", None)
+    failed = TestClient(client.app, raise_server_exceptions=False).post("/api/v1/bto/configure", json=fx["request"])
+    assert (failed.status_code, failed.json()) == (fx["configure_failed"]["status"], fx["configure_failed"]["body"])
+
+    page = _code_only((src / "pages/BTOCatalog.tsx").read_text(encoding="utf-8"))
+    assert "setErrorMsg(`Build failed: ${errorMessage(e)}`);" in page
+    assert "setErrorMsg(`Build-to-Order failed: ${errorMessage(e)}`);" in page
+    assert "API server is running" not in page
+    t = (src / "pages/BTOCatalog.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './BTOCatalog.fixture.json';" in t and "<BTOCatalog />" in t

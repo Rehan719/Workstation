@@ -1,0 +1,319 @@
+{
+  "blueprint": {
+    "ai_provenance": {
+      "basis": "no model is called by this endpoint: it resolves catalog slugs and assembles a blueprint dict. This is not an unrecorded provenance \u2014 it is the absence of one, and the two are different facts.",
+      "evidence_basis": "NOT SERVED: no resource gave a reply for this - nothing was asked, or what was asked did not answer - so there is no behaviour to state and it carries no level",
+      "evidence_level": null,
+      "evidence_level_number": null,
+      "is_external": false,
+      "posture": "deterministic",
+      "served_by": null
+    },
+    "blueprint_id": "36898e14-4ae8-425d-bed7-f17549257320",
+    "component_count": 3,
+    "components": {
+      "entity": {
+        "identity_layer": "L1 Core Identity",
+        "provisioned": false,
+        "status": "SPECIFIED (blueprint only)",
+        "type": "Sovereign Digital Entity"
+      },
+      "products": {
+        "catalog": [
+          {
+            "category": "Platform",
+            "features": [
+              "Constitutional Compliance Checking",
+              "C-Suite Coordination",
+              "Quad-Engine Bridge"
+            ],
+            "features_basis": "",
+            "features_declared_not_built": [],
+            "has_directory": true,
+            "live": true,
+            "name": "OctoVeritas Engine",
+            "route": "/constitution",
+            "slug": "OctoVeritasEngine",
+            "source": null,
+            "status": "live",
+            "tier": "Enterprise+"
+          },
+          {
+            "category": "Platform",
+            "features": [
+              "Virtual WST pool with cycle contributions",
+              "Allocation to projects and VSB entities",
+              "Owner-set virtual endowment, disclosed as a seed"
+            ],
+            "features_basis": "the three declared features are served by nothing in this repository - a grep for each hits only this catalogue entry, and the fund's own dashboard states that no on-chain integration exists. Virtual WST only.",
+            "features_declared_not_built": [
+              "Autonomous Rebalancing",
+              "On-Chain Gateway",
+              "Constitutional Evolution Voting"
+            ],
+            "has_directory": false,
+            "live": true,
+            "name": "Capital Fund",
+            "route": "/capital",
+            "slug": "capital_fund",
+            "source": null,
+            "status": "live",
+            "tier": "Enterprise"
+          },
+          {
+            "category": "SDK",
+            "features": [
+              "Domain pipeline narratives on the owned fabric",
+              "Variant generation, ranked only when a scorer returns scores"
+            ],
+            "features_basis": "W496 (FU-114): a repo-wide grep for synthetic data generation finds nothing, and the reactor writes a narrative of how a pipeline would behave rather than executing a simulation - its own page states that nothing is executed. The three declared features are kept here, named as not built, rather than deleted or presented as served.",
+            "features_declared_not_built": [
+              "High-Fidelity Twinning",
+              "ABM/Physics Simulation",
+              "Synthetic Data Generation"
+            ],
+            "has_directory": true,
+            "live": true,
+            "name": "Digital Reactor (Simulation-as-a-Service)",
+            "route": "/reactor",
+            "slug": "digital_reactor",
+            "source": "agentic_core/simulation/engine.py",
+            "status": "live",
+            "tier": "Standard/Pro/Enterprise"
+          },
+          {
+            "category": "Domain (Quran Education Platform)",
+            "features": [
+              "Qur'an text retrieved from a named source, never generated",
+              "Memorisation review scheduling"
+            ],
+            "features_basis": "no SDK package is published: the features listed are served by this platform's own Quran Education routes (their state is at /api/v1/qep/status), the analytics endpoints answer that they are not implemented, and the platform is free at the point of use, so no paid tier is offered",
+            "features_declared_not_built": [
+              "Quranic-studies analytics endpoints",
+              "Scholarly Annotation Trust Scoring"
+            ],
+            "has_directory": true,
+            "live": true,
+            "name": "QEP-as-a-Service SDK",
+            "route": "/qep-religion",
+            "slug": "qep-sdk",
+            "source": null,
+            "status": "live",
+            "tier": "Domain"
+          }
+        ],
+        "counts": {
+          "legacy": 3,
+          "live": 4,
+          "registered": 17,
+          "source": 10,
+          "with_directory": 16
+        },
+        "not_served": [
+          {
+            "name": "Care Domain Signature Product",
+            "reason": "legacy archive \u2014 not a served product",
+            "slug": "Care",
+            "status": "legacy"
+          },
+          {
+            "name": "Education Domain Signature Product",
+            "reason": "legacy archive \u2014 not a served product",
+            "slug": "Education",
+            "status": "legacy"
+          },
+          {
+            "name": "Religion Domain Signature Product",
+            "reason": "legacy archive \u2014 not a served product",
+            "slug": "Religion",
+            "status": "legacy"
+          },
+          {
+            "name": "Co-Evolutionary Business Incubator",
+            "reason": "source pointer \u2014 nothing served yet",
+            "slug": "business_incubator",
+            "status": "source"
+          },
+          {
+            "name": "Cognitive Computing Scraper SDK",
+            "reason": "source pointer \u2014 nothing served yet",
+            "slug": "cognitive_scraper",
+            "status": "source"
+          },
+          {
+            "name": "Enterprise File Hub",
+            "reason": "source pointer \u2014 nothing served yet",
+            "slug": "enterprise-file-hub",
+            "status": "source"
+          },
+          {
+            "name": "Grand Synthesis Engine",
+            "reason": "source pointer \u2014 nothing served yet",
+            "slug": "gse",
+            "status": "source"
+          },
+          {
+            "name": "MJM Intelligence Engine",
+            "reason": "source pointer \u2014 nothing served yet",
+            "slug": "mjm-intelligence-engine",
+            "status": "source"
+          },
+          {
+            "name": "Molecular Communication SDK",
+            "reason": "source pointer \u2014 nothing served yet",
+            "slug": "molecular_sdk",
+            "status": "source"
+          },
+          {
+            "name": "Neuromorphic Nanophotonic Navigator",
+            "reason": "source pointer \u2014 nothing served yet",
+            "slug": "nanophotonic_navigation",
+            "status": "source"
+          },
+          {
+            "name": "Dual-Mode Sensory Scraper",
+            "reason": "source pointer \u2014 nothing served yet",
+            "slug": "scraping_suite",
+            "status": "source"
+          },
+          {
+            "name": "Signature Product Suite",
+            "reason": "source pointer \u2014 nothing served yet",
+            "slug": "signature-product-suite",
+            "status": "source"
+          },
+          {
+            "name": "Unified Version Ingestion & Assimilation Pipeline",
+            "reason": "source pointer \u2014 nothing served yet",
+            "slug": "uviap",
+            "status": "source"
+          }
+        ],
+        "route": "/bto"
+      },
+      "vsb": {
+        "activated": false,
+        "ai_ceo": "VSB AI CEO",
+        "name": "Virtual Sovereign Business",
+        "route": "/ceo",
+        "status": "SPECIFIED (blueprint only)"
+      }
+    },
+    "components_requested": 3,
+    "entity_name": "W1032 made up: a village bakery cooperative",
+    "evidence_basis": "NOT SERVED: no resource gave a reply for this - nothing was asked, or what was asked did not answer - so there is no behaviour to state and it carries no level",
+    "evidence_level": null,
+    "evidence_level_number": null,
+    "is_external": false,
+    "not_buildable": [],
+    "note": "Design blueprint only \u2014 this endpoint provisions, activates and integrates nothing. POST /bto/build genuinely produces the selected products via the \u00a713 living-deliverables engine and reports BUILT/FAILED per item.",
+    "product_resources": [],
+    "provisioned": false,
+    "resource_count": 0,
+    "served_by": null,
+    "timestamp": "2026-11-14T14:58:33.057607",
+    "unknown_basis": "everything asked for was recognised",
+    "unknown_components": [],
+    "unknown_slugs": []
+  },
+  "build": {
+    "ai_provenance": {
+      "any_external": false,
+      "basis": "counted from each deliverable's own ai_provenance, as the \u00a713 engine reported it. An entry with no server is counted separately and is never folded into a total.",
+      "entries_with_no_server": 0,
+      "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+      "evidence_level": "behaviour",
+      "evidence_level_number": 1,
+      "served_by": {
+        "native": 3
+      }
+    },
+    "any_external": false,
+    "built": [
+      {
+        "deliverable_id": "deliv-137e3647",
+        "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+        "evidence_level": "behaviour",
+        "evidence_level_number": 1,
+        "is_external": false,
+        "name": "OctoVeritas Engine",
+        "qms_gate_passed": null,
+        "served_by": "native",
+        "slug": "OctoVeritasEngine",
+        "status": "COMPOSED_NOT_ASSESSED",
+        "status_basis": "a document was composed and the living-QMS gate could not assess it (floor-served: the floor emits the requested headings, so coverage cannot be measured). Composed is not built."
+      },
+      {
+        "deliverable_id": "deliv-e7b03aac",
+        "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+        "evidence_level": "behaviour",
+        "evidence_level_number": 1,
+        "is_external": false,
+        "name": "Capital Fund",
+        "qms_gate_passed": null,
+        "served_by": "native",
+        "slug": "capital_fund",
+        "status": "COMPOSED_NOT_ASSESSED",
+        "status_basis": "a document was composed and the living-QMS gate could not assess it (floor-served: the floor emits the requested headings, so coverage cannot be measured). Composed is not built."
+      },
+      {
+        "deliverable_id": "deliv-451f2149",
+        "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+        "evidence_level": "behaviour",
+        "evidence_level_number": 1,
+        "is_external": false,
+        "name": "Digital Reactor (Simulation-as-a-Service)",
+        "qms_gate_passed": null,
+        "served_by": "native",
+        "slug": "digital_reactor",
+        "status": "COMPOSED_NOT_ASSESSED",
+        "status_basis": "a document was composed and the living-QMS gate could not assess it (floor-served: the floor emits the requested headings, so coverage cannot be measured). Composed is not built."
+      }
+    ],
+    "composed_not_assessed_count": 3,
+    "delivered_basis": "0 product(s) passed the living-QMS gate; 3 had a document composed that the gate could not assess (floor-served); 0 had a document composed that the gate FAILED. Neither of the last two is a delivery, and they are not the same outcome",
+    "delivered_count": 0,
+    "domain": "enterprise",
+    "entity_name": "W1032 made up: a village bakery cooperative",
+    "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+    "evidence_level": "behaviour",
+    "evidence_level_number": 1,
+    "gate_failed_count": 0,
+    "note": "Build-to-order via the \u00a713 living-deliverables engine. A product counts as BUILT only when the living-QMS gate PASSED on its deliverable; a composed document the gate could not assess is reported as composed, not delivered.",
+    "objective": "Build-to-order delivery for W1032 made up: a village bakery cooperative",
+    "posture": "in-house-first",
+    "requested": [
+      "OctoVeritasEngine",
+      "capital_fund",
+      "digital_reactor"
+    ],
+    "served_by": {
+      "native": 3
+    },
+    "unknown_slugs": []
+  },
+  "configure_failed": {
+    "body": {
+      "cause_established": false,
+      "detail": "POST /api/v1/bto/configure failed with TypeError. The failure is recorded; the cause is not established.",
+      "failure_class": "TypeError",
+      "route": "/api/v1/bto/configure"
+    },
+    "status": 500
+  },
+  "name": "W1032 made up: a village bakery cooperative",
+  "request": {
+    "components": [
+      "entity",
+      "vsb",
+      "products"
+    ],
+    "entity_name": "W1032 made up: a village bakery cooperative",
+    "product_resources": []
+  },
+  "slugs": [
+    "OctoVeritasEngine",
+    "capital_fund",
+    "digital_reactor"
+  ]
+}
