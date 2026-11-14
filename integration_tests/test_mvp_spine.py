@@ -84422,7 +84422,9 @@ def test_w1014_a_rendered_test_waits_for_what_an_element_says_and_never_reads_it
     assert scanned > 40, ("this scanned almost nothing, so it would pass on an empty tree", scanned)
     assert offenders == [], ("a rendered test reads an element's text as it was found, before its read settles; "
                              "wait for what it says", offenders)
-    assert n_waited == 114, n_waited   # 99 converted, 1 by hand (the law page's note), the sign-in page's 2 (W1013), 12 written so
+    #  99 converted, 1 by hand (the law page's note), the sign-in page's 2 (W1013), 12 written so; a later round's
+    #  test that waits adds to it (W1017), so this is the floor the conversion left
+    assert n_waited >= 114, n_waited
     td = (src / "pages/TransformationDashboard.test.tsx").read_text(encoding="utf-8")
     assert td.count("await waitFor(() => expect(screen.getByTestId('followups-card').textContent).toContain(") == 2
     lt = (src / "pages/Login.test.tsx").read_text(encoding="utf-8")
@@ -84531,3 +84533,36 @@ def test_w1016_a_read_made_through_within_waits_for_what_its_element_says_too(cl
     assert n == 5, n
     w = (src / "pages/profile/Wallet.test.tsx").read_text(encoding="utf-8")
     assert w.count("await waitFor(() => expect(within(offer).getByTestId('wallet-allocation-reverse-said').textContent).toBe(") == 2
+
+
+def test_w1017_fu399_the_four_tab_hubs_are_rendered_the_tab_shown_is_the_tab_the_address_names(client):
+    """FU-399 parts 41 to 44 (W1017). The economy centre, the organism hub, the governance centre and the living
+    organisation hub are rows of tabs over pages that each have a rendered test of their own. Each hub is now
+    rendered with its pages stood in for, reading only the hub's own work: it opens on its first tab, a tab it does
+    not have opens the first one, the address ?tab=x shows tab x for every tab it has, and choosing a tab writes it
+    into the address while the first tab clears it; the living organisation hub sends the composer it no longer holds
+    to the native designer. Rendering found no defect. Held here: each hub's test mounts the real hub, opens every
+    tab the hub has by its address, and stands in for exactly the pages the hub's tabs show."""
+    import pathlib
+    import re
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    hubs = {"pages/enterprise/EconomyCenter": "overview", "pages/organism/OrganismHub": "overview",
+            "pages/governance/GovernanceCenter": "overview", "pages/LivingOrganisationHub": "ceo"}
+    for rel, first in hubs.items():
+        name = rel.rsplit("/", 1)[1]
+        page = (src / f"{rel}.tsx").read_text(encoding="utf-8").replace("\r\n", "\n")
+        test = (src / f"{rel}.test.tsx").read_text(encoding="utf-8")
+        assert f"import {{ {name} }} from './{name}';" in test and f"<{name} />" in test, rel
+        ids = re.findall(r"\{ id: '(\w+)',", page)
+        assert ids and ids[0] == first, (rel, ids)
+        for i in ids:
+            assert f"['{i}', '" in test, (rel, i, "a tab the test does not open by its address")
+        els = re.findall(r"El: (\w+) \}", page)
+        imports = {}
+        for m in re.finditer(r"^import (?:\{ (\w+) \}|(\w+)) from '([^']+)';", page, re.M):
+            imports[m.group(1) or m.group(2)] = m.group(3)
+        assert sorted(re.findall(r"^vi\.mock\('([^']+)'", test, re.M)) == sorted(imports[e] for e in els), rel
+        assert f"setSp(t.id === '{first}' ? {{}} : {{ tab: t.id }}, {{ replace: true }})" in page, rel
+        assert f"TABS.some(t => t.id === requested) ? requested! : '{first}'" in page, rel
+    lo = (src / "pages/LivingOrganisationHub.test.tsx").read_text(encoding="utf-8")
+    assert "'at: /native-ai?focus=cascade-designer'" in lo
