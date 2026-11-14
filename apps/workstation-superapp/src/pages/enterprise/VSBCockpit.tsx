@@ -214,7 +214,9 @@ export const VSBCockpit: React.FC = () => {
       ? d.map((x: any) => x?.msg && `${Array.isArray(x.loc) && x.loc.length ? `${x.loc[x.loc.length - 1]}: ` : ''}${x.msg}`)
         .filter(Boolean).join('; ') : '';
     if (reasons) return `${fallback}: ${reasons}.`;
-    return e?.response ? `${fallback} (HTTP ${e.response.status}).` : `${fallback} — backend unreachable.`;
+    //  W1030 - an object reason is said too (its message, or the object): it was the status alone
+    return e?.response ? `${fallback} (HTTP ${e.response.status}): ${axiosDetail(e, 'no reason given')}.`
+      : `${fallback} — backend unreachable.`;
   };
   const [lastCycle, setLastCycle] = useState<Dict | null>(null);
   const [cycling, setCycling] = useState(false);
@@ -320,7 +322,12 @@ export const VSBCockpit: React.FC = () => {
       validateStatus: () => true,
     }).then(r => {
       if (r.status === 200) setRepoFile({ path, text: String(r.data ?? ''), bytes: String(r.headers?.['x-repo-bytes'] ?? '') });
-      else setRepoErr(`${path} did not open (HTTP ${r.status}). Nothing is shown as its contents.`);
+      //  W1030 - the refusal's reason, read from the text the read asked for: it said the status alone
+      else {
+        const why = (() => { try { return bodyDetail(JSON.parse(String(r.data ?? '')), 'no reason given'); }
+                             catch { return 'no reason given'; } })();
+        setRepoErr(`${path} did not open (HTTP ${r.status}): ${why}. Nothing is shown as its contents.`);
+      }
     }).catch(() => setRepoErr(`${path} could not be fetched. Nothing is shown as its contents.`))
       .finally(() => setRepoBusy(''));
   };

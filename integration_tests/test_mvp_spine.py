@@ -85488,3 +85488,86 @@ def test_w1029_an_awaited_answer_is_read_before_it_is_used_and_never_left_unread
     assert scanned > 100 and assigned > 30, ("this read almost nothing", scanned, assigned)
     assert left_unread == [], ("an awaited fetch's answer is never read, so a refusal reads as done", left_unread)
     assert used_first == [], ("an answer's body is used before its status is read", used_first)
+
+
+def test_w1030_a_refusal_is_said_by_its_reason_in_a_sentence_that_says_more(client):
+    """W1030. W1025 held that no template whose only interpolation is a status after "HTTP " is said. A template that
+    says something else as well (a file's path, a decision, a fallback) was outside its census, and three said a
+    refusal by its status alone: the entity cockpit's repository file ("<path> did not open (HTTP 404)."), the
+    cockpit's reader of the ledger, the plan and the cycle, which said an object reason as "<what> (HTTP n).", and the
+    Genesis journey's review gate ("Gate approve failed (HTTP 409)."), so the Owner's refused decision came with no
+    reason. Each now says the reason.
+
+    Held here, tree-wide: a template that says a status after "HTTP " and something else says the reason too (a hole
+    that reads one), or says that none came, or is itself the fallback a reader falls back to, or the alternative
+    when no reason came (after `||`, `??` or a ternary's `:`)."""
+    import pathlib
+    import re
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+
+    def templates(s):
+        """each template literal's start, end, text and holes, a hole read to its own closing brace"""
+        i, n = 0, len(s)
+        while i < n:
+            c = s[i]
+            if c in "'\"":
+                j = i + 1
+                while j < n and s[j] not in (c, "\n"):
+                    j += 2 if s[j] == "\\" else 1
+                i = j + 1
+                continue
+            if c != "`":
+                i += 1
+                continue
+            j, holes = i + 1, []
+            while j < n and s[j] != "`":
+                if s[j] == "\\":
+                    j += 2
+                    continue
+                if s.startswith("${", j):
+                    d, k = 1, j + 2
+                    while k < n and d:
+                        d += (s[k] == "{") - (s[k] == "}")
+                        k += 1
+                    holes.append(s[j + 2:k - 1])
+                    j = k
+                    continue
+                j += 1
+            yield i, j + 1, s[i + 1:j], holes
+            i = j + 1
+
+    status = re.compile(r"\s*[\w.?]+\.status\s*")
+    reads_a_reason = re.compile(r"bodyDetail|refusalOf|refusalText|errorMessage|axiosDetail|detailText|serverDetail|"
+                                r"flat\(|said\(|why|\bdetail\b|\bd\b|\bed\b|reason")
+    offenders, scanned, read = [], 0, 0
+    for f in sorted(p for ext in ("*.ts", "*.tsx") for p in src.rglob(ext)):
+        rel = f.relative_to(src).as_posix()
+        if ".test." in f.name or rel == "lib/api.ts":
+            continue
+        scanned += 1
+        s = _code_only(f.read_text(encoding="utf-8").replace("\r\n", "\n"))
+        for a, b, text, holes in templates(s):
+            if not re.search(r"HTTP \$\{\s*[\w.?]+\.status\s*\}", "`" + text + "`"):
+                continue
+            others = [h for h in holes if not status.fullmatch(h)]
+            if not others:
+                continue                                 # W1025's form, which it holds
+            read += 1
+            if any(reads_a_reason.search(h) for h in others):
+                continue                                 # a hole says the reason
+            if re.search(r"no reason|returned no details|gave no reason|no details", text):
+                continue                                 # the sentence says no reason came
+            before = s[:a].rstrip()
+            if before.endswith(("||", "??", ":")) or re.search(r"\b(bodyDetail|axiosDetail)\([^()]*,$", before):
+                continue                                 # the fallback, or the alternative when no reason came
+            line = s.count("\n", 0, a) + 1
+            offenders.append(f"{rel}:{line}: `{text[:120]}`")
+    assert scanned > 100 and read > 5, ("this read almost nothing", scanned, read)
+    assert offenders == [], ("a refusal is said by its status in a longer sentence, with its reason dropped", offenders)
+
+    #  the three, read where they are
+    vsb = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8"))
+    assert "setRepoErr(`${path} did not open (HTTP ${r.status}): ${why}. Nothing is shown as its contents.`);" in vsb
+    assert "return e?.response ? `${fallback} (HTTP ${e.response.status}): ${axiosDetail(e, 'no reason given')}.`" in vsb
+    gj = _code_only((src / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
+    assert "setError(`Gate ${decision} failed (HTTP ${res.status}): ${await refusalText(res)}`);" in gj

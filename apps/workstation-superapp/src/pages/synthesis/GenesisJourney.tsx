@@ -539,7 +539,8 @@ export const GenesisJourney: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ decision }),
       });
       // Ledger cluster 1 — the Owner's gate decision must never silently no-op on a 4xx/5xx
-      if (!res.ok) { setError(`Gate ${decision} failed (HTTP ${res.status}).`); return; }
+      //  W1030 - the refusal's reason (it said the status alone, so a refused decision gave the Owner no reason)
+      if (!res.ok) { setError(`Gate ${decision} failed (HTTP ${res.status}): ${await refusalText(res)}`); return; }
       const dj = await res.json();
       setEntityStatus({ status: dj.entity_status, basis: dj.entity_status_basis });
       //  W927 - the decision is recorded by now: a failed re-read is said as that, never as "nothing changed"

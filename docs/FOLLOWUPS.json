@@ -24525,6 +24525,28 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the fabric's three actions read the status first and say a refusal in the API's own words (its refusalOf), the designs are read again only after a save the server took, and a refused retirement keeps the design chosen; the avatar's refused read of the entities is not kept. ResourceFabric.test.tsx drives the three refusals, the routes' own (three vitest blinds); test_w1029 holds the refusals, read again, the four sites and, tree-wide, that no awaited fetch's answer is left unread or used before its status (six blinds)."
+    },
+    {
+      "id": "FU-1214",
+      "title": "Three refusals were said by their status alone in a longer sentence, outside W1025's census: the cockpit's repository file and its reader of an object reason, and the Genesis gate decision",
+      "why": "Found by widening W1025's census, whose rule read only templates whose one interpolation is a status after 'HTTP '. A template that says something else as well was outside it, and three dropped the reason a refusal gave: the entity cockpit's repository file ('<path> did not open (HTTP 404).', the read asks for text and the reason is in it), the cockpit's reader of the ledger, the plan and the cycle, which said an object reason as '<what> (HTTP n).', and the Genesis journey's review gate ('Gate approve failed (HTTP 409).'), so the Owner's refused decision came with no reason.",
+      "source": "W1030 (W1025's census, widened)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx",
+        "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1030",
+      "note": "",
+      "slot_source": "found by the census FU-399's rendering led to; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the repository file's refusal is read from the text the read asked for, the cockpit's reader says an object reason through axiosDetail, and the gate decision says its refusal through the journey's refusalText. test_w1030 holds it tree-wide: a template with a status after 'HTTP ' and more says the reason, says none came, or is a reader's fallback or the alternative when none came (four blinds)."
     }
   ],
   "routes": [
