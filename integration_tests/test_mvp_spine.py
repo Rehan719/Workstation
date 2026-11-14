@@ -85796,3 +85796,41 @@ def test_w1036_fu399_authorship_intelligence_expands_every_stage_it_says_it_expa
     assert "onClick={() => toggle(num)}" in page and "aria-expanded={open.has(num)}" in page
     t = (src / "pages/synthesis/AuthorshipEngine.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './AuthorshipEngine.fixture.json';" in t and "render(<AuthorshipEngine />);" in t
+
+
+def test_w1037_fu399_design_and_dev_intelligence_says_the_stack_its_run_was_asked(client):
+    """FU-399 part 58 (W1037). Design & Dev Intelligence is rendered against its route's own stream
+    (DesignDevEngine.test.tsx): the nine stages the route streamed for a made-up system and a stack typed in, on a
+    fresh store with no model installed, and its refusal of a request with no system. Rendering found one defect: the
+    output's header said the form's stack, scale and deployment target as they stood, so changing one after a run
+    relabelled that run's stages with a stack, a scale or a target they were not run with. What the run was asked is
+    kept when it starts, the header says that, and the completion banner falls back to it, not to the form.
+
+    Held here: the refusal is the route's own, read again; the stream's completion line agrees with its own stages and
+    names the stack and scale asked (the stream is not run again: each stage is a gateway call, which the operations
+    record counts); and the page's code."""
+    import json
+    import pathlib
+    from agentic_core.api import intelligence as _intel
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/developers/DesignDevEngine.fixture.json").read_text(encoding="utf-8"))
+
+    r = client.post("/api/v1/intelligence/design-dev", json={k: v for k, v in fx["ask"].items() if k != "system"})
+    assert (r.status_code, r.json()) == (fx["refused"]["status"], fx["refused"]["body"]), r.text[:200]
+    events = [json.loads(line[6:]) for line in fx["design_dev"]["stream"].split("\n") if line.startswith("data: ")]
+    stages = [e for e in events if isinstance((e.get("data") or {}).get("stage_num"), int)]
+    assert [e["data"]["stage_num"] for e in stages] == list(range(1, 10)), [e["stage"] for e in stages]
+    done = [e for e in events if e["stage"] == "complete"]
+    assert len(done) == 1 and done[0]["content"] == _intel._run_summary_text(9, [e["data"] for e in stages]), done
+    assert (done[0]["data"]["tech_stack"], done[0]["data"]["scale"]) == (fx["ask"]["tech_stack"], fx["ask"]["scale"])
+
+    page = _code_only((src / "pages/developers/DesignDevEngine.tsx").read_text(encoding="utf-8"))
+    assert "setRanWith({ stack: effectiveStack, scale, target: deploymentTarget });" in page
+    header = page[page.index('data-testid="ddpie-ran-with"'):]
+    header = header[:header.index("</div>")]
+    assert ("<span>{ranWith?.stack}</span>" in header and "{ranWith?.scale}</span>" in header
+            and "{ranWith?.target}</span>" in header), header
+    assert "effectiveStack" not in header and "{scale}" not in header and "{deploymentTarget}" not in header, header
+    assert "?.tech_stack ?? ranWith?.stack}" in page and "?.scale ?? ranWith?.scale}" in page
+    t = (src / "pages/developers/DesignDevEngine.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './DesignDevEngine.fixture.json';" in t and "render(<DesignDevEngine />);" in t

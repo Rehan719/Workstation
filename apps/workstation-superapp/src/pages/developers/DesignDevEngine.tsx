@@ -60,6 +60,9 @@ export const DesignDevEngine: React.FC = () => {
   const [error, setError] = useState('');
   const [expanded, setExpanded] = useState<number | null>(null);
   const [customStack, setCustomStack] = useState('');
+  //  W1037 - what the run was asked, kept when it starts: the output said the form's stack, scale and target as
+  //  they stood, so a change after a run relabelled that run's stages
+  const [ranWith, setRanWith] = useState<{ stack: string; scale: string; target: string } | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -74,6 +77,7 @@ export const DesignDevEngine: React.FC = () => {
     setEvents([]);
     setError('');
     setExpanded(null);
+    setRanWith({ stack: effectiveStack, scale, target: deploymentTarget });
 
     await streamPost<DDEvent>(
       '/api/v1/intelligence/design-dev',
@@ -324,12 +328,13 @@ export const DesignDevEngine: React.FC = () => {
             <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
               Pipeline Output — {ranCount(stageEvents)} of {DDPIE_STAGES.length} stages ran
             </h3>
-            <div className="flex items-center gap-3 text-[9px] font-mono text-slate-600">
-              <span>{effectiveStack}</span>
+            {/* W1037 - the stack, scale and target the run was asked, not the form's as it stands */}
+            <div className="flex items-center gap-3 text-[9px] font-mono text-slate-600" data-testid="ddpie-ran-with">
+              <span>{ranWith?.stack}</span>
               <span>·</span>
-              <span className="uppercase">{scale}</span>
+              <span className="uppercase">{ranWith?.scale}</span>
               <span>·</span>
-              <span className="uppercase">{deploymentTarget}</span>
+              <span className="uppercase">{ranWith?.target}</span>
             </div>
           </div>
 
@@ -389,9 +394,9 @@ export const DesignDevEngine: React.FC = () => {
                 {completeEvent.content}
               </p>
               <div className="flex items-center gap-3 mt-3 text-[9px] font-mono text-slate-500">
-                <span>Stack: {(completeEvent.data as any)?.tech_stack ?? effectiveStack}</span>
+                <span>Stack: {(completeEvent.data as any)?.tech_stack ?? ranWith?.stack}</span>
                 <span>·</span>
-                <span>Scale: {(completeEvent.data as any)?.scale ?? scale}</span>
+                <span>Scale: {(completeEvent.data as any)?.scale ?? ranWith?.scale}</span>
                 <span>·</span>
                 <span>Stages: {(completeEvent.data as any)?.stages_completed ?? '—'} of {DDPIE_STAGES.length} ran</span>
               </div>

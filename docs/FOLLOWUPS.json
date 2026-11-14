@@ -24675,6 +24675,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: which cards are open is a set of stage numbers; 'Expand All' opens every stage that streamed in, 'Collapse All' shuts them, and each card says whether it is open. AuthorshipEngine.test.tsx drives it against the route's own stream (three vitest blinds); test_w1036 holds the refusal, the stream's completion line against its own stages, and the page's code (four blinds)."
+    },
+    {
+      "id": "FU-1221",
+      "title": "Design & Dev Intelligence's output said the form's stack, scale and target as they stood, not the run's",
+      "why": "Found rendering Design & Dev Intelligence (FU-399 part 58) against its route's own stream. The output's header read the form's stack, scale and deployment target as they stood, so changing any of them after a run relabelled that run's nine stages with a stack, a scale or a target they were not run with; the completion banner fell back to the form too.",
+      "source": "W1037 (FU-399 part 58, Design & Dev Intelligence rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/developers/DesignDevEngine.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1037",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of Design & Dev Intelligence; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: what the run was asked (stack, scale, target) is kept when it starts; the output's header says it, and the completion banner falls back to it, not to the form. DesignDevEngine.test.tsx drives a change after the run against the route's own stream (three vitest blinds); test_w1037 holds the refusal, the completion line against its own stages, and the page's code (five blinds)."
     }
   ],
   "routes": [
