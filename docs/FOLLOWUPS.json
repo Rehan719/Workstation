@@ -24308,6 +24308,28 @@
       "note": "",
       "slot_source": "the synthesis studio's own render, the next FU-399 part; it rides P5.1 as FU-399 does",
       "tier": 1
+    },
+    {
+      "id": "FU-1205",
+      "title": "When the model's reply did not parse, /generate handed over a template as the topic's audiobook, business model canvas or specification",
+      "why": "Found capturing the synthesis studio's answers for its render (W1020). With no model installed: the audiobook narrated W414's fixed advanced-therapy deck whatever the topic, three papers that do not exist ('Wu et al 2025', 'Chazarin et al 2026', 'Gifford et al 2025') and a market figure nothing derived; the business model canvas was one fixed canvas for every business, the platform's own engines as its key resources; a specification said the reply's first 600 characters as its description, cut without a word, and stamped itself 'Generated - ready for development'. The fabrication ledger had the deck as fixed by W414; it survived on the audiobook path.",
+      "source": "W1020 (found capturing the synthesis studio's answers)",
+      "found": "2026-11-14",
+      "files": [
+        "agentic_core/synthesis/api.py",
+        "docs/FABRICATION_LEDGER.md"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1020",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the synthesis studio; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the audiobook, the canvas and the four specifications each say the model did not return a usable output, as the presentation and the simulation do; the audiobook counts no chapter; a reply that parses is used as it is. The two template modules are removed with their last callers, and the fabrication ledger says the deck survived W414 on the audiobook path. test_w1020 holds every structured type's floor answer and the scan of agentic_core (five blinds)."
     }
   ],
   "routes": [

@@ -12,8 +12,9 @@ import uuid
 
 from agentic_core.store_paths import DATA_DIR
 from agentic_core.ai.gateway import gateway
-from agentic_core.synthesis.presentation import presentation_gen
-from agentic_core.synthesis.business_model import business_simulator
+#  W1020 - the two template modules, synthesis/presentation.py and synthesis/business_model.py, are removed: their
+#  last callers were the audiobook's and the canvas's fallbacks below, which handed a template over as the topic's
+#  content when the model's reply did not parse
 from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence)   # W727
 from agentic_core.api._ai_provenance import wrap_material as _wrap_material886      # W886 (FU-995)
 
@@ -283,10 +284,23 @@ class SynthesisManager:
             )
             raw = await self._query(prompt, "audiobook", said=instructions)
             chapters = self._extract_json_array(raw)
+            narrated = bool(chapters)
             if not chapters:
-                chapters = presentation_gen.generate_audiobook(topic)
+                # W1020 - this substituted presentation_gen.generate_audiobook(), which narrated the FIXED deck W414
+                # took off the presentation path: whatever the topic, ten chapters on AAV, CAR-T and mRNA safety citing
+                # three papers that do not exist ("Wu et al 2025", "Chazarin et al 2026", "Gifford et al 2025")
+                # and a market figure nothing derived. An audiobook on a bakery cooperative was narrated that.
+                chapters = [{
+                    "id": 1,
+                    "title": f"Audiobook: {topic}",
+                    "narration": "",
+                    "generated": False,
+                    "detail": ("The model did not return a usable audiobook for this topic, so none is narrated. "
+                               "A fixed template on another subject was previously substituted here."),
+                }]
             content = json.dumps(chapters, indent=2)
-            metadata.update(format="json", chapters_count=len(chapters), title=f"Audiobook: {topic}")
+            #  W1020 - the count is of chapters narrated: the one that says none came back is not a chapter
+            metadata.update(format="json", chapters_count=len(chapters) if narrated else 0, title=f"Audiobook: {topic}")
 
         # ── Website ──────────────────────────────────────────────────────────────
         elif otype == "website":
@@ -329,10 +343,13 @@ class SynthesisManager:
             raw = await self._query(prompt, otype, said=instructions)
             artifact = self._extract_json_object(raw)
             if not artifact:
+                # W1020 - this said the reply's first 600 characters as the specification's description, cut without
+                # a word, and stamped it "Generated — ready for development": with no model, the floor's own headings
+                # were offered as a specification ready to build, and with no reply the description was made up.
                 artifact = {
-                    "title": f"{doc_label}: {topic}",
-                    "description": raw[:600] if raw else f"Specification for {topic}",
-                    "status": "Generated — ready for development",
+                    "generated": False,
+                    "detail": (f"The model did not return a parseable {doc_label.lower()} for this topic, so none "
+                               "is shown, and nothing here is ready for development."),
                 }
             artifact.setdefault("title", f"{doc_label}: {topic}")
             artifact["timestamp"] = timestamp
@@ -352,7 +369,15 @@ class SynthesisManager:
             raw = await self._query(prompt, "business_model", said=instructions)
             canvas = self._extract_json_object(raw)
             if not canvas:
-                canvas = business_simulator.generate_business_model_canvas(topic)
+                # W1020 - this substituted business_simulator.generate_business_model_canvas(), one FIXED canvas that
+                # used the topic in two strings: every business got the same segments ("Enterprise R&D teams",
+                # "Regulatory bodies"), channels, partners and revenue streams, and the platform's own engines as its
+                # key resources, with nothing marking it as a template.
+                canvas = {
+                    "generated": False,
+                    "detail": ("The model did not return a parseable business model canvas for this topic, so none "
+                               "is shown. A fixed template was previously substituted here."),
+                }
             canvas.setdefault("title", f"Business Model Canvas: {topic}")
             canvas["timestamp"] = timestamp
             content = json.dumps(canvas, indent=2)

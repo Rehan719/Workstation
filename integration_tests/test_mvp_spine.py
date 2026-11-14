@@ -84716,3 +84716,76 @@ def test_w1019_fu399_the_business_model_dashboard_is_rendered_and_a_simulation_i
         assert case in t, case
     assert "expect(screen.queryByText('Market Size')).toBeNull();" in t
     assert "expect(screen.queryByRole('button')).toBeNull();" in t
+
+
+def test_w1020_a_fallback_says_nothing_came_back_and_never_hands_over_a_template(client, monkeypatch):
+    """W1020. When the model's reply did not parse, three of /generate's output types handed over a template as the
+    topic's content, and with no model installed every one of them is reached. The audiobook narrated W414's fixed
+    advanced-therapy deck whatever the topic: three papers that do not exist and a market figure nothing derived. The
+    business model canvas was one fixed canvas, the same segments, partners and engines for every business. A
+    specification (app, agent, product, service) said the reply's first 600 characters as its description, cut without
+    a word, and stamped itself "Generated — ready for development". Each now says no usable output came back, as the
+    presentation and the simulation do, and the two template modules are gone with their last callers.
+
+    Held here: on the floor, every structured type's answer parses, carries none of the templates' words, and says it
+    was not generated; the audiobook counts no chapter; a reply that parses is used, never replaced; and nothing under
+    agentic_core holds the invented citations or the fixed canvas."""
+    import json
+    import pathlib
+    from agentic_core.synthesis import api as _sa
+    ask = {"content_ids": [], "instructions": "W1020 made up: a delivery cooperative for village bakeries"}
+    template_words = ("Wu et al", "Chazarin", "Gifford et al", "AAV", "CAR-T", "mRNA", "4.2 billion", "4.2B",
+                      "Enterprise R&D teams", "Regulatory bodies", "Multi-Modal Fabric", "Genome/Evolution engine",
+                      "ready for development\"", "Generated — ready")
+    for t in ("audiobook", "business_model", "app", "agent", "product", "service", "presentation", "video", "simulation"):
+        r = client.post("/api/v1/synthesis/generate", json={**ask, "output_type": t})
+        assert r.status_code == 200, (t, r.status_code, r.text[:300])
+        body = r.json()
+        for w in template_words:
+            assert w not in body["content"], (t, "a template's words in the answer", w)
+        c = json.loads(body["content"])
+        first = c[0] if isinstance(c, list) else c
+        said = first.get("detail") or first.get("content") or ""
+        assert first.get("generated") is False and said.startswith("The model did not return"), (t, first)
+        if t == "audiobook":
+            assert len(c) == 1 and c[0]["narration"] == "" and "duration_sec" not in c[0], c
+            assert body["metadata"]["chapters_count"] == 0, ("the note that none came back counted as a chapter",
+                                                              body["metadata"])
+        if t in ("app", "agent", "product", "service"):
+            assert set(c) == {"generated", "detail", "title", "timestamp"}, (t, sorted(c))
+            assert "nothing here is ready for development" in c["detail"], c["detail"]
+
+    #  a reply that parses is the answer: the fallback fires only when nothing usable came back
+    replies = {
+        "audiobook": [{"id": 1, "title": "W1020 made up: the first van", "narration": "W1020 made up.", "duration_sec": 6}],
+        "business_model": {"title": "W1020 made up: a bakery cooperative", "customer_segments": ["W1020 made up: cafes"]},
+        "app": {"title": "W1020 made up: a booking line", "description": "W1020 made up: orders close at four."},
+    }
+    for t, reply in replies.items():
+        async def _reply(prompt, _out=json.dumps(reply), **_kw):
+            return {"output": _out, "served_by": "ollama:w1020-made-up", "is_external": False}
+        monkeypatch.setattr(_sa.gateway, "query_meta", _reply)
+        r = client.post("/api/v1/synthesis/generate", json={**ask, "output_type": t})
+        assert r.status_code == 200, (t, r.text[:300])
+        c = json.loads(r.json()["content"])
+        if isinstance(reply, list):
+            assert c == reply and r.json()["metadata"]["chapters_count"] == 1, (t, c, r.json()["metadata"])
+        else:
+            assert {k: v for k, v in c.items() if k != "timestamp"} == reply and "generated" not in c, (t, c)
+    monkeypatch.undo()
+
+    #  the template modules are gone, and nothing under agentic_core holds their words outside a comment
+    root = pathlib.Path(__file__).resolve().parents[1]
+    for gone in ("agentic_core/synthesis/presentation.py", "agentic_core/synthesis/business_model.py"):
+        assert not (root / gone).exists(), gone
+    held, scanned = [], 0
+    for p in sorted((root / "agentic_core").rglob("*.py")):
+        scanned += 1
+        code = _code_only(p.read_text(encoding="utf-8", errors="replace"))
+        for w in ("Chazarin", "Gifford et al", "Wu et al", "Enterprise R&D teams", "Genome/Evolution engine"):
+            if w in code:
+                held.append(f"{p.relative_to(root).as_posix()}: {w}")
+    assert scanned > 300, ("this scanned almost nothing, so it would pass on an empty tree", scanned)
+    assert held == [], ("a template's invented words are still in the code", held)
+    ledger = (root / "docs/FABRICATION_LEDGER.md").read_text(encoding="utf-8")
+    assert "FIXED (W414) on the presentation path only" in ledger and "### `agentic_core/synthesis/business_model.py:56`" in ledger
