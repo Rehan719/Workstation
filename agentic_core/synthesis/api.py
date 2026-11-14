@@ -74,8 +74,11 @@ class SynthesisOutput(BaseModel):
 _GENERATED_OUTPUT_TYPES = frozenset({
     "report", "review", "analysis", "dissertation", "dossier", "presentation", "video", "audiobook", "website",
     "app", "agent", "product", "service", "business_model", "simulation"})
-#  W1019 - the output types composed whole and never streamed: /stream refuses them, and the studio asks /generate
-_COMPOSED_WHOLE_TYPES = frozenset({"simulation"})
+#  W1019, W1021 - the output types composed whole and never streamed: /stream refuses them, and the studio asks
+#  /generate, which parses the model's reply into each one's structure and says when none came back. The stream
+#  streams text only: the five documents and the website.
+_STREAMED_OUTPUT_TYPES = frozenset({"report", "review", "analysis", "dissertation", "dossier", "website"})
+_COMPOSED_WHOLE_TYPES = _GENERATED_OUTPUT_TYPES - _STREAMED_OUTPUT_TYPES
 
 
 class SynthesisManager:
@@ -254,6 +257,7 @@ class SynthesisManager:
             )
             raw = await self._query(prompt, "presentation", said=instructions)
             slides = self._extract_json_array(raw)
+            made = bool(slides)
             if not slides:
                 # W414 — this substituted presentation_gen.generate_presentation(), which returns a
                 # FIXED 10-slide deck about advanced-therapy safety (AAV, CAR-T, mRNA) whatever the
@@ -272,7 +276,9 @@ class SynthesisManager:
                 s.setdefault("id", i + 1)
                 s.setdefault("animation", ["fade-in", "slide-left", "zoom-in"][i % 3])
             content = json.dumps(slides, indent=2)
-            metadata.update(format="json", slides_count=len(slides), title=f"Presentation: {topic}")
+            #  W1021 - the count is of slides made: the one that says none came back is not a slide, and the studio
+            #  read a count of 1 as a deck its player can open
+            metadata.update(format="json", slides_count=len(slides) if made else 0, title=f"Presentation: {topic}")
 
         # ── Audiobook ────────────────────────────────────────────────────────────
         elif otype == "audiobook":
@@ -492,6 +498,15 @@ async def stream_synthesis(request: SynthesisRequest, user: dict | None = Depend
     #  studio tries first, and the download was markdown under a .json name, without the provenance a parsed
     #  simulation's download carries. /generate asks the model for the simulation's structure and says when none came
     #  back. Refused before anything is asked, written or recorded, and after the ruling check, as /generate refuses.
+    #  W1021 - and so is every structured type: a deck, an audiobook, the four specifications and a canvas were each
+    #  handed to the studio as text, which every display that parses its output drew nothing from. A type nothing
+    #  here generates is refused as /generate refuses it (W645): this route asked for any string at all as
+    #  markdown and saved it, so a typo was filed in the history as an output.
+    if request.output_type not in _GENERATED_OUTPUT_TYPES:
+        raise HTTPException(status_code=422, detail=(
+            f"output_type {request.output_type!r} is not one this route generates. It streams: "
+            f"{', '.join(sorted(_STREAMED_OUTPUT_TYPES))}; POST /api/v1/synthesis/generate composes "
+            f"{', '.join(sorted(_COMPOSED_WHOLE_TYPES))}. Nothing was generated or saved."))
     if request.output_type in _COMPOSED_WHOLE_TYPES:
         raise HTTPException(status_code=422, detail=(
             f"output_type {request.output_type!r} is composed whole, not streamed: POST /api/v1/synthesis/generate "
@@ -515,29 +530,15 @@ async def stream_synthesis(request: SynthesisRequest, user: dict | None = Depend
             f"Format as clean markdown with sections: Abstract, Introduction, Analysis, Discussion, Conclusion. "
             f"Be specific and cite knowledge base content where relevant."
         )
-    elif otype in ("presentation", "video"):
-        prompt = (
-            f'Create a 10-slide executive presentation on: "{topic}".{ctx_block}\n\n'
-            "Return a JSON array of 10 slide objects, each with: id (int), title (str), content (str), narration (str)."
-        )
     elif otype == "website":
         prompt = (
             f'Write a complete single-page HTML5 website about: "{topic}".{ctx_block}\n\n'
             "Dark theme: background #0b0f19, accent #64ffda, text #e2e8f0. "
             "Include: hero, key findings, features grid, CTA. Return full HTML only."
         )
-    elif otype == "business_model":
-        prompt = (
-            f'Generate a comprehensive Business Model Canvas for: "{topic}".{ctx_block}\n\n'
-            "Return a JSON object with: title, value_proposition, customer_segments, channels, "
-            "revenue_streams, key_resources, key_activities, key_partners, cost_structure, "
-            "market_opportunity, competitive_advantage."
-        )
-    else:
-        prompt = (
-            f'Generate a detailed {otype} document on: "{topic}".{ctx_block}\n\n'
-            "Return clean markdown."
-        )
+    else:   # unreachable while the refusals above and the branches agree; if they ever disagree, SAY SO
+        raise HTTPException(status_code=500, detail=(
+            f"output_type {otype!r} is listed as streamed and no branch streams it. Nothing was generated."))
 
     output_id = str(uuid.uuid4())
     timestamp = datetime.datetime.utcnow().isoformat()
@@ -570,7 +571,7 @@ async def stream_synthesis(request: SynthesisRequest, user: dict | None = Depend
             content, _faith659 = "".join(collected), _flt659.record()
         else:
             content, _faith659 = _withhold659(fin.get("output") or "")
-        ext = "html" if otype == "website" else ("json" if otype in ("presentation", "video", "audiobook", "business_model", "simulation") else "md")
+        ext = "html" if otype == "website" else "md"      # W1021 - the stream streams a document or a website
         output_path = synthesis_manager.output_dir / f"{output_id}.{ext}"
         # W490 (refutation) — the STREAM path persists its own file too; it carries the provenance the
         # done frame already reports, so the downloaded copy says what the screen said.
@@ -592,21 +593,9 @@ async def stream_synthesis(request: SynthesisRequest, user: dict | None = Depend
             "faith_content": _faith659,
         })
 
-        # W494 (FU-148 refutation) - the done frame sent no `format` and no `slides_count`, so the
-        # studio page invented `format: 'md'` for every streamed type and its slides_count branch was
-        # dead. Both are computed here already (`ext`, and the content for a slide deck is the JSON the
-        # player parses), so the stream reports them instead of leaving the page to guess. slides_count
-        # is omitted rather than defaulted when the content does not parse to a deck.
-        _slides_n = None
-        if otype in ("presentation", "video"):
-            try:
-                _parsed = json.loads(content)
-                if isinstance(_parsed, list):
-                    _slides_n = len(_parsed)
-                elif isinstance(_parsed, dict) and isinstance(_parsed.get("slides"), list):
-                    _slides_n = len(_parsed["slides"])
-            except Exception:
-                _slides_n = None
+        # W494 (FU-148 refutation) - the done frame sent no `format`, so the studio page invented `format: 'md'`
+        # for every streamed type; it reports `ext`. W1021 - a deck is no longer streamed (/generate composes it and
+        # counts its slides), so the frame carries no slide count.
         _done = {**_reply_evidence(fin.get('served_by')), 'done': True, 'output_id': output_id,
                  'download_url': f'/api/v1/synthesis/download/{output_id}', 'timestamp': timestamp,
                  'format': ext,
@@ -614,8 +603,6 @@ async def stream_synthesis(request: SynthesisRequest, user: dict | None = Depend
                  'profile_applied': bool(fin.get('profile_applied')),
                  'faith_content': _faith659,
                  'model_tokens': fin.get('model_tokens'), 'model_tokens_basis': fin.get('model_tokens_basis')}   # W776
-        if _slides_n is not None:
-            _done['slides_count'] = _slides_n
         yield f"data: {json.dumps(_done)}\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})

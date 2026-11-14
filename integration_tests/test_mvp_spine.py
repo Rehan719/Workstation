@@ -21791,17 +21791,18 @@ def test_w494_a_verdict_that_cannot_come_out_otherwise_is_not_an_assessment(clie
     # ── FU-148: a player announced over a result with nothing to play ──────────────────────────────
     ss = (app / "pages/synthesis/SynthesisStudio.tsx").read_text(encoding="utf-8")
     assert "Web Player Ready" not in ss
-    assert "slides_count: ev.slides_count" in ss              # the stream's own field, not a constant
+    #  W1021 - a deck is composed whole: its count is /generate's own metadata, which the studio spreads in whole
+    assert "completed.push({ ...resp.data, outputType: type });" in ss and "slides_count: ev.slides_count" not in ss
     # and the stream actually SENDS them: the first version read fields the done frame never emitted,
     # so `format` fell back to a hard-coded 'md' and the slides_count branch was dead
     _sapi = (root / "agentic_core/synthesis/api.py").read_text(encoding="utf-8")
-    assert "'format': ext," in _sapi and "_done['slides_count'] = _slides_n" in _sapi
+    assert "'format': ext," in _sapi and "slides_count=len(slides) if made else 0" in _sapi   # W1021
     assert "format: ev.format ?? (type === 'presentation' ? undefined : 'md')" not in ss
     # the player claim rests on a parse, not on the output being non-empty
     assert "JSON.parse(result.content)" in ss and "slides !== null" in ss
     assert "metadata: { type, format: 'md', title: type }," not in ss
     assert "no slide data in this result" in ss
-    assert "disabled={!result.content}" in ss and "Nothing to play" in ss
+    assert "disabled={!result.content || note !== undefined}" in ss and "Nothing to play" in ss   # W1021
 
     # ── FU-102: a chart titled "measured" plotting a value that is 1.0 by construction ─────────────
     swi = (app / "components/organism/SwarmIntelligence.tsx").read_text(encoding="utf-8")
@@ -84487,7 +84488,8 @@ def test_w1015_a_caught_failure_is_said_as_what_it_was(client):
         spans += [(body(s, m.end(), "(", ")"), m.group(1)) for m in dotcatch.finditer(s)]
         seen = set()
         for (a, b), var in spans:
-            for u in re.finditer(r"\b" + var + r"\??\.message\b", s[a:b]):
+            #  W1021 - and through a cast, `(e as any).message`, which the studio's upload said unseen
+            for u in re.finditer(r"(?:\b" + var + r"\??|\(\s*" + var + r"\s+as\s+[\w.]+\s*\))\.message\b", s[a:b]):
                 at = a + u.start()
                 if at in seen:
                     continue
@@ -84531,7 +84533,8 @@ def test_w1016_a_read_made_through_within_waits_for_what_its_element_says_too(cl
     assert scanned > 40, scanned
     assert offenders == [], ("a rendered test reads an element's text as found inside a part of the page; wait for "
                              "what it says", offenders)
-    assert n == 5, n
+    #  five converted; a later round's test that waits inside a part adds to it (W1021), so this is the floor
+    assert n >= 5, n
     w = (src / "pages/profile/Wallet.test.tsx").read_text(encoding="utf-8")
     assert w.count("await waitFor(() => expect(within(offer).getByTestId('wallet-allocation-reverse-said').textContent).toBe(") == 2
 
@@ -84638,7 +84641,7 @@ def test_w1019_fu399_the_business_model_dashboard_is_rendered_and_a_simulation_i
     assert sorted(p.name for p in _sa.synthesis_manager.output_dir.glob("*")) == files, "a refused stream wrote a file"
     r = client.post("/api/v1/synthesis/stream", json={**ask, "output_type": "report"})
     assert r.status_code == 200 and "text/event-stream" in r.headers.get("content-type", ""), "a report still streams"
-    assert _sa._COMPOSED_WHOLE_TYPES == frozenset({"simulation"}) <= _sa._GENERATED_OUTPUT_TYPES
+    assert "simulation" in _sa._COMPOSED_WHOLE_TYPES and _sa._COMPOSED_WHOLE_TYPES <= _sa._GENERATED_OUTPUT_TYPES
 
     #  /generate composes one, as the dashboard reads it
     g = client.post("/api/v1/synthesis/generate", json=ask)
@@ -84789,3 +84792,90 @@ def test_w1020_a_fallback_says_nothing_came_back_and_never_hands_over_a_template
     assert held == [], ("a template's invented words are still in the code", held)
     ledger = (root / "docs/FABRICATION_LEDGER.md").read_text(encoding="utf-8")
     assert "FIXED (W414) on the presentation path only" in ledger and "### `agentic_core/synthesis/business_model.py:56`" in ledger
+
+
+def test_w1021_fu399_the_synthesis_studio_is_rendered_and_every_structured_output_is_composed_whole(client):
+    """FU-399 part 48 (W1021), closing FU-1204. The synthesis studio is rendered against its routes' own answers
+    (SynthesisStudio.test.tsx): the knowledge base, /generate's answer for each structured type, the stream's frames
+    for a report, the history and a refused request, captured on a fresh store with no model installed.
+
+    The stream handed every structured output over as text: it asked for an audiobook and the four specifications as
+    markdown, and gave a deck's or a canvas's reply unparsed, so each display that parses its output drew nothing.
+    Each is composed whole now: the studio asks /generate, and /stream refuses it, and refuses as /generate does a
+    type nothing here generates, which it had saved as an output. The rest of what rendering found: an output the
+    model did not return drew an empty panel, and a deck of none was offered to the player; every failed generation
+    was said as a server not running; an unread knowledge base and history read as empty; and a streamed result's
+    text was read back off the page.
+
+    Held here: the stream's refusals with nothing recorded, and what it still streams; a deck of none counts no slide;
+    the studio's readings, read as code; and the fixture is the routes' own answer, each structured type made again."""
+    import json
+    import pathlib
+    from agentic_core.synthesis import api as _sa
+    ask = {"content_ids": [], "instructions": "W1021 made up: a delivery cooperative for village bakeries"}
+    composed = ("presentation", "video", "audiobook", "app", "agent", "product", "service", "business_model", "simulation")
+    assert _sa._COMPOSED_WHOLE_TYPES == frozenset(composed), sorted(_sa._COMPOSED_WHOLE_TYPES)
+    assert _sa._STREAMED_OUTPUT_TYPES == frozenset({"report", "review", "analysis", "dissertation", "dossier", "website"})
+    assert _sa._STREAMED_OUTPUT_TYPES | _sa._COMPOSED_WHOLE_TYPES == _sa._GENERATED_OUTPUT_TYPES
+
+    #  the stream refuses every structured type and every type nothing generates, and records and writes nothing
+    rows = len(_sa.synthesis_manager.history)
+    files = sorted(p.name for p in _sa.synthesis_manager.output_dir.glob("*"))
+    for t in composed:
+        s = client.post("/api/v1/synthesis/stream", json={**ask, "output_type": t})
+        assert s.status_code == 422 and "is composed whole, not streamed" in s.json()["detail"], (t, s.status_code, s.text[:200])
+    u = client.post("/api/v1/synthesis/stream", json={**ask, "output_type": "podcast"})
+    assert u.status_code == 422, (u.status_code, u.text[:200])
+    assert u.json()["detail"].startswith("output_type 'podcast' is not one this route generates. It streams: analysis, "
+                                         "dissertation, dossier, report, review, website;"), u.json()["detail"]
+    assert len(_sa.synthesis_manager.history) == rows, "a refused stream recorded a row"
+    assert sorted(p.name for p in _sa.synthesis_manager.output_dir.glob("*")) == files, "a refused stream wrote a file"
+    for t in ("report", "website"):
+        r = client.post("/api/v1/synthesis/stream", json={**ask, "output_type": t})
+        assert r.status_code == 200 and "text/event-stream" in r.headers.get("content-type", ""), t
+        done = [json.loads(ln[6:]) for ln in r.text.splitlines() if ln.startswith("data: ") and '"done": true' in ln][-1]
+        assert done["format"] == ("html" if t == "website" else "md") and "slides_count" not in done, (t, done)
+
+    #  a deck the model did not return counts no slide
+    g = client.post("/api/v1/synthesis/generate", json={**ask, "output_type": "presentation"})
+    assert g.status_code == 200 and g.json()["metadata"]["slides_count"] == 0, g.json()["metadata"]
+
+    #  the studio, read as code
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    studio = _code_only((src / "pages/synthesis/SynthesisStudio.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "innerText" not in studio, "a streamed result's text is read back off the page"
+    assert "streamed += tok;" in studio and "finalResult.content = streamed;" in studio
+    assert "setErrorMsg(`Generation failed for ${type}: ${errorMessage(e)}`);" in studio
+    assert "check the API server is running" not in studio and "(e as any).message" not in studio
+    assert "setErrorMsg(`Upload failed: ${errorMessage(e)}`);" in studio
+    assert "} catch (e) { setFilesUnread(errorMessage(e)); }" in studio, "an unread knowledge base is said"
+    assert "} catch (e) { setHistoryUnread(errorMessage(e)); }" in studio, "an unread history is said"
+    assert "console.error(" not in studio
+    for display in ("{result.outputType === 'business_model' && note === undefined && (() => {",
+                    "{result.outputType === 'audiobook' && note === undefined && (() => {",
+                    "{['app', 'agent', 'product', 'service'].includes(result.outputType) && note === undefined && (() => {"):
+        assert display in studio, ("a display draws an answer the model did not return", display)
+
+    #  the fixture is the routes' own answer: each structured type's floor answer is the one the route gives now
+    fx = json.loads((src / "pages/synthesis/SynthesisStudio.fixture.json").read_text(encoding="utf-8"))
+    assert sorted(fx["generate"]) == sorted(composed), sorted(fx["generate"])
+    for t in composed:
+        live = client.post("/api/v1/synthesis/generate", json={**ask, "output_type": t})
+        assert live.status_code == 200, (t, live.text[:200])
+        a, b = json.loads(fx["generate"][t]["content"]), json.loads(live.json()["content"])
+        a, b = (a[0] if isinstance(a, list) else a), (b[0] if isinstance(b, list) else b)
+        assert a.get("generated") is False and (a.get("detail") or a.get("content")) == (b.get("detail") or b.get("content")), t
+        assert fx["generate"][t]["metadata"].get("slides_count") == live.json()["metadata"].get("slides_count"), t
+        assert fx["generate"][t]["served_by"] == live.json()["served_by"] == "native", t
+    assert fx["refused"]["status"] == 409 and "religious ruling" in fx["refused"]["body"]["detail"]["message"]
+    frames = [json.loads(ln[6:]) for ln in fx["stream_report"].splitlines() if ln.startswith("data: ")]
+    assert frames[-1].get("done") and frames[-1]["format"] == "md" and sum(1 for f in frames if "token" in f) > 1
+    assert fx["files"] and all(f["in_knowledge_base"] is True for f in fx["files"]), fx["files"]
+
+    #  the rendered test mounts the real studio on that fixture, and holds what it found
+    t = (src / "pages/synthesis/SynthesisStudio.test.tsx").read_text(encoding="utf-8")
+    assert "import { SynthesisStudio } from './SynthesisStudio';" in t and "<SynthesisStudio />" in t
+    assert "import captured from './SynthesisStudio.fixture.json';" in t
+    assert ".toBe(framesText(captured.stream_report));" in t
+    assert "throw new Error(`the studio streamed ${type}, which is composed whole`);" in t
+    assert "expect(screen.getByRole('alert').textContent).not.toContain('check the API server is running');" in t

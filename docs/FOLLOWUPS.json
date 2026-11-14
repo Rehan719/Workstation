@@ -24303,11 +24303,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1021",
       "note": "",
       "slot_source": "the synthesis studio's own render, the next FU-399 part; it rides P5.1 as FU-399 does",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built with the synthesis studio's render (FU-399 part 48): every structured output type is composed whole, asked of /generate by the studio and refused by /stream, which also refuses a type /generate refuses; each display says an answer the model did not return, and a deck of none counts no slide and offers no player; the studio's loop says a failure through errorMessage. SynthesisStudio.test.tsx drives it against the routes' own answers (five vitest blinds); test_w1021 holds the refusals, the readings and the fixture (six blinds)."
     },
     {
       "id": "FU-1205",

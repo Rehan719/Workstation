@@ -1,5 +1,6 @@
 import { silenceIsRight } from '../../components/ReadFailures';   // W961 (FU-1181)
 import { errorMessage } from '../../lib/api';   // W1015 - a caught failure, said as what it was
+import { bodyDetail } from '../../lib/api';   // W1021 - a note's reason, read as every reason is
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { FabricLink } from '../../components/FabricLink';
@@ -40,10 +41,28 @@ const OUTPUT_TYPES = [
 
 type OutputTypeId = typeof OUTPUT_TYPES[number]['id'];
 
-// W1019 — the types composed whole: asked of /generate, which parses the model's reply into the structure drawn
-// below and says when none came back. The stream asked for a simulation as markdown and saved it as .json, so the
-// business model dashboard, which parses it, drew nothing on the path tried first. The stream route refuses one now.
-const COMPOSED_WHOLE: readonly OutputTypeId[] = ['simulation'];
+// W1019, W1021 — the types composed whole: asked of /generate, which parses the model's reply into the structure
+// drawn below and says when none came back. The stream handed each of them over as text: it asked for a
+// simulation, an audiobook and the four specifications as markdown, and gave a deck's or a canvas's reply
+// unparsed, so every display below that parses its output drew nothing. The stream route refuses each one now;
+// it streams the five documents and the website, which are the text they stream.
+const COMPOSED_WHOLE: readonly OutputTypeId[] = [
+  'presentation', 'video', 'audiobook', 'app', 'agent', 'product', 'service', 'business_model', 'simulation'];
+
+// W1021 — the route's answer for a structured output the model did not return: { generated: false, detail } for an
+// object, or a list whose every entry is one (a deck's or an audiobook's note). Each display below drew the
+// structure's fields and nothing else, so that answer drew an empty panel. Undefined when an output was composed.
+function notGenerated(content: string): string | undefined {
+  let c: any;
+  //  not JSON: not one of /generate's answers, so not one that says none came back
+  try { c = JSON.parse(content); } catch { return undefined; }
+  const notes: any[] = Array.isArray(c) ? c : [c];
+  if (!notes.length || !notes.every(n => n?.generated === false)) return undefined;
+  const n = notes[0];
+  //  the route's own sentence, read as every reason is; a deck's note says it in its content
+  return bodyDetail(n, typeof n?.content === 'string' && n.content
+    ? n.content : 'The model returned none of this output, and the answer does not say why.');
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -124,11 +143,17 @@ export const SynthesisStudio: React.FC = () => {
 
   // ── Data loading ────────────────────────────────────────────────────────────
 
+  // W1021 — an unread knowledge base was shown as an empty one ("No files ingested yet"), its failure in the console
+  // only; an unread history likewise ("No synthesis runs yet"). Each is said where its list would be.
+  const [filesUnread, setFilesUnread] = useState<string | null>(null);
+  const [historyUnread, setHistoryUnread] = useState<string | null>(null);
+
   const fetchFiles = useCallback(async () => {
     try {
       const resp = await axios.get('/api/v1/ingest/list');
       setIngestedFiles(resp.data);
-    } catch (e) { console.error('Failed to load files:', e); }
+      setFilesUnread(null);
+    } catch (e) { setFilesUnread(errorMessage(e)); }
   }, []);
 
   useEffect(() => { fetchFiles(); }, [fetchFiles]);
@@ -142,7 +167,8 @@ export const SynthesisStudio: React.FC = () => {
     try {
       const resp = await axios.get('/api/v1/synthesis/history');
       setHistory(resp.data);
-    } catch (e) { console.error('Failed to load history:', e); }
+      setHistoryUnread(null);
+    } catch (e) { setHistoryUnread(errorMessage(e)); }
     finally { setLoadingHistory(false); }
   }, []);
 
@@ -165,7 +191,7 @@ export const SynthesisStudio: React.FC = () => {
       setIngestedFiles(prev => [resp.data, ...prev]);
       setSelectedIds(prev => [...prev, resp.data.file_id]);
     } catch (e) {
-      setErrorMsg('Upload failed: ' + (e as any).message);
+      setErrorMsg(`Upload failed: ${errorMessage(e)}`);   // W1021 - it said axios's words ("Network Error")
     } finally {
       setIngesting(false);
     }
@@ -256,6 +282,7 @@ export const SynthesisStudio: React.FC = () => {
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buf = '';
+        let streamed = '';
         let finalResult: SynthesisResult | null = null;
 
         while (true) {
@@ -270,6 +297,7 @@ export const SynthesisStudio: React.FC = () => {
               const ev = JSON.parse(line.slice(6));
               if (ev.token !== undefined) {
                 const tok: string = ev.token.replace(/\\n/g, '\n');
+                streamed += tok;
                 setStreamTokens(prev => ({ ...prev, [type]: (prev[type] ?? '') + tok }));
               } else if (ev.done) {
                 finalResult = {
@@ -282,9 +310,9 @@ export const SynthesisStudio: React.FC = () => {
                   // only fail. The stream's own fields are used where it sends them, and what it does
                   // not send is left absent rather than invented.
                   // W494 (refutation) - `ev.format ?? 'md'` was still an invented default for every
-                  // non-presentation type, and `ev.slides_count` did not exist on the frame at all. The
-                  // stream reports both now; what it does not send stays absent.
-                  metadata: { type, title: type, format: ev.format, slides_count: ev.slides_count },
+                  // non-presentation type. The stream reports its format; what it does not send stays absent.
+                  // W1021 - a deck is composed whole, so no streamed result carries a slide count.
+                  metadata: { type, title: type, format: ev.format },
                   timestamp: ev.timestamp,
                   outputType: type,
                   served_by: ev.served_by, is_external: ev.is_external, profile_applied: ev.profile_applied,
@@ -295,12 +323,15 @@ export const SynthesisStudio: React.FC = () => {
         }
 
         if (finalResult) {
-          // Swap accumulated stream text into content
-          finalResult.content = (document.getElementById(`stream-${type}`) as HTMLElement | null)?.innerText ?? '';
+          // W1021 - the text the frames carried. This read it back off the page (innerText), which holds what React
+          // had drawn when the stream closed, so the last frames could be missing from the text shown, copied and
+          // previewed, while the downloaded file had it whole.
+          finalResult.content = streamed;
           completed.push(finalResult);
         }
       } catch (e) {
-        setErrorMsg(`Generation failed for ${type} — check the API server is running.`);
+        //  W1021 - this said every failure as a server that is not running, a refusal included, its reason dropped
+        setErrorMsg(`Generation failed for ${type}: ${errorMessage(e)}`);
       }
     }
 
@@ -376,7 +407,12 @@ export const SynthesisStudio: React.FC = () => {
             </h3>
             {loadingHistory && <Loader2 size={14} className="animate-spin text-aura" />}
           </div>
-          {history.length === 0 && !loadingHistory && (
+          {historyUnread !== null && !loadingHistory && (
+            <p role="alert" data-testid="studio-history-unread" className="text-[10px] text-vital font-bold">
+              The history could not be read ({historyUnread}), so whether this session has any run is not known.
+            </p>
+          )}
+          {historyUnread === null && history.length === 0 && !loadingHistory && (
             <p className="text-[10px] text-slate-500 italic">No synthesis runs yet this session.</p>
           )}
           <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar pr-1">
@@ -445,7 +481,8 @@ export const SynthesisStudio: React.FC = () => {
                 <div key={type} className="border border-slate-800 rounded-2xl overflow-hidden">
                   <div className="flex items-center gap-2 px-4 py-2 border-b border-slate-800 bg-slate-900/40">
                     <span className="text-[9px] font-black uppercase tracking-widest text-aura">{type.replace('_', ' ')}</span>
-                    {!tokens && <span className="text-[9px] text-slate-600 uppercase animate-pulse">waiting…</span>}
+                    {!tokens && <span className="text-[9px] text-slate-600 uppercase animate-pulse">
+                      {COMPOSED_WHOLE.includes(type) ? 'composed whole · shown when done' : 'waiting…'}</span>}
                   </div>
                   <pre
                     id={`stream-${type}`}
@@ -483,6 +520,10 @@ export const SynthesisStudio: React.FC = () => {
                 const typeInfo = OUTPUT_TYPES.find(t => t.id === result.outputType);
                 const isExpanded = expandedResults.has(i);
                 const fmt = result.metadata?.format || 'json';
+                // W1021 - why an output was not composed, said where its display would be (the simulation's
+                // dashboard says its own)
+                const note = COMPOSED_WHOLE.includes(result.outputType) && result.outputType !== 'simulation'
+                  ? notGenerated(result.content) : undefined;
 
                 return (
                   <div key={i} className="border border-slate-800 rounded-2xl overflow-hidden">
@@ -545,6 +586,11 @@ export const SynthesisStudio: React.FC = () => {
                     {isExpanded && (
                       <div className="border-t border-slate-800">
 
+                        {note !== undefined && (
+                          <p role="status" data-testid="studio-not-generated"
+                             className="p-6 text-[10px] font-bold text-amber-400 leading-relaxed border-b border-slate-800">{note}</p>
+                        )}
+
                         {/* Presentation / video player */}
                         {(result.outputType === 'presentation' || result.outputType === 'video') && (
                           <div className="p-4 bg-aura/5 border-b border-slate-800 flex items-center justify-between gap-4">
@@ -568,11 +614,13 @@ export const SynthesisStudio: React.FC = () => {
                                   if (slides === null && result.content) {
                                     try {
                                       const p = JSON.parse(result.content);
-                                      if (Array.isArray(p)) slides = p.length;
-                                      else if (Array.isArray(p?.slides)) slides = p.slides.length;
+                                      //  W1021 - a slide that says none came back is not a slide
+                                      const made = (xs: any[]) => xs.filter(s => s?.generated !== false).length;
+                                      if (Array.isArray(p)) slides = made(p);
+                                      else if (Array.isArray(p?.slides)) slides = made(p.slides);
                                     } catch { slides = null; }
                                   }
-                                  return slides !== null
+                                  return slides !== null && slides > 0
                                     ? <span className="text-aura">{slides} slides · player can open this</span>
                                     : <span className="text-amber-400">no slide data in this result · the player has nothing to open</span>;
                                 })()}
@@ -581,17 +629,17 @@ export const SynthesisStudio: React.FC = () => {
                             {/* W494 - offered on a result with empty content, where it could only fail */}
                             <button
                               type="button"
-                              disabled={!result.content}
+                              disabled={!result.content || note !== undefined}
                               onClick={() => {
                                 try { setActivePresentation(JSON.parse(result.content)); }
                                 catch { setErrorMsg('Could not parse slide data.'); }
                               }}
                               data-testid="studio-launch-player"
                               className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-transform ${
-                                result.content ? 'bg-aura text-sovereign hover:scale-105'
+                                result.content && note === undefined ? 'bg-aura text-sovereign hover:scale-105'
                                                : 'bg-slate-800 text-slate-500 cursor-not-allowed'}`}
                             >
-                              {result.content ? 'Launch Player' : 'Nothing to play'}
+                              {result.content && note === undefined ? 'Launch Player' : 'Nothing to play'}
                             </button>
                           </div>
                         )}
@@ -609,7 +657,7 @@ export const SynthesisStudio: React.FC = () => {
                         })()}
 
                         {/* Business Model Canvas — structured display */}
-                        {result.outputType === 'business_model' && (() => {
+                        {result.outputType === 'business_model' && note === undefined && (() => {
                           try {
                             const canvas = JSON.parse(result.content);
                             const sections = [
@@ -638,7 +686,7 @@ export const SynthesisStudio: React.FC = () => {
                         })()}
 
                         {/* Audiobook chapters */}
-                        {result.outputType === 'audiobook' && (() => {
+                        {result.outputType === 'audiobook' && note === undefined && (() => {
                           try {
                             const chapters = JSON.parse(result.content);
                             return (
@@ -659,7 +707,7 @@ export const SynthesisStudio: React.FC = () => {
                         })()}
 
                         {/* App / Agent / Product / Service structured display */}
-                        {['app', 'agent', 'product', 'service'].includes(result.outputType) && (() => {
+                        {['app', 'agent', 'product', 'service'].includes(result.outputType) && note === undefined && (() => {
                           try {
                             const spec = JSON.parse(result.content);
                             return (
@@ -719,7 +767,7 @@ export const SynthesisStudio: React.FC = () => {
                         })()}
 
                         {/* Raw content — for markdown documents and JSON fallback */}
-                        <div className="bg-slate-950/80 mx-4 mb-4 mt-4 rounded-2xl p-6 font-mono text-xs text-slate-400 max-h-96 overflow-y-auto custom-scrollbar leading-relaxed whitespace-pre-wrap">
+                        <div data-testid="studio-result-content" className="bg-slate-950/80 mx-4 mb-4 mt-4 rounded-2xl p-6 font-mono text-xs text-slate-400 max-h-96 overflow-y-auto custom-scrollbar leading-relaxed whitespace-pre-wrap">
                           {result.content}
                         </div>
                       </div>
@@ -755,7 +803,11 @@ export const SynthesisStudio: React.FC = () => {
             )}
           </div>
 
-          {ingestedFiles.length === 0 ? (
+          {filesUnread !== null && ingestedFiles.length === 0 ? (
+            <p role="alert" data-testid="studio-files-unread" className="text-[10px] text-vital font-bold">
+              The knowledge base could not be read ({filesUnread}), so whether it holds any file is not known.
+            </p>
+          ) : ingestedFiles.length === 0 ? (
             <p className="text-[10px] text-slate-600 italic">No files ingested yet — upload a file or paste a URL below.</p>
           ) : (
             <div className="flex flex-wrap gap-2">
