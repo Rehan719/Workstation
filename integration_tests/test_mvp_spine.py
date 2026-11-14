@@ -55014,7 +55014,8 @@ def test_p3b_r4_domain_qep_and_genesis_surfaces_say_what_exists(client, monkeypa
     # -- 4. D4 (R5.10) FRAMEWORKS FROM THE API · A HYPOTHESIS TAB · INTERFAITH STATED AS ABSENT ----------------
     _ids = [f["id"] for f in client.get("/api/v1/education/frameworks").json()["frameworks"]]
     _eh = _page("pages/domains/EducationHub.tsx")
-    assert "fetch('/api/v1/education/frameworks')" in _eh, "the hub does not read the list"
+    #  W1004 - the list is read through apiJson, so a refusal says its reason
+    assert "apiJson<any>('/api/v1/education/frameworks')" in _eh, "the hub does not read the list"
     #  W816 (FU-835) - the same select, now also given the names the API lists for its options
     assert ("options: (frameworks && frameworks.length > 0 ? frameworks : ['bloom']), optionLabels: frameworkNames, "
             "default: 'bloom' }") in _eh
@@ -72170,7 +72171,8 @@ def test_w824_the_science_selects_read_the_methodology_list_and_the_gmp_gate_is_
     assert {"systematic_review", "experimental", "meta_analysis"} <= set(ids), ids
     sh = _code_only((_pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
                      / "domains" / "ScienceHub.tsx").read_bytes().decode("utf-8"))
-    assert "fetch('/api/v1/science/methodologies')" in sh, "the hub does not read the methodology list"
+    #  W1004 - the list is read through apiJson, so a refusal says its reason
+    assert "apiJson<any>('/api/v1/science/methodologies')" in sh, "the hub does not read the methodology list"
     design = sh[sh.index("activeTab === 'design' ? ("):sh.index("activeTab === 'literature' ? (")]
     assert "options: (methods && methods.length > 0 ? methods : [" in design and "optionLabels: methodNames" in design, (
         "the design select still types its methodologies")
@@ -83753,3 +83755,39 @@ def test_w1003_fu399_the_appraisal_says_how_every_reading_was_read_and_a_refused
     assert set(fx) == {"whole", "phase", "sent", "refused_send"}, sorted(fx)
     assert all((f or {}).get("basis") for f in fx["whole"]["faculties"].values()), "the fixture predates the fix"
     assert fx["refused_send"]["status"] == 409 and fx["refused_send"]["body"]["detail"]["message"], fx["refused_send"]
+
+
+def test_w1004_fu399_the_science_and_education_hubs_say_a_refusal_s_reason_and_a_list_of_none_as_none(client):
+    """FU-399 part 34 (W1004). The Science hub fills its methodology selects from the methodologies the API lists; the
+    Education hub fills its framework select from the frameworks the API lists. ScienceHub.test.tsx and
+    EducationHub.test.tsx mount the real pages against the answers their reads gave on a fresh store, and have the
+    server refuse each list and answer it empty. Rendering them found two defects, the same in both, fixed:
+    - a refused read was said by its status alone ("could not be read (HTTP 503)"); each list is read through
+      apiJson and a refusal says the server's status and reason;
+    - a list answered empty was said as unread ("could not be read (the list came back empty)"); it is said as a
+      list of none, and an answer holding no list at all is still said as unread.
+    Held here: the lists answer; and each hub's code."""
+    import json
+    import pathlib
+    assert client.get("/api/v1/science/methodologies").status_code == 200
+    assert client.get("/api/v1/education/frameworks").status_code == 200
+    root = pathlib.Path(__file__).resolve().parents[1]
+    d = root / "apps/workstation-superapp/src/pages/domains"
+    for name, what, url, none, said in (
+            ("ScienceHub", "methodolog", "/api/v1/science/methodologies",
+             "'The server lists no methodologies, so only the methodologies typed on this page are offered.'",
+             "`The methodology list could not be read (${errorMessage(e)}), so only the methodologies typed on this page "
+             "are offered.`"),
+            ("EducationHub", "framework", "/api/v1/education/frameworks",
+             "'The server lists no frameworks, so only the default framework is offered below.'",
+             "`The framework list could not be read (${errorMessage(e)}), so only the default framework is offered below.`")):
+        t = (d / f"{name}.test.tsx").read_text(encoding="utf-8")
+        assert f"import {{ {name} }} from './{name}';" in t and f"<{name} />" in t, name
+        code = _code_only((d / f"{name}.tsx").read_text(encoding="utf-8"))
+        assert f"apiJson<any>('{url}')" in code and f"fetch('{url}')" not in code, name
+        assert "throw new Error(`HTTP ${r.status}`)" not in code and "the list came back empty" not in code, name
+        assert none in code, (name, "a list of none is not said as none")
+        assert "(the answer held no list)" in code, (name, "an answer with no list is not said as unread")
+        assert said in code, (name, "a refusal of the list does not say its reason")
+        fx = json.loads((d / f"{name}.fixture.json").read_text(encoding="utf-8"))
+        assert "serving" in fx and fx[("methodologies" if what == "methodolog" else "frameworks")], (name, sorted(fx))

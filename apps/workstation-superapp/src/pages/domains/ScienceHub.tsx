@@ -7,6 +7,7 @@ import { useStore } from '@workstation/shared';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 import { DomainTool } from '../../components/DomainTool';
 import { toolsFor } from '../../lib/toolRegistry';
+import { apiJson, errorMessage } from '../../lib/api';   // W1004
 
 export const ScienceHub: React.FC = () => {
   const T = toolsFor('/science');   // W470 — the one tool registry the front doors count from
@@ -20,18 +21,28 @@ export const ScienceHub: React.FC = () => {
   const [methodsNote, setMethodsNote] = useState('');
   useEffect(() => {
     let alive = true;
-    fetch('/api/v1/science/methodologies')
-      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+    //  W1004 - a refusal says the server's reason (it said "HTTP 503" alone), and a list read empty is said as
+    //  empty: it was said as one that could not be read
+    apiJson<any>('/api/v1/science/methodologies')
       .then(d => {
         if (!alive) return;
-        const list = Array.isArray(d?.methodologies) ? d.methodologies : [];
+        if (!Array.isArray(d?.methodologies)) {
+          setMethods(null);
+          setMethodsNote('The methodology list could not be read (the answer held no list), so only the methodologies typed on this page are offered.');
+          return;
+        }
+        const list = d.methodologies;
         const ids = list.map((m: any) => String(m?.id ?? '')).filter(Boolean);
-        if (ids.length === 0) throw new Error('the list came back empty');
+        if (ids.length === 0) {
+          setMethods(null);
+          setMethodsNote('The server lists no methodologies, so only the methodologies typed on this page are offered.');
+          return;
+        }
         const names: Record<string, string> = {};
         list.forEach((m: any) => { if (m?.id && m?.name) names[String(m.id)] = String(m.name); });
         setMethods(ids); setMethodNames(names); setMethodsNote('');
       })
-      .catch(e => { if (alive) { setMethods(null); setMethodsNote(`The methodology list could not be read (${String(e?.message ?? e)}), so only the methodologies typed on this page are offered.`); } });
+      .catch(e => { if (alive) { setMethods(null); setMethodsNote(`The methodology list could not be read (${errorMessage(e)}), so only the methodologies typed on this page are offered.`); } });
     return () => { alive = false; };
   }, []);
 

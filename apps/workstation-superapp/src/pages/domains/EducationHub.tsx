@@ -23,18 +23,28 @@ export const EducationHub: React.FC = () => {
   const [frameworksNote, setFrameworksNote] = useState('');
   useEffect(() => {
     let alive = true;
-    fetch('/api/v1/education/frameworks')
-      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+    //  W1004 - a refusal says the server's reason (it said "HTTP 503" alone), and a list read empty is said as
+    //  empty: it was said as one that could not be read
+    apiJson<any>('/api/v1/education/frameworks')
       .then(d => {
         if (!alive) return;
-        const list = Array.isArray(d?.frameworks) ? d.frameworks : [];
+        if (!Array.isArray(d?.frameworks)) {
+          setFrameworks(null);
+          setFrameworksNote('The framework list could not be read (the answer held no list), so only the default framework is offered below.');
+          return;
+        }
+        const list = d.frameworks;
         const ids = list.map((f: any) => String(f?.id ?? '')).filter(Boolean);
-        if (ids.length === 0) throw new Error('the list came back empty');
+        if (ids.length === 0) {
+          setFrameworks(null);
+          setFrameworksNote('The server lists no frameworks, so only the default framework is offered below.');
+          return;
+        }
         const names: Record<string, string> = {};
         list.forEach((f: any) => { if (f?.id && f?.name) names[String(f.id)] = String(f.name); });
         setFrameworks(ids); setFrameworkNames(names); setFrameworksNote('');
       })
-      .catch(e => { if (alive) { setFrameworks(null); setFrameworksNote(`The framework list could not be read (${String(e?.message ?? e)}), so only the default framework is offered below.`); } });
+      .catch(e => { if (alive) { setFrameworks(null); setFrameworksNote(`The framework list could not be read (${errorMessage(e)}), so only the default framework is offered below.`); } });
     return () => { alive = false; };
   }, []);
 
