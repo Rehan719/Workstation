@@ -24003,6 +24003,30 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: recalled lines now reach a model between their own two marks, as data, with any imitation of either mark defused; the floor reads no section from inside them. docs/MODEL_ON_CHECKLIST.md is the one checklist: each door (a person's material, the domain callers, ingested files, recalled interactions) and each property every door keeps, with the code and the test that drives it. test_w969 drives the recall block and holds every row of the checklist to code and a test that exist."
+    },
+    {
+      "id": "FU-1195",
+      "title": "Round and row ids were read as three digits and rounds ordered as text, so from W1000 the pace would have frozen",
+      "why": "Measured in W999 by driving the register's own pace mechanism with rounds W1000 to W1005, each closing one row, and a row W1000 found. The pace window stayed W961 to W969: it was the last six build rounds of sorted() over the round ids as text, where W1000 sorts between W100 and W101, so every rate and projection from W1000 on would have been measured over rounds that had stopped, with nothing saying so. W1000 found no row, because the round a row's source names was read as exactly three digits. The two round-duration readers (night_sim, session_forecast) read a commit's round the same way. The check that an open item's text names no row riding another item read row ids as exactly three digits, so the 195 rows from FU-1000 on passed it unread. W811's probe guard read a probe's round as three digits.",
+      "source": "W999 (measured before W1000: not captured by any row)",
+      "found": "2026-11-14",
+      "files": [
+        "agentic_core/plan_followups.py",
+        "agentic_core/api/method.py",
+        "scripts/night_sim.py",
+        "scripts/session_forecast.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W999",
+      "note": "",
+      "slot_source": "the register's own tooling, which rides the suite-and-tooling item as the other instrument rows do",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: a round id is read past three digits wherever it is read (the round a row's source names, the two round-duration readers, W811's guard), and a row id past FU-999 in the item-text check. The pace window, the ceiling's tie list and the method's rounds that only found rows order rounds as numbers (round_key: W999 before W1000, W883 before W883b before W884). Driven in test_w999 on a copy of the register with rounds W1000 to W1005: the window is those six rounds and W1000 counts its row; no id pattern in the code reads exactly three digits."
     }
   ],
   "routes": [

@@ -2116,7 +2116,8 @@ def _retrospect(rows: List[Dict[str, Any]], reg: Any) -> Dict[str, Any]:
     share = round(len(dropped) / resolved, 3) if resolved else None
 
     closing = sorted(r for r, a in act.items() if a.get("closed", 0) > 0)
-    finding_only = sorted(r for r, a in act.items() if a.get("closed", 0) == 0 and a.get("found", 0) > 0)
+    finding_only = sorted((r for r, a in act.items() if a.get("closed", 0) == 0 and a.get("found", 0) > 0),
+                          key=_fu.round_key)            # W999: in the order the rounds ran, W999 before W1000
     closed_total = sum(a.get("closed", 0) for a in act.values())
     found_total = sum(a.get("found", 0) for a in act.values())
 

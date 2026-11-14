@@ -71561,7 +71561,7 @@ def test_w811_fu924_every_one_round_probe_says_on_its_first_line_that_it_is_hist
         if "HISTORY (W811, FU-924)" not in _first:
             _unmarked811.append(_rel)
             continue
-        _m = _re811.search(r"_w(\d{3})_probe", _rel)
+        _m = _re811.search(r"_w(\d{3,})_probe", _rel)
         if _m:
             assert f"W{_m.group(1)}" in _first, ("a probe's history line names the wrong round", _rel, _first)
     assert not _unmarked811, ("a one-round probe does not say on its first line that it is history", _unmarked811[:5])
@@ -83464,3 +83464,93 @@ def test_w998_fu399_organism_anatomy_names_every_failed_read_and_never_shows_an_
     assert "{genomes === null && readFailures['the genome population'] && " in code
     fx = json.loads((src / "pages/organism/OrganismAnatomy.fixture.json").read_text(encoding="utf-8"))
     assert set(fx) == {"health", "life", "systems", "signals", "heal_log", "genome", "config"}, sorted(fx)
+
+
+def test_w999_round_and_row_ids_are_read_past_three_digits_and_rounds_are_ordered_as_numbers():
+    """W999, the last round with a three-digit id. Driven on a copy of the register itself, with rounds W1000 to W1005
+    each closing one row and a row W1000 found: the pace window is those six rounds in the order they ran, and W1000 is
+    counted as finding its row. Before, the window stayed on W961 to W969 (round ids were sorted as text, where W1000
+    sorts between W100 and W101) and W1000 found nothing (a source's round was read as exactly three digits). Also
+    driven: the ceiling's tie list and the method's rounds that only found rows, in round order; the two
+    round-duration readers over commits of W999 to W1001; and the check that an open item's text names no row riding
+    another item, over a row past FU-999, while today's plan still passes it. No id pattern in the code reads exactly
+    three digits."""
+    import copy
+    import importlib.util
+    import json
+    import pathlib
+    import re
+    import subprocess
+    import types
+    from agentic_core import plan_followups as fu
+    from agentic_core.api import method
+    root = pathlib.Path(__file__).resolve().parents[1]
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    living = (root / "docs/WORKSTATION_IDBO_LIVING_PLAN.md").read_text(encoding="utf-8")
+
+    #  the order rounds ran, sub-rounds in their place
+    assert sorted(["W1000", "W884", "W883b", "W999", "W883", "W1001"], key=fu.round_key) == [
+        "W883", "W883b", "W884", "W999", "W1000", "W1001"]
+
+    #  rounds W1000 to W1005 each close one open row, and W1000 finds one
+    reg2 = copy.deepcopy(reg)
+    opened = [r for r in reg2["items"] if isinstance(r, dict) and r.get("status") == "open"][:6]
+    assert len(opened) == 6, "the register has fewer than six open rows to drive the window with"
+    for i, r in enumerate(opened):
+        r["status"], r["closed_by"] = "done", f"W{1000 + i}"
+    found = copy.deepcopy(opened[0])
+    found.update(id="FU-99999", status="open", closed_by=None, source="W1000 (driven by test_w999)")
+    reg2["items"].append(found)
+    assert fu._round_activity(reg2)["W1000"] == {"closed": 1, "found": 1}, fu._round_activity(reg2).get("W1000")
+    window = fu.forecast(reg2, prompt)["window"]
+    assert window["rounds"] == [f"W{1000 + i}" for i in range(6)], window
+    assert window["found_per_round"] == round(1 / 6, 2), window
+
+    #  a tie at the ceiling, and the rounds that only found rows, are listed in the order the rounds ran
+    tie = {"items": [{"id": "FU-001", "status": "done", "closed_by": "W1000"},
+                     {"id": "FU-002", "status": "done", "closed_by": "W999"}]}
+    assert fu.largest_round_closed(tie)["rounds"] == ["W999", "W1000"], fu.largest_round_closed(tie)
+    only_found = {"items": [{"id": "FU-001", "status": "open", "source": "W1000 (a sweep)"},
+                            {"id": "FU-002", "status": "open", "source": "W999 (a sweep)"}]}
+    assert method._retrospect([], only_found)["rounds_that_only_found"] == ["W999", "W1000"]
+
+    #  the two round-duration readers read W1000's commits as a round's
+    log = "1700000000\x1fW999: a\n1700003600\x1fW1000: b\n1700007200\x1fW1001: c\n1700010800\x1fW1001: c, its fix\n"
+    for rel in ("scripts/night_sim.py", "scripts/session_forecast.py"):
+        spec = importlib.util.spec_from_file_location(f"_w999_{pathlib.Path(rel).stem}", root / rel)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        mod.subprocess = types.SimpleNamespace(run=lambda *a, **k: types.SimpleNamespace(stdout=log))
+        assert mod._round_ends() == {999: 1700000000, 1000: 1700003600, 1001: 1700010800}, (rel, mod._round_ends())
+
+    #  an open item's text naming a row past FU-999 that rides another item is reported; today's plan passes
+    items = fu.plan_items(prompt)
+    open_slots = [it["slot"] for it in items if not it["done"]]
+    rider = copy.deepcopy(next(r for r in reg["items"] if isinstance(r, dict) and r.get("status") == "open"
+                               and r.get("slot") in open_slots))
+    rider["id"] = "FU-99998"
+    other = next(s for s in open_slots if s != rider["slot"])
+    named = re.sub(rf"(?m)^( {re.escape(other)}\b.*)$", r"\1 (see FU-99998)", prompt, count=1)
+    assert named != prompt
+    reg3 = copy.deepcopy(reg)
+    reg3["items"].append(rider)
+    assert any(p.startswith(f"{other}'s text names FU-99998, which rides {rider['slot']}")
+               for p in fu.check(reg3, named, None)), (other, rider["slot"])
+    assert not [p for p in fu.check(reg, prompt, living) if "'s text names FU-" in p]
+
+    #  no id pattern in the code reads exactly three digits (a round's id, a row's, or a probe's round), in any of
+    #  the four ways a regex spells three digits
+    three = re.compile(r"(?<!\\)(?:[Ww]|FU-)\(?(?:(?:\\d|\[0-9\])\{3\}|(?:\\d){3}|(?:\[0-9\]){3})(?![+*?{]|\\d|\[0-9\])")
+    tracked = subprocess.run(["git", "ls-files", "*.py", "*.ts", "*.tsx", "*.sh", "*.js", "*.mjs"], cwd=root,
+                             capture_output=True, text=True, check=True).stdout.split()
+    assert len(tracked) > 1000, ("git listed too few files to be reading the right place", len(tracked))
+    hits = []
+    for rel in tracked:
+        try:
+            text = (root / rel).read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        hits += [f"{rel}:{n}" for n, line in enumerate(text.splitlines(), 1)
+                 if not line.lstrip().startswith(("#", "//")) and three.search(line)]
+    assert not hits, ("an id pattern reads exactly three digits, so it stops reading at W1000 or FU-1000", hits)

@@ -62,7 +62,7 @@ def _round_ends(depth: int = 400) -> Dict[int, int]:
         p = line.split("\x1f")
         if len(p) < 2:
             continue
-        m = re.search(r"\bW(\d{3})\b", p[1])
+        m = re.search(r"\bW(\d{3,})\b", p[1])          # W999: a round from W1000 on is a round too
         if m:
             out.setdefault(int(m.group(1)), []).append(int(p[0]))
     return {r: max(ts) for r, ts in out.items()}
