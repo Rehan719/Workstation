@@ -8,7 +8,7 @@ import axios from 'axios';
 import { downloadExport } from '../../lib/download';
 // W495 (FU-131, S12.6) - the shared provenance helpers, so this page labels output the same way
 // every other surface does rather than inventing its own wording
-import { provenanceBadge, provenanceLine } from '../../lib/api';
+import { axiosDetail, provenanceBadge, provenanceLine } from '../../lib/api';   // W1011: axiosDetail
 import { AskPerson } from '../../components/AskPerson';   // W968 (P5.14 clause 6)
 import {
   Plus, Play, ChevronRight, Download, Loader2, Trash2,
@@ -127,7 +127,7 @@ const CreateForm: React.FC<CreateFormProps> = ({ onCreated, onCancel, initialRea
       });
       onCreated(res.data);
     } catch (err: any) {
-      setError(err?.response?.data?.detail ?? 'Failed to create project.');
+      setError(axiosDetail(err, 'Failed to create project.'));
     } finally {
       setSaving(false);
     }
@@ -360,7 +360,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
       // failed re-read leaves the confirmation standing, and the next read of the list says it.
       try { const again = await axios.get(`/api/v1/projects/${project.id}`); onUpdate(again.data); } catch { silenceIsRight('a failed re-read leaves the confirmation standing, and the next read of the list says it')(); }
     } catch (err: any) {
-      setError(err?.response?.data?.detail ?? 'Cannot propose advance yet.');
+      setError(axiosDetail(err, 'Cannot propose advance yet.'));
     } finally {
       setAdvancing(false);
     }
@@ -374,7 +374,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
       await axios.delete(`/api/v1/projects/${project.id}`, { params: { confirm_title: project.title } });
       onDelete(project.id);
     } catch (err: any) {
-      setError(err?.response?.data?.detail ?? 'Delete failed.');
+      setError(axiosDetail(err, 'Delete failed.'));
       setDeleting(false);
     }
   };

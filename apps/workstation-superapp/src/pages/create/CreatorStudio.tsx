@@ -16,7 +16,7 @@ import {
   Wand2, Database, Plus, Save, Play, Sparkles,
   Download, X, ChevronRight, Loader2, CheckCircle2
 } from 'lucide-react';
-import { provenanceBadge, provenanceLine, provenanceField } from '../../lib/api';
+import { axiosDetail, provenanceBadge, provenanceLine, provenanceField } from '../../lib/api';   // W1011: axiosDetail
 import { AskPerson } from '../../components/AskPerson';   // W968 (P5.14 clause 6)
 import { motion, AnimatePresence } from 'framer-motion';
 import componentRegistry from '@workstation/shared/data/component_registry.json';
@@ -119,7 +119,7 @@ export const CreatorStudio: React.FC = () => {
       setNodes(newNodes);
       setEdges(newEdges);
     } catch (err: any) {
-      setError(err?.response?.data?.detail ?? err?.message ?? 'Blueprint generation failed.');
+      setError(axiosDetail(err, err?.message ?? 'Blueprint generation failed.'));
     } finally {
       setIsGenerating(false);
     }

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, bodyOrNull } from '../../lib/api';
+import { axiosDetail, provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, bodyOrNull } from '../../lib/api';   // W1011: axiosDetail
 import { ReadFailures, useReadFailures, silenceIsRight } from '../../components/ReadFailures';   // W928
 import { VBSSystemsPanel } from '../../components/VBSSystemsPanel';
 import { downloadExport } from '../../lib/download';
@@ -530,7 +530,7 @@ export const VSBCockpit: React.FC = () => {
       setChiefResult(r.data);
       setChiefText('');
     } catch (e: any) {
-      setChiefResult({ error: e?.response?.data?.detail ?? e?.message ?? 'failed' });
+      setChiefResult({ error: axiosDetail(e, e?.message ?? 'failed') });
     }
     setChiefBusy(false);
   };
@@ -596,7 +596,7 @@ export const VSBCockpit: React.FC = () => {
       await axios.post('/api/v1/deliverables/produce', { type: delivType, brief: delivBrief, vsb_id: selected });
       setDelivBrief('');
       await loadDeliverables(selected);
-    } catch (e: any) { setActErr(`Produce failed: ${e?.response?.data?.detail ?? 'backend unreachable'}`); }
+    } catch (e: any) { setActErr(`Produce failed: ${axiosDetail(e, 'backend unreachable')}`); }
     setDelivProducing(false);
   };
 

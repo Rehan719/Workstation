@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { FabricLink } from '../../components/FabricLink';
 import { downloadExport } from '../../lib/download';
-import { provenanceBadge, provenanceMapBadge } from '../../lib/api';
+import { axiosDetail, provenanceBadge, provenanceMapBadge } from '../../lib/api';   // W1011: axiosDetail
 import {
   Sparkles, FileText, Presentation, Globe, Layers, Download, Play, Loader2,
   CheckCircle2, Upload, BarChart3, BookOpen, Archive, Video, Headphones,
@@ -196,7 +196,7 @@ export const SynthesisStudio: React.FC = () => {
       setSelectedIds(prev => prev.filter(id => id !== fileId));
     } catch (e: any) {
       // Ledger cluster 2 — a failed delete leaves the file in the list; say so
-      setErrorMsg(`Delete failed: ${e?.response?.data?.detail ?? 'backend unreachable'}`);
+      setErrorMsg(`Delete failed: ${axiosDetail(e, 'backend unreachable')}`);
     }
   };
 

@@ -84013,3 +84013,85 @@ def test_w1010_fu399_a_refused_tournament_says_its_reason_and_never_takes_the_in
     fx = json.loads((pd / "Incubator.fixture.json").read_text(encoding="utf-8"))
     assert fx["evolved"]["winner"] is None and fx["evolved"]["winner_basis"], fx["evolved"].get("winner_basis")
     assert fx["refused"]["status"] == 422 and isinstance(fx["refused"]["body"]["detail"], list), fx["refused"]
+
+
+def test_w1011_no_page_puts_a_refusal_s_detail_into_the_page_as_it_came(client):
+    """W1011. A route that refuses answers a `detail` whose shape is the route's: a sentence, a field check's list of
+    {loc, msg}, or a structured refusal's object. W1010 found the Incubator putting it into the page as it came, so
+    a field check's list became a React child, which React refuses to render, and the page went down. The class was
+    not the Incubator's alone: twelve call sites read `e?.response?.data?.detail` straight into what a page shows.
+    Eight put it where it is rendered as a child (the avatar's two notices and its reply, the projects hub's three
+    errors, Change Control's action message, the Creator Studio's blueprint), so a list or an object takes the
+    surface down. Four put it into a sentence, where an object reads "[object Object]" (Change Control's submission,
+    the cockpit's Chief instruction and its deliverable, the synthesis studio's delete). Each now says the detail
+    through lib/api.ts's axiosDetail: a sentence as itself, a field check by its field, an object by its message,
+    and the page's own message when there is none.
+
+    test_w597 held one form of the crash, `set*(e?.response?.data?.detail ||`, and the sites written with `err` or
+    `??` passed it. This guard holds the expression itself. Outside lib/api.ts it is read only where every shape is
+    handled: the cockpit's detailText (eight calls) and serverDetail, and the synthesis studio's string check.
+    Held here: a route the projects hub calls refuses with a list (the crash is real), each site's line, and the
+    tree-wide count."""
+    import pathlib
+    import re
+    #  the crash is real: the projects hub's create call, refused by its field check, answers a list
+    r = client.post("/api/v1/projects/", json={})
+    assert r.status_code == 422 and isinstance(r.json()["detail"], list), r.text[:200]
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    sites = {
+        "hooks/useAvatarSession.ts": [
+            "setNotice(axiosDetail(err, 'Voice output is currently unavailable.'));",
+            "axiosDetail(err, '') ||",
+            "setNotice(axiosDetail(err, 'Voice transcription is currently unavailable.'));"],
+        "pages/projects/ProjectsHub.tsx": [
+            "setError(axiosDetail(err, 'Failed to create project.'));",
+            "setError(axiosDetail(err, 'Cannot propose advance yet.'));",
+            "setError(axiosDetail(err, 'Delete failed.'));"],
+        "pages/enterprise/ChangeControlAgency.tsx": [
+            "setMsg(`Error: ${axiosDetail(e, 'request failed')}`);",
+            "const detail = axiosDetail(e, '');"],
+        "pages/enterprise/VSBCockpit.tsx": [
+            "setChiefResult({ error: axiosDetail(e, e?.message ?? 'failed') });",
+            "setActErr(`Produce failed: ${axiosDetail(e, 'backend unreachable')}`);"],
+        "pages/synthesis/SynthesisStudio.tsx": [
+            "setErrorMsg(`Delete failed: ${axiosDetail(e, 'backend unreachable')}`);"],
+        "pages/create/CreatorStudio.tsx": [
+            "setError(axiosDetail(err, err?.message ?? 'Blueprint generation failed.'));"],
+    }
+    imported = re.compile(r"^import \{[^}]*\baxiosDetail\b[^}]*\} from '(?:\.\./)+lib/api';", re.M)
+    for rel, lines in sites.items():
+        code = _code_only((src / rel).read_text(encoding="utf-8").replace("\r\n", "\n"))
+        assert imported.search(code), (rel, "axiosDetail is not imported")
+        for ln in lines:
+            assert code.count(ln) == 1, (rel, ln, code.count(ln))
+    assert sum(len(v) for v in sites.values()) == 12
+    #  the expression, tree-wide: read only where every shape it comes in is handled
+    raw = re.compile(r"\.response\??\.data\??\.detail\b")
+    held = {"detailText": 0, "serverDetail": 0, "string check": 0}
+    offenders, scanned = [], 0
+    files = sorted(p for ext in ("*.ts", "*.tsx", "*.js", "*.jsx") for p in src.rglob(ext))
+    for f in files:
+        rel = f.relative_to(src).as_posix()
+        if ".test." in f.name or rel == "lib/api.ts":
+            continue
+        scanned += 1
+        code = _code_only(f.read_text(encoding="utf-8").replace("\r\n", "\n"))
+        for m in raw.finditer(code):
+            start = code.rfind("\n", 0, m.start()) + 1
+            end = code.find("\n", m.end())
+            line = code[start:end].strip()
+            following = code[end + 1:].split("\n", 1)[0].strip()
+            if f.name == "VSBCockpit.tsx" and code[:m.start()].endswith("detailText(e?"):
+                held["detailText"] += 1
+            elif (f.name == "VSBCockpit.tsx" and line == "const d = e?.response?.data?.detail;"
+                  and following == "if (typeof d === 'string') return d;"):
+                held["serverDetail"] += 1
+            elif (f.name == "SynthesisStudio.tsx" and line == "const detail = e?.response?.data?.detail;"
+                  and following.startswith("setErrorMsg(typeof detail === 'string' && detail")):
+                held["string check"] += 1
+            else:
+                offenders.append(f"{rel}: {line[:140]}")
+    assert scanned > 100, ("this scanned almost nothing, so it would pass on an empty tree", scanned)
+    assert offenders == [], ("a page reads a refusal's detail as it came; say it through axiosDetail(e, fallback)",
+                             offenders)
+    assert held == {"detailText": 8, "serverDetail": 1, "string check": 1}, held

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { describeReadFailure, silenceIsRight } from '../components/ReadFailures';   // W931
 import { useLocation } from 'react-router-dom';
 import axios from 'axios';
+import { axiosDetail } from '../lib/api';   // W1011 - a refusal's detail as text, whatever its shape
 import { getPrefs } from '../lib/userPrefs';
 
 export interface AvatarSuggestedArea {
@@ -224,7 +225,7 @@ export function useAvatarSession() {
       await audio.play();
     } catch (err: any) {
       setSpeaking(false);
-      setNotice(err?.response?.data?.detail || 'Voice output is currently unavailable.');
+      setNotice(axiosDetail(err, 'Voice output is currently unavailable.'));
     }
   }, [volume]);
 
@@ -280,7 +281,7 @@ export function useAvatarSession() {
       setAiStatus('online');
     } catch (err: any) {
       const detail: string =
-        err?.response?.data?.detail ||
+        axiosDetail(err, '') ||
         (err?.code === 'ECONNREFUSED' || err?.code === 'ERR_NETWORK'
           ? 'Backend server is not running. Start the Workstation API server.'
           : 'Could not reach the avatar backend.');
@@ -342,7 +343,7 @@ export function useAvatarSession() {
           const text: string = resp.data.text;
           if (text) sendMessage(text);
         } catch (err: any) {
-          setNotice(err?.response?.data?.detail || 'Voice transcription is currently unavailable.');
+          setNotice(axiosDetail(err, 'Voice transcription is currently unavailable.'));
         } finally {
           setTranscribing(false);
         }

@@ -24048,6 +24048,32 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the retrospection's refusal now carries the three keys W561 added to its answer (closure_kinds, closures_with_a_kind, closure_kind_basis), said as not measured. Driven in test_w1001 with the round record made unreadable: the refusal's key set is the answer's."
+    },
+    {
+      "id": "FU-1197",
+      "title": "Twelve call sites put a server's refusal into the page as it came: a field check's list takes the surface down",
+      "why": "Found by W1010's rendered Incubator: a refused call's detail is the route's shape (a sentence, a field check's list of {loc, msg}, or a structured refusal's object), and a page that renders it as it came hands React a list or an object as a child, which React refuses, so the surface goes down. A sweep for the expression found twelve more sites (the avatar session 3, the projects hub 3, Change Control 2, the entity cockpit 2, the synthesis studio 1, the Creator Studio 1). W597's guard held only the form set*(e?.response?.data?.detail ||, so the sites written with err or ?? passed it.",
+      "source": "W1011 (the class of the defect W1010's rendered Incubator found)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/hooks/useAvatarSession.ts",
+        "apps/workstation-superapp/src/pages/projects/ProjectsHub.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/ChangeControlAgency.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx",
+        "apps/workstation-superapp/src/pages/synthesis/SynthesisStudio.tsx",
+        "apps/workstation-superapp/src/pages/create/CreatorStudio.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1011",
+      "note": "",
+      "slot_source": "the defect class FU-399's rendering found on the Incubator, swept across the pages FU-399 has not reached yet; it rides P5.1 as FU-399 does",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: each of the twelve sites says the reason through lib/api.ts's axiosDetail (a sentence as itself, a field check by its field, an object by its message) with the message it already gave when there is none. test_w1011 holds each site's line and the expression tree-wide: outside lib/api.ts it is read only where every shape is handled (the cockpit's detailText and serverDetail, the synthesis studio's string check); ten blinds turn it red."
     }
   ],
   "routes": [

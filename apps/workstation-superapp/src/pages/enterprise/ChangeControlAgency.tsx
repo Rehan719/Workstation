@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W931
 import axios from 'axios';
+import { axiosDetail } from '../../lib/api';   // W1011 - a refusal's detail as text, whatever its shape
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   GitBranch, CheckCircle2, XCircle, Clock, Loader2,
@@ -534,7 +535,7 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
       setTitle(''); setDesc(''); setType('config_minor'); setRationale(''); setSystems('');
       setTimeout(() => { onSubmitted(); setOpen(false); setMsg(null); }, 1500);
     } catch (e: any) {
-      setMsg(`Error: ${e?.response?.data?.detail ?? 'request failed'}`);
+      setMsg(`Error: ${axiosDetail(e, 'request failed')}`);
     } finally { setLoading(false); }
   };
 
@@ -710,7 +711,7 @@ export const ChangeControlAgency: React.FC = () => {
   // W459 — a 403 is the governance gate answering, not an unreachable backend
   const actionMessage = (e: any): string => {
     const status = e?.response?.status;
-    const detail = e?.response?.data?.detail;
+    const detail = axiosDetail(e, '');   // W1011 - text, whatever shape the reason came in
     if (status === 403) return detail || 'Refused — an admin decision is required for this action.';
     if (status === 401) return 'Sign in required — this action records an identity.';
     if (status === 409) return detail || 'The record changed while this action was running — reload and retry.';
