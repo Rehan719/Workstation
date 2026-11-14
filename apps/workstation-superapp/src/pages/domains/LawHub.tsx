@@ -10,6 +10,12 @@ import TimeLimitPanel from '../../components/TimeLimitPanel';   // W875 (FU-1012
 import { DomainTool } from '../../components/DomainTool';
 import { toolsFor } from '../../lib/toolRegistry';
 import { useServingStatus, servingIsFloor } from '../../components/ServingNow';   // W866 (FU-1013)
+import { apiJson, ApiError, errorMessage } from '../../lib/api';   // W996
+
+//  W996 (FU-399 part 28) - a refusal says the server's status and reason, an unreachable server says that, and a
+//  sentence of this page's own (an empty list) stands as written
+const readFailure = (e: unknown) => (e instanceof ApiError || e instanceof TypeError ? errorMessage(e)
+  : String((e as { message?: string } | null)?.message ?? e));
 
 export const LawHub: React.FC = () => {
   const T = toolsFor('/law');   // W470 — the one tool registry the front doors count from
@@ -24,8 +30,8 @@ export const LawHub: React.FC = () => {
   const [templatesNote, setTemplatesNote] = useState('');
   useEffect(() => {
     let alive = true;
-    fetch('/api/v1/law/templates')
-      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+    //  W996 - this threw `HTTP ${r.status}`, so a refusal lost its reason and a body that was not JSON said a parse error
+    apiJson('/api/v1/law/templates')
       .then(d => {
         if (!alive) return;
         const list = Array.isArray(d?.templates) ? d.templates : [];
@@ -35,7 +41,7 @@ export const LawHub: React.FC = () => {
         list.forEach((t: any) => { if (t?.id && t?.name) names[String(t.id)] = String(t.name); });
         setTemplates(ids); setTemplateNames(names); setTemplatesHeld(d?.held ?? null); setTemplatesNote('');
       })
-      .catch(e => { if (alive) { setTemplates(null); setTemplatesNote(`The template list could not be read (${String(e?.message ?? e)}), so the templates typed on this page are offered and which is held is not known.`); } });
+      .catch(e => { if (alive) { setTemplates(null); setTemplatesNote(`The template list could not be read (${readFailure(e)}), so the templates typed on this page are offered and which is held is not known.`); } });
     return () => { alive = false; };
   }, []);
   // W866 (FU-1013) - WHAT THIS MACHINE DOES IN LAW, said before any form: the server's list of the tools that call
@@ -47,10 +53,9 @@ export const LawHub: React.FC = () => {
   const [lawToolsNote, setLawToolsNote] = useState('');
   useEffect(() => {
     let alive = true;
-    fetch('/api/v1/law/tools')
-      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+    apiJson('/api/v1/law/tools')   // W996 - through apiJson, as the template list
       .then(d => { if (alive) { setLawTools(d); setLawToolsNote(''); } })
-      .catch(e => { if (alive) { setLawTools(null); setLawToolsNote(`What each Law tool does could not be read (${String(e?.message ?? e)}), so nothing is said about it here. Each answer still says what composed it.`); } });
+      .catch(e => { if (alive) { setLawTools(null); setLawToolsNote(`What each Law tool does could not be read (${readFailure(e)}), so nothing is said about it here. Each answer still says what composed it.`); } });
     return () => { alive = false; };
   }, []);
   const floorNow = serving ? servingIsFloor(serving) : null;
@@ -108,7 +113,11 @@ export const LawHub: React.FC = () => {
                 </li>
               ))}
             </ul>
-            <p data-testid="law-forms-need-a-model" className="text-[11px] text-slate-400">The three forms further down need a model. {formsNow}</p>
+            {/* W996 - "The three forms" was typed; the count is the server's list's */}
+            {(() => { const n = (lawTools.needs_a_model ?? []).length; return (
+              <p data-testid="law-forms-need-a-model" className="text-[11px] text-slate-400">
+                {n === 0 ? 'No form further down needs a model.' : `The ${n === 1 ? 'one form' : `${n} forms`} further down need${n === 1 ? 's' : ''} a model.`} {formsNow}
+              </p>); })()}
             {showWithoutModel && withoutModel.map(([sentence, titles]) => (
               <p key={sentence} data-testid="law-form-without-model" className="text-[11px] text-amber-300/90">
                 {titles.join(' and ')}, with no model: {sentence}

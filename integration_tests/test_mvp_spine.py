@@ -72199,7 +72199,8 @@ def test_w825_the_law_and_care_selects_read_the_api_lists_and_the_employment_tab
     t = client.get("/api/v1/law/templates").json()
     assert t["templates"] and (t.get("held") or {}).get("templates"), t.get("held")
     law = _page("LawHub.tsx")
-    assert "fetch('/api/v1/law/templates')" in law and "optionLabels: templateNames" in law, "the template select types its own"
+    #  W996 - read through apiJson now, so a refusal keeps the server's reason
+    assert "apiJson('/api/v1/law/templates')" in law and "optionLabels: templateNames" in law, "the template select types its own"
     assert 'data-testid="law-templates-held"' in law and "{templatesHeld!.reason}" in law, "the held template is not said"
 
     tools = client.get("/api/v1/care/tools").json()["tools"]
@@ -74700,7 +74701,7 @@ def test_w866_the_law_page_says_what_this_machine_does_before_a_form_and_the_no_
 
     #  3. the page: the statement first, then the tools that call no model, then the forms
     page = _code_only((src / "pages" / "domains" / "LawHub.tsx").read_text(encoding="utf-8"))
-    assert "fetch('/api/v1/law/tools')" in page and 'data-testid="law-tools-note"' in page
+    assert "apiJson('/api/v1/law/tools')" in page and 'data-testid="law-tools-note"' in page   # W996 - through apiJson
     i_card = page.index('data-testid="law-what-runs-here"')
     i_statute, i_matter, i_forms = page.index("<StatutePanel />"), page.index("<MatterAssemblyPanel />"), page.index("<DomainTool")
     assert i_card < i_statute < i_matter < i_forms, ("the order on the page", i_card, i_statute, i_matter, i_forms)
@@ -83329,3 +83330,43 @@ def test_w995_fu399_support_never_drops_a_refused_confirmation_and_says_each_ref
     assert "(HTTP ${r.status})" not in code and "(r.data as {detail?: string}).detail" not in code
     fx = json.loads((pdir / "Support.fixture.json").read_text(encoding="utf-8"))
     assert fx["confirm_refused"]["status"] == 404 and fx["rate_refused"]["status"] == 422, fx["rate_refused"]
+
+
+def test_w996_fu399_the_law_hub_says_each_refusals_reason_and_counts_the_forms_from_the_servers_list(client):
+    """FU-399 part 28 (W996). The Law hub says what this machine does in Law before any form: the tools that call no
+    model, each form's sentence for what it returns with no model, and the template list with the one it holds.
+    LawHub.test.tsx mounts the real page against the answers its reads gave on a fresh store, and has the server refuse
+    each read. Rendering it found two defects, fixed:
+    - the template list and the tools list were read with fetch and `throw new Error(`HTTP ${r.status}`)`, so a refusal
+      lost its reason and a body that was not JSON said the parser's "Unexpected token"; both go through apiJson;
+    - "The three forms further down need a model." was typed while the server lists those forms; the count is the
+      list's, with its own grammar.
+    Held here: the tools route lists the forms that need a model; and the page's code."""
+    import json
+    import pathlib
+    import re
+    tools = client.get("/api/v1/law/tools").json()
+    assert isinstance(tools.get("needs_a_model"), list) and tools["needs_a_model"], tools
+    assert all(f.get("when_no_model_serves") for f in tools["needs_a_model"]), tools["needs_a_model"]
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    pdir = root / "apps/workstation-superapp/src/pages/domains"
+    page = (pdir / "LawHub.tsx").read_text(encoding="utf-8")
+    t = (pdir / "LawHub.test.tsx").read_text(encoding="utf-8")
+    assert "import { LawHub } from './LawHub';" in t and "<LawHub />" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"law-no-model-tool", "law-forms-need-a-model", "law-tools-note", "law-templates-note",
+            "law-templates-held"} <= read, sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in page, tid
+    code = _code_only(page)
+    #  both reads through apiJson, each failure said with the server's reason
+    assert "apiJson('/api/v1/law/templates')" in code and "apiJson('/api/v1/law/tools')" in code
+    assert "fetch('/api/v1/law/" not in code and "throw new Error(`HTTP ${r.status}`)" not in code
+    assert code.count("could not be read (${readFailure(e)})") == 2
+    assert "const readFailure = (e: unknown) => (e instanceof ApiError || e instanceof TypeError ? errorMessage(e)" in code
+    #  the count is the server's list's
+    assert "The three forms further down need a model." not in code
+    assert "const n = (lawTools.needs_a_model ?? []).length;" in code
+    fx = json.loads((pdir / "LawHub.fixture.json").read_text(encoding="utf-8"))
+    assert len(fx["tools"]["needs_a_model"]) == len(tools["needs_a_model"]), "the fixture's list of forms drifted from the route's"
