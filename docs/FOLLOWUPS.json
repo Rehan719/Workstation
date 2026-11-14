@@ -24866,6 +24866,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the specification says what composed it beside its heading (provenanceBadge over the answer's served_by); a failed request says what happened through errorMessage, its sentence ending once; the Build button is named for the plan it records. SolutionsPlatform.test.tsx drives each against the routes' own answers (four vitest blinds); test_w1045 holds the captured answer, the readiness reads and the page (four blinds)."
+    },
+    {
+      "id": "FU-1230",
+      "title": "The query and completion routes answered a request that asked nothing, and dropped a field they do not read",
+      "why": "Found by W1045's capture of the Solutions Platform: POST /api/v1/ai/query with an empty body answered 200, ok true, with the native engine's frame about nothing. The request model's two text fields defaulted to empty and a field it does not read was dropped, so a request that asked nothing was put to the gateway with an empty prompt and its frame returned as an answer. That is how W491's defect hid (the page posted its prompt as message). /api/v1/ai/completion took the same model and did the same.",
+      "source": "W1046 (found by W1045's capture of the Solutions Platform)",
+      "found": "2026-11-14",
+      "files": [
+        "agentic_core/api/integration_surface.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1046",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the Solutions Platform; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: both routes refuse a field they do not read, by its name, and a request with no text to ask, before any call. test_w1046 drives each refusal on both routes, holds that none reaches the gateway and that a question is still answered (three blinds); test_w640's probe of the route asks in the field it reads."
     }
   ],
   "routes": [

@@ -48918,7 +48918,9 @@ def test_w640_the_floor_attributes_nothing_to_a_person_unless_the_caller_says_wh
     if (_lj.get("ai_provenance") or {}).get("served_by") in (None, "native"):
         _ltxt = __import__("json").dumps(_lj)
         assert _NOT_TOLD not in _ltxt, "an upgraded domain tool still tells its user it was not told what they wrote"
-    _raw = client.post("/api/v1/ai/query", json={"message": "Subject: tidal barrages\nTask: compare two designs",
+    #  W1046 - asked in the field the route reads: `message` is not one, and is refused by name now. It was dropped,
+    #  so this probe was answered as a question about nothing
+    _raw = client.post("/api/v1/ai/query", json={"query": "Subject: tidal barrages\nTask: compare two designs",
                                                  "agent": "assistant"})
     if _raw.status_code == 200:
         _rtxt = __import__("json").dumps(_raw.json())
@@ -86188,3 +86190,48 @@ def test_w1045_fu399_the_solutions_platform_says_what_composed_a_specification(c
     assert "status: 'PLAN ONLY \\u2014 nothing provisioned'" in page   # what the button records, unchanged
     t = (src / "pages/SolutionsPlatform.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './SolutionsPlatform.fixture.json';" in t and "render(<SolutionsPlatform />);" in t
+
+
+def test_w1046_the_query_routes_refuse_a_request_that_asks_nothing(client, monkeypatch):
+    """W1046. W1045's capture found POST /api/v1/ai/query answering an empty body with 200, ok true, and the native
+    engine's frame about nothing. The request model's two text fields default to empty and a field it does not read
+    was dropped, so a request that asked nothing was put to the gateway with an empty prompt and its frame returned as
+    an answer. That is how W491's defect hid: the Solutions Platform posted its prompt as `message`, which the route
+    does not read, and was answered with nothing to say no question had arrived. /api/v1/ai/completion took the same
+    model. Both now refuse a field they do not read, by its name, and a request with no text to ask, before any call.
+
+    Held here: each refusal by its reason, on both routes; that no refused request reaches the gateway; that a
+    question is still put and answered; and the Solutions Platform asks in the field the route reads."""
+    import pathlib
+    from agentic_core.ai.gateway import gateway
+    asked = []
+    real = gateway.query_meta
+
+    async def counted(prompt, *a, **k):
+        asked.append(prompt)
+        return await real(prompt, *a, **k)
+    monkeypatch.setattr(gateway, "query_meta", counted)
+
+    nothing = "nothing to ask: the request carries no text in `query` or `prompt`, so no call was made"
+    for route in ("/api/v1/ai/query", "/api/v1/ai/completion"):
+        for body in ({}, {"query": "   "}, {"prompt": ""}, {"agent": "w1046_probe"}):
+            r = client.post(route, json=body)
+            assert (r.status_code, r.json().get("detail")) == (422, nothing), (route, body, r.text[:200])
+        r = client.post(route, json={"message": "W1046 probe: a field the route does not read"})
+        d = r.json().get("detail")
+        assert r.status_code == 422 and [(x["type"], x["loc"]) for x in d] == [("extra_forbidden", ["body", "message"])], (
+            route, r.text[:300])
+    assert asked == [], ("a refused request reached the gateway", asked)
+
+    #  a question is still put, and answered, on both
+    r = client.post("/api/v1/ai/query", json={"query": "W1046 probe: what does a timetable checker check"})
+    assert r.status_code == 200 and r.json()["ok"] is True and r.json()["answer"], r.text[:200]
+    r = client.post("/api/v1/ai/completion", json={"prompt": "W1046 probe: name one timetable clash"})
+    assert r.status_code == 200 and r.json()["completion"], r.text[:200]
+    assert asked == ["W1046 probe: what does a timetable checker check", "W1046 probe: name one timetable clash"], asked
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = (root / "agentic_core/api/integration_surface.py").read_text(encoding="utf-8")
+    assert src.count("    _refuse_nothing_asked(prompt)   # W1046\n") == 2
+    sol = (root / "apps/workstation-superapp/src/pages/SolutionsPlatform.tsx").read_text(encoding="utf-8")
+    assert "axios.post('/api/v1/ai/query', { query: prompt })" in sol

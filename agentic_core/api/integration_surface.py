@@ -23,7 +23,7 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, Depends, HTTPException
 
 from agentic_core.auth.core import get_current_user
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict   # W1046: ConfigDict
 
 from agentic_core.ai.gateway import gateway
 from agentic_core.api._ai_provenance import call_evidence as _call_evidence   # W727
@@ -74,14 +74,26 @@ async def ai_quotas():
 
 
 class AIQuery(BaseModel):
+    #  W1046 - a field this request does not hold is refused with its name: it was dropped, so a prompt sent as
+    #  `message` (W491's defect) reached the gateway as an empty one and was answered
+    model_config = ConfigDict(extra="forbid")
     prompt: str = ""
     query: str = ""
     agent: str = "ai_surface"
 
 
+def _refuse_nothing_asked(prompt: str) -> None:
+    """W1046 - a request with no text to ask is refused before any call: it was put to the gateway with an empty
+    prompt, and the native engine's frame about nothing was returned as the answer."""
+    if not (prompt or "").strip():
+        raise HTTPException(status_code=422, detail=(
+            "nothing to ask: the request carries no text in `query` or `prompt`, so no call was made"))
+
+
 @router.post("/api/v1/ai/completion")
 async def ai_completion(req: AIQuery):
     prompt = req.prompt or req.query
+    _refuse_nothing_asked(prompt)   # W1046
     # W506 (P2.2) - the completion says what served it. `served_by` is None on the failure path, which is
     # a different statement from the floor having served it, so the two cases stay distinguishable.
     _served, _ext = None, False
@@ -104,6 +116,7 @@ async def ai_completion(req: AIQuery):
 @router.post("/api/v1/ai/query")
 async def ai_query(req: AIQuery, user: dict | None = Depends(get_current_user)):
     prompt = req.query or req.prompt
+    _refuse_nothing_asked(prompt)   # W1046
     # W491 (refutation) — a failure was returned as the ANSWER ("[unavailable: …]"), a non-empty string
     # that every caller then rendered as the model's output. A caller cannot tell success from failure by
     # looking at a string, so the outcome is a field: `ok` plus `error`, and `answer` is null when nothing
