@@ -81094,7 +81094,7 @@ def test_w959_fu1181_no_call_ends_in_a_catch_that_returns_nothing_unclassified()
     assert api.count("export function bodyOrNull") == 1 and "return r.json().then((b: T) => b, notJson);" in api
     assert "Each caller of bodyOrNull checks the answer's" in api and "const notJson = (): null => null;" in api
     users = [f for f in files if "bodyOrNull(" in _code_only(f.read_text(encoding="utf-8")) and f.name != "api.ts"]
-    assert len(users) == 18, sorted(f.name for f in users)   # W960: + lib/auth.ts, ForgePipeline, SwarmIntelligence; W982: + AgentHubPanel, QEPIntelligence, VSBCockpit; W989: + lib/download.ts; W1003: + MethodAppraisal; W1005: + Login; W1006: + Generator, ReactorStudio
+    assert len(users) == 19, sorted(f.name for f in users)   # W960: + lib/auth.ts, ForgePipeline, SwarmIntelligence; W982: + AgentHubPanel, QEPIntelligence, VSBCockpit; W989: + lib/download.ts; W1003: + MethodAppraisal; W1005: + Login; W1006: + Generator, ReactorStudio; W1008: + lib/stream.ts
     for f in users:
         code = _code_only(f.read_text(encoding="utf-8"))
         for m in re.finditer(r"bodyOrNull\((\w+)\)", code):
@@ -81176,13 +81176,15 @@ def test_w961_fu1181_every_silence_in_the_frontend_is_named_with_its_reason():
     in_catch = [(f.relative_to(src).as_posix(), m.group(1)) for f in files
                 for m in re.finditer(r"catch(?:\s*\([^)]*\))?\s*\{\s*silenceIsRight\('([^']*)'\)\(\);\s*\}",
                                      f.read_text(encoding="utf-8"))]
-    assert len(in_catch) == 42, (len(in_catch), sorted({f for f, _ in in_catch}))
-    assert len(named) == 44 and sum(1 for f, _ in named if f.endswith("PresentationPlayer.tsx")) == 2, len(named)
+    #  W1008 - the five stream readers (Intelligence Lab, Design & Dev, Authorship, Synthesis Nexus, the spawn
+    #  studio) are one, lib/stream.ts
+    assert len(in_catch) == 38, (len(in_catch), sorted({f for f, _ in in_catch}))
+    assert len(named) == 40 and sum(1 for f, _ in named if f.endswith("PresentationPlayer.tsx")) == 2, len(named)
     assert all(len(why) >= 30 for _, why in named), [w for _, w in named if len(w) < 30]
     kinds = {"storage": "browser storage is a per-browser convenience", "event": "an in-page event",
              "clipboard": "shows Copied only when the copy succeeded", "frame": "a stream frame that is not JSON"}
     seen = {k: sum(1 for _, w in in_catch if v in w) for k, v in kinds.items()}
-    assert seen == {"storage": 9, "event": 5, "clipboard": 3, "frame": 10}, seen
+    assert seen == {"storage": 9, "event": 5, "clipboard": 3, "frame": 6}, seen
     #  each file that names a silence imports the helper from the one place it is defined
     for rel in {f for f, _ in in_catch}:
         t = (src / rel).read_text(encoding="utf-8")
@@ -83908,3 +83910,44 @@ def test_w1007_fu399_each_cognition_action_says_its_own_failure_where_it_is_run(
     assert 'data-testid="solve-error">{solveErr}</p>}' in code
     fx = json.loads((pages / "CognitionIntegration.fixture.json").read_text(encoding="utf-8"))
     assert set(fx) == {"wiring", "knowledge", "engines", "heartbeat", "solved", "aligned"}, sorted(fx)
+
+
+def test_w1008_fu399_one_stream_reader_says_a_refusal_s_reason_and_an_unreachable_server_as_one(client):
+    """FU-399 part 38 (W1008). The Intelligence Lab, the Design & Dev engine, the Authorship engine, the Synthesis Nexus
+    and the entity spawn studio each stream a run, and each carried its own copy of the stream reader. IntelligenceLab.test.tsx mounts the Lab against
+    what its route streamed on a fresh store with no model installed, played back as a stream. Rendering it found two
+    defects in the reader, fixed in all five copies:
+    - a refused run said its status alone ("HTTP 422"), or the answer's raw text, a field check nothing of its
+      field; it says the server's status and reason, a field check by its field;
+    - an unreachable server was said in the browser's words; it is said as one.
+    The five copies are one reader, lib/stream.ts, which also says an answer that carries no stream.
+    Held here: the route streams and refuses as captured; no page carries a stream reader of its own; and the
+    reader's code."""
+    import json
+    import pathlib
+    import re
+    r = client.post("/api/v1/intelligence/bdp", json={"domain": "enterprise"})
+    assert r.status_code == 422 and isinstance(r.json()["detail"], list), r.text[:200]
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    reader = _code_only((src / "lib/stream.ts").read_text(encoding="utf-8"))
+    assert "export async function streamPost<E>(" in reader
+    assert "onError(`Failed (HTTP ${res.status}): ${axiosDetail({ response: { data: d } }, 'no reason given')}`);" in reader
+    assert "onError('The server answered without a stream, so nothing ran here.');" in reader
+    assert "onError(errorMessage(e));" in reader and "e?.message ?? String(e)" not in reader
+    #  one reader: no page defines its own, and the five that stream import the one, naming the events they read
+    defining = [f.relative_to(src).as_posix() for f in src.rglob("*.tsx")
+                if re.search(r"^async function streamPost\(", f.read_text(encoding="utf-8"), re.M)]
+    assert defining == [], defining
+    for rel, imp, event in (("pages/IntelligenceLab.tsx", "'../lib/stream'", "IntelEvent"),
+                            ("pages/developers/DesignDevEngine.tsx", "'../../lib/stream'", "DDEvent"),
+                            ("pages/synthesis/AuthorshipEngine.tsx", "'../../lib/stream'", "APEvent"),
+                            ("pages/synthesis/SynthesisNexus.tsx", "'../../lib/stream'", "NexusEvent"),
+                            ("pages/enterprise/VSBSpawnStudio.tsx", "'../../lib/stream'", "SpawnEvent")):
+        page = (src / rel).read_text(encoding="utf-8")
+        assert f"import {{ streamPost }} from {imp};" in page and f"await streamPost<{event}>(" in page, rel
+    t = (src / "pages/IntelligenceLab.test.tsx").read_text(encoding="utf-8")
+    assert "import { IntelligenceLab } from './IntelligenceLab';" in t and "new ReadableStream(" in t
+    fx = json.loads((src / "pages/IntelligenceLab.fixture.json").read_text(encoding="utf-8"))
+    assert fx["bdp"]["content_type"].startswith("text/event-stream") and fx["refused"]["status"] == 422, sorted(fx)
