@@ -1,0 +1,2625 @@
+{
+ "answers": {
+  "/api/v1/vsb": {
+   "status": 200,
+   "body": {
+    "entities": [
+     {
+      "vsb_id": "vsb-0e91018f1b",
+      "name": "W1055 Repair Cafe",
+      "domain": "enterprise",
+      "status": "registered - not operating",
+      "stage": "",
+      "owner_id": "owner",
+      "created_at": "2026-11-14T23:12:38Z",
+      "has_board": true,
+      "entity_type": "waqf_ltd_hybrid",
+      "business_plan_scope": "vsb-0e91018f1b",
+      "has_native_swarm": true
+     },
+     {
+      "vsb_id": "vsb-c69f17813a",
+      "name": "W1055 Tool Library",
+      "domain": "enterprise",
+      "status": "registered - not operating",
+      "stage": "",
+      "owner_id": "owner",
+      "created_at": "2026-11-14T23:12:38Z",
+      "has_board": true,
+      "entity_type": "waqf_ltd_hybrid",
+      "business_plan_scope": "vsb-c69f17813a",
+      "has_native_swarm": true
+     }
+    ],
+    "total": 2
+   }
+  },
+  "/api/v1/mgmt/standards": {
+   "status": 200,
+   "body": {
+    "standards": [
+     {
+      "id": "iso9001",
+      "name": "ISO 9001",
+      "type": "QMS",
+      "description": "Quality Management Systems"
+     },
+     {
+      "id": "iso14001",
+      "name": "ISO 14001",
+      "type": "EMS",
+      "description": "Environmental Management Systems"
+     },
+     {
+      "id": "iso27001",
+      "name": "ISO/IEC 27001",
+      "type": "ISMS",
+      "description": "Information Security Management"
+     },
+     {
+      "id": "iso45001",
+      "name": "ISO 45001",
+      "type": "OH&S",
+      "description": "Occupational Health and Safety"
+     },
+     {
+      "id": "bsc",
+      "name": "Balanced Scorecard",
+      "type": "BMS",
+      "description": "Strategic performance management"
+     },
+     {
+      "id": "okr",
+      "name": "OKRs",
+      "type": "BMS",
+      "description": "Objectives and Key Results framework"
+     },
+     {
+      "id": "cmmi",
+      "name": "CMMI",
+      "type": "Process",
+      "description": "Capability Maturity Model Integration"
+     },
+     {
+      "id": "gdpr",
+      "name": "UK GDPR / GDPR",
+      "type": "Compliance",
+      "description": "Data protection compliance framework"
+     },
+     {
+      "id": "cyber_essentials",
+      "name": "Cyber Essentials",
+      "type": "Security",
+      "description": "UK government cybersecurity scheme"
+     }
+    ],
+    "total": 9,
+    "note": "A generated outline to complete and review - not a conformity assessment, and not a statement that anything is aligned to, compliant with or certified against a standard. This platform holds no standard's text; check the current edition at its publisher.",
+    "editions": {
+     "read_on": "2026-10-12",
+     "read_by": "round W676, in a browser at the publisher's pages",
+     "says": "the publisher lists 2026 editions of its quality and environmental management standards as current"
+    }
+   }
+  },
+  "/api/v1/bto/components": {
+   "status": 200,
+   "body": {
+    "components": [
+     {
+      "id": "entity",
+      "label": "Entity"
+     },
+     {
+      "id": "organism",
+      "label": "Organism"
+     },
+     {
+      "id": "vsb",
+      "label": "Virtual Sovereign Business"
+     },
+     {
+      "id": "csuite",
+      "label": "C-Suite"
+     },
+     {
+      "id": "coe",
+      "label": "Centers of Excellence"
+     },
+     {
+      "id": "domains",
+      "label": "Domains"
+     },
+     {
+      "id": "realms",
+      "label": "Realms"
+     },
+     {
+      "id": "products",
+      "label": "Products"
+     },
+     {
+      "id": "services",
+      "label": "Services"
+     }
+    ]
+   }
+  },
+  "/api/v1/deliverables/output-formats": {
+   "status": 200,
+   "body": {
+    "live": [
+     {
+      "id": "md",
+      "label": "Markdown",
+      "kind": "document"
+     },
+     {
+      "id": "html",
+      "label": "HTML document / website",
+      "kind": "website"
+     },
+     {
+      "id": "slides",
+      "label": "HTML presentation (slide deck)",
+      "kind": "presentation"
+     },
+     {
+      "id": "txt",
+      "label": "Plain text",
+      "kind": "document"
+     },
+     {
+      "id": "json",
+      "label": "Structured JSON",
+      "kind": "data"
+     },
+     {
+      "id": "video-html",
+      "label": "Self-playing video (animated HTML — auto-advancing scenes)",
+      "kind": "video",
+      "is_media_file": false,
+      "basis": "This format is an HTML page that plays its scenes in a browser. It is not a video file; no media encoder is present here, so mp4 is listed as not yet produced."
+     },
+     {
+      "id": "pdf",
+      "label": "PDF document",
+      "kind": "document"
+     },
+     {
+      "id": "docx",
+      "label": "Word document (.docx)",
+      "kind": "document"
+     },
+     {
+      "id": "pptx",
+      "label": "PowerPoint (.pptx)",
+      "kind": "presentation"
+     },
+     {
+      "id": "xlsx",
+      "label": "Excel spreadsheet (.xlsx)",
+      "kind": "data"
+     },
+     {
+      "id": "svg",
+      "label": "Vector summary card (.svg)",
+      "kind": "image"
+     },
+     {
+      "id": "png",
+      "label": "Image summary card (.png)",
+      "kind": "image"
+     }
+    ],
+    "live_ids": [
+     "md",
+     "html",
+     "slides",
+     "txt",
+     "json",
+     "video-html",
+     "pdf",
+     "docx",
+     "pptx",
+     "xlsx",
+     "svg",
+     "png"
+    ],
+    "catalogue_not_yet_produced": [
+     "mp4",
+     "mp3"
+    ],
+    "source": "agentic_core.omnimedia (the platform's own multimedia output factory)",
+    "note": "live = real in-house renders via /export?format=; catalogue = documented targets, not faked."
+   }
+  },
+  "/api/v1/economy/living-vsbs": {
+   "status": 200,
+   "body": {
+    "living_vsbs": [
+     {
+      "vsb_id": "vsb-c69f17813a",
+      "name": "W1055 Tool Library",
+      "entity_type": "waqf_ltd_hybrid",
+      "domain": "enterprise",
+      "owner": "owner",
+      "registered_at": "2026-11-14T23:12:38Z",
+      "operating_cycles": 1,
+      "last_operated": "2026-11-14T23:12:38Z",
+      "status": "living",
+      "parent_vsb": null,
+      "lineage_state": "no_parent",
+      "lineage_generation": 0,
+      "lineage_basis": "no parent was stated, so this entity has NONE - which is a fact about it and not a field somebody forgot. An entity established directly by its founder is the root of its own lineage, which makes it generation 0.",
+      "auto_economy": true,
+      "auto_compliance": true,
+      "lifecycle_state": "juvenile",
+      "lifecycle_basis": "juvenile: operable, but NOT operated: the heartbeat's Self-run lever is off, so nothing runs its cycles",
+      "last_governance": {
+       "status": "passed",
+       "gate": "policy_pre_gate(sync)",
+       "screened": "intent_label",
+       "coverage_limit": "matches tokens inside an intent LABEL after normalising separators and case. A free-prose sentence of intent is NOT reliably screened here: `allowed: True` from this gate means no prohibited token was found in the label, never that the action was understood and cleared.",
+       "label_screened": "economy_distribution",
+       "at": "2026-11-14T23:12:38Z"
+      },
+      "establishment_cycles": 1,
+      "last_operated_by": "establishment",
+      "last_distributable": 0.0,
+      "last_visit_id": "43f88d645da2",
+      "entity_status": "registered - not operating",
+      "entity_status_basis": "registered on the living roster — autonomous economy cycles are OFF (the heartbeat's Self-run lever is off); enable Self-run and start the heartbeat on the Heartbeat page for the organism to tend this VSB. None of its body was ever provided (concept, design, operations, commercialisation); this status is read from the review gates, the pending map and the heartbeat, and does not read whether a section was provided",
+      "status_basis": "'living' is this roster's word for 'registered here'. It does not say the entity is operating: `entity_status` is the entity's own derived status",
+      "compliance": {
+       "verdict": "review",
+       "screened_at": "2026-11-14T23:12:38Z",
+       "verdicts": [
+        {
+         "framework": "sharia_halal",
+         "status": "review",
+         "reason": "no engine covers this area — the haram-term screen matched nothing and no halal vocabulary is present; not a certification (engine ran and produced no finding here, so it backs no verdict)",
+         "coverage": "none"
+        },
+        {
+         "framework": "uk_legal",
+         "status": "review",
+         "reason": "no engine covers this area — keyword screen + employment-statute vocabulary matched nothing (jurisdiction UK / London); not legal advice (UK engine ran and produced no finding here, so it backs no verdict · audit db7e66dbddd6b0fd… over the subject)",
+         "coverage": "none"
+        },
+        {
+         "framework": "regulatory",
+         "status": "not_assessed",
+         "reason": "keyword screen found no regulated-activity trigger — the absence of a trigger word is not a regulatory clearance; nothing here assessed this subject",
+         "coverage": "screen"
+        },
+        {
+         "framework": "ehs",
+         "status": "not_assessed",
+         "reason": "keyword screen found no hazard term — the absence of a hazard word is not an EHS clearance; nothing here assessed this subject",
+         "coverage": "screen"
+        },
+        {
+         "framework": "ethical",
+         "status": "not_assessed",
+         "reason": "human: not_assessed; environment: not_assessed; quality: not_assessed; value: not_assessed (engine ran and produced no finding here, so it backs no verdict)",
+         "coverage": "none",
+         "dimensions_not_assessed": [
+          "human",
+          "environment",
+          "quality",
+          "value"
+         ]
+        }
+       ],
+       "coverage_gaps": [
+        "ehs",
+        "ethical",
+        "regulatory",
+        "sharia_halal",
+        "uk_legal"
+       ],
+       "assessed_by": [],
+       "never_screened": false,
+       "history_unavailable": null
+      },
+      "economy_held": {
+       "held": false,
+       "reason": null,
+       "consequence": null,
+       "consequence_basis": null,
+       "outcome": null,
+       "last_visit_error": null,
+       "standing_decision": null
+      },
+      "operating_cycles_basis": "cycles this roster's operate step ran and booked, of which 1 was run by establishment as the entity's first cycle and not by the autonomous beat; a cycle run through any other path is posted to the books but not counted here",
+      "ledger_cycles": 1,
+      "ledger_cycles_basis": "counted on these books: one intake entry per metabolic cycle (1 carrying a distinct cycle token, 0 without one). Cycles run before intake entries carried a token are not distinguishable and are counted once each."
+     },
+     {
+      "vsb_id": "vsb-0e91018f1b",
+      "name": "W1055 Repair Cafe",
+      "entity_type": "waqf_ltd_hybrid",
+      "domain": "enterprise",
+      "owner": "owner",
+      "registered_at": "2026-11-14T23:12:38Z",
+      "operating_cycles": 1,
+      "last_operated": "2026-11-14T23:12:38Z",
+      "status": "living",
+      "parent_vsb": null,
+      "lineage_state": "no_parent",
+      "lineage_generation": 0,
+      "lineage_basis": "no parent was stated, so this entity has NONE - which is a fact about it and not a field somebody forgot. An entity established directly by its founder is the root of its own lineage, which makes it generation 0.",
+      "auto_economy": true,
+      "auto_compliance": true,
+      "lifecycle_state": "juvenile",
+      "lifecycle_basis": "juvenile: operable, but NOT operated: the heartbeat's Self-run lever is off, so nothing runs its cycles",
+      "last_governance": {
+       "status": "passed",
+       "gate": "policy_pre_gate(sync)",
+       "screened": "intent_label",
+       "coverage_limit": "matches tokens inside an intent LABEL after normalising separators and case. A free-prose sentence of intent is NOT reliably screened here: `allowed: True` from this gate means no prohibited token was found in the label, never that the action was understood and cleared.",
+       "label_screened": "economy_distribution",
+       "at": "2026-11-14T23:12:38Z"
+      },
+      "establishment_cycles": 1,
+      "last_operated_by": "establishment",
+      "last_distributable": 0.0,
+      "last_visit_id": "8fe1515e6d86",
+      "entity_status": "registered - not operating",
+      "entity_status_basis": "registered on the living roster — autonomous economy cycles are OFF (the heartbeat's Self-run lever is off); enable Self-run and start the heartbeat on the Heartbeat page for the organism to tend this VSB. None of its body was ever provided (concept, design, operations, commercialisation); this status is read from the review gates, the pending map and the heartbeat, and does not read whether a section was provided",
+      "status_basis": "'living' is this roster's word for 'registered here'. It does not say the entity is operating: `entity_status` is the entity's own derived status",
+      "compliance": {
+       "verdict": "review",
+       "screened_at": "2026-11-14T23:12:38Z",
+       "verdicts": [
+        {
+         "framework": "sharia_halal",
+         "status": "review",
+         "reason": "no engine covers this area — the haram-term screen matched nothing and no halal vocabulary is present; not a certification (engine ran and produced no finding here, so it backs no verdict)",
+         "coverage": "none"
+        },
+        {
+         "framework": "uk_legal",
+         "status": "review",
+         "reason": "no engine covers this area — keyword screen + employment-statute vocabulary matched nothing (jurisdiction UK / London); not legal advice (UK engine ran and produced no finding here, so it backs no verdict · audit 0a3b92a905fdf2d4… over the subject)",
+         "coverage": "none"
+        },
+        {
+         "framework": "regulatory",
+         "status": "not_assessed",
+         "reason": "keyword screen found no regulated-activity trigger — the absence of a trigger word is not a regulatory clearance; nothing here assessed this subject",
+         "coverage": "screen"
+        },
+        {
+         "framework": "ehs",
+         "status": "not_assessed",
+         "reason": "keyword screen found no hazard term — the absence of a hazard word is not an EHS clearance; nothing here assessed this subject",
+         "coverage": "screen"
+        },
+        {
+         "framework": "ethical",
+         "status": "not_assessed",
+         "reason": "human: not_assessed; environment: not_assessed; quality: not_assessed; value: not_assessed (engine ran and produced no finding here, so it backs no verdict)",
+         "coverage": "none",
+         "dimensions_not_assessed": [
+          "human",
+          "environment",
+          "quality",
+          "value"
+         ]
+        }
+       ],
+       "coverage_gaps": [
+        "ehs",
+        "ethical",
+        "regulatory",
+        "sharia_halal",
+        "uk_legal"
+       ],
+       "assessed_by": [],
+       "never_screened": false,
+       "history_unavailable": null
+      },
+      "economy_held": {
+       "held": false,
+       "reason": null,
+       "consequence": null,
+       "consequence_basis": null,
+       "outcome": null,
+       "last_visit_error": null,
+       "standing_decision": null
+      },
+      "operating_cycles_basis": "cycles this roster's operate step ran and booked, of which 1 was run by establishment as the entity's first cycle and not by the autonomous beat; a cycle run through any other path is posted to the books but not counted here",
+      "ledger_cycles": 1,
+      "ledger_cycles_basis": "counted on these books: one intake entry per metabolic cycle (1 carrying a distinct cycle token, 0 without one). Cycles run before intake entries carried a token are not distinguishable and are counted once each."
+     }
+    ],
+    "total": 2,
+    "history_unavailable": null,
+    "cycle_counts_basis": "`operating_cycles` is this roster's own tally; `ledger_cycles` is what the entity's books record. They differ whenever a cycle ran outside the roster.",
+    "note": "Established VSB enterprises the organism autonomously tends (paced virtual economy cycles on the circadian heartbeat). Virtual/simulated — no real funds.",
+    "autonomous_cycles": false,
+    "autonomous_cycles_note": "OFF — the heartbeat's Self-run lever is off: no roster cycle runs until both are on (the Heartbeat page)"
+   }
+  },
+  "/api/v1/vsb/vsb-c69f17813a": {
+   "status": 200,
+   "body": {
+    "vsb_id": "vsb-c69f17813a",
+    "name": "W1055 Tool Library",
+    "challenge": "W1055 made up: a tool library run by a residents' association",
+    "domain": "enterprise",
+    "realm": "enterprise",
+    "realm_used": "enterprise",
+    "realm_recognised": true,
+    "product": "reactor",
+    "product_label": "Reactor — rapid AI generation",
+    "product_source": "the default - no product was chosen",
+    "scope": "commercialise",
+    "owner_id": "owner",
+    "owner_stamped": true,
+    "owner_stamp_basis": "WORKSTATION_OWNER_ID is not set to an identity, so the record carries the role word 'owner': the one person this single-user deployment serves (no name is written in the code)",
+    "status": "registered - not operating",
+    "stage": null,
+    "genome_spec": {
+     "vsb_id": "vsb-c69f17813a",
+     "origin": "genesis_journey",
+     "problem": "W1055 made up: a tool library run by a residents' association",
+     "domain": "enterprise",
+     "realm": "enterprise",
+     "realm_used": "enterprise",
+     "realm_recognised": true,
+     "product": "reactor",
+     "product_label": "Reactor — rapid AI generation",
+     "product_source": "the default - no product was chosen",
+     "concept": "",
+     "design": "",
+     "commercialisation": "",
+     "constitutional_alignment": null,
+     "constitutional_gate": {
+      "status": "allowed",
+      "screened": "intent + domain",
+      "content_screened": false,
+      "checkpoint": "CHK-1794697958430",
+      "scope": "intent + domain only — this gate screened the request's intent label against the prohibited list and its own constant attestation sentence. The delivery's content was NOT screened, so this verdict is not a judgement on what was produced."
+     }
+    },
+    "epigenetic_traits": {
+     "domain": "enterprise",
+     "origin": "genesis"
+    },
+    "generation": 0,
+    "established_through": "genesis_journey",
+    "established_through_basis": "established by the Genesis journey (POST /api/v1/genesis/establish or its streaming door), which keeps a journey record, evidence and review gates before the entity exists",
+    "ceo_specification": "",
+    "ceo_specification_source": "absent",
+    "swarm_config": {
+     "CEO": "AI CEO — W1055 Tool Library",
+     "CFO": "Financial modelling and capital allocation",
+     "CTO": "Technical architecture and system health",
+     "CMO": "Go-to-market and demand generation",
+     "CLO": "Legal and regulatory compliance",
+     "CoE": [
+      "Research",
+      "Design",
+      "Engineering",
+      "Science",
+      "Commercial",
+      "Compliance"
+     ]
+    },
+    "genesis_blueprint": {
+     "concept": "",
+     "design": "",
+     "commercialisation": ""
+    },
+    "genesis_journey": {
+     "research": "",
+     "operations": "",
+     "selected_candidate": {},
+     "stage_verifications": {},
+     "evidence_source": {
+      "source": "none",
+      "journey_id": null,
+      "basis": "no candidate or stage evidence was supplied"
+     }
+    },
+    "ai_provenance": {},
+    "review_gates": {
+     "stages": [],
+     "decisions": {}
+    },
+    "name_source": "founder",
+    "name_pending": false,
+    "body_pending": {
+     "concept": false,
+     "design": false,
+     "commercialisation": false,
+     "operations": false
+    },
+    "body_absent": {
+     "concept": true,
+     "design": true,
+     "commercialisation": true,
+     "operations": true
+    },
+    "ship_requested": false,
+    "governance": {
+     "status": "allowed",
+     "screened": "intent + domain",
+     "content_screened": false,
+     "checkpoint": "CHK-1794697958430",
+     "scope": "intent + domain only — this gate screened the request's intent label against the prohibited list and its own constant attestation sentence. The delivery's content was NOT screened, so this verdict is not a judgement on what was produced."
+    },
+    "created_at": "2026-11-14T23:12:38Z",
+    "board": {
+     "owner": "owner",
+     "chief": {
+      "title": "Chief of the Board — owner's standing charter, instructions and recorded decisions on the owned fabric (no twin model is trained; the Chief reports whether it is a modelled twin or a role)",
+      "fidelity_charter": "Represent the Owner precisely, effectively, efficiently, systematically and punctually — reflecting their exact wishes and instructions, perfectly understood and remembered, with due diligence, honesty, sincerity, loyalty, determination, resilience and perfectionism."
+     },
+     "directors": [
+      {
+       "id": "dir_strategy",
+       "title": "Director of Strategy & Vision",
+       "mandate": "Business plan, strategy, aims, mission, objectives — coherence with the Owner's vision."
+      },
+      {
+       "id": "dir_technology",
+       "title": "Director of Technology & Architecture",
+       "mandate": "Technical direction, architecture integrity, build quality, scalability."
+      },
+      {
+       "id": "dir_governance",
+       "title": "Director of Governance & Compliance",
+       "mandate": "Constitutional alignment, gaas.v5 gate, risk, change control, audit integrity."
+      },
+      {
+       "id": "dir_biomimetic",
+       "title": "Director of Biomimetic Systems",
+       "mandate": "Highest authority to monitor/change/control all VSB living processes (immune/nervous/genome/evolution)."
+      },
+      {
+       "id": "dir_operations",
+       "title": "Director of Operations & Delivery",
+       "mandate": "BTO, Build-to-Order, facilities management, operational delivery to timeline."
+      },
+      {
+       "id": "dir_finance",
+       "title": "Director of Finance & Capital",
+       "mandate": "Capital allocation, unit economics, commercial sustainability."
+      },
+      {
+       "id": "dir_evolution",
+       "title": "Director of Evolution & Learning",
+       "mandate": "Continual self-improvement; ties the Sovereign Evolution Office to board direction."
+      }
+     ],
+     "governance": "arms-length: AI CEO cannot instruct the board; board directs the AI CEO",
+     "vision_summary": "Commercialise: W1055 made up: a tool library run by a residents' association"
+    },
+    "economy": {
+     "entity_type": "waqf_ltd_hybrid",
+     "entity_name": "Waqf-Ltd Hybrid (recommended)",
+     "waterfall": {
+      "owner": 0.2,
+      "self_investment": 0.3,
+      "capital_fund": 0.2,
+      "user_projects": 0.15,
+      "charity": 0.15
+     },
+     "capital_preserved": true,
+     "currency": "WST (virtual)"
+    },
+    "living": {
+     "autonomous_operation": "registered on the living roster — autonomous economy cycles are OFF (the heartbeat's Self-run lever is off); enable Self-run and start the heartbeat on the Heartbeat page for the organism to tend this VSB",
+     "autonomous_cycles": false,
+     "virtual": true,
+     "read_at": "2026-11-14T23:12:38Z"
+    },
+    "business_plan_scope": "vsb-c69f17813a",
+    "native_swarm": {
+     "cascade_id": "swarm-4e0fb3e7",
+     "name": "W1055 Tool Library — delivery swarm",
+     "org": [
+      "Chief (the Owner's standing charter; no twin model is trained)",
+      "AI CEO",
+      "C-Suite",
+      "Centre of Excellence",
+      "Build-to-Order"
+     ],
+     "stages": [
+      "ai-ceo",
+      "c-suite",
+      "centre-of-excellence",
+      "build-to-order"
+     ],
+     "run": "/api/v1/resources/swarm/run",
+     "posture": "in-house-first"
+    },
+    "status_basis": "registered on the living roster — autonomous economy cycles are OFF (the heartbeat's Self-run lever is off); enable Self-run and start the heartbeat on the Heartbeat page for the organism to tend this VSB. None of its body was ever provided (concept, design, operations, commercialisation); this status is read from the review gates, the pending map and the heartbeat, and does not read whether a section was provided",
+    "stage_basis": "no §4 lifecycle stage is reached: the first section (concept) was never provided",
+    "body_provided": [],
+    "status_derived_at": "2026-11-14T23:12:38Z",
+    "owner_stamp": {
+     "stamped_at_creation": true,
+     "label": null,
+     "basis": "WORKSTATION_OWNER_ID is not set to an identity, so the record carries the role word 'owner': the one person this single-user deployment serves (no name is written in the code)"
+    },
+    "operating_means": null,
+    "founder_writable_sections": {
+     "concept": "POST /api/v1/vsb/vsb-c69f17813a/concept",
+     "commercialisation": "POST /api/v1/vsb/vsb-c69f17813a/body/commercialisation",
+     "design": "POST /api/v1/vsb/vsb-c69f17813a/body/design",
+     "operations": "POST /api/v1/vsb/vsb-c69f17813a/body/operations"
+    }
+   }
+  },
+  "/api/v1/business-plan?scope=vsb-c69f17813a": {
+   "status": 200,
+   "body": {
+    "scope": "vsb-c69f17813a",
+    "owner": "owner",
+    "executive_summary": "W1055 Tool Library is a VSB IDBO established to solve: W1055 made up: a tool library run by a residents' association.",
+    "concept": "Optimal solution concept for: W1055 made up: a tool library run by a residents' association",
+    "vision": "A waqf_ltd_hybrid VSB IDBO to commercialise this solution beneficently.",
+    "mission": "Deliver: W1055 made up: a tool library run by a residents' association",
+    "strategy": "Concept → Design → Commercialisation, governed by the Board (Chief — the Owner's standing charter; no twin model is trained) → AI CEO → C-Suite → CoE → BTO.",
+    "aims": [],
+    "objectives": [
+     {
+      "id": "obj-23e84894",
+      "title": "Validate the concept",
+      "kpi": "",
+      "timeline": "",
+      "owner_role": "AI CEO",
+      "progress_pct": 0,
+      "status": "planned",
+      "reviews": [],
+      "draft": true,
+      "source": "establish_seed",
+      "created_at": "2026-11-14T23:12:38Z"
+     },
+     {
+      "id": "obj-51368598",
+      "title": "Deliver the design",
+      "kpi": "",
+      "timeline": "",
+      "owner_role": "AI CEO",
+      "progress_pct": 0,
+      "status": "planned",
+      "reviews": [],
+      "draft": true,
+      "source": "establish_seed",
+      "created_at": "2026-11-14T23:12:38Z"
+     },
+     {
+      "id": "obj-812ea998",
+      "title": "Launch to market",
+      "kpi": "",
+      "timeline": "",
+      "owner_role": "AI CEO",
+      "progress_pct": 0,
+      "status": "planned",
+      "reviews": [],
+      "draft": true,
+      "source": "establish_seed",
+      "created_at": "2026-11-14T23:12:38Z"
+     }
+    ],
+    "updated_at": "2026-11-14T23:12:38Z",
+    "provenance": {
+     "evidence_level": "behaviour",
+     "evidence_level_number": 1,
+     "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+     "served_by": null,
+     "body_pending": [],
+     "name_source": "founder",
+     "field_sources": {
+      "executive_summary": "establish_template",
+      "concept": "establish_template",
+      "vision": "establish_template",
+      "mission": "establish_template",
+      "strategy": "establish_template"
+     },
+     "templated_fields": [
+      "executive_summary",
+      "vision",
+      "mission",
+      "strategy",
+      "concept"
+     ],
+     "opening_written_by": "code templates filled from the establish request — not the Chief, and not a model. Edit any field to replace it with your own; a model or the Chief has composed nothing here."
+    },
+    "roadmap": {
+     "living": true,
+     "phases": [
+      {
+       "timeline": "Unscheduled",
+       "progress_pct": 0,
+       "complete": false,
+       "count": 3,
+       "objectives": [
+        {
+         "id": "obj-23e84894",
+         "title": "Validate the concept",
+         "progress_pct": 0,
+         "status": "planned",
+         "kpi": "",
+         "owner_role": "AI CEO"
+        },
+        {
+         "id": "obj-51368598",
+         "title": "Deliver the design",
+         "progress_pct": 0,
+         "status": "planned",
+         "kpi": "",
+         "owner_role": "AI CEO"
+        },
+        {
+         "id": "obj-812ea998",
+         "title": "Launch to market",
+         "progress_pct": 0,
+         "status": "planned",
+         "kpi": "",
+         "owner_role": "AI CEO"
+        }
+       ]
+      }
+     ],
+     "phase_count": 1,
+     "objective_count": 3,
+     "overall_progress_pct": 0,
+     "current_phase": null,
+     "next_milestone": null,
+     "unscheduled_count": 3,
+     "unparsed_timelines": [],
+     "note": "Living roadmap derived from the plan's objectives — it updates as objectives progress. PHASES ARE IN TIME ORDER, parsed from each objective's timeline (Q1 2026 / 2026 Q1, a month and year, 2026-01, or a bare year). A timeline that does not parse is NOT a phase: those objectives are listed under Unscheduled, which is excluded from current_phase and next_milestone and counted in unscheduled_count — so the roadmap never drops them silently, and never claims an unplaceable objective comes next."
+    }
+   }
+  },
+  "/api/v1/economy/ledger/vsb-c69f17813a": {
+   "status": 200,
+   "body": {
+    "vsb_id": "vsb-c69f17813a",
+    "currency": "WST (virtual)",
+    "available": true,
+    "balances": {
+     "revenue": 0.0,
+     "reserves": 0.0,
+     "owner": 0.0,
+     "self_investment": 0.0,
+     "capital_fund": 0.0,
+     "user_projects": 0.0,
+     "charity": 0.0
+    },
+    "reserve_fund_wst": 0.0,
+    "balances_note": "'balances' is the cumulative legacy view (excludes transfers/closes); 'reserve_fund_wst' is the live double-entry reserve balance.",
+    "total_revenue": 0.0,
+    "totals_book": "pots",
+    "book_of_record": "double_entry",
+    "revenue_reconciliation": {
+     "book_of_record": "double_entry",
+     "revenue_double_entry_wst": 0,
+     "revenue_pots_wst": 0.0,
+     "difference_wst": 0.0,
+     "double_entry_began": null,
+     "pots_revenue_before_double_entry_wst": 0.0,
+     "pots_revenue_unposted_since_wst": 0,
+     "pots_revenue_unposted_since": [],
+     "basis": "the book of record is the double-entry book (Owner ruling 2026-10-12): it records 0 of revenue; the pots record 0.0. These books hold no double-entry posting at all, so none of the pots' revenue is on the book of record. Nothing is posted to close a gap here: it is said."
+    },
+    "revenue_entered": {
+     "by_entry": [],
+     "said_wst": 0,
+     "not_said_wst": 0.0,
+     "intakes_not_said": 0,
+     "basis": "Revenue on these books entered as each cycle's intake recorded it: no intake has said yet. Every distributed figure on these books - the owner's share, charity, the fund, the reserves - is a share of this revenue, so its value entered as the revenue did. Virtual WST only."
+    },
+    "total_distributed": 0.0,
+    "entry_count": 2,
+    "cycles_posted": 1,
+    "cycles_posted_basis": "counted on these books: one intake entry per metabolic cycle (1 carrying a distinct cycle token, 0 without one). Cycles run before intake entries carried a token are not distinguishable and are counted once each.",
+    "recent": [
+     {
+      "ts": "2026-11-14T23:12:38Z",
+      "account": "revenue",
+      "kind": "credit",
+      "amount": 0.0,
+      "memo": "cycle intake (revenue)",
+      "balance_after": 0.0,
+      "ref": "cyc-dc7e94dd10ff",
+      "entered_as": {}
+     },
+     {
+      "ts": "2026-11-14T23:12:38Z",
+      "account": "reserves",
+      "kind": "credit",
+      "amount": 0.0,
+      "memo": "homeostasis (prudential reserve)",
+      "balance_after": 0.0
+     }
+    ],
+    "disclaimer": "Virtual/simulated WST units — not real money."
+   }
+  },
+  "/api/v1/vsb/vsb-c69f17813a/repo": {
+   "status": 404,
+   "body": {
+    "detail": "No repository generated for VSB vsb-c69f17813a yet."
+   }
+  },
+  "/api/v1/vsb/vsb-c69f17813a/repo/ship": {
+   "status": 404,
+   "body": {
+    "detail": "No shipped repo for vsb-c69f17813a — POST /repo/ship first."
+   }
+  },
+  "/api/v1/deliverables?vsb_id=vsb-c69f17813a": {
+   "status": 200,
+   "body": {
+    "deliverables": [],
+    "total": 0,
+    "truncated": false,
+    "total_basis": "every deliverable held: 0 of a 300-row cap, so none has been dropped"
+   }
+  },
+  "/api/v1/vsb/vsb-c69f17813a/review-gates": {
+   "status": 200,
+   "body": {
+    "vsb_id": "vsb-c69f17813a",
+    "mode": "Mode 3 — optional human review gates (set in the VSB genome)",
+    "stages": [],
+    "lifecycle": [
+     {
+      "id": "intake",
+      "name": "Challenge Intake",
+      "description": "CEO receives and decomposes the challenge"
+     },
+     {
+      "id": "research",
+      "name": "Research & Discovery",
+      "description": "Research CoE synthesises domain knowledge and evidence"
+     },
+     {
+      "id": "design",
+      "name": "Solution Design",
+      "description": "Design CoE architects the optimal solution"
+     },
+     {
+      "id": "build",
+      "name": "Build & Development",
+      "description": "Engineering CoE develops the solution via Factory"
+     },
+     {
+      "id": "validate",
+      "name": "Digital Twin Validation",
+      "description": "Science CoE validates solution in digital twin simulation"
+     },
+     {
+      "id": "commercialise",
+      "name": "Commercialisation",
+      "description": "Commercial CoE creates marketplace listing and launch plan"
+     },
+     {
+      "id": "genome",
+      "name": "Genome Encoding",
+      "description": "VSB constitution encoded in epigenetic registry"
+     },
+     {
+      "id": "launch",
+      "name": "VSB Entity Launch",
+      "description": "VSB entity created and operational"
+     }
+    ],
+    "statuses": [
+     {
+      "stage": "intake",
+      "gated": false,
+      "status": "not_gated",
+      "decision": null,
+      "blocks_progress": false
+     },
+     {
+      "stage": "research",
+      "gated": false,
+      "status": "not_gated",
+      "decision": null,
+      "blocks_progress": false
+     },
+     {
+      "stage": "design",
+      "gated": false,
+      "status": "not_gated",
+      "decision": null,
+      "blocks_progress": false
+     },
+     {
+      "stage": "build",
+      "gated": false,
+      "status": "not_gated",
+      "decision": null,
+      "blocks_progress": false
+     },
+     {
+      "stage": "validate",
+      "gated": false,
+      "status": "not_gated",
+      "decision": null,
+      "blocks_progress": false
+     },
+     {
+      "stage": "commercialise",
+      "gated": false,
+      "status": "not_gated",
+      "decision": null,
+      "blocks_progress": false
+     },
+     {
+      "stage": "genome",
+      "gated": false,
+      "status": "not_gated",
+      "decision": null,
+      "blocks_progress": false
+     },
+     {
+      "stage": "launch",
+      "gated": false,
+      "status": "not_gated",
+      "decision": null,
+      "blocks_progress": false
+     }
+    ],
+    "gated_count": 0,
+    "holds": [
+     "ship",
+     "repo",
+     "website",
+     "web app",
+     "phone app",
+     "board pack",
+     "repo cascade",
+     "evolve",
+     "evolution apply",
+     "cascade",
+     "swarm run",
+     "orchestrate",
+     "contract delivery"
+    ],
+    "not_held": [
+     "economy cycle"
+    ],
+    "holds_basis": "The heartbeat's own re-ship, evolve and evolution auto-apply are held as well. NOT held: the entity's economy cycle - a gate holds the ship, the board pack and the public surfaces, not the economy.",
+    "lifecycle_basis": "these 8 stages are the entity's GOVERNANCE lifecycle, a separate list from the Genesis journey's own stages (GET /api/v1/genesis/status). A gate here pauses the entity's lifecycle movers (ship, repo, website, web app, phone app, board pack, repo cascade, evolve, evolution apply, cascade, swarm run, orchestrate, contract delivery), not a journey stage; it does not hold the economy cycle; and every gate is OFF until the founder sets one"
+   }
+  },
+  "/api/v1/vsb/vsb-c69f17813a/board-packs": {
+   "status": 200,
+   "body": {
+    "vsb_id": "vsb-c69f17813a",
+    "board_packs": [],
+    "total": 0,
+    "versions": 0,
+    "note": "each assembly is filed; the version moves only when what the pack carries changes"
+   }
+  },
+  "/api/v1/vsb/vsb-c69f17813a/board-pack": {
+   "status": 404,
+   "body": {
+    "detail": "No board pack assembled for VSB vsb-c69f17813a yet."
+   }
+  },
+  "/api/v1/vsb/vsb-0e91018f1b": {
+   "status": 200,
+   "body": {
+    "vsb_id": "vsb-0e91018f1b",
+    "name": "W1055 Repair Cafe",
+    "challenge": "W1055 made up: a repair cafe held once a month in a library",
+    "domain": "enterprise",
+    "realm": "enterprise",
+    "realm_used": "enterprise",
+    "realm_recognised": true,
+    "product": "reactor",
+    "product_label": "Reactor — rapid AI generation",
+    "product_source": "the default - no product was chosen",
+    "scope": "commercialise",
+    "owner_id": "owner",
+    "owner_stamped": true,
+    "owner_stamp_basis": "WORKSTATION_OWNER_ID is not set to an identity, so the record carries the role word 'owner': the one person this single-user deployment serves (no name is written in the code)",
+    "status": "registered - not operating",
+    "stage": null,
+    "genome_spec": {
+     "vsb_id": "vsb-0e91018f1b",
+     "origin": "genesis_journey",
+     "problem": "W1055 made up: a repair cafe held once a month in a library",
+     "domain": "enterprise",
+     "realm": "enterprise",
+     "realm_used": "enterprise",
+     "realm_recognised": true,
+     "product": "reactor",
+     "product_label": "Reactor — rapid AI generation",
+     "product_source": "the default - no product was chosen",
+     "concept": "",
+     "design": "",
+     "commercialisation": "",
+     "constitutional_alignment": null,
+     "constitutional_gate": {
+      "status": "allowed",
+      "screened": "intent + domain",
+      "content_screened": false,
+      "checkpoint": "CHK-1794697958449",
+      "scope": "intent + domain only — this gate screened the request's intent label against the prohibited list and its own constant attestation sentence. The delivery's content was NOT screened, so this verdict is not a judgement on what was produced."
+     }
+    },
+    "epigenetic_traits": {
+     "domain": "enterprise",
+     "origin": "genesis"
+    },
+    "generation": 0,
+    "established_through": "genesis_journey",
+    "established_through_basis": "established by the Genesis journey (POST /api/v1/genesis/establish or its streaming door), which keeps a journey record, evidence and review gates before the entity exists",
+    "ceo_specification": "",
+    "ceo_specification_source": "absent",
+    "swarm_config": {
+     "CEO": "AI CEO — W1055 Repair Cafe",
+     "CFO": "Financial modelling and capital allocation",
+     "CTO": "Technical architecture and system health",
+     "CMO": "Go-to-market and demand generation",
+     "CLO": "Legal and regulatory compliance",
+     "CoE": [
+      "Research",
+      "Design",
+      "Engineering",
+      "Science",
+      "Commercial",
+      "Compliance"
+     ]
+    },
+    "genesis_blueprint": {
+     "concept": "",
+     "design": "",
+     "commercialisation": ""
+    },
+    "genesis_journey": {
+     "research": "",
+     "operations": "",
+     "selected_candidate": {},
+     "stage_verifications": {},
+     "evidence_source": {
+      "source": "none",
+      "journey_id": null,
+      "basis": "no candidate or stage evidence was supplied"
+     }
+    },
+    "ai_provenance": {},
+    "review_gates": {
+     "stages": [],
+     "decisions": {}
+    },
+    "name_source": "founder",
+    "name_pending": false,
+    "body_pending": {
+     "concept": false,
+     "design": false,
+     "commercialisation": false,
+     "operations": false
+    },
+    "body_absent": {
+     "concept": true,
+     "design": true,
+     "commercialisation": true,
+     "operations": true
+    },
+    "ship_requested": false,
+    "governance": {
+     "status": "allowed",
+     "screened": "intent + domain",
+     "content_screened": false,
+     "checkpoint": "CHK-1794697958449",
+     "scope": "intent + domain only — this gate screened the request's intent label against the prohibited list and its own constant attestation sentence. The delivery's content was NOT screened, so this verdict is not a judgement on what was produced."
+    },
+    "created_at": "2026-11-14T23:12:38Z",
+    "board": {
+     "owner": "owner",
+     "chief": {
+      "title": "Chief of the Board — owner's standing charter, instructions and recorded decisions on the owned fabric (no twin model is trained; the Chief reports whether it is a modelled twin or a role)",
+      "fidelity_charter": "Represent the Owner precisely, effectively, efficiently, systematically and punctually — reflecting their exact wishes and instructions, perfectly understood and remembered, with due diligence, honesty, sincerity, loyalty, determination, resilience and perfectionism."
+     },
+     "directors": [
+      {
+       "id": "dir_strategy",
+       "title": "Director of Strategy & Vision",
+       "mandate": "Business plan, strategy, aims, mission, objectives — coherence with the Owner's vision."
+      },
+      {
+       "id": "dir_technology",
+       "title": "Director of Technology & Architecture",
+       "mandate": "Technical direction, architecture integrity, build quality, scalability."
+      },
+      {
+       "id": "dir_governance",
+       "title": "Director of Governance & Compliance",
+       "mandate": "Constitutional alignment, gaas.v5 gate, risk, change control, audit integrity."
+      },
+      {
+       "id": "dir_biomimetic",
+       "title": "Director of Biomimetic Systems",
+       "mandate": "Highest authority to monitor/change/control all VSB living processes (immune/nervous/genome/evolution)."
+      },
+      {
+       "id": "dir_operations",
+       "title": "Director of Operations & Delivery",
+       "mandate": "BTO, Build-to-Order, facilities management, operational delivery to timeline."
+      },
+      {
+       "id": "dir_finance",
+       "title": "Director of Finance & Capital",
+       "mandate": "Capital allocation, unit economics, commercial sustainability."
+      },
+      {
+       "id": "dir_evolution",
+       "title": "Director of Evolution & Learning",
+       "mandate": "Continual self-improvement; ties the Sovereign Evolution Office to board direction."
+      }
+     ],
+     "governance": "arms-length: AI CEO cannot instruct the board; board directs the AI CEO",
+     "vision_summary": "Commercialise: W1055 made up: a repair cafe held once a month in a library"
+    },
+    "economy": {
+     "entity_type": "waqf_ltd_hybrid",
+     "entity_name": "Waqf-Ltd Hybrid (recommended)",
+     "waterfall": {
+      "owner": 0.2,
+      "self_investment": 0.3,
+      "capital_fund": 0.2,
+      "user_projects": 0.15,
+      "charity": 0.15
+     },
+     "capital_preserved": true,
+     "currency": "WST (virtual)"
+    },
+    "living": {
+     "autonomous_operation": "registered on the living roster — autonomous economy cycles are OFF (the heartbeat's Self-run lever is off); enable Self-run and start the heartbeat on the Heartbeat page for the organism to tend this VSB",
+     "autonomous_cycles": false,
+     "virtual": true,
+     "read_at": "2026-11-14T23:12:38Z"
+    },
+    "business_plan_scope": "vsb-0e91018f1b",
+    "native_swarm": {
+     "cascade_id": "swarm-f7e0097e",
+     "name": "W1055 Repair Cafe — delivery swarm",
+     "org": [
+      "Chief (the Owner's standing charter; no twin model is trained)",
+      "AI CEO",
+      "C-Suite",
+      "Centre of Excellence",
+      "Build-to-Order"
+     ],
+     "stages": [
+      "ai-ceo",
+      "c-suite",
+      "centre-of-excellence",
+      "build-to-order"
+     ],
+     "run": "/api/v1/resources/swarm/run",
+     "posture": "in-house-first"
+    },
+    "status_basis": "registered on the living roster — autonomous economy cycles are OFF (the heartbeat's Self-run lever is off); enable Self-run and start the heartbeat on the Heartbeat page for the organism to tend this VSB. None of its body was ever provided (concept, design, operations, commercialisation); this status is read from the review gates, the pending map and the heartbeat, and does not read whether a section was provided",
+    "stage_basis": "no §4 lifecycle stage is reached: the first section (concept) was never provided",
+    "body_provided": [],
+    "status_derived_at": "2026-11-14T23:12:38Z",
+    "owner_stamp": {
+     "stamped_at_creation": true,
+     "label": null,
+     "basis": "WORKSTATION_OWNER_ID is not set to an identity, so the record carries the role word 'owner': the one person this single-user deployment serves (no name is written in the code)"
+    },
+    "operating_means": null,
+    "founder_writable_sections": {
+     "concept": "POST /api/v1/vsb/vsb-0e91018f1b/concept",
+     "commercialisation": "POST /api/v1/vsb/vsb-0e91018f1b/body/commercialisation",
+     "design": "POST /api/v1/vsb/vsb-0e91018f1b/body/design",
+     "operations": "POST /api/v1/vsb/vsb-0e91018f1b/body/operations"
+    }
+   }
+  },
+  "/api/v1/business-plan?scope=vsb-0e91018f1b": {
+   "status": 200,
+   "body": {
+    "scope": "vsb-0e91018f1b",
+    "owner": "owner",
+    "executive_summary": "W1055 Repair Cafe is a VSB IDBO established to solve: W1055 made up: a repair cafe held once a month in a library.",
+    "concept": "Optimal solution concept for: W1055 made up: a repair cafe held once a month in a library",
+    "vision": "A waqf_ltd_hybrid VSB IDBO to commercialise this solution beneficently.",
+    "mission": "Deliver: W1055 made up: a repair cafe held once a month in a library",
+    "strategy": "Concept → Design → Commercialisation, governed by the Board (Chief — the Owner's standing charter; no twin model is trained) → AI CEO → C-Suite → CoE → BTO.",
+    "aims": [],
+    "objectives": [
+     {
+      "id": "obj-45a9c67a",
+      "title": "Validate the concept",
+      "kpi": "",
+      "timeline": "",
+      "owner_role": "AI CEO",
+      "progress_pct": 0,
+      "status": "planned",
+      "reviews": [],
+      "draft": true,
+      "source": "establish_seed",
+      "created_at": "2026-11-14T23:12:38Z"
+     },
+     {
+      "id": "obj-9244fe33",
+      "title": "Deliver the design",
+      "kpi": "",
+      "timeline": "",
+      "owner_role": "AI CEO",
+      "progress_pct": 0,
+      "status": "planned",
+      "reviews": [],
+      "draft": true,
+      "source": "establish_seed",
+      "created_at": "2026-11-14T23:12:38Z"
+     },
+     {
+      "id": "obj-50f81bd9",
+      "title": "Launch to market",
+      "kpi": "",
+      "timeline": "",
+      "owner_role": "AI CEO",
+      "progress_pct": 0,
+      "status": "planned",
+      "reviews": [],
+      "draft": true,
+      "source": "establish_seed",
+      "created_at": "2026-11-14T23:12:38Z"
+     }
+    ],
+    "updated_at": "2026-11-14T23:12:38Z",
+    "provenance": {
+     "evidence_level": "behaviour",
+     "evidence_level_number": 1,
+     "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+     "served_by": null,
+     "body_pending": [],
+     "name_source": "founder",
+     "field_sources": {
+      "executive_summary": "establish_template",
+      "concept": "establish_template",
+      "vision": "establish_template",
+      "mission": "establish_template",
+      "strategy": "establish_template"
+     },
+     "templated_fields": [
+      "executive_summary",
+      "vision",
+      "mission",
+      "strategy",
+      "concept"
+     ],
+     "opening_written_by": "code templates filled from the establish request — not the Chief, and not a model. Edit any field to replace it with your own; a model or the Chief has composed nothing here."
+    },
+    "roadmap": {
+     "living": true,
+     "phases": [
+      {
+       "timeline": "Unscheduled",
+       "progress_pct": 0,
+       "complete": false,
+       "count": 3,
+       "objectives": [
+        {
+         "id": "obj-45a9c67a",
+         "title": "Validate the concept",
+         "progress_pct": 0,
+         "status": "planned",
+         "kpi": "",
+         "owner_role": "AI CEO"
+        },
+        {
+         "id": "obj-9244fe33",
+         "title": "Deliver the design",
+         "progress_pct": 0,
+         "status": "planned",
+         "kpi": "",
+         "owner_role": "AI CEO"
+        },
+        {
+         "id": "obj-50f81bd9",
+         "title": "Launch to market",
+         "progress_pct": 0,
+         "status": "planned",
+         "kpi": "",
+         "owner_role": "AI CEO"
+        }
+       ]
+      }
+     ],
+     "phase_count": 1,
+     "objective_count": 3,
+     "overall_progress_pct": 0,
+     "current_phase": null,
+     "next_milestone": null,
+     "unscheduled_count": 3,
+     "unparsed_timelines": [],
+     "note": "Living roadmap derived from the plan's objectives — it updates as objectives progress. PHASES ARE IN TIME ORDER, parsed from each objective's timeline (Q1 2026 / 2026 Q1, a month and year, 2026-01, or a bare year). A timeline that does not parse is NOT a phase: those objectives are listed under Unscheduled, which is excluded from current_phase and next_milestone and counted in unscheduled_count — so the roadmap never drops them silently, and never claims an unplaceable objective comes next."
+    }
+   }
+  },
+  "/api/v1/economy/ledger/vsb-0e91018f1b": {
+   "status": 200,
+   "body": {
+    "vsb_id": "vsb-0e91018f1b",
+    "currency": "WST (virtual)",
+    "available": true,
+    "balances": {
+     "revenue": 0.0,
+     "reserves": 0.0,
+     "owner": 0.0,
+     "self_investment": 0.0,
+     "capital_fund": 0.0,
+     "user_projects": 0.0,
+     "charity": 0.0
+    },
+    "reserve_fund_wst": 0.0,
+    "balances_note": "'balances' is the cumulative legacy view (excludes transfers/closes); 'reserve_fund_wst' is the live double-entry reserve balance.",
+    "total_revenue": 0.0,
+    "totals_book": "pots",
+    "book_of_record": "double_entry",
+    "revenue_reconciliation": {
+     "book_of_record": "double_entry",
+     "revenue_double_entry_wst": 0,
+     "revenue_pots_wst": 0.0,
+     "difference_wst": 0.0,
+     "double_entry_began": null,
+     "pots_revenue_before_double_entry_wst": 0.0,
+     "pots_revenue_unposted_since_wst": 0,
+     "pots_revenue_unposted_since": [],
+     "basis": "the book of record is the double-entry book (Owner ruling 2026-10-12): it records 0 of revenue; the pots record 0.0. These books hold no double-entry posting at all, so none of the pots' revenue is on the book of record. Nothing is posted to close a gap here: it is said."
+    },
+    "revenue_entered": {
+     "by_entry": [],
+     "said_wst": 0,
+     "not_said_wst": 0.0,
+     "intakes_not_said": 0,
+     "basis": "Revenue on these books entered as each cycle's intake recorded it: no intake has said yet. Every distributed figure on these books - the owner's share, charity, the fund, the reserves - is a share of this revenue, so its value entered as the revenue did. Virtual WST only."
+    },
+    "total_distributed": 0.0,
+    "entry_count": 2,
+    "cycles_posted": 1,
+    "cycles_posted_basis": "counted on these books: one intake entry per metabolic cycle (1 carrying a distinct cycle token, 0 without one). Cycles run before intake entries carried a token are not distinguishable and are counted once each.",
+    "recent": [
+     {
+      "ts": "2026-11-14T23:12:38Z",
+      "account": "revenue",
+      "kind": "credit",
+      "amount": 0.0,
+      "memo": "cycle intake (revenue)",
+      "balance_after": 0.0,
+      "ref": "cyc-dc06ab7520a4",
+      "entered_as": {}
+     },
+     {
+      "ts": "2026-11-14T23:12:38Z",
+      "account": "reserves",
+      "kind": "credit",
+      "amount": 0.0,
+      "memo": "homeostasis (prudential reserve)",
+      "balance_after": 0.0
+     }
+    ],
+    "disclaimer": "Virtual/simulated WST units — not real money."
+   }
+  },
+  "/api/v1/vsb/vsb-0e91018f1b/repo": {
+   "status": 404,
+   "body": {
+    "detail": "No repository generated for VSB vsb-0e91018f1b yet."
+   }
+  },
+  "/api/v1/vsb/vsb-0e91018f1b/repo/ship": {
+   "status": 404,
+   "body": {
+    "detail": "No shipped repo for vsb-0e91018f1b — POST /repo/ship first."
+   }
+  },
+  "/api/v1/deliverables?vsb_id=vsb-0e91018f1b": {
+   "status": 200,
+   "body": {
+    "deliverables": [],
+    "total": 0,
+    "truncated": false,
+    "total_basis": "every deliverable held: 0 of a 300-row cap, so none has been dropped"
+   }
+  },
+  "/api/v1/vsb/vsb-0e91018f1b/review-gates": {
+   "status": 200,
+   "body": {
+    "vsb_id": "vsb-0e91018f1b",
+    "mode": "Mode 3 — optional human review gates (set in the VSB genome)",
+    "stages": [],
+    "lifecycle": [
+     {
+      "id": "intake",
+      "name": "Challenge Intake",
+      "description": "CEO receives and decomposes the challenge"
+     },
+     {
+      "id": "research",
+      "name": "Research & Discovery",
+      "description": "Research CoE synthesises domain knowledge and evidence"
+     },
+     {
+      "id": "design",
+      "name": "Solution Design",
+      "description": "Design CoE architects the optimal solution"
+     },
+     {
+      "id": "build",
+      "name": "Build & Development",
+      "description": "Engineering CoE develops the solution via Factory"
+     },
+     {
+      "id": "validate",
+      "name": "Digital Twin Validation",
+      "description": "Science CoE validates solution in digital twin simulation"
+     },
+     {
+      "id": "commercialise",
+      "name": "Commercialisation",
+      "description": "Commercial CoE creates marketplace listing and launch plan"
+     },
+     {
+      "id": "genome",
+      "name": "Genome Encoding",
+      "description": "VSB constitution encoded in epigenetic registry"
+     },
+     {
+      "id": "launch",
+      "name": "VSB Entity Launch",
+      "description": "VSB entity created and operational"
+     }
+    ],
+    "statuses": [
+     {
+      "stage": "intake",
+      "gated": false,
+      "status": "not_gated",
+      "decision": null,
+      "blocks_progress": false
+     },
+     {
+      "stage": "research",
+      "gated": false,
+      "status": "not_gated",
+      "decision": null,
+      "blocks_progress": false
+     },
+     {
+      "stage": "design",
+      "gated": false,
+      "status": "not_gated",
+      "decision": null,
+      "blocks_progress": false
+     },
+     {
+      "stage": "build",
+      "gated": false,
+      "status": "not_gated",
+      "decision": null,
+      "blocks_progress": false
+     },
+     {
+      "stage": "validate",
+      "gated": false,
+      "status": "not_gated",
+      "decision": null,
+      "blocks_progress": false
+     },
+     {
+      "stage": "commercialise",
+      "gated": false,
+      "status": "not_gated",
+      "decision": null,
+      "blocks_progress": false
+     },
+     {
+      "stage": "genome",
+      "gated": false,
+      "status": "not_gated",
+      "decision": null,
+      "blocks_progress": false
+     },
+     {
+      "stage": "launch",
+      "gated": false,
+      "status": "not_gated",
+      "decision": null,
+      "blocks_progress": false
+     }
+    ],
+    "gated_count": 0,
+    "holds": [
+     "ship",
+     "repo",
+     "website",
+     "web app",
+     "phone app",
+     "board pack",
+     "repo cascade",
+     "evolve",
+     "evolution apply",
+     "cascade",
+     "swarm run",
+     "orchestrate",
+     "contract delivery"
+    ],
+    "not_held": [
+     "economy cycle"
+    ],
+    "holds_basis": "The heartbeat's own re-ship, evolve and evolution auto-apply are held as well. NOT held: the entity's economy cycle - a gate holds the ship, the board pack and the public surfaces, not the economy.",
+    "lifecycle_basis": "these 8 stages are the entity's GOVERNANCE lifecycle, a separate list from the Genesis journey's own stages (GET /api/v1/genesis/status). A gate here pauses the entity's lifecycle movers (ship, repo, website, web app, phone app, board pack, repo cascade, evolve, evolution apply, cascade, swarm run, orchestrate, contract delivery), not a journey stage; it does not hold the economy cycle; and every gate is OFF until the founder sets one"
+   }
+  },
+  "/api/v1/vsb/vsb-0e91018f1b/board-packs": {
+   "status": 200,
+   "body": {
+    "vsb_id": "vsb-0e91018f1b",
+    "board_packs": [],
+    "total": 0,
+    "versions": 0,
+    "note": "each assembly is filed; the version moves only when what the pack carries changes"
+   }
+  },
+  "/api/v1/vsb/vsb-0e91018f1b/board-pack": {
+   "status": 404,
+   "body": {
+    "detail": "No board pack assembled for VSB vsb-0e91018f1b yet."
+   }
+  }
+ },
+ "vsb_id": "vsb-0e91018f1b",
+ "other_id": "vsb-c69f17813a",
+ "assembled": {
+  "status": 200,
+  "body": {
+   "vsb_id": "vsb-0e91018f1b",
+   "name": "W1055 Repair Cafe",
+   "kind": "board_pack",
+   "generated_at": "2026-11-14T23:12:38Z",
+   "owner_id": "owner",
+   "layers": {
+    "constitutional": {
+     "mission": "Deliver: W1055 made up: a repair cafe held once a month in a library",
+     "vision": "W1055 made up: a repair cafe held once a month in a library",
+     "values": "NOT DECLARED - this entity has declared no values of its own",
+     "values_declared": false,
+     "mission_source": "derived from the founder's problem statement - not authored; the business plan holds no Owner-written mission",
+     "vision_source": "the founder's problem statement, verbatim - not authored; the business plan holds no Owner-written vision",
+     "values_source": "this entity has declared no values of its own, and the platform's standing values line is NOT shown in their place - it is identical for every VSB and would read as this entity's",
+     "genome_present": true,
+     "entity": "vsb-0e91018f1b",
+     "holds": "content",
+     "present": true,
+     "basis": "derived fresh from this entity when the pack was assembled; each field above carries its own source"
+    },
+    "strategic": {
+     "ceo": {},
+     "holds": "empty",
+     "present": false,
+     "basis": "EMPTY - no CEO specification was composed for this entity, so there is no strategic layer to read",
+     "refresh_id": null,
+     "refresh_basis": "no §17.3 strategic refresh exists for this entity's plan, so this layer is whatever the CEO specification is - which is what the basis says",
+     "objectives_on_plan_now": 3
+    },
+    "action_plan": {
+     "board": {
+      "owner": "owner",
+      "chief": {
+       "title": "Chief of the Board — owner's standing charter, instructions and recorded decisions on the owned fabric (no twin model is trained; the Chief reports whether it is a modelled twin or a role)",
+       "fidelity_charter": "Represent the Owner precisely, effectively, efficiently, systematically and punctually — reflecting their exact wishes and instructions, perfectly understood and remembered, with due diligence, honesty, sincerity, loyalty, determination, resilience and perfectionism."
+      },
+      "directors": [
+       {
+        "id": "dir_strategy",
+        "title": "Director of Strategy & Vision",
+        "mandate": "Business plan, strategy, aims, mission, objectives — coherence with the Owner's vision."
+       },
+       {
+        "id": "dir_technology",
+        "title": "Director of Technology & Architecture",
+        "mandate": "Technical direction, architecture integrity, build quality, scalability."
+       },
+       {
+        "id": "dir_governance",
+        "title": "Director of Governance & Compliance",
+        "mandate": "Constitutional alignment, gaas.v5 gate, risk, change control, audit integrity."
+       },
+       {
+        "id": "dir_biomimetic",
+        "title": "Director of Biomimetic Systems",
+        "mandate": "Highest authority to monitor/change/control all VSB living processes (immune/nervous/genome/evolution)."
+       },
+       {
+        "id": "dir_operations",
+        "title": "Director of Operations & Delivery",
+        "mandate": "BTO, Build-to-Order, facilities management, operational delivery to timeline."
+       },
+       {
+        "id": "dir_finance",
+        "title": "Director of Finance & Capital",
+        "mandate": "Capital allocation, unit economics, commercial sustainability."
+       },
+       {
+        "id": "dir_evolution",
+        "title": "Director of Evolution & Learning",
+        "mandate": "Continual self-improvement; ties the Sovereign Evolution Office to board direction."
+       }
+      ],
+      "governance": "arms-length: AI CEO cannot instruct the board; board directs the AI CEO",
+      "vision_summary": "Commercialise: W1055 made up: a repair cafe held once a month in a library"
+     },
+     "holds": "other",
+     "present": false,
+     "basis": "OTHER - the entity's standing board roster, which is who would act and not what is to be done; no action items are recorded here, so this layer holds something real that is not an action plan",
+     "refresh_id": null,
+     "refresh_basis": "no §17.3 action-plan refresh exists for this entity's plan, so this layer is whatever the board roster is - which is what the basis says",
+     "open_objectives_now": 3,
+     "objectives_now_basis": "the plan holds 3 open objective(s) as this pack was assembled; the sentence above is of the time it is dated"
+    },
+    "operational": {
+     "stage": null,
+     "stage_basis": "no §4 lifecycle stage is reached: the first section (concept) was never provided",
+     "status": "registered - not operating",
+     "generation": 0,
+     "domain": "enterprise",
+     "realm": "enterprise",
+     "governance": "allowed",
+     "holds": "content",
+     "present": true,
+     "basis": "derived fresh from this entity when the pack was assembled; each field above carries its own source"
+    }
+   },
+   "layers_present": [
+    "constitutional",
+    "operational"
+   ],
+   "layers_state": {
+    "constitutional": {
+     "holds": "content",
+     "basis": "derived fresh from this entity when the pack was assembled; each field above carries its own source"
+    },
+    "strategic": {
+     "holds": "empty",
+     "basis": "EMPTY - no CEO specification was composed for this entity, so there is no strategic layer to read"
+    },
+    "action_plan": {
+     "holds": "other",
+     "basis": "OTHER - the entity's standing board roster, which is who would act and not what is to be done; no action items are recorded here, so this layer holds something real that is not an action plan"
+    },
+    "operational": {
+     "holds": "content",
+     "basis": "derived fresh from this entity when the pack was assembled; each field above carries its own source"
+    }
+   },
+   "economy": {
+    "entity_type": "waqf_ltd_hybrid",
+    "entity_name": "Waqf-Ltd Hybrid (recommended)",
+    "waterfall": {
+     "owner": 0.2,
+     "self_investment": 0.3,
+     "capital_fund": 0.2,
+     "user_projects": 0.15,
+     "charity": 0.15
+    },
+    "capital_preserved": true,
+    "currency": "WST (virtual)"
+   },
+   "narrative": "narrative pending the owned model — this board pack has not been composed. The operational snapshot below is live. Constitutional layer: mission derived from the founder's problem statement - not authored; the business plan holds no Owner-written mission; vision the founder's problem statement, verbatim - not authored; the business plan holds no Owner-written vision; values NOT DECLARED - this entity has declared none and no platform line stands in for them. The strategic and action-plan layers each state their own source below: a CEO specification, or the latest §17.3 cadence refresh, which is DERIVED from the plan's own state and is not an analysis.",
+   "ai_provenance": {
+    "posture": "in-house-first",
+    "served_by": {
+     "native": 1
+    },
+    "any_external": false,
+    "evidence_level": "behaviour",
+    "evidence_level_number": 1,
+    "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer"
+   },
+   "quality_assurance": {
+    "quality": {
+     "bar": [
+      "specifically designed",
+      "modelled",
+      "simulated",
+      "optimised",
+      "categorised",
+      "ranked",
+      "best-in-class",
+      "innovative",
+      "effective",
+      "safe",
+      "efficient",
+      "commercially viable",
+      "compliant",
+      "verified",
+      "tested",
+      "validated"
+     ],
+     "delivery_coverage": 0.0,
+     "delivery_coverage_basis": "4 declared section(s) checked against the delivered content",
+     "substantive_length": true,
+     "stub_found": false,
+     "stub_marker_found": false,
+     "stub_screen_basis": "the length and stub screen ran on this text, whether or not the coverage gate could: no stub marker matched and the text is not under the minimum length",
+     "served_by": "native×1",
+     "not_assessable": true,
+     "compliance": {
+      "overall": null,
+      "compliant": null,
+      "verdicts": [
+       {
+        "framework": "sharia_halal",
+        "status": "review",
+        "reason": "no engine covers this area — the haram-term screen matched nothing and no halal vocabulary is present; not a certification (engine ran and produced no finding here, so it backs no verdict)",
+        "coverage": "none"
+       },
+       {
+        "framework": "uk_legal",
+        "status": "review",
+        "reason": "no engine covers this area — keyword screen + employment-statute vocabulary matched nothing (jurisdiction UK / London); not legal advice (UK engine ran and produced no finding here, so it backs no verdict · audit ec7d87785ed68c8a… over the subject)",
+        "coverage": "none"
+       },
+       {
+        "framework": "regulatory",
+        "status": "not_assessed",
+        "reason": "keyword screen found no regulated-activity trigger — the absence of a trigger word is not a regulatory clearance; nothing here assessed this subject",
+        "coverage": "screen"
+       },
+       {
+        "framework": "ehs",
+        "status": "not_assessed",
+        "reason": "keyword screen found no hazard term — the absence of a hazard word is not an EHS clearance; nothing here assessed this subject",
+        "coverage": "screen"
+       },
+       {
+        "framework": "ethical",
+        "status": "not_assessed",
+        "reason": "human: not_assessed; environment: not_assessed; quality: not_assessed; value: not_assessed (engine ran and produced no finding here, so it backs no verdict)",
+        "coverage": "none",
+        "dimensions_not_assessed": [
+         "human",
+         "environment",
+         "quality",
+         "value"
+        ]
+       }
+      ],
+      "coverage_gaps": [
+       "ehs",
+       "ethical",
+       "regulatory",
+       "sharia_halal",
+       "uk_legal"
+      ],
+      "assessed_by": [],
+      "basis": "keyword and vocabulary screens plus the ethical dimensions. A screen can refuse and can escalate; it cannot clear — so only a row with coverage 'engine' can carry a pass, and `coverage_gaps` names every area nothing here assessed — NOTHING here assessed this subject, so the overall is 'review' and no part of it may be reported as compliant",
+      "screened_subject": "the pending-state sentence — the narrative has not been composed, so this verdict is about a placeholder and says nothing about the enterprise",
+      "assessable": false,
+      "overall_of_screened_text": "review",
+      "sealed_note": "the QMS record sealed below covers the pending-state sentence, which is what was delivered when it was sealed"
+     },
+     "qms_gate_passed": null,
+     "qms_basis": "not assessable — floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+     "qms_min_coverage": 0.95,
+     "qms_non_conformance_rate": null,
+     "qms_defects": {
+      "gates_run": 0,
+      "defects_total": 0,
+      "gate_failures": 0,
+      "open": 0,
+      "corrected": 0,
+      "closed": 0,
+      "closed_source_retired": 0,
+      "not_reproducible": 0,
+      "non_conformance_rate": null,
+      "what_if_gates": 0,
+      "reported_total": 0,
+      "person_reported_open": 0,
+      "what_if_failures": 0,
+      "open_from_retired_labels": 0,
+      "closed_basis": "'closed' counts defects re-verified and passed. A defect closed because its source was retired, or reported not reproducible, was not re-verified: each is counted apart and moves nothing in the rate",
+      "dispositions_basis": "0 defect(s) closed because the surface that opened them was retired and 0 reported not reproducible, each with the reason, name and time its person gave; neither is a re-verification, so neither is counted as closed above, as a gate pass or in the rate. Open now under a label no live surface opens a defect under: 0",
+      "attested_reverifications": 0,
+      "attested_counted_since": null,
+      "defects_closed_on_attestation": 0,
+      "attested_basis": "No caller-attested re-verification has been counted: the counter starts at the first one after it was added, and any run before that is in the rate and not in this count. 0 defect(s) closed now were last re-verified on typed figures. By ruling (OWNER 2026-10-11) attested re-verifications STAY in the rate: these counts stand beside it and change it by nothing.",
+      "rate_basis": "gate failures / gates run across ALL deliveries on this platform (every entity and tenant share one QMS store) — not one entity's record. What-if gates run on typed metrics, and re-verifications of the defects they open, are counted separately and excluded. A re-verification of a DELIVERY defect does count, including one attested by its caller (W316: a correction that does not hold must raise the rate)."
+     },
+     "bar_measured": {
+      "criteria": {
+       "specifically designed": {
+        "met": null,
+        "basis": "not assessable — floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "verified": {
+        "met": null,
+        "basis": "not assessable — floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "compliant": {
+        "met": null,
+        "measured": false,
+        "attested": false,
+        "source": "screen",
+        "basis": "§11 screen verdicts: {'sharia_halal': 'review', 'uk_legal': 'review', 'regulatory': 'not_assessed', 'ehs': 'not_assessed', 'ethical': 'not_assessed'} — not established: ehs, ethical, regulatory, sharia_halal, uk_legal could not assess this subject (a keyword screen can refuse, not clear)"
+       },
+       "safe": {
+        "met": null,
+        "measured": false,
+        "attested": false,
+        "source": "screen",
+        "basis": "§11 safety-bearing frameworks: {'sharia_halal': 'review', 'ehs': 'not_assessed', 'ethical': 'not_assessed'} — not established: ehs, ethical, sharia_halal could not assess this subject (a keyword screen can refuse, not clear)"
+       },
+       "modelled": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "simulated": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "optimised": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "categorised": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "ranked": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "best-in-class": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "innovative": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "effective": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "efficient": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "commercially viable": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "tested": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "validated": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       }
+      },
+      "measured": 0,
+      "met": 0,
+      "attested": 0,
+      "not_measured": 16,
+      "not_measured_basis": "16 = 14 with no source + 2 screen-only: a criterion only a screen read is not measured either. The summary prints the two as separate buckets so that its figures add up to the bar's 16",
+      "screen_only": 2,
+      "screen_only_criteria": [
+       "compliant",
+       "safe"
+      ],
+      "summary": "0 measured · 0 attested · 2 screen-only · 14 not measured (of 16)",
+      "total": 16,
+      "gate_measurements": {},
+      "gate_measurements_summary": "none - the gate did not run on this output (see the criteria's basis)",
+      "gate_measurements_basis": "structure only: whether every declared section heading is present, and whether a stub marker (or too little text) was found. The content was not read, so a pass here is not a finding that the delivery is specifically designed or verified",
+      "measured_criteria": [],
+      "attested_criteria": []
+     },
+     "quality_record_hash": "e5b7b8a3e416e038aed90697e515a384ec02a6580153cb7b517a5e3435ecfe0870525edfb0d65b7a3f776b51fea014141d6be62623a5ca5cd6634c445055831f",
+     "document_controlled": true
+    },
+    "biomimetic": {
+     "layers": [
+      "Immune"
+     ],
+     "layers_declared": [
+      "Genome",
+      "Nervous",
+      "Immune",
+      "Cardiovascular",
+      "Respiratory",
+      "Musculoskeletal",
+      "Endocrine"
+     ],
+     "self": "self-managing · improving · healing",
+     "immune": {
+      "health": 1.0,
+      "threat_level": "NOMINAL",
+      "hot_endpoint_errors": 0,
+      "hot_endpoint_tied": [],
+      "errors_in_window": 0,
+      "review_flags_in_window": 0,
+      "events_in_window": 0,
+      "health_basis": "health and threat are computed from 0 failure(s) in the window; 0 compliance review flag(s) are reported beside them and are NOT counted — a flag asks a human to look, it is not a finding of harm",
+      "window_seconds": 300,
+      "observations_in_window": 1,
+      "observed_basis": "1 call(s) were observed in the last 5 minutes",
+      "by_type": {},
+      "hot_endpoint": null,
+      "response_playbook": [
+       "recommended: passive surveillance"
+      ]
+     },
+     "circadian": "MAINTENANCE_REST",
+     "layers_not_contributing": [
+      "Genome",
+      "Nervous",
+      "Cardiovascular",
+      "Respiratory",
+      "Musculoskeletal",
+      "Endocrine"
+     ],
+     "layer_states": {
+      "Genome": "implemented_not_on_this_path",
+      "Nervous": "engaged_no_value",
+      "Immune": "engaged_with_value",
+      "Cardiovascular": "measurement_under_this_name",
+      "Respiratory": "implemented_not_on_this_path",
+      "Musculoskeletal": "implemented_not_on_this_path",
+      "Endocrine": "engaged_no_value"
+     },
+     "layer_basis": {
+      "Genome": "agentic_core/organism/genome.py — encode/crossover/mutate, mounted under /api/v1/organism/genome; a quality record does not exercise it",
+      "Nervous": "agentic_core/organism/nervous.py — the fire_signal below routes into the NervousSystem; it contributes no value to this record",
+      "Immune": "agentic_core/organism/immune.py — immune.status() is read into this record",
+      "Cardiovascular": "agentic_core/app_mvp.py serves resource_flow = 100 - cpu_percent as 'cardiovascular'. That is host CPU headroom, honestly measured, under an anatomical name — there is no circulatory subsystem",
+      "Respiratory": "agentic_core/api/agent_hub.py — the Agent Hub (the vision's 17.2 map): a bus that RECORDS messages between agents; nothing is subscribed to execute what it records, and a quality record does not exercise it. NOT THE LAYER: agentic_core/molecular/triad_integration.py CANNOT BE IMPORTED: it imports six siblings from agentic_core/molecular/ and only atp_simulator still exists (p53_oscillator, ubiquitin_system, hsp_network, redox_sensor and chaperone_cascade were archived), so it raises ModuleNotFoundError and the TriadIntegrator can never be instantiated. Nothing imports it either, but that is the weaker of the two facts - this basis used to say it held a REAL TriadIntegrator, which is what code_exists_unreached is meant to mean",
+      "Musculoskeletal": "agentic_core/api/resource_fabric.py — composable facilities that run real engines, EXCEPT the composed Digital Twin stage, which is a model-written scenario narrative and runs no simulator; a quality record does not exercise them",
+      "Endocrine": "agentic_core/organism/biobus.py — the signal bus and shared context (the vision's 17.2 map); this record's own fire_signal travels on it and it contributes no value to the record. NOT THE LAYER, though it carries a similar name: agentic_core/biomimicry/geospheric/regulator.py holds a HomeostaticRegulator that does a PROPORTIONAL THRESHOLD COMPARISON and names a corrective action as a string - no integral accumulates, no derivative is read, nothing actuates - and NOTHING IMPORTS IT; a second copy of the same class sits in geospheric/homeostatic_regulator.py. W434's note vouched for this layer and W446 measured that vouching as the overclaim"
+     },
+     "layers_note": "1 of 7 declared layers contributed a value to this record: Immune. Engaged on this path without contributing a value: Nervous, Endocrine. Implemented and reachable, but not on this path: Genome, Respiratory, Musculoskeletal. A measurement published under this anatomical name, not an organ: Cardiovascular. `layer_basis` names the module behind each claim."
+    }
+   },
+   "entity_compliance": {
+    "verdict": "review",
+    "known": true,
+    "never_screened": false,
+    "basis": "the entity's latest §11 screen, from the per-VSB compliance history"
+   },
+   "content_hash": "528841818c6604af887b779788918eec89e576be431e8a7987d8e57eb65ca5e1",
+   "concept_source": "challenge",
+   "concept_note": "no concept recorded yet — this pack is grounded in the founder's problem statement; record a concept at POST /api/v1/vsb/vsb-0e91018f1b/concept",
+   "version": 1,
+   "unchanged_since": "2026-11-14T23:12:38Z",
+   "unchanged": false,
+   "dcs_registered": true,
+   "dcs_hash": "c9e35aa2fa4a6d060e5a9af1363d45a5fa2b81e1b85c6e0701ac170711db966fba4c3e04c5bc774e564fa5348f73fb1b541aa6d74f3c8f07d9c48137661dea08",
+   "dcs_scope": "pack",
+   "dcs_covers": "this pack: version 1 of entity vsb-0e91018f1b, content hash 528841818c6604af… (layers, economy, narrative and the entity's verdict)",
+   "narrative_record_hash": "e5b7b8a3e416e038aed90697e515a384ec02a6580153cb7b517a5e3435ecfe0870525edfb0d65b7a3f776b51fea014141d6be62623a5ca5cd6634c445055831f",
+   "note": "Living Business System — on-demand Board Pack, assembled fresh from live data, registered under document control as this version."
+  }
+ },
+ "packs_after": {
+  "status": 200,
+  "body": {
+   "vsb_id": "vsb-0e91018f1b",
+   "board_packs": [
+    {
+     "generated_at": "2026-11-14T23:12:38Z",
+     "dcs_hash": "c9e35aa2fa4a6d060e5a9af1363d45a5fa2b81e1b85c6e0701ac170711db966fba4c3e04c5bc774e564fa5348f73fb1b541aa6d74f3c8f07d9c48137661dea08",
+     "dcs_registered": true,
+     "version": 1,
+     "content_hash": "528841818c6604af887b779788918eec89e576be431e8a7987d8e57eb65ca5e1",
+     "unchanged_since": "2026-11-14T23:12:38Z"
+    }
+   ],
+   "total": 1,
+   "versions": 1,
+   "note": "each assembly is filed; the version moves only when what the pack carries changes"
+  }
+ },
+ "pack_after": {
+  "status": 200,
+  "body": {
+   "vsb_id": "vsb-0e91018f1b",
+   "name": "W1055 Repair Cafe",
+   "kind": "board_pack",
+   "generated_at": "2026-11-14T23:12:38Z",
+   "owner_id": "owner",
+   "layers": {
+    "constitutional": {
+     "mission": "Deliver: W1055 made up: a repair cafe held once a month in a library",
+     "vision": "W1055 made up: a repair cafe held once a month in a library",
+     "values": "NOT DECLARED - this entity has declared no values of its own",
+     "values_declared": false,
+     "mission_source": "derived from the founder's problem statement - not authored; the business plan holds no Owner-written mission",
+     "vision_source": "the founder's problem statement, verbatim - not authored; the business plan holds no Owner-written vision",
+     "values_source": "this entity has declared no values of its own, and the platform's standing values line is NOT shown in their place - it is identical for every VSB and would read as this entity's",
+     "genome_present": true,
+     "entity": "vsb-0e91018f1b",
+     "holds": "content",
+     "present": true,
+     "basis": "derived fresh from this entity when the pack was assembled; each field above carries its own source"
+    },
+    "strategic": {
+     "ceo": {},
+     "holds": "empty",
+     "present": false,
+     "basis": "EMPTY - no CEO specification was composed for this entity, so there is no strategic layer to read",
+     "refresh_id": null,
+     "refresh_basis": "no §17.3 strategic refresh exists for this entity's plan, so this layer is whatever the CEO specification is - which is what the basis says",
+     "objectives_on_plan_now": 3
+    },
+    "action_plan": {
+     "board": {
+      "owner": "owner",
+      "chief": {
+       "title": "Chief of the Board — owner's standing charter, instructions and recorded decisions on the owned fabric (no twin model is trained; the Chief reports whether it is a modelled twin or a role)",
+       "fidelity_charter": "Represent the Owner precisely, effectively, efficiently, systematically and punctually — reflecting their exact wishes and instructions, perfectly understood and remembered, with due diligence, honesty, sincerity, loyalty, determination, resilience and perfectionism."
+      },
+      "directors": [
+       {
+        "id": "dir_strategy",
+        "title": "Director of Strategy & Vision",
+        "mandate": "Business plan, strategy, aims, mission, objectives — coherence with the Owner's vision."
+       },
+       {
+        "id": "dir_technology",
+        "title": "Director of Technology & Architecture",
+        "mandate": "Technical direction, architecture integrity, build quality, scalability."
+       },
+       {
+        "id": "dir_governance",
+        "title": "Director of Governance & Compliance",
+        "mandate": "Constitutional alignment, gaas.v5 gate, risk, change control, audit integrity."
+       },
+       {
+        "id": "dir_biomimetic",
+        "title": "Director of Biomimetic Systems",
+        "mandate": "Highest authority to monitor/change/control all VSB living processes (immune/nervous/genome/evolution)."
+       },
+       {
+        "id": "dir_operations",
+        "title": "Director of Operations & Delivery",
+        "mandate": "BTO, Build-to-Order, facilities management, operational delivery to timeline."
+       },
+       {
+        "id": "dir_finance",
+        "title": "Director of Finance & Capital",
+        "mandate": "Capital allocation, unit economics, commercial sustainability."
+       },
+       {
+        "id": "dir_evolution",
+        "title": "Director of Evolution & Learning",
+        "mandate": "Continual self-improvement; ties the Sovereign Evolution Office to board direction."
+       }
+      ],
+      "governance": "arms-length: AI CEO cannot instruct the board; board directs the AI CEO",
+      "vision_summary": "Commercialise: W1055 made up: a repair cafe held once a month in a library"
+     },
+     "holds": "other",
+     "present": false,
+     "basis": "OTHER - the entity's standing board roster, which is who would act and not what is to be done; no action items are recorded here, so this layer holds something real that is not an action plan",
+     "refresh_id": null,
+     "refresh_basis": "no §17.3 action-plan refresh exists for this entity's plan, so this layer is whatever the board roster is - which is what the basis says",
+     "open_objectives_now": 3,
+     "objectives_now_basis": "the plan holds 3 open objective(s) as this pack was assembled; the sentence above is of the time it is dated"
+    },
+    "operational": {
+     "stage": null,
+     "stage_basis": "no §4 lifecycle stage is reached: the first section (concept) was never provided",
+     "status": "registered - not operating",
+     "generation": 0,
+     "domain": "enterprise",
+     "realm": "enterprise",
+     "governance": "allowed",
+     "holds": "content",
+     "present": true,
+     "basis": "derived fresh from this entity when the pack was assembled; each field above carries its own source"
+    }
+   },
+   "layers_present": [
+    "constitutional",
+    "operational"
+   ],
+   "layers_state": {
+    "constitutional": {
+     "holds": "content",
+     "basis": "derived fresh from this entity when the pack was assembled; each field above carries its own source"
+    },
+    "strategic": {
+     "holds": "empty",
+     "basis": "EMPTY - no CEO specification was composed for this entity, so there is no strategic layer to read"
+    },
+    "action_plan": {
+     "holds": "other",
+     "basis": "OTHER - the entity's standing board roster, which is who would act and not what is to be done; no action items are recorded here, so this layer holds something real that is not an action plan"
+    },
+    "operational": {
+     "holds": "content",
+     "basis": "derived fresh from this entity when the pack was assembled; each field above carries its own source"
+    }
+   },
+   "economy": {
+    "entity_type": "waqf_ltd_hybrid",
+    "entity_name": "Waqf-Ltd Hybrid (recommended)",
+    "waterfall": {
+     "owner": 0.2,
+     "self_investment": 0.3,
+     "capital_fund": 0.2,
+     "user_projects": 0.15,
+     "charity": 0.15
+    },
+    "capital_preserved": true,
+    "currency": "WST (virtual)"
+   },
+   "narrative": "narrative pending the owned model — this board pack has not been composed. The operational snapshot below is live. Constitutional layer: mission derived from the founder's problem statement - not authored; the business plan holds no Owner-written mission; vision the founder's problem statement, verbatim - not authored; the business plan holds no Owner-written vision; values NOT DECLARED - this entity has declared none and no platform line stands in for them. The strategic and action-plan layers each state their own source below: a CEO specification, or the latest §17.3 cadence refresh, which is DERIVED from the plan's own state and is not an analysis.",
+   "ai_provenance": {
+    "posture": "in-house-first",
+    "served_by": {
+     "native": 1
+    },
+    "any_external": false,
+    "evidence_level": "behaviour",
+    "evidence_level_number": 1,
+    "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer"
+   },
+   "quality_assurance": {
+    "quality": {
+     "bar": [
+      "specifically designed",
+      "modelled",
+      "simulated",
+      "optimised",
+      "categorised",
+      "ranked",
+      "best-in-class",
+      "innovative",
+      "effective",
+      "safe",
+      "efficient",
+      "commercially viable",
+      "compliant",
+      "verified",
+      "tested",
+      "validated"
+     ],
+     "delivery_coverage": 0.0,
+     "delivery_coverage_basis": "4 declared section(s) checked against the delivered content",
+     "substantive_length": true,
+     "stub_found": false,
+     "stub_marker_found": false,
+     "stub_screen_basis": "the length and stub screen ran on this text, whether or not the coverage gate could: no stub marker matched and the text is not under the minimum length",
+     "served_by": "native×1",
+     "not_assessable": true,
+     "compliance": {
+      "overall": null,
+      "compliant": null,
+      "verdicts": [
+       {
+        "framework": "sharia_halal",
+        "status": "review",
+        "reason": "no engine covers this area — the haram-term screen matched nothing and no halal vocabulary is present; not a certification (engine ran and produced no finding here, so it backs no verdict)",
+        "coverage": "none"
+       },
+       {
+        "framework": "uk_legal",
+        "status": "review",
+        "reason": "no engine covers this area — keyword screen + employment-statute vocabulary matched nothing (jurisdiction UK / London); not legal advice (UK engine ran and produced no finding here, so it backs no verdict · audit ec7d87785ed68c8a… over the subject)",
+        "coverage": "none"
+       },
+       {
+        "framework": "regulatory",
+        "status": "not_assessed",
+        "reason": "keyword screen found no regulated-activity trigger — the absence of a trigger word is not a regulatory clearance; nothing here assessed this subject",
+        "coverage": "screen"
+       },
+       {
+        "framework": "ehs",
+        "status": "not_assessed",
+        "reason": "keyword screen found no hazard term — the absence of a hazard word is not an EHS clearance; nothing here assessed this subject",
+        "coverage": "screen"
+       },
+       {
+        "framework": "ethical",
+        "status": "not_assessed",
+        "reason": "human: not_assessed; environment: not_assessed; quality: not_assessed; value: not_assessed (engine ran and produced no finding here, so it backs no verdict)",
+        "coverage": "none",
+        "dimensions_not_assessed": [
+         "human",
+         "environment",
+         "quality",
+         "value"
+        ]
+       }
+      ],
+      "coverage_gaps": [
+       "ehs",
+       "ethical",
+       "regulatory",
+       "sharia_halal",
+       "uk_legal"
+      ],
+      "assessed_by": [],
+      "basis": "keyword and vocabulary screens plus the ethical dimensions. A screen can refuse and can escalate; it cannot clear — so only a row with coverage 'engine' can carry a pass, and `coverage_gaps` names every area nothing here assessed — NOTHING here assessed this subject, so the overall is 'review' and no part of it may be reported as compliant",
+      "screened_subject": "the pending-state sentence — the narrative has not been composed, so this verdict is about a placeholder and says nothing about the enterprise",
+      "assessable": false,
+      "overall_of_screened_text": "review",
+      "sealed_note": "the QMS record sealed below covers the pending-state sentence, which is what was delivered when it was sealed"
+     },
+     "qms_gate_passed": null,
+     "qms_basis": "not assessable — floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+     "qms_min_coverage": 0.95,
+     "qms_non_conformance_rate": null,
+     "qms_defects": {
+      "gates_run": 0,
+      "defects_total": 0,
+      "gate_failures": 0,
+      "open": 0,
+      "corrected": 0,
+      "closed": 0,
+      "closed_source_retired": 0,
+      "not_reproducible": 0,
+      "non_conformance_rate": null,
+      "what_if_gates": 0,
+      "reported_total": 0,
+      "person_reported_open": 0,
+      "what_if_failures": 0,
+      "open_from_retired_labels": 0,
+      "closed_basis": "'closed' counts defects re-verified and passed. A defect closed because its source was retired, or reported not reproducible, was not re-verified: each is counted apart and moves nothing in the rate",
+      "dispositions_basis": "0 defect(s) closed because the surface that opened them was retired and 0 reported not reproducible, each with the reason, name and time its person gave; neither is a re-verification, so neither is counted as closed above, as a gate pass or in the rate. Open now under a label no live surface opens a defect under: 0",
+      "attested_reverifications": 0,
+      "attested_counted_since": null,
+      "defects_closed_on_attestation": 0,
+      "attested_basis": "No caller-attested re-verification has been counted: the counter starts at the first one after it was added, and any run before that is in the rate and not in this count. 0 defect(s) closed now were last re-verified on typed figures. By ruling (OWNER 2026-10-11) attested re-verifications STAY in the rate: these counts stand beside it and change it by nothing.",
+      "rate_basis": "gate failures / gates run across ALL deliveries on this platform (every entity and tenant share one QMS store) — not one entity's record. What-if gates run on typed metrics, and re-verifications of the defects they open, are counted separately and excluded. A re-verification of a DELIVERY defect does count, including one attested by its caller (W316: a correction that does not hold must raise the rate)."
+     },
+     "bar_measured": {
+      "criteria": {
+       "specifically designed": {
+        "met": null,
+        "basis": "not assessable — floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "verified": {
+        "met": null,
+        "basis": "not assessable — floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "compliant": {
+        "met": null,
+        "measured": false,
+        "attested": false,
+        "source": "screen",
+        "basis": "§11 screen verdicts: {'sharia_halal': 'review', 'uk_legal': 'review', 'regulatory': 'not_assessed', 'ehs': 'not_assessed', 'ethical': 'not_assessed'} — not established: ehs, ethical, regulatory, sharia_halal, uk_legal could not assess this subject (a keyword screen can refuse, not clear)"
+       },
+       "safe": {
+        "met": null,
+        "measured": false,
+        "attested": false,
+        "source": "screen",
+        "basis": "§11 safety-bearing frameworks: {'sharia_halal': 'review', 'ehs': 'not_assessed', 'ethical': 'not_assessed'} — not established: ehs, ethical, sharia_halal could not assess this subject (a keyword screen can refuse, not clear)"
+       },
+       "modelled": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "simulated": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "optimised": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "categorised": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "ranked": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "best-in-class": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "innovative": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "effective": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "efficient": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "commercially viable": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "tested": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "validated": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       }
+      },
+      "measured": 0,
+      "met": 0,
+      "attested": 0,
+      "not_measured": 16,
+      "not_measured_basis": "16 = 14 with no source + 2 screen-only: a criterion only a screen read is not measured either. The summary prints the two as separate buckets so that its figures add up to the bar's 16",
+      "screen_only": 2,
+      "screen_only_criteria": [
+       "compliant",
+       "safe"
+      ],
+      "summary": "0 measured · 0 attested · 2 screen-only · 14 not measured (of 16)",
+      "total": 16,
+      "gate_measurements": {},
+      "gate_measurements_summary": "none - the gate did not run on this output (see the criteria's basis)",
+      "gate_measurements_basis": "structure only: whether every declared section heading is present, and whether a stub marker (or too little text) was found. The content was not read, so a pass here is not a finding that the delivery is specifically designed or verified",
+      "measured_criteria": [],
+      "attested_criteria": []
+     },
+     "quality_record_hash": "e5b7b8a3e416e038aed90697e515a384ec02a6580153cb7b517a5e3435ecfe0870525edfb0d65b7a3f776b51fea014141d6be62623a5ca5cd6634c445055831f",
+     "document_controlled": true
+    },
+    "biomimetic": {
+     "layers": [
+      "Immune"
+     ],
+     "layers_declared": [
+      "Genome",
+      "Nervous",
+      "Immune",
+      "Cardiovascular",
+      "Respiratory",
+      "Musculoskeletal",
+      "Endocrine"
+     ],
+     "self": "self-managing · improving · healing",
+     "immune": {
+      "health": 1.0,
+      "threat_level": "NOMINAL",
+      "hot_endpoint_errors": 0,
+      "hot_endpoint_tied": [],
+      "errors_in_window": 0,
+      "review_flags_in_window": 0,
+      "events_in_window": 0,
+      "health_basis": "health and threat are computed from 0 failure(s) in the window; 0 compliance review flag(s) are reported beside them and are NOT counted — a flag asks a human to look, it is not a finding of harm",
+      "window_seconds": 300,
+      "observations_in_window": 1,
+      "observed_basis": "1 call(s) were observed in the last 5 minutes",
+      "by_type": {},
+      "hot_endpoint": null,
+      "response_playbook": [
+       "recommended: passive surveillance"
+      ]
+     },
+     "circadian": "MAINTENANCE_REST",
+     "layers_not_contributing": [
+      "Genome",
+      "Nervous",
+      "Cardiovascular",
+      "Respiratory",
+      "Musculoskeletal",
+      "Endocrine"
+     ],
+     "layer_states": {
+      "Genome": "implemented_not_on_this_path",
+      "Nervous": "engaged_no_value",
+      "Immune": "engaged_with_value",
+      "Cardiovascular": "measurement_under_this_name",
+      "Respiratory": "implemented_not_on_this_path",
+      "Musculoskeletal": "implemented_not_on_this_path",
+      "Endocrine": "engaged_no_value"
+     },
+     "layer_basis": {
+      "Genome": "agentic_core/organism/genome.py — encode/crossover/mutate, mounted under /api/v1/organism/genome; a quality record does not exercise it",
+      "Nervous": "agentic_core/organism/nervous.py — the fire_signal below routes into the NervousSystem; it contributes no value to this record",
+      "Immune": "agentic_core/organism/immune.py — immune.status() is read into this record",
+      "Cardiovascular": "agentic_core/app_mvp.py serves resource_flow = 100 - cpu_percent as 'cardiovascular'. That is host CPU headroom, honestly measured, under an anatomical name — there is no circulatory subsystem",
+      "Respiratory": "agentic_core/api/agent_hub.py — the Agent Hub (the vision's 17.2 map): a bus that RECORDS messages between agents; nothing is subscribed to execute what it records, and a quality record does not exercise it. NOT THE LAYER: agentic_core/molecular/triad_integration.py CANNOT BE IMPORTED: it imports six siblings from agentic_core/molecular/ and only atp_simulator still exists (p53_oscillator, ubiquitin_system, hsp_network, redox_sensor and chaperone_cascade were archived), so it raises ModuleNotFoundError and the TriadIntegrator can never be instantiated. Nothing imports it either, but that is the weaker of the two facts - this basis used to say it held a REAL TriadIntegrator, which is what code_exists_unreached is meant to mean",
+      "Musculoskeletal": "agentic_core/api/resource_fabric.py — composable facilities that run real engines, EXCEPT the composed Digital Twin stage, which is a model-written scenario narrative and runs no simulator; a quality record does not exercise them",
+      "Endocrine": "agentic_core/organism/biobus.py — the signal bus and shared context (the vision's 17.2 map); this record's own fire_signal travels on it and it contributes no value to the record. NOT THE LAYER, though it carries a similar name: agentic_core/biomimicry/geospheric/regulator.py holds a HomeostaticRegulator that does a PROPORTIONAL THRESHOLD COMPARISON and names a corrective action as a string - no integral accumulates, no derivative is read, nothing actuates - and NOTHING IMPORTS IT; a second copy of the same class sits in geospheric/homeostatic_regulator.py. W434's note vouched for this layer and W446 measured that vouching as the overclaim"
+     },
+     "layers_note": "1 of 7 declared layers contributed a value to this record: Immune. Engaged on this path without contributing a value: Nervous, Endocrine. Implemented and reachable, but not on this path: Genome, Respiratory, Musculoskeletal. A measurement published under this anatomical name, not an organ: Cardiovascular. `layer_basis` names the module behind each claim."
+    }
+   },
+   "entity_compliance": {
+    "verdict": "review",
+    "known": true,
+    "never_screened": false,
+    "basis": "the entity's latest §11 screen, from the per-VSB compliance history"
+   },
+   "content_hash": "528841818c6604af887b779788918eec89e576be431e8a7987d8e57eb65ca5e1",
+   "concept_source": "challenge",
+   "concept_note": "no concept recorded yet — this pack is grounded in the founder's problem statement; record a concept at POST /api/v1/vsb/vsb-0e91018f1b/concept",
+   "version": 1,
+   "unchanged_since": "2026-11-14T23:12:38Z",
+   "unchanged": false,
+   "dcs_registered": true,
+   "dcs_hash": "c9e35aa2fa4a6d060e5a9af1363d45a5fa2b81e1b85c6e0701ac170711db966fba4c3e04c5bc774e564fa5348f73fb1b541aa6d74f3c8f07d9c48137661dea08",
+   "dcs_scope": "pack",
+   "dcs_covers": "this pack: version 1 of entity vsb-0e91018f1b, content hash 528841818c6604af… (layers, economy, narrative and the entity's verdict)",
+   "narrative_record_hash": "e5b7b8a3e416e038aed90697e515a384ec02a6580153cb7b517a5e3435ecfe0870525edfb0d65b7a3f776b51fea014141d6be62623a5ca5cd6634c445055831f",
+   "note": "Living Business System — on-demand Board Pack, assembled fresh from live data, registered under document control as this version."
+  }
+ },
+ "ask": {
+  "instruction": "W1055 made up: lend the ten most asked-for tools first and record every loan and return",
+  "owner": "owner",
+  "scope": "vsb-0e91018f1b",
+  "cascade_to_ceo": true
+ },
+ "instructed": {
+  "status": 200,
+  "body": {
+   "directive_id": "dir-f80dc45f",
+   "owner": "owner",
+   "owner_source": "the caller's own label — single-user mode has no principal to stamp",
+   "owner_as_requested": "owner",
+   "instruction": "W1055 made up: lend the ten most asked-for tools first and record every loan and return",
+   "unprompted": false,
+   "restated_kind": null,
+   "instruction_source": "supplied directly by the caller as the Owner's own instruction",
+   "chief_directive": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Chief of the Board — the standing charter of owner, the Owner/Founder of the Workstation IDBO. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Owner Intent\nNative structured frame for 'Owner Intent' over: W1055 made up: lend the ten most asked-for tools first and record every loan and return (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- asked-for tools\n- most asked-for\n- record every\n- tools first\n- every loan\n\n## Board Directive\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.\n\n## Director Assignments\nNative structured frame for 'Director Assignments' over: W1055 made up: lend the ten most asked-for tools first and record every loan and return (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- asked-for tools\n- most asked-for\n- record every\n- tools first\n- every loan\n\n## Success Criteria\nStructured measurement frame:\n- Candidate KPI from asked-for tools.\n- Candidate KPI from most asked-for.\n- Candidate KPI from record every.\n- Candidate KPI from tools first.\n- Each KPI needs a baseline, target, and cadence; tie to the objective above.",
+   "directive_reason": "the native floor composed this directive. It was told which words are yours and built a structured frame around them; it did not interpret them, so the text below is a frame, not the Chief's response to your instruction. Your instruction itself is recorded verbatim above",
+   "ceo_action_plan": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: AI CEO receiving a directive from the Board of Directors. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Owner Intent\nNative structured frame for 'Owner Intent' over: W1055 made up: lend the ten most asked-for tools first and record every loan and return (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.). The list below is the request's most frequent terms, not findings about them.\n- asked-for tools\n- most asked-for\n- record every\n- tools first\n- every loan\n\n## Board Directive\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.; record outcomes to memory/UEG.\n\n## Director Assignments\nNative structured frame for 'Director Assignments' over: W1055 made up: lend the ten most asked-for tools first and record every loan and return (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.). The list below is the request's most frequent terms, not findings about them.\n- asked-for tools\n- most asked-for\n- record every\n- tools first\n- every loan\n\n## Strategic Objectives\nNative structured frame for 'Strategic Objectives' over: W1055 made up: lend the ten most asked-for tools first and record every loan and return (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.). The list below is the request's most frequent terms, not findings about them.\n- asked-for tools\n- most asked-for\n- record every\n- tools first\n- every loan\n\n## Action Plan\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.; record outcomes to memory/UEG.\n\n## Delegation\nNative structured frame for 'Delegation' over: W1055 made up: lend the ten most asked-for tools first and record every loan and return (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.). The list below is the request's most frequent terms, not findings about them.\n- asked-for tools\n- most asked-for\n- record every\n- tools first\n- every loan\n\n## KPIs & Review Cadence\nStructured measurement frame:\n- Candidate KPI from asked-for tools.\n- Candidate KPI from most asked-for.\n- Candidate KPI from record every.\n- Candidate KPI from tools first.\n- Each KPI needs a baseline, target, and cadence; tie to the objective above.",
+   "ceo_plan_reason": "the native floor composed this plan: a structured frame, not a plan the AI CEO produced. It yielded no readable objective, so your instruction was recorded as ONE objective on the living plan in its place.",
+   "business_plan_scope": "vsb-0e91018f1b",
+   "objectives_added": 1,
+   "objectives_parsed": 0,
+   "objectives_fallback": true,
+   "objectives_not_added_reason": null,
+   "ai_provenance": {
+    "posture": "in-house-first",
+    "served_by": {
+     "native": 2
+    },
+    "any_external": false,
+    "evidence_level": "behaviour",
+    "evidence_level_number": 1,
+    "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+    "served_by_agent": {
+     "board_chief": "native",
+     "board_ceo_delegate": "native"
+    }
+   },
+   "governance": {
+    "status": "allowed",
+    "checkpoint": "CHK-1794697958561",
+    "screened": "the declared intent, owner and scope labels of this request",
+    "covers_directive_content": false,
+    "basis": "the gaas.v5 pre-gate compares the DECLARED INTENT against a fixed list of prohibited intents and checks whether a declared human approval is outstanding. It does not read the directive's prose. A status of 'allowed' therefore means nothing on that list matched — it is not a judgement that the directive is constitutional."
+   },
+   "delegation_chain": [
+    "Chief",
+    "AI CEO"
+   ],
+   "delegation_chain_basis": "the tiers whose prompts ran for this directive. The C-Suite, CoE and BTO are NOT invoked by a directive; the org cascade runs them.",
+   "created_at": "2026-11-14T23:12:38Z"
+  }
+ },
+ "instruct_refused": {
+  "status": 422,
+  "body": {
+   "detail": [
+    {
+     "type": "missing",
+     "loc": [
+      "body",
+      "instruction"
+     ],
+     "msg": "Field required",
+     "input": {
+      "owner": "owner",
+      "scope": "vsb-0e91018f1b",
+      "cascade_to_ceo": true
+     }
+    }
+   ]
+  }
+ }
+}

@@ -25057,6 +25057,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: each download says its failure under its own row and clears it when the row is downloaded again; no code in the app calls alert(). Downloads.test.tsx drives both against the routes' own refusals and files (four vitest blinds); test_w1054 holds the census, both pages, and the refusals asked again at the routes (five blinds)."
+    },
+    {
+      "id": "FU-1239",
+      "title": "The cockpit's Chief answer was tied to no entity: an answer that came after another entity was opened was said under that entity's Chief, and one entity's answer stood under the next",
+      "why": "Found rendering the cockpit's chief tab (FU-399 part 73) for two entities established on a fresh store. Unlike every other action on the tab, the Chief's instruction kept no note of the entity it was issued for: an answer that came after another entity was opened was said under that entity's Chief as its answer. Its answer or failure was never cleared when another entity was opened, the button stayed busy with the first entity's call, and what was typed for one entity stayed in the box for the next. A failure was said as its bare reason, with nothing to say the instruction had not been passed.",
+      "source": "W1055 (FU-399 part 73, the cockpit's chief tab rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1055",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the cockpit's chief tab; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the Chief's answer is dropped when another entity is on screen; its answer, failure, busy flag and typed instruction are cleared when another entity is opened; a failure says Not instructed before its reason. VSBCockpit.chief.test.tsx drives each against the routes' own answers for two entities (five vitest blinds); test_w1055 holds the route's field check asked again, the captured pack and answer, and the page (four blinds)."
     }
   ],
   "routes": [

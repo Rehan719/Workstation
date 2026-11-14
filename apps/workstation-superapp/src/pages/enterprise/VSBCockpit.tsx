@@ -395,6 +395,8 @@ export const VSBCockpit: React.FC = () => {
   const [chiefText, setChiefText] = useState('');
   const [chiefBusy, setChiefBusy] = useState(false);
   const [chiefResult, setChiefResult] = useState<Dict | null>(null);
+  //  W1055 - one entity's instruction, answer and failure are never left under another's Chief
+  useEffect(() => { setChiefText(''); setChiefResult(null); setChiefBusy(false); }, [selected]);
 
   // W452 — a Mode 3 gate refusal arrives as a dict {error, gate, status, …}: render the gate, not '[object Object]'
   const detailText = (d: any): string => (d && typeof d === 'object')
@@ -553,16 +555,20 @@ export const VSBCockpit: React.FC = () => {
 
   const instructChief = async () => {
     if (!selected || !chiefText.trim()) return;
+    const issuedFor = selected;   // W1055 - the answer is said under the entity it was issued for (the W503 pattern)
     setChiefBusy(true); setChiefResult(null);
     try {
       const r = await axios.post('/api/v1/board/chief/instruct', {
         instruction: chiefText, owner: detail?.owner_id || 'the founder',
         scope: selected, cascade_to_ceo: true,
       });
+      if (issuedFor !== selectedRef.current) return;
       setChiefResult(r.data);
       setChiefText('');
     } catch (e: any) {
-      setChiefResult({ error: axiosDetail(e, errorMessage(e)) });
+      if (issuedFor !== selectedRef.current) return;
+      //  W1055 - said as an instruction not passed: the bare reason said nothing of what had failed
+      setChiefResult({ error: `Not instructed: ${axiosDetail(e, errorMessage(e))}` });
     }
     setChiefBusy(false);
   };
@@ -1089,7 +1095,7 @@ export const VSBCockpit: React.FC = () => {
                 </Button>
                 {chiefResult && (
                   <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 space-y-1">
-                    {chiefResult.error ? <p className="text-vital">{String(chiefResult.error)}</p> : (
+                    {chiefResult.error ? <p data-testid="cockpit-chief-error" role="alert" className="text-vital">{String(chiefResult.error)}</p> : (
                       <>
                         {/* W490 (sweep S1.3, C7) — the directive below is often the floor's own framing of the
                     prompt and never mentions the Owner's instruction; the response already carried

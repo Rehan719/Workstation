@@ -84091,7 +84091,7 @@ def test_w1011_no_page_puts_a_refusal_s_detail_into_the_page_as_it_came(client):
             "setMsg(`Error: ${axiosDetail(e, 'request failed')}`);",
             "const detail = axiosDetail(e, '');"],
         "pages/enterprise/VSBCockpit.tsx": [
-            "setChiefResult({ error: axiosDetail(e, errorMessage(e)) });",   # W1015 - axios's own words were the fallback
+            "setChiefResult({ error: `Not instructed: ${axiosDetail(e, errorMessage(e))}` });",   # W1015 - axios's own words were the fallback; W1055 - it says the instruction was not passed
             "setDelivErr(`Produce failed: ${errorMessage(e)}`);"],   # W1028 - its fallback said a refusal as unreachable; W1050 - beside its button
         "pages/synthesis/SynthesisStudio.tsx": [
             "setErrorMsg(`Delete failed: ${errorMessage(e)}`);"],   # W1028
@@ -86584,3 +86584,50 @@ def test_w1054_no_failure_is_said_in_a_browser_alert_the_two_downloads_say_their
     t = (pages / "enterprise/Downloads.test.tsx").read_text(encoding="utf-8")
     assert "import files from './Downloads.fixture.json';" in t and "<VSBCockpit />" in t and "<ProjectsHub />" in t
     assert t.count("expect(alerted).not.toHaveBeenCalled();") == 2
+
+
+def test_w1055_fu399_the_cockpit_s_chief_tab_keeps_the_chief_s_answer_with_the_entity_it_was_issued_for(client):
+    """FU-399 part 73 (W1055). The cockpit's chief tab is rendered against its routes' own answers
+    (VSBCockpit.chief.test.tsx) for two entities established through Genesis on a fresh store: every read on opening
+    either, the Board Pack assembled for the one the cockpit opens on and the pack's reads after it, and that entity's
+    Chief instructed as the tab sends it. Rendering found the Chief's answer tied to no entity, unlike every other
+    action on the tab:
+    - an answer that came after another entity was opened was said under that entity's Chief, as its answer;
+    - an answer or a failure stood under every entity opened after it, the button stayed busy with the first entity's
+      call, and what was typed for one entity stayed in the box for the next;
+    - a failure was said as its bare reason, with nothing to say the instruction had not been passed.
+    Each answer is now dropped when another entity is on screen, all four are cleared when another is opened, and a
+    failure says "Not instructed:" before its reason, as the tab's other actions do.
+
+    Held here: the route's field check of an instruction left out, asked again (it records nothing); the captured
+    pack and the Chief's answer, which the native floor composed and says so; and the page's code."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/enterprise/VSBCockpit.chief.fixture.json").read_text(encoding="utf-8"))
+    ask = fx["ask"]
+    assert ask["scope"] == fx["vsb_id"] and ask["cascade_to_ceo"] is True and ask["instruction"].startswith("W1055 made up:")
+    r = client.post("/api/v1/board/chief/instruct", json={k: v for k, v in ask.items() if k != "instruction"})
+    assert (r.status_code, r.json()) == (fx["instruct_refused"]["status"], fx["instruct_refused"]["body"]), r.text[:300]
+    assert [d["loc"] for d in r.json()["detail"]] == [["body", "instruction"]], r.json()
+    #  the captured answer is the native floor's, and says so
+    b = fx["instructed"]["body"]
+    assert (fx["instructed"]["status"], b["objectives_fallback"], b["objectives_added"]) == (200, True, 1), b
+    assert set(b["ai_provenance"]["served_by"]) == {"native"} and b["ai_provenance"]["any_external"] is False
+    assert b["directive_reason"].startswith("the native floor composed this directive"), b["directive_reason"][:120]
+    #  the pack: none on opening (the route's 404), one assembly after
+    pk = f"/api/v1/vsb/{fx['vsb_id']}/board-pack"
+    assert fx["answers"][pk]["status"] == 404 and fx["answers"][pk + "s"]["body"]["total"] == 0
+    assert (fx["assembled"]["status"], fx["assembled"]["body"]["version"]) == (200, 1)
+    assert fx["packs_after"]["body"]["total"] == 1 and fx["pack_after"]["body"]["version"] == 1
+    assert fx["other_id"] != fx["vsb_id"] and f"/api/v1/vsb/{fx['other_id']}/board-packs" in fx["answers"]
+
+    page = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "useEffect(() => { setChiefText(''); setChiefResult(null); setChiefBusy(false); }, [selected]);" in page
+    chief = page[page.index("const instructChief = async"):page.index("const runTransformation = async")]
+    assert "const issuedFor = selected;" in chief
+    assert chief.count("if (issuedFor !== selectedRef.current) return;") == 2, chief
+    assert "setChiefResult({ error: `Not instructed: ${axiosDetail(e, errorMessage(e))}` });" in chief
+    assert 'data-testid="cockpit-chief-error"' in page
+    t = (src / "pages/enterprise/VSBCockpit.chief.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './VSBCockpit.chief.fixture.json';" in t and "<VSBCockpit />" in t
