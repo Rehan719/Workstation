@@ -84566,3 +84566,29 @@ def test_w1017_fu399_the_four_tab_hubs_are_rendered_the_tab_shown_is_the_tab_the
         assert f"TABS.some(t => t.id === requested) ? requested! : '{first}'" in page, rel
     lo = (src / "pages/LivingOrganisationHub.test.tsx").read_text(encoding="utf-8")
     assert "'at: /native-ai?focus=cascade-designer'" in lo
+
+
+def test_w1018_fu399_the_tools_catalogue_and_the_domains_hub_are_rendered_against_the_registry_and_the_status(client):
+    """FU-399 parts 45 and 46 (W1018). The AI tools catalogue and the domains hub list the domain tools from the one
+    registry (lib/toolRegistry.ts) and say, before any form, what this machine can serve, from
+    GET /api/v1/native-ai/status. AIToolsCatalogue.test.tsx and DomainsHub.test.tsx mount the real pages against the
+    status the route answered on a fresh store with no model installed, and against a refused one: the catalogue
+    lists every tool as a link to its tool on its domain's page, the hub shows each domain's count and tools and
+    opens it when chosen, and both say the serving sentence the status gives, or "could not be read" when it cannot
+    be. Rendering found no defect. Held here: the fixture is the route's own answer, and each test reads the registry
+    and the serving sentence rather than its own copy of them."""
+    import json
+    import pathlib
+    live = client.get("/api/v1/native-ai/status")
+    assert live.status_code == 200, live.text[:200]
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    for page, test, up in (("pages/AIToolsCatalogue", "AIToolsCatalogue", "../"), ("pages/domains/DomainsHub", "DomainsHub", "../../")):
+        fx = json.loads((src / f"{page}.fixture.json").read_text(encoding="utf-8"))["status"]
+        assert set(fx) <= set(live.json()), sorted(set(fx) - set(live.json()))
+        for k in ("is_real_model", "mode", "floor_active"):
+            assert fx[k] == live.json()[k], (k, fx[k], live.json()[k])
+        t = (src / f"{page}.test.tsx").read_text(encoding="utf-8")
+        assert f"const {{ {test} }} = await import('./{test}');" in t and f"<{test} />" in t, page
+        assert f"import {{ TOOL_REGISTRY, TOOL_TOTAL }} from '{up}lib/toolRegistry';" in t, page
+        assert f"import {{ servingSentence }} from '{up}components/ServingNow';" in t, page
+        assert "toBe(servingSentence(captured.status))" in t and "status: 503" in t, page
