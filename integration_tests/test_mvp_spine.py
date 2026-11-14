@@ -86021,3 +86021,31 @@ def test_w1041_fu399_the_synthesis_nexus_says_how_its_engine_was_chosen_in_words
             "&& <>{' '}<span ") in page
     t = (src / "pages/synthesis/SynthesisNexus.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './SynthesisNexus.fixture.json';" in t and "render(<SynthesisNexus />);" in t
+
+
+def test_w1042_a_server_is_never_guessed_as_down(client):
+    """W1042. W1028 held that a server that answered is never said as unreachable, by a census of three wordings;
+    W1039 removed a fourth from the Spawn Studio's swarm. A census of that wording found three more, each the fallback
+    said when no reason came: every domain tool's generation and its refine (DomainTool, one component for all
+    twenty-five) and the Change Control queue's actions said "the backend may be unavailable". That covers a server
+    that answered without a reason, which was not unavailable, and one that could not be reached, which can be said
+    for certain. Each fallback is now errorMessage: a refusal by its status, the fact that no reason came, and an
+    unreachable server as one. DomainTool.failures.test.tsx drives the generation unreachable and refused with no
+    reason, and a refine unreachable over an output that stands.
+
+    Held here: tree-wide, no code says a backend may be down; and the three, read where they are."""
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    guesses = ("may be unavailable", "may be down", "may be offline", "might be unavailable", "might be down")
+    said = sorted(f"{f.relative_to(src).as_posix()}: {g}"
+                  for f in (p for ext in ("*.ts", "*.tsx") for p in src.rglob(ext)) if ".test." not in f.name
+                  for g in guesses if g in _code_only(f.read_text(encoding="utf-8")).lower())
+    assert said == [], ("a failure guesses that a backend is down; say it by what it was (errorMessage)", said)
+
+    tool = _code_only((src / "components/DomainTool.tsx").read_text(encoding="utf-8"))
+    assert "setError(axiosDetail(e, errorMessage(e)));" in tool
+    assert "setError(axiosDetail(e, `${errorMessage(e)} (your current output is unchanged)`));" in tool
+    cca = _code_only((src / "pages/enterprise/ChangeControlAgency.tsx").read_text(encoding="utf-8"))
+    assert "return detail || errorMessage(e);" in cca
+    t = (src / "components/DomainTool.failures.test.tsx").read_text(encoding="utf-8")
+    assert "import { DomainTool } from './DomainTool';" in t and "import captured from './DomainTool.fixture.json';" in t

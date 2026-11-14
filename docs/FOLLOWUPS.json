@@ -24781,6 +24781,28 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: both forms of the engine sentence separate their words with spaces of their own. SynthesisNexus.test.tsx reads each as a sentence against the route's own stream (three vitest blinds); test_w1041 holds the refusal, the stream's record of the default and the page (four blinds)."
+    },
+    {
+      "id": "FU-1226",
+      "title": "Three fallbacks guessed the backend may be unavailable, for a server that answered or one that could not be reached",
+      "why": "W1028's census of unreachable wordings read 'unreachable', 'could not be reached' and 'not running'; W1039 removed 'the backend may be unavailable' from the Spawn Studio's swarm. A census of that wording found three more, each the fallback said when no reason came: every domain tool's generation and its refine (DomainTool, one component for all twenty-five) and the Change Control queue's actions. A server that answered without a reason was not unavailable, and one that could not be reached can be said for certain.",
+      "source": "W1042 (a server is never guessed as down)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/components/DomainTool.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/ChangeControlAgency.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1042",
+      "note": "",
+      "slot_source": "the same class as W1028's sentences; it rides P5.1 as FU-399's findings do",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: each of the three fallbacks is errorMessage, which says a refusal by its status, that no reason came, and an unreachable server as one. DomainTool.failures.test.tsx drives the generation and the refine (two vitest blinds); test_w1042 holds, tree-wide, that no code says a backend may be down (four blinds)."
     }
   ],
   "routes": [

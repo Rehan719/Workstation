@@ -206,7 +206,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
         setHistoryId(rec.id);   // W337 — refines update THIS record in place
       } catch { silenceIsRight('the local history of outputs is browser storage is a per-browser convenience that nothing else depends on')(); }
     } catch (e: any) {
-      setError(axiosDetail(e, 'Request failed — the backend may be unavailable.'));
+      setError(axiosDetail(e, errorMessage(e)));   // W1042 - by what it was: the fallback guessed at a backend that was down
     }
     setBusy(false);
   };
@@ -276,7 +276,8 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
         }
       } catch { silenceIsRight('the local history of a refined output is browser storage is a per-browser convenience that nothing else depends on')(); }
     } catch (e: any) {
-      setError(axiosDetail(e, 'Refine failed — the backend may be unavailable. Your current output is unchanged.'));   // W337 — never a silent click
+      //  W337 - never a silent click; W1042 - by what it was, not a guess at a backend that was down
+      setError(axiosDetail(e, `${errorMessage(e)} (your current output is unchanged)`));
     }
     setRefining(false);
   };

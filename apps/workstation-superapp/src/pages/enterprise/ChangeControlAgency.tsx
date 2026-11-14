@@ -717,7 +717,7 @@ export const ChangeControlAgency: React.FC = () => {
     if (status === 401) return 'Sign in required — this action records an identity.';
     if (status === 409) return detail || 'The record changed while this action was running — reload and retry.';
     if (status === 503) return detail || 'The change record is busy — retry in a moment.';
-    return detail || 'Action failed — the backend may be unavailable.';
+    return detail || errorMessage(e);   // W1042 - by what it was: the fallback guessed at a backend that was down
   };
 
   const runAction = async (id: string, act: () => Promise<unknown>) => {
