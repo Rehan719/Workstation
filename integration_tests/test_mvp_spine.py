@@ -85948,3 +85948,40 @@ def test_w1039_fu399_the_vsb_spawn_studio_says_each_failure_where_it_happened(cl
     assert "may be unavailable" not in page and "axiosDetail" not in page
     t = (src / "pages/enterprise/VSBSpawnStudio.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './VSBSpawnStudio.fixture.json';" in t and "<VSBSpawnStudio />" in t
+
+
+def test_w1040_fu399_the_living_marketplace_says_a_failed_read_with_its_reason_and_never_as_none(client):
+    """FU-399 part 61 (W1040). The Living Marketplace is rendered against its routes' own answers
+    (LivingMarketplace.test.tsx): the catalogue and the listings a fresh store seeds from it, each route's own 500 when
+    its read fails inside, and the listings' server unreachable. Rendering found two defects:
+    - a failed read of the catalogue was said in one fixed sentence for every failure, the server's reason dropped. It
+      is said through errorMessage;
+    - a failed read of the listings sat above a list that said none were registered, though nothing had been read.
+      The read's failure is held apart from a purchase's, and the empty state is not shown over it.
+
+    Held here: the two reads are the routes' own, read again; their 500s are what the global handler says (the
+    failures are made inside the routes, so they are not run again); and the page."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/marketplace/LivingMarketplace.fixture.json").read_text(encoding="utf-8"))
+
+    cat = client.get("/api/v1/catalog/products")
+    assert cat.status_code == 200, cat.text[:200]
+    assert [p["slug"] for p in cat.json()["products"]] == [p["slug"] for p in fx["catalog"]["body"]["products"]]
+    assert fx["listings"]["status"] == 200 and all(not x["priced"] for x in fx["listings"]["body"]), fx["listings"]
+    for key, said in (("catalog_failed", "GET /api/v1/catalog/products"),
+                      ("listings_failed", "GET /api/v1/marketplace/listings")):
+        a = fx[key]
+        assert a["status"] == 500 and a["body"]["cause_established"] is False, (key, a)
+        assert a["body"]["detail"] == (f"{said} failed with RuntimeError. The failure is recorded; the cause is not "
+                                       "established."), (key, a["body"]["detail"])
+
+    page = _code_only((src / "pages/marketplace/LivingMarketplace.tsx").read_text(encoding="utf-8"))
+    assert ".catch(e => setCatalogError(errorMessage(e)))" in page and "Failed to load catalog" not in page
+    assert "The catalogue could not be read: {catalogError}" in page
+    assert ".catch(e => setListingsUnread(`The listings could not be read: ${errorMessage(e)}`));" in page
+    assert "{listings.length === 0 ? (listingsUnread ? null : (" in page
+    assert '<div role="alert" data-testid="listings-unread"' in page
+    t = (src / "pages/marketplace/LivingMarketplace.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './LivingMarketplace.fixture.json';" in t and "<LivingMarketplace />" in t

@@ -90,27 +90,31 @@ export const LivingMarketplace: React.FC = () => {
 
   const [catalogProducts, setCatalogProducts] = useState<CatalogProduct[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
-  const [catalogError, setCatalogError] = useState(false);
+  //  W1040 - the catalogue's failure, by what it was: one fixed sentence was said for every failure
+  const [catalogError, setCatalogError] = useState('');
   const [productSearch, setProductSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>('tier');
 
   const [listings, setListings] = useState<Listing[]>([]);
   const [listingsError, setListingsError] = useState('');
+  //  W1040 - a failed read of the listings, held apart from a failed purchase: the list beneath its notice said none
+  //  were registered when nothing had been read
+  const [listingsUnread, setListingsUnread] = useState('');
   const [buying, setBuying] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<string>('');
 
   useEffect(() => {
     axios.get('/api/v1/catalog/products')
       .then(r => setCatalogProducts(r.data.products))
-      .catch(() => setCatalogError(true))
+      .catch(e => setCatalogError(errorMessage(e)))
       .finally(() => setCatalogLoading(false));
   }, []);
 
   const loadListings = () => {
     apiJson<Listing[]>('/api/v1/marketplace/listings')
-      .then(d => { setListings(Array.isArray(d) ? d : []); setListingsError(''); })
-      .catch(e => setListingsError(errorMessage(e)));
+      .then(d => { setListings(Array.isArray(d) ? d : []); setListingsUnread(''); })
+      .catch(e => setListingsUnread(`The listings could not be read: ${errorMessage(e)}`));
   };
   useEffect(loadListings, []);
 
@@ -261,9 +265,9 @@ export const LivingMarketplace: React.FC = () => {
         </div>
       )}
       {catalogError && (
-        <div className="flex items-center justify-center py-20 gap-3 text-red-400">
+        <div role="alert" data-testid="catalog-unread" className="flex items-center justify-center py-20 gap-3 text-red-400">
           <AlertTriangle size={18} />
-          <span className="text-xs font-black uppercase tracking-widest">Failed to load catalog.</span>
+          <span className="text-xs font-black tracking-wide">The catalogue could not be read: {catalogError}</span>
         </div>
       )}
 
@@ -367,6 +371,12 @@ export const LivingMarketplace: React.FC = () => {
           for sale</span>; only a listing with a WST price can be bought.
         </p>
 
+        {listingsUnread && (
+          <div role="alert" data-testid="listings-unread" className="mt-4 flex items-start gap-2 rounded-xl border border-vital/30 bg-vital/10 px-3 py-2">
+            <AlertTriangle size={12} className="text-vital shrink-0 mt-0.5" />
+            <p className="text-[10px] font-bold text-vital leading-relaxed">{listingsUnread}</p>
+          </div>
+        )}
         {listingsError && (
           <div role="alert" className="mt-4 flex items-start gap-2 rounded-xl border border-vital/30 bg-vital/10 px-3 py-2">
             <AlertTriangle size={12} className="text-vital shrink-0 mt-0.5" />
@@ -386,9 +396,9 @@ export const LivingMarketplace: React.FC = () => {
             Open any listing to set its price (virtual WST), edit it, or get an AI valuation.
           </p>
         )}
-        {listings.length === 0 ? (
+        {listings.length === 0 ? (listingsUnread ? null : (
           <p className="text-xs text-slate-500 italic py-8">No listings are registered.</p>
-        ) : (
+        )) : (
           <>
             {/* W491 (refutation) - `tradeable` excludes BOTH unpriced and held listings, so this sentence
                 described every registered listing as an unpriced catalogue entry; with a priced-but-held

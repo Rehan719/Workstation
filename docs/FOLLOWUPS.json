@@ -24739,6 +24739,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the list's failure is said in the list (no 'No VSB entities yet' beneath it, the count 'not read'); an entity's failure in its own panel, not 'Loading org…'; an orchestration's under the entity's button; unread deliverables are not 'None yet' or counted; the swarm's failure through errorMessage. VSBSpawnStudio.test.tsx drives each against the routes' own answers (four vitest blinds); test_w1039 holds the refusal read again, the server's own 500s and the page (five blinds). test_w960's and test_w1025's readings moved with the sentences."
+    },
+    {
+      "id": "FU-1224",
+      "title": "The Living Marketplace dropped a failed catalogue read's reason, and said unread listings as none",
+      "why": "Found rendering the Living Marketplace (FU-399 part 61) against its routes' own answers. A failed read of the product catalogue was said in one fixed sentence for every failure, the server's reason dropped; and a failed read of the listings put its notice above a list that said none were registered, though nothing had been read.",
+      "source": "W1040 (FU-399 part 61, the Living Marketplace rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/marketplace/LivingMarketplace.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1040",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the Living Marketplace; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the catalogue's failure is said through errorMessage; the listings' read failure is held apart from a purchase's and said by its reason, and the empty state is not shown over it. LivingMarketplace.test.tsx drives both against the routes' own answers and an unreachable server (three vitest blinds); test_w1040 holds the reads, the server's own 500s and the page (four blinds)."
     }
   ],
   "routes": [
