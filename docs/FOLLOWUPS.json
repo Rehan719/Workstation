@@ -24696,6 +24696,28 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: what the run was asked (stack, scale, target) is kept when it starts; the output's header says it, and the completion banner falls back to it, not to the form. DesignDevEngine.test.tsx drives a change after the run against the route's own stream (three vitest blinds); test_w1037 holds the refusal, the completion line against its own stages, and the page's code (five blinds)."
+    },
+    {
+      "id": "FU-1222",
+      "title": "The Creator Studio's 'AI Generate' and Enter replaced a graph the person built with no question",
+      "why": "Found rendering the Creator Studio (FU-399 part 59) against the blueprint route's own answers. A generation replaces the canvas. 'Regenerate blueprint' asked first over a graph the person had built (W968's ruling: an act that cannot be undone is not performed on a general yes), but 'AI Generate' and the intent field's Enter generated straight away and discarded the graph with no question; test_w968's count of the act's call sites read only the button's form. The same rendering found the blueprint's name cutting the intent at its sixtieth character, mid-word, with nothing said.",
+      "source": "W1038 (FU-399 part 59, the Creator Studio rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/create/CreatorStudio.tsx",
+        "agentic_core/api/v290/ceo_generate.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1038",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the Creator Studio; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: 'AI Generate', the intent's Enter and 'Regenerate blueprint' go through one request, which asks over a built graph (the question under the intent bar) and generates straight away over an empty canvas; the blueprint's name is the intent, whole when it fits, a cut falling between words and marked. CreatorStudio.test.tsx drives it against the route's own answers, canvas and all (three vitest blinds); test_w1038 holds the refusal and the name read again and every call of the generation (five blinds)."
     }
   ],
   "routes": [

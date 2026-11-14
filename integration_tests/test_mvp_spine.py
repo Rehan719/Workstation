@@ -85834,3 +85834,48 @@ def test_w1037_fu399_design_and_dev_intelligence_says_the_stack_its_run_was_aske
     assert "?.tech_stack ?? ranWith?.stack}" in page and "?.scale ?? ranWith?.scale}" in page
     t = (src / "pages/developers/DesignDevEngine.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './DesignDevEngine.fixture.json';" in t and "render(<DesignDevEngine />);" in t
+
+
+def test_w1038_fu399_the_creator_studio_asks_before_any_generation_replaces_a_built_graph(client):
+    """FU-399 part 59 (W1038). The Creator Studio is rendered, canvas and all, against the blueprint route's own answers
+    (CreatorStudio.test.tsx): the floor's blueprint for a made-up intent on a fresh store with no model installed, and
+    the route's refusal of a request with no intent. Rendering found two defects:
+    - "AI Generate" and the intent field's Enter generated straight away, and a generation replaces the canvas, so a
+      graph the person had built was discarded with no question. Only "Regenerate blueprint" asked (W968's ruling),
+      and test_w968's count of the act's call sites read only that button's form. All three now go through one
+      request, which asks over a built graph and generates straight away over an empty one.
+    - The blueprint's name cut the intent at its sixtieth character, mid-word, and said nothing ("... for one str").
+      The name is the intent, whole when it fits; a cut to fit a heading falls between words and is marked.
+
+    Held here: the refusal and the name are the route's own, read again (no project is named, so nothing is stored),
+    and a short intent is named whole; and, in the page, every call of the generation is the request's or the
+    question's answer."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/create/CreatorStudio.fixture.json").read_text(encoding="utf-8"))
+    url = "/api/v290/ceo/generate-blueprint"
+
+    r = client.post(url, json={k: v for k, v in fx["ask"].items() if k != "intent"})
+    assert (r.status_code, r.json()) == (fx["refused"]["status"], fx["refused"]["body"]), r.text[:200]
+    got = client.post(url, json=fx["ask"])
+    assert got.status_code == 200, got.text[:200]
+    body, was = got.json(), fx["blueprint"]["body"]
+    assert body["name"] == was["name"] == "W1038 made up: a lending library of garden tools for one… — Design Blueprint"
+    assert ([n["label"] for n in body["nodes"]], body["nodes_source"], body["nodes_basis"]) == (
+        [n["label"] for n in was["nodes"]], was["nodes_source"], was["nodes_basis"])
+    short = client.post(url, json={**fx["ask"], "intent": "W1038 made up:  a tool\nshed"})
+    assert short.json()["name"] == "W1038 made up: a tool shed — Design Blueprint", short.json()["name"]
+
+    code = " ".join(_code_only((src / "pages/create/CreatorStudio.tsx").read_text(encoding="utf-8")).split())
+    req = code[code.index("const requestGenerate = () => {"):]
+    req = req[:req.index("};") + 2]
+    assert req == ("const requestGenerate = () => { if (isGenerating || !intent.trim()) return; "
+                   "if (nodes.length > 0) { setAskingRegenerate(true); return; } void handleAIGenerate(); };"), req
+    #  the request: its definition, "AI Generate", the intent's Enter and "Regenerate blueprint"
+    assert code.count("requestGenerate") == 4, code.count("requestGenerate")
+    assert code.count("onClick={requestGenerate}") == 2 and "if (e.key === 'Enter') requestGenerate();" in code
+    #  the generation: its definition, the request over an empty canvas, and the question's answer
+    assert code.count("handleAIGenerate") == 3, code.count("handleAIGenerate")
+    t = (src / "pages/create/CreatorStudio.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './CreatorStudio.fixture.json';" in t and "render(<CreatorStudio />);" in t
