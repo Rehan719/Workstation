@@ -24908,6 +24908,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: each of the four reads says its failure through errorMessage and keeps what it says about the panel it leaves empty. VSBEconomy.test.tsx drives the reads as captured, the living entities' own 500 and three reads that reach no server (four vitest blinds); test_w1047 holds the reads, the 500 and the page (three blinds)."
+    },
+    {
+      "id": "FU-1232",
+      "title": "The Native AI page said every action's failure in one line under its header, far from the button and kept over a later success",
+      "why": "Found rendering the Native AI page (FU-399 part 67) against its routes' own answers. A completion, an ensemble, the quick swarm, the workflow tree, a lifecycle action, a cascade's save and a saved cascade's run each said its failure in one line under the page's header, far above its button on a page that long; only the tree cleared it when it ran again, so a failure stayed on screen over a later success. A failed read of the fabric's status said one fixed sentence, with the route's reason dropped.",
+      "source": "W1048 (FU-399 part 67, the Native AI page rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/developers/NativeAI.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1048",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the Native AI page; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: each action says its failure beside its own button and clears it when tried again; the status read says the route's reason. NativeAI.test.tsx drives the reads as captured, the status route's own 500, a completion that reached no server and then was answered, and the swarm's and the tree's failures (five vitest blinds); test_w1048 holds the captured status, completion and 500, and the page (four blinds); test_w1012's and test_w1013's readings of the save and the tree move with them."
     }
   ],
   "routes": [

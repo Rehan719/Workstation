@@ -84177,7 +84177,7 @@ def test_w1012_a_refusal_read_by_hand_is_never_said_as_object_object(client):
             "toast(`Submission failed (HTTP ${res.status})${detail ? `: ${detail.slice(0, 120)}` : ''}`);"],
         "pages/developers/NativeAI.tsx": [
             "const detail = bodyDetail(await bodyOrNull(r), '');",
-            "setError(`Save failed (HTTP ${r.status})${detail ? `: ${detail}` : ''}.`);"],
+            "setSaveErr(`Save failed (HTTP ${r.status})${detail ? `: ${detail}` : ''}.`);"],   # W1048 - beside its button
     }
     for rel, lines in sites.items():
         code = _code_only((src / rel).read_text(encoding="utf-8").replace("\r\n", "\n"))
@@ -84333,7 +84333,7 @@ def test_w1013_one_reading_of_a_refusal_a_field_check_is_said_by_its_field(clien
         "lib/auth.ts": ["basis: `Failed (HTTP ${r.status}): ${bodyDetail(d, 'no reason given')}` };"],
         "pages/developers/ForgePipeline.tsx": ["_why = bodyDetail(_b, '');", "const _rwhy = bodyDetail(_rb, '');"],
         "pages/developers/NativeAI.tsx": [
-            "setError(bodyDetail(data, `Workflow-tree run failed (HTTP ${r.status}).`));",
+            "setTreeErr(bodyDetail(data, `Workflow-tree run failed (HTTP ${r.status}).`));",   # W1048 - beside its button
             "if (!r.ok) throw new Error(bodyDetail(b, `HTTP ${r.status}`));"],
         "pages/enterprise/VSBCockpit.tsx": ["if (!r.ok) throw new Error(bodyDetail(b, `HTTP ${r.status}`));"] * 2,
         "pages/enterprise/EconomyOperations.tsx": [
@@ -86279,3 +86279,47 @@ def test_w1047_fu399_the_vsb_economy_page_says_what_happened_when_a_read_fails(c
         assert fixed not in page, ("a read's failure is a fixed sentence again", fixed)
     t = (src / "pages/enterprise/VSBEconomy.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './VSBEconomy.fixture.json';" in t and "<VSBEconomy />" in t
+
+
+def test_w1048_fu399_the_native_ai_page_says_each_failure_beside_the_action_that_met_it(client):
+    """FU-399 part 67 (W1048). The Native AI page is rendered against its routes' own answers (NativeAI.test.tsx): every
+    read it makes on opening, as each route answered on a fresh store with no model installed, one completion of the
+    page's own default prompt, and the status route's own 500 when its read fails inside. Rendering found two defects:
+    - every action's failure was said in one line under the page's header: a completion, an ensemble, the quick swarm,
+      the workflow tree, a lifecycle action, a cascade's save and a saved cascade's run. The line sits far above their
+      buttons, and only the tree cleared it when it ran again, so a failure stayed on screen over a later success. Each
+      is said beside its own button now, and cleared when that action is tried again;
+    - a failed read of the fabric's status said one fixed sentence, with the route's reason dropped. It says the reason.
+
+    Held here: the captured status is the floor's and the completion the native engine's, asked with the page's own
+    default prompt; the status route's 500 is the global handler's (made inside the route, so not run again); and the
+    page's code, where no action writes the header's line any more."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/developers/NativeAI.fixture.json").read_text(encoding="utf-8"))
+    st = fx["answers"]["/api/v1/native-ai/status"]["body"]
+    assert (st["floor_active"], st["active_model"]) == (True, "native"), st
+    r = client.get("/api/v1/native-ai/status")
+    assert r.status_code == 200 and r.json()["floor_active"] is True, r.text[:200]
+    done = fx["completed"]["body"]
+    assert (fx["completed"]["status"], done["served_by"], done["is_external"]) == (200, "native", False), done
+    assert fx["ask"] == {"prompt": "Outline a halal, zero-waste weekly meal plan for an elderly resident",
+                         "agent": "console", "model": "auto"}
+    sf = fx["status_failed"]
+    assert (sf["status"], sf["body"]["detail"], sf["body"]["cause_established"]) == (
+        500, "GET /api/v1/native-ai/status failed with RuntimeError. The failure is recorded; the cause is not "
+             "established.", False), sf
+
+    page = _code_only((src / "pages/developers/NativeAI.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "setError(" not in page and "const [error, setError]" not in page, "an action's failure is said in the header's line again"
+    assert ".catch((e: unknown) => setStatusErr(`The fabric's status could not be read: ${errorMessage(e)}`))" in page
+    for setter, testid in (("setCompleteErr", "native-complete-error"), ("setEnsembleErr", "native-ensemble-error"),
+                           ("setSwarmErr", "native-swarm-error"), ("setTreeErr", "native-tree-error"),
+                           ("setLcActErr", "lifecycle-action-error"), ("setSaveErr", "cascade-save-error")):
+        assert f"{setter}('')" in page, (setter, "is not cleared when its action is tried again")
+        assert f'data-testid="{testid}"' in page, testid
+    assert "setRunSavedErr(null);" in page and "setRunSavedErr({ id, msg: errorMessage(e) });" in page
+    assert 'data-testid="cascade-run-error"' in page
+    t = (src / "pages/developers/NativeAI.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './NativeAI.fixture.json';" in t and "render(<NativeAI />);" in t

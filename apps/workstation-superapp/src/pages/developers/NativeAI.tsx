@@ -458,7 +458,16 @@ export const NativeAI: React.FC = () => {
   const [goal, setGoal] = useState('Build and launch a halal compliance review service for SME food businesses');
   const [tree, setTree] = useState<TreeRun | null>(null);
   const [treeRunning, setTreeRunning] = useState(false);
-  const [error, setError] = useState('');
+  //  W1048 - each failure is said beside the action that met it, and cleared when that action is tried again. One
+  //  line under the header said them all, far above their buttons, and kept a failure on screen over a later success
+  const [statusErr, setStatusErr] = useState('');
+  const [completeErr, setCompleteErr] = useState('');
+  const [ensembleErr, setEnsembleErr] = useState('');
+  const [swarmErr, setSwarmErr] = useState('');
+  const [treeErr, setTreeErr] = useState('');
+  const [lcActErr, setLcActErr] = useState('');
+  const [saveErr, setSaveErr] = useState('');
+  const [runSavedErr, setRunSavedErr] = useState<{ id: string; msg: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [homeo, setHomeo] = useState<any>(null);   // §8→§6 live homeostatic posture
   // W437 — fabric integrity: a REAL import probe of every capability's backing module, plus the
@@ -563,19 +572,19 @@ export const NativeAI: React.FC = () => {
     apiJson<CandidateRegister>('/api/v1/native-ai/lifecycle/candidates').then(d => { setCandidates(d); setCandErr(''); })
       .catch(e => { setCandidates(null); setCandErr(errorMessage(e)); });
   const lifecycleAction = async (action: 'evaluate' | 'promote' | 'retire' | 'reinstate', model: string) => {
-    setLcBusy(`${action}:${model}`);
+    setLcBusy(`${action}:${model}`); setLcActErr('');
     try {
       // Ledger cluster 2 — a failed retire/promote must be visible, never a silent reload
       await apiJson(`/api/v1/native-ai/lifecycle/${action}`, { method: 'POST', body: { model } });
       loadLifecycle();
       loadCandidates();
-    } catch (e) { setError(errorMessage(e)); }
+    } catch (e) { setLcActErr(errorMessage(e)); }
     setLcBusy('');
   };
 
   useEffect(() => {
     apiJson('/api/v1/native-ai/status').then(setStatus)
-      .catch(() => setError('Failed to load fabric status'))
+      .catch((e: unknown) => setStatusErr(`The fabric's status could not be read: ${errorMessage(e)}`))   // W1048 - with its reason
       .finally(() => setLoading(false));
     apiJson('/api/v1/native-ai/capabilities').then(d => setCapabilities(d.capabilities || [])).catch(noteRead('the capabilities'));
     apiJson('/api/v1/native-ai/homeostasis').then(setHomeo).catch(noteRead('the homeostasis reading'));
@@ -600,11 +609,11 @@ export const NativeAI: React.FC = () => {
   const [completing, setCompleting] = useState(false);
   const runComplete = async () => {
     if (!cPrompt.trim()) return;
-    setCompleting(true); setCRes(null);
+    setCompleting(true); setCRes(null); setCompleteErr('');
     try {
       setCRes(await apiJson('/api/v1/native-ai/complete', {
         method: 'POST', body: { prompt: cPrompt, agent: 'console', model: cModel } }));
-    } catch (e) { setError(errorMessage(e)); }
+    } catch (e) { setCompleteErr(errorMessage(e)); }
     setCompleting(false);
   };
 
@@ -613,26 +622,26 @@ export const NativeAI: React.FC = () => {
   const [ensembling, setEnsembling] = useState(false);
   const runEnsemble = async () => {
     if (!cPrompt.trim()) return;
-    setEnsembling(true); setEnsRes(null);
+    setEnsembling(true); setEnsRes(null); setEnsembleErr('');
     try {
       setEnsRes(await apiJson('/api/v1/native-ai/ensemble', {
         method: 'POST', body: { prompt: cPrompt, agent: 'console' } }));
-    } catch (e) { setError(errorMessage(e)); }
+    } catch (e) { setEnsembleErr(errorMessage(e)); }
     setEnsembling(false);
   };
 
   const runSwarm = async () => {
-    setRunning(true); setRun(null);
+    setRunning(true); setRun(null); setSwarmErr('');
     try {
       setRun(await apiJson('/api/v1/native-ai/swarm', {
         method: 'POST', body: { agent: 'demo', context } }));
-    } catch (e) { setError(errorMessage(e)); }
+    } catch (e) { setSwarmErr(errorMessage(e)); }
     setRunning(false);
   };
 
   const runTree = async () => {
     if (!goal.trim()) return;
-    setTreeRunning(true); setTree(null); setError('');
+    setTreeRunning(true); setTree(null); setTreeErr('');
     try {
       const r = await fetch('/api/v1/native-ai/tree', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -645,9 +654,9 @@ export const NativeAI: React.FC = () => {
         setTree(data);
       } else {
         //  W982 - the server's sentence when it gave one; an object detail is never put into the text
-        setError(bodyDetail(data, `Workflow-tree run failed (HTTP ${r.status}).`));   // W1013 - a field check by its field
+        setTreeErr(bodyDetail(data, `Workflow-tree run failed (HTTP ${r.status}).`));   // W1013 - a field check by its field
       }
-    } catch (e: any) { setError(errorMessage(e)); }
+    } catch (e: any) { setTreeErr(errorMessage(e)); }
     setTreeRunning(false);
   };
 
@@ -694,7 +703,7 @@ export const NativeAI: React.FC = () => {
   };
 
   const saveCascade = async () => {
-    setSaving(true);
+    setSaving(true); setSaveErr('');
     try {
       const valid = stages.filter(s => s.role.trim() && s.instruction.trim());
       const url = editingId ? `/api/v1/resources/swarm/${editingId}` : '/api/v1/resources/swarm/define';
@@ -705,21 +714,21 @@ export const NativeAI: React.FC = () => {
       });
       if (!r.ok) {   // W344 — never a silent click; W460 — and say why when the backend says why
         const detail = bodyDetail(await bodyOrNull(r), '');   // W1012 - text, whatever its shape
-        setError(`Save failed (HTTP ${r.status})${detail ? `: ${detail}` : ''}.`);
+        setSaveErr(`Save failed (HTTP ${r.status})${detail ? `: ${detail}` : ''}.`);
       }
       // W460 — a cascade removed elsewhere (404) used to trap the designer in edit mode against a missing id
       if (r.ok || (editingId && r.status === 404)) { setEditingId(null); if (r.ok) setDesignContext(''); }
       await loadCascades();
-    } catch (e: any) { setError(errorMessage(e)); }
+    } catch (e: any) { setSaveErr(errorMessage(e)); }
     setSaving(false);
   };
 
   const runSaved = async (id: string) => {
-    setRunningId(id); setSavedRun(null);
+    setRunningId(id); setSavedRun(null); setRunSavedErr(null);
     try {
       setSavedRun({ id, run: await apiJson('/api/v1/resources/swarm/run', {
         method: 'POST', body: { swarm_id: id } }) });
-    } catch (e) { setError(errorMessage(e)); }
+    } catch (e) { setRunSavedErr({ id, msg: errorMessage(e) }); }
     setRunningId('');
   };
 
@@ -736,9 +745,9 @@ export const NativeAI: React.FC = () => {
         </p>
       </header>
 
-      {error && <p className="text-vital text-xs font-bold">{error}</p>}
+      {statusErr && <p role="alert" data-testid="native-status-error" className="text-vital text-xs font-bold">{statusErr}</p>}
 
-      {loading && !status && !error && (
+      {loading && !status && !statusErr && (
         <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500"><Loader2 size={14} className="animate-spin" /> Loading the native AI fabric…</div>
       )}
 
@@ -980,6 +989,8 @@ export const NativeAI: React.FC = () => {
                 {ensembling ? <Loader2 size={12} className="animate-spin" /> : <Network size={12} />} Ensemble (all owned models)
               </button>
             </div>
+            {completeErr && <p data-testid="native-complete-error" role="alert" className="text-[10px] font-bold text-vital mb-3">{completeErr}</p>}
+            {ensembleErr && <p data-testid="native-ensemble-error" role="alert" className="text-[10px] font-bold text-vital mb-3">{ensembleErr}</p>}
             {ensRes && (
               <div className="p-3 rounded-xl bg-slate-950 border border-aura/20 mb-3">
                 {/* W491 (sweep S7.12, C10) — this read "Ensemble · 1 owned models in parallel →
@@ -1091,6 +1102,7 @@ export const NativeAI: React.FC = () => {
                   </div>
                 ))}
               </div>
+              {lcActErr && <p data-testid="lifecycle-action-error" role="alert" className="text-[10px] font-bold text-vital mt-2">{lcActErr}</p>}
             </Card>
           )}
 
@@ -1241,6 +1253,7 @@ export const NativeAI: React.FC = () => {
             <Button onClick={runSwarm} disabled={running} className="flex items-center gap-2 bg-aura text-sovereign text-xs">
               {running ? <Loader2 size={13} className="animate-spin" /> : <Network size={13} />} Run quick swarm
             </Button>
+            {swarmErr && <p data-testid="native-swarm-error" role="alert" className="text-[10px] font-bold text-vital mt-2">{swarmErr}</p>}
             {run && <Trace run={run} />}
           </Card>
 
@@ -1258,6 +1271,7 @@ export const NativeAI: React.FC = () => {
             <Button onClick={runTree} disabled={treeRunning || !goal.trim()} className="flex items-center gap-2 bg-highlight text-sovereign text-xs">
               {treeRunning ? <Loader2 size={13} className="animate-spin" /> : <Network size={13} />} Plan + run workflow tree
             </Button>
+            {treeErr && <p data-testid="native-tree-error" role="alert" className="text-[10px] font-bold text-vital mt-2">{treeErr}</p>}
             {tree && <TreeView run={tree} />}
           </Card>
 
@@ -1310,6 +1324,7 @@ export const NativeAI: React.FC = () => {
                 {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save cascade
               </Button>
             </div>
+            {saveErr && <p data-testid="cascade-save-error" role="alert" className="text-[10px] font-bold text-vital mt-2">{saveErr}</p>}
           </Card>
 
           {/* Saved cascades */}
@@ -1356,6 +1371,7 @@ export const NativeAI: React.FC = () => {
                       </Button>
                     </div>
                   </div>
+                  {runSavedErr?.id === c.id && <p data-testid="cascade-run-error" role="alert" className="text-[10px] font-bold text-vital mt-2">{runSavedErr.msg}</p>}
                   {confirmDelete === c.id && (
                     <div className="mt-3 p-3 rounded-xl bg-vital/5 border border-vital/30" data-testid="cascade-delete-confirm">
                       <p className="text-[10px] font-bold text-vital">
