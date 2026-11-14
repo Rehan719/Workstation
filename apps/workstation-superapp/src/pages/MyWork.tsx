@@ -8,6 +8,7 @@ import {
   syncWorkspaceFromServer, lastSyncError, type OutputRecord,
 } from '../lib/outputHistory';
 import { getToken } from '../lib/auth';
+import { AskPerson } from '../components/AskPerson';   // W1034 - clearing every saved output asks first
 import { provenanceBadge, provenanceMapBadge, provenanceLine } from '../lib/api';
 
 // §9 — "My Work": revisit the outputs you've generated (domain tools + journeys).
@@ -25,6 +26,7 @@ export const MyWork: React.FC = () => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState('');
+  const [askingClear, setAskingClear] = useState(false);   // W1034
 
   const signedIn = (() => { try { return !!getToken(); } catch { return false; } })();
 
@@ -101,12 +103,23 @@ export const MyWork: React.FC = () => {
           )}
         </div>
         {records.length > 0 && (
-          <Button type="button" onClick={clearAll}
+          <Button type="button" onClick={() => setAskingClear(true)}
             variant="outline" className="text-[10px] border-slate-800 text-slate-400 shrink-0">
             <Trash2 size={14} /> Clear all
           </Button>
         )}
       </header>
+      {/* W1034 - clearing every saved output cannot be undone, and it ran on one click with no question (W968's
+          ruling: an act that cannot be undone is not performed on a general yes) */}
+      {askingClear && (
+        <AskPerson question={`Clear all ${records.length} saved output${records.length === 1 ? '' : 's'}?`} kind="confirmation"
+          options={[
+            { id: 'clear', label: 'Clear them all', differs: signedIn ? 'every saved output is removed from this browser and from your workspace on the server' : 'every saved output is removed from this browser', undo: 'it cannot be undone: the outputs are kept nowhere else' },
+            { id: 'keep', label: 'Keep them', differs: 'nothing changes', undo: 'there is nothing to undo', recommended: true },
+          ]}
+          typeBack={{ optionId: 'clear', text: 'clear all', label: 'Type "clear all" to clear them' }}
+          onChoose={id => { setAskingClear(false); if (id === 'clear') void clearAll(); }} />
+      )}
 
       {/* Do not assert "nothing saved" while the workspace pull is still in flight — that verdict
           was wrong for every signed-in user on a device that had not synced yet. */}

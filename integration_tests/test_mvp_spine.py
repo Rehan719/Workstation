@@ -85698,3 +85698,33 @@ def test_w1033_no_control_says_not_implemented_and_the_wallet_requests_an_alloca
     con = _code_only((src / "pages/Contribute.tsx").read_text(encoding="utf-8"))
     assert con.count("openExternal(`${REPO}/discussions`)") == 2 and "Discourse" not in con and "Discord" not in con
     assert 'data-testid="contribute-no-forum"' in con
+
+
+def test_w1034_fu399_my_work_asks_before_it_clears_every_saved_output(client):
+    """FU-399 part 56 (W1034). My Work is rendered (MyWork.test.tsx), signed out as shipped, over two made-up outputs
+    saved the way a tool saves one. Rendering found one defect: "Clear all" removed every saved output (from this
+    browser, and from the person's workspace on the server when signed in) on one click, with no question. The
+    Owner's ruling of 2026-10-12 (P5.14 clause 6, W968): an act that cannot be undone is not performed on a general
+    yes. It now asks in AskPerson's shape, and the clearing waits for "clear all" typed back.
+
+    Held here, as test_w968 holds the four acts it found: one question, a confirmation, two options each saying what
+    it does and what undoing it costs, exactly one recommended, the act held for its words, and run only from the
+    answer."""
+    import pathlib
+    import re
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    code = " ".join(_code_only((src / "pages/MyWork.tsx").read_text(encoding="utf-8")).split())
+    blocks = re.findall(r"<AskPerson (.*?)/>", code)
+    assert len(blocks) == 1, len(blocks)
+    b = blocks[0]
+    assert 'kind="confirmation"' in b
+    opts = re.findall(r"\{ id: '[a-z]+', label: [^}]*\}", b)
+    assert len(opts) == 2 and all("differs: " in o and "undo: " in o for o in opts), opts
+    assert sum("recommended: true" in o for o in opts) == 1, "not exactly one option is recommended"
+    assert "recommended: true" in [o for o in opts if "id: 'keep'" in o][0], "clearing everything is recommended"
+    assert "typeBack={{ optionId: 'clear', text: 'clear all'," in b, "the clearing is not held for its words"
+    assert "if (id === 'clear') void clearAll();" in b and code.count("void clearAll()") == 1, "the act runs from elsewhere"
+    assert "onClick={clearAll}" not in code and "onClick={() => setAskingClear(true)}" in code
+    assert "it cannot be undone" in b, b[:300]
+    t = (src / "pages/MyWork.test.tsx").read_text(encoding="utf-8")
+    assert "import { MyWork } from './MyWork';" in t and "saveOutput(" in t

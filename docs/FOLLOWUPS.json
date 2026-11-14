@@ -24612,6 +24612,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the Wallet's Allocate opens a request to the fund's route and says the fund's own sentence (held at Change Control, or the refusal's status and reason); Propose Amendment goes to Change Control as the Constitution page's does; the Contribute page says there is no forum and opens the repository's discussions. Wallet.test.tsx and Contribute.test.tsx drive them (three vitest blinds); test_w1033 holds the refusals, read again, the held answer, and, tree-wide, that no page calls notImplemented (five blinds)."
+    },
+    {
+      "id": "FU-1218",
+      "title": "My Work's 'Clear all' removed every saved output on one click, with no question",
+      "why": "Found rendering My Work (FU-399 part 56). 'Clear all' removed every saved output, from this browser and, when signed in, from the person's workspace on the server, on one click, with no question at all. The Owner's ruling of 2026-10-12 (P5.14 clause 6, W968) is that an act that cannot be undone is not performed on a general yes; W968 moved the four acts it found that ran on a bare window.confirm, and this one did not even confirm.",
+      "source": "W1034 (FU-399 part 56, My Work rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/MyWork.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1034",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of My Work; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: 'Clear all' opens a question in AskPerson's shape (what clearing and keeping each do, that clearing cannot be undone, keeping recommended), and the clearing waits for 'clear all' typed back. MyWork.test.tsx drives it over two outputs saved the way a tool saves one (two vitest blinds); test_w1034 holds the question's shape as test_w968 holds its four (three blinds)."
     }
   ],
   "routes": [
