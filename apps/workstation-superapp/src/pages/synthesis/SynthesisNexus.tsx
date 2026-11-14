@@ -418,16 +418,17 @@ export const SynthesisNexus: React.FC = () => {
             <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800">
               {React.createElement(engineIcon(selectedEngine), { size: 12, className: 'text-highlight shrink-0' })}
               {decision?.decided === false ? (
+                //  W1041 - the words are spaced by spaces, not by margins: the text read "defaulted toBDPbecause"
                 <p className="text-[10px] font-black uppercase tracking-widest text-amber-400">
-                  Not selected: defaulted to
-                  <span className="ml-2">{selectedEngine.toUpperCase()}</span>
-                  <span className="ml-2 normal-case tracking-normal font-bold text-slate-400">because {decision.reason}</span>
+                  Not selected: defaulted to{' '}
+                  <span>{selectedEngine.toUpperCase()}</span>{' '}
+                  <span className="normal-case tracking-normal font-bold text-slate-400">because {decision.reason}</span>
                 </p>
               ) : (
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                  Primary engine:
-                  <span className="text-highlight ml-2">{selectedEngine.toUpperCase()}</span>
-                  {decision?.reason && <span className="ml-2 normal-case tracking-normal font-bold text-slate-500">({decision.reason})</span>}
+                  Primary engine:{' '}
+                  <span className="text-highlight">{selectedEngine.toUpperCase()}</span>
+                  {decision?.reason && <>{' '}<span className="normal-case tracking-normal font-bold text-slate-500">({decision.reason})</span></>}
                 </p>
               )}
             </div>

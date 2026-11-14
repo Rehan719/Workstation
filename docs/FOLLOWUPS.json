@@ -24760,6 +24760,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the catalogue's failure is said through errorMessage; the listings' read failure is held apart from a purchase's and said by its reason, and the empty state is not shown over it. LivingMarketplace.test.tsx drives both against the routes' own answers and an unreachable server (three vitest blinds); test_w1040 holds the reads, the server's own 500s and the page (four blinds)."
+    },
+    {
+      "id": "FU-1225",
+      "title": "The Synthesis Nexus's sentence saying how its engine was chosen ran its words together",
+      "why": "Found rendering the Synthesis Nexus (FU-399 part 62) against its route's own stream. The sentence that says how the primary engine was chosen (defaulted, because no model decided, or chosen with a reason) was built from spans spaced only by their margins, so for anything reading the text rather than the pixels it ran together: 'defaulted toBDPbecause no model was available to decide'.",
+      "source": "W1041 (FU-399 part 62, the Synthesis Nexus rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/SynthesisNexus.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1041",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the Synthesis Nexus; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: both forms of the engine sentence separate their words with spaces of their own. SynthesisNexus.test.tsx reads each as a sentence against the route's own stream (three vitest blinds); test_w1041 holds the refusal, the stream's record of the default and the page (four blinds)."
     }
   ],
   "routes": [

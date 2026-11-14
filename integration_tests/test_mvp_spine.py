@@ -85985,3 +85985,39 @@ def test_w1040_fu399_the_living_marketplace_says_a_failed_read_with_its_reason_a
     assert '<div role="alert" data-testid="listings-unread"' in page
     t = (src / "pages/marketplace/LivingMarketplace.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './LivingMarketplace.fixture.json';" in t and "<LivingMarketplace />" in t
+
+
+def test_w1041_fu399_the_synthesis_nexus_says_how_its_engine_was_chosen_in_words_that_read(client):
+    """FU-399 part 62 (W1041). The Synthesis Nexus is rendered against its route's own stream
+    (SynthesisNexus.test.tsx): the four layers streamed for a made-up challenge on a fresh store with no model
+    installed, Auto chosen, so no model chose the engine and BDP ran by default, and the route's refusal of a request
+    with no challenge. Rendering found one defect: the sentence that says how the engine was chosen ("Not selected:
+    defaulted to BDP because <reason>", or "Primary engine: BDP (<reason>)") was spaced only by its spans' margins, so
+    its text ran together for anything that reads text: "defaulted toBDPbecause no model was available to decide". Its
+    words are now separated by spaces of their own.
+
+    Held here: the refusal is the route's own, read again; the stream's own record of the default (the stream is not
+    run again: each layer is a gateway call, which the operations record counts); and the page's code."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/synthesis/SynthesisNexus.fixture.json").read_text(encoding="utf-8"))
+
+    r = client.post("/api/v1/intelligence/nexus", json={k: v for k, v in fx["ask"].items() if k != "challenge"})
+    assert (r.status_code, r.json()) == (fx["refused"]["status"], fx["refused"]["body"]), r.text[:200]
+    events = [json.loads(line[6:]) for line in fx["nexus"]["stream"].split("\n") if line.startswith("data: ")]
+    chosen = [e for e in events if e["stage"] == "engine_selected"]
+    assert len(chosen) == 1 and chosen[0]["data"]["engine"] == "bdp", chosen
+    assert chosen[0]["data"]["decision"]["decided"] is False and chosen[0]["data"]["decision"]["reason"], chosen
+    stages = [e for e in events if isinstance((e.get("data") or {}).get("stage_num"), int)]
+    assert [e["data"]["stage_num"] for e in stages] == list(range(1, 9)), [e["stage"] for e in stages]
+    done = [e for e in events if e["stage"] == "nexus_complete"]
+    assert len(done) == 1 and (done[0]["data"]["layers_completed"], done[0]["data"]["layers_total"]) == (4, 4), done
+
+    page = " ".join(_code_only((src / "pages/synthesis/SynthesisNexus.tsx").read_text(encoding="utf-8")).split())
+    assert ("Not selected: defaulted to{' '} <span>{selectedEngine.toUpperCase()}</span>{' '} <span className=\"normal-case "
+            "tracking-normal font-bold text-slate-400\">because {decision.reason}</span>") in page
+    assert ("Primary engine:{' '} <span className=\"text-highlight\">{selectedEngine.toUpperCase()}</span> {decision?.reason "
+            "&& <>{' '}<span ") in page
+    t = (src / "pages/synthesis/SynthesisNexus.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './SynthesisNexus.fixture.json';" in t and "render(<SynthesisNexus />);" in t
