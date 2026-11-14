@@ -17,7 +17,7 @@ export const ProtectedEntitiesPanel: React.FC = () => {
 
   const load = async () => {
     try { setRec(await apiJson<Dict>('/api/v1/economy/protected-entities')); setErr(''); }
-    catch (e: any) { setErr(`The protected-entities record could not be read: ${String(e?.message ?? e)}`); }
+    catch (e: any) { setErr(`The protected-entities record could not be read: ${errorMessage(e)}`); }
   };
   useEffect(() => { load(); }, []);
 

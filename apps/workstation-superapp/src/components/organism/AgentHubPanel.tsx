@@ -12,6 +12,7 @@
  *     means recorded: no executor is subscribed and nothing runs these automatically.
  */
 import React, { useEffect, useRef, useState } from 'react';
+import { errorMessage } from '../../lib/api';   // W1015 - a caught failure, said as what it was
 import { ReadFailures, useReadFailures, silenceIsRight } from '../../components/ReadFailures';   // W931
 import { bodyOrNull, bodyDetail } from '../../lib/api';   // W982; W1013: bodyDetail
 import { Card, Button } from '@workstation/ui';
@@ -58,7 +59,7 @@ const AgentHubPanel: React.FC = () => {
 
   const loadAll = () => {
     setLoadErr('');
-    jget('/api/v1/hub/agents').then(setAgents).catch(e => setLoadErr(`Hub unreachable — ${e.message}`));
+    jget('/api/v1/hub/agents').then(setAgents).catch(e => setLoadErr(`Hub unreachable — ${errorMessage(e)}`));
     loadMsgs();
     jget('/api/v1/hub/handoffs?limit=20').then(d => setHandoffs(d.handoffs)).catch(() => setHandoffs(null));
   };
@@ -112,7 +113,7 @@ const AgentHubPanel: React.FC = () => {
         : 'Stored — no live subscribers received it (nothing on the platform consumes hub messages by itself).');
       setDraft('');
       if (feedMode !== 'sse') loadMsgs();
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+    } catch (e: any) { setErr(errorMessage(e)); }
     setBusy(false);
   };
 
@@ -125,7 +126,7 @@ const AgentHubPanel: React.FC = () => {
       });
       if (!r.ok) { const d = await bodyOrNull(r); setErr(bodyDetail(d, `HTTP ${r.status}`)); return; }   // W1013 - and a body that is not JSON
       jget('/api/v1/hub/handoffs?limit=20').then(d => { clearRead('the handoffs'); setHandoffs(d.handoffs); }).catch(noteRead('the handoffs'));
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+    } catch (e: any) { setErr(errorMessage(e)); }
   };
 
   return (

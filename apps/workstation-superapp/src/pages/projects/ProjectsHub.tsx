@@ -1,4 +1,5 @@
 import { silenceIsRight } from '../../components/ReadFailures';   // W961 (FU-1181)
+import { errorMessage } from '../../lib/api';   // W1015 - a caught failure, said as what it was
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { REALMS as CANON_REALMS, REALM_LABELS, DOMAIN_LABELS } from '../../lib/taxonomy';
 import { useSearchParams } from 'react-router-dom';
@@ -340,7 +341,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
         setError('The stream closed before completing, and the project could not be re-read.');
       }
     } catch (err: any) {
-      setError(err?.message ?? 'Stream failed');
+      setError(errorMessage(err));
       onUpdate({ ...project, status: 'error' });
     } finally {
       setStreaming(false);
@@ -548,7 +549,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
                 <button
                   type="button"
                   onClick={() => downloadExport(out.download_url, String(out.output_id ?? 'output'))
-                    .catch((e: any) => alert(`Download failed: ${e?.message ?? 'backend unreachable'}`))}
+                    .catch((e: any) => alert(`Download failed: ${errorMessage(e)}`))}
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-aura/30 text-aura text-[8px] font-black uppercase tracking-widest hover:bg-aura/10 transition-colors"
                 >
                   <Download size={9} /> Download

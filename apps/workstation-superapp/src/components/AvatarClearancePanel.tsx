@@ -41,11 +41,11 @@ export const AvatarClearancePanel: React.FC = () => {
       await apiJson('/api/v1/avatar/ratifications', { method: 'POST', body: { purpose, modes: ['instructor'] } });
       setPurpose('');
       await load();
-    } catch (e: any) { setErr(`Not recorded: ${String(e?.message ?? e)}`); }
+    } catch (e: any) { setErr(`Not recorded: ${errorMessage(e)}`); }
   };
   const revoke = async (id: string) => {
     try { await apiJson(`/api/v1/avatar/ratifications/${id}/revoke`, { method: 'POST' }); await load(); }
-    catch (e: any) { setErr(`Not revoked: ${String(e?.message ?? e)}`); }
+    catch (e: any) { setErr(`Not revoked: ${errorMessage(e)}`); }
   };
 
   const active = (rats ?? []).filter(r => !r.revoked_at);

@@ -252,7 +252,7 @@ export const GenesisJourney: React.FC = () => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const d = await res.json();
       setVsb({ ...vsb, name: d.name, name_pending: false, name_source: 'founder', initial_ship: d.ship ?? vsb.initial_ship });
-    } catch (e: any) { setError(`Naming failed — ${e?.message ?? 'backend unreachable'}; nothing changed.`); }
+    } catch (e: any) { setError(`Naming failed: ${errorMessage(e)} Nothing changed.`); }
     setNaming(false);
   };
   // §2 — the VSB's legal/economic form, selected by the user at generation (wired to the economy templates)
@@ -313,7 +313,7 @@ export const GenesisJourney: React.FC = () => {
           vsb_id: data?.established_vsb?.vsb_id });
       } catch { silenceIsRight('the local history of outputs is browser storage is a per-browser convenience that nothing else depends on')(); }
     } catch (e: any) {
-      setError(e?.message ?? String(e));
+      setError(errorMessage(e));
     }
     setRunning(false);
   };
@@ -367,7 +367,7 @@ export const GenesisJourney: React.FC = () => {
       // W338 — bearer-carrying open (a raw window.open 401s under auth)
       await openExport(`/api/v1/deliverables/${d.id}/export?format=${kind === 'presentation' ? 'slides' : 'html'}`);
     } catch (e: any) {
-      setError(e?.message ?? String(e));
+      setError(errorMessage(e));
     }
     setExporting('');
   };
@@ -1296,7 +1296,7 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                             )}
                           </div>
                           <p className="text-[9px] text-slate-500">Pages: {site.nav.map(n => n.label).join(' · ')}</p>
-                          <button type="button" onClick={() => openExport(site.preview).catch(e => setError(`Preview failed: ${e.message}`))}
+                          <button type="button" onClick={() => openExport(site.preview).catch(e => setError(`Preview failed: ${errorMessage(e)}`))}
                             className="inline-block text-[10px] font-black uppercase tracking-widest text-aura border border-aura/40 px-3 py-1.5 rounded-lg hover:bg-aura/10 transition-colors">
                               Open the live site →
                             </button>
@@ -1329,7 +1329,7 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                             <p className="text-[9px] text-amber-400/80 leading-relaxed" data-testid="webapp-template-note">
                               {typeof webapp.note === 'string' && webapp.note ? webapp.note : 'The server sent no note saying what this app is.'}
                             </p>
-                            <button type="button" onClick={() => openExport(webapp.preview).catch(e => setError(`Preview failed: ${e.message}`))}
+                            <button type="button" onClick={() => openExport(webapp.preview).catch(e => setError(`Preview failed: ${errorMessage(e)}`))}
                               className="inline-block text-[10px] font-black uppercase tracking-widest text-highlight border border-highlight/40 px-3 py-1.5 rounded-lg hover:bg-highlight/10 transition-colors">
                                 Open the web app →
                               </button>
@@ -1365,7 +1365,7 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                             <p className="text-[9px] text-amber-400/80 leading-relaxed" data-testid="pwa-template-note">
                               {typeof pwa.note === 'string' && pwa.note ? pwa.note : 'The server sent no note saying what this app is.'}
                             </p>
-                            <button type="button" onClick={() => openExport(pwa.preview).catch(e => setError(`Preview failed: ${e.message}`))}
+                            <button type="button" onClick={() => openExport(pwa.preview).catch(e => setError(`Preview failed: ${errorMessage(e)}`))}
                               className="inline-block text-[10px] font-black uppercase tracking-widest text-aura border border-aura/40 px-3 py-1.5 rounded-lg hover:bg-aura/10 transition-colors">
                                 Open the phone app →
                               </button>

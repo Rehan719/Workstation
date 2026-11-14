@@ -370,7 +370,7 @@ Document-controlled under the QMS (DCMS) · record ${selected.quality_assurance.
                     setError('');
                     try { await downloadExport(`/api/v1/deliverables/${selected.id}/export?format=${dlFormat}`, `${selected.title || 'deliverable'}.${dlFormat}`); }
                     //  W989 (FU-399 part 21) - a failed export is said on the page, with the server's reason, not in an alert
-                    catch (e: any) { setError(e?.message ?? 'Export failed'); }
+                    catch (e: any) { setError(errorMessage(e)); }
                   }}
                   title={selected.quality_assurance?.quality?.compliance?.overall === 'fail' ? 'This export carries the COMPLIANCE FAIL verdict on page one — the artifact is not cleared for use' : undefined}
                   className={`flex items-center gap-1.5 text-[11px] font-bold px-3 py-2 rounded-xl hover:opacity-90 ${selected.quality_assurance?.quality?.compliance?.overall === 'fail' ? 'bg-vital/20 text-vital border border-vital/40' : 'bg-aura text-sovereign'}`}>

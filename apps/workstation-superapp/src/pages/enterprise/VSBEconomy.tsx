@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { errorMessage } from '../../lib/api';   // W1015 - a caught failure, said as what it was
 import { useSearchParams } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import {
@@ -213,7 +214,7 @@ export const VSBEconomy: React.FC = () => {
       setWfMsg(d.ueg_logged === false
         ? `Saved — effective from the next cycle (virtual). NOT logged to the UEG: ${d.ueg_basis ?? 'the log write failed'}.`
         : 'Saved — effective from the next cycle (virtual; logged to the UEG).');
-    } catch (e: any) { setWfErr([e?.message ?? String(e)]); }
+    } catch (e: any) { setWfErr([errorMessage(e)]); }
     setWfSaving(false);
   };
 
@@ -246,7 +247,7 @@ export const VSBEconomy: React.FC = () => {
       setHold(d.cycle == null ? (d.governance ?? { status: 'no_cycle', note: 'The cycle returned no result.' }) : null);
       loadOwnerPay();   // refresh the ledger (the cycle's report says whether the Owner's §4 share was recorded)
       loadBoardPack();  // refresh the live financial Board Pack
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+    } catch (e: any) { setError(errorMessage(e)); }
     setRunning(false);
   };
 
@@ -276,7 +277,7 @@ export const VSBEconomy: React.FC = () => {
       setCloseMsg(`Books closed — surplus after distributions ${(d.close?.net_profit_wst ?? 0).toLocaleString()} WST → retained earnings ${(d.retained_earnings_wst ?? 0).toLocaleString()} WST (the waterfall's pots are counted as spent in this chart). `
         + `Next period starts clean.${d.ueg_logged ? ' UEG-logged.' : ' (UEG event did NOT land — logging was unavailable.)'}`);
       loadBoardPack();
-    } catch (e: any) { setCloseErr(e?.message ?? String(e)); }
+    } catch (e: any) { setCloseErr(errorMessage(e)); }
     setClosing(false);
   };
 
@@ -305,7 +306,7 @@ export const VSBEconomy: React.FC = () => {
           basis: String(d.governance?.basis ?? d.status_label ?? 'Held — not paid.') });
       }
       loadOwnerPay();
-    } catch (e: any) { setPayErr(e?.message ?? String(e)); }
+    } catch (e: any) { setPayErr(errorMessage(e)); }
     setPayingOut(false);
   };
 

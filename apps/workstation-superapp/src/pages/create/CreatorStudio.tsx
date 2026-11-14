@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
+import { errorMessage } from '../../lib/api';   // W1015 - a caught failure, said as what it was
 import { REALMS as CANON_REALMS } from '../../lib/taxonomy';
 import ReactFlow, {
   addEdge,
@@ -119,7 +120,7 @@ export const CreatorStudio: React.FC = () => {
       setNodes(newNodes);
       setEdges(newEdges);
     } catch (err: any) {
-      setError(axiosDetail(err, err?.message ?? 'Blueprint generation failed.'));
+      setError(axiosDetail(err, errorMessage(err)));
     } finally {
       setIsGenerating(false);
     }

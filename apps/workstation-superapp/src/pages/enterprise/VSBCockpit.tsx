@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { errorMessage } from '../../lib/api';   // W1015 - a caught failure, said as what it was
 import { axiosDetail, bodyDetail, provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, bodyOrNull } from '../../lib/api';   // W1011: axiosDetail; W1012: bodyDetail
 import { ReadFailures, useReadFailures, silenceIsRight } from '../../components/ReadFailures';   // W928
 import { VBSSystemsPanel } from '../../components/VBSSystemsPanel';
@@ -68,7 +69,7 @@ const EditCascade: React.FC<{ cascadeId: string; onSaved: () => void }> = ({ cas
       if (!r.ok) throw new Error(bodyDetail(b, `HTTP ${r.status}`));   // W1013 - a field check by its field
       setStages((b.stages || []).map((st: any) => ({ role: st.role || '', instruction: st.instruction || '',
                                                      ...(st.model ? { model: String(st.model) } : {}) })));
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+    } catch (e: any) { setErr(errorMessage(e)); }
   };
 
   const blank = (stages || []).some(st => !st.role.trim() || !st.instruction.trim());
@@ -86,7 +87,7 @@ const EditCascade: React.FC<{ cascadeId: string; onSaved: () => void }> = ({ cas
       if (!r.ok) throw new Error(bodyDetail(b, `HTTP ${r.status}`));   // W1013 - a field check by its field
       setMsg(`Saved ${(b.stages || []).length} stages. The next run of this cascade re-reads them — nothing further to apply.`);
       onSaved();
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+    } catch (e: any) { setErr(errorMessage(e)); }
     setBusy(false);
   };
 
@@ -393,7 +394,7 @@ export const VSBCockpit: React.FC = () => {
     } catch (e: any) {
       setGrowthResult({ kind, forEntity: issuedFor,
                         error: (issuedFor !== selectedRef.current ? `${issuedFor}: ` : '')
-                               + detailText(e?.response?.data?.detail ?? e?.message) });
+                               + detailText(e?.response?.data?.detail ?? errorMessage(e)) });
     }
     setGrowthBusy('');
   };
@@ -411,7 +412,7 @@ export const VSBCockpit: React.FC = () => {
       setGates(r.data);
     } catch (e: any) {
       if (id !== selectedRef.current) return;
-      setGates(null); setGateMsg(`Review gates could not be read: ${detailText(e?.response?.data?.detail ?? e?.message)}`);
+      setGates(null); setGateMsg(`Review gates could not be read: ${detailText(e?.response?.data?.detail ?? errorMessage(e))}`);
     }
   };
   useEffect(() => { setGates(null); setGateMsg(''); if (selected && tab === 'chief') loadGates(selected); }, [selected, tab]);
@@ -426,7 +427,7 @@ export const VSBCockpit: React.FC = () => {
       await loadGates(issuedFor);
     } catch (e: any) {
       if (issuedFor !== selectedRef.current) return;
-      setGateMsg(`Not decided: ${detailText(e?.response?.data?.detail ?? e?.message)}`);
+      setGateMsg(`Not decided: ${detailText(e?.response?.data?.detail ?? errorMessage(e))}`);
     }
   };
 
@@ -445,7 +446,7 @@ export const VSBCockpit: React.FC = () => {
       setPackList(r.data);
     } catch (e: any) {
       if (id !== selectedRef.current) return;
-      setPackList(null); setPackMsg(`The board pack history could not be read: ${detailText(e?.response?.data?.detail ?? e?.message)}`);
+      setPackList(null); setPackMsg(`The board pack history could not be read: ${detailText(e?.response?.data?.detail ?? errorMessage(e))}`);
     }
   };
   const loadLatestPack = async (id: string) => {
@@ -457,7 +458,7 @@ export const VSBCockpit: React.FC = () => {
       if (id !== selectedRef.current) return;
       setPack(null);
       // a 404 is "none assembled yet", which the history's own count says; anything else is said here
-      if (e?.response?.status !== 404) setPackMsg(`The latest board pack could not be read: ${detailText(e?.response?.data?.detail ?? e?.message)}`);
+      if (e?.response?.status !== 404) setPackMsg(`The latest board pack could not be read: ${detailText(e?.response?.data?.detail ?? errorMessage(e))}`);
     }
   };
   useEffect(() => {
@@ -475,7 +476,7 @@ export const VSBCockpit: React.FC = () => {
       await loadPacks(issuedFor);
     } catch (e: any) {
       if (issuedFor !== selectedRef.current) return;
-      setPackMsg(`Not assembled: ${detailText(e?.response?.data?.detail ?? e?.message)}`);
+      setPackMsg(`Not assembled: ${detailText(e?.response?.data?.detail ?? errorMessage(e))}`);
     }
     if (issuedFor === selectedRef.current) setPackBusy(false);
   };
@@ -502,7 +503,7 @@ export const VSBCockpit: React.FC = () => {
       saved = r.data ?? {};
     } catch (e: any) {
       if (issuedFor === selectedRef.current) {
-        setBodyMsg(`${section}: NOT recorded — ${detailText(e?.response?.data?.detail ?? e?.message)}`);
+        setBodyMsg(`${section}: NOT recorded — ${detailText(e?.response?.data?.detail ?? errorMessage(e))}`);
         setBodyBusy('');
       }
       return;
@@ -530,7 +531,7 @@ export const VSBCockpit: React.FC = () => {
       setChiefResult(r.data);
       setChiefText('');
     } catch (e: any) {
-      setChiefResult({ error: axiosDetail(e, e?.message ?? 'failed') });
+      setChiefResult({ error: axiosDetail(e, errorMessage(e)) });
     }
     setChiefBusy(false);
   };
@@ -1275,7 +1276,7 @@ export const VSBCockpit: React.FC = () => {
                       {/* W338 — bearer-carrying export (a raw anchor 401s under auth) */}
                       <button type="button" onClick={async () => {
                           try { await downloadExport(`/api/v1/deliverables/${d.id}/export?format=${delivFormat}`, `${d.title || 'deliverable'}.${delivFormat}`); }
-                          catch (e: any) { alert(e?.message ?? 'Export failed'); }
+                          catch (e: any) { alert(errorMessage(e)); }
                         }}
                         className="shrink-0 text-[10px] font-black uppercase text-sovereign bg-aura px-3 py-1.5 rounded-lg flex items-center gap-1 hover:opacity-90"><Download size={11} /> Export</button>
                     </div>

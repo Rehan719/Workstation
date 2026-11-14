@@ -54880,7 +54880,8 @@ def test_p3b_r3_board_chief_plan_and_entity_pages_say_what_they_hold(client, mon
                   "axios.post(`/api/v1/vsb/${issuedFor}/board-pack`)"):
         assert _call in _fn, ("the Cockpit does not call", _call)
     assert "/api/v1/economy/" not in _fn, "the Cockpit's board pack reads the economy pack"
-    assert "setPackMsg(`Not assembled: ${detailText(e?.response?.data?.detail ?? e?.message)}`)" in _fn, (
+    #  W1015 - with no answer it says an unreachable server as one (it said axios's "Network Error")
+    assert "setPackMsg(`Not assembled: ${detailText(e?.response?.data?.detail ?? errorMessage(e))}`)" in _fn, (
         "a refusal (a dict for a gate) is not flattened to text")
     assert _fn.count("!== selectedRef.current) return;") >= 6, "an answer is not tied to the entity it was issued for"
     assert "if (e?.response?.status !== 404) setPackMsg(" in _fn
@@ -54907,7 +54908,7 @@ def test_p3b_r3_board_chief_plan_and_entity_pages_say_what_they_hold(client, mon
     _sv = _between(_ck, "const saveBodySection = async (section: string) => {", "const instructChief = async () => {")
     assert "axios.post(`/api/v1/vsb/${issuedFor}/body/${encodeURIComponent(section)}`, { text })" in _sv
     assert "axios.post(`/api/v1/vsb/${issuedFor}/concept`, { concept: text })" in _sv
-    assert "NOT recorded — ${detailText(e?.response?.data?.detail ?? e?.message)}" in _sv, "a refusal is not shown as text"
+    assert "NOT recorded — ${detailText(e?.response?.data?.detail ?? errorMessage(e))}" in _sv, "a refusal is not shown as text"   # W1015
     assert _sv.index("const text = (bodyDraft[section] ?? '').trim();") < _sv.index("await axios.post("), (
         "the draft is read after the request began")
     _ed = _between(_ck, "const pend: Record<string, any> =", 'data-testid="cockpit-body-message"')
@@ -78690,7 +78691,9 @@ def test_w928_the_pages_a_founder_uses_most_say_when_a_read_fails():
     src = root / "apps/workstation-superapp/src"
     rf = (src / "components/ReadFailures.tsx").read_text(encoding="utf-8")
     assert 'data-testid="read-failure"' in rf and "Could not read {what} — {why}" in rf
-    assert "return `Failed (HTTP ${ax.response.status}): ${axiosDetail(e, 'no reason given')}`;" in rf
+    #  W1015 - the axios reading moved into errorMessage, which describeReadFailure now is
+    assert ("if (typeof ax.response?.status === 'number') return `Failed (HTTP ${ax.response.status}): ${axiosDetail(e, 'no reason given')}`;"
+            in (src / "lib/api.ts").read_text(encoding="utf-8"))
     assert "return errorMessage(e);" in rf
     pages = ["pages/enterprise/VSBEconomy.tsx", "pages/enterprise/VSBCockpit.tsx", "pages/enterprise/VSBSpawnStudio.tsx",
              "pages/synthesis/GenesisJourney.tsx", "pages/Deliverables.tsx", "pages/DashboardNew.tsx",
@@ -83082,7 +83085,8 @@ def test_w989_fu399_the_deliverables_page_never_shows_an_unread_list_as_empty_an
     assert "refine HTTP" not in code and "version HTTP" not in code and "step = 'version';" in code
     assert "'The refine was not done' : 'The refined text was not saved as a new version'}: ${errorMessage(e)}" in code
     #  a refused export: the server's reason, on the page
-    assert "catch (e: any) { setError(e?.message ?? 'Export failed'); }" in code and "alert(" not in code
+    #  W1015 - a failed export is said as what it was (it said the error's own message)
+    assert "catch (e: any) { setError(errorMessage(e)); }" in code and "alert(" not in code
     assert dl.count("if (!r.ok) throw await refused(r);") == 2 and "throw new Error(`Export failed (HTTP ${r.status})`)" not in dl
     assert "const d = bodyDetail(await bodyOrNull(r), '');" in dl and "Export failed (HTTP ${r.status})${d ?" in dl   # W1013
     fx = json.loads((src / "pages/Deliverables.fixture.json").read_text(encoding="utf-8"))
@@ -84067,12 +84071,12 @@ def test_w1011_no_page_puts_a_refusal_s_detail_into_the_page_as_it_came(client):
             "setMsg(`Error: ${axiosDetail(e, 'request failed')}`);",
             "const detail = axiosDetail(e, '');"],
         "pages/enterprise/VSBCockpit.tsx": [
-            "setChiefResult({ error: axiosDetail(e, e?.message ?? 'failed') });",
+            "setChiefResult({ error: axiosDetail(e, errorMessage(e)) });",   # W1015 - axios's own words were the fallback
             "setActErr(`Produce failed: ${axiosDetail(e, 'backend unreachable')}`);"],
         "pages/synthesis/SynthesisStudio.tsx": [
             "setErrorMsg(`Delete failed: ${axiosDetail(e, 'backend unreachable')}`);"],
         "pages/create/CreatorStudio.tsx": [
-            "setError(axiosDetail(err, err?.message ?? 'Blueprint generation failed.'));"],
+            "setError(axiosDetail(err, errorMessage(err)));"],   # W1015 - axios's own words were the fallback
     }
     imported = re.compile(r"^import \{[^}]*\baxiosDetail\b[^}]*\} from '(?:\.\./)+lib/api';", re.M)
     for rel, lines in sites.items():
@@ -84423,3 +84427,81 @@ def test_w1014_a_rendered_test_waits_for_what_an_element_says_and_never_reads_it
     assert td.count("await waitFor(() => expect(screen.getByTestId('followups-card').textContent).toContain(") == 2
     lt = (src / "pages/Login.test.tsx").read_text(encoding="utf-8")
     assert lt.count("await waitFor(() => expect(screen.getByTestId('signup-state').textContent)") == 2
+
+
+def test_w1015_a_caught_failure_is_said_as_what_it_was(client):
+    """W1015. Fifty-four places said a caught failure by the error's own `.message`: for a server that could not be
+    reached that is the browser's words ("Failed to fetch") or axios's ("Network Error"); for an axios refusal it is
+    axios's sentence ("Request failed with status code 409") with the server's reason dropped; for apiJson's refusal
+    it is ApiError's own "HTTP 422: ..." beside the page's words. errorMessage, which the other pages say a failure
+    through, said every error that was not an ApiError as an unreachable server, an axios refusal included, and a
+    sentence the page threw itself. It now says an axios refusal by its status and reason, an axios call that reached
+    no server as one, and a plain Error (the page's own sentence) as itself; describeReadFailure is errorMessage; and
+    each of the fifty-four says its failure through it. src/lib/api.test.ts drives every shape.
+
+    Held here: errorMessage's two new readings and describeReadFailure's delegation; and, tree-wide, no catch says
+    the caught error's own message. Two stay, named: the chat's timeout check, which reads the message to tell a
+    timeout from another failure and says neither by it, and the deliverables' refine, which already says a page's
+    own sentence as itself and anything else through errorMessage."""
+    import pathlib
+    import re
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    api = (src / "lib/api.ts").read_text(encoding="utf-8")
+    fn = api[api.index("export function errorMessage(e: unknown): string {"):]
+    fn = fn[:fn.index("\n}\n") + 3]
+    assert "if (typeof ax.response?.status === 'number') return `Failed (HTTP ${ax.response.status}): ${axiosDetail(e, 'no reason given')}`;" in fn
+    assert "return ax.name === 'CanceledError' ? 'Cancelled.' : 'Failed — backend unreachable.';" in fn
+    assert "if (e instanceof Error && e.name === 'Error' && e.message) return e.message;" in fn
+    rf = (src / "components/ReadFailures.tsx").read_text(encoding="utf-8")
+    d = rf[rf.index("export function describeReadFailure(e: unknown): string {"):]
+    d = d[:d.index("\n}\n") + 3]
+    assert "return errorMessage(e);" in d and "isAxiosError" not in d, d
+    unit = (src / "lib/api.test.ts").read_text(encoding="utf-8")
+    for said in ("expect(errorMessage(axiosRefusal(422, FIELD_CHECK))).toBe('Failed (HTTP 422): title: Field required');",
+                 "expect(errorMessage(axiosUnreached())).toBe('Failed — backend unreachable.');",
+                 "expect(errorMessage(new TypeError('Failed to fetch'))).toBe('Failed — backend unreachable.');"):
+        assert said in unit, said
+
+    #  tree-wide: no catch says the caught error's own message
+    catch = re.compile(r"catch\s*\(\s*(\w+)(?:\s*:\s*\w+)?\s*\)\s*\{")
+    dotcatch = re.compile(r"\.catch\(\s*\(?\s*(\w+)(?:\s*:\s*\w+)?\s*\)?\s*=>\s*")
+
+    def body(s, i, o, c):
+        depth, j = 1, i
+        while j < len(s) and depth:
+            depth += (s[j] == o) - (s[j] == c)
+            j += 1
+        return i, j - 1
+
+    named, offenders, scanned = [], [], 0
+    for f in sorted(p for ext in ("*.ts", "*.tsx") for p in src.rglob(ext)):
+        rel = f.relative_to(src).as_posix()
+        if ".test." in f.name or rel == "lib/api.ts":
+            continue
+        scanned += 1
+        s = _code_only(f.read_text(encoding="utf-8").replace("\r\n", "\n"))
+        spans = [(body(s, m.end(), "{", "}"), m.group(1)) for m in catch.finditer(s)]
+        spans += [(body(s, m.end(), "(", ")"), m.group(1)) for m in dotcatch.finditer(s)]
+        seen = set()
+        for (a, b), var in spans:
+            for u in re.finditer(r"\b" + var + r"\??\.message\b", s[a:b]):
+                at = a + u.start()
+                if at in seen:
+                    continue
+                seen.add(at)
+                line = s[s.rfind("\n", 0, at) + 1:s.find("\n", at)].strip()
+                if rel == "pages/CEOChat.tsx" and line.startswith("const isTimeout = error?.name === 'AbortError' || error?.message?.includes('timeout');"):
+                    named.append(rel)
+                elif rel == "pages/Deliverables.tsx" and line == ": (e instanceof Error ? e.message : String(e)));":
+                    named.append(rel)
+                else:
+                    offenders.append(f"{rel}: {line[:140]}")
+    assert scanned > 100, ("this scanned almost nothing, so it would pass on an empty tree", scanned)
+    assert offenders == [], ("a catch says the caught error's own message (the browser's or axios's words); say the "
+                             "failure through errorMessage", offenders)
+    assert sorted(named) == ["pages/CEOChat.tsx", "pages/Deliverables.tsx"], named
+    #  a few of the fifty-four, read where they are
+    vsb = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8"))
+    assert vsb.count("detailText(e?.response?.data?.detail ?? errorMessage(e))") == 7, vsb.count("detailText(e?.response?.data?.detail ?? errorMessage(e))")
+    gj = _code_only((src / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
+    assert "setError(`Naming failed: ${errorMessage(e)} Nothing changed.`);" in gj

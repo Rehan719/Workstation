@@ -65,7 +65,7 @@ export const VenturePortfolioPanel: React.FC<{ vsbId: string }> = ({ vsbId }) =>
       setMsg(`${d.returned_wst.toLocaleString()} WST recorded on ${holdingId} — ${d.recycles}. (${d.amount_source})`);
       setRetAmt({ ...retAmt, [holdingId]: 0 });
       load();
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+    } catch (e: any) { setErr(errorMessage(e)); }
     setBusy('');
   };
 
@@ -248,7 +248,7 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
       setResult({ ...d.transfer, governance: d.governance });
       setAmount(0); setMemo('');
       onDone?.();
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+    } catch (e: any) { setErr(errorMessage(e)); }
     finally { setBusy(false); onBusyChange?.(false); loadOpen(); }
   };
 
@@ -268,7 +268,7 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
       if (stranded === tid) { setStranded(null); setErr(''); }
       setOpenLegs(legs => legs.filter(l => l.transfer_id !== tid));
       onDone?.();
-    } catch (e: any) { setCompleteErr(e?.message ?? String(e)); }
+    } catch (e: any) { setCompleteErr(errorMessage(e)); }
     finally { setCompleting(false); onBusyChange?.(false); loadOpen(); }
   };
 

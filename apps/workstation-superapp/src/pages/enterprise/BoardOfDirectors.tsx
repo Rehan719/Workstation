@@ -197,7 +197,7 @@ export const BoardOfDirectors: React.FC = () => {
       });
       if (!r.ok) { setError(`HTTP ${r.status}`); setRunning(false); return; }
       setResult(await r.json());
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+    } catch (e: any) { setError(errorMessage(e)); }
     setRunning(false);
   };
 

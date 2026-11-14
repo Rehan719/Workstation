@@ -647,7 +647,7 @@ export const NativeAI: React.FC = () => {
         //  W982 - the server's sentence when it gave one; an object detail is never put into the text
         setError(bodyDetail(data, `Workflow-tree run failed (HTTP ${r.status}).`));   // W1013 - a field check by its field
       }
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+    } catch (e: any) { setError(errorMessage(e)); }
     setTreeRunning(false);
   };
 
@@ -710,7 +710,7 @@ export const NativeAI: React.FC = () => {
       // W460 — a cascade removed elsewhere (404) used to trap the designer in edit mode against a missing id
       if (r.ok || (editingId && r.status === 404)) { setEditingId(null); if (r.ok) setDesignContext(''); }
       await loadCascades();
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+    } catch (e: any) { setError(errorMessage(e)); }
     setSaving(false);
   };
 
@@ -1376,7 +1376,7 @@ export const NativeAI: React.FC = () => {
                                     setCascades(prev => prev.filter(x => x.id !== c.id));
                                     setConfirmDelete(null);
                                     if (editingId === c.id) setEditingId(null);
-                                  } catch (e: any) { setDeleteErr(e?.message ?? String(e)); }
+                                  } catch (e: any) { setDeleteErr(errorMessage(e)); }
                                   setDeletingId(null);
                                 }}>
                           Retire it

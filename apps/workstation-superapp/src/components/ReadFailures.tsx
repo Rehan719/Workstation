@@ -9,10 +9,7 @@ import { axiosDetail, errorMessage } from '../lib/api';
 /** The sentence for a failed read: an axios refusal carries its status and the server's detail; anything else is
  *  said by the shared helper (an ApiError's status and detail, an abort, or an unreachable server). */
 export function describeReadFailure(e: unknown): string {
-  const ax = e as { isAxiosError?: boolean; response?: { status?: number } };
-  if (ax?.isAxiosError && typeof ax.response?.status === 'number') {
-    return `Failed (HTTP ${ax.response.status}): ${axiosDetail(e, 'no reason given')}`;
-  }
+  //  W1015 - errorMessage reads an axios refusal by its status and reason itself now: one reading of a failure
   return errorMessage(e);
 }
 

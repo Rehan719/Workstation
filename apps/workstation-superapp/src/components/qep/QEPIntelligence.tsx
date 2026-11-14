@@ -14,6 +14,7 @@
  *     never a green badge over controls that did not run.
  */
 import React, { useEffect, useState } from 'react';
+import { errorMessage } from '../../lib/api';   // W1015 - a caught failure, said as what it was
 import { Card, Button } from '@workstation/ui';
 import { Brain, Loader2, AlertCircle, ShieldCheck, GitBranch, Scale } from 'lucide-react';
 import { provenanceBadge, bodyOrNull, bodyDetail } from '../../lib/api';
@@ -57,7 +58,7 @@ const QEPIntelligence: React.FC = () => {
       if (!r.ok) { setErr(bodyDetail(d, `HTTP ${r.status}`)); setBusy(''); return; }   // W1013 - a field check by its field (it said JSON)
       setXai(d);
       setWeights({ ease_weight: d.model_weights.ease_weight, interval_weight: d.model_weights.interval_weight, quality_weight: d.model_weights.quality_weight });
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+    } catch (e: any) { setErr(errorMessage(e)); }
     setBusy('');
   };
 
@@ -74,7 +75,7 @@ const QEPIntelligence: React.FC = () => {
       //  record. The sentence is the server's own, with the record's id and its state.
       setMsg(`${d.status} — ${d.basis} Change record ${d.cca_id ?? 'not filed'}${d.change_status ? ` (${d.change_status})` : ''}.`);
       loadAll();
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+    } catch (e: any) { setErr(errorMessage(e)); }
     setBusy('');
   };
 
@@ -89,7 +90,7 @@ const QEPIntelligence: React.FC = () => {
       if (!r.ok) { setErr(bodyDetail(d, `HTTP ${r.status}`)); setBusy(''); return; }   // W1013 - a field check by its field
       setBlueprint(d);
       loadAll();
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+    } catch (e: any) { setErr(errorMessage(e)); }
     setBusy('');
   };
 

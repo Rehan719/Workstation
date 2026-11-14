@@ -106,7 +106,17 @@ export function errorMessage(e: unknown): string {
   if (e instanceof ApiError) return e.status === 401
     ? 'Not signed in — your session may have expired.'
     : `Failed (HTTP ${e.status}): ${e.detail}`;
+  //  W1015 - axios says a refusal and an unreachable server in its own words ("Request failed with status code
+  //  409", "Network Error"): a refusal is said by its status and reason, a call that reached no server as one
+  const ax = e as { isAxiosError?: boolean; response?: { status?: number }; name?: string } | null;
+  if (ax?.isAxiosError) {
+    if (typeof ax.response?.status === 'number') return `Failed (HTTP ${ax.response.status}): ${axiosDetail(e, 'no reason given')}`;
+    return ax.name === 'CanceledError' ? 'Cancelled.' : 'Failed — backend unreachable.';
+  }
   if (e instanceof Error && e.name === 'AbortError') return 'Cancelled.';
+  //  W1015 - a sentence a page threw itself (a plain Error) is said as itself; fetch's TypeError is a server that
+  //  could not be reached, and so is anything else this cannot read
+  if (e instanceof Error && e.name === 'Error' && e.message) return e.message;
   return 'Failed — backend unreachable.';
 }
 

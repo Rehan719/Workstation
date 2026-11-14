@@ -1,4 +1,5 @@
 import { silenceIsRight } from '../../components/ReadFailures';   // W961 (FU-1181)
+import { errorMessage } from '../../lib/api';   // W1015 - a caught failure, said as what it was
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { FabricLink } from '../../components/FabricLink';
@@ -306,7 +307,7 @@ export const SynthesisStudio: React.FC = () => {
     try {
       await downloadExport(result.output_url, `${title}.${fmt}`);
     } catch (e: any) {
-      setErrorMsg(`Download failed: ${e?.message ?? 'backend unreachable'}`);
+      setErrorMsg(`Download failed: ${errorMessage(e)}`);
     }
   };
 

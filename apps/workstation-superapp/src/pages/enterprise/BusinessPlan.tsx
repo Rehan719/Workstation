@@ -70,7 +70,7 @@ export const BusinessPlan: React.FC = () => {
       setPlanErr(''); setPlan(data);
     } catch (e: any) {
       setPlan(null);
-      setPlanErr(`the plan could not be fetched (${e?.message || 'network error'}) — nothing was changed`);
+      setPlanErr(`the plan could not be fetched (${errorMessage(e)}) — nothing was changed`);
     }
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [scope]);
@@ -140,7 +140,7 @@ export const BusinessPlan: React.FC = () => {
       }
       await load();
     } catch (e) {
-      setActErr(`Delivery could not be attempted: ${e instanceof Error ? e.message : 'the backend was unreachable'} - nothing changed`);
+      setActErr(`Delivery could not be attempted: ${errorMessage(e)} - nothing changed`);
     }
     setOrchestrating('');
   };

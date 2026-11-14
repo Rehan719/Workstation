@@ -57,7 +57,7 @@ export const QEPStudio: React.FC = () => {
       .then(r => (r.ok ? r.json() : r.json().catch(() => ({})).then((b: any) =>
         Promise.reject(new Error(bodyDetail(b, '').slice(0, 140) || `${url} → HTTP ${r.status}`)))))   // W1012 - text, whatever its shape
       .then(set)
-      .catch(e => setLoadErrs(errs => [...errs, String(e?.message ?? e)]));
+      .catch(e => setLoadErrs(errs => [...errs, errorMessage(e)]));
 
   // W444 — the platform's own honesty statement (per-component truth lines + the constitutional
   // constraints) and the translation availability were served but never shown to anyone.

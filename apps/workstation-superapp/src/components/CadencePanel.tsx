@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { errorMessage } from '../lib/api';   // W1015 - a caught failure, said as what it was
 import { apiJson } from '../lib/api';
 
 type Dict = Record<string, any>;
@@ -13,7 +14,7 @@ export const CadencePanel: React.FC<{ scope: string }> = ({ scope }) => {
   const [err, setErr] = useState('');
   useEffect(() => {
     apiJson<Dict>(`/api/v1/organism/cadence?scope=${encodeURIComponent(scope)}`)
-      .then(setSt).catch(e => setErr(`The cadence could not be read: ${String(e?.message ?? e)}`));
+      .then(setSt).catch(e => setErr(`The cadence could not be read: ${errorMessage(e)}`));
   }, [scope]);
   return (
     <div className="space-y-2" data-testid="cadence-panel">

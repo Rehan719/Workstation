@@ -197,7 +197,7 @@ const SwarmIntelligence: React.FC = () => {
       await loadCascadeRuns();
       setTask('');
     } catch (e: any) {
-      setStreamOutput(`Error: ${axiosDetail(e, e.message)}`);
+      setStreamOutput(`Error: ${axiosDetail(e, errorMessage(e))}`);
       setStreaming(false);
     } finally {
       setDelegating(false);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { errorMessage } from '../../lib/api';   // W1015 - a caught failure, said as what it was
 import { Card, Button } from '@workstation/ui';
 import { Hammer, Loader2, AlertCircle, Check, ChevronDown, ChevronUp, Rocket, FlaskConical } from 'lucide-react';
 import { FabricLink } from '../../components/FabricLink';
@@ -82,7 +83,7 @@ export const ForgePipeline: React.FC = () => {
         setError(_why ? `HTTP ${r.status} — ${_why}` : `HTTP ${r.status}`); setRunning(false); return;
       }
       setResult(await r.json());
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+    } catch (e: any) { setError(errorMessage(e)); }
     setRunning(false);
   };
 
@@ -199,7 +200,7 @@ export const ForgePipeline: React.FC = () => {
                   throw new Error(_rwhy ? `HTTP ${r.status} — ${_rwhy}` : `HTTP ${r.status}`);
                 }
                 setResult(await r.json());
-              } catch (e: any) { setError(e?.message ?? String(e)); }
+              } catch (e: any) { setError(errorMessage(e)); }
               setRerunning(false);
             }}
             className="text-[9px] font-black uppercase tracking-widest text-highlight hover:text-white transition-colors disabled:opacity-40">
