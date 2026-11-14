@@ -2138,8 +2138,13 @@ def _retrospect(rows: List[Dict[str, Any]], reg: Any) -> Dict[str, Any]:
 
     return {
         "state": MET if resolved else NOT_ASSESSABLE,
-        "basis": None,                 # the answer's meaning is in what_the_pattern_means; `basis` is the
-        "rounds": None,                # refusal branch's field, carried here so the shapes match
+        #  W1003 - every reading states how it was read: the appraisal page shows each reading by its basis, and
+        #  this one alone stated none, so the page said it "states no basis". It reads two populations, named here
+        "basis": ("read from the register's own record. The rows in this scope, by status: built or satisfied, "
+                  "dropped as refuted, and why each closed where it records why. The rounds, and whether the "
+                  "backlog is growing, over the whole register: which round closed each row and which round "
+                  "found it"),
+        "rounds": None,                # the refusal branch's field, carried here so the shapes match
         "closure_kinds": _kinds,
         "closures_with_a_kind": _recorded,
         "closure_kind_basis": (
@@ -2164,7 +2169,8 @@ def _retrospect(rows: List[Dict[str, Any]], reg: Any) -> Dict[str, Any]:
              f"is an upper bound on the work and not a measure of it (M-FCAST-02). The totals cannot show "
              f"this, because closing a satisfied row and closing a built one are the same increment."
              if resolved else "no row has been resolved, so there is no pattern to read yet.")
-            + (f" {len(finding_only)} round(s) closed nothing and only registered findings: those add work "
+            + (f" Across the whole register, {len(finding_only)} round(s) closed nothing and only registered "
+               f"findings: those add work "
                f"rather than burning it, and counting them as build rounds would understate the rate."
                if finding_only else "")),
         "limits": ("this reads STATUS, not cause. It cannot tell a row closed because it was built from one "

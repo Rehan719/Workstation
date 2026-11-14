@@ -64270,7 +64270,8 @@ def test_w697_an_appraisal_recommends_from_what_it_counted_and_a_person_sends_on
     gov = (root / "apps/workstation-superapp/src/pages/governance/GovernanceCenter.tsx").read_text(encoding="utf-8")
     assert "El: MethodAppraisal }" in gov and "import { MethodAppraisal } from './MethodAppraisal';" in gov
     page = (root / "apps/workstation-superapp/src/pages/governance/MethodAppraisal.tsx").read_text(encoding="utf-8")
-    assert "body: { scope: asked || null, recommendation_id: id }" in page, "the button sends more than the id"
+    #  W1003 - the request is sent by fetch so its refusal is read whole; its body is still the scope and the id alone
+    assert "body: JSON.stringify({ scope: asked || null, recommendation_id: id })," in page, "the button sends more than the id"
     for gate, body in (("{data.recommendations.length === 0 ? (", 'data-testid="appraisal-no-recommendations"'),
                        ("{data.recommendations.map(r => (", "{r.recommendation}"),
                        ("{data.hand_off && (", "{data.hand_off.statement}"),
@@ -81091,7 +81092,7 @@ def test_w959_fu1181_no_call_ends_in_a_catch_that_returns_nothing_unclassified()
     assert api.count("export function bodyOrNull") == 1 and "return r.json().then((b: T) => b, notJson);" in api
     assert "Each caller of bodyOrNull checks the answer's" in api and "const notJson = (): null => null;" in api
     users = [f for f in files if "bodyOrNull(" in _code_only(f.read_text(encoding="utf-8")) and f.name != "api.ts"]
-    assert len(users) == 14, sorted(f.name for f in users)   # W960: + lib/auth.ts, ForgePipeline, SwarmIntelligence; W982: + AgentHubPanel, QEPIntelligence, VSBCockpit; W989: + lib/download.ts
+    assert len(users) == 15, sorted(f.name for f in users)   # W960: + lib/auth.ts, ForgePipeline, SwarmIntelligence; W982: + AgentHubPanel, QEPIntelligence, VSBCockpit; W989: + lib/download.ts; W1003: + MethodAppraisal
     for f in users:
         code = _code_only(f.read_text(encoding="utf-8"))
         for m in re.finditer(r"bodyOrNull\((\w+)\)", code):
@@ -83703,3 +83704,52 @@ def test_w1002_fu399_charity_directives_say_a_refused_read_as_one_and_never_offe
     fx = json.loads((src / "pages/enterprise/CharityDirectives.fixture.json").read_text(encoding="utf-8"))
     assert set(fx) == {"directives", "candidates", "saved", "candidates_after"}, sorted(fx)
     assert fx["directives"]["priorities_source"] == "never_set" and fx["saved"]["exclusions_unknown"], fx["saved"]
+
+
+def test_w1003_fu399_the_appraisal_says_how_every_reading_was_read_and_a_refused_send_by_its_reason(client):
+    """FU-399 part 33 (W1003). The appraisal page shows the method cell's readings over a scope, what they recommend
+    and what becomes of an appraisal, and sends one recommendation to Change Control. MethodAppraisal.test.tsx mounts
+    the real page against the answers its routes gave on a fresh store, and has the server refuse an appraisal.
+    Rendering it found two defects, fixed:
+    - the retrospection showed as "this reading states no basis": the one reading of eleven whose answer carried
+      none. It reads the rows of the scope and the rounds of the whole register; it now says how it was read, both
+      populations named, and its count of rounds says it is the whole register's;
+    - a refused send was said as its JSON ("Not sent: Failed (HTTP 409): {"message": ..."); the answer is read
+      whole and the reason said in its own words.
+    Held here: every reading of an appraisal states its basis, in every scope; the two populations are named; a
+    recommendation the readings do not make is refused as an object with its reason; and the page's code."""
+    import json
+    import pathlib
+    import re
+    for scope in ("", "?scope=P3", "?scope=P3.30"):
+        a = client.get(f"/api/v1/method/appraise{scope}")
+        assert a.status_code == 200, a.text[:200]
+        unstated = [k for k, f in a.json()["faculties"].items() if not (f or {}).get("basis")]
+        assert unstated == [], (scope, unstated)
+    retro = client.get("/api/v1/method/appraise?scope=P3").json()["faculties"]["retrospection"]
+    assert "The rows in this scope, by status" in retro["basis"] and "over the whole register" in retro["basis"], retro
+    if retro["rounds_that_only_found"]:
+        assert "Across the whole register, " in retro["what_the_pattern_means"], retro["what_the_pattern_means"]
+    refused = client.post("/api/v1/method/appraise/recommend",
+                          json={"scope": None, "recommendation_id": "w1003-no-such-recommendation"})
+    assert refused.status_code == 409 and isinstance(refused.json()["detail"], dict), refused.text[:200]
+    assert refused.json()["detail"]["message"].startswith("No change record was filed"), refused.text[:200]
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    page = (src / "pages/governance/MethodAppraisal.tsx").read_text(encoding="utf-8")
+    t = (src / "pages/governance/MethodAppraisal.test.tsx").read_text(encoding="utf-8")
+    assert "import { MethodAppraisal } from './MethodAppraisal';" in t and "<MethodAppraisal />" in t
+    for tid in set(re.findall(r"ByTestId\('([^']+)'\)", t)):
+        assert f'data-testid="{tid}"' in page, tid
+    assert "findByTestId(`send-refused-${first.id}`)" in t and "data-testid={`send-refused-${r.id}`}" in page
+    code = _code_only(page)
+    #  the send is read whole: its status first, then its reason in its own words, never its JSON
+    assert "apiJson<any>('/api/v1/method/appraise/recommend'" not in code
+    assert "const d = await bodyOrNull(r);" in code and "if (!r.ok) {" in code
+    assert "`Failed (HTTP ${r.status}): ${axiosDetail({ response: { data: d } }, 'no reason given')}`" in code
+    assert "if (!d?.change_control) {" in code
+    fx = json.loads((src / "pages/governance/MethodAppraisal.fixture.json").read_text(encoding="utf-8"))
+    assert set(fx) == {"whole", "phase", "sent", "refused_send"}, sorted(fx)
+    assert all((f or {}).get("basis") for f in fx["whole"]["faculties"].values()), "the fixture predates the fix"
+    assert fx["refused_send"]["status"] == 409 and fx["refused_send"]["body"]["detail"]["message"], fx["refused_send"]
