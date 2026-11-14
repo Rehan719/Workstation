@@ -86447,3 +86447,36 @@ def test_w1051_fu399_the_cockpit_s_actions_say_their_failure_beside_their_own_bu
     assert "{orchErr[o.id] && <p data-testid=\"cockpit-orchestration-error\"" in page, "an objective's failure is said under another"
     t = (src / "pages/enterprise/VSBCockpit.actions.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './VSBCockpit.fixture.json';" in t and "<VSBCockpit />" in t
+
+
+def test_w1052_fu399_the_cockpit_s_chat_says_a_reply_that_did_not_come_as_that(client):
+    """FU-399 part 71 (W1052). The cockpit's chat tab is rendered against its routes' own answers
+    (VSBCockpit.chat.test.tsx): every read the cockpit makes on opening an entity established through Genesis on a
+    fresh store, the avatar's answer to a made-up message as the tab sends it, and the route's field check of a
+    message left out. Rendering found a reply that did not come put into the conversation in the avatar's own voice:
+    one fixed sentence, that the enterprise avatar was unavailable, for a call that reached no server, for a server's
+    refusal and its reason, and for a field check alike. It is said beside the input as the failure it was, and
+    cleared when a message is sent again or another entity is opened; the conversation holds only what was said.
+
+    Held here: the field check is the route's own, read again (it puts nothing to the avatar); the captured answer is
+    the native engine's, asked as the tab asks; and the page's code."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/enterprise/VSBCockpit.chat.fixture.json").read_text(encoding="utf-8"))
+    vid = fx["vsb_id"]
+    r = client.post("/api/v1/avatar/chat", json={"context": "vsb", "vsb_id": vid})
+    assert r.status_code == 422 == fx["refused"]["status"], r.text[:200]
+    assert [(d["loc"], d["msg"]) for d in r.json()["detail"]] == [(d["loc"], d["msg"]) for d in fx["refused"]["body"]["detail"]]
+    assert fx["ask"] == {"message": fx["ask"]["message"], "context": "vsb", "vsb_id": vid}
+    a = fx["answered"]["body"]
+    assert (fx["answered"]["status"], a["served_by"], a["is_external"]) == (200, "native", False), a
+
+    page = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "The enterprise avatar is unavailable right now." not in page, "a failed reply is said in the avatar's voice again"
+    assert "      setChatErr(`No reply came: ${errorMessage(e)}`);" in page
+    assert "setChatInput(''); setPendingImage(null); setChatting(true); setChatErr('');" in page
+    assert "setBtoErr(''); setPlanErr(''); setChatErr('');" in page, "another entity's failed reply stays on screen"
+    assert 'data-testid="cockpit-chat-error"' in page
+    t = (src / "pages/enterprise/VSBCockpit.chat.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './VSBCockpit.chat.fixture.json';" in t and "<VSBCockpit />" in t

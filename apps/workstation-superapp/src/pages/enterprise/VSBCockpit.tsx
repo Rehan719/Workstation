@@ -191,6 +191,7 @@ export const VSBCockpit: React.FC = () => {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [chatting, setChatting] = useState(false);
+  const [chatErr, setChatErr] = useState('');   // W1052 - a reply that did not come, said beside the input
   const [pendingImage, setPendingImage] = useState<{ b64: string; name: string } | null>(null);
   const [chatLang, setChatLang] = useState('');   // '' = English; otherwise respond in this language
   const [ledger, setLedger] = useState<Dict | null>(null);
@@ -292,7 +293,7 @@ export const VSBCockpit: React.FC = () => {
 
   useEffect(() => {
     if (!selected) return;
-    setLoading(true); setTx(null); setMessages([]); setLastCycle(null); setLedgerErr(''); setTxErr(''); setOrchErr({}); setCycleErr(''); setBtoErr(''); setPlanErr('');
+    setLoading(true); setTx(null); setMessages([]); setLastCycle(null); setLedgerErr(''); setTxErr(''); setOrchErr({}); setCycleErr(''); setBtoErr(''); setPlanErr(''); setChatErr('');
     setCycleHold(null); setGrowthResult(null);   // W503 (FU-059) — never another entity's answer
     const issuedFor = selected;
     Promise.all([
@@ -643,7 +644,7 @@ export const VSBCockpit: React.FC = () => {
     if ((!msg && !pendingImage) || chatting || !selected) return;
     const img = pendingImage;
     setMessages(m => [...m, { role: 'you', text: msg || '(image)', attached: !!img }]);
-    setChatInput(''); setPendingImage(null); setChatting(true);
+    setChatInput(''); setPendingImage(null); setChatting(true); setChatErr('');
     try {
       const body: Record<string, any> = { message: msg || 'What is in this image?', context: 'vsb', vsb_id: selected };
       if (img) body.image_base64 = img.b64;
@@ -655,8 +656,10 @@ export const VSBCockpit: React.FC = () => {
                                image_status: r.data.image_status, attached_requested: Boolean(pendingImage),
                                language_requested: r.data.language ?? null, language_honoured: r.data.language ?? null }]);
       speak(reply);
-    } catch {
-      setMessages(m => [...m, { role: 'vsb', text: 'The enterprise avatar is unavailable right now.', is_external: false }]);
+    } catch (e: unknown) {
+      //  W1052 - said as the failure it was, beside the input: it was put in the conversation in the avatar's own voice,
+      //  one fixed sentence whatever the failure was
+      setChatErr(`No reply came: ${errorMessage(e)}`);
     }
     setChatting(false);
   };
@@ -2037,6 +2040,7 @@ export const VSBCockpit: React.FC = () => {
                   {chatting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} Send
                 </Button>
               </div>
+              {chatErr && <p role="alert" data-testid="cockpit-chat-error" className="text-[10px] font-bold text-vital">{chatErr}</p>}
               <p className="text-[9px] text-slate-600">Voice (browser-native, in-house) + image (analysed in-house by a local Ollama vision model, with honest provenance) — no external service required.</p>
             </Card>
           )}
