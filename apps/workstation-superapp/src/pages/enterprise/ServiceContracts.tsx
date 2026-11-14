@@ -219,7 +219,9 @@ export const ServiceContracts: React.FC<{ entities: Entity[] }> = ({ entities })
           setError(res.note || 'The settlement did not complete — the contract stays delivered and nothing was paid.');
         }
       } else if (step.path === 'decline' || step.path === 'cancel') {
-        setNotice(`Contract ${res.status} by the ${res.withdrawn?.by ?? step.path === 'decline' ? 'provider' : 'client'}`
+        //  W997 (FU-399 part 29) - `by ?? isDecline ? a : b` parsed as `(by ?? isDecline) ? a : b`, so whenever the server
+        //  named who withdrew the page said "by the provider": a client's cancellation was announced as the provider's
+        setNotice(`Contract ${res.status} by the ${res.withdrawn?.by ?? (step.path === 'decline' ? 'provider' : 'client')}`
                   + `${res.withdrawn?.from_status ? ` (it was ${res.withdrawn.from_status})` : ''} — nothing was paid.`);
       } else {
         setNotice(`Contract ${res.status}.`);
@@ -306,11 +308,16 @@ export const ServiceContracts: React.FC<{ entities: Entity[] }> = ({ entities })
       {/* Ledger of contracts */}
       {loading ? (
         <p className="text-[10px] font-bold text-slate-600 flex items-center gap-2"><Loader2 size={11} className="animate-spin" /> Loading contracts…</p>
-      ) : contracts.length === 0 ? (
+      ) : contracts.length === 0 ? (loadErr ? (
+        //  W997 - a refused read showed its failure and, below it, "No contracts yet": an unread list as an empty one
+        <p className="text-xs text-amber-400/90 font-bold py-4" data-testid="contracts-unread">
+          The contracts could not be read, so this is not a list of none.
+        </p>
+      ) : (
         <p className="text-xs text-slate-500 italic py-4">
           No contracts yet. Offer one above — nothing is created until you do.
         </p>
-      ) : (
+      )) : (
         <div className="space-y-2">
           {contracts.map(c => {
             const step = NEXT_ACTION[c.status];

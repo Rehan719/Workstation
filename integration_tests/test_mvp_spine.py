@@ -83370,3 +83370,52 @@ def test_w996_fu399_the_law_hub_says_each_refusals_reason_and_counts_the_forms_f
     assert "const n = (lawTools.needs_a_model ?? []).length;" in code
     fx = json.loads((pdir / "LawHub.fixture.json").read_text(encoding="utf-8"))
     assert len(fx["tools"]["needs_a_model"]) == len(tools["needs_a_model"]), "the fixture's list of forms drifted from the route's"
+
+
+def test_w997_fu399_a_contracts_withdrawal_names_the_party_the_server_names_and_an_unread_list_is_not_empty(client):
+    """FU-399 part 29 (W997). The service contracts panel lists the contracts between two entities of this platform in
+    virtual units and moves them along, or withdraws them: the provider declines, the client cancels.
+    ServiceContracts.test.tsx mounts the real component against the answers its routes gave on a fresh store, and has
+    the server refuse the list and an offer. Rendering it found two defects, fixed:
+    - the withdrawal notice read `${res.withdrawn?.by ?? step.path === 'decline' ? 'provider' : 'client'}`, which
+      parses as `(by ?? isDecline) ? 'provider' : 'client'`, so a client's cancellation was announced as the provider's;
+    - a refused read showed its failure and, below it, "No contracts yet."; the list now says it was not read.
+    Held here: the routes name who withdrew; and the component's code."""
+    import json
+    import pathlib
+    import re
+    from agentic_core.api import vsb as _v
+    for vid in ("vsb-w997-a", "vsb-w997-b"):
+        _v._save_vsb({"vsb_id": vid, "name": vid, "owner_id": "default", "domain": "enterprise", "challenge": "w997 probe"})
+    try:
+        o = client.post("/api/v1/economy/contracts", json={"client_vsb": "vsb-w997-a", "provider_vsb": "vsb-w997-b",
+                                                            "brief": "w997 probe", "price_wst": 10}).json()
+        c = client.post(f"/api/v1/economy/contracts/{o['id']}/cancel").json()
+        assert c["status"] == "cancelled" and c["withdrawn"]["by"] == "client", c
+        r = client.post("/api/v1/economy/contracts", json={"client_vsb": "vsb-w997-a", "provider_vsb": "vsb-w997-a",
+                                                            "brief": "w997 itself", "price_wst": 10})
+        assert r.status_code == 400 and r.json()["detail"] == "An entity cannot contract itself.", r.text
+    finally:
+        for vid in ("vsb-w997-a", "vsb-w997-b"):
+            _v._vsb_path(vid).unlink(missing_ok=True)
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    pdir = root / "apps/workstation-superapp/src/pages/enterprise"
+    page = pdir.joinpath("ServiceContracts.tsx").read_bytes().decode("utf-8").replace("\r\n", "\n")
+    t = (pdir / "ServiceContracts.test.tsx").read_text(encoding="utf-8")
+    assert "import { ServiceContracts } from './ServiceContracts';" in t and "<ServiceContracts entities=" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"contracts-load-error", "contracts-unread", "contract-action-error"} <= read, sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in page, tid
+    code = _code_only(page)
+    #  the party the server names, and the step's only when it names none
+    assert "${res.withdrawn?.by ?? (step.path === 'decline' ? 'provider' : 'client')}" in code
+    assert "${res.withdrawn?.by ?? step.path === 'decline' ? 'provider' : 'client'}" not in code
+    #  an unread list is said as unread
+    assert ") : contracts.length === 0 ? (loadErr ? (" in code
+    assert "The contracts could not be read, so this is not a list of none." in code
+    #  the page offers no entity a contract with itself, as the route refuses it
+    assert "entities.filter(e => e.vsb_id !== client)" in code
+    fx = json.loads((pdir / "ServiceContracts.fixture.json").read_text(encoding="utf-8"))
+    assert fx["cancelled"]["withdrawn"]["by"] == "client" and fx["declined"]["withdrawn"]["by"] == "provider"
