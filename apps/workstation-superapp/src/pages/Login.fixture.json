@@ -1,0 +1,44 @@
+{
+ "me": {
+  "status": 200,
+  "body": {
+   "auth_enabled": false,
+   "message": "Single-user mode — no auth required."
+  }
+ },
+ "config": {
+  "status": 200,
+  "body": {
+   "auth_enabled": false,
+   "self_serve_signup_enabled": false,
+   "registration": "Owner-curated (admin creates accounts)"
+  }
+ },
+ "bad_signin": {
+  "status": 401,
+  "body": {
+   "detail": "Incorrect username or password."
+  }
+ },
+ "too_many": {
+  "status": 429,
+  "body": {
+   "detail": "Too many failed sign-ins for this name or from this address: try again in 900 second(s). Nothing was checked or created. The count is kept for 15 minutes."
+  },
+  "retry_after": "900"
+ },
+ "signup": {
+  "status": 409,
+  "body": {
+   "detail": "Auth is disabled (single-user mode) — signup is meaningless until the Owner enables AUTH_ENABLED."
+  }
+ },
+ "register": {
+  "status": 200,
+  "body": {
+   "status": "created",
+   "username": "w1005-made-up-2",
+   "role": "user"
+  }
+ }
+}

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import { KeyRound, Loader2, LogIn, ShieldCheck, UserPlus } from 'lucide-react';
 import { clearToken, setToken, whoami, WhoAmI } from '../lib/auth';
-import { apiJson } from '../lib/api';   // W927 - a read is used only on a 2xx
+import { apiJson, axiosDetail, bodyOrNull, errorMessage } from '../lib/api';   // W927 - a read is used only on a 2xx
 
 // §14 (W296) — the FRONT DOOR: the multi-user journey can begin. Honest at every edge:
 //  - auth-off single-user mode says so (no fake login theatre);
@@ -22,21 +22,32 @@ export const Login: React.FC = () => {
   const [cfg, setCfg] = useState<{ self_serve_signup_enabled?: boolean; registration?: string } | null>(null);
   const [su, setSu] = useState({ username: '', password: '' });
   const [suMsg, setSuMsg] = useState('');
+  //  W1005 - a setting that was not read is said as unread, never shown as signup being off
+  const [cfgErr, setCfgErr] = useState('');
 
   useEffect(() => {
     whoami().then(setWho);
-    apiJson('/api/v1/auth/config').then(setCfg).catch(() => setCfg(null));
+    apiJson('/api/v1/auth/config').then(d => { setCfg(d); setCfgErr(''); })
+      .catch(e => { setCfg(null); setCfgErr(errorMessage(e)); });
   }, []);
+
+  //  W1005 - a refusal says the server's status and reason; an object or a list is said by its message, never as
+  //  "[object Object]" (a field check answers a list)
+  const refusal = (r: Response, d: unknown) => `Failed (HTTP ${r.status}): ${axiosDetail({ response: { data: d } }, 'no reason given')}`;
 
   const signup = async () => {
     if (!su.username.trim() || !su.password) return;
     setSuMsg('');
-    const r = await fetch('/api/v1/auth/signup', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(su),
-    });
-    const d = await r.json().catch(() => ({}));
-    setSuMsg(r.ok ? `Account '${su.username}' created — sign in above.` : `Failed: ${d?.detail ?? r.status}`);
-    if (r.ok) { setUsername(su.username); setSu({ username: '', password: '' }); }
+    try {
+      const r = await fetch('/api/v1/auth/signup', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(su),
+      });
+      const d = await bodyOrNull(r);
+      setSuMsg(r.ok ? `Account '${su.username}' created — sign in above.` : refusal(r, d));
+      if (r.ok) { setUsername(su.username); setSu({ username: '', password: '' }); }
+    } catch (e) {
+      setSuMsg(errorMessage(e));   // W1005 - a network failure is said, never an unhandled rejection
+    }
   };
 
   const login = async () => {
@@ -47,12 +58,13 @@ export const Login: React.FC = () => {
       const r = await fetch('/api/v1/auth/token', {
         method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body,
       });
-      if (!r.ok) { setError(r.status === 401 ? 'Invalid username or password.' : `HTTP ${r.status}`); setBusy(false); return; }
+      //  W1005 - past the attempt limit the server says when to try again (429); the page said "HTTP 429"
+      if (!r.ok) { const d = await bodyOrNull(r); setError(r.status === 401 ? 'Invalid username or password.' : refusal(r, d)); setBusy(false); return; }
       const d = await r.json();
       setToken(d.access_token);
       setWho(await whoami());
       nav('/');
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+    } catch (e) { setError(errorMessage(e)); }
     setBusy(false);
   };
 
@@ -65,8 +77,8 @@ export const Login: React.FC = () => {
       const r = await fetch('/api/v1/auth/register', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(nu),
       });
-      const d = await r.json().catch(() => ({}));
-      setNuMsg(r.ok ? `Created '${nu.username}' (${d.role}).` : `Failed: ${d?.detail ?? r.status}`);
+      const d = await bodyOrNull(r);
+      setNuMsg(r.ok ? `Created '${nu.username}' (${d?.role ?? 'its role not said'}).` : refusal(r, d));
       if (r.ok) setNu({ username: '', password: '', role: 'user' });
     } catch {
       setNuMsg('Failed: backend unreachable.');   // cluster 2 — network failure must not reject unhandled
@@ -113,8 +125,10 @@ export const Login: React.FC = () => {
             </Button>
             {error && <p className="text-vital text-xs font-bold">{error}</p>}
           </div>
-          <p className="text-[10px] text-slate-500 flex items-center gap-1.5"><KeyRound size={12} />
-            {cfg?.self_serve_signup_enabled
+          <p className="text-[10px] text-slate-500 flex items-center gap-1.5" data-testid="signup-state"><KeyRound size={12} />
+            {cfgErr ? `Whether self-serve signup is on could not be read (${cfgErr}).`
+              : cfg === null ? 'Reading whether self-serve signup is on…'
+              : cfg.self_serve_signup_enabled
               ? 'Self-serve signup is enabled by the Owner — create an account below.'
               : 'Accounts are Owner-curated — ask the Owner for access. There is no self-serve signup unless the Owner enables it.'}</p>
         </Card>

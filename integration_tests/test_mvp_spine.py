@@ -81094,7 +81094,7 @@ def test_w959_fu1181_no_call_ends_in_a_catch_that_returns_nothing_unclassified()
     assert api.count("export function bodyOrNull") == 1 and "return r.json().then((b: T) => b, notJson);" in api
     assert "Each caller of bodyOrNull checks the answer's" in api and "const notJson = (): null => null;" in api
     users = [f for f in files if "bodyOrNull(" in _code_only(f.read_text(encoding="utf-8")) and f.name != "api.ts"]
-    assert len(users) == 15, sorted(f.name for f in users)   # W960: + lib/auth.ts, ForgePipeline, SwarmIntelligence; W982: + AgentHubPanel, QEPIntelligence, VSBCockpit; W989: + lib/download.ts; W1003: + MethodAppraisal
+    assert len(users) == 16, sorted(f.name for f in users)   # W960: + lib/auth.ts, ForgePipeline, SwarmIntelligence; W982: + AgentHubPanel, QEPIntelligence, VSBCockpit; W989: + lib/download.ts; W1003: + MethodAppraisal; W1005: + Login
     for f in users:
         code = _code_only(f.read_text(encoding="utf-8"))
         for m in re.finditer(r"bodyOrNull\((\w+)\)", code):
@@ -83791,3 +83791,49 @@ def test_w1004_fu399_the_science_and_education_hubs_say_a_refusal_s_reason_and_a
         assert said in code, (name, "a refusal of the list does not say its reason")
         fx = json.loads((d / f"{name}.fixture.json").read_text(encoding="utf-8"))
         assert "serving" in fx and fx[("methodologies" if what == "methodolog" else "frameworks")], (name, sorted(fx))
+
+
+def test_w1005_fu399_the_sign_in_page_says_each_refusal_s_reason_and_an_unread_setting_as_unread(client):
+    """FU-399 part 35 (W1005). The sign-in page says whether sign-in is on, offers the sign-in form, offers self-serve
+    signup only when the Owner turned it on, and offers an administrator the form that adds a user. Login.test.tsx
+    mounts the real page against the answers its routes gave on a fresh store with sign-in off, as shipped. Rendering
+    it found four defects, fixed:
+    - a refused read of the signup setting was shown as signup being off; it is said as unread, with its reason;
+    - a refused sign-in other than a wrong password said its status alone ("HTTP 429" past the attempt limit); it
+      says the server's reason;
+    - a refused signup or new user said "Failed: [object Object]" for an object or a list; each says its message;
+    - a signup the server could not be reached for rejected with nothing said; it is said.
+    Held here: with sign-in off, the session and the signup setting answer and a signup is refused with its reason;
+    the attempt limit answers 429 with when to try again; and the page's code."""
+    import json
+    import pathlib
+    import re
+    assert client.get("/api/v1/auth/me").json().get("auth_enabled") is False
+    cfg = client.get("/api/v1/auth/config")
+    assert cfg.status_code == 200 and cfg.json()["self_serve_signup_enabled"] is False, cfg.text[:200]
+    su = client.post("/api/v1/auth/signup", json={"username": "w1005-made-up", "password": "not-a-real-password"})
+    assert su.status_code == 409 and isinstance(su.json()["detail"], str), su.text[:200]
+    from agentic_core.auth import core as auth_core
+    wait = auth_core._too_many("failed sign-ins for this name or from this address", 42)
+    assert wait.status_code == 429 and wait.headers["Retry-After"] == "42" and "try again in 42 second(s)" in wait.detail
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    page = (src / "pages/Login.tsx").read_text(encoding="utf-8")
+    t = (src / "pages/Login.test.tsx").read_text(encoding="utf-8")
+    assert "import { Login } from './Login';" in t and "<Login />" in t
+    for tid in set(re.findall(r"ByTestId\('([^']+)'\)", t)):
+        assert f'data-testid="{tid}"' in page, tid
+    code = _code_only(page)
+    #  each refusal says the server's status and reason, an object or a list by its message
+    assert "`Failed: ${d?.detail ?? r.status}`" not in code and "r.json().catch(() => ({}))" not in code
+    assert "const refusal = (r: Response, d: unknown) => `Failed (HTTP ${r.status}): ${axiosDetail({ response: { data: d } }, 'no reason given')}`;" in code
+    assert "setError(r.status === 401 ? 'Invalid username or password.' : refusal(r, d));" in code
+    assert code.count(": refusal(r, d));") == 3, code.count(": refusal(r, d));")
+    #  a signup that cannot reach the server is said; an unread setting is said as unread
+    assert "setSuMsg(errorMessage(e));" in code
+    assert ".catch(e => { setCfg(null); setCfgErr(errorMessage(e)); });" in code
+    assert "{cfgErr ? `Whether self-serve signup is on could not be read (${cfgErr}).`" in code
+    fx = json.loads((src / "pages/Login.fixture.json").read_text(encoding="utf-8"))
+    assert set(fx) == {"me", "config", "bad_signin", "too_many", "signup", "register"}, sorted(fx)
+    assert fx["too_many"]["status"] == 429 and fx["too_many"]["retry_after"], fx["too_many"]
