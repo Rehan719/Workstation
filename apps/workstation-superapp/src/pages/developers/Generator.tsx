@@ -4,7 +4,7 @@ import { WORKSPACE_DOMAINS } from '../../lib/taxonomy';
 import { useSearchParams } from 'react-router-dom';
 import { Card, Badge } from '@workstation/ui';
 import { Wand2, Play, Download, Copy, Check, Loader2, Code2, Braces, Settings, FileText, Boxes, Cpu } from 'lucide-react';
-import { provenanceBadge, provenanceComment, provenanceField } from '../../lib/api';
+import { axiosDetail, bodyOrNull, errorMessage, provenanceBadge, provenanceComment, provenanceField } from '../../lib/api';
 
 const ARTEFACT_TYPES = [
   { id: 'code',       label: 'Code',        icon: Code2,    fmt: 'python'   },
@@ -65,10 +65,16 @@ export const Generator: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ artefact_type: artefactType, spec, domain, format, model }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      //  W1006 - a refusal says the server's status and reason (it said "HTTP 422" alone); a field check, which
+      //  answers a list, by its field
+      if (!res.ok) {
+        const d = await bodyOrNull(res);
+        setError(`Failed (HTTP ${res.status}): ${axiosDetail({ response: { data: d } }, 'no reason given')}`);
+        return;
+      }
       setResult(await res.json());
-    } catch (err: any) {
-      setError(err.message ?? 'Generation failed');
+    } catch (err) {
+      setError(errorMessage(err));   // W1006 - an unreachable server is said as one, not in the browser's words
     } finally {
       setRunning(false);
     }
@@ -220,6 +226,9 @@ export const Generator: React.FC = () => {
                 <p className="text-xs text-vital font-mono">[ERROR] {error}</p>
               ) : result?.output ? (
                 <pre className="text-[10px] text-slate-300 font-mono leading-relaxed whitespace-pre-wrap">{result.output}</pre>
+              ) : result ? (
+                //  W1006 - an answer that held no artefact is said, never shown as the idle prompt
+                <p className="text-xs text-amber-400 font-mono" data-testid="generator-no-artefact">The generator answered, and its answer held no artefact.</p>
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-center gap-3 opacity-40">
                   {running

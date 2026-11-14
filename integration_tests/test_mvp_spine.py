@@ -81094,7 +81094,7 @@ def test_w959_fu1181_no_call_ends_in_a_catch_that_returns_nothing_unclassified()
     assert api.count("export function bodyOrNull") == 1 and "return r.json().then((b: T) => b, notJson);" in api
     assert "Each caller of bodyOrNull checks the answer's" in api and "const notJson = (): null => null;" in api
     users = [f for f in files if "bodyOrNull(" in _code_only(f.read_text(encoding="utf-8")) and f.name != "api.ts"]
-    assert len(users) == 16, sorted(f.name for f in users)   # W960: + lib/auth.ts, ForgePipeline, SwarmIntelligence; W982: + AgentHubPanel, QEPIntelligence, VSBCockpit; W989: + lib/download.ts; W1003: + MethodAppraisal; W1005: + Login
+    assert len(users) == 18, sorted(f.name for f in users)   # W960: + lib/auth.ts, ForgePipeline, SwarmIntelligence; W982: + AgentHubPanel, QEPIntelligence, VSBCockpit; W989: + lib/download.ts; W1003: + MethodAppraisal; W1005: + Login; W1006: + Generator, ReactorStudio
     for f in users:
         code = _code_only(f.read_text(encoding="utf-8"))
         for m in re.finditer(r"bodyOrNull\((\w+)\)", code):
@@ -83837,3 +83837,39 @@ def test_w1005_fu399_the_sign_in_page_says_each_refusal_s_reason_and_an_unread_s
     fx = json.loads((src / "pages/Login.fixture.json").read_text(encoding="utf-8"))
     assert set(fx) == {"me", "config", "bad_signin", "too_many", "signup", "register"}, sorted(fx)
     assert fx["too_many"]["status"] == 429 and fx["too_many"]["retry_after"], fx["too_many"]
+
+
+def test_w1006_fu399_the_generator_and_the_studio_say_a_refusal_s_reason_and_an_empty_answer_as_one(client):
+    """FU-399 part 36 (W1006). The Generator composes one artefact from a description; the Reactor's Studio draws a
+    chart over a typed series with statistics and a narrative. Generator.test.tsx and ReactorStudio.test.tsx mount the
+    real pages against the answers their routes gave on a fresh store with no model installed, and have the server
+    refuse and be unreachable. Rendering them found three defects, fixed:
+    - a refused run said its status alone ("[ERROR] HTTP 422", "HTTP 400"), and a field check nothing of its field;
+      each says the server's status and reason, a field check by its field;
+    - an unreachable server was said in the browser's words ("Failed to fetch"); each says the server could not be
+      reached;
+    - a Generator answer that held no artefact was shown as the idle prompt; it is said.
+    Held here: the routes answer, and refuse as captured; and each page's code."""
+    import json
+    import pathlib
+    r = client.post("/api/v1/generator/produce", json={"artefact_type": "code", "domain": "software"})
+    assert r.status_code == 422 and isinstance(r.json()["detail"], list), r.text[:200]
+    r = client.post("/api/v1/reactor/studio", json={"title": "W1006", "domain": "enterprise", "chart_type": "bar",
+                                                    "series": []})
+    assert r.status_code == 400 and r.json()["detail"] == "Provide at least one data point (label + value).", r.text[:200]
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    pages = root / "apps/workstation-superapp/src/pages"
+    for rel, name in (("developers/Generator", "Generator"), ("synthesis/ReactorStudio", "ReactorStudio")):
+        t = (pages / f"{rel}.test.tsx").read_text(encoding="utf-8")
+        assert f"import {{ {name} }} from './{name}';" in t and f"<{name} />" in t, name
+        code = _code_only((pages / f"{rel}.tsx").read_text(encoding="utf-8"))
+        assert "`HTTP ${res.status}`" not in code and "`HTTP ${r.status}`" not in code, name
+        assert "${axiosDetail({ response: { data: d } }, 'no reason given')}`);" in code, (name, "a refusal says no reason")
+        fx = json.loads((pages / f"{rel}.fixture.json").read_text(encoding="utf-8"))
+        assert fx["refused"]["status"] in (400, 422), (name, fx["refused"])
+    gen = _code_only((pages / "developers/Generator.tsx").read_text(encoding="utf-8"))
+    assert "setError(errorMessage(err));" in gen and "err.message ?? 'Generation failed'" not in gen
+    assert "The generator answered, and its answer held no artefact." in gen and ") : result ? (" in gen
+    studio = _code_only((pages / "synthesis/ReactorStudio.tsx").read_text(encoding="utf-8"))
+    assert "} catch (e) { setError(errorMessage(e)); }" in studio and "e?.message ?? String(e)" not in studio
