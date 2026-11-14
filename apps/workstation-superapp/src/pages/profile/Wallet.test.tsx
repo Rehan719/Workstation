@@ -5,12 +5,17 @@
 // the real page against the answers the fund routes gave on a fresh store (Wallet.fixture.json, captured by
 // w981_capture.py from a made-up fund of two allocations, one reversal held, approved and applied, and two refusals),
 // drives the reversal as a person would, and has the server refuse each read and each request.
+//
+// W1033 - and an allocation is requested here: "Allocate" said "not implemented" over the fund's route, which is
+// built. Its answers are the route's own (Wallet.allocate.fixture.json): a request for a made-up project, held at
+// Change Control, and the refusals of a recipient nothing knows and of an amount that is not positive.
 import { fireEvent, render, screen, within, waitFor } from '@testing-library/react';
 import axios from 'axios';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import captured from './Wallet.fixture.json';
+import allocate from './Wallet.allocate.fixture.json';
 import { Wallet } from './Wallet';
 
 type Reply = { status: number; data: unknown };
@@ -20,7 +25,7 @@ const refused = (status: number, detail: string): Reply => ({ status, data: { de
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const clone = (x: any) => JSON.parse(JSON.stringify(x));
 
-function serve(a: { status?: Reply; portfolio?: Reply; reverse?: Reply | Error; unreachable?: boolean } = {}) {
+function serve(a: { status?: Reply; portfolio?: Reply; reverse?: Reply | Error; allocate?: Reply; unreachable?: boolean } = {}) {
   vi.spyOn(axios, 'get').mockImplementation(async (url: string) => {
     if (a.unreachable) throw new Error('Network Error');
     if (url === '/api/v1/fund/status') return (a.status ?? ok(captured.status)) as never;
@@ -30,6 +35,7 @@ function serve(a: { status?: Reply; portfolio?: Reply; reverse?: Reply | Error; 
   const posts: { url: string; body: unknown }[] = [];
   vi.spyOn(axios, 'post').mockImplementation(async (url: string, body?: unknown) => {
     posts.push({ url, body });
+    if (url === '/api/v1/fund/allocate') return (a.allocate ?? ok(allocate.held)) as never;   // W1033
     const r = a.reverse ?? ok(captured.reverse_held);
     if (r instanceof Error) throw r;
     return r as never;
@@ -174,5 +180,32 @@ describe('Wallet, rendered against the fund routes\' own answers', () => {
     expect(screen.getAllByTestId('wallet-allocation-reverse')).toHaveLength(
       captured.portfolio_reversed.allocations.filter(x => x.status === 'active').length);
     expect(screen.getByTestId('wallet-allocated').textContent).toBe(captured.status_reversed.allocated.toLocaleString());
+  });
+
+  it('an allocation requested is held at Change Control, and the page says the fund\'s own sentence', async () => {
+    const posts = serve();
+    render(<Wallet />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Allocate' }));
+    fireEvent.change(screen.getByLabelText('Recipient id'), { target: { value: allocate.ask.project_id } });
+    fireEvent.change(screen.getByLabelText('Recipient name'), { target: { value: allocate.ask.project_name } });
+    fireEvent.change(screen.getByLabelText('Amount (WST)'), { target: { value: String(allocate.ask.amount) } });
+    fireEvent.change(screen.getByLabelText('Purpose'), { target: { value: allocate.ask.purpose } });
+    fireEvent.click(screen.getByRole('button', { name: 'request the allocation' }));
+    await waitFor(() => expect(screen.getByTestId('wallet-allocation-request-said').textContent).toBe(allocate.held.governance.basis));
+    expect(posts.find(p => p.url === '/api/v1/fund/allocate')?.body).toEqual(allocate.ask);
+    expect(document.querySelector('[data-notimpl-toast]')).toBeNull();
+  });
+
+  it('a refused allocation says its status and the server\'s reason', async () => {
+    serve({ allocate: { status: allocate.unknown_refused.status, data: allocate.unknown_refused.body } });
+    render(<Wallet />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Allocate' }));
+    fireEvent.change(screen.getByLabelText('Recipient id'), { target: { value: 'w1033-made-up-nothing' } });
+    fireEvent.change(screen.getByLabelText('Recipient name'), { target: { value: allocate.ask.project_name } });
+    fireEvent.change(screen.getByLabelText('Amount (WST)'), { target: { value: '1000' } });
+    fireEvent.change(screen.getByLabelText('Purpose'), { target: { value: allocate.ask.purpose } });
+    fireEvent.click(screen.getByRole('button', { name: 'request the allocation' }));
+    await waitFor(() => expect(screen.getByTestId('wallet-allocation-request-said').textContent).toBe(
+      `Not requested (HTTP ${allocate.unknown_refused.status}): ${allocate.unknown_refused.body.detail}`));
   });
 });

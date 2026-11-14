@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { apiJson, errorMessage, ApiError, bodyDetail } from '../../lib/api';
 import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W928
-import { Card, Button, Badge, notImplemented } from '@workstation/ui';
+import { Card, Button, Badge } from '@workstation/ui';
 import {
   TrendingUp, ShieldAlert, PieChart, Activity,
   BarChart3, MessageCircle, AlertTriangle, RefreshCw,
@@ -354,7 +354,9 @@ export const CapitalDashboard: React.FC = () => {
                     <div className="p-3 bg-highlight text-slate-950 rounded-2xl"><Code size={24} /></div>
                     <h3 className="text-xl font-black text-white uppercase italic">Constitutional Evolution</h3>
                 </div>
-                <Button onClick={() => notImplemented('Propose Amendment')} size="sm" className="bg-aura text-slate-950 font-black uppercase italic">Propose Amendment</Button>
+                {/* W1033 - an amendment is proposed at Change Control, where the Constitution page's own "Propose Amendment"
+                    goes: this one said "not implemented" */}
+                <a href="/change-control" data-testid="capital-propose-amendment" className="px-3 py-1.5 rounded-lg bg-aura text-slate-950 text-xs font-black uppercase italic">Propose Amendment</a>
             </div>
             {/* W415 — this panel rendered two literal objects as constitutional articles:
                   { id: '1130', title: 'Concentration Limit Increase', status: 'UNDER REVIEW', ... }

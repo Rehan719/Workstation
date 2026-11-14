@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Wallet as WalletIcon, ArrowUpRight, ArrowDownLeft, ShieldCheck, Activity, Star, Shield, CreditCard, Landmark, DollarSign, Loader2 } from 'lucide-react';
-import { notImplemented } from '@workstation/ui';
 
 interface FundStatus {
   total_capital: number;
@@ -77,8 +76,45 @@ interface AllocationRequest {
 const flat = (d: unknown): string =>
   typeof d === 'string' ? d : d == null ? 'no reason was given' : JSON.stringify(d);
 
+//  W1033 - request an allocation. The fund's route is built: it checks the recipient exists, holds the request at
+//  Change Control for an explicit decision, and applies it once when the same allocation is requested again. This
+//  page's "Allocate" said "not implemented" over it
+const RequestAllocation: React.FC = () => {
+  const [to, setTo] = useState('');
+  const [name, setName] = useState('');
+  const [amount, setAmount] = useState('');
+  const [purpose, setPurpose] = useState('');
+  const [said, setSaid] = useState('');
+  const ask = async () => {
+    try {
+      const r = await axios.post('/api/v1/fund/allocate',
+        { project_id: to.trim(), project_name: name.trim(), amount: Number(amount), purpose: purpose.trim() },
+        { validateStatus: () => true });
+      setSaid(r.status === 200
+        ? String(r.data?.governance?.basis ?? r.data?.status_label ?? 'The fund answered and said nothing of what it did.')
+        : `Not requested (HTTP ${r.status}): ${flat(r.data?.detail)}`);
+    } catch {
+      setSaid('Not requested: the server could not be reached, so nothing was asked of Change Control.');
+    }
+  };
+  const ready = to.trim() !== '' && name.trim() !== '' && Number(amount) > 0 && purpose.trim() !== '';
+  const field = 'text-[11px] bg-slate-900 border border-slate-800 rounded-lg p-2 text-slate-300';
+  return (
+    <div className="mt-6 flex flex-wrap items-center gap-2" data-testid="wallet-allocation-request">
+      <input aria-label="Recipient id" value={to} onChange={e => setTo(e.target.value)} placeholder="the entity's or project's id" className={`${field} w-56`} />
+      <input aria-label="Recipient name" value={name} onChange={e => setName(e.target.value)} placeholder="its name" className={`${field} w-48`} />
+      <input aria-label="Amount (WST)" value={amount} onChange={e => setAmount(e.target.value)} placeholder="amount in WST" inputMode="decimal" className={`${field} w-32`} />
+      <input aria-label="Purpose" value={purpose} onChange={e => setPurpose(e.target.value)} placeholder="what it is for" className={`${field} w-64`} />
+      <button type="button" onClick={ask} disabled={!ready}
+        className="text-[10px] font-black uppercase px-3 py-2 rounded-lg border border-aura/40 text-aura disabled:opacity-40">request the allocation</button>
+      {said && <p data-testid="wallet-allocation-request-said" className="basis-full text-[11px] text-amber-400/80">{said}</p>}
+    </div>
+  );
+};
+
 export const Wallet: React.FC = () => {
   const [fund, setFund] = useState<FundStatus | null>(null);
+  const [allocOpen, setAllocOpen] = useState(false);   // W1033 - the request, opened by "Allocate"
   const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [allocBasis, setAllocBasis] = useState<string | null>(null);   // W577 (FU-298)
   const [requests, setRequests] = useState<AllocationRequest[]>([]);          // FU-794
@@ -175,8 +211,9 @@ export const Wallet: React.FC = () => {
                <p className="text-slate-500 text-xs font-bold mt-1" data-testid="wallet-allocation-governed">An allocation is requested, held at Change Control for an explicit decision, and applied only after it is approved.</p>
             </div>
          </div>
-         <button type="button" onClick={() => notImplemented('Allocate Capital')} className="px-10 py-4 bg-aura text-sovereign font-black rounded-2xl hover:scale-105 transition-all">Allocate</button>
+         <button type="button" onClick={() => setAllocOpen(o => !o)} aria-expanded={allocOpen} className="px-10 py-4 bg-aura text-sovereign font-black rounded-2xl hover:scale-105 transition-all">Allocate</button>
       </div>
+      {allocOpen && <RequestAllocation />}
 
       <div className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800" data-testid="wallet-allocation-requests">
         <h3 className="text-xl font-bold mb-2">Allocation Requests</h3>

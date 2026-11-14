@@ -85652,3 +85652,49 @@ def test_w1032_fu399_the_bto_catalogue_says_a_failure_by_what_it_was(client, mon
     assert "API server is running" not in page
     t = (src / "pages/BTOCatalog.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './BTOCatalog.fixture.json';" in t and "<BTOCatalog />" in t
+
+
+def test_w1033_no_control_says_not_implemented_and_the_wallet_requests_an_allocation(client):
+    """W1033. Four buttons said "not implemented", and one said it over a route that is built. The Wallet's
+    "Allocate" said it over the fund's allocation route, which checks the recipient exists, holds the request at
+    Change Control for an explicit decision, and applies it once when the same allocation is requested again. The
+    Capital Dashboard's "Propose Amendment" said it, while the Constitution page's own "Propose Amendment" goes to
+    Change Control, where amendments are proposed. And the Contribute page offered a forum and a chat server that do
+    not exist. The Wallet now requests the allocation and says the fund's own sentence (Wallet.test.tsx, against the
+    route's answers in Wallet.allocate.fixture.json); the amendment goes to Change Control; and the Contribute page
+    says there is no forum and opens the repository's discussions (Contribute.test.tsx).
+
+    Held here: the refusals are the route's own, read again (neither files anything); the held answer moves nothing;
+    tree-wide, no page calls notImplemented; and the four, read where they are."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/profile/Wallet.allocate.fixture.json").read_text(encoding="utf-8"))
+
+    #  the refusals, read again: an amount that is not positive is refused first, and a recipient nothing knows
+    #  before anything is filed (an amount of 1, so the fund's balance on this store is never what answers)
+    n = client.post("/api/v1/fund/allocate", json={**fx["ask"], "amount": -5})
+    assert (n.status_code, n.json()) == (fx["amount_refused"]["status"], fx["amount_refused"]["body"]), n.text[:200]
+    u = client.post("/api/v1/fund/allocate", json={**fx["ask"], "project_id": "w1033-made-up-nothing", "amount": 1})
+    assert (u.status_code, u.json()) == (fx["unknown_refused"]["status"], fx["unknown_refused"]["body"]), u.text[:200]
+    assert "Nothing was filed with Change Control" in fx["unknown_refused"]["body"]["detail"]
+    #  the held answer moved nothing: it is a Change Control record, and the fund's figure is unchanged
+    h = fx["held"]
+    assert (h["status"], h["applied"], h["allocation_id"]) == ("held", False, None), h
+    assert h["governance"]["basis"].startswith("HELD, NOT ALLOCATED: this request is Change Control record "), h
+    assert h["governance"]["recipient_kind"] == "project" and h["cca_id"], h["governance"]
+
+    #  tree-wide: no page calls notImplemented
+    callers = sorted(f.relative_to(src).as_posix() for f in (p for ext in ("*.ts", "*.tsx") for p in src.rglob(ext))
+                     if ".test." not in f.name and "notImplemented(" in _code_only(f.read_text(encoding="utf-8")))
+    assert callers == [], ("a control says not implemented; build it, point it to where it is, or say it is not here",
+                           callers)
+
+    wallet = _code_only((src / "pages/profile/Wallet.tsx").read_text(encoding="utf-8"))
+    assert "const r = await axios.post('/api/v1/fund/allocate'," in wallet and "{allocOpen && <RequestAllocation />}" in wallet
+    assert "? String(r.data?.governance?.basis ?? r.data?.status_label ??" in wallet
+    cap = _code_only((src / "pages/enterprise/CapitalDashboard.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert '<a href="/change-control" data-testid="capital-propose-amendment"' in cap
+    con = _code_only((src / "pages/Contribute.tsx").read_text(encoding="utf-8"))
+    assert con.count("openExternal(`${REPO}/discussions`)") == 2 and "Discourse" not in con and "Discord" not in con
+    assert 'data-testid="contribute-no-forum"' in con

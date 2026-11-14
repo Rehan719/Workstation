@@ -24589,6 +24589,29 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: both actions say the failure through errorMessage, and test_w1028's census reads the wording. BTOCatalog.test.tsx drives the blueprint, the build-to-order answer, the server's own 500 and an unreachable server (two vitest blinds); test_w1032 holds the blueprint and the 500, read again, and the catalogue's readings (three blinds)."
+    },
+    {
+      "id": "FU-1217",
+      "title": "Four buttons said 'not implemented', one over a route that is built: the Wallet's Allocate, the Capital Dashboard's Propose Amendment, and the Contribute page's forum and chat server",
+      "why": "Found by a census of the controls whose only action is notImplemented, after the BTO catalogue was rendered. The Wallet's 'Allocate' said 'not implemented' over the fund's allocation route, which is built: it checks the recipient exists, holds the request at Change Control for an explicit decision, and applies it once when the same allocation is requested again; no page offered it. The Capital Dashboard's 'Propose Amendment' said 'not implemented', while the Constitution page's own 'Propose Amendment' goes to Change Control, where amendments are proposed. The Contribute page offered 'Access Discourse Forum' and 'Join Discord Server', which do not exist.",
+      "source": "W1033 (the census of controls that say not implemented)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/profile/Wallet.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/CapitalDashboard.tsx",
+        "apps/workstation-superapp/src/pages/Contribute.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1033",
+      "note": "",
+      "slot_source": "found by the census FU-399's rendering led to; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the Wallet's Allocate opens a request to the fund's route and says the fund's own sentence (held at Change Control, or the refusal's status and reason); Propose Amendment goes to Change Control as the Constitution page's does; the Contribute page says there is no forum and opens the repository's discussions. Wallet.test.tsx and Contribute.test.tsx drive them (three vitest blinds); test_w1033 holds the refusals, read again, the held answer, and, tree-wide, that no page calls notImplemented (five blinds)."
     }
   ],
   "routes": [
