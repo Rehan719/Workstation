@@ -89152,8 +89152,11 @@ def test_w1087_p514_the_one_list_reached_from_the_first_screen_reads_the_stores_
     dec = by[("project", "decision")]
     assert dec["project_id"] == mine and dec["on"] == f"W1087 project {tag}" and "'concept' to 'prototype'" in dec["what"]
     assert dec["where"] == "the Governance Hub's proposals" and by[("agreement", "falls_due")]["where"] == _wt.WHERE["agreement"]
-    assert w["reads"] == _wt.READS and w["not_read_yet"] == _wt.NOT_READ_YET and len(_wt.NOT_READ_YET) == 7
-    assert w["unread"] == [] and "not_kept" not in w and "said" not in w and w["date_basis"] == _wt.DATE_BASIS
+    assert w["reads"] == _wt.READS and w["not_read_yet"] == _wt.NOT_READ_YET and len(_wt.NOT_READ_YET) == 5   # W1088
+    #  W1088 - the list reads more stores now, which the suite's other tests share: this test holds its own five
+    ours = ("agreements", "assets", "projects", "proposals", "changes")
+    assert [x for x in w["unread"] if x["store"] in ours] == [] and "not_kept" not in w and "said" not in w
+    assert w["date_basis"] == _wt.DATE_BASIS
     assert "none is taken from a model" in _wt.DATE_BASIS and "none is computed" not in _wt.BASIS
     assert client.get("/api/v1/waiting?within_days=999", headers=H["one"]).status_code == 400
     #  a renewed piece of evidence takes its lapsed one off the list, and a fact not due in the window is not on it
@@ -89161,7 +89164,8 @@ def test_w1087_p514_the_one_list_reached_from_the_first_screen_reads_the_stores_
 
     #  another person: none of it
     two = waiting("two")
-    assert two["items"] == [] and two["said"] == _wt.NOTHING and tag not in json.dumps(two)
+    assert two["items"] == [] and two["said"] == (_wt.NOTHING_READ if two["unread"] else _wt.NOTHING)
+    assert tag not in json.dumps(two)
 
     #  Change Control: a change waiting on a decision, one waiting for the Board, a material economy action a review
     #  approved, and an unowned project's proposal - an administrator's, and no other person's
@@ -89180,7 +89184,7 @@ def test_w1087_p514_the_one_list_reached_from_the_first_screen_reads_the_stores_
     _pj._save_proposal(_pj.Proposal(project_id=orphan.id, project_title=orphan.title, from_stage="concept",
                                     to_stage="prototype"))
     adm = waiting("adm")
-    seen = sorted((i["source"], i["kind"], i["on"], i["where"]) for i in adm["items"])
+    seen = sorted((i["source"], i["kind"], i["on"], i["where"]) for i in adm["items"] if i["source"] in ("change", "project"))
     assert seen == sorted([("change", "decision", f"W1087 change {tag}", "Change Control's queue"),
                            ("change", "decision", f"W1087 economy {tag}", "Change Control's queue"),
                            ("change", "ratification", f"W1087 ratify {tag}", "the Board's ratifications"),
@@ -89194,7 +89198,7 @@ def test_w1087_p514_the_one_list_reached_from_the_first_screen_reads_the_stores_
     monkeypatch.setenv("AUTH_ENABLED", "false")
     off = waiting()
     assert off["not_kept"] == _wt.NOT_KEPT and not [i for i in off["items"] if i["source"] in ("agreement", "asset")]
-    assert sorted((i["source"], i["on"]) for i in off["items"]) == sorted([
+    assert sorted((i["source"], i["on"]) for i in off["items"] if i["source"] in ("project", "change")) == sorted([
         ("project", f"W1087 project {tag}"), ("project", f"W1087 unowned project {tag}"),
         ("change", f"W1087 change {tag}"), ("change", f"W1087 ratify {tag}"), ("change", f"W1087 economy {tag}")])
     monkeypatch.setenv("AUTH_ENABLED", "true")
@@ -89218,9 +89222,10 @@ def test_w1087_p514_the_one_list_reached_from_the_first_screen_reads_the_stores_
         finally:
             p.write_bytes(held)
         name = "agreements" if store == _ag.AGREEMENTS else "assets"
-        assert [x["store"] for x in u["unread"]] == [name] and u["unread"][0]["said"], u["unread"]
+        assert [x["store"] for x in u["unread"] if x["store"] in ours] == [name] and u["unread"][0]["said"], u["unread"]
         assert {i["source"] for i in u["items"]} == {"agreement", "asset", "project"} - {name[:-1]}, u["items"]
-        assert none["items"] == [] and none["said"] == _wt.NOTHING_READ and [x["store"] for x in none["unread"]] == [name]
+        assert none["items"] == [] and none["said"] == _wt.NOTHING_READ
+        assert [x["store"] for x in none["unread"] if x["store"] in ours] == [name]
     for folder, name, k in (("projects", "projects", "one"), ("proposals", "proposals", "one"), ("cca", "changes", "adm")):
         bad = tmp_path / folder / (("cca-0badrecord" if folder == "cca" else f"w1087-bad-{tag}") + ".json")
         bad.write_text("{ not json", encoding="utf-8")
@@ -89231,7 +89236,7 @@ def test_w1087_p514_the_one_list_reached_from_the_first_screen_reads_the_stores_
         said = [x["said"] for x in u["unread"] if x["store"] == name]
         assert len(said) == 1 and said[0].startswith("1 "), u["unread"]
         assert u["items"], u
-    assert waiting("one")["unread"] == [] and waiting("adm")["unread"] == []
+    assert not [x for k in ("one", "adm") for x in waiting(k)["unread"] if x["store"] in ours]
 
     #  the first screen mounts the list, and the panel says what the route gives, on the route's own answers
     root = pathlib.Path(__file__).resolve().parents[1]
@@ -89261,3 +89266,159 @@ def test_w1087_p514_the_one_list_reached_from_the_first_screen_reads_the_stores_
     w627 = w627[:w627.index("\ndef test_")]
     assert 'client.get(f"/api/v1/resources/swarm?vsb_id={_vid}")' in w627
     assert 'client.get("/api/v1/resources/swarm")' not in w627
+
+
+def test_w1088_fu1270_the_one_list_reads_what_an_entitys_owner_is_waited_on_for(client, monkeypatch):
+    """FU-1270, part 1 (W1088): the one list of what waits on a person reads the entity owner's stores. Held here,
+    through the routes, as two people and an administrator:
+    - an entity of a person's waits on them for a decision at each review gate still pending (not one decided), and
+      for a name while its working name is not published;
+    - a service contract waits on the owner of the side that acts next: offered and accepted on the provider's (to
+      accept or decline, then to deliver), delivered on the client's (to settle); never on the other side's;
+    - a cascade's delivery to an entity waits on its owner until that version is accepted, and not after;
+    - another person's entities, contracts and deliveries are never on a person's list; an unowned entity's are an
+      administrator's; with sign-in off, every one is the one person's using the machine;
+    - an entity record, the contract store and the record of acceptances that cannot be read are each said in their
+      place, with why, and the rest of the list stands;
+    - the two entries of the census these stores were named under are no longer said as not read yet."""
+    import json
+    import time
+    import uuid
+    import agentic_core.auth.core as _ac
+    import agentic_core.api.vsb as _vs
+    import agentic_core.api.waiting as _wt
+    from agentic_core.api import economy as _ec
+    from agentic_core.api import swarm as _sw
+    from agentic_core.config import atomic_write_json, data_path, read_json_strict
+    tag = uuid.uuid4().hex[:8]
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    who = {k: f"w1088-{k}-{tag}" for k in ("one", "two", "adm")}
+    users = _ac._load_users()
+    for k, name in who.items():
+        users[name] = {"user_id": name, "username": name, "hashed_password": _ac._pwd_ctx.hash("pw12345678"),
+                       "role": "admin" if k == "adm" else "user", "created_at": "2026-11-15T00:00:00Z",
+                       "api_keys": []}
+    _ac._save_users(users)
+    H = {k: {"Authorization": "Bearer " + client.post("/api/v1/auth/token", data={
+        "username": n, "password": "pw12345678"}).json()["access_token"]} for k, n in who.items()}
+
+    def waiting(k=None):
+        r = client.get("/api/v1/waiting", headers=H[k] if k else {})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()
+
+    def mine(k, source=None):
+        return [i for i in waiting(k)["items"] if i.get("source") in ("entity", "contract", "delivery")
+                and (source is None or i["source"] == source)]
+
+    def establish(k, problem, name=None):
+        body = {"problem": problem, "ship_output": False, **({"name": name} if name else {})}
+        r = client.post("/api/v1/genesis/establish", headers=H[k], json=body)
+        assert r.status_code == 200, r.text[:300]
+        return r.json()["vsb_id"]
+
+    #  person one's entities: one waiting to be named, with two stages gated; one named; person two's, named
+    pending = establish("one", f"w1088 made-up mission waiting to be named {tag}")
+    provider = establish("one", f"w1088 made-up provider {tag}", name=f"W1088 Provider {tag}")
+    buyer = establish("two", f"w1088 made-up client {tag}", name=f"W1088 Client {tag}")
+    assert client.post(f"/api/v1/vsb/{pending}/review-gates", headers=H["one"],
+                       json={"stages": ["design", "commercialise"]}).status_code == 200
+    assert client.post(f"/api/v1/vsb/{pending}/review-gates/design/decision", headers=H["one"],
+                       json={"decision": "approve", "note": "w1088 made-up"}).status_code == 200
+    got = sorted((i["kind"], i["what"]) for i in mine("one", "entity") if i["vsb_id"] == pending)
+    assert got == [("gate", "a decision at the review gate of its 'commercialise' stage"),
+                   ("name", "a name for this enterprise, from its founder")], got
+    assert all(i["where"] in (_wt.WHERE["entity"], _wt.WHERE["gate"]) for i in mine("one", "entity"))
+    assert not [i for i in mine("one", "entity") if i["vsb_id"] == provider]   # named, and no gate pending
+    assert mine("two") == [] or all(i["vsb_id"] == buyer for i in mine("two"))
+
+    #  a service contract: offered and accepted wait on the provider's owner, delivered on the client's
+    offer = client.post("/api/v1/economy/contracts", headers=H["two"], json={
+        "client_vsb": buyer, "provider_vsb": provider, "brief": f"w1088 a made-up brief {tag}", "price_wst": 10})
+    assert offer.status_code == 200, offer.text[:300]
+    cid = offer.json()["id"] if "id" in offer.json() else offer.json()["contract"]["id"]
+    seen = [(i["kind"], i["vsb_id"], i["where"]) for i in mine("one", "contract")]
+    assert seen == [("offered", provider, _wt.WHERE["contract"])], seen
+    assert not mine("two", "contract")
+    assert client.post(f"/api/v1/economy/contracts/{cid}/accept", headers=H["one"]).status_code == 200
+    assert [i["kind"] for i in mine("one", "contract")] == ["accepted"] and not mine("two", "contract")
+
+    def delivered(rows):
+        for r in rows:
+            if r.get("id") == cid:
+                r["status"] = "delivered"
+    _ec._mutate_contracts(delivered, keep=cid)
+    assert [i["kind"] for i in mine("two", "contract")] == ["delivered"] and not mine("one", "contract")
+
+    #  a delivery to an entity waits on its owner until that version is accepted
+    runs_path = data_path("org_cascade_runs.json")
+    runs = read_json_strict(runs_path, [], expect=list)
+    run_id, sha = f"w1088-run-{tag}", uuid.uuid4().hex * 2
+    runs.append({"run_id": run_id, "mission": f"w1088 a made-up mission {tag}", "business_plan_scope": provider,
+                 "delivery_sha256": sha, "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+    atomic_write_json(runs_path, runs)
+    dl = [i for i in mine("one", "delivery") if i["run_id"] == run_id]
+    assert len(dl) == 1 and dl[0]["where"] == _wt.WHERE["delivery"] and tag in dl[0]["what"], dl
+    assert not [i for i in mine("two", "delivery") if i["run_id"] == run_id]
+    assert client.post(f"/api/v1/swarm/cascade/runs/{run_id}/accept", headers=H["one"],
+                       json={"delivery_sha256": sha}).status_code == 200
+    assert not [i for i in mine("one", "delivery") if i["run_id"] == run_id]
+
+    #  an unowned entity's waits are an administrator's
+    orphan = f"vsb-w1088{tag}"
+    (_vs._VSB_STORE / f"{orphan}.json").write_text(json.dumps({
+        "vsb_id": orphan, "name": f"W1088 unowned {tag}", "owner_id": None, "name_pending": True}), encoding="utf-8")
+    try:
+        assert [i["kind"] for i in mine("adm", "entity") if i["vsb_id"] == orphan] == ["name"]
+        assert not [i for i in mine("one", "entity") if i["vsb_id"] == orphan]
+        #  with sign-in off every entity is the one person's
+        monkeypatch.setenv("AUTH_ENABLED", "false")
+        off = {(i["source"], i["vsb_id"], i["kind"]) for i in waiting()["items"] if i.get("vsb_id")}
+        assert {("entity", pending, "name"), ("entity", pending, "gate"), ("entity", orphan, "name"),
+                ("contract", buyer, "delivered")} <= off, off
+        monkeypatch.setenv("AUTH_ENABLED", "true")
+    finally:
+        (_vs._VSB_STORE / f"{orphan}.json").unlink()
+
+    #  a record or a store it cannot read is said in its place, and the rest stands. The store is shared with the
+    #  suite's other tests, so what it could not read already is counted first.
+    def unread_entities(k):
+        said = [x["said"] for x in waiting(k)["unread"] if x["store"] == "entities"]
+        return int(said[0].split()[0]) if said else 0
+    before = unread_entities("one")
+    studio = _vs._VSB_STORE / f"w1088-studio-{tag}.json"   # the synthesis studio's own record, by entity_id
+    studio.write_text(json.dumps({"entity_id": f"w1088-studio-{tag}", "solution_name": "made up"}), encoding="utf-8")
+    bad = _vs._VSB_STORE / f"w1088-bad-{tag}.json"
+    bad.write_text("{ not json", encoding="utf-8")
+    try:
+        u = waiting("one")
+    finally:
+        bad.unlink()
+        studio.unlink()
+    said = [x["said"] for x in u["unread"] if x["store"] == "entities"]
+    assert len(said) == 1 and said[0].startswith(f"{before + 1} entity record(s) could not be read"), (before, u["unread"])
+    assert [i["vsb_id"] for i in u["items"] if i.get("source") == "entity"].count(pending) == 2
+    for path, store in ((_ec._contracts_path(), "contracts"), (_sw._ACCEPTANCES_STORE, "acceptances")):
+        held = path.read_bytes() if path.exists() else None
+        path.write_text("{ not json", encoding="utf-8")
+        try:
+            u = waiting("two" if store == "contracts" else "one")
+        finally:
+            if held is None:
+                path.unlink()
+            else:
+                path.write_bytes(held)
+        assert [x["store"] for x in u["unread"] if x["store"] != "entities"] == [store], u["unread"]
+        assert all(x["said"] for x in u["unread"])
+        if store == "contracts":
+            assert not [i for i in u["items"] if i.get("source") == "contract"]
+        else:
+            assert not [i for i in u["items"] if i.get("source") == "delivery"]
+            assert [i["kind"] for i in u["items"] if i.get("vsb_id") == pending] != []
+    assert [x for x in waiting("one")["unread"] if x["store"] != "entities"] == []
+    assert unread_entities("one") == before
+
+    #  the census's entries for these stores are no longer said as not read yet
+    assert not [s for s in _wt.NOT_READ_YET if "review gate" in s or "service contract" in s]
+    assert len(_wt.NOT_READ_YET) == 5 and waiting("one")["not_read_yet"] == _wt.NOT_READ_YET
+    assert sum("your entities" in r for r in _wt.READS) == 2

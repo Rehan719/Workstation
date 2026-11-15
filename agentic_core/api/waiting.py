@@ -30,12 +30,16 @@ READS = ["the obligations on your agreement records: each one falling due within
          "nothing current in its place, and a declaration of readiness withdrawn because what it rests on lapsed",
          "Change Control: each change waiting on a decision, each a review approved that waits for the Board's "
          "ratification, and each material economy action a review approved, which only the Owner's own decision "
-         "releases; an administrator records all three, so with sign-in on they wait on an administrator"]
+         "releases; an administrator records all three, so with sign-in on they wait on an administrator",
+         #  W1088 (FU-1270)
+         "your entities: a stage held at its review gate until you decide it, and an entity whose working name is "
+         "not published until you name it",
+         "your entities' service contracts: an offer to accept or decline, an accepted contract to deliver, and a "
+         "delivered one to settle, each on the side that acts next; and a delivery to your entity waiting for you to "
+         "accept its version"]
 #  W1087 - the census of the stores that hold something waiting on a person found these as well; each is named until
 #  the list reads it (FU-1270)
-NOT_READ_YET = ["an entity's review gate waiting on its owner's decision, and an entity waiting to be named",
-                "a service contract waiting on its provider or its client, and a delivery waiting to be accepted",
-                "the scholar review queue, the children's approval pack, and a GMP record waiting on a signatory",
+NOT_READ_YET = ["the scholar review queue, the children's approval pack, and a GMP record waiting on a signatory",
                 "a legal artefact waiting on the Owner's approval, and an avatar mode waiting on an administrator's "
                 "co-signature",
                 "a support answer waiting on its asker's confirmation, and a quality defect waiting on a correction or "
@@ -44,7 +48,11 @@ NOT_READ_YET = ["an entity's review gate waiting on its owner's decision, and an
                 "a method amendment not yet carried out, a follow-up waiting on the Owner, and an immune defence "
                 "waiting to be lifted"]
 WHERE = {"agreement": "the agreements on the Law page", "asset": "the assets on the Law page",
-         "change": "Change Control's queue", "ratification": "the Board's ratifications"}
+         "change": "Change Control's queue", "ratification": "the Board's ratifications",
+         #  W1088 (FU-1270)
+         "entity": "the entity's Cockpit", "gate": "the entity's review gates on its Cockpit",
+         "contract": "the service contracts on the VSB Economy page",
+         "delivery": "the deliveries on the Living Organisation hub"}
 NOT_KEPT = ("Your agreement and asset records are kept only once you are signed in, and sign-in is off, so nothing "
             "of theirs is on this list.")
 BASIS = ("One list of what waits on you, from the records it reads; a record it could not read is said with why, and "
@@ -57,7 +65,8 @@ NOTHING_READ = ("Nothing in what this list could read is waiting on you; what it
                 "this is not a list of none.")
 #  soonest first: what has a date (falling due, lapsing, lapsed), then decisions, oldest first, then the rest
 _RANK = {"falls_due": 0, "evidence_lapses": 0, "evidence_lapsed": 0, "decision": 1, "ratification": 1,
-         "readiness_withdrawn": 2, "unconfirmed": 3}
+         "readiness_withdrawn": 2, "unconfirmed": 3,
+         "name": 1, "gate": 1, "offered": 1, "accepted": 1, "delivered": 1, "acceptance": 1}   # W1088
 
 
 def _iso(ts) -> str:
@@ -153,6 +162,121 @@ def _changes(user) -> tuple:
         if unread else [])
 
 
+def _theirs(user, owner) -> bool:
+    """W1088 - whether a record owned by `owner` waits on this person: with sign-in on, it is theirs, or it is unowned and
+    they are an administrator (an unowned record is an administrator's, user_can_access); with it off, every record
+    is the one person's using this machine."""
+    if not auth_enabled():
+        return True
+    me = user.get("username") if isinstance(user, dict) else None
+    admin = isinstance(user, dict) and user.get("role") == "admin"
+    return bool(me and owner == me) or (not owner and admin)
+
+
+def _entities(user) -> tuple:
+    """W1088 (FU-1270) - an entity of this person's waiting on them: a stage held at its review gate until they decide
+    it (W452, Mode 3), and an entity whose working name is not published until its founder names it (W450). Every
+    entity record is read here, counted when it cannot be; the owners and names read serve the contracts and the
+    deliveries, whose own records name entities by id."""
+    import json
+    from agentic_core.api import vsb as vs
+    items, unread, owners, names = [], 0, {}, {}
+    for p in list(vs._VSB_STORE.glob("*.json")):
+        try:
+            v = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            if p.exists():
+                unread += 1
+            continue
+        if isinstance(v, dict) and not v.get("vsb_id") and v.get("entity_id"):
+            continue   # the synthesis studio keeps its own entities in this folder, by entity_id
+        if not (isinstance(v, dict) and v.get("vsb_id")):
+            unread += 1
+            continue
+        vid = str(v["vsb_id"])
+        owners[vid], names[vid] = v.get("owner_id"), (v.get("name") or vid)
+        if not _theirs(user, v.get("owner_id")):
+            continue
+        since = str(v.get("created_at") or "")
+        if v.get("name_pending"):
+            items.append({"source": "entity", "kind": "name", "vsb_id": vid, "what": "a name for this enterprise, from its founder",
+                          "on": names[vid], "ref": None, "where": WHERE["entity"], "since": since,
+                          "said": "its body is not published under a working name until it is named"})
+        rg = v.get("review_gates") if isinstance(v.get("review_gates"), dict) else {}
+        for st in (vs._gate_status(rg, s) for s in (rg.get("stages") or [])):
+            if st.get("status") == "pending":
+                items.append({"source": "entity", "kind": "gate", "vsb_id": vid,
+                              "what": f"a decision at the review gate of its '{st['stage']}' stage",
+                              "on": names[vid], "ref": None, "where": WHERE["gate"], "since": since,
+                              "said": "the stage does not go ahead until it is decided"})
+    return items, ([{"store": "entities", "said": (
+        f"{unread} entity record(s) could not be read, so a decision or a name one of them waits on may not be "
+        f"shown.")}] if unread else []), owners, names
+
+
+_CONTRACT_WAITS = {   # status -> (whose side acts, what waits)
+    "offered": ("provider_vsb", "an answer to this offer of a service contract: accept it or decline it"),
+    "accepted": ("provider_vsb", "the delivery of this accepted service contract"),
+    "delivered": ("client_vsb", "the settlement of this delivered service contract"),
+}
+
+
+def _contracts(user, owners: dict, names: dict) -> list:
+    """W1088 (FU-1270) - a service contract between entities waits on the owner of the side that acts next: an offer
+    on the provider's, to accept or decline; an accepted contract on the provider's, to deliver; a delivered one on the
+    client's, to settle. The contract store is read strictly, and a store it cannot read is said by its caller."""
+    from agentic_core.api.economy import _read_contracts
+    items = []
+    for c in _read_contracts():
+        side = _CONTRACT_WAITS.get(c.get("status"))
+        if not side:
+            continue
+        vid = str(c.get(side[0]) or "")
+        if vid not in owners or not _theirs(user, owners[vid]):
+            continue
+        since = str(c.get("offered_at") or "")
+        items.append({"source": "contract", "kind": c.get("status"), "contract_id": c.get("id"), "vsb_id": vid,
+                      "what": side[1], "on": names.get(vid, vid),
+                      "ref": f"{c.get('brief', '')[:80]}; {c.get('price_wst')} virtual WST", "where": WHERE["contract"],
+                      "since": since, "said": _ago(since)})
+    return items
+
+
+def _deliveries(user, owners: dict, names: dict) -> tuple:
+    """W1088 (FU-1270) - a cascade's delivery to an entity waits on its owner's acceptance of that version (W851): a run
+    scoped to an entity, with the version it delivered, and no acceptance recorded for it. The run history is read
+    tolerantly and says when it was not read whole; the acceptances are read strictly."""
+    from agentic_core.config import StoreUnavailable, data_path, read_json_reported
+    from agentic_core.api.swarm import _acceptances
+    unread = []
+    runs, why = read_json_reported(data_path("org_cascade_runs.json"), [])
+    if why:
+        unread.append({"store": "cascade runs", "said": (
+            f"The cascade run history could not be read whole ({why}), so a delivery waiting to be accepted may not "
+            f"be shown.")})
+    try:
+        accepted = {a.get("run_id") for a in _acceptances()}
+    except StoreUnavailable as e:
+        return [], unread + [{"store": "acceptances", "said": (
+            f"The record of accepted deliveries could not be read ({e}), so no delivery is said to wait on you: one "
+            f"may already be accepted.")}]
+    items = []
+    for r in runs if isinstance(runs, list) else []:
+        if not isinstance(r, dict):
+            continue
+        vid = str(r.get("business_plan_scope") or "")
+        if vid in ("", "workstation") or not r.get("delivery_sha256") or r.get("run_id") in accepted:
+            continue
+        if vid not in owners or not _theirs(user, owners[vid]):
+            continue
+        since = str(r.get("created_at") or "")
+        items.append({"source": "delivery", "kind": "acceptance", "run_id": r.get("run_id"), "vsb_id": vid,
+                      "what": f"an acceptance of this version of the delivery for '{str(r.get('mission') or '')[:80]}'",
+                      "on": names.get(vid, vid), "ref": None, "where": WHERE["delivery"], "since": since,
+                      "said": _ago(since)})
+    return items, unread
+
+
 @router.get("")
 async def what_waits(within_days: int = 30, user: dict | None = Depends(get_current_user)):
     """What waits on this person, from the records the list reads, soonest first; each store it could not read, with
@@ -177,6 +301,19 @@ async def what_waits(within_days: int = 30, user: dict | None = Depends(get_curr
         got, missed = read()
         items += got
         unread += missed
+    #  W1088 (FU-1270) - an entity's own waits, then the contracts and deliveries that name entities by id
+    got, missed, owners, names = _entities(user)
+    items += got
+    unread += missed
+    try:
+        items += _contracts(user, owners, names)
+    except HTTPException as e:
+        if e.status_code != 503:
+            raise
+        unread.append({"store": "contracts", "said": str(e.detail)})
+    got, missed = _deliveries(user, owners, names)
+    items += got
+    unread += missed
     items.sort(key=lambda i: (_RANK.get(i["kind"], 9), i.get("days") if i.get("days") is not None else 0,
                               str(i.get("since") or "")))
     return {"reads": READS, "not_read_yet": NOT_READ_YET, "basis": BASIS, "date_basis": DATE_BASIS,

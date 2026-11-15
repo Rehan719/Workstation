@@ -7,11 +7,11 @@
     "the obligations on your agreement records: each one falling due within the window or past its date, and each one no person has confirmed",
     "your projects: each proposal to move one to another stage, which waits on your decision",
     "your asset records: a fact whose evidence lapses within the window, a fact whose evidence has lapsed with nothing current in its place, and a declaration of readiness withdrawn because what it rests on lapsed",
-    "Change Control: each change waiting on a decision, each a review approved that waits for the Board's ratification, and each material economy action a review approved, which only the Owner's own decision releases; an administrator records all three, so with sign-in on they wait on an administrator"
+    "Change Control: each change waiting on a decision, each a review approved that waits for the Board's ratification, and each material economy action a review approved, which only the Owner's own decision releases; an administrator records all three, so with sign-in on they wait on an administrator",
+    "your entities: a stage held at its review gate until you decide it, and an entity whose working name is not published until you name it",
+    "your entities' service contracts: an offer to accept or decline, an accepted contract to deliver, and a delivered one to settle, each on the side that acts next; and a delivery to your entity waiting for you to accept its version"
    ],
    "not_read_yet": [
-    "an entity's review gate waiting on its owner's decision, and an entity waiting to be named",
-    "a service contract waiting on its provider or its client, and a delivery waiting to be accepted",
     "the scholar review queue, the children's approval pack, and a GMP record waiting on a signatory",
     "a legal artefact waiting on the Owner's approval, and an avatar mode waiting on an administrator's co-signature",
     "a support answer waiting on its asker's confirmation, and a quality defect waiting on a correction or a re-verification",
@@ -25,24 +25,24 @@
     {
      "source": "project",
      "kind": "decision",
-     "project_id": "4a583e46bb514552a81c8dc088945099",
-     "proposal_id": "5ab61d5a31734b6d8b06ab0b63338441",
+     "project_id": "b66be43dffa448ea95f034021c635c3a",
+     "proposal_id": "503d27f4c87e4484be987cbcd44a3a92",
      "what": "a decision on the proposal to move it from 'concept' to 'prototype'",
      "on": "W1087 Made-up Project",
      "ref": null,
      "where": "the Governance Hub's proposals",
-     "since": "2026-11-15T15:35:38Z",
+     "since": "2026-11-15T17:24:04Z",
      "said": "raised today"
     },
     {
      "source": "change",
      "kind": "decision",
-     "cca_id": "cca-dfdad218a0",
+     "cca_id": "cca-340bb08200",
      "what": "a decision on this change",
      "on": "W1087 made-up policy amendment",
      "ref": "tier HIGH",
      "where": "Change Control's queue",
-     "since": "2026-11-15T15:35:38Z",
+     "since": "2026-11-15T17:24:04Z",
      "said": "raised today"
     }
    ],
@@ -57,11 +57,11 @@
     "the obligations on your agreement records: each one falling due within the window or past its date, and each one no person has confirmed",
     "your projects: each proposal to move one to another stage, which waits on your decision",
     "your asset records: a fact whose evidence lapses within the window, a fact whose evidence has lapsed with nothing current in its place, and a declaration of readiness withdrawn because what it rests on lapsed",
-    "Change Control: each change waiting on a decision, each a review approved that waits for the Board's ratification, and each material economy action a review approved, which only the Owner's own decision releases; an administrator records all three, so with sign-in on they wait on an administrator"
+    "Change Control: each change waiting on a decision, each a review approved that waits for the Board's ratification, and each material economy action a review approved, which only the Owner's own decision releases; an administrator records all three, so with sign-in on they wait on an administrator",
+    "your entities: a stage held at its review gate until you decide it, and an entity whose working name is not published until you name it",
+    "your entities' service contracts: an offer to accept or decline, an accepted contract to deliver, and a delivered one to settle, each on the side that acts next; and a delivery to your entity waiting for you to accept its version"
    ],
    "not_read_yet": [
-    "an entity's review gate waiting on its owner's decision, and an entity waiting to be named",
-    "a service contract waiting on its provider or its client, and a delivery waiting to be accepted",
     "the scholar review queue, the children's approval pack, and a GMP record waiting on a signatory",
     "a legal artefact waiting on the Owner's approval, and an avatar mode waiting on an administrator's co-signature",
     "a support answer waiting on its asker's confirmation, and a quality defect waiting on a correction or a re-verification",
@@ -73,9 +73,9 @@
    "within_days": 30,
    "items": [
     {
-     "agreement_id": "agr-6e3df8758d",
+     "agreement_id": "agr-352263f01b",
      "agreement_title": "W1087 Made-up Supply",
-     "obligation_id": "obl-9bda8ba5fa",
+     "obligation_id": "obl-4834703d96",
      "what": "pay the made-up price",
      "clause": "clause 4",
      "due_on": "2026-11-12",
@@ -89,12 +89,12 @@
      "where": "the agreements on the Law page"
     },
     {
-     "asset_id": "ast-7ffc306663",
+     "asset_id": "ast-2f59a703f0",
      "on": "W1087 made-up delivery robot",
      "ref": "the maker's evidence of conformity",
      "fact": "maker_conformity",
      "kind": "evidence_lapsed",
-     "evidence_id": "evd-ab90832585",
+     "evidence_id": "evd-afb22906ad",
      "what": "the made-up declaration of conformity",
      "lapses_on": "2026-11-13",
      "days": -2,
@@ -103,12 +103,12 @@
      "where": "the assets on the Law page"
     },
     {
-     "asset_id": "ast-7ffc306663",
+     "asset_id": "ast-2f59a703f0",
      "on": "W1087 made-up delivery robot",
      "ref": "insurance",
      "fact": "insurance",
      "kind": "evidence_lapses",
-     "evidence_id": "evd-420c3bdd8c",
+     "evidence_id": "evd-94057e3e2c",
      "what": "the made-up insurance certificate",
      "lapses_on": "2026-11-20",
      "days": 5,
@@ -117,9 +117,9 @@
      "where": "the assets on the Law page"
     },
     {
-     "agreement_id": "agr-6e3df8758d",
+     "agreement_id": "agr-352263f01b",
      "agreement_title": "W1087 Made-up Supply",
-     "obligation_id": "obl-6d1c3f815f",
+     "obligation_id": "obl-c898a05ff0",
      "what": "deliver the made-up goods",
      "clause": "clause 3",
      "due_on": "2026-11-25",
@@ -135,19 +135,19 @@
     {
      "source": "project",
      "kind": "decision",
-     "project_id": "804eed7587534bbc9adad6f6481a34ab",
-     "proposal_id": "1702e8fe870c4b288615a67baa141b40",
+     "project_id": "15467c8082bb4a4b9e0f31be0d0bdb63",
+     "proposal_id": "e9b11c90a3af44e2b0ed63da4e4844db",
      "what": "a decision on the proposal to move it from 'concept' to 'prototype'",
      "on": "W1087 Made-up Pilot",
      "ref": null,
      "where": "the Governance Hub's proposals",
-     "since": "2026-11-15T15:35:38Z",
+     "since": "2026-11-15T17:24:04Z",
      "said": "raised today"
     },
     {
-     "agreement_id": "agr-6e3df8758d",
+     "agreement_id": "agr-352263f01b",
      "agreement_title": "W1087 Made-up Supply",
-     "obligation_id": "obl-9bda8ba5fa",
+     "obligation_id": "obl-4834703d96",
      "what": "pay the made-up price",
      "clause": "clause 4",
      "due_on": "2026-11-12",
@@ -160,9 +160,9 @@
      "where": "the agreements on the Law page"
     },
     {
-     "agreement_id": "agr-6e3df8758d",
+     "agreement_id": "agr-352263f01b",
      "agreement_title": "W1087 Made-up Supply",
-     "obligation_id": "obl-6d1c3f815f",
+     "obligation_id": "obl-c898a05ff0",
      "what": "deliver the made-up goods",
      "clause": "clause 3",
      "due_on": "2026-11-25",
@@ -185,11 +185,11 @@
     "the obligations on your agreement records: each one falling due within the window or past its date, and each one no person has confirmed",
     "your projects: each proposal to move one to another stage, which waits on your decision",
     "your asset records: a fact whose evidence lapses within the window, a fact whose evidence has lapsed with nothing current in its place, and a declaration of readiness withdrawn because what it rests on lapsed",
-    "Change Control: each change waiting on a decision, each a review approved that waits for the Board's ratification, and each material economy action a review approved, which only the Owner's own decision releases; an administrator records all three, so with sign-in on they wait on an administrator"
+    "Change Control: each change waiting on a decision, each a review approved that waits for the Board's ratification, and each material economy action a review approved, which only the Owner's own decision releases; an administrator records all three, so with sign-in on they wait on an administrator",
+    "your entities: a stage held at its review gate until you decide it, and an entity whose working name is not published until you name it",
+    "your entities' service contracts: an offer to accept or decline, an accepted contract to deliver, and a delivered one to settle, each on the side that acts next; and a delivery to your entity waiting for you to accept its version"
    ],
    "not_read_yet": [
-    "an entity's review gate waiting on its owner's decision, and an entity waiting to be named",
-    "a service contract waiting on its provider or its client, and a delivery waiting to be accepted",
     "the scholar review queue, the children's approval pack, and a GMP record waiting on a signatory",
     "a legal artefact waiting on the Owner's approval, and an avatar mode waiting on an administrator's co-signature",
     "a support answer waiting on its asker's confirmation, and a quality defect waiting on a correction or a re-verification",
@@ -201,9 +201,9 @@
    "within_days": 30,
    "items": [
     {
-     "agreement_id": "agr-6e3df8758d",
+     "agreement_id": "agr-352263f01b",
      "agreement_title": "W1087 Made-up Supply",
-     "obligation_id": "obl-9bda8ba5fa",
+     "obligation_id": "obl-4834703d96",
      "what": "pay the made-up price",
      "clause": "clause 4",
      "due_on": "2026-11-12",
@@ -217,12 +217,12 @@
      "where": "the agreements on the Law page"
     },
     {
-     "asset_id": "ast-7ffc306663",
+     "asset_id": "ast-2f59a703f0",
      "on": "W1087 made-up delivery robot",
      "ref": "the maker's evidence of conformity",
      "fact": "maker_conformity",
      "kind": "evidence_lapsed",
-     "evidence_id": "evd-ab90832585",
+     "evidence_id": "evd-afb22906ad",
      "what": "the made-up declaration of conformity",
      "lapses_on": "2026-11-13",
      "days": -2,
@@ -231,12 +231,12 @@
      "where": "the assets on the Law page"
     },
     {
-     "asset_id": "ast-7ffc306663",
+     "asset_id": "ast-2f59a703f0",
      "on": "W1087 made-up delivery robot",
      "ref": "insurance",
      "fact": "insurance",
      "kind": "evidence_lapses",
-     "evidence_id": "evd-420c3bdd8c",
+     "evidence_id": "evd-94057e3e2c",
      "what": "the made-up insurance certificate",
      "lapses_on": "2026-11-20",
      "days": 5,
@@ -245,9 +245,9 @@
      "where": "the assets on the Law page"
     },
     {
-     "agreement_id": "agr-6e3df8758d",
+     "agreement_id": "agr-352263f01b",
      "agreement_title": "W1087 Made-up Supply",
-     "obligation_id": "obl-6d1c3f815f",
+     "obligation_id": "obl-c898a05ff0",
      "what": "deliver the made-up goods",
      "clause": "clause 3",
      "due_on": "2026-11-25",
@@ -263,19 +263,19 @@
     {
      "source": "project",
      "kind": "decision",
-     "project_id": "804eed7587534bbc9adad6f6481a34ab",
-     "proposal_id": "1702e8fe870c4b288615a67baa141b40",
+     "project_id": "15467c8082bb4a4b9e0f31be0d0bdb63",
+     "proposal_id": "e9b11c90a3af44e2b0ed63da4e4844db",
      "what": "a decision on the proposal to move it from 'concept' to 'prototype'",
      "on": "W1087 Made-up Pilot",
      "ref": null,
      "where": "the Governance Hub's proposals",
-     "since": "2026-11-15T15:35:38Z",
+     "since": "2026-11-15T17:24:04Z",
      "said": "raised today"
     },
     {
-     "agreement_id": "agr-6e3df8758d",
+     "agreement_id": "agr-352263f01b",
      "agreement_title": "W1087 Made-up Supply",
-     "obligation_id": "obl-9bda8ba5fa",
+     "obligation_id": "obl-4834703d96",
      "what": "pay the made-up price",
      "clause": "clause 4",
      "due_on": "2026-11-12",
@@ -298,11 +298,11 @@
     "the obligations on your agreement records: each one falling due within the window or past its date, and each one no person has confirmed",
     "your projects: each proposal to move one to another stage, which waits on your decision",
     "your asset records: a fact whose evidence lapses within the window, a fact whose evidence has lapsed with nothing current in its place, and a declaration of readiness withdrawn because what it rests on lapsed",
-    "Change Control: each change waiting on a decision, each a review approved that waits for the Board's ratification, and each material economy action a review approved, which only the Owner's own decision releases; an administrator records all three, so with sign-in on they wait on an administrator"
+    "Change Control: each change waiting on a decision, each a review approved that waits for the Board's ratification, and each material economy action a review approved, which only the Owner's own decision releases; an administrator records all three, so with sign-in on they wait on an administrator",
+    "your entities: a stage held at its review gate until you decide it, and an entity whose working name is not published until you name it",
+    "your entities' service contracts: an offer to accept or decline, an accepted contract to deliver, and a delivered one to settle, each on the side that acts next; and a delivery to your entity waiting for you to accept its version"
    ],
    "not_read_yet": [
-    "an entity's review gate waiting on its owner's decision, and an entity waiting to be named",
-    "a service contract waiting on its provider or its client, and a delivery waiting to be accepted",
     "the scholar review queue, the children's approval pack, and a GMP record waiting on a signatory",
     "a legal artefact waiting on the Owner's approval, and an avatar mode waiting on an administrator's co-signature",
     "a support answer waiting on its asker's confirmation, and a quality defect waiting on a correction or a re-verification",
@@ -314,12 +314,12 @@
    "within_days": 30,
    "items": [
     {
-     "asset_id": "ast-7ffc306663",
+     "asset_id": "ast-2f59a703f0",
      "on": "W1087 made-up delivery robot",
      "ref": "the maker's evidence of conformity",
      "fact": "maker_conformity",
      "kind": "evidence_lapsed",
-     "evidence_id": "evd-ab90832585",
+     "evidence_id": "evd-afb22906ad",
      "what": "the made-up declaration of conformity",
      "lapses_on": "2026-11-13",
      "days": -2,
@@ -328,12 +328,12 @@
      "where": "the assets on the Law page"
     },
     {
-     "asset_id": "ast-7ffc306663",
+     "asset_id": "ast-2f59a703f0",
      "on": "W1087 made-up delivery robot",
      "ref": "insurance",
      "fact": "insurance",
      "kind": "evidence_lapses",
-     "evidence_id": "evd-420c3bdd8c",
+     "evidence_id": "evd-94057e3e2c",
      "what": "the made-up insurance certificate",
      "lapses_on": "2026-11-20",
      "days": 5,
@@ -344,13 +344,13 @@
     {
      "source": "project",
      "kind": "decision",
-     "project_id": "804eed7587534bbc9adad6f6481a34ab",
-     "proposal_id": "1702e8fe870c4b288615a67baa141b40",
+     "project_id": "15467c8082bb4a4b9e0f31be0d0bdb63",
+     "proposal_id": "e9b11c90a3af44e2b0ed63da4e4844db",
      "what": "a decision on the proposal to move it from 'concept' to 'prototype'",
      "on": "W1087 Made-up Pilot",
      "ref": null,
      "where": "the Governance Hub's proposals",
-     "since": "2026-11-15T15:35:38Z",
+     "since": "2026-11-15T17:24:04Z",
      "said": "raised today"
     }
    ],
@@ -375,11 +375,11 @@
     "the obligations on your agreement records: each one falling due within the window or past its date, and each one no person has confirmed",
     "your projects: each proposal to move one to another stage, which waits on your decision",
     "your asset records: a fact whose evidence lapses within the window, a fact whose evidence has lapsed with nothing current in its place, and a declaration of readiness withdrawn because what it rests on lapsed",
-    "Change Control: each change waiting on a decision, each a review approved that waits for the Board's ratification, and each material economy action a review approved, which only the Owner's own decision releases; an administrator records all three, so with sign-in on they wait on an administrator"
+    "Change Control: each change waiting on a decision, each a review approved that waits for the Board's ratification, and each material economy action a review approved, which only the Owner's own decision releases; an administrator records all three, so with sign-in on they wait on an administrator",
+    "your entities: a stage held at its review gate until you decide it, and an entity whose working name is not published until you name it",
+    "your entities' service contracts: an offer to accept or decline, an accepted contract to deliver, and a delivered one to settle, each on the side that acts next; and a delivery to your entity waiting for you to accept its version"
    ],
    "not_read_yet": [
-    "an entity's review gate waiting on its owner's decision, and an entity waiting to be named",
-    "a service contract waiting on its provider or its client, and a delivery waiting to be accepted",
     "the scholar review queue, the children's approval pack, and a GMP record waiting on a signatory",
     "a legal artefact waiting on the Owner's approval, and an avatar mode waiting on an administrator's co-signature",
     "a support answer waiting on its asker's confirmation, and a quality defect waiting on a correction or a re-verification",
