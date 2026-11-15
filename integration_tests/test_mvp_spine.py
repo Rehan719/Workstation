@@ -90322,3 +90322,127 @@ def test_w1096_fu1272_the_decisions_the_one_list_names_are_held_by_their_own_rou
                     p.unlink()
             else:
                 p.write_bytes(b)
+
+
+def test_w1097_fu1274_every_route_the_entity_walk_passes_over_is_named_and_held(client, monkeypatch):
+    """FU-1274 (W1097). W1075's walk drives every route that takes an entity's id as a second person, and passes over
+    every route whose path names something else, so an entity named in such a route's body was never driven: that is
+    how the curate route passed it (FU-1271). Held here:
+    - every route the walk passes over that names an entity in its query or its body is named, with the test that
+      holds it, so a new one is said rather than taken as held;
+    - each of the four this test holds is driven as the second person against the first person's entity and
+      answered as for an entity that does not exist. One was a hole: a composition run bound to an objective wrote a
+      review onto another person's entity's plan and advanced it. It is answered as an objective not found now, and
+      nothing is written; the owner's own run still writes its review.
+    The stores this test writes are shared with the suite's other tests: it keeps their bytes and puts them back."""
+    import json
+    import uuid
+    from pathlib import Path
+    from fastapi.routing import APIRoute
+    import agentic_core.auth.core as _ac
+    import agentic_core.api.business_plan as _bp
+    import agentic_core.api.resource_fabric as _rf
+    from agentic_core.api import vsb as _vs
+    from agentic_core.config import data_path
+    ENTITY = {"vsb_id", "entity_id", "twin_id", "scope", "vid", "from_vsb", "to_vsb", "parent_id", "target_vsb",
+              "vsb", "entity", "parent_vsb", "child_vsb", "source_vsb", "target_id", "client_vsb", "provider_vsb"}
+
+    def entityish(n):
+        return n in ENTITY or "vsb" in n or n.endswith("entity_id")
+
+    #  the census: what W1075's walk passes over (a path naming something else) and names an entity elsewhere
+    passed = set()
+    for route in client.app.routes:
+        if not isinstance(route, APIRoute) or any(s in route.path for s in ("stream", "/events", "/sse", "/ws")):
+            continue
+        dep = route.dependant
+        if not [p.name for p in dep.path_params if not entityish(p.name)]:
+            continue
+        fields = {}
+        for bp in dep.body_params:
+            fi = getattr(bp, "field_info", None)
+            mf = getattr(getattr(fi, "annotation", None), "model_fields", None)
+            fields.update(mf) if mf else fields.__setitem__(bp.name, fi)
+        if [n for n in fields if entityish(n)] or [p.name for p in dep.query_params if entityish(p.name)]:
+            passed.update((m, route.path) for m in (route.methods or ()))
+    HELD = {("POST", "/api/v1/business-plan/objective/{oid}/orchestrate"): "test_w1097",
+            ("POST", "/api/v1/business-plan/objective/{oid}/review"): "test_w1097",
+            ("POST", "/api/v1/economy/transfers/{transfer_id}/complete"): "test_w1097",
+            ("POST", "/api/v1/resources/compositions/{cid}/run"): "test_w1097",
+            ("POST", "/api/v1/swarm/catalogue/proposed/{run_id}/curate"): "test_w1093"}
+    assert passed == set(HELD), ("a route W1075's walk passes over names an entity, and no test is named for it",
+                                 sorted(passed ^ set(HELD)))
+    src = Path(__file__).read_text(encoding="utf-8")
+    assert all(f"\ndef {t}_" in src for t in set(HELD.values())), "a test named for a route is not in the suite"
+
+    tag = uuid.uuid4().hex[:8]
+    vid, missing = f"w1097-ent-{tag}", f"w1097-no-entity-{tag}"
+    stores = [_vs._VSB_STORE / f"{vid}.json", _bp._path(vid), _rf._STORE, data_path("composition_runs.json")]
+    kept = {p: (p.read_bytes() if p.exists() else None) for p in stores}
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    who = {k: f"w1097-{k}-{tag}" for k in ("one", "two")}
+    users = _ac._load_users()
+    for name in who.values():
+        users[name] = {"user_id": name, "username": name, "hashed_password": _ac._pwd_ctx.hash("pw12345678"),
+                       "role": "user", "created_at": "2026-11-15T00:00:00Z", "api_keys": []}
+    _ac._save_users(users)
+    H = {k: {"Authorization": "Bearer " + client.post("/api/v1/auth/token", data={
+        "username": n, "password": "pw12345678"}).json()["access_token"]} for k, n in who.items()}
+    try:
+        _vs._VSB_STORE.mkdir(parents=True, exist_ok=True)
+        stores[0].write_text(json.dumps({"vsb_id": vid, "name": f"W1097 made-up entity {tag}", "owner_id": who["one"]}),
+                             encoding="utf-8")
+        plan = _bp._load(vid)
+        plan.setdefault("objectives", []).extend(_bp.parse_objective_lines(
+            f"Deliver the W1097 made-up pilot {tag} | pilot live | next review | AI CEO"))
+        _bp._save(plan)
+        oid = _bp._load(vid)["objectives"][-1]["id"]
+
+        def objective():
+            return next(o for o in _bp._load(vid)["objectives"] if o["id"] == oid)
+
+        #  the plan's routes and the transfer: another person's entity is answered as one that does not exist
+        for path, body in ((f"/api/v1/business-plan/objective/{oid}/review", {"note": "w1097 made up", "progress_pct": 50}),
+                           (f"/api/v1/business-plan/objective/{oid}/orchestrate", {}),
+                           (f"/api/v1/economy/transfers/xfer-w1097{tag}/complete", {})):
+            key = "from_vsb" if "transfers" in path else "scope"
+            theirs = client.post(path, headers=H["two"], json={**body, key: vid})
+            none = client.post(path, headers=H["two"], json={**body, key: missing})
+            assert (theirs.status_code, theirs.json()) == (
+                none.status_code, json.loads(none.text.replace(missing, vid))) and theirs.status_code == 404, (
+                path, theirs.status_code, theirs.text[:200], none.text[:200])
+            assert who["one"] not in theirs.text and f"made-up pilot {tag}" not in theirs.text
+        assert objective()["status"] == "planned" and not objective().get("reviews")
+
+        #  the composition run: another person's run bound to the objective writes nothing; the owner's does
+        _real = _rf.assure_delivery
+
+        async def _passing(*a, **k):
+            out = await _real(*a, **k)
+            out.setdefault("quality", {})["qms_gate_passed"] = True
+            return out
+        monkeypatch.setattr(_rf, "assure_delivery", _passing)
+
+        def run(k, scope):
+            comp = client.post("/api/v1/resources/compose", headers=H[k], json={
+                "name": f"w1097 made-up rig {k}", "usage_area": "synthesis", "resource_ids": ["petri_dish"],
+                "config": {}})
+            assert comp.status_code == 200, comp.text[:200]
+            r = client.post(f"/api/v1/resources/compositions/{comp.json()['id']}/run", headers=H[k],
+                            json={"objective": "w1097 made up", "objective_id": oid, "scope": scope})
+            assert r.status_code == 200, r.text[:300]
+            return r.json()
+        theirs, none = run("two", vid), run("two", missing)
+        assert theirs["plan_binding"]["result"] == none["plan_binding"]["result"] == "objective_not_found", (
+            theirs["plan_binding"], none["plan_binding"])
+        assert objective()["status"] == "planned" and not objective().get("reviews"), objective()
+        own = run("one", vid)
+        assert own["plan_binding"]["result"] == "review_written", own["plan_binding"]
+        assert objective()["status"] == "in_progress" and objective()["reviews"][-1]["composition_run"]["run_id"] == own["run_id"]
+    finally:
+        for p, b in kept.items():
+            if b is None:
+                if p.exists():
+                    p.unlink()
+            else:
+                p.write_bytes(b)

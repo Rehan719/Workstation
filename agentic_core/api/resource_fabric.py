@@ -3053,8 +3053,11 @@ async def run_composition(cid: str, req: RunCompositionRequest,
     if req.objective_id:
         plan_binding = {"objective_id": req.objective_id, "scope": req.scope, "advanced": False}
         try:
-            from agentic_core.api.business_plan import _load as _bp_load, _save as _bp_save
-            fresh = _bp_load(req.scope)
+            from agentic_core.api.business_plan import _load as _bp_load, _save as _bp_save, caller_may_reach as _bp_reach
+            #  W1097 (FU-1274) - the objective is read from a scope the caller may reach, or it is answered as one not
+            #  found and nothing is written: a person's run wrote a review onto another person's entity's plan, named
+            #  by the scope and objective id in its body
+            fresh = _bp_load(req.scope) if _bp_reach(user, req.scope) else {"objectives": []}
             tgt = next((o for o in fresh.get("objectives", []) if o.get("id") == req.objective_id), None)
             if tgt is None:
                 plan_binding["result"] = "objective_not_found"

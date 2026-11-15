@@ -25841,11 +25841,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1097",
       "note": "",
       "slot_source": "the guard of the tenancy invariant FU-1262 built; it rides P5.1 as that row did",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1097. test_w1097 takes the census W1075's walk lacked: every route whose path names something other than an entity and whose query or body names one is named, with the test that holds it (five today: the plan's review and orchestrate, the transfer completion, the composition run and the curate route), so a new one is said rather than taken as held. Driving them found one hole: a composition run bound to a living-plan objective wrote a review onto another person's entity's plan and advanced it (probed on a scratch store). The objective is now read only from a scope the caller may reach (caller_may_reach); any other is answered as an objective not found and nothing is written, and the owner's own run still writes its review. Each held route is driven as the second person and answered as for an entity that does not exist; three blinds turn the guard red."
     }
   ],
   "routes": [
