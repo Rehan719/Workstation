@@ -89152,7 +89152,7 @@ def test_w1087_p514_the_one_list_reached_from_the_first_screen_reads_the_stores_
     dec = by[("project", "decision")]
     assert dec["project_id"] == mine and dec["on"] == f"W1087 project {tag}" and "'concept' to 'prototype'" in dec["what"]
     assert dec["where"] == "the Governance Hub's proposals" and by[("agreement", "falls_due")]["where"] == _wt.WHERE["agreement"]
-    assert w["reads"] == _wt.READS and w["not_read_yet"] == _wt.NOT_READ_YET and len(_wt.NOT_READ_YET) == 4   # W1089
+    assert w["reads"] == _wt.READS and w["not_read_yet"] == _wt.NOT_READ_YET and len(_wt.NOT_READ_YET) == 3   # W1090
     #  W1088 - the list reads more stores now, which the suite's other tests share: this test holds its own five
     ours = ("agreements", "assets", "projects", "proposals", "changes")
     assert [x for x in w["unread"] if x["store"] in ours] == [] and "not_kept" not in w and "said" not in w
@@ -89421,7 +89421,7 @@ def test_w1088_fu1270_the_one_list_reads_what_an_entitys_owner_is_waited_on_for(
 
     #  the census's entries for these stores are no longer said as not read yet
     assert not [s for s in _wt.NOT_READ_YET if "review gate" in s or "service contract" in s]
-    assert len(_wt.NOT_READ_YET) == 4 and waiting("one")["not_read_yet"] == _wt.NOT_READ_YET   # W1089
+    assert len(_wt.NOT_READ_YET) == 3 and waiting("one")["not_read_yet"] == _wt.NOT_READ_YET   # W1090
     assert sum("your entities" in r for r in _wt.READS) == 2
 
 
@@ -89532,7 +89532,95 @@ def test_w1089_fu1270_the_one_list_reads_the_reviewers_queues_by_their_rosters(c
 
         #  the census entry for these queues is no longer said as not read yet
         assert not [s for s in _wt.NOT_READ_YET if "scholar review" in s or "GMP" in s]
-        assert len(_wt.NOT_READ_YET) == 4 and any("reviewers' queues" in r for r in _wt.READS)
+        assert len(_wt.NOT_READ_YET) == 3 and any("reviewers' queues" in r for r in _wt.READS)   # W1090
+    finally:
+        for p, b in kept.items():
+            if b is None:
+                if p.exists():
+                    p.unlink()
+            else:
+                p.write_bytes(b)
+
+
+def test_w1090_fu1270_the_one_list_reads_the_owners_own_approvals(client, monkeypatch):
+    """FU-1270, part 3 (W1090): the one list of what waits on a person reads two of the Owner's own approvals, held
+    through the route as a person and an administrator:
+    - a filing-shaped legal draft waits on the Owner's approval, and is off the list once approved;
+    - a learner's standing approval for a high-impact avatar mode waits on the Owner's co-signature, and is off the
+      list once co-signed or revoked; one for an ordinary mode waits on nobody;
+    - both wait on an administrator, never on a person who is not one; with sign-in off, on the one person using the
+      machine; each says that no page offers it yet;
+    - a store it cannot read is said in its place, and the rest of the list stands.
+    The two stores are shared with the suite's other tests: this test keeps their bytes and puts them back."""
+    import time
+    import uuid
+    import agentic_core.auth.core as _ac
+    import agentic_core.api.waiting as _wt
+    from agentic_core.avatars.core import ratifications as _rt
+    from agentic_core.config import atomic_write_json, read_json_strict
+    from agentic_core.legal import specialist as _sp
+    tag = uuid.uuid4().hex[:8]
+    paths = [_sp._store(), _rt._path()]
+    kept = {p: (p.read_bytes() if p.exists() else None) for p in paths}
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    who = {k: f"w1090-{k}-{tag}" for k in ("one", "adm")}
+    users = _ac._load_users()
+    for k, name in who.items():
+        users[name] = {"user_id": name, "username": name, "hashed_password": _ac._pwd_ctx.hash("pw12345678"),
+                       "role": "admin" if k == "adm" else "user", "created_at": "2026-11-15T00:00:00Z",
+                       "api_keys": []}
+    _ac._save_users(users)
+    H = {k: {"Authorization": "Bearer " + client.post("/api/v1/auth/token", data={
+        "username": n, "password": "pw12345678"}).json()["access_token"]} for k, n in who.items()}
+    aid = f"lgl-w1090{tag}"
+
+    def ours(k=None):
+        r = client.get("/api/v1/waiting", headers=H[k] if k else {})
+        assert r.status_code == 200, r.text[:300]
+        return [i for i in r.json()["items"] if i.get("artefact_id") == aid
+                or (i.get("source") == "avatar" and tag in str(i.get("on")))]
+    try:
+        d = read_json_strict(_sp._store(), missing={"artefacts": {}}, expect=dict)
+        d.setdefault("artefacts", {})[aid] = {"artefact_id": aid, "template_id": "w1090_made_up_template",
+                                              "status": "draft_awaiting_owner_approval", "filing_shaped": True,
+                                              "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+        atomic_write_json(_sp._store(), d)
+        high = _rt.record(f"w1090-learner-{tag}", "a made-up purpose", ["emergency", "practice"], "w1090")
+        plain = _rt.record(f"w1090-plain-{tag}", "a made-up purpose", ["practice"], "w1090")
+        assert high["recorded"] and plain["recorded"]
+
+        got = sorted((i["source"], i["kind"], i["where"]) for i in ours("adm"))
+        assert got == [("avatar", "cosign", _wt.WHERE["cosign"]), ("legal", "approval", _wt.WHERE["legal"])], got
+        assert all(i["where"].startswith("no page yet") for i in ours("adm"))
+        cos = next(i for i in ours("adm") if i["source"] == "avatar")
+        assert "emergency" in cos["what"] and "practice" not in cos["what"] and f"w1090-learner-{tag}" in cos["on"]
+        assert ours("one") == []
+        monkeypatch.setenv("AUTH_ENABLED", "false")
+        assert sorted(i["source"] for i in ours()) == ["avatar", "legal"]
+        monkeypatch.setenv("AUTH_ENABLED", "true")
+
+        #  approved, co-signed or revoked: off the list
+        assert _sp.approve(aid, by="w1090 made-up Owner").get("approved") is True
+        assert [i["source"] for i in ours("adm")] == ["avatar"]
+        assert _rt.cosign(high["ratification"]["id"], by_owner="w1090 made-up Owner")["cosigned"]
+        assert ours("adm") == []
+
+        #  a store it cannot read is said in its place, and the rest stands
+        for p, store in ((_sp._store(), "legal artefacts"), (_rt._path(), "avatar ratifications")):
+            held = p.read_bytes() if p.exists() else None
+            p.write_text("{ not json", encoding="utf-8")
+            try:
+                r = client.get("/api/v1/waiting", headers=H["adm"])
+            finally:
+                if held is None:
+                    p.unlink()
+                else:
+                    p.write_bytes(held)
+            assert r.status_code == 200 and [x for x in r.json()["unread"] if x["store"] == store], r.text[:300]
+            r1 = client.get("/api/v1/waiting", headers=H["one"]).json()
+            assert not [x for x in r1["unread"] if x["store"] == store]
+        assert not [s for s in _wt.NOT_READ_YET if "legal artefact" in s or "co-signature" in s]
+        assert len(_wt.NOT_READ_YET) == 3 and any("the Owner's own approvals" in r for r in _wt.READS)
     finally:
         for p, b in kept.items():
             if b is None:

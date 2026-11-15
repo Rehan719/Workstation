@@ -39,12 +39,13 @@ READS = ["the obligations on your agreement records: each one falling due within
          "accept its version",
          #  W1089 (FU-1270)
          "the reviewers' queues you are on the roster for: a composed item in scholar review and the children's "
-         "approval pack, waiting on a scholar, and a GMP record waiting on a QA signatory"]
+         "approval pack, waiting on a scholar, and a GMP record waiting on a QA signatory",
+         #  W1090 (FU-1270)
+         "the Owner's own approvals, which an administrator records: a filing-shaped legal draft, and a learner's "
+         "standing approval for a high-impact avatar mode waiting on the Owner's co-signature"]
 #  W1087 - the census of the stores that hold something waiting on a person found these as well; each is named until
 #  the list reads it (FU-1270)
-NOT_READ_YET = ["a legal artefact waiting on the Owner's approval, and an avatar mode waiting on an administrator's "
-                "co-signature",
-                "a support answer waiting on its asker's confirmation, and a quality defect waiting on a correction or "
+NOT_READ_YET = [                "a support answer waiting on its asker's confirmation, and a quality defect waiting on a correction or "
                 "a re-verification",
                 "an evolution proposal and a proposed catalogue entry waiting on a decision",
                 "a method amendment not yet carried out, a follow-up waiting on the Owner, and an immune defence "
@@ -58,7 +59,10 @@ WHERE = {"agreement": "the agreements on the Law page", "asset": "the assets on 
          #  W1089 (FU-1270)
          "review": "the scholar review panel on the Quran platform's hub",
          "pack": "the children's approval pack on the Quran platform's hub",
-         "gmp": "the GMP sign-off on the Science page"}
+         "gmp": "the GMP sign-off on the Science page",
+         #  W1090 (FU-1270) - no page offers these yet
+         "legal": "no page yet: an administrator approves it through the Law matter's approval route",
+         "cosign": "no page yet: an administrator co-signs it through the avatar ratification route"}
 NOT_KEPT = ("Your agreement and asset records are kept only once you are signed in, and sign-in is off, so nothing "
             "of theirs is on this list.")
 BASIS = ("One list of what waits on you, from the records it reads; a record it could not read is said with why, and "
@@ -73,7 +77,8 @@ NOTHING_READ = ("Nothing in what this list could read is waiting on you; what it
 _RANK = {"falls_due": 0, "evidence_lapses": 0, "evidence_lapsed": 0, "decision": 1, "ratification": 1,
          "readiness_withdrawn": 2, "unconfirmed": 3,
          "name": 1, "gate": 1, "offered": 1, "accepted": 1, "delivered": 1, "acceptance": 1,   # W1088
-         "review": 1, "pack": 1, "qa": 1}   # W1089
+         "review": 1, "pack": 1, "qa": 1,   # W1089
+         "approval": 1, "cosign": 1}   # W1090
 
 
 def _iso(ts) -> str:
@@ -363,6 +368,65 @@ def _gmp(user) -> tuple:
     return items, []
 
 
+def _owners_call(user) -> bool:
+    """W1090 (FU-1270) - whether the Owner's own approval waits on this person: with sign-in on, an administrator's,
+    who records the Owner's decision; with it off, the one person using this machine."""
+    return not auth_enabled() or (isinstance(user, dict) and user.get("role") == "admin")
+
+
+def _artefacts(user) -> tuple:
+    """W1090 (FU-1270) - a filing-shaped legal draft waits on the Owner's approval (legal/specialist.py). No page offers
+    the approval yet; an administrator records it through the Law matter's route."""
+    if not _owners_call(user):
+        return [], []
+    from agentic_core.config import StoreUnavailable, read_json_strict
+    from agentic_core.legal import specialist as sp
+    try:
+        d = read_json_strict(sp._store(), missing={"artefacts": {}}, expect=dict)
+    except StoreUnavailable as e:
+        return [], [{"store": "legal artefacts", "said": (
+            f"The legal drafts could not be read ({e}), so one waiting on the Owner's approval may not be shown.")}]
+    items = []
+    for aid, a in (d.get("artefacts") or {}).items():
+        if not isinstance(a, dict) or a.get("status") != "draft_awaiting_owner_approval":
+            continue
+        since = str(a.get("created_at") or "")
+        items.append({"source": "legal", "kind": "approval", "artefact_id": aid,
+                      "what": "the Owner's approval of this filing-shaped draft",
+                      "on": f"the legal draft {aid} ({a.get('template_id')})", "ref": None, "where": WHERE["legal"],
+                      "since": since, "said": _ago(since)})
+    return items, []
+
+
+def _cosigns(user) -> tuple:
+    """W1090 (FU-1270) - a learner's standing approval for a high-impact avatar mode waits on the Owner's co-signature
+    while it is not revoked (avatars/core/ratifications.py). No page offers the co-signature yet."""
+    if not _owners_call(user):
+        return [], []
+    from agentic_core.config import StoreUnavailable
+    from agentic_core.avatars.core import ratifications as rt
+    try:
+        d = rt._load()
+    except StoreUnavailable as e:
+        return [], [{"store": "avatar ratifications", "said": (
+            f"The avatar ratifications could not be read ({e}), so one waiting on the Owner's co-signature may not be "
+            f"shown.")}]
+    items = []
+    for r in d.get("ratifications") or []:
+        if not isinstance(r, dict) or r.get("revoked_at"):
+            continue
+        high = [m for m in (r.get("modes") or []) if m in rt.HIGH_IMPACT_MODES]
+        if not high or rt.OWNER_SIGNATORY in (r.get("signatories") or []):
+            continue
+        since = str(r.get("recorded_at") or "")
+        items.append({"source": "avatar", "kind": "cosign", "ratification_id": r.get("id"),
+                      "what": (f"the Owner's co-signature on a learner's standing approval for the "
+                               f"{', '.join(high)} mode{'s' if len(high) != 1 else ''}"),
+                      "on": f"the learner {r.get('user_id')}", "ref": None, "where": WHERE["cosign"],
+                      "since": since, "said": _ago(since)})
+    return items, []
+
+
 @router.get("")
 async def what_waits(within_days: int = 30, user: dict | None = Depends(get_current_user)):
     """What waits on this person, from the records the list reads, soonest first; each store it could not read, with
@@ -401,7 +465,8 @@ async def what_waits(within_days: int = 30, user: dict | None = Depends(get_curr
     items += got
     unread += missed
     #  W1089 (FU-1270) - the reviewers' queues the person is on the roster for
-    for read in (lambda: _reviews(user), lambda: _gmp(user)):
+    for read in (lambda: _reviews(user), lambda: _gmp(user),
+                 lambda: _artefacts(user), lambda: _cosigns(user)):   # W1090 - the Owner's own approvals
         got, missed = read()
         items += got
         unread += missed
