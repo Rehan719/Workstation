@@ -88078,3 +88078,68 @@ def test_w1078_fu1265_the_shells_vitals_say_the_routes_own_words_a_figure_never_
     fx = json.loads((src / "components/BiometricStatus.fixture.json").read_text(encoding="utf-8"))
     assert fx["live"]["status"] == 200 and fx["refused"]["status"] == 503
     assert fx["live"]["body"]["cardiovascular"].get("host_cpu_window_seconds") is not None
+
+
+def test_w1079_fu399_every_file_that_calls_a_route_is_reached_by_a_rendered_test():
+    """W1079 (FU-399 part 90). FU-399 asks that a claim about what a person sees be held by a render, not by a scan of
+    the source. Measured as an import census: every source file that names a route in a call (fetch, axios, apiJson,
+    an event stream) is followed from each rendered test through its imports, a module the test stands in with
+    vi.mock() not being followed. Before this round one such file was reached by no rendered test: the Quran
+    platform's hub (pages/domains/QEPReligionHub.tsx), whose first tab shows one verse retrieved from its source.
+    W1074, W1076 and W1078 rendered the three others the census had found (the children's approval pack, the avatar
+    session, the shell's vitals). The hub is rendered here (QEPReligionHub.test.tsx, four cases) against its route's
+    own answers, its verse a made-up placeholder: no Quran text is kept and nothing is scored. It said the route's
+    sentence on whether a prefix was separated from the verse only when one was, so the route's "not checked ... no
+    boundary is asserted" never reached the reader of a verse whose text may carry the prefix; it is said now
+    whatever the route found.
+
+    Held here: no route-calling file is reached by no rendered test, so a page that calls a route and is never rendered
+    cannot be added unnoticed; and the hub's rendered test over a fixture with no Arabic in it."""
+    import json
+    import pathlib
+    import re
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    ext = (".tsx", ".ts", ".jsx", ".js")
+    route = re.compile(r"""(?:fetch|axios\.(?:get|post|put|patch|delete|request)|apiJson|new EventSource|axios)\s*"""
+                       r"""(?:<[^>]*>)?\s*\(\s*[`'"]/api/""")
+    imported = re.compile(r"""(?:^|\n)\s*(?:import|export)\s[^;]*?from\s+['"](\.[^'"]+)['"]|import\(\s*['"](\.[^'"]+)['"]\s*\)""")
+    mocked_at = re.compile(r"""vi\.mock\(\s*['"](\.[^'"]+)['"]""")
+
+    def resolve(frm, spec):
+        base = (frm.parent / spec).resolve()
+        for cand in [base] + [base.with_name(base.name + e) for e in ext] + [base / ("index" + e) for e in ext]:
+            if cand.is_file():
+                return cand
+        return None
+
+    files = [p for p in src.rglob("*") if p.suffix in ext and p.is_file()]
+    text = {p: p.read_text(encoding="utf-8", errors="replace") for p in files}
+    imports = {p: [r for r in (resolve(p, a or b) for a, b in imported.findall(text[p])) if r] for p in files}
+    tests = [p for p in files if p.name.endswith((".test.tsx", ".test.ts"))]
+    callers = sorted(p for p in files if ".test." not in p.name and route.search(text[p]))
+    reached = set()
+    for t in tests:
+        mocked = {resolve(t, m) for m in mocked_at.findall(text[t])} - {None}
+        todo = [t]
+        while todo:
+            for g in imports.get(todo.pop(), []):
+                if g not in reached | mocked:
+                    reached.add(g)
+                    todo.append(g)
+    assert len(callers) >= 85 and len(tests) >= 100, ("the census read almost nothing", len(callers), len(tests))
+    unreached = [p.relative_to(src).as_posix() for p in callers if p not in reached]
+    assert unreached == [], ("a file that calls a route is reached by no rendered test", unreached)
+
+    #  the route's sentence on the verse's prefix is said whatever the route found
+    hub = _code_only((src / "pages/domains/QEPReligionHub.tsx").read_text(encoding="utf-8"))
+    assert "{ayah.basmala_basis && (" in hub and 'data-testid="coach-basmala-basis"' in hub
+    assert "ayah.basmala_separated && ayah.basmala_basis" not in hub
+    #  the hub's rendered test, over a fixture with no Quran text in it
+    t = (src / "pages/domains/QEPReligionHub.test.tsx").read_text(encoding="utf-8")
+    assert t.count("\n  it('") == 4, t.count("\n  it('")
+    raw = (src / "pages/domains/QEPReligionHub.fixture.json").read_text(encoding="utf-8")
+    assert not re.search(r"[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]", raw), "the fixture holds Arabic"
+    fx = json.loads(raw)
+    assert fx["unavailable"]["status"] == 503 and fx["verse"]["status"] == 200
+    assert re.fullmatch(r"placeholder2 words2 verse1 alpha1 beta1", fx["verse"]["body"]["text_arabic"])
+    assert fx["verse"]["body"]["surah_name"].startswith("W1079 placeholder name")

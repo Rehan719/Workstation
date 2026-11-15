@@ -25655,6 +25655,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the hook carries the route's CPU window and the load and communication readings' bases, and why a reading is not live (the route's refusal by its reason, or a route not reached); the chrome says a figure never read as not read with that reason, claims no state of a reading not live, and says a last reading as the last reading. The rendered test (four cases, all red on the unfixed vitals) has six vitest blinds; test_w1078 holds the code and the fixture, with six blinds."
+    },
+    {
+      "id": "FU-1266",
+      "title": "The Quran platform's hub said the route's sentence on the verse's prefix only when one was separated, so its 'not checked' never reached the reader",
+      "why": "Found by rendering the Quran platform's hub (pages/domains/QEPReligionHub.tsx) against its route's own answers (FU-399 part 90; the import census found it the last route-calling file no rendered test reached; the verse a made-up placeholder, no Quran text kept, nothing scored). The hub's first tab shows one verse retrieved from its source and separates a prefix the edition prepends to an ayah 1, with the route's basis (W483). It said that basis only when a prefix was separated. When the route could not check, because its reference text for the prefix could not be sourced, it answers 'not checked ... no boundary is asserted and nothing was removed', and the hub dropped that sentence beside a verse whose text may carry the prefix: the W572 class, scripture under a reference it may not match, on the surface the constitution binds hardest.",
+      "source": "W1079 (FU-399 part 90: the Quran platform's hub rendered; the import census)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1079",
+      "note": "",
+      "slot_source": "found by FU-399's render of the Quran platform's hub; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the route's sentence on the verse's prefix is said whatever the route found. The hub's rendered test (four cases) has one vitest blind; test_w1079 holds the import census (every file that calls a route is reached by a rendered test, 90 of 90), the hub's code and the fixture (no Arabic), with three blinds."
     }
   ],
   "routes": [
