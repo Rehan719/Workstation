@@ -655,5 +655,106 @@
   },
   "generated_at": "2026-11-15T22:33:09Z",
   "disclaimer": "The score is computed in-house from the published table (NEWS2, Royal College of Physicians, 2017) and is a decision aid, not a diagnosis; the narrative is a structured frame from the native floor, not an interpretation by AI or by a clinician. Clinical judgement by a qualified professional is required."
+ },
+ "review_handover_uncalibrated": {
+  "endpoint": "/api/v1/care/handover",
+  "tool": "care_handover",
+  "discipline": "care",
+  "review": {
+   "tier": "unreviewed",
+   "label": "Unreviewed",
+   "known": true,
+   "records_counted": 0,
+   "records_not_counted": 1,
+   "of_tiers": [
+    "Checked by rule",
+    "Reviewed by Workstation's specialist agent",
+    "Signed by a qualified person"
+   ],
+   "basis": "no review of this tool counts: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed. 1 record(s) exist and do not count; an agent's review of this tool exists and does not raise its tier: w1102-made-up-reviewer has not been calibrated",
+   "not_counted": [
+    {
+     "tier": "reviewed_by_workstation_agent",
+     "why_not": "the agent that reviewed is not calibrated on planted defects and clean answers: the calibration set cannot be run yet, so no agent has been calibrated on it: C03 relies on the chart itself (rcp-news2), which the register says was NOT READ; C10 relies on the chart itself (rcp-news2), which the register says was NOT READ; K02 relies on the chart itself (rcp-news2), which the register says was NOT READ; K06 is described, not written out in full: the dementia frame can cite NICE NG97 with the date it was read only once NG97 has been read at its publisher's page; the register holds it as named, not read; K06 relies on nice-ng97 being current, and the register holds it as named_not_read"
+    }
+   ],
+   "uncalibrated_agent_review": "an agent's review of this tool exists and does not raise its tier: w1102-made-up-reviewer has not been calibrated"
+  },
+  "person": {
+   "option": "A qualified person's review is an option for anything this tool gives. Workstation does not arrange one. When a person signs a review of this tool, it is recorded as the third tier, with their credential as they stated it.",
+   "warranted_when": "Before anything it gives is used in a person's direct care, a registered professional who knows that person checks it.",
+   "release": "Release is the Owner's switch. Even then, a clinical score used in someone's direct care keeps a qualified person.",
+   "kept_by_the_ruling": "a clinical score used in someone's direct care",
+   "basis": "The release sentence is the Owner's ruling of 2026-10-12 (P5.15). When a person is warranted is Workstation's own statement (W925): it claims no professional's role, and it does not say that any person has reviewed anything."
+  }
+ },
+ "handover_uncalibrated": {
+  "handover_id": "d405c3fcc1",
+  "handover_type": "SBAR",
+  "handover": "_[Workstation native structured engine — owned, no external dependency]_\n\n## Understanding\nThe request concerns: fell at 0300 w-care 84F (domain: care).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- fell\n- w-care\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'care_handover', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for care; record outcomes to memory/UEG.",
+  "disclaimer": "Composed by the native floor, not by a model: a structured frame, with nothing generated, reasoned or interpreted by AI. It has not been reviewed by anyone, has not been sent to or received by anyone, and is not a clinical record. The person handing over remains responsible for every word.",
+  "ai_provenance": {
+   "posture": "in-house-first",
+   "served_by": "native",
+   "is_external": false,
+   "language_requested": null,
+   "language_delivered": null,
+   "language_basis": "no language was requested, so no claim is made about the output's language",
+   "profile_applied": false,
+   "profile_state": "none_written",
+   "profile_basis": "you have not written a profile",
+   "model_tokens": null,
+   "model_tokens_basis": "NOT COUNTED - the deterministic floor served this and runs no model, so there are no tokens to count; null, never 0",
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+   "served_identity": {
+    "model": null,
+    "build_digest": null,
+    "processor": null,
+    "basis": "the deterministic floor answered: no model ran"
+   },
+   "material": {
+    "label": "CARE RECORD",
+    "chars": 60,
+    "read_chars": 60,
+    "read_whole": true,
+    "limit": 12000,
+    "delimiter_marks_defused": false,
+    "basis": "all 60 characters of the care record were handed over; it was marked as data and not as instruction"
+   },
+   "review": {
+    "tier": "unreviewed",
+    "label": "Unreviewed",
+    "known": true,
+    "records_counted": 0,
+    "records_not_counted": 1,
+    "of_tiers": [
+     "Checked by rule",
+     "Reviewed by Workstation's specialist agent",
+     "Signed by a qualified person"
+    ],
+    "basis": "no review of this tool counts: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed. 1 record(s) exist and do not count; an agent's review of this tool exists and does not raise its tier: w1102-made-up-reviewer has not been calibrated",
+    "not_counted": [
+     {
+      "tier": "reviewed_by_workstation_agent",
+      "why_not": "the agent that reviewed is not calibrated on planted defects and clean answers: the calibration set cannot be run yet, so no agent has been calibrated on it: C03 relies on the chart itself (rcp-news2), which the register says was NOT READ; C10 relies on the chart itself (rcp-news2), which the register says was NOT READ; K02 relies on the chart itself (rcp-news2), which the register says was NOT READ; K06 is described, not written out in full: the dementia frame can cite NICE NG97 with the date it was read only once NG97 has been read at its publisher's page; the register holds it as named, not read; K06 relies on nice-ng97 being current, and the register holds it as named_not_read"
+     }
+    ],
+    "uncalibrated_agent_review": "an agent's review of this tool exists and does not raise its tier: w1102-made-up-reviewer has not been calibrated"
+   },
+   "floor_note": "Composed by the native floor, not by a model: the headings are a structure filled with terms taken from your input. NO research, legal or clinical analysis, guidance, marking, market data or safeguarding assessment was performed - read it as an outline to work from, not as an answer.",
+   "quality_assurance": {
+    "qms_gate_passed": null,
+    "qms_basis": "not assessable — floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+    "delivery_coverage": null,
+    "stub_found": false,
+    "compliance_overall": "review",
+    "compliance_basis": "keyword and vocabulary screens plus the ethical dimensions. A screen can refuse and can escalate; it cannot clear — so only a row with coverage 'engine' can carry a pass, and `coverage_gaps` names every area nothing here assessed — NOTHING here assessed this subject, so the overall is 'review' and no part of it may be reported as compliant",
+    "compliance_echo_only": false,
+    "quality_record_hash": "71763ad2905acc2c35ff4088416b04cb03dd90eaa22ef33f8b13765e334be0d729ed733fd817d3b485fedaa381c40c785aa0d3780833c70c2e9f90e7424b49c2"
+   }
+  },
+  "generated_at": "2026-11-15T23:22:45Z"
  }
 }

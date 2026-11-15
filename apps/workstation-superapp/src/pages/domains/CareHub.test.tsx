@@ -22,12 +22,12 @@ const refused = (detail: string): Reply => ({ status: 503, body: { detail } });
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const clone = (x: any) => JSON.parse(JSON.stringify(x));
 
-function serve(a: { tools?: Reply; hazards?: Reply } = {}) {
+function serve(a: { tools?: Reply; hazards?: Reply; review_handover?: Reply } = {}) {
   vi.stubGlobal('fetch', vi.fn(async (url: string) => {
     const reply = ({ status, body }: Reply) => ({ ok: status < 400, status, statusText: '', json: async () => body });
     if (url === '/api/v1/care/tools') return reply(a.tools ?? ok(captured.tools));
     if (url === '/api/v1/care/hazards') return reply(a.hazards ?? ok(captured.hazards));
-    if (url === '/api/v1/review-options?endpoint=' + encodeURIComponent('/api/v1/care/handover')) return reply(ok(captured.review_handover));
+    if (url === '/api/v1/review-options?endpoint=' + encodeURIComponent('/api/v1/care/handover')) return reply(a.review_handover ?? ok(captured.review_handover));
     if (url === '/api/v1/review-options?endpoint=' + encodeURIComponent('/api/v1/care/risk-assess')) return reply(ok(captured.review_risk));
     if (url === '/api/v1/native-ai/status') return reply(ok(captured.status));
     return reply({ status: 404, body: { detail: `not served in this test: ${url}` } });
@@ -175,6 +175,27 @@ describe('CareHub, rendered against the Care routes\' own answers', () => {
     await assess('resp_rate: 22\nskin_colour: pale');
     const score = await screen.findByTestId('care-score');
     expect(within(score).getByTestId('care-score-acknowledgement').textContent).toBe(captured.news2_partial.score.acknowledgement);
+  });
+
+  // W1102 (FU-399 part 91) - the tier of review where a person reads it: in the options before the form, and in the
+  // line under the answer, each in the route's own sentence, with an uncalibrated agent's review labelled (W1101)
+  it('an uncalibrated agent\'s review of the handover is labelled before the form and under the answer', async () => {
+    serve({ review_handover: ok(captured.review_handover_uncalibrated) });
+    const post = vi.spyOn(axios, 'post').mockResolvedValue({ data: captured.handover_uncalibrated } as never);
+    mount();
+    const label = "an agent's review of this tool exists and does not raise its tier: w1102-made-up-reviewer has not been calibrated";
+    const options = captured.review_handover_uncalibrated.review;
+    const tier = await screen.findByTestId('review-option-tier');
+    expect(tier.textContent).toBe(`Review reached: ${options.label} — ${options.basis}.`);
+    expect(options.basis).toContain(label);
+    fireEvent.change(screen.getByLabelText('Patient summary'), { target: { value: 'w-care 84F' } });
+    fireEvent.change(screen.getByLabelText('Current situation'), { target: { value: 'fell at 0300' } });
+    fireEvent.click(screen.getByRole('button', { name: /Compose handover/ }));
+    const line = await screen.findByTestId('domain-review-tier');
+    const review = captured.handover_uncalibrated.ai_provenance.review;
+    expect(line.textContent).toBe(`Review: ${review.label} — ${review.basis}.`);
+    expect(review.basis).toContain(label);
+    expect(post.mock.calls[0][0]).toBe('/api/v1/care/handover');
   });
 
   it('a partial NEWS2 says what is missing, that the total is a lower bound, and which keys it did not read', async () => {

@@ -82263,8 +82263,11 @@ def test_w976_fu399_the_care_page_is_guarded_by_a_render_and_a_refused_hazard_lo
     read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
     assert {"care-sources", "care-source-tool", "care-source-row", "care-sources-refusal", "care-hazard-log",
             "care-hazard", "care-hazard-refusal", "care-score", "care-keys-not-read"} <= read, sorted(read)
+    #  W1102 - or by the two components the page mounts for each tool, which say its tier of review
+    mounted = page + "".join((root / "apps/workstation-superapp/src/components" / f).read_text(encoding="utf-8")
+                             for f in ("DomainTool.tsx", "ReviewOptions.tsx"))
     for tid in read:
-        assert f'data-testid="{tid}"' in page, ("an id the test reads is not rendered by the page", tid)
+        assert f'data-testid="{tid}"' in mounted, ("an id the test reads is not rendered by the page", tid)
 
     #  both of the page's own reads go through the checked helper, and each says its refusal
     assert "apiJson<any>('/api/v1/care/tools')" in page and "apiJson<any>('/api/v1/care/hazards')" in page
@@ -90754,3 +90757,41 @@ def test_w1101_fu1054_an_uncalibrated_agents_review_is_labelled_where_the_tier_i
            "been calibrated")
     assert both["tier"] == "checked_by_rule" and both["basis"].startswith("the highest tier a record supports: checked by rule")
     assert both["basis"].endswith("; " + two) and both["uncalibrated_agent_review"] == two, both["basis"]
+
+
+def test_w1102_fu399_the_tier_of_review_is_rendered_where_it_is_read_with_an_uncalibrated_agents_label(client, tmp_path, monkeypatch):
+    """FU-399 part 91 (W1102). No rendered test read the tier line under an answer or the tier in the options shown
+    before a tool's form; guards read their source. Held here:
+    - the Care page's fixture carries the handover's options and answer as the routes give them with one made-up,
+      uncalibrated agent review on record: each says the tier in its own sentence, with W1101's label;
+    - the page's rendered test reads both, in the two places a person reads them."""
+    import datetime as _dt
+    import json
+    from pathlib import Path
+    from agentic_core.api import _review_tier as rt
+    store = tmp_path / "review_tier_records.json"
+    monkeypatch.setattr(rt, "_path", lambda: store)
+    pages = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "domains"
+    fx = json.loads((pages / "CareHub.fixture.json").read_text(encoding="utf-8"))
+    today = _dt.date.today().isoformat()
+    review = {"tool": "care_handover", "tier": "reviewed_by_workstation_agent", "date": today,
+              "checklist": "care checklist v2", "tool_version": "care_handover as built today",
+              "sources_read": [{"source": "nice-ng249", "page": "recommendations 1.1 to 1.3", "read_on": today}],
+              "model": "local-model", "agent": "w1102-made-up-reviewer",
+              "could_not_check": "nothing beyond the guideline's own text"}
+    made = client.post("/api/v1/review/record", json=review)
+    assert made.status_code == 200 and made.json()["kept_though_not_counted"] is True, made.text[:300]
+    live = {"options": client.get("/api/v1/review-options", params={"endpoint": "/api/v1/care/handover"}).json()["review"],
+            "answer": client.post("/api/v1/care/handover", json={
+                "patient_summary": "w-care 84F", "current_situation": "fell at 0300", "background": "", "assessment": "",
+                "recommendation": "", "handover_type": "sbar"}).json()["ai_provenance"]["review"]}
+    kept = {"options": fx["review_handover_uncalibrated"]["review"],
+            "answer": fx["handover_uncalibrated"]["ai_provenance"]["review"]}
+    for where in ("options", "answer"):
+        assert (live[where]["label"], live[where]["basis"]) == (kept[where]["label"], kept[where]["basis"]), (
+            where, live[where], kept[where])
+        assert "w1102-made-up-reviewer has not been calibrated" in live[where]["basis"], live[where]
+    spec = (pages / "CareHub.test.tsx").read_text(encoding="utf-8")
+    for case in ("await screen.findByTestId('review-option-tier');", "await screen.findByTestId('domain-review-tier');",
+                 "captured.review_handover_uncalibrated.review", "captured.handover_uncalibrated.ai_provenance.review"):
+        assert case in spec, f"the rendered test no longer reads the tier where it is read: {case}"
