@@ -39,19 +39,20 @@ _RUNS_STORE = data_path("swarm_runs.json")
 
 
 def _load_runs() -> list[dict]:
-    _RUNS_STORE.parent.mkdir(parents=True, exist_ok=True)
-    if _RUNS_STORE.exists():
-        try:
-            return json.loads(_RUNS_STORE.read_text())[-50:]  # keep last 50
-        except Exception:
-            pass
-    return []
+    """W1094 (FU-1273) - the delegations kept, read whole or refused (StoreUnavailable): a store that cannot be
+    read is never taken for none."""
+    from agentic_core.config import read_json_strict
+    return [r for r in read_json_strict(_RUNS_STORE, [], expect=list) if isinstance(r, dict)][-50:]  # keep last 50
 
 
 def _save_run(run: dict) -> None:
-    runs = _load_runs()
-    runs.append(run)
-    _RUNS_STORE.write_text(json.dumps(runs[-50:], indent=2))
+    """W1094 (FU-1273) - one delegation appended atomically, under the store's lock. A store that cannot be read
+    whole is refused (StoreUnavailable), so what it held is never written over (W472)."""
+    from agentic_core.config import atomic_write_json, read_json_strict, store_lock
+    with store_lock(_RUNS_STORE):
+        runs = read_json_strict(_RUNS_STORE, [], expect=list)
+        runs.append(run)
+        atomic_write_json(_RUNS_STORE, runs[-50:])
 
 
 # W491 (refutation) — the per-run agent bound, named once so the run card reports it instead of
@@ -93,9 +94,19 @@ async def list_agents():
 
 
 @router.get("/runs")
-async def list_runs():
-    """Return the last 50 swarm orchestration runs."""
-    runs = _load_runs()
+async def list_runs(user: dict | None = Depends(get_current_user)):
+    """Return the last 50 swarm orchestration runs. W1094 (FU-1273) - with sign-in on, a person's own; an
+    administrator's are every one, and a run kept before W1094 names nobody, so it is an administrator's."""
+    from agentic_core.auth.core import user_can_access
+    from agentic_core.config import StoreUnavailable
+    if user is not None and not isinstance(user, dict):
+        user = None
+    try:
+        runs = _load_runs()
+    except StoreUnavailable as e:
+        raise HTTPException(status_code=503, detail=(
+            f"{e}; the delegations kept could not be read, so none is listed")) from e
+    runs = [r for r in runs if user_can_access(user, r.get("owner_id"))]
     return {"runs": list(reversed(runs)), "total": len(runs)}
 
 
@@ -108,7 +119,7 @@ class DelegateRequest(BaseModel):
 
 
 @router.post("/delegate")
-async def delegate_task(req: DelegateRequest):
+async def delegate_task(req: DelegateRequest, user: dict | None = Depends(get_current_user)):
     """
     CEO receives task, decides which agents to engage, collects their responses,
     and synthesises a unified executive response.
@@ -118,6 +129,9 @@ async def delegate_task(req: DelegateRequest):
     refuse_faith_ruling(f"{req.task} {req.context}", "delegation")
     run_id = uuid.uuid4().hex[:10]
     start = time.time()
+    #  W1094 (FU-1273) - the person this delegation is kept for: with sign-in on, the one signed in
+    from agentic_core.auth.core import auth_enabled as _auth1094
+    _owner1094 = user.get("username") if (_auth1094() and isinstance(user, dict)) else None
 
     biobus.fire_signal("cognitive", "swarm.delegate", f"CEO delegation: {req.task[:80]}", 0.7)
 
@@ -129,7 +143,7 @@ async def delegate_task(req: DelegateRequest):
     @spans_run("ai_call")          # W847 (FU-1121) - the model attempt inside is held
     async def _dq(prompt: str, agent: str) -> str:
         _t0 = time.time()
-        res = await gateway.query_meta(prompt, agent=agent, augment=False,
+        res = await gateway.query_meta(prompt, agent=agent, augment=False, owner_id=_owner1094,   # W1094
                                        user_text=(req.task or None))   # W640 - the person's own words
         sb = res.get("served_by", "native")
         provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
@@ -227,6 +241,7 @@ async def delegate_task(req: DelegateRequest):
 
     run = {
         "run_id": run_id,
+        "owner_id": _owner1094,
         "task": req.task,
         "domain": req.domain,
         "realm": req.realm,
@@ -250,7 +265,14 @@ async def delegate_task(req: DelegateRequest):
         "duration_ms": int((time.time() - start) * 1000),
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
-    _save_run({k: v for k, v in run.items() if k != "agent_responses"})  # save compact version
+    from agentic_core.config import StoreUnavailable as _SU1094
+    try:
+        _save_run({k: v for k, v in run.items() if k != "agent_responses"})  # save compact version
+        run["persistence"] = {"persisted": True}
+    except _SU1094 as _e1094:
+        #  W1094 (FU-1273) - said, never a silent loss and never a replaced store
+        run["persistence"] = {"persisted": False, "reason": (
+            f"{_e1094}; this delegation was not kept, and what the store held was left as it was")}
     biobus.record_operation("swarm_delegate", "swarm.delegate", success=True, payload=f"{len(agent_ids)} agents, {run['duration_ms']}ms")
 
     return run
@@ -654,8 +676,8 @@ async def cascade_orchestration(req: CascadeRequest,
         _qt0 = time.time()
         # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what
         # they asked for is stored where even they cannot recall it. `user` is in scope here by
-        # closure from cascade_orchestration; the identical call in _dq() is NOT threaded, because
-        # its enclosing delegate_task() has no user and unattributed is the correct namespace there.
+        # closure from cascade_orchestration; the identical call in _dq() threads the person delegate_task()
+        # reads (W1094), so a delegation's exchange is kept where its person can recall it too.
         _owner_id = user.get("username") if isinstance(user, dict) else None
         res = await gateway.query_meta(prompt, agent=agent, augment=False, owner_id=_owner_id,
                                        user_text=(req.mission or None))   # W640 - the person's own words

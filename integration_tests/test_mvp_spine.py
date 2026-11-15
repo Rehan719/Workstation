@@ -89984,3 +89984,73 @@ def test_w1093_fu1271_a_cascade_run_for_an_entity_is_curated_listed_and_attribut
                 p.write_bytes(b)
         for p in set(_mk._LISTINGS_DIR.glob("*.json")) - listed:
             p.unlink()
+
+
+def test_w1094_fu1273_a_delegation_is_its_persons_and_its_store_is_never_replaced(client, monkeypatch):
+    """FU-1273 (W1094). The swarm's delegations were recorded with no person and listed to every signed-in person, each
+    with the task and the context a person typed; and the store's reader passed over a store it could not read, so the
+    next delegation wrote its run over it, with a plain write. Held here through the routes, as two people and an
+    administrator:
+    - a delegation names the person who made it, and is listed for them and an administrator, never for another
+      person; one kept before this round names nobody, so it is an administrator's; with sign-in off every one is;
+    - a store that cannot be read is refused in the listing with why, never listed as none; a delegation made then
+      says it was not kept, and the store is left as it was.
+    The store is shared with the suite's other tests: this test keeps its bytes and puts them back."""
+    import uuid
+    import agentic_core.auth.core as _ac
+    from agentic_core.api import swarm as _sw
+    from agentic_core.config import atomic_write_json, read_json_strict
+    tag = uuid.uuid4().hex[:8]
+    store = _sw._RUNS_STORE
+    kept = store.read_bytes() if store.exists() else None
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    who = {k: f"w1094-{k}-{tag}" for k in ("one", "two", "adm")}
+    users = _ac._load_users()
+    for k, name in who.items():
+        users[name] = {"user_id": name, "username": name, "hashed_password": _ac._pwd_ctx.hash("pw12345678"),
+                       "role": "admin" if k == "adm" else "user", "created_at": "2026-11-15T00:00:00Z",
+                       "api_keys": []}
+    _ac._save_users(users)
+    H = {k: {"Authorization": "Bearer " + client.post("/api/v1/auth/token", data={
+        "username": n, "password": "pw12345678"}).json()["access_token"]} for k, n in who.items()}
+    task, old = f"w1094 made-up task {tag}", f"w1094-old-{tag}"
+
+    def listed(k=None):
+        r = client.get("/api/v1/swarm/runs", headers=H[k] if k else {})
+        assert r.status_code == 200, r.text[:300]
+        return {x["run_id"] for x in r.json()["runs"] if tag in str(x.get("task") or "") + str(x.get("run_id") or "")}
+    try:
+        rows = read_json_strict(store, missing=[], expect=list)
+        rows.append({"run_id": old, "task": f"{task}, kept before", "created_at": "2026-11-01T00:00:00Z"})
+        atomic_write_json(store, rows)
+        d = client.post("/api/v1/swarm/delegate", headers=H["one"], json={"task": task, "domain": "enterprise"})
+        assert d.status_code == 200, d.text[:300]
+        rid = d.json()["run_id"]
+        assert d.json()["owner_id"] == who["one"] and d.json()["persistence"] == {"persisted": True}, d.json()
+        assert next(r for r in read_json_strict(store, missing=[], expect=list) if r.get("run_id") == rid)[
+            "owner_id"] == who["one"]
+        #  the maker's, and an administrator's; never another person's; one naming nobody, an administrator's
+        assert (listed("one"), listed("two"), listed("adm")) == ({rid}, set(), {rid, old})
+        monkeypatch.setenv("AUTH_ENABLED", "false")
+        assert listed() == {rid, old}
+        monkeypatch.setenv("AUTH_ENABLED", "true")
+
+        #  a store that cannot be read is refused with why, and a delegation made then is not written over it
+        good = store.read_bytes()
+        store.write_text("{ not json", encoding="utf-8")
+        try:
+            bad = client.get("/api/v1/swarm/runs", headers=H["one"])
+            made = client.post("/api/v1/swarm/delegate", headers=H["one"],
+                               json={"task": f"{task}, again", "domain": "enterprise"})
+            after = store.read_bytes()
+        finally:
+            store.write_bytes(good)
+        assert bad.status_code == 503 and "could not be read" in bad.json()["detail"], bad.text[:300]
+        assert made.status_code == 200 and made.json()["persistence"]["persisted"] is False, made.text[:300]
+        assert "was not kept" in made.json()["persistence"]["reason"] and after == b"{ not json", after[:80]
+    finally:
+        if kept is None:
+            if store.exists():
+                store.unlink()
+        else:
+            store.write_bytes(kept)

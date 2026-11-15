@@ -25814,11 +25814,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P5.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1094",
       "note": "",
       "slot_source": "the tenancy invariant W1077 held (FU-1263), on a listing its census did not seed; it rides P5.1 as FU-1262, FU-1263 and FU-1271 did",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1094. POST /api/v1/swarm/delegate reads its person and names them on the run it keeps (with sign-in on), and its gateway calls carry that person as the cascade's do (§17.5 invariant 1); GET /api/v1/swarm/runs lists a person's own delegations, an administrator's every one, and a delegation kept before this round, naming nobody, only for an administrator (user_can_access). With sign-in off nothing changes. The store is read whole or refused and written atomically under its lock: the listing refuses a store it cannot read with why (503), never listing it as none, and a delegation made then says it was not kept and leaves the store as it was. test_w1094 holds it through the routes as two people and an administrator; six blinds turn it red."
     },
     {
       "id": "FU-1274",
