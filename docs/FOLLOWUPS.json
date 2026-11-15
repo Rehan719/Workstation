@@ -25550,6 +25550,62 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: a pack that could not be read is taken off the page, and a decision refused reads the pack again, so what is shown is the pack a next decision would be on. The rendered test (six cases, two red on the unfixed pack) has three vitest blinds; test_w1074 holds the pack's code and the fixture (no Arabic; every rule, tool and question made up; no decision an approval), with three blinds."
+    },
+    {
+      "id": "FU-1262",
+      "title": "With sign-in on, a route that takes an entity's id read or wrote that entity for whoever named it",
+      "why": "Found while rendering the avatar session: its chat read any entity named by vsb_id into the prompt, with no check of whose it was. Measured as two people over HTTP (the first establishes an entity whose name and mission carry a canary, then gives it an outcome, an economy cycle, a deliverable, a change and an objective; every GET route taking an entity id, and every POST route whose path, query or body names one, is called as the second person with that id and with an id that names no entity): the studio's entity read returned the entity whole and its list named every entity; the twin blueprint returned its blueprint, genome and economy; the avatar's chat was grounded in it; the cycles read its books (the waterfall pots' total, its postings) and the outcomes listed its records; a deliverable was grounded in it and filed against it; the transformation, which took no person, read and wrote its business plan, filed a change and saved a twin under it; establishment and the retired spawn route made a child of it; a defect, a change and an outcome were filed against it; the cascade refused with a 403 that named its owner; and the QEP contribution routes said a non-QEP entity's form and its owner's share.",
+      "source": "W1075 (found preparing W1076: the avatar session)",
+      "found": "2026-11-15",
+      "files": [
+        "agentic_core/api/vsb.py",
+        "agentic_core/api/synthesis_studio.py",
+        "agentic_core/api/integration_surface.py",
+        "agentic_core/avatars/api.py",
+        "agentic_core/api/deliverables.py",
+        "agentic_core/api/transformation_orchestration.py",
+        "agentic_core/api/swarm.py",
+        "agentic_core/economy/living_vsbs.py",
+        "agentic_core/api/genesis.py",
+        "agentic_core/api/management_systems.py",
+        "agentic_core/api/change_control.py",
+        "agentic_core/api/operational_excellence.py",
+        "agentic_core/api/cycles.py",
+        "agentic_core/religious_domain/api.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1075",
+      "note": "",
+      "slot_source": "tenant isolation under sign-in (the section 17.5 invariant FU-1061 measured route by route); it rides P5.1 as FU-1061 did",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: every route that takes an entity id answers a second person as it answers an id that names no entity, never with the entity, its owner or a reply grounded in it; six routes that read or record an id naming no entity (the cycles; a defect, a change, an outcome, a deliverable, a cascade) refuse another person's entity as not found, naming nobody. test_w1075 holds it as a census over every such route (46 GET, 53 POST), with 17 blinds."
+    },
+    {
+      "id": "FU-1263",
+      "title": "With sign-in on, eleven listings hand a person every other person's entities or records",
+      "why": "Found by W1075's census swept over the GET routes that take no entity id, called as a second person after a first had established an entity and given it records: the studio's entity list (fixed in W1075), the nervous system's and the extrospection's signals, the change queue and the list of every change, the living plan's state, the global search, the federation's twins, and the operations record's outcomes (fixed in W1075 for rows naming an entity), rankings and summary each answered with the first person's entity name or records. Each is to answer a person with what is theirs, or be an administrator's view, as W884 ruled for the unmarked-debit audit across every entity.",
+      "source": "W1075 (the census's sweep of the listings)",
+      "found": "2026-11-15",
+      "files": [
+        "agentic_core/organism/nervous.py",
+        "agentic_core/api/change_control.py",
+        "agentic_core/api/living_plan.py",
+        "agentic_core/api/integration_surface.py",
+        "agentic_core/api/operational_excellence.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "tenant isolation under sign-in, as FU-1262; it rides P5.1 as FU-1061 did",
+      "tier": 1
     }
   ],
   "routes": [

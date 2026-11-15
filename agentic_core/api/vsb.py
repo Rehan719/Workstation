@@ -425,6 +425,44 @@ def _require_vsb_access(vsb_id: str, user: dict | None) -> dict:
     return vsb
 
 
+def entity_for_caller(vsb_id: str | None, user: dict | None) -> dict | None:
+    """W1075 - the entity an id names, if this caller may read it; None when it names none OR another person's.
+
+    One answer for both, so a route that reads an entity by a caller-named id tells a second person nothing an id
+    that names no entity would not: the avatar's grounding, the studio's entity read and the twin blueprint each
+    read any id they were given. With sign-in off every entity is the caller's, as before; an administrator reads
+    every entity (user_can_access). A non-dict `user` is an in-process call holding the dependency marker, read as
+    nobody, as _require_vsb_access reads it."""
+    if not vsb_id:
+        return None
+    if user is not None and not isinstance(user, dict):
+        user = None
+    from agentic_core.auth.core import user_can_access
+    try:
+        vsb = _load_vsb(str(vsb_id))
+    except (OSError, ValueError):          # an id that is no readable record names no entity
+        return None
+    if not vsb or not user_can_access(user, vsb.get("owner_id")):
+        return None
+    return vsb
+
+
+def names_anothers_entity(vsb_id: str | None, user: dict | None) -> bool:
+    """W1075 - does this id name an entity this caller may not reach? For the routes that file a record against an
+    entity by a caller-named id (a defect, a change, an outcome, a deliverable): each filed one against another
+    person's entity. An id that names no entity at all is False here; those routes record it as named, as before."""
+    if not vsb_id:
+        return False
+    if user is not None and not isinstance(user, dict):
+        user = None
+    from agentic_core.auth.core import user_can_access
+    try:
+        vsb = _load_vsb(str(vsb_id))
+    except (OSError, ValueError):
+        return False
+    return bool(vsb) and not user_can_access(user, vsb.get("owner_id"))
+
+
 def _version_control_commit(root, vsb_id: str, surface: str, qa: Dict[str, Any] | None) -> Dict[str, Any]:
     """§13 (W289) — the entity repository is a genuinely VERSION-CONTROLLED whole: git-init on the
     first generation (safe: the store lives under gitignored data/, so the nested .git is invisible
@@ -3370,6 +3408,11 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
     #  go: not inside register() (an `except Exception: pass` eats it) and not inside the generator.
     from agentic_core.economy.living_vsbs import resolve_parent as _rp, PARENT_UNRESOLVED as _PU
     _lin_chk = _rp(getattr(req, "parent_vsb", "") or "")
+    #  W1075 - another person's entity as the parent is answered as a parent that does not exist (the route is
+    #  retired behind a switch; its code is kept, and kept to the same rule as establishment)
+    if _lin_chk["state"] != _PU and names_anothers_entity(getattr(req, "parent_vsb", "") or "", user):
+        from agentic_core.economy.living_vsbs import parent_unresolved as _pun1075
+        _lin_chk = _pun1075(str(getattr(req, "parent_vsb", "") or "").strip())
     if _lin_chk["state"] == _PU:
         raise HTTPException(status_code=409, detail={
             "message": (f"Not spawned: the stated parent {req.parent_vsb!r} is not on the living "

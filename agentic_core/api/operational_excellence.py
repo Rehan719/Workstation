@@ -27,7 +27,8 @@ from pathlib import Path
 from agentic_core.config import atomic_write_json, data_path
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from agentic_core.auth.core import get_current_user   # W1075
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/v1/operations", tags=["operational-excellence"])
@@ -485,7 +486,12 @@ class RecordRequest(BaseModel):
 
 
 @router.post("/record")
-async def record(req: RecordRequest):
+async def record(req: RecordRequest, user: dict | None = Depends(get_current_user)):
+    #  W1075 - an outcome filed against another person's entity by whoever named its id
+    from agentic_core.api.vsb import names_anothers_entity
+    if names_anothers_entity(req.vsb_id, user):
+        raise HTTPException(status_code=404, detail=(
+            f"No entity {req.vsb_id} was found, so no outcome was recorded against it."))
     return record_outcome(req.kind, req.resource, served_by=req.served_by, is_external=req.is_external,
                           duration_ms=req.duration_ms, success=req.success, ref=req.ref, vsb_id=req.vsb_id,
                           reported_by="caller")
@@ -493,8 +499,15 @@ async def record(req: RecordRequest):
 
 @router.get("/outcomes")
 async def outcomes(resource: Optional[str] = None, vsb_id: Optional[str] = None,
-                   kind: Optional[str] = None, limit: int = 100):
+                   kind: Optional[str] = None, limit: int = 100,
+                   user: dict | None = Depends(get_current_user)):
     rows = _load()
+    #  W1075 - an outcome recorded against another person's entity is not listed: every entity's were listed to
+    #  whoever asked, and to whoever named the entity's id. Each entity named is read once.
+    from agentic_core.api.vsb import names_anothers_entity
+    _theirs = {v for v in {r.get("vsb_id") for r in rows} if v and names_anothers_entity(v, user)}
+    if _theirs:
+        rows = [r for r in rows if r.get("vsb_id") not in _theirs]
     if kind:
         rows = [r for r in rows if r.get("kind") == kind]
     else:

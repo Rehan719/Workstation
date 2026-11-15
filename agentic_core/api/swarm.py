@@ -501,14 +501,12 @@ async def cascade_orchestration(req: CascadeRequest,
             # business plan and records revenue and cost against it, so a client-supplied scope let an
             # authenticated caller drive another tenant's plan and ledger. Inert in single-user mode, where
             # there is no principal to compare against.
-            from agentic_core.auth.core import auth_enabled as _ae
-            if _ae():
-                _owner = (user or {}).get("username")
-                _vsb_owner = _gated_vsb.get("owner_id") or _gated_vsb.get("owner")
-                if _vsb_owner and _owner and _vsb_owner != _owner:
-                    raise HTTPException(status_code=403, detail=(
-                        f"the scope '{req.scope}' belongs to {_vsb_owner}; a cascade writes objectives into "
-                        f"its business plan and records revenue against it, so it runs only for its owner."))
+            #  W1075 - refused as NOT FOUND, naming nobody: the 403 named the entity's owner to whoever asked, and an
+            #  administrator was refused another person's entity although user_can_access lets them reach it
+            from agentic_core.api.vsb import names_anothers_entity
+            if names_anothers_entity(req.scope, user):
+                raise HTTPException(status_code=404, detail=(
+                    f"No entity {req.scope} was found, so no cascade was run for it."))
 
     #  W829 (FU-1118) - WHOSE WORK THE TIER CALLS ARE, for the work budget (S18.6). A cascade scoped to a VSB is that
     #  entity's work, so its tier calls are booked to the VSB under its registered owner, whoever called: a VSB's own

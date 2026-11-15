@@ -598,7 +598,11 @@ async def chat(request: ChatRequest, user: dict | None = Depends(get_current_use
                 image_note = ("(Image attached and received, but no in-house vision model (set OLLAMA_VISION_MODEL, "
                               "e.g. llava/llama3.2-vision) or external vision key is available, so its contents were not analysed.)")
 
-    grounding = _vsb_grounding(request.vsb_id) if request.vsb_id else ""
+    #  W1075 - grounded only in an entity the caller may read: any id was read into the prompt, so a person's avatar
+    #  answered from another person's entity. Another person's entity grounds nothing, as one that does not exist.
+    from agentic_core.api.vsb import entity_for_caller as _entity_for_caller
+    grounding = (_vsb_grounding(request.vsb_id)
+                 if request.vsb_id and _entity_for_caller(request.vsb_id, user) else "")
     history_block = "\n".join(f"{h['role']}: {h['content']}" for h in history[-10:])
     # All-language: instruct the in-house fabric to answer in the requested language (default English).
     lang = (request.language or "").strip()

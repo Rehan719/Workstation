@@ -87721,3 +87721,168 @@ def test_w1074_fu1261_the_approval_pack_takes_a_pack_it_could_not_read_off_the_p
                 assert q["question"].startswith("W1074 made up: "), tool["id"]
         assert fx[k]["body"]["state"] != "approved", fx[k]["body"]["state"]
     assert fx["returned"]["body"]["decision"]["decision"] == "return"
+
+
+def test_w1075_fu1262_with_sign_in_on_no_route_reads_or_writes_another_persons_entity_by_its_id(client, monkeypatch):
+    """W1075 (FU-1262). With sign-in on, a route that takes an entity's id read or wrote that entity for whoever named
+    it. Measured as two people over HTTP: the studio's entity read returned it whole and its list named every
+    entity; the twin blueprint returned its blueprint, genome and economy; the avatar's chat was grounded in it; the
+    cycles read its books and the outcomes listed its records; a deliverable was grounded in it and filed against
+    it; the transformation (which took no person) read and wrote its business plan; a child of it was established;
+    a defect, a change and an outcome were filed against it; the cascade refused with a 403 naming its owner; and the
+    QEP routes said a non-QEP entity's form and owner share.
+
+    Held here, as the first person, the second, and nobody signed in: every GET route that takes an entity id, and
+    every POST route whose path, query or body names one, answers the second person exactly as it answers an id that
+    names no entity (the same status, and when both are 200 the same body once the id and the per-call fields are
+    read out of it), never with the first person's entity, its owner, or a reply grounded in it. Six routes read or
+    record an id that names no entity, as they always did (a ledger stands without an entity record; a defect, a
+    change, an outcome, a deliverable and a cascade are recorded against the id as named); each refuses another
+    person's entity as not found, naming nobody. The first person reaches each as before, and with sign-in off
+    nothing changes."""
+    import re
+    import uuid
+    from fastapi.routing import APIRoute
+    import agentic_core.auth.core as _ac
+    ENTITY = {"vsb_id", "entity_id", "twin_id", "scope", "vid", "from_vsb", "to_vsb", "parent_id", "target_vsb",
+              "vsb", "entity", "parent_vsb", "child_vsb", "source_vsb", "target_id", "client_vsb", "provider_vsb"}
+    #  read or recorded as named when the id names no entity; another person's entity is refused as not found
+    AS_NAMED = {("GET", "/api/v1/cycles"), ("POST", "/api/v1/swarm/cascade"), ("POST", "/api/v1/mgmt/nonconformance"),
+                ("POST", "/api/v1/cca/submit"), ("POST", "/api/v1/deliverables/produce"),
+                ("POST", "/api/v1/operations/record")}
+    #  a field named for a scope that is no entity id: only that nothing of the entity is said is held
+    NOT_AN_ENTITY = {("POST", "/api/v1/mgmt/ems/generate")}   # the environmental scope, free text
+    VOLATILE = re.compile(r'"(timestamp|generated_at|read_at|checked_at|measured_at|at|now|ts|elapsed_ms|duration_ms|'
+                          r'took_ms|run_id|request_id|id|session_id|transformation_id|cca_id)"\s*:\s*'
+                          r'("[^"]*"|-?[0-9.eE+-]+|null)')
+    MISSING = "w1075-no-such-entity"
+
+    def entityish(n):
+        return n in ENTITY or "vsb" in n or n.endswith("entity_id")
+
+    def norm(text, eid):
+        return VOLATILE.sub(r'"\1": "~"', text.replace(eid, "<ID>"))
+
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    canary = uuid.uuid4().hex[:12]
+    who = {k: f"w1075-{k}-{uuid.uuid4().hex[:6]}" for k in ("one", "two")}
+    users = _ac._load_users()
+    for name in who.values():
+        users[name] = {"username": name, "hashed_password": _ac._pwd_ctx.hash("pw12345678"), "role": "user"}
+    _ac._save_users(users)
+    H = {}
+    for k, name in who.items():
+        tok = client.post("/api/v1/auth/token", data={"username": name, "password": "pw12345678"})
+        assert tok.status_code == 200, tok.text[:200]
+        H[k] = {"Authorization": "Bearer " + tok.json()["access_token"]}
+    est = client.post("/api/v1/genesis/establish", headers=H["one"], json={
+        "problem": f"w1075 canary mission {canary}", "ship_output": False, "name": f"W1075 Canary {canary}"})
+    assert est.status_code == 200, est.text[:300]
+    vid = est.json()["vsb_id"]
+    #  the first person's records in the stores kept per entity
+    for path, body in (("/api/v1/operations/record", {"kind": f"w1075 {canary}", "resource": "w1075", "vsb_id": vid}),
+                       ("/api/v1/economy/cycle", {"vsb_id": vid, "revenue": 50.0}),
+                       ("/api/v1/deliverables/produce", {"type": "report", "title": f"w1075 {canary}",
+                                                         "brief": "a made-up brief", "vsb_id": vid}),
+                       ("/api/v1/cca/submit", {"title": f"w1075 {canary}", "description": "a made-up change", "vsb_id": vid}),
+                       ("/api/v1/business-plan/objective", {"scope": vid, "title": f"w1075 objective {canary}"})):
+        r = client.post(path, headers=H["one"], json=body)
+        assert r.status_code == 200, (path, r.status_code, r.text[:200])
+    marks = (canary, who["one"])
+
+    def call(method, path, headers, params=None, body=None):
+        r = client.request(method, path, headers=headers, params=params, json=body)
+        try:
+            j = r.json()
+        except ValueError:
+            j = None
+        grounded = isinstance(j, dict) and j.get("grounded_in") == vid
+        return r.status_code, r.text, any(m in r.text for m in marks) or grounded
+
+    def fill(field):
+        s = str(getattr(field, "annotation", ""))
+        return False if "bool" in s else 1 if ("int" in s or "float" in s) else [] if "ist" in s else \
+            {} if "ict" in s else "w1075 made up"
+
+    gets = posts = 0
+    wrong = []
+    for route in client.app.routes:
+        if not isinstance(route, APIRoute) or any(s in route.path for s in ("stream", "/events", "/sse", "/ws")):
+            continue
+        dep = route.dependant
+        pn, qn = [p.name for p in dep.path_params], [p.name for p in dep.query_params]
+        if [n for n in pn if not entityish(n)]:
+            continue
+        ep, eq = [n for n in pn if entityish(n)], [n for n in qn if entityish(n)]
+        fields = {}
+        for bp in dep.body_params:
+            fi = getattr(bp, "field_info", None)
+            mf = getattr(getattr(fi, "annotation", None), "model_fields", None)
+            fields.update(mf) if mf else fields.__setitem__(bp.name, fi)
+        eb = [n for n in fields if entityish(n)]
+
+        def at(eid, with_body):
+            path = route.path
+            for n in ep:
+                path = path.replace("{" + n + "}", eid)
+            body = None
+            if with_body and fields:
+                body = {n: fill(f) for n, f in fields.items() if f.is_required()}
+                body.update({n: eid for n in eb})
+            return path, ({n: eid for n in eq} or None), body
+
+        for method in sorted(route.methods or ()):
+            if method == "GET" and (ep or eq):
+                gets += 1
+            elif method == "POST" and (ep or eq or eb):
+                posts += 1
+            else:
+                continue
+            p, q, b = at(vid, method == "POST")
+            s2, t2, leak2 = call(method, p, H["two"], q, b)
+            if leak2:
+                wrong.append(f"{method} {route.path}: the second person was answered with the first person's entity")
+            if method == "GET":
+                s0, t0, leak0 = call(method, p, {}, q)
+                if leak0:
+                    wrong.append(f"GET {route.path}: nobody signed in was answered with the entity")
+            if (method, route.path) in NOT_AN_ENTITY:
+                continue
+            if (method, route.path) in AS_NAMED:
+                if s2 != 404:
+                    wrong.append(f"{method} {route.path}: another person's entity answered {s2}, not as not found")
+                continue
+            pm, qm, bm = at(MISSING, method == "POST")
+            sm, tm, _ = call(method, pm, H["two"], qm, bm)
+            if s2 != sm:
+                wrong.append(f"{method} {route.path}: {s2} for another person's entity, {sm} for no entity")
+            elif s2 == 200 and norm(t2, vid) != norm(tm, MISSING):
+                wrong.append(f"{method} {route.path}: answered another person's entity unlike no entity")
+    assert gets >= 40 and posts >= 45, ("the census reached too few routes to be the census", gets, posts)
+    assert wrong == [], wrong
+
+    #  the first person reaches each as before
+    one = H["one"]
+    r = client.get(f"/api/v1/studio/vsb/{vid}", headers=one)
+    assert r.status_code == 200 and canary in r.text, r.text[:200]
+    listed = {k: {e.get("entity_id") for e in client.get("/api/v1/studio/vsb", headers=H[k]).json()["entities"]}
+              for k in ("one", "two")}
+    assert vid in listed["one"] and vid not in listed["two"], listed
+    assert client.get(f"/api/v220/twin/blueprint/{vid}", headers=one).json().get("name") == f"W1075 Canary {canary}"
+    g = client.post("/api/v1/avatar/chat", headers=one, json={"session_id": None, "message": "w1075 what is my mission?",
+                                                              "context": "general", "vsb_id": vid})
+    assert g.status_code == 200 and g.json().get("grounded_in") == vid, g.text[:200]
+    assert client.get("/api/v1/cycles", headers=one, params={"vsb_id": vid}).status_code == 200
+    mine = client.get("/api/v1/operations/outcomes", headers=one, params={"vsb_id": vid}).json()["outcomes"]
+    assert [o for o in mine if o.get("kind") == f"w1075 {canary}"], mine[:3]
+    child = client.post("/api/v1/genesis/establish", headers=one, json={
+        "problem": "w1075 a child of the first person's entity", "ship_output": False, "parent_vsb": vid})
+    assert child.status_code == 200, child.text[:300]
+    #  the cascade's refusal names nobody
+    c2 = client.post("/api/v1/swarm/cascade", headers=H["two"], json={"mission": "w1075 made up", "scope": vid})
+    assert c2.status_code == 404 and who["one"] not in c2.text, c2.text[:200]
+
+    #  with sign-in off nothing changes
+    monkeypatch.setenv("AUTH_ENABLED", "false")
+    r = client.get(f"/api/v1/studio/vsb/{vid}")
+    assert r.status_code == 200 and canary in r.text, r.text[:200]

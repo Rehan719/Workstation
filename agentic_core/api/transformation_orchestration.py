@@ -41,7 +41,8 @@ from pathlib import Path
 from agentic_core.config import data_path
 from typing import Any, Dict, List
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from agentic_core.auth.core import get_current_user   # W1075
 from pydantic import BaseModel
 
 from agentic_core.api._strict_models import STRICT
@@ -151,7 +152,12 @@ from agentic_core.api.operational_excellence import spans_run    # W847 (FU-1121
 
 @router.post("/orchestrate")
 @spans_run("transformation")       # W847 (FU-1121) - every run inside it is held
-async def orchestrate(req: OrchestrateRequest):
+async def orchestrate(req: OrchestrateRequest, user: dict | None = Depends(get_current_user)):
+    #  W1075 - WHOSE PLAN IT IS. A run reads its scope's business plan, writes the plan back, files a change and saves
+    #  a twin under the scope, and it took no person at all: any caller ran it on another person's entity. The plan's
+    #  own routes decide who reaches a scope (business_plan.caller_may_reach), and this is held to the same rule.
+    from agentic_core.api.business_plan import _reach_or_404
+    _reach_or_404(user, req.scope)
     _t0 = time.time()
     signals = 0
     cascade: List[Dict[str, Any]] = []

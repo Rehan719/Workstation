@@ -277,6 +277,12 @@ async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_u
     if req.type not in _TYPES and not req.sections:
         raise HTTPException(status_code=400,
                             detail=f"Unknown type '{req.type}'. Known: {list(_TYPES)} (or pass sections).")
+    #  W1075 - another person's entity: the deliverable was grounded in it (its name and mission in the prompt) and
+    #  filed against it
+    from agentic_core.api.vsb import names_anothers_entity
+    if names_anothers_entity(req.vsb_id, user):
+        raise HTTPException(status_code=404, detail=f"No entity {req.vsb_id} was found, so no deliverable was "
+                                                    f"produced for it.")
     _t0 = time.time()
     if req.content.strip():
         # §4.9 (W306) — verbatim ingest: output already produced elsewhere on the platform (a Genesis

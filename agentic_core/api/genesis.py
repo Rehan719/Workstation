@@ -1491,6 +1491,11 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
     #  dict detail reaching a page as a React child throws (W597).
     from agentic_core.economy.living_vsbs import resolve_parent as _rp, PARENT_UNRESOLVED as _PU
     _lin_chk = _rp(getattr(req, "parent_vsb", "") or "")
+    #  W1075 - another person's entity as the parent is answered as a parent that does not exist
+    from agentic_core.api.vsb import names_anothers_entity as _nae1075
+    if _lin_chk["state"] != _PU and _nae1075(getattr(req, "parent_vsb", "") or "", user):
+        from agentic_core.economy.living_vsbs import parent_unresolved as _pun1075
+        _lin_chk = _pun1075(str(getattr(req, "parent_vsb", "") or "").strip())
     if _lin_chk["state"] == _PU:
         raise HTTPException(status_code=409, detail={
             "message": (f"Not established: the stated parent {getattr(req, 'parent_vsb', '')!r} is not on "

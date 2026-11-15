@@ -1591,7 +1591,7 @@ _A8_FINANCE_BASIS = ("vision A.8 (Owner-authored): QEP is 100% donation and waqf
                      "only - no real-money rail is touched by this channel.")
 
 
-def _contribution_entity(vsb_id: str) -> dict:
+def _contribution_entity(vsb_id: str, user: dict | None = None) -> dict:
     """The entity a contribution is for, or an HTTP refusal. NEVER a ledger for an id nobody established.
 
     `read_strict` answers a missing ledger file with new empty books, so `VirtualLedger(<anything>)` succeeds
@@ -1622,18 +1622,24 @@ def _contribution_entity(vsb_id: str) -> dict:
             rec = _load_vsb(safe)
         except Exception:
             rec = None
+    _missing = {"message": f"no entity {safe} is on the living roster or in the VSB store, so a contribution "
+                           f"cannot be recorded against its books. Nothing was written.",
+                "vsb_id": safe}
     if not rec:
-        raise HTTPException(status_code=404, detail={
-            "message": f"no entity {safe} is on the living roster or in the VSB store, so a contribution "
-                       f"cannot be recorded against its books. Nothing was written.",
-            "vsb_id": safe})
+        raise HTTPException(status_code=404, detail=_missing)
     #  W622 (FU-512, M1 v9 R1.0) — A QEP CHANNEL CREDITS ONLY A QEP ENTITY. This checked only that the entity
     #  existed, so a Zakat or Sponsor-a-Student gift could be posted to any entity, and the response then told
     #  the donor "no owner share at all" and "A.8: owner 0%" about one whose own waterfall paid its owner 20%.
     #  A.8's claims are true of the qep_waqf_trust form and of nothing else, so another form is refused, with
     #  the owner share its own template carries, rather than credited under A.8's description.
     _etype = rec.get("entity_type") or (rec.get("economy") or {}).get("entity_type")
+    #  W1075 - another person's entity that is no QEP entity is answered as one that does not exist: its form and its
+    #  owner's share were said to any caller. A QEP entity takes a gift and shows its donor statement to anyone (A.8's
+    #  transparent donor view), so it is not hidden.
     if _etype != "qep_waqf_trust":
+        from agentic_core.api.vsb import names_anothers_entity
+        if names_anothers_entity(safe, user):
+            raise HTTPException(status_code=404, detail=_missing)
         try:
             from agentic_core.economy.entities import get_template
             _owner = (get_template(_etype or "").get("waterfall") or {}).get("owner")
@@ -1648,14 +1654,15 @@ def _contribution_entity(vsb_id: str) -> dict:
     return {"vsb_id": safe, "record": rec}
 
 
-def _record_contribution(vsb_id: str, amount_wst: float, channel: str, donor_ref: str = "") -> dict:
+def _record_contribution(vsb_id: str, amount_wst: float, channel: str, donor_ref: str = "",
+                         user: dict | None = None) -> dict:
     """Credit the entity's `revenue` account and REPORT THE BALANCE READ BACK, not the amount handed in.
 
     This file's own W439 note records the defect this avoids: "every award fell to a fallback claiming
     'recorded' while persisting nothing". A channel that returns the figure it was given cannot tell a
     caller whether anything was persisted, so the balance below is re-read from the books after the write.
     """
-    ent = _contribution_entity(vsb_id)
+    ent = _contribution_entity(vsb_id, user)
     safe = ent["vsb_id"]
     from agentic_core.economy.ledger import VirtualLedger
     led = VirtualLedger(safe)
@@ -1695,14 +1702,14 @@ def _record_contribution(vsb_id: str, amount_wst: float, channel: str, donor_ref
 
 
 @router.post("/contribute/zakat", dependencies=_ASKS)
-async def contribute_zakat(req: ContributionRequest):
+async def contribute_zakat(req: ContributionRequest, user: dict | None = Depends(get_current_user)):
     """A Zakat-eligible contribution to a QEP entity. THIS PLATFORM RULES ON NOTHING.
 
     A.8 designates QEP's charity funds Zakat-eligible. Whether a particular contribution discharges a
     particular donor's Zakat obligation is a religious ruling - §11 forbids this platform from making one,
     so the response states the designation, refuses the ruling, and refers the donor to their own scholar.
     """
-    out = _record_contribution(req.vsb_id, req.amount_wst, "zakat", req.donor_ref)
+    out = _record_contribution(req.vsb_id, req.amount_wst, "zakat", req.donor_ref, user=user)
     out["zakat_basis"] = (
         "A.8 DESIGNATED this entity's charity funds Zakat-eligible. This platform does NOT rule on whether "
         "your Zakat obligation is discharged by this contribution: that is a religious ruling and no AI here "
@@ -1713,14 +1720,14 @@ async def contribute_zakat(req: ContributionRequest):
 
 
 @router.post("/contribute/sponsor-a-student", dependencies=_ASKS)
-async def contribute_sponsor_a_student(req: ContributionRequest):
+async def contribute_sponsor_a_student(req: ContributionRequest, user: dict | None = Depends(get_current_user)):
     """Sponsor-a-Student (A.8). NO LEARNER IS NAMED, because nothing here matches one.
 
     A.8 names Sponsor-a-Student as a channel. Reporting a sponsored learner would require a matching
     mechanism, and none exists - so this says what the contribution DOES fund (the entity's books, which its
     waterfall distributes to the user_projects and charity shares) and does not claim a student.
     """
-    out = _record_contribution(req.vsb_id, req.amount_wst, "sponsor_a_student", req.donor_ref)
+    out = _record_contribution(req.vsb_id, req.amount_wst, "sponsor_a_student", req.donor_ref, user=user)
     out["student_matched"] = None
     out["sponsorship_basis"] = (
         "NO LEARNER IS NAMED OR MATCHED to this contribution: no mechanism exists in this platform that "
@@ -1732,14 +1739,14 @@ async def contribute_sponsor_a_student(req: ContributionRequest):
 
 
 @router.get("/contribute/statement/{vsb_id}", dependencies=_ASKS)
-async def contribution_statement(vsb_id: str):
+async def contribution_statement(vsb_id: str, user: dict | None = Depends(get_current_user)):
     """A.8's transparent donor view: what came in by channel, and how the waterfall allocates it.
 
     Reads the entity's OWN books and its OWN template. The allocation is what the waterfall WOULD direct;
     the entity's cycle is what actually distributes, so the two are reported separately rather than one
     presented as the other.
     """
-    ent = _contribution_entity(vsb_id)
+    ent = _contribution_entity(vsb_id, user)
     safe = ent["vsb_id"]
     from agentic_core.economy.ledger import VirtualLedger
     led = VirtualLedger(safe)

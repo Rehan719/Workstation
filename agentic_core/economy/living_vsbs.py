@@ -316,6 +316,12 @@ def resolve_parent(parent_vsb: str) -> Dict[str, Any]:
                              ", whose own generation was not recorded (it predates the field), so this is "
                              "counted as 1 rather than guessed from a chain that cannot be walked")
                           + ".")}
+    return parent_unresolved(pid)
+
+
+def parent_unresolved(pid: str) -> Dict[str, Any]:
+    """The answer for a stated parent that resolves to no entity. W1075 - also the answer, at establishment, for a
+    parent that is another person's entity: a child of it was made, and its existence confirmed, for anyone."""
     return {"state": PARENT_UNRESOLVED, "parent_vsb": None, "lineage_generation": None,
             "basis": (f"the stated parent {pid!r} is not on the living roster. A lineage field that "
                       f"accepted this would claim a parent that never existed, and every clause reasoning "

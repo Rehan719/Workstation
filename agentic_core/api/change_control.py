@@ -1308,6 +1308,12 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
 async def submit_change_route(req: SubmitChangeRequest,
                               user: dict | None = Depends(get_current_user)):
     """HTTP entry: stamps the authenticated principal (auth ON) or keeps the caller's name (OFF)."""
+    #  W1075 - a change filed against another person's entity (a retirement, a mitosis, a restore among them) by
+    #  whoever named its id
+    from agentic_core.api.vsb import names_anothers_entity
+    if names_anothers_entity(req.vsb_id, user):
+        raise HTTPException(status_code=404, detail=(
+            f"No entity {req.vsb_id} was found, so no change was submitted for it."))
     return await submit_change(req, principal=_actor(user, req.submitted_by or "system"))
 
 

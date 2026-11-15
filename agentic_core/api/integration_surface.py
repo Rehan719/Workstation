@@ -628,10 +628,12 @@ async def spawn_twin(node_id: str = "node-1"):
 
 
 @router.get("/api/v220/twin/blueprint/{twin_id}")
-async def twin_blueprint(twin_id: str):
+async def twin_blueprint(twin_id: str, user: dict | None = Depends(get_current_user)):
     try:
-        from agentic_core.api.vsb import _load_vsb
-        v = _load_vsb(twin_id)
+        #  W1075 - another person's entity is answered as one that does not exist: its name, blueprint, genome and
+        #  economy were returned to any caller
+        from agentic_core.api.vsb import entity_for_caller
+        v = entity_for_caller(twin_id, user)
         if v:
             return {"twin_id": twin_id, "name": v.get("name"), "blueprint": v.get("genesis_blueprint", {}),
                     "genome": v.get("genome_spec", {}), "board": bool(v.get("board")), "economy": v.get("economy", {})}
