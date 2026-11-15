@@ -25141,6 +25141,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: each read and action of the panel is dropped when another entity is on screen; the shipped body's state is cleared while the next is read, and the listing's result when another entity is opened. VSBCockpit.repo.test.tsx drives the tree, the shipped state and the listing against the routes' own answers for two entities (three vitest blinds); test_w1057 holds the captured ship, tree and file, the routes' answers asked again, and the page (five blinds)."
+    },
+    {
+      "id": "FU-1243",
+      "title": "test_w1048 read what served last from the record every test in a worker shares, so it passed or failed by the order the tests ran in (Backend on Windows red twice)",
+      "why": "PR #462's Backend on Windows job went red at test_w1048 on 573a67aa and on cde1f26d: the live Native AI status read floor_active False. The status says what served the LAST recorded completion, read from the operations record, and the suite's record is shared by every test in a worker: an earlier test's row naming another resource made the read fail. Reproduced: with such a row last, the status reads False, and a completion with the floor's record throttle shut (one floor row a minute) leaves it so.",
+      "source": "W1057b (PR #462's Backend on Windows job red on 573a67aa and cde1f26d)",
+      "found": "2026-11-15",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1057b",
+      "note": "",
+      "slot_source": "found by CI on FU-399's rounds; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: test_w1048 reads the status over a record of its own, holding a row that names another resource as an earlier test leaves one, then the page's own completion with the floor's record throttle open. test_w1057b holds the condition (the status reads False under it) and test_w1048's form (two blinds)."
     }
   ],
   "routes": [

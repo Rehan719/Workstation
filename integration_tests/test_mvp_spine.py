@@ -86282,7 +86282,7 @@ def test_w1047_fu399_the_vsb_economy_page_says_what_happened_when_a_read_fails(c
     assert "import captured from './VSBEconomy.fixture.json';" in t and "<VSBEconomy />" in t
 
 
-def test_w1048_fu399_the_native_ai_page_says_each_failure_beside_the_action_that_met_it(client):
+def test_w1048_fu399_the_native_ai_page_says_each_failure_beside_the_action_that_met_it(client, monkeypatch, tmp_path):
     """FU-399 part 67 (W1048). The Native AI page is rendered against its routes' own answers (NativeAI.test.tsx): every
     read it makes on opening, as each route answered on a fresh store with no model installed, one completion of the
     page's own default prompt, and the status route's own 500 when its read fails inside. Rendering found two defects:
@@ -86301,6 +86301,17 @@ def test_w1048_fu399_the_native_ai_page_says_each_failure_beside_the_action_that
     fx = json.loads((src / "pages/developers/NativeAI.fixture.json").read_text(encoding="utf-8"))
     st = fx["answers"]["/api/v1/native-ai/status"]["body"]
     assert (st["floor_active"], st["active_model"]) == (True, "native"), st
+    #  W1057b - the status says what served LAST, read from the operations record, which every test in a worker
+    #  shares: an earlier test's row naming another resource made this read fail on Backend on Windows twice. It is
+    #  read over a record of this test's own, holding such a row as an earlier test leaves one, then the page's own
+    #  completion, with the floor's record throttle open (it records one serve a minute otherwise)
+    import importlib
+    import agentic_core.api.operational_excellence as _oe
+    monkeypatch.setattr(_oe, "_STORE", tmp_path / "operations_outcomes.json")
+    monkeypatch.setattr(importlib.import_module("agentic_core.ai.native.orchestrator"), "_FLOOR_RECORD_EVERY_S", 0.0)
+    _oe.record_outcome("model_attempt", "local", served_by="local", success=True)
+    now = client.post("/api/v1/native-ai/complete", json=fx["ask"])
+    assert (now.status_code, now.json()["served_by"]) == (200, "native"), now.text[:200]
     r = client.get("/api/v1/native-ai/status")
     assert r.status_code == 200 and r.json()["floor_active"] is True, r.text[:200]
     done = fx["completed"]["body"]
@@ -86756,3 +86767,28 @@ def test_w1057_fu399_the_cockpit_s_repository_panel_says_what_it_read_under_the_
     assert "useEffect(() => { setListedResult(null); }, [selected]);" in page
     t = (src / "pages/enterprise/VSBCockpit.repo.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './VSBCockpit.repo.fixture.json';" in t and "<VSBCockpit />" in t
+
+
+def test_w1057b_test_w1048_reads_what_served_last_from_a_record_of_its_own(client, monkeypatch, tmp_path):
+    """W1057b. PR #462's Backend on Windows job went red twice (573a67aa, cde1f26d) at test_w1048: the live Native AI
+    status read floor_active False. The status says what served the LAST recorded completion, read from the
+    operations record, and the suite's record is shared by every test in a worker, so an earlier test's row naming
+    another resource made test_w1048 pass or fail by the order the tests ran in. Held here: under exactly that
+    condition, on a record of this test's own, the status reads False (so a read of the shared record is a read of
+    whatever ran before); and test_w1048 reads over a record of its own, after the page's own completion with the
+    floor's record throttle open."""
+    import pathlib
+    import agentic_core.api.operational_excellence as _oe
+    monkeypatch.setattr(_oe, "_STORE", tmp_path / "operations_outcomes.json")
+    _oe.record_outcome("model_attempt", "local", served_by="local", success=True)
+    st = client.get("/api/v1/native-ai/status").json()
+    assert (st["floor_active"], st["measured_recent_server"]) == (False, "local"), st
+
+    t = pathlib.Path(__file__).resolve().read_text(encoding="utf-8")
+    i = t.index("def test_w1048_fu399_the_native_ai_page_says_each_failure_beside_the_action_that_met_it(")
+    w1048 = t[i:t.index("\ndef ", i + 10)]
+    assert w1048.startswith("def test_w1048_fu399_the_native_ai_page_says_each_failure_beside_the_action_that_met_it(client, monkeypatch, tmp_path):")
+    assert 'monkeypatch.setattr(_oe, "_STORE", tmp_path / "operations_outcomes.json")' in w1048
+    assert '"_FLOOR_RECORD_EVERY_S", 0.0)' in w1048
+    j = w1048.index('now = client.post("/api/v1/native-ai/complete", json=fx["ask"])')
+    assert j < w1048.index('r = client.get("/api/v1/native-ai/status")'), "the status is read before the test's own completion"
