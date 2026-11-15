@@ -22,7 +22,7 @@ from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from agentic_core.auth.core import get_current_user
+from agentic_core.auth.core import get_current_user, require_admin, user_can_access   # W1077
 from pydantic import BaseModel, ConfigDict   # W1046: ConfigDict
 
 from agentic_core.ai.gateway import gateway
@@ -526,7 +526,8 @@ async def evo_metrics():
 
 
 @router.get("/api/v190/extrospection/signals")
-async def extrospection_signals(n: int = 30):
+async def extrospection_signals(n: int = 30, _admin: dict = Depends(require_admin)):
+    #  W1077 - an administrator's: the organism's signals carry every entity's events, and nothing says whose
     try:
         from agentic_core.organism.nervous import nervous
         sigs = nervous.recent_signals(min(n, 100))
@@ -537,12 +538,16 @@ async def extrospection_signals(n: int = 30):
 
 # ── v250 global search ────────────────────────────────────────────────────────
 @router.get("/api/v250/search/global")
-async def global_search(q: str = ""):
+async def global_search(q: str = "", user: dict | None = Depends(get_current_user)):
     ql = q.lower().strip()
+    #  W1077 - the caller's own entities and projects: every one, whoever's, was searched and listed
+    _u = user if isinstance(user, dict) else None
     results: List[Dict[str, Any]] = []
     try:
         from agentic_core.api.vsb import _list_vsbs
         for v in _list_vsbs():
+            if not user_can_access(_u, v.get("owner_id")):
+                continue
             if not ql or ql in str(v.get("name", "")).lower() or ql in str(v.get("domain", "")).lower():
                 results.append({"type": "vsb", "title": v.get("name"), "route": "/vsb", "id": v.get("vsb_id")})
     except Exception:
@@ -557,6 +562,8 @@ async def global_search(q: str = ""):
     try:
         from agentic_core.projects.api import _all_projects
         for p in _all_projects():
+            if not user_can_access(_u, p.owner_id):
+                continue
             hay = f"{p.title} {p.realm} {p.domain} {p.stage}".lower()
             if not ql or ql in hay:
                 results.append({"type": "project", "title": p.title, "route": "/projects", "id": p.id,
@@ -576,12 +583,14 @@ async def global_search(q: str = ""):
 
 # ── v210 / v220 federation twins ──────────────────────────────────────────────
 @router.get("/api/v210/federation/twins")
-async def federation_twins():
+async def federation_twins(user: dict | None = Depends(get_current_user)):
     twins = []
     try:
         from agentic_core.api.vsb import _list_vsbs
+        #  W1077 - the caller's own entities: every one, whoever's, was listed
+        _u = user if isinstance(user, dict) else None
         twins = [{"id": v.get("vsb_id"), "name": v.get("name"), "domain": v.get("domain"),
-                  "status": v.get("status")} for v in _list_vsbs()]
+                  "status": v.get("status")} for v in _list_vsbs() if user_can_access(_u, v.get("owner_id"))]
     except Exception:
         pass
     # W326 — the spawn-twin registrations are genuinely CONSUMED here (a real registry read)

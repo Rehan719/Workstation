@@ -19,7 +19,8 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from agentic_core.auth.core import get_current_user   # W1077
 
 router = APIRouter(prefix="/api/v1/plan", tags=["living-plan"])
 
@@ -120,7 +121,7 @@ async def get_plan():
 
 
 @router.get("/state")
-async def get_state():
+async def get_state(user: dict | None = Depends(get_current_user)):
     """Grounded, auto-introspected snapshot of the live organism — so the plan never silently rots."""
     state: Dict[str, Any] = {"reconciled_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
 
@@ -139,7 +140,10 @@ async def get_state():
         pass
     try:
         from agentic_core.api.vsb import _list_vsbs
-        vsbs = _list_vsbs()
+        from agentic_core.auth.core import user_can_access as _uca1077
+        #  W1077 - the entities this caller may read: the five most recent were named whoever's they were
+        _u1077 = user if isinstance(user, dict) else None
+        vsbs = [v for v in _list_vsbs() if _uca1077(_u1077, v.get("owner_id"))]
         state["vsb_entities"] = len(vsbs)
         state["vsb_recent"] = [v.get("name") for v in vsbs[:5]]
     except Exception:

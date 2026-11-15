@@ -497,6 +497,14 @@ async def record(req: RecordRequest, user: dict | None = Depends(get_current_use
                           reported_by="caller")
 
 
+def _not_anothers(rows: List[Dict[str, Any]], user: dict | None) -> List[Dict[str, Any]]:
+    """W1077 - the rows that name no entity of another person's (each entity named is read once). W1075 drew the
+    outcomes from this; the rankings and the summary counted every entity's rows for whoever asked."""
+    from agentic_core.api.vsb import names_anothers_entity
+    theirs = {v for v in {r.get("vsb_id") for r in rows} if v and names_anothers_entity(v, user)}
+    return [r for r in rows if r.get("vsb_id") not in theirs] if theirs else rows
+
+
 @router.get("/outcomes")
 async def outcomes(resource: Optional[str] = None, vsb_id: Optional[str] = None,
                    kind: Optional[str] = None, limit: int = 100,
@@ -582,8 +590,8 @@ def rankings_basis(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 @router.get("/rankings")
-async def rankings():
-    _rows873 = [r for r in _load() if r.get("kind") != "model_attempt"]
+async def rankings(user: dict | None = Depends(get_current_user)):
+    _rows873 = [r for r in _not_anothers(_load(), user) if r.get("kind") != "model_attempt"]   # W1077
     return {"rankings": _rankings(_rows873), **rankings_basis(_rows873)}      # W873 (FU-1039)
 
 
@@ -707,8 +715,8 @@ def _before_isolation(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 @router.get("/summary")
-async def summary():
-    rows = [r for r in _load() if r.get("kind") != "model_attempt"]
+async def summary(user: dict | None = Depends(get_current_user)):
+    rows = [r for r in _not_anothers(_load(), user) if r.get("kind") != "model_attempt"]   # W1077
     n = len(rows)
     # W495 (FU-125, S7.3) — this divided "rows that returned text" by "all rows", which on the
     # deterministic floor is 1.0 by construction and was shown as "Success rate 100%".

@@ -25,7 +25,7 @@ from typing import Deque, Callable, Literal
 
 from fastapi import APIRouter, Depends
 
-from agentic_core.auth.core import get_current_user
+from agentic_core.auth.core import get_current_user, require_admin   # W1077
 
 router = APIRouter(prefix="/api/v1/organism", tags=["idbo-organism"])
 
@@ -173,7 +173,8 @@ async def nervous_status():
 
 
 @router.get("/nervous/signals")
-async def nervous_signals(n: int = 50):
+async def nervous_signals(n: int = 50, _admin: dict = Depends(require_admin)):
+    #  W1077 - an administrator's: the signals carry every entity's events (a mission, a name), and nothing says whose
     # W438 — `count` used to echo the REQUESTED cap (7 stored signals, n=50 -> count 50), and
     # n=0 / negative n produced absurd slices; count is now what was actually returned
     requested = n

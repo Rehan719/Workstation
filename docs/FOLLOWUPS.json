@@ -25601,11 +25601,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P5.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1077",
       "note": "",
       "slot_source": "tenant isolation under sign-in, as FU-1262; it rides P5.1 as FU-1061 did",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1077: with sign-in on, a person sees the changes they submitted and those naming their own entities (Change Control's list, queue, approved, rejected and implemented lists, its ledger gaps, a change read by its id and its impact assessment), their own entities in the living plan's state and the federation's twins, their own entities and projects in the global search, and the operations rows of their own entities and the platform's in the rankings and the summary; the nervous system's and the extrospection's signals are an administrator's. An administrator sees everything, and nothing changes with sign-in off. test_w1077 holds it as the listing sweep, as two people and an administrator (every GET route with no required parameter, after the first person has an entity, an outcome, a cycle, two changes, an objective and a project), with 13 blinds."
     },
     {
       "id": "FU-1264",

@@ -302,7 +302,26 @@ def _decision_account(record: dict, decision: str, decision_source: str, review_
     }
 
 
-def _list_changes(status_filter: str | None = None) -> list[dict]:
+def _caller_may_see_change(c: dict | None, user: dict | None) -> bool:
+    """W1077 - WHOSE CHANGE IT IS. With sign-in off, or for an administrator, every change. Otherwise a change the
+    caller submitted (as the server stamped it), or one naming an entity the caller owns: every person's changes
+    were listed, and read by id, for whoever asked. A non-dict `user` is an in-process call, read as nobody."""
+    if not c:
+        return False
+    if user is not None and not isinstance(user, dict):
+        user = None
+    if not auth_enabled() or user is None or user.get("role") == "admin":
+        return True
+    if c.get("submitted_by_verified") and c.get("submitted_by") == user.get("username"):
+        return True
+    if c.get("vsb_id"):
+        from agentic_core.api.vsb import entity_for_caller
+        return entity_for_caller(c.get("vsb_id"), user) is not None
+    return False
+
+
+def _list_changes(status_filter: str | None = None, for_caller: bool = False,
+                  user: dict | None = None) -> list[dict]:
     result = []
     # W459 — stat() ran outside the try, so a record removed mid-scan raised out of GET /queue; and
     # the listing now reads through _load_change, so it agrees with the by-id routes on every file
@@ -312,6 +331,8 @@ def _list_changes(status_filter: str | None = None) -> list[dict]:
             if not c:
                 continue
             if status_filter and c.get("status") != status_filter:
+                continue
+            if for_caller and not _caller_may_see_change(c, user):   # W1077
                 continue
             result.append({
                 "cca_id": c["cca_id"],
@@ -1592,10 +1613,12 @@ async def immune_reconfigure_revert(cca_id: str, user: dict = Depends(require_ad
 
 
 @router.get("/ledger-gaps")
-async def ledger_gaps():
+async def ledger_gaps(user: dict | None = Depends(get_current_user)):
     """W505 (FU-031) — decisions whose constitutional node is missing or unproven, so a reconciliation has
     something to read. A gap never undoes the decision; it says the audit trail is incomplete and where."""
     rows = decisions_missing_ledger_node()
+    #  W1077 - the gaps of the caller's own changes; an administrator's are every change's
+    rows = [r for r in rows if _caller_may_see_change(_load_change(str(r.get("cca_id") or "")), user)]
     return {"gaps": rows, "total": len(rows),
             "marked": sum(1 for r in rows if r.get("kind") == "marked"),
             "unproven": sum(1 for r in rows if r.get("kind") == "unproven"),
@@ -1605,31 +1628,36 @@ async def ledger_gaps():
 
 
 @router.get("/queue")
-async def get_queue():
-    """List all pending change requests awaiting review."""
-    pending = _list_changes("submitted") + _list_changes("under_review")
+async def get_queue(user: dict | None = Depends(get_current_user)):
+    """List the pending change requests awaiting review that the caller may see (W1077)."""
+    pending = (_list_changes("submitted", for_caller=True, user=user)
+               + _list_changes("under_review", for_caller=True, user=user))
     return {"queue": pending, "total": len(pending)}
 
 
 @router.get("/approved")
-async def get_approved():
-    return {"changes": _list_changes("approved"), "total": len(_list_changes("approved"))}
+async def get_approved(user: dict | None = Depends(get_current_user)):
+    _c = _list_changes("approved", for_caller=True, user=user)   # W1077
+    return {"changes": _c, "total": len(_c)}
 
 
 @router.get("/rejected")
-async def get_rejected():
-    return {"changes": _list_changes("rejected"), "total": len(_list_changes("rejected"))}
+async def get_rejected(user: dict | None = Depends(get_current_user)):
+    _c = _list_changes("rejected", for_caller=True, user=user)   # W1077
+    return {"changes": _c, "total": len(_c)}
 
 
 @router.get("/implemented")
-async def get_implemented():
-    return {"changes": _list_changes("implemented"), "total": len(_list_changes("implemented"))}
+async def get_implemented(user: dict | None = Depends(get_current_user)):
+    _c = _list_changes("implemented", for_caller=True, user=user)   # W1077
+    return {"changes": _c, "total": len(_c)}
 
 
 @router.get("/{cca_id}")
-async def get_change(cca_id: str):
+async def get_change(cca_id: str, user: dict | None = Depends(get_current_user)):
     c = _load_change(cca_id)
-    if not c:
+    #  W1077 - another person's change is answered as one that does not exist
+    if not _caller_may_see_change(c, user):
         raise HTTPException(status_code=404, detail=f"Change {cca_id} not found.")
     # W464 — the tier it is decided under, and whether the approval waits for the Board (read-time; the stored
     # record keeps the tier it was filed with until a decision stamps the effective one)
@@ -2454,10 +2482,11 @@ def ratify_change(cca_id: str, decision: str, notes: str, principal: str, verifi
 
 
 @router.get("/impact/{cca_id}")
-async def impact_assessment(cca_id: str):
+async def impact_assessment(cca_id: str, user: dict | None = Depends(get_current_user)):
     """AI-generated impact assessment for a change request."""
     c = _load_change(cca_id)
-    if not c:
+    #  W1077 - another person's change is answered as one that does not exist (an assessment was composed for it)
+    if not _caller_may_see_change(c, user):
         raise HTTPException(status_code=404, detail=f"Change {cca_id} not found.")
 
     ctx = biobus.organism_context()
@@ -2477,16 +2506,17 @@ async def impact_assessment(cca_id: str):
     )
     # W506 (P2.2)
     _ia = await gateway.query_meta(prompt, agent="cca_impact", augment=False,   # W651 (FU-675)
-                                   user_text=_change_said(c))
+                                   user_text=_change_said(c),
+                                   owner_id=(user.get("username") if isinstance(user, dict) else None))   # W1077
     assessment = _ia.get("output", "")
     biobus.fire_signal("cognitive", "cca.impact", f"Impact assessed: {c['title']}", 0.4)
     return {"cca_id": cca_id, "assessment": assessment, "organism_mode": ctx["mode"]}
 
 
 @router.get("")
-async def list_all_changes():
-    """List all change requests across all statuses."""
-    all_changes = _list_changes()
+async def list_all_changes(user: dict | None = Depends(get_current_user)):
+    """List the change requests the caller may see, across all statuses (W1077: every person's were listed)."""
+    all_changes = _list_changes(for_caller=True, user=user)
     by_status: dict[str, int] = {}
     for c in all_changes:
         s = c["status"]

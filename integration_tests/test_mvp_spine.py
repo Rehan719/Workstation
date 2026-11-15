@@ -87937,3 +87937,110 @@ def test_w1076_fu1264_the_avatar_session_is_one_conversation_for_one_person_answ
     assert all(fx[k]["message"].startswith("W1076 made up: ") for k in ("ask_1", "ask_2"))
     assert [e["name"] for e in fx["vsb_two"]["body"]["entities"]] == ["W1076 Made-up Bike Shop", "W1076 Made-up Bakery"]
     assert fx["reply_1"]["body"]["grounded_in"] == fx["ask_1"]["vsb_id"] and fx["not_theirs"]["status"] == 404
+
+
+def test_w1077_fu1263_with_sign_in_on_no_listing_hands_a_person_another_persons_entities_or_records(client, monkeypatch):
+    """W1077 (FU-1263). W1075's census, swept over the GET routes that take no entity id, found eleven listings that
+    handed a second person the first person's entity name or records. W1075 fixed the studio's list and the
+    outcomes. The other nine:
+    - Change Control's queue and its list of every change named every person's changes, and a change read by its
+      id, or its impact assessment, answered whoever named it;
+    - the living plan's state named the most recent entities, whoever's;
+    - the global search and the federation's twins listed every entity, and the search every project;
+    - the operations record's rankings and summary counted every entity's rows;
+    - the nervous system's and the extrospection's signals carried every entity's events.
+
+    Held here, as the first person, the second and an administrator: every GET route that takes no required parameter
+    answers the second person with nothing of the first person's, neither the entity's name nor its owner; another
+    person's change is not found by its id, nor is its impact assessment; the first person sees their own entity and
+    change, and the administrator everyone's. With sign-in off nothing changes."""
+    import uuid
+    from fastapi.routing import APIRoute
+    import agentic_core.auth.core as _ac
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    canary = uuid.uuid4().hex[:12]
+    who = {k: f"w1077-{k}-{uuid.uuid4().hex[:6]}" for k in ("one", "two", "admin")}
+    users = _ac._load_users()
+    for k, name in who.items():
+        users[name] = {"user_id": name, "username": name, "hashed_password": _ac._pwd_ctx.hash("pw12345678"),
+                       "role": "admin" if k == "admin" else "user", "created_at": "2026-11-15T00:00:00Z",
+                       "api_keys": []}
+    _ac._save_users(users)
+    H = {}
+    for k, name in who.items():
+        tok = client.post("/api/v1/auth/token", data={"username": name, "password": "pw12345678"})
+        assert tok.status_code == 200, tok.text[:200]
+        H[k] = {"Authorization": "Bearer " + tok.json()["access_token"]}
+    est = client.post("/api/v1/genesis/establish", headers=H["one"], json={
+        "problem": f"w1077 canary mission {canary}", "ship_output": False, "name": f"W1077 Canary {canary}"})
+    assert est.status_code == 200, est.text[:300]
+    vid = est.json()["vsb_id"]
+    #  the first person's records in the stores the listings read
+    seeded = {}
+    for k, path, body in (("outcome", "/api/v1/operations/record", {"kind": f"w1077 {canary}", "resource": "w1077", "vsb_id": vid}),
+                          ("cycle", "/api/v1/economy/cycle", {"vsb_id": vid, "revenue": 50.0}),
+                          ("change", "/api/v1/cca/submit", {"title": f"w1077 {canary}", "description": "a made-up change",
+                                                            "vsb_id": vid}),
+                          ("objective", "/api/v1/business-plan/objective", {"scope": vid, "title": f"w1077 objective {canary}"}),
+                          ("project", "/api/v1/projects/", {"title": f"W1077 project {canary}",
+                                                             "description": "a made-up project"})):
+        r = client.post(path, headers=H["one"], json=body)
+        assert r.status_code in (200, 201), (path, r.status_code, r.text[:200])
+        seeded[k] = r.json()
+    cca = seeded["change"]["cca_id"]
+    #  and a second change of theirs, decided with no ledger mark either way, so the ledger gaps list it
+    from agentic_core.api import change_control as _cc1077
+    gap = client.post("/api/v1/cca/submit", headers=H["one"], json={
+        "title": f"w1077 decided {canary}", "description": "a made-up decided change", "vsb_id": vid})
+    assert gap.status_code == 200, gap.text[:200]
+    _rec = _cc1077._load_change(gap.json()["cca_id"])
+    _rec["status"] = "rejected"
+    _rec["audit_trail"] = [e for e in (_rec.get("audit_trail") or []) if (e or {}).get("event") != "ueg_written"]
+    _cc1077._save_change(_rec)
+    assert gap.json()["cca_id"] in client.get("/api/v1/cca/ledger-gaps", headers=H["one"]).text
+    marks = (canary, who["one"])
+
+    #  1. every GET route that takes no required parameter, as the second person
+    called, leaks = 0, []
+    for route in client.app.routes:
+        if not isinstance(route, APIRoute) or "GET" not in (route.methods or ()) or \
+                any(s in route.path for s in ("stream", "/events", "/sse", "/ws")):
+            continue
+        dep = route.dependant
+        if dep.path_params or [q for q in dep.query_params if q.field_info.is_required()]:
+            continue
+        called += 1
+        r = client.get(route.path, headers=H["two"])
+        if any(m in r.text for m in marks):
+            leaks.append(f"{route.path} ({route.endpoint.__module__}.{route.endpoint.__name__})")
+    assert called >= 200, ("the sweep reached too few routes to be the sweep", called)
+    assert leaks == [], ("a listing hands a second person the first person's entity or records", leaks)
+
+    #  a search names the query back, and the bare search stops at thirty results, so the search is asked for the
+    #  first person's own words as the second person: nothing of theirs is found
+    theirs = [x for x in client.get("/api/v250/search/global", headers=H["two"], params={"q": canary}).json()["results"]
+              if canary in str(x)]
+    assert theirs == [], theirs
+
+    #  2. another person's change by its id, and its impact assessment, are not found
+    for path in (f"/api/v1/cca/{cca}", f"/api/v1/cca/impact/{cca}"):
+        r = client.get(path, headers=H["two"])
+        assert r.status_code == 404 and canary not in r.text, (path, r.status_code, r.text[:200])
+
+    #  3. the first person sees their own, and the administrator everyone's
+    assert client.get(f"/api/v1/cca/{cca}", headers=H["one"]).status_code == 200
+    assert cca in client.get("/api/v1/cca/queue", headers=H["one"]).text
+    assert cca in client.get("/api/v1/cca/queue", headers=H["admin"]).text
+    assert client.get(f"/api/v1/cca/{cca}", headers=H["admin"]).status_code == 200
+    found = client.get("/api/v250/search/global", headers=H["one"], params={"q": canary}).json()["results"]
+    assert any(x.get("id") == vid for x in found) and any(x.get("type") == "project" for x in found), found[:3]
+    assert f"W1077 Canary {canary}" in client.get("/api/v1/plan/state", headers=H["one"]).json().get("vsb_recent", [])
+    assert vid in client.get("/api/v210/federation/twins", headers=H["one"]).text
+    for path in ("/api/v1/organism/nervous/signals", "/api/v190/extrospection/signals"):
+        assert client.get(path, headers=H["admin"]).status_code == 200, path
+        assert client.get(path, headers=H["two"]).status_code == 403, path
+
+    #  with sign-in off nothing changes
+    monkeypatch.setenv("AUTH_ENABLED", "false")
+    assert cca in client.get("/api/v1/cca/queue").text
+    assert client.get(f"/api/v1/cca/{cca}").status_code == 200
