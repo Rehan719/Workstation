@@ -15,7 +15,8 @@ WHAT THE DOOR REFUSES AND WHAT IT KEEPS
   that such a review be labelled, not hidden - so it is stored, reported beside the tool, and raises nothing.
 - A signature is entered by the administrator and is the PERSON'S statement: the credential is stored as stated
   and every answer says this platform did not verify it. Who entered it is recorded beside it.
-- Nothing here composes a review. An agent's review is recorded by whoever ran it, with the model that reviewed.
+- Nothing here composes a review. An agent's review is recorded by whoever ran it, with the model that reviewed;
+  Workstation's own Care reviewer (care_reviewer.py, W1100) is run over the calibration set by its own route.
 
 No tier, record or sentence claims a professional's role for an agent.
 """
@@ -131,19 +132,62 @@ async def record_calibration_run(req: CalibrationRun, user: dict | None = Depend
     unknown = sorted(set(req.flags) - known)
     if unknown:
         raise HTTPException(status_code=422, detail=f"Not recorded: {unknown} are not cases of this set.")
-    run = {"run_id": f"cal-{uuid.uuid4().hex[:10]}", "agent": req.agent.strip(), "discipline": req.discipline,
-           "model": req.model.strip(), "configuration": req.configuration, "date": req.date,
-           "set_version": the_set.get("version"), "flags": req.flags,
-           "entered_by": _entered_by(user), "entered_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    return _store_run(the_set, user, agent=req.agent.strip(), discipline=req.discipline, model=req.model.strip(),
+                      configuration=req.configuration, date=req.date, flags=req.flags)
+
+
+def _store_run(the_set: Dict[str, Any], user: Any, **fields: Any) -> Dict[str, Any]:
+    """W1100 - the one way a run is kept, whoever entered its flags: with the set's version, who entered it and when,
+    and the rates computed here from the flags."""
+    from agentic_core.api import _review_calibration as _cal
     from agentic_core.config import mutate_json
+    run = {"run_id": f"cal-{uuid.uuid4().hex[:10]}", **fields, "set_version": the_set.get("version"),
+           "entered_by": _entered_by(user), "entered_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
 
     def _add(existing):
         rows = existing if isinstance(existing, list) else []
         rows.append(run)
         return rows
     mutate_json(_cal._runs_path(), _add, list)
-    return {"recorded": True, "run_id": run["run_id"], "score": _cal.score(the_set["cases"], req.flags),
-            "agent_now": _cal.calibration_of(run["agent"], req.discipline)}
+    return {"recorded": True, "run_id": run["run_id"], "score": _cal.score(the_set["cases"], fields["flags"]),
+            "agent_now": _cal.calibration_of(run["agent"], fields["discipline"])}
+
+
+class AgentRun(BaseModel):
+    model_config = {"extra": "forbid"}
+    discipline: str = "care"
+    date: str                              # the day the run is made: the set must be runnable on it
+
+
+@router.post("/calibration/agent-run")
+async def run_reviewer_agent(req: AgentRun, user: dict | None = Depends(get_current_user)):
+    """W1100 (FU-1054 part 2) - Workstation's reviewer agent over every case of the set, what it flagged recorded as
+    one run. Nothing is asked of a model unless the set can be run on the date. A case the floor answered is no
+    review, and a run is one model's: a run with either is refused, and nothing is kept."""
+    from agentic_core.api import _review_calibration as _cal
+    from agentic_core.api import care_reviewer as _cr
+    if req.discipline != "care":
+        raise HTTPException(status_code=422, detail=(
+            f"Not run: Workstation has no reviewer agent for {req.discipline!r}; Care's is the first."))
+    the_set, day = _cal.load_set("care"), _rt._date(req.date)
+    if not the_set or day is None:
+        raise HTTPException(status_code=422, detail="Not run: a run names its date, on a set that exists.")
+    can = _cal.runnable(the_set, on=day)
+    if not can["runnable"]:
+        raise HTTPException(status_code=409, detail=(
+            f"Not run: the calibration set cannot be run on {can['on']}: " + "; ".join(can["why_not"]) + "."))
+    got = await _cr.run_on_set(the_set)
+    if got["floor_answered"]:
+        raise HTTPException(status_code=409, detail=(
+            f"Not recorded: no model served {len(got['floor_answered'])} of the set's case(s) "
+            f"({', '.join(got['floor_answered'])}), and the floor cannot review; nothing was flagged for them."))
+    if len(got["models"]) != 1:
+        raise HTTPException(status_code=409, detail=(
+            f"Not recorded: the cases were reviewed by {len(got['models'])} models "
+            f"({', '.join(got['models']) or 'none'}); a run is one model's."))
+    out = _store_run(the_set, user, agent=_cr.AGENT, discipline="care", model=got["models"][0],
+                     configuration="model", date=day.isoformat(), flags=got["flags"])
+    return {**out, "lines_not_read_as_flags": got["lines_not_read_as_flags"]}
 
 
 @router.get("/calibration/{agent}")

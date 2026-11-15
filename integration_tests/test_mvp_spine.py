@@ -50373,6 +50373,8 @@ def test_w651_every_gateway_call_says_what_the_person_wrote_or_is_named_as_havin
         ("native_ai.py", "evaluate_model"): "the fixed probe set",
         ("native_ai.py", "_baseline_record"): "the pinned public and held-out case sets; no person typed a prompt",
         ("ceo_generate.py", "debug_creation"): "a posted blueprint object, not prose the person wrote",
+        ("care_reviewer.py", "review"): "reviews an answer the tree gave, against the checklist and the register; "
+                                         "no person typed it (W1100)",
     }
     _root = _pl.Path(__file__).resolve().parents[1] / "agentic_core"
     _says, _silent = 0, {}
@@ -90582,3 +90584,129 @@ def test_w1099_fu1054_the_care_calibration_set_is_written_out_and_run_only_when_
     ok = client.post("/api/v1/review/calibration/run", json=body)
     assert ok.status_code == 200 and ok.json()["score"]["meets_bar"] is True, ok.text[:300]
     assert len(json.loads(runs.read_text(encoding="utf-8"))) == 1
+
+
+def test_w1100_fu1054_the_care_reviewer_is_a_different_checklist_over_the_sources(client, tmp_path, monkeypatch):
+    """FU-1054 part 2 (W1100); P5.15 clauses 3 and 4. There was no reviewer agent. Held here:
+    - CLAUSE 4: the reviewer is never shown the prompt that composed an answer. Every Care route's prompt as sent is
+      captured; no line of any of them is in the reviewer's own words, which are the set's checklist, the set's
+      reasons and the register's rows, the answer handed over in a block marked as data; the module imports no
+      domain router;
+    - what it says is read only by the set's own reasons: a FLAG line with another reason, and any other line, is
+      kept and counted and is never a flag;
+    - the floor cannot review: with no model serving, nothing is flagged and the answer says so;
+    - it declares no data class and asks for no external service, so no case leaves the machine;
+    - the run route asks no model while the set cannot be run, refuses a run the floor answered any case of or that
+      more than one model reviewed, and records a whole run with the rates computed by the server."""
+    import ast
+    import json
+    from pathlib import Path
+    import agentic_core.api.care as _care
+    from agentic_core.api import _review_calibration as cal
+    from agentic_core.api import care_reviewer as cr
+    from agentic_core.ai.native import orchestrator
+    root = Path(__file__).resolve().parents[1]
+    the_set = cal.load_set("care")
+
+    #  the Care routes' own prompts, as sent, on the tree's own test inputs
+    composing = []
+
+    async def _composer(prompt, agent, **kw):
+        composing.append(prompt)
+        return "w1100 made-up composed text", {"served_by": "w1100-capture"}
+    monkeypatch.setattr(_care, "ai_text", _composer)
+    for path, body in (("/api/v1/care/care-plan", {"care_needs": ["w-care mobility"]}),
+                       ("/api/v1/care/risk-assess", {"tool": "news2", "patient_data": {"respiratory_rate": 25}}),
+                       ("/api/v1/care/safeguarding", {"concern": "w-care probe: a resident has bruises",
+                                                      "concern_about": "an adult"}),
+                       ("/api/v1/care/handover", {"patient_summary": "w-care 84F", "current_situation": "fell at 0300"})):
+        assert client.post(path, json=body).status_code == 200, path
+    assert len(composing) == 4
+    lines = {ln.strip() for p in composing for ln in p.splitlines() if len(ln.strip()) >= 25}
+
+    asked = []
+
+    async def _model(prompt, agent="assistant", **kw):
+        asked.append({"prompt": prompt, "agent": agent, "kw": kw})
+        return {"output": "FLAG: source not current\nFLAG: a reason the set does not have\nI think it is fine.",
+                "served_by": "ollama:w1100-made-up"}
+    monkeypatch.setattr(orchestrator, "complete", _model)
+    import asyncio
+    case = next(c for c in the_set["cases"] if c["id"] == "C01")
+    got = asyncio.run(cr.review(case["shown"], the_set, case["relies_on"]))
+    sent = asked[-1]["prompt"]
+    words, answer = sent.split(cr._BEGIN)
+    assert cr._END in answer and json.dumps(case["shown"], indent=1, ensure_ascii=False) in answer
+    assert not [ln for ln in lines if ln in words], "the reviewer was shown the prompt that composed an answer"
+    assert all(item in words for item in the_set["checklist"]) and all(r in words for r in cr.reasons(the_set))
+    assert '"id": "nice-cg161"' in words and '"status": "replaced"' in words, "the register's row was not given"
+    assert asked[-1]["agent"] == cr.AGENT and not ({"data_class", "prefer_external", "prefer"} & set(asked[-1]["kw"]))
+    imported = set()
+    for n in ast.walk(ast.parse((root / "agentic_core/api/care_reviewer.py").read_text(encoding="utf-8"))):
+        if isinstance(n, ast.Import):
+            imported |= {a.name for a in n.names}
+        elif isinstance(n, ast.ImportFrom):
+            imported |= {f"{n.module}.{a.name}" for a in n.names} | {str(n.module)}
+    assert not [m for m in imported if m.rsplit(".", 1)[-1] in
+                ("care", "law", "education", "science", "employment", "career", "religion")], imported
+
+    #  only the set's own reasons are flags; every other line is kept and counted
+    assert got["reviewed"] is True and got["model"] == "ollama:w1100-made-up" and got["flags"] == ["source not current"]
+    assert got["lines_not_read_as_flags"] == ["FLAG: a reason the set does not have", "I think it is fine."]
+    none = cr.parse("FLAG: none", cr.reasons(the_set))
+    assert none == {"flags": [], "said_none": True, "lines_not_read_as_flags": []}
+
+    #  the floor cannot review
+    async def _floor(prompt, agent="assistant", **kw):
+        return {"output": "## Native structured frame\n- FLAG: source not current", "served_by": "native"}
+    monkeypatch.setattr(orchestrator, "complete", _floor)
+    flo = asyncio.run(cr.review(case["shown"], the_set, case["relies_on"]))
+    assert flo["reviewed"] is False and flo["flags"] is None and "the floor cannot review" in flo["why_not"], flo
+
+    #  THE RUN ROUTE. On the tree's set, which cannot be run, no model is asked and nothing is kept
+    runs = tmp_path / "review_calibration_runs.json"
+    monkeypatch.setattr(cal, "_runs_path", lambda: runs)
+    monkeypatch.setattr(orchestrator, "complete", _model)
+    n_asked = len(asked)
+    r = client.post("/api/v1/review/calibration/agent-run", json={"date": "2026-11-15"})
+    assert r.status_code == 409 and r.json()["detail"].startswith("Not run: the calibration set cannot be run on 2026-11-15"), r.text[:300]
+    assert len(asked) == n_asked and not runs.exists(), "a model was asked, or a run kept, on a set that cannot be run"
+    assert client.post("/api/v1/review/calibration/agent-run", json={"date": "2026-11-15", "discipline": "law"}).status_code == 422
+
+    #  on a made-up set that can be run, the agent's flags are recorded as one run, scored by the server
+    import datetime as _dt
+    today = _dt.date.today().isoformat()          # the made-up row is read today, so the run is in its period whenever
+    register = {"r-now": {"id": "r-now", "names": ["W1100 Made-Up Guide"], "status": "current", "read_on": today,
+                          "says": "Read at its page."}}
+    monkeypatch.setattr(cal, "_register", lambda: (register, 90))
+    made_up = {"version": "w1100-t", "checklist": the_set["checklist"],
+               "cases": [{"id": f"P{i}", "planted": "made up", "must_flag": "source not current",
+                          "shown": f"w1100 made-up planted answer {i}", "from": "made up here", "relies_on": []}
+                         for i in range(2)]
+                        + [{"id": f"K{i}", "planted": None, "shown": f"w1100 made-up clean answer {i} citing W1100 Made-Up Guide",
+                            "relies_on": [{"row": "r-now", "status": "current"}]} for i in range(6)]}
+    monkeypatch.setattr(cal, "load_set", lambda d: made_up if d == "care" else None)
+
+    def model_saying(per_case, served="ollama:w1100-made-up"):
+        async def _m(prompt, agent="assistant", **kw):
+            asked.append({"prompt": prompt, "agent": agent, "kw": kw})
+            which = next(c["id"] for c in made_up["cases"] if c["shown"] in prompt)
+            return {"output": per_case(which), "served_by": served(which) if callable(served) else served}
+        return _m
+    monkeypatch.setattr(orchestrator, "complete", model_saying(lambda cid: "FLAG: none"))
+    _rows_shown = asyncio.run(cr.review(made_up["cases"][2]["shown"], made_up, made_up["cases"][2]["relies_on"]))["rows_shown"]
+    assert _rows_shown == ["r-now"], _rows_shown
+    monkeypatch.setattr(orchestrator, "complete", model_saying(lambda cid: "FLAG: none", served=lambda cid: "native" if cid == "K3" else "ollama:w1100-made-up"))
+    floor_run = client.post("/api/v1/review/calibration/agent-run", json={"date": today})
+    assert floor_run.status_code == 409 and "no model served 1 of the set's case(s) (K3)" in floor_run.json()["detail"], floor_run.text[:300]
+    monkeypatch.setattr(orchestrator, "complete", model_saying(lambda cid: "FLAG: none", served=lambda cid: "ollama:a" if cid == "P0" else "ollama:b"))
+    two = client.post("/api/v1/review/calibration/agent-run", json={"date": today})
+    assert two.status_code == 409 and "reviewed by 2 models" in two.json()["detail"] and not runs.exists(), two.text[:300]
+    monkeypatch.setattr(orchestrator, "complete", model_saying(
+        lambda cid: "FLAG: source not current" if cid.startswith("P") else "FLAG: none"))
+    ok = client.post("/api/v1/review/calibration/agent-run", json={"date": today})
+    assert ok.status_code == 200 and ok.json()["score"]["meets_bar"] is True, ok.text[:300]
+    kept = json.loads(runs.read_text(encoding="utf-8"))
+    assert len(kept) == 1 and kept[0]["agent"] == cr.AGENT and kept[0]["model"] == "ollama:w1100-made-up" and kept[0]["configuration"] == "model"
+    assert kept[0]["flags"] == {"P0": ["source not current"], "P1": ["source not current"], **{f"K{i}": [] for i in range(6)}}
+    assert ok.json()["agent_now"]["calibrated"] is True, ok.json()["agent_now"]
