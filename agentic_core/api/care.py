@@ -275,6 +275,11 @@ async def risk_assessment(req: RiskAssessRequest):
     # back with no score under a green pass. The AI now narrates INTERPRETATION of a score it is told
     # not to recompute; the block is returned first and the page renders it first.
     score = compute_score(req.tool, req.patient_data or {})
+    #  W1098 (FU-1275) - THE ACKNOWLEDGEMENT ITS OWNER REQUIRES GOES WITH THE SCORE, whole. W679 kept it on the
+    #  catalogue entry, which no page shows; the score a person reads gives the chart's points, band and response
+    #  wording, so it is given with every score of an instrument whose owner requires one (NEWS2 alone, today)
+    if tool_info.get("acknowledgement") and isinstance(score, dict):
+        score = {**score, "acknowledgement": tool_info["acknowledgement"]}
     summary = score_summary(score)
     heading = "COMPUTED SCORE"
 

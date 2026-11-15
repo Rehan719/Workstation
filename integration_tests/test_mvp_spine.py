@@ -90446,3 +90446,38 @@ def test_w1097_fu1274_every_route_the_entity_walk_passes_over_is_named_and_held(
                     p.unlink()
             else:
                 p.write_bytes(b)
+
+
+def test_w1098_fu1275_the_early_warning_score_gives_its_owners_acknowledgement_where_it_is_read(client):
+    """FU-1275 (W1098). The Royal College of Physicians allows NEWS2 to be reused provided the stated acknowledgement
+    is given (its terms, read at its page on 2026-10-12, are in the register of sources). W679 put the acknowledgement
+    on the catalogue entry, and its guard reads it there; no page shows the catalogue's entry, and the score a person
+    reads (the chart's points, its band and its response wording) carried none. Held here:
+    - every NEWS2 score the route gives, whole or partial or with nothing recorded, carries the acknowledgement, in
+      the catalogue's own words, whole;
+    - an answer that no published chart computed carries no acknowledgement of one;
+    - the Care page says it under the score, and its rendered test reads it from the route's own answers."""
+    import json
+    from pathlib import Path
+    import agentic_core.api.care as _care
+    root = Path(__file__).resolve().parents[1]
+    ack = {t["id"]: t for t in _care._TOOLS}["news2"]["acknowledgement"]
+    assert ack.startswith("Reproduced from: Royal College of Physicians.") and ack.endswith("London: RCP, 2017."), ack
+    full = {"resp_rate": "22", "spo2": "93", "oxygen": "air", "systolic_bp": "105", "pulse": "112", "temp": "38.4",
+            "consciousness": "alert"}
+    for data in (full, {"resp_rate": "22", "skin_colour": "pale"}, {}):
+        r = client.post("/api/v1/care/risk-assess", json={"tool": "news2", "patient_data": data})
+        assert r.status_code == 200, r.text[:200]
+        assert r.json()["score"].get("acknowledgement") == ack, (data, r.json()["score"].get("acknowledgement"))
+    for tool in ("mental_health", "dementia_care", "discharge"):
+        r = client.post("/api/v1/care/risk-assess", json={"tool": tool, "patient_data": {"mood": "low"}})
+        assert r.status_code == 200 and "acknowledgement" not in (r.json()["score"] or {}), (tool, r.text[:200])
+    reg = {row["id"]: row for row in json.loads((root / "docs" / "SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    assert "acknowledgement is given" in reg["rcp-news2"]["says"], "the terms the acknowledgement answers are not held"
+    pages = root / "apps" / "workstation-superapp" / "src" / "pages" / "domains"
+    fx = json.loads((pages / "CareHub.fixture.json").read_text(encoding="utf-8"))
+    assert fx["news2"]["score"]["acknowledgement"] == ack and fx["news2_partial"]["score"]["acknowledgement"] == ack, (
+        "the rendered test's fixture is not the route's answer as it now is")
+    spec = (pages / "CareHub.test.tsx").read_text(encoding="utf-8")
+    for case in ("toBe(captured.news2.score.acknowledgement)", "toBe(captured.news2_partial.score.acknowledgement)"):
+        assert case in spec, f"the rendered test no longer reads the acknowledgement: {case}"

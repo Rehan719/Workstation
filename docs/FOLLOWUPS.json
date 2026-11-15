@@ -25849,6 +25849,28 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in W1097. test_w1097 takes the census W1075's walk lacked: every route whose path names something other than an entity and whose query or body names one is named, with the test that holds it (five today: the plan's review and orchestrate, the transfer completion, the composition run and the curate route), so a new one is said rather than taken as held. Driving them found one hole: a composition run bound to a living-plan objective wrote a review onto another person's entity's plan and advanced it (probed on a scratch store). The objective is now read only from a scope the caller may reach (caller_may_reach); any other is answered as an objective not found and nothing is written, and the owner's own run still writes its review. Each held route is driven as the second person and answered as for an entity that does not exist; three blinds turn the guard red."
+    },
+    {
+      "id": "FU-1275",
+      "title": "The early-warning score's owner requires its acknowledgement wherever NEWS2 is reproduced, and it was given nowhere a person reads the score",
+      "why": "Found writing the Care calibration set's clean cases (FU-1054): K02 is a score at a boundary 'with the college's acknowledgement', and the tree could not give one. The register of sources holds the Royal College of Physicians' reuse terms for NEWS2, read at its page on 2026-10-12: no copyright restriction provided the stated acknowledgement is given, the material is not modified, and the charts are reproduced in colour. W679 put the acknowledgement on the catalogue entry (GET /api/v1/care/tools), and its guard read it there. No page shows the catalogue's entry, and the score the risk route answers (the chart's points, its band and its response wording, which the Care page draws first) carried none.",
+      "source": "W1098 (found writing FU-1054's calibration cases)",
+      "found": "2026-11-15",
+      "files": [
+        "agentic_core/api/care.py",
+        "apps/workstation-superapp/src/pages/domains/CareHub.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.13",
+      "status": "done",
+      "closed_by": "W1098",
+      "note": "",
+      "slot_source": "the Care tools' sources and their terms are P5.13's (W955); found writing P5.15's calibration set",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: every NEWS2 score the risk route answers, whole, partial or with nothing recorded, carries the acknowledgement in the catalogue's own words, whole, and an answer no published chart computed carries none; the Care page says it under the score. The rendered test (two cases, on the route's own answers captured again) has two vitest blinds; test_w1098 holds the route, the register's terms, the fixture and the cases, with three blinds."
     }
   ],
   "routes": [

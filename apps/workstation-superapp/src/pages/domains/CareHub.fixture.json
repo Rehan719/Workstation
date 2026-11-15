@@ -442,7 +442,7 @@
   ]
  },
  "news2": {
-  "assessment_id": "f33b5c600f",
+  "assessment_id": "8b4663180d",
   "tool": "news2",
   "tool_name": "NEWS2 Early Warning Score",
   "score": {
@@ -496,7 +496,8 @@
    "keys_not_read": [],
    "note": null,
    "basis": "computed in-house from the published table — a decision aid, not a diagnosis; clinical judgement by a qualified professional is required",
-   "available": true
+   "available": true,
+   "acknowledgement": "Reproduced from: Royal College of Physicians. National Early Warning Score (NEWS) 2: Standardising the assessment of acute-illness severity in the NHS. Updated report of a working party. London: RCP, 2017."
   },
   "score_summary": "NEWS2 8 · high · emergency response — urgent or emergency clinical review by a team with critical-care competencies; continuous monitoring (respiratory_rate 2, spo2_scale_1 2, air_or_oxygen 0, systolic_bp 1, pulse 2, consciousness 0, temperature 1)",
   "assessment": "_[Workstation native structured engine — owned, no external dependency]_\n\n## Clinical Interpretation\nNative structured frame for 'Clinical Interpretation' over: resp_rate: 22 spo2: 93 oxygen: air systolic_bp: 105 pulse: 112 temp: 38.4 consciousness: alert (domain: care). The list below is the request's most frequent terms, not findings about them.\n- resp rate\n- oxygen air\n- consciousness alert\n- systolic\n- pulse\n\n## Recommended Actions\nStructured option frame for: resp_rate: 22 spo2: 93 oxygen: air systolic_bp: 105 pulse: 112 temp: 38.4 consciousness: alert.\n- Generate ≥3 distinct variants of the approach.\n- Score each against value, feasibility, risk, and values-fit (halal/beneficence).\n- Recommend the highest-scoring; record why — to be enriched by a model resource.\n\n## Escalation Triggers\nNative structured frame for 'Escalation Triggers' over: resp_rate: 22 spo2: 93 oxygen: air systolic_bp: 105 pulse: 112 temp: 38.4 consciousness: alert (domain: care). The list below is the request's most frequent terms, not findings about them.\n- resp rate\n- oxygen air\n- consciousness alert\n- systolic\n- pulse\n\n## Documentation Guidance\nNative structured frame for 'Documentation Guidance' over: resp_rate: 22 spo2: 93 oxygen: air systolic_bp: 105 pulse: 112 temp: 38.4 consciousness: alert (domain: care). The list below is the request's most frequent terms, not findings about them.\n- resp rate\n- oxygen air\n- consciousness alert\n- systolic\n- pulse\n\n_A DRAFT that no professional has reviewed: a qualified professional must check it before anyone relies on it._",
@@ -555,11 +556,11 @@
     "quality_record_hash": "a284f9b042e8239545e92c97d24cf12d612d5be2ef21564505e955b67d258532182add6500ff2f743614a4d7a24739c8f6caad4d8f5223d182ecdf7828337caf"
    }
   },
-  "generated_at": "2026-11-13T20:20:17Z",
+  "generated_at": "2026-11-15T22:33:08Z",
   "disclaimer": "The score is computed in-house from the published table (NEWS2, Royal College of Physicians, 2017) and is a decision aid, not a diagnosis; the narrative is a structured frame from the native floor, not an interpretation by AI or by a clinician. Clinical judgement by a qualified professional is required."
  },
  "news2_partial": {
-  "assessment_id": "d076da053f",
+  "assessment_id": "cde285bd87",
   "tool": "news2",
   "tool_name": "NEWS2 Early Warning Score",
   "score": {
@@ -592,7 +593,8 @@
    ],
    "note": "score computed from the observations given — INCOMPLETE: the total is a lower bound until the missing observations are recorded",
    "basis": "computed in-house from the published table — a decision aid, not a diagnosis; clinical judgement by a qualified professional is required",
-   "available": true
+   "available": true,
+   "acknowledgement": "Reproduced from: Royal College of Physicians. National Early Warning Score (NEWS) 2: Standardising the assessment of acute-illness severity in the NHS. Updated report of a working party. London: RCP, 2017."
   },
   "score_summary": "NEWS2 ≥ 2 (lower bound) · no band · no band — the total is a lower bound until the missing observations are recorded (respiratory_rate 2) — INCOMPLETE, missing: spo2, oxygen (air or supplemental oxygen), systolic_bp, pulse, consciousness (ACVPU), temperature",
   "assessment": "_[Workstation native structured engine — owned, no external dependency]_\n\n## Clinical Interpretation\nNative structured frame for 'Clinical Interpretation' over: resp_rate: 22 skin_colour: pale (domain: care). The list below is the request's most frequent terms, not findings about them.\n- resp rate\n- skin colour\n- colour pale\n\n## Recommended Actions\nStructured option frame for: resp_rate: 22 skin_colour: pale.\n- Generate ≥3 distinct variants of the approach.\n- Score each against value, feasibility, risk, and values-fit (halal/beneficence).\n- Recommend the highest-scoring; record why — to be enriched by a model resource.\n\n## Escalation Triggers\nNative structured frame for 'Escalation Triggers' over: resp_rate: 22 skin_colour: pale (domain: care). The list below is the request's most frequent terms, not findings about them.\n- resp rate\n- skin colour\n- colour pale\n\n## Documentation Guidance\nNative structured frame for 'Documentation Guidance' over: resp_rate: 22 skin_colour: pale (domain: care). The list below is the request's most frequent terms, not findings about them.\n- resp rate\n- skin colour\n- colour pale\n\n_A DRAFT that no professional has reviewed: a qualified professional must check it before anyone relies on it._",
@@ -651,7 +653,7 @@
     "quality_record_hash": "84d48bf02e97f6e4203db94bd95d94bbd36de6bc29f08cc35bb7def84e38bab7085b4bf7f61a058836dabf48164a151820bb4670f495efa429c6d3bb6d4ed2c6"
    }
   },
-  "generated_at": "2026-11-13T20:20:17Z",
+  "generated_at": "2026-11-15T22:33:09Z",
   "disclaimer": "The score is computed in-house from the published table (NEWS2, Royal College of Physicians, 2017) and is a decision aid, not a diagnosis; the narrative is a structured frame from the native floor, not an interpretation by AI or by a clinician. Clinical judgement by a qualified professional is required."
  }
 }

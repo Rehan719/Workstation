@@ -124,6 +124,10 @@ export const CareHub: React.FC = () => {
                         <p className="text-sm font-black text-white">{String(r.score.tool).toUpperCase().replace('_', ' ')} {r.score.tool === 'falls_risk' ? 'factor count ' : r.score.complete === false && r.score.total != null ? '≥ ' : ''}{r.score.total ?? '—'}{r.score.band ? <span className={`ml-2 text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded ${/high|very high|emergency/i.test(r.score.band) ? 'bg-vital/15 text-vital' : /medium|at risk|warranted/i.test(r.score.band) ? 'bg-amber-500/15 text-amber-400' : /not assessed|no trigger recorded|no band/i.test(r.score.band) ? 'bg-slate-800 text-slate-400' : 'bg-emerald-500/15 text-emerald-400'}`}>{r.score.band}</span> : null}</p>
                         {r.score.response && <p className="text-[11px] text-slate-300">{r.score.response}</p>}
                         <p className="text-[9px] text-slate-500">{r.score.table} · {r.score.basis}</p>
+                        {/* W1098 (FU-1275) - the acknowledgement the chart's owner requires, whole, where its score is read */}
+                        {r.score.acknowledgement && (
+                          <p className="text-[9px] text-slate-500" data-testid="care-score-acknowledgement">{r.score.acknowledgement}</p>
+                        )}
                         <div className="flex flex-wrap gap-1.5">
                           {Object.entries(r.score.components || {}).map(([k, v]: [string, any]) => (
                             <span key={k} className="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 text-slate-400" title={v.note || ''}>{k.replace(/_/g, ' ')}: {String(v.value)} → <b className="text-white">{v.points}</b></span>

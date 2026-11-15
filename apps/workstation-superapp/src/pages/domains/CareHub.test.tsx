@@ -156,6 +156,27 @@ describe('CareHub, rendered against the Care routes\' own answers', () => {
     expect(score.textContent).not.toContain('Incomplete');
   });
 
+  // W1098 (FU-1275) - the chart's owner allows its reuse provided the stated acknowledgement is given; the score is
+  // where its points, band and response wording are read, so the acknowledgement is said there, as the route gives it
+  it('a NEWS2 score gives its owner\'s acknowledgement, whole, under the score', async () => {
+    serve();
+    vi.spyOn(axios, 'post').mockResolvedValue({ data: captured.news2 } as never);
+    mount();
+    await assess(FULL);
+    const score = await screen.findByTestId('care-score');
+    expect(captured.news2.score.acknowledgement).toMatch(/^Reproduced from: Royal College of Physicians\./);
+    expect(within(score).getByTestId('care-score-acknowledgement').textContent).toBe(captured.news2.score.acknowledgement);
+  });
+
+  it('a partial NEWS2 gives the acknowledgement too: its points are still the chart\'s', async () => {
+    serve();
+    vi.spyOn(axios, 'post').mockResolvedValue({ data: captured.news2_partial } as never);
+    mount();
+    await assess('resp_rate: 22\nskin_colour: pale');
+    const score = await screen.findByTestId('care-score');
+    expect(within(score).getByTestId('care-score-acknowledgement').textContent).toBe(captured.news2_partial.score.acknowledgement);
+  });
+
   it('a partial NEWS2 says what is missing, that the total is a lower bound, and which keys it did not read', async () => {
     serve();
     vi.spyOn(axios, 'post').mockResolvedValue({ data: captured.news2_partial } as never);
