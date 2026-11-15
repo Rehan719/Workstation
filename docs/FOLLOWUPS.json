@@ -25423,6 +25423,28 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the roster's failure is said with its reason under the board, and the gate's own count takes its place when it arrives; a withheld plan's heading says withheld once, with the gate's reason beneath it. The rendered test (six cases) has three vitest blinds; test_w1068 drives the gate's states, holds the module's code and the fixture (withheld answers only, no Arabic), with three blinds."
+    },
+    {
+      "id": "FU-1256",
+      "title": "The scholar review panel said the roster and the review queue as empty before either was read and when a read failed, read the two together, and told the children's approval pack of a roster nobody had read",
+      "why": "Found by rendering ScholarReviewPanel against its routes' own answers (FU-399 part 82; no test rendered it). Before the gate's status answered, and whenever its read failed, the roster card said \"No scholar is recorded, so nothing can be approved and every item stays withheld.\" and \"Roster (0)\", and the queue card \"Nothing has been composed and submitted for review.\". The status and the queue were read in one Promise.all, so a refused read of one took the other's answer down and both were said as \"The scholar review record could not be read\". And the children's approval pack was handed an empty roster before the status had answered, so it said \"No scholar is on the roster, so no decision on the pack can be recorded.\" of a roster nobody had read (each driven on the unfixed panel). The capture keeps no composed religious text and no Arabic, and nothing in it was approved.",
+      "source": "W1069 (FU-399 part 82: the scholar review panel rendered)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/components/qep/ScholarReviewPanel.tsx",
+        "apps/workstation-superapp/src/components/qep/ChildrenApprovalPack.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1069",
+      "note": "",
+      "slot_source": "found by FU-399's render of the Quran platform's scholar review panel; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the status and the queue are read on their own and each is said as being read, read, or with its reason, in its own card; the pack is handed the roster only once it is read and says so until then. The rendered test (six cases) has five vitest blinds; test_w1069 holds the routes' answers, the panel's and the pack's code, and the fixture (no Arabic, placeholder text only, nothing approved), with five blinds."
     }
   ],
   "routes": [

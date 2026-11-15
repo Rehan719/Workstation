@@ -1,0 +1,257 @@
+{
+ "status": {
+  "status": 200,
+  "body": {
+   "scholars_on_roster": 0,
+   "roster_is_empty": true,
+   "items": 0,
+   "by_state": {
+    "draft": 0,
+    "in_review": 0,
+    "approved": 0,
+    "rejected": 0
+   },
+   "queue_cap_per_tool": 20,
+   "queues_full": {},
+   "basis": "Approval requires a reviewer recorded on the scholar roster; there is no trust score a caller can assert. With an empty roster NOTHING can be approved and every learner-facing item is withheld - the designed state until the Owner engages a reviewer. An approval is bound to the exact text approved, so an edit afterwards falls back to withheld.",
+   "roster": {},
+   "footing": {
+    "authentication": "off",
+    "who_adds_a_scholar": "the Owner (single-user mode)",
+    "who_decides": "the Owner, on the named scholar's behalf: entered by the Owner on the scholar's behalf - attested, not verified"
+   }
+  }
+ },
+ "queue": {
+  "status": 200,
+  "body": {
+   "items": [],
+   "total": 0,
+   "footing": {
+    "authentication": "off",
+    "who_adds_a_scholar": "the Owner (single-user mode)",
+    "who_decides": "the Owner, on the named scholar's behalf: entered by the Owner on the scholar's behalf - attested, not verified"
+   }
+  }
+ },
+ "pack_read": {
+  "status": 200,
+  "holds_arabic": false
+ },
+ "placeholder_put": {
+  "status": 200,
+  "review_state": "withheld"
+ },
+ "queue_held": {
+  "status": 200,
+  "body": {
+   "items": [
+    {
+     "content_key": "qep_curriculum:Quran & Islamic Studies:Intermediate:12",
+     "surface": "qep/curriculum",
+     "reference": "Quran & Islamic Studies",
+     "body": "W1069 made up: a placeholder standing in for a composed text awaiting review",
+     "body_hash": "3372b5220416d8aa8e00ba2da5c9fb32",
+     "state": "in_review",
+     "submitted_at": "2026-11-15T06:33:21Z",
+     "reviewer_id": null,
+     "reviewed_at": null,
+     "decision_note": null,
+     "served_by": "native",
+     "served_by_basis": "the deterministic floor composed this, not a model: it is the requested headings filled with terms from the request, not a draft to approve on its merits"
+    }
+   ],
+   "total": 1,
+   "footing": {
+    "authentication": "off",
+    "who_adds_a_scholar": "the Owner (single-user mode)",
+    "who_decides": "the Owner, on the named scholar's behalf: entered by the Owner on the scholar's behalf - attested, not verified"
+   }
+  }
+ },
+ "scholar_ask": {
+  "scholar_id": "w1069-made-up",
+  "name": "W1069 made-up reviewer",
+  "credential": "W1069 made up: a credential stated for this capture"
+ },
+ "scholar_added": {
+  "status": 200,
+  "body": {
+   "scholar_id": "w1069-made-up",
+   "name": "W1069 made-up reviewer",
+   "credential": "W1069 made up: a credential stated for this capture",
+   "added_by": "the Owner (single-user mode)",
+   "added_at": "2026-11-15T06:33:21Z",
+   "credential_basis": "the credential is recorded as stated; this platform has not verified it"
+  }
+ },
+ "status_one": {
+  "status": 200,
+  "body": {
+   "scholars_on_roster": 1,
+   "roster_is_empty": false,
+   "items": 1,
+   "by_state": {
+    "draft": 0,
+    "in_review": 1,
+    "approved": 0,
+    "rejected": 0
+   },
+   "queue_cap_per_tool": 20,
+   "queues_full": {},
+   "basis": "Approval requires a reviewer recorded on the scholar roster; there is no trust score a caller can assert. With an empty roster NOTHING can be approved and every learner-facing item is withheld - the designed state until the Owner engages a reviewer. An approval is bound to the exact text approved, so an edit afterwards falls back to withheld.",
+   "roster": {
+    "w1069-made-up": {
+     "name": "W1069 made-up reviewer",
+     "credential": "W1069 made up: a credential stated for this capture",
+     "added_by": "the Owner (single-user mode)",
+     "added_at": "2026-11-15T06:33:21Z"
+    }
+   },
+   "footing": {
+    "authentication": "off",
+    "who_adds_a_scholar": "the Owner (single-user mode)",
+    "who_decides": "the Owner, on the named scholar's behalf: entered by the Owner on the scholar's behalf - attested, not verified"
+   }
+  }
+ },
+ "queue_one": {
+  "status": 200,
+  "body": {
+   "items": [
+    {
+     "content_key": "qep_curriculum:Quran & Islamic Studies:Intermediate:12",
+     "surface": "qep/curriculum",
+     "reference": "Quran & Islamic Studies",
+     "body": "W1069 made up: a placeholder standing in for a composed text awaiting review",
+     "body_hash": "3372b5220416d8aa8e00ba2da5c9fb32",
+     "state": "in_review",
+     "submitted_at": "2026-11-15T06:33:21Z",
+     "reviewer_id": null,
+     "reviewed_at": null,
+     "decision_note": null,
+     "served_by": "native",
+     "served_by_basis": "the deterministic floor composed this, not a model: it is the requested headings filled with terms from the request, not a draft to approve on its merits"
+    }
+   ],
+   "total": 1,
+   "footing": {
+    "authentication": "off",
+    "who_adds_a_scholar": "the Owner (single-user mode)",
+    "who_decides": "the Owner, on the named scholar's behalf: entered by the Owner on the scholar's behalf - attested, not verified"
+   }
+  }
+ },
+ "decide_ask": {
+  "content_key": "qep_curriculum:Quran & Islamic Studies:Intermediate:12",
+  "scholar_id": "w1069-made-up",
+  "approve": false
+ },
+ "decided": {
+  "status": 200,
+  "body": {
+   "ok": true,
+   "record": {
+    "content_key": "qep_curriculum:Quran & Islamic Studies:Intermediate:12",
+    "surface": "qep/curriculum",
+    "reference": "Quran & Islamic Studies",
+    "body": "W1069 made up: a placeholder standing in for a composed text awaiting review",
+    "body_hash": "3372b5220416d8aa8e00ba2da5c9fb32",
+    "state": "rejected",
+    "submitted_at": "2026-11-15T06:33:21Z",
+    "reviewer_id": "w1069-made-up",
+    "reviewed_at": "2026-11-15T06:33:21Z",
+    "decision_note": null,
+    "served_by": "native",
+    "served_by_basis": "the deterministic floor composed this, not a model: it is the requested headings filled with terms from the request, not a draft to approve on its merits",
+    "entered_by": "the Owner (single-user mode)",
+    "attestation": "entered by the Owner on the scholar's behalf - attested, not verified"
+   },
+   "reason": "rejected",
+   "detail": "recorded by w1069-made-up"
+  }
+ },
+ "queue_decided": {
+  "status": 200,
+  "body": {
+   "items": [
+    {
+     "content_key": "qep_curriculum:Quran & Islamic Studies:Intermediate:12",
+     "surface": "qep/curriculum",
+     "reference": "Quran & Islamic Studies",
+     "body": "W1069 made up: a placeholder standing in for a composed text awaiting review",
+     "body_hash": "3372b5220416d8aa8e00ba2da5c9fb32",
+     "state": "rejected",
+     "submitted_at": "2026-11-15T06:33:21Z",
+     "reviewer_id": "w1069-made-up",
+     "reviewed_at": "2026-11-15T06:33:21Z",
+     "decision_note": null,
+     "served_by": "native",
+     "served_by_basis": "the deterministic floor composed this, not a model: it is the requested headings filled with terms from the request, not a draft to approve on its merits",
+     "entered_by": "the Owner (single-user mode)",
+     "attestation": "entered by the Owner on the scholar's behalf - attested, not verified"
+    }
+   ],
+   "total": 1,
+   "footing": {
+    "authentication": "off",
+    "who_adds_a_scholar": "the Owner (single-user mode)",
+    "who_decides": "the Owner, on the named scholar's behalf: entered by the Owner on the scholar's behalf - attested, not verified"
+   }
+  }
+ },
+ "status_decided": {
+  "status": 200,
+  "body": {
+   "scholars_on_roster": 1,
+   "roster_is_empty": false,
+   "items": 1,
+   "by_state": {
+    "draft": 0,
+    "in_review": 0,
+    "approved": 0,
+    "rejected": 1
+   },
+   "queue_cap_per_tool": 20,
+   "queues_full": {},
+   "basis": "Approval requires a reviewer recorded on the scholar roster; there is no trust score a caller can assert. With an empty roster NOTHING can be approved and every learner-facing item is withheld - the designed state until the Owner engages a reviewer. An approval is bound to the exact text approved, so an edit afterwards falls back to withheld.",
+   "roster": {
+    "w1069-made-up": {
+     "name": "W1069 made-up reviewer",
+     "credential": "W1069 made up: a credential stated for this capture",
+     "added_by": "the Owner (single-user mode)",
+     "added_at": "2026-11-15T06:33:21Z"
+    }
+   },
+   "footing": {
+    "authentication": "off",
+    "who_adds_a_scholar": "the Owner (single-user mode)",
+    "who_decides": "the Owner, on the named scholar's behalf: entered by the Owner on the scholar's behalf - attested, not verified"
+   }
+  }
+ },
+ "decide_unknown": {
+  "status": 409,
+  "body": {
+   "detail": "'w1069-not-on-the-roster' is not on the scholar roster. Approval is by recorded identity, never by a trust score the caller supplies about itself."
+  }
+ },
+ "status_failed": {
+  "status": 500,
+  "body": {
+   "detail": "GET /api/v1/scholar-review/status failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/scholar-review/status",
+   "cause_established": false
+  }
+ },
+ "queue_failed": {
+  "status": 500,
+  "body": {
+   "detail": "GET /api/v1/scholar-review/queue failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/scholar-review/queue",
+   "cause_established": false
+  }
+ }
+}

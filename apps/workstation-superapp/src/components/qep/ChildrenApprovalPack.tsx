@@ -18,7 +18,8 @@ interface Pack {
   children_tools: { open: boolean; basis: string };
 }
 
-export const ChildrenApprovalPack: React.FC<{ roster: [string, { name: string }][]; chosen: string }> = ({ roster, chosen }) => {
+//  W1069 - `roster` is null until the panel has read it: an unread roster is not said as one with nobody on it
+export const ChildrenApprovalPack: React.FC<{ roster: [string, { name: string }][] | null; chosen: string }> = ({ roster, chosen }) => {
   const [pack, setPack] = useState<Pack | null>(null);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
@@ -72,7 +73,9 @@ export const ChildrenApprovalPack: React.FC<{ roster: [string, { name: string }]
           ))}
 
         <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-4 mb-2">3. The decision on the whole pack</h5>
-        {roster.length === 0
+        {roster === null
+          ? <p className="text-[11px] text-slate-500" data-testid="pack-roster-unread">The roster has not been read, so whether a decision on the pack can be recorded is not known here.</p>
+          : roster.length === 0
           ? <p className="text-[11px] text-slate-500" data-testid="pack-no-scholar">No scholar is on the roster, so no decision on the pack can be recorded.</p>
           : (<>
             <textarea aria-label="Notes on the pack" value={notes} onChange={e => setNotes(e.target.value)} rows={3}

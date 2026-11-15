@@ -20,22 +20,27 @@ interface Status { scholars_on_roster: number; roster_is_empty: boolean; items: 
                    roster: Record<string, Scholar>; footing: Footing }
 
 const ScholarReviewPanel: React.FC = () => {
+  //  W1069 - the status and the queue are read on their own, and each is held as unread (null) until its read
+  //  answers. They were read together: one refused read took the other's answer down, and an unread roster and
+  //  queue were said as empty
   const [status, setStatus] = useState<Status | null>(null);
-  const [items, setItems] = useState<Item[]>([]);
-  const [err, setErr] = useState('');
+  const [statusErr, setStatusErr] = useState('');
+  const [items, setItems] = useState<Item[] | null>(null);
+  const [queueErr, setQueueErr] = useState('');
   const [msg, setMsg] = useState('');
   const [form, setForm] = useState({ scholar_id: '', name: '', credential: '' });
   const [chosen, setChosen] = useState('');
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    try {
-      const [s, q] = await Promise.all([
-        apiJson<Status>('/api/v1/scholar-review/status'),
-        apiJson<{ items: Item[] }>('/api/v1/scholar-review/queue'),
-      ]);
-      setStatus(s); setItems(q.items || []); setErr('');
-    } catch (e) { setErr(`The scholar review record could not be read. ${errorMessage(e)}`); }
+    await Promise.all([
+      apiJson<Status>('/api/v1/scholar-review/status')
+        .then(s => { setStatus(s); setStatusErr(''); })
+        .catch(e => { setStatus(null); setStatusErr(`The scholar review status could not be read: ${errorMessage(e)}`); }),
+      apiJson<{ items: Item[] }>('/api/v1/scholar-review/queue')
+        .then(q => { setItems(q.items || []); setQueueErr(''); })
+        .catch(e => { setItems(null); setQueueErr(`The review queue could not be read: ${errorMessage(e)}`); }),
+    ]);
   }, []);
   useEffect(() => { void load(); }, [load]);
 
@@ -65,7 +70,7 @@ const ScholarReviewPanel: React.FC = () => {
     <div className="space-y-6" data-testid="scholar-review-panel">
       <Card className="p-6 border-slate-800 bg-slate-900/40">
         <h3 className="text-xs font-black uppercase tracking-widest text-aura mb-2">Scholar review</h3>
-        {err && <p role="alert" className="text-xs text-vital font-semibold mb-2">{err}</p>}
+        {statusErr && <p role="alert" data-testid="scholar-status-unread" className="text-xs text-vital font-semibold mb-2">{statusErr}</p>}
         <p className="text-[11px] text-slate-400 leading-relaxed">{status?.basis}</p>
         {status && (
           <p className="text-[11px] text-amber-400 font-semibold leading-relaxed mt-2" data-testid="scholar-footing">
@@ -75,11 +80,15 @@ const ScholarReviewPanel: React.FC = () => {
       </Card>
 
       {/* W739 (P5.21) - the children's tools as ONE pack, decided as a whole, above the item-by-item queue */}
-      <ChildrenApprovalPack roster={roster} chosen={chosen} />
+      <ChildrenApprovalPack roster={status ? roster : null} chosen={chosen} />
 
       <Card className="p-6 border-slate-800 bg-slate-900/40">
-        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Roster ({roster.length})</h4>
-        {roster.length === 0
+        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Roster{status ? ` (${roster.length})` : ''}</h4>
+        {status === null
+          ? (statusErr
+              ? <p className="text-[11px] text-slate-500" data-testid="scholar-roster-unread">Who is on the roster is not known: the status could not be read.</p>
+              : <p className="text-[11px] text-slate-500">Reading the roster…</p>)
+          : roster.length === 0
           ? <p className="text-[11px] text-slate-500" data-testid="scholar-roster-empty">No scholar is recorded, so nothing can be approved and every item stays withheld.</p>
           : roster.map(([id, s]) => (
             <p key={id} className="text-[11px] text-slate-300 mb-1">
@@ -96,7 +105,7 @@ const ScholarReviewPanel: React.FC = () => {
       </Card>
 
       <Card className="p-6 border-slate-800 bg-slate-900/40">
-        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Awaiting or decided ({items.length})</h4>
+        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Awaiting or decided{items ? ` (${items.length})` : ''}</h4>
         {roster.length > 0 && (
           <label className="block text-[10px] text-slate-500 mb-3">Decision entered for
             <select aria-label="Scholar deciding" value={chosen} onChange={e => setChosen(e.target.value)} className="ml-2 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-white">
@@ -105,8 +114,10 @@ const ScholarReviewPanel: React.FC = () => {
             </select>
           </label>
         )}
-        {items.length === 0 && <p className="text-[11px] text-slate-500">Nothing has been composed and submitted for review.</p>}
-        {items.map(it => (
+        {queueErr && <p role="alert" data-testid="scholar-queue-unread" className="text-[11px] text-vital font-semibold">{queueErr}</p>}
+        {!queueErr && items === null && <p className="text-[11px] text-slate-500">Reading the review queue…</p>}
+        {items && items.length === 0 && <p className="text-[11px] text-slate-500">Nothing has been composed and submitted for review.</p>}
+        {(items ?? []).map(it => (
           <div key={it.content_key} className="p-3 rounded-xl bg-slate-950 border border-slate-900 mb-2" data-testid="scholar-item">
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{it.surface} · {it.reference || it.content_key} · <span className="text-white">{it.state}</span></p>
             {/* REL — the key names the surface, the tool and the text's hash; shown when the line above shows the reference instead */}

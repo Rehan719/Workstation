@@ -66977,8 +66977,8 @@ def test_w739_the_scholar_sees_and_decides_the_childrens_tools_as_one_pack(clien
     #  4. THE PAGE shows the pack above the item queue and decides on the hash it read
     _panel = (_root / "apps/workstation-superapp/src/components/qep/ScholarReviewPanel.tsx").read_text(encoding="utf-8")
     _comp = (_root / "apps/workstation-superapp/src/components/qep/ChildrenApprovalPack.tsx").read_text(encoding="utf-8")
-    assert "<ChildrenApprovalPack roster={roster} chosen={chosen} />" in _panel
-    assert _panel.index("<ChildrenApprovalPack") < _panel.index("Roster ({roster.length})")
+    assert "<ChildrenApprovalPack roster={status ? roster : null} chosen={chosen} />" in _panel   # W1069
+    assert _panel.index("<ChildrenApprovalPack") < _panel.index("Roster{status ? ` (${roster.length})` : ''}")
     assert "seen_hash: pack.pack_hash" in _comp and "/api/v1/scholar-review/pack.md" in _comp
 
     #  5. THE PLAN carries the item, with its bar
@@ -87444,3 +87444,58 @@ def test_w1068_fu1255_the_learn_and_teach_module_says_a_roster_it_could_not_read
         assert fx[k]["body"]["curriculum"] is None and fx[k]["body"]["review_state"] == "withheld", k
     assert not re.search(r"[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]", raw), \
         "the fixture holds Arabic text"
+
+
+def test_w1069_fu1256_the_scholar_review_panel_says_the_roster_and_the_queue_only_once_read(client):
+    """W1069 (FU-1256; FU-399 part 82). The Quran platform's scholar review panel had no rendered test. Rendered
+    against its routes' own answers, it said the roster as empty before its read answered and when the read failed
+    ("No scholar is recorded, so nothing can be approved and every item stays withheld.", "Roster (0)"), and the
+    queue the same ("Nothing has been composed and submitted for review."); it read the gate's status and its queue
+    together, so one refused read took the other's answer down and both were said as "the scholar review record
+    could not be read"; and it handed the children's approval pack an empty roster before the status had answered,
+    so the pack said no scholar was on a roster nobody had read. Each is read on its own and said as being read,
+    read, or with its reason, in its own card; the pack is handed the roster only once it is read.
+
+    Held here: the two routes' answers carry what the panel reads; the panel's and the pack's code; and the rendered
+    test's fixture: no Arabic in it, every queued item's text the capture's made-up placeholder, nothing approved.
+    The rendered test (ScholarReviewPanel.test.tsx, six cases, five vitest blinds) holds what the panel says."""
+    import json
+    import pathlib
+    import re
+    st = client.get("/api/v1/scholar-review/status")
+    q = client.get("/api/v1/scholar-review/queue")
+    assert st.status_code == 200 and q.status_code == 200, (st.text[:200], q.text[:200])
+    s = st.json()
+    assert isinstance(s["roster"], dict) and isinstance(s["basis"], str), s
+    assert {"authentication", "who_adds_a_scholar", "who_decides"} <= set(s["footing"]), s["footing"]
+    assert isinstance(q.json()["items"], list), q.json()
+    #  the panel: each record read on its own, and neither said as empty before it was read
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/components/qep"
+    panel = _code_only((src / "ScholarReviewPanel.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "The scholar review record could not be read" not in panel
+    assert ".then(s => { setStatus(s); setStatusErr(''); })" in panel
+    assert ".catch(e => { setStatus(null); setStatusErr(`The scholar review status could not be read: ${errorMessage(e)}`); })," in panel
+    assert ".then(q => { setItems(q.items || []); setQueueErr(''); })" in panel
+    assert ".catch(e => { setItems(null); setQueueErr(`The review queue could not be read: ${errorMessage(e)}`); })," in panel
+    assert "useState<Item[] | null>(null)" in panel
+    assert "        {status === null\n          ? (statusErr\n" in panel
+    assert "{items && items.length === 0 && <p" in panel and "{!queueErr && items === null && " in panel
+    assert "<ChildrenApprovalPack roster={status ? roster : null} chosen={chosen} />" in panel
+    pack = _code_only((src / "ChildrenApprovalPack.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "roster: [string, { name: string }][] | null" in pack
+    assert '{roster === null\n          ? <p className="text-[11px] text-slate-500" data-testid="pack-roster-unread">' in pack
+    #  the rendered test, and a fixture with no composed religious text, no Arabic and nothing approved
+    t = (src / "ScholarReviewPanel.test.tsx").read_text(encoding="utf-8")
+    assert t.count("\n  it('") == 6, t.count("\n  it('")
+    raw = (src / "ScholarReviewPanel.fixture.json").read_text(encoding="utf-8")
+    assert not re.search(r"[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]", raw), "the fixture holds Arabic"
+    fx = json.loads(raw)
+    #  a queue's items are a list; the status's own "items" is a count
+    queued = [it for v in fx.values() if isinstance(v, dict) and isinstance(v.get("body"), dict)
+              and isinstance(v["body"].get("items"), list) for it in v["body"]["items"]]
+    assert queued, "the fixture holds no queued item"
+    for it in queued:
+        assert it["body"].startswith("W1069 made up: ") and it["state"] != "approved", it
+    for v in fx.values():
+        if isinstance(v, dict) and isinstance(v.get("body"), dict) and "by_state" in v["body"]:
+            assert v["body"]["by_state"]["approved"] == 0, v["body"]["by_state"]
