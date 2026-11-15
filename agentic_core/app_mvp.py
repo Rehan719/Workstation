@@ -311,6 +311,9 @@ app.include_router(agreements_api.router, dependencies=[_Depends(_get_current_us
 #  P5.19 (W1082) - physical assets as records and evidence, held under an agreement record; nothing is controlled
 from agentic_core.api import assets as assets_api
 app.include_router(assets_api.router, dependencies=[_Depends(_get_current_user)])
+#  P5.18 clause 3 (W1085) - the one list of what waits on a person
+from agentic_core.api import waiting as waiting_api
+app.include_router(waiting_api.router, dependencies=[_Depends(_get_current_user)])
 
 #  the registers a reader can check: the sources this platform names, and what a person can do here
 from agentic_core.api import registers as registers_api

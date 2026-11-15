@@ -63,6 +63,16 @@ LIMITS = {"name": 200, "read_from": 300, "registered_on": 200, "registered_numbe
           "role": 80, "note": 1000, "evidence": 1000, "formality": 200, "basis": 500, "how": 500,
           "capacity": 120, "authority_as_stated": 500, "stated_by": 200}
 
+#  W1085 (P5.18 clauses 3 and 7) - OBLIGATIONS AND DATES FROM THE TEXT, AND A PERSON'S DOCUMENT AS DATA
+NOTICE_UNKNOWN = "The notice period is not known: none has been entered from the text."
+UNCONFIRMED = "Not confirmed by a person yet."
+NO_DATE = "No date is entered for it."
+DATE_BASIS = ("A date here is a person's entry from the text: none is computed by this platform, and none is taken from "
+              "a model.")
+TEXT_KEPT = ("The text is kept whole, as data, on this machine: no instruction in it is followed, and nothing of it is "
+             "sent to an outside service.")
+LIMITS.update({"what_owed": 500, "clause": 80, "notice": 200})
+
 
 # ── the store ─────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -293,6 +303,57 @@ class EndedRequest(_Asked):
     how: str = ""
 
 
+class ObligationRequest(_Asked):
+    owed_by: str = ""
+    owed_to: str = ""
+    what: str = ""
+    clause: str = ""
+    due_on: Optional[str] = None
+
+
+class NoticeRequest(_Asked):
+    as_stated: str = ""
+    clause: str = ""
+
+
+class ConfirmRequest(_Asked):
+    pass
+
+
+def _any_date(value, what: str) -> str:
+    """A date a person entered from the text: written YYYY-MM-DD, past or to come (a date falls due later)."""
+    s = str(value or "").strip()
+    d = None
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", s):
+        try:
+            d = date.fromisoformat(s)
+        except ValueError:
+            d = None
+    if d is None:
+        raise HTTPException(status_code=400, detail=(
+            f"{what} must be a date written YYYY-MM-DD; '{s or 'nothing'}' is not one, so nothing was kept."))
+    return s
+
+
+def _obligations(a: dict) -> List[dict]:
+    out = []
+    for o in a.get("obligations") or []:
+        out.append({**o,
+                    **({} if o.get("confirmed") else {"confirmed_said": UNCONFIRMED}),
+                    **({} if o.get("due_on") else {"due_said": NO_DATE})})
+    return out
+
+
+def _notice(a: dict) -> dict:
+    n = a.get("notice")
+    return {**n, "known": True} if n else {"known": False, "said": NOTICE_UNKNOWN}
+
+
+def _text_kept(a: dict) -> dict:
+    t = str(_current(a).get("text") or "")
+    return {"chars": len(t), "of": len(t), "basis": TEXT_KEPT}
+
+
 class SignatoryRequest(_Asked):
     party_id: str = ""
     name: str = ""
@@ -363,6 +424,7 @@ def _whole(a: dict, parties: Optional[list]) -> dict:
             "parties": _parties_of(a, parties),
             "versions": [{k: v.get(k) for k in ("version", "hash", "by", "at", "text")} for v in a.get("versions") or []],
             "current": {k: _current(a).get(k) for k in ("version", "hash")},
+            "obligations": _obligations(a), "notice": _notice(a), "text_kept": _text_kept(a), "date_basis": DATE_BASIS,
             "facts": _facts(a), "not_legal_advice": NOT_LEGAL_ADVICE}
 
 
@@ -637,3 +699,92 @@ async def add_signatory(aid: str, req: SignatoryRequest, user: dict | None = Dep
             "name": name, "capacity": capacity, "authority_as_stated": authority, "stated_by": stated_by,
             "recorded_by": who, "recorded_at": _now()})
     return _fact(aid, user, _record)
+
+
+@router.post("/{aid}/obligations")
+async def add_obligation(aid: str, req: ObligationRequest, user: dict | None = Depends(get_current_user)):
+    """Clause 3: an obligation as read from the text - who owes what to whom, under which clause, and when it falls due
+    if a person entered a date. It names the clause it was read from, and waits for a person to confirm it."""
+    _person(user)
+    _only(req, "An obligation is entered with who owes it, to whom, what is owed, the clause it was read from and, if the "
+               "text gives one, the date it falls due;")
+    what = _text(req.what, "What is owed", "what_owed")
+    clause = _text(req.clause, "The clause it was read from", "clause")
+    due = _any_date(req.due_on, "The date it falls due") if str(req.due_on or "").strip() else None
+
+    def _record(a, who):
+        _not_after_end(a, "an obligation")
+        ids = {p.get("party_id") for p in a.get("parties") or []}
+        for role, pid in (("owes", req.owed_by), ("is owed", req.owed_to)):
+            if str(pid or "").strip() not in ids:
+                raise HTTPException(status_code=400, detail=(
+                    f"Who {role} it is one of this agreement's parties; '{str(pid or '').strip() or 'nothing'}' is not "
+                    f"one, so nothing was kept."))
+        if str(req.owed_by).strip() == str(req.owed_to).strip():
+            raise HTTPException(status_code=400, detail="A party does not owe an obligation to itself, so nothing was kept.")
+        at = _now()
+        a.setdefault("obligations", []).append({
+            "id": f"obl-{uuid.uuid4().hex[:10]}", "owed_by": str(req.owed_by).strip(), "owed_to": str(req.owed_to).strip(),
+            "what": what, "clause": clause, "due_on": due, "entered_by": who, "entered_at": at,
+            **({"due_basis": f"entered by {who} at {at} from the text"} if due else {}), "confirmed": None})
+    return _fact(aid, user, _record)
+
+
+@router.post("/{aid}/obligations/{oid}/confirm")
+async def confirm_obligation(aid: str, oid: str, req: ConfirmRequest, user: dict | None = Depends(get_current_user)):
+    """Clause 3: a person confirms an obligation was read from its clause; the record names who and when."""
+    _person(user)
+    _only(req, "A confirmation carries nothing but itself;")
+
+    def _record(a, who):
+        _not_after_end(a, "a confirmation")
+        o = next((x for x in a.get("obligations") or [] if x.get("id") == oid), None)
+        if o is None:
+            raise HTTPException(status_code=404, detail=f"No obligation {oid} is on this agreement.")
+        if o.get("confirmed"):
+            raise HTTPException(status_code=409, detail=(
+                f"It is already confirmed, by {o['confirmed']['by']} at {o['confirmed']['at']}, so nothing was changed."))
+        o["confirmed"] = {"by": who, "at": _now()}
+    return _fact(aid, user, _record)
+
+
+@router.post("/{aid}/notice")
+async def enter_notice(aid: str, req: NoticeRequest, user: dict | None = Depends(get_current_user)):
+    """Clause 3: the notice period as the text states it and the clause it was read from; an earlier entry is kept.
+    With none entered, the record says the notice period is not known."""
+    _person(user)
+    _only(req, "The notice period is entered as the text states it, with the clause it was read from;")
+    as_stated = _text(req.as_stated, "The notice period, as the text states it", "notice")
+    clause = _text(req.clause, "The clause it was read from", "clause")
+
+    def _record(a, who):
+        _not_after_end(a, "a notice period")
+        if a.get("notice"):
+            a.setdefault("notice_history", []).append(a["notice"])
+        a["notice"] = {"as_stated": as_stated, "clause": clause, "entered_by": who, "entered_at": _now()}
+    return _fact(aid, user, _record)
+
+
+def falling_due(user, within_days: int) -> dict:
+    """W1085 - what on this person's agreement records waits on a person: an obligation falling due within the window
+    or past its date, and an obligation no person has confirmed. Read by the one list of what waits on a person."""
+    today = _today()
+    items = []
+    for a in _read(AGREEMENTS):
+        if not _reaches(user, a) or a.get("ended"):
+            continue
+        for o in a.get("obligations") or []:
+            base = {"agreement_id": a["id"], "agreement_title": a.get("title"), "obligation_id": o["id"],
+                    "what": o.get("what"), "clause": o.get("clause"), "due_on": o.get("due_on"),
+                    "confirmed": bool(o.get("confirmed"))}
+            if o.get("due_on"):
+                days = (date.fromisoformat(o["due_on"]) - today).days
+                if days <= within_days:
+                    items.append({**base, "kind": "falls_due", "days": days,
+                                  "said": (f"falls due in {days} day{'s' if days != 1 else ''}" if days > 0 else
+                                           "falls due today" if days == 0 else
+                                           f"fell due {-days} day{'s' if days != -1 else ''} ago")})
+            if not o.get("confirmed"):
+                items.append({**base, "kind": "unconfirmed", "said": UNCONFIRMED})
+    items.sort(key=lambda x: (x["kind"] != "falls_due", x.get("days") if x.get("days") is not None else 10 ** 6))
+    return {"items": items, "within_days": within_days}

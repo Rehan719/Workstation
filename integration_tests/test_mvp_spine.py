@@ -88858,3 +88858,117 @@ def test_w1084_p519_which_rules_apply_to_an_asset_are_the_rows_of_the_register_f
     row = next(x for x in reg["rows"] if x["id"] == "law-asset-rules")
     assert row["state"] == "journey" and row["driven_by"] == "test_w1084_p519_which_rules_apply_to_an_asset_are_the_rows_of_the_register_for_its_use"
     assert "no source permitting the use was found" in row["today"] and cov.check(reg)["problems"] == []
+
+
+def test_w1085_p518_an_obligation_names_its_clause_and_who_confirmed_it_and_what_falls_due_is_on_one_list(client, monkeypatch):
+    """P5.18 clauses 3 and 7, the records (W1085, FU-1267), driven through the routes on made-up parties. Held here:
+    - an obligation is entered with who owes it, to whom (both parties of the agreement), what, the clause it was read
+      from, and the date it falls due if a person entered one; it reads "not confirmed by a person yet" until a person
+      confirms it, and the record names who and when; a party owing itself, an unknown party, no clause, a date that is
+      not one, a field the route does not take, and a second confirmation are refused;
+    - a date is a person's entry: the record says none is computed and none is taken from a model;
+    - with no notice period entered the record says it is not known; an entered one names its clause, and an earlier
+      entry is kept;
+    - the text is kept whole as data: how much was kept of how much was given, and that nothing in it is followed or
+      sent outside;
+    - the one list of what waits on a person shows what falls due within the window or is past its date, soonest
+      first, and each obligation no person has confirmed; nothing on an ended agreement; another person's never; it
+      names what it does not read yet; with sign-in off it keeps nothing and says so; a window that is not one is
+      refused."""
+    import uuid
+    from datetime import datetime, timedelta, timezone
+    import agentic_core.auth.core as _ac
+    import agentic_core.api.agreements as _ag
+    import agentic_core.api.waiting as _wt
+    tag = uuid.uuid4().hex[:8]
+    today = datetime.now(timezone.utc).date()
+    yday, in10, ago3, in90 = ((today - timedelta(days=1)).isoformat(), (today + timedelta(days=10)).isoformat(),
+                             (today - timedelta(days=3)).isoformat(), (today + timedelta(days=90)).isoformat())
+
+    monkeypatch.setenv("AUTH_ENABLED", "false")
+    off = client.get("/api/v1/waiting").json()
+    assert off["kept"] is False and off["items"] == [] and off["said"] == _wt.NOT_KEPT and off["not_read_yet"], off
+
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    who = {k: f"w1085-{k}-{tag}" for k in ("one", "two")}
+    users = _ac._load_users()
+    for k, name in who.items():
+        users[name] = {"user_id": name, "username": name, "hashed_password": _ac._pwd_ctx.hash("pw12345678"),
+                       "role": "user", "created_at": "2026-11-15T00:00:00Z", "api_keys": []}
+    _ac._save_users(users)
+    H = {k: {"Authorization": "Bearer " + client.post("/api/v1/auth/token", data={
+        "username": n, "password": "pw12345678"}).json()["access_token"]} for k, n in who.items()}
+    one, two = H["one"], H["two"]
+    pids = [client.post("/api/v1/agreements/parties", headers=one, json={
+        "kind": "person", "name": f"W1085 Madeup {n} {tag}", "read_from": "a made-up letter", "read_on": yday}).json()["party"]["id"]
+        for n in ("Supplier", "Customer")]
+    text = f"W1085 made-up agreement {tag}: clause 3, the supplier delivers; clause 9, either side may end it."
+    made = client.post("/api/v1/agreements", headers=one, json={"title": f"W1085 Supply {tag}", "text": text, "parties": [
+        {"party_id": pids[0], "role": "supplier"}, {"party_id": pids[1], "role": "customer"}]}).json()
+    aid = made["id"]
+    #  the text kept whole, as data; the notice period not known; the dates a person's
+    assert made["text_kept"] == {"chars": len(text), "of": len(text), "basis": _ag.TEXT_KEPT}, made["text_kept"]
+    assert made["notice"] == {"known": False, "said": _ag.NOTICE_UNKNOWN} and made["obligations"] == []
+    assert made["date_basis"] == _ag.DATE_BASIS and "none is computed" in _ag.DATE_BASIS and "model" in _ag.DATE_BASIS
+
+    def ob(body, h=one):
+        return client.post(f"/api/v1/agreements/{aid}/obligations", headers=h, json=body)
+    good = {"owed_by": pids[0], "owed_to": pids[1], "what": "deliver the made-up goods", "clause": "clause 3",
+            "due_on": in10}
+    for bad, words in (({**good, "owed_by": pids[1]}, "does not owe an obligation to itself"),
+                       ({**good, "owed_to": "pty-none"}, "Who is owed it is one of this agreement's parties"),
+                       ({**good, "clause": ""}, "The clause it was read from is needed"),
+                       ({**good, "due_on": "next month"}, "must be a date written YYYY-MM-DD"),
+                       ({**good, "computed_by": "a model"}, "'computed_by' is not part of it")):
+        rr = ob(bad)
+        assert rr.status_code == 400 and words in rr.json()["detail"], (bad, rr.status_code, rr.text[:300])
+    r1 = ob(good)
+    assert r1.status_code == 200, r1.text[:300]
+    o1 = r1.json()["obligations"][0]
+    assert (o1["what"], o1["clause"], o1["due_on"], o1["entered_by"]) == (good["what"], "clause 3", in10, who["one"])
+    assert o1["confirmed"] is None and o1["confirmed_said"] == _ag.UNCONFIRMED and who["one"] in o1["due_basis"]
+    ob({**good, "what": "pay the made-up price", "owed_by": pids[1], "owed_to": pids[0], "clause": "clause 4", "due_on": ago3})
+    ob({**good, "what": "keep the made-up secret", "clause": "clause 7", "due_on": in90})
+    r4 = ob({**good, "what": "give notice in writing", "clause": "clause 9", "due_on": None})
+    o4 = r4.json()["obligations"][3]
+    assert o4["due_on"] is None and o4["due_said"] == _ag.NO_DATE
+
+    #  the one list: what falls due in the window or past its date, soonest first, then what no person has confirmed
+    w = client.get("/api/v1/waiting", headers=one).json()
+    due = [(i["what"], i["said"]) for i in w["items"] if i["kind"] == "falls_due"]
+    assert due == [("pay the made-up price", "fell due 3 days ago"), ("deliver the made-up goods", "falls due in 10 days")], due
+    assert [i["what"] for i in w["items"] if i["kind"] == "unconfirmed"] == [
+        "deliver the made-up goods", "pay the made-up price", "keep the made-up secret", "give notice in writing"]
+    assert w["kept"] is True and w["within_days"] == 30 and w["reads"] == _wt.READS and w["not_read_yet"] == _wt.NOT_READ_YET
+    assert [i["what"] for i in client.get("/api/v1/waiting?within_days=120", headers=one).json()["items"]
+            if i["kind"] == "falls_due"][-1] == "keep the made-up secret"
+    assert client.get("/api/v1/waiting?within_days=999", headers=one).status_code == 400
+
+    #  a person confirms; the record names who and when, and the list no longer asks for it
+    c = client.post(f"/api/v1/agreements/{aid}/obligations/{o1['id']}/confirm", headers=one, json={})
+    assert c.status_code == 200, c.text[:300]
+    conf = c.json()["obligations"][0]["confirmed"]
+    assert conf["by"] == who["one"] and conf["at"]
+    assert client.post(f"/api/v1/agreements/{aid}/obligations/{o1['id']}/confirm", headers=one, json={}).status_code == 409
+    assert client.post(f"/api/v1/agreements/{aid}/obligations/obl-none/confirm", headers=one, json={}).status_code == 404
+    w2 = client.get("/api/v1/waiting", headers=one).json()
+    assert "deliver the made-up goods" not in [i["what"] for i in w2["items"] if i["kind"] == "unconfirmed"]
+    assert [i["confirmed"] for i in w2["items"] if i["what"] == "deliver the made-up goods"] == [True]
+
+    #  the notice period as the text states it, with its clause; an earlier entry kept
+    n1 = client.post(f"/api/v1/agreements/{aid}/notice", headers=one, json={"as_stated": "thirty days in writing", "clause": "clause 9"})
+    assert n1.status_code == 200 and n1.json()["notice"]["known"] is True and n1.json()["notice"]["clause"] == "clause 9"
+    client.post(f"/api/v1/agreements/{aid}/notice", headers=one, json={"as_stated": "sixty days in writing", "clause": "clause 9.1"})
+    whole = client.get(f"/api/v1/agreements/{aid}", headers=one).json()
+    assert whole["notice"]["as_stated"] == "sixty days in writing" and whole["notice"]["entered_by"] == who["one"]
+    assert client.post(f"/api/v1/agreements/{aid}/notice", headers=one, json={"as_stated": "x", "clause": "y", "at": 1}).status_code == 400
+
+    #  another person: not on their list, and not theirs to add to
+    seen = client.get("/api/v1/waiting", headers=two).json()
+    assert seen["items"] == [] and tag not in str(seen)
+    assert ob(good, h=two).status_code == 404
+
+    #  an ended agreement waits on nobody, and takes no more obligations
+    assert client.post(f"/api/v1/agreements/{aid}/ended", headers=one, json={"on": today.isoformat(), "how": "w1085 made-up"}).status_code == 200
+    assert client.get("/api/v1/waiting", headers=one).json()["items"] == []
+    assert ob(good).status_code == 409

@@ -76,10 +76,11 @@
   },
   {
    "id": "projects-and-workspace",
-   "holds": "a person's projects and workspace",
+   "holds": "a person's projects and workspace, and the one list of what waits on them",
    "modules": [
     "agentic_core.projects.api",
-    "agentic_core.api.user_workspace"
+    "agentic_core.api.user_workspace",
+    "agentic_core.api.waiting"
    ],
    "pages": [
     "./pages/projects"
