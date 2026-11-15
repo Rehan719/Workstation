@@ -305,6 +305,10 @@ app.include_router(career_api.router, dependencies=[_Depends(_get_current_user)]
 from agentic_core.api import law as law_api
 app.include_router(law_api.router, dependencies=[_Depends(_get_current_user)])
 
+#  P5.18 (W1080) - the enterprise's own agreements: parties and agreement records, kept only for a signed-in person
+from agentic_core.api import agreements as agreements_api
+app.include_router(agreements_api.router, dependencies=[_Depends(_get_current_user)])
+
 #  the registers a reader can check: the sources this platform names, and what a person can do here
 from agentic_core.api import registers as registers_api
 app.include_router(registers_api.router)

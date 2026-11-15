@@ -88143,3 +88143,261 @@ def test_w1079_fu399_every_file_that_calls_a_route_is_reached_by_a_rendered_test
     assert fx["unavailable"]["status"] == 503 and fx["verse"]["status"] == 200
     assert re.fullmatch(r"placeholder2 words2 verse1 alpha1 beta1", fx["verse"]["body"]["text_arabic"])
     assert fx["verse"]["body"]["surah_name"].startswith("W1079 placeholder name")
+
+
+def test_w1080_p518_a_party_is_a_person_or_a_registered_body_and_an_agreements_six_facts_stay_apart(client, monkeypatch):
+    """P5.18 clauses 1 and 2, the first slice (W1080, FU-1075), driven through the routes on made-up parties, as a first
+    person, a second and an administrator. Held here:
+    - with sign-in off nothing is kept: every write is refused with the ruling's reason, the listings say so, and the
+      store holds nothing of what was typed;
+    - a party is a person or a registered body, entered with where and when it was read, and says this platform did not
+      check it; a registered body needs its register and number and a person has neither; a date that is not one, or
+      has not come, is refused; a field the route does not take is refused by name;
+    - an entity of this platform is refused as a party by its id, at both doors; to a person who cannot reach that
+      entity its id is answered as any unknown id; no answer carries an entity's form or a single status;
+    - an agreement is drafted at version 1 with its text's hash, and its six facts are apart, each with who and when;
+    - an approval names its version's hash: an old hash is refused, and a change to the text ends the approval, with
+      why; a change made from an old version is refused; a review says whether it is of the current text;
+    - an execution is a person's entry of the version, the date, the evidence and the formalities met: a provider's
+      status in the request is refused by name; once executed the text is not changed; the law's formalities are not
+      stated;
+    - in force and ended are entries of their own; an end before the signing is refused; after the end nothing is added;
+    - a signatory's authority is recorded as stated and by whom, never verified;
+    - the second person finds none of the first person's records, as for a record that does not exist; the
+      administrator reads them;
+    - the internal service contracts are listed apart, never as agreements."""
+    import hashlib
+    import uuid
+    from datetime import datetime, timedelta, timezone
+    import agentic_core.auth.core as _ac
+    import agentic_core.api.agreements as _ag
+    tag = uuid.uuid4().hex[:8]
+    today = datetime.now(timezone.utc).date()
+    yday, week_ago, later = ((today - timedelta(days=1)).isoformat(), (today - timedelta(days=7)).isoformat(),
+                             (today + timedelta(days=30)).isoformat())
+
+    def keys(o):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                yield k
+                yield from keys(v)
+        elif isinstance(o, list):
+            for v in o:
+                yield from keys(v)
+
+    def plain(answer):
+        """no answer folds the facts into one status, or shows an entity's form"""
+        bad = {k for k in keys(answer) if k in ("status", "stage", "lifecycle", "entity_type", "legal_form",
+                                                "incorporated", "incorporation", "provider_status")}
+        assert not bad, ("an agreement answer carries a single status or an entity's form", bad)
+        return answer
+
+    def stored():
+        return "".join(p.read_text(encoding="utf-8") for p in (_ag._path(_ag.PARTIES), _ag._path(_ag.AGREEMENTS))
+                       if p.exists())
+
+    #  0. with sign-in off nothing is kept
+    monkeypatch.setenv("AUTH_ENABLED", "false")
+    typed = f"W1080 Off {tag}"
+    off = client.post("/api/v1/agreements/parties", json={"kind": "person", "name": typed, "read_from": "w1080",
+                                                          "read_on": yday})
+    assert off.status_code == 403 and off.json()["detail"] == _ag.NOT_KEPT, (off.status_code, off.text[:300])
+    offa = client.post("/api/v1/agreements", json={"title": typed, "text": typed, "parties": []})
+    assert offa.status_code == 403 and offa.json()["detail"] == _ag.NOT_KEPT
+    lst = client.get("/api/v1/agreements").json()
+    assert lst["kept"] is False and lst["agreements"] == [] and lst["not_kept_because"] == _ag.NOT_KEPT, lst
+    assert lst["internal_service_contracts"]["what_these_are"] == _ag.SERVICE_CONTRACTS_ARE
+    assert client.get("/api/v1/agreements/parties").json()["kept"] is False
+    assert client.get("/api/v1/agreements/agr-anything").status_code == 404
+    assert typed not in stored(), "what a person typed was kept before sign-in"
+
+    #  signed in: a first person, a second and an administrator
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    who = {k: f"w1080-{k}-{tag}" for k in ("one", "two", "admin")}
+    users = _ac._load_users()
+    for k, name in who.items():
+        users[name] = {"user_id": name, "username": name, "hashed_password": _ac._pwd_ctx.hash("pw12345678"),
+                       "role": "admin" if k == "admin" else "user", "created_at": "2026-11-15T00:00:00Z",
+                       "api_keys": []}
+    _ac._save_users(users)
+    H = {}
+    for k, name in who.items():
+        tok = client.post("/api/v1/auth/token", data={"username": name, "password": "pw12345678"})
+        assert tok.status_code == 200, tok.text[:200]
+        H[k] = {"Authorization": "Bearer " + tok.json()["access_token"]}
+    one, two, adm = H["one"], H["two"], H["admin"]
+
+    #  1. parties as they are in law
+    def party(body, h=one):
+        return client.post("/api/v1/agreements/parties", headers=h, json=body)
+    body = {"kind": "registered_body", "name": f"W1080 Example Supplies {tag}",
+            "registered_on": "a made-up register (W1080)", "registered_number": f"W1080-{tag}",
+            "read_from": "the made-up register's page for it (W1080)", "read_on": yday}
+    r = party(body)
+    assert r.status_code == 200, r.text[:300]
+    sup = plain(r.json())["party"]
+    assert sup["id"].startswith("pty-") and sup["kind"] == "registered_body" and sup["checked_by_this_platform"] is False
+    assert (sup["registered_on"], sup["registered_number"], sup["read_from"], sup["read_on"], sup["entered_by"]) == (
+        body["registered_on"], body["registered_number"], body["read_from"], yday, who["one"]), sup
+    assert sup["basis"].endswith(_ag.NOT_CHECKED) and body["read_from"] in sup["basis"]
+    per = party({"kind": "person", "name": f"Ann W1080-Example {tag}", "read_from": "the made-up draft's signature block",
+                 "read_on": yday}).json()["party"]
+    assert per["kind"] == "person" and per["registered_on"] is None and per["registered_number"] is None
+    for bad, words in (({**body, "kind": "company"}, "is neither"),
+                       ({**body, "registered_number": ""}, "Its number on that register is needed"),
+                       ({"kind": "person", "name": "w1080", "registered_on": "a made-up register", "read_from": "w1080",
+                         "read_on": yday}, "a registered body's"),
+                       ({**body, "read_from": " "}, "Where the party's details were read is needed"),
+                       ({**body, "read_on": "14/11/2026"}, "must be a date written YYYY-MM-DD"),
+                       ({**body, "read_on": later}, "a date that has not come is not recorded"),
+                       ({**body, "vsb_id": "w1080"}, "'vsb_id' is not part of it"),
+                       ({**body, "incorporated": True}, "'incorporated' is not part of it")):
+        rr = party(bad)
+        assert rr.status_code == 400 and words in rr.json()["detail"], (bad, rr.status_code, rr.text[:300])
+
+    #  an entity of this platform is never a party
+    est = client.post("/api/v1/genesis/establish", headers=one, json={
+        "problem": f"w1080 made-up mission {tag}", "ship_output": False, "name": f"W1080 Entity {tag}"})
+    assert est.status_code == 200, est.text[:300]
+    vid = est.json()["vsb_id"]
+    rr = party({**body, "name": vid})
+    assert rr.status_code == 400 and rr.json()["detail"] == _ag.NOT_AN_ENTITY.format(id=f"'{vid}'"), rr.text[:300]
+    p2 = party({**body, "name": vid, "registered_number": "W1080-TWO"}, h=two)
+    assert p2.status_code == 200, ("another person's entity id was answered as an entity", p2.text[:300])
+    p2 = p2.json()["party"]
+
+    #  2. an agreement record whose six facts are kept apart
+    text1 = f"W1080 made-up agreement {tag}: the supplier supplies made-up goods to the customer."
+    h1, roles = "sha256:" + hashlib.sha256(text1.encode("utf-8")).hexdigest(), [
+        {"party_id": sup["id"], "role": "supplier"}, {"party_id": per["id"], "role": "customer"}]
+
+    def draft(parties, h=one):
+        return client.post("/api/v1/agreements", headers=h, json={"title": f"W1080 Supply {tag}", "text": text1,
+                                                                  "parties": parties})
+    for parties, h, words in (([roles[0]], one, "at least two parties"),
+                              ([roles[0], {"party_id": vid, "role": "customer"}], one, "is an entity of this platform"),
+                              ([roles[0], {"party_id": "pty-none", "role": "customer"}], one, "is not a party record of yours"),
+                              ([roles[0], {**roles[0], "role": "again"}], one, "is named twice"),
+                              ([roles[0], {**roles[1], "vsb_id": vid}], one, "named by its party record"),
+                              (roles, two, "is not a party record of yours"),
+                              ([{"party_id": p2["id"], "role": "supplier"}, {"party_id": vid, "role": "customer"}], two,
+                               "is not a party record of yours")):
+        rr = draft(parties, h)
+        assert rr.status_code == 400 and words in rr.json()["detail"], (parties, rr.status_code, rr.text[:300])
+        assert h is one or "entity" not in rr.json()["detail"], ("another person's entity was named as one", rr.text[:300])
+    d = draft(roles)
+    assert d.status_code == 200, d.text[:300]
+    a = plain(d.json())
+    aid = a["id"]
+    assert aid.startswith("agr-") and a["current"] == {"version": 1, "hash": h1} and a["versions"][0]["text"] == text1
+    assert [f["state"] for f in a["facts"]] == list(_ag.STATES) == ["drafted", "reviewed", "approved", "executed",
+                                                                     "in_force", "ended"]
+    assert a["facts"][0]["recorded"] is True and a["facts"][0]["by"] == who["one"] and a["facts"][0]["at"]
+    assert all(f["recorded"] is False and f["said"] for f in a["facts"][1:]), a["facts"]
+    assert [(p["role"], p["party"]["name"]) for p in a["parties"]] == [("supplier", sup["name"]), ("customer", per["name"])]
+
+    def act(path, body, h=one, method="post"):
+        return getattr(client, method)(f"/api/v1/agreements/{aid}/{path}", headers=h, json=body)
+    rv = act("review", {"hash": h1, "note": "w1080 a made-up review"})
+    assert rv.status_code == 200, rv.text[:300]
+    assert rv.json()["facts"][1]["reviews"][0]["by"] == who["one"] and rv.json()["facts"][1]["reviews"][0]["of_current_text"]
+    ap = act("approve", {"hash": h1})
+    assert ap.status_code == 200, ap.text[:300]
+    f = plain(ap.json())["facts"][2]
+    assert f["recorded"] and (f["version"], f["hash"], f["by"]) == (1, h1, who["one"]) and f["at"], f
+    assert act("approve", {"hash": h1}).status_code == 409
+
+    #  a change to the text ends the approval, with why
+    text2 = text1 + " A second made-up clause."
+    h2 = "sha256:" + hashlib.sha256(text2.encode("utf-8")).hexdigest()
+    stale = act("text", {"text": text2, "from_hash": "sha256:w1080-not-a-version"}, method="put")
+    assert stale.status_code == 409 and "not the version this change was made from" in stale.json()["detail"]
+    assert act("text", {"text": text1, "from_hash": h1}, method="put").status_code == 400
+    ch = act("text", {"text": text2, "from_hash": h1}, method="put")
+    assert ch.status_code == 200, ch.text[:300]
+    c = plain(ch.json())
+    assert c["current"] == {"version": 2, "hash": h2} and [v["hash"] for v in c["versions"]] == [h1, h2]
+    assert c["facts"][2]["recorded"] is False, "a change to the text left the approval of the old text standing"
+    ended_ap = c["facts"][2]["ended_approvals"]
+    assert len(ended_ap) == 1 and ended_ap[0]["version"] == 1 and ended_ap[0]["ended_by"] == who["one"], ended_ap
+    assert "the text changed" in ended_ap[0]["ended_because"] and h2 in ended_ap[0]["ended_because"]
+    assert c["facts"][1]["reviews"][0]["of_current_text"] is False
+    old = act("approve", {"hash": h1})
+    assert old.status_code == 409 and "not the version named" in old.json()["detail"], old.text[:300]
+    assert act("approve", {"hash": h2}).status_code == 200
+
+    #  a signatory's authority as stated and by whom
+    sig = {"party_id": sup["id"], "name": f"Bo W1080-Example {tag}", "capacity": "director, as stated",
+           "authority_as_stated": "authorised by the board, as a made-up minute says", "stated_by": "the company secretary, as stated"}
+    sg = act("signatories", sig)
+    assert sg.status_code == 200, sg.text[:300]
+    s = next(p for p in sg.json()["parties"] if p["party_id"] == sup["id"])["signatories"][0]
+    assert s["verified_by_this_platform"] is False and s["basis"] == _ag.AUTHORITY_NOT_VERIFIED, s
+    assert (s["stated_by"], s["recorded_by"], s["authority_as_stated"]) == (sig["stated_by"], who["one"],
+                                                                            sig["authority_as_stated"]) and s["recorded_at"]
+    assert act("signatories", {**sig, "party_id": "pty-none"}).status_code == 400
+
+    #  an execution is a person's entry, never a provider's status
+    ex_body = {"hash": h2, "signed_on": yday, "evidence": "the made-up signed copy, as stated (W1080)",
+               "formalities_met": ["signed by both parties, as stated (W1080)"]}
+    prov = act("executed", {**ex_body, "provider_status": "completed"})
+    assert prov.status_code == 400 and "'provider_status' is not part of it" in prov.json()["detail"], prov.text[:300]
+    assert act("executed", {**ex_body, "formalities_met": []}).status_code == 400
+    assert act("executed", {**ex_body, "hash": "sha256:w1080-none"}).status_code == 400
+    assert act("executed", {**ex_body, "signed_on": later}).status_code == 400
+    ex = act("executed", ex_body)
+    assert ex.status_code == 200, ex.text[:300]
+    e = plain(ex.json())["facts"][3]
+    assert e["recorded"] and (e["entered_by"], e["version"], e["hash"], e["signed_on"]) == (who["one"], 2, h2, yday), e
+    assert e["entered_at"] and e["evidence"] == ex_body["evidence"] and e["formalities_met"] == ex_body["formalities_met"]
+    assert e["formalities_the_law_requires"] is None and e["law_basis"] == _ag.LAW_NOT_READ and e["of_current_text"] is True
+    assert act("executed", ex_body).status_code == 409
+    fixed = act("text", {"text": text2 + " A third.", "from_hash": h2}, method="put")
+    assert fixed.status_code == 409 and "a variation is an agreement record of its own" in fixed.json()["detail"]
+
+    #  in force and ended, each its own entry
+    inf = act("in-force", {"from_date": yday, "basis": "on signature, as the made-up text says"})
+    assert inf.status_code == 200 and inf.json()["facts"][4]["from"] == yday and inf.json()["facts"][4]["entered_by"] == who["one"]
+    assert act("in-force", {"from_date": yday, "basis": "again"}).status_code == 409
+    early = act("ended", {"on": week_ago, "how": "w1080"})
+    assert early.status_code == 400 and "before the date it was signed" in early.json()["detail"], early.text[:300]
+    en = act("ended", {"on": today.isoformat(), "how": "ended by a made-up notice, as stated (W1080)"})
+    assert en.status_code == 200, en.text[:300]
+    last = plain(en.json())
+    assert [f["recorded"] for f in last["facts"]] == [True] * 6, last["facts"]
+    assert last["facts"][5]["on"] == today.isoformat() and last["facts"][5]["entered_by"] == who["one"]
+    assert act("review", {"hash": h2}).status_code == 409 and act("signatories", sig).status_code == 409
+
+    #  another person's record is answered as one that does not exist; an administrator reads it
+    gone = client.get("/api/v1/agreements/agr-w1080none", headers=two)
+    theirs = client.get(f"/api/v1/agreements/{aid}", headers=two)
+    assert theirs.status_code == gone.status_code == 404
+    assert theirs.json()["detail"].replace(aid, "<ID>") == gone.json()["detail"].replace("agr-w1080none", "<ID>")
+    assert act("approve", {"hash": h2}, h=two).status_code == 404
+    for path in ("/api/v1/agreements", "/api/v1/agreements/parties"):
+        seen = client.get(path, headers=two)
+        assert seen.status_code == 200 and tag not in seen.text.replace(who["two"], ""), (path, seen.text[:300])
+    assert client.get(f"/api/v1/agreements/{aid}", headers=adm).status_code == 200
+    assert aid in client.get("/api/v1/agreements", headers=adm).text
+
+    #  the internal service contracts are listed apart, never as agreements
+    est2 = client.post("/api/v1/genesis/establish", headers=one, json={
+        "problem": f"w1080 made-up second mission {tag}", "ship_output": False, "name": f"W1080 Second {tag}"})
+    assert est2.status_code == 200, est2.text[:300]
+    ctr = client.post("/api/v1/economy/contracts", headers=one, json={
+        "client_vsb": vid, "provider_vsb": est2.json()["vsb_id"], "brief": f"w1080 made-up brief {tag}", "price_wst": 10})
+    assert ctr.status_code == 200, ctr.text[:300]
+    mine = client.get("/api/v1/agreements", headers=one).json()
+    plain(mine["agreements"])
+    assert mine["kept"] is True and [x["id"] for x in mine["agreements"]] == [aid], mine["agreements"]
+    isc = mine["internal_service_contracts"]
+    assert ctr.json()["id"] in [x["id"] for x in isc["contracts"]] and isc["what_these_are"] == _ag.SERVICE_CONTRACTS_ARE
+    assert ctr.json()["id"] not in str(mine["agreements"])
+    assert [x["state"] for x in mine["agreements"][0]["facts"]] == list(_ag.STATES)
+
+    #  the store keeps what the signed-in person entered, under their name; the code reads no entity's form
+    held = stored()
+    assert sup["id"] in held and aid in held and typed not in held
+    import pathlib
+    src = (pathlib.Path(__file__).resolve().parents[1] / "agentic_core/api/agreements.py").read_text(encoding="utf-8")
+    assert "ENTITY_TEMPLATES" not in src and "entity_type" not in src and "economy.entity_form" not in src

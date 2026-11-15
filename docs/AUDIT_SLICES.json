@@ -87,10 +87,11 @@
   },
   {
    "id": "law",
-   "holds": "the Law tools and the page of where help is",
+   "holds": "the Law tools, the page of where help is, and the enterprise's agreement records",
    "modules": [
     "agentic_core.api.law",
-    "agentic_core.api.where_help"
+    "agentic_core.api.where_help",
+    "agentic_core.api.agreements"
    ],
    "pages": []
   },
