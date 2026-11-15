@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GenerationPrice } from '../../components/GenerationPrice';
 import { qmsChip, provenanceMapBadge, complianceChip, layerTitle, immuneReading, apiJson, errorMessage, bodyOrNull, bodyDetail } from '../../lib/api';
+import { asClause } from '../../lib/api';   // W1062 - the establishment's reason, whole and as a clause
 import { refusalOf } from '../../lib/stream';   // W1025 - a refusal by its reason, not its status alone
 import { ReadFailures, useReadFailures, silenceIsRight } from '../../components/ReadFailures';   // W928
 import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS, PRODUCTS, PRODUCT_LABELS } from '../../lib/taxonomy';
@@ -434,7 +435,7 @@ export const GenesisJourney: React.FC = () => {
         });
         if (!res.ok) {
           const detail = bodyDetail(await bodyOrNull(res), '');   // W1012 - text, whatever its shape
-          setError(`Establishment failed (HTTP ${res.status})${detail ? `: ${detail.slice(0, 160)}` : ''}.`);
+          setError(`Establishment failed (HTTP ${res.status})${detail ? `: ${asClause(detail)}` : ''}.`);
         } else {
           setVsb(await res.json());
         }

@@ -43323,15 +43323,14 @@ def test_w597_p310_no_curriculum_without_a_named_scholar(client):
         assert "quran" in _rd["matched"], (
             "the refusal does not name what matched, so a teacher whose secular course tripped the list "
             "cannot see why and cannot dispute it", _rd)
-        #  AND IT MUST SURVIVE THE PAGE'S OWN TRUNCATION. apps/.../lib/api.ts renders a non-string detail
-        #  as JSON.stringify(detail).slice(0, 300) through errorMessage(), so a refusal longer than that
-        #  reaches a teacher on EducationHub cut off mid-sentence - which is how a careful explanation
-        #  becomes unreadable JSON. The readable sentence must fit, and must come first.
+        #  AND WHAT A TEACHER NEEDS COMES FIRST. lib/api.ts cut a refusal's reason at 300 characters until W1062,
+        #  which says it whole; the referral and the readable sentence still come first, where a teacher reads
+        #  first.
         import json as _js310
         _wire = _js310.dumps(_rd)[:300]
         assert "/api/v1/qep/curriculum" in _wire, (
-            "the referral falls outside the first 300 characters of the serialised detail, which is all "
-            "the page keeps - so the one thing a teacher needs is the thing truncated away", len(_wire),
+            "the referral falls outside the first 300 characters of the serialised detail, so the one thing a "
+            "teacher needs is not what is read first", len(_wire),
             _wire[-80:])
         assert _rd["message"].endswith("."), (
             "the refusal's readable sentence is itself truncated", _rd["message"][-60:])
@@ -78680,7 +78679,7 @@ def test_w927_no_page_uses_an_answers_body_before_checking_its_status():
 
     #  the helper this rests on still refuses a non-2xx, with the server's own detail
     api = (src / "lib/api.ts").read_text(encoding="utf-8")
-    assert "  if (!res.ok) {" in api and "throw new ApiError(res.status, detail.slice(0, 300));" in api
+    assert "  if (!res.ok) {" in api and "throw new ApiError(res.status, detail);" in api   # W1062 - whole
 
     #  the Genesis page says what happened when a gate read fails, never "unreachable" for a refusal
     g = (src / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
@@ -84163,7 +84162,7 @@ def test_w1012_a_refusal_read_by_hand_is_never_said_as_object_object(client):
             "  return axiosDetail({ response: { data: body } }, fallback);\n}") in api
     sites = {
         "components/QEPStudio.tsx": [
-            "Promise.reject(new Error(bodyDetail(b, '').slice(0, 140) || `${url} → HTTP ${r.status}`)))))"],
+            "Promise.reject(new Error(bodyDetail(b, '') || `${url} → HTTP ${r.status}`)))))"],   # W1062 - whole
         "pages/projects/ProjectsHub.tsx": ["if (!response.ok) throw new Error(await refusalOf(response));"],
         "pages/enterprise/BusinessPlan.tsx": [
             "setPlanErr(bodyDetail(data, `the plan could not be read (HTTP ${r.status})`));"],
@@ -84172,13 +84171,13 @@ def test_w1012_a_refusal_read_by_hand_is_never_said_as_object_object(client):
             "${String((r.data as any)?.detail?.basis ?? bodyDetail(r.data, 'no reason given'))}`);"],
         "pages/synthesis/GenesisJourney.tsx": [
             "const detail = bodyDetail(await bodyOrNull(res), '');",
-            "setError(`Establishment failed (HTTP ${res.status})${detail ? `: ${detail.slice(0, 160)}` : ''}.`);"],
+            "setError(`Establishment failed (HTTP ${res.status})${detail ? `: ${asClause(detail)}` : ''}.`);"],   # W1062
         "pages/governance/GovernanceHub.tsx": [
             "const detail = bodyDetail(await bodyOrNull(res), '');",
-            "toast(`Submission failed (HTTP ${res.status})${detail ? `: ${detail.slice(0, 120)}` : ''}`);"],
+            "toast(`Submission failed (HTTP ${res.status})${detail ? `: ${detail}` : ''}`);"],   # W1062 - whole
         "pages/developers/NativeAI.tsx": [
             "const detail = bodyDetail(await bodyOrNull(r), '');",
-            "setSaveErr(`Save failed (HTTP ${r.status})${detail ? `: ${detail}` : ''}.`);"],   # W1048 - beside its button
+            "setSaveErr(`Save failed (HTTP ${r.status})${detail ? `: ${asClause(detail)}` : ''}.`);"],   # W1048, W1062
     }
     for rel, lines in sites.items():
         code = _code_only((src / rel).read_text(encoding="utf-8").replace("\r\n", "\n"))
@@ -86991,10 +86990,99 @@ def test_w1061_fu1247_the_instrument_cell_says_each_read_s_failure_in_its_place_
     assert "import captured from './InstrumentCellPanel.fixture.json';" in t
     for tid in ("cell-availability-error", "cell-propose-error", "cell-specs-unlisted"):
         assert f"'{tid}'" in t, tid
-    assert t.count("\n  it('") == 9, "the rendered cases"
+    assert t.count("\n  it('") >= 9, "the rendered cases"   # W1062 added the store's own refusal
     fx = json.loads((src / "InstrumentCellPanel.fixture.json").read_text(encoding="utf-8"))
     assert fx["availability_failed"]["status"] == 500 and fx["availability"]["status"] == 200
     assert [fx[k]["status"] for k in ("proposed_open", "proposed_stated", "kept", "proposed_second", "kept_second")] == [200] * 5
     assert fx["kept"]["body"]["saved"] is True and fx["kept_second"]["body"]["saved"] is True
     assert fx["proposed_open"]["body"]["selection"] is None and fx["proposed_open"]["body"]["suggested_requirements"]
     assert [s["id"] for s in fx["specifications_after"]["body"]["specifications"]] == [fx["kept"]["body"]["id"]]
+
+
+def test_w1062_fu1248_a_refusal_s_reason_is_said_whole_never_cut_at_a_fixed_length():
+    """W1062 (FU-1248). Rendering the instrument cell (W1061) found the specifications route's own 503 said cut: "...
+    This is a store problem, not a problem with th". The shared fetch helper (lib/api.ts apiJson) cut every refusal's
+    reason at 300 characters, mid-word and unmarked, so every page reading through it lost the end of a long reason,
+    and a route's reason often says last what was kept or what to do next. Five of the backend's literal refusal
+    sentences are longer than that before any value is put in (a census of agentic_core's HTTPException details, held
+    below), and a reason that carries a store's own error is longer still. Three more cuts were made by hand, each
+    shorter: the Quran studio's section reads (140), the Genesis journey's establishment (160) and the Governance Hub's
+    meta-proposal submission (120). Each says the reason whole now. The establishment and the Native AI page's cascade
+    save closed a reason copied into a variable with a full stop of their own, a form W1059's census did not read (the
+    save said a cascade removed elsewhere as "... not found.."); both say it as a clause now.
+
+    Held here: the helper passes the reason whole; tree-wide, no reason is cut at a fixed length in the app; the four
+    sites; the backend's census; and the unit and rendered cases (src/lib/api.test.ts, InstrumentCellPanel.test.tsx)
+    that drive the 503 as the route answered it."""
+    import ast
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    api = _code_only((src / "lib/api.ts").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    fn = api[api.index("export async function apiJson"):api.index("export function axiosDetail")]
+    assert "throw new ApiError(res.status, detail);" in fn
+    assert not re.search(r"\.(slice|substring|substr)\(", fn), "the shared fetch helper cuts what it says"
+    #  tree-wide: a reason, or a reader's answer, cut at a fixed length
+    named = re.compile(r"\b(?:detail|reason|why|basis|message|refusal|err|error)\w*\s*\)?\s*\.(?:slice|substring|substr)"
+                       r"\(\s*0\s*,\s*\d+\s*\)")
+    read = re.compile(r"\b(?:bodyDetail|axiosDetail|errorMessage|refusalOf|asClause)\((?:[^()]|\([^()]*\))*\)\s*"
+                      r"\.(?:slice|substring|substr)\(")
+    cuts, scanned = [], 0
+    for f in sorted(list(src.rglob("*.ts")) + list(src.rglob("*.tsx"))):
+        if ".test." in f.name:
+            continue
+        scanned += 1
+        code = _code_only(f.read_text(encoding="utf-8", errors="replace").replace("\r\n", "\n"))
+        cuts += [f"{f.relative_to(src).as_posix()}: {m.group(0)[:80]}" for rx in (named, read) for m in rx.finditer(code)]
+    assert scanned > 100, scanned
+    assert cuts == [], ("a refusal's reason is cut at a fixed length; say it whole", cuts)
+    #  W1059's closing in the form its census did not read: a reason copied into a variable, closed by the page
+    nested = re.compile(r"\$\{\w+ \? `: \$\{(?!asClause\()[^`]*?\}` : ''\}\.")
+    closings = []
+    for f in sorted(list(src.rglob("*.ts")) + list(src.rglob("*.tsx"))):
+        if ".test." in f.name:
+            continue
+        code = _code_only(f.read_text(encoding="utf-8", errors="replace").replace("\r\n", "\n"))
+        closings += [f"{f.relative_to(src).as_posix()}: {m.group(0)[:80]}" for m in nested.finditer(code)]
+    assert closings == [], ("a reason in a variable is followed by a second full stop; say it with asClause", closings)
+    for rel, line in (
+            ("pages/developers/NativeAI.tsx",
+             "setSaveErr(`Save failed (HTTP ${r.status})${detail ? `: ${asClause(detail)}` : ''}.`);"),
+            ("components/QEPStudio.tsx", "Promise.reject(new Error(bodyDetail(b, '') || `${url} → HTTP ${r.status}`)))))"),
+            ("pages/synthesis/GenesisJourney.tsx",
+             "setError(`Establishment failed (HTTP ${res.status})${detail ? `: ${asClause(detail)}` : ''}.`);"),
+            ("pages/governance/GovernanceHub.tsx",
+             "toast(`Submission failed (HTTP ${res.status})${detail ? `: ${detail}` : ''}`);")):
+        assert line in _code_only((src / rel).read_text(encoding="utf-8").replace("\r\n", "\n")), rel
+    #  the backend's census: refusal sentences longer than the old cut, before any value is put in
+    longer = []
+    for f in sorted((root / "agentic_core").rglob("*.py")):
+        try:
+            tree = ast.parse(f.read_text(encoding="utf-8"))
+        except (SyntaxError, UnicodeDecodeError):
+            continue
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Call) and getattr(node.func, "id", getattr(node.func, "attr", None)) == "HTTPException"):
+                continue
+            for kw in node.keywords:
+                v = kw.value if kw.arg == "detail" else None
+                if isinstance(v, ast.Constant) and isinstance(v.value, str):
+                    text = v.value
+                elif isinstance(v, ast.JoinedStr):
+                    text = "".join(x.value for x in v.values if isinstance(x, ast.Constant))
+                else:
+                    continue
+                if len(text) > 300:
+                    longer.append(f"{f.relative_to(root).as_posix()}:{node.lineno}")
+    assert len(longer) >= 3, ("the census no longer finds the long refusals it was written for", longer)
+    #  the unit and the rendered case drive the store's own 503, longer than the old cut, as the route answered it
+    fx = json.loads((src / "components/InstrumentCellPanel.fixture.json").read_text(encoding="utf-8"))
+    assert fx["specifications_failed"]["status"] == 503 and len(fx["specifications_failed"]["body"]["detail"]) > 300
+    unit = (src / "lib/api.test.ts").read_text(encoding="utf-8")
+    assert "import cell from '../components/InstrumentCellPanel.fixture.json';" in unit
+    assert "expect((e as ApiError).detail).toBe(a.body.detail);" in unit
+    assert "expect(errorMessage(e)).toBe(`Failed (HTTP 503): ${a.body.detail}`);" in unit
+    cell = (src / "components/InstrumentCellPanel.test.tsx").read_text(encoding="utf-8")
+    assert "`The kept specifications were not listed: Failed (HTTP 503): ${why.replace(/\\.$/, '')}.`" in cell

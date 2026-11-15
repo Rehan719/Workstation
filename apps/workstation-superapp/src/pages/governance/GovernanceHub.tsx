@@ -526,7 +526,7 @@ const SanctumTab: React.FC = () => {
       // Ledger cluster 2 — a 4xx/5xx must never produce the success toast + a phantom list entry
       if (!res.ok) {
         const detail = bodyDetail(await bodyOrNull(res), '');   // W1012 - text, whatever its shape
-        toast(`Submission failed (HTTP ${res.status})${detail ? `: ${detail.slice(0, 120)}` : ''}`);
+        toast(`Submission failed (HTTP ${res.status})${detail ? `: ${detail}` : ''}`);
         return;
       }
       const data = await res.json();

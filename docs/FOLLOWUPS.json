@@ -25249,6 +25249,31 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: each failure is the panel's own and is said where its answer would be, saying what was not read; no list is said as empty before a read of it answered; only the latest read of the kept specifications is drawn, and one that failed draws no list; the proposal before goes when another is asked. The rendered test (nine cases against the routes' own answers) has ten vitest blinds; test_w1061 holds the code (twelve blinds)."
+    },
+    {
+      "id": "FU-1248",
+      "title": "A refusal's reason was cut at a fixed length, mid-word and unmarked: the shared fetch helper kept 300 characters of every reason, and three pages cut theirs by hand at 140, 160 and 120; two closed a reason in a variable with a second full stop",
+      "why": "Found rendering the instrument cell (W1061): the specifications route's own 503 (310 characters) was said as '... This is a store problem, not a problem with th'. lib/api.ts apiJson cut every refusal's reason at 300 characters, so every page reading through it lost the end of a long reason, and a route's reason often says last what was kept or what to do next. Five of the backend's literal refusal sentences are longer than 300 characters before any value is put in. A census of the app found three more cuts by hand: the Quran studio's section reads (140), the Genesis journey's establishment (160) and the Governance Hub's meta-proposal submission (120). The establishment and the Native AI page's cascade save closed a reason copied into a variable with a full stop of their own, a form W1059's census did not read: the save said a cascade removed elsewhere as '... not found..'.",
+      "source": "W1062 (found by W1061's render of the instrument cell)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/lib/api.ts",
+        "apps/workstation-superapp/src/components/QEPStudio.tsx",
+        "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx",
+        "apps/workstation-superapp/src/pages/governance/GovernanceHub.tsx",
+        "apps/workstation-superapp/src/pages/developers/NativeAI.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1062",
+      "note": "",
+      "slot_source": "found by FU-399's render of the Resource Fabric's instrument cell; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the shared fetch helper and the three pages say a refusal's reason whole, and the establishment and the cascade save say a reason in a variable as a clause. src/lib/api.test.ts and the instrument cell's rendered test drive the specifications route's own 503 (two vitest blinds); test_w1062 holds the helper, the five sites and the censuses of the app and the backend (seven blinds)."
     }
   ],
   "routes": [

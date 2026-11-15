@@ -187,6 +187,17 @@ describe('InstrumentCellPanel, rendered against its routes\' own answers', () =>
     expect(screen.queryByTestId('cell-specs-unlisted')).toBeNull();
   });
 
+  //  W1062 - the store's own refusal of the list is longer than the 300 characters the shared helper kept
+  it('says the store\'s own refusal of the list whole', async () => {
+    const why = captured.specifications_failed.body.detail;
+    expect(why.length).toBeGreaterThan(300);
+    serve({ specs: [captured.specifications_failed] });
+    mount();
+    await waitFor(() => expect(screen.getByTestId('cell-specs-unlisted').textContent).toBe(
+      `The kept specifications were not listed: Failed (HTTP 503): ${why.replace(/\.$/, '')}.`));
+    expect(screen.queryByText(NONE_KEPT)).toBeNull();
+  });
+
   it('says a keep that was made, and that the list read after it was not, apart, and draws no list it did not read', async () => {
     serve({ specs: [captured.specifications_after, 'unreachable'], propose: [captured.proposed_second], keep: captured.kept_second });
     mount();

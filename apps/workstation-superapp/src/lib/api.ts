@@ -52,7 +52,9 @@ export async function apiJson<T = any>(url: string, opts: ApiOptions = {}): Prom
     if (j && typeof j === 'object' && 'detail' in j) {
       detail = bodyDetail(j, detail);   // W1013 - a field check by its field, an object by its message (it said JSON)
     }
-    throw new ApiError(res.status, detail.slice(0, 300));
+    //  W1062 - the reason whole: a cut at 300 characters ended a route's own sentence mid-word, unmarked ("... not a
+    //  problem with th"), and a refusal often says last what was kept or what to do next
+    throw new ApiError(res.status, detail);
   }
   return res.json() as Promise<T>;
 }

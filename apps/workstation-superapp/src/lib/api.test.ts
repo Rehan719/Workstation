@@ -9,6 +9,7 @@ import { asClause } from './api';   // W1059 - test_w1013 holds the line above a
 import { errorMessage } from './api';   // W1015 - W1013's guard holds the line above as its own
 import { whoami } from './auth';
 import repo from '../pages/enterprise/VSBCockpit.repo.fixture.json';   // W1058 - the KPI gate's own refusal
+import cell from '../components/InstrumentCellPanel.fixture.json';   // W1062 - the specifications store's own 503
 
 const FIELD_CHECK = { detail: [{ type: 'missing', loc: ['body', 'title'], msg: 'Field required', input: {} }] };
 const reply = (status: number, body: unknown, statusText = '') =>
@@ -70,6 +71,18 @@ describe('one reading of a refusal', () => {
     expect(e).toBeInstanceOf(ApiError);
     expect((e as ApiError).status).toBe(422);
     expect((e as ApiError).detail).toBe('title: Field required');
+  });
+
+  //  W1062 - it cut every reason at 300 characters, mid-word and unmarked
+  it('the shared fetch helper says a refusal\'s reason whole, however long', async () => {
+    const a = cell.specifications_failed;
+    expect(a.status).toBe(503);
+    expect(a.body.detail.length).toBeGreaterThan(300);
+    vi.stubGlobal('fetch', vi.fn(async () => reply(a.status, a.body, 'Service Unavailable')));
+    const e = await apiJson('/api/v1/resources/specifications').catch((x: unknown) => x);
+    expect(e).toBeInstanceOf(ApiError);
+    expect((e as ApiError).detail).toBe(a.body.detail);
+    expect(errorMessage(e)).toBe(`Failed (HTTP 503): ${a.body.detail}`);
   });
 
   it('the shared fetch helper keeps the status text when a refusal is not JSON', async () => {

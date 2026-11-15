@@ -56,7 +56,7 @@ export const QEPStudio: React.FC = () => {
   const getJson = (url: string, set: (d: any) => void) =>
     fetch(url)
       .then(r => (r.ok ? r.json() : r.json().catch(() => ({})).then((b: any) =>
-        Promise.reject(new Error(bodyDetail(b, '').slice(0, 140) || `${url} → HTTP ${r.status}`)))))   // W1012 - text, whatever its shape
+        Promise.reject(new Error(bodyDetail(b, '') || `${url} → HTTP ${r.status}`)))))   // W1012 - text, whatever its shape
       .then(set)
       .catch(e => setLoadErrs(errs => [...errs, errorMessage(e)]));
 
