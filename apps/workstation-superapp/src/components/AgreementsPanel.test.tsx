@@ -295,6 +295,52 @@ describe('AgreementsPanel, rendered against its routes\' own answers (made-up pa
       `Notice period: ${n.as_stated} (${n.clause}), entered by ${n.entered_by} at ${n.entered_at}.`));
   });
 
+  // W1103 (FU-399 part 92) - each action's refusal is said beside its own button, in the route's own words, and
+  // nothing is said in any other action's place
+  const ERRORS = ['review', 'approve', 'text', 'executed', 'in-force', 'ended', 'signatory', 'obligation', 'notice', 'confirm'];
+  const REFUSALS: [string, string, Answer, Answer, () => void][] = [
+    ['review', 'review', C.review_refused, C.read_drafted, () => press(/^Record a review of version 1/)],
+    ['text', 'text', C.text_refused, C.read_drafted, () => { type('The text', 'w1103 a changed made-up text'); press(/^Save as version 2/); }],
+    ['executed', 'executed', C.executed_refused, C.read_drafted, () => {
+      type('Date it was signed', C.captured_on); type('Evidence that it was executed', 'w1103 made-up evidence');
+      type('Formalities met', 'w1103 signed, as stated'); press(/^Record the execution of version 1/); }],
+    ['in-force', 'in_force', C.in_force_refused, C.read_drafted, () => {
+      type('In force from', C.captured_on); type('What puts it in force', 'w1103 made up'); press('Record that it is in force'); }],
+    ['signatory', 'signatories', C.signatory_refused, C.read_drafted, () => {
+      type('Signs for', C.read_drafted.body.parties[0].party_id); type('Signatory name', 'w1103 made-up name');
+      type('Signs as', 'w1103 as stated'); type('Authority, as stated', 'w1103 as stated'); type('Stated by', 'w1103 made up');
+      press('Record this signatory'); }],
+    ['notice', 'notice', C.notice_refused, C.read_drafted, () => {
+      type('The notice period, as stated', 'w1103 sixty days'); type('The notice clause', 'clause 9'); press('Record the notice period'); }],
+    ['confirm', 'confirm', C.confirm_again, C.obligation, () => press('Confirm it was read from clause 3')],
+  ];
+  for (const [id, key, refusal, read, doIt] of REFUSALS) {
+    it(`a refused ${id} is said beside its own button, in the route's words, and in no other place`, async () => {
+      await opened({ [key]: [refusal] } as Plan, read);
+      doIt();
+      await waitFor(() => expect(screen.getByTestId(`agreement-error-${id}`).textContent).toBe(`Not recorded: ${failed(refusal)}`));
+      for (const other of ERRORS.filter(e => e !== id)) expect(screen.queryByTestId(`agreement-error-${other}`)).toBeNull();
+    });
+  }
+
+  // W1103 - what was typed for one agreement is never offered for the next one opened
+  it('a form typed for one agreement is empty when another is opened', async () => {
+    const A2 = C.second_draft_a.body.id;
+    const B2 = C.second_draft_b.body.id;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const plan: any = { list: [C.second_list], parties: [C.second_parties],
+                        [`GET ${BASE}/${A2}`]: [C.second_read_a], [`GET ${BASE}/${B2}`]: [C.second_read_b] };
+    serve(plan);
+    render(<AgreementsPanel />);
+    fireEvent.click(await screen.findByRole('button', { name: /^W1103 Made-up First - version 1/ }));
+    await waitFor(() => expect(screen.getByTestId('agreement-current').textContent).toContain(C.second_read_a.body.current.hash));
+    const typed = ['Review note', 'Signatory name', 'Evidence that it was executed', 'What puts it in force', 'The notice clause'];
+    for (const label of typed) type(label, `w1103 typed for the first agreement: ${label}`);
+    fireEvent.click(screen.getByRole('button', { name: /^W1103 Made-up Second - version 1/ }));
+    await waitFor(() => expect(screen.getByTestId('agreement-current').textContent).toContain(C.second_read_b.body.current.hash));
+    for (const label of typed) expect((screen.getByLabelText(label) as HTMLInputElement).value).toBe('');
+  });
+
   it('a failed read of the records says its reason, and says no record as none', async () => {
     serve({ list: [C.list_unread], parties: [C.parties_two] });
     render(<AgreementsPanel />);

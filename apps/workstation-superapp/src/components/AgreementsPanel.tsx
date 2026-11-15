@@ -115,6 +115,11 @@ export default function AgreementsPanel() {
   const openRecord = async (id: string) => {
     openId.current = id;
     setOpen(null); setOpenErr(''); setErrs({});
+    //  W1103 - what was typed for one agreement is never offered for the next: every form is cleared when a record
+    //  is opened (its text is set from the record itself, in show)
+    setNote(''); setEx({ signed_on: '', evidence: '', formalities: '' }); setInf({ from_date: '', basis: '' });
+    setEnd({ on: '', how: '' }); setSig({ party_id: '', name: '', capacity: '', authority_as_stated: '', stated_by: '' });
+    setOb({ owed_by: '', owed_to: '', what: '', clause: '', due_on: '' }); setNt({ as_stated: '', clause: '' });
     try {
       show(await apiJson(`${BASE}/${id}`));
     } catch (e) {

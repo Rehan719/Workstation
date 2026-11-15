@@ -90795,3 +90795,37 @@ def test_w1102_fu399_the_tier_of_review_is_rendered_where_it_is_read_with_an_unc
     for case in ("await screen.findByTestId('review-option-tier');", "await screen.findByTestId('domain-review-tier');",
                  "captured.review_handover_uncalibrated.review", "captured.handover_uncalibrated.ai_provenance.review"):
         assert case in spec, f"the rendered test no longer reads the tier where it is read: {case}"
+
+
+def test_w1103_fu399_each_agreement_action_says_its_refusal_beside_its_button_and_no_form_carries_over():
+    """FU-399 part 92 (W1103). Seven of the agreements panel's per-action failures were never rendered, and opening
+    another agreement cleared the failures but not the forms: what was typed for one agreement stood under the next
+    and was recorded on it with one press. Held here:
+    - the panel's fixture carries each action's own refusal, as the route gives it, taken where the record stands, and
+      a second made-up person's two agreements;
+    - the rendered test drives each refusal beside its own button and in no other place, and opens one agreement after
+      another with every form typed into, finding each form empty."""
+    import json
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components"
+    fx = json.loads((src / "AgreementsPanel.fixture.json").read_text(encoding="utf-8"))
+    said = {"review_refused": (409, "The text is now version 2 ("),
+            "text_refused": (400, "The text given is version 2 as it stands, so nothing was changed."),
+            "signatory_refused": (400, "'w1103-not-a-party' is not a party to this agreement, so no signatory was recorded."),
+            "executed_refused": (409, "Its execution is already recorded, entered by "),
+            "in_force_refused": (409, "That it is in force is already recorded, from "),
+            "notice_refused": (400, "The clause it was read from is needed, and none was given, so nothing was kept."),
+            "confirm_again": (409, "")}
+    for k, (status, starts) in said.items():
+        assert fx[k]["status"] == status and str(fx[k]["body"]["detail"]).startswith(starts), (k, fx[k])
+    a2, b2 = fx["second_draft_a"]["body"], fx["second_draft_b"]["body"]
+    assert a2["id"] != b2["id"] and {a["id"] for a in fx["second_list"]["body"]["agreements"]} == {a2["id"], b2["id"]}
+    assert fx["second_read_a"]["body"]["id"] == a2["id"] and fx["second_read_b"]["body"]["id"] == b2["id"]
+    spec = (src / "AgreementsPanel.test.tsx").read_text(encoding="utf-8")
+    for row in ("['review', 'review', C.review_refused", "['text', 'text', C.text_refused",
+                "['executed', 'executed', C.executed_refused", "['in-force', 'in_force', C.in_force_refused",
+                "['signatory', 'signatories', C.signatory_refused", "['notice', 'notice', C.notice_refused",
+                "['confirm', 'confirm', C.confirm_again"):
+        assert row in spec, f"the rendered test no longer drives a refusal: {row}"
+    assert "it('a form typed for one agreement is empty when another is opened'" in spec
+    assert "for (const label of typed) expect((screen.getByLabelText(label) as HTMLInputElement).value).toBe('');" in spec

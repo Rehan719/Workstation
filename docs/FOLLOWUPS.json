@@ -25871,6 +25871,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: every NEWS2 score the risk route answers, whole, partial or with nothing recorded, carries the acknowledgement in the catalogue's own words, whole, and an answer no published chart computed carries none; the Care page says it under the score. The rendered test (two cases, on the route's own answers captured again) has two vitest blinds; test_w1098 holds the route, the register's terms, the fixture and the cases, with three blinds."
+    },
+    {
+      "id": "FU-1276",
+      "title": "The agreements panel kept what was typed for one agreement when another was opened, ready to be recorded on it",
+      "why": "Found reading the agreements panel for FU-399 part 92, whose seven per-action failures were never rendered (the review, the text, the execution, that it is in force, a signatory, the notice period, a confirmation). Opening another agreement cleared the failures and the record shown, but not the forms: a review note, an execution's date, evidence and formalities, an in-force date and basis, an end, a signatory, an obligation and a notice period typed for one agreement stood under the next one opened, and one press recorded them on it. Driven in the rendered test: five forms typed into for one agreement were still filled under the second.",
+      "source": "W1103 (FU-399 part 92: the agreements panel's per-action refusals rendered)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/components/AgreementsPanel.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.18",
+      "status": "done",
+      "closed_by": "W1103",
+      "note": "",
+      "slot_source": "the agreements panel is P5.18's (W1081, W1086); found by FU-399's render of it",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: every form of the open record is cleared when a record is opened, its text set from the record itself. The rendered test types into five forms of one agreement, opens another and finds each empty, and drives each of the seven actions' refusals beside its own button and in no other place, on the routes' own refusals captured again; three vitest blinds, and test_w1103 holds the fixture and the cases with two blinds."
     }
   ],
   "routes": [
