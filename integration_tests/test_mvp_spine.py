@@ -84329,7 +84329,10 @@ def test_w1013_one_reading_of_a_refusal_a_field_check_is_said_by_its_field(clien
         "components/organism/AgentHubPanel.tsx": [
             "if (!r.ok) { setErr(bodyDetail(d, `HTTP ${r.status}`)); setBusy(false); return; }",
             "if (!r.ok) { const d = await bodyOrNull(r); setMoveErr({ id, why: `Not moved: Failed (HTTP ${r.status}): ${bodyDetail(d, 'no reason given')}` }); return; }"],   # W1066
-        "components/qep/QEPIntelligence.tsx": ["if (!r.ok) { setErr(bodyDetail(d, `HTTP ${r.status}`)); setBusy(''); return; }"] * 3,
+        "components/qep/QEPIntelligence.tsx": [   # W1072 - beside each button, by status and reason
+            "if (!r.ok) { setXaiErr(`Not explained: Failed (HTTP ${r.status}): ${bodyDetail(d, 'no reason given')}`); setBusy(''); return; }",
+            "if (!r.ok) { setWeightsErr(`Not proposed: Failed (HTTP ${r.status}): ${bodyDetail(d, 'no reason given')}`); setBusy(''); return; }",
+            "if (!r.ok) { setAdaptErr(`No blueprint: Failed (HTTP ${r.status}): ${bodyDetail(d, 'no reason given')}`); setBusy(''); return; }"],
         "lib/auth.ts": ["basis: `Failed (HTTP ${r.status}): ${bodyDetail(d, 'no reason given')}` };"],
         "pages/developers/ForgePipeline.tsx": ["_why = bodyDetail(_b, '');", "const _rwhy = bodyDetail(_rb, '');"],
         "pages/developers/NativeAI.tsx": [
@@ -87592,3 +87595,48 @@ def test_w1071_fu1258_the_practice_asks_the_next_word_of_the_verse_it_practises_
     assert said, "the fixture holds no verse text at all"
     for s in said:
         assert made_up.match(s), ("a verse's text in the fixture is not the capture's placeholder", s)
+
+
+def test_w1072_fu1259_the_intelligence_layer_says_each_failure_beside_its_button_and_shows_no_record_it_could_not_read(client):
+    """W1072 (FU-1259; FU-399 part 85). The Quran platform's intelligence layer had no rendered test. Rendered against
+    its routes' own answers, it said every action's failure (an explanation, a weights proposal, a blueprint) in one
+    line at the very foot of the page, after the compliance audit, away from the button that met it, and the next
+    action took it away; a registry or an audit that could not be read again said "... - showing nothing rather than
+    stale figures" while the registry and the audit read before stayed on the page; an explanation of the inputs
+    before stayed under new inputs whose explanation was refused; and a refusal was said as its bare detail. Each
+    failure is said beside its own button with the refusal's status and reason, a record that could not be read is
+    taken off the page, and an explanation is cleared when another is asked for.
+
+    Held here: the routes' refusals the panel says (the scheduler's field check, the weights' sum), driven; the
+    panel's code; and the rendered test's fixture (no Arabic; nothing applied). The rendered test
+    (QEPIntelligence.test.tsx, six cases, five vitest blinds) holds what the panel says."""
+    import json
+    import pathlib
+    import re
+    r = client.get("/api/v1/qep/xai/explanations", params={"ease_factor": 5, "interval_days": 6, "repetition": 3,
+                                                            "last_quality": 4})
+    assert r.status_code == 422 and isinstance(r.json()["detail"], list), r.text[:200]
+    w = client.post("/api/v1/qep/recommendation/update", json={"ease_weight": 0.5, "interval_weight": 0.5,
+                                                               "quality_weight": 0.5})
+    assert w.status_code == 422 and "must sum to ~1.0" in w.json()["detail"], w.text[:200]
+    #  the panel: each failure beside its button, by status and reason; an unread record off the page
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/components/qep"
+    qi = _code_only((src / "QEPIntelligence.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "setErr(" not in qi and "{err &&" not in qi, "a failure is said in one line at the foot of the page again"
+    for setter, lead, testid in (("setXaiErr", "Not explained", "qep-xai-error"),
+                                 ("setWeightsErr", "Not proposed", "qep-weights-error"),
+                                 ("setAdaptErr", "No blueprint", "qep-adapt-error")):
+        assert (f"if (!r.ok) {{ {setter}(`{lead}: Failed (HTTP ${{r.status}}): ${{bodyDetail(d, 'no reason given')}}`); "
+                "setBusy(''); return; }") in qi, setter
+        assert f"{setter}(`{lead}: ${{errorMessage(e)}}`)" in qi, setter
+        assert f'data-testid="{testid}"' in qi, testid
+    assert "setBusy('xai'); setXaiErr(''); setXai(null);" in qi
+    assert re.search(r"\.catch\(e => \{\n\s+setReg\(null\);", qi) and re.search(r"\.catch\(e => \{\n\s+setAudit\(null\);", qi)
+    assert "showing nothing rather than stale figures" in qi
+    #  the rendered test, and its fixture
+    t = (src / "QEPIntelligence.test.tsx").read_text(encoding="utf-8")
+    assert t.count("\n  it('") == 6, t.count("\n  it('")
+    raw = (src / "QEPIntelligence.fixture.json").read_text(encoding="utf-8")
+    assert not re.search(r"[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]", raw), "the fixture holds Arabic"
+    fx = json.loads(raw)
+    assert fx["weights_proposed"]["body"]["applied"] is False, fx["weights_proposed"]["body"]

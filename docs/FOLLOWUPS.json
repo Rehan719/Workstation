@@ -25487,6 +25487,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the next word and the whole verse are asked of the verse being practised, kept when Begin answers; each card says its own failure, and no other action takes it away. The rendered test (seven cases) has five vitest blinds; test_w1071 holds the panel's code and the fixture (no Arabic; every verse's text the capture's placeholder words), with five blinds."
+    },
+    {
+      "id": "FU-1259",
+      "title": "The intelligence layer said every action's failure at the foot of the page, kept showing a registry and an audit it said it could not read, and left an explanation of earlier inputs standing over a refusal",
+      "why": "Found by rendering QEPIntelligence against its routes' own answers (FU-399 part 85; no test rendered it). Every action's failure (an explanation, a weights proposal, a blueprint) was said in one line at the very foot of the page, after the compliance audit, away from the button that met it, and the next action took it away. A registry or an audit that could not be read again, after a proposal or a blueprint, said \"... - showing nothing rather than stale figures\" while the registry and the audit read before stayed on the page (driven: the seed adaptation still listed under that sentence). An explanation of the inputs before stayed under new inputs whose explanation was refused, and a refusal was said as its bare detail.",
+      "source": "W1072 (FU-399 part 85: the intelligence layer rendered)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/components/qep/QEPIntelligence.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1072",
+      "note": "",
+      "slot_source": "found by FU-399's render of the Quran platform's intelligence layer; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: each failure is said beside its own button with the refusal's status and reason; a record that could not be read is taken off the page; an explanation is cleared when another is asked for. The rendered test (six cases) has five vitest blinds; test_w1072 drives the two refusals the panel says and holds its code and the fixture, with five blinds."
     }
   ],
   "routes": [

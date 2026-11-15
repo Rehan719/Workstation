@@ -1,0 +1,332 @@
+{
+ "registry": {
+  "status": 200,
+  "body": {
+   "adaptations": [
+    {
+     "id": "ADP-hifz-science",
+     "pattern": "SM-2 spaced repetition",
+     "from": "religion",
+     "to": "science",
+     "status": "pattern_seed",
+     "fidelity": null
+    },
+    {
+     "id": "ADP-tajweed-care",
+     "pattern": "written-recall comparison",
+     "from": "religion",
+     "to": "care",
+     "status": "pattern_seed",
+     "fidelity": null
+    }
+   ],
+   "count": 2
+  }
+ },
+ "audit": {
+  "status": 200,
+  "body": {
+   "compliant": null,
+   "checks": [
+    {
+     "control": "Explainability (XAI) available",
+     "status": "not_checked",
+     "reason": "No explainability check exists to run; a pass was previously asserted."
+    },
+    {
+     "control": "Translation tajweed-preservation",
+     "status": "not_checked",
+     "reason": "No tajweed-preservation check exists to run; a pass was previously asserted."
+    },
+    {
+     "control": "Adaptation fidelity (model self-declared) >= 0.85",
+     "status": "not_checked",
+     "reason": "0 of 2 adaptation(s) carry a model-self-declared expected fidelity (not independently measured)."
+    },
+    {
+     "control": "Recommendation weights normalised",
+     "status": "pass"
+    }
+   ],
+   "audited_at": 1794730090.2974157,
+   "adaptations_audited": 2,
+   "note": "compliant is null when a control could not be checked. It is never asserted true on the strength of controls that do not run."
+  }
+ },
+ "xai_ask": {
+  "ease_factor": 2.5,
+  "interval_days": 6,
+  "repetition": 3,
+  "last_quality": 4
+ },
+ "xai": {
+  "status": 200,
+  "body": {
+   "decision": "advance",
+   "next_interval_days": 15,
+   "new_efactor": 2.5,
+   "interval_basis": "computed by the REAL MemorizationEngine (SM-2), not an approximation",
+   "explanations": [
+    {
+     "feature": "ease_factor",
+     "value": 2.5,
+     "contribution": 0.4,
+     "rationale": "ease is at or above the 2.5 starting value, so the interval grows faster. The engine moved it to 2.5.",
+     "used_by_engine": true
+    },
+    {
+     "feature": "interval_days",
+     "value": 6,
+     "contribution": 0.35,
+     "rationale": "the prior interval of 6 day(s) anchors the next spacing step.",
+     "used_by_engine": true
+    },
+    {
+     "feature": "repetition",
+     "value": 3,
+     "contribution": 0.3,
+     "rationale": "from the second repetition the interval compounds by ease (3 recorded).",
+     "used_by_engine": true
+    },
+    {
+     "feature": "last_quality",
+     "value": 4,
+     "contribution": 0.2,
+     "rationale": "recall quality 4 is 3 or above, so the engine ADVANCES the schedule.",
+     "used_by_engine": true
+    }
+   ],
+   "explanations_basis": "display-weight attribution over the scheduling inputs — an aid to reading the decision, not the engine's internal arithmetic; the repetition entry uses a fixed display constant of 0.1 that is not part of the tunable model weights",
+   "model_weights": {
+    "ease_weight": 0.4,
+    "interval_weight": 0.35,
+    "quality_weight": 0.25,
+    "weights_source": "the governed setting qep_recommendation.weights",
+    "weights_basis": "changed only through a change record (review, approval, implementation)"
+   },
+   "method": "real SM-2 next-review + display-weight feature attribution"
+  }
+ },
+ "xai_other_ask": {
+  "ease_factor": 2.5,
+  "interval_days": 6,
+  "repetition": 3,
+  "last_quality": 1
+ },
+ "xai_other": {
+  "status": 200,
+  "body": {
+   "decision": "reset",
+   "next_interval_days": 1,
+   "new_efactor": 1.96,
+   "interval_basis": "computed by the REAL MemorizationEngine (SM-2), not an approximation",
+   "explanations": [
+    {
+     "feature": "ease_factor",
+     "value": 2.5,
+     "contribution": 0.0,
+     "rationale": "this recall failed (quality 1 < 3), so the engine reset the schedule to 1 day and the ease factor did not affect the interval at all. Ease moved to 1.96 for the next review.",
+     "used_by_engine": false,
+     "display_weight_if_used": 0.4
+    },
+    {
+     "feature": "interval_days",
+     "value": 6,
+     "contribution": 0.0,
+     "rationale": "the prior interval of 6 day(s) was discarded: a quality below 3 resets the schedule to 1 day whatever the interval was.",
+     "used_by_engine": false,
+     "display_weight_if_used": 0.35
+    },
+    {
+     "feature": "repetition",
+     "value": 3,
+     "contribution": 0.0,
+     "rationale": "the 3 prior repetition(s) were discarded: a quality below 3 resets the count to zero, so no compounding applies.",
+     "used_by_engine": false,
+     "display_weight_if_used": 0.3
+    },
+    {
+     "feature": "last_quality",
+     "value": 1,
+     "contribution": 0.05,
+     "rationale": "recall quality 1 is below 3, so the engine RESETS the schedule.",
+     "used_by_engine": true
+    }
+   ],
+   "explanations_basis": "display-weight attribution over the scheduling inputs — an aid to reading the decision, not the engine's internal arithmetic; the repetition entry uses a fixed display constant of 0.1 that is not part of the tunable model weights",
+   "model_weights": {
+    "ease_weight": 0.4,
+    "interval_weight": 0.35,
+    "quality_weight": 0.25,
+    "weights_source": "the governed setting qep_recommendation.weights",
+    "weights_basis": "changed only through a change record (review, approval, implementation)"
+   },
+   "method": "real SM-2 next-review + display-weight feature attribution"
+  }
+ },
+ "xai_out_of_range_ask": {
+  "ease_factor": 5,
+  "interval_days": 6,
+  "repetition": 3,
+  "last_quality": 4
+ },
+ "xai_out_of_range": {
+  "status": 422,
+  "body": {
+   "detail": [
+    {
+     "type": "less_than_equal",
+     "loc": [
+      "query",
+      "ease_factor"
+     ],
+     "msg": "Input should be less than or equal to 3",
+     "input": "5",
+     "ctx": {
+      "le": "3.0"
+     }
+    }
+   ]
+  }
+ },
+ "weights_ask": {
+  "ease_weight": 0.4,
+  "interval_weight": 0.35,
+  "quality_weight": 0.25
+ },
+ "weights_proposed": {
+  "status": 200,
+  "body": {
+   "status": "proposed, not applied",
+   "applied": false,
+   "proposed_weights": "0.4,0.35,0.25",
+   "cca_id": "cca-4f597a4c2b",
+   "change_status": "submitted",
+   "model_weights": {
+    "ease_weight": 0.4,
+    "interval_weight": 0.35,
+    "quality_weight": 0.25,
+    "weights_source": "the governed setting qep_recommendation.weights",
+    "weights_basis": "changed only through a change record (review, approval, implementation)"
+   },
+   "basis": "the weights in use are unchanged. They change when this change record is approved and implemented, and not before"
+  }
+ },
+ "weights_bad": {
+  "status": 422,
+  "body": {
+   "detail": "weights must sum to ~1.0 (got 1.5) — the compliance audit grades exactly this"
+  }
+ },
+ "adapt_ask": {
+  "pattern": "W1072 made up: spaced practice with a short daily review",
+  "source_domain": "education",
+  "target_domain": "science"
+ },
+ "blueprint": {
+  "status": 200,
+  "body": {
+   "adaptation": {
+    "id": "ADP-03a8543d",
+    "pattern": "W1072 made up: spaced practice with a short daily review",
+    "from": "education",
+    "to": "science",
+    "status": "frame_only",
+    "evidence_level": "behaviour",
+    "evidence_level_number": 1,
+    "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+    "served_by": "native",
+    "fidelity": null,
+    "ts": 1794730090.3998673
+   },
+   "blueprint": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: QEP Cross-Domain Adaptation engine. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Adapted Mechanism\nNative structured frame for 'Adapted Mechanism' over: W1072 made up: spaced practice with a short daily review (domain: science). The list below is the request's most frequent terms, not findings about them.\n- spaced practice\n- daily review\n- made spaced\n- short daily\n\n## Key Adjustments\nNative structured frame for 'Key Adjustments' over: W1072 made up: spaced practice with a short daily review (domain: science). The list below is the request's most frequent terms, not findings about them.\n- spaced practice\n- daily review\n- made spaced\n- short daily\n\n## Expected Fidelity\nNative structured frame for 'Expected Fidelity' over: W1072 made up: spaced practice with a short daily review (domain: science). The list below is the request's most frequent terms, not findings about them.\n- spaced practice\n- daily review\n- made spaced\n- short daily",
+   "status": "frame_only",
+   "status_note": "the native floor served this: a structured frame was recorded, NOT a blueprint — no adaptation was designed; nothing was installed or activated anywhere"
+  }
+ },
+ "registry_after": {
+  "status": 200,
+  "body": {
+   "adaptations": [
+    {
+     "id": "ADP-hifz-science",
+     "pattern": "SM-2 spaced repetition",
+     "from": "religion",
+     "to": "science",
+     "status": "pattern_seed",
+     "fidelity": null
+    },
+    {
+     "id": "ADP-tajweed-care",
+     "pattern": "written-recall comparison",
+     "from": "religion",
+     "to": "care",
+     "status": "pattern_seed",
+     "fidelity": null
+    },
+    {
+     "id": "ADP-03a8543d",
+     "pattern": "W1072 made up: spaced practice with a short daily review",
+     "from": "education",
+     "to": "science",
+     "status": "frame_only",
+     "evidence_level": "behaviour",
+     "evidence_level_number": 1,
+     "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+     "served_by": "native",
+     "fidelity": null,
+     "ts": 1794730090.3998673
+    }
+   ],
+   "count": 3
+  }
+ },
+ "audit_after": {
+  "status": 200,
+  "body": {
+   "compliant": null,
+   "checks": [
+    {
+     "control": "Explainability (XAI) available",
+     "status": "not_checked",
+     "reason": "No explainability check exists to run; a pass was previously asserted."
+    },
+    {
+     "control": "Translation tajweed-preservation",
+     "status": "not_checked",
+     "reason": "No tajweed-preservation check exists to run; a pass was previously asserted."
+    },
+    {
+     "control": "Adaptation fidelity (model self-declared) >= 0.85",
+     "status": "not_checked",
+     "reason": "0 of 3 adaptation(s) carry a model-self-declared expected fidelity (not independently measured)."
+    },
+    {
+     "control": "Recommendation weights normalised",
+     "status": "pass"
+    }
+   ],
+   "audited_at": 1794730090.4051926,
+   "adaptations_audited": 3,
+   "note": "compliant is null when a control could not be checked. It is never asserted true on the strength of controls that do not run."
+  }
+ },
+ "registry_failed": {
+  "status": 500,
+  "body": {
+   "detail": "GET /api/v1/qep/adaptation/registry failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/qep/adaptation/registry",
+   "cause_established": false
+  }
+ },
+ "audit_failed": {
+  "status": 500,
+  "body": {
+   "detail": "GET /api/v1/qep/compliance/audit failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/qep/compliance/audit",
+   "cause_established": false
+  }
+ }
+}
