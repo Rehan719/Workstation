@@ -357,20 +357,22 @@ async def git_history(limit: int = 20):
         _top = subprocess.run(["git", "rev-parse", "--show-toplevel"],
                               capture_output=True, text=True, timeout=8, cwd=".")
         repository = (_top.stdout or "").strip() or None
+        #  W1067 - git's reason is said whole. It was cut at 160 characters, and git's remedy for a repository it
+        #  will not read for the user the server runs as (safe.directory and the path) is past the cut
         if repository is None:
-            unreadable_reason = ((_top.stderr or "").strip()[:160]
+            unreadable_reason = ((_top.stderr or "").strip()
                                  or "the directory the server runs in is not a git repository")
         else:
             out = subprocess.run(["git", "log", f"-{limit}", "--pretty=format:%h|%an|%ar|%s"],
                                  capture_output=True, text=True, timeout=8, cwd=".")
             if out.returncode != 0:
-                unreadable_reason = (out.stderr or "").strip()[:160] or f"git log exited {out.returncode}"
+                unreadable_reason = (out.stderr or "").strip() or f"git log exited {out.returncode}"
             for line in out.stdout.splitlines():
                 parts = line.split("|", 3)
                 if len(parts) == 4:
                     commits.append({"hash": parts[0], "author": parts[1], "when": parts[2], "message": parts[3]})
     except Exception as e:
-        unreadable_reason = f"{e.__class__.__name__}: {str(e)[:140]}"
+        unreadable_reason = f"{e.__class__.__name__}: {e}"   # W1067 - whole
     # W491 (refutation) — `total` was len(commits), i.e. the size of the page just fetched: ?limit=3 on a
     # repository of ~1500 commits returned total 3. That is the exact defect this round's rule names ("a
     # fetch limit is not a total") left standing in the endpoint the round rewrote for it. The page size

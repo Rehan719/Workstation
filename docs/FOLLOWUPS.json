@@ -25380,6 +25380,28 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: each list is said as empty only once a read of it answered; a failed read says its reason and that nothing is listed; a refused move is said on its work-order; the hub's default note names who moved a work-order. The rendered test (five cases) has five vitest blinds; test_w1066 drives the route's note and holds the panel's code (five blinds)."
+    },
+    {
+      "id": "FU-1254",
+      "title": "The shell's fourth column read its two lists together, so one refused read took the other's answer down and set off both reads again without end; a list read once was never read again; the commit-log route cut git's reason",
+      "why": "Found by rendering FourthColumn against its routes' own answers (FU-399 part 80; no test rendered it). Its history tab read the avatar sessions and the platform's commit log in one Promise.all: a refused read of the sessions took the commits it had read off the column and said both as failing; a failed read set off both reads again without end (the reader was rebuilt as its loading flag fell, and the effect ran it again, so a column open on a refusing server called it again and again: 18,352 calls in 200 ms in a rendered probe against a stand-in refusing both); and a list read once was never read again while the shell stayed open, so a session started later was never listed (each driven on the unfixed column). The commit-log route cut git's reason at 160 characters (an exception's at 140), and git's remedy for a repository it will not read for the server's user, safe.directory and the path, is past the cut.",
+      "source": "W1067 (FU-399 part 80: the shell's fourth column rendered)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/components/layout/FourthColumn.tsx",
+        "agentic_core/api/integration_surface.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1067",
+      "note": "",
+      "slot_source": "found by FU-399's render of the shell's fourth column; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: each list is read on its own, each time the history is opened or the person asks, and is said as read, as being read, or with the reason it could not be; an earlier opening's answer is not said; git's reason is said whole. The rendered test (six cases) has six vitest blinds; test_w1067 drives the route's reasons and holds the column's code (five blinds)."
     }
   ],
   "routes": [

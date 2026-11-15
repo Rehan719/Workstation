@@ -85431,7 +85431,9 @@ def test_w1028_a_server_that_answered_is_never_said_as_unreachable(client):
     cca = _code_only((src / "pages/enterprise/ChangeControlAgency.tsx").read_text(encoding="utf-8"))
     assert "setLoadError(`The change queue could not be read: ${errorMessage(e)}`);" in cca
     side = _code_only((src / "components/layout/FourthColumn.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
-    assert ".catch(e => setDataError(`The recent commits and the avatar sessions could not be read: ${errorMessage(e)}`))" in side
+    #  W1067 - each list is read on its own, and its failure said in its own place
+    assert ".catch(e => { if (asked === reads.current) setSessionsErr(`The avatar sessions could not be read: ${errorMessage(e)}`); });" in side
+    assert ".catch(e => { if (asked === reads.current) setGitErr(`The platform commits could not be read: ${errorMessage(e)}`); });" in side
     studio = _code_only((src / "pages/synthesis/SynthesisStudio.tsx").read_text(encoding="utf-8"))
     assert "setErrorMsg(`Delete failed: ${errorMessage(e)}`);" in studio
     avatar = _code_only((src / "hooks/useAvatarSession.ts").read_text(encoding="utf-8"))
@@ -87319,3 +87321,79 @@ def test_w1066_fu1253_the_agent_hub_says_no_list_as_empty_unread_and_who_moved_a
     t = (src / "AgentHubPanel.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './AgentHubPanel.fixture.json';" in t and t.count("\n  it('") == 5
     assert "expect(moved.status_note).toBe('claimed by the operator of this single-user deployment');" in t
+
+
+def test_w1067_fu1254_the_fourth_column_reads_each_list_on_its_own_and_git_s_reason_is_said_whole(client, monkeypatch):
+    """W1067 (FU-1254; FU-399 part 80). The shell's fourth column had no rendered test. Rendered against its routes'
+    own answers, its history tab read the avatar sessions and the platform's commit log together (one Promise.all):
+    a refused read of the sessions took the commits it had read off the column and said both as failing; a failed
+    read set off both reads again without end (the reader was rebuilt as its loading flag fell, and the effect ran
+    it again); and a list read once was never read again while the shell stayed open. The commit-log route cut git's
+    reason at 160 characters (an exception's at 140), and git's remedy for a repository it will not read for the
+    server's user (safe.directory and the path) is past the cut. Each list is read on its own, each time the history
+    is opened or the person asks; an earlier opening's answer is not said; git's reason is said whole.
+
+    Held here: the route's reasons, driven (git's refusal, git log's failure and an exception, each longer than the
+    old cut); the column's code. The rendered test (FourthColumn.test.tsx, six cases, six vitest blinds) holds what
+    the column says."""
+    import inspect
+    import pathlib
+    import subprocess
+    import agentic_core.api.integration_surface as _is
+    where = "/srv/w1067-made-up/a-checkout-whose-path-is-long-enough-to-pass-the-old-cut"
+    refused = (f"fatal: detected dubious ownership in repository at '{where}'\n"
+               "To add an exception for this directory, call:\n\n"
+               f"\tgit config --global --add safe.directory {where}")
+    log_failed = ("fatal: W1067 made up: git log failed after the repository was found, with a reason long enough "
+                  "to pass the old cut of one hundred and sixty characters, ending in its remedy: run git fsck")
+    raised = ("W1067 made up: git could not be started, with a reason long enough to pass the old cut of one hundred "
+              "and forty characters, ending in its remedy: install git")
+    assert min(len(refused), len(log_failed)) > 160 and len(raised) > 140
+    real_run = subprocess.run
+    mode = {"now": "refused"}
+
+    def run(args, **kw):
+        if list(args[:1]) != ["git"]:
+            return real_run(args, **kw)
+        if mode["now"] == "raised":
+            raise OSError(raised)
+        if args[1] == "rev-parse":
+            if mode["now"] == "refused":
+                return subprocess.CompletedProcess(args, 128, stdout="", stderr=refused + "\n")
+            return subprocess.CompletedProcess(args, 0, stdout=where + "\n", stderr="")
+        if args[1] == "log":
+            return subprocess.CompletedProcess(args, 128, stdout="", stderr=log_failed + "\n")
+        return real_run(args, **kw)
+    monkeypatch.setattr(_is.subprocess, "run", run)
+    for now, reason in (("refused", refused), ("log", log_failed), ("raised", f"OSError: {raised}")):
+        mode["now"] = now
+        r = client.get("/api/v1/workstation/git-history", params={"limit": 12})
+        assert r.status_code == 200, (now, r.text[:200])
+        b = r.json()
+        assert b["readable"] is False and b["commits"] == [], (now, b)
+        assert b["unreadable_reason"] == reason, (now, b["unreadable_reason"])
+        assert b["repository_commits_total"] is None, (now, b)
+    monkeypatch.setattr(_is.subprocess, "run", real_run)
+    src_route = _code_only(inspect.getsource(_is.git_history))
+    assert "[:160]" not in src_route and "[:140]" not in src_route
+    #  the column: each list read on its own, each time the history is opened, and an earlier opening's answer dropped
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fc = _code_only((src / "components/layout/FourthColumn.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "Promise.all(" not in fc, "the two lists are read together again"
+    assert "dataLoaded" not in fc and "dataLoading" not in fc and "fetchDockData" not in fc
+    assert fc.count("axios.get('/api/v1/avatar/sessions')") == 1
+    assert fc.count("axios.get('/api/v1/workstation/git-history', { params: { limit: 12 } })") == 1
+    assert "const asked = ++reads.current;" in fc
+    assert ".then(s => { if (asked === reads.current) setSessions(s.data || []); })" in fc
+    assert "if (asked !== reads.current) return;\n        setCommits(g.data.commits || []);" in fc
+    assert "  }, []);\n\n  useEffect(() => {\n    if (!isCollapsed && activeTab === 'projects') readDock();\n  }, [isCollapsed, activeTab, readDock]);" in fc
+    assert "onClick={readDock}" in fc and 'aria-label="Read the sessions and the commits again"' in fc
+    #  each list says its own state: unread until its read answers, and its own failure in its own place
+    assert "useState<SessionSummary[] | null>(null)" in fc and "useState<CommitEntry[] | null>(null)" in fc
+    assert ": sessions === null\n" in fc and "{!gitErr && commits === null && " in fc
+    assert 'data-testid="dock-sessions-unread"' in fc and 'data-testid="git-history-unread"' in fc
+    #  the rendered test
+    t = (src / "components/layout/FourthColumn.test.tsx").read_text(encoding="utf-8")
+    assert t.count("\n  it('") == 6, t.count("\n  it('")
+    fx = (src / "components/layout/FourthColumn.fixture.json").read_text(encoding="utf-8")
+    assert "safe.directory" in fx and "sessions_failed" in fx
