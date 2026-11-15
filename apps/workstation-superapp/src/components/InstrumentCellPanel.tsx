@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { apiJson, errorMessage } from '../lib/api';
+import React, { useEffect, useRef, useState } from 'react';
+import { apiJson, asClause, errorMessage } from '../lib/api';
 
 // W640 (plan item P3.31) — THE INSTRUMENT CELL, ON THE FABRIC'S OWN PAGE.
 // Everything shown here is the server's statement, printed with its basis: which resources the fabric can
@@ -115,7 +115,10 @@ const NEED_WORD: Record<string, string> = {
 
 export function InstrumentCellPanel() {
   const [avail, setAvail] = useState<AvailReply | null>(null);
-  const [err, setErr] = useState('');
+  //  W1061 - each failure is its own and is said where its answer would be: the availability's stays until a read
+  //  of it answers (a proposal asked after it never takes it away), and a proposal's is said beside its button
+  const [availErr, setAvailErr] = useState('');
+  const [proposeErr, setProposeErr] = useState('');
   const [objective, setObjective] = useState('');
   const [reqs, setReqs] = useState('');
   const [busy, setBusy] = useState(false);
@@ -125,6 +128,7 @@ export function InstrumentCellPanel() {
   const [runs, setRuns] = useState<RunRow[]>([]);
   const [runsErr, setRunsErr] = useState('');
   const [runsNote, setRunsNote] = useState('');
+  const [runsListed, setRunsListed] = useState(false);   // W1061 - no run is said as none before the list was read
   const [runId, setRunId] = useState('');
   const [want, setWant] = useState<Record<string, string>>({});
   const [wantGate, setWantGate] = useState(false);
@@ -135,6 +139,11 @@ export function InstrumentCellPanel() {
   // P3.31 - keep a proposal, list kept ones, run one again, and see proposed versus executed
   const [specs, setSpecs] = useState<SpecRow[]>([]);
   const [specErr, setSpecErr] = useState('');
+  //  W1061 - the list of kept specifications: never said as empty before a read of it answered, its failure apart
+  //  from a keep's, an open's or a run's, and only the latest read asked is drawn
+  const [specsListed, setSpecsListed] = useState(false);
+  const [specsUnlisted, setSpecsUnlisted] = useState('');
+  const specsRead = useRef(0);
   const [specMsg, setSpecMsg] = useState('');
   const [specBusy, setSpecBusy] = useState(false);
   const [specDetail, setSpecDetail] = useState<SpecDetail | null>(null);
@@ -144,21 +153,37 @@ export function InstrumentCellPanel() {
   const [specGate, setSpecGate] = useState(false);
   const [specText, setSpecText] = useState('');
 
+  //  W1061 - a read of the kept specifications. One that answers after a later one was asked is dropped; one that
+  //  failed says what was not read and draws no list, since what an earlier read listed is not the list now
+  const listSpecs = async () => {
+    const asked = ++specsRead.current;
+    try {
+      const d = await fetchSpecs();
+      if (asked !== specsRead.current) return;
+      setSpecs(d.specifications ?? []); setSpecsListed(true); setSpecsUnlisted('');
+    } catch (e) {
+      if (asked !== specsRead.current) return;
+      setSpecs([]); setSpecsListed(false);
+      setSpecsUnlisted(`The kept specifications were not listed: ${asClause(errorMessage(e))}.`);
+    }
+  };
   useEffect(() => {
-    apiJson<AvailReply>('/api/v1/resources/cell/availability').then(setAvail).catch(e => setErr(errorMessage(e)));
+    apiJson<AvailReply>('/api/v1/resources/cell/availability').then(setAvail)
+      .catch(e => setAvailErr(`Which resources the fabric can run was not read: ${asClause(errorMessage(e))}.`));
     apiJson<RunList>('/api/v1/resources/compositions/runs?limit=10')
-      .then(d => { setRuns(d.runs ?? []); setRunsNote(d.listing_is_incomplete ? (d.listing_basis ?? 'The run history could not be read whole.') : ''); })
+      .then(d => { setRuns(d.runs ?? []); setRunsListed(true); setRunsNote(d.listing_is_incomplete ? (d.listing_basis ?? 'The run history could not be read whole.') : ''); })
       .catch(e => setRunsErr(errorMessage(e)));
-    fetchSpecs().then(d => setSpecs(d.specifications ?? [])).catch(e => setSpecErr(errorMessage(e)));
+    listSpecs();
   }, []);
 
   const propose = async (required: string[]) => {
-    setBusy(true); setErr('');
+    //  W1061 - the proposal on screen answers what was asked last: the one before it goes when another is asked
+    setBusy(true); setProposeErr(''); setProposal(null);
     try {
       setProposal(await apiJson<Proposal>('/api/v1/resources/cell/propose', {
         method: 'POST', body: { objective, required_capabilities: required },
       }));
-    } catch (e) { setErr(errorMessage(e)); }
+    } catch (e) { setProposeErr(`No proposal was made: ${asClause(errorMessage(e))}.`); }
     setBusy(false);
   };
   const stated = reqs.split(',').map(s => s.trim()).filter(Boolean);
@@ -188,8 +213,7 @@ export function InstrumentCellPanel() {
       setSpecMsg(kept.saved
         ? `Kept as ${kept.id}, version ${kept.version}, digest ${String(kept.digest).slice(0, 12)}. Nothing was run.`
         : `This content is already kept as ${kept.id}, version ${kept.version}. Nothing new was written.`);
-      const d = await fetchSpecs();
-      setSpecs(d.specifications ?? []);
+      await listSpecs();   // W1061 - the list read after a keep says its own failure, never as the keep's
     } catch (e) { setSpecErr(errorMessage(e)); }
     setSpecBusy(false);
   };
@@ -254,7 +278,7 @@ export function InstrumentCellPanel() {
           Which resources the fabric can run now, and a proposal for an objective. A proposal saves nothing and runs nothing.
         </p>
       </div>
-      {err && <p className="text-[11px] text-rose-400">{err}</p>}
+      {availErr && <p role="alert" data-testid="cell-availability-error" className="text-[11px] text-rose-400">{availErr}</p>}
 
       {avail && (
         <div data-testid="cell-availability" className="space-y-2">
@@ -328,6 +352,7 @@ export function InstrumentCellPanel() {
           className="px-3 py-1.5 rounded-lg border border-sky-500/40 text-sky-300 text-[11px] font-bold disabled:opacity-40">
           {busy ? 'Working…' : stated.length ? 'Propose a set' : 'Suggest requirements'}
         </button>
+        {proposeErr && <p role="alert" data-testid="cell-propose-error" className="text-[11px] text-rose-400">{proposeErr}</p>}
       </div>
 
       {proposal && (
@@ -453,7 +478,8 @@ export function InstrumentCellPanel() {
         <p className="text-[11px] font-bold text-slate-200">Kept specifications</p>
         {specErr && <p role="alert" data-testid="cell-spec-error" className="text-[11px] text-rose-400">{specErr}</p>}
         {specMsg && <p data-testid="cell-spec-message" className="text-[11px] text-emerald-300">{specMsg}</p>}
-        {specs.length === 0 && !specErr && <p className="text-[11px] text-slate-400">No specification has been kept.</p>}
+        {specsUnlisted && <p role="alert" data-testid="cell-specs-unlisted" className="text-[11px] text-rose-400">{specsUnlisted}</p>}
+        {specsListed && specs.length === 0 && <p className="text-[11px] text-slate-400">No specification has been kept.</p>}
         <ul className="space-y-1">
           {specs.map(s => (
             <li key={s.id} className="text-[11px] px-2 py-1 rounded-lg border border-slate-800 text-slate-300">
@@ -525,7 +551,7 @@ export function InstrumentCellPanel() {
         </p>
         {runsErr && <p role="alert" data-testid="cell-runs-error" className="text-[11px] text-rose-400">{runsErr} No run is listed.</p>}
         {runsNote && <p className="text-[10px] text-amber-300">{runsNote}</p>}
-        {!runsErr && runs.length === 0 && (
+        {runsListed && runs.length === 0 && (
           <p className="text-[11px] text-slate-400">No recorded run is listed, so there is nothing to check yet.</p>
         )}
         {runs.length > 0 && (

@@ -25228,6 +25228,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: each write's answer and the read after it are dropped when another entity is on screen, and the forms and busy flags are cleared when it is opened. Both components' rendered tests hold a write back until another entity is open (three vitest blinds); test_w1060 holds both components' code (five blinds)."
+    },
+    {
+      "id": "FU-1247",
+      "title": "The Resource Fabric's instrument cell said its lists as empty before they were read, took a failed availability read away when a proposal was asked, and said a proposal or a list that was not read away from where it belonged",
+      "why": "Found by rendering InstrumentCellPanel against its routes' own answers (FU-399 part 76; it had no rendered test). The list of kept specifications and the list of recorded runs were said as empty (No specification has been kept, No recorded run is listed) before either was read, and a read of the kept specifications that answered late was drawn over the one read after a keep. One state held the availability read's failure and a proposal's: a failed availability read was said as a bare reason at the top of the panel and taken away by the next proposal asked, and a proposal that was not made was said there too, away from its button, with the proposal before it still drawn as though it answered. A list that was not read after a keep was said as a bare failure under Kept as, as though the keep had failed, and a keep, an open or a run took a failed list read away (each driven in the rendered test on the unfixed panel).",
+      "source": "W1061 (FU-399 part 76: the instrument cell rendered)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/components/InstrumentCellPanel.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1061",
+      "note": "",
+      "slot_source": "found by FU-399's render of the Resource Fabric's instrument cell; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: each failure is the panel's own and is said where its answer would be, saying what was not read; no list is said as empty before a read of it answered; only the latest read of the kept specifications is drawn, and one that failed draws no list; the proposal before goes when another is asked. The rendered test (nine cases against the routes' own answers) has ten vitest blinds; test_w1061 holds the code (twelve blinds)."
     }
   ],
   "routes": [

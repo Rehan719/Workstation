@@ -86935,3 +86935,66 @@ def test_w1060_the_cockpit_s_specialists_and_work_review_say_a_write_s_answer_un
     assert "rerender(<EntitySpecialists vsbId={other.vsb_id} />);" in st and "expect(screen.queryByTestId('specialists-done')).toBeNull();" in st
     rt = (src / "components/EntityWorkReview.test.tsx").read_text(encoding="utf-8")
     assert "rerender(<EntityWorkReview vsbId={other.vsb_id} />);" in rt and "expect(screen.queryByTestId('work-review-done')).toBeNull();" in rt
+
+
+def test_w1061_fu1247_the_instrument_cell_says_each_read_s_failure_in_its_place_and_no_list_as_none_unread():
+    """W1061 (FU-1247; FU-399 part 76). The Resource Fabric's instrument cell (components/InstrumentCellPanel.tsx) had
+    no rendered test. Rendered against its routes' own answers, it said the list of kept specifications and the list of
+    recorded runs as empty before either was read, and drew a read of the kept specifications that answered late over
+    the one read after a keep. One state held the availability read's failure and a proposal's, so a failed
+    availability read was said as a bare reason at the top of the panel and was taken away by the next proposal asked,
+    and a proposal that was not made was said there too, away from its button, with the proposal before it still
+    drawn as though it answered. A list that was not read after a keep was said as a bare failure under "Kept as", as
+    though the keep had failed, and a keep, an open or a run took a failed list read away.
+
+    Each failure is now its own and is said where its answer would be, saying what was not read; no list is said as
+    empty before a read of it answered; only the latest read of the kept specifications is drawn, and one that failed
+    draws no list. Held here: the panel's code, and that its rendered test and the capture it reads are there (the
+    rendered test holds what the panel says: InstrumentCellPanel.test.tsx, nine cases, ten vitest blinds)."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/components"
+    code = _code_only((src / "InstrumentCellPanel.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    #  1  one failure per read or action: the state the availability and a proposal shared is gone
+    assert "const [err, setErr]" not in code and "setErr(" not in code and "{err && " not in code
+    #  the availability's failure is set by its read alone, says what was not read, and is said in its place
+    assert code.count("setAvailErr(") == 1, "something other than the availability read sets or clears its failure"
+    assert (".catch(e => setAvailErr(`Which resources the fabric can run was not read: ${asClause(errorMessage(e))}.`));"
+            in code)
+    assert '{availErr && <p role="alert" data-testid="cell-availability-error" ' in code
+    #  2  a proposal: the one before it goes when another is asked, and one not made is said beside its button
+    fn = code[code.index("const propose = async (required: string[]) => {"):code.index("const stated = ")]
+    assert "setProposal(null)" in fn and fn.index("setProposal(null)") < fn.index("await apiJson<Proposal>"), fn
+    assert "} catch (e) { setProposeErr(`No proposal was made: ${asClause(errorMessage(e))}.`); }" in fn
+    assert code.count("setProposeErr(") == 2, "something other than a proposal sets its failure"
+    form = code[code.index("onClick={() => propose(stated)}"):code.index('{proposal && (')]
+    assert '{proposeErr && <p role="alert" data-testid="cell-propose-error" ' in form, "not said beside its button"
+    #  3  no list is said as none before a read of it answered
+    assert '{specsListed && specs.length === 0 && <p className="text-[11px] text-slate-400">No specification has been kept.</p>}' in code
+    assert "{runsListed && runs.length === 0 && (" in code
+    assert code.count("setRunsListed(true)") == 1 and code.count("setRunsListed(") == 1
+    #  4  every read of the kept specifications is listSpecs: on opening and after a keep, and nothing else
+    ls = code[code.index("const listSpecs = async () => {"):code.index("  useEffect(() => {")]
+    assert code.count("fetchSpecs()") == 1 and "await fetchSpecs()" in ls
+    assert code.count("listSpecs()") == 2 and "    listSpecs();\n  }, []);" in code and "await listSpecs();" in code
+    #  only the latest read asked is drawn: an answer and a failure each dropped when a later read was asked
+    assert "const asked = ++specsRead.current;" in ls and ls.count("if (asked !== specsRead.current) return;") == 2, ls
+    #  a read that failed draws no list and says what was not read; only a read sets or clears what it says
+    assert "setSpecs([]); setSpecsListed(false);" in ls
+    assert "setSpecsUnlisted(`The kept specifications were not listed: ${asClause(errorMessage(e))}.`);" in ls
+    assert code.count("setSpecsUnlisted(") == ls.count("setSpecsUnlisted(") == 2
+    assert code.count("setSpecsListed(") == ls.count("setSpecsListed(") == 2
+    assert code.count("setSpecs(") == ls.count("setSpecs(") == 2, "a list is drawn by something other than its read"
+    assert '{specsUnlisted && <p role="alert" data-testid="cell-specs-unlisted" ' in code
+    #  5  the rendered test and the capture it reads
+    t = (src / "InstrumentCellPanel.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './InstrumentCellPanel.fixture.json';" in t
+    for tid in ("cell-availability-error", "cell-propose-error", "cell-specs-unlisted"):
+        assert f"'{tid}'" in t, tid
+    assert t.count("\n  it('") == 9, "the rendered cases"
+    fx = json.loads((src / "InstrumentCellPanel.fixture.json").read_text(encoding="utf-8"))
+    assert fx["availability_failed"]["status"] == 500 and fx["availability"]["status"] == 200
+    assert [fx[k]["status"] for k in ("proposed_open", "proposed_stated", "kept", "proposed_second", "kept_second")] == [200] * 5
+    assert fx["kept"]["body"]["saved"] is True and fx["kept_second"]["body"]["saved"] is True
+    assert fx["proposed_open"]["body"]["selection"] is None and fx["proposed_open"]["body"]["suggested_requirements"]
+    assert [s["id"] for s in fx["specifications_after"]["body"]["specifications"]] == [fx["kept"]["body"]["id"]]
