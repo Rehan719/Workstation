@@ -36,11 +36,13 @@ READS = ["the obligations on your agreement records: each one falling due within
          "not published until you name it",
          "your entities' service contracts: an offer to accept or decline, an accepted contract to deliver, and a "
          "delivered one to settle, each on the side that acts next; and a delivery to your entity waiting for you to "
-         "accept its version"]
+         "accept its version",
+         #  W1089 (FU-1270)
+         "the reviewers' queues you are on the roster for: a composed item in scholar review and the children's "
+         "approval pack, waiting on a scholar, and a GMP record waiting on a QA signatory"]
 #  W1087 - the census of the stores that hold something waiting on a person found these as well; each is named until
 #  the list reads it (FU-1270)
-NOT_READ_YET = ["the scholar review queue, the children's approval pack, and a GMP record waiting on a signatory",
-                "a legal artefact waiting on the Owner's approval, and an avatar mode waiting on an administrator's "
+NOT_READ_YET = ["a legal artefact waiting on the Owner's approval, and an avatar mode waiting on an administrator's "
                 "co-signature",
                 "a support answer waiting on its asker's confirmation, and a quality defect waiting on a correction or "
                 "a re-verification",
@@ -52,7 +54,11 @@ WHERE = {"agreement": "the agreements on the Law page", "asset": "the assets on 
          #  W1088 (FU-1270)
          "entity": "the entity's Cockpit", "gate": "the entity's review gates on its Cockpit",
          "contract": "the service contracts on the VSB Economy page",
-         "delivery": "the deliveries on the Living Organisation hub"}
+         "delivery": "the deliveries on the Living Organisation hub",
+         #  W1089 (FU-1270)
+         "review": "the scholar review panel on the Quran platform's hub",
+         "pack": "the children's approval pack on the Quran platform's hub",
+         "gmp": "the GMP sign-off on the Science page"}
 NOT_KEPT = ("Your agreement and asset records are kept only once you are signed in, and sign-in is off, so nothing "
             "of theirs is on this list.")
 BASIS = ("One list of what waits on you, from the records it reads; a record it could not read is said with why, and "
@@ -66,7 +72,8 @@ NOTHING_READ = ("Nothing in what this list could read is waiting on you; what it
 #  soonest first: what has a date (falling due, lapsing, lapsed), then decisions, oldest first, then the rest
 _RANK = {"falls_due": 0, "evidence_lapses": 0, "evidence_lapsed": 0, "decision": 1, "ratification": 1,
          "readiness_withdrawn": 2, "unconfirmed": 3,
-         "name": 1, "gate": 1, "offered": 1, "accepted": 1, "delivered": 1, "acceptance": 1}   # W1088
+         "name": 1, "gate": 1, "offered": 1, "accepted": 1, "delivered": 1, "acceptance": 1,   # W1088
+         "review": 1, "pack": 1, "qa": 1}   # W1089
 
 
 def _iso(ts) -> str:
@@ -277,6 +284,85 @@ def _deliveries(user, owners: dict, names: dict) -> tuple:
     return items, unread
 
 
+def _reviewer(user, roster: dict) -> bool:
+    """W1089 (FU-1270) - whether a reviewers' queue waits on this person. With sign-in on, on the account whose username
+    is on the roster (a scholar decides only from their own account; a QA signatory is named on the roster), or, while
+    the roster is empty, on an administrator, who adds the first; with sign-in off, on the one person using this
+    machine, who enters a decision on a named reviewer's behalf."""
+    if not auth_enabled():
+        return True
+    me = user.get("username") if isinstance(user, dict) else None
+    admin = isinstance(user, dict) and user.get("role") == "admin"
+    return bool(me and me in roster) or (not roster and admin)
+
+
+def _reviews(user) -> tuple:
+    """W1089 (FU-1270) - a composed item in the scholar review queue (in review), and the children's approval pack while
+    it awaits a decision or has changed since one, wait on a scholar on the roster. The item is named by where it was
+    composed and its reference, never by its text."""
+    from agentic_core.config import StoreUnavailable
+    from agentic_core.api import scholar_review as sr
+    try:
+        roster = sr.roster()
+        recs = sr._load(sr._review_path())
+    except StoreUnavailable as e:
+        return [], [{"store": "scholar review", "said": (
+            f"The scholar review queue or its roster could not be read ({e}), so an item waiting on a scholar may not "
+            f"be shown.")}]
+    if not _reviewer(user, roster):
+        return [], []
+    items, unread = [], []
+    for key, r in recs.items():
+        if not isinstance(r, dict) or r.get("state") != sr.IN_REVIEW:
+            continue
+        since = str(r.get("submitted_at") or "")
+        items.append({"source": "review", "kind": "review", "content_key": key,
+                      "what": "a scholar's decision on this composed item", "on": str(r.get("surface") or key),
+                      "ref": r.get("reference") or None, "where": WHERE["review"], "since": since,
+                      "said": (_ago(since) if roster else
+                               "no scholar is on the roster, so it cannot be decided until one is added")})
+    try:
+        from agentic_core.religious_domain import approval_pack as ap
+        pack = ap.assemble()
+    except StoreUnavailable as e:
+        unread.append({"store": "approval pack", "said": (
+            f"The children's approval pack could not be read ({e}), so whether it waits on a scholar is not known.")})
+    else:
+        if pack.get("state") in ("awaiting_review", "changed_since_approval"):
+            items.append({"source": "review", "kind": "pack", "pack_hash": pack.get("pack_hash"),
+                          "what": "a scholar's decision on the children's approval pack, as a whole",
+                          "on": "the children's approval pack", "ref": None, "where": WHERE["pack"], "since": "",
+                          "said": (str(pack.get("basis") or pack.get("state")) if roster else
+                                   "no scholar is on the roster, so it cannot be decided until one is added")})
+    return items, unread
+
+
+def _gmp(user) -> tuple:
+    """W1089 (FU-1270) - a GMP record pending QA waits on a signatory on the QA roster. Records name no owner, so the
+    roster is who they wait on."""
+    from agentic_core.config import StoreUnavailable
+    from agentic_core.science import gmp_signoff as gs
+    try:
+        roster, recs = gs._load("roster"), gs._load("records")
+    except StoreUnavailable as e:
+        return [], [{"store": "GMP records", "said": (
+            f"The GMP records or their QA roster could not be read ({e}), so a record waiting on a signatory may not "
+            f"be shown.")}]
+    if not _reviewer(user, roster):
+        return [], []
+    items = []
+    for rid, r in recs.items():
+        if not isinstance(r, dict) or r.get("state") != gs.PENDING:
+            continue
+        since = str(r.get("submitted_at") or "")
+        items.append({"source": "gmp", "kind": "qa", "record_id": rid, "what": "a QA signatory's sign-off",
+                      "on": f"the GMP {r.get('kind') or 'record'} {rid}", "ref": None, "where": WHERE["gmp"],
+                      "since": since, "said": (_ago(since) if roster else
+                                               "no QA signatory is on the roster, so it cannot be signed until one is "
+                                               "added")})
+    return items, []
+
+
 @router.get("")
 async def what_waits(within_days: int = 30, user: dict | None = Depends(get_current_user)):
     """What waits on this person, from the records the list reads, soonest first; each store it could not read, with
@@ -314,6 +400,11 @@ async def what_waits(within_days: int = 30, user: dict | None = Depends(get_curr
     got, missed = _deliveries(user, owners, names)
     items += got
     unread += missed
+    #  W1089 (FU-1270) - the reviewers' queues the person is on the roster for
+    for read in (lambda: _reviews(user), lambda: _gmp(user)):
+        got, missed = read()
+        items += got
+        unread += missed
     items.sort(key=lambda i: (_RANK.get(i["kind"], 9), i.get("days") if i.get("days") is not None else 0,
                               str(i.get("since") or "")))
     return {"reads": READS, "not_read_yet": NOT_READ_YET, "basis": BASIS, "date_basis": DATE_BASIS,

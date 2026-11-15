@@ -89152,7 +89152,7 @@ def test_w1087_p514_the_one_list_reached_from_the_first_screen_reads_the_stores_
     dec = by[("project", "decision")]
     assert dec["project_id"] == mine and dec["on"] == f"W1087 project {tag}" and "'concept' to 'prototype'" in dec["what"]
     assert dec["where"] == "the Governance Hub's proposals" and by[("agreement", "falls_due")]["where"] == _wt.WHERE["agreement"]
-    assert w["reads"] == _wt.READS and w["not_read_yet"] == _wt.NOT_READ_YET and len(_wt.NOT_READ_YET) == 5   # W1088
+    assert w["reads"] == _wt.READS and w["not_read_yet"] == _wt.NOT_READ_YET and len(_wt.NOT_READ_YET) == 4   # W1089
     #  W1088 - the list reads more stores now, which the suite's other tests share: this test holds its own five
     ours = ("agreements", "assets", "projects", "proposals", "changes")
     assert [x for x in w["unread"] if x["store"] in ours] == [] and "not_kept" not in w and "said" not in w
@@ -89250,7 +89250,8 @@ def test_w1087_p514_the_one_list_reached_from_the_first_screen_reads_the_stores_
         assert said in wp, said
     assert set(re.findall(r"/api/v\d+/[\w/{}.-]*", wp)) == {"/api/v1/waiting"}
     fx = json.loads((src / "components/WaitingPanel.fixture.json").read_text(encoding="utf-8"))
-    assert [i["source"] for i in fx["waiting_off"]["body"]["items"]] == ["project", "change"]
+    #  W1089 - with sign-in off the children's approval pack waits on a scholar too, its roster empty
+    assert [i["source"] for i in fx["waiting_off"]["body"]["items"]] == ["review", "project", "change"]
     assert fx["waiting_off"]["body"]["not_kept"] == _wt.NOT_KEPT and fx["waiting_refused"]["status"] == 400
     assert [i["source"] for i in fx["waiting"]["body"]["items"]] == [
         "agreement", "asset", "asset", "agreement", "project", "agreement", "agreement"]
@@ -89420,5 +89421,122 @@ def test_w1088_fu1270_the_one_list_reads_what_an_entitys_owner_is_waited_on_for(
 
     #  the census's entries for these stores are no longer said as not read yet
     assert not [s for s in _wt.NOT_READ_YET if "review gate" in s or "service contract" in s]
-    assert len(_wt.NOT_READ_YET) == 5 and waiting("one")["not_read_yet"] == _wt.NOT_READ_YET
+    assert len(_wt.NOT_READ_YET) == 4 and waiting("one")["not_read_yet"] == _wt.NOT_READ_YET   # W1089
     assert sum("your entities" in r for r in _wt.READS) == 2
+
+
+def test_w1089_fu1270_the_one_list_reads_the_reviewers_queues_by_their_rosters(client, monkeypatch):
+    """FU-1270, part 2 (W1089): the one list of what waits on a person reads the reviewers' queues. Held here, through
+    the route, as a scholar, a QA signatory, a person on neither roster and an administrator:
+    - a composed item in scholar review waits on a scholar on the roster, named by where it was composed and its
+      reference, never by its text; the children's approval pack, awaiting a decision, waits on them too;
+    - a GMP record pending QA waits on a signatory on the QA roster;
+    - none of it waits on a person on neither roster, nor on an administrator while a roster has someone on it; while
+      a roster is empty it waits on an administrator, who adds the first, and it says it cannot be decided until then;
+    - with sign-in off it all waits on the one person using the machine;
+    - a store it cannot read is said in its place, and the rest of the list stands;
+    - the census entry for these queues is no longer said as not read yet.
+    The reviewer stores are shared with the suite's other tests: this test keeps their bytes and puts them back."""
+    import json
+    import time
+    import uuid
+    import agentic_core.auth.core as _ac
+    import agentic_core.api.scholar_review as _sr
+    import agentic_core.api.waiting as _wt
+    from agentic_core.religious_domain import approval_pack as _ap
+    from agentic_core.science import gmp_signoff as _gs
+    tag = uuid.uuid4().hex[:8]
+    paths = [_sr._review_path(), _sr._roster_path(), _ap._store_path(), _gs._p("records"), _gs._p("roster")]
+    kept = {p: (p.read_bytes() if p.exists() else None) for p in paths}
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    who = {k: f"w1089-{k}-{tag}" for k in ("sch", "qa", "one", "adm")}
+    users = _ac._load_users()
+    for k, name in who.items():
+        users[name] = {"user_id": name, "username": name, "hashed_password": _ac._pwd_ctx.hash("pw12345678"),
+                       "role": "admin" if k == "adm" else "user", "created_at": "2026-11-15T00:00:00Z",
+                       "api_keys": []}
+    _ac._save_users(users)
+    H = {k: {"Authorization": "Bearer " + client.post("/api/v1/auth/token", data={
+        "username": n, "password": "pw12345678"}).json()["access_token"]} for k, n in who.items()}
+    key, gid = f"w1089-made-up-{tag}", f"w1089-gmp-{tag}"
+
+    def waiting(k=None):
+        r = client.get("/api/v1/waiting", headers=H[k] if k else {})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()
+
+    def ours(k=None):
+        return [i for i in waiting(k)["items"] if i.get("content_key") == key or i.get("record_id") == gid
+                or i.get("kind") == "pack"]
+    try:
+        #  a scholar on the roster, a composed item in review (a made-up placeholder), a QA signatory, a GMP record
+        assert client.post("/api/v1/scholar-review/roster", headers=H["adm"], json={
+            "scholar_id": who["sch"], "name": f"W1089 Madeup Scholar {tag}",
+            "credential": "a made-up credential, as stated"}).status_code == 200
+        recs = _sr._load(_sr._review_path())
+        recs[key] = {"content_key": key, "surface": "w1089.made_up_surface", "reference": f"w1089 ref {tag}",
+                     "body": f"a made-up placeholder {tag}", "body_hash": _sr.body_hash(f"a made-up placeholder {tag}"),
+                     "state": _sr.IN_REVIEW, "submitted_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                     "reviewer_id": None, "reviewed_at": None, "decision_note": None}
+        _sr._save(_sr._review_path(), recs)
+        assert _gs.add_signatory(who["qa"], f"W1089 Madeup QA {tag}", "QA lead, as stated", "w1089")["ok"]
+        assert _gs.submit(gid, "batch_record", f"a made-up batch record {tag}")["ok"]
+
+        sch = {(i["source"], i["kind"]) for i in ours("sch")}
+        assert sch == {("review", "review"), ("review", "pack")}, sch
+        item = next(i for i in ours("sch") if i["kind"] == "review")
+        assert (item["on"], item["ref"], item["where"]) == (
+            "w1089.made_up_surface", f"w1089 ref {tag}", _wt.WHERE["review"]), item
+        #  the text is never on the list (other tests' queued items are in the shared store too: this one's own)
+        assert f"a made-up placeholder {tag}" not in json.dumps(waiting("sch"))
+        assert [i["record_id"] for i in ours("qa") if i["source"] == "gmp"] == [gid]
+        assert next(i for i in ours("qa") if i["source"] == "gmp")["where"] == _wt.WHERE["gmp"]
+        assert not [i for i in ours("qa") if i["source"] == "review"] and not [
+            i for i in ours("sch") if i["source"] == "gmp"]
+        assert ours("one") == [] and ours("adm") == []
+
+        #  an empty roster waits on an administrator, and says it cannot be decided until one is added
+        monkeypatch.setattr(_sr, "roster", lambda: {})
+        adm = [i for i in ours("adm") if i["kind"] == "review"]
+        assert len(adm) == 1 and adm[0]["said"].startswith("no scholar is on the roster"), adm
+        assert ours("one") == [] and not [i for i in ours("sch") if i["kind"] == "review"]
+        monkeypatch.undo()
+        monkeypatch.setenv("AUTH_ENABLED", "true")
+        _load = _gs._load
+        monkeypatch.setattr(_gs, "_load", lambda name: {} if name == "roster" else _load(name))
+        gm = [i for i in ours("adm") if i["source"] == "gmp"]
+        assert len(gm) == 1 and gm[0]["said"].startswith("no QA signatory is on the roster"), gm
+        monkeypatch.setattr(_gs, "_load", _load)
+
+        #  with sign-in off it all waits on the one person using the machine
+        monkeypatch.setenv("AUTH_ENABLED", "false")
+        assert {(i["source"], i["kind"]) for i in ours()} == {("review", "review"), ("review", "pack"), ("gmp", "qa")}
+        monkeypatch.setenv("AUTH_ENABLED", "true")
+
+        #  a store it cannot read is said in its place, and the rest stands
+        for p, store, k in ((_sr._review_path(), "scholar review", "sch"), (_ap._store_path(), "approval pack", "sch"),
+                            (_gs._p("records"), "GMP records", "qa")):
+            held = p.read_bytes() if p.exists() else None
+            p.write_text("{ not json", encoding="utf-8")
+            try:
+                u = waiting(k)
+            finally:
+                if held is None:
+                    p.unlink()
+                else:
+                    p.write_bytes(held)
+            said = [x["said"] for x in u["unread"] if x["store"] == store]
+            assert len(said) == 1 and said[0], u["unread"]
+        assert not [x for k in ("sch", "qa") for x in waiting(k)["unread"]
+                    if x["store"] in ("scholar review", "approval pack", "GMP records")]
+
+        #  the census entry for these queues is no longer said as not read yet
+        assert not [s for s in _wt.NOT_READ_YET if "scholar review" in s or "GMP" in s]
+        assert len(_wt.NOT_READ_YET) == 4 and any("reviewers' queues" in r for r in _wt.READS)
+    finally:
+        for p, b in kept.items():
+            if b is None:
+                if p.exists():
+                    p.unlink()
+            else:
+                p.write_bytes(b)
