@@ -89152,7 +89152,7 @@ def test_w1087_p514_the_one_list_reached_from_the_first_screen_reads_the_stores_
     dec = by[("project", "decision")]
     assert dec["project_id"] == mine and dec["on"] == f"W1087 project {tag}" and "'concept' to 'prototype'" in dec["what"]
     assert dec["where"] == "the Governance Hub's proposals" and by[("agreement", "falls_due")]["where"] == _wt.WHERE["agreement"]
-    assert w["reads"] == _wt.READS and w["not_read_yet"] == _wt.NOT_READ_YET and len(_wt.NOT_READ_YET) == 3   # W1090
+    assert w["reads"] == _wt.READS and w["not_read_yet"] == _wt.NOT_READ_YET and len(_wt.NOT_READ_YET) == 2   # W1091
     #  W1088 - the list reads more stores now, which the suite's other tests share: this test holds its own five
     ours = ("agreements", "assets", "projects", "proposals", "changes")
     assert [x for x in w["unread"] if x["store"] in ours] == [] and "not_kept" not in w and "said" not in w
@@ -89421,7 +89421,7 @@ def test_w1088_fu1270_the_one_list_reads_what_an_entitys_owner_is_waited_on_for(
 
     #  the census's entries for these stores are no longer said as not read yet
     assert not [s for s in _wt.NOT_READ_YET if "review gate" in s or "service contract" in s]
-    assert len(_wt.NOT_READ_YET) == 3 and waiting("one")["not_read_yet"] == _wt.NOT_READ_YET   # W1090
+    assert len(_wt.NOT_READ_YET) == 2 and waiting("one")["not_read_yet"] == _wt.NOT_READ_YET   # W1091
     assert sum("your entities" in r for r in _wt.READS) == 2
 
 
@@ -89532,7 +89532,7 @@ def test_w1089_fu1270_the_one_list_reads_the_reviewers_queues_by_their_rosters(c
 
         #  the census entry for these queues is no longer said as not read yet
         assert not [s for s in _wt.NOT_READ_YET if "scholar review" in s or "GMP" in s]
-        assert len(_wt.NOT_READ_YET) == 3 and any("reviewers' queues" in r for r in _wt.READS)   # W1090
+        assert len(_wt.NOT_READ_YET) == 2 and any("reviewers' queues" in r for r in _wt.READS)   # W1091
     finally:
         for p, b in kept.items():
             if b is None:
@@ -89620,7 +89620,96 @@ def test_w1090_fu1270_the_one_list_reads_the_owners_own_approvals(client, monkey
             r1 = client.get("/api/v1/waiting", headers=H["one"]).json()
             assert not [x for x in r1["unread"] if x["store"] == store]
         assert not [s for s in _wt.NOT_READ_YET if "legal artefact" in s or "co-signature" in s]
-        assert len(_wt.NOT_READ_YET) == 3 and any("the Owner's own approvals" in r for r in _wt.READS)
+        assert len(_wt.NOT_READ_YET) == 2 and any("the Owner's own approvals" in r for r in _wt.READS)   # W1091
+    finally:
+        for p, b in kept.items():
+            if b is None:
+                if p.exists():
+                    p.unlink()
+            else:
+                p.write_bytes(b)
+
+
+def test_w1091_fu1270_the_one_list_reads_a_support_answer_and_a_quality_defect(client, monkeypatch):
+    """FU-1270, part 4 (W1091): the one list of what waits on a person reads a support answer and a quality defect,
+    held through the route as two people and an administrator:
+    - a support ticket whose answer its asker has not confirmed waits on the asker; not one confirmed, not one
+      unanswered, and never another person's; one asked while signed out waits on nobody named, and with sign-in off
+      on the one person using the machine;
+    - a quality defect waits on its owner: an open one for a correction, a corrected one for a re-verification, and
+      neither once it is closed; a platform-level defect is an administrator's;
+    - a store that cannot be read whole is said in its place, and the rest of the list stands.
+    The two stores are shared with the suite's other tests: this test keeps their bytes and puts them back."""
+    import json
+    import time
+    import uuid
+    import agentic_core.auth.core as _ac
+    import agentic_core.api.waiting as _wt
+    from agentic_core.config import atomic_write_json, data_path, read_json_strict
+    from agentic_core.support import tickets as _tk
+    tag = uuid.uuid4().hex[:8]
+    qms = data_path("qms_state_vbs.json")
+    paths = [_tk._store(), qms]
+    kept = {p: (p.read_bytes() if p.exists() else None) for p in paths}
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    who = {k: f"w1091-{k}-{tag}" for k in ("one", "two", "adm")}
+    users = _ac._load_users()
+    for k, name in who.items():
+        users[name] = {"user_id": name, "username": name, "hashed_password": _ac._pwd_ctx.hash("pw12345678"),
+                       "role": "admin" if k == "adm" else "user", "created_at": "2026-11-15T00:00:00Z",
+                       "api_keys": []}
+    _ac._save_users(users)
+    H = {k: {"Authorization": "Bearer " + client.post("/api/v1/auth/token", data={
+        "username": n, "password": "pw12345678"}).json()["access_token"]} for k, n in who.items()}
+
+    def ours(k=None):
+        r = client.get("/api/v1/waiting", headers=H[k] if k else {})
+        assert r.status_code == 200, r.text[:300]
+        return sorted((i["source"], i["kind"], i.get("ticket_id") or i.get("defect_id"))
+                      for i in r.json()["items"] if tag in str(i.get("ticket_id") or i.get("defect_id") or ""))
+    try:
+        now = time.time()
+        rows = read_json_strict(_tk._store(), missing=[], expect=list)
+
+        def ticket(n, asker, answer, confirmed):
+            return {"id": f"tkt-w1091{tag}{n}", "user_id": asker, "query": "a made-up question", "created_at": now,
+                    "answer": answer, "answered_at": now if answer else None, "confirmed": confirmed,
+                    "confirmed_at": None, "confirmed_by": None}
+        rows += [ticket(1, who["one"], "a made-up answer", None), ticket(2, who["one"], "a made-up answer", True),
+                 ticket(3, who["one"], None, None), ticket(4, "anonymous", "a made-up answer", None)]
+        atomic_write_json(_tk._store(), rows)
+        st = read_json_strict(qms, missing={"gates_run": 0, "defects_total": 0, "defects": []}, expect=dict)
+        st.setdefault("defects", [])
+        for n, owner, status in ((1, who["one"], "open"), (2, who["one"], "corrected"), (3, who["one"], "closed"),
+                                 (4, None, "open")):
+            st["defects"].append({"id": f"DEF-w1091{tag}{n}", "label": "w1091 made-up", "owner_id": owner,
+                                  "status": status, "opened_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                                  "correction": None})
+        atomic_write_json(qms, st)
+
+        t, d = f"tkt-w1091{tag}", f"DEF-w1091{tag}"
+        assert ours("one") == [("defect", "correct", f"{d}1"), ("defect", "reverify", f"{d}2"),
+                               ("support", "confirm", f"{t}1")], ours("one")
+        assert ours("two") == [] and ours("adm") == [("defect", "correct", f"{d}4")]
+        r = client.get("/api/v1/waiting", headers=H["one"]).json()
+        assert {i["where"] for i in r["items"] if tag in str(i.get("ticket_id") or i.get("defect_id") or "")} == {
+            _wt.WHERE["support"], _wt.WHERE["defect"]}
+        monkeypatch.setenv("AUTH_ENABLED", "false")
+        assert ("support", "confirm", f"{t}4") in ours() and ("defect", "correct", f"{d}4") in ours()
+        monkeypatch.setenv("AUTH_ENABLED", "true")
+
+        #  a store that cannot be read whole is said in its place, and the rest stands
+        for p, store, still in ((_tk._store(), "support tickets", "defect"), (qms, "quality defects", "support")):
+            held = p.read_bytes()
+            p.write_text("{ not json", encoding="utf-8")
+            try:
+                u = client.get("/api/v1/waiting", headers=H["one"]).json()
+            finally:
+                p.write_bytes(held)
+            assert [x for x in u["unread"] if x["store"] == store], u["unread"]
+            assert [i for i in u["items"] if i.get("source") == still and tag in json.dumps(i)], u["items"]
+        assert not [s for s in _wt.NOT_READ_YET if "support answer" in s]
+        assert len(_wt.NOT_READ_YET) == 2 and any("a support answer waiting on your confirmation" in r for r in _wt.READS)
     finally:
         for p, b in kept.items():
             if b is None:

@@ -11,10 +11,10 @@
     "your entities: a stage held at its review gate until you decide it, and an entity whose working name is not published until you name it",
     "your entities' service contracts: an offer to accept or decline, an accepted contract to deliver, and a delivered one to settle, each on the side that acts next; and a delivery to your entity waiting for you to accept its version",
     "the reviewers' queues you are on the roster for: a composed item in scholar review and the children's approval pack, waiting on a scholar, and a GMP record waiting on a QA signatory",
-    "the Owner's own approvals, which an administrator records: a filing-shaped legal draft, and a learner's standing approval for a high-impact avatar mode waiting on the Owner's co-signature"
+    "the Owner's own approvals, which an administrator records: a filing-shaped legal draft, and a learner's standing approval for a high-impact avatar mode waiting on the Owner's co-signature",
+    "a support answer waiting on your confirmation, and a quality defect of yours waiting on a correction or a re-verification"
    ],
    "not_read_yet": [
-    "a support answer waiting on its asker's confirmation, and a quality defect waiting on a correction or a re-verification",
     "an evolution proposal and a proposed catalogue entry waiting on a decision",
     "a method amendment not yet carried out, a follow-up waiting on the Owner, and an immune defence waiting to be lifted"
    ],
@@ -36,24 +36,24 @@
     {
      "source": "project",
      "kind": "decision",
-     "project_id": "64013be87e7145ab82125c7529d57ad2",
-     "proposal_id": "25410dad7f124151a94574ba786d8b7c",
+     "project_id": "c29e1f815ff1404993c6105ce60e2fad",
+     "proposal_id": "b20dc2946df3425c8c4be2f492c3f2bf",
      "what": "a decision on the proposal to move it from 'concept' to 'prototype'",
      "on": "W1087 Made-up Project",
      "ref": null,
      "where": "the Governance Hub's proposals",
-     "since": "2026-11-15T18:34:04Z",
+     "since": "2026-11-15T18:56:24Z",
      "said": "raised today"
     },
     {
      "source": "change",
      "kind": "decision",
-     "cca_id": "cca-5563bd0e06",
+     "cca_id": "cca-fe3b3ae8d1",
      "what": "a decision on this change",
      "on": "W1087 made-up policy amendment",
      "ref": "tier HIGH",
      "where": "Change Control's queue",
-     "since": "2026-11-15T18:34:04Z",
+     "since": "2026-11-15T18:56:24Z",
      "said": "raised today"
     }
    ],
@@ -72,10 +72,10 @@
     "your entities: a stage held at its review gate until you decide it, and an entity whose working name is not published until you name it",
     "your entities' service contracts: an offer to accept or decline, an accepted contract to deliver, and a delivered one to settle, each on the side that acts next; and a delivery to your entity waiting for you to accept its version",
     "the reviewers' queues you are on the roster for: a composed item in scholar review and the children's approval pack, waiting on a scholar, and a GMP record waiting on a QA signatory",
-    "the Owner's own approvals, which an administrator records: a filing-shaped legal draft, and a learner's standing approval for a high-impact avatar mode waiting on the Owner's co-signature"
+    "the Owner's own approvals, which an administrator records: a filing-shaped legal draft, and a learner's standing approval for a high-impact avatar mode waiting on the Owner's co-signature",
+    "a support answer waiting on your confirmation, and a quality defect of yours waiting on a correction or a re-verification"
    ],
    "not_read_yet": [
-    "a support answer waiting on its asker's confirmation, and a quality defect waiting on a correction or a re-verification",
     "an evolution proposal and a proposed catalogue entry waiting on a decision",
     "a method amendment not yet carried out, a follow-up waiting on the Owner, and an immune defence waiting to be lifted"
    ],
@@ -84,9 +84,9 @@
    "within_days": 30,
    "items": [
     {
-     "agreement_id": "agr-158217b1c7",
+     "agreement_id": "agr-cb5f8c708f",
      "agreement_title": "W1087 Made-up Supply",
-     "obligation_id": "obl-b7e37f5f44",
+     "obligation_id": "obl-29b1500617",
      "what": "pay the made-up price",
      "clause": "clause 4",
      "due_on": "2026-11-12",
@@ -100,12 +100,12 @@
      "where": "the agreements on the Law page"
     },
     {
-     "asset_id": "ast-52daf21614",
+     "asset_id": "ast-387f6e55b1",
      "on": "W1087 made-up delivery robot",
      "ref": "the maker's evidence of conformity",
      "fact": "maker_conformity",
      "kind": "evidence_lapsed",
-     "evidence_id": "evd-0849ceeca1",
+     "evidence_id": "evd-f0643bcfbd",
      "what": "the made-up declaration of conformity",
      "lapses_on": "2026-11-13",
      "days": -2,
@@ -114,12 +114,12 @@
      "where": "the assets on the Law page"
     },
     {
-     "asset_id": "ast-52daf21614",
+     "asset_id": "ast-387f6e55b1",
      "on": "W1087 made-up delivery robot",
      "ref": "insurance",
      "fact": "insurance",
      "kind": "evidence_lapses",
-     "evidence_id": "evd-e7386b1e91",
+     "evidence_id": "evd-ac86573e24",
      "what": "the made-up insurance certificate",
      "lapses_on": "2026-11-20",
      "days": 5,
@@ -128,9 +128,9 @@
      "where": "the assets on the Law page"
     },
     {
-     "agreement_id": "agr-158217b1c7",
+     "agreement_id": "agr-cb5f8c708f",
      "agreement_title": "W1087 Made-up Supply",
-     "obligation_id": "obl-f24de9b436",
+     "obligation_id": "obl-b6b49b1416",
      "what": "deliver the made-up goods",
      "clause": "clause 3",
      "due_on": "2026-11-25",
@@ -146,19 +146,19 @@
     {
      "source": "project",
      "kind": "decision",
-     "project_id": "adabf3b3b0434ed3a6246f323dd270ce",
-     "proposal_id": "2690d6e2755d4fb7a81502e498d2c01b",
+     "project_id": "f961c39ee55e4da8a819f96bd8454074",
+     "proposal_id": "15e6a43e18544b55907d63783a65e98b",
      "what": "a decision on the proposal to move it from 'concept' to 'prototype'",
      "on": "W1087 Made-up Pilot",
      "ref": null,
      "where": "the Governance Hub's proposals",
-     "since": "2026-11-15T18:34:04Z",
+     "since": "2026-11-15T18:56:24Z",
      "said": "raised today"
     },
     {
-     "agreement_id": "agr-158217b1c7",
+     "agreement_id": "agr-cb5f8c708f",
      "agreement_title": "W1087 Made-up Supply",
-     "obligation_id": "obl-b7e37f5f44",
+     "obligation_id": "obl-29b1500617",
      "what": "pay the made-up price",
      "clause": "clause 4",
      "due_on": "2026-11-12",
@@ -171,9 +171,9 @@
      "where": "the agreements on the Law page"
     },
     {
-     "agreement_id": "agr-158217b1c7",
+     "agreement_id": "agr-cb5f8c708f",
      "agreement_title": "W1087 Made-up Supply",
-     "obligation_id": "obl-f24de9b436",
+     "obligation_id": "obl-b6b49b1416",
      "what": "deliver the made-up goods",
      "clause": "clause 3",
      "due_on": "2026-11-25",
@@ -200,10 +200,10 @@
     "your entities: a stage held at its review gate until you decide it, and an entity whose working name is not published until you name it",
     "your entities' service contracts: an offer to accept or decline, an accepted contract to deliver, and a delivered one to settle, each on the side that acts next; and a delivery to your entity waiting for you to accept its version",
     "the reviewers' queues you are on the roster for: a composed item in scholar review and the children's approval pack, waiting on a scholar, and a GMP record waiting on a QA signatory",
-    "the Owner's own approvals, which an administrator records: a filing-shaped legal draft, and a learner's standing approval for a high-impact avatar mode waiting on the Owner's co-signature"
+    "the Owner's own approvals, which an administrator records: a filing-shaped legal draft, and a learner's standing approval for a high-impact avatar mode waiting on the Owner's co-signature",
+    "a support answer waiting on your confirmation, and a quality defect of yours waiting on a correction or a re-verification"
    ],
    "not_read_yet": [
-    "a support answer waiting on its asker's confirmation, and a quality defect waiting on a correction or a re-verification",
     "an evolution proposal and a proposed catalogue entry waiting on a decision",
     "a method amendment not yet carried out, a follow-up waiting on the Owner, and an immune defence waiting to be lifted"
    ],
@@ -212,9 +212,9 @@
    "within_days": 30,
    "items": [
     {
-     "agreement_id": "agr-158217b1c7",
+     "agreement_id": "agr-cb5f8c708f",
      "agreement_title": "W1087 Made-up Supply",
-     "obligation_id": "obl-b7e37f5f44",
+     "obligation_id": "obl-29b1500617",
      "what": "pay the made-up price",
      "clause": "clause 4",
      "due_on": "2026-11-12",
@@ -228,12 +228,12 @@
      "where": "the agreements on the Law page"
     },
     {
-     "asset_id": "ast-52daf21614",
+     "asset_id": "ast-387f6e55b1",
      "on": "W1087 made-up delivery robot",
      "ref": "the maker's evidence of conformity",
      "fact": "maker_conformity",
      "kind": "evidence_lapsed",
-     "evidence_id": "evd-0849ceeca1",
+     "evidence_id": "evd-f0643bcfbd",
      "what": "the made-up declaration of conformity",
      "lapses_on": "2026-11-13",
      "days": -2,
@@ -242,12 +242,12 @@
      "where": "the assets on the Law page"
     },
     {
-     "asset_id": "ast-52daf21614",
+     "asset_id": "ast-387f6e55b1",
      "on": "W1087 made-up delivery robot",
      "ref": "insurance",
      "fact": "insurance",
      "kind": "evidence_lapses",
-     "evidence_id": "evd-e7386b1e91",
+     "evidence_id": "evd-ac86573e24",
      "what": "the made-up insurance certificate",
      "lapses_on": "2026-11-20",
      "days": 5,
@@ -256,9 +256,9 @@
      "where": "the assets on the Law page"
     },
     {
-     "agreement_id": "agr-158217b1c7",
+     "agreement_id": "agr-cb5f8c708f",
      "agreement_title": "W1087 Made-up Supply",
-     "obligation_id": "obl-f24de9b436",
+     "obligation_id": "obl-b6b49b1416",
      "what": "deliver the made-up goods",
      "clause": "clause 3",
      "due_on": "2026-11-25",
@@ -274,19 +274,19 @@
     {
      "source": "project",
      "kind": "decision",
-     "project_id": "adabf3b3b0434ed3a6246f323dd270ce",
-     "proposal_id": "2690d6e2755d4fb7a81502e498d2c01b",
+     "project_id": "f961c39ee55e4da8a819f96bd8454074",
+     "proposal_id": "15e6a43e18544b55907d63783a65e98b",
      "what": "a decision on the proposal to move it from 'concept' to 'prototype'",
      "on": "W1087 Made-up Pilot",
      "ref": null,
      "where": "the Governance Hub's proposals",
-     "since": "2026-11-15T18:34:04Z",
+     "since": "2026-11-15T18:56:24Z",
      "said": "raised today"
     },
     {
-     "agreement_id": "agr-158217b1c7",
+     "agreement_id": "agr-cb5f8c708f",
      "agreement_title": "W1087 Made-up Supply",
-     "obligation_id": "obl-b7e37f5f44",
+     "obligation_id": "obl-29b1500617",
      "what": "pay the made-up price",
      "clause": "clause 4",
      "due_on": "2026-11-12",
@@ -313,10 +313,10 @@
     "your entities: a stage held at its review gate until you decide it, and an entity whose working name is not published until you name it",
     "your entities' service contracts: an offer to accept or decline, an accepted contract to deliver, and a delivered one to settle, each on the side that acts next; and a delivery to your entity waiting for you to accept its version",
     "the reviewers' queues you are on the roster for: a composed item in scholar review and the children's approval pack, waiting on a scholar, and a GMP record waiting on a QA signatory",
-    "the Owner's own approvals, which an administrator records: a filing-shaped legal draft, and a learner's standing approval for a high-impact avatar mode waiting on the Owner's co-signature"
+    "the Owner's own approvals, which an administrator records: a filing-shaped legal draft, and a learner's standing approval for a high-impact avatar mode waiting on the Owner's co-signature",
+    "a support answer waiting on your confirmation, and a quality defect of yours waiting on a correction or a re-verification"
    ],
    "not_read_yet": [
-    "a support answer waiting on its asker's confirmation, and a quality defect waiting on a correction or a re-verification",
     "an evolution proposal and a proposed catalogue entry waiting on a decision",
     "a method amendment not yet carried out, a follow-up waiting on the Owner, and an immune defence waiting to be lifted"
    ],
@@ -325,12 +325,12 @@
    "within_days": 30,
    "items": [
     {
-     "asset_id": "ast-52daf21614",
+     "asset_id": "ast-387f6e55b1",
      "on": "W1087 made-up delivery robot",
      "ref": "the maker's evidence of conformity",
      "fact": "maker_conformity",
      "kind": "evidence_lapsed",
-     "evidence_id": "evd-0849ceeca1",
+     "evidence_id": "evd-f0643bcfbd",
      "what": "the made-up declaration of conformity",
      "lapses_on": "2026-11-13",
      "days": -2,
@@ -339,12 +339,12 @@
      "where": "the assets on the Law page"
     },
     {
-     "asset_id": "ast-52daf21614",
+     "asset_id": "ast-387f6e55b1",
      "on": "W1087 made-up delivery robot",
      "ref": "insurance",
      "fact": "insurance",
      "kind": "evidence_lapses",
-     "evidence_id": "evd-e7386b1e91",
+     "evidence_id": "evd-ac86573e24",
      "what": "the made-up insurance certificate",
      "lapses_on": "2026-11-20",
      "days": 5,
@@ -355,13 +355,13 @@
     {
      "source": "project",
      "kind": "decision",
-     "project_id": "adabf3b3b0434ed3a6246f323dd270ce",
-     "proposal_id": "2690d6e2755d4fb7a81502e498d2c01b",
+     "project_id": "f961c39ee55e4da8a819f96bd8454074",
+     "proposal_id": "15e6a43e18544b55907d63783a65e98b",
      "what": "a decision on the proposal to move it from 'concept' to 'prototype'",
      "on": "W1087 Made-up Pilot",
      "ref": null,
      "where": "the Governance Hub's proposals",
-     "since": "2026-11-15T18:34:04Z",
+     "since": "2026-11-15T18:56:24Z",
      "said": "raised today"
     }
    ],
@@ -390,10 +390,10 @@
     "your entities: a stage held at its review gate until you decide it, and an entity whose working name is not published until you name it",
     "your entities' service contracts: an offer to accept or decline, an accepted contract to deliver, and a delivered one to settle, each on the side that acts next; and a delivery to your entity waiting for you to accept its version",
     "the reviewers' queues you are on the roster for: a composed item in scholar review and the children's approval pack, waiting on a scholar, and a GMP record waiting on a QA signatory",
-    "the Owner's own approvals, which an administrator records: a filing-shaped legal draft, and a learner's standing approval for a high-impact avatar mode waiting on the Owner's co-signature"
+    "the Owner's own approvals, which an administrator records: a filing-shaped legal draft, and a learner's standing approval for a high-impact avatar mode waiting on the Owner's co-signature",
+    "a support answer waiting on your confirmation, and a quality defect of yours waiting on a correction or a re-verification"
    ],
    "not_read_yet": [
-    "a support answer waiting on its asker's confirmation, and a quality defect waiting on a correction or a re-verification",
     "an evolution proposal and a proposed catalogue entry waiting on a decision",
     "a method amendment not yet carried out, a follow-up waiting on the Owner, and an immune defence waiting to be lifted"
    ],

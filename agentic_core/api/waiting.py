@@ -42,12 +42,13 @@ READS = ["the obligations on your agreement records: each one falling due within
          "approval pack, waiting on a scholar, and a GMP record waiting on a QA signatory",
          #  W1090 (FU-1270)
          "the Owner's own approvals, which an administrator records: a filing-shaped legal draft, and a learner's "
-         "standing approval for a high-impact avatar mode waiting on the Owner's co-signature"]
+         "standing approval for a high-impact avatar mode waiting on the Owner's co-signature",
+         #  W1091 (FU-1270)
+         "a support answer waiting on your confirmation, and a quality defect of yours waiting on a correction or "
+         "a re-verification"]
 #  W1087 - the census of the stores that hold something waiting on a person found these as well; each is named until
 #  the list reads it (FU-1270)
-NOT_READ_YET = [                "a support answer waiting on its asker's confirmation, and a quality defect waiting on a correction or "
-                "a re-verification",
-                "an evolution proposal and a proposed catalogue entry waiting on a decision",
+NOT_READ_YET = ["an evolution proposal and a proposed catalogue entry waiting on a decision",
                 "a method amendment not yet carried out, a follow-up waiting on the Owner, and an immune defence "
                 "waiting to be lifted"]
 WHERE = {"agreement": "the agreements on the Law page", "asset": "the assets on the Law page",
@@ -62,7 +63,10 @@ WHERE = {"agreement": "the agreements on the Law page", "asset": "the assets on 
          "gmp": "the GMP sign-off on the Science page",
          #  W1090 (FU-1270) - no page offers these yet
          "legal": "no page yet: an administrator approves it through the Law matter's approval route",
-         "cosign": "no page yet: an administrator co-signs it through the avatar ratification route"}
+         "cosign": "no page yet: an administrator co-signs it through the avatar ratification route",
+         #  W1091 (FU-1270)
+         "support": "your support ticket on the Support page",
+         "defect": "the defects on the Cockpit's VBS panel"}
 NOT_KEPT = ("Your agreement and asset records are kept only once you are signed in, and sign-in is off, so nothing "
             "of theirs is on this list.")
 BASIS = ("One list of what waits on you, from the records it reads; a record it could not read is said with why, and "
@@ -78,7 +82,8 @@ _RANK = {"falls_due": 0, "evidence_lapses": 0, "evidence_lapsed": 0, "decision":
          "readiness_withdrawn": 2, "unconfirmed": 3,
          "name": 1, "gate": 1, "offered": 1, "accepted": 1, "delivered": 1, "acceptance": 1,   # W1088
          "review": 1, "pack": 1, "qa": 1,   # W1089
-         "approval": 1, "cosign": 1}   # W1090
+         "approval": 1, "cosign": 1,   # W1090
+         "confirm": 1, "correct": 1, "reverify": 1}   # W1091
 
 
 def _iso(ts) -> str:
@@ -427,6 +432,56 @@ def _cosigns(user) -> tuple:
     return items, []
 
 
+def _tickets(user) -> tuple:
+    """W1091 (FU-1270) - a support ticket whose answer its asker has not confirmed waits on them (support/tickets.py):
+    with sign-in on, the asker by their account; with it off, the one person using this machine. One asked while
+    signed out waits on nobody who can be named."""
+    from agentic_core.config import StoreUnavailable
+    from agentic_core.support import tickets as tk
+    try:
+        rows = tk._read()
+    except StoreUnavailable as e:
+        return [], [{"store": "support tickets", "said": (
+            f"The support tickets could not be read ({e}), so an answer waiting on your confirmation may not be "
+            f"shown.")}]
+    items = []
+    for t in rows:
+        if not isinstance(t, dict) or t.get("answer") in (None, "") or t.get("confirmed") is not tk.UNCONFIRMED:
+            continue
+        if not _theirs(user, t.get("user_id")):
+            continue
+        at = t.get("answered_at")
+        since = _iso(at) if isinstance(at, (int, float)) else str(at or "")
+        items.append({"source": "support", "kind": "confirm", "ticket_id": t.get("id"),
+                      "what": "your confirmation that this answer resolved your question",
+                      "on": f"the support ticket {t.get('id')}", "ref": None, "where": WHERE["support"],
+                      "since": since, "said": _ago(since)})
+    return items, []
+
+
+def _defects(user) -> tuple:
+    """W1091 (FU-1270) - a quality defect waits on its owner (vbs/qms.py): an open one for a correction, a corrected one
+    for a re-verification. A platform-level defect, with no owner, is an administrator's. The store is read
+    tolerantly, and when it was not read whole that is said."""
+    from agentic_core.config import data_path, read_json_reported
+    st, why = read_json_reported(data_path("qms_state_vbs.json"), {"defects": []})
+    unread = ([{"store": "quality defects", "said": (
+        f"The quality defects could not be read whole ({why}), so one waiting on you may not be shown.")}] if why else [])
+    items = []
+    for d in ((st.get("defects") if isinstance(st, dict) else None) or []):
+        if not isinstance(d, dict) or d.get("status") not in ("open", "corrected"):
+            continue
+        if not _theirs(user, d.get("owner_id")):
+            continue
+        since = str(d.get("opened_at") or "")
+        corrected = d.get("status") == "corrected"
+        items.append({"source": "defect", "kind": "reverify" if corrected else "correct", "defect_id": d.get("id"),
+                      "what": "a re-verification of its correction" if corrected else "a correction",
+                      "on": f"the defect {d.get('id')} ({d.get('label')})", "ref": None, "where": WHERE["defect"],
+                      "since": since, "said": _ago(since)})
+    return items, unread
+
+
 @router.get("")
 async def what_waits(within_days: int = 30, user: dict | None = Depends(get_current_user)):
     """What waits on this person, from the records the list reads, soonest first; each store it could not read, with
@@ -466,7 +521,8 @@ async def what_waits(within_days: int = 30, user: dict | None = Depends(get_curr
     unread += missed
     #  W1089 (FU-1270) - the reviewers' queues the person is on the roster for
     for read in (lambda: _reviews(user), lambda: _gmp(user),
-                 lambda: _artefacts(user), lambda: _cosigns(user)):   # W1090 - the Owner's own approvals
+                 lambda: _artefacts(user), lambda: _cosigns(user),   # W1090 - the Owner's own approvals
+                 lambda: _tickets(user), lambda: _defects(user)):   # W1091 - a support answer, a defect
         got, missed = read()
         items += got
         unread += missed
