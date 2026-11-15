@@ -22,6 +22,8 @@ function _clearLocalUserData(): void {
     localStorage.removeItem('ws_user_prefs_v1');
     window.dispatchEvent(new CustomEvent('ws:output-history'));
     window.dispatchEvent(new CustomEvent('ws:user-prefs'));
+    //  W1076 - and whatever a page holds for the person who was signed in: the avatar's conversation set it aside
+    window.dispatchEvent(new CustomEvent('ws:identity'));
   } catch { silenceIsRight('with no browser storage there is nothing to clear at sign-out')(); }
 }
 

@@ -25606,6 +25606,30 @@
       "note": "",
       "slot_source": "tenant isolation under sign-in, as FU-1262; it rides P5.1 as FU-1061 did",
       "tier": 1
+    },
+    {
+      "id": "FU-1264",
+      "title": "The avatar session said a failed reply in the avatar's voice, answered two messages at once, kept a cleared or a previous person's conversation, kept the person's entity for the page's life, and offered a rewind that did nothing",
+      "why": "Found by rendering the avatar session (hooks/useAvatarSession.ts) with the shell footer's conversation panel, voice controls and avatar against its routes' own answers (FU-399 part 88; no rendered test reached it; every message and entity made up). A reply that did not come was put in the conversation in the avatar's own voice, under Avatar. A second message could be sent with Enter while the first was answered (the send button waits; Enter did not): the first exchange opened two sessions, and replies came back in either order. A reply for a conversation cleared while it was on its way was said in the new conversation, and the session it opened was the one the next message continued. The person's entity was read once per page load and kept: an entity made or updated since was never the one grounded while the reply said 'your most recently updated one', and a person who signed in after another on the same page sent the other person's entity with every message. A change of who is signed in left the conversation on screen (the sign-in page is inside the shell), and the next person's message went to it. A voice message was sent as the session stood when the recording started (another session opened). The rewind was offered for a reply the browser spoke, which it cannot rewind.",
+      "source": "W1076 (FU-399 part 88: the avatar session rendered)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/hooks/useAvatarSession.ts",
+        "apps/workstation-superapp/src/components/avatar/ConversationPanel.tsx",
+        "apps/workstation-superapp/src/components/layout/Header.tsx",
+        "apps/workstation-superapp/src/lib/auth.ts"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1076",
+      "note": "",
+      "slot_source": "found by FU-399's render of the avatar session; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: a reply that did not come is said beside the input as that; one message is answered at a time (words heard meanwhile go in the box); a cleared conversation's late reply is dropped and the session it opened closed; the person's entity is read for each message; a change of who is signed in sets the conversation aside; a voice message is sent as the conversation stands when it is heard; and the rewind is offered only for audio it can rewind. The rendered test (seven cases, all red on the unfixed session) has ten vitest blinds; test_w1076 holds the code and the fixture, with ten blinds."
     }
   ],
   "routes": [

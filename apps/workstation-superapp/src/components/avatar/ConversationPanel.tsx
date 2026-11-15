@@ -47,7 +47,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
   //  matters most: a screen-reader user in Arabic or Urdu also gets an RTL layout.
   const { t } = useT();
   const {
-    messages, input, setInput, sending, notice, context,
+    messages, input, setInput, sending, notice, sendError, context,
     sendMessage, clearConversation, pendingImage, setPendingImage, handleImageFile,
     speakReplies, setSpeakReplies,   // W325 — spoken replies are finally REACHABLE
   } = avatar;
@@ -197,6 +197,14 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
         <div className="shrink-0 mt-2 px-3 py-2 text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-xl">
           {notice}
         </div>
+      )}
+
+      {/* W1076 - a reply that did not come, said as that beside the input: it was put in the conversation in the
+          avatar's own voice */}
+      {sendError && (
+        <p role="alert" data-testid="avatar-send-error" className="shrink-0 mt-2 px-1 text-[10px] font-bold text-vital">
+          {sendError}
+        </p>
       )}
 
       {pendingImage && (

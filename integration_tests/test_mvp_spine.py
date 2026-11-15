@@ -87886,3 +87886,54 @@ def test_w1075_fu1262_with_sign_in_on_no_route_reads_or_writes_another_persons_e
     monkeypatch.setenv("AUTH_ENABLED", "false")
     r = client.get(f"/api/v1/studio/vsb/{vid}")
     assert r.status_code == 200 and canary in r.text, r.text[:200]
+
+
+def test_w1076_fu1264_the_avatar_session_is_one_conversation_for_one_person_answered_one_message_at_a_time():
+    """W1076 (FU-1264; FU-399 part 88). The avatar session (hooks/useAvatarSession.ts) is the one conversation the
+    shell's footer, its header and its voice controls share, and no rendered test reached it. Rendered with the
+    footer's conversation panel, voice controls and avatar against its routes' own answers (every message and entity
+    made up), it showed seven defects:
+    - a reply that did not come was said in the avatar's own voice;
+    - a second message could be sent with Enter while the first was answered;
+    - a cleared conversation's late reply was said in the new one, and the session it opened was the one the next
+      message continued;
+    - the person's entity was read once per page load, so a newer entity was never grounded and the next person on
+      the same page sent the previous person's;
+    - a change of who is signed in left the conversation on screen;
+    - a voice message was sent as the session stood when the recording started;
+    - the rewind was offered for a reply the browser spoke.
+    Each is fixed.
+
+    Held here: the hook's, the panel's and the sign-in's code, and the rendered test (useAvatarSession.test.tsx, seven
+    cases, ten vitest blinds) over its fixture of made-up messages and entities."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    hook = _code_only((src / "hooks/useAvatarSession.ts").read_text(encoding="utf-8"))
+    #  the person's entity, read for each message
+    assert "_groundingVsb" not in hook and "    return rows.length ? (rows[0].vsb_id ?? null) : null;" in hook
+    #  one message at a time, under the conversation it was asked in
+    assert "if (inFlight.current) {" in hook and "const asked = conversation.current;" in hook
+    assert hook.count("inFlight.current = false;") == 3, "clearing, a change of person, and an answer end a message"
+    assert "if (asked !== conversation.current) {" in hook and "axios.delete(`/api/v1/avatar/session/${opened}`)" in hook
+    #  a reply that did not come is said as that
+    assert "setSendError(`No reply came: ${detail}`);" in hook
+    assert "setMessages(prev => [...prev, { role: 'assistant', content: detail }]);" not in hook
+    #  a change of who is signed in sets the conversation aside
+    assert "window.addEventListener('ws:identity', aside);" in hook
+    auth = _code_only((src / "lib/auth.ts").read_text(encoding="utf-8"))
+    assert "window.dispatchEvent(new CustomEvent('ws:identity'));" in auth
+    #  a voice message is sent as the conversation stands when it is heard
+    assert hook.count("if (text) sendLatest.current(text);") == 2 and "if (text) sendMessage(text);" not in hook
+    #  no rewind offered for a reply the browser speaks
+    spoken = hook[hook.index("window.speechSynthesis.speak(u);"):hook.index("const resp = await axios.post('/api/v1/avatar/speak'")]
+    assert "setHasPlayedAudio(true)" not in spoken
+    panel = _code_only((src / "components/avatar/ConversationPanel.tsx").read_text(encoding="utf-8"))
+    assert "{sendError && (" in panel and 'data-testid="avatar-send-error"' in panel
+    #  the rendered test, over made-up messages and entities
+    t = (src / "hooks/useAvatarSession.test.tsx").read_text(encoding="utf-8")
+    assert t.count("\n  it('") == 7, t.count("\n  it('")
+    fx = json.loads((src / "hooks/useAvatarSession.fixture.json").read_text(encoding="utf-8"))
+    assert all(fx[k]["message"].startswith("W1076 made up: ") for k in ("ask_1", "ask_2"))
+    assert [e["name"] for e in fx["vsb_two"]["body"]["entities"]] == ["W1076 Made-up Bike Shop", "W1076 Made-up Bakery"]
+    assert fx["reply_1"]["body"]["grounded_in"] == fx["ask_1"]["vsb_id"] and fx["not_theirs"]["status"] == 404

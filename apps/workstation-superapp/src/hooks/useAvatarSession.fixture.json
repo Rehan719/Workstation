@@ -1,0 +1,133 @@
+{
+ "vsb_none": {
+  "status": 200,
+  "body": {
+   "entities": []
+  }
+ },
+ "vsb_one": {
+  "status": 200,
+  "body": {
+   "entities": [
+    {
+     "vsb_id": "vsb-dd88722e99",
+     "name": "W1076 Made-up Bakery"
+    }
+   ]
+  }
+ },
+ "status": {
+  "status": 200,
+  "body": {
+   "online": true,
+   "posture": "in-house-first",
+   "native": true,
+   "effective_serving_mode": "deterministic floor",
+   "effective_serving_mode_basis": "no owned local model is reachable; the floor always answers, and it cannot translate or reason like a model",
+   "local_serving_disabled": true,
+   "external_use_permitted": false,
+   "ollama_online": false,
+   "openai_key_present": false,
+   "anthropic_key_present": false,
+   "key_note": "presence of the env var only — validity is only known at call time"
+  }
+ },
+ "ask_1": {
+  "session_id": null,
+  "message": "W1076 made up: what should my bakery do first?",
+  "context": "general",
+  "vsb_id": "vsb-dd88722e99"
+ },
+ "reply_1": {
+  "status": 200,
+  "body": {
+   "session_id": "11dd53c7-3773-4c70-8f12-febbf2d083a5",
+   "response": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Workstation Sovereign Mesh avatar — a helpful, concise assistant across the whole platform. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: W1076 made up: what should my bakery do first? (domain: cross-domain (the avatar is a conversation across every domain, not a domain tool)).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- bakery first\n- made what\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'avatar:general', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for cross-domain (the avatar is a conversation across every domain, not a domain tool); record outcomes to memory/UEG.",
+   "cleared": null,
+   "clearance_reason": "NOT cleared by the constitutional clearance chain: no approval is recorded for this learner in mode 'instructor', so the chain was not run and this is the avatar's ordinary answer. Record what you want the avatar for to have replies cleared",
+   "clearance_gates": null,
+   "image_understood": false,
+   "image_served_by": null,
+   "image_is_external": false,
+   "image_status": "none",
+   "image_refusal": null,
+   "image_accepts": [],
+   "context": "general",
+   "served_by": "native",
+   "is_external": false,
+   "grounded_in": "vsb-dd88722e99",
+   "grounding_used": false,
+   "grounding_basis": "your enterprise's record reached the prompt, but the native floor does not read it: this reply used none of it",
+   "language": null,
+   "language_note": null,
+   "profile_applied": false,
+   "profile_state": "none_written",
+   "profile_basis": "you have not written a profile",
+   "suggested_areas": [],
+   "suggested_areas_basis": "No platform area is suggested: no word or phrase in your message is on the keyword list for any of the 14 areas. The list reads words, not meaning, so this does not say that no area of the platform fits what you asked."
+  }
+ },
+ "vsb_two": {
+  "status": 200,
+  "body": {
+   "entities": [
+    {
+     "vsb_id": "vsb-8cf9b806d6",
+     "name": "W1076 Made-up Bike Shop"
+    },
+    {
+     "vsb_id": "vsb-dd88722e99",
+     "name": "W1076 Made-up Bakery"
+    }
+   ]
+  }
+ },
+ "ask_2": {
+  "session_id": "11dd53c7-3773-4c70-8f12-febbf2d083a5",
+  "message": "W1076 made up: and after that?",
+  "context": "general",
+  "vsb_id": "vsb-8cf9b806d6"
+ },
+ "reply_2": {
+  "status": 200,
+  "body": {
+   "session_id": "11dd53c7-3773-4c70-8f12-febbf2d083a5",
+   "response": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Workstation Sovereign Mesh avatar — a helpful, concise assistant across the whole platform. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nSubject: W1076 made up: and after that? (domain: cross-domain (the avatar is a conversation across every domain, not a domain tool)).\nStructured frame over the terms most frequent in the request (a term count, not an analysis):\n- made\n- after\n\n## Terms most frequent in the text you wrote\nNative structured frame for 'Terms most frequent in the text you wrote' over: W1076 made up: and after that? (domain: cross-domain (the avatar is a conversation across every domain, not a domain tool)). The list below is the request's most frequent terms, not findings about them.\n- made\n- after\n\n## Native approach\nNative structured frame for 'Native approach' over: W1076 made up: and after that? (domain: cross-domain (the avatar is a conversation across every domain, not a domain tool)). The list below is the request's most frequent terms, not findings about them.\n- made\n- after\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for cross-domain (the avatar is a conversation across every domain, not a domain tool); record outcomes to memory/UEG.",
+   "cleared": null,
+   "clearance_reason": "NOT cleared by the constitutional clearance chain: no approval is recorded for this learner in mode 'instructor', so the chain was not run and this is the avatar's ordinary answer. Record what you want the avatar for to have replies cleared",
+   "clearance_gates": null,
+   "image_understood": false,
+   "image_served_by": null,
+   "image_is_external": false,
+   "image_status": "none",
+   "image_refusal": null,
+   "image_accepts": [],
+   "context": "general",
+   "served_by": "native",
+   "is_external": false,
+   "grounded_in": "vsb-8cf9b806d6",
+   "grounding_used": false,
+   "grounding_basis": "your enterprise's record reached the prompt, but the native floor does not read it: this reply used none of it",
+   "language": null,
+   "language_note": null,
+   "profile_applied": false,
+   "profile_state": "none_written",
+   "profile_basis": "you have not written a profile",
+   "suggested_areas": [],
+   "suggested_areas_basis": "No platform area is suggested: no word or phrase in your message is on the keyword list for any of the 14 areas. The list reads words, not meaning, so this does not say that no area of the platform fits what you asked."
+  }
+ },
+ "deleted": {
+  "status": 200,
+  "body": {
+   "cleared": true,
+   "session_id": "11dd53c7-3773-4c70-8f12-febbf2d083a5"
+  }
+ },
+ "not_theirs": {
+  "status": 404,
+  "body": {
+   "detail": "Session not found"
+  }
+ }
+}
