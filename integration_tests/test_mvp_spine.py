@@ -47455,7 +47455,9 @@ def test_w627_p225_material_chief_gates_overclaims_and_surfaces(client, monkeypa
     _e = client.post("/api/v1/native-ai/ensemble", json={"prompt": "Summarise a bakery co-op",
                                                           "models": ["native"]}).json()
     assert _e.get("governance_checkpoint"), ("/ensemble runs with no constitutional gate", sorted(_e)[:20])
-    _sw = client.get("/api/v1/resources/swarm").json()
+    #  W1086 - the saved cascade of this test's own entity: the store lists the oldest first, and another test's
+    #  entity may hold that one behind a pending review gate (CI on cda538c5, after test_vsb_review_gates_mode3)
+    _sw = client.get(f"/api/v1/resources/swarm?vsb_id={_vid}").json()
     _sws = _sw.get("cascades") or []
     assert _sws, ("no saved cascade to run, so the saved-swarm leg cannot discriminate", sorted(_sw))
     if _sws:
@@ -88972,3 +88974,61 @@ def test_w1085_p518_an_obligation_names_its_clause_and_who_confirmed_it_and_what
     assert client.post(f"/api/v1/agreements/{aid}/ended", headers=one, json={"on": today.isoformat(), "how": "w1085 made-up"}).status_code == 200
     assert client.get("/api/v1/waiting", headers=one).json()["items"] == []
     assert ob(good).status_code == 409
+
+
+def test_w1086_p518_on_the_law_page_obligations_the_notice_period_and_what_waits_on_you_are_said_as_the_routes_give_them():
+    """P5.18 clauses 3 and 7 completed (W1086, FU-1267). W1085 built the records and the one list of what waits on a
+    person; the Law page is where a person completes them. Held here:
+    - the Law page mounts the waiting panel once, before the agreements; the waiting panel calls the one list's route
+      and no other, and says the route's own sentences (why nothing is kept, that nothing waits, what it reads and does
+      not read yet, the date basis), with a sentence ended once;
+    - the agreements panel says each obligation with its clause and the route's "not confirmed" until a person
+      confirms it, the route's date basis, the notice period as entered or the route's "not known", and how much of
+      the text was kept; it offers nothing once an agreement's end is recorded;
+    - both rendered tests exist on fixtures captured from the routes on made-up parties, which hold an obligation past
+      its date, one confirmed, the notice period unknown and then entered, and the list's own 503;
+    - the journey is a row of the coverage register, driven by test_w1085, and the register's check passes."""
+    import json
+    import pathlib
+    import re
+    import agentic_core.api.agreements as _ag
+    import agentic_core.api.waiting as _wt
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+
+    hub = _code_only((src / "pages/domains/LawHub.tsx").read_text(encoding="utf-8"))
+    assert "import WaitingPanel from '../../components/WaitingPanel';" in hub and hub.count("<WaitingPanel />") == 1
+    assert hub.index("<WaitingPanel />") < hub.index("<AgreementsPanel />")
+    wp = _code_only((src / "components/WaitingPanel.tsx").read_text(encoding="utf-8"))
+    assert set(re.findall(r"/api/v\d+/[\w/{}.-]*", wp)) == {"/api/v1/waiting"}
+    for said in ("{w.said}", "${(w.reads ?? []).join('; ')}", "${(w.not_read_yet ?? []).join('; ')}", "${w.date_basis ?? ''}",
+                 "${asClause(String(i.said ?? ''))}"):
+        assert said in wp, said
+    ap = _code_only((src / "components/AgreementsPanel.tsx").read_text(encoding="utf-8"))
+    for said in ("o.due_said", "o.confirmed_said", "{open.date_basis}", "open.notice.said", "${open.text_kept.basis}",
+                 "`obligations/${o.id}/confirm`"):
+        assert said in ap, said
+    assert ap.count("!ended && (") >= 3, "a form is offered after the agreement's end is recorded"
+
+    fx = json.loads((src / "components/AgreementsPanel.fixture.json").read_text(encoding="utf-8"))
+    wx = json.loads((src / "components/WaitingPanel.fixture.json").read_text(encoding="utf-8"))
+    assert fx["in_force"]["body"]["notice"] == {"known": False, "said": _ag.NOTICE_UNKNOWN}
+    assert fx["notice"]["body"]["notice"]["known"] is True and fx["confirm_again"]["status"] == 409
+    assert fx["obligation"]["body"]["obligations"][0]["confirmed_said"] == _ag.UNCONFIRMED
+    assert fx["confirmed"]["body"]["obligations"][0]["confirmed"]["by"]
+    kinds = [(i["kind"], i["said"]) for i in wx["waiting"]["body"]["items"]]
+    assert ("falls_due", "fell due 3 days ago") in kinds and ("unconfirmed", _ag.UNCONFIRMED) in kinds, kinds
+    assert wx["waiting_off"]["body"]["said"] == _wt.NOT_KEPT and wx["waiting_unread"]["status"] == 503
+    assert wx["waiting_ended"]["body"]["items"] == [] and wx["waiting"]["body"]["not_read_yet"] == _wt.NOT_READ_YET
+    for t in ("AgreementsPanel.test.tsx", "WaitingPanel.test.tsx"):
+        assert (src / "components" / t).is_file(), t
+
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("w1086_cov", root / "scripts/coverage_register.py")
+    cov = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cov)
+    reg = cov.load()
+    row = next(r for r in reg["rows"] if r["id"] == "law-agreement-obligations")
+    assert row["state"] == "journey" and row["driven_by"] == (
+        "test_w1085_p518_an_obligation_names_its_clause_and_who_confirmed_it_and_what_falls_due_is_on_one_list"), row
+    assert "none computed and none taken from a model" in row["today"] and cov.check(reg)["problems"] == []

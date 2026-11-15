@@ -60,7 +60,7 @@
   "status": 200,
   "body": {
    "party": {
-    "id": "pty-57bdae8027",
+    "id": "pty-af62a65f15",
     "kind": "registered_body",
     "name": "W1081 Made-up Supplies Ltd",
     "registered_on": "a made-up register (W1081)",
@@ -68,7 +68,7 @@
     "read_from": "the made-up register's page for it",
     "read_on": "2026-11-14",
     "entered_by": "w1081-made-up-person",
-    "entered_at": "2026-11-15T13:49:41Z",
+    "entered_at": "2026-11-15T15:02:02Z",
     "checked_by_this_platform": false,
     "basis": "As entered by w1081-made-up-person, read from the made-up register's page for it on 2026-11-14. This platform did not check it against any register or document."
    },
@@ -79,7 +79,7 @@
   "status": 200,
   "body": {
    "party": {
-    "id": "pty-a451598d4c",
+    "id": "pty-d5472b4f1f",
     "kind": "person",
     "name": "Ann W1081-Madeup",
     "registered_on": null,
@@ -87,7 +87,7 @@
     "read_from": "the signature block of the made-up draft",
     "read_on": "2026-11-14",
     "entered_by": "w1081-made-up-person",
-    "entered_at": "2026-11-15T13:49:41Z",
+    "entered_at": "2026-11-15T15:02:02Z",
     "checked_by_this_platform": false,
     "basis": "As entered by w1081-made-up-person, read from the signature block of the made-up draft on 2026-11-14. This platform did not check it against any register or document."
    },
@@ -99,7 +99,7 @@
   "body": {
    "parties": [
     {
-     "id": "pty-a451598d4c",
+     "id": "pty-d5472b4f1f",
      "kind": "person",
      "name": "Ann W1081-Madeup",
      "registered_on": null,
@@ -107,12 +107,12 @@
      "read_from": "the signature block of the made-up draft",
      "read_on": "2026-11-14",
      "entered_by": "w1081-made-up-person",
-     "entered_at": "2026-11-15T13:49:41Z",
+     "entered_at": "2026-11-15T15:02:02Z",
      "checked_by_this_platform": false,
      "basis": "As entered by w1081-made-up-person, read from the signature block of the made-up draft on 2026-11-14. This platform did not check it against any register or document."
     },
     {
-     "id": "pty-57bdae8027",
+     "id": "pty-af62a65f15",
      "kind": "registered_body",
      "name": "W1081 Made-up Supplies Ltd",
      "registered_on": "a made-up register (W1081)",
@@ -120,7 +120,7 @@
      "read_from": "the made-up register's page for it",
      "read_on": "2026-11-14",
      "entered_by": "w1081-made-up-person",
-     "entered_at": "2026-11-15T13:49:41Z",
+     "entered_at": "2026-11-15T15:02:02Z",
      "checked_by_this_platform": false,
      "basis": "As entered by w1081-made-up-person, read from the made-up register's page for it on 2026-11-14. This platform did not check it against any register or document."
     }
@@ -133,21 +133,21 @@
  "draft_refused": {
   "status": 400,
   "body": {
-   "detail": "W1081 Made-up Supplies Ltd (pty-57bdae8027) is named twice as a party, so nothing was kept."
+   "detail": "W1081 Made-up Supplies Ltd (pty-af62a65f15) is named twice as a party, so nothing was kept."
   }
  },
  "draft": {
   "status": 200,
   "body": {
-   "id": "agr-92e51963c8",
+   "id": "agr-1b0a4e5274",
    "title": "W1081 Made-up Supply",
    "owner": "w1081-made-up-person",
    "parties": [
     {
-     "party_id": "pty-57bdae8027",
+     "party_id": "pty-af62a65f15",
      "role": "supplier",
      "party": {
-      "id": "pty-57bdae8027",
+      "id": "pty-af62a65f15",
       "kind": "registered_body",
       "name": "W1081 Made-up Supplies Ltd",
       "registered_on": "a made-up register (W1081)",
@@ -155,17 +155,17 @@
       "read_from": "the made-up register's page for it",
       "read_on": "2026-11-14",
       "entered_by": "w1081-made-up-person",
-      "entered_at": "2026-11-15T13:49:41Z",
+      "entered_at": "2026-11-15T15:02:02Z",
       "checked_by_this_platform": false,
       "basis": "As entered by w1081-made-up-person, read from the made-up register's page for it on 2026-11-14. This platform did not check it against any register or document."
      },
      "signatories": []
     },
     {
-     "party_id": "pty-a451598d4c",
+     "party_id": "pty-d5472b4f1f",
      "role": "customer",
      "party": {
-      "id": "pty-a451598d4c",
+      "id": "pty-d5472b4f1f",
       "kind": "person",
       "name": "Ann W1081-Madeup",
       "registered_on": null,
@@ -173,7 +173,7 @@
       "read_from": "the signature block of the made-up draft",
       "read_on": "2026-11-14",
       "entered_by": "w1081-made-up-person",
-      "entered_at": "2026-11-15T13:49:41Z",
+      "entered_at": "2026-11-15T15:02:02Z",
       "checked_by_this_platform": false,
       "basis": "As entered by w1081-made-up-person, read from the signature block of the made-up draft on 2026-11-14. This platform did not check it against any register or document."
      },
@@ -185,7 +185,7 @@
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer."
     }
    ],
@@ -193,12 +193,23 @@
     "version": 1,
     "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee"
    },
+   "obligations": [],
+   "notice": {
+    "known": false,
+    "said": "The notice period is not known: none has been entered from the text."
+   },
+   "text_kept": {
+    "chars": 77,
+    "of": 77,
+    "basis": "The text is kept whole, as data, on this machine: no instruction in it is followed, and nothing of it is sent to an outside service."
+   },
+   "date_basis": "A date here is a person's entry from the text: none is computed by this platform, and none is taken from a model.",
    "facts": [
     {
      "state": "drafted",
      "recorded": true,
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee"
     },
@@ -236,15 +247,15 @@
  "read_drafted": {
   "status": 200,
   "body": {
-   "id": "agr-92e51963c8",
+   "id": "agr-1b0a4e5274",
    "title": "W1081 Made-up Supply",
    "owner": "w1081-made-up-person",
    "parties": [
     {
-     "party_id": "pty-57bdae8027",
+     "party_id": "pty-af62a65f15",
      "role": "supplier",
      "party": {
-      "id": "pty-57bdae8027",
+      "id": "pty-af62a65f15",
       "kind": "registered_body",
       "name": "W1081 Made-up Supplies Ltd",
       "registered_on": "a made-up register (W1081)",
@@ -252,17 +263,17 @@
       "read_from": "the made-up register's page for it",
       "read_on": "2026-11-14",
       "entered_by": "w1081-made-up-person",
-      "entered_at": "2026-11-15T13:49:41Z",
+      "entered_at": "2026-11-15T15:02:02Z",
       "checked_by_this_platform": false,
       "basis": "As entered by w1081-made-up-person, read from the made-up register's page for it on 2026-11-14. This platform did not check it against any register or document."
      },
      "signatories": []
     },
     {
-     "party_id": "pty-a451598d4c",
+     "party_id": "pty-d5472b4f1f",
      "role": "customer",
      "party": {
-      "id": "pty-a451598d4c",
+      "id": "pty-d5472b4f1f",
       "kind": "person",
       "name": "Ann W1081-Madeup",
       "registered_on": null,
@@ -270,7 +281,7 @@
       "read_from": "the signature block of the made-up draft",
       "read_on": "2026-11-14",
       "entered_by": "w1081-made-up-person",
-      "entered_at": "2026-11-15T13:49:41Z",
+      "entered_at": "2026-11-15T15:02:02Z",
       "checked_by_this_platform": false,
       "basis": "As entered by w1081-made-up-person, read from the signature block of the made-up draft on 2026-11-14. This platform did not check it against any register or document."
      },
@@ -282,7 +293,7 @@
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer."
     }
    ],
@@ -290,12 +301,23 @@
     "version": 1,
     "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee"
    },
+   "obligations": [],
+   "notice": {
+    "known": false,
+    "said": "The notice period is not known: none has been entered from the text."
+   },
+   "text_kept": {
+    "chars": 77,
+    "of": 77,
+    "basis": "The text is kept whole, as data, on this machine: no instruction in it is followed, and nothing of it is sent to an outside service."
+   },
+   "date_basis": "A date here is a person's entry from the text: none is computed by this platform, and none is taken from a model.",
    "facts": [
     {
      "state": "drafted",
      "recorded": true,
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee"
     },
@@ -335,7 +357,7 @@
   "body": {
    "agreements": [
     {
-     "id": "agr-92e51963c8",
+     "id": "agr-1b0a4e5274",
      "title": "W1081 Made-up Supply",
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
@@ -354,7 +376,7 @@
        "state": "drafted",
        "recorded": true,
        "by": "w1081-made-up-person",
-       "at": "2026-11-15T13:49:41Z"
+       "at": "2026-11-15T15:02:02Z"
       },
       {
        "state": "reviewed",
@@ -386,15 +408,15 @@
     "route": "/api/v1/economy/contracts",
     "contracts": [
      {
-      "id": "ctr-665d60d676",
-      "client_vsb": "vsb-5d9d6d5885",
-      "provider_vsb": "vsb-0ef74f7754",
+      "id": "ctr-11c033d78b",
+      "client_vsb": "vsb-4a6d330f94",
+      "provider_vsb": "vsb-8f14f99511",
       "brief": "w1081 a made-up brief",
       "price_wst": 10.0,
       "status": "offered",
       "delivery": null,
       "settlement": null,
-      "offered_at": "2026-11-15T13:49:41Z"
+      "offered_at": "2026-11-15T15:02:02Z"
      }
     ],
     "total": 1,
@@ -406,15 +428,15 @@
  "review": {
   "status": 200,
   "body": {
-   "id": "agr-92e51963c8",
+   "id": "agr-1b0a4e5274",
    "title": "W1081 Made-up Supply",
    "owner": "w1081-made-up-person",
    "parties": [
     {
-     "party_id": "pty-57bdae8027",
+     "party_id": "pty-af62a65f15",
      "role": "supplier",
      "party": {
-      "id": "pty-57bdae8027",
+      "id": "pty-af62a65f15",
       "kind": "registered_body",
       "name": "W1081 Made-up Supplies Ltd",
       "registered_on": "a made-up register (W1081)",
@@ -422,17 +444,17 @@
       "read_from": "the made-up register's page for it",
       "read_on": "2026-11-14",
       "entered_by": "w1081-made-up-person",
-      "entered_at": "2026-11-15T13:49:41Z",
+      "entered_at": "2026-11-15T15:02:02Z",
       "checked_by_this_platform": false,
       "basis": "As entered by w1081-made-up-person, read from the made-up register's page for it on 2026-11-14. This platform did not check it against any register or document."
      },
      "signatories": []
     },
     {
-     "party_id": "pty-a451598d4c",
+     "party_id": "pty-d5472b4f1f",
      "role": "customer",
      "party": {
-      "id": "pty-a451598d4c",
+      "id": "pty-d5472b4f1f",
       "kind": "person",
       "name": "Ann W1081-Madeup",
       "registered_on": null,
@@ -440,7 +462,7 @@
       "read_from": "the signature block of the made-up draft",
       "read_on": "2026-11-14",
       "entered_by": "w1081-made-up-person",
-      "entered_at": "2026-11-15T13:49:41Z",
+      "entered_at": "2026-11-15T15:02:02Z",
       "checked_by_this_platform": false,
       "basis": "As entered by w1081-made-up-person, read from the signature block of the made-up draft on 2026-11-14. This platform did not check it against any register or document."
      },
@@ -452,7 +474,7 @@
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer."
     }
    ],
@@ -460,12 +482,23 @@
     "version": 1,
     "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee"
    },
+   "obligations": [],
+   "notice": {
+    "known": false,
+    "said": "The notice period is not known: none has been entered from the text."
+   },
+   "text_kept": {
+    "chars": 77,
+    "of": 77,
+    "basis": "The text is kept whole, as data, on this machine: no instruction in it is followed, and nothing of it is sent to an outside service."
+   },
+   "date_basis": "A date here is a person's entry from the text: none is computed by this platform, and none is taken from a model.",
    "facts": [
     {
      "state": "drafted",
      "recorded": true,
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee"
     },
@@ -475,7 +508,7 @@
      "reviews": [
       {
        "by": "w1081-made-up-person",
-       "at": "2026-11-15T13:49:41Z",
+       "at": "2026-11-15T15:02:02Z",
        "version": 1,
        "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
        "note": "a made-up review",
@@ -511,15 +544,15 @@
  "approve": {
   "status": 200,
   "body": {
-   "id": "agr-92e51963c8",
+   "id": "agr-1b0a4e5274",
    "title": "W1081 Made-up Supply",
    "owner": "w1081-made-up-person",
    "parties": [
     {
-     "party_id": "pty-57bdae8027",
+     "party_id": "pty-af62a65f15",
      "role": "supplier",
      "party": {
-      "id": "pty-57bdae8027",
+      "id": "pty-af62a65f15",
       "kind": "registered_body",
       "name": "W1081 Made-up Supplies Ltd",
       "registered_on": "a made-up register (W1081)",
@@ -527,17 +560,17 @@
       "read_from": "the made-up register's page for it",
       "read_on": "2026-11-14",
       "entered_by": "w1081-made-up-person",
-      "entered_at": "2026-11-15T13:49:41Z",
+      "entered_at": "2026-11-15T15:02:02Z",
       "checked_by_this_platform": false,
       "basis": "As entered by w1081-made-up-person, read from the made-up register's page for it on 2026-11-14. This platform did not check it against any register or document."
      },
      "signatories": []
     },
     {
-     "party_id": "pty-a451598d4c",
+     "party_id": "pty-d5472b4f1f",
      "role": "customer",
      "party": {
-      "id": "pty-a451598d4c",
+      "id": "pty-d5472b4f1f",
       "kind": "person",
       "name": "Ann W1081-Madeup",
       "registered_on": null,
@@ -545,7 +578,7 @@
       "read_from": "the signature block of the made-up draft",
       "read_on": "2026-11-14",
       "entered_by": "w1081-made-up-person",
-      "entered_at": "2026-11-15T13:49:41Z",
+      "entered_at": "2026-11-15T15:02:02Z",
       "checked_by_this_platform": false,
       "basis": "As entered by w1081-made-up-person, read from the signature block of the made-up draft on 2026-11-14. This platform did not check it against any register or document."
      },
@@ -557,7 +590,7 @@
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer."
     }
    ],
@@ -565,12 +598,23 @@
     "version": 1,
     "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee"
    },
+   "obligations": [],
+   "notice": {
+    "known": false,
+    "said": "The notice period is not known: none has been entered from the text."
+   },
+   "text_kept": {
+    "chars": 77,
+    "of": 77,
+    "basis": "The text is kept whole, as data, on this machine: no instruction in it is followed, and nothing of it is sent to an outside service."
+   },
+   "date_basis": "A date here is a person's entry from the text: none is computed by this platform, and none is taken from a model.",
    "facts": [
     {
      "state": "drafted",
      "recorded": true,
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee"
     },
@@ -580,7 +624,7 @@
      "reviews": [
       {
        "by": "w1081-made-up-person",
-       "at": "2026-11-15T13:49:41Z",
+       "at": "2026-11-15T15:02:02Z",
        "version": 1,
        "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
        "note": "a made-up review",
@@ -592,7 +636,7 @@
      "state": "approved",
      "recorded": true,
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
      "ended_approvals": []
@@ -619,15 +663,15 @@
  "text": {
   "status": 200,
   "body": {
-   "id": "agr-92e51963c8",
+   "id": "agr-1b0a4e5274",
    "title": "W1081 Made-up Supply",
    "owner": "w1081-made-up-person",
    "parties": [
     {
-     "party_id": "pty-57bdae8027",
+     "party_id": "pty-af62a65f15",
      "role": "supplier",
      "party": {
-      "id": "pty-57bdae8027",
+      "id": "pty-af62a65f15",
       "kind": "registered_body",
       "name": "W1081 Made-up Supplies Ltd",
       "registered_on": "a made-up register (W1081)",
@@ -635,17 +679,17 @@
       "read_from": "the made-up register's page for it",
       "read_on": "2026-11-14",
       "entered_by": "w1081-made-up-person",
-      "entered_at": "2026-11-15T13:49:41Z",
+      "entered_at": "2026-11-15T15:02:02Z",
       "checked_by_this_platform": false,
       "basis": "As entered by w1081-made-up-person, read from the made-up register's page for it on 2026-11-14. This platform did not check it against any register or document."
      },
      "signatories": []
     },
     {
-     "party_id": "pty-a451598d4c",
+     "party_id": "pty-d5472b4f1f",
      "role": "customer",
      "party": {
-      "id": "pty-a451598d4c",
+      "id": "pty-d5472b4f1f",
       "kind": "person",
       "name": "Ann W1081-Madeup",
       "registered_on": null,
@@ -653,7 +697,7 @@
       "read_from": "the signature block of the made-up draft",
       "read_on": "2026-11-14",
       "entered_by": "w1081-made-up-person",
-      "entered_at": "2026-11-15T13:49:41Z",
+      "entered_at": "2026-11-15T15:02:02Z",
       "checked_by_this_platform": false,
       "basis": "As entered by w1081-made-up-person, read from the signature block of the made-up draft on 2026-11-14. This platform did not check it against any register or document."
      },
@@ -665,14 +709,14 @@
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer."
     },
     {
      "version": 2,
      "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer. A second made-up clause."
     }
    ],
@@ -680,12 +724,23 @@
     "version": 2,
     "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1"
    },
+   "obligations": [],
+   "notice": {
+    "known": false,
+    "said": "The notice period is not known: none has been entered from the text."
+   },
+   "text_kept": {
+    "chars": 102,
+    "of": 102,
+    "basis": "The text is kept whole, as data, on this machine: no instruction in it is followed, and nothing of it is sent to an outside service."
+   },
+   "date_basis": "A date here is a person's entry from the text: none is computed by this platform, and none is taken from a model.",
    "facts": [
     {
      "state": "drafted",
      "recorded": true,
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee"
     },
@@ -695,7 +750,7 @@
      "reviews": [
       {
        "by": "w1081-made-up-person",
-       "at": "2026-11-15T13:49:41Z",
+       "at": "2026-11-15T15:02:02Z",
        "version": 1,
        "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
        "note": "a made-up review",
@@ -710,10 +765,10 @@
      "ended_approvals": [
       {
        "by": "w1081-made-up-person",
-       "at": "2026-11-15T13:49:41Z",
+       "at": "2026-11-15T15:02:02Z",
        "version": 1,
        "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
-       "ended_at": "2026-11-15T13:49:41Z",
+       "ended_at": "2026-11-15T15:02:02Z",
        "ended_by": "w1081-made-up-person",
        "ended_because": "the text changed: version 2 (sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1) replaced the approved version 1"
       }
@@ -747,15 +802,15 @@
  "approve2": {
   "status": 200,
   "body": {
-   "id": "agr-92e51963c8",
+   "id": "agr-1b0a4e5274",
    "title": "W1081 Made-up Supply",
    "owner": "w1081-made-up-person",
    "parties": [
     {
-     "party_id": "pty-57bdae8027",
+     "party_id": "pty-af62a65f15",
      "role": "supplier",
      "party": {
-      "id": "pty-57bdae8027",
+      "id": "pty-af62a65f15",
       "kind": "registered_body",
       "name": "W1081 Made-up Supplies Ltd",
       "registered_on": "a made-up register (W1081)",
@@ -763,17 +818,17 @@
       "read_from": "the made-up register's page for it",
       "read_on": "2026-11-14",
       "entered_by": "w1081-made-up-person",
-      "entered_at": "2026-11-15T13:49:41Z",
+      "entered_at": "2026-11-15T15:02:02Z",
       "checked_by_this_platform": false,
       "basis": "As entered by w1081-made-up-person, read from the made-up register's page for it on 2026-11-14. This platform did not check it against any register or document."
      },
      "signatories": []
     },
     {
-     "party_id": "pty-a451598d4c",
+     "party_id": "pty-d5472b4f1f",
      "role": "customer",
      "party": {
-      "id": "pty-a451598d4c",
+      "id": "pty-d5472b4f1f",
       "kind": "person",
       "name": "Ann W1081-Madeup",
       "registered_on": null,
@@ -781,7 +836,7 @@
       "read_from": "the signature block of the made-up draft",
       "read_on": "2026-11-14",
       "entered_by": "w1081-made-up-person",
-      "entered_at": "2026-11-15T13:49:41Z",
+      "entered_at": "2026-11-15T15:02:02Z",
       "checked_by_this_platform": false,
       "basis": "As entered by w1081-made-up-person, read from the signature block of the made-up draft on 2026-11-14. This platform did not check it against any register or document."
      },
@@ -793,14 +848,14 @@
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer."
     },
     {
      "version": 2,
      "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer. A second made-up clause."
     }
    ],
@@ -808,12 +863,23 @@
     "version": 2,
     "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1"
    },
+   "obligations": [],
+   "notice": {
+    "known": false,
+    "said": "The notice period is not known: none has been entered from the text."
+   },
+   "text_kept": {
+    "chars": 102,
+    "of": 102,
+    "basis": "The text is kept whole, as data, on this machine: no instruction in it is followed, and nothing of it is sent to an outside service."
+   },
+   "date_basis": "A date here is a person's entry from the text: none is computed by this platform, and none is taken from a model.",
    "facts": [
     {
      "state": "drafted",
      "recorded": true,
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee"
     },
@@ -823,7 +889,7 @@
      "reviews": [
       {
        "by": "w1081-made-up-person",
-       "at": "2026-11-15T13:49:41Z",
+       "at": "2026-11-15T15:02:02Z",
        "version": 1,
        "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
        "note": "a made-up review",
@@ -835,16 +901,16 @@
      "state": "approved",
      "recorded": true,
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "version": 2,
      "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
      "ended_approvals": [
       {
        "by": "w1081-made-up-person",
-       "at": "2026-11-15T13:49:41Z",
+       "at": "2026-11-15T15:02:02Z",
        "version": 1,
        "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
-       "ended_at": "2026-11-15T13:49:41Z",
+       "ended_at": "2026-11-15T15:02:02Z",
        "ended_by": "w1081-made-up-person",
        "ended_because": "the text changed: version 2 (sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1) replaced the approved version 1"
       }
@@ -872,15 +938,15 @@
  "signatory": {
   "status": 200,
   "body": {
-   "id": "agr-92e51963c8",
+   "id": "agr-1b0a4e5274",
    "title": "W1081 Made-up Supply",
    "owner": "w1081-made-up-person",
    "parties": [
     {
-     "party_id": "pty-57bdae8027",
+     "party_id": "pty-af62a65f15",
      "role": "supplier",
      "party": {
-      "id": "pty-57bdae8027",
+      "id": "pty-af62a65f15",
       "kind": "registered_body",
       "name": "W1081 Made-up Supplies Ltd",
       "registered_on": "a made-up register (W1081)",
@@ -888,7 +954,7 @@
       "read_from": "the made-up register's page for it",
       "read_on": "2026-11-14",
       "entered_by": "w1081-made-up-person",
-      "entered_at": "2026-11-15T13:49:41Z",
+      "entered_at": "2026-11-15T15:02:02Z",
       "checked_by_this_platform": false,
       "basis": "As entered by w1081-made-up-person, read from the made-up register's page for it on 2026-11-14. This platform did not check it against any register or document."
      },
@@ -899,17 +965,17 @@
        "authority_as_stated": "authorised by the board, as a made-up minute says",
        "stated_by": "the company secretary, as stated",
        "recorded_by": "w1081-made-up-person",
-       "recorded_at": "2026-11-15T13:49:41Z",
+       "recorded_at": "2026-11-15T15:02:02Z",
        "verified_by_this_platform": false,
        "basis": "This platform did not verify this authority; it is recorded as stated, by the person named."
       }
      ]
     },
     {
-     "party_id": "pty-a451598d4c",
+     "party_id": "pty-d5472b4f1f",
      "role": "customer",
      "party": {
-      "id": "pty-a451598d4c",
+      "id": "pty-d5472b4f1f",
       "kind": "person",
       "name": "Ann W1081-Madeup",
       "registered_on": null,
@@ -917,7 +983,7 @@
       "read_from": "the signature block of the made-up draft",
       "read_on": "2026-11-14",
       "entered_by": "w1081-made-up-person",
-      "entered_at": "2026-11-15T13:49:41Z",
+      "entered_at": "2026-11-15T15:02:02Z",
       "checked_by_this_platform": false,
       "basis": "As entered by w1081-made-up-person, read from the signature block of the made-up draft on 2026-11-14. This platform did not check it against any register or document."
      },
@@ -929,14 +995,14 @@
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer."
     },
     {
      "version": 2,
      "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer. A second made-up clause."
     }
    ],
@@ -944,12 +1010,23 @@
     "version": 2,
     "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1"
    },
+   "obligations": [],
+   "notice": {
+    "known": false,
+    "said": "The notice period is not known: none has been entered from the text."
+   },
+   "text_kept": {
+    "chars": 102,
+    "of": 102,
+    "basis": "The text is kept whole, as data, on this machine: no instruction in it is followed, and nothing of it is sent to an outside service."
+   },
+   "date_basis": "A date here is a person's entry from the text: none is computed by this platform, and none is taken from a model.",
    "facts": [
     {
      "state": "drafted",
      "recorded": true,
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee"
     },
@@ -959,7 +1036,7 @@
      "reviews": [
       {
        "by": "w1081-made-up-person",
-       "at": "2026-11-15T13:49:41Z",
+       "at": "2026-11-15T15:02:02Z",
        "version": 1,
        "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
        "note": "a made-up review",
@@ -971,16 +1048,16 @@
      "state": "approved",
      "recorded": true,
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "version": 2,
      "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
      "ended_approvals": [
       {
        "by": "w1081-made-up-person",
-       "at": "2026-11-15T13:49:41Z",
+       "at": "2026-11-15T15:02:02Z",
        "version": 1,
        "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
-       "ended_at": "2026-11-15T13:49:41Z",
+       "ended_at": "2026-11-15T15:02:02Z",
        "ended_by": "w1081-made-up-person",
        "ended_because": "the text changed: version 2 (sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1) replaced the approved version 1"
       }
@@ -1008,15 +1085,15 @@
  "executed": {
   "status": 200,
   "body": {
-   "id": "agr-92e51963c8",
+   "id": "agr-1b0a4e5274",
    "title": "W1081 Made-up Supply",
    "owner": "w1081-made-up-person",
    "parties": [
     {
-     "party_id": "pty-57bdae8027",
+     "party_id": "pty-af62a65f15",
      "role": "supplier",
      "party": {
-      "id": "pty-57bdae8027",
+      "id": "pty-af62a65f15",
       "kind": "registered_body",
       "name": "W1081 Made-up Supplies Ltd",
       "registered_on": "a made-up register (W1081)",
@@ -1024,7 +1101,7 @@
       "read_from": "the made-up register's page for it",
       "read_on": "2026-11-14",
       "entered_by": "w1081-made-up-person",
-      "entered_at": "2026-11-15T13:49:41Z",
+      "entered_at": "2026-11-15T15:02:02Z",
       "checked_by_this_platform": false,
       "basis": "As entered by w1081-made-up-person, read from the made-up register's page for it on 2026-11-14. This platform did not check it against any register or document."
      },
@@ -1035,17 +1112,17 @@
        "authority_as_stated": "authorised by the board, as a made-up minute says",
        "stated_by": "the company secretary, as stated",
        "recorded_by": "w1081-made-up-person",
-       "recorded_at": "2026-11-15T13:49:41Z",
+       "recorded_at": "2026-11-15T15:02:02Z",
        "verified_by_this_platform": false,
        "basis": "This platform did not verify this authority; it is recorded as stated, by the person named."
       }
      ]
     },
     {
-     "party_id": "pty-a451598d4c",
+     "party_id": "pty-d5472b4f1f",
      "role": "customer",
      "party": {
-      "id": "pty-a451598d4c",
+      "id": "pty-d5472b4f1f",
       "kind": "person",
       "name": "Ann W1081-Madeup",
       "registered_on": null,
@@ -1053,7 +1130,7 @@
       "read_from": "the signature block of the made-up draft",
       "read_on": "2026-11-14",
       "entered_by": "w1081-made-up-person",
-      "entered_at": "2026-11-15T13:49:41Z",
+      "entered_at": "2026-11-15T15:02:02Z",
       "checked_by_this_platform": false,
       "basis": "As entered by w1081-made-up-person, read from the signature block of the made-up draft on 2026-11-14. This platform did not check it against any register or document."
      },
@@ -1065,14 +1142,14 @@
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer."
     },
     {
      "version": 2,
      "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer. A second made-up clause."
     }
    ],
@@ -1080,12 +1157,23 @@
     "version": 2,
     "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1"
    },
+   "obligations": [],
+   "notice": {
+    "known": false,
+    "said": "The notice period is not known: none has been entered from the text."
+   },
+   "text_kept": {
+    "chars": 102,
+    "of": 102,
+    "basis": "The text is kept whole, as data, on this machine: no instruction in it is followed, and nothing of it is sent to an outside service."
+   },
+   "date_basis": "A date here is a person's entry from the text: none is computed by this platform, and none is taken from a model.",
    "facts": [
     {
      "state": "drafted",
      "recorded": true,
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee"
     },
@@ -1095,7 +1183,7 @@
      "reviews": [
       {
        "by": "w1081-made-up-person",
-       "at": "2026-11-15T13:49:41Z",
+       "at": "2026-11-15T15:02:02Z",
        "version": 1,
        "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
        "note": "a made-up review",
@@ -1107,16 +1195,16 @@
      "state": "approved",
      "recorded": true,
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "version": 2,
      "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
      "ended_approvals": [
       {
        "by": "w1081-made-up-person",
-       "at": "2026-11-15T13:49:41Z",
+       "at": "2026-11-15T15:02:02Z",
        "version": 1,
        "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
-       "ended_at": "2026-11-15T13:49:41Z",
+       "ended_at": "2026-11-15T15:02:02Z",
        "ended_by": "w1081-made-up-person",
        "ended_because": "the text changed: version 2 (sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1) replaced the approved version 1"
       }
@@ -1126,7 +1214,7 @@
      "state": "executed",
      "recorded": true,
      "entered_by": "w1081-made-up-person",
-     "entered_at": "2026-11-15T13:49:41Z",
+     "entered_at": "2026-11-15T15:02:02Z",
      "version": 2,
      "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
      "signed_on": "2026-11-14",
@@ -1155,15 +1243,15 @@
  "in_force": {
   "status": 200,
   "body": {
-   "id": "agr-92e51963c8",
+   "id": "agr-1b0a4e5274",
    "title": "W1081 Made-up Supply",
    "owner": "w1081-made-up-person",
    "parties": [
     {
-     "party_id": "pty-57bdae8027",
+     "party_id": "pty-af62a65f15",
      "role": "supplier",
      "party": {
-      "id": "pty-57bdae8027",
+      "id": "pty-af62a65f15",
       "kind": "registered_body",
       "name": "W1081 Made-up Supplies Ltd",
       "registered_on": "a made-up register (W1081)",
@@ -1171,7 +1259,7 @@
       "read_from": "the made-up register's page for it",
       "read_on": "2026-11-14",
       "entered_by": "w1081-made-up-person",
-      "entered_at": "2026-11-15T13:49:41Z",
+      "entered_at": "2026-11-15T15:02:02Z",
       "checked_by_this_platform": false,
       "basis": "As entered by w1081-made-up-person, read from the made-up register's page for it on 2026-11-14. This platform did not check it against any register or document."
      },
@@ -1182,17 +1270,17 @@
        "authority_as_stated": "authorised by the board, as a made-up minute says",
        "stated_by": "the company secretary, as stated",
        "recorded_by": "w1081-made-up-person",
-       "recorded_at": "2026-11-15T13:49:41Z",
+       "recorded_at": "2026-11-15T15:02:02Z",
        "verified_by_this_platform": false,
        "basis": "This platform did not verify this authority; it is recorded as stated, by the person named."
       }
      ]
     },
     {
-     "party_id": "pty-a451598d4c",
+     "party_id": "pty-d5472b4f1f",
      "role": "customer",
      "party": {
-      "id": "pty-a451598d4c",
+      "id": "pty-d5472b4f1f",
       "kind": "person",
       "name": "Ann W1081-Madeup",
       "registered_on": null,
@@ -1200,7 +1288,7 @@
       "read_from": "the signature block of the made-up draft",
       "read_on": "2026-11-14",
       "entered_by": "w1081-made-up-person",
-      "entered_at": "2026-11-15T13:49:41Z",
+      "entered_at": "2026-11-15T15:02:02Z",
       "checked_by_this_platform": false,
       "basis": "As entered by w1081-made-up-person, read from the signature block of the made-up draft on 2026-11-14. This platform did not check it against any register or document."
      },
@@ -1212,14 +1300,14 @@
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer."
     },
     {
      "version": 2,
      "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer. A second made-up clause."
     }
    ],
@@ -1227,12 +1315,23 @@
     "version": 2,
     "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1"
    },
+   "obligations": [],
+   "notice": {
+    "known": false,
+    "said": "The notice period is not known: none has been entered from the text."
+   },
+   "text_kept": {
+    "chars": 102,
+    "of": 102,
+    "basis": "The text is kept whole, as data, on this machine: no instruction in it is followed, and nothing of it is sent to an outside service."
+   },
+   "date_basis": "A date here is a person's entry from the text: none is computed by this platform, and none is taken from a model.",
    "facts": [
     {
      "state": "drafted",
      "recorded": true,
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee"
     },
@@ -1242,7 +1341,7 @@
      "reviews": [
       {
        "by": "w1081-made-up-person",
-       "at": "2026-11-15T13:49:41Z",
+       "at": "2026-11-15T15:02:02Z",
        "version": 1,
        "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
        "note": "a made-up review",
@@ -1254,16 +1353,16 @@
      "state": "approved",
      "recorded": true,
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "version": 2,
      "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
      "ended_approvals": [
       {
        "by": "w1081-made-up-person",
-       "at": "2026-11-15T13:49:41Z",
+       "at": "2026-11-15T15:02:02Z",
        "version": 1,
        "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
-       "ended_at": "2026-11-15T13:49:41Z",
+       "ended_at": "2026-11-15T15:02:02Z",
        "ended_by": "w1081-made-up-person",
        "ended_because": "the text changed: version 2 (sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1) replaced the approved version 1"
       }
@@ -1273,7 +1372,7 @@
      "state": "executed",
      "recorded": true,
      "entered_by": "w1081-made-up-person",
-     "entered_at": "2026-11-15T13:49:41Z",
+     "entered_at": "2026-11-15T15:02:02Z",
      "version": 2,
      "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
      "signed_on": "2026-11-14",
@@ -1289,7 +1388,765 @@
      "state": "in_force",
      "recorded": true,
      "entered_by": "w1081-made-up-person",
-     "entered_at": "2026-11-15T13:49:41Z",
+     "entered_at": "2026-11-15T15:02:02Z",
+     "from": "2026-11-14",
+     "basis": "on signature, as the made-up text says"
+    },
+    {
+     "state": "ended",
+     "recorded": false,
+     "said": "No end is recorded."
+    }
+   ],
+   "not_legal_advice": "Nothing here is legal advice, and this platform is not a solicitor."
+  }
+ },
+ "obligation_refused": {
+  "status": 400,
+  "body": {
+   "detail": "A party does not owe an obligation to itself, so nothing was kept."
+  }
+ },
+ "obligation": {
+  "status": 200,
+  "body": {
+   "id": "agr-1b0a4e5274",
+   "title": "W1081 Made-up Supply",
+   "owner": "w1081-made-up-person",
+   "parties": [
+    {
+     "party_id": "pty-af62a65f15",
+     "role": "supplier",
+     "party": {
+      "id": "pty-af62a65f15",
+      "kind": "registered_body",
+      "name": "W1081 Made-up Supplies Ltd",
+      "registered_on": "a made-up register (W1081)",
+      "registered_number": "W1081-0001",
+      "read_from": "the made-up register's page for it",
+      "read_on": "2026-11-14",
+      "entered_by": "w1081-made-up-person",
+      "entered_at": "2026-11-15T15:02:02Z",
+      "checked_by_this_platform": false,
+      "basis": "As entered by w1081-made-up-person, read from the made-up register's page for it on 2026-11-14. This platform did not check it against any register or document."
+     },
+     "signatories": [
+      {
+       "name": "Bo W1081-Madeup",
+       "capacity": "director, as stated",
+       "authority_as_stated": "authorised by the board, as a made-up minute says",
+       "stated_by": "the company secretary, as stated",
+       "recorded_by": "w1081-made-up-person",
+       "recorded_at": "2026-11-15T15:02:02Z",
+       "verified_by_this_platform": false,
+       "basis": "This platform did not verify this authority; it is recorded as stated, by the person named."
+      }
+     ]
+    },
+    {
+     "party_id": "pty-d5472b4f1f",
+     "role": "customer",
+     "party": {
+      "id": "pty-d5472b4f1f",
+      "kind": "person",
+      "name": "Ann W1081-Madeup",
+      "registered_on": null,
+      "registered_number": null,
+      "read_from": "the signature block of the made-up draft",
+      "read_on": "2026-11-14",
+      "entered_by": "w1081-made-up-person",
+      "entered_at": "2026-11-15T15:02:02Z",
+      "checked_by_this_platform": false,
+      "basis": "As entered by w1081-made-up-person, read from the signature block of the made-up draft on 2026-11-14. This platform did not check it against any register or document."
+     },
+     "signatories": []
+    }
+   ],
+   "versions": [
+    {
+     "version": 1,
+     "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
+     "by": "w1081-made-up-person",
+     "at": "2026-11-15T15:02:02Z",
+     "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer."
+    },
+    {
+     "version": 2,
+     "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
+     "by": "w1081-made-up-person",
+     "at": "2026-11-15T15:02:02Z",
+     "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer. A second made-up clause."
+    }
+   ],
+   "current": {
+    "version": 2,
+    "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1"
+   },
+   "obligations": [
+    {
+     "id": "obl-52a54f4450",
+     "owed_by": "pty-af62a65f15",
+     "owed_to": "pty-d5472b4f1f",
+     "what": "deliver the made-up goods",
+     "clause": "clause 3",
+     "due_on": "2026-11-25",
+     "entered_by": "w1081-made-up-person",
+     "entered_at": "2026-11-15T15:02:02Z",
+     "due_basis": "entered by w1081-made-up-person at 2026-11-15T15:02:02Z from the text",
+     "confirmed": null,
+     "confirmed_said": "Not confirmed by a person yet."
+    }
+   ],
+   "notice": {
+    "known": false,
+    "said": "The notice period is not known: none has been entered from the text."
+   },
+   "text_kept": {
+    "chars": 102,
+    "of": 102,
+    "basis": "The text is kept whole, as data, on this machine: no instruction in it is followed, and nothing of it is sent to an outside service."
+   },
+   "date_basis": "A date here is a person's entry from the text: none is computed by this platform, and none is taken from a model.",
+   "facts": [
+    {
+     "state": "drafted",
+     "recorded": true,
+     "by": "w1081-made-up-person",
+     "at": "2026-11-15T15:02:02Z",
+     "version": 1,
+     "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee"
+    },
+    {
+     "state": "reviewed",
+     "recorded": true,
+     "reviews": [
+      {
+       "by": "w1081-made-up-person",
+       "at": "2026-11-15T15:02:02Z",
+       "version": 1,
+       "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
+       "note": "a made-up review",
+       "of_current_text": false
+      }
+     ]
+    },
+    {
+     "state": "approved",
+     "recorded": true,
+     "by": "w1081-made-up-person",
+     "at": "2026-11-15T15:02:02Z",
+     "version": 2,
+     "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
+     "ended_approvals": [
+      {
+       "by": "w1081-made-up-person",
+       "at": "2026-11-15T15:02:02Z",
+       "version": 1,
+       "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
+       "ended_at": "2026-11-15T15:02:02Z",
+       "ended_by": "w1081-made-up-person",
+       "ended_because": "the text changed: version 2 (sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1) replaced the approved version 1"
+      }
+     ]
+    },
+    {
+     "state": "executed",
+     "recorded": true,
+     "entered_by": "w1081-made-up-person",
+     "entered_at": "2026-11-15T15:02:02Z",
+     "version": 2,
+     "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
+     "signed_on": "2026-11-14",
+     "evidence": "the made-up signed copy",
+     "formalities_met": [
+      "signed by both parties, as stated"
+     ],
+     "of_current_text": true,
+     "formalities_the_law_requires": null,
+     "law_basis": "Which formalities the law requires is not stated here: the rules on execution have not been read at their publisher, so the formalities are the ones the person entered."
+    },
+    {
+     "state": "in_force",
+     "recorded": true,
+     "entered_by": "w1081-made-up-person",
+     "entered_at": "2026-11-15T15:02:02Z",
+     "from": "2026-11-14",
+     "basis": "on signature, as the made-up text says"
+    },
+    {
+     "state": "ended",
+     "recorded": false,
+     "said": "No end is recorded."
+    }
+   ],
+   "not_legal_advice": "Nothing here is legal advice, and this platform is not a solicitor."
+  }
+ },
+ "obligation_two": {
+  "status": 200,
+  "body": {
+   "id": "agr-1b0a4e5274",
+   "title": "W1081 Made-up Supply",
+   "owner": "w1081-made-up-person",
+   "parties": [
+    {
+     "party_id": "pty-af62a65f15",
+     "role": "supplier",
+     "party": {
+      "id": "pty-af62a65f15",
+      "kind": "registered_body",
+      "name": "W1081 Made-up Supplies Ltd",
+      "registered_on": "a made-up register (W1081)",
+      "registered_number": "W1081-0001",
+      "read_from": "the made-up register's page for it",
+      "read_on": "2026-11-14",
+      "entered_by": "w1081-made-up-person",
+      "entered_at": "2026-11-15T15:02:02Z",
+      "checked_by_this_platform": false,
+      "basis": "As entered by w1081-made-up-person, read from the made-up register's page for it on 2026-11-14. This platform did not check it against any register or document."
+     },
+     "signatories": [
+      {
+       "name": "Bo W1081-Madeup",
+       "capacity": "director, as stated",
+       "authority_as_stated": "authorised by the board, as a made-up minute says",
+       "stated_by": "the company secretary, as stated",
+       "recorded_by": "w1081-made-up-person",
+       "recorded_at": "2026-11-15T15:02:02Z",
+       "verified_by_this_platform": false,
+       "basis": "This platform did not verify this authority; it is recorded as stated, by the person named."
+      }
+     ]
+    },
+    {
+     "party_id": "pty-d5472b4f1f",
+     "role": "customer",
+     "party": {
+      "id": "pty-d5472b4f1f",
+      "kind": "person",
+      "name": "Ann W1081-Madeup",
+      "registered_on": null,
+      "registered_number": null,
+      "read_from": "the signature block of the made-up draft",
+      "read_on": "2026-11-14",
+      "entered_by": "w1081-made-up-person",
+      "entered_at": "2026-11-15T15:02:02Z",
+      "checked_by_this_platform": false,
+      "basis": "As entered by w1081-made-up-person, read from the signature block of the made-up draft on 2026-11-14. This platform did not check it against any register or document."
+     },
+     "signatories": []
+    }
+   ],
+   "versions": [
+    {
+     "version": 1,
+     "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
+     "by": "w1081-made-up-person",
+     "at": "2026-11-15T15:02:02Z",
+     "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer."
+    },
+    {
+     "version": 2,
+     "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
+     "by": "w1081-made-up-person",
+     "at": "2026-11-15T15:02:02Z",
+     "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer. A second made-up clause."
+    }
+   ],
+   "current": {
+    "version": 2,
+    "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1"
+   },
+   "obligations": [
+    {
+     "id": "obl-52a54f4450",
+     "owed_by": "pty-af62a65f15",
+     "owed_to": "pty-d5472b4f1f",
+     "what": "deliver the made-up goods",
+     "clause": "clause 3",
+     "due_on": "2026-11-25",
+     "entered_by": "w1081-made-up-person",
+     "entered_at": "2026-11-15T15:02:02Z",
+     "due_basis": "entered by w1081-made-up-person at 2026-11-15T15:02:02Z from the text",
+     "confirmed": null,
+     "confirmed_said": "Not confirmed by a person yet."
+    },
+    {
+     "id": "obl-05b9899af9",
+     "owed_by": "pty-d5472b4f1f",
+     "owed_to": "pty-af62a65f15",
+     "what": "pay the made-up price",
+     "clause": "clause 4",
+     "due_on": "2026-11-12",
+     "entered_by": "w1081-made-up-person",
+     "entered_at": "2026-11-15T15:02:02Z",
+     "due_basis": "entered by w1081-made-up-person at 2026-11-15T15:02:02Z from the text",
+     "confirmed": null,
+     "confirmed_said": "Not confirmed by a person yet."
+    }
+   ],
+   "notice": {
+    "known": false,
+    "said": "The notice period is not known: none has been entered from the text."
+   },
+   "text_kept": {
+    "chars": 102,
+    "of": 102,
+    "basis": "The text is kept whole, as data, on this machine: no instruction in it is followed, and nothing of it is sent to an outside service."
+   },
+   "date_basis": "A date here is a person's entry from the text: none is computed by this platform, and none is taken from a model.",
+   "facts": [
+    {
+     "state": "drafted",
+     "recorded": true,
+     "by": "w1081-made-up-person",
+     "at": "2026-11-15T15:02:02Z",
+     "version": 1,
+     "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee"
+    },
+    {
+     "state": "reviewed",
+     "recorded": true,
+     "reviews": [
+      {
+       "by": "w1081-made-up-person",
+       "at": "2026-11-15T15:02:02Z",
+       "version": 1,
+       "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
+       "note": "a made-up review",
+       "of_current_text": false
+      }
+     ]
+    },
+    {
+     "state": "approved",
+     "recorded": true,
+     "by": "w1081-made-up-person",
+     "at": "2026-11-15T15:02:02Z",
+     "version": 2,
+     "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
+     "ended_approvals": [
+      {
+       "by": "w1081-made-up-person",
+       "at": "2026-11-15T15:02:02Z",
+       "version": 1,
+       "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
+       "ended_at": "2026-11-15T15:02:02Z",
+       "ended_by": "w1081-made-up-person",
+       "ended_because": "the text changed: version 2 (sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1) replaced the approved version 1"
+      }
+     ]
+    },
+    {
+     "state": "executed",
+     "recorded": true,
+     "entered_by": "w1081-made-up-person",
+     "entered_at": "2026-11-15T15:02:02Z",
+     "version": 2,
+     "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
+     "signed_on": "2026-11-14",
+     "evidence": "the made-up signed copy",
+     "formalities_met": [
+      "signed by both parties, as stated"
+     ],
+     "of_current_text": true,
+     "formalities_the_law_requires": null,
+     "law_basis": "Which formalities the law requires is not stated here: the rules on execution have not been read at their publisher, so the formalities are the ones the person entered."
+    },
+    {
+     "state": "in_force",
+     "recorded": true,
+     "entered_by": "w1081-made-up-person",
+     "entered_at": "2026-11-15T15:02:02Z",
+     "from": "2026-11-14",
+     "basis": "on signature, as the made-up text says"
+    },
+    {
+     "state": "ended",
+     "recorded": false,
+     "said": "No end is recorded."
+    }
+   ],
+   "not_legal_advice": "Nothing here is legal advice, and this platform is not a solicitor."
+  }
+ },
+ "confirmed": {
+  "status": 200,
+  "body": {
+   "id": "agr-1b0a4e5274",
+   "title": "W1081 Made-up Supply",
+   "owner": "w1081-made-up-person",
+   "parties": [
+    {
+     "party_id": "pty-af62a65f15",
+     "role": "supplier",
+     "party": {
+      "id": "pty-af62a65f15",
+      "kind": "registered_body",
+      "name": "W1081 Made-up Supplies Ltd",
+      "registered_on": "a made-up register (W1081)",
+      "registered_number": "W1081-0001",
+      "read_from": "the made-up register's page for it",
+      "read_on": "2026-11-14",
+      "entered_by": "w1081-made-up-person",
+      "entered_at": "2026-11-15T15:02:02Z",
+      "checked_by_this_platform": false,
+      "basis": "As entered by w1081-made-up-person, read from the made-up register's page for it on 2026-11-14. This platform did not check it against any register or document."
+     },
+     "signatories": [
+      {
+       "name": "Bo W1081-Madeup",
+       "capacity": "director, as stated",
+       "authority_as_stated": "authorised by the board, as a made-up minute says",
+       "stated_by": "the company secretary, as stated",
+       "recorded_by": "w1081-made-up-person",
+       "recorded_at": "2026-11-15T15:02:02Z",
+       "verified_by_this_platform": false,
+       "basis": "This platform did not verify this authority; it is recorded as stated, by the person named."
+      }
+     ]
+    },
+    {
+     "party_id": "pty-d5472b4f1f",
+     "role": "customer",
+     "party": {
+      "id": "pty-d5472b4f1f",
+      "kind": "person",
+      "name": "Ann W1081-Madeup",
+      "registered_on": null,
+      "registered_number": null,
+      "read_from": "the signature block of the made-up draft",
+      "read_on": "2026-11-14",
+      "entered_by": "w1081-made-up-person",
+      "entered_at": "2026-11-15T15:02:02Z",
+      "checked_by_this_platform": false,
+      "basis": "As entered by w1081-made-up-person, read from the signature block of the made-up draft on 2026-11-14. This platform did not check it against any register or document."
+     },
+     "signatories": []
+    }
+   ],
+   "versions": [
+    {
+     "version": 1,
+     "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
+     "by": "w1081-made-up-person",
+     "at": "2026-11-15T15:02:02Z",
+     "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer."
+    },
+    {
+     "version": 2,
+     "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
+     "by": "w1081-made-up-person",
+     "at": "2026-11-15T15:02:02Z",
+     "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer. A second made-up clause."
+    }
+   ],
+   "current": {
+    "version": 2,
+    "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1"
+   },
+   "obligations": [
+    {
+     "id": "obl-52a54f4450",
+     "owed_by": "pty-af62a65f15",
+     "owed_to": "pty-d5472b4f1f",
+     "what": "deliver the made-up goods",
+     "clause": "clause 3",
+     "due_on": "2026-11-25",
+     "entered_by": "w1081-made-up-person",
+     "entered_at": "2026-11-15T15:02:02Z",
+     "due_basis": "entered by w1081-made-up-person at 2026-11-15T15:02:02Z from the text",
+     "confirmed": {
+      "by": "w1081-made-up-person",
+      "at": "2026-11-15T15:02:02Z"
+     }
+    },
+    {
+     "id": "obl-05b9899af9",
+     "owed_by": "pty-d5472b4f1f",
+     "owed_to": "pty-af62a65f15",
+     "what": "pay the made-up price",
+     "clause": "clause 4",
+     "due_on": "2026-11-12",
+     "entered_by": "w1081-made-up-person",
+     "entered_at": "2026-11-15T15:02:02Z",
+     "due_basis": "entered by w1081-made-up-person at 2026-11-15T15:02:02Z from the text",
+     "confirmed": null,
+     "confirmed_said": "Not confirmed by a person yet."
+    }
+   ],
+   "notice": {
+    "known": false,
+    "said": "The notice period is not known: none has been entered from the text."
+   },
+   "text_kept": {
+    "chars": 102,
+    "of": 102,
+    "basis": "The text is kept whole, as data, on this machine: no instruction in it is followed, and nothing of it is sent to an outside service."
+   },
+   "date_basis": "A date here is a person's entry from the text: none is computed by this platform, and none is taken from a model.",
+   "facts": [
+    {
+     "state": "drafted",
+     "recorded": true,
+     "by": "w1081-made-up-person",
+     "at": "2026-11-15T15:02:02Z",
+     "version": 1,
+     "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee"
+    },
+    {
+     "state": "reviewed",
+     "recorded": true,
+     "reviews": [
+      {
+       "by": "w1081-made-up-person",
+       "at": "2026-11-15T15:02:02Z",
+       "version": 1,
+       "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
+       "note": "a made-up review",
+       "of_current_text": false
+      }
+     ]
+    },
+    {
+     "state": "approved",
+     "recorded": true,
+     "by": "w1081-made-up-person",
+     "at": "2026-11-15T15:02:02Z",
+     "version": 2,
+     "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
+     "ended_approvals": [
+      {
+       "by": "w1081-made-up-person",
+       "at": "2026-11-15T15:02:02Z",
+       "version": 1,
+       "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
+       "ended_at": "2026-11-15T15:02:02Z",
+       "ended_by": "w1081-made-up-person",
+       "ended_because": "the text changed: version 2 (sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1) replaced the approved version 1"
+      }
+     ]
+    },
+    {
+     "state": "executed",
+     "recorded": true,
+     "entered_by": "w1081-made-up-person",
+     "entered_at": "2026-11-15T15:02:02Z",
+     "version": 2,
+     "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
+     "signed_on": "2026-11-14",
+     "evidence": "the made-up signed copy",
+     "formalities_met": [
+      "signed by both parties, as stated"
+     ],
+     "of_current_text": true,
+     "formalities_the_law_requires": null,
+     "law_basis": "Which formalities the law requires is not stated here: the rules on execution have not been read at their publisher, so the formalities are the ones the person entered."
+    },
+    {
+     "state": "in_force",
+     "recorded": true,
+     "entered_by": "w1081-made-up-person",
+     "entered_at": "2026-11-15T15:02:02Z",
+     "from": "2026-11-14",
+     "basis": "on signature, as the made-up text says"
+    },
+    {
+     "state": "ended",
+     "recorded": false,
+     "said": "No end is recorded."
+    }
+   ],
+   "not_legal_advice": "Nothing here is legal advice, and this platform is not a solicitor."
+  }
+ },
+ "confirm_again": {
+  "status": 409,
+  "body": {
+   "detail": "It is already confirmed, by w1081-made-up-person at 2026-11-15T15:02:02Z, so nothing was changed."
+  }
+ },
+ "notice": {
+  "status": 200,
+  "body": {
+   "id": "agr-1b0a4e5274",
+   "title": "W1081 Made-up Supply",
+   "owner": "w1081-made-up-person",
+   "parties": [
+    {
+     "party_id": "pty-af62a65f15",
+     "role": "supplier",
+     "party": {
+      "id": "pty-af62a65f15",
+      "kind": "registered_body",
+      "name": "W1081 Made-up Supplies Ltd",
+      "registered_on": "a made-up register (W1081)",
+      "registered_number": "W1081-0001",
+      "read_from": "the made-up register's page for it",
+      "read_on": "2026-11-14",
+      "entered_by": "w1081-made-up-person",
+      "entered_at": "2026-11-15T15:02:02Z",
+      "checked_by_this_platform": false,
+      "basis": "As entered by w1081-made-up-person, read from the made-up register's page for it on 2026-11-14. This platform did not check it against any register or document."
+     },
+     "signatories": [
+      {
+       "name": "Bo W1081-Madeup",
+       "capacity": "director, as stated",
+       "authority_as_stated": "authorised by the board, as a made-up minute says",
+       "stated_by": "the company secretary, as stated",
+       "recorded_by": "w1081-made-up-person",
+       "recorded_at": "2026-11-15T15:02:02Z",
+       "verified_by_this_platform": false,
+       "basis": "This platform did not verify this authority; it is recorded as stated, by the person named."
+      }
+     ]
+    },
+    {
+     "party_id": "pty-d5472b4f1f",
+     "role": "customer",
+     "party": {
+      "id": "pty-d5472b4f1f",
+      "kind": "person",
+      "name": "Ann W1081-Madeup",
+      "registered_on": null,
+      "registered_number": null,
+      "read_from": "the signature block of the made-up draft",
+      "read_on": "2026-11-14",
+      "entered_by": "w1081-made-up-person",
+      "entered_at": "2026-11-15T15:02:02Z",
+      "checked_by_this_platform": false,
+      "basis": "As entered by w1081-made-up-person, read from the signature block of the made-up draft on 2026-11-14. This platform did not check it against any register or document."
+     },
+     "signatories": []
+    }
+   ],
+   "versions": [
+    {
+     "version": 1,
+     "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
+     "by": "w1081-made-up-person",
+     "at": "2026-11-15T15:02:02Z",
+     "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer."
+    },
+    {
+     "version": 2,
+     "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
+     "by": "w1081-made-up-person",
+     "at": "2026-11-15T15:02:02Z",
+     "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer. A second made-up clause."
+    }
+   ],
+   "current": {
+    "version": 2,
+    "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1"
+   },
+   "obligations": [
+    {
+     "id": "obl-52a54f4450",
+     "owed_by": "pty-af62a65f15",
+     "owed_to": "pty-d5472b4f1f",
+     "what": "deliver the made-up goods",
+     "clause": "clause 3",
+     "due_on": "2026-11-25",
+     "entered_by": "w1081-made-up-person",
+     "entered_at": "2026-11-15T15:02:02Z",
+     "due_basis": "entered by w1081-made-up-person at 2026-11-15T15:02:02Z from the text",
+     "confirmed": {
+      "by": "w1081-made-up-person",
+      "at": "2026-11-15T15:02:02Z"
+     }
+    },
+    {
+     "id": "obl-05b9899af9",
+     "owed_by": "pty-d5472b4f1f",
+     "owed_to": "pty-af62a65f15",
+     "what": "pay the made-up price",
+     "clause": "clause 4",
+     "due_on": "2026-11-12",
+     "entered_by": "w1081-made-up-person",
+     "entered_at": "2026-11-15T15:02:02Z",
+     "due_basis": "entered by w1081-made-up-person at 2026-11-15T15:02:02Z from the text",
+     "confirmed": null,
+     "confirmed_said": "Not confirmed by a person yet."
+    }
+   ],
+   "notice": {
+    "as_stated": "thirty days in writing, as stated",
+    "clause": "clause 9",
+    "entered_by": "w1081-made-up-person",
+    "entered_at": "2026-11-15T15:02:02Z",
+    "known": true
+   },
+   "text_kept": {
+    "chars": 102,
+    "of": 102,
+    "basis": "The text is kept whole, as data, on this machine: no instruction in it is followed, and nothing of it is sent to an outside service."
+   },
+   "date_basis": "A date here is a person's entry from the text: none is computed by this platform, and none is taken from a model.",
+   "facts": [
+    {
+     "state": "drafted",
+     "recorded": true,
+     "by": "w1081-made-up-person",
+     "at": "2026-11-15T15:02:02Z",
+     "version": 1,
+     "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee"
+    },
+    {
+     "state": "reviewed",
+     "recorded": true,
+     "reviews": [
+      {
+       "by": "w1081-made-up-person",
+       "at": "2026-11-15T15:02:02Z",
+       "version": 1,
+       "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
+       "note": "a made-up review",
+       "of_current_text": false
+      }
+     ]
+    },
+    {
+     "state": "approved",
+     "recorded": true,
+     "by": "w1081-made-up-person",
+     "at": "2026-11-15T15:02:02Z",
+     "version": 2,
+     "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
+     "ended_approvals": [
+      {
+       "by": "w1081-made-up-person",
+       "at": "2026-11-15T15:02:02Z",
+       "version": 1,
+       "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
+       "ended_at": "2026-11-15T15:02:02Z",
+       "ended_by": "w1081-made-up-person",
+       "ended_because": "the text changed: version 2 (sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1) replaced the approved version 1"
+      }
+     ]
+    },
+    {
+     "state": "executed",
+     "recorded": true,
+     "entered_by": "w1081-made-up-person",
+     "entered_at": "2026-11-15T15:02:02Z",
+     "version": 2,
+     "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
+     "signed_on": "2026-11-14",
+     "evidence": "the made-up signed copy",
+     "formalities_met": [
+      "signed by both parties, as stated"
+     ],
+     "of_current_text": true,
+     "formalities_the_law_requires": null,
+     "law_basis": "Which formalities the law requires is not stated here: the rules on execution have not been read at their publisher, so the formalities are the ones the person entered."
+    },
+    {
+     "state": "in_force",
+     "recorded": true,
+     "entered_by": "w1081-made-up-person",
+     "entered_at": "2026-11-15T15:02:02Z",
      "from": "2026-11-14",
      "basis": "on signature, as the made-up text says"
     },
@@ -1311,15 +2168,15 @@
  "ended": {
   "status": 200,
   "body": {
-   "id": "agr-92e51963c8",
+   "id": "agr-1b0a4e5274",
    "title": "W1081 Made-up Supply",
    "owner": "w1081-made-up-person",
    "parties": [
     {
-     "party_id": "pty-57bdae8027",
+     "party_id": "pty-af62a65f15",
      "role": "supplier",
      "party": {
-      "id": "pty-57bdae8027",
+      "id": "pty-af62a65f15",
       "kind": "registered_body",
       "name": "W1081 Made-up Supplies Ltd",
       "registered_on": "a made-up register (W1081)",
@@ -1327,7 +2184,7 @@
       "read_from": "the made-up register's page for it",
       "read_on": "2026-11-14",
       "entered_by": "w1081-made-up-person",
-      "entered_at": "2026-11-15T13:49:41Z",
+      "entered_at": "2026-11-15T15:02:02Z",
       "checked_by_this_platform": false,
       "basis": "As entered by w1081-made-up-person, read from the made-up register's page for it on 2026-11-14. This platform did not check it against any register or document."
      },
@@ -1338,17 +2195,17 @@
        "authority_as_stated": "authorised by the board, as a made-up minute says",
        "stated_by": "the company secretary, as stated",
        "recorded_by": "w1081-made-up-person",
-       "recorded_at": "2026-11-15T13:49:41Z",
+       "recorded_at": "2026-11-15T15:02:02Z",
        "verified_by_this_platform": false,
        "basis": "This platform did not verify this authority; it is recorded as stated, by the person named."
       }
      ]
     },
     {
-     "party_id": "pty-a451598d4c",
+     "party_id": "pty-d5472b4f1f",
      "role": "customer",
      "party": {
-      "id": "pty-a451598d4c",
+      "id": "pty-d5472b4f1f",
       "kind": "person",
       "name": "Ann W1081-Madeup",
       "registered_on": null,
@@ -1356,7 +2213,7 @@
       "read_from": "the signature block of the made-up draft",
       "read_on": "2026-11-14",
       "entered_by": "w1081-made-up-person",
-      "entered_at": "2026-11-15T13:49:41Z",
+      "entered_at": "2026-11-15T15:02:02Z",
       "checked_by_this_platform": false,
       "basis": "As entered by w1081-made-up-person, read from the signature block of the made-up draft on 2026-11-14. This platform did not check it against any register or document."
      },
@@ -1368,14 +2225,14 @@
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer."
     },
     {
      "version": 2,
      "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "text": "W1081 made-up agreement: the supplier supplies made-up goods to the customer. A second made-up clause."
     }
    ],
@@ -1383,12 +2240,55 @@
     "version": 2,
     "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1"
    },
+   "obligations": [
+    {
+     "id": "obl-52a54f4450",
+     "owed_by": "pty-af62a65f15",
+     "owed_to": "pty-d5472b4f1f",
+     "what": "deliver the made-up goods",
+     "clause": "clause 3",
+     "due_on": "2026-11-25",
+     "entered_by": "w1081-made-up-person",
+     "entered_at": "2026-11-15T15:02:02Z",
+     "due_basis": "entered by w1081-made-up-person at 2026-11-15T15:02:02Z from the text",
+     "confirmed": {
+      "by": "w1081-made-up-person",
+      "at": "2026-11-15T15:02:02Z"
+     }
+    },
+    {
+     "id": "obl-05b9899af9",
+     "owed_by": "pty-d5472b4f1f",
+     "owed_to": "pty-af62a65f15",
+     "what": "pay the made-up price",
+     "clause": "clause 4",
+     "due_on": "2026-11-12",
+     "entered_by": "w1081-made-up-person",
+     "entered_at": "2026-11-15T15:02:02Z",
+     "due_basis": "entered by w1081-made-up-person at 2026-11-15T15:02:02Z from the text",
+     "confirmed": null,
+     "confirmed_said": "Not confirmed by a person yet."
+    }
+   ],
+   "notice": {
+    "as_stated": "thirty days in writing, as stated",
+    "clause": "clause 9",
+    "entered_by": "w1081-made-up-person",
+    "entered_at": "2026-11-15T15:02:02Z",
+    "known": true
+   },
+   "text_kept": {
+    "chars": 102,
+    "of": 102,
+    "basis": "The text is kept whole, as data, on this machine: no instruction in it is followed, and nothing of it is sent to an outside service."
+   },
+   "date_basis": "A date here is a person's entry from the text: none is computed by this platform, and none is taken from a model.",
    "facts": [
     {
      "state": "drafted",
      "recorded": true,
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "version": 1,
      "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee"
     },
@@ -1398,7 +2298,7 @@
      "reviews": [
       {
        "by": "w1081-made-up-person",
-       "at": "2026-11-15T13:49:41Z",
+       "at": "2026-11-15T15:02:02Z",
        "version": 1,
        "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
        "note": "a made-up review",
@@ -1410,16 +2310,16 @@
      "state": "approved",
      "recorded": true,
      "by": "w1081-made-up-person",
-     "at": "2026-11-15T13:49:41Z",
+     "at": "2026-11-15T15:02:02Z",
      "version": 2,
      "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
      "ended_approvals": [
       {
        "by": "w1081-made-up-person",
-       "at": "2026-11-15T13:49:41Z",
+       "at": "2026-11-15T15:02:02Z",
        "version": 1,
        "hash": "sha256:af8d0b7287798a4637c39f5eba87b8d0abcc02924b4d5e3e7eea590f085670ee",
-       "ended_at": "2026-11-15T13:49:41Z",
+       "ended_at": "2026-11-15T15:02:02Z",
        "ended_by": "w1081-made-up-person",
        "ended_because": "the text changed: version 2 (sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1) replaced the approved version 1"
       }
@@ -1429,7 +2329,7 @@
      "state": "executed",
      "recorded": true,
      "entered_by": "w1081-made-up-person",
-     "entered_at": "2026-11-15T13:49:41Z",
+     "entered_at": "2026-11-15T15:02:02Z",
      "version": 2,
      "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
      "signed_on": "2026-11-14",
@@ -1445,7 +2345,7 @@
      "state": "in_force",
      "recorded": true,
      "entered_by": "w1081-made-up-person",
-     "entered_at": "2026-11-15T13:49:41Z",
+     "entered_at": "2026-11-15T15:02:02Z",
      "from": "2026-11-14",
      "basis": "on signature, as the made-up text says"
     },
@@ -1453,7 +2353,7 @@
      "state": "ended",
      "recorded": true,
      "entered_by": "w1081-made-up-person",
-     "entered_at": "2026-11-15T13:49:41Z",
+     "entered_at": "2026-11-15T15:02:02Z",
      "on": "2026-11-15",
      "how": "ended by a made-up notice, as stated"
     }
@@ -1466,7 +2366,7 @@
   "body": {
    "agreements": [
     {
-     "id": "agr-92e51963c8",
+     "id": "agr-1b0a4e5274",
      "title": "W1081 Made-up Supply",
      "version": 2,
      "hash": "sha256:476c3068907f76fba9f364465fb83a652d8f69ea9996da716ab0b23184b073e1",
@@ -1485,7 +2385,7 @@
        "state": "drafted",
        "recorded": true,
        "by": "w1081-made-up-person",
-       "at": "2026-11-15T13:49:41Z"
+       "at": "2026-11-15T15:02:02Z"
       },
       {
        "state": "reviewed",
@@ -1495,25 +2395,25 @@
        "state": "approved",
        "recorded": true,
        "by": "w1081-made-up-person",
-       "at": "2026-11-15T13:49:41Z"
+       "at": "2026-11-15T15:02:02Z"
       },
       {
        "state": "executed",
        "recorded": true,
        "entered_by": "w1081-made-up-person",
-       "entered_at": "2026-11-15T13:49:41Z"
+       "entered_at": "2026-11-15T15:02:02Z"
       },
       {
        "state": "in_force",
        "recorded": true,
        "entered_by": "w1081-made-up-person",
-       "entered_at": "2026-11-15T13:49:41Z"
+       "entered_at": "2026-11-15T15:02:02Z"
       },
       {
        "state": "ended",
        "recorded": true,
        "entered_by": "w1081-made-up-person",
-       "entered_at": "2026-11-15T13:49:41Z"
+       "entered_at": "2026-11-15T15:02:02Z"
       }
      ]
     }
@@ -1525,15 +2425,15 @@
     "route": "/api/v1/economy/contracts",
     "contracts": [
      {
-      "id": "ctr-665d60d676",
-      "client_vsb": "vsb-5d9d6d5885",
-      "provider_vsb": "vsb-0ef74f7754",
+      "id": "ctr-11c033d78b",
+      "client_vsb": "vsb-4a6d330f94",
+      "provider_vsb": "vsb-8f14f99511",
       "brief": "w1081 a made-up brief",
       "price_wst": 10.0,
       "status": "offered",
       "delivery": null,
       "settlement": null,
-      "offered_at": "2026-11-15T13:49:41Z"
+      "offered_at": "2026-11-15T15:02:02Z"
      }
     ],
     "total": 1,

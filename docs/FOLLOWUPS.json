@@ -25695,10 +25695,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1086",
       "note": "",
-      "slot_source": "P5.18's own next clauses, after clauses 1 and 2 (W1080, W1081)"
+      "slot_source": "P5.18's own next clauses, after clauses 1 and 2 (W1080, W1081)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1085 and W1086, on made-up parties. An obligation names who owes what to whom (both parties of the agreement), the clause it was read from and the date it falls due as a person entered it, and reads not confirmed until a person confirms it, the record naming who and when. Every date is a person's entry: none is computed and none is taken from a model; a date computed by a dated rule waits on its sources (FU-1077). An unknown notice period is said to be unknown until it is entered from its clause. The text is kept whole as data on this machine, with how much was kept of how much was given, and nothing in it is followed or sent outside (clause 7). What falls due, or waits for a confirmation, is on the one list of what waits on a person (/api/v1/waiting), which names what it does not read yet. test_w1085 drives the routes (eight blinds); the Law page's waiting panel and the agreements panel's additions are rendered against the routes' own answers (WaitingPanel.test.tsx five cases, AgreementsPanel.test.tsx eleven, ten vitest blinds); test_w1086 holds the wiring (five blinds). The journey is the coverage register's row law-agreement-obligations, driven by test_w1085."
     },
     {
       "id": "FU-1268",
@@ -25719,6 +25722,23 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in W1084. An asset says where it would be used (in a workplace, on a road, on a public footway, in the air, or somewhere else), entered by a person at entry or afterwards with who and when, an earlier entry kept. Its rules are the register of sources' rows for that use, by id: each as the register holds it (what it says, the date read, by whom, what was not read, how it is marked) and whether it was read within the review window. A public footway has no source permitting the use, and the record says so in those words; nothing says the law permits a use. The Law page's assets panel chooses the use and says the rows as the route gave them (two new rendered cases, five vitest blinds); test_w1084 drives it through the routes (seven blinds). The journey is the coverage register's row law-asset-rules, driven by test_w1084."
+    },
+    {
+      "id": "FU-1269",
+      "title": "The one list of what waits on a person reads only agreement obligations, and is not reached from the first screen",
+      "why": "W1085 built /api/v1/waiting and W1086 put it on the Law page, above the agreements. It reads one store: the obligations on a person's agreement records, falling due or not confirmed. P5.14 clause 4 asks that one list reached from the first screen show everything that waits on the person, read from the stores that exist. Two such stores exist and are not read: a project that waits on a person's decision (W867 derives it from the proposals pending for the project, and the Projects hub shows it project by project), and an asset record's evidence, which carries the date it lapses (W1082). The list names them as not read yet, so an empty list says only that nothing it reads is waiting; and nothing on the first screen reaches it.",
+      "source": "W1086 (P5.18 clauses 3 and 7 completed on the Law page)",
+      "found": "2026-11-15",
+      "files": [
+        "agentic_core/api/waiting.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.14",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.14 clause 4: one list reached from the first screen shows everything that waits on the person, read from the stores that exist"
     }
   ],
   "routes": [

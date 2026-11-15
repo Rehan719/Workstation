@@ -22,7 +22,8 @@ type Party = { id: string; kind: string; name: string; registered_on?: string | 
 type Fact = { state: string; recorded: boolean; said?: string; by?: string; at?: string; entered_by?: string;
   entered_at?: string; [k: string]: any };
 type Agreement = { id: string; title: string; parties: any[]; versions: any[]; current: { version: number; hash: string };
-  facts: Fact[]; not_legal_advice?: string };
+  facts: Fact[]; not_legal_advice?: string;
+  obligations?: any[]; notice?: any; text_kept?: any; date_basis?: string };   // W1086 (P5.18 clauses 3 and 7)
 
 //  one fact, said as the route recorded it: who and when, and what it holds; a fact not recorded says so
 function FactLine({ f }: { f: Fact }) {
@@ -80,6 +81,9 @@ export default function AgreementsPanel() {
   const [inf, setInf] = useState({ from_date: '', basis: '' });
   const [end, setEnd] = useState({ on: '', how: '' });
   const [sig, setSig] = useState({ party_id: '', name: '', capacity: '', authority_as_stated: '', stated_by: '' });
+  //  W1086 (P5.18 clause 3) - an obligation from its clause, and the notice period as the text states it
+  const [ob, setOb] = useState({ owed_by: '', owed_to: '', what: '', clause: '', due_on: '' });
+  const [nt, setNt] = useState({ as_stated: '', clause: '' });
 
   const readList = useCallback(async () => {
     setListErr('');
@@ -160,6 +164,8 @@ export default function AgreementsPanel() {
   };
 
   const cur = open?.current;
+  //  W1086 - a party by its name on the open record, as the route gave it
+  const nameOf = (pid: string) => open?.parties.find((x: any) => x.party_id === pid)?.party?.name ?? pid;
   const fact = (s: string) => open?.facts.find(f => f.state === s);
   const executed = !!fact('executed')?.recorded;
   const ended = !!fact('ended')?.recorded;
@@ -289,6 +295,61 @@ export default function AgreementsPanel() {
                 ))}
               </ul>
               <ul className="space-y-1">{open.facts.map(f => <FactLine key={f.state} f={f} />)}</ul>
+
+              {/* W1086 (P5.18 clauses 3 and 7) - obligations from the text, the notice period, the text kept as data */}
+              <div className="space-y-1" data-testid="agreement-obligations">
+                <p className="text-[11px] font-black text-slate-100">Obligations, as read from the text</p>
+                {(open.obligations ?? []).length === 0 && <p data-testid="agreement-no-obligations" className="text-[11px] text-slate-500">No obligation is entered yet.</p>}
+                <ul className="space-y-1">
+                  {(open.obligations ?? []).map((o: any) => (
+                    <li key={o.id} data-testid="agreement-obligation" className="text-[11px] text-slate-300">
+                      {`${nameOf(o.owed_by)} owes ${nameOf(o.owed_to)}: ${o.what} (${o.clause}). ${o.due_on ? `Falls due on ${o.due_on}, as entered.` : o.due_said} ${o.confirmed ? `Confirmed by ${o.confirmed.by} at ${o.confirmed.at}.` : o.confirmed_said}`}
+                      {!o.confirmed && !ended && (
+                        <button type="button" className={`${button} ml-2`} disabled={!!busy} onClick={() => act(`confirm-${o.id}`, `obligations/${o.id}/confirm`, {})}>
+                          {`Confirm it was read from ${o.clause}`}
+                        </button>
+                      )}
+                      {errs[`confirm-${o.id}`] && <span data-testid="agreement-error-confirm" className="block text-[11px] text-rose-300">{errs[`confirm-${o.id}`]}</span>}
+                    </li>
+                  ))}
+                </ul>
+                {open.date_basis && <p data-testid="agreement-date-basis" className="text-[10px] text-slate-500">{open.date_basis}</p>}
+                {!ended && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {([['owed_by', 'Owed by'], ['owed_to', 'Owed to']] as const).map(([k, label]) => (
+                      <select key={k} aria-label={label} className={field} value={ob[k]} onChange={e => setOb({ ...ob, [k]: e.target.value })}>
+                        <option value="">{`${label}: choose a party`}</option>
+                        {open.parties.map((x: any) => <option key={x.party_id} value={x.party_id}>{x.party?.name ?? x.party_id}</option>)}
+                      </select>
+                    ))}
+                    <input aria-label="What is owed" className={field} placeholder="What is owed, as the text says" value={ob.what} onChange={e => setOb({ ...ob, what: e.target.value })} />
+                    <input aria-label="The clause it was read from" className={field} placeholder="The clause, e.g. clause 3" value={ob.clause} onChange={e => setOb({ ...ob, clause: e.target.value })} />
+                    <input aria-label="It falls due on" type="date" className={field} value={ob.due_on} onChange={e => setOb({ ...ob, due_on: e.target.value })} />
+                    <button type="button" className={button} disabled={!!busy} onClick={() => act('obligation', 'obligations', { ...ob, due_on: ob.due_on || null })}>Record this obligation</button>
+                  </div>
+                )}
+                {errs.obligation && <p data-testid="agreement-error-obligation" className="text-[11px] text-rose-300">{errs.obligation}</p>}
+              </div>
+              {open.notice && (
+                <div className="space-y-1" data-testid="agreement-notice">
+                  <p data-testid="agreement-notice-said" className="text-[11px] text-slate-300">
+                    {open.notice.known ? `Notice period: ${open.notice.as_stated} (${open.notice.clause}), entered by ${open.notice.entered_by} at ${open.notice.entered_at}.` : open.notice.said}
+                  </p>
+                  {!ended && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <input aria-label="The notice period, as stated" className={field} placeholder="As the text states it" value={nt.as_stated} onChange={e => setNt({ ...nt, as_stated: e.target.value })} />
+                      <input aria-label="The notice clause" className={field} placeholder="The clause it was read from" value={nt.clause} onChange={e => setNt({ ...nt, clause: e.target.value })} />
+                      <button type="button" className={button} disabled={!!busy} onClick={() => act('notice', 'notice', nt)}>Record the notice period</button>
+                    </div>
+                  )}
+                  {errs.notice && <p data-testid="agreement-error-notice" className="text-[11px] text-rose-300">{errs.notice}</p>}
+                </div>
+              )}
+              {open.text_kept && (
+                <p data-testid="agreement-text-kept" className="text-[10px] text-slate-500">
+                  {`${open.text_kept.chars} of the ${open.text_kept.of} characters of the text are kept. ${open.text_kept.basis}`}
+                </p>
+              )}
 
               {ended ? (
                 <p data-testid="agreement-ended-note" className="text-[11px] text-slate-500">Its end is recorded, so nothing more is recorded on it.</p>

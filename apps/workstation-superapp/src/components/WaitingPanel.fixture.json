@@ -1,0 +1,165 @@
+{
+ "captured_on": "2026-11-15",
+ "waiting": {
+  "status": 200,
+  "body": {
+   "reads": [
+    "the obligations on your agreement records: each one falling due within the window or past its date, and each one no person has confirmed"
+   ],
+   "not_read_yet": [
+    "an asset record's evidence as it nears its lapse",
+    "a project's decision waiting on you",
+    "a change waiting on your decision"
+   ],
+   "basis": "One list of what waits on you, from the records it reads; what it does not read yet is named, so an empty list says only that nothing it reads is waiting.",
+   "date_basis": "A date here is a person's entry from the text: none is computed by this platform, and none is taken from a model.",
+   "items": [
+    {
+     "agreement_id": "agr-1b0a4e5274",
+     "agreement_title": "W1081 Made-up Supply",
+     "obligation_id": "obl-05b9899af9",
+     "what": "pay the made-up price",
+     "clause": "clause 4",
+     "due_on": "2026-11-12",
+     "confirmed": false,
+     "kind": "falls_due",
+     "days": -3,
+     "said": "fell due 3 days ago"
+    },
+    {
+     "agreement_id": "agr-1b0a4e5274",
+     "agreement_title": "W1081 Made-up Supply",
+     "obligation_id": "obl-52a54f4450",
+     "what": "deliver the made-up goods",
+     "clause": "clause 3",
+     "due_on": "2026-11-25",
+     "confirmed": false,
+     "kind": "falls_due",
+     "days": 10,
+     "said": "falls due in 10 days"
+    },
+    {
+     "agreement_id": "agr-1b0a4e5274",
+     "agreement_title": "W1081 Made-up Supply",
+     "obligation_id": "obl-52a54f4450",
+     "what": "deliver the made-up goods",
+     "clause": "clause 3",
+     "due_on": "2026-11-25",
+     "confirmed": false,
+     "kind": "unconfirmed",
+     "said": "Not confirmed by a person yet."
+    },
+    {
+     "agreement_id": "agr-1b0a4e5274",
+     "agreement_title": "W1081 Made-up Supply",
+     "obligation_id": "obl-05b9899af9",
+     "what": "pay the made-up price",
+     "clause": "clause 4",
+     "due_on": "2026-11-12",
+     "confirmed": false,
+     "kind": "unconfirmed",
+     "said": "Not confirmed by a person yet."
+    }
+   ],
+   "kept": true,
+   "within_days": 30
+  }
+ },
+ "waiting_after": {
+  "status": 200,
+  "body": {
+   "reads": [
+    "the obligations on your agreement records: each one falling due within the window or past its date, and each one no person has confirmed"
+   ],
+   "not_read_yet": [
+    "an asset record's evidence as it nears its lapse",
+    "a project's decision waiting on you",
+    "a change waiting on your decision"
+   ],
+   "basis": "One list of what waits on you, from the records it reads; what it does not read yet is named, so an empty list says only that nothing it reads is waiting.",
+   "date_basis": "A date here is a person's entry from the text: none is computed by this platform, and none is taken from a model.",
+   "items": [
+    {
+     "agreement_id": "agr-1b0a4e5274",
+     "agreement_title": "W1081 Made-up Supply",
+     "obligation_id": "obl-05b9899af9",
+     "what": "pay the made-up price",
+     "clause": "clause 4",
+     "due_on": "2026-11-12",
+     "confirmed": false,
+     "kind": "falls_due",
+     "days": -3,
+     "said": "fell due 3 days ago"
+    },
+    {
+     "agreement_id": "agr-1b0a4e5274",
+     "agreement_title": "W1081 Made-up Supply",
+     "obligation_id": "obl-52a54f4450",
+     "what": "deliver the made-up goods",
+     "clause": "clause 3",
+     "due_on": "2026-11-25",
+     "confirmed": true,
+     "kind": "falls_due",
+     "days": 10,
+     "said": "falls due in 10 days"
+    },
+    {
+     "agreement_id": "agr-1b0a4e5274",
+     "agreement_title": "W1081 Made-up Supply",
+     "obligation_id": "obl-05b9899af9",
+     "what": "pay the made-up price",
+     "clause": "clause 4",
+     "due_on": "2026-11-12",
+     "confirmed": false,
+     "kind": "unconfirmed",
+     "said": "Not confirmed by a person yet."
+    }
+   ],
+   "kept": true,
+   "within_days": 30
+  }
+ },
+ "waiting_ended": {
+  "status": 200,
+  "body": {
+   "reads": [
+    "the obligations on your agreement records: each one falling due within the window or past its date, and each one no person has confirmed"
+   ],
+   "not_read_yet": [
+    "an asset record's evidence as it nears its lapse",
+    "a project's decision waiting on you",
+    "a change waiting on your decision"
+   ],
+   "basis": "One list of what waits on you, from the records it reads; what it does not read yet is named, so an empty list says only that nothing it reads is waiting.",
+   "date_basis": "A date here is a person's entry from the text: none is computed by this platform, and none is taken from a model.",
+   "items": [],
+   "kept": true,
+   "within_days": 30,
+   "said": "Nothing that this list reads is waiting on you."
+  }
+ },
+ "waiting_unread": {
+  "status": 503,
+  "body": {
+   "detail": "agreements.json could not be read whole (not valid JSON: Expecting property name enclosed in double quotes: line 1 column 3 (char 2)) — nothing was written"
+  }
+ },
+ "waiting_off": {
+  "status": 200,
+  "body": {
+   "reads": [
+    "the obligations on your agreement records: each one falling due within the window or past its date, and each one no person has confirmed"
+   ],
+   "not_read_yet": [
+    "an asset record's evidence as it nears its lapse",
+    "a project's decision waiting on you",
+    "a change waiting on your decision"
+   ],
+   "basis": "One list of what waits on you, from the records it reads; what it does not read yet is named, so an empty list says only that nothing it reads is waiting.",
+   "date_basis": "A date here is a person's entry from the text: none is computed by this platform, and none is taken from a model.",
+   "items": [],
+   "kept": false,
+   "said": "Nothing is kept before sign-in, so nothing here waits on anyone yet."
+  }
+ }
+}

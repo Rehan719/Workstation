@@ -9,6 +9,7 @@ import StatutePanel from '../../components/StatutePanel';
 import TimeLimitPanel from '../../components/TimeLimitPanel';   // W875 (FU-1012)
 import AgreementsPanel from '../../components/AgreementsPanel';   // W1081 (P5.18)
 import AssetsPanel from '../../components/AssetsPanel';   // W1083 (P5.19)
+import WaitingPanel from '../../components/WaitingPanel';   // W1086 (P5.18 clause 3)
 import { DomainTool } from '../../components/DomainTool';
 import { toolsFor } from '../../lib/toolRegistry';
 import { useTab } from '../../lib/useTab';   // W1027 - the tab is in the address
@@ -220,6 +221,11 @@ export const LawHub: React.FC = () => {
               />
             )}
          </div>
+      </Card>
+
+      {/* W1086 (P5.18 clause 3) - the one list of what waits on you, from the records it reads */}
+      <Card className="p-6">
+        <WaitingPanel />
       </Card>
 
       {/* W1081 (P5.18 clauses 1 and 2) - the enterprise's own agreements, as records that say only what is true of

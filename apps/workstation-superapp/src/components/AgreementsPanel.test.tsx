@@ -8,6 +8,8 @@
 // a change to the text that ends it, an approval of the old text refused, the second approval, a signatory, the
 // execution, that it is in force, an end refused for its date and the end, and the listing's own 503. Every party,
 // entity and text is made up, and nothing is legal advice.
+// W1086 (P5.18 clauses 3 and 7): an obligation refused for naming one party on both sides, the obligation, a second,
+// a person's confirmation and a second one refused, and the notice period as the text states it.
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -21,7 +23,7 @@ const C: any = captured;
 type Answer = { status: number; body: any };
 type Reply = Answer | Promise<Answer>;
 type Plan = Partial<Record<'list' | 'parties' | 'party' | 'draft' | 'read' | 'review' | 'approve' | 'text' | 'executed'
-  | 'in_force' | 'ended' | 'signatories', Reply[]>>;
+  | 'in_force' | 'ended' | 'signatories' | 'obligation' | 'confirm' | 'notice', Reply[]>>;
 const BASE = '/api/v1/agreements';
 const DRAFTED = C.draft.body;
 const AID = DRAFTED.id;
@@ -48,6 +50,9 @@ function serve(plan: Plan) {
             : method === 'GET' && url === `${BASE}/${AID}` ? 'read'
               : method === 'PUT' && act === 'text' ? 'text'
                 : method === 'POST' && act === 'in-force' ? 'in_force'
+                  : method === 'POST' && act === 'obligations' ? 'obligation'
+                    : method === 'POST' && /^obligations\/[^/]+\/confirm$/.test(act) ? 'confirm'
+                      : method === 'POST' && act === 'notice' ? 'notice'
                   : method === 'POST' && ['review', 'approve', 'executed', 'ended', 'signatories'].includes(act) ? act
                     : `${method} ${url}`;
     const a = await next(key);
@@ -245,6 +250,49 @@ describe('AgreementsPanel, rendered against its routes\' own answers (made-up pa
     expect(facts()[5]).toBe(`Ended on ${e.on}: ${e.how} - by ${e.entered_by} at ${e.entered_at}`);
     expect(screen.queryByRole('button', { name: /^Approve version/ })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Record its end' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Record this obligation' })).toBeNull();   // W1086 - nothing more is offered
+  });
+
+  it('an obligation is entered from its clause, refused beside its button when it is not one, and confirmed by a person', async () => {
+    const sent = await opened({ obligation: [C.obligation_refused, C.obligation], confirm: [C.confirmed] }, C.in_force);
+    expect(screen.getByTestId('agreement-no-obligations').textContent).toBe('No obligation is entered yet.');
+    expect(screen.getByTestId('agreement-date-basis').textContent).toBe(C.in_force.body.date_basis);
+    const o = C.obligation.body.obligations[0];
+    type('Owed by', BODY.id);
+    type('Owed to', BODY.id);
+    type('What is owed', o.what);
+    type('The clause it was read from', o.clause);
+    type('It falls due on', o.due_on);
+    press('Record this obligation');
+    await waitFor(() => expect(screen.getByTestId('agreement-error-obligation').textContent).toBe(`Not recorded: ${failed(C.obligation_refused)}`));
+    type('Owed to', PERSON.id);
+    press('Record this obligation');
+    await waitFor(() => expect(screen.getAllByTestId('agreement-obligation')).toHaveLength(1));
+    expect(screen.getByTestId('agreement-obligation').textContent).toContain(
+      `${BODY.name} owes ${PERSON.name}: ${o.what} (${o.clause}). Falls due on ${o.due_on}, as entered. ${o.confirmed_said}`);
+    press(`Confirm it was read from ${o.clause}`);
+    const c = C.confirmed.body.obligations[0].confirmed;
+    await waitFor(() => expect(screen.getAllByTestId('agreement-obligation')[0].textContent).toContain(`Confirmed by ${c.by} at ${c.at}.`));
+    expect(screen.queryByRole('button', { name: `Confirm it was read from ${o.clause}` })).toBeNull();
+    const posts = sent.filter(s => s.method === 'POST').map(s => [s.url.slice(BASE.length), s.body]);
+    expect(posts).toEqual([
+      [`/${AID}/obligations`, { owed_by: BODY.id, owed_to: BODY.id, what: o.what, clause: o.clause, due_on: o.due_on }],
+      [`/${AID}/obligations`, { owed_by: BODY.id, owed_to: PERSON.id, what: o.what, clause: o.clause, due_on: o.due_on }],
+      [`/${AID}/obligations/${o.id}/confirm`, {}]]);
+  });
+
+  it('the notice period is said as not known until it is entered, then as entered with its clause; the text is kept as data', async () => {
+    await opened({ notice: [C.notice] }, C.in_force);
+    expect(screen.getByTestId('agreement-notice-said').textContent).toBe(C.in_force.body.notice.said);
+    expect(C.in_force.body.notice.known).toBe(false);
+    const tk = C.in_force.body.text_kept;
+    expect(screen.getByTestId('agreement-text-kept').textContent).toBe(`${tk.chars} of the ${tk.of} characters of the text are kept. ${tk.basis}`);
+    const n = C.notice.body.notice;
+    type('The notice period, as stated', n.as_stated);
+    type('The notice clause', n.clause);
+    press('Record the notice period');
+    await waitFor(() => expect(screen.getByTestId('agreement-notice-said').textContent).toBe(
+      `Notice period: ${n.as_stated} (${n.clause}), entered by ${n.entered_by} at ${n.entered_at}.`));
   });
 
   it('a failed read of the records says its reason, and says no record as none', async () => {

@@ -662,6 +662,15 @@
    "state": "journey",
    "driven_by": "test_w1084_p519_which_rules_apply_to_an_asset_are_the_rows_of_the_register_for_its_use",
    "today": "on the Law page, a signed-in person says where an asset would be used - in a workplace, on a road, on a public footway, in the air or somewhere else - and is shown the rows of the register of sources for that use, each with what it says, the date it was read, by whom and what was not read; where no source permitting the use was found, the record says so in those words; nothing says whether the law permits the use (built in W1084)"
+  },
+  {
+   "id": "law-agreement-obligations",
+   "domain": "Law",
+   "subject": "What the enterprise's agreement obliges, and when, and what waits on a person",
+   "nation": "Any: the record states no rule of law",
+   "state": "journey",
+   "driven_by": "test_w1085_p518_an_obligation_names_its_clause_and_who_confirmed_it_and_what_falls_due_is_on_one_list",
+   "today": "on the Law page, a signed-in person enters each obligation an agreement's text sets - who owes what to whom, the clause it was read from and the date it falls due as they read it - and confirms it; the notice period is said as not known until it is entered from its clause; what falls due, or waits for a confirmation, is on the one list of what waits on them, which says what it does not read yet; every date is a person's entry, none computed and none taken from a model, and the text is kept as data on this machine (built in W1085 and W1086)"
   }
  ]
 }
