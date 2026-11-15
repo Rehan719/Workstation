@@ -87499,3 +87499,51 @@ def test_w1069_fu1256_the_scholar_review_panel_says_the_roster_and_the_queue_onl
     for v in fx.values():
         if isinstance(v, dict) and isinstance(v.get("body"), dict) and "by_state" in v["body"]:
             assert v["body"]["by_state"]["approved"] == 0, v["body"]["by_state"]
+
+
+def test_w1070_fu1257_the_donor_statement_says_no_entity_unread_a_statement_under_its_own_and_untagged_postings():
+    """W1070 (FU-1257; FU-399 part 83). The Quran platform's donor statement had no rendered test. Rendered against
+    its routes' own answers, it said "No QEP entity is on the living roster" before the roster's read answered and
+    beside its failure; it said a statement that answered after another entity was chosen under that entity; it never
+    said the postings with no channel tag, because the statement gives them as an object (count, total and basis)
+    and the panel read it as a number; and it offered the entities by id alone, in a choice with no label. Each is
+    fixed: the roster is said as being read, read, or with its reason; a statement only under its own entity; the
+    untagged postings with their count and total; each entity by its name and id, in a labelled choice.
+
+    Held here: the books' own count of untagged postings and the statement route's copy of it, driven on a ledger of
+    this test's own; the panel's code; and the rendered test's fixture (no Arabic; virtual WST). The rendered test
+    (QepDonorStatement.test.tsx, five cases, five vitest blinds) holds what the panel says."""
+    import inspect
+    import json
+    import pathlib
+    import re
+    from agentic_core.economy import ledger as _ledger_mod
+    from agentic_core.economy.ledger import VirtualLedger
+    import agentic_core.religious_domain.api as _rd
+    #  the books count a posting with no source apart, as an object - what the statement hands the panel
+    for _stale in (_ledger_mod._STORE / "w1070-guard_ledger.json",):
+        _stale.unlink(missing_ok=True)
+    led = VirtualLedger("w1070-guard")
+    led.record("revenue", 5.0, memo="W1070 guard: a made-up posting written with no source")
+    not_stated = VirtualLedger("w1070-guard").postings_by_source()["not_stated"]
+    assert isinstance(not_stated, dict) and not_stated["count"] == 1 and not_stated["total_wst"] == 5.0, not_stated
+    assert '"untagged_postings": split.get("not_stated")' in inspect.getsource(_rd.contribution_statement)
+    #  the panel
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/components"
+    q = _code_only((src / "QepDonorStatement.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "useState<{ id: string; name: string }[] | null>(null)" in q
+    assert "{ids && ids.length === 0 && <p" in q and "{!rosterErr && ids === null && " in q
+    assert ".catch(e => setRosterErr(`The living roster could not be read: ${errorMessage(e)}`));" in q
+    assert "let live = true;" in q and "return () => { live = false; };" in q
+    assert ".then(r => { if (live) { setSt(r); setErr(''); } })" in q
+    assert ".catch(e => { if (live) { setSt(null); setErr(`No statement: ${errorMessage(e)}`); } });" in q
+    assert "{Number(st.untagged_postings?.count || 0) > 0 && " in q and "Number(st.untagged_postings || 0)" not in q
+    assert 'aria-label="QEP entity"' in q and "<option key={i.id} value={i.id}>{i.name} ({i.id})</option>" in q
+    #  the rendered test and its fixture
+    t = (src / "QepDonorStatement.test.tsx").read_text(encoding="utf-8")
+    assert t.count("\n  it('") == 5, t.count("\n  it('")
+    raw = (src / "QepDonorStatement.fixture.json").read_text(encoding="utf-8")
+    assert not re.search(r"[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]", raw), "the fixture holds Arabic"
+    fx = json.loads(raw)
+    assert fx["contributed"]["body"]["currency"] == "WST (virtual)", fx["contributed"]["body"]
+    assert fx["statement_first"]["body"]["untagged_postings"]["count"] == 1

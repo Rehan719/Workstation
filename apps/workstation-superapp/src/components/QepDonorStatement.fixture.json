@@ -1,0 +1,347 @@
+{
+ "roster": {
+  "status": 200,
+  "body": {
+   "living_vsbs": [],
+   "total": 0,
+   "history_unavailable": null,
+   "cycle_counts_basis": "`operating_cycles` is this roster's own tally; `ledger_cycles` is what the entity's books record. They differ whenever a cycle ran outside the roster.",
+   "note": "Established VSB enterprises the organism autonomously tends (paced virtual economy cycles on the circadian heartbeat). Virtual/simulated — no real funds.",
+   "autonomous_cycles": false,
+   "autonomous_cycles_note": "OFF — the heartbeat's Self-run lever is off: no roster cycle runs until both are on (the Heartbeat page)"
+  }
+ },
+ "vsb_ids": [
+  "vsb-6c31d70167",
+  "vsb-14533245c7"
+ ],
+ "roster_after": {
+  "status": 200,
+  "body": {
+   "living_vsbs": [
+    {
+     "vsb_id": "vsb-6c31d70167",
+     "name": "W1070 Reading Circle",
+     "entity_type": "qep_waqf_trust",
+     "domain": "religion",
+     "owner": "owner",
+     "registered_at": "2026-11-15T07:10:01Z",
+     "operating_cycles": 1,
+     "last_operated": "2026-11-15T07:10:01Z",
+     "status": "living",
+     "parent_vsb": null,
+     "lineage_state": "no_parent",
+     "lineage_generation": 0,
+     "lineage_basis": "no parent was stated, so this entity has NONE - which is a fact about it and not a field somebody forgot. An entity established directly by its founder is the root of its own lineage, which makes it generation 0.",
+     "auto_economy": true,
+     "auto_compliance": true,
+     "lifecycle_state": "juvenile",
+     "lifecycle_basis": "juvenile: operable, but NOT operated: the heartbeat's Self-run lever is off, so nothing runs its cycles",
+     "last_governance": {
+      "status": "passed",
+      "gate": "policy_pre_gate(sync)",
+      "screened": "intent_label",
+      "coverage_limit": "matches tokens inside an intent LABEL after normalising separators and case. A free-prose sentence of intent is NOT reliably screened here: `allowed: True` from this gate means no prohibited token was found in the label, never that the action was understood and cleared.",
+      "label_screened": "economy_distribution",
+      "at": "2026-11-15T07:10:01Z"
+     },
+     "establishment_cycles": 1,
+     "last_operated_by": "establishment",
+     "last_distributable": 0.0,
+     "last_visit_id": "2892db721c12",
+     "entity_status": "registered - not operating",
+     "entity_status_basis": "registered on the living roster — autonomous economy cycles are OFF (the heartbeat's Self-run lever is off); enable Self-run and start the heartbeat on the Heartbeat page for the organism to tend this VSB. None of its body was ever provided (concept, design, operations, commercialisation); this status is read from the review gates, the pending map and the heartbeat, and does not read whether a section was provided",
+     "status_basis": "'living' is this roster's word for 'registered here'. It does not say the entity is operating: `entity_status` is the entity's own derived status",
+     "compliance": {
+      "verdict": "review",
+      "screened_at": "2026-11-15T07:10:01Z",
+      "verdicts": [
+       {
+        "framework": "sharia_halal",
+        "status": "review",
+        "reason": "no engine covers this area — the haram-term screen matched nothing and no halal vocabulary is present; not a certification (engine ran and produced no finding here, so it backs no verdict)",
+        "coverage": "none"
+       },
+       {
+        "framework": "uk_legal",
+        "status": "review",
+        "reason": "no engine covers this area — keyword screen + employment-statute vocabulary matched nothing (jurisdiction UK / London); not legal advice (UK engine ran and produced no finding here, so it backs no verdict · audit 5fc3e87ccf29ba4e… over the subject)",
+        "coverage": "none"
+       },
+       {
+        "framework": "regulatory",
+        "status": "not_assessed",
+        "reason": "keyword screen found no regulated-activity trigger — the absence of a trigger word is not a regulatory clearance; nothing here assessed this subject",
+        "coverage": "screen"
+       },
+       {
+        "framework": "ehs",
+        "status": "not_assessed",
+        "reason": "keyword screen found no hazard term — the absence of a hazard word is not an EHS clearance; nothing here assessed this subject",
+        "coverage": "screen"
+       },
+       {
+        "framework": "ethical",
+        "status": "not_assessed",
+        "reason": "human: not_assessed; environment: not_assessed; quality: not_assessed; value: not_assessed (engine ran and produced no finding here, so it backs no verdict)",
+        "coverage": "none",
+        "dimensions_not_assessed": [
+         "human",
+         "environment",
+         "quality",
+         "value"
+        ]
+       }
+      ],
+      "coverage_gaps": [
+       "ehs",
+       "ethical",
+       "regulatory",
+       "sharia_halal",
+       "uk_legal"
+      ],
+      "assessed_by": [],
+      "never_screened": false,
+      "history_unavailable": null
+     },
+     "economy_held": {
+      "held": false,
+      "reason": null,
+      "consequence": null,
+      "consequence_basis": null,
+      "outcome": null,
+      "last_visit_error": null,
+      "standing_decision": null
+     },
+     "operating_cycles_basis": "cycles this roster's operate step ran and booked, of which 1 was run by establishment as the entity's first cycle and not by the autonomous beat; a cycle run through any other path is posted to the books but not counted here",
+     "ledger_cycles": 1,
+     "ledger_cycles_basis": "counted on these books: one intake entry per metabolic cycle (1 carrying a distinct cycle token, 0 without one). Cycles run before intake entries carried a token are not distinguishable and are counted once each."
+    },
+    {
+     "vsb_id": "vsb-14533245c7",
+     "name": "W1070 Second Circle",
+     "entity_type": "qep_waqf_trust",
+     "domain": "religion",
+     "owner": "owner",
+     "registered_at": "2026-11-15T07:10:01Z",
+     "operating_cycles": 1,
+     "last_operated": "2026-11-15T07:10:01Z",
+     "status": "living",
+     "parent_vsb": null,
+     "lineage_state": "no_parent",
+     "lineage_generation": 0,
+     "lineage_basis": "no parent was stated, so this entity has NONE - which is a fact about it and not a field somebody forgot. An entity established directly by its founder is the root of its own lineage, which makes it generation 0.",
+     "auto_economy": true,
+     "auto_compliance": true,
+     "lifecycle_state": "juvenile",
+     "lifecycle_basis": "juvenile: operable, but NOT operated: the heartbeat's Self-run lever is off, so nothing runs its cycles",
+     "last_governance": {
+      "status": "passed",
+      "gate": "policy_pre_gate(sync)",
+      "screened": "intent_label",
+      "coverage_limit": "matches tokens inside an intent LABEL after normalising separators and case. A free-prose sentence of intent is NOT reliably screened here: `allowed: True` from this gate means no prohibited token was found in the label, never that the action was understood and cleared.",
+      "label_screened": "economy_distribution",
+      "at": "2026-11-15T07:10:01Z"
+     },
+     "establishment_cycles": 1,
+     "last_operated_by": "establishment",
+     "last_distributable": 0.0,
+     "last_visit_id": "fb9ede06071b",
+     "entity_status": "registered - not operating",
+     "entity_status_basis": "registered on the living roster — autonomous economy cycles are OFF (the heartbeat's Self-run lever is off); enable Self-run and start the heartbeat on the Heartbeat page for the organism to tend this VSB. None of its body was ever provided (concept, design, operations, commercialisation); this status is read from the review gates, the pending map and the heartbeat, and does not read whether a section was provided",
+     "status_basis": "'living' is this roster's word for 'registered here'. It does not say the entity is operating: `entity_status` is the entity's own derived status",
+     "compliance": {
+      "verdict": "review",
+      "screened_at": "2026-11-15T07:10:01Z",
+      "verdicts": [
+       {
+        "framework": "sharia_halal",
+        "status": "review",
+        "reason": "no engine covers this area — the haram-term screen matched nothing and no halal vocabulary is present; not a certification (engine ran and produced no finding here, so it backs no verdict)",
+        "coverage": "none"
+       },
+       {
+        "framework": "uk_legal",
+        "status": "review",
+        "reason": "no engine covers this area — keyword screen + employment-statute vocabulary matched nothing (jurisdiction UK / London); not legal advice (UK engine ran and produced no finding here, so it backs no verdict · audit 68fcc48053975ded… over the subject)",
+        "coverage": "none"
+       },
+       {
+        "framework": "regulatory",
+        "status": "not_assessed",
+        "reason": "keyword screen found no regulated-activity trigger — the absence of a trigger word is not a regulatory clearance; nothing here assessed this subject",
+        "coverage": "screen"
+       },
+       {
+        "framework": "ehs",
+        "status": "not_assessed",
+        "reason": "keyword screen found no hazard term — the absence of a hazard word is not an EHS clearance; nothing here assessed this subject",
+        "coverage": "screen"
+       },
+       {
+        "framework": "ethical",
+        "status": "not_assessed",
+        "reason": "human: not_assessed; environment: not_assessed; quality: not_assessed; value: not_assessed (engine ran and produced no finding here, so it backs no verdict)",
+        "coverage": "none",
+        "dimensions_not_assessed": [
+         "human",
+         "environment",
+         "quality",
+         "value"
+        ]
+       }
+      ],
+      "coverage_gaps": [
+       "ehs",
+       "ethical",
+       "regulatory",
+       "sharia_halal",
+       "uk_legal"
+      ],
+      "assessed_by": [],
+      "never_screened": false,
+      "history_unavailable": null
+     },
+     "economy_held": {
+      "held": false,
+      "reason": null,
+      "consequence": null,
+      "consequence_basis": null,
+      "outcome": null,
+      "last_visit_error": null,
+      "standing_decision": null
+     },
+     "operating_cycles_basis": "cycles this roster's operate step ran and booked, of which 1 was run by establishment as the entity's first cycle and not by the autonomous beat; a cycle run through any other path is posted to the books but not counted here",
+     "ledger_cycles": 1,
+     "ledger_cycles_basis": "counted on these books: one intake entry per metabolic cycle (1 carrying a distinct cycle token, 0 without one). Cycles run before intake entries carried a token are not distinguishable and are counted once each."
+    }
+   ],
+   "total": 2,
+   "history_unavailable": null,
+   "cycle_counts_basis": "`operating_cycles` is this roster's own tally; `ledger_cycles` is what the entity's books record. They differ whenever a cycle ran outside the roster.",
+   "note": "Established VSB enterprises the organism autonomously tends (paced virtual economy cycles on the circadian heartbeat). Virtual/simulated — no real funds.",
+   "autonomous_cycles": false,
+   "autonomous_cycles_note": "OFF — the heartbeat's Self-run lever is off: no roster cycle runs until both are on (the Heartbeat page)"
+  }
+ },
+ "contribution_ask": {
+  "vsb_id": "vsb-6c31d70167",
+  "amount_wst": 25,
+  "donor_ref": "w1070-made-up-donor"
+ },
+ "contributed": {
+  "status": 200,
+  "body": {
+   "recorded": true,
+   "vsb_id": "vsb-6c31d70167",
+   "channel": "sponsor_a_student",
+   "amount_wst": 25.0,
+   "revenue_balance_wst": 25.0,
+   "currency": "WST (virtual)",
+   "memo": "QEP contribution via sponsor_a_student (donor ref w1070-made-up-donor)",
+   "balance_basis": "revenue_balance_wst was RE-READ from the entity's ledger after the posting, so it is what the books say rather than the figure this request supplied",
+   "distribution_basis": "a contribution is credited to `revenue`, which the entity's next economic cycle distributes through its own waterfall (A.8: owner 0%, surplus capped at 5% with reinvestment). It is not allocated by this request.",
+   "a8_basis": "vision A.8 (Owner-authored): QEP is 100% donation and waqf-backed, free at the point of use for individuals, with Zakat-eligible funds and Sponsor-a-Student. Virtual WST only - no real-money rail is touched by this channel.",
+   "student_matched": null,
+   "sponsorship_basis": "NO LEARNER IS NAMED OR MATCHED to this contribution: no mechanism exists in this platform that pairs a donation with an individual learner, and reporting one would be a claim with nothing behind it. What this contribution does is fund the entity itself, whose waterfall directs the largest shares to learner projects and charity, with no owner share at all. Because QEP is free at the point of use, no learner is waiting on a sponsor to be able to study."
+  }
+ },
+ "statement_first": {
+  "status": 200,
+  "body": {
+   "vsb_id": "vsb-6c31d70167",
+   "contributions_by_channel_wst": {
+    "sponsor_a_student": 25.0
+   },
+   "contributions_by_channel_count": {
+    "sponsor_a_student": 1
+   },
+   "contributions_total_wst": 25.0,
+   "contributions_count": 1,
+   "revenue_balance_wst": 30.0,
+   "undeclared_channel_tags": [],
+   "untagged_postings": {
+    "source": null,
+    "count": 1,
+    "total_wst": 5.0,
+    "basis": "written before postings carried a source, or by a caller that states none - these are NOT attributed to any source"
+   },
+   "waterfall": {
+    "owner": 0.0,
+    "self_investment": 0.05,
+    "capital_fund": 0.35,
+    "user_projects": 0.4,
+    "charity": 0.2
+   },
+   "would_allocate_wst": {
+    "owner": 0.0,
+    "self_investment": 1.25,
+    "capital_fund": 8.75,
+    "user_projects": 10.0,
+    "charity": 5.0
+   },
+   "entity_type": "qep_waqf_trust",
+   "template_name": "QEP Waqf Endowment + Not-for-Profit Trust (A.8)",
+   "template_is_a_fallback": false,
+   "allocation_basis": "would_allocate_wst is what this entity's waterfall WOULD direct for the total contributed; it is not a record of distributions made. Only an economic cycle distributes, and a cycle run before some of these contributions arrived distributed less. The two are reported separately rather than one presented as the other.",
+   "template_basis": "get_template() returns the DEFAULT template for an unrecognised entity_type, so template_is_a_fallback says whether this waterfall is the entity's own or the generic one standing in for it - a silent fallback would otherwise show the wrong figures under the right name.",
+   "a8_basis": "vision A.8 (Owner-authored): QEP is 100% donation and waqf-backed, free at the point of use for individuals, with Zakat-eligible funds and Sponsor-a-Student. Virtual WST only - no real-money rail is touched by this channel."
+  }
+ },
+ "statement_second": {
+  "status": 200,
+  "body": {
+   "vsb_id": "vsb-14533245c7",
+   "contributions_by_channel_wst": {},
+   "contributions_by_channel_count": {},
+   "contributions_total_wst": 0,
+   "contributions_count": 0,
+   "revenue_balance_wst": 0.0,
+   "undeclared_channel_tags": [],
+   "untagged_postings": {
+    "source": null,
+    "count": 0,
+    "total_wst": 0.0,
+    "basis": "written before postings carried a source, or by a caller that states none - these are NOT attributed to any source"
+   },
+   "waterfall": {
+    "owner": 0.0,
+    "self_investment": 0.05,
+    "capital_fund": 0.35,
+    "user_projects": 0.4,
+    "charity": 0.2
+   },
+   "would_allocate_wst": {
+    "owner": 0.0,
+    "self_investment": 0.0,
+    "capital_fund": 0.0,
+    "user_projects": 0.0,
+    "charity": 0.0
+   },
+   "entity_type": "qep_waqf_trust",
+   "template_name": "QEP Waqf Endowment + Not-for-Profit Trust (A.8)",
+   "template_is_a_fallback": false,
+   "allocation_basis": "would_allocate_wst is what this entity's waterfall WOULD direct for the total contributed; it is not a record of distributions made. Only an economic cycle distributes, and a cycle run before some of these contributions arrived distributed less. The two are reported separately rather than one presented as the other.",
+   "template_basis": "get_template() returns the DEFAULT template for an unrecognised entity_type, so template_is_a_fallback says whether this waterfall is the entity's own or the generic one standing in for it - a silent fallback would otherwise show the wrong figures under the right name.",
+   "a8_basis": "vision A.8 (Owner-authored): QEP is 100% donation and waqf-backed, free at the point of use for individuals, with Zakat-eligible funds and Sponsor-a-Student. Virtual WST only - no real-money rail is touched by this channel."
+  }
+ },
+ "statement_missing": {
+  "status": 404,
+  "body": {
+   "detail": {
+    "message": "no entity w1070-no-such-entity is on the living roster or in the VSB store, so a contribution cannot be recorded against its books. Nothing was written.",
+    "vsb_id": "w1070-no-such-entity"
+   }
+  }
+ },
+ "roster_failed": {
+  "status": 500,
+  "body": {
+   "detail": "GET /api/v1/economy/living-vsbs failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/economy/living-vsbs",
+   "cause_established": false
+  }
+ }
+}

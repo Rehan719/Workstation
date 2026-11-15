@@ -25445,6 +25445,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the status and the queue are read on their own and each is said as being read, read, or with its reason, in its own card; the pack is handed the roster only once it is read and says so until then. The rendered test (six cases) has five vitest blinds; test_w1069 holds the routes' answers, the panel's and the pack's code, and the fixture (no Arabic, placeholder text only, nothing approved), with five blinds."
+    },
+    {
+      "id": "FU-1257",
+      "title": "The donor statement said no QEP entity before the roster was read, said a late statement under another entity, never said the postings with no channel tag, and offered entities by id alone",
+      "why": "Found by rendering QepDonorStatement against its routes' own answers (FU-399 part 83; no test rendered it). It said \"No QEP entity is on the living roster, so there is no statement to show.\" before the roster's read answered and beside its failure. A statement that answered after another entity was chosen was said under that entity: driven, the chosen entity's 0 WST was replaced by the other's 25 WST (the read had no guard). The statement gives untagged postings as an object (count, total and basis) and the panel read it as a number, which is never greater than nought, so a posting with no channel tag was never said (driven: the statement gave one, the panel said none). The entities were offered by id alone, in a choice with no label. Virtual WST only.",
+      "source": "W1070 (FU-399 part 83: the donor statement rendered)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/components/QepDonorStatement.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1070",
+      "note": "",
+      "slot_source": "found by FU-399's render of the Quran platform's donor statement; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the roster is said as being read, read, or with its reason; a statement only under the entity it was read for, and as being read until it answers; untagged postings with their count and total; each entity by its name and id, in a labelled choice. The rendered test (five cases) has five vitest blinds; test_w1070 drives the books' count of untagged postings and holds the panel's code and the fixture (no Arabic, virtual WST), with five blinds."
     }
   ],
   "routes": [
