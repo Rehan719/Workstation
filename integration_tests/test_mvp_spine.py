@@ -86700,3 +86700,59 @@ def test_w1056_fu399_the_cockpit_s_cascade_editor_belongs_to_the_entity_it_was_o
     assert "if (pending.timer !== undefined) clearTimeout(pending.timer);" in hub
     ht = (src / "pages/domains/EmploymentHub.test.tsx").read_text(encoding="utf-8")
     assert "expect(looked).not.toHaveBeenCalledWith('job-search-engine-section');" in ht
+
+
+def test_w1057_fu399_the_cockpit_s_repository_panel_says_what_it_read_under_the_entity_it_read_it_for(client):
+    """FU-399 part 75 (W1057). The cockpit's repository panel is rendered against its routes' own answers
+    (VSBCockpit.repo.test.tsx) for two entities established through Genesis on a fresh store, the one the cockpit
+    opens on with its repository shipped: every read on opening either after that ship, one file of its tree, and the
+    listing route's refusal. Rendering found the panel's reads and actions tied to no entity, unlike the growth
+    actions beside them (W503): the declared tree, whether the shipped body is current, a file opened from the tree,
+    the products' listing and the archive each set what came back whenever it came, so a slow answer for one entity
+    was said under the next one opened (driven: the shipped entity's 31 files as the other's tree, and its listing
+    refusal as the other's). Each is now dropped when another entity is on screen; the shipped body's state is
+    cleared while the next is read, and the listing's result when another entity is opened.
+
+    Held here: the captured ship, tree and file; the routes' answers for an entity with no repository and no
+    objective, asked again of one made here (neither writes anything); and the page's code."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/enterprise/VSBCockpit.repo.fixture.json").read_text(encoding="utf-8"))
+    vid, other = fx["vsb_id"], fx["other_id"]
+    a = fx["answers"]
+    assert fx["shipped"]["status"] == 200 and fx["shipped"]["body"]["shipped"] is True
+    tree = a[f"/api/v1/vsb/{vid}/repo"]["body"]["tree"]
+    assert a[f"/api/v1/vsb/{vid}/repo"]["status"] == 200 and len(tree) > 1 and fx["file"]["path"] in tree
+    assert a[f"/api/v1/vsb/{vid}/repo/ship"]["body"]["shipped"] is True
+    assert fx["file"]["status"] == 200 and int(fx["file"]["bytes"]) == len(fx["file"]["text"].encode("utf-8"))
+    assert (a[f"/api/v1/vsb/{other}/repo"]["status"], a[f"/api/v1/vsb/{other}/repo/ship"]["status"]) == (404, 404)
+
+    #  an entity with no repository and no objective of its own, made here: the routes answer it as they answered
+    est = client.post("/api/v1/genesis/establish", json={"problem": "W1057 made up: a toy swap held each half-term in a church hall",
+                                                         "ship_output": False, "name": "W1057 Toy Swap"})
+    assert est.status_code == 200, est.text[:200]
+    e = est.json()["vsb_id"]
+    r = client.get(f"/api/v1/vsb/{e}/repo")
+    assert (r.status_code, r.json()["detail"]) == (404, a[f"/api/v1/vsb/{other}/repo"]["body"]["detail"].replace(other, e))
+    r = client.post(f"/api/v1/marketplace/listings/from-entity/{e}", json={})
+    got, want = r.json()["detail"], fx["listed"]["body"]["detail"]
+    assert (r.status_code, got["error"], got["reason"]) == (fx["listed"]["status"], want["error"], want["reason"]), r.text[:300]
+
+    page = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    tree_fn = page[page.index("const loadRepoTree = (vid: string) => {"):page.index("const loadShipState = (vid: string) => {")]
+    assert "if (vid !== selectedRef.current) return;" in tree_fn
+    assert "}).catch(() => { if (vid === selectedRef.current) setRepoErr('The repository could not be reached. No tree is shown.'); });" in tree_fn
+    ship_fn = page[page.index("const loadShipState = (vid: string) => {"):page.index("const loadShipState = (vid: string) => {") + 700]
+    assert "setShipErr(''); setShipState(null);" in ship_fn
+    assert ".then(r => { if (vid === selectedRef.current) setShipState(r.data); })" in ship_fn
+    assert "        if (vid !== selectedRef.current) return;\n        setShipState(null);" in ship_fn
+    for start, end in (("const openRepoFile = (path: string) => {", "const listEntityProducts = () => {"),
+                       ("const listEntityProducts = () => {", "const downloadRepoZip = () => {"),
+                       ("const downloadRepoZip = () => {", "const runGrowth = async")):
+        fn = page[page.index(start):page.index(end)]
+        assert "const issuedFor = selected;" in fn, start
+        assert "issuedFor === selectedRef.current" in fn or "issuedFor !== selectedRef.current" in fn, start
+    assert "useEffect(() => { setListedResult(null); }, [selected]);" in page
+    t = (src / "pages/enterprise/VSBCockpit.repo.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './VSBCockpit.repo.fixture.json';" in t and "<VSBCockpit />" in t

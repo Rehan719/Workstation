@@ -278,17 +278,19 @@ export const VSBCockpit: React.FC = () => {
   const loadRepoTree = (vid: string) => {
     setRepoTree(null); setRepoNone(''); setRepoErr(''); setRepoFile(null);
     axios.get(`/api/v1/vsb/${vid}/repo`, { validateStatus: () => true }).then(r => {
+      if (vid !== selectedRef.current) return;   // W1057 - said under the entity it was read for, never the next
       if (r.status === 200 && Array.isArray(r.data?.tree)) { setRepoTree(r.data.tree as string[]); }
       else if (r.status === 404) { setRepoNone(bodyDetail(r.data, 'This entity has no repository.')); }   // W1012
       else { setRepoErr(`The repository could not be read (HTTP ${r.status}): ${bodyDetail(r.data, 'no reason given')}. No tree is shown.`); }   // W1025
-    }).catch(() => setRepoErr('The repository could not be reached. No tree is shown.'));
+    }).catch(() => { if (vid === selectedRef.current) setRepoErr('The repository could not be reached. No tree is shown.'); });
   };
   //  W1049 - a 404 is an entity never shipped, and shows nothing. Every other failure showed nothing too, so a body
   //  whose manifest could not be read gave no sign that whether it is current was unknown; it is said
   const loadShipState = (vid: string) => {
-    setShipErr('');
-    axios.get(`/api/v1/vsb/${vid}/repo/ship`).then(r => setShipState(r.data))
+    setShipErr(''); setShipState(null);   // W1057 - another entity's state is never left standing while this one is read
+    axios.get(`/api/v1/vsb/${vid}/repo/ship`).then(r => { if (vid === selectedRef.current) setShipState(r.data); })
       .catch((e: any) => {
+        if (vid !== selectedRef.current) return;
         setShipState(null);
         if (e?.response?.status !== 404) setShipErr(`Whether the shipped body is current could not be read: ${errorMessage(e)}`);
       });
@@ -336,11 +338,13 @@ export const VSBCockpit: React.FC = () => {
   //  component-level entity; the effect's own `issuedFor` is local to the effect and invisible here.
   const openRepoFile = (path: string) => {
     if (!selected) return;
+    const issuedFor = selected;   // W1057 - a file opened for one entity is never shown under the next
     setRepoBusy(path); setRepoFile(null); setRepoErr('');
     axios.get(`/api/v1/vsb/${selected}/repo/file`, {
       params: { path }, responseType: 'text', transformResponse: [(d: unknown) => d],
       validateStatus: () => true,
     }).then(r => {
+      if (issuedFor !== selectedRef.current) return;
       if (r.status === 200) setRepoFile({ path, text: String(r.data ?? ''), bytes: String(r.headers?.['x-repo-bytes'] ?? '') });
       //  W1030 - the refusal's reason, read from the text the read asked for: it said the status alone
       else {
@@ -348,7 +352,7 @@ export const VSBCockpit: React.FC = () => {
                              catch { return 'no reason given'; } })();
         setRepoErr(`${path} did not open (HTTP ${r.status}): ${why}. Nothing is shown as its contents.`);
       }
-    }).catch(() => setRepoErr(`${path} could not be fetched. Nothing is shown as its contents.`))
+    }).catch(() => { if (issuedFor === selectedRef.current) setRepoErr(`${path} could not be fetched. Nothing is shown as its contents.`); })
       .finally(() => setRepoBusy(''));
   };
 
@@ -357,15 +361,18 @@ export const VSBCockpit: React.FC = () => {
   //  exactly as true as the commercialise stage's label was. Through axios, because the route checks
   //  that the caller owns the entity.
   const [listedResult, setListedResult] = useState<Dict | null>(null);
+  useEffect(() => { setListedResult(null); }, [selected]);   // W1057 - one entity's listing never stands under the next
   const listEntityProducts = () => {
     if (!selected) return;
+    const issuedFor = selected;   // W1057 - said under the entity it was asked for, never the next
     setRepoBusy('listing'); setListedResult(null); setRepoErr('');
     axios.post(`/api/v1/marketplace/listings/from-entity/${selected}`, {}, { validateStatus: () => true })
       .then(r => {
+        if (issuedFor !== selectedRef.current) return;
         if (r.status === 200) setListedResult(r.data as Dict);
         else setRepoErr(`The products were not listed (HTTP ${r.status}): ${bodyDetail(r.data, 'no reason given')}. Nothing was added to the marketplace.`);   // W1025
       })
-      .catch(() => setRepoErr('The marketplace could not be reached. Nothing was listed.'))
+      .catch(() => { if (issuedFor === selectedRef.current) setRepoErr('The marketplace could not be reached. Nothing was listed.'); })
       .finally(() => setRepoBusy(''));
   };
 
@@ -373,13 +380,14 @@ export const VSBCockpit: React.FC = () => {
   //  URL, so the download carries the token instead of being a link the browser follows unauthenticated.
   const downloadRepoZip = () => {
     if (!selected) return;
+    const issuedFor = selected;   // W1057 - its failure is said under the entity it was asked for
     setRepoBusy('zip'); setRepoErr('');
     axios.get(`/api/v1/vsb/${selected}/repo/zip`, { responseType: 'blob', validateStatus: () => true })
       .then(async r => {
         //  W1025 - the archive is asked for as a blob, so a refusal's body is a blob too: its reason is read from it
         if (r.status !== 200) {
           const why = await (r.data as Blob).text().then(t => bodyDetail(JSON.parse(t), 'no reason given'), () => 'no reason given');
-          setRepoErr(`The archive was not produced (HTTP ${r.status}): ${why}`);
+          if (issuedFor === selectedRef.current) setRepoErr(`The archive was not produced (HTTP ${r.status}): ${why}`);
           return;
         }
         const url = URL.createObjectURL(r.data as Blob);
@@ -388,7 +396,7 @@ export const VSBCockpit: React.FC = () => {
         document.body.appendChild(a); a.click(); a.remove();
         URL.revokeObjectURL(url);
       })
-      .catch(() => setRepoErr('The archive could not be fetched.'))
+      .catch(() => { if (issuedFor === selectedRef.current) setRepoErr('The archive could not be fetched.'); })
       .finally(() => setRepoBusy(''));
   };
   // W503 (FU-059) — a 200 that HELD, kept apart from a cycle that ran

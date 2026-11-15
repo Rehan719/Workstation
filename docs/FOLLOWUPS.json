@@ -25120,6 +25120,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the hub cancels its deferred scroll's frame and timer when it is closed. EmploymentHub.test.tsx closes the hub before the scroll runs and holds that it never looks for its section (one vitest blind); test_w1056 holds the code (one blind)."
+    },
+    {
+      "id": "FU-1242",
+      "title": "The cockpit's repository panel said what it read for one entity under the next one opened: its files as the other's tree, its shipped state over an entity never shipped, its refusals as the other's",
+      "why": "Found rendering the cockpit's repository panel (FU-399 part 75) for two entities established on a fresh store, one with its repository shipped. Unlike the growth actions beside it (W503), the panel's reads and actions kept no note of the entity they were asked for: the declared tree, whether the shipped body is current, a file opened from the tree, the products' listing and the archive each set what came back whenever it came. A slow answer for one entity was said under the next one opened: the shipped entity's 31 files as the other's tree, Shipped body is current over an entity never shipped, its listing refusal as the other's. The listing's result was never cleared when another entity was opened.",
+      "source": "W1057 (FU-399 part 75, the cockpit's repository panel rendered)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1057",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the cockpit's repository panel; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: each read and action of the panel is dropped when another entity is on screen; the shipped body's state is cleared while the next is read, and the listing's result when another entity is opened. VSBCockpit.repo.test.tsx drives the tree, the shipped state and the listing against the routes' own answers for two entities (three vitest blinds); test_w1057 holds the captured ship, tree and file, the routes' answers asked again, and the page (five blinds)."
     }
   ],
   "routes": [
