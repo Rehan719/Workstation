@@ -25358,6 +25358,28 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the three routes refuse an empty or blank ask before any gate or call, and refuse a field they do not read by its name; every page that posts to them sends only the fields they read. test_w1065 drives each route (six blinds)."
+    },
+    {
+      "id": "FU-1253",
+      "title": "The agent hub said each list as empty before it was read, a failed read without its reason and a refused move away from its work-order; the hub stamped a person's claim as an executor's",
+      "why": "Found by rendering AgentHubPanel against its routes' own answers (FU-399 part 79; the hub page's test mocks it). It said none - no external agent session has registered, no messages - the bus is real and currently quiet, and letterbox unavailable before any read answered; a failed read of the bus or the letterbox said no reason (the letterbox's failure in the same words as while it was read); and a refused status change was said in the message-bus card, away from its work-order (each driven on the unfixed panel). The hub's status route stamped a work-order a person moved to in progress claimed by an executor, and no executor is subscribed: the panel says so.",
+      "source": "W1066 (FU-399 part 79: the agent hub rendered)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/components/organism/AgentHubPanel.tsx",
+        "agentic_core/api/agent_hub.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1066",
+      "note": "",
+      "slot_source": "found by FU-399's render of the organism's agent hub; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: each list is said as empty only once a read of it answered; a failed read says its reason and that nothing is listed; a refused move is said on its work-order; the hub's default note names who moved a work-order. The rendered test (five cases) has five vitest blinds; test_w1066 drives the route's note and holds the panel's code (five blinds)."
     }
   ],
   "routes": [

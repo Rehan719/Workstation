@@ -1,0 +1,302 @@
+{
+ "agents": {
+  "status": 200,
+  "body": {
+   "registered": [],
+   "platform_roster": [
+    {
+     "id": "CEO",
+     "role": "Chief Executive Officer",
+     "expertise": "Strategic vision, decision-making, stakeholder alignment, final synthesis",
+     "source": "swarm roster (role definitions a cascade can prompt as - not running agents)"
+    },
+    {
+     "id": "CFO",
+     "role": "Chief Financial Officer",
+     "expertise": "Financial modelling, budgeting, funding strategy, unit economics, risk",
+     "source": "swarm roster (role definitions a cascade can prompt as - not running agents)"
+    },
+    {
+     "id": "CTO",
+     "role": "Chief Technology Officer",
+     "expertise": "Architecture, technology selection, build vs buy, technical roadmap, AI/ML",
+     "source": "swarm roster (role definitions a cascade can prompt as - not running agents)"
+    },
+    {
+     "id": "CMO",
+     "role": "Chief Marketing Officer",
+     "expertise": "Brand, messaging, GTM strategy, demand generation, customer acquisition",
+     "source": "swarm roster (role definitions a cascade can prompt as - not running agents)"
+    },
+    {
+     "id": "COO",
+     "role": "Chief Operating Officer",
+     "expertise": "Process design, operational efficiency, scaling, supply chain, KPIs",
+     "source": "swarm roster (role definitions a cascade can prompt as - not running agents)"
+    },
+    {
+     "id": "CLO",
+     "role": "Chief Legal Officer",
+     "expertise": "Contracts, compliance, IP, regulatory, employment law, risk mitigation",
+     "source": "swarm roster (role definitions a cascade can prompt as - not running agents)"
+    },
+    {
+     "id": "CSO",
+     "role": "Chief Strategy Officer",
+     "expertise": "Strategy, competitive positioning, growth options, partnerships, market entry",
+     "source": "swarm roster (role definitions a cascade can prompt as - not running agents)"
+    },
+    {
+     "id": "CPO",
+     "role": "Chief Product Officer",
+     "expertise": "Product vision, roadmap, UX, discovery, prioritisation, lifecycle",
+     "source": "swarm roster (role definitions a cascade can prompt as - not running agents)"
+    },
+    {
+     "id": "CIO",
+     "role": "Chief Information Officer",
+     "expertise": "Information systems, data governance, security posture, knowledge management",
+     "source": "swarm roster (role definitions a cascade can prompt as - not running agents)"
+    },
+    {
+     "id": "Forecasting",
+     "role": "Chief Forecasting Officer",
+     "expertise": "Demand/financial forecasting, scenario modelling, sensitivity analysis, planning assumptions",
+     "source": "swarm roster (role definitions a cascade can prompt as - not running agents)"
+    },
+    {
+     "id": "Policy",
+     "role": "Chief Policy Officer",
+     "expertise": "Policy, ethics, regulatory strategy, standards, public affairs, governance alignment",
+     "source": "swarm roster (role definitions a cascade can prompt as - not running agents)"
+    },
+    {
+     "id": "science",
+     "role": "Chief Science Officer",
+     "expertise": "Research methodology, evidence synthesis, R&D strategy, academic partnerships",
+     "source": "swarm roster (role definitions a cascade can prompt as - not running agents)"
+    },
+    {
+     "id": "care",
+     "role": "Chief Care Officer",
+     "expertise": "Healthcare pathways, patient safety, clinical governance, NICE compliance",
+     "source": "swarm roster (role definitions a cascade can prompt as - not running agents)"
+    },
+    {
+     "id": "education",
+     "role": "Chief Learning Officer",
+     "expertise": "Curriculum design, pedagogy, learning outcomes, EdTech, accreditation",
+     "source": "swarm roster (role definitions a cascade can prompt as - not running agents)"
+    },
+    {
+     "id": "law",
+     "role": "Legal Domain Expert",
+     "expertise": "Contract law, dispute resolution, legal document generation, jurisdiction advice",
+     "source": "swarm roster (role definitions a cascade can prompt as - not running agents)"
+    },
+    {
+     "id": "religion",
+     "role": "Faith-Community Affairs Advisor",
+     "expertise": "Faith-community needs, interfaith relations, pointing to qualified scholars and certified bodies; gives NO religious ruling",
+     "source": "swarm roster (role definitions a cascade can prompt as - not running agents)"
+    }
+   ],
+   "note": "`registered` lists external agent sessions that called /hub/agents/register; `platform_roster` is the swarm's list of role definitions, not running agents. Registration gates nothing by itself — it is a presence record."
+  }
+ },
+ "messages": {
+  "status": 200,
+  "body": []
+ },
+ "handoffs": {
+  "status": 200,
+  "body": {
+   "handoffs": [],
+   "total_on_disk": 0,
+   "note": "records only — no executor is subscribed; statuses move via POST /hub/handoffs/{id}/status"
+  }
+ },
+ "post_ask": {
+  "sender_id": "owner-console",
+  "sender_role": "USER",
+  "content": "W1066 made up: the repair cafe opens at ten on Saturday"
+ },
+ "posted": {
+  "status": 201,
+  "body": {
+   "id": "a0ef1699-bf34-4ef6-bd14-ec779aca4699",
+   "timestamp": "2026-11-15T05:12:27.526135Z",
+   "sender_id": "owner-console",
+   "sender_role": "USER",
+   "posted_by": "local",
+   "channel": "general",
+   "content": "W1066 made up: the repair cafe opens at ten on Saturday",
+   "reply_to": null,
+   "metadata": {
+    "project_id": null,
+    "task": null,
+    "action": null
+   },
+   "delivered_to_live_subscribers": 0
+  }
+ },
+ "messages_after": {
+  "status": 200,
+  "body": [
+   {
+    "id": "a0ef1699-bf34-4ef6-bd14-ec779aca4699",
+    "timestamp": "2026-11-15T05:12:27.526135Z",
+    "sender_id": "owner-console",
+    "sender_role": "USER",
+    "posted_by": "local",
+    "channel": "general",
+    "content": "W1066 made up: the repair cafe opens at ten on Saturday",
+    "reply_to": null,
+    "metadata": {
+     "project_id": null,
+     "task": null,
+     "action": null
+    }
+   }
+  ]
+ },
+ "handoff_ask": {
+  "from_agent": "w1066-capture",
+  "task_title": "W1066 made up: list the tools to bring",
+  "task_description": "W1066 made up: a list of the hand tools the volunteers bring each week",
+  "priority": "normal"
+ },
+ "filed": {
+  "status": 201,
+  "body": {
+   "status": "recorded",
+   "handoff_id": "e6ddee7b-dfce-464d-a897-aa57cdeebe27",
+   "message_id": "bb394e12-bf19-4db4-9919-5c9322370511",
+   "channel": "engineering",
+   "delivered_to_live_subscribers": 0,
+   "note": "Work-order recorded and visible at GET /hub/handoffs. No executor is subscribed to the hub — nothing will run this automatically."
+  }
+ },
+ "handoffs_after": {
+  "status": 200,
+  "body": {
+   "handoffs": [
+    {
+     "handoff_id": "e6ddee7b-dfce-464d-a897-aa57cdeebe27",
+     "created_at": "2026-11-15T05:12:27.530568Z",
+     "filed_by": "local",
+     "from_agent": "w1066-capture",
+     "to_agent": "claude-code",
+     "project_id": null,
+     "task_title": "W1066 made up: list the tools to bring",
+     "task_description": "W1066 made up: a list of the hand tools the volunteers bring each week",
+     "acceptance_criteria": [],
+     "priority": "normal",
+     "related_files": [],
+     "metadata": {},
+     "status": "recorded",
+     "status_note": "no executor is subscribed — this is a work-order record; nothing runs it automatically",
+     "status_history": [
+      {
+       "status": "recorded",
+       "at": "2026-11-15T05:12:27.530568Z",
+       "by": "local"
+      }
+     ]
+    }
+   ],
+   "total_on_disk": 1,
+   "note": "records only — no executor is subscribed; statuses move via POST /hub/handoffs/{id}/status"
+  }
+ },
+ "handoff_id": "e6ddee7b-dfce-464d-a897-aa57cdeebe27",
+ "moved": {
+  "status": 200,
+  "body": {
+   "handoff_id": "e6ddee7b-dfce-464d-a897-aa57cdeebe27",
+   "status": "in_progress",
+   "by": "local"
+  }
+ },
+ "handoffs_moved": {
+  "status": 200,
+  "body": {
+   "handoffs": [
+    {
+     "handoff_id": "e6ddee7b-dfce-464d-a897-aa57cdeebe27",
+     "created_at": "2026-11-15T05:12:27.530568Z",
+     "filed_by": "local",
+     "from_agent": "w1066-capture",
+     "to_agent": "claude-code",
+     "project_id": null,
+     "task_title": "W1066 made up: list the tools to bring",
+     "task_description": "W1066 made up: a list of the hand tools the volunteers bring each week",
+     "acceptance_criteria": [],
+     "priority": "normal",
+     "related_files": [],
+     "metadata": {},
+     "status": "in_progress",
+     "status_note": "claimed by the operator of this single-user deployment",
+     "status_history": [
+      {
+       "status": "recorded",
+       "at": "2026-11-15T05:12:27.530568Z",
+       "by": "local"
+      },
+      {
+       "status": "in_progress",
+       "at": "2026-11-15T05:12:27.535086Z",
+       "by": "local",
+       "note": ""
+      }
+     ]
+    }
+   ],
+   "total_on_disk": 1,
+   "note": "records only — no executor is subscribed; statuses move via POST /hub/handoffs/{id}/status"
+  }
+ },
+ "move_missing": {
+  "status": 404,
+  "body": {
+   "detail": "No handoff with id 'w1066-no-such-handoff'."
+  }
+ },
+ "post_empty": {
+  "status": 422,
+  "body": {
+   "detail": [
+    {
+     "type": "string_too_short",
+     "loc": [
+      "body",
+      "content"
+     ],
+     "msg": "String should have at least 1 character",
+     "input": "",
+     "ctx": {
+      "min_length": 1
+     }
+    }
+   ]
+  }
+ },
+ "messages_failed": {
+  "status": 500,
+  "body": {
+   "detail": "GET /api/v1/hub/messages failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/hub/messages",
+   "cause_established": false
+  }
+ },
+ "handoffs_failed": {
+  "status": 500,
+  "body": {
+   "detail": "GET /api/v1/hub/handoffs failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/hub/handoffs",
+   "cause_established": false
+  }
+ }
+}

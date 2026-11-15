@@ -84328,7 +84328,7 @@ def test_w1013_one_reading_of_a_refusal_a_field_check_is_said_by_its_field(clien
     sites = {
         "components/organism/AgentHubPanel.tsx": [
             "if (!r.ok) { setErr(bodyDetail(d, `HTTP ${r.status}`)); setBusy(false); return; }",
-            "if (!r.ok) { const d = await bodyOrNull(r); setErr(bodyDetail(d, `HTTP ${r.status}`)); return; }"],
+            "if (!r.ok) { const d = await bodyOrNull(r); setMoveErr({ id, why: `Not moved: Failed (HTTP ${r.status}): ${bodyDetail(d, 'no reason given')}` }); return; }"],   # W1066
         "components/qep/QEPIntelligence.tsx": ["if (!r.ok) { setErr(bodyDetail(d, `HTTP ${r.status}`)); setBusy(''); return; }"] * 3,
         "lib/auth.ts": ["basis: `Failed (HTTP ${r.status}): ${bodyDetail(d, 'no reason given')}` };"],
         "pages/developers/ForgePipeline.tsx": ["_why = bodyDetail(_b, '');", "const _rwhy = bodyDetail(_rb, '');"],
@@ -87267,3 +87267,55 @@ def test_w1065_fu1252_the_native_ai_routes_refuse_a_request_that_asks_nothing(cl
         assert at < body.index("console_pre_gate"), fn.__name__
     for m in (_na.CompleteRequest, _na.EnsembleRequest, _na.TreeRequest):
         assert m.model_config.get("extra") == "forbid", m.__name__
+
+
+def test_w1066_fu1253_the_agent_hub_says_no_list_as_empty_unread_and_who_moved_a_work_order(client):
+    """W1066 (FU-1253; FU-399 part 79). The organism's Agent Collaboration Hub panel had no rendered test (the hub
+    page's test mocks it). Rendered against its routes' own answers, it said each list as empty, or unavailable,
+    before its read had answered ("none - no external agent session has registered", "no messages - the bus is
+    real, and currently quiet", "letterbox unavailable"); it said a failed read of the bus or the letterbox without
+    its reason; and it said a refused status change in the message-bus card, away from its work-order. The hub's own
+    route stamped a work-order a person moved to in progress "claimed by an executor", which the panel says does not
+    exist: no executor is subscribed. Each list is said as empty only once read, a failed read says its reason, a
+    refused move is said on its work-order, and the hub's note names who moved it.
+
+    Held here: the route's note, driven; the panel's code. The rendered test (AgentHubPanel.test.tsx, five cases,
+    five vitest blinds) holds what the panel says."""
+    import inspect
+    import pathlib
+    import agentic_core.api.agent_hub as _ah
+    filed = client.post("/api/v1/hub/claude-code-handoff", json={
+        "from_agent": "w1066-guard", "task_title": "W1066 guard: a made-up work-order",
+        "task_description": "W1066 guard: made up", "priority": "low"})
+    assert filed.status_code == 201, filed.text[:200]
+    hid = filed.json()["handoff_id"]
+
+    def note_of(h):
+        rows = client.get("/api/v1/hub/handoffs?limit=200").json()["handoffs"]
+        return next(r for r in rows if r["handoff_id"] == h)["status_note"]
+    assert client.post(f"/api/v1/hub/handoffs/{hid}/status", json={"status": "in_progress"}).status_code == 200
+    assert note_of(hid) == "claimed by the operator of this single-user deployment", note_of(hid)
+    assert client.post(f"/api/v1/hub/handoffs/{hid}/status", json={"status": "done"}).status_code == 200
+    assert note_of(hid) == "marked done by the operator of this single-user deployment", note_of(hid)
+    assert client.post(f"/api/v1/hub/handoffs/{hid}/status",
+                       json={"status": "done", "note": "W1066 guard: a person's own note"}).status_code == 200
+    assert note_of(hid) == "W1066 guard: a person's own note", "a person's own note is replaced"
+    assert "claimed by an executor" not in _code_only(inspect.getsource(_ah)), "the executor's note is still written"
+    #  the panel
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/components/organism"
+    code = _code_only((src / "AgentHubPanel.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "msgsFailed" not in code and "letterbox unavailable" not in code
+    assert ".then(d => { setMsgs(d); setMsgsErr(''); setMsgsListed(true); })" in code
+    assert ".catch(e => setMsgsErr(errorMessage(e)));" in code
+    assert "{!msgsErr && msgsListed && msgs.length === 0 && <p" in code
+    assert "The message feed could not be read: {msgsErr} This is not a quiet bus." in code
+    assert "{agents === null ? null : (agents.registered?.length ?? 0) === 0" in code
+    assert ".catch(e => { setHandoffs(null); setHandoffsErr(errorMessage(e)); });" in code
+    assert "The letterbox could not be read: {handoffsErr} No work-order is listed." in code
+    move = code[code.index("const moveStatus = async"):code.index("return (\n")]
+    assert "setErr(" not in move, "a refused move is said in the message bus's state"
+    assert move.count("setMoveErr({ id, why: `Not moved: ") == 2, move
+    assert "moveErr && moveErr.id === h.handoff_id && (" in code and 'data-testid="hub-handoff-move-error"' in code
+    t = (src / "AgentHubPanel.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './AgentHubPanel.fixture.json';" in t and t.count("\n  it('") == 5
+    assert "expect(moved.status_note).toBe('claimed by the operator of this single-user deployment');" in t
