@@ -25274,6 +25274,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the shared fetch helper and the three pages say a refusal's reason whole, and the establishment and the cascade save say a reason in a variable as a clause. src/lib/api.test.ts and the instrument cell's rendered test drive the specifications route's own 503 (two vitest blinds); test_w1062 holds the helper, the five sites and the censuses of the app and the backend (seven blinds)."
+    },
+    {
+      "id": "FU-1249",
+      "title": "The Management Systems hub's rendered test read the old result's absence at once after a refused generation, while AnimatePresence still held it: PR #462's Frontend job went red on 553270dd",
+      "why": "CI on 553270dd (W1061, which does not touch the hub) failed at ManagementSystemsHub.test.tsx's refused-generation case: 'Framework text' was still on screen. The hub's result panel is inside framer-motion's AnimatePresence, which keeps a removed child mounted until its exit completes and removes it in a later render, so the failure is said one commit before the old panel leaves (observed at each DOM mutation: [true, false]). The test read the absence synchronously right after the failure appeared, which lands between the two commits whenever React's second render loses the race against Testing Library's zero-delay drain, a race the runner's load decides.",
+      "source": "W1062b (PR #462 CI on 553270dd)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/ManagementSystemsHub.test.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1062b",
+      "note": "",
+      "slot_source": "a rendered test FU-399 added (W1031); it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the refused-generation case waits for the old panel to leave before it reads anything else about it. test_w1062b holds the wait and that the panel is still inside AnimatePresence (two blinds)."
     }
   ],
   "routes": [

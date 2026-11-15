@@ -87086,3 +87086,30 @@ def test_w1062_fu1248_a_refusal_s_reason_is_said_whole_never_cut_at_a_fixed_leng
     assert "expect(errorMessage(e)).toBe(`Failed (HTTP 503): ${a.body.detail}`);" in unit
     cell = (src / "components/InstrumentCellPanel.test.tsx").read_text(encoding="utf-8")
     assert "`The kept specifications were not listed: Failed (HTTP 503): ${why.replace(/\\.$/, '')}.`" in cell
+
+
+def test_w1062b_fu1249_the_hub_s_rendered_test_waits_for_the_old_result_to_leave():
+    """W1062b (FU-1249). PR #462's Frontend job went red on 553270dd at ManagementSystemsHub.test.tsx's refused-
+    generation case: "Framework text", the first generation's result, was still on screen when the test read its
+    absence. The hub's result panel is inside framer-motion's AnimatePresence, which keeps a child it removes mounted
+    until its exit completes and removes it in a later render, so the failure is said one commit before the old panel
+    leaves. A synchronous read right after the failure appeared landed between the two whenever React's second
+    render lost the race against Testing Library's zero-delay drain, which the runner's load decides. The test now
+    waits for the old panel to leave (W1014's rule: a rendered test waits for what it reads).
+
+    Held here: the result panel is still inside AnimatePresence (the reason the wait is needed), and the test waits
+    for the panel's absence before it reads anything else about it."""
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages/enterprise"
+    page = _code_only((src / "ManagementSystemsHub.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    i = page.index("<ResultPanel result={result}")
+    assert "<AnimatePresence>" in page[max(0, i - 300):i], "the result panel left AnimatePresence: revisit the wait"
+    t = _code_only((src / "ManagementSystemsHub.test.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    case = t[t.index("it('says a refused generation as a failure where the form is"):]
+    case = case[:case.index("\n  it(") if "\n  it(" in case else len(case)]
+    wait = "await waitFor(() => expect(screen.queryByText('Framework text')).toBeNull());"
+    assert wait in case, "the refused-generation case reads the old panel's absence without waiting for it"
+    at = case.index(wait)
+    for read in ("expect(screen.queryByText('Result')).toBeNull();", "expect(pre(captured.qms.framework).length).toBe(0);"):
+        assert read in case and case.index(read) > at, ("read before the old panel has left", read)
+    assert case.count("queryByText('Framework text')") == 1, "the old panel's absence is read a second time, unwaited"

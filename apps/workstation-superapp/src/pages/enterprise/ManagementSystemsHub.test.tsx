@@ -88,8 +88,10 @@ describe('ManagementSystemsHub, rendered against its routes\' own answers', () =
     const d = captured.qms_refused.body.detail[0];
     await waitFor(() => expect(screen.getByTestId('mgmt-generate-failed').textContent).toBe(
       `Nothing was generated: Failed (HTTP ${captured.qms_refused.status}): ${d.loc[d.loc.length - 1]}: ${d.msg}`));
+    //  W1062b - the old result leaves through AnimatePresence in a render after the one that says the failure, so
+    //  its absence is waited for: read at once, it was still on screen on a loaded runner (CI on 553270dd)
+    await waitFor(() => expect(screen.queryByText('Framework text')).toBeNull());
     expect(screen.queryByText('Result')).toBeNull();
-    expect(screen.queryByText('Framework text')).toBeNull();
     expect(pre(captured.qms.framework).length).toBe(0);
   });
 
