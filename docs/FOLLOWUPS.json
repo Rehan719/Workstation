@@ -25402,6 +25402,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: each list is read on its own, each time the history is opened or the person asks, and is said as read, as being read, or with the reason it could not be; an earlier opening's answer is not said; git's reason is said whole. The rendered test (six cases) has six vitest blinds; test_w1067 drives the route's reasons and holds the column's code (five blinds)."
+    },
+    {
+      "id": "FU-1255",
+      "title": "The Learn and Teach module said a scholar roster it could not read without the route's reason, and headed a withheld study plan \"withheld — withheld\"",
+      "why": "Found by rendering LearnTeachModule against its routes' own answers (FU-399 part 81; the Religion hub's test mocks it). A failed read of the scholar roster was said as \"Whether any scholar is on the roster could not be read here\" with what the route said dropped (the catch took no error). The scholar-review gate says every plan it does not serve as \"withheld\", whatever the reason, and the module headed the gate's reason \"withheld — {state}\", so every withheld plan was headed \"withheld — withheld\" (driven on the unfixed module). The capture keeps withheld answers only: no composed religious text, nothing approved.",
+      "source": "W1068 (FU-399 part 81: the Learn and Teach module rendered)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/components/LearnTeachModule.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1068",
+      "note": "",
+      "slot_source": "found by FU-399's render of the Religion hub's Learn and Teach module; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the roster's failure is said with its reason under the board, and the gate's own count takes its place when it arrives; a withheld plan's heading says withheld once, with the gate's reason beneath it. The rendered test (six cases) has three vitest blinds; test_w1068 drives the gate's states, holds the module's code and the fixture (withheld answers only, no Arabic), with three blinds."
     }
   ],
   "routes": [

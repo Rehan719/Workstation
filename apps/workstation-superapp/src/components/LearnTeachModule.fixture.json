@@ -1,0 +1,158 @@
+{
+ "plan_ask": {
+  "subject": "Quran & Islamic Studies",
+  "level": "Intermediate",
+  "duration_weeks": 12
+ },
+ "status": {
+  "status": 200,
+  "body": {
+   "scholars_on_roster": 0,
+   "roster_is_empty": true,
+   "items": 0,
+   "by_state": {
+    "draft": 0,
+    "in_review": 0,
+    "approved": 0,
+    "rejected": 0
+   },
+   "queue_cap_per_tool": 20,
+   "queues_full": {},
+   "basis": "Approval requires a reviewer recorded on the scholar roster; there is no trust score a caller can assert. With an empty roster NOTHING can be approved and every learner-facing item is withheld - the designed state until the Owner engages a reviewer. An approval is bound to the exact text approved, so an edit afterwards falls back to withheld.",
+   "roster": {},
+   "footing": {
+    "authentication": "off",
+    "who_adds_a_scholar": "the Owner (single-user mode)",
+    "who_decides": "the Owner, on the named scholar's behalf: entered by the Owner on the scholar's behalf - attested, not verified"
+   }
+  }
+ },
+ "plan_empty_roster": {
+  "status": 200,
+  "body": {
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+   "subject": "Quran & Islamic Studies",
+   "level": "Intermediate",
+   "duration_weeks": 12,
+   "curriculum": null,
+   "review_state": "withheld",
+   "review_note": "This is not shown because no scholar has reviewed it. A named scholar must approve religious content composed here before a learner sees it (§11 and A.12.3, for teaching content) and before it is shown to a person using a research tool or asking for a rewrite (Owner ruling 2026-10-11), and no scholar is on the roster yet. A disclaimer is not a review, so nothing is shown in its place.",
+   "scholar_reviewed": false,
+   "gate": {
+    "scholars_on_roster": 0,
+    "roster_is_empty": true,
+    "items": 1,
+    "by_state": {
+     "draft": 0,
+     "in_review": 1,
+     "approved": 0,
+     "rejected": 0
+    },
+    "queue_cap_per_tool": 20,
+    "queues_full": {},
+    "basis": "Approval requires a reviewer recorded on the scholar roster; there is no trust score a caller can assert. With an empty roster NOTHING can be approved and every learner-facing item is withheld - the designed state until the Owner engages a reviewer. An approval is bound to the exact text approved, so an edit afterwards falls back to withheld."
+   },
+   "served_by": "native",
+   "floor_served": true,
+   "basis": "Owner ruling 2026-10-05b R7 (§A.12.3): a named human scholar approves AI-composed religious teaching content before a learner sees it, and a disclaimer is not a review. An approval is bound to the exact text approved, so an edit after approval falls back to withheld. Nothing here scores a learner, assesses a recitation or rules on a difference between schools."
+  }
+ },
+ "scholar_ask": {
+  "scholar_id": "w1068-made-up",
+  "name": "W1068 made-up reviewer",
+  "credential": "W1068 made up: a credential stated for this capture"
+ },
+ "scholar_added": {
+  "status": 200,
+  "body": {
+   "scholar_id": "w1068-made-up",
+   "name": "W1068 made-up reviewer",
+   "credential": "W1068 made up: a credential stated for this capture",
+   "added_by": "the Owner (single-user mode)",
+   "added_at": "2026-11-15T06:07:33Z",
+   "credential_basis": "the credential is recorded as stated; this platform has not verified it"
+  }
+ },
+ "status_one": {
+  "status": 200,
+  "body": {
+   "scholars_on_roster": 1,
+   "roster_is_empty": false,
+   "items": 1,
+   "by_state": {
+    "draft": 0,
+    "in_review": 1,
+    "approved": 0,
+    "rejected": 0
+   },
+   "queue_cap_per_tool": 20,
+   "queues_full": {},
+   "basis": "Approval requires a reviewer recorded on the scholar roster; there is no trust score a caller can assert. With an empty roster NOTHING can be approved and every learner-facing item is withheld - the designed state until the Owner engages a reviewer. An approval is bound to the exact text approved, so an edit afterwards falls back to withheld.",
+   "roster": {
+    "w1068-made-up": {
+     "name": "W1068 made-up reviewer",
+     "credential": "W1068 made up: a credential stated for this capture",
+     "added_by": "the Owner (single-user mode)",
+     "added_at": "2026-11-15T06:07:33Z"
+    }
+   },
+   "footing": {
+    "authentication": "off",
+    "who_adds_a_scholar": "the Owner (single-user mode)",
+    "who_decides": "the Owner, on the named scholar's behalf: entered by the Owner on the scholar's behalf - attested, not verified"
+   }
+  }
+ },
+ "plan_awaiting": {
+  "status": 200,
+  "body": {
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+   "subject": "Quran & Islamic Studies",
+   "level": "Intermediate",
+   "duration_weeks": 12,
+   "curriculum": null,
+   "review_state": "withheld",
+   "review_note": "This is awaiting scholarly review and is not shown until it is approved.",
+   "scholar_reviewed": false,
+   "gate": {
+    "scholars_on_roster": 1,
+    "roster_is_empty": false,
+    "items": 1,
+    "by_state": {
+     "draft": 0,
+     "in_review": 1,
+     "approved": 0,
+     "rejected": 0
+    },
+    "queue_cap_per_tool": 20,
+    "queues_full": {},
+    "basis": "Approval requires a reviewer recorded on the scholar roster; there is no trust score a caller can assert. With an empty roster NOTHING can be approved and every learner-facing item is withheld - the designed state until the Owner engages a reviewer. An approval is bound to the exact text approved, so an edit afterwards falls back to withheld."
+   },
+   "served_by": "native",
+   "floor_served": true,
+   "basis": "Owner ruling 2026-10-05b R7 (§A.12.3): a named human scholar approves AI-composed religious teaching content before a learner sees it, and a disclaimer is not a review. An approval is bound to the exact text approved, so an edit after approval falls back to withheld. Nothing here scores a learner, assesses a recitation or rules on a difference between schools."
+  }
+ },
+ "status_failed": {
+  "status": 500,
+  "body": {
+   "detail": "GET /api/v1/scholar-review/status failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/scholar-review/status",
+   "cause_established": false
+  }
+ },
+ "plan_failed": {
+  "status": 500,
+  "body": {
+   "detail": "POST /api/v1/qep/curriculum failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/qep/curriculum",
+   "cause_established": false
+  }
+ }
+}

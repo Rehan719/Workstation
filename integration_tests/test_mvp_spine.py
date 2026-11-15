@@ -87397,3 +87397,50 @@ def test_w1067_fu1254_the_fourth_column_reads_each_list_on_its_own_and_git_s_rea
     assert t.count("\n  it('") == 6, t.count("\n  it('")
     fx = (src / "components/layout/FourthColumn.fixture.json").read_text(encoding="utf-8")
     assert "safe.directory" in fx and "sessions_failed" in fx
+
+
+def test_w1068_fu1255_the_learn_and_teach_module_says_a_roster_it_could_not_read_and_a_withheld_plan_once(monkeypatch):
+    """W1068 (FU-1255; FU-399 part 81). The Religion hub's Learn and Teach module had no rendered test (the hub's test
+    mocks it). Rendered against its routes' own answers, it said a scholar roster it could not read without the
+    route's reason, and headed a withheld study plan "withheld — withheld": the scholar-review gate says every plan
+    it does not serve as "withheld", and the heading repeated the state after a dash. The roster's failure is said
+    with its reason under the board, and a withheld plan's heading says "withheld" once, with the gate's reason
+    beneath it.
+
+    Held here: the gate's states, driven (a plan it does not serve is "withheld", whatever the reason); the module's
+    code; and the rendered test's fixture, which keeps withheld answers only: no composed religious text and no
+    Arabic is in it, and nothing in it was approved. The rendered test (LearnTeachModule.test.tsx, six cases, three
+    vitest blinds) holds what the module says."""
+    import json
+    import pathlib
+    import re
+    import agentic_core.api.scholar_review as _sr
+    #  the gate's answer for a plan it does not serve: "withheld", whether no scholar is on the roster or the plan
+    #  has not been submitted (driven on the gate's own function, over no store)
+    monkeypatch.setattr(_sr, "_load", lambda *a, **k: {})
+    for empty in (True, False):
+        monkeypatch.setattr(_sr, "roster_is_empty", lambda e=empty: e)
+        monkeypatch.setattr(_sr, "queues_full", lambda *a, **k: {})
+        served, state, why = _sr.published_body("w1068-guard:a-made-up-key", "W1068 guard: made up")
+        assert served is None and state == "withheld" and why, (empty, served, state, why)
+    #  the module: the roster's failure said with its reason, and a withheld plan's heading said once
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    ltm = _code_only((src / "components/LearnTeachModule.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert ".catch(e => { setGateScholars(null); setRosterErr(errorMessage(e)); });" in ltm
+    assert ".catch(() => setGateScholars(null))" not in ltm
+    assert "{gateScholars === null && rosterErr && (" in ltm and 'data-testid="learnteach-roster-unread"' in ltm
+    assert "The roster could not be read: {rosterErr}" in ltm
+    assert '{reviewState === "withheld" ? "withheld" : `withheld — ${reviewState}`}' in ltm
+    assert "withheld — {reviewState}" not in ltm
+    #  the rendered test, and a fixture that keeps withheld answers only
+    t = (src / "components/LearnTeachModule.test.tsx").read_text(encoding="utf-8")
+    assert t.count("\n  it('") == 6, t.count("\n  it('")
+    raw = (src / "components/LearnTeachModule.fixture.json").read_text(encoding="utf-8")
+    fx = json.loads(raw)
+    plans = [k for k, v in fx.items() if isinstance(v, dict) and isinstance(v.get("body"), dict)
+             and "review_state" in v["body"]]
+    assert plans, "the fixture holds no answer from the gate"
+    for k in plans:
+        assert fx[k]["body"]["curriculum"] is None and fx[k]["body"]["review_state"] == "withheld", k
+    assert not re.search(r"[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]", raw), \
+        "the fixture holds Arabic text"

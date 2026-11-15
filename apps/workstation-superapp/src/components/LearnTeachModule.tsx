@@ -26,13 +26,15 @@ export const LearnTeachModule: React.FC = () => {
   //  undefined: not read yet · null: the read failed · a number: what the roster holds
   const [gateScholars, setGateScholars] = useState<number | null | undefined>(undefined);
   const [rosterFooting, setRosterFooting] = useState<string>("");
+  //  W1068 - why the roster could not be read, as the route said it (the board said only that it could not be)
+  const [rosterErr, setRosterErr] = useState<string>("");
   useEffect(() => {
     apiJson<{ scholars_on_roster?: number; footing?: { authentication?: string } }>("/api/v1/scholar-review/status")
       .then(d => {
         setGateScholars(typeof d.scholars_on_roster === "number" ? d.scholars_on_roster : null);
         setRosterFooting(d.footing?.authentication ?? "");
       })
-      .catch(() => setGateScholars(null));
+      .catch(e => { setGateScholars(null); setRosterErr(errorMessage(e)); });
   }, []);
 
   const generateReport = async () => {
@@ -134,8 +136,8 @@ export const LearnTeachModule: React.FC = () => {
           {reviewState && !report && (
             <div data-testid="learnteach-review-state"
                  className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
-              <p className="text-[8px] font-black uppercase tracking-widest text-amber-400/80 mb-2">
-                withheld — {reviewState}
+              <p data-testid="learnteach-review-heading" className="text-[8px] font-black uppercase tracking-widest text-amber-400/80 mb-2">
+                {reviewState === "withheld" ? "withheld" : `withheld — ${reviewState}`}
               </p>
               <p data-testid="learnteach-review-note" className="text-[10px] text-slate-300 leading-relaxed font-medium">
                 {reviewNote}
@@ -223,6 +225,11 @@ export const LearnTeachModule: React.FC = () => {
               disclaimer is not a review.</>
           )}
         </p>
+        {gateScholars === null && rosterErr && (
+          <p role="alert" data-testid="learnteach-roster-unread" className="mt-3 text-[10px] font-bold text-vital leading-relaxed max-w-2xl">
+            The roster could not be read: {rosterErr}
+          </p>
+        )}
       </Card>
     </div>
   );
