@@ -88486,3 +88486,176 @@ def test_w1081_p518_on_the_law_page_a_signed_in_person_keeps_the_enterprises_agr
         "test_w1080_p518_a_party_is_a_person_or_a_registered_body_and_an_agreements_six_facts_stay_apart"), row
     assert "nothing is kept before sign-in" in row["today"] and "not stated" in row["today"]
     assert cov.check(reg)["problems"] == []
+
+
+def test_w1082_p519_an_asset_is_a_record_held_under_an_agreement_and_its_six_facts_are_never_merged(client, monkeypatch):
+    """P5.19 clauses 1, 2, 4 and 5 (W1082, FU-1078), driven through the routes on a made-up asset, as a first person, a
+    second and an administrator. Held here:
+    - with sign-in off nothing is kept, and the listing says why;
+    - an asset is what a person entered, of one of five kinds, owned and possessed by party records and held under an
+      agreement record of theirs; an entity of this platform is refused as owner, an unknown party or agreement is
+      refused, and a field the route does not take is refused by name;
+    - its six facts are apart and each reads "not evidenced" until evidence is attached; the agreement it is held under
+      is never read as the right to use it or as a place's permission;
+    - evidence is a person's, with who, when and when it lapses; evidence past its date reads lapsed;
+    - a declaration of readiness names the person declaring and rests on the evidence current when it was made; when
+      that evidence lapses the declaration reads withdrawn, with why, until a person declares again;
+    - no answer carries a score, a percentage or a single word of readiness, and nothing is connected or controlled:
+      the module opens nothing outside the process and reads no twin;
+    - the second person finds none of the first person's assets; the administrator reads them."""
+    import ast
+    import pathlib
+    import uuid
+    from datetime import datetime, timedelta, timezone
+    import agentic_core.auth.core as _ac
+    import agentic_core.api.assets as _as
+    tag = uuid.uuid4().hex[:8]
+    today = datetime.now(timezone.utc).date()
+    yday, soon, later = ((today - timedelta(days=1)).isoformat(), (today + timedelta(days=10)).isoformat(),
+                         (today + timedelta(days=400)).isoformat())
+
+    def keys(o):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                yield k
+                yield from keys(v)
+        elif isinstance(o, list):
+            for v in o:
+                yield from keys(v)
+
+    def plain(answer):
+        bad = {k for k in keys(answer) if any(w in k.lower() for w in ("score", "percent", "overall", "status", "rating"))
+               or k in ("ready", "readiness_level", "is_ready", "safe", "is_safe")}
+        assert not bad, ("an asset answer computes something across the six facts", bad)
+        return answer
+
+    #  0. with sign-in off nothing is kept
+    monkeypatch.setenv("AUTH_ENABLED", "false")
+    off = client.post("/api/v1/assets", json={"what": f"W1082 Off {tag}", "kind": "robot"})
+    assert off.status_code == 403 and off.json()["detail"] == _as.NOT_KEPT, off.text[:300]
+    assert client.get("/api/v1/assets").json()["kept"] is False
+
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    who = {k: f"w1082-{k}-{tag}" for k in ("one", "two", "admin")}
+    users = _ac._load_users()
+    for k, name in who.items():
+        users[name] = {"user_id": name, "username": name, "hashed_password": _ac._pwd_ctx.hash("pw12345678"),
+                       "role": "admin" if k == "admin" else "user", "created_at": "2026-11-15T00:00:00Z", "api_keys": []}
+    _ac._save_users(users)
+    H = {k: {"Authorization": "Bearer " + client.post("/api/v1/auth/token", data={
+        "username": n, "password": "pw12345678"}).json()["access_token"]} for k, n in who.items()}
+    one, two, adm = H["one"], H["two"], H["admin"]
+
+    #  the parties and the agreement it is held under (W1080's records)
+    def party(body):
+        r = client.post("/api/v1/agreements/parties", headers=one, json={"read_from": "a made-up register (W1082)",
+                                                                         "read_on": yday, **body})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()["party"]["id"]
+    lessor = party({"kind": "registered_body", "name": f"W1082 Made-up Robot Leasing {tag}",
+                    "registered_on": "a made-up register", "registered_number": f"W1082-{tag}"})
+    lessee = party({"kind": "person", "name": f"Eve W1082-Madeup {tag}"})
+    lease = client.post("/api/v1/agreements", headers=one, json={
+        "title": f"W1082 made-up lease {tag}", "text": "w1082 a made-up lease of a made-up robot",
+        "parties": [{"party_id": lessor, "role": "lessor"}, {"party_id": lessee, "role": "lessee"}]})
+    assert lease.status_code == 200, lease.text[:300]
+    lid = lease.json()["id"]
+    est = client.post("/api/v1/genesis/establish", headers=one, json={
+        "problem": f"w1082 made-up mission {tag}", "ship_output": False, "name": f"W1082 Entity {tag}"})
+    assert est.status_code == 200, est.text[:300]
+    vid = est.json()["vsb_id"]
+
+    #  1. an asset record
+    body = {"what": f"a made-up delivery robot, serial W1082-{tag}", "kind": "robot", "owned_by": lessor,
+            "possessed_by": lessee, "agreement_id": lid}
+    for bad, words in (({**body, "kind": "spaceship"}, "is not one"),
+                       ({**body, "owned_by": vid}, "is an entity of this platform"),
+                       ({**body, "owned_by": "pty-none"}, "is not one, so nothing was kept"),
+                       ({**body, "agreement_id": "agr-none"}, "held under an agreement record of yours"),
+                       ({**body, "agreement_id": ""}, "No agreement was named: an asset is held under"),
+                       ({**body, "possessed_by": ""}, "Nobody was named as who possesses it"),
+                       ({**body, "connect_to": "tcp://w1082"}, "'connect_to' is not part of it"),
+                       ({**body, "what": ""}, "What the asset is is needed")):
+        rr = client.post("/api/v1/assets", headers=one, json=bad)
+        assert rr.status_code == 400 and words in rr.json()["detail"], (bad, rr.status_code, rr.text[:300])
+    made = client.post("/api/v1/assets", headers=one, json=body)
+    assert made.status_code == 200, made.text[:300]
+    a = plain(made.json())
+    aid = a["id"]
+    assert aid.startswith("ast-") and a["what"] == body["what"] and a["kind"] == "robot"
+    assert a["owned_by"]["party_id"] == lessor and a["possessed_by"]["party_id"] == lessee and a["entered_by"] == who["one"]
+    assert a["held_under"]["agreement_id"] == lid and a["held_under"]["basis"] == _as.AGREEMENT_IS_NOT_PERMISSION
+    assert a["controlled"] is False and a["controlled_basis"] == _as.NOT_CONTROLLED and a["judged_basis"] == _as.NOT_JUDGED
+    #  2. six facts, apart, each not evidenced - the lease is not the right to use it, nor any place's permission
+    assert [f["fact"] for f in a["facts"]] == list(_as.FACTS) == ["right_to_use", "place_permission",
+                                                                   "maker_conformity", "user_safety", "insurance",
+                                                                   "readiness"]
+    assert all(f["evidence"] == [] and f["said"] == _as.NOT_EVIDENCED for f in a["facts"]), a["facts"]
+
+    def attach(b, h=one):
+        return client.post(f"/api/v1/assets/{aid}/evidence", headers=h, json=b)
+    for bad, words in (({"fact": "safety_score", "evidence": "w", "lapses_on": later}, "is not one"),
+                       ({"fact": "insurance", "evidence": "w", "lapses_on": "next year"}, "must be a date"),
+                       ({"fact": "insurance", "evidence": "", "lapses_on": later}, "What the evidence is is needed"),
+                       ({"fact": "readiness", "evidence": "w", "lapses_on": later}, "The person declaring it ready is needed"),
+                       ({"fact": "insurance", "evidence": "w", "lapses_on": later, "named_person": "x"}, "A named person is"),
+                       ({"fact": "insurance", "evidence": "w", "lapses_on": later, "telemetry": {"x": 1}}, "'telemetry' is not part of it")):
+        rr = attach(bad)
+        assert rr.status_code == 400 and words in rr.json()["detail"], (bad, rr.status_code, rr.text[:300])
+    plan = (("right_to_use", "the made-up lease, clause 2, as stated", later),
+            ("maker_conformity", "the maker's made-up declaration of conformity, as stated", later),
+            ("user_safety", "a made-up risk assessment, as stated", soon),
+            ("insurance", "a made-up policy that ended yesterday, as stated", yday))
+    for fact, ev, lapse in plan:
+        r = attach({"fact": fact, "evidence": ev, "lapses_on": lapse})
+        assert r.status_code == 200, r.text[:300]
+    f = {x["fact"]: x for x in plain(r.json())["facts"]}
+    assert f["insurance"]["evidence"][0]["state"] == "lapsed" and f["right_to_use"]["evidence"][0]["state"] == "current"
+    assert f["place_permission"]["said"] == _as.NOT_EVIDENCED and f["readiness"]["said"] == _as.NOT_EVIDENCED
+    e = f["user_safety"]["evidence"][0]
+    assert (e["attached_by"], e["lapses_on"], e["evidence"]) == (who["one"], soon, plan[2][1]) and e["attached_at"]
+
+    #  5. a declaration of readiness rests on the evidence current when it is made, and is withdrawn when that lapses
+    rd = attach({"fact": "readiness", "evidence": "a made-up declaration, as stated", "lapses_on": later,
+                 "named_person": f"Dee W1082-Madeup {tag}, as named"})
+    assert rd.status_code == 200, rd.text[:300]
+    dec = {x["fact"]: x for x in rd.json()["facts"]}["readiness"]["evidence"][0]
+    current_ids = {x["id"] for x in rd.json()["facts"][0]["evidence"] + rd.json()["facts"][2]["evidence"]
+                   + rd.json()["facts"][3]["evidence"]}
+    assert dec["state"] == "current" and set(dec["rests_on"]) == current_ids, (dec, current_ids)
+    assert dec["named_person"] == f"Dee W1082-Madeup {tag}, as named"
+    monkeypatch.setattr(_as, "_today", lambda: today + timedelta(days=11))   # the risk assessment lapses
+    moved = {x["fact"]: x for x in plain(client.get(f"/api/v1/assets/{aid}", headers=one).json())["facts"]}
+    assert moved["user_safety"]["evidence"][0]["state"] == "lapsed"
+    w = moved["readiness"]["evidence"][0]
+    assert w["state"] == "withdrawn" and plan[2][1] in w["withdrawn_because"] and "until a person declares again" in w["withdrawn_because"]
+    again = attach({"fact": "readiness", "evidence": "a made-up second declaration, as stated", "lapses_on": later,
+                    "named_person": f"Dee W1082-Madeup {tag}, as named"})
+    states = [x["state"] for x in {y["fact"]: y for y in again.json()["facts"]}["readiness"]["evidence"]]
+    assert states == ["withdrawn", "current"], states
+    monkeypatch.setattr(_as, "_today", lambda: today)
+
+    #  another person's asset is answered as one that does not exist; an administrator reads it
+    gone = client.get("/api/v1/assets/ast-w1082none", headers=two)
+    theirs = client.get(f"/api/v1/assets/{aid}", headers=two)
+    assert theirs.status_code == gone.status_code == 404
+    assert theirs.json()["detail"].replace(aid, "<ID>") == gone.json()["detail"].replace("ast-w1082none", "<ID>")
+    assert attach({"fact": "insurance", "evidence": "w", "lapses_on": later}, h=two).status_code == 404
+    seen = client.get("/api/v1/assets", headers=two)
+    assert seen.status_code == 200 and tag not in seen.text.replace(who["two"], "")
+    assert client.get(f"/api/v1/assets/{aid}", headers=adm).status_code == 200
+    mine = plain(client.get("/api/v1/assets", headers=one).json())
+    assert [x["id"] for x in mine["assets"]] == [aid] and mine["kept"] is True
+
+    #  4. nothing is connected or controlled: the module opens nothing outside the process and reads no twin
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = (root / "agentic_core/api/assets.py").read_text(encoding="utf-8")
+    mods = set()
+    for node in ast.walk(ast.parse(src)):
+        if isinstance(node, ast.Import):
+            mods |= {n.name for n in node.names}
+        elif isinstance(node, ast.ImportFrom):
+            mods.add(node.module or "")
+    assert mods <= {"uuid", "re", "datetime", "typing", "fastapi", "agentic_core.api.agreements",
+                    "agentic_core.auth.core"}, mods
+    assert "digital_twin" not in src and "integration_surface" not in src and "socket" not in src

@@ -308,6 +308,9 @@ app.include_router(law_api.router, dependencies=[_Depends(_get_current_user)])
 #  P5.18 (W1080) - the enterprise's own agreements: parties and agreement records, kept only for a signed-in person
 from agentic_core.api import agreements as agreements_api
 app.include_router(agreements_api.router, dependencies=[_Depends(_get_current_user)])
+#  P5.19 (W1082) - physical assets as records and evidence, held under an agreement record; nothing is controlled
+from agentic_core.api import assets as assets_api
+app.include_router(assets_api.router, dependencies=[_Depends(_get_current_user)])
 
 #  the registers a reader can check: the sources this platform names, and what a person can do here
 from agentic_core.api import registers as registers_api
