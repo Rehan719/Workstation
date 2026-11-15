@@ -25755,10 +25755,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.14",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1095",
       "note": "",
-      "slot_source": "P5.14 clause 4: one list reached from the first screen shows everything that waits on the person, read from the stores that exist"
+      "slot_source": "P5.14 clause 4: one list reached from the first screen shows everything that waits on the person, read from the stores that exist",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1088 to W1095, one part a round. The one list (/api/v1/waiting) now reads every store W1087's census found: an entity's review gate and its name, a service contract on the side that acts next and a delivery waiting to be accepted (W1088); the scholar review queue, the children's approval pack and a GMP record, by their rosters (W1089); a filing-shaped legal draft and an avatar co-signature, the Owner's own approvals (W1090); a support answer waiting on its asker and a quality defect on its owner (W1091); an evolution proposal and a cascade's proposed offerings (W1092); and a method amendment not carried out, an immune defence in place and a follow-up waiting on the Owner (W1095). Each waits on the person its own record names, read rather than guessed: the owner, the roster, or an administrator who records the Owner's or Change Control's decisions; with sign-in off, on the one person using the machine. A store it cannot read is said in its place, to whom it waits on, and the rest of the list stands; religious and composed text is never on it. NOT_READ_YET is empty. test_w1088 to test_w1092 and test_w1095 hold each part through the route. The census also found defects the list cannot fix, registered as FU-1271 to FU-1274."
     },
     {
       "id": "FU-1271",

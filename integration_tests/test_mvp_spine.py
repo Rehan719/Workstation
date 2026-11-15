@@ -88893,7 +88893,7 @@ def test_w1085_p518_an_obligation_names_its_clause_and_who_confirmed_it_and_what
     off = client.get("/api/v1/waiting").json()
     #  W1087 - with sign-in off the list reads the stores kept without sign-in (projects, Change Control) and says the
     #  agreement and asset records are kept only after it; none of theirs is on it
-    assert off["not_kept"] == _wt.NOT_KEPT and off["not_read_yet"], off
+    assert off["not_kept"] == _wt.NOT_KEPT and off["not_read_yet"] == _wt.NOT_READ_YET, off   # W1095 - none left
     assert not [i for i in off["items"] if i.get("source") in ("agreement", "asset")], off
 
     monkeypatch.setenv("AUTH_ENABLED", "true")
@@ -89152,7 +89152,7 @@ def test_w1087_p514_the_one_list_reached_from_the_first_screen_reads_the_stores_
     dec = by[("project", "decision")]
     assert dec["project_id"] == mine and dec["on"] == f"W1087 project {tag}" and "'concept' to 'prototype'" in dec["what"]
     assert dec["where"] == "the Governance Hub's proposals" and by[("agreement", "falls_due")]["where"] == _wt.WHERE["agreement"]
-    assert w["reads"] == _wt.READS and w["not_read_yet"] == _wt.NOT_READ_YET and len(_wt.NOT_READ_YET) == 1   # W1092
+    assert w["reads"] == _wt.READS and w["not_read_yet"] == _wt.NOT_READ_YET and len(_wt.NOT_READ_YET) == 0   # W1095
     #  W1088 - the list reads more stores now, which the suite's other tests share: this test holds its own five
     ours = ("agreements", "assets", "projects", "proposals", "changes")
     assert [x for x in w["unread"] if x["store"] in ours] == [] and "not_kept" not in w and "said" not in w
@@ -89251,7 +89251,9 @@ def test_w1087_p514_the_one_list_reached_from_the_first_screen_reads_the_stores_
     assert set(re.findall(r"/api/v\d+/[\w/{}.-]*", wp)) == {"/api/v1/waiting"}
     fx = json.loads((src / "components/WaitingPanel.fixture.json").read_text(encoding="utf-8"))
     #  W1089 - with sign-in off the children's approval pack waits on a scholar too, its roster empty
-    assert [i["source"] for i in fx["waiting_off"]["body"]["items"]] == ["review", "project", "change"]
+    #  W1095 - with sign-in off the follow-ups waiting on the Owner are on it too, as many as the register holds open
+    assert [i["source"] for i in fx["waiting_off"]["body"]["items"] if i["source"] != "followup"] == [
+        "review", "project", "change"]
     assert fx["waiting_off"]["body"]["not_kept"] == _wt.NOT_KEPT and fx["waiting_refused"]["status"] == 400
     assert [i["source"] for i in fx["waiting"]["body"]["items"]] == [
         "agreement", "asset", "asset", "agreement", "project", "agreement", "agreement"]
@@ -89421,7 +89423,7 @@ def test_w1088_fu1270_the_one_list_reads_what_an_entitys_owner_is_waited_on_for(
 
     #  the census's entries for these stores are no longer said as not read yet
     assert not [s for s in _wt.NOT_READ_YET if "review gate" in s or "service contract" in s]
-    assert len(_wt.NOT_READ_YET) == 1 and waiting("one")["not_read_yet"] == _wt.NOT_READ_YET   # W1092
+    assert len(_wt.NOT_READ_YET) == 0 and waiting("one")["not_read_yet"] == _wt.NOT_READ_YET   # W1095
     assert sum("your entities" in r for r in _wt.READS) == 2
 
 
@@ -89532,7 +89534,7 @@ def test_w1089_fu1270_the_one_list_reads_the_reviewers_queues_by_their_rosters(c
 
         #  the census entry for these queues is no longer said as not read yet
         assert not [s for s in _wt.NOT_READ_YET if "scholar review" in s or "GMP" in s]
-        assert len(_wt.NOT_READ_YET) == 1 and any("reviewers' queues" in r for r in _wt.READS)   # W1092
+        assert len(_wt.NOT_READ_YET) == 0 and any("reviewers' queues" in r for r in _wt.READS)   # W1095
     finally:
         for p, b in kept.items():
             if b is None:
@@ -89620,7 +89622,7 @@ def test_w1090_fu1270_the_one_list_reads_the_owners_own_approvals(client, monkey
             r1 = client.get("/api/v1/waiting", headers=H["one"]).json()
             assert not [x for x in r1["unread"] if x["store"] == store]
         assert not [s for s in _wt.NOT_READ_YET if "legal artefact" in s or "co-signature" in s]
-        assert len(_wt.NOT_READ_YET) == 1 and any("the Owner's own approvals" in r for r in _wt.READS)   # W1092
+        assert len(_wt.NOT_READ_YET) == 0 and any("the Owner's own approvals" in r for r in _wt.READS)   # W1095
     finally:
         for p, b in kept.items():
             if b is None:
@@ -89709,7 +89711,7 @@ def test_w1091_fu1270_the_one_list_reads_a_support_answer_and_a_quality_defect(c
             assert [x for x in u["unread"] if x["store"] == store], u["unread"]
             assert [i for i in u["items"] if i.get("source") == still and tag in json.dumps(i)], u["items"]
         assert not [s for s in _wt.NOT_READ_YET if "support answer" in s]
-        assert len(_wt.NOT_READ_YET) == 1 and any("a support answer waiting on your confirmation" in r for r in _wt.READS)   # W1092
+        assert len(_wt.NOT_READ_YET) == 0 and any("a support answer waiting on your confirmation" in r for r in _wt.READS)   # W1095
     finally:
         for p, b in kept.items():
             if b is None:
@@ -89852,7 +89854,7 @@ def test_w1092_fu1270_the_one_list_reads_an_evolution_proposal_and_a_proposed_ca
 
         #  the census entry for these is no longer said as not read yet
         assert not [s for s in _wt.NOT_READ_YET if "evolution" in s or "catalogue" in s]
-        assert len(_wt.NOT_READ_YET) == 1 and any("an evolution proposal waiting on a decision" in r for r in _wt.READS)
+        assert len(_wt.NOT_READ_YET) == 0 and any("an evolution proposal waiting on a decision" in r for r in _wt.READS)   # W1095
     finally:
         for p, b in kept.items():
             if b is None:
@@ -90054,3 +90056,129 @@ def test_w1094_fu1273_a_delegation_is_its_persons_and_its_store_is_never_replace
                 store.unlink()
         else:
             store.write_bytes(kept)
+
+
+def test_w1095_fu1270_the_one_list_reads_the_last_of_the_census(client, monkeypatch, tmp_path):
+    """FU-1270, part 6 (W1095, closed): the one list of what waits on a person reads the last stores of the census,
+    held through the route as a person and an administrator, on made-up records:
+    - a method amendment Change Control decided and the method does not carry out yet waits on an administrator,
+      read from the method's own answer; one not decided yet is not said as waiting to be carried out;
+    - an immune defence in place, reversible and not lifted, waits on an administrator to lift it; one already lifted,
+      or one with nothing to restore, does not;
+    - a follow-up in the platform's register that only the Owner decides, open, waits on an administrator, named by
+      its id and its register title; one done, or one not gated on the Owner, does not;
+    - none of it waits on a person who is not an administrator, and with sign-in off it waits on the one person;
+    - a store that cannot be read, or a register not on this machine, is said in its place to whom it waits on;
+    - the census names nothing as not read yet.
+    The stores are shared with the suite's other tests: this test keeps their bytes and puts them back; the register
+    read is a made-up file of this test's own, never the repository's."""
+    import json
+    import time
+    import uuid
+    import agentic_core.auth.core as _ac
+    import agentic_core.api.waiting as _wt
+    from agentic_core import plan_followups as _fu
+    from agentic_core.api import change_control as _cc
+    from agentic_core.api import method as _md
+    tag = uuid.uuid4().hex[:8]
+    amend = _md._amendments_path()
+    kept = amend.read_bytes() if amend.exists() else None
+    made = []
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    who = {k: f"w1095-{k}-{tag}" for k in ("one", "adm")}
+    users = _ac._load_users()
+    for k, name in who.items():
+        users[name] = {"user_id": name, "username": name, "hashed_password": _ac._pwd_ctx.hash("pw12345678"),
+                       "role": "admin" if k == "adm" else "user", "created_at": "2026-11-15T00:00:00Z",
+                       "api_keys": []}
+    _ac._save_users(users)
+    H = {k: {"Authorization": "Bearer " + client.post("/api/v1/auth/token", data={
+        "username": n, "password": "pw12345678"}).json()["access_token"]} for k, n in who.items()}
+    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+    def change(n, **kw):
+        rec = {"cca_id": f"cca-w1095-{tag}-{n}", "title": f"w1095 made-up change {n}", "impact_tier": "LOW",
+               "submitted_at": now, "audit_trail": [], **kw}
+        _cc._save_change(rec)
+        made.append(rec["cca_id"])
+        return rec["cca_id"]
+
+    def waiting(k=None):
+        r = client.get("/api/v1/waiting", headers=H[k] if k else {})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()
+
+    def ours(k=None):
+        return sorted((i["source"], i["kind"], i.get("cca_id") or i.get("followup_id"))
+                      for i in waiting(k)["items"] if tag in str(i.get("cca_id") or i.get("followup_id") or ""))
+    try:
+        #  amendments: one decided and not carried out, one not decided yet
+        done, undecided = change(1, status="implemented", change_type="method_amendment"), change(
+            2, status="submitted", change_type="method_amendment")
+        recs = _md._amendments_read()
+        for cid in (done, undecided):
+            recs[cid] = {"kind": "batch", "title": f"w1095 made-up amendment {cid}", "filed_at": now,
+                         "lesson_ids": [f"W1095-MADE-UP-{tag}"]}
+        from agentic_core.config import atomic_write_json
+        atomic_write_json(amend, recs)
+        #  defences: one in place, one lifted, one with nothing to restore
+        target = {"section": "w1095", "key": f"made_up_{tag}", "value": 1}
+        live = change(3, status="implemented", change_type="immune_reconfiguration", reversible=True, reverts_to=target)
+        change(4, status="reverted", change_type="immune_reconfiguration", reversible=True, reverts_to=target,
+               reverted_at=now)
+        change(5, status="implemented", change_type="immune_reconfiguration", reversible=False, reverts_to=None)
+        #  the register: a made-up file of this test's own
+        reg = tmp_path / "FOLLOWUPS.json"
+        reg.write_text(json.dumps({"items": [
+            {"id": f"FU-W1095{tag}1", "title": f"w1095 made-up decision {tag}", "status": "open", "owner_gated": True,
+             "found": "2026-11-15"},
+            {"id": f"FU-W1095{tag}2", "title": "w1095 made-up", "status": "done", "owner_gated": True},
+            {"id": f"FU-W1095{tag}3", "title": "w1095 made-up", "status": "open", "owner_gated": False}]}),
+            encoding="utf-8")
+        monkeypatch.setattr(_fu, "REGISTER", reg)
+
+        adm = ours("adm")
+        assert adm == sorted([("change", "decision", undecided), ("change", "lift", live), ("followup", "owner",
+                              f"FU-W1095{tag}1"), ("method", "carry", done)]), adm
+        items = {(i["source"], i.get("cca_id") or i.get("followup_id")): i for i in waiting("adm")["items"]}
+        assert items[("method", done)]["where"] == _wt.WHERE["amendment"] and items[("method", done)]["said"]
+        assert items[("change", live)]["where"] == _wt.WHERE["defence"]
+        fu = items[("followup", f"FU-W1095{tag}1")]
+        assert (fu["on"], fu["ref"], fu["where"]) == (f"the follow-up FU-W1095{tag}1", f"w1095 made-up decision {tag}",
+                                                      _wt.WHERE["followup"]), fu
+        assert ours("one") == []
+        monkeypatch.setenv("AUTH_ENABLED", "false")
+        assert ours() == adm
+        monkeypatch.setenv("AUTH_ENABLED", "true")
+
+        #  a store that cannot be read, and a register not on this machine, are said in their place to whom they wait on
+        held = amend.read_bytes()
+        amend.write_text("{ not json", encoding="utf-8")
+        try:
+            u, one = waiting("adm"), waiting("one")
+        finally:
+            amend.write_bytes(held)
+        assert [x for x in u["unread"] if x["store"] == "method amendments" and x["said"]], u["unread"]
+        assert not [x for x in one["unread"] if x["store"] == "method amendments"]
+        assert [i for i in u["items"] if i.get("cca_id") == live], "the rest of the list stands"
+        monkeypatch.setattr(_fu, "REGISTER", tmp_path / "not-here.json")
+        u = waiting("adm")
+        assert [x for x in u["unread"] if x["store"] == "follow-ups" and "not on this machine" in x["said"]], u["unread"]
+        (tmp_path / "bad.json").write_text("{ not json", encoding="utf-8")
+        monkeypatch.setattr(_fu, "REGISTER", tmp_path / "bad.json")
+        assert [x for x in waiting("adm")["unread"] if x["store"] == "follow-ups" and "could not be read" in x["said"]]
+        assert not [x for x in waiting("one")["unread"] if x["store"] == "follow-ups"]
+
+        #  the census names nothing as not read yet
+        assert _wt.NOT_READ_YET == [] and waiting("adm")["not_read_yet"] == []
+        assert any("a follow-up in the platform's register waiting on the Owner's decision" in r for r in _wt.READS)
+    finally:
+        if kept is None:
+            if amend.exists():
+                amend.unlink()
+        else:
+            amend.write_bytes(kept)
+        for cid in made:
+            p = _cc._cca_path(cid)
+            if p.exists():
+                p.unlink()

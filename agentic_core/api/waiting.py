@@ -9,8 +9,8 @@ One list, reached from the first screen, of what waits on the person asking, rea
 - Change Control: each change waiting on a decision, each a review approved that waits for the Board's ratification,
   and each material economy action a review approved, which only the Owner's own decision releases. An administrator
   records all three, so they wait on an administrator; with sign-in off, on the one person using this machine.
-The census of the stores that hold something waiting on a person (W1087) found more; each is named as not read yet
-until the list reads it (FU-1270).
+The census of the stores that hold something waiting on a person (W1087) found more; each was named as not read yet
+until the list read it, and since W1095 the list reads every one of them (FU-1270).
 The agreement and asset records are kept only for a signed-in person (the Owner's ruling of 2026-10-12), so with
 sign-in off the list says so and reads the rest. A store it cannot read is said in its place, with why, and the rest
 of the list still stands. What it does not read yet is named, so an empty list is never taken for nothing waiting
@@ -51,11 +51,14 @@ READS = ["the obligations on your agreement records: each one falling due within
          "waits on an administrator",
          "the offerings a cascade proposed, waiting to be curated into the marketplace: for your entity, on you; "
          "for the platform, on an administrator. Nothing records a decision not to curate them, so they wait "
-         "until one is curated"]
+         "until one is curated",
+         #  W1095 (FU-1270)
+         "a method amendment Change Control decided and the method does not carry out yet, an immune defence in "
+         "place until it is lifted, and a follow-up in the platform's register waiting on the Owner's decision; an "
+         "administrator records all three, so with sign-in on they wait on an administrator"]
 #  W1087 - the census of the stores that hold something waiting on a person found these as well; each is named until
 #  the list reads it (FU-1270)
-NOT_READ_YET = ["a method amendment not yet carried out, a follow-up waiting on the Owner, and an immune defence "
-                "waiting to be lifted"]
+NOT_READ_YET: list = []   # W1095 - the list reads every store the census found (FU-1270)
 WHERE = {"agreement": "the agreements on the Law page", "asset": "the assets on the Law page",
          "change": "Change Control's queue", "ratification": "the Board's ratifications",
          #  W1088 (FU-1270)
@@ -74,7 +77,12 @@ WHERE = {"agreement": "the agreements on the Law page", "asset": "the assets on 
          "defect": "the defects on the Cockpit's VBS panel",
          #  W1092 (FU-1270) - no page offers these yet
          "evolution": "no page yet: a decision is recorded through the evolution proposal's approve or reject route",
-         "catalogue": "no page yet: an offering is curated through the proposed catalogue's curate route"}
+         "catalogue": "no page yet: an offering is curated through the proposed catalogue's curate route",
+         #  W1095 (FU-1270)
+         "amendment": ("no page yet: a method edit that names its change record carries it out, and GET "
+                       "/api/v1/method/amendments says which are"),
+         "defence": "no page yet: an administrator lifts it through Change Control's immune revert route",
+         "followup": "the follow-up register on the Transformation Dashboard"}
 NOT_KEPT = ("Your agreement and asset records are kept only once you are signed in, and sign-in is off, so nothing "
             "of theirs is on this list.")
 BASIS = ("One list of what waits on you, from the records it reads; a record it could not read is said with why, and "
@@ -92,7 +100,8 @@ _RANK = {"falls_due": 0, "evidence_lapses": 0, "evidence_lapsed": 0, "decision":
          "review": 1, "pack": 1, "qa": 1,   # W1089
          "approval": 1, "cosign": 1,   # W1090
          "confirm": 1, "correct": 1, "reverify": 1,   # W1091
-         "proposal": 1, "curate": 1}   # W1092
+         "proposal": 1, "curate": 1,   # W1092
+         "carry": 1, "owner": 1, "lift": 2}   # W1095
 
 
 def _iso(ts) -> str:
@@ -177,6 +186,12 @@ def _changes(user) -> tuple:
             #  recorded any other way releases nothing, so it still waits
             kind, what, where = ("decision", "the Owner's own decision on this change: a review's approval of a "
                                              "material economy action releases nothing", WHERE["change"])
+        elif (c.get("change_type") == "immune_reconfiguration" and c.get("status") == "implemented"
+              and c.get("reversible") and not c.get("reverted_at")):
+            #  W1095 (FU-1270) - an immune defence in place stays until an administrator lifts it, once the threat it
+            #  answered has passed; its prior value was captured, so it can be
+            kind, what, where = ("lift", "an administrator's lifting of this immune defence, once the threat it "
+                                         "answered has passed", WHERE["defence"])
         else:
             continue
         since = str(c.get("submitted_at") or "")
@@ -566,6 +581,53 @@ def _catalogue(user, owners: dict, names: dict) -> tuple:
     return items, []
 
 
+def _amendments_waiting(am) -> list:
+    """W1095 (FU-1270) - a method amendment Change Control decided and the method does not carry out yet (W827): its
+    `carried_out` is "no" or "partly". Read from GET /api/v1/method/amendments' own answer, so the rule is the
+    method's. A method edit that names the amendment's change record carries it out."""
+    items = []
+    for a in (am.get("amendments") if isinstance(am, dict) else None) or []:
+        if not isinstance(a, dict) or not a.get("decided") or a.get("carried_out") not in ("no", "partly"):
+            continue
+        since = str(a.get("filed_at") or "")
+        items.append({"source": "method", "kind": "carry", "cca_id": a.get("cca_id"),
+                      "what": ("the method edit that carries this amendment out" if a.get("carried_out") == "no"
+                               else "the method edit that carries the rest of this amendment out"),
+                      "on": a.get("title") or f"the method amendment {a.get('cca_id')}", "ref": a.get("cca_id"),
+                      "where": WHERE["amendment"], "since": since,
+                      "said": str(a.get("carried_out_basis") or "") or _ago(since)})
+    return items
+
+
+def _owner_rows(user) -> tuple:
+    """W1095 (FU-1270) - a follow-up in the platform's register that only the Owner decides (docs/FOLLOWUPS.json: open
+    and owner_gated). An administrator records the Owner's decision; with sign-in off, it is the one person's using
+    this machine. The register is the repository's own document, and a runtime that does not carry it says so."""
+    if not _owners_call(user):
+        return [], []
+    from agentic_core import plan_followups as fu
+    try:
+        reg = fu.parse_register(fu.REGISTER.read_bytes())
+    except FileNotFoundError:
+        return [], [{"store": "follow-ups", "said": (
+            "The follow-up register (docs/FOLLOWUPS.json) is not on this machine, so a follow-up waiting on the "
+            "Owner's decision is not shown.")}]
+    except (OSError, ValueError) as e:
+        return [], [{"store": "follow-ups", "said": (
+            f"The follow-up register could not be read ({type(e).__name__}), so a follow-up waiting on the Owner's "
+            f"decision may not be shown.")}]
+    items = []
+    for r in (reg.get("items") if isinstance(reg, dict) else None) or []:
+        if not isinstance(r, dict) or r.get("status") != "open" or not r.get("owner_gated"):
+            continue
+        since = str(r.get("found") or "")
+        items.append({"source": "followup", "kind": "owner", "followup_id": r.get("id"),
+                      "what": "the Owner's decision on this follow-up", "on": f"the follow-up {r.get('id')}",
+                      "ref": str(r.get("title") or "")[:160] or None, "where": WHERE["followup"],
+                      "since": since, "said": _ago(since)})
+    return items, []
+
+
 @router.get("")
 async def what_waits(within_days: int = 30, user: dict | None = Depends(get_current_user)):
     """What waits on this person, from the records the list reads, soonest first; each store it could not read, with
@@ -611,6 +673,19 @@ async def what_waits(within_days: int = 30, user: dict | None = Depends(get_curr
         got, missed = read()
         items += got
         unread += missed
+    #  W1095 (FU-1270) - a follow-up waiting on the Owner, and a method amendment not carried out, read from the
+    #  method's own answer; an administrator records both
+    got, missed = _owner_rows(user)
+    items += got
+    unread += missed
+    if _decider(user):
+        from agentic_core.api import method as _md
+        try:
+            items += _amendments_waiting(await _md.list_amendments())
+        except HTTPException as e:
+            if e.status_code != 503:
+                raise
+            unread.append({"store": "method amendments", "said": str(e.detail)})
     items.sort(key=lambda i: (_RANK.get(i["kind"], 9), i.get("days") if i.get("days") is not None else 0,
                               str(i.get("since") or "")))
     return {"reads": READS, "not_read_yet": NOT_READ_YET, "basis": BASIS, "date_basis": DATE_BASIS,

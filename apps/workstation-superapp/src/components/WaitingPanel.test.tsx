@@ -47,7 +47,9 @@ describe('WaitingPanel, rendered against its route\'s own answers (made-up recor
     await waitFor(() => expect(screen.getByTestId('waiting-not-kept').textContent).toBe(C.waiting_off.body.not_kept));
     expect(items()).toEqual(C.waiting_off.body.items.map(line));
     //  W1089 - the children's approval pack waits on a scholar too, with sign-in off and its roster empty
-    expect(C.waiting_off.body.items.map((i: any) => i.source)).toEqual(['review', 'project', 'change']);
+    //  W1095 - the follow-ups waiting on the Owner are on it too, as many as the register holds open
+    expect(C.waiting_off.body.items.map((i: any) => i.source).filter((s: string) => s !== 'followup'))
+      .toEqual(['review', 'project', 'change']);
   });
 
   it('says what waits soonest first, each with the record it is on and where it is acted on', async () => {
