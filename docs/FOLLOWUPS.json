@@ -21529,10 +21529,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1083",
       "note": "",
-      "slot_source": "chartered with the item in this round"
+      "slot_source": "chartered with the item in this round",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1082 and W1083 on a made-up asset. An asset record holds what the thing is as a person entered it, of one of five kinds, owned and possessed by party records and held under an agreement record; an entity of this platform is neither owner nor possessor. Its six facts - the right to use it, the permission of the place, the maker's evidence of conformity, the user's own safety evidence, insurance and a named person's declaration of readiness - are never merged: each reads not evidenced until a person attaches evidence with who, when and when it lapses, and the agreement it is held under is never read as any of them. Evidence past its date reads lapsed, and a declaration resting on lapsed evidence reads withdrawn until a person declares again (clause 5). No score, percentage or word of readiness is computed, and nothing connects to, commands or reads from the thing (clause 4). Kept only for a signed-in person. test_w1082 drives the routes (eight blinds); the Law page's panel is rendered against the routes' own answers (AssetsPanel.test.tsx, seven cases, nine vitest blinds); test_w1083 holds the wiring (five blinds). The journey is the coverage register's row law-asset-evidence, driven by test_w1082. Clause 3 is FU-1268."
     },
     {
       "id": "FU-1079",
@@ -25696,6 +25699,23 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P5.18's own next clauses, after clauses 1 and 2 (W1080, W1081)"
+    },
+    {
+      "id": "FU-1268",
+      "title": "Which rules apply to an asset is not shown: P5.19 clause 3, the regime as rows of the register of sources",
+      "why": "W1082 and W1083 built clauses 1, 2, 4 and 5: an asset record held under an agreement, its six facts of evidence kept apart, and nothing connected or controlled, completed on the Law page. Clause 3 asks that, for a robot in a workplace, a vehicle on a road, a robot on a footway and a drone, the regime be shown as rows of the register of sources, each saying what was read, on what date and what was not read; and that where no source permitting a use was found, the record say so in those words. The register already holds the rows read on 2026-10-13 (hse-puwer-overview, si-2026-867-machinery, si-2026-439-av-passenger-permits, av-act-implementation-programme, caa-drone-requirements), each read by one reader through a summarising fetch and not re-read; no primary source permitting a robot on a public footway was found (FU-1079). The asset record does not yet say where it would be used, which clause 3 needs to choose the rows.",
+      "source": "W1083 (P5.19 clauses 1, 2, 4 and 5 completed on the Law page)",
+      "found": "2026-11-15",
+      "files": [
+        "agentic_core/api/assets.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.19's own next clause, after clauses 1, 2, 4 and 5 (W1082, W1083)"
     }
   ],
   "routes": [

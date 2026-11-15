@@ -88659,3 +88659,74 @@ def test_w1082_p519_an_asset_is_a_record_held_under_an_agreement_and_its_six_fac
     assert mods <= {"uuid", "re", "datetime", "typing", "fastapi", "agentic_core.api.agreements",
                     "agentic_core.auth.core"}, mods
     assert "digital_twin" not in src and "integration_surface" not in src and "socket" not in src
+
+
+def test_w1083_p519_on_the_law_page_a_signed_in_person_keeps_an_assets_evidence_six_facts_apart():
+    """P5.19 clauses 1, 2, 4 and 5 completed (W1083, FU-1078). W1082 built the asset records; the Law page's assets
+    panel (components/AssetsPanel.tsx), beside the agreements they are held under, is where a person completes them,
+    and its rendered test drives every step against the routes' own answers. Held here:
+    - the Law page mounts the panel once, after the agreements panel; the panel calls the asset routes and the party
+      and agreement routes only - nothing that reaches a device, a twin or a simulation;
+    - the panel says the route's own sentences (why nothing is kept, that nothing is controlled or judged, the basis of
+      the agreement it is held under, "not evidenced", why a declaration is withdrawn) and computes nothing across the
+      six facts;
+    - its fixture is the routes' own answers on a made-up asset: the six facts in order in every asset answer, a
+      lapsed risk assessment and the declaration resting on it withdrawn, and no key that scores or rates;
+    - the journey is a row of the coverage register, driven by test_w1082, and the register's check passes."""
+    import json
+    import pathlib
+    import re
+    import agentic_core.api.assets as _as
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+
+    hub = _code_only((src / "pages/domains/LawHub.tsx").read_text(encoding="utf-8"))
+    assert "import AssetsPanel from '../../components/AssetsPanel';" in hub and hub.count("<AssetsPanel />") == 1
+    assert hub.index("<AgreementsPanel />") < hub.index("<AssetsPanel />")
+    panel = _code_only((src / "components/AssetsPanel.tsx").read_text(encoding="utf-8"))
+    called = set(re.findall(r"/api/v\d+/[\w/{}.-]*", panel))
+    assert called == {"/api/v1/assets", "/api/v1/agreements/parties", "/api/v1/agreements"}, called
+    assert not re.search(r"twin|device|telemetry|simulat|websocket|EventSource", panel, re.I)
+    assert not re.search(r"score|percent|\.every\(|ready\s*[=:]", panel, re.I), "the panel computes something across the six"
+    for said in ("{list.not_kept_because}", "{list.controlled_basis}", "{list.judged_basis}", "${open.held_under?.basis}",
+                 "{f.said}", "${e.withdrawn_because}", "${e.state}"):
+        assert said in panel, said
+
+    test = (src / "components/AssetsPanel.test.tsx").read_text(encoding="utf-8")
+    assert "import AssetsPanel from './AssetsPanel';" in test and len(re.findall(r"(?m)^  it\(", test)) >= 7
+    fx = json.loads((src / "components/AssetsPanel.fixture.json").read_text(encoding="utf-8"))
+    whole = [v["body"] for v in fx.values() if isinstance(v, dict) and isinstance(v.get("body"), dict) and "facts" in v["body"]]
+    assert len(whole) >= 7, len(whole)
+    for b in whole:
+        assert [f["fact"] for f in b["facts"]] == list(_as.FACTS), b["facts"]
+        assert b["controlled"] is False and b["held_under"]["basis"] == _as.AGREEMENT_IS_NOT_PERMISSION
+
+    def keys(o):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                yield k
+                yield from keys(v)
+        elif isinstance(o, list):
+            for v in o:
+                yield from keys(v)
+    answers = [v["body"] for v in fx.values() if isinstance(v, dict) and isinstance(v.get("body"), dict)
+               and ("facts" in v["body"] or "assets" in v["body"])]
+    assert len(answers) >= 10, len(answers)
+    rated = {k for k in keys(answers) if re.search(r"score|percent|rating|status|overall", k)}
+    assert not rated, ("an asset answer holds a rating", rated)
+    w = {f["fact"]: f for f in fx["read_withdrawn"]["body"]["facts"]}
+    assert w["user_safety"]["evidence"][0]["state"] == "lapsed" and w["readiness"]["evidence"][0]["state"] == "withdrawn"
+    assert fx["list_off"]["body"]["not_kept_because"] == _as.NOT_KEPT
+    names = [p["name"] for p in fx["parties"]["body"]["parties"]]
+    assert len(names) == 2 and all("W1083" in n for n in names), names
+
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("w1083_cov", root / "scripts/coverage_register.py")
+    cov = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cov)
+    reg = cov.load()
+    row = next(r for r in reg["rows"] if r["id"] == "law-asset-evidence")
+    assert row["state"] == "journey" and row["domain"] == "Law" and row["driven_by"] == (
+        "test_w1082_p519_an_asset_is_a_record_held_under_an_agreement_and_its_six_facts_are_never_merged"), row
+    assert "nothing is connected or controlled" in row["today"] and "no score" in row["today"]
+    assert cov.check(reg)["problems"] == []

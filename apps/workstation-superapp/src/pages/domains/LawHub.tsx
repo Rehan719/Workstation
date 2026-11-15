@@ -8,6 +8,7 @@ import MatterAssemblyPanel from '../../components/MatterAssemblyPanel';
 import StatutePanel from '../../components/StatutePanel';
 import TimeLimitPanel from '../../components/TimeLimitPanel';   // W875 (FU-1012)
 import AgreementsPanel from '../../components/AgreementsPanel';   // W1081 (P5.18)
+import AssetsPanel from '../../components/AssetsPanel';   // W1083 (P5.19)
 import { DomainTool } from '../../components/DomainTool';
 import { toolsFor } from '../../lib/toolRegistry';
 import { useTab } from '../../lib/useTab';   // W1027 - the tab is in the address
@@ -225,6 +226,12 @@ export const LawHub: React.FC = () => {
           them: kept only for a signed-in person, and never on an entity of this platform as a party */}
       <Card className="p-6">
         <AgreementsPanel />
+      </Card>
+
+      {/* W1083 (P5.19) - the physical assets held under those agreements, as records and evidence: six facts kept
+          apart, nothing computed across them, and nothing connected or controlled */}
+      <Card className="p-6">
+        <AssetsPanel />
       </Card>
     </div>
   );
