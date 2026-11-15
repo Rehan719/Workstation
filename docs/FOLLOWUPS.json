@@ -25184,6 +25184,28 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the reader reads a structured refusal's sentence keys first (message, detail, why, note, basis) and error last. src/lib/api.test.ts drives each shape, the KPI gate's as the route answered it (two vitest blinds); test_w1058 holds the route's refusal, the order and a census of every literal structured refusal (three blinds)."
+    },
+    {
+      "id": "FU-1245",
+      "title": "Five of the cockpit's messages closed a route's reason with a second full stop (... are not gated by it.. Nothing was added to the marketplace.)",
+      "why": "Found staging W1058, which says a structured refusal by its sentence: the cockpit's messages that say a route's reason inside a sentence of their own close it with a full stop, and the reason is a sentence that ends with its own. serverDetail's two forms, the repository's unread tree, a file that did not open, the products' listing and the roster that is not reporting each said it twice.",
+      "source": "W1059 (found staging W1058)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/lib/api.ts",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1059",
+      "note": "",
+      "slot_source": "found by FU-399's renders of the cockpit; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: lib/api.ts asClause says a reason as a clause, dropping its closing full stop and nothing else, at each of the six closings. src/lib/api.test.ts drives asClause and VSBCockpit.repo.test.tsx the listing's sentence whole (two vitest blinds); test_w1059 holds the closings and a tree-wide census (four blinds)."
     }
   ],
   "routes": [

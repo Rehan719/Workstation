@@ -5,6 +5,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiError, apiJson, axiosDetail, bodyDetail } from './api';
+import { asClause } from './api';   // W1059 - test_w1013 holds the line above as its own
 import { errorMessage } from './api';   // W1015 - W1013's guard holds the line above as its own
 import { whoami } from './auth';
 import repo from '../pages/enterprise/VSBCockpit.repo.fixture.json';   // W1058 - the KPI gate's own refusal
@@ -46,6 +47,15 @@ describe('one reading of a refusal', () => {
     //  a key that is not a sentence is passed over
     expect(bodyDetail({ detail: { message: { nested: true }, note: 'a sentence' } }, 'none')).toBe('a sentence');
     expect(axiosDetail({ response: { data: kpi } }, 'none')).toBe(kpi.detail.detail);
+  });
+
+  //  W1059 - a reason said inside a longer sentence ends that sentence once
+  it('says a reason as a clause: its own closing full stop is dropped, nothing else', () => {
+    expect(asClause('No repository generated for VSB vsb-1 yet.')).toBe('No repository generated for VSB vsb-1 yet');
+    expect(asClause('no reason given')).toBe('no reason given');
+    expect(asClause('Failed — backend unreachable. ')).toBe('Failed — backend unreachable');
+    expect(asClause('is it held?')).toBe('is it held?');
+    expect(asClause('held for a person…')).toBe('held for a person…');
   });
 
   it('is the reading an axios error gets', () => {

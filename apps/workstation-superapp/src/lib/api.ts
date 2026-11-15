@@ -102,6 +102,13 @@ export function axiosDetail(e: any, fallback: string): string {
   return fallback;
 }
 
+//  W1059 - a reason said inside a longer sentence: its own closing full stop is dropped, so the sentence around it
+//  ends once ("... are not gated by it.. Nothing was added" said it twice). Only a full stop: a question or an
+//  ellipsis is the reason's own and stays.
+export function asClause(reason: string): string {
+  return reason.replace(/\s*\.\s*$/, '');
+}
+
 /** W1012 - the reason in a refused answer's body that a page read by hand (a fetch, or axios told to accept every
  *  status), as text whatever its shape: axiosDetail's reading, so a sentence is itself, a field check is said by
  *  its field and an object by its message. String() of a field check's list said "[object Object]". */

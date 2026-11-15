@@ -102,8 +102,9 @@ describe('VSBCockpit\'s repository panel, rendered against its routes\' own answ
     fireEvent.click(screen.getByTestId('cockpit-list-products'));
     //  W1058 - by the route's sentence: the shared reader said the gate's code, "kpi_gate"
     const why = String((captured.listed.body as { detail: { detail: string } }).detail.detail);
-    await waitFor(() => expect(screen.getByTestId('cockpit-repo-error').textContent).toContain(
-      `The products were not listed (HTTP 409): ${why.replace(/\.$/, '')}`));
+    //  W1059 - and the sentence around it ends once: the route's own full stop was followed by the page's
+    await waitFor(() => expect(screen.getByTestId('cockpit-repo-error').textContent).toBe(
+      `The products were not listed (HTTP 409): ${why.replace(/\.$/, '')}. Nothing was added to the marketplace.`));
     expect(screen.getByTestId('cockpit-repo-error').textContent).not.toContain('kpi_gate');
   });
 });

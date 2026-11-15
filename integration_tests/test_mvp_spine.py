@@ -15900,7 +15900,7 @@ def test_w468_an_unreadable_vsb_ledger_is_refused_never_replaced(client, monkeyp
     econ = (pages / "VSBEconomy.tsx").read_text(encoding="utf-8")
     cockpit = (pages / "VSBCockpit.tsx").read_text(encoding="utf-8")
     assert "setError(why || `HTTP ${r.status}`); setRunning(false); return;" in econ
-    assert "if (typeof d === 'string') return d;" in cockpit and "if (reasons) return `${fallback}: ${reasons}.`;" in cockpit
+    assert "if (typeof d === 'string') return d;" in cockpit and "if (reasons) return `${fallback}: ${asClause(reasons)}.`;" in cockpit
     for page in (econ, cockpit):                    # a 422 names the field it refused
         assert "Array.isArray(d.loc) && d.loc.length ? `${d.loc[d.loc.length - 1]}: `" in page or \
             "Array.isArray(x.loc) && x.loc.length ? `${x.loc[x.loc.length - 1]}: `" in page
@@ -85585,8 +85585,8 @@ def test_w1030_a_refusal_is_said_by_its_reason_in_a_sentence_that_says_more(clie
 
     #  the three, read where they are
     vsb = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8"))
-    assert "setRepoErr(`${path} did not open (HTTP ${r.status}): ${why}. Nothing is shown as its contents.`);" in vsb
-    assert "return e?.response ? `${fallback} (HTTP ${e.response.status}): ${axiosDetail(e, 'no reason given')}.`" in vsb
+    assert "setRepoErr(`${path} did not open (HTTP ${r.status}): ${asClause(why)}. Nothing is shown as its contents.`);" in vsb   # W1059
+    assert "return e?.response ? `${fallback} (HTTP ${e.response.status}): ${asClause(axiosDetail(e, 'no reason given'))}.`" in vsb   # W1059
     gj = _code_only((src / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
     assert "setError(`Gate ${decision} failed (HTTP ${res.status}): ${await refusalText(res)}`);" in gj
 
@@ -86853,3 +86853,49 @@ def test_w1058_a_structured_refusal_is_said_by_its_sentence_never_by_its_code(cl
     assert said_by_code == {}, ("a refusal with a sentence is said by its code", said_by_code)
     kpi = [w for w in read_by if w.startswith("agentic_core/api/marketplace.py")]
     assert kpi and all(read_by[w][0] == "detail" for w in kpi), {w: read_by[w] for w in kpi}
+
+
+def test_w1059_a_reason_said_inside_a_longer_sentence_ends_that_sentence_once():
+    """W1059. Five of the cockpit's messages say a route's reason inside a sentence of their own and close it with a
+    full stop: serverDetail's two forms (a field check's reasons, and a refusal's reason after its status), the
+    repository's unread tree, a file that did not open, the products' listing and the roster that is not reporting.
+    A route's reason is a sentence with its own full stop, so each said it twice ("... are not gated by it.. Nothing
+    was added to the marketplace."), and W1058, which says a structured refusal by its sentence, makes that the usual
+    case. The reason is said as a clause now: lib/api.ts asClause drops its closing full stop, and nothing else.
+
+    Held here: asClause; the cockpit's six closings through it; and, tree-wide, no message in the app closes a
+    reader's reason with a full stop of its own unless it is said as a clause. src/lib/api.test.ts drives asClause and
+    VSBCockpit.repo.test.tsx the listing's sentence, whole."""
+    import pathlib
+    import re
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    api = (src / "lib/api.ts").read_text(encoding="utf-8")
+    assert "export function asClause(reason: string): string {\n  return reason.replace(/\\s*\\.\\s*$/, '');\n}" in api
+    vsb = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "import { asClause, axiosDetail, bodyDetail," in vsb
+    for closing in ("${fallback}: ${asClause(reasons)}.`",
+                    "(HTTP ${e.response.status}): ${asClause(axiosDetail(e, 'no reason given'))}.`",
+                    "(HTTP ${r.status}): ${asClause(bodyDetail(r.data, 'no reason given'))}. No tree is shown.`",
+                    "${path} did not open (HTTP ${r.status}): ${asClause(why)}. Nothing is shown as its contents.`",
+                    "(HTTP ${r.status}): ${asClause(bodyDetail(r.data, 'no reason given'))}. Nothing was added to the marketplace.`",
+                    "(HTTP ${r.status}): ${asClause(bodyDetail(r.data, 'no reason given'))}. That is a statement about `"):
+        assert closing in vsb, closing
+    assert "${why}." not in vsb and "${reasons}." not in vsb
+
+    #  tree-wide: a reader's reason closed with the page's own full stop is said as a clause
+    closed = re.compile(r"\$\{(?:bodyDetail|axiosDetail)\((?:[^()]|\([^()]*\))*\)\}\.")
+    offenders, scanned = [], 0
+    for f in sorted(list(src.rglob("*.ts")) + list(src.rglob("*.tsx"))):
+        if ".test." in f.name:
+            continue
+        scanned += 1
+        code = _code_only(f.read_text(encoding="utf-8", errors="replace").replace("\r\n", "\n"))
+        offenders += [f"{f.relative_to(src).as_posix()}: {m.group(0)[:80]}" for m in closed.finditer(code)]
+    assert scanned > 100, scanned
+    assert offenders == [], ("a reason is followed by a second full stop; say it with asClause", offenders)
+
+    unit = (src / "lib/api.test.ts").read_text(encoding="utf-8")
+    assert "expect(asClause('No repository generated for VSB vsb-1 yet.')).toBe('No repository generated for VSB vsb-1 yet');" in unit
+    assert "expect(asClause('is it held?')).toBe('is it held?');" in unit
+    repo = (src / "pages/enterprise/VSBCockpit.repo.test.tsx").read_text(encoding="utf-8")
+    assert "Nothing was added to the marketplace.`));" in repo

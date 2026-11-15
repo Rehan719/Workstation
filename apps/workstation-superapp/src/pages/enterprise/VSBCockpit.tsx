@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { errorMessage } from '../../lib/api';   // W1015 - a caught failure, said as what it was
 import { useTab } from '../../lib/useTab';   // W1027 - the tab is in the address
-import { axiosDetail, bodyDetail, provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, bodyOrNull } from '../../lib/api';   // W1011: axiosDetail; W1012: bodyDetail
+import { asClause, axiosDetail, bodyDetail, provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, bodyOrNull } from '../../lib/api';   // W1011: axiosDetail; W1012: bodyDetail
 import { ReadFailures, useReadFailures, silenceIsRight } from '../../components/ReadFailures';   // W928
 import { VBSSystemsPanel } from '../../components/VBSSystemsPanel';
 import { downloadExport } from '../../lib/download';
@@ -219,9 +219,9 @@ export const VSBCockpit: React.FC = () => {
     const reasons = Array.isArray(d)
       ? d.map((x: any) => x?.msg && `${Array.isArray(x.loc) && x.loc.length ? `${x.loc[x.loc.length - 1]}: ` : ''}${x.msg}`)
         .filter(Boolean).join('; ') : '';
-    if (reasons) return `${fallback}: ${reasons}.`;
+    if (reasons) return `${fallback}: ${asClause(reasons)}.`;   // W1059 - one full stop
     //  W1030 - an object reason is said too (its message, or the object): it was the status alone
-    return e?.response ? `${fallback} (HTTP ${e.response.status}): ${axiosDetail(e, 'no reason given')}.`
+    return e?.response ? `${fallback} (HTTP ${e.response.status}): ${asClause(axiosDetail(e, 'no reason given'))}.`
       : `${fallback} — backend unreachable.`;
   };
   const [lastCycle, setLastCycle] = useState<Dict | null>(null);
@@ -281,7 +281,7 @@ export const VSBCockpit: React.FC = () => {
       if (vid !== selectedRef.current) return;   // W1057 - said under the entity it was read for, never the next
       if (r.status === 200 && Array.isArray(r.data?.tree)) { setRepoTree(r.data.tree as string[]); }
       else if (r.status === 404) { setRepoNone(bodyDetail(r.data, 'This entity has no repository.')); }   // W1012
-      else { setRepoErr(`The repository could not be read (HTTP ${r.status}): ${bodyDetail(r.data, 'no reason given')}. No tree is shown.`); }   // W1025
+      else { setRepoErr(`The repository could not be read (HTTP ${r.status}): ${asClause(bodyDetail(r.data, 'no reason given'))}. No tree is shown.`); }   // W1025
     }).catch(() => { if (vid === selectedRef.current) setRepoErr('The repository could not be reached. No tree is shown.'); });
   };
   //  W1049 - a 404 is an entity never shipped, and shows nothing. Every other failure showed nothing too, so a body
@@ -350,7 +350,7 @@ export const VSBCockpit: React.FC = () => {
       else {
         const why = (() => { try { return bodyDetail(JSON.parse(String(r.data ?? '')), 'no reason given'); }
                              catch { return 'no reason given'; } })();
-        setRepoErr(`${path} did not open (HTTP ${r.status}): ${why}. Nothing is shown as its contents.`);
+        setRepoErr(`${path} did not open (HTTP ${r.status}): ${asClause(why)}. Nothing is shown as its contents.`);
       }
     }).catch(() => { if (issuedFor === selectedRef.current) setRepoErr(`${path} could not be fetched. Nothing is shown as its contents.`); })
       .finally(() => setRepoBusy(''));
@@ -370,7 +370,7 @@ export const VSBCockpit: React.FC = () => {
       .then(r => {
         if (issuedFor !== selectedRef.current) return;
         if (r.status === 200) setListedResult(r.data as Dict);
-        else setRepoErr(`The products were not listed (HTTP ${r.status}): ${bodyDetail(r.data, 'no reason given')}. Nothing was added to the marketplace.`);   // W1025
+        else setRepoErr(`The products were not listed (HTTP ${r.status}): ${asClause(bodyDetail(r.data, 'no reason given'))}. Nothing was added to the marketplace.`);   // W1025
       })
       .catch(() => { if (issuedFor === selectedRef.current) setRepoErr('The marketplace could not be reached. Nothing was listed.'); })
       .finally(() => setRepoBusy(''));
@@ -616,7 +616,7 @@ export const VSBCockpit: React.FC = () => {
         if (r.status !== 200 || !r.data) {
           setOperating(null);
           //  W1025 - with the server's reason when it gave one
-          setOperatingErr(`The living roster is not reporting (HTTP ${r.status}): ${bodyDetail(r.data, 'no reason given')}. That is a statement about `
+          setOperatingErr(`The living roster is not reporting (HTTP ${r.status}): ${asClause(bodyDetail(r.data, 'no reason given'))}. That is a statement about `
             + `reachability, not about whether this entity has operated.`);
           return;
         }
