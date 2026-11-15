@@ -70,6 +70,8 @@ const CSUITE_POOL = ['CSO', 'CFO', 'CTO', 'CPO', 'COO', 'CIO', 'CLO', 'Forecasti
 // W671 (ledger v16 R3.6) — the ONE place this tab's axis is fixed. The request body and both notices read it,
 // so the sentence on the page cannot drift from what is posted.
 const CASCADE_AXIS = { domain: 'enterprise', realm: 'enterprise' } as const;
+//  W1063 - what the hub's read-failure list calls a plan it could not read
+const PLAN_READ = "the living plan's objectives";
 
 const SwarmIntelligence: React.FC = () => {
   const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W931 - a read that fails is said
@@ -101,6 +103,10 @@ const SwarmIntelligence: React.FC = () => {
   // in part still rendered "No persisted cascade runs yet", which is the same untruth arriving by
   // the successful path.
   const [cascadeIncomplete, setCascadeIncomplete] = useState<string | null>(null);
+  //  W1063 - the history is said as empty only once a read of it answered, and a refused acceptance is said beside
+  //  its own button: it was put in the history's read failure, which took the list it had read off the page
+  const [cascadeListed, setCascadeListed] = useState(false);
+  const [acceptErr, setAcceptErr] = useState<{ run: string; why: string } | null>(null);
 
   const loadRuns = async () => {
     // W493 (FU-202, sweep S11.2, C4) - this swallowed the error, so an UNREACHABLE backend produced the
@@ -124,6 +130,7 @@ const SwarmIntelligence: React.FC = () => {
       // route says when it is short. This read .runs and dropped the rest.
       setCascadeIncomplete(res.data.total_is_incomplete ? (res.data.total_basis ?? '') : null);
       setCascadeErr('');
+      setCascadeListed(true);
     } catch (e) { setCascadeErr(errorMessage(e)); }
   };
 
@@ -138,11 +145,18 @@ const SwarmIntelligence: React.FC = () => {
   // W292 — when a VSB scope is chosen, offer its living plan's OPEN objectives for binding
   useEffect(() => {
     setObjectiveSel('');
-    if (scopeSel === 'workstation') { setObjectives([]); return; }
+    //  W1063 - a plan that could not be read is said, not offered as one with no objective, and only the chosen
+    //  plan's answer is used: one that answers after another plan was chosen is dropped
+    let live = true;
+    setObjectives([]);
+    if (scopeSel === 'workstation') { clearRead(PLAN_READ); return; }
     axios.get(`/api/v1/business-plan?scope=${encodeURIComponent(scopeSel)}`).then(res => {
+      if (!live) return;
       const objs = (res.data?.plan ?? res.data)?.objectives ?? [];
       setObjectives(objs.filter((o: any) => o.status !== 'done'));
-    }).catch(() => setObjectives([]));
+      clearRead(PLAN_READ);
+    }).catch(e => { if (live) noteRead(PLAN_READ)(e); });
+    return () => { live = false; };
   }, [scopeSel]);
 
   useEffect(() => {
@@ -226,7 +240,9 @@ const SwarmIntelligence: React.FC = () => {
       <ReadFailures failures={readFailures} />
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-fuchsia-500 text-lg font-bold uppercase">Swarm Intelligence Hub</h2>
-        <button onClick={loadRuns} className="p-1.5 rounded hover:bg-white/5 text-white/30 hover:text-white/60">
+        {/* W1063 - it read the delegate runs alone, and had no name */}
+        <button type="button" onClick={() => { loadRuns(); loadCascadeRuns(); }} aria-label="Read the run lists again"
+          title="Read the run lists again" className="p-1.5 rounded hover:bg-white/5 text-white/30 hover:text-white/60">
           <RefreshCw size={13} />
         </button>
       </div>
@@ -387,7 +403,8 @@ const SwarmIntelligence: React.FC = () => {
             ] as [string, string][]).filter(([, v]) => v).map(([label, text]) => (
               <details key={label} className="bg-black/40 rounded-lg border border-white/5">
                 <summary className="text-[9px] font-black uppercase tracking-widest text-white/60 px-3 py-2 cursor-pointer">{label}</summary>
-                <pre className="text-[9px] text-white/50 font-mono whitespace-pre-wrap leading-relaxed max-h-44 overflow-y-auto px-3 pb-3">{String(text).slice(0, 1400)}</pre>
+                {/* W1063 - each tier whole: it was cut at 1,400 characters, unmarked, in a box that scrolls */}
+                <pre className="text-[9px] text-white/50 font-mono whitespace-pre-wrap leading-relaxed max-h-44 overflow-y-auto px-3 pb-3">{String(text)}</pre>
               </details>
             ))}
             {/* §5 — the specialist C-Suite, each officer driving its own Centre of Excellence */}
@@ -407,9 +424,9 @@ const SwarmIntelligence: React.FC = () => {
                   {cascade.csuite_roster.engaged.map((role: string) => (
                     <div key={role} className="border-t border-white/5 pt-2">
                       <p className="text-[9px] font-black uppercase tracking-widest text-fuchsia-300">{role}</p>
-                      <pre className="text-[9px] text-white/45 font-mono whitespace-pre-wrap leading-relaxed max-h-28 overflow-y-auto">{String(cascade.level_2_csuite?.[role] || '').slice(0, 700)}</pre>
+                      <pre className="text-[9px] text-white/45 font-mono whitespace-pre-wrap leading-relaxed max-h-28 overflow-y-auto">{String(cascade.level_2_csuite?.[role] || '')}</pre>
                       {cascade.level_3_coe?.[`${role} CoE`] && (
-                        <pre className="mt-1 text-[9px] text-sky-300/50 font-mono whitespace-pre-wrap leading-relaxed max-h-24 overflow-y-auto border-l border-sky-500/20 pl-2">↳ CoE — {String(cascade.level_3_coe[`${role} CoE`]).slice(0, 500)}</pre>
+                        <pre className="mt-1 text-[9px] text-sky-300/50 font-mono whitespace-pre-wrap leading-relaxed max-h-24 overflow-y-auto border-l border-sky-500/20 pl-2">↳ CoE — {String(cascade.level_3_coe[`${role} CoE`])}</pre>
                       )}
                     </div>
                   ))}
@@ -430,7 +447,7 @@ const SwarmIntelligence: React.FC = () => {
                   {Object.entries(cascade.appraisals).map(([k, v]: any) => (
                     <div key={k} className="border-t border-white/5 pt-2">
                       <p className="text-[9px] font-black uppercase tracking-widest text-amber-300/80">{String(k).replace(/_/g, ' ')}</p>
-                      <pre className="text-[9px] text-white/45 font-mono whitespace-pre-wrap leading-relaxed max-h-28 overflow-y-auto">{String(v).slice(0, 600)}</pre>
+                      <pre className="text-[9px] text-white/45 font-mono whitespace-pre-wrap leading-relaxed max-h-28 overflow-y-auto">{String(v)}</pre>
                     </div>
                   ))}
                 </div>
@@ -460,7 +477,7 @@ const SwarmIntelligence: React.FC = () => {
                               data-testid={`fabric-kind-${f.resource}`}>
                           {f.kind === 'facility_run' ? `ran ${f.endpoint ?? ''}` : (f.kind_phrase ?? f.kind ?? 'kind not recorded')}
                         </span> · match ×{f.match_hits}</p>
-                      {f.output && <pre className="text-[9px] text-white/45 font-mono whitespace-pre-wrap leading-relaxed max-h-24 overflow-y-auto">{String(f.output).slice(0, 400)}</pre>}
+                      {f.output && <pre className="text-[9px] text-white/45 font-mono whitespace-pre-wrap leading-relaxed max-h-24 overflow-y-auto">{String(f.output)}</pre>}
                     </div>
                   ))}
                 </div>
@@ -508,6 +525,8 @@ const SwarmIntelligence: React.FC = () => {
             <p className="text-[10px] text-amber-400" data-testid="cascade-runs-unreadable">
               The cascade history could not be read ({cascadeErr}) — whether any cascade ran is unknown.
             </p>
+          ) : !cascadeListed ? (
+            <p className="text-[10px] text-[#666]" data-testid="cascade-runs-reading">Reading the cascade history…</p>
           ) : cascadeRuns.length === 0 ? (
             <p className="text-[10px] text-[#444]" data-testid="cascade-runs-empty">
               {cascadeIncomplete !== null
@@ -554,17 +573,23 @@ const SwarmIntelligence: React.FC = () => {
                   ) : cr.acceptance_basis ? (
                     <p data-testid="cascade-run-acceptance-unread" className="text-[8px] text-amber-400">{cr.acceptance_basis}</p>
                   ) : cr.delivery_sha256 && cr.business_plan_scope && cr.business_plan_scope !== 'workstation' ? (
+                    <>
                     <button type="button" data-testid="cascade-run-accept"
                       title="Records that you accepted this version of the delivery. Acceptance by itself earns nothing: only an accepted contract's agreed amount is earned."
                       onClick={async () => {
+                        setAcceptErr(null);
                         try {
                           await axios.post(`/api/v1/swarm/cascade/runs/${cr.run_id}/accept`, { delivery_sha256: cr.delivery_sha256 });
                           loadCascadeRuns();
-                        } catch (e) { setCascadeErr(errorMessage(e)); }
+                        } catch (e) { setAcceptErr({ run: cr.run_id, why: `Not accepted: ${errorMessage(e)}` }); }
                       }}
                       className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-white/10 text-white/50 hover:text-emerald-300">
                       accept this delivery
                     </button>
+                    {acceptErr && acceptErr.run === cr.run_id && (
+                      <p role="alert" data-testid="cascade-run-accept-error" className="text-[8px] text-amber-400">{acceptErr.why}</p>
+                    )}
+                    </>
                   ) : null}
                 </div>
               ))}

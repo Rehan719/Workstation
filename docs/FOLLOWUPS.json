@@ -25295,6 +25295,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the refused-generation case waits for the old panel to leave before it reads anything else about it. test_w1062b holds the wait and that the panel is still inside AnimatePresence (two blinds)."
+    },
+    {
+      "id": "FU-1250",
+      "title": "The Swarm Intelligence hub drew every tier of a cascade's delivery cut at a fixed length, unmarked, said its history as empty unread, and said a refused acceptance as a history it could not read",
+      "why": "Found by rendering SwarmIntelligence against its routes' own answers (FU-399 part 77; it had no rendered test). Each tier of the delivery was cut, unmarked, in a box that scrolls: the Chief's, the Board's, the CEO's, the BTO's and the Build-to-Order delivery at 1,400 characters (the captured Build-to-Order runs to 2,088), each officer's at 700 (each about 2,200), each CoE's at 500, each appraisal at 600, each fabric output at 400, so a person read part of each tier as the whole. The cascade history said No persisted cascade runs yet before its read answered. A refused acceptance was put in the history's read failure, which took the list it had read off the page. A plan whose objectives could not be read offered none and said nothing, and an answer for a plan no longer chosen could fill the next one's objectives. The refresh read the delegate runs alone and had no name (each driven in the rendered test on the unfixed hub).",
+      "source": "W1063 (FU-399 part 77: the Swarm Intelligence hub rendered)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/components/organism/SwarmIntelligence.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1063",
+      "note": "",
+      "slot_source": "found by FU-399's render of the organism's Swarm Intelligence hub; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: each tier of the delivery is drawn whole; the history is said as being read until it answers; a refused acceptance is said beside its button and the history stays; an unread plan is said in the hub's read-failure list and only the chosen plan's answer is used; the refresh reads both lists and is named. The rendered test (eight cases) has eight vitest blinds; test_w1063 holds the code (eight blinds)."
     }
   ],
   "routes": [

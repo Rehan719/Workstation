@@ -87113,3 +87113,60 @@ def test_w1062b_fu1249_the_hub_s_rendered_test_waits_for_the_old_result_to_leave
     for read in ("expect(screen.queryByText('Result')).toBeNull();", "expect(pre(captured.qms.framework).length).toBe(0);"):
         assert read in case and case.index(read) > at, ("read before the old panel has left", read)
     assert case.count("queryByText('Framework text')") == 1, "the old panel's absence is read a second time, unwaited"
+
+
+def test_w1063_fu1250_the_swarm_hub_draws_its_delivery_whole_and_says_each_failure_in_its_place():
+    """W1063 (FU-1250; FU-399 part 77). The organism's Swarm Intelligence hub had no rendered test. Rendered against its
+    routes' own answers, it drew every tier of a cascade's delivery cut at a fixed length, unmarked, in a box that
+    scrolls (each tier at 1,400 characters, an officer's at 700, a CoE's at 500, an appraisal at 600, a fabric output
+    at 400; the captured Build-to-Order delivery runs to 2,088 and each officer's to about 2,200). It said the cascade
+    history as empty before its read had answered. A refused acceptance was put in the history's read failure, which
+    took the list it had read off the page. A plan whose objectives could not be read offered none and said nothing,
+    and an answer for a plan no longer chosen could fill the next one's objectives. The refresh read the delegate
+    runs alone and had no name.
+
+    Held here: the hub's code for each; the rendered test (SwarmIntelligence.test.tsx, eight cases, eight vitest
+    blinds) holds what it says."""
+    import json
+    import pathlib
+    import re
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/components/organism"
+    code = _code_only((src / "SwarmIntelligence.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    #  1  the delivery whole: nothing between the delivery's heading and the history is cut at a fixed length
+    delivery = code[code.index("{cascade && ("):code.index("Org Cascade History (persisted)")]
+    assert not re.search(r"\.(slice|substring|substr)\(\s*0\s*,\s*(?:[5-9]\d{2}|1\d{3})\s*\)", delivery), (
+        "a tier of the delivery is cut at a fixed length", re.findall(r"\.slice\(0, \d+\)", delivery))
+    for whole in ("{String(text)}</pre>", "{String(cascade.level_2_csuite?.[role] || '')}</pre>",
+                  "↳ CoE — {String(cascade.level_3_coe[`${role} CoE`])}</pre>",
+                  "leading-relaxed max-h-28 overflow-y-auto\">{String(v)}</pre>", "{String(f.output)}</pre>"):
+        assert whole in delivery, whole
+    #  2  the history is said as being read until a read of it answers
+    assert "const [cascadeListed, setCascadeListed] = useState(false);" in code
+    assert code.count("setCascadeListed(true)") == 1 and code.count("setCascadeListed(") == 1
+    hist = code[code.index("{cascadeErr ? ("):code.index('data-testid="cascade-runs-empty"')]
+    assert ") : !cascadeListed ? (" in hist and 'data-testid="cascade-runs-reading"' in hist
+    #  3  a refused acceptance is said beside its button, never as the history's read failure
+    accept = code[code.index('data-testid="cascade-run-accept"'):code.index("accept this delivery")]
+    assert "setCascadeErr(" not in accept, "an acceptance's failure is said as the history unread"
+    assert "} catch (e) { setAcceptErr({ run: cr.run_id, why: `Not accepted: ${errorMessage(e)}` }); }" in accept
+    assert 'data-testid="cascade-run-accept-error"' in code and "acceptErr && acceptErr.run === cr.run_id && (" in code
+    assert code.count("setCascadeErr(errorMessage(e))") == 1, "something besides the history's read sets its failure"
+    #  4  the plan: said when unread, and only the chosen plan's answer used
+    plan = code[code.index("setObjectiveSel('');"):code.index("}, [scopeSel]);")]
+    assert "let live = true;" in plan and "return () => { live = false; };" in plan and "if (!live) return;" in plan
+    assert "}).catch(e => { if (live) noteRead(PLAN_READ)(e); });" in plan and "clearRead(PLAN_READ);" in plan
+    assert ".catch(() =>" not in plan, "a plan that could not be read is passed over in silence"
+    assert "const PLAN_READ = \"the living plan's objectives\";" in code
+    #  5  the refresh reads both lists, and has a name
+    assert ('onClick={() => { loadRuns(); loadCascadeRuns(); }} aria-label="Read the run lists again"' in code)
+    assert "onClick={loadRuns}" not in code
+    #  6  the rendered test and the capture it reads
+    t = (src / "SwarmIntelligence.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './SwarmIntelligence.fixture.json';" in t and t.count("\n  it('") >= 8
+    for tid in ("cascade-run-accept-error", "cascade-runs-empty", "read-failures"):
+        assert f"'{tid}'" in t, tid
+    fx = json.loads((src / "SwarmIntelligence.fixture.json").read_text(encoding="utf-8"))
+    assert fx["cascade"]["status"] == 200 and len(fx["cascade"]["body"]["level_5_build_to_order"]) > 1400
+    assert [fx[k]["status"] for k in ("accepted", "accept_again", "accept_wrong", "runs_failed", "cascade_runs_failed")] == [
+        200, 409, 409, 500, 500]
+    assert fx["cascade_runs_after"]["body"]["runs"][0]["business_plan_scope"] == fx["vsb_id"]
