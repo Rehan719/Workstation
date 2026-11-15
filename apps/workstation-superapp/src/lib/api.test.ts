@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, apiJson, axiosDetail, bodyDetail } from './api';
 import { errorMessage } from './api';   // W1015 - W1013's guard holds the line above as its own
 import { whoami } from './auth';
+import repo from '../pages/enterprise/VSBCockpit.repo.fixture.json';   // W1058 - the KPI gate's own refusal
 
 const FIELD_CHECK = { detail: [{ type: 'missing', loc: ['body', 'title'], msg: 'Field required', input: {} }] };
 const reply = (status: number, body: unknown, statusText = '') =>
@@ -21,9 +22,30 @@ describe('one reading of a refusal', () => {
     expect(bodyDetail({ detail: 'the plan could not be read' }, 'none')).toBe('the plan could not be read');
     expect(bodyDetail(FIELD_CHECK, 'none')).toBe('title: Field required');
     expect(bodyDetail({ detail: { message: 'a release needs two signatures' } }, 'none')).toBe('a release needs two signatures');
-    expect(bodyDetail({ detail: { error: 'kpi_gate', basis: 'two objectives carry no KPI' } }, 'none')).toBe('kpi_gate');
+    //  W1058 - this pinned the code: a structured refusal is said by its sentence
+    expect(bodyDetail({ detail: { error: 'kpi_gate', basis: 'two objectives carry no KPI' } }, 'none')).toBe('two objectives carry no KPI');
     expect(bodyDetail(null, 'none')).toBe('none');
     expect(bodyDetail({}, 'none')).toBe('none');
+  });
+
+  //  W1058 - the shapes the routes refuse in: a code in `error` beside the sentence written for a reader
+  it('says a structured refusal by its sentence, never by its code', () => {
+    const kpi = repo.listed.body as { detail: { error: string; detail: string } };
+    expect(repo.listed.status).toBe(409);
+    expect(bodyDetail(kpi, 'none')).toBe(kpi.detail.detail);   // the marketplace's KPI gate, as the route answered
+    expect(bodyDetail({ detail: { error: 'compliance_fail_hold', refused: 'listing', note: 'NOT DONE: the latest screen is fail' } }, 'none'))
+      .toBe('NOT DONE: the latest screen is fail');
+    expect(bodyDetail({ detail: { refused: 'organism.rpm_limit', why: 'a live lever is changed through Change Control' } }, 'none'))
+      .toBe('a live lever is changed through Change Control');
+    expect(bodyDetail({ detail: { refused: 'retirement_is_governed', basis: 'retirement is decided at Change Control' } }, 'none'))
+      .toBe('retirement is decided at Change Control');
+    //  the review gate writes its sentence in `error` and nothing else; a code with no sentence is said as itself
+    expect(bodyDetail({ detail: { error: 'review gate blocks progress - a human review is pending', gate: 'design' } }, 'none'))
+      .toBe('review gate blocks progress - a human review is pending');
+    expect(bodyDetail({ detail: { error: 'curation_blocked_by_compliance', note: null } }, 'none')).toBe('curation_blocked_by_compliance');
+    //  a key that is not a sentence is passed over
+    expect(bodyDetail({ detail: { message: { nested: true }, note: 'a sentence' } }, 'none')).toBe('a sentence');
+    expect(axiosDetail({ response: { data: kpi } }, 'none')).toBe(kpi.detail.detail);
   });
 
   it('is the reading an axios error gets', () => {

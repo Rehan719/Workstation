@@ -64,12 +64,19 @@ export async function apiJson<T = any>(url: string, opts: ApiOptions = {}): Prom
  *  surface crashes rather than showing a bad message. Twenty-two call sites read `e?.response?.data?.detail`
  *  straight into error state, so this is a class and not a site.
  *
- *  A structured detail is rendered by its `message` when it has one, because that is the sentence written
- *  for a reader; otherwise by its JSON, which is ugly but TRUE and far better than a blank panel claiming
- *  the backend is unavailable when it in fact refused and gave a reason.
+ *  A structured detail is rendered by the sentence written for a reader (W1058: its `message`, `detail`, `why`,
+ *  `note` or `basis`, and only then its `error`, which most routes fill with a code); otherwise by its JSON,
+ *  which is ugly but TRUE and far better than a blank panel claiming the backend is unavailable when it in fact
+ *  refused and gave a reason.
  *
  *  `errorMessage` above does the same job for the fetch path. The two now agree.
  */
+//  W1058 - a structured refusal's sentence keys, in the order they are read. Most routes that refuse with an object
+//  put a code in `error` ("kpi_gate", "compliance_fail_hold", "blocked_by_screen") and the sentence beside it;
+//  this read `error` before `note` and never read `detail`, `why` or `basis`, so the code was said and the
+//  sentence dropped. `error` is read last: one route, the review gate, writes its sentence there and nothing else.
+export const REFUSAL_SENTENCE_KEYS = ['message', 'detail', 'why', 'note', 'basis', 'error'] as const;
+
 export function axiosDetail(e: any, fallback: string): string {
   const d = e?.response?.data?.detail;
   if (typeof d === 'string' && d) return d;
@@ -86,9 +93,10 @@ export function axiosDetail(e: any, fallback: string): string {
     return reasons || fallback;
   }
   if (d && typeof d === 'object') {
-    const m = (d as Record<string, unknown>).message ?? (d as Record<string, unknown>).error
-              ?? (d as Record<string, unknown>).note;
-    if (typeof m === 'string' && m) return m;
+    for (const k of REFUSAL_SENTENCE_KEYS) {
+      const m = (d as Record<string, unknown>)[k];
+      if (typeof m === 'string' && m.trim()) return m;
+    }
     try { return JSON.stringify(d); } catch { return fallback; }
   }
   return fallback;

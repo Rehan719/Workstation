@@ -86792,3 +86792,64 @@ def test_w1057b_test_w1048_reads_what_served_last_from_a_record_of_its_own(clien
     assert '"_FLOOR_RECORD_EVERY_S", 0.0)' in w1048
     j = w1048.index('now = client.post("/api/v1/native-ai/complete", json=fx["ask"])')
     assert j < w1048.index('r = client.get("/api/v1/native-ai/status")'), "the status is read before the test's own completion"
+
+
+def test_w1058_a_structured_refusal_is_said_by_its_sentence_never_by_its_code(client):
+    """W1058. Rendering the cockpit's repository panel (W1057) found the marketplace listing's refusal said as
+    "kpi_gate". The one reader every page says a refusal through (lib/api.ts axiosDetail, and bodyDetail over it) read
+    a structured refusal's `message`, then its `error`, then its `note`, and never its `detail`, `why` or `basis`.
+    Most routes that refuse with an object put a code in `error` and the sentence written for a reader beside it, so
+    each was said by its code and the sentence was dropped. The reader reads the sentence keys first now, and `error`
+    last: the review gate writes its sentence there and nothing else. src/lib/api.test.ts drives each shape, the KPI
+    gate's as the route answered it.
+
+    Held here: the KPI gate's refusal, asked again of an entity made here, is a code beside a sentence; the reader's
+    order; and, over every literal structured refusal in agentic_core, each that carries a code in `error` and a
+    sentence under another key is read by the sentence."""
+    import ast
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    est = client.post("/api/v1/genesis/establish", json={"problem": "W1058 made up: a book swap shelf kept by a launderette",
+                                                         "ship_output": False, "name": "W1058 Book Swap"})
+    assert est.status_code == 200, est.text[:200]
+    r = client.post(f"/api/v1/marketplace/listings/from-entity/{est.json()['vsb_id']}", json={})
+    d = r.json()["detail"]
+    assert (r.status_code, d["error"], d["reason"]) == (409, "kpi_gate", "no_objectives"), r.text[:300]
+    assert isinstance(d["detail"], str) and len(d["detail"].split()) > 8, d   # the sentence the reader says
+
+    api = (root / "apps/workstation-superapp/src/lib/api.ts").read_text(encoding="utf-8")
+    m = re.search(r"export const REFUSAL_SENTENCE_KEYS = \[([^\]]+)\] as const;", api)
+    assert m, "the reader's order is not stated"
+    order = [k.strip().strip("'") for k in m.group(1).split(",")]
+    assert order == ["message", "detail", "why", "note", "basis", "error"], order
+    assert "for (const k of REFUSAL_SENTENCE_KEYS) {" in api
+    assert ".message ?? (d as Record<string, unknown>).error" not in api, "the code is read before the sentence again"
+    unit = (root / "apps/workstation-superapp/src/lib/api.test.ts").read_text(encoding="utf-8")
+    assert "expect(bodyDetail(kpi, 'none')).toBe(kpi.detail.detail);" in unit
+    assert ".toBe('kpi_gate');" not in unit
+
+    #  every literal structured refusal: the key the reader reads first, among the keys it carries
+    code = re.compile(r"^[a-z][a-z0-9_]*$")
+    read_by, scanned = {}, 0
+    for f in sorted((root / "agentic_core").rglob("*.py")):
+        tree = ast.parse(f.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Call) and getattr(node.func, "id", getattr(node.func, "attr", "")) == "HTTPException"):
+                continue
+            det = next((k.value for k in node.keywords if k.arg == "detail"), None)
+            if not isinstance(det, ast.Dict):
+                continue
+            scanned += 1
+            keys = {k.value: v for k, v in zip(det.keys, det.values) if isinstance(k, ast.Constant)}
+            first = next((k for k in order if k in keys), None)
+            err = keys.get("error")
+            err_is_code = isinstance(err, ast.Constant) and isinstance(err.value, str) and bool(code.match(err.value))
+            read_by[f"{f.relative_to(root).as_posix()}:{node.lineno}"] = (first, err_is_code, sorted(keys))
+    assert scanned >= 20, ("this scanned almost nothing, so it would pass on an empty tree", scanned)
+    coded = {w: v for w, v in read_by.items() if v[1]}
+    assert coded, "no structured refusal carries a code, so this holds nothing"
+    said_by_code = {w: v for w, v in coded.items() if v[0] == "error" and set(v[2]) & set(order[:-1])}
+    assert said_by_code == {}, ("a refusal with a sentence is said by its code", said_by_code)
+    kpi = [w for w in read_by if w.startswith("agentic_core/api/marketplace.py")]
+    assert kpi and all(read_by[w][0] == "detail" for w in kpi), {w: read_by[w] for w in kpi}

@@ -25162,6 +25162,28 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: test_w1048 reads the status over a record of its own, holding a row that names another resource as an earlier test leaves one, then the page's own completion with the floor's record throttle open. test_w1057b holds the condition (the status reads False under it) and test_w1048's form (two blinds)."
+    },
+    {
+      "id": "FU-1244",
+      "title": "The shared refusal reader said a structured refusal by its code (kpi_gate, compliance_fail_hold, blocked_by_screen) and dropped the sentence written for a reader",
+      "why": "Found rendering the cockpit's repository panel (W1057): the marketplace listing's refusal was said as kpi_gate. lib/api.ts axiosDetail, and bodyDetail over it, read a structured refusal's message, then its error, then its note, and never its detail, why or basis. Most routes that refuse with an object put a code in error and the sentence beside it: the KPI gate's in detail; the compliance hold's, the unread compliance standing's, the curation hold's, the Genesis screen veto's and the cascade's unproposed item's in note; the governed setting's in why. Each was said by its code. W1013's own unit example, {error: kpi_gate, basis: ...}, pinned the code.",
+      "source": "W1058 (found rendering the cockpit's repository panel, W1057)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/lib/api.ts",
+        "apps/workstation-superapp/src/lib/api.test.ts"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1058",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the cockpit's repository panel; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the reader reads a structured refusal's sentence keys first (message, detail, why, note, basis) and error last. src/lib/api.test.ts drives each shape, the KPI gate's as the route answered it (two vitest blinds); test_w1058 holds the route's refusal, the order and a census of every literal structured refusal (three blinds)."
     }
   ],
   "routes": [

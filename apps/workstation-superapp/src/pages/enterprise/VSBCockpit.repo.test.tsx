@@ -100,7 +100,10 @@ describe('VSBCockpit\'s repository panel, rendered against its routes\' own answ
     mount();
     await waitFor(() => expect(current()).toBeTruthy());
     fireEvent.click(screen.getByTestId('cockpit-list-products'));
-    await waitFor(() => expect(screen.getByTestId('cockpit-repo-error').textContent).toMatch(
-      /^The products were not listed \(HTTP 409\): .+\. Nothing was added to the marketplace\.$/));
+    //  W1058 - by the route's sentence: the shared reader said the gate's code, "kpi_gate"
+    const why = String((captured.listed.body as { detail: { detail: string } }).detail.detail);
+    await waitFor(() => expect(screen.getByTestId('cockpit-repo-error').textContent).toContain(
+      `The products were not listed (HTTP 409): ${why.replace(/\.$/, '')}`));
+    expect(screen.getByTestId('cockpit-repo-error').textContent).not.toContain('kpi_gate');
   });
 });
