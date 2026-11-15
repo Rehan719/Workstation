@@ -63559,7 +63559,7 @@ def test_w691_a_reviewer_agent_is_calibrated_by_its_recorded_run_and_never_by_a_
 
     #  THE SET IN THE TREE says it cannot be run yet, so NO agent is calibrated - and a run on it is refused
     the_set = cal.load_set("care")
-    assert the_set and the_set["runnable"] is False and len(the_set["cases"]) == 16
+    assert the_set and cal.runnable(the_set)["runnable"] is False and len(the_set["cases"]) == 16   # W1099: computed
     assert sum(1 for c in the_set["cases"] if c.get("planted")) == 10
     runs = tmp_path / "review_calibration_runs.json"
     monkeypatch.setattr(cal, "_runs_path", lambda: runs)
@@ -63568,10 +63568,12 @@ def test_w691_a_reviewer_agent_is_calibrated_by_its_recorded_run_and_never_by_a_
     today = _dt.date.today().isoformat()
     refused = client.post("/api/v1/review/calibration/run", json={"agent": "care-reviewer", "model": "m", "configuration": "model",
                                                                  "date": today, "flags": {}})
-    assert refused.status_code == 409 and "not written out in full" in refused.json()["detail"] and not runs.exists()
+    assert refused.status_code == 409 and "cannot be run on" in refused.json()["detail"] and not runs.exists()
 
     #  WHEN A SET CAN BE RUN (made to happen here), the run is recorded and the RATES ARE COMPUTED BY THE SERVER
-    runnable = {"version": "t1", "runnable": True, "cases": cases}
+    #  W1099 - a set can be run when it is written out, never because it says so
+    runnable = {"version": "t1", "cases": [{**c, "shown": f"made-up text {c['id']}", "from": "made up here",
+                                           "relies_on": []} for c in cases]}
     monkeypatch.setattr(cal, "load_set", lambda d: runnable if d == "care" else None)
     assert cal.calibration_of("care-reviewer")["why_not"] == "this agent has never been run on the calibration set"
     body = {"agent": "care-reviewer", "model": "m", "configuration": "model", "date": today, "flags": perfect}
@@ -90481,3 +90483,102 @@ def test_w1098_fu1275_the_early_warning_score_gives_its_owners_acknowledgement_w
     spec = (pages / "CareHub.test.tsx").read_text(encoding="utf-8")
     for case in ("toBe(captured.news2.score.acknowledgement)", "toBe(captured.news2_partial.score.acknowledgement)"):
         assert case in spec, f"the rendered test no longer reads the acknowledgement: {case}"
+
+
+def test_w1099_fu1054_the_care_calibration_set_is_written_out_and_run_only_when_it_can_be(client, tmp_path, monkeypatch):
+    """FU-1054 part 1 (W1099). The Care calibration set was sixteen cases described in a sentence each, with
+    `"runnable": false` typed beside them, and the route and calibration_of read that flag: a claim stood where the
+    module's own rule is a measurement. Held here:
+    - the set in the tree is written out: fifteen cases carry what a reviewer is shown, each taken from the tree (a
+      route's answer, a prompt, an entry of the catalogue's history), and every planted case says where the tree
+      had its defect; the sixteenth, K06, says why it is not written out yet; no `runnable` key stands in the file;
+    - whether a set can be run is computed, and every rule drives it: a case not written out, a planted case with no
+      `from`, a row not in the register, a row in another status, a current row not read within the review period
+      of the run's date or read after it, and a part the row says was NOT READ - and each reason is said;
+    - on 2026-11-15 the set cannot be run for exactly two causes outside this machine: NEWS2's chart itself was not
+      read (C03, C10, K02) and NICE NG97 has not been read (K06, whose text waits on it);
+    - the calibration route records a run only on a date the set can be run, and refuses one on the tree's set with
+      those reasons, writing nothing; a flag in a set's file decides nothing either way."""
+    import datetime as _dt
+    import json
+    from pathlib import Path
+    from agentic_core.api import _review_calibration as cal
+    root = Path(__file__).resolve().parents[1]
+    raw = json.loads((root / "docs" / "CARE_REVIEW_CALIBRATION.json").read_text(encoding="utf-8"))
+
+    #  1. THE SET IN THE TREE
+    assert "runnable" not in raw and "runnable_basis" not in raw and raw["version"] == "2-written", (
+        "a flag stands in the file where the computation was ruled")
+    cases = {c["id"]: c for c in raw["cases"]}
+    assert len(cases) == 16 and sum(1 for c in cases.values() if c.get("planted")) == 10
+    for cid, c in cases.items():
+        assert bool(c.get("shown")) is (cid != "K06"), (cid, "written out" if c.get("shown") else "not written out")
+        if c.get("planted"):
+            assert c.get("must_flag") and len(str(c.get("from") or "")) > 40, (cid, c.get("from"))
+        assert isinstance(c.get("relies_on"), list), cid
+    assert "NG97" in cases["K06"]["not_written"] and "verified against clinical guidance" in cases["C08"]["described_before"]
+    on = cal.runnable(raw, on="2026-11-15")
+    chart = "relies on the chart itself (rcp-news2), which the register says was NOT READ"
+    assert on["runnable"] is False and sorted(on["why_not"]) == sorted([
+        f"C03 {chart}", f"C10 {chart}", f"K02 {chart}",
+        "K06 is described, not written out in full: " + cases["K06"]["not_written"],
+        "K06 relies on nice-ng97 being current, and the register holds it as named_not_read"]), on["why_not"]
+
+    #  ...and the route refuses a run on it with those reasons, writing nothing; no agent is calibrated on it
+    runs = tmp_path / "review_calibration_runs.json"
+    monkeypatch.setattr(cal, "_runs_path", lambda: runs)
+    body = {"agent": "w1099-reviewer", "model": "local-model", "configuration": "model", "date": "2026-11-15",
+            "flags": {f"P{i}": [f"reason-{i}"] for i in range(3)}}
+    refused = client.post("/api/v1/review/calibration/run", json=body)
+    assert refused.status_code == 409 and refused.json()["detail"] == (
+        "Not recorded: the calibration set cannot be run on 2026-11-15: " + "; ".join(on["why_not"]) + "."), refused.text[:400]
+    assert not runs.exists(), "a refused run wrote the store"
+    now = cal.calibration_of("w1099-reviewer")
+    assert now["calibrated"] is False and "cannot be run yet" in now["why_not"] and now["set_cannot_run"], now
+
+    #  2. COMPUTED FROM THE CASES AND THE REGISTER, each rule driven
+    register = {"r-now": {"id": "r-now", "status": "current", "read_on": "2026-11-01",
+                          "says": "Read at its page. NOT READ: the annex. Terms read."},
+                "r-old": {"id": "r-old", "status": "replaced", "read_on": "2026-10-01"},
+                "r-named": {"id": "r-named", "status": "named_not_read"}}
+    monkeypatch.setattr(cal, "_register", lambda: (register, 90))
+    planted = [{"id": f"P{i}", "planted": "made up", "must_flag": f"reason-{i}", "shown": f"made-up planted {i}",
+                "from": "made up for this test", "relies_on": [{"row": "r-old", "status": "replaced"}]} for i in range(3)]
+    clean = [{"id": f"K{i}", "planted": None, "shown": {"answer": f"made-up clean {i}"},
+              "relies_on": [{"row": "r-now", "status": "current", "part": "the summary"}]} for i in range(6)]
+    good = {"version": "w1099-t", "cases": planted + clean}
+
+    def run_on(the_set, day):
+        return cal.runnable(the_set, on=day)
+    assert run_on(good, "2026-11-15") == {"runnable": True, "on": "2026-11-15", "why_not": []}
+    assert run_on({**good, "runnable": False}, "2026-11-15")["runnable"] is True, "a flag in the file decided"
+
+    def bent(index, **change):
+        cs = [dict(c) for c in good["cases"]]
+        cs[index].update(change)
+        return {"version": "w1099-t", "runnable": True, "cases": cs}
+    for the_set, said in (
+            (bent(0, shown=""), "P0 is described, not written out in full"),
+            (bent(3, shown={}), "K0 is described, not written out in full"),
+            (bent(1, **{"from": " "}), "P1 does not say where this repository had its defect"),
+            (bent(4, relies_on=[{"row": "r-gone", "status": "current"}]), "K1 relies on r-gone, which is not a row"),
+            (bent(5, relies_on=[{"row": "r-named", "status": "current"}]),
+             "K2 relies on r-named being current, and the register holds it as named_not_read"),
+            (bent(6, relies_on=[{"row": "r-now", "status": "current", "part": "the annex"}]),
+             "K3 relies on the annex (r-now), which the register says was NOT READ")):
+        got = run_on(the_set, "2026-11-15")
+        assert got["runnable"] is False and any(w.startswith(said) for w in got["why_not"]), (said, got["why_not"])
+    for day in ("2027-01-31", "2026-10-31"):            # 91 days after the read, and before it
+        late = run_on(good, day)
+        assert late["runnable"] is False and len(late["why_not"]) == 6 and all(
+            "was not read within the register's 90-day review period before " + day in w for w in late["why_not"]), late
+    assert run_on(good, "2027-01-30")["runnable"] is True, "the 90th day is within the period"
+    assert run_on(good, "lately") == {"runnable": False, "on": None, "why_not": ["'lately' is not a date"]}
+
+    #  3. THE ROUTE: a run is recorded only on a date the set can be run, and nothing else is written
+    monkeypatch.setattr(cal, "load_set", lambda d: good if d == "care" else None)
+    late = client.post("/api/v1/review/calibration/run", json={**body, "date": "2027-02-14"})
+    assert late.status_code == 409 and "90-day review period before 2027-02-14" in late.json()["detail"] and not runs.exists(), late.text[:300]
+    ok = client.post("/api/v1/review/calibration/run", json=body)
+    assert ok.status_code == 200 and ok.json()["score"]["meets_bar"] is True, ok.text[:300]
+    assert len(json.loads(runs.read_text(encoding="utf-8"))) == 1

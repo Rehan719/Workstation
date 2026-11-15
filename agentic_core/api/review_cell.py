@@ -116,14 +116,17 @@ async def record_calibration_run(req: CalibrationRun, user: dict | None = Depend
     the_set = _cal.load_set(req.discipline)
     if not the_set:
         raise HTTPException(status_code=422, detail=f"Not recorded: no calibration set exists for {req.discipline!r}.")
-    if not the_set.get("runnable"):
-        #  refused where the caller receives it: a run on cases that are only described measured nothing
-        raise HTTPException(status_code=409, detail=(
-            "Not recorded: " + str(the_set.get("runnable_basis") or "this calibration set cannot be run yet") + "."))
     if req.configuration not in _cal.CONFIGURATIONS:
         raise HTTPException(status_code=422, detail=f"configuration is one of {list(_cal.CONFIGURATIONS)}")
     if not str(req.agent).strip() or not str(req.model).strip() or _rt._date(req.date) is None:
         raise HTTPException(status_code=422, detail="Not recorded: a run names its agent, its model and its date.")
+    #  W1099 (FU-1054) - WHETHER THE SET CAN BE RUN ON THE RUN'S DATE IS COMPUTED, never read from a flag, and every
+    #  reason it cannot is said where the caller receives it: a run on cases not written out, or on sources not
+    #  read, measured nothing
+    can = _cal.runnable(the_set, on=_rt._date(req.date))
+    if not can["runnable"]:
+        raise HTTPException(status_code=409, detail=(
+            f"Not recorded: the calibration set cannot be run on {can['on']}: " + "; ".join(can["why_not"]) + "."))
     known = {c["id"] for c in the_set.get("cases") or []}
     unknown = sorted(set(req.flags) - known)
     if unknown:
