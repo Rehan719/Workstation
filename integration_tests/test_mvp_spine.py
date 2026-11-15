@@ -88044,3 +88044,37 @@ def test_w1077_fu1263_with_sign_in_on_no_listing_hands_a_person_another_persons_
     monkeypatch.setenv("AUTH_ENABLED", "false")
     assert cca in client.get("/api/v1/cca/queue").text
     assert client.get(f"/api/v1/cca/{cca}").status_code == 200
+
+
+def test_w1078_fu1265_the_shells_vitals_say_the_routes_own_words_a_figure_never_read_as_not_read_and_a_refusal_with_its_reason():
+    """W1078 (FU-1265; FU-399 part 89). The shell's vitals chrome (BiometricStatus, fed by useWorkstationBiometrics) had
+    no rendered test, and the hook was the last route-calling file no rendered test reached. Rendered with the real
+    hook against its route's own answers, three things were wrong:
+    - the hook dropped what the route says of its own figures, though the chrome reads it: the window the CPU figure
+      covers (W756's guard read the chrome's code, which reads a field the hook never carried) and the load and
+      communication readings' bases;
+    - a first read that failed was titled with the hook's default headroom (100%) and labelled Idle;
+    - a refused read kept the last figures as though current, without the route's reason.
+
+    Held here: the hook's and the chrome's code, and the rendered test (BiometricStatus.test.tsx, four cases, six
+    vitest blinds) over the route's own answers."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    hook = _code_only((src / "hooks/useWorkstationBiometrics.ts").read_text(encoding="utf-8"))
+    for carried in ("host_cpu_window_seconds: r.cardiovascular?.host_cpu_window_seconds ?? null,",
+                    "basis:         r.cognition?.basis,", "basis: r.communication?.basis,"):
+        assert carried in hook, carried
+    assert "unread: bodyDetail(res.data, `the vitals route answered ${res.status}`)" in hook
+    assert "live: false, unread: errorMessage(e) }));" in hook and "everRead: true, unread: null });" in hook
+    chrome = _code_only((src / "components/BiometricStatus.tsx").read_text(encoding="utf-8"))
+    assert "const CARDIO_TITLE = !b.live && !b.everRead" in chrome
+    assert "`Cardiovascular — host CPU headroom not read: ${b.unread ?? 'the vitals have not been read yet'}`" in chrome
+    assert "const label      = b.live ? stateLabel(b.systemState) : 'Unread';" in chrome
+    assert chrome.count("title={LOAD_TITLE}") == 2 and chrome.count("title={COMM_TITLE}") == 2
+    assert "(b.cardiovascular as any)" not in chrome and "(b.cognition as any)" not in chrome
+    t = (src / "components/BiometricStatus.test.tsx").read_text(encoding="utf-8")
+    assert t.count("\n  it('") == 4, t.count("\n  it('")
+    fx = json.loads((src / "components/BiometricStatus.fixture.json").read_text(encoding="utf-8"))
+    assert fx["live"]["status"] == 200 and fx["refused"]["status"] == 503
+    assert fx["live"]["body"]["cardiovascular"].get("host_cpu_window_seconds") is not None

@@ -25633,6 +25633,28 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: a reply that did not come is said beside the input as that; one message is answered at a time (words heard meanwhile go in the box); a cleared conversation's late reply is dropped and the session it opened closed; the person's entity is read for each message; a change of who is signed in sets the conversation aside; a voice message is sent as the conversation stands when it is heard; and the rewind is offered only for audio it can rewind. The rendered test (seven cases, all red on the unfixed session) has ten vitest blinds; test_w1076 holds the code and the fixture, with ten blinds."
+    },
+    {
+      "id": "FU-1265",
+      "title": "The shell's vitals dropped the route's window and bases, titled a host nobody read with the default headroom, and kept a refused reading as current",
+      "why": "Found by rendering the shell's vitals chrome (BiometricStatus) with the real hook (useWorkstationBiometrics) against its route's own answers (FU-399 part 89; no rendered test reached the hook, the last route-calling file the census found unreached). The hook dropped what the route says about its own figures, though the chrome reads it: the window the host CPU figure covers, which W756 asks every surface printing the CPU figure to print (its guard read the chrome's code, which reads a field the hook never carried), and the load and communication readings' own bases, so the chrome said its fallback sentence instead of the server's. A first read that failed, refused (503: the host could not be read) or unreached, left the chrome titled 'host CPU headroom 100%' and labelled Idle, the hook's defaults, of a host nobody read. A refused read after a live one kept the last figures and state as though current, and dropped the route's reason: only the dot turned grey.",
+      "source": "W1078 (FU-399 part 89: the shell's vitals rendered with the real hook)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/hooks/useWorkstationBiometrics.ts",
+        "apps/workstation-superapp/src/components/BiometricStatus.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1078",
+      "note": "",
+      "slot_source": "found by FU-399's render of the shell's vitals; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the hook carries the route's CPU window and the load and communication readings' bases, and why a reading is not live (the route's refusal by its reason, or a route not reached); the chrome says a figure never read as not read with that reason, claims no state of a reading not live, and says a last reading as the last reading. The rendered test (four cases, all red on the unfixed vitals) has six vitest blinds; test_w1078 holds the code and the fixture, with six blinds."
     }
   ],
   "routes": [
