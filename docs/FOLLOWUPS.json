@@ -21469,10 +21469,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1081",
       "note": "",
-      "slot_source": "chartered with the item in this round"
+      "slot_source": "chartered with the item in this round",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1080 and W1081, as one driven slice on made-up parties. A party is a person or a registered body, entered with where and when it was read and never checked by this platform; an entity of this platform is refused as a party, and the Law page offers parties only from the party records. An agreement keeps drafted, reviewed, approved, executed, in force and ended as six facts apart, each with who and when; an approval is of one version by its hash, and a change to the text ends it with why; an execution is a person's entry of the evidence and the formalities met, never a provider's status, and the law's formalities are not stated while the rules on execution are unread (FU-1077); a signatory's authority is recorded as stated and by whom, never verified; the internal service contracts are listed apart. Kept only for a signed-in person. test_w1080 drives the routes as two people and an administrator (ten blinds); the Law page's panel is rendered against the routes' own answers (AgreementsPanel.test.tsx, nine cases, nine vitest blinds); test_w1081 holds the wiring (six blinds). The journey is the coverage register's row law-agreement-records, driven by test_w1080."
     },
     {
       "id": "FU-1076",
@@ -25676,6 +25679,23 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the route's sentence on the verse's prefix is said whatever the route found. The hub's rendered test (four cases) has one vitest blind; test_w1079 holds the import census (every file that calls a route is reached by a rendered test, 90 of 90), the hub's code and the fixture (no Arabic), with three blinds."
+    },
+    {
+      "id": "FU-1267",
+      "title": "The agreement records hold no obligation and no date: P5.18's next slice (clauses 3 and 7)",
+      "why": "W1080 and W1081 built clauses 1 and 2: parties as they are in law, and an agreement record whose six facts are kept apart, completed on the Law page. Nothing yet records what an agreement obliges or when. Clause 3 asks that an obligation name the clause it was read from and the person who confirmed it; that a date be entered by a person, or computed by a dated rule from a source that was read, and never taken from a model; that an unknown notice period be said to be unknown; and that what falls due be shown on the one list of what waits on a person. Clause 7 asks that a person's document be data: an instruction inside an uploaded agreement is never followed, how much was read of how much is said, and nothing of it crosses to an outside service. Both can be built on a person's entries alone. A date computed by a rule, and clauses 4 to 6 and 8, wait on their sources being read at the publishers (FU-1077).",
+      "source": "W1081 (P5.18 clauses 1 and 2 completed on the Law page)",
+      "found": "2026-11-15",
+      "files": [
+        "agentic_core/api/agreements.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.18's own next clauses, after clauses 1 and 2 (W1080, W1081)"
     }
   ],
   "routes": [

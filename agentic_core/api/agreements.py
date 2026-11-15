@@ -411,7 +411,8 @@ async def draft_agreement(req: AgreementRequest, user: dict | None = Depends(get
                 f"'{pid or 'nothing'}' is not a party record of yours. A party is entered first, as the person or "
                 f"registered body it is (POST /api/v1/agreements/parties), so nothing was kept."))
         if pid in {n["party_id"] for n in named}:
-            raise HTTPException(status_code=400, detail=f"{pid} is named twice as a party, so nothing was kept.")
+            raise HTTPException(status_code=400, detail=(
+                f"{mine[pid]['name']} ({pid}) is named twice as a party, so nothing was kept."))
         named.append({"party_id": pid, "role": role, "signatories": []})
     at, h = _now(), _hash(text)
     a = {"id": f"agr-{uuid.uuid4().hex[:10]}", "owner": who, "title": title, "parties": named,

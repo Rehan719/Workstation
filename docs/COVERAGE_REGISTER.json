@@ -635,6 +635,15 @@
    "state": "journey",
    "driven_by": "test_w724_a_statute_provision_is_shown_word_for_word_and_help_is_a_list_of_links",
    "today": "one section is fetched from legislation.gov.uk on request and shown word for word with its version date, extent, the publisher's list of changes not yet applied and the licence; it is not advice and says nothing about whether it applies to a person"
+  },
+  {
+   "id": "law-agreement-records",
+   "domain": "Law",
+   "subject": "Keeping a record of the enterprise's own agreement with an outside party",
+   "nation": "Any: the record states no rule of law",
+   "state": "journey",
+   "driven_by": "test_w1080_p518_a_party_is_a_person_or_a_registered_body_and_an_agreements_six_facts_stay_apart",
+   "today": "on the Law page, a signed-in person enters each party as a person or a registered body with where and when it was read, drafts an agreement on those party records only, and records its review, the approval of one exact version, its execution as their own entry of the evidence and the formalities met, that it is in force and its end, each with who and when; a change to the text ends the approval it had; nothing is kept before sign-in, which formalities the law requires is not stated, and nothing here is legal advice (built in W1080 and W1081)"
   }
  ]
 }

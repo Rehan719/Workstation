@@ -88401,3 +88401,88 @@ def test_w1080_p518_a_party_is_a_person_or_a_registered_body_and_an_agreements_s
     import pathlib
     src = (pathlib.Path(__file__).resolve().parents[1] / "agentic_core/api/agreements.py").read_text(encoding="utf-8")
     assert "ENTITY_TEMPLATES" not in src and "entity_type" not in src and "economy.entity_form" not in src
+
+
+def test_w1081_p518_on_the_law_page_a_signed_in_person_keeps_the_enterprises_agreement_records(client, monkeypatch):
+    """P5.18 clauses 1 and 2 completed (W1081, FU-1075). W1080 built the records; the Law page's panel
+    (components/AgreementsPanel.tsx) is where a person completes them, and its rendered test drives every step against
+    the routes' own answers. Held here:
+    - the Law page mounts the panel once, and the panel calls the agreement routes only: no entity of this platform is
+      read, so none can be offered as a party; a party is offered only from the party records;
+    - the panel says the route's own sentences: why nothing is kept with sign-in off, that nothing here is legal
+      advice, each party's basis, the law's formalities as not stated, a signatory's authority as not verified, and
+      what the internal service contracts are;
+    - its rendered test exists and its fixture is the routes' own answers on made-up parties: every agreement answer
+      holds the six facts in order and no single status, and every party is made up;
+    - a draft naming one party twice is refused by the party's name, not by an id the person never saw (driven);
+    - the journey is a row of the coverage register, driven by test_w1080, and the register's check passes."""
+    import json
+    import pathlib
+    import re
+    import uuid
+    from datetime import datetime, timedelta, timezone
+    import agentic_core.auth.core as _ac
+    import agentic_core.api.agreements as _ag
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+
+    #  1. the page mounts the panel; the panel calls the agreement routes only
+    hub = _code_only((src / "pages/domains/LawHub.tsx").read_text(encoding="utf-8"))
+    assert "import AgreementsPanel from '../../components/AgreementsPanel';" in hub and hub.count("<AgreementsPanel />") == 1
+    panel = _code_only((src / "components/AgreementsPanel.tsx").read_text(encoding="utf-8"))
+    assert set(re.findall(r"/api/v\d+/[\w/{}.-]*", panel)) == {"/api/v1/agreements"}, re.findall(r"/api/v\d+/[\w/{}.-]*", panel)
+    assert "apiJson(" in panel and "axios" not in panel and "fetch(" not in panel
+    assert "(parties ?? []).map(x => <option key={x.id} value={x.id}>{x.name}</option>)" in panel
+    #  the route's own sentences, never the page's in their place
+    for said in ("{list.not_kept_because}", "{list.not_legal_advice}", "{x.basis}", "{f.law_basis}", "${s.basis}",
+                 "{isc.what_these_are}", "{isc.unread}", "{f.said}", "${e.ended_because}"):
+        assert said in panel, said
+
+    #  2. the rendered test and its fixture: the routes' own answers on made-up parties
+    test = (src / "components/AgreementsPanel.test.tsx").read_text(encoding="utf-8")
+    assert "import AgreementsPanel from './AgreementsPanel';" in test and len(re.findall(r"(?m)^  it\(", test)) >= 9
+    fx = json.loads((src / "components/AgreementsPanel.fixture.json").read_text(encoding="utf-8"))
+    for k in ("list_off", "list_empty", "party_refused", "party_body", "party_person", "draft_refused", "draft",
+              "approve", "text", "approve_old", "executed", "signatory", "in_force", "ended_refused", "ended",
+              "list_unread"):
+        assert k in fx and fx[k]["status"] in (200, 400, 409, 503), k
+    assert fx["list_off"]["body"]["kept"] is False and fx["list_off"]["body"]["not_kept_because"] == _ag.NOT_KEPT
+    whole = [v["body"] for v in fx.values() if isinstance(v, dict) and isinstance(v.get("body"), dict) and "facts" in v["body"]]
+    assert len(whole) >= 9, len(whole)
+    for b in whole:
+        assert [f["state"] for f in b["facts"]] == list(_ag.STATES), b["facts"]
+        assert "status" not in json.dumps({k: v for k, v in b.items() if k != "internal_service_contracts"}), b["id"]
+    names = [p["name"] for p in fx["parties_two"]["body"]["parties"]]
+    assert len(names) == 2 and all("W1081" in n for n in names), names
+    assert fx["executed"]["body"]["facts"][3]["formalities_the_law_requires"] is None
+    assert fx["draft_refused"]["body"]["detail"].startswith("W1081 Made-up Supplies Ltd (pty-"), fx["draft_refused"]
+
+    #  3. a draft naming one party twice is refused by the party's name (driven)
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    who = f"w1081-person-{uuid.uuid4().hex[:6]}"
+    users = _ac._load_users()
+    users[who] = {"user_id": who, "username": who, "hashed_password": _ac._pwd_ctx.hash("pw12345678"), "role": "user",
+                  "created_at": "2026-11-15T00:00:00Z", "api_keys": []}
+    _ac._save_users(users)
+    H = {"Authorization": "Bearer " + client.post("/api/v1/auth/token", data={"username": who, "password": "pw12345678"}).json()["access_token"]}
+    yday = (datetime.now(timezone.utc).date() - timedelta(days=1)).isoformat()
+    made = client.post("/api/v1/agreements/parties", headers=H, json={
+        "kind": "person", "name": f"Cy W1081-Madeup {who}", "read_from": "a made-up letter", "read_on": yday})
+    assert made.status_code == 200, made.text[:300]
+    pid = made.json()["party"]["id"]
+    twice = client.post("/api/v1/agreements", headers=H, json={"title": "w1081", "text": "w1081 made-up text", "parties": [
+        {"party_id": pid, "role": "a"}, {"party_id": pid, "role": "b"}]})
+    assert twice.status_code == 400 and twice.json()["detail"] == (
+        f"Cy W1081-Madeup {who} ({pid}) is named twice as a party, so nothing was kept."), twice.text[:300]
+
+    #  4. the journey is a row of the coverage register, and the register's check passes
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("w1081_cov", root / "scripts/coverage_register.py")
+    cov = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cov)
+    reg = cov.load()
+    row = next(r for r in reg["rows"] if r["id"] == "law-agreement-records")
+    assert row["state"] == "journey" and row["domain"] == "Law" and row["driven_by"] == (
+        "test_w1080_p518_a_party_is_a_person_or_a_registered_body_and_an_agreements_six_facts_stay_apart"), row
+    assert "nothing is kept before sign-in" in row["today"] and "not stated" in row["today"]
+    assert cov.check(reg)["problems"] == []
