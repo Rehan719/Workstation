@@ -25508,6 +25508,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: each failure is said beside its own button with the refusal's status and reason; a record that could not be read is taken off the page; an explanation is cleared when another is asked for. The rendered test (six cases) has five vitest blinds; test_w1072 drives the two refusals the panel says and holds its code and the fixture, with five blinds."
+    },
+    {
+      "id": "FU-1260",
+      "title": "The Quran studio said a verse, its translation and a review under a reference opened after they were asked for, and every action's failure in one line at the top of the studio",
+      "why": "Found by rendering QEPStudio against its routes' own answers (FU-399 part 86; no test rendered it; the platform's Quran cache was planted with made-up placeholders for the capture, so no Quran text, surah name or translation is kept). A due verse opened while another was still being read was said under the second reference when the first answered late, the text of one verse under the reference of another, on the surface the constitution binds hardest (driven: 1:2's text under 1:3; the read had no guard). A translation of the meanings asked for one verse was said under the next verse opened the same way (driven), and a review or a recollection's comparison for one verse could be said under the next. Every failure of seven actions (a surah read, cards made, a verse opened, a translation, a review, a recall, a lesson) was said in one line at the very top of the studio, away from the card that met it, and whatever was done next took it away.",
+      "source": "W1073 (FU-399 part 86: the Quran studio rendered)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/components/QEPStudio.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1073",
+      "note": "",
+      "slot_source": "found by FU-399's render of the Quran platform's studio; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: a verse, its translation, a review, a recall and a reference recitation are said only under the reference they were asked for; each card (reader, review, lesson) says its own failure, and no other action takes it away. The rendered test (nine cases) has five vitest blinds; test_w1073 holds the studio's code and the fixture (no Arabic; every verse, surah name and translation a placeholder), with five blinds."
     }
   ],
   "routes": [

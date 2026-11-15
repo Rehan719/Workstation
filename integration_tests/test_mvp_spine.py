@@ -81011,7 +81011,7 @@ def test_w957_p517_the_card_scheduler_is_kept_only_for_isolated_trouble_spots(cl
     flat = " ".join(studio.split())
     assert "mark a trouble spot: ayaat" in flat and "Make cards for this spot (SM-2)" in flat and "memorise ayaat" not in flat
     sched_fn = flat.split("const schedule = async () => {", 1)[1].split("};", 1)[0]
-    assert "setErr(errorMessage(e))" in sched_fn
+    assert "setReaderErr(errorMessage(e))" in sched_fn   # W1073 - said in the reader card
 
     #  the journey is a row of the coverage register, driven by this test
     reg = json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))
@@ -87640,3 +87640,47 @@ def test_w1072_fu1259_the_intelligence_layer_says_each_failure_beside_its_button
     assert not re.search(r"[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]", raw), "the fixture holds Arabic"
     fx = json.loads(raw)
     assert fx["weights_proposed"]["body"]["applied"] is False, fx["weights_proposed"]["body"]
+
+
+def test_w1073_fu1260_the_quran_studio_says_a_verse_only_under_the_reference_asked_for_and_each_failure_in_its_card():
+    """W1073 (FU-1260; FU-399 part 86). The Quran platform's studio had no rendered test. Rendered against its routes'
+    own answers (the platform's Quran cache planted with made-up placeholders for the capture, so no Quran text, surah
+    name or translation is kept), a due verse opened while another was still being read was said under the second
+    reference when the first answered late: the text of one verse under the reference of another (driven: 1:2's text
+    under 1:3). A translation of the meanings asked for one verse was said under the next verse opened the same way,
+    and a review recorded or a recollection compared for one verse could be said under the next. Every failure of
+    seven actions was said in one line at the very top of the studio, away from the card that met it, and taken away
+    by whatever was done next. A verse, its translation, a review, a recall and a reference recitation are said only
+    under the reference they were asked for, and each card says its own failure.
+
+    Held here: the studio's code, and the rendered test's fixture: no Arabic in it, every verse's text and every surah
+    name the capture's placeholders, every translation a made-up stand-in, nothing scored. The rendered test
+    (QEPStudio.test.tsx, nine cases, five vitest blinds) holds what the studio says."""
+    import json
+    import pathlib
+    import re
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/components"
+    qs = _code_only((src / "QEPStudio.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "const reviewing = useRef<string | null>(null);" in qs
+    assert "    reviewing.current = ref;\n" in qs and "if (reviewing.current === ref) setReviewAyah(d);" in qs
+    for guarded in ("if (reviewing.current === forRef) setMeaning(d);",
+                    "if (reviewing.current === forRef) setReviewResult(d);",
+                    "if (reviewing.current === forRef) setRecall(d.comparison);",
+                    "if (reviewing.current === forRef) setListen(heard);"):
+        assert guarded in qs, guarded
+    assert "setErr(" not in qs and "{err &&" not in qs, "a failure is said in one line at the top of the studio again"
+    for card in ("qep-reader-error", "qep-review-error", "qep-lesson-error"):
+        assert f'data-testid="{card}"' in qs, card
+    #  the rendered test, and a fixture with no Quran text in it
+    t = (src / "QEPStudio.test.tsx").read_text(encoding="utf-8")
+    assert t.count("\n  it('") == 9, t.count("\n  it('")
+    raw = (src / "QEPStudio.fixture.json").read_text(encoding="utf-8")
+    assert not re.search(r"[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]", raw), "the fixture holds Arabic"
+    fx = json.loads(raw)
+    made_up = re.compile(r"^placeholder\d+ words\d+ verse\d+ alpha\d+ beta\d+$")
+    verses = [a["text_arabic"] for a in fx["surah_1"]["body"]["ayaat"]]
+    verses += [fx[k]["body"]["text_arabic"] for k in ("ayah_1_2", "ayah_1_3")]
+    assert verses and all(made_up.match(v) for v in verses), verses
+    assert all(s["name_arabic"].startswith("W1073 placeholder name") for s in fx["suwar"]["body"]["suwar"])
+    assert all(fx[k]["body"]["translation_text"].startswith("W1073 made up: ") for k in ("translation_1_2", "translation_1_3"))
+    assert fx["lesson"]["body"]["lesson_plan"] is None and fx["recalled"]["body"]["comparison"]["comparable"] is False
