@@ -89152,7 +89152,7 @@ def test_w1087_p514_the_one_list_reached_from_the_first_screen_reads_the_stores_
     dec = by[("project", "decision")]
     assert dec["project_id"] == mine and dec["on"] == f"W1087 project {tag}" and "'concept' to 'prototype'" in dec["what"]
     assert dec["where"] == "the Governance Hub's proposals" and by[("agreement", "falls_due")]["where"] == _wt.WHERE["agreement"]
-    assert w["reads"] == _wt.READS and w["not_read_yet"] == _wt.NOT_READ_YET and len(_wt.NOT_READ_YET) == 2   # W1091
+    assert w["reads"] == _wt.READS and w["not_read_yet"] == _wt.NOT_READ_YET and len(_wt.NOT_READ_YET) == 1   # W1092
     #  W1088 - the list reads more stores now, which the suite's other tests share: this test holds its own five
     ours = ("agreements", "assets", "projects", "proposals", "changes")
     assert [x for x in w["unread"] if x["store"] in ours] == [] and "not_kept" not in w and "said" not in w
@@ -89421,7 +89421,7 @@ def test_w1088_fu1270_the_one_list_reads_what_an_entitys_owner_is_waited_on_for(
 
     #  the census's entries for these stores are no longer said as not read yet
     assert not [s for s in _wt.NOT_READ_YET if "review gate" in s or "service contract" in s]
-    assert len(_wt.NOT_READ_YET) == 2 and waiting("one")["not_read_yet"] == _wt.NOT_READ_YET   # W1091
+    assert len(_wt.NOT_READ_YET) == 1 and waiting("one")["not_read_yet"] == _wt.NOT_READ_YET   # W1092
     assert sum("your entities" in r for r in _wt.READS) == 2
 
 
@@ -89532,7 +89532,7 @@ def test_w1089_fu1270_the_one_list_reads_the_reviewers_queues_by_their_rosters(c
 
         #  the census entry for these queues is no longer said as not read yet
         assert not [s for s in _wt.NOT_READ_YET if "scholar review" in s or "GMP" in s]
-        assert len(_wt.NOT_READ_YET) == 2 and any("reviewers' queues" in r for r in _wt.READS)   # W1091
+        assert len(_wt.NOT_READ_YET) == 1 and any("reviewers' queues" in r for r in _wt.READS)   # W1092
     finally:
         for p, b in kept.items():
             if b is None:
@@ -89620,7 +89620,7 @@ def test_w1090_fu1270_the_one_list_reads_the_owners_own_approvals(client, monkey
             r1 = client.get("/api/v1/waiting", headers=H["one"]).json()
             assert not [x for x in r1["unread"] if x["store"] == store]
         assert not [s for s in _wt.NOT_READ_YET if "legal artefact" in s or "co-signature" in s]
-        assert len(_wt.NOT_READ_YET) == 2 and any("the Owner's own approvals" in r for r in _wt.READS)   # W1091
+        assert len(_wt.NOT_READ_YET) == 1 and any("the Owner's own approvals" in r for r in _wt.READS)   # W1092
     finally:
         for p, b in kept.items():
             if b is None:
@@ -89709,7 +89709,150 @@ def test_w1091_fu1270_the_one_list_reads_a_support_answer_and_a_quality_defect(c
             assert [x for x in u["unread"] if x["store"] == store], u["unread"]
             assert [i for i in u["items"] if i.get("source") == still and tag in json.dumps(i)], u["items"]
         assert not [s for s in _wt.NOT_READ_YET if "support answer" in s]
-        assert len(_wt.NOT_READ_YET) == 2 and any("a support answer waiting on your confirmation" in r for r in _wt.READS)
+        assert len(_wt.NOT_READ_YET) == 1 and any("a support answer waiting on your confirmation" in r for r in _wt.READS)   # W1092
+    finally:
+        for p, b in kept.items():
+            if b is None:
+                if p.exists():
+                    p.unlink()
+            else:
+                p.write_bytes(b)
+
+
+def test_w1092_fu1270_the_one_list_reads_an_evolution_proposal_and_a_proposed_catalogue(client, monkeypatch):
+    """FU-1270, part 5 (W1092): the one list of what waits on a person reads an evolution proposal and the offerings a
+    cascade proposed, held through the route as an entity's owner, another person and an administrator:
+    - a pending evolution proposal waits on an administrator, named by its id and never by its words; not one
+      approved, rejected or with Change Control; the default the route filed when nothing was proposed waits only to
+      be rejected, and says so;
+    - the offerings a cascade proposed for an entity wait on its owner to be curated, named by the run and its mission
+      and never by the offerings; for the platform, or for a run that is not found, on an administrator, which says
+      why; not a catalogue already curated, nor one that proposed nothing;
+    - with sign-in off all of it waits on the one person using the machine;
+    - a store that cannot be read is said in its place to whom it waits on, and the rest of the list stands.
+    The stores are shared with the suite's other tests: this test keeps their bytes and puts them back."""
+    import json
+    import time
+    import uuid
+    import agentic_core.auth.core as _ac
+    import agentic_core.api.waiting as _wt
+    from agentic_core.api import vsb as _vs
+    from agentic_core.api.v191 import evolution as _ev
+    from agentic_core.config import atomic_write_json, data_path, read_json_strict
+    tag = uuid.uuid4().hex[:8]
+    vid = f"w1092-ent-{tag}"
+    cat, runs = data_path("proposed_catalogue.json"), data_path("org_cascade_runs.json")
+    ent = _vs._VSB_STORE / f"{vid}.json"
+    paths = [_ev._STORE, cat, runs, ent]
+    kept = {p: (p.read_bytes() if p.exists() else None) for p in paths}
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    who = {k: f"w1092-{k}-{tag}" for k in ("own", "two", "adm")}
+    users = _ac._load_users()
+    for k, name in who.items():
+        users[name] = {"user_id": name, "username": name, "hashed_password": _ac._pwd_ctx.hash("pw12345678"),
+                       "role": "admin" if k == "adm" else "user", "created_at": "2026-11-15T00:00:00Z",
+                       "api_keys": []}
+    _ac._save_users(users)
+    H = {k: {"Authorization": "Bearer " + client.post("/api/v1/auth/token", data={
+        "username": n, "password": "pw12345678"}).json()["access_token"]} for k, n in who.items()}
+
+    def waiting(k=None):
+        r = client.get("/api/v1/waiting", headers=H[k] if k else {})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()
+
+    def mine(u):
+        return [i for i in u["items"] if tag in str(i.get("proposal_id") or i.get("run_id") or "")]
+
+    def ours(k=None):
+        return sorted((i["source"], i["kind"], i.get("proposal_id") or i.get("run_id")) for i in mine(waiting(k)))
+    try:
+        now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        _vs._VSB_STORE.mkdir(parents=True, exist_ok=True)
+        ent.write_text(json.dumps({"vsb_id": vid, "name": f"W1092 made-up entity {tag}", "owner_id": who["own"]}),
+                       encoding="utf-8")
+        words, offering = f"w1092 made-up proposal words {tag}", f"W1092 Made-up Offering {tag}"
+        ep = f"ep-w1092{tag}"
+
+        def proposal(n, status, **kw):
+            return {"id": f"{ep}{n}", "type": "PROCESS", "title": words, "description": words, "impact": "Low",
+                    "rationale": words, "status": status, "generated_at": now, "served_by": "w1092-made-up", **kw}
+        props = read_json_strict(_ev._STORE, missing=[], expect=list)
+        props += [proposal(1, "pending"), proposal(2, "approved"), proposal(3, "rejected"),
+                  proposal(4, "under_change_control", cca_id=f"cca-w1092-{tag}"),
+                  {**proposal(5, "pending"), "title": _ev._REMOVED_DEFAULT[0], "rationale": _ev._REMOVED_DEFAULT[1],
+                   "served_by": None}]
+        atomic_write_json(_ev._STORE, props)
+        run = f"w1092-run-{tag}-"
+
+        def row(n, status, items):
+            return {"run_id": f"{run}{n}", "mission": f"a made-up mission {n}", "domain": "w1092", "status": status,
+                    "items": items, "items_basis": "made up", "raw": offering, "created_at": now}
+        rows = read_json_strict(cat, missing=[], expect=list)
+        rows += [row(1, "proposed", [offering]), row(2, "proposed", [offering, f"{offering} two"]),
+                 row(3, "proposed", [offering]), row(4, "curated", [offering]), row(5, "proposed", []),
+                 row(6, "not_proposed_floor_served", [])]
+        atomic_write_json(cat, rows)
+        rr = read_json_strict(runs, missing=[], expect=list)
+        rr += [{"run_id": f"{run}{n}", "mission": f"a made-up mission {n}", "created_at": now,
+                "business_plan_scope": "workstation" if n == 2 else vid} for n in (1, 2, 4, 5, 6)]
+        atomic_write_json(runs, rr)
+
+        #  an entity's offerings wait on its owner; the platform's, and a run not found, on an administrator
+        assert ours("own") == [("catalogue", "curate", f"{run}1")], ours("own")
+        assert ours("two") == []
+        assert ours("adm") == [("catalogue", "curate", f"{run}2"), ("catalogue", "curate", f"{run}3"),
+                               ("evolution", "proposal", f"{ep}1"), ("evolution", "proposal", f"{ep}5")], ours("adm")
+        it = mine(waiting("own"))[0]
+        assert (it["on"], it["ref"], it["where"], it.get("vsb_id"), it["what"]) == (
+            f"W1092 made-up entity {tag}", f"the cascade run {run}1 for 'a made-up mission 1'", _wt.WHERE["catalogue"],
+            vid, "a curation of the 1 offering this cascade proposed"), it
+        adm = {i.get("proposal_id") or i.get("run_id"): i for i in mine(waiting("adm"))}
+        assert adm[f"{run}2"]["what"] == "a curation of the 2 offerings this cascade proposed"
+        assert not adm[f"{run}2"]["said"].startswith("whose it is") and "vsb_id" not in adm[f"{run}2"]
+        assert adm[f"{run}3"]["said"].startswith("whose it is could not be found"), adm[f"{run}3"]
+        assert (adm[f"{ep}1"]["on"], adm[f"{ep}1"]["where"]) == (f"the evolution proposal {ep}1", _wt.WHERE["evolution"])
+        assert adm[f"{ep}1"]["what"].startswith("a decision on this proposal to change the platform")
+        assert adm[f"{ep}5"]["what"] == "a rejection of this row, which nothing proposed"
+        assert adm[f"{ep}5"]["said"].startswith("it is the default this route filed when nothing was proposed")
+        #  a proposal's words and an offering's name are a model's: never on the list
+        for k in ("own", "two", "adm"):
+            seen = json.dumps(waiting(k))
+            assert words not in seen and offering not in seen and _ev._REMOVED_DEFAULT[0] not in seen, k
+
+        #  with sign-in off all of it waits on the one person using the machine
+        monkeypatch.setenv("AUTH_ENABLED", "false")
+        assert ours() == [("catalogue", "curate", f"{run}{n}") for n in (1, 2, 3)] + [
+            ("evolution", "proposal", f"{ep}1"), ("evolution", "proposal", f"{ep}5")], ours()
+        monkeypatch.setenv("AUTH_ENABLED", "true")
+
+        #  a store that cannot be read is said in its place, to whom it waits on, and the rest stands
+        for p, store, still in ((_ev._STORE, "evolution proposals", "catalogue"), (cat, "proposed catalogue", "evolution")):
+            held = p.read_bytes()
+            p.write_text("{ not json", encoding="utf-8")
+            try:
+                u, two = waiting("adm"), waiting("two")
+            finally:
+                p.write_bytes(held)
+            said = [x["said"] for x in u["unread"] if x["store"] == store]
+            assert len(said) == 1 and said[0], u["unread"]
+            assert [i for i in mine(u) if i["source"] == still], u["items"]
+            if store == "evolution proposals":
+                assert not [x for x in two["unread"] if x["store"] == store], two["unread"]
+        #  with the run history not read whole, whose a catalogue is cannot be found: an administrator's, said so
+        held = runs.read_bytes()
+        runs.write_text("{ not json", encoding="utf-8")
+        try:
+            u, own = waiting("adm"), ours("own")
+        finally:
+            runs.write_bytes(held)
+        assert own == [] and [x for x in u["unread"] if x["store"] == "cascade runs"], u["unread"]
+        assert {i["run_id"] for i in mine(u) if i["source"] == "catalogue"} == {f"{run}{n}" for n in (1, 2, 3)}
+        assert all(i["said"].startswith("whose it is could not be found") for i in mine(u) if i["source"] == "catalogue")
+
+        #  the census entry for these is no longer said as not read yet
+        assert not [s for s in _wt.NOT_READ_YET if "evolution" in s or "catalogue" in s]
+        assert len(_wt.NOT_READ_YET) == 1 and any("an evolution proposal waiting on a decision" in r for r in _wt.READS)
     finally:
         for p, b in kept.items():
             if b is None:

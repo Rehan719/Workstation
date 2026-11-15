@@ -25759,6 +25759,45 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P5.14 clause 4: one list reached from the first screen shows everything that waits on the person, read from the stores that exist"
+    },
+    {
+      "id": "FU-1271",
+      "title": "With sign-in on, curating a cascade's proposed offering attributes its sales to whatever entity the request names",
+      "why": "Found by W1092's census of the proposed catalogue, and probed on a scratch store with sign-in on. POST /api/v1/swarm/catalogue/proposed/{run_id}/curate calls the marketplace's create_listing handler without its caller, so create_listing reads no person, and W311's check (a listing's sales are attributed only to an entity its caller owns, else 404) passes for every entity: user_can_access with no person is true. A second person curating for the first person's entity got 200 and a listing whose vsb_id is the first person's entity once that entity's KPI gate was met; before it was met, a 409 that confirms the entity and describes its business plan, where POST /api/v1/marketplace/listings answers 404 to the same person. The listing names the curator the request typed ('owner' by default), not the person who curated, and nothing records who did. The route should take its caller, hand it to create_listing, and name the curator from the caller.",
+      "source": "W1092 (the census of the proposed catalogue, for the one list)",
+      "found": "2026-11-15",
+      "files": [
+        "agentic_core/api/swarm.py",
+        "agentic_core/api/marketplace.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the tenancy invariant W1075 and W1077 held (FU-1262, FU-1263), broken through a route that calls another route's handler without its caller; it rides P5.1 as they did",
+      "tier": 1
+    },
+    {
+      "id": "FU-1272",
+      "title": "Two decisions the one list now names are not held by their own routes: an evolution proposal and a proposed catalogue",
+      "why": "Found by W1092's census. The evolution proposals' reader (api/v191/evolution.py _load) passes over a store it cannot read and returns none: GET /api/v191/evolution/proposals then says nothing is pending, approve and reject say a proposal is not found, and a generation that parses a proposal saves only the new ones over the unreadable store, replacing what it held (W472's rule is refused, never replaced). The router is mounted for any signed-in person, so anyone signed in approves or rejects a proposal to change the platform itself, which the one list names as an administrator's decision; sovereign evolution, which also proposes changes to the platform, is an administrator's (W505). A proposed catalogue (data/proposed_catalogue.json) cannot be declined: nothing records a decision not to curate it, so it stays proposed, and on the one list, until one of its offerings is curated or it leaves the store's last fifty rows.",
+      "source": "W1092 (the census of the evolution proposals and the proposed catalogue, for the one list)",
+      "found": "2026-11-15",
+      "files": [
+        "agentic_core/api/v191/evolution.py",
+        "agentic_core/api/swarm.py",
+        "agentic_core/app_mvp.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.14",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found by the census of the one list (P5.14 clause 4): the decisions it names are held by the routes that record them, and the stores it reads are read whole or said as unread",
+      "tier": 2
     }
   ],
   "routes": [

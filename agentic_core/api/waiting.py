@@ -45,11 +45,16 @@ READS = ["the obligations on your agreement records: each one falling due within
          "standing approval for a high-impact avatar mode waiting on the Owner's co-signature",
          #  W1091 (FU-1270)
          "a support answer waiting on your confirmation, and a quality defect of yours waiting on a correction or "
-         "a re-verification"]
+         "a re-verification",
+         #  W1092 (FU-1270)
+         "an evolution proposal waiting on a decision: a proposal to change the platform, so with sign-in on it "
+         "waits on an administrator",
+         "the offerings a cascade proposed, waiting to be curated into the marketplace: for your entity, on you; "
+         "for the platform, on an administrator. Nothing records a decision not to curate them, so they wait "
+         "until one is curated"]
 #  W1087 - the census of the stores that hold something waiting on a person found these as well; each is named until
 #  the list reads it (FU-1270)
-NOT_READ_YET = ["an evolution proposal and a proposed catalogue entry waiting on a decision",
-                "a method amendment not yet carried out, a follow-up waiting on the Owner, and an immune defence "
+NOT_READ_YET = ["a method amendment not yet carried out, a follow-up waiting on the Owner, and an immune defence "
                 "waiting to be lifted"]
 WHERE = {"agreement": "the agreements on the Law page", "asset": "the assets on the Law page",
          "change": "Change Control's queue", "ratification": "the Board's ratifications",
@@ -66,7 +71,10 @@ WHERE = {"agreement": "the agreements on the Law page", "asset": "the assets on 
          "cosign": "no page yet: an administrator co-signs it through the avatar ratification route",
          #  W1091 (FU-1270)
          "support": "your support ticket on the Support page",
-         "defect": "the defects on the Cockpit's VBS panel"}
+         "defect": "the defects on the Cockpit's VBS panel",
+         #  W1092 (FU-1270) - no page offers these yet
+         "evolution": "no page yet: a decision is recorded through the evolution proposal's approve or reject route",
+         "catalogue": "no page yet: an offering is curated through the proposed catalogue's curate route"}
 NOT_KEPT = ("Your agreement and asset records are kept only once you are signed in, and sign-in is off, so nothing "
             "of theirs is on this list.")
 BASIS = ("One list of what waits on you, from the records it reads; a record it could not read is said with why, and "
@@ -83,7 +91,8 @@ _RANK = {"falls_due": 0, "evidence_lapses": 0, "evidence_lapsed": 0, "decision":
          "name": 1, "gate": 1, "offered": 1, "accepted": 1, "delivered": 1, "acceptance": 1,   # W1088
          "review": 1, "pack": 1, "qa": 1,   # W1089
          "approval": 1, "cosign": 1,   # W1090
-         "confirm": 1, "correct": 1, "reverify": 1}   # W1091
+         "confirm": 1, "correct": 1, "reverify": 1,   # W1091
+         "proposal": 1, "curate": 1}   # W1092
 
 
 def _iso(ts) -> str:
@@ -482,6 +491,81 @@ def _defects(user) -> tuple:
     return items, unread
 
 
+def _proposals(user) -> tuple:
+    """W1092 (FU-1270) - a pending evolution proposal waits on a decision (api/v191/evolution.py): approved, it is filed
+    with Change Control; rejected, it is closed. A proposal is to change the platform itself, so, as Change Control's
+    decisions do, it waits on an administrator with sign-in on, and on the one person using this machine with it off
+    (the route that records the decision is open to any signed-in person: FU-1272). The proposals' own reader passes
+    over a store it cannot read, so the list reads it strictly and says when it could not. A proposal's words are a
+    model's, so it is named by its id."""
+    if not _decider(user):
+        return [], []
+    from agentic_core.config import StoreUnavailable, read_json_strict
+    from agentic_core.api.v191 import evolution as ev
+    try:
+        rows = read_json_strict(ev._STORE, missing=[], expect=list)
+    except StoreUnavailable as e:
+        return [], [{"store": "evolution proposals", "said": (
+            f"The evolution proposals could not be read ({e}), so one waiting on a decision may not be shown.")}]
+    items = []
+    for p in rows:
+        if not isinstance(p, dict) or p.get("status") != "pending":
+            continue
+        since = str(p.get("generated_at") or "")
+        canned = ev._is_removed_default(p)
+        items.append({"source": "evolution", "kind": "proposal", "proposal_id": p.get("id"),
+                      "what": ("a rejection of this row, which nothing proposed" if canned else
+                               "a decision on this proposal to change the platform: approved, it goes to Change "
+                               "Control; rejected, it is closed"),
+                      "on": f"the evolution proposal {p.get('id')}", "ref": None, "where": WHERE["evolution"],
+                      "since": since,
+                      "said": ("it is the default this route filed when nothing was proposed, written by nothing, so "
+                               "it can only be rejected" if canned else _ago(since))})
+    return items, []
+
+
+def _catalogue(user, owners: dict, names: dict) -> tuple:
+    """W1092 (FU-1270) - the offerings a cascade proposed wait to be curated into the marketplace (api/swarm.py, W294:
+    the cascade proposes, a person curates). A cascade run for an entity proposed them for it, so they wait on its
+    owner; a run for the platform, or one whose run or entity is not found, on an administrator; with sign-in off, on
+    the one person using this machine. Nothing records a decision not to curate them, so they wait until one is
+    curated (FU-1272). The catalogue is read strictly and the run history tolerantly (the deliveries say when it was
+    not read whole). The offerings' names are a model's, so the list names the run, never them."""
+    from agentic_core.config import StoreUnavailable, data_path, read_json_reported, read_json_strict
+    try:
+        rows = read_json_strict(data_path("proposed_catalogue.json"), missing=[], expect=list)
+    except StoreUnavailable as e:
+        return [], [{"store": "proposed catalogue", "said": (
+            f"The proposed catalogue could not be read ({e}), so offerings waiting to be curated may not be shown.")}]
+    runs, _why = read_json_reported(data_path("org_cascade_runs.json"), [])
+    scope = {r.get("run_id"): str(r.get("business_plan_scope") or "")
+             for r in (runs if isinstance(runs, list) else []) if isinstance(r, dict)}
+    items = []
+    for c in rows:
+        if not isinstance(c, dict) or c.get("status") != "proposed":
+            continue
+        offered = [i for i in (c.get("items") or []) if str(i).strip()]
+        if not offered:
+            continue
+        rid = c.get("run_id")
+        vid = scope.get(rid)
+        platform = vid in ("", "workstation")
+        entity = not platform and vid in owners
+        if not _theirs(user, owners[vid] if entity else None):
+            continue
+        since = str(c.get("created_at") or "")
+        n = len(offered)
+        items.append({"source": "catalogue", "kind": "curate", "run_id": rid, **({"vsb_id": vid} if entity else {}),
+                      "what": f"a curation of the {n} offering{'s' if n != 1 else ''} this cascade proposed",
+                      "on": names.get(vid, vid) if entity else "the marketplace",
+                      "ref": f"the cascade run {rid} for '{str(c.get('mission') or '')[:80]}'",
+                      "where": WHERE["catalogue"], "since": since,
+                      "said": (_ago(since) if entity or platform else
+                               "whose it is could not be found (its cascade run or its entity was not read), so it is "
+                               "listed for an administrator")})
+    return items, []
+
+
 @router.get("")
 async def what_waits(within_days: int = 30, user: dict | None = Depends(get_current_user)):
     """What waits on this person, from the records the list reads, soonest first; each store it could not read, with
@@ -522,7 +606,8 @@ async def what_waits(within_days: int = 30, user: dict | None = Depends(get_curr
     #  W1089 (FU-1270) - the reviewers' queues the person is on the roster for
     for read in (lambda: _reviews(user), lambda: _gmp(user),
                  lambda: _artefacts(user), lambda: _cosigns(user),   # W1090 - the Owner's own approvals
-                 lambda: _tickets(user), lambda: _defects(user)):   # W1091 - a support answer, a defect
+                 lambda: _tickets(user), lambda: _defects(user),   # W1091 - a support answer, a defect
+                 lambda: _proposals(user), lambda: _catalogue(user, owners, names)):   # W1092
         got, missed = read()
         items += got
         unread += missed
