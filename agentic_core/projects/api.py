@@ -207,14 +207,20 @@ def _save(project: Project) -> None:
     _path(project.id).write_text(project.model_dump_json(indent=2, exclude={"waiting_on_person"}))   # W867: derived
 
 
-def _all_projects() -> list[Project]:
-    projects = []
+def _projects_read() -> tuple[list[Project], int]:
+    """Every project record, newest first, and how many could not be read (W1087): a skipped record is counted,
+    so the one list of what waits on a person says a project it could not read rather than nothing waiting."""
+    projects, unread = [], 0
     for f in sorted(_STORE.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True):
         try:
             projects.append(Project(**json.loads(f.read_text())))
         except Exception:
-            pass
-    return projects
+            unread += 1
+    return projects, unread
+
+
+def _all_projects() -> list[Project]:
+    return _projects_read()[0]
 
 
 # ── Output persistence (reuses synthesis download dir) ───────────────────────

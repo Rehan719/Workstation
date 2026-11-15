@@ -356,3 +356,55 @@ async def enter_use(aid: str, req: UseRequest, user: dict | None = Depends(get_c
         return a
     a = _mutate(ASSETS, _change)
     return _public(a, _read(PARTIES), _read(AGREEMENTS))
+
+
+def _days_to(when, today: date):
+    try:
+        return (date.fromisoformat(str(when)) - today).days
+    except ValueError:
+        return None
+
+
+def lapsing(user, within_days: int) -> dict:
+    """W1087 (P5.14 clause 4) - what on this person's asset records waits on a person, for the one list of what waits
+    on a person. Read fact by fact, as the record draws them, and nothing computed across the six:
+    - a fact whose current evidence lapses within the window: the last of it to lapse, since until then the fact is
+      evidenced;
+    - a fact whose evidence has all lapsed, with nothing current in its place;
+    - a declaration of readiness withdrawn because what it rests on lapsed, with why, until a person declares again.
+    A fact never evidenced is not on it: the asset's record says "not evidenced", and nothing there was due."""
+    from agentic_core.api.agreements import _yours
+    today = _today()
+    items = []
+    for a in _read(ASSETS):
+        if not _yours(user, a):   # its maker's, never an administrator's reach
+            continue
+        for f in _facts(a):
+            ev = f["evidence"]
+            if not ev:
+                continue
+            base = {"asset_id": a["id"], "on": a.get("what"), "ref": f["name"], "fact": f["fact"]}
+            current = [e for e in ev if e["state"] == "current"]
+            if current:
+                last = max(current, key=lambda e: str(e.get("lapses_on") or "9999-12-31"))
+                days = _days_to(last.get("lapses_on"), today)
+                if days is not None and days <= within_days:
+                    items.append({**base, "kind": "evidence_lapses", "evidence_id": last["id"],
+                                  "what": last.get("evidence"), "lapses_on": last.get("lapses_on"), "days": days,
+                                  "said": ("lapses today" if days == 0 else
+                                           f"lapses in {days} day{'s' if days != 1 else ''}")})
+                continue
+            withdrawn = [e for e in ev if e["state"] == "withdrawn"]
+            if withdrawn:
+                w = withdrawn[-1]
+                items.append({**base, "kind": "readiness_withdrawn", "evidence_id": w["id"], "what": w.get("evidence"),
+                              "said": w.get("withdrawn_because")})
+                continue
+            last = max(ev, key=lambda e: str(e.get("lapses_on") or ""))
+            days = _days_to(last.get("lapses_on"), today)
+            items.append({**base, "kind": "evidence_lapsed", "evidence_id": last["id"], "what": last.get("evidence"),
+                          "lapses_on": last.get("lapses_on"), "days": days,
+                          "said": (f"lapsed {-days} day{'s' if days != -1 else ''} ago, and nothing current is in its "
+                                   f"place" if days is not None else
+                                   "has lapsed, and nothing current is in its place")})
+    return {"items": items}

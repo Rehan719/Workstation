@@ -14,6 +14,7 @@ import { listOutputs, type OutputRecord } from '../lib/outputHistory';
 import { useT } from '../lib/i18n';
 import { ServingNow } from '../components/ServingNow';   // W737 (FU-967)
 import { ReadFailures, useReadFailures, describeReadFailure } from '../components/ReadFailures';   // W928; W984
+import WaitingPanel from '../components/WaitingPanel';   // W1087 (P5.14 clause 4)
 
 // The unified front door (§3A + §17). It orients every user to the two ways Workstation IDBO serves
 // them — (1) work now with AI across a domain, or (2) take a challenge Concept→Commercialisation into a
@@ -193,6 +194,11 @@ export const DashboardNew: React.FC = () => {
             </Button>
           </div>
         </header>
+
+        {/* W1087 (P5.14 clause 4, FU-1269) - the one list of what waits on you, reached from the first screen */}
+        <Card className="p-6 border-slate-900 bg-slate-950/40">
+          <WaitingPanel />
+        </Card>
 
         {/* §3A — the two primary journeys */}
         <section className="grid grid-cols-1 @[720px]:grid-cols-2 gap-6">

@@ -4,13 +4,14 @@
 // runs itself, and its health. This mounts the real page against the answers its four routes gave on a fresh store
 // (DashboardNew.fixture.json, captured by w984_capture.py: no project, then one made-up project), and has the server
 // refuse each read, or not answer at all.
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import axios from 'axios';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import captured from './DashboardNew.fixture.json';
+import waiting from '../components/WaitingPanel.fixture.json';   // W1087 - the one list's own answers
 import { DashboardNew } from './DashboardNew';
 
 type Reply = { status: number; data: unknown } | 'unreachable';
@@ -131,5 +132,19 @@ describe('DashboardNew (the home), rendered against its routes\' own answers', (
     mount();
     expect((await screen.findAllByTestId('read-failure')).map(p => p.textContent)).toContain(
       'Could not read this machine\'s figures — Failed (HTTP 503): the host figures could not be read');
+  });
+
+  //  W1087 (P5.14 clause 4) - the one list of what waits on you is reached from the first screen, as it answered
+  it('what waits on you is on the first screen, as the one list gives it', async () => {
+    serve();
+    const Wt: any = waiting;
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => (url === '/api/v1/waiting'
+      ? { ok: true, status: 200, statusText: '', json: async () => Wt.waiting.body }
+      : { ok: false, status: 404, statusText: '', json: async () => ({}) })));
+    mount();
+    const panel = await screen.findByTestId('waiting-panel');
+    await waitFor(() => expect(within(panel).getAllByTestId('waiting-item')).toHaveLength(Wt.waiting.body.items.length));
+    expect(within(panel).getAllByTestId('waiting-item').map(li => li.textContent?.split(' (')[0])).toEqual(
+      Wt.waiting.body.items.map((i: any) => i.what));
   });
 });

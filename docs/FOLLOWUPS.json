@@ -25735,6 +25735,26 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.14",
+      "status": "done",
+      "closed_by": "W1087",
+      "note": "",
+      "slot_source": "P5.14 clause 4: one list reached from the first screen shows everything that waits on the person, read from the stores that exist",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1087. The one list of what waits on a person (/api/v1/waiting) reads four stores: the obligations on the person's agreement records; their asset records' evidence (lapsing within the window, lapsed with nothing current in its place, and a declaration of readiness withdrawn because what it rests on lapsed); the pending proposals on their projects; and Change Control (a change waiting on a decision, one waiting for the Board's ratification, and a material economy action a review approved), which waits on an administrator. Each item says where it is acted on. With sign-in off it reads the projects and Change Control, and says that agreement and asset records are kept only after sign-in. A store it cannot read is said in its place, and the rest stands. The first screen (pages/DashboardNew.tsx) mounts it before anything else. Driving it as an administrator found the list reading every person's obligations as the administrator's; it now reads the maker's own records. The census's other stores are named as not read yet (FU-1270). test_w1087 drives it (fifteen blinds); test_w627 runs its own entity's saved cascade (CI on cda538c5); the panel and the home are rendered against the route's own answers (six vitest blinds)."
+    },
+    {
+      "id": "FU-1270",
+      "title": "The one list of what waits on a person reads four of the stores that hold something waiting on a person, and names the rest as not read",
+      "why": "W1087 made /api/v1/waiting read the agreement obligations, the asset evidence, the projects' pending proposals and Change Control (a change waiting on a decision, one waiting for the Board's ratification, and a material economy action a review approved), and reached it from the first screen. A census of the stores that hold something waiting on a person (W1087) found these as well, each named on the list as not read yet: an entity's review gate waiting on its owner's decision (vsb.py _gate_status) and an entity waiting to be named (genesis name_pending); a service contract offered, accepted or delivered, waiting on its provider or its client (economy contracts), and a delivery waiting to be accepted (swarm cascade runs); the scholar review queue (in_review), the children's approval pack, and a GMP record pending a QA signatory; a legal artefact awaiting the Owner's approval and an avatar mode awaiting an administrator's co-signature; a support answer awaiting its asker's confirmation and a quality defect awaiting a correction or a re-verification; an evolution proposal and a proposed catalogue entry awaiting a decision; and a method amendment not yet carried out, a follow-up gated on the Owner, and an immune defence awaiting an administrator's revert. Each has its own rule for whom it waits on, which the list must read rather than guess.",
+      "source": "W1087 (P5.14 clause 4: the one list reads the stores that exist and is reached from the first screen)",
+      "found": "2026-11-15",
+      "files": [
+        "agentic_core/api/waiting.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.14",
       "status": "open",
       "closed_by": null,
       "note": "",

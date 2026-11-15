@@ -82834,6 +82834,8 @@ def test_w984_fu399_the_home_says_a_refusal_as_a_refusal_never_as_an_unreachable
     pdir = root / "apps/workstation-superapp/src/pages"
     page = (pdir / "DashboardNew.tsx").read_text(encoding="utf-8")
     shared = (root / "apps/workstation-superapp/src/components/ReadFailures.tsx").read_text(encoding="utf-8")
+    #  W1087 - the home mounts the one list of what waits on you, whose test ids are its own panel's
+    shared += (root / "apps/workstation-superapp/src/components/WaitingPanel.tsx").read_text(encoding="utf-8")
     t = (pdir / "DashboardNew.test.tsx").read_text(encoding="utf-8")
     assert "import { DashboardNew } from './DashboardNew';" in t and "<DashboardNew />" in t
     read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
@@ -88889,7 +88891,10 @@ def test_w1085_p518_an_obligation_names_its_clause_and_who_confirmed_it_and_what
 
     monkeypatch.setenv("AUTH_ENABLED", "false")
     off = client.get("/api/v1/waiting").json()
-    assert off["kept"] is False and off["items"] == [] and off["said"] == _wt.NOT_KEPT and off["not_read_yet"], off
+    #  W1087 - with sign-in off the list reads the stores kept without sign-in (projects, Change Control) and says the
+    #  agreement and asset records are kept only after it; none of theirs is on it
+    assert off["not_kept"] == _wt.NOT_KEPT and off["not_read_yet"], off
+    assert not [i for i in off["items"] if i.get("source") in ("agreement", "asset")], off
 
     monkeypatch.setenv("AUTH_ENABLED", "true")
     who = {k: f"w1085-{k}-{tag}" for k in ("one", "two")}
@@ -88941,7 +88946,7 @@ def test_w1085_p518_an_obligation_names_its_clause_and_who_confirmed_it_and_what
     assert due == [("pay the made-up price", "fell due 3 days ago"), ("deliver the made-up goods", "falls due in 10 days")], due
     assert [i["what"] for i in w["items"] if i["kind"] == "unconfirmed"] == [
         "deliver the made-up goods", "pay the made-up price", "keep the made-up secret", "give notice in writing"]
-    assert w["kept"] is True and w["within_days"] == 30 and w["reads"] == _wt.READS and w["not_read_yet"] == _wt.NOT_READ_YET
+    assert "not_kept" not in w and w["within_days"] == 30 and w["reads"] == _wt.READS and w["not_read_yet"] == _wt.NOT_READ_YET
     assert [i["what"] for i in client.get("/api/v1/waiting?within_days=120", headers=one).json()["items"]
             if i["kind"] == "falls_due"][-1] == "keep the made-up secret"
     assert client.get("/api/v1/waiting?within_days=999", headers=one).status_code == 400
@@ -89018,8 +89023,10 @@ def test_w1086_p518_on_the_law_page_obligations_the_notice_period_and_what_waits
     assert fx["confirmed"]["body"]["obligations"][0]["confirmed"]["by"]
     kinds = [(i["kind"], i["said"]) for i in wx["waiting"]["body"]["items"]]
     assert ("falls_due", "fell due 3 days ago") in kinds and ("unconfirmed", _ag.UNCONFIRMED) in kinds, kinds
-    assert wx["waiting_off"]["body"]["said"] == _wt.NOT_KEPT and wx["waiting_unread"]["status"] == 503
-    assert wx["waiting_ended"]["body"]["items"] == [] and wx["waiting"]["body"]["not_read_yet"] == _wt.NOT_READ_YET
+    #  W1087 - the fixture is the one W1087 captured: a store the list cannot read is said in its place
+    assert wx["waiting_off"]["body"]["not_kept"] == _wt.NOT_KEPT and wx["waiting_refused"]["status"] == 400
+    assert [u["store"] for u in wx["waiting_store_unread"]["body"]["unread"]] == ["agreements"]
+    assert wx["waiting_none"]["body"]["items"] == [] and wx["waiting"]["body"]["not_read_yet"] == _wt.NOT_READ_YET
     for t in ("AgreementsPanel.test.tsx", "WaitingPanel.test.tsx"):
         assert (src / "components" / t).is_file(), t
 
@@ -89032,3 +89039,225 @@ def test_w1086_p518_on_the_law_page_obligations_the_notice_period_and_what_waits
     assert row["state"] == "journey" and row["driven_by"] == (
         "test_w1085_p518_an_obligation_names_its_clause_and_who_confirmed_it_and_what_falls_due_is_on_one_list"), row
     assert "none computed and none taken from a model" in row["today"] and cov.check(reg)["problems"] == []
+
+
+def test_w1087_p514_the_one_list_reached_from_the_first_screen_reads_the_stores_that_exist(client, monkeypatch, tmp_path):
+    """P5.14 clause 4 (W1087, FU-1269): one list reached from the first screen shows everything that waits on the
+    person, read from the stores that exist. W1085 read one store, and only with sign-in on. Held here, through the
+    routes, as two people and an administrator, on this test's own project, proposal and Change Control stores:
+    - a person's list holds the obligations on their agreement records; their asset records' evidence that lapses in
+      the window, evidence lapsed with nothing current in its place (and not evidence a current one replaced), and a
+      declaration of readiness withdrawn because what it rests on lapsed; and each proposal on a project of theirs.
+      What has a date comes first, soonest first, then decisions, then the rest; each says where it is acted on;
+    - another person's records are never on it. Change Control's queue, the Board's ratifications and a material
+      economy action a review approved are on an administrator's list and on no other person's, and so is an unowned
+      project's proposal;
+    - with sign-in off, the projects and Change Control are read, and the list says the agreement and asset records
+      are kept only after sign-in, holding none of theirs;
+    - a store it cannot read is said in its place, with why, and the rest of the list stands: the agreement store, the
+      asset store, a project record, a proposal record and a change record. With nothing else on it, the list never
+      says that nothing waits;
+    - what it does not read yet is named: the other stores the census found (FU-1270);
+    - the first screen mounts the list once, before anything else on it; the panel says each item with where it is
+      acted on, each store it could not read, and the sentence for sign-in off, as the route gives them, on a fixture
+      captured from the route."""
+    import json
+    import pathlib
+    import re
+    import time
+    import uuid
+    from datetime import datetime, timedelta, timezone
+    import agentic_core.auth.core as _ac
+    import agentic_core.api.agreements as _ag
+    import agentic_core.api.assets as _as
+    import agentic_core.api.change_control as _cc
+    import agentic_core.api.waiting as _wt
+    from agentic_core.projects import api as _pj
+    tag = uuid.uuid4().hex[:8]
+    today = datetime.now(timezone.utc).date()
+
+    def day(n):
+        return (today + timedelta(days=n)).isoformat()
+    for name, attr in (("projects", "_STORE"), ("proposals", "_PROPOSALS_DIR")):
+        (tmp_path / name).mkdir()
+        monkeypatch.setattr(_pj, attr, tmp_path / name)
+    (tmp_path / "cca").mkdir()
+    monkeypatch.setattr(_cc, "_CCA_STORE", tmp_path / "cca")
+
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    who = {k: f"w1087-{k}-{tag}" for k in ("one", "two", "adm")}
+    users = _ac._load_users()
+    for k, name in who.items():
+        users[name] = {"user_id": name, "username": name, "hashed_password": _ac._pwd_ctx.hash("pw12345678"),
+                       "role": "admin" if k == "adm" else "user", "created_at": "2026-11-15T00:00:00Z",
+                       "api_keys": []}
+    _ac._save_users(users)
+    H = {k: {"Authorization": "Bearer " + client.post("/api/v1/auth/token", data={
+        "username": n, "password": "pw12345678"}).json()["access_token"]} for k, n in who.items()}
+
+    def waiting(k=None):
+        r = client.get("/api/v1/waiting", headers=H[k] if k else {})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()
+
+    def with_output(pid):
+        p = _pj._load(pid)
+        p.outputs.append(_pj.ProjectOutput(output_id=f"w1087-{pid[:8]}", stage=p.stage, created_at=time.time(),
+                                           download_url="/w1087", preview="w1087", served_by="native"))
+        _pj._save(p)
+
+    #  person one's records: an agreement's obligations, an asset's evidence, and a project waiting on a decision
+    pids = [client.post("/api/v1/agreements/parties", headers=H["one"], json={
+        "kind": "person", "name": f"W1087 Madeup {n} {tag}", "read_from": "a made-up letter",
+        "read_on": day(-1)}).json()["party"]["id"] for n in ("Supplier", "Customer")]
+    ag = client.post("/api/v1/agreements", headers=H["one"], json={
+        "title": f"W1087 Supply {tag}", "text": f"W1087 made-up agreement {tag}: clause 3; clause 4.",
+        "parties": [{"party_id": pids[0], "role": "supplier"}, {"party_id": pids[1], "role": "customer"}]}).json()
+    A = f"/api/v1/agreements/{ag['id']}"
+    for what, clause, due in (("pay the made-up price", "clause 4", day(-3)),
+                              ("deliver the made-up goods", "clause 3", day(10))):
+        assert client.post(f"{A}/obligations", headers=H["one"], json={
+            "owed_by": pids[0], "owed_to": pids[1], "what": what, "clause": clause, "due_on": due}).status_code == 200
+    asset = client.post("/api/v1/assets", headers=H["one"], json={
+        "what": f"W1087 made-up robot {tag}", "kind": "robot", "owned_by": pids[0], "possessed_by": pids[0],
+        "agreement_id": ag["id"]}).json()
+    for body in ({"fact": "insurance", "evidence": "the made-up certificate", "lapses_on": day(5)},
+                 {"fact": "maker_conformity", "evidence": "the made-up declaration", "lapses_on": day(-2)},
+                 {"fact": "user_safety", "evidence": "the made-up assessment, lapsed", "lapses_on": day(-4)},
+                 {"fact": "user_safety", "evidence": "the made-up assessment, renewed", "lapses_on": day(200)},
+                 {"fact": "readiness", "evidence": "a made-up declaration of readiness", "lapses_on": day(300),
+                  "named_person": f"Ann W1087 {tag}"}):
+        r = client.post(f"/api/v1/assets/{asset['id']}/evidence", headers=H["one"], json=body)
+        assert r.status_code == 200, r.text[:300]
+    made = client.post("/api/v1/projects/", headers=H["one"], json={"title": f"W1087 project {tag}",
+                                                                      "description": "a made-up project (W1087)"})
+    assert made.status_code == 201, made.text[:300]
+    mine = made.json()["id"]
+    with_output(mine)
+    assert client.post(f"/api/v1/projects/{mine}/propose-advance", headers=H["one"]).status_code == 201
+
+    #  what has a date first, soonest first; then decisions; then what waits for a confirmation
+    w = waiting("one")
+    got = [(i["source"], i["kind"], i["said"]) for i in w["items"]]
+    assert got == [("agreement", "falls_due", "fell due 3 days ago"),
+                   ("asset", "evidence_lapsed", "lapsed 2 days ago, and nothing current is in its place"),
+                   ("asset", "evidence_lapses", "lapses in 5 days"),
+                   ("agreement", "falls_due", "falls due in 10 days"),
+                   ("project", "decision", "raised today"),
+                   ("agreement", "unconfirmed", _ag.UNCONFIRMED), ("agreement", "unconfirmed", _ag.UNCONFIRMED)], got
+    by = {(i["source"], i["kind"]): i for i in w["items"]}
+    lapsed = by[("asset", "evidence_lapsed")]
+    assert (lapsed["what"], lapsed["ref"], lapsed["on"], lapsed["where"]) == (
+        "the made-up declaration", _as.FACT_NAMES["maker_conformity"], asset["what"], _wt.WHERE["asset"]), lapsed
+    dec = by[("project", "decision")]
+    assert dec["project_id"] == mine and dec["on"] == f"W1087 project {tag}" and "'concept' to 'prototype'" in dec["what"]
+    assert dec["where"] == "the Governance Hub's proposals" and by[("agreement", "falls_due")]["where"] == _wt.WHERE["agreement"]
+    assert w["reads"] == _wt.READS and w["not_read_yet"] == _wt.NOT_READ_YET and len(_wt.NOT_READ_YET) == 7
+    assert w["unread"] == [] and "not_kept" not in w and "said" not in w and w["date_basis"] == _wt.DATE_BASIS
+    assert "none is taken from a model" in _wt.DATE_BASIS and "none is computed" not in _wt.BASIS
+    assert client.get("/api/v1/waiting?within_days=999", headers=H["one"]).status_code == 400
+    #  a renewed piece of evidence takes its lapsed one off the list, and a fact not due in the window is not on it
+    assert not [i for i in w["items"] if i.get("fact") in ("user_safety", "readiness")], w["items"]
+
+    #  another person: none of it
+    two = waiting("two")
+    assert two["items"] == [] and two["said"] == _wt.NOTHING and tag not in json.dumps(two)
+
+    #  Change Control: a change waiting on a decision, one waiting for the Board, a material economy action a review
+    #  approved, and an unowned project's proposal - an administrator's, and no other person's
+    sub = client.post("/api/v1/cca/submit", headers=H["one"], json={
+        "title": f"W1087 change {tag}", "change_type": "policy_amendment",
+        "description": f"a made-up policy amendment ({tag})"})
+    assert sub.status_code == 200 and sub.json()["status"] == "submitted", sub.text[:300]
+    rec = json.loads((tmp_path / "cca" / f"{sub.json()['cca_id']}.json").read_text(encoding="utf-8"))
+    for n, (title, change_type) in enumerate(((f"W1087 ratify {tag}", "policy_amendment"),
+                                              (f"W1087 economy {tag}", "economy_material"))):
+        _cc._save_change({**rec, "cca_id": f"cca-{tag}{n}0", "title": title, "change_type": change_type,
+                          "status": "approved", "decision": "approved"})   # approved by a review, as recorded
+    orphan = _pj.Project(title=f"W1087 unowned project {tag}", description="made up", owner_id=None)
+    _pj._save(orphan)
+    with_output(orphan.id)
+    _pj._save_proposal(_pj.Proposal(project_id=orphan.id, project_title=orphan.title, from_stage="concept",
+                                    to_stage="prototype"))
+    adm = waiting("adm")
+    seen = sorted((i["source"], i["kind"], i["on"], i["where"]) for i in adm["items"])
+    assert seen == sorted([("change", "decision", f"W1087 change {tag}", "Change Control's queue"),
+                           ("change", "decision", f"W1087 economy {tag}", "Change Control's queue"),
+                           ("change", "ratification", f"W1087 ratify {tag}", "the Board's ratifications"),
+                           ("project", "decision", f"W1087 unowned project {tag}", "the Governance Hub's proposals")]), seen
+    assert [i["ref"] for i in adm["items"] if i["on"] == f"W1087 change {tag}"] == ["tier HIGH"]
+    assert "releases nothing" in next(i["what"] for i in adm["items"] if i["on"] == f"W1087 economy {tag}")
+    assert not [i for i in waiting("one")["items"] if i["source"] == "change" or i["on"] == orphan.title]
+    assert waiting("two")["items"] == []
+
+    #  sign-in off: the projects and Change Control are read; the agreement and asset records are not kept
+    monkeypatch.setenv("AUTH_ENABLED", "false")
+    off = waiting()
+    assert off["not_kept"] == _wt.NOT_KEPT and not [i for i in off["items"] if i["source"] in ("agreement", "asset")]
+    assert sorted((i["source"], i["on"]) for i in off["items"]) == sorted([
+        ("project", f"W1087 project {tag}"), ("project", f"W1087 unowned project {tag}"),
+        ("change", f"W1087 change {tag}"), ("change", f"W1087 ratify {tag}"), ("change", f"W1087 economy {tag}")])
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+
+    #  a declaration of readiness resting on evidence that has since lapsed: withdrawn, with why, until declared again
+    monkeypatch.setattr(_as, "_today", lambda: today + timedelta(days=6))
+    later = waiting("one")["items"]
+    wd = [i for i in later if i["kind"] == "readiness_withdrawn"]
+    assert len(wd) == 1 and wd[0]["said"].startswith("it rests on evidence that has lapsed") and wd[0]["what"] == (
+        "a made-up declaration of readiness") and wd[0]["where"] == _wt.WHERE["asset"], wd
+    assert ("evidence_lapsed", _as.FACT_NAMES["insurance"]) in [(i["kind"], i.get("ref")) for i in later]
+    monkeypatch.setattr(_as, "_today", lambda: today)
+
+    #  a store it cannot read is said in its place, with why, and the rest of the list stands
+    for store in (_ag.AGREEMENTS, _as.ASSETS):
+        p = _ag._path(store)
+        held = p.read_bytes()
+        p.write_text("{ not json", encoding="utf-8")
+        try:
+            u, none = waiting("one"), waiting("two")
+        finally:
+            p.write_bytes(held)
+        name = "agreements" if store == _ag.AGREEMENTS else "assets"
+        assert [x["store"] for x in u["unread"]] == [name] and u["unread"][0]["said"], u["unread"]
+        assert {i["source"] for i in u["items"]} == {"agreement", "asset", "project"} - {name[:-1]}, u["items"]
+        assert none["items"] == [] and none["said"] == _wt.NOTHING_READ and [x["store"] for x in none["unread"]] == [name]
+    for folder, name, k in (("projects", "projects", "one"), ("proposals", "proposals", "one"), ("cca", "changes", "adm")):
+        bad = tmp_path / folder / (("cca-0badrecord" if folder == "cca" else f"w1087-bad-{tag}") + ".json")
+        bad.write_text("{ not json", encoding="utf-8")
+        try:
+            u = waiting(k)
+        finally:
+            bad.unlink()
+        said = [x["said"] for x in u["unread"] if x["store"] == name]
+        assert len(said) == 1 and said[0].startswith("1 "), u["unread"]
+        assert u["items"], u
+    assert waiting("one")["unread"] == [] and waiting("adm")["unread"] == []
+
+    #  the first screen mounts the list, and the panel says what the route gives, on the route's own answers
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    home = _code_only((src / "pages/DashboardNew.tsx").read_text(encoding="utf-8"))
+    assert "import WaitingPanel from '../components/WaitingPanel';" in home and home.count("<WaitingPanel />") == 1
+    assert home.index("<WaitingPanel />") < home.index("JOURNEYS.map(")
+    wp = _code_only((src / "components/WaitingPanel.tsx").read_text(encoding="utf-8"))
+    for said in ("{w.not_kept}", "{u.said}", "It is acted on in ${i.where}.", "${i.ref ? `${i.ref}, ` : ''}on ${i.on}",
+                 "${asClause(String(i.said ?? ''))}"):
+        assert said in wp, said
+    assert set(re.findall(r"/api/v\d+/[\w/{}.-]*", wp)) == {"/api/v1/waiting"}
+    fx = json.loads((src / "components/WaitingPanel.fixture.json").read_text(encoding="utf-8"))
+    assert [i["source"] for i in fx["waiting_off"]["body"]["items"]] == ["project", "change"]
+    assert fx["waiting_off"]["body"]["not_kept"] == _wt.NOT_KEPT and fx["waiting_refused"]["status"] == 400
+    assert [i["source"] for i in fx["waiting"]["body"]["items"]] == [
+        "agreement", "asset", "asset", "agreement", "project", "agreement", "agreement"]
+    assert [u["store"] for u in fx["waiting_store_unread"]["body"]["unread"]] == ["agreements"]
+    assert fx["waiting"]["body"]["not_read_yet"] == _wt.NOT_READ_YET and fx["waiting"]["body"]["reads"] == _wt.READS
+    home_test = (src / "pages/DashboardNew.test.tsx").read_text(encoding="utf-8")
+    assert "../components/WaitingPanel.fixture.json" in home_test and "waiting-panel" in home_test
+
+    #  CI on cda538c5: test_w627 ran the oldest saved cascade in the store, another test's entity held behind a
+    #  pending review gate in a worker that had run test_vsb_review_gates_mode3 first; it runs its own entity's now
+    spine = pathlib.Path(__file__).read_text(encoding="utf-8")
+    w627 = spine[spine.index("def test_w627_p225_material_chief_gates_overclaims_and_surfaces("):]
+    w627 = w627[:w627.index("\ndef test_")]
+    assert 'client.get(f"/api/v1/resources/swarm?vsb_id={_vid}")' in w627
+    assert 'client.get("/api/v1/resources/swarm")' not in w627

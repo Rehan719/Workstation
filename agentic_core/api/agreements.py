@@ -125,6 +125,14 @@ def _person(user) -> str:
     return str(user["username"])
 
 
+def _yours(user, row: dict) -> bool:
+    """W1087 - whether a record is this person's own: its maker's. What waits on a person is what is theirs to act
+    on: an administrator reaches every record (_reaches), and the obligations on another person's record wait on
+    that person. Nobody with sign-in off."""
+    return (auth_enabled() and isinstance(user, dict) and bool(user.get("username"))
+            and row.get("owner") == user.get("username"))
+
+
 def _reaches(user, row: dict) -> bool:
     """Whether this caller may read or add to a record: its maker, or an administrator. Nobody with sign-in off."""
     if not auth_enabled() or not isinstance(user, dict) or not user.get("username"):
@@ -771,7 +779,7 @@ def falling_due(user, within_days: int) -> dict:
     today = _today()
     items = []
     for a in _read(AGREEMENTS):
-        if not _reaches(user, a) or a.get("ended"):
+        if not _yours(user, a) or a.get("ended"):   # W1087 - its maker's, never an administrator's reach
             continue
         for o in a.get("obligations") or []:
             base = {"agreement_id": a["id"], "agreement_title": a.get("title"), "obligation_id": o["id"],
