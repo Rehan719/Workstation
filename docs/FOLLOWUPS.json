@@ -25799,11 +25799,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.14",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1096",
       "note": "",
       "slot_source": "found by the census of the one list (P5.14 clause 4): the decisions it names are held by the routes that record them, and the stores it reads are read whole or said as unread",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1096. Deciding an evolution proposal, approving or rejecting it, is an administrator's (require_admin, as sovereign evolution's decisions are, W505); with sign-in off, the one person's. The proposals' store is read whole or refused: the listing, a decision and a generation each refuse with why (503), a generation before any model runs, and nothing is written over a store that could not be read. A cascade's proposed catalogue can be declined (POST /api/v1/swarm/catalogue/proposed/{run_id}/decline), held as declined with who, when and why, and it leaves the one list. The person who decides a catalogue, curating or declining it, is the one the list names: for an entity its owner, for the platform or a run not found an administrator. test_w1096 holds it through the routes as an owner, a second person and an administrator, with W311's attribution check on an owner's own run; nine blinds turn it red."
     },
     {
       "id": "FU-1273",

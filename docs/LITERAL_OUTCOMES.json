@@ -370,6 +370,14 @@
    "reason": "the governance status until the gate answers, and in the branch where the gate raised, with the error beside it"
   },
   {
+   "file": "agentic_core/api/swarm.py",
+   "function": "decline_proposed_catalogue",
+   "key": "status",
+   "literal": "declined",
+   "occurrences": 1,
+   "reason": "said after the catalogue's row is set to declined, with who declined it, when and why, and the store written whole under its lock; a store that cannot be read is a 503 before this, and a row that is not proposed a 409"
+  },
+  {
    "file": "agentic_core/api/synthesis_studio.py",
    "function": "spawn_vsb_entity",
    "key": "status",

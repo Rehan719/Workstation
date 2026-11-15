@@ -14,7 +14,7 @@
     "the Owner's own approvals, which an administrator records: a filing-shaped legal draft, and a learner's standing approval for a high-impact avatar mode waiting on the Owner's co-signature",
     "a support answer waiting on your confirmation, and a quality defect of yours waiting on a correction or a re-verification",
     "an evolution proposal waiting on a decision: a proposal to change the platform, so with sign-in on it waits on an administrator",
-    "the offerings a cascade proposed, waiting to be curated into the marketplace: for your entity, on you; for the platform, on an administrator. Nothing records a decision not to curate them, so they wait until one is curated",
+    "the offerings a cascade proposed, waiting to be curated into the marketplace: for your entity, on you; for the platform, on an administrator; they wait until one is curated or the catalogue is declined",
     "a method amendment Change Control decided and the method does not carry out yet, an immune defence in place until it is lifted, and a follow-up in the platform's register waiting on the Owner's decision; an administrator records all three, so with sign-in on they wait on an administrator"
    ],
    "not_read_yet": [],
@@ -190,24 +190,24 @@
     {
      "source": "project",
      "kind": "decision",
-     "project_id": "5891e33a5077441db346f0cdf2fdbaa8",
-     "proposal_id": "26b3d025528140dc86b0c5255d6aab30",
+     "project_id": "7db3d24239c1454c9d01e215c6e44965",
+     "proposal_id": "a587c41818414ccdbfa79cae41de9e15",
      "what": "a decision on the proposal to move it from 'concept' to 'prototype'",
      "on": "W1087 Made-up Project",
      "ref": null,
      "where": "the Governance Hub's proposals",
-     "since": "2026-11-15T20:56:40Z",
+     "since": "2026-11-15T22:01:29Z",
      "said": "raised today"
     },
     {
      "source": "change",
      "kind": "decision",
-     "cca_id": "cca-42825d75ab",
+     "cca_id": "cca-11969f3add",
      "what": "a decision on this change",
      "on": "W1087 made-up policy amendment",
      "ref": "tier HIGH",
      "where": "Change Control's queue",
-     "since": "2026-11-15T20:56:40Z",
+     "since": "2026-11-15T22:01:29Z",
      "said": "raised today"
     }
    ],
@@ -229,7 +229,7 @@
     "the Owner's own approvals, which an administrator records: a filing-shaped legal draft, and a learner's standing approval for a high-impact avatar mode waiting on the Owner's co-signature",
     "a support answer waiting on your confirmation, and a quality defect of yours waiting on a correction or a re-verification",
     "an evolution proposal waiting on a decision: a proposal to change the platform, so with sign-in on it waits on an administrator",
-    "the offerings a cascade proposed, waiting to be curated into the marketplace: for your entity, on you; for the platform, on an administrator. Nothing records a decision not to curate them, so they wait until one is curated",
+    "the offerings a cascade proposed, waiting to be curated into the marketplace: for your entity, on you; for the platform, on an administrator; they wait until one is curated or the catalogue is declined",
     "a method amendment Change Control decided and the method does not carry out yet, an immune defence in place until it is lifted, and a follow-up in the platform's register waiting on the Owner's decision; an administrator records all three, so with sign-in on they wait on an administrator"
    ],
    "not_read_yet": [],
@@ -238,9 +238,9 @@
    "within_days": 30,
    "items": [
     {
-     "agreement_id": "agr-d798d6ceda",
+     "agreement_id": "agr-a43fef0856",
      "agreement_title": "W1087 Made-up Supply",
-     "obligation_id": "obl-7e44c11fc9",
+     "obligation_id": "obl-357736f9fe",
      "what": "pay the made-up price",
      "clause": "clause 4",
      "due_on": "2026-11-12",
@@ -254,12 +254,12 @@
      "where": "the agreements on the Law page"
     },
     {
-     "asset_id": "ast-0c72293e1c",
+     "asset_id": "ast-381208b21c",
      "on": "W1087 made-up delivery robot",
      "ref": "the maker's evidence of conformity",
      "fact": "maker_conformity",
      "kind": "evidence_lapsed",
-     "evidence_id": "evd-d66c03d682",
+     "evidence_id": "evd-39eb03e0c2",
      "what": "the made-up declaration of conformity",
      "lapses_on": "2026-11-13",
      "days": -2,
@@ -268,12 +268,12 @@
      "where": "the assets on the Law page"
     },
     {
-     "asset_id": "ast-0c72293e1c",
+     "asset_id": "ast-381208b21c",
      "on": "W1087 made-up delivery robot",
      "ref": "insurance",
      "fact": "insurance",
      "kind": "evidence_lapses",
-     "evidence_id": "evd-44a035d277",
+     "evidence_id": "evd-6221a4e46a",
      "what": "the made-up insurance certificate",
      "lapses_on": "2026-11-20",
      "days": 5,
@@ -282,9 +282,9 @@
      "where": "the assets on the Law page"
     },
     {
-     "agreement_id": "agr-d798d6ceda",
+     "agreement_id": "agr-a43fef0856",
      "agreement_title": "W1087 Made-up Supply",
-     "obligation_id": "obl-d7ba61d808",
+     "obligation_id": "obl-ec608775b1",
      "what": "deliver the made-up goods",
      "clause": "clause 3",
      "due_on": "2026-11-25",
@@ -300,19 +300,19 @@
     {
      "source": "project",
      "kind": "decision",
-     "project_id": "963e303ec85846dca10af78097d2477d",
-     "proposal_id": "806eca1793114783a07bd419f9827c09",
+     "project_id": "cba0cf0efc3c4ce6b7cf255de6cadc83",
+     "proposal_id": "f7cd3f0f11de4994bebaf3ff30e3a7ca",
      "what": "a decision on the proposal to move it from 'concept' to 'prototype'",
      "on": "W1087 Made-up Pilot",
      "ref": null,
      "where": "the Governance Hub's proposals",
-     "since": "2026-11-15T20:56:40Z",
+     "since": "2026-11-15T22:01:29Z",
      "said": "raised today"
     },
     {
-     "agreement_id": "agr-d798d6ceda",
+     "agreement_id": "agr-a43fef0856",
      "agreement_title": "W1087 Made-up Supply",
-     "obligation_id": "obl-7e44c11fc9",
+     "obligation_id": "obl-357736f9fe",
      "what": "pay the made-up price",
      "clause": "clause 4",
      "due_on": "2026-11-12",
@@ -325,9 +325,9 @@
      "where": "the agreements on the Law page"
     },
     {
-     "agreement_id": "agr-d798d6ceda",
+     "agreement_id": "agr-a43fef0856",
      "agreement_title": "W1087 Made-up Supply",
-     "obligation_id": "obl-d7ba61d808",
+     "obligation_id": "obl-ec608775b1",
      "what": "deliver the made-up goods",
      "clause": "clause 3",
      "due_on": "2026-11-25",
@@ -357,7 +357,7 @@
     "the Owner's own approvals, which an administrator records: a filing-shaped legal draft, and a learner's standing approval for a high-impact avatar mode waiting on the Owner's co-signature",
     "a support answer waiting on your confirmation, and a quality defect of yours waiting on a correction or a re-verification",
     "an evolution proposal waiting on a decision: a proposal to change the platform, so with sign-in on it waits on an administrator",
-    "the offerings a cascade proposed, waiting to be curated into the marketplace: for your entity, on you; for the platform, on an administrator. Nothing records a decision not to curate them, so they wait until one is curated",
+    "the offerings a cascade proposed, waiting to be curated into the marketplace: for your entity, on you; for the platform, on an administrator; they wait until one is curated or the catalogue is declined",
     "a method amendment Change Control decided and the method does not carry out yet, an immune defence in place until it is lifted, and a follow-up in the platform's register waiting on the Owner's decision; an administrator records all three, so with sign-in on they wait on an administrator"
    ],
    "not_read_yet": [],
@@ -366,9 +366,9 @@
    "within_days": 30,
    "items": [
     {
-     "agreement_id": "agr-d798d6ceda",
+     "agreement_id": "agr-a43fef0856",
      "agreement_title": "W1087 Made-up Supply",
-     "obligation_id": "obl-7e44c11fc9",
+     "obligation_id": "obl-357736f9fe",
      "what": "pay the made-up price",
      "clause": "clause 4",
      "due_on": "2026-11-12",
@@ -382,12 +382,12 @@
      "where": "the agreements on the Law page"
     },
     {
-     "asset_id": "ast-0c72293e1c",
+     "asset_id": "ast-381208b21c",
      "on": "W1087 made-up delivery robot",
      "ref": "the maker's evidence of conformity",
      "fact": "maker_conformity",
      "kind": "evidence_lapsed",
-     "evidence_id": "evd-d66c03d682",
+     "evidence_id": "evd-39eb03e0c2",
      "what": "the made-up declaration of conformity",
      "lapses_on": "2026-11-13",
      "days": -2,
@@ -396,12 +396,12 @@
      "where": "the assets on the Law page"
     },
     {
-     "asset_id": "ast-0c72293e1c",
+     "asset_id": "ast-381208b21c",
      "on": "W1087 made-up delivery robot",
      "ref": "insurance",
      "fact": "insurance",
      "kind": "evidence_lapses",
-     "evidence_id": "evd-44a035d277",
+     "evidence_id": "evd-6221a4e46a",
      "what": "the made-up insurance certificate",
      "lapses_on": "2026-11-20",
      "days": 5,
@@ -410,9 +410,9 @@
      "where": "the assets on the Law page"
     },
     {
-     "agreement_id": "agr-d798d6ceda",
+     "agreement_id": "agr-a43fef0856",
      "agreement_title": "W1087 Made-up Supply",
-     "obligation_id": "obl-d7ba61d808",
+     "obligation_id": "obl-ec608775b1",
      "what": "deliver the made-up goods",
      "clause": "clause 3",
      "due_on": "2026-11-25",
@@ -428,19 +428,19 @@
     {
      "source": "project",
      "kind": "decision",
-     "project_id": "963e303ec85846dca10af78097d2477d",
-     "proposal_id": "806eca1793114783a07bd419f9827c09",
+     "project_id": "cba0cf0efc3c4ce6b7cf255de6cadc83",
+     "proposal_id": "f7cd3f0f11de4994bebaf3ff30e3a7ca",
      "what": "a decision on the proposal to move it from 'concept' to 'prototype'",
      "on": "W1087 Made-up Pilot",
      "ref": null,
      "where": "the Governance Hub's proposals",
-     "since": "2026-11-15T20:56:40Z",
+     "since": "2026-11-15T22:01:29Z",
      "said": "raised today"
     },
     {
-     "agreement_id": "agr-d798d6ceda",
+     "agreement_id": "agr-a43fef0856",
      "agreement_title": "W1087 Made-up Supply",
-     "obligation_id": "obl-7e44c11fc9",
+     "obligation_id": "obl-357736f9fe",
      "what": "pay the made-up price",
      "clause": "clause 4",
      "due_on": "2026-11-12",
@@ -470,7 +470,7 @@
     "the Owner's own approvals, which an administrator records: a filing-shaped legal draft, and a learner's standing approval for a high-impact avatar mode waiting on the Owner's co-signature",
     "a support answer waiting on your confirmation, and a quality defect of yours waiting on a correction or a re-verification",
     "an evolution proposal waiting on a decision: a proposal to change the platform, so with sign-in on it waits on an administrator",
-    "the offerings a cascade proposed, waiting to be curated into the marketplace: for your entity, on you; for the platform, on an administrator. Nothing records a decision not to curate them, so they wait until one is curated",
+    "the offerings a cascade proposed, waiting to be curated into the marketplace: for your entity, on you; for the platform, on an administrator; they wait until one is curated or the catalogue is declined",
     "a method amendment Change Control decided and the method does not carry out yet, an immune defence in place until it is lifted, and a follow-up in the platform's register waiting on the Owner's decision; an administrator records all three, so with sign-in on they wait on an administrator"
    ],
    "not_read_yet": [],
@@ -479,12 +479,12 @@
    "within_days": 30,
    "items": [
     {
-     "asset_id": "ast-0c72293e1c",
+     "asset_id": "ast-381208b21c",
      "on": "W1087 made-up delivery robot",
      "ref": "the maker's evidence of conformity",
      "fact": "maker_conformity",
      "kind": "evidence_lapsed",
-     "evidence_id": "evd-d66c03d682",
+     "evidence_id": "evd-39eb03e0c2",
      "what": "the made-up declaration of conformity",
      "lapses_on": "2026-11-13",
      "days": -2,
@@ -493,12 +493,12 @@
      "where": "the assets on the Law page"
     },
     {
-     "asset_id": "ast-0c72293e1c",
+     "asset_id": "ast-381208b21c",
      "on": "W1087 made-up delivery robot",
      "ref": "insurance",
      "fact": "insurance",
      "kind": "evidence_lapses",
-     "evidence_id": "evd-44a035d277",
+     "evidence_id": "evd-6221a4e46a",
      "what": "the made-up insurance certificate",
      "lapses_on": "2026-11-20",
      "days": 5,
@@ -509,13 +509,13 @@
     {
      "source": "project",
      "kind": "decision",
-     "project_id": "963e303ec85846dca10af78097d2477d",
-     "proposal_id": "806eca1793114783a07bd419f9827c09",
+     "project_id": "cba0cf0efc3c4ce6b7cf255de6cadc83",
+     "proposal_id": "f7cd3f0f11de4994bebaf3ff30e3a7ca",
      "what": "a decision on the proposal to move it from 'concept' to 'prototype'",
      "on": "W1087 Made-up Pilot",
      "ref": null,
      "where": "the Governance Hub's proposals",
-     "since": "2026-11-15T20:56:40Z",
+     "since": "2026-11-15T22:01:29Z",
      "said": "raised today"
     }
    ],
@@ -547,7 +547,7 @@
     "the Owner's own approvals, which an administrator records: a filing-shaped legal draft, and a learner's standing approval for a high-impact avatar mode waiting on the Owner's co-signature",
     "a support answer waiting on your confirmation, and a quality defect of yours waiting on a correction or a re-verification",
     "an evolution proposal waiting on a decision: a proposal to change the platform, so with sign-in on it waits on an administrator",
-    "the offerings a cascade proposed, waiting to be curated into the marketplace: for your entity, on you; for the platform, on an administrator. Nothing records a decision not to curate them, so they wait until one is curated",
+    "the offerings a cascade proposed, waiting to be curated into the marketplace: for your entity, on you; for the platform, on an administrator; they wait until one is curated or the catalogue is declined",
     "a method amendment Change Control decided and the method does not carry out yet, an immune defence in place until it is lifted, and a follow-up in the platform's register waiting on the Owner's decision; an administrator records all three, so with sign-in on they wait on an administrator"
    ],
    "not_read_yet": [],

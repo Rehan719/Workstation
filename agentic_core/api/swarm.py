@@ -339,6 +339,16 @@ def _scoped(user) -> bool:
     return auth_enabled() and isinstance(user, dict) and user.get("role") != "admin"
 
 
+def _may_decide(scope, user) -> bool:
+    """W1096 (FU-1272) - whether this person decides a cascade run's proposed catalogue, curating or declining it, as
+    the one list names them (W1092): a run for an entity, its owner (W1093); a run for the platform, or one not found,
+    an administrator; with sign-in off, the one person using this machine."""
+    from agentic_core.auth.core import user_can_access
+    if scope is not None and str(scope) in ("", "workstation"):
+        return user_can_access(user, None)
+    return _run_is_theirs(scope, user)
+
+
 class CurateProposalRequest(BaseModel):
     item: str                       # the proposed item name to commercialise
     description: str = ""
@@ -368,7 +378,9 @@ async def curate_proposed_item(run_id: str, req: CurateProposalRequest,
     from agentic_core.auth.core import request_owner_id
     #  W1093 (FU-1271) - a run for an entity proposed its offerings for that entity: a person whose entity it is not
     #  is answered as for a run that does not exist, so whether it exists is never said
-    if not prop or not _run_is_theirs(_run_scopes()[0].get(run_id), user):
+    #  W1096 (FU-1272) - and a run for the platform, or one not found, is an administrator's to curate, as the one list
+    #  names it
+    if not prop or not _may_decide(_run_scopes()[0].get(run_id), user):
         raise HTTPException(status_code=404, detail=f"No proposed catalogue for run {run_id}.")
     from agentic_core.api.compliance import screen_compliance
     screen = screen_compliance(f"{req.item}. {req.description}")
@@ -427,6 +439,43 @@ async def curate_proposed_item(run_id: str, req: CurateProposalRequest,
             "proposed_by_cascade": _is_proposed,
             "note": ("Curated by a deliberate act — the cascade proposes, never auto-publishes." if _is_proposed else
                      "Published as the curator's own offering: this cascade did not propose it.")}
+
+
+class DeclineProposalRequest(BaseModel):
+    reason: str = ""
+
+
+@router.post("/catalogue/proposed/{run_id}/decline")
+async def decline_proposed_catalogue(run_id: str, req: DeclineProposalRequest = DeclineProposalRequest(),
+                                     user: dict | None = Depends(get_current_user)):
+    """W1096 (FU-1272) - a person decides NOT to curate what a cascade proposed. Nothing recorded that decision, so a
+    proposed catalogue stayed proposed, and on the one list, until one of its offerings was curated. The row is now
+    held as declined, with who, when and why, and waits on nobody. The person who decides it declines it (as the one
+    list names them: a run for an entity, its owner; for the platform, an administrator); anyone else is answered as
+    for a run that does not exist. A row that is not proposed is not declined."""
+    from agentic_core.auth.core import request_owner_id
+    from agentic_core.config import (StoreUnavailable as _SU, atomic_write_json as _awj, data_path as _dp,
+                                     read_json_strict as _rjs, store_lock as _lock)
+    if user is not None and not isinstance(user, dict):
+        user = None
+    store = _dp("proposed_catalogue.json")
+    with _lock(store):
+        try:
+            rows = _rjs(store, list, expect=list)
+        except _SU as e:
+            raise HTTPException(status_code=503, detail=f"{e}; nothing was declined")
+        prop = next((p for p in rows if isinstance(p, dict) and p.get("run_id") == run_id), None)
+        if not prop or not _may_decide(_run_scopes()[0].get(run_id), user):
+            raise HTTPException(status_code=404, detail=f"No proposed catalogue for run {run_id}.")
+        if prop.get("status") != "proposed":
+            raise HTTPException(status_code=409, detail=(
+                f"cascade {run_id}'s catalogue is {prop.get('status')}, not proposed, so there is nothing to decline"))
+        prop["status"] = "declined"
+        prop["declined"] = {"by": request_owner_id(user, "the operator of this single-user deployment"),
+                            "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "reason": req.reason[:300]}
+        _awj(store, rows)
+    return {"run_id": run_id, "status": "declined", "declined": prop["declined"],
+            "note": "Nothing was published, and the catalogue no longer waits on anyone."}
 
 
 @router.get("/catalogue/proposed")

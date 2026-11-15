@@ -50,8 +50,7 @@ READS = ["the obligations on your agreement records: each one falling due within
          "an evolution proposal waiting on a decision: a proposal to change the platform, so with sign-in on it "
          "waits on an administrator",
          "the offerings a cascade proposed, waiting to be curated into the marketplace: for your entity, on you; "
-         "for the platform, on an administrator. Nothing records a decision not to curate them, so they wait "
-         "until one is curated",
+         "for the platform, on an administrator; they wait until one is curated or the catalogue is declined",
          #  W1095 (FU-1270)
          "a method amendment Change Control decided and the method does not carry out yet, an immune defence in "
          "place until it is lifted, and a follow-up in the platform's register waiting on the Owner's decision; an "
@@ -77,7 +76,8 @@ WHERE = {"agreement": "the agreements on the Law page", "asset": "the assets on 
          "defect": "the defects on the Cockpit's VBS panel",
          #  W1092 (FU-1270) - no page offers these yet
          "evolution": "no page yet: a decision is recorded through the evolution proposal's approve or reject route",
-         "catalogue": "no page yet: an offering is curated through the proposed catalogue's curate route",
+         "catalogue": ("no page yet: an offering is curated, or the catalogue declined, through the proposed "
+                       "catalogue's curate and decline routes"),
          #  W1095 (FU-1270)
          "amendment": ("no page yet: a method edit that names its change record carries it out, and GET "
                        "/api/v1/method/amendments says which are"),
@@ -510,8 +510,8 @@ def _proposals(user) -> tuple:
     """W1092 (FU-1270) - a pending evolution proposal waits on a decision (api/v191/evolution.py): approved, it is filed
     with Change Control; rejected, it is closed. A proposal is to change the platform itself, so, as Change Control's
     decisions do, it waits on an administrator with sign-in on, and on the one person using this machine with it off
-    (the route that records the decision is open to any signed-in person: FU-1272). The proposals' own reader passes
-    over a store it cannot read, so the list reads it strictly and says when it could not. A proposal's words are a
+    (the route that records the decision is an administrator's too, W1096). The proposals are read strictly here,
+    and a store that cannot be read is said in its place. A proposal's words are a
     model's, so it is named by its id."""
     if not _decider(user):
         return [], []
@@ -543,8 +543,8 @@ def _catalogue(user, owners: dict, names: dict) -> tuple:
     """W1092 (FU-1270) - the offerings a cascade proposed wait to be curated into the marketplace (api/swarm.py, W294:
     the cascade proposes, a person curates). A cascade run for an entity proposed them for it, so they wait on its
     owner; a run for the platform, or one whose run or entity is not found, on an administrator; with sign-in off, on
-    the one person using this machine. Nothing records a decision not to curate them, so they wait until one is
-    curated (FU-1272). The catalogue is read strictly and the run history tolerantly (the deliveries say when it was
+    the one person using this machine. They wait until one is curated or the catalogue is declined (W1096). The
+    catalogue is read strictly and the run history tolerantly (the deliveries say when it was
     not read whole). The offerings' names are a model's, so the list names the run, never them."""
     from agentic_core.config import StoreUnavailable, data_path, read_json_reported, read_json_strict
     try:

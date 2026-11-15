@@ -90182,3 +90182,143 @@ def test_w1095_fu1270_the_one_list_reads_the_last_of_the_census(client, monkeypa
             p = _cc._cca_path(cid)
             if p.exists():
                 p.unlink()
+
+
+def test_w1096_fu1272_the_decisions_the_one_list_names_are_held_by_their_own_routes(client, monkeypatch):
+    """FU-1272 (W1096). The one list names whose decision an evolution proposal and a proposed catalogue are, and their
+    routes did not hold it: anyone signed in approved or rejected a proposal to change the platform, the proposals'
+    reader took a store it could not read for none (and the next generation wrote over it), a catalogue for the
+    platform was anyone's to curate, and nothing recorded a decision not to curate one. Held here through the routes,
+    as an entity's owner, a second person and an administrator, on made-up records:
+    - an evolution proposal is decided only by an administrator: another person's approval and rejection are refused
+      and it stays pending; an administrator's rejection is recorded;
+    - a store of proposals that cannot be read is said as that: the listing and a decision refuse with why, and a
+      generation refuses before any model runs, leaving the store as it was;
+    - a catalogue is declined by the person who decides it, with who, when and why, and leaves the one list; anyone
+      else is answered as for a run that does not exist; one not proposed is not declined again; a catalogue for the
+      platform is an administrator's to curate and to decline, and with sign-in off the one person's;
+    - the owner of a run cannot attribute its sales to another person's entity (W311), which is answered as one that
+      does not exist.
+    The stores are shared with the suite's other tests: this test keeps their bytes and puts them back."""
+    import json
+    import time
+    import uuid
+    import agentic_core.auth.core as _ac
+    from agentic_core.api import vsb as _vs
+    from agentic_core.api.v191 import evolution as _ev
+    from agentic_core.config import atomic_write_json, data_path, read_json_strict
+    tag = uuid.uuid4().hex[:8]
+    vid, other = f"w1096-ent-{tag}", f"w1096-other-{tag}"
+    cat, runs = data_path("proposed_catalogue.json"), data_path("org_cascade_runs.json")
+    ents = [_vs._VSB_STORE / f"{v}.json" for v in (vid, other)]
+    kept = {p: (p.read_bytes() if p.exists() else None) for p in [_ev._STORE, cat, runs] + ents}
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    who = {k: f"w1096-{k}-{tag}" for k in ("own", "two", "adm")}
+    users = _ac._load_users()
+    for k, name in who.items():
+        users[name] = {"user_id": name, "username": name, "hashed_password": _ac._pwd_ctx.hash("pw12345678"),
+                       "role": "admin" if k == "adm" else "user", "created_at": "2026-11-15T00:00:00Z",
+                       "api_keys": []}
+    _ac._save_users(users)
+    H = {k: {"Authorization": "Bearer " + client.post("/api/v1/auth/token", data={
+        "username": n, "password": "pw12345678"}).json()["access_token"]} for k, n in who.items()}
+    ep, run, offering = f"ep-w1096{tag}", f"w1096-run-{tag}-", f"W1096 Made-up Offering {tag}"
+
+    def status(pid):
+        return next(p for p in read_json_strict(_ev._STORE, missing=[], expect=list) if p["id"] == pid)["status"]
+
+    def row(n):
+        return next(r for r in read_json_strict(cat, missing=[], expect=list) if r.get("run_id") == f"{run}{n}")
+
+    def decline(k, n):
+        return client.post(f"/api/v1/swarm/catalogue/proposed/{run}{n}/decline", headers=H[k] if k else {},
+                           json={"reason": f"w1096 made-up reason {n}"})
+
+    def on_list(k):
+        return {i["run_id"] for i in client.get("/api/v1/waiting", headers=H[k]).json()["items"]
+                if i.get("source") == "catalogue" and tag in str(i.get("run_id"))}
+    try:
+        now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        _vs._VSB_STORE.mkdir(parents=True, exist_ok=True)
+        for p, v, o in ((ents[0], vid, who["own"]), (ents[1], other, who["two"])):
+            p.write_text(json.dumps({"vsb_id": v, "name": f"W1096 made-up entity {v}", "owner_id": o}), encoding="utf-8")
+        props = read_json_strict(_ev._STORE, missing=[], expect=list)
+        props += [{"id": f"{ep}{n}", "type": "PROCESS", "title": "w1096 made-up", "description": "w1096 made-up",
+                   "impact": "Low", "rationale": "w1096 made-up", "status": "pending", "generated_at": now,
+                   "served_by": "w1096-made-up"} for n in (1, 2)]
+        atomic_write_json(_ev._STORE, props)
+
+        #  an evolution proposal is an administrator's to decide
+        for verb in ("approve", "reject"):
+            r = client.post(f"/api/v191/evolution/proposals/{ep}1/{verb}", headers=H["own"])
+            assert r.status_code == 403, (verb, r.status_code, r.text[:200])
+        assert status(f"{ep}1") == "pending"
+        r = client.post(f"/api/v191/evolution/proposals/{ep}2/reject", headers=H["adm"])
+        assert r.status_code == 200 and r.json()["status"] == "rejected" and status(f"{ep}2") == "rejected", r.text[:200]
+
+        #  a store that cannot be read is said as that, and a generation is refused before any model runs
+        calls = []
+
+        async def _model(*a, **k):
+            calls.append(a)
+            return {"output": "", "served_by": "w1096-stand-in"}
+        monkeypatch.setattr(_ev.gateway, "query_meta", _model)
+        held = _ev._STORE.read_bytes()
+        _ev._STORE.write_text("{ not json", encoding="utf-8")
+        try:
+            lst = client.get("/api/v191/evolution/proposals", headers=H["adm"])
+            dec = client.post(f"/api/v191/evolution/proposals/{ep}1/approve", headers=H["adm"])
+            gen = client.post("/api/v191/evolution/proposals/generate", headers=H["adm"], json={"context": "w1096"})
+            after = _ev._STORE.read_bytes()
+        finally:
+            _ev._STORE.write_bytes(held)
+        assert [x.status_code for x in (lst, dec, gen)] == [503, 503, 503], (lst.text[:200], dec.text[:200], gen.text[:200])
+        assert all("could not be read" in x.json()["detail"] for x in (lst, dec, gen))
+        assert calls == [] and after == b"{ not json"
+
+        #  a catalogue is declined by the person who decides it, and leaves the one list
+        rr = read_json_strict(runs, missing=[], expect=list)
+        rr += [{"run_id": f"{run}{n}", "mission": f"a made-up mission {n}", "created_at": now,
+                "business_plan_scope": vid if n in (1, 4) else "workstation"} for n in (1, 2, 3, 4)]
+        atomic_write_json(runs, rr)
+        rows = read_json_strict(cat, missing=[], expect=list)
+        rows += [{"run_id": f"{run}{n}", "mission": f"a made-up mission {n}", "domain": "w1096", "status": "proposed",
+                  "items": [offering], "items_basis": "made up", "raw": "made up", "created_at": now}
+                 for n in (1, 2, 3, 4)]
+        atomic_write_json(cat, rows)
+        assert on_list("own") == {f"{run}1", f"{run}4"}
+        gone = client.post(f"/api/v1/swarm/catalogue/proposed/w1096-no-run-{tag}/decline", headers=H["two"], json={})
+        theirs = decline("two", 1)
+        assert (theirs.status_code, theirs.json()) == (404, json.loads(gone.text.replace(f"w1096-no-run-{tag}", f"{run}1")))
+        assert row(1)["status"] == "proposed"
+        d = decline("own", 1)
+        assert d.status_code == 200, d.text[:300]
+        assert (row(1)["status"], row(1)["declined"]["by"], row(1)["declined"]["reason"]) == (
+            "declined", who["own"], "w1096 made-up reason 1"), row(1)
+        assert on_list("own") == {f"{run}4"} and decline("own", 1).status_code == 409
+
+        #  a catalogue for the platform is an administrator's to curate and decline
+        body = {"item": offering, "description": "a made-up offering (W1096)", "vsb_id": ""}
+        assert client.post(f"/api/v1/swarm/catalogue/proposed/{run}2/curate", headers=H["two"], json=body).status_code == 404
+        assert decline("two", 2).status_code == 404 and row(2)["status"] == "proposed"
+        assert decline("adm", 2).status_code == 200 and row(2)["declined"]["by"] == who["adm"]
+        monkeypatch.setenv("AUTH_ENABLED", "false")
+        assert decline(None, 3).status_code == 200
+        assert row(3)["declined"]["by"] == "the operator of this single-user deployment"
+        monkeypatch.setenv("AUTH_ENABLED", "true")
+
+        #  the owner of a run cannot attribute its sales to another person's entity
+        miss = client.post(f"/api/v1/swarm/catalogue/proposed/{run}4/curate", headers=H["own"],
+                           json={**body, "vsb_id": f"w1096-no-entity-{tag}"})
+        named = client.post(f"/api/v1/swarm/catalogue/proposed/{run}4/curate", headers=H["own"],
+                            json={**body, "vsb_id": other})
+        assert (named.status_code, named.json()) == (
+            404, json.loads(miss.text.replace(f"w1096-no-entity-{tag}", other))), named.text[:300]
+        assert row(4)["status"] == "proposed"
+    finally:
+        for p, b in kept.items():
+            if b is None:
+                if p.exists():
+                    p.unlink()
+            else:
+                p.write_bytes(b)
