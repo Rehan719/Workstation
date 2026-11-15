@@ -25529,6 +25529,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: a verse, its translation, a review, a recall and a reference recitation are said only under the reference they were asked for; each card (reader, review, lesson) says its own failure, and no other action takes it away. The rendered test (nine cases) has five vitest blinds; test_w1073 holds the studio's code and the fixture (no Arabic; every verse, surah name and translation a placeholder), with five blinds."
+    },
+    {
+      "id": "FU-1261",
+      "title": "The children's approval pack left a pack it could not read on the page, and said a decision refused because the pack had changed over the old pack, with nothing that read it again",
+      "why": "Found by rendering ChildrenApprovalPack against its routes' own answers (FU-399 part 87; no test rendered it, the scholar review panel's test stands it in; the pack's own words were replaced by made-up ones in the capture, its shape, counts and fingerprint kept, and the only decision a return by a made-up reviewer). A pack that could not be read again after a decision left the pack read before on the page, under 'The approval pack could not be read' (driven: the rules and the state stayed under a 500). A decision refused because the pack had changed since it was read said 'Read it again and decide on what it holds now' over the old pack, and nothing on the page read it again (driven: one read only, the old state stayed).",
+      "source": "W1074 (FU-399 part 87: the children's approval pack rendered)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/components/qep/ChildrenApprovalPack.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1074",
+      "note": "",
+      "slot_source": "found by FU-399's render of the children's approval pack; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: a pack that could not be read is taken off the page, and a decision refused reads the pack again, so what is shown is the pack a next decision would be on. The rendered test (six cases, two red on the unfixed pack) has three vitest blinds; test_w1074 holds the pack's code and the fixture (no Arabic; every rule, tool and question made up; no decision an approval), with three blinds."
     }
   ],
   "routes": [

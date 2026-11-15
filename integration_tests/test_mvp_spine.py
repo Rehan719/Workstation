@@ -87684,3 +87684,40 @@ def test_w1073_fu1260_the_quran_studio_says_a_verse_only_under_the_reference_ask
     assert all(s["name_arabic"].startswith("W1073 placeholder name") for s in fx["suwar"]["body"]["suwar"])
     assert all(fx[k]["body"]["translation_text"].startswith("W1073 made up: ") for k in ("translation_1_2", "translation_1_3"))
     assert fx["lesson"]["body"]["lesson_plan"] is None and fx["recalled"]["body"]["comparison"]["comparable"] is False
+
+
+def test_w1074_fu1261_the_approval_pack_takes_a_pack_it_could_not_read_off_the_page_and_reads_it_again_when_refused():
+    """W1074 (FU-1261; FU-399 part 87). The children's approval pack had no rendered test (the scholar review panel's
+    test stands it in). Rendered against its routes' own answers (the pack's own words replaced by made-up ones in the
+    capture; the only decision a return by a made-up reviewer), a pack that could not be read again after a decision
+    left the pack read before on the page, under "The approval pack could not be read"; and a decision refused because
+    the pack had changed said "Read it again and decide on what it holds now" over the old pack, with nothing on the
+    page that read it again. A pack that could not be read is taken off the page, and a refused decision reads the
+    pack again.
+
+    Held here: the pack's code, and the rendered test's fixture: no Arabic in it, every rule, tool and question in it
+    made up, and no decision in it an approval. The rendered test (ChildrenApprovalPack.test.tsx, six cases, three
+    vitest blinds) holds what the pack says."""
+    import json
+    import pathlib
+    import re
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/components/qep"
+    cap = _code_only((src / "ChildrenApprovalPack.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "catch (e) { setPack(null); setErr(`The approval pack could not be read. ${errorMessage(e)}`); }" in cap
+    assert "} catch (e) { setMsg(`Not recorded. ${errorMessage(e)}`); await load(); }" in cap
+    assert "{roster === null\n          ? <p" in cap and 'data-testid="pack-roster-unread"' in cap
+    t = (src / "ChildrenApprovalPack.test.tsx").read_text(encoding="utf-8")
+    assert t.count("\n  it('") == 6, t.count("\n  it('")
+    raw = (src / "ChildrenApprovalPack.fixture.json").read_text(encoding="utf-8")
+    assert not re.search(r"[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]", raw), "the fixture holds Arabic"
+    fx = json.loads(raw)
+    for k in ("pack", "pack_after"):
+        sec = fx[k]["body"]["sections"]
+        assert sec["rules"] and all(r["rule"].startswith("W1074 made up: ") for r in sec["rules"]), k
+        for tool in sec["tools"]:
+            assert tool["name"].startswith("W1074 made-up tool ") and tool["what_a_child_sees"].startswith("W1074 made up: "), tool["id"]
+            assert not tool.get("run_by") or tool["run_by"].startswith("W1074 made up: "), tool["id"]
+            for q in tool.get("questions") or []:
+                assert q["question"].startswith("W1074 made up: "), tool["id"]
+        assert fx[k]["body"]["state"] != "approved", fx[k]["body"]["state"]
+    assert fx["returned"]["body"]["decision"]["decision"] == "return"

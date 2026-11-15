@@ -27,7 +27,8 @@ export const ChildrenApprovalPack: React.FC<{ roster: [string, { name: string }]
   const [busy, setBusy] = useState(false);
   const load = useCallback(async () => {
     try { setPack(await apiJson<Pack>('/api/v1/scholar-review/pack')); setErr(''); }
-    catch (e) { setErr(`The approval pack could not be read. ${errorMessage(e)}`); }
+    //  W1074 - a pack that could not be read is not left on the page: the one read before stood under this sentence
+    catch (e) { setPack(null); setErr(`The approval pack could not be read. ${errorMessage(e)}`); }
   }, []);
   useEffect(() => { void load(); }, [load]);
 
@@ -39,7 +40,9 @@ export const ChildrenApprovalPack: React.FC<{ roster: [string, { name: string }]
         body: { scholar_id: chosen, decision, notes, seen_hash: pack.pack_hash } });
       setMsg(decision === 'approve' ? 'The whole pack is recorded as approved.' : 'The pack is recorded as returned, with your notes.');
       setNotes(''); await load();
-    } catch (e) { setMsg(`Not recorded. ${errorMessage(e)}`); }
+    //  W1074 - a refused decision reads the pack again: a pack that changed was refused with "Read it again" over
+    //  the old pack, and nothing here read it again
+    } catch (e) { setMsg(`Not recorded. ${errorMessage(e)}`); await load(); }
     setBusy(false);
   };
 
