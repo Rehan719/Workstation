@@ -86631,3 +86631,72 @@ def test_w1055_fu399_the_cockpit_s_chief_tab_keeps_the_chief_s_answer_with_the_e
     assert 'data-testid="cockpit-chief-error"' in page
     t = (src / "pages/enterprise/VSBCockpit.chief.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './VSBCockpit.chief.fixture.json';" in t and "<VSBCockpit />" in t
+
+
+def test_w1056_fu399_the_cockpit_s_cascade_editor_belongs_to_the_entity_it_was_opened_on(client):
+    """FU-399 part 74 (W1056). The cockpit's organisation tab is rendered against its routes' own answers
+    (VSBCockpit.org.test.tsx) for two entities established through Genesis on a fresh store: every read on opening
+    either, each one's cascade as the editor reads it, the opened entity's cascade saved with one instruction edited,
+    a section written in its founder's words, and the routes' refusals. Rendering found:
+    - the cascade editor bound to no entity. The tab stays mounted while another entity is opened, and the editor
+      kept its state: opened on one entity, it stayed open with that entity's stages under the other's, and its Save
+      put them to the other entity's cascade, which a save replaces whole (driven on the unfixed page: the PUT went to
+      the other entity's cascade with the first's edited stages). It is keyed by the cascade it edits now, so another
+      entity's cascade opens a fresh editor, closed;
+    - its failures said as a bare reason, with nothing to say whether the cascade had not been read or not been
+      saved. Each says which.
+    Found staging the round: a full rendered run failed once after every test had passed, on the Employment hub's
+    deferred scroll, which ran after its test file's document was torn down. It is cancelled when the hub is closed.
+
+    Held here: the routes' refusals asked again (each changes nothing); the captured save is the cascade read with
+    only the instruction edited; the two entities' cascades are two; and the page's code."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/enterprise/VSBCockpit.org.fixture.json").read_text(encoding="utf-8"))
+    vid, other = fx["vsb_id"], fx["other_id"]
+    cid = fx["cascade_id"]
+    oid = fx["answers"][f"/api/v1/vsb/{other}"]["body"]["native_swarm"]["cascade_id"]
+    assert cid == fx["answers"][f"/api/v1/vsb/{vid}"]["body"]["native_swarm"]["cascade_id"] and cid != oid, (cid, oid)
+    #  the save is what the editor sends: the stages it read, only the first instruction edited
+    read = fx["answers"][f"/api/v1/resources/swarm/{cid}"]["body"]["stages"]
+    sent = fx["save_ask"]["stages"]
+    assert [s["role"] for s in sent] == [s["role"] for s in read] and len(sent) == len(read) > 1
+    assert sent[0]["instruction"] != read[0]["instruction"] and sent[0]["instruction"].startswith("W1056 made up:")
+    assert [s["instruction"] for s in sent[1:]] == [s["instruction"] for s in read[1:]]
+    assert fx["saved"]["status"] == 200 and fx["saved"]["body"]["stages"][0]["instruction"] == sent[0]["instruction"]
+    assert fx["body_saved"]["status"] == 200 and fx["body_saved"]["body"]["source"] == "founder"
+    assert fx["after_body"]["body"]["body_absent"]["design"] is False
+
+    #  the cascade route's refusals for a cascade it does not hold, asked again: neither reads or writes one
+    gone = "/api/v1/resources/swarm/swarm-w1056-not-held"
+    r = client.get(gone)
+    assert (r.status_code, r.json()) == (fx["read_refused"]["status"], fx["read_refused"]["body"]), r.text[:200]
+    r = client.put(gone, json=fx["save_ask"])
+    assert (r.status_code, r.json()) == (fx["save_refused"]["status"], fx["save_refused"]["body"]), r.text[:200]
+    #  the section route's refusal of a section too short to be a founder's words, asked again of an entity made here
+    est = client.post("/api/v1/genesis/establish", json={"problem": "W1056 made up: a seed library kept in a school's entrance hall",
+                                                         "ship_output": False, "name": "W1056 Seed Library"})
+    assert est.status_code == 200, est.text[:200]
+    e = est.json()["vsb_id"]
+    r = client.post(f"/api/v1/vsb/{e}/body/operations", json={"text": "seeds"})
+    assert (r.status_code, r.json()) == (fx["body_refused"]["status"], fx["body_refused"]["body"]), r.text[:200]
+    assert client.get(f"/api/v1/vsb/{e}").json()["body_absent"]["operations"] is True   # nothing was recorded
+
+    page = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "<EditCascade key={swarm.cascade_id} cascadeId={swarm.cascade_id}" in page
+    assert "} catch (e: any) { setErr(`The cascade could not be read: ${errorMessage(e)}`); }" in page
+    assert "} catch (e: any) { setErr(`The cascade was not saved: ${errorMessage(e)}`); }" in page
+    assert 'data-testid="cascade-edit-error"' in page
+    t = (src / "pages/enterprise/VSBCockpit.org.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './VSBCockpit.org.fixture.json';" in t and "<VSBCockpit />" in t
+    #  found staging this round: the Employment hub's deferred scroll ran after the page was gone, and in a rendered
+    #  test after its document was torn down, which failed a whole run once every test had passed. It is cancelled
+    #  when the hub is closed; EmploymentHub.test.tsx closes the hub before it runs
+    hub = _code_only((src / "pages/domains/EmploymentHub.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "pendingScroll.current.frame = requestAnimationFrame(() => {" in hub
+    assert "pendingScroll.current.timer = setTimeout(() => {" in hub
+    assert "if (pending.frame !== undefined) cancelAnimationFrame(pending.frame);" in hub
+    assert "if (pending.timer !== undefined) clearTimeout(pending.timer);" in hub
+    ht = (src / "pages/domains/EmploymentHub.test.tsx").read_text(encoding="utf-8")
+    assert "expect(looked).not.toHaveBeenCalledWith('job-search-engine-section');" in ht

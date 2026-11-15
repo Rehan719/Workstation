@@ -42,7 +42,7 @@ function Where() {
 }
 
 function mount(at: string) {
-  render(
+  return render(
     <MemoryRouter initialEntries={[at]}>
       <AdaptiveUIProvider>
         <EmploymentHub />
@@ -98,5 +98,17 @@ describe('EmploymentHub, rendered: the tool shown is the tab the address names',
     await waitFor(() => expect(at()).toBe('at: /employment?tab=salary'));
     expect(screen.getByText(SHOWN.salary)).toBeTruthy();
     expect(screen.queryByText(SHOWN.cover)).toBeNull();
+  });
+
+  //  W1056 - left pending, the scroll ran after the hub was gone, and after this file's document was torn down,
+  //  which failed the whole run once every test had passed
+  it('the scroll New Opportunity defers is cancelled when the hub is closed before it runs', async () => {
+    const looked = vi.spyOn(document, 'getElementById');
+    const { unmount } = mount('/employment');
+    fireEvent.click(screen.getByRole('button', { name: /New Opportunity/ }));
+    unmount();
+    await new Promise(r => setTimeout(r, 150));
+    expect(looked).not.toHaveBeenCalledWith('job-search-engine-section');
+    looked.mockRestore();
   });
 });

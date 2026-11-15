@@ -18,10 +18,20 @@ export const EmploymentHub: React.FC = () => {
   //  W1027 - and the tab is in the address: a tab the hub does not have opens the CV tools
   const [activeTab, setActiveTab] = useTab(EMPLOYMENT_TABS, 'cv');
 
+  //  W1056 - the deferred scroll is cancelled when the hub is closed: left pending, it ran after the page was gone,
+  //  and in a rendered test after its document was torn down, which failed the whole run
+  const pendingScroll = React.useRef<{ frame?: number; timer?: ReturnType<typeof setTimeout> }>({});
+  React.useEffect(() => {
+    const pending = pendingScroll.current;
+    return () => {
+      if (pending.frame !== undefined) cancelAnimationFrame(pending.frame);
+      if (pending.timer !== undefined) clearTimeout(pending.timer);
+    };
+  }, []);
   const scrollToSection = (id: string) => {
     // Defer until the tab's content has mounted.
-    requestAnimationFrame(() => {
-      setTimeout(() => {
+    pendingScroll.current.frame = requestAnimationFrame(() => {
+      pendingScroll.current.timer = setTimeout(() => {
         document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 50);
     });

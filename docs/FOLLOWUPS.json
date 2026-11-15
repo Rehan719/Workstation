@@ -25078,6 +25078,48 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the Chief's answer is dropped when another entity is on screen; its answer, failure, busy flag and typed instruction are cleared when another entity is opened; a failure says Not instructed before its reason. VSBCockpit.chief.test.tsx drives each against the routes' own answers for two entities (five vitest blinds); test_w1055 holds the route's field check asked again, the captured pack and answer, and the page (four blinds)."
+    },
+    {
+      "id": "FU-1240",
+      "title": "The cockpit's cascade editor was bound to no entity: opened on one entity it stayed open when another was opened, and its Save put the first entity's stages to the other's cascade",
+      "why": "Found rendering the cockpit's organisation tab (FU-399 part 74) for two entities established on a fresh store. The tab stays mounted while another entity is opened, and the cascade editor kept its state: opened on one entity, it stayed open with that entity's stages under the other's, and pressing Save put them to the other entity's cascade, which a save replaces whole (driven on the unfixed page: the PUT went to the other entity's cascade with the first's edited stages). Its failures were said as a bare reason, with nothing to say whether the cascade had not been read or not been saved.",
+      "source": "W1056 (FU-399 part 74, the cockpit's organisation tab rendered)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1056",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the cockpit's organisation tab; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the editor is keyed by the cascade it edits, so another entity's cascade opens a fresh editor, closed; a failure says whether the cascade was not read or not saved. VSBCockpit.org.test.tsx drives each against the routes' own answers for two entities (three vitest blinds); test_w1056 holds the routes' refusals asked again, the captured save and the page (four blinds)."
+    },
+    {
+      "id": "FU-1241",
+      "title": "The Employment hub's deferred scroll ran after the hub was gone, and in a rendered test after its document was torn down, failing the whole run once every test had passed",
+      "why": "Found staging W1056: a full rendered run failed with an uncaught error (document is not defined) after all 467 tests had passed, from EmploymentHub.test.tsx. New Opportunity defers its scroll by a frame and a 50 ms timer, and nothing cancelled either when the hub was closed, so the scroll ran after the page was gone; when it was the last thing pending in its test file, it ran after the file's document was torn down, which fails the run, and the round's vitest step and CI's frontend job with it, at random.",
+      "source": "W1056 (found staging the round: a full rendered run failed once after every test had passed)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/pages/domains/EmploymentHub.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1056",
+      "note": "",
+      "slot_source": "found by FU-399's rendered runs; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the hub cancels its deferred scroll's frame and timer when it is closed. EmploymentHub.test.tsx closes the hub before the scroll runs and holds that it never looks for its section (one vitest blind); test_w1056 holds the code (one blind)."
     }
   ],
   "routes": [

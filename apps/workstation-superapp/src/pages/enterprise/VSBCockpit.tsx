@@ -71,7 +71,8 @@ const EditCascade: React.FC<{ cascadeId: string; onSaved: () => void }> = ({ cas
       if (!r.ok) throw new Error(bodyDetail(b, `HTTP ${r.status}`));   // W1013 - a field check by its field
       setStages((b.stages || []).map((st: any) => ({ role: st.role || '', instruction: st.instruction || '',
                                                      ...(st.model ? { model: String(st.model) } : {}) })));
-    } catch (e: any) { setErr(errorMessage(e)); }
+    //  W1056 - says what failed: a bare reason said nothing of whether the cascade was read
+    } catch (e: any) { setErr(`The cascade could not be read: ${errorMessage(e)}`); }
   };
 
   const blank = (stages || []).some(st => !st.role.trim() || !st.instruction.trim());
@@ -89,7 +90,7 @@ const EditCascade: React.FC<{ cascadeId: string; onSaved: () => void }> = ({ cas
       if (!r.ok) throw new Error(bodyDetail(b, `HTTP ${r.status}`));   // W1013 - a field check by its field
       setMsg(`Saved ${(b.stages || []).length} stages. The next run of this cascade re-reads them — nothing further to apply.`);
       onSaved();
-    } catch (e: any) { setErr(errorMessage(e)); }
+    } catch (e: any) { setErr(`The cascade was not saved: ${errorMessage(e)}`); }   // W1056 - and what failed
     setBusy(false);
   };
 
@@ -105,7 +106,7 @@ const EditCascade: React.FC<{ cascadeId: string; onSaved: () => void }> = ({ cas
   return (
     <div className="mt-3 p-3 rounded-xl bg-slate-950 border border-slate-900" data-testid="cascade-edit">
       <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">Reconfigure the delivery cascade</p>
-      {err && <p role="alert" className="text-[10px] font-bold text-vital mb-2">{err}</p>}
+      {err && <p role="alert" data-testid="cascade-edit-error" className="text-[10px] font-bold text-vital mb-2">{err}</p>}
       {stages === null && !err && <Loader2 size={13} className="animate-spin text-slate-500" />}
       {(stages || []).map((st, i) => (
         <div key={i} className="flex gap-2 mb-2">
@@ -987,7 +988,9 @@ export const VSBCockpit: React.FC = () => {
                     no way to reconfigure it, while PUT /resources/swarm/{id} has done exactly that since
                     W267 — and POST /swarm/run re-reads the saved stages, so an edit takes effect on the next
                     run with nothing further to do. That second half is what the criterion asks be provable. */}
-                {swarm.cascade_id && <EditCascade cascadeId={swarm.cascade_id} onSaved={() => setCascadeTick(t => t + 1)} />}
+                {/* W1056 - keyed by the cascade it edits: the tab stays mounted while another entity is opened, so an
+                    open editor kept one entity's stages under the other's, and its Save put them to the other's */}
+                {swarm.cascade_id && <EditCascade key={swarm.cascade_id} cascadeId={swarm.cascade_id} onSaved={() => setCascadeTick(t => t + 1)} />}
               </Card>
             </div>
           )}
