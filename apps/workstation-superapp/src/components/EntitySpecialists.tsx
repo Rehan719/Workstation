@@ -4,7 +4,7 @@
 // whether Workstation recommends a specialist for this entity, with what engaging one would cost the entity and when
 // one is warranted. This component types none of them. A refusal is shown in the server's own words; a failed read
 // is said and never drawn as an empty roster.
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { apiJson, errorMessage } from '../lib/api';
 
 interface Specialist {
@@ -44,6 +44,10 @@ export const EntitySpecialists: React.FC<{ vsbId: string }> = ({ vsbId }) => {
   const [done, setDone] = useState('');
   const [busy, setBusy] = useState(false);
   const base = `/api/v1/entity-specialists/${encodeURIComponent(vsbId)}`;
+  //  W1060 - the entity on screen now: a write's answer, and the read after it, are said only under the entity they
+  //  were made for. The cockpit keeps this mounted while another entity is opened; only vsbId changes
+  const baseRef = useRef(base);
+  baseRef.current = base;
 
   useEffect(() => {
     let live = true;
@@ -51,6 +55,7 @@ export const EntitySpecialists: React.FC<{ vsbId: string }> = ({ vsbId }) => {
     setReadError('');
     setRefused('');
     setDone('');
+    setForm(BLANK); setReasons({}); setBusy(false);   // W1060 - what was typed for one entity never stands for the next
     apiJson<Roster>(base)
       .then(r => { if (live) setRoster(r); })
       .catch(e => { if (live) setReadError(errorMessage(e)); });
@@ -60,43 +65,52 @@ export const EntitySpecialists: React.FC<{ vsbId: string }> = ({ vsbId }) => {
   //  after a write the roster is read again; a failed re-read is said, and the roster is not drawn from memory
   const reread = useCallback(async () => {
     try {
-      setRoster(await apiJson<Roster>(base));
+      const r = await apiJson<Roster>(base);
+      if (base !== baseRef.current) return;   // W1060 - another entity is on screen now
+      setRoster(r);
       setReadError('');
     } catch (e) {
+      if (base !== baseRef.current) return;
       setRoster(null);
       setReadError(errorMessage(e));
     }
   }, [base]);
 
   const attach = async () => {
+    const issuedFor = base;
     setBusy(true);
     setRefused('');
     setDone('');
     try {
       const a = await apiJson<{ specialist: Specialist }>(base, { method: 'POST', body: form });
+      if (issuedFor !== baseRef.current) return;   // W1060 - another entity is on screen now
       setDone(`Attached: ${a.specialist.name}.`);
       setForm(BLANK);
       await reread();
     } catch (e) {
+      if (issuedFor !== baseRef.current) return;
       setRefused(errorMessage(e));
     } finally {
-      setBusy(false);
+      if (issuedFor === baseRef.current) setBusy(false);
     }
   };
 
   const retire = async (s: Specialist) => {
+    const issuedFor = base;
     setBusy(true);
     setRefused('');
     setDone('');
     try {
       await apiJson(`${base}/${encodeURIComponent(s.specialist_id)}/retire`, {
         method: 'POST', body: { reason: reasons[s.specialist_id] ?? '' } });
+      if (issuedFor !== baseRef.current) return;   // W1060 - another entity is on screen now
       setDone(`Retired: ${s.name}.`);
       await reread();
     } catch (e) {
+      if (issuedFor !== baseRef.current) return;
       setRefused(errorMessage(e));
     } finally {
-      setBusy(false);
+      if (issuedFor === baseRef.current) setBusy(false);
     }
   };
 

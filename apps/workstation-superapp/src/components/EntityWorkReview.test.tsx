@@ -52,6 +52,32 @@ describe("EntityWorkReview, rendered against the signature routes' own answers",
     vi.unstubAllGlobals();
   });
 
+  //  W1060 - the cockpit keeps this mounted while another entity is opened: a signature that came back after it was
+  //  opened said "Signed by" there, and its read of the first entity's review was drawn as the other's
+  it("a signature that comes back after another entity is opened says nothing there, nor draws the first one's review", async () => {
+    const other = captured.bare;
+    let letGo: () => void = () => undefined;
+    let signedNow = false;
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      const answer = (b: unknown) => ({ ok: true, status: 200, statusText: '', json: async () => b });
+      if (init?.method === 'POST') { await new Promise<void>(go => { letGo = go; }); signedNow = true; return answer(captured.signed); }
+      if (url.includes(`/${other.vsb_id}`)) return answer(url.endsWith('/signatures') ? other : captured.bare_roster);
+      return answer(url.endsWith('/signatures') ? (signedNow ? captured.after : captured.before) : captured.roster);
+    }));
+    const { rerender } = render(<EntityWorkReview vsbId={captured.vsb_id} />);
+    await screen.findByTestId(`work-review-${did}`);
+    fill();
+    fireEvent.click(screen.getByText('Record the signature'));
+    rerender(<EntityWorkReview vsbId={other.vsb_id} />);
+    await waitFor(() => expect(screen.queryByTestId(`work-review-${did}`)).toBeNull());
+    await screen.findByTestId('entity-work-review');
+    letGo();
+    await new Promise(r => setTimeout(r, 50));
+    expect(screen.queryByTestId('work-review-done')).toBeNull();
+    expect(screen.queryByTestId(`work-review-${did}`)).toBeNull();
+    expect(screen.queryByTestId(`signature-${signatures(captured.after)[0].signature_id}`)).toBeNull();
+  });
+
   it("a deliverable nobody has signed shows the review it has reached in the server's words", async () => {
     serve([ok(captured.before)], [ok(captured.roster)]);
     render(<EntityWorkReview vsbId={captured.vsb_id} />);

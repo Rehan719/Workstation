@@ -86899,3 +86899,39 @@ def test_w1059_a_reason_said_inside_a_longer_sentence_ends_that_sentence_once():
     assert "expect(asClause('is it held?')).toBe('is it held?');" in unit
     repo = (src / "pages/enterprise/VSBCockpit.repo.test.tsx").read_text(encoding="utf-8")
     assert "Nothing was added to the marketplace.`));" in repo
+
+
+def test_w1060_the_cockpit_s_specialists_and_work_review_say_a_write_s_answer_under_the_entity_it_was_made_for():
+    """W1060. The cockpit's org tab mounts EntitySpecialists and EntityWorkReview for the entity on screen and keeps them
+    mounted while another entity is opened: only their vsbId changes. Each guarded its first read but not its writes:
+    an attach, a retirement or a signature that came back after another entity was opened said its "Attached",
+    "Retired" or "Signed by" under the other entity, and its read of the roster or the review afterwards, made for the
+    first entity, was drawn as the other's (driven in both components' rendered tests on the unfixed code). What was
+    typed for one entity stayed in the form for the next, and the buttons could stay busy with the first entity's call.
+    Each write's answer and the read after it are dropped now when another entity is on screen, and the forms are
+    cleared when it is opened.
+
+    Held here: both components' code, and their rendered tests' switch cases."""
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    sp = _code_only((src / "components/EntitySpecialists.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    wr = _code_only((src / "components/EntityWorkReview.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    for code in (sp, wr):
+        assert "const baseRef = useRef(base);\n  baseRef.current = base;" in code
+    assert "setForm(BLANK); setReasons({}); setBusy(false);" in sp
+    assert "setForm(BLANK); setBusy(false);" in wr
+    reread = sp[sp.index("const reread = useCallback(async () => {"):sp.index("const attach = async () => {")]
+    assert reread.count("if (base !== baseRef.current) return;") == 2, reread
+    for name, code, start, end in (("attach", sp, "const attach = async () => {", "const retire = async (s: Specialist) => {"),
+                                   ("retire", sp, "const retire = async (s: Specialist) => {", "const field = "),
+                                   ("sign", wr, "const sign = async () => {", "const field = ")):
+        fn = code[code.index(start):code.index(end)]
+        assert "const issuedFor = base;" in fn, name
+        assert fn.count("if (issuedFor !== baseRef.current) return;") >= 2, (name, fn)
+        assert "if (issuedFor === baseRef.current) setBusy(false);" in fn, name
+    sign = wr[wr.index("const sign = async () => {"):wr.index("const field = ")]
+    assert sign.count("if (issuedFor !== baseRef.current) return;") == 4, sign   # the write, its read, both failures
+    st = (src / "components/EntitySpecialists.test.tsx").read_text(encoding="utf-8")
+    assert "rerender(<EntitySpecialists vsbId={other.vsb_id} />);" in st and "expect(screen.queryByTestId('specialists-done')).toBeNull();" in st
+    rt = (src / "components/EntityWorkReview.test.tsx").read_text(encoding="utf-8")
+    assert "rerender(<EntityWorkReview vsbId={other.vsb_id} />);" in rt and "expect(screen.queryByTestId('work-review-done')).toBeNull();" in rt

@@ -25206,6 +25206,28 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: lib/api.ts asClause says a reason as a clause, dropping its closing full stop and nothing else, at each of the six closings. src/lib/api.test.ts drives asClause and VSBCockpit.repo.test.tsx the listing's sentence whole (two vitest blinds); test_w1059 holds the closings and a tree-wide census (four blinds)."
+    },
+    {
+      "id": "FU-1246",
+      "title": "The cockpit's specialists and work review said a write's answer under whichever entity was on screen: an attach, a retirement or a signature for one entity was said under the next, with the first entity's roster or review",
+      "why": "Found by a census of the entity pickers after W1055-W1057 tied the cockpit's own actions to their entity. The cockpit mounts EntitySpecialists and EntityWorkReview for the entity on screen and keeps them mounted while another is opened: only vsbId changes. Each guarded its first read but not its writes. An attach, a retirement or a signature that came back after another entity was opened said its Attached, Retired or Signed by under the other entity, and its read of the roster or the review afterwards, made for the first entity, was drawn as the other's (driven in both rendered tests). What was typed for one entity stayed in the form for the next, and the buttons could stay busy with the first entity's call.",
+      "source": "W1060 (the entity-picker census after W1055-W1057)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/components/EntitySpecialists.tsx",
+        "apps/workstation-superapp/src/components/EntityWorkReview.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1060",
+      "note": "",
+      "slot_source": "found by the census of FU-399's renders of the cockpit; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: each write's answer and the read after it are dropped when another entity is on screen, and the forms and busy flags are cleared when it is opened. Both components' rendered tests hold a write back until another entity is open (three vitest blinds); test_w1060 holds both components' code (five blinds)."
     }
   ],
   "routes": [

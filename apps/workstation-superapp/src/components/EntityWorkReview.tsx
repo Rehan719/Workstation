@@ -5,7 +5,7 @@
 // does not, the server's reason. A specialist holding a place signs one deliverable here. A refusal is shown in the
 // server's own words; a failed read is said, and never drawn as "nothing is signed". This component types none of
 // the sentences about the rules.
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { apiJson, errorMessage } from '../lib/api';
 
 interface Review { tier: string; label: string; basis: string; title: string; version: number }
@@ -34,6 +34,10 @@ export const EntityWorkReview: React.FC<{ vsbId: string }> = ({ vsbId }) => {
   const [done, setDone] = useState('');
   const [busy, setBusy] = useState(false);
   const base = `/api/v1/entity-specialists/${encodeURIComponent(vsbId)}`;
+  //  W1060 - the entity on screen now: a signature's answer, and the read after it, are said only under the entity
+  //  they were made for. The cockpit keeps this mounted while another entity is opened; only vsbId changes
+  const baseRef = useRef(base);
+  baseRef.current = base;
 
   //  the signatures and who holds a place are read together; either failing is said, and nothing is drawn
   const read = useCallback(() => Promise.all([
@@ -48,6 +52,7 @@ export const EntityWorkReview: React.FC<{ vsbId: string }> = ({ vsbId }) => {
     setReadError('');
     setRefused('');
     setDone('');
+    setForm(BLANK); setBusy(false);   // W1060 - a signature's record typed for one entity never stands for the next
     read()
       .then(([s, r]) => { if (live) { setAnswer(s); setHeld(r.active); } })
       .catch(e => { if (live) setReadError(errorMessage(e)); });
@@ -55,6 +60,7 @@ export const EntityWorkReview: React.FC<{ vsbId: string }> = ({ vsbId }) => {
   }, [read]);
 
   const sign = async () => {
+    const issuedFor = base;
     setBusy(true);
     setRefused('');
     setDone('');
@@ -62,21 +68,25 @@ export const EntityWorkReview: React.FC<{ vsbId: string }> = ({ vsbId }) => {
     try {
       const a = await apiJson<{ signature: Signature }>(`${base}/${encodeURIComponent(specialist_id)}/sign`,
         { method: 'POST', body });
+      if (issuedFor !== baseRef.current) return;   // W1060 - another entity is on screen now
       setDone(`Signed by ${a.signature.name}, for version ${a.signature.version}.`);
       setForm(BLANK);
       try {
         const [s, r] = await read();
+        if (issuedFor !== baseRef.current) return;
         setAnswer(s);
         setHeld(r.active);
         setReadError('');
       } catch (e) {
+        if (issuedFor !== baseRef.current) return;
         setAnswer(null);
         setReadError(errorMessage(e));
       }
     } catch (e) {
+      if (issuedFor !== baseRef.current) return;
       setRefused(errorMessage(e));
     } finally {
-      setBusy(false);
+      if (issuedFor === baseRef.current) setBusy(false);
     }
   };
 

@@ -43,6 +43,32 @@ describe("EntitySpecialists, rendered against the roster route's own answers", (
     vi.unstubAllGlobals();
   });
 
+  //  W1060 - the cockpit keeps this mounted while another entity is opened: an attach that came back after it was
+  //  opened said "Attached" there, and its read of the first entity's roster was drawn as the other's
+  it('an attach that comes back after another entity is opened says nothing there, and the form is cleared', async () => {
+    const other = captured.not_generated;
+    let letGo: () => void = () => undefined;
+    let attached = false;
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      const answer = (b: unknown) => ({ ok: true, status: 200, statusText: '', json: async () => b });
+      if (init?.method === 'POST') { await new Promise<void>(go => { letGo = go; }); attached = true; return answer(captured.attached); }
+      if (url.endsWith(`/${other.vsb_id}`)) return answer(other);
+      return answer(attached ? captured.after_attach : captured.generated_empty);
+    }));
+    const { rerender } = render(<EntitySpecialists vsbId={captured.vsb_id} />);
+    await screen.findByTestId('specialists-none');
+    fill(captured.attach_request);
+    fireEvent.click(screen.getByText('Attach a specialist'));
+    rerender(<EntitySpecialists vsbId={other.vsb_id} />);
+    await waitFor(() => expect(screen.getByTestId('specialists-recommendation').textContent).toBe(other.recommendation.said));
+    expect((screen.getByLabelText("Specialist's name") as HTMLInputElement).value).toBe('');
+    letGo();
+    await new Promise(r => setTimeout(r, 50));
+    expect(screen.getByTestId('specialists-recommendation').textContent).toBe(other.recommendation.said);
+    expect(screen.queryByTestId('specialists-done')).toBeNull();
+    expect(screen.getByTestId('specialists-none')).toBeTruthy();
+  });
+
   it("a generated entity is recommended a specialist, as a chargeable option, in the server's words", async () => {
     const r = captured.generated_empty;
     serve([ok(r)]);
