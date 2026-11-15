@@ -87547,3 +87547,48 @@ def test_w1070_fu1257_the_donor_statement_says_no_entity_unread_a_statement_unde
     fx = json.loads(raw)
     assert fx["contributed"]["body"]["currency"] == "WST (virtual)", fx["contributed"]["body"]
     assert fx["statement_first"]["body"]["untagged_postings"]["count"] == 1
+
+
+def test_w1071_fu1258_the_practice_asks_the_next_word_of_the_verse_it_practises_and_says_each_failure_in_its_card():
+    """W1071 (FU-1258; FU-399 part 84). The Quran platform's memorisation practice had no rendered test. Rendered
+    against its routes' own answers (every verse's text replaced by made-up placeholder words in the capture, so no
+    Quran text is kept), "Next word" asked for the verse the Surah and Ayah boxes named when it was pressed, not the
+    verse being practised: a box changed after Begin added another verse's word to the words shown, two verses' words
+    said as one ("placeholder1 words1 shared1 alpha2", 1:1's words then 1:2's); "Show the whole verse" showed the
+    verse the boxes named; and every failure was said in one line above all three cards, taken away by whatever was
+    done next. The next word and the whole verse are of the verse being practised, and each card says its own failure.
+
+    Held here: the panel's code, and the rendered test's fixture: no Arabic in it, and every verse's text in it the
+    capture's placeholder words. The rendered test (HifzPractice.test.tsx, seven cases, five vitest blinds) holds
+    what the panel says; test_w684 still holds that nothing on the panel words a judgement of the learner."""
+    import json
+    import pathlib
+    import re
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/components"
+    hp = _code_only((src / "HifzPractice.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "const [practising, setPractising] = useState<{ surah: number; ayah: number } | null>(null);" in hp
+    assert "`/api/v1/qep/hifz/practice/${practising.surah}/${practising.ayah}/next?after_words=${seen.length}`" in hp
+    assert "/next?after_words=${seen.length}" in hp and "${surah}/${ayah}/next" not in hp
+    assert "const at = reveal && practising ? practising : { surah, ayah };" in hp
+    assert "setHidden(r); setPractising(at);" in hp
+    for card in ("hifz-plan-error", "hifz-hidden-error", "hifz-similar-error"):
+        assert f'data-testid="{card}"' in hp, card
+    assert "setErr(" not in hp and 'data-testid="hifz-practice-error"' not in hp
+    #  the rendered test, and a fixture with no Quran text in it: every verse's text is a placeholder
+    t = (src / "HifzPractice.test.tsx").read_text(encoding="utf-8")
+    assert t.count("\n  it('") == 7, t.count("\n  it('")
+    raw = (src / "HifzPractice.fixture.json").read_text(encoding="utf-8")
+    assert not re.search(r"[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]", raw), "the fixture holds Arabic"
+    fx = json.loads(raw)
+    made_up = re.compile(r"^(?:(?:placeholder|words|shared|alpha|beta|gamma|delta|epsilon|zeta)\d+ ?)+$")
+    said = []
+    for k, v in fx.items():
+        for a in (v if isinstance(v, list) else [v]):
+            b = a.get("body") if isinstance(a, dict) else None
+            if isinstance(b, dict):
+                said += [b[f] for f in ("shown", "text", "word", "shared") if isinstance(b.get(f), str) and b[f]]
+                said += [p[f] for p in (b.get("pairs") or []) for f in ("shared", "a_continues", "b_continues")
+                         if isinstance(p.get(f), str)]
+    assert said, "the fixture holds no verse text at all"
+    for s in said:
+        assert made_up.match(s), ("a verse's text in the fixture is not the capture's placeholder", s)

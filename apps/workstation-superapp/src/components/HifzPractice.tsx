@@ -18,7 +18,11 @@ const TRACK_LABEL: Record<string, string> = { new_lesson: 'New lesson', recent_r
 const inputCls = 'text-[11px] bg-slate-950 border border-slate-900 rounded-lg p-1.5 text-slate-300';
 
 export const HifzPractice: React.FC<{ uid: string }> = ({ uid }) => {
-  const [err, setErr] = useState('');
+  //  W1071 - each card says its own failure, where its action is: one line above all three said every failure
+  //  away from the action that met it, and whatever was done next took it away
+  const [planErr, setPlanErr] = useState('');
+  const [hiddenErr, setHiddenErr] = useState('');
+  const [similarErr, setSimilarErr] = useState('');
   const [busy, setBusy] = useState('');
 
   // ── the plan ──
@@ -28,15 +32,15 @@ export const HifzPractice: React.FC<{ uid: string }> = ({ uid }) => {
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
   const [setBy, setSetBy] = useState('learner');
-  const loadPlan = () => apiJson<Portions>(`/api/v1/qep/hifz/portions/${encodeURIComponent(uid)}`).then(setPlan).catch(e => setErr(errorMessage(e)));
+  const loadPlan = () => apiJson<Portions>(`/api/v1/qep/hifz/portions/${encodeURIComponent(uid)}`).then(setPlan).catch(e => setPlanErr(errorMessage(e)));
   useEffect(() => { loadPlan(); }, [uid]);
   const savePortion = async () => {
-    setBusy('portion'); setErr('');
+    setBusy('portion'); setPlanErr('');
     const asValue = (v: string) => (unit === 'ayah_range' ? v.trim() : Number(v));
     try {
       await apiJson('/api/v1/qep/hifz/portion', { method: 'POST', body: { uid, track, unit, start: asValue(start), end: asValue(end), set_by: setBy } });
       await loadPlan();
-    } catch (e) { setErr(errorMessage(e)); }
+    } catch (e) { setPlanErr(errorMessage(e)); }
     setBusy('');
   };
 
@@ -46,22 +50,28 @@ export const HifzPractice: React.FC<{ uid: string }> = ({ uid }) => {
   const [hidden, setHidden] = useState<Hidden | null>(null);
   const [seen, setSeen] = useState<string[]>([]);
   const [ended, setEnded] = useState(false);
+  //  W1071 - the verse being practised. The next word and the whole verse are asked of it, never of whatever the
+  //  Surah and Ayah boxes say when they are pressed: a box changed after Begin added another verse's word to the
+  //  words shown
+  const [practising, setPractising] = useState<{ surah: number; ayah: number } | null>(null);
   const openHidden = async (reveal = false) => {
-    setBusy('hidden'); setErr('');
+    const at = reveal && practising ? practising : { surah, ayah };
+    setBusy('hidden'); setHiddenErr('');
     try {
-      const r = await apiJson<Hidden>(`/api/v1/qep/hifz/practice/${surah}/${ayah}${reveal ? '?reveal=true' : ''}`);
-      setHidden(r);
+      const r = await apiJson<Hidden>(`/api/v1/qep/hifz/practice/${at.surah}/${at.ayah}${reveal ? '?reveal=true' : ''}`);
+      setHidden(r); setPractising(at);
       if (!reveal) { setSeen(r.shown ? [r.shown] : []); setEnded(r.hidden_words === 0); }
-    } catch (e) { setHidden(null); setErr(errorMessage(e)); }
+    } catch (e) { setHidden(null); setPractising(null); setHiddenErr(errorMessage(e)); }
     setBusy('');
   };
   const nextWord = async () => {
-    setBusy('next'); setErr('');
+    if (!practising) return;
+    setBusy('next'); setHiddenErr('');
     try {
-      const r = await apiJson<{ word: string | null; end_of_verse: boolean }>(`/api/v1/qep/hifz/practice/${surah}/${ayah}/next?after_words=${seen.length}`);
+      const r = await apiJson<{ word: string | null; end_of_verse: boolean }>(`/api/v1/qep/hifz/practice/${practising.surah}/${practising.ayah}/next?after_words=${seen.length}`);
       if (r.word) setSeen(s => [...s, r.word as string]);
       setEnded(r.end_of_verse);
-    } catch (e) { setErr(errorMessage(e)); }
+    } catch (e) { setHiddenErr(errorMessage(e)); }
     setBusy('');
   };
 
@@ -69,18 +79,18 @@ export const HifzPractice: React.FC<{ uid: string }> = ({ uid }) => {
   const [surahs, setSurahs] = useState('');
   const [similar, setSimilar] = useState<Similar | null>(null);
   const findSimilar = async () => {
-    setBusy('similar'); setErr(''); setSimilar(null);
+    setBusy('similar'); setSimilarErr(''); setSimilar(null);
     try { setSimilar(await apiJson<Similar>(`/api/v1/qep/hifz/similar?surahs=${encodeURIComponent(surahs.trim())}`)); }
-    catch (e) { setErr(errorMessage(e)); }
+    catch (e) { setSimilarErr(errorMessage(e)); }
     setBusy('');
   };
 
   return (
     <div className="space-y-4" data-testid="hifz-practice">
-      {err && <p data-testid="hifz-practice-error" className="text-[10px] text-vital">{err}</p>}
 
       <Card className="p-5">
         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-2"><ListChecks size={14} /> Your plan — three tracks</h3>
+        {planErr && <p role="alert" data-testid="hifz-plan-error" className="text-[10px] text-vital mb-2">{planErr}</p>}
         {plan && <p data-testid="hifz-plan-defaults" className="text-[9px] text-slate-500 mb-3 leading-relaxed">{plan.defaults_basis}</p>}
         {/* W686 (OWNER RULING 2026-10-12) — whose record this is, in the server's words: the id is typed, not a login */}
         {plan && plan.identity_verified === false && plan.identity_basis && (
@@ -125,6 +135,7 @@ export const HifzPractice: React.FC<{ uid: string }> = ({ uid }) => {
             {busy === 'hidden' ? <Loader2 size={11} className="animate-spin" /> : <BookOpen size={11} />} Begin
           </Button>
         </div>
+        {hiddenErr && <p role="alert" data-testid="hifz-hidden-error" className="text-[10px] text-vital mb-2">{hiddenErr}</p>}
         {hidden && (
           <div data-testid="hifz-hidden">
             <p dir="rtl" lang="ar" data-testid="hifz-hidden-text" className="text-xl text-white leading-loose mb-2">
@@ -151,6 +162,7 @@ export const HifzPractice: React.FC<{ uid: string }> = ({ uid }) => {
             {busy === 'similar' ? <Loader2 size={11} className="animate-spin" /> : <GitCompare size={11} />} Compare
           </Button>
         </div>
+        {similarErr && <p role="alert" data-testid="hifz-similar-error" className="text-[10px] text-vital mb-2">{similarErr}</p>}
         {similar && (
           <div data-testid="hifz-similar">
             <p data-testid="hifz-similar-basis" className="text-[9px] text-slate-500 leading-relaxed">{similar.basis}</p>

@@ -25466,6 +25466,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the roster is said as being read, read, or with its reason; a statement only under the entity it was read for, and as being read until it answers; untagged postings with their count and total; each entity by its name and id, in a labelled choice. The rendered test (five cases) has five vitest blinds; test_w1070 drives the books' count of untagged postings and holds the panel's code and the fixture (no Arabic, virtual WST), with five blinds."
+    },
+    {
+      "id": "FU-1258",
+      "title": "The memorisation practice asked the next word of the verse the Surah and Ayah boxes named, not the verse being practised, so two verses' words were said as one; every failure was said in one line above all three cards",
+      "why": "Found by rendering HifzPractice against its routes' own answers (FU-399 part 84; no test rendered it; every verse's text in the capture is made-up placeholder words, so no Quran text is kept). \"Next word\" read the Surah and Ayah boxes when it was pressed: a box changed after Begin added the next word of the verse the boxes then named to the words of the verse being practised (driven: 1:1's first three words, then 1:2's fourth, said as one verse), and \"Show the whole verse\" showed the verse the boxes named. Every failure (a plan not read, a portion not set, a verse not fetched, a comparison refused) was said in one line above all three cards, away from the action that met it, and whatever was done next took it away (driven: a portion not set, cleared by opening a verse).",
+      "source": "W1071 (FU-399 part 84: the memorisation practice rendered)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/components/HifzPractice.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1071",
+      "note": "",
+      "slot_source": "found by FU-399's render of the Quran platform's memorisation practice; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the next word and the whole verse are asked of the verse being practised, kept when Begin answers; each card says its own failure, and no other action takes it away. The rendered test (seven cases) has five vitest blinds; test_w1071 holds the panel's code and the fixture (no Arabic; every verse's text the capture's placeholder words), with five blinds."
     }
   ],
   "routes": [
