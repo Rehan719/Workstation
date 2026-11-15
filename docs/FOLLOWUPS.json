@@ -25316,6 +25316,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: each tier of the delivery is drawn whole; the history is said as being read until it answers; a refused acceptance is said beside its button and the history stays; an unread plan is said in the hub's read-failure list and only the chosen plan's answer is used; the refresh reads both lists and is named. The rendered test (eight cases) has eight vitest blinds; test_w1063 holds the code (eight blinds)."
+    },
+    {
+      "id": "FU-1251",
+      "title": "The shell's in-house assistant said a reply, or a failure, that came back after its conversation was cleared, in the cleared conversation under no question",
+      "why": "Found by rendering NativeAgentPanel against its routes' own answers (FU-399 part 78; it had no rendered test and no guard read it). Clear conversation stays offered while a message is being answered; the reply that came back afterwards was added to the cleared conversation, stamped with the resource that served it, and a failure was said there as an alert, each answering a question no longer on screen (driven in the rendered test on the unfixed panel).",
+      "source": "W1064 (FU-399 part 78: the in-house assistant rendered)",
+      "found": "2026-11-15",
+      "files": [
+        "apps/workstation-superapp/src/components/NativeAgentPanel.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1064",
+      "note": "",
+      "slot_source": "found by FU-399's render of the shell's in-house assistant; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: clearing starts another conversation, an answer for the one before is dropped, and nothing is left being answered. The rendered test (five cases) has four vitest blinds; test_w1064 holds the code (four blinds)."
     }
   ],
   "routes": [

@@ -87170,3 +87170,41 @@ def test_w1063_fu1250_the_swarm_hub_draws_its_delivery_whole_and_says_each_failu
     assert [fx[k]["status"] for k in ("accepted", "accept_again", "accept_wrong", "runs_failed", "cascade_runs_failed")] == [
         200, 409, 409, 500, 500]
     assert fx["cascade_runs_after"]["body"]["runs"][0]["business_plan_scope"] == fx["vsb_id"]
+
+
+def test_w1064_fu1251_the_in_house_assistant_drops_an_answer_for_a_conversation_it_cleared():
+    """W1064 (FU-1251; FU-399 part 78). The shell's in-house assistant (components/NativeAgentPanel.tsx) had no rendered
+    test, and no guard read it. Rendered against its routes' own answers, it offers only the owned resources the route
+    lists, sends the conversation as it was, and stamps each reply with the resource that served it. One thing it
+    said wrongly: "Clear conversation" stays offered while a message is being answered, and a reply, or a failure,
+    that came back after the conversation was cleared was said in the cleared conversation, under no question.
+    Clearing now starts another conversation; an answer for the one before is dropped, and nothing is left being
+    answered.
+
+    Held here: the panel's code; the rendered test (NativeAgentPanel.test.tsx, five cases, four vitest blinds) holds
+    what it says, against NativeAgentPanel.fixture.json."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/components"
+    code = _code_only((src / "NativeAgentPanel.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "const conversation = useRef(0);" in code
+    send = code[code.index("const send = useCallback(async () => {"):code.index("const selectable = ")]
+    assert "const asked = conversation.current;" in send
+    assert send.index("const asked = conversation.current;") < send.index("await apiJson")
+    after = send[send.index("await apiJson"):]
+    assert after.index("if (asked !== conversation.current) return;") < after.index("setMessages(prev => [")
+    assert "if (asked === conversation.current) setSendError(errorMessage(e));" in after
+    assert "if (asked === conversation.current) setSending(false);" in after
+    assert send.count("setSendError(errorMessage(e))") == 1 and send.count("setSending(false)") == 1
+    clear = code[code.index('title="Clear conversation"') - 400:code.index('title="Clear conversation"')]
+    assert "conversation.current += 1;" in clear and "setSending(false);" in clear and "setMessages([]);" in clear
+    #  the rendered test, and the capture it reads: the prompt it checks is the panel's own
+    t = (src / "NativeAgentPanel.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './NativeAgentPanel.fixture.json';" in t and t.count("\n  it('") == 5
+    assert "never says a reply, or a failure, that comes after the conversation was cleared" in t
+    assert "expect(asked).toEqual([captured.ask_first, captured.ask_second]);" in t
+    fx = json.loads((src / "NativeAgentPanel.fixture.json").read_text(encoding="utf-8"))
+    assert fx["first_reply"]["status"] == 200 and fx["first_reply"]["body"]["served_by"]
+    assert fx["models"]["body"]["local_models"] == [] and fx["models_failed"]["status"] == 500
+    assert fx["ask_first"]["agent"] == "workstation-assistant" and fx["ask_first"]["prompt"].endswith(
+        "User: What is the current system state?\n\nAssistant:")

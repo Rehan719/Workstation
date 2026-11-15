@@ -61,6 +61,9 @@ export const NativeAgentPanel: React.FC = () => {
   const [notice, setNotice] = useState('');
   const [sendError, setSendError] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
+  //  W1064 - the conversation on screen. Clearing it starts another, and a reply or a failure that comes back for
+  //  the one before is dropped: it was said in the cleared conversation, under no question
+  const conversation = useRef(0);
 
   // Ask the backend which owned resources actually exist here.
   useEffect(() => {
@@ -95,6 +98,7 @@ export const NativeAgentPanel: React.FC = () => {
     if (!text || sending) return;
 
     const history = messages;
+    const asked = conversation.current;
     setMessages(prev => [...prev, { role: 'user', content: text }]);
     setInput('');
     setSending(true);
@@ -108,6 +112,7 @@ export const NativeAgentPanel: React.FC = () => {
           body: { prompt: buildPrompt(history, text), agent: AGENT, model: tier, timeout: 120 },
         },
       );
+      if (asked !== conversation.current) return;
       setMessages(prev => [
         ...prev,
         {
@@ -119,9 +124,9 @@ export const NativeAgentPanel: React.FC = () => {
       ]);
     } catch (e) {
       // A failed request is a failed request. It does not get rendered as an assistant turn.
-      setSendError(errorMessage(e));
+      if (asked === conversation.current) setSendError(errorMessage(e));
     } finally {
-      setSending(false);
+      if (asked === conversation.current) setSending(false);
     }
   }, [input, messages, sending, tier]);
 
@@ -150,8 +155,10 @@ export const NativeAgentPanel: React.FC = () => {
             <button
               type="button"
               onClick={() => {
+                conversation.current += 1;   // W1064 - an answer still on its way belongs to the cleared one
                 setMessages([]);
                 setSendError('');
+                setSending(false);
               }}
               title="Clear conversation"
               aria-label="Clear conversation"
