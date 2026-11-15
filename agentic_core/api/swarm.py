@@ -278,6 +278,45 @@ class CascadeRequest(BaseModel):
 CURATE_ONLY_PROPOSED_ITEMS = True
 
 
+#  W1093 (FU-1271) - A CASCADE RUN FOR AN ENTITY IS ITS OWNER'S. Its proposed offerings were curated by whoever named
+#  the run, with the sales attributed to whatever entity the request named, and its run and its proposed catalogue
+#  were listed to every signed-in person. A run for an entity is now read, listed and curated only by a person whose
+#  entity it is (an administrator reads every one), and the others are answered as for a run that does not exist.
+def _run_is_theirs(scope, user) -> bool:
+    """Whether a cascade run's records are this person's. A run for the platform, or one that names no scope, is
+    anyone's, as accepting a delivery reads it; a run for an entity is its owner's, and an administrator's when the
+    entity has no owner or is not found (user_can_access). A scope of None is a run that is not found, so whose it
+    is cannot be said: an administrator's. With sign-in off every run is the one person's."""
+    from agentic_core.auth.core import user_can_access
+    if scope is not None and str(scope) in ("", "workstation"):
+        return True
+    owner = None
+    s = str(scope or "")
+    if s and not any(c in s for c in ("/", "\\", "..")):
+        try:
+            from agentic_core.api.vsb import _load_vsb
+            vsb = _load_vsb(s)
+        except (OSError, ValueError):
+            vsb = None
+        owner = vsb.get("owner_id") if isinstance(vsb, dict) else None
+    return user_can_access(user, owner)
+
+
+def _run_scopes() -> tuple:
+    """Each persisted cascade run's scope by its id, read tolerantly, and why the history was not read whole (None
+    when it was): a run it does not hold is not found."""
+    from agentic_core.config import read_json_reported
+    rows, why = read_json_reported(data_path("org_cascade_runs.json"), [])
+    return ({r.get("run_id"): str(r.get("business_plan_scope") or "")
+             for r in (rows if isinstance(rows, list) else []) if isinstance(r, dict)}, why)
+
+
+def _scoped(user) -> bool:
+    """Whether a listing of runs is narrowed for this person: with sign-in on, for anyone but an administrator."""
+    from agentic_core.auth.core import auth_enabled
+    return auth_enabled() and isinstance(user, dict) and user.get("role") != "admin"
+
+
 class CurateProposalRequest(BaseModel):
     item: str                       # the proposed item name to commercialise
     description: str = ""
@@ -287,7 +326,8 @@ class CurateProposalRequest(BaseModel):
 
 
 @router.post("/catalogue/proposed/{run_id}/curate")
-async def curate_proposed_item(run_id: str, req: CurateProposalRequest):
+async def curate_proposed_item(run_id: str, req: CurateProposalRequest,
+                               user: dict | None = Depends(get_current_user)):
     """§12×§13 (W294) — a cascade-PROPOSED offering is CURATED into the live marketplace by a
     deliberate human act (the cascade proposes, the Owner/user curates — never automatic): the
     listing text is §11-screened first (a FAIL blocks publication with the verdicts — user-authored
@@ -301,7 +341,12 @@ async def curate_proposed_item(run_id: str, req: CurateProposalRequest):
     except _SU as e:
         raise HTTPException(status_code=503, detail=f"{e}; nothing was curated")
     prop = next((p for p in rows if p.get("run_id") == run_id), None)
-    if not prop:
+    if user is not None and not isinstance(user, dict):
+        user = None
+    from agentic_core.auth.core import request_owner_id
+    #  W1093 (FU-1271) - a run for an entity proposed its offerings for that entity: a person whose entity it is not
+    #  is answered as for a run that does not exist, so whether it exists is never said
+    if not prop or not _run_is_theirs(_run_scopes()[0].get(run_id), user):
         raise HTTPException(status_code=404, detail=f"No proposed catalogue for run {run_id}.")
     from agentic_core.api.compliance import screen_compliance
     screen = screen_compliance(f"{req.item}. {req.description}")
@@ -340,9 +385,10 @@ async def curate_proposed_item(run_id: str, req: CurateProposalRequest):
             f"Curated from cascade {run_id}" if _is_proposed else
             f"Authored by the curator; cascade {run_id} did not propose it"),
         author=req.curator, category="Product", price_wst=max(0.0, float(req.price_wst)),
-        creator_id=req.curator, vsb_id=req.vsb_id))
+        creator_id=req.curator, vsb_id=req.vsb_id), user)   # W1093 (FU-1271): W311's check reads the curator
     prop.setdefault("curated" if _is_proposed else "owner_authored", []).append({
         "item": req.item, "listing_id": listing.get("id"),
+        "by": request_owner_id(user, req.curator),   # W1093 (FU-1271) - with sign-in on, the person signed in
         "compliance_overall": screen["overall"],
         "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
     if _is_proposed:                       # a row whose cascade proposed nothing is never called curated
@@ -362,12 +408,20 @@ async def curate_proposed_item(run_id: str, req: CurateProposalRequest):
 
 
 @router.get("/catalogue/proposed")
-async def proposed_catalogue(limit: int = 10):
+async def proposed_catalogue(limit: int = 10, user: dict | None = Depends(get_current_user)):
     """§5 (W282) — the offerings the org cascade has PROPOSED (parsed + persisted per run; the
     cascade proposes, the Owner curates into the real shipped-product catalog)."""
     from agentic_core.config import data_path as _dp, read_json_reported as _rjr
     rows, _why = _rjr(_dp("proposed_catalogue.json"), [])
     rows = rows if isinstance(rows, list) else []
+    #  W1093 (FU-1271) - a cascade run for an entity proposed for that entity: listed only for a person whose it is
+    if user is not None and not isinstance(user, dict):
+        user = None
+    _scopes, _runs_why = _run_scopes()
+    rows = [r for r in rows if isinstance(r, dict) and _run_is_theirs(_scopes.get(r.get("run_id")), user)]
+    if _runs_why and _scoped(user):
+        _why = _why or (f"the cascade run history could not be read whole ({_runs_why}), so a proposal whose run "
+                        f"it does not hold is listed only for an administrator")
     return {"proposed": list(reversed(rows[-max(1, min(int(limit), 50)):])),
             # W577 (FU-298) — a short list of what the cascade PROPOSED reads as the cascade having
             # proposed less. The Owner curates from this list, so an absence here is an offering that
@@ -376,24 +430,32 @@ async def proposed_catalogue(limit: int = 10):
             "listing_is_incomplete": bool(_why),
             "listing_basis": ("the proposals this store could not be read whole are MISSING from this "
                               "list, so the cascade proposed at least these and possibly more"
-                              if _why else "every proposal the cascade has persisted")}
+                              if _why else ("every proposal the cascade has persisted for the platform or for an "
+                                            "entity of yours" if _scoped(user) else
+                                            "every proposal the cascade has persisted"))}
 
 
 @router.get("/cascade/runs")
-async def cascade_runs(limit: int = 10):
+async def cascade_runs(limit: int = 10, user: dict | None = Depends(get_current_user)):
     """§5 (W268) — the persisted org-cascade run history (appraisals · Development Actions · measured
     quality · governance · provenance), newest first. The appraisal/development record survives the
     response, so the next cycle can be judged against it."""
     from agentic_core.config import data_path, read_json_reported
     rows, _why = read_json_reported(data_path("org_cascade_runs.json"), [])
     rows = rows if isinstance(rows, list) else []
+    #  W1093 (FU-1271) - a run for an entity is its owner's: listed and counted only for them
+    if user is not None and not isinstance(user, dict):
+        user = None
+    rows = [r for r in rows if isinstance(r, dict) and _run_is_theirs(str(r.get("business_plan_scope") or ""), user)]
     return {"runs": _with_acceptance(list(reversed(rows[-max(1, min(limit, 50)):]))), "total": len(rows),
             # W577 (FU-298) — `total` is the figure a reader takes as "how many cascades have run".
             "store_incomplete": _why,
             "total_is_incomplete": bool(_why),
             "total_basis": ("the runs this store could not be read whole are MISSING from this total, "
                             "so at least this many have run and possibly more"
-                            if _why else "every run persisted in the cascade history")}
+                            if _why else ("every run persisted in the cascade history for the platform or for an "
+                                          "entity of yours" if _scoped(user) else
+                                          "every run persisted in the cascade history"))}
 
 
 #  W851 (FU-1049) - A PERSON ACCEPTS A DELIVERY: who, when and which version, recorded once. What acceptance earns

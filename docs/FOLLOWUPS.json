@@ -25773,11 +25773,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P5.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1093",
       "note": "",
       "slot_source": "the tenancy invariant W1075 and W1077 held (FU-1262, FU-1263), broken through a route that calls another route's handler without its caller; it rides P5.1 as they did",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1093. The curate route takes its caller and hands it to the marketplace's listing handler, so W311's check holds: another person's entity is answered as one that does not exist, before the entity's business-plan gate that used to name it. A cascade run for an entity is curated only by its owner (anyone else is answered as for a run that does not exist), and the curated record names who curated, from the person signed in. Found while fixing it and held by the same rule: the cascade's run history and its proposed catalogue listed every person's runs; each now lists a run for an entity only for its owner and an administrator, a run for the platform for everyone as before, and a catalogue whose run is not found, or a run whose scope is not an entity id, only for an administrator, counting what it lists and saying when the listing is narrowed. With sign-in off nothing changes. test_w1093 holds it through the routes as an owner, a second person and an administrator, on made-up runs and catalogues; eleven blinds turn it red. W1075's walk passed over the curate route because its path names a run, not an entity (registered with W1093)."
     },
     {
       "id": "FU-1272",
@@ -25797,6 +25800,42 @@
       "closed_by": null,
       "note": "",
       "slot_source": "found by the census of the one list (P5.14 clause 4): the decisions it names are held by the routes that record them, and the stores it reads are read whole or said as unread",
+      "tier": 2
+    },
+    {
+      "id": "FU-1273",
+      "title": "The swarm's delegations are every signed-in person's to read, and their store is replaced when it cannot be read",
+      "why": "Found by W1093's census of the swarm's routes. POST /api/v1/swarm/delegate records its run with no person, and GET /api/v1/swarm/runs lists the last fifty delegations, each with the task and the context a person typed, to every signed-in person (W1077's rule is that no listing hands a person another person's records; its census seeded no delegation, so it did not see this one). The store's reader (api/swarm.py _load_runs) passes over a store it cannot read and returns none, and the next delegation writes its run over it, replacing what it held, with a plain write rather than an atomic one (W472's rule is refused, never replaced).",
+      "source": "W1093 (the census of the swarm's routes)",
+      "found": "2026-11-15",
+      "files": [
+        "agentic_core/api/swarm.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the tenancy invariant W1077 held (FU-1263), on a listing its census did not seed; it rides P5.1 as FU-1262, FU-1263 and FU-1271 did",
+      "tier": 1
+    },
+    {
+      "id": "FU-1274",
+      "title": "W1075's walk passes over every route whose path names something other than an entity, so an entity named in its body is never driven",
+      "why": "Found by W1093. The curate route (POST /api/v1/swarm/catalogue/proposed/{run_id}/curate) names a run in its path and an entity in its body, and test_w1075 skips every route with a path parameter that is not an entity id, so the body's vsb_id was never driven as a second person: that is how FU-1271 passed it. The walk should drive such a route with a record of the first person's behind its path, or name each route it passes over, so a route it does not reach is said rather than taken as held.",
+      "source": "W1093 (how FU-1271 passed W1075's walk)",
+      "found": "2026-11-15",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the guard of the tenancy invariant FU-1262 built; it rides P5.1 as that row did",
       "tier": 2
     }
   ],

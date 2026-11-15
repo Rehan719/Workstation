@@ -60397,7 +60397,7 @@ def test_t1_r31_curation_publishes_only_an_item_the_cascade_proposed(client, mon
     atomic_write_json(_store, _rows)
     _listed = []
 
-    async def _fake_listing(req):
+    async def _fake_listing(req, user=None):   # W1093 - the curate route hands the listing handler its caller
         _listed.append(req)
         return {"id": f"listing-{len(_listed)}", "vsb_id": req.vsb_id, "description": req.description}
     monkeypatch.setattr(_mk, "create_listing", _fake_listing)
@@ -89860,3 +89860,127 @@ def test_w1092_fu1270_the_one_list_reads_an_evolution_proposal_and_a_proposed_ca
                     p.unlink()
             else:
                 p.write_bytes(b)
+
+
+def test_w1093_fu1271_a_cascade_run_for_an_entity_is_curated_listed_and_attributed_only_by_its_owner(client, monkeypatch):
+    """FU-1271 (W1093). With sign-in on, curating a cascade's proposed offering called the marketplace's listing handler
+    without its caller, so W311's check that a listing's sales go only to an entity its caller owns passed for every
+    entity: a second person curated an offering whose sales went to the first person's entity, and before that was
+    told the entity's business plan. The cascade's run history and its proposed catalogue listed every person's runs.
+
+    Held here through the routes, as an entity's owner, a second person and an administrator, on made-up runs:
+    - the second person curating the owner's run is answered as for a run that does not exist, and curating a run for
+      the platform with the owner's entity named, as for an entity that does not exist, before any business-plan
+      gate; nothing is written and no listing is made;
+    - the owner curating their own run reaches the entity's gate, and once it is met the listing is theirs: its
+      creator is the person signed in, and the curated record names them;
+    - the run history and the proposed catalogue list an entity's run only for its owner and an administrator, a run
+      for the platform for everyone, and a catalogue whose run is not found only for an administrator; the total
+      counts what is listed, and the basis says the listing is narrowed;
+    - with sign-in off nothing changes.
+    The stores are shared with the suite's other tests: this test keeps their bytes and puts them back."""
+    import json
+    import time
+    import uuid
+    import agentic_core.auth.core as _ac
+    import agentic_core.api.business_plan as _bp
+    import agentic_core.api.marketplace as _mk
+    from agentic_core.api import vsb as _vs
+    from agentic_core.config import atomic_write_json, data_path, read_json_strict
+    tag = uuid.uuid4().hex[:8]
+    vid = f"w1093-ent-{tag}"
+    cat, runs = data_path("proposed_catalogue.json"), data_path("org_cascade_runs.json")
+    ent = _vs._VSB_STORE / f"{vid}.json"
+    kept = {p: (p.read_bytes() if p.exists() else None) for p in (cat, runs, ent)}
+    listed = set(_mk._LISTINGS_DIR.glob("*.json"))
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    who = {k: f"w1093-{k}-{tag}" for k in ("own", "two", "adm")}
+    users = _ac._load_users()
+    for k, name in who.items():
+        users[name] = {"user_id": name, "username": name, "hashed_password": _ac._pwd_ctx.hash("pw12345678"),
+                       "role": "admin" if k == "adm" else "user", "created_at": "2026-11-15T00:00:00Z",
+                       "api_keys": []}
+    _ac._save_users(users)
+    H = {k: {"Authorization": "Bearer " + client.post("/api/v1/auth/token", data={
+        "username": n, "password": "pw12345678"}).json()["access_token"]} for k, n in who.items()}
+    run, offering = f"w1093-run-{tag}-", f"W1093 Made-up Offering {tag}"
+
+    def curate(k, n, vsb=""):
+        return client.post(f"/api/v1/swarm/catalogue/proposed/{run}{n}/curate", headers=H[k] if k else {},
+                           json={"item": offering, "description": "a made-up offering (W1093)", "vsb_id": vsb})
+
+    def row(n):
+        return next(r for r in read_json_strict(cat, missing=[], expect=list) if r.get("run_id") == f"{run}{n}")
+
+    def seen(k, path, key):
+        r = client.get(path, headers=H[k] if k else {}, params={"limit": 50})
+        assert r.status_code == 200, r.text[:300]
+        return r.json(), {x["run_id"] for x in r.json()[key] if tag in str(x.get("run_id") or "")}
+    try:
+        now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        _vs._VSB_STORE.mkdir(parents=True, exist_ok=True)
+        ent.write_text(json.dumps({"vsb_id": vid, "name": f"W1093 made-up entity {tag}", "owner_id": who["own"]}),
+                       encoding="utf-8")
+        rr = read_json_strict(runs, missing=[], expect=list)
+        #  run 4 names the owner's entity by a path that steps out of the entities' folder and back: not an entity id
+        scope = {1: vid, 2: "workstation", 4: f"../{_vs._VSB_STORE.name}/{vid}"}
+        rr += [{"run_id": f"{run}{n}", "mission": f"a made-up mission {n}", "created_at": now,
+                "business_plan_scope": s} for n, s in scope.items()]
+        atomic_write_json(runs, rr)
+        rows = read_json_strict(cat, missing=[], expect=list)
+        rows += [{"run_id": f"{run}{n}", "mission": f"a made-up mission {n}", "domain": "w1093", "status": "proposed",
+                  "items": [offering], "items_basis": "made up", "raw": "made up", "created_at": now} for n in (1, 2, 3, 4)]
+        atomic_write_json(cat, rows)
+
+        #  another person's run is answered as one that does not exist; another person's entity, as one that does not
+        gone = client.post(f"/api/v1/swarm/catalogue/proposed/w1093-no-run-{tag}/curate", headers=H["two"],
+                           json={"item": offering, "vsb_id": ""})
+        theirs = curate("two", 1)
+        assert (theirs.status_code, theirs.json()) == (
+            gone.status_code, json.loads(gone.text.replace(f"w1093-no-run-{tag}", f"{run}1"))) and gone.status_code == 404
+        nobody = curate("two", 2, f"w1093-no-entity-{tag}")
+        named = curate("two", 2, vid)
+        assert (named.status_code, named.json()) == (
+            nobody.status_code, json.loads(nobody.text.replace(f"w1093-no-entity-{tag}", vid))) and named.status_code == 404
+        assert "kpi" not in named.text.lower() and who["own"] not in named.text
+        assert row(1)["status"] == row(2)["status"] == "proposed" and not row(1).get("curated") and not row(2).get("curated")
+        assert set(_mk._LISTINGS_DIR.glob("*.json")) == listed
+
+        #  the owner reaches their entity's gate, and once it is met the listing and the record are theirs
+        gated = curate("own", 1, vid)
+        assert gated.status_code == 409 and gated.json()["detail"]["error"] == "kpi_gate", gated.text[:300]
+        monkeypatch.setattr(_bp, "kpi_release_gate", lambda v: {"ok": True})
+        done = curate("own", 1, vid)
+        assert done.status_code == 200, done.text[:300]
+        lst = done.json()["listing"]
+        assert (lst.get("vsb_id"), lst.get("creator_id")) == (vid, who["own"]), lst
+        assert row(1)["status"] == "curated" and row(1)["curated"][0]["by"] == who["own"], row(1)
+
+        #  an entity's run is listed for its owner and an administrator; the platform's for everyone; one not found,
+        #  or one whose scope is not an entity id, for an administrator
+        for path, key, want in (("/api/v1/swarm/cascade/runs", "runs", ({1, 2}, {2}, {1, 2, 4})),
+                                ("/api/v1/swarm/catalogue/proposed", "proposed", ({1, 2}, {2}, {1, 2, 3, 4}))):
+            got = {k: seen(k, path, key) for k in ("own", "two", "adm")}
+            assert [got[k][1] for k in ("own", "two", "adm")] == [{f"{run}{n}" for n in w} for w in want], (path, got)
+        body = {k: seen(k, "/api/v1/swarm/cascade/runs", "runs")[0] for k in ("own", "two", "adm")}
+        assert body["own"]["total"] == body["two"]["total"] + 1 and body["adm"]["total"] >= body["own"]["total"]
+        assert body["two"]["total_basis"].endswith("for the platform or for an entity of yours"), body["two"]
+        assert body["adm"]["total_basis"] == "every run persisted in the cascade history", body["adm"]["total_basis"]
+        assert seen("two", "/api/v1/swarm/catalogue/proposed", "proposed")[0]["listing_basis"].endswith(
+            "for the platform or for an entity of yours")
+
+        #  with sign-in off nothing changes: every run is listed, and the one person curates with the name they give
+        monkeypatch.setenv("AUTH_ENABLED", "false")
+        assert seen(None, "/api/v1/swarm/catalogue/proposed", "proposed")[1] == {f"{run}{n}" for n in (1, 2, 3, 4)}
+        assert seen(None, "/api/v1/swarm/cascade/runs", "runs")[1] == {f"{run}{n}" for n in (1, 2, 4)}
+        off = curate(None, 3)
+        assert off.status_code == 200 and row(3)["curated"][0]["by"] == "owner", off.text[:300]
+    finally:
+        for p, b in kept.items():
+            if b is None:
+                if p.exists():
+                    p.unlink()
+            else:
+                p.write_bytes(b)
+        for p in set(_mk._LISTINGS_DIR.glob("*.json")) - listed:
+            p.unlink()
