@@ -171,7 +171,9 @@ def review_statement(tool: str, today: Optional[_dt.date] = None) -> Dict[str, A
         "of_tiers": [LABEL[t] for t in ORDER[1:]],
     }
     if tier == UNREVIEWED:
-        out["basis"] = ("no review of this tool is recorded: no rule check, no review by a calibrated agent and no "
+        #  W1101 - a tool whose records do not count has a record: what is true of it is that none of them counts
+        out["basis"] = (f"no review of this tool {'counts' if not_counted else 'is recorded'}: no rule check, no "
+                        "review by a calibrated agent and no "
                         "qualified person's signature. Treat what it returns as unreviewed"
                         + (f". {len(not_counted)} record(s) exist and do not count" if not_counted else ""))
     else:
@@ -192,7 +194,12 @@ def review_statement(tool: str, today: Optional[_dt.date] = None) -> Dict[str, A
         out["basis"] += f"; the reviewing agent's calibration: {out['agent_rates']['basis']}"
     if not_counted:
         out["not_counted"] = not_counted[:5]
-        if any(v.get("uncalibrated_agent_review") for _r, v in judged):
-            out["uncalibrated_agent_review"] = ("an agent's review of this tool exists and does not raise its tier: "
-                                                "the agent has not been calibrated")
+        _uncal = sorted({str(_r.get("agent")) for _r, v in judged if v.get("uncalibrated_agent_review")})
+        if _uncal:
+            out["uncalibrated_agent_review"] = (
+                "an agent's review of this tool exists and does not raise its tier: "
+                + ", ".join(_uncal) + (" has" if len(_uncal) == 1 else " have") + " not been calibrated")
+            #  W1101 (P5.15 clause 3) - LABELLED where it is read: in the sentence every answer, saved text and
+            #  options panel already says, as the reviewing agent's rates are
+            out["basis"] += "; " + out["uncalibrated_agent_review"]
     return out

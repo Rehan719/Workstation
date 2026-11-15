@@ -90710,3 +90710,47 @@ def test_w1100_fu1054_the_care_reviewer_is_a_different_checklist_over_the_source
     assert len(kept) == 1 and kept[0]["agent"] == cr.AGENT and kept[0]["model"] == "ollama:w1100-made-up" and kept[0]["configuration"] == "model"
     assert kept[0]["flags"] == {"P0": ["source not current"], "P1": ["source not current"], **{f"K{i}": [] for i in range(6)}}
     assert ok.json()["agent_now"]["calibrated"] is True, ok.json()["agent_now"]
+
+
+def test_w1101_fu1054_an_uncalibrated_agents_review_is_labelled_where_the_tier_is_read(client, tmp_path, monkeypatch):
+    """FU-1054 part 3 (W1101); P5.15 clause 3: an uncalibrated agent's review is labelled so. The label was a key no
+    page reads; the tier line under an answer, the text a person saves and the options shown before a tool is used
+    all say the tier's own sentence. Held here:
+    - with an uncalibrated agent's review on record, the sentence says so and names the agent, on the tool's answer,
+      on its options and in review_statement itself;
+    - a tool whose only records do not count says no review of it counts, never that none is recorded; a tool with
+      no record still says none is recorded;
+    - beside a rule check that counts, the label is said after the tier it does not raise."""
+    import datetime as _dt
+    import json
+    from agentic_core.api import _review_tier as rt
+    from agentic_core.api import _review_calibration as cal
+    store = tmp_path / "review_tier_records.json"
+    monkeypatch.setattr(rt, "_path", lambda: store)
+    monkeypatch.setattr(cal, "calibration_of", lambda agent, discipline="care": {
+        "calibrated": False, "known": True, "why_not": "this agent has never been run on the calibration set"})
+    today = _dt.date.today().isoformat()
+    T = "care_risk_assess"
+    assert "no review of this tool is recorded" in rt.review_statement(T)["basis"]
+    agent = {"tool": T, "tier": "reviewed_by_workstation_agent", "date": today, "checklist": "care checklist v2",
+             "sources_read": [{"source": "nice-ng249", "page": "recommendations 1.1", "read_on": today}],
+             "agent": "w1101-reviewer", "model": "local-model", "tool_version": "the tree at W1101",
+             "could_not_check": "nothing beyond the source's own text"}
+    store.write_text(json.dumps([agent]), encoding="utf-8")
+    label = "an agent's review of this tool exists and does not raise its tier: w1101-reviewer has not been calibrated"
+    alone = rt.review_statement(T)
+    assert alone["tier"] == "unreviewed" and alone["uncalibrated_agent_review"] == label, alone
+    assert alone["basis"].startswith("no review of this tool counts:") and alone["basis"].endswith("; " + label), alone["basis"]
+    #  where a person reads it: under the answer (and so in what they save), and before the form
+    risk = client.post("/api/v1/care/risk-assess", json={"tool": "news2", "patient_data": {"respiratory_rate": 25}}).json()
+    assert label in risk["ai_provenance"]["review"]["basis"], risk["ai_provenance"]["review"]
+    opts = client.get("/api/v1/review-options", params={"endpoint": "/api/v1/care/risk-assess"})
+    assert opts.status_code == 200 and label in json.dumps(opts.json()), opts.text[:400]
+    #  beside a rule check that counts, the label follows the tier it does not raise
+    rule = {"tool": T, "tier": "checked_by_rule", "date": today, "rule": "a withheld score answers its refusal", "test": "test_w679"}
+    store.write_text(json.dumps([rule, agent, {**agent, "agent": "w1101-second"}]), encoding="utf-8")
+    both = rt.review_statement(T)
+    two = ("an agent's review of this tool exists and does not raise its tier: w1101-reviewer, w1101-second have not "
+           "been calibrated")
+    assert both["tier"] == "checked_by_rule" and both["basis"].startswith("the highest tier a record supports: checked by rule")
+    assert both["basis"].endswith("; " + two) and both["uncalibrated_agent_review"] == two, both["basis"]
