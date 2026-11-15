@@ -8,6 +8,9 @@
 // readiness refused for naming nobody, evidence for four facts (the insurance already lapsed), a declaration of
 // readiness, the asset read with the date moved on (its risk assessment lapsed, the declaration withdrawn), and each
 // listing's own 503. Every party, asset and piece of evidence is made up, and nothing is judged or connected.
+// W1084 (P5.19 clause 3): a second asset entered as used in a workplace, and the first given a public footway
+// afterwards - the register of sources' rows for that use, said as the route gave them, or its own words that no
+// source permitting the use was found.
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -19,7 +22,7 @@ import AssetsPanel from './AssetsPanel';
 const C: any = captured;
 type Answer = { status: number; body: any };
 type Reply = Answer | Promise<Answer>;
-type Plan = Partial<Record<'list' | 'parties' | 'agreements' | 'asset' | 'read' | 'evidence', Reply[]>>;
+type Plan = Partial<Record<'list' | 'parties' | 'agreements' | 'asset' | 'read' | 'evidence' | 'use', Reply[]>>;
 const BASE = '/api/v1/assets';
 const ASSET = C.asset.body;
 const AID = ASSET.id;
@@ -41,6 +44,7 @@ function serve(plan: Plan) {
           : method === 'POST' && url === BASE ? 'asset'
             : method === 'GET' && url === `${BASE}/${AID}` ? 'read'
               : method === 'POST' && url === `${BASE}/${AID}/evidence` ? 'evidence'
+                : method === 'POST' && url === `${BASE}/${AID}/use` ? 'use'
                 : `${method} ${url}`;
     const a = await next(key);
     return { ok: a.status < 400, status: a.status, statusText: '', json: async () => a.body } as unknown as Response;
@@ -116,11 +120,12 @@ describe('AssetsPanel, rendered against its routes\' own answers (a made-up asse
     expect(screen.getByTestId('asset-held').textContent).toBe(
       `Owned by ${ASSET.owned_by.name}; possessed by ${ASSET.possessed_by.name}; held under ${ASSET.held_under.title}. ${ASSET.held_under.basis}`);
     expect(facts()).toEqual(ASSET.facts.map((f: any) => `${f.name}: ${f.said}`));
+    expect(screen.getByTestId('asset-rules-said').textContent).toBe(ASSET.rules.said);   // no use entered, no regime
     expect(ASSET.facts.every((f: any) => f.said === 'not evidenced')).toBe(true);
     await waitFor(() => expect(screen.getAllByTestId('asset-row')).toHaveLength(1));
     expect(sent.filter(s => s.method === 'POST').map(s => s.body)).toEqual([
-      { what: ASSET.what, kind: 'robot', owned_by: ASSET.owned_by.party_id, possessed_by: ASSET.possessed_by.party_id, agreement_id: '' },
-      { what: ASSET.what, kind: 'robot', owned_by: ASSET.owned_by.party_id, possessed_by: ASSET.possessed_by.party_id, agreement_id: ASSET.held_under.agreement_id }]);
+      { what: ASSET.what, kind: 'robot', owned_by: ASSET.owned_by.party_id, possessed_by: ASSET.possessed_by.party_id, agreement_id: '', use: '' },
+      { what: ASSET.what, kind: 'robot', owned_by: ASSET.owned_by.party_id, possessed_by: ASSET.possessed_by.party_id, agreement_id: ASSET.held_under.agreement_id, use: '' }]);
   });
 
   it('evidence is said with who, when, its lapse and its state; a declaration naming nobody is refused beside its button', async () => {
@@ -162,6 +167,37 @@ describe('AssetsPanel, rendered against its routes\' own answers (a made-up asse
     //  aside)
     const text = (screen.getByTestId('assets-panel').textContent ?? '').replace(C.list_one.body.judged_basis, '');
     expect(text).not.toMatch(/ready to use|score|percent|%|fully evidenced/i);
+  });
+
+  it('where it would be used is chosen at entry, and the register\'s rows for that use are said as the route gave them', async () => {
+    const W = C.asset_workplace.body;
+    const sent = serve({ list: [C.list_one, C.list_two], parties: [C.parties], agreements: [C.agreements], asset: [C.asset_workplace] });
+    render(<AssetsPanel />);
+    await screen.findByTestId('assets-form');
+    type('What the asset is', W.what);
+    type('Owned by', W.owned_by.party_id);
+    type('Possessed by', W.possessed_by.party_id);
+    type('Held under', W.held_under.agreement_id);
+    type('Where it would be used', 'workplace');
+    press('Enter this asset');
+    await waitFor(() => expect(screen.getAllByTestId('asset-rule-row')).toHaveLength(W.rules.rows.length));
+    expect(W.rules.rows.length).toBeGreaterThan(0);
+    expect(screen.getAllByTestId('asset-rule-row').map(li => li.textContent)).toEqual(W.rules.rows.map((r: any) =>
+      `${r.names[0]} (${r.kind}, ${r.nation.join(', ')}): read on ${r.read_on}, by ${r.read_by}. It says: ${r.says} Not read: ${r.not_read}.${r.stands !== 'current' ? ` Marked ${r.stands} in the register.` : ''}${r.recently_checked ? '' : ` Not recently checked: ${r.checked_basis}.`}`));
+    expect(screen.getByTestId('asset-rules-basis').textContent).toBe(W.rules.basis);
+    expect(screen.getByText(`Which rules apply, used ${W.rules.use_name}`)).toBeTruthy();
+    expect(sent.find(s => s.method === 'POST')!.body.use).toBe('workplace');
+  });
+
+  it('a public footway has no source permitting the use, and the panel says so in the route\'s words', async () => {
+    const sent = await opened({ use: [C.use_footway] }, C.asset);
+    expect(screen.getByTestId('asset-rules-said').textContent).toBe(C.asset.body.rules.said);
+    type('It would be used', 'footway');
+    press('Record where it would be used');
+    await waitFor(() => expect(screen.getByTestId('asset-rules-said').textContent).toBe(C.use_footway.body.rules.said));
+    expect(C.use_footway.body.rules.said).toBe('No source permitting this use was found.');
+    expect(screen.queryAllByTestId('asset-rule-row')).toHaveLength(0);
+    expect(sent.filter(s => s.method === 'POST').map(s => [s.url, s.body])).toEqual([[`${BASE}/${AID}/use`, { use: 'footway' }]]);
   });
 
   it('a failed read says its reason in its own place, and says no record as none', async () => {

@@ -653,6 +653,15 @@
    "state": "journey",
    "driven_by": "test_w1082_p519_an_asset_is_a_record_held_under_an_agreement_and_its_six_facts_are_never_merged",
    "today": "on the Law page, a signed-in person enters a vehicle, robot, drone or instrument as a record owned and possessed by party records and held under an agreement record, and attaches evidence to its six facts apart - the right to use it, the place's permission, the maker's conformity, their own safety evidence, insurance and a named person's declaration of readiness - each with who, when and when it lapses; evidence past its date reads lapsed and a declaration resting on it withdrawn; no score or word of readiness is computed, nothing is connected or controlled, and nothing is kept before sign-in (built in W1082 and W1083)"
+  },
+  {
+   "id": "law-asset-rules",
+   "domain": "Law",
+   "subject": "Which rules apply where a physical asset would be used, as sources",
+   "nation": "Great Britain and the UK, as each row of the register of sources says",
+   "state": "journey",
+   "driven_by": "test_w1084_p519_which_rules_apply_to_an_asset_are_the_rows_of_the_register_for_its_use",
+   "today": "on the Law page, a signed-in person says where an asset would be used - in a workplace, on a road, on a public footway, in the air or somewhere else - and is shown the rows of the register of sources for that use, each with what it says, the date it was read, by whom and what was not read; where no source permitting the use was found, the record says so in those words; nothing says whether the law permits the use (built in W1084)"
   }
  ]
 }

@@ -25712,10 +25712,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1084",
       "note": "",
-      "slot_source": "P5.19's own next clause, after clauses 1, 2, 4 and 5 (W1082, W1083)"
+      "slot_source": "P5.19's own next clause, after clauses 1, 2, 4 and 5 (W1082, W1083)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1084. An asset says where it would be used (in a workplace, on a road, on a public footway, in the air, or somewhere else), entered by a person at entry or afterwards with who and when, an earlier entry kept. Its rules are the register of sources' rows for that use, by id: each as the register holds it (what it says, the date read, by whom, what was not read, how it is marked) and whether it was read within the review window. A public footway has no source permitting the use, and the record says so in those words; nothing says the law permits a use. The Law page's assets panel chooses the use and says the rows as the route gave them (two new rendered cases, five vitest blinds); test_w1084 drives it through the routes (seven blinds). The journey is the coverage register's row law-asset-rules, driven by test_w1084."
     }
   ],
   "routes": [

@@ -14,6 +14,11 @@ const KINDS: [string, string][] = [
   ['vehicle', 'a vehicle'], ['robot', 'a robot'], ['drone', 'a drone'],
   ['laboratory_instrument', 'a laboratory instrument'], ['other', 'something else'],
 ];
+//  W1084 (P5.19 clause 3) - where it would be used; the rows that apply are the route's, said as it gave them
+const USES: [string, string][] = [
+  ['workplace', 'in a workplace'], ['road', 'on a road'], ['footway', 'on a public footway'], ['air', 'in the air'],
+  ['elsewhere', 'somewhere else'],
+];
 const field = 'w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-slate-200';
 const button = 'px-3 py-1.5 rounded-lg bg-slate-800 text-[10px] font-black uppercase tracking-widest text-aura disabled:opacity-40';
 
@@ -51,7 +56,8 @@ export default function AssetsPanel() {
   const [errs, setErrs] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState('');
   const say = (k: string, v: string) => setErrs(e => ({ ...e, [k]: v }));
-  const [a, setA] = useState({ what: '', kind: 'robot', owned_by: '', possessed_by: '', agreement_id: '' });
+  const [a, setA] = useState({ what: '', kind: 'robot', owned_by: '', possessed_by: '', agreement_id: '', use: '' });
+  const [use, setUse] = useState('');
   const [ev, setEv] = useState({ fact: 'right_to_use', evidence: '', lapses_on: '', named_person: '' });
 
   const readList = useCallback(async () => {
@@ -104,7 +110,7 @@ export default function AssetsPanel() {
     say('asset', ''); setBusy('asset');
     try {
       const x = await apiJson(BASE, { method: 'POST', body: a });
-      setA({ what: '', kind: a.kind, owned_by: '', possessed_by: '', agreement_id: '' });
+      setA({ what: '', kind: a.kind, owned_by: '', possessed_by: '', agreement_id: '', use: '' });
       openId.current = x.id; setErrs({}); show(x);
       await readList();
     } catch (e) {
@@ -127,6 +133,18 @@ export default function AssetsPanel() {
     } finally { setBusy(''); }
   };
 
+  //  W1084 - where it would be used, entered on the open record; the route's answer is said under its own id only
+  const recordUse = async () => {
+    if (!open) return;
+    const id = open.id;
+    say('use', ''); setBusy('use');
+    try {
+      show(await apiJson(`${BASE}/${id}/use`, { method: 'POST', body: { use } }));
+      if (openId.current === id) await readList();
+    } catch (e) {
+      if (openId.current === id) say('use', `Where it would be used was not recorded: ${errorMessage(e)}`);
+    } finally { setBusy(''); }
+  };
   const choices = parties !== null && agreements !== null;
   return (
     <div className="space-y-6" data-testid="assets-panel">
@@ -167,6 +185,10 @@ export default function AssetsPanel() {
                   <option value="">Held under: choose an agreement</option>
                   {(agreements ?? []).map((g: any) => <option key={g.id} value={g.id}>{g.title}</option>)}
                 </select>
+                <select aria-label="Where it would be used" className={field} value={a.use} onChange={e => setA({ ...a, use: e.target.value })}>
+                  <option value="">Where it would be used: not said yet</option>
+                  {USES.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+                </select>
               </div>
             )}
             {choices && <button type="button" className={button} disabled={busy === 'asset'} onClick={enter}>Enter this asset</button>}
@@ -195,6 +217,29 @@ export default function AssetsPanel() {
                 {`Owned by ${open.owned_by?.name ?? open.owned_by?.party_id}; possessed by ${open.possessed_by?.name ?? open.possessed_by?.party_id}; held under ${open.held_under?.title ?? open.held_under?.agreement_id}. ${open.held_under?.basis}`}
               </p>
               <ul className="space-y-1">{(open.facts ?? []).map((f: any) => <FactBlock key={f.fact} f={f} />)}</ul>
+              <div className="space-y-1" data-testid="asset-rules">
+                <p className="text-[11px] font-black text-slate-100">
+                  {open.rules?.use_name ? `Which rules apply, used ${open.rules.use_name}` : 'Which rules apply'}
+                </p>
+                {(open.rules?.rows ?? []).length === 0 ? (
+                  <p data-testid="asset-rules-said" className="text-[11px] text-amber-300">{open.rules?.said}</p>
+                ) : (
+                  <ul className="space-y-1">
+                    {(open.rules?.rows ?? []).map((r: any) => (
+                      <li key={r.id} data-testid="asset-rule-row" className="text-[10px] text-slate-300">
+                        {r.said ? `${r.id}: ${r.said}` : `${(r.names ?? [r.id])[0]} (${r.kind}, ${(r.nation ?? []).join(', ')}): read on ${r.read_on}, by ${r.read_by}. It says: ${r.says} Not read: ${r.not_read}.${r.stands && r.stands !== 'current' ? ` Marked ${r.stands} in the register.` : ''}${r.recently_checked ? '' : ` Not recently checked: ${r.checked_basis}.`}`}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <p data-testid="asset-rules-basis" className="text-[10px] text-slate-500">{open.rules?.basis}</p>
+                <select aria-label="It would be used" className={field} value={use} onChange={e => setUse(e.target.value)}>
+                  <option value="">It would be used: choose</option>
+                  {USES.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+                </select>
+                <button type="button" className={button} disabled={busy === 'use'} onClick={recordUse}>Record where it would be used</button>
+                {errs.use && <p data-testid="asset-use-error" className="text-[11px] text-rose-300">{errs.use}</p>}
+              </div>
               <div className="space-y-1" data-testid="asset-evidence-form">
                 <select aria-label="Evidence for" className={field} value={ev.fact} onChange={e => setEv({ ...ev, fact: e.target.value })}>
                   {(open.facts ?? []).map((f: any) => <option key={f.fact} value={f.fact}>{f.name}</option>)}

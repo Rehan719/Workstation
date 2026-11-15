@@ -59,6 +59,68 @@ AGREEMENT_IS_NOT_PERMISSION = ("The agreement it is held under is recorded as st
                                "of the right to use it or of any place's permission to use it there.")
 LIMITS_EXTRA = {"what": 300, "evidence": 500, "named_person": 200}
 
+#  W1084 (P5.19 clause 3) - WHICH RULES APPLY, AS SOURCES. Where it would be used is a person's entry; the regime for
+#  that use is the rows of the register of sources (docs/SOURCES.json) named here by id, each shown as it was read:
+#  what it says, on what date, by whom and what was not read. Nothing here says whether the law permits the use.
+USES = ("workplace", "road", "footway", "air", "elsewhere")
+USE_NAMES = {"workplace": "in a workplace", "road": "on a road", "footway": "on a public footway",
+             "air": "in the air", "elsewhere": "somewhere else"}
+RULE_ROWS = {
+    "workplace": ("hse-puwer-overview", "si-2026-867-machinery"),
+    "road": ("si-2026-439-av-passenger-permits", "av-act-implementation-programme"),
+    "footway": (),
+    "air": ("caa-drone-requirements",),
+    "elsewhere": (),
+}
+NO_PERMITTING_SOURCE = "No source permitting this use was found."
+NO_SOURCE_READ = "No source has been read for a use somewhere else, so no regime is shown for it."
+USE_NOT_ENTERED = "Where it would be used is not entered, so no regime is shown."
+RULES_BASIS = ("These are the rows of the register of sources for this use, each as it was read: what it says, on "
+               "what date, by whom, and what was not read. Nothing here says whether the law permits this use, and "
+               "no row is a permission.")
+
+
+def _sources_register():
+    """The register of sources by id, and its review window; (None, None) when it cannot be read."""
+    import json
+    from pathlib import Path
+    try:
+        d = json.loads((Path(__file__).resolve().parents[2] / "docs" / "SOURCES.json").read_text(encoding="utf-8"))
+        return {str(r["id"]): r for r in d["rows"] if isinstance(r, dict) and r.get("id")}, int(d.get("review_days") or 90)
+    except (OSError, ValueError, KeyError, TypeError):
+        return None, None
+
+
+def _rules(a: dict) -> dict:
+    use = a.get("use")
+    out = {"use": use, "use_name": USE_NAMES.get(use) if use else None, "rows": [], "basis": RULES_BASIS}
+    if not use:
+        return {**out, "said": USE_NOT_ENTERED}
+    if use == "footway":
+        return {**out, "said": NO_PERMITTING_SOURCE}
+    if use == "elsewhere":
+        return {**out, "said": NO_SOURCE_READ}
+    register, review_days = _sources_register()
+    if register is None:
+        return {**out, "said": "The register of sources could not be read, so no regime is shown."}
+    today = _today()
+    rows = []
+    for sid in RULE_ROWS[use]:
+        r = register.get(sid)
+        if r is None:
+            rows.append({"id": sid, "said": "This row is not in the register of sources."})
+            continue
+        try:
+            fresh = (today - date.fromisoformat(str(r.get("read_on")))).days <= review_days
+        except ValueError:
+            fresh = False
+        rows.append({**{k: r.get(k) for k in ("id", "names", "kind", "nation", "page", "read_on", "read_by", "says",
+                                             "not_read")},
+                     "stands": r.get("status"),   # the register's own marking of the row: current, replaced, ...
+                     "recently_checked": fresh,
+                     **({} if fresh else {"checked_basis": f"read more than {review_days} days ago, and not since"})})
+    return {**out, "rows": rows}
+
 
 def _person(user) -> str:
     if not auth_enabled():
@@ -103,6 +165,7 @@ class AssetRequest(_Asked):
     owned_by: str = ""
     possessed_by: str = ""
     agreement_id: str = ""
+    use: str = ""   # W1084 - where it would be used
 
 
 class EvidenceRequest(_Asked):
@@ -160,6 +223,8 @@ def _public(a: dict, parties: list, agreements: list) -> dict:
                            **({} if held else {"said": "This agreement record is not in the agreement store."}),
                            "basis": AGREEMENT_IS_NOT_PERMISSION},
             "entered_by": a.get("entered_by"), "entered_at": a.get("entered_at"),
+            "rules": {**_rules(a), "entered_by": a.get("use_entered_by"), "entered_at": a.get("use_entered_at"),
+                      "history": a.get("use_history") or []},
             "facts": _facts(a), "controlled": False, "controlled_basis": NOT_CONTROLLED, "judged_basis": NOT_JUDGED}
 
 
@@ -175,13 +240,17 @@ async def enter_asset(req: AssetRequest, user: dict | None = Depends(get_current
     """Clause 1: a physical thing, as a person entered it, who owns and who possesses it (party records), and the
     agreement record it is held under."""
     who = _person(user)
-    _only(req, "An asset is entered by what it is, its kind, who owns it, who possesses it and the agreement it is held "
-               "under;")
+    _only(req, "An asset is entered by what it is, its kind, who owns it, who possesses it, the agreement it is held "
+               "under and where it would be used;")
     what = _short(req.what, "What the asset is", "what")
     kind = str(req.kind or "").strip()
     if kind not in KINDS:
         raise HTTPException(status_code=400, detail=(
             f"An asset's kind is one of {', '.join(KINDS)}; '{kind or 'nothing'}' is not one, so nothing was kept."))
+    use = str(req.use or "").strip()
+    if use and use not in USES:
+        raise HTTPException(status_code=400, detail=(
+            f"Where it would be used is one of {', '.join(USES)}; '{use}' is not one, so nothing was kept."))
     mine = {p["id"]: p for p in _read(PARTIES) if _reaches(user, p)}
     for role, pid in (("owns", req.owned_by), ("possesses", req.possessed_by)):
         pid = str(pid or "").strip()
@@ -205,7 +274,8 @@ async def enter_asset(req: AssetRequest, user: dict | None = Depends(get_current
             f"kept."))
     a = {"id": f"ast-{uuid.uuid4().hex[:10]}", "owner": who, "what": what, "kind": kind,
          "owned_by": str(req.owned_by).strip(), "possessed_by": str(req.possessed_by).strip(), "agreement_id": aid,
-         "entered_by": who, "entered_at": _now(), "evidence": []}
+         "entered_by": who, "entered_at": _now(), "evidence": [],
+         **({"use": use, "use_entered_by": who, "use_entered_at": _now()} if use else {})}
     _mutate(ASSETS, lambda rows: rows.append(a))
     return _public(a, list(mine.values()), _read(AGREEMENTS))
 
@@ -258,6 +328,31 @@ async def attach_evidence(aid: str, req: EvidenceRequest, user: dict | None = De
             e["rests_on"] = [x["id"] for x in a.get("evidence") or []
                              if x.get("fact") != "readiness" and not _lapsed(x, today)]
         a.setdefault("evidence", []).append(e)
+        return a
+    a = _mutate(ASSETS, _change)
+    return _public(a, _read(PARTIES), _read(AGREEMENTS))
+
+
+class UseRequest(_Asked):
+    use: str = ""
+
+
+@router.post("/{aid}/use")
+async def enter_use(aid: str, req: UseRequest, user: dict | None = Depends(get_current_user)):
+    """Clause 3: where the asset would be used, as a person entered it, with who and when; an earlier entry is kept."""
+    who = _person(user)
+    _only(req, "Where it would be used is entered as one of the uses;")
+    use = str(req.use or "").strip()
+    if use not in USES:
+        raise HTTPException(status_code=400, detail=(
+            f"Where it would be used is one of {', '.join(USES)}; '{use or 'nothing'}' is not one, so nothing was kept."))
+
+    def _change(rows):
+        a = _mine(rows, aid, user)
+        if a.get("use"):
+            a.setdefault("use_history", []).append({"use": a["use"], "entered_by": a.get("use_entered_by"),
+                                                    "entered_at": a.get("use_entered_at")})
+        a.update(use=use, use_entered_by=who, use_entered_at=_now())
         return a
     a = _mutate(ASSETS, _change)
     return _public(a, _read(PARTIES), _read(AGREEMENTS))

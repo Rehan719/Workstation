@@ -88656,8 +88656,10 @@ def test_w1082_p519_an_asset_is_a_record_held_under_an_agreement_and_its_six_fac
             mods |= {n.name for n in node.names}
         elif isinstance(node, ast.ImportFrom):
             mods.add(node.module or "")
+    #  W1084 - json and pathlib read the register of sources (docs/SOURCES.json) from this tree; nothing opens a
+    #  connection
     assert mods <= {"uuid", "re", "datetime", "typing", "fastapi", "agentic_core.api.agreements",
-                    "agentic_core.auth.core"}, mods
+                    "agentic_core.auth.core", "json", "pathlib"}, mods
     assert "digital_twin" not in src and "integration_surface" not in src and "socket" not in src
 
 
@@ -88730,3 +88732,129 @@ def test_w1083_p519_on_the_law_page_a_signed_in_person_keeps_an_assets_evidence_
         "test_w1082_p519_an_asset_is_a_record_held_under_an_agreement_and_its_six_facts_are_never_merged"), row
     assert "nothing is connected or controlled" in row["today"] and "no score" in row["today"]
     assert cov.check(reg)["problems"] == []
+
+
+def test_w1084_p519_which_rules_apply_to_an_asset_are_the_rows_of_the_register_for_its_use(client, monkeypatch):
+    """P5.19 clause 3 (W1084, FU-1268), driven through the routes on a made-up asset, signed in. Held here:
+    - where an asset would be used is a person's entry, at entry or afterwards, with who and when; an earlier entry is
+      kept; a use that is not one of the five, or a field the route does not take, is refused;
+    - its rules are the register of sources' rows for that use, by id, each as the register holds it (what it says,
+      the date read, by whom, what was not read) and whether it was read within the review window; a row read too long
+      ago says so;
+    - a public footway has no source permitting the use, and the record says so in those words; somewhere else has no
+      source read; an asset with no use entered says no regime is shown; a register that cannot be read is said;
+    - nothing says the law permits the use: no row is a permission, and the basis says so;
+    - every row the code names is a row of the register, and the page says the rows as the route gave them;
+    - the journey is a row of the coverage register, driven by this test."""
+    import json
+    import pathlib
+    import re
+    import uuid
+    from datetime import date, datetime, timedelta, timezone
+    import agentic_core.auth.core as _ac
+    import agentic_core.api.assets as _as
+    root = pathlib.Path(__file__).resolve().parents[1]
+    register = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    tag = uuid.uuid4().hex[:8]
+    yday = (datetime.now(timezone.utc).date() - timedelta(days=1)).isoformat()
+
+    #  every row the code names is a row of the register, and each use the clause names has its rows or its words
+    assert set(_as.USES) == {"workplace", "road", "footway", "air", "elsewhere"}
+    named = {i for ids in _as.RULE_ROWS.values() for i in ids}
+    assert named and named <= set(register), named - set(register)
+    assert _as.RULE_ROWS["footway"] == () and _as.NO_PERMITTING_SOURCE == "No source permitting this use was found."
+
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    who = f"w1084-{tag}"
+    users = _ac._load_users()
+    users[who] = {"user_id": who, "username": who, "hashed_password": _ac._pwd_ctx.hash("pw12345678"), "role": "user",
+                  "created_at": "2026-11-15T00:00:00Z", "api_keys": []}
+    _ac._save_users(users)
+    H = {"Authorization": "Bearer " + client.post("/api/v1/auth/token", data={"username": who, "password": "pw12345678"}).json()["access_token"]}
+    pids = [client.post("/api/v1/agreements/parties", headers=H, json={
+        "kind": "person", "name": f"W1084 Madeup {n} {tag}", "read_from": "a made-up letter", "read_on": yday}).json()["party"]["id"]
+        for n in ("One", "Two")]
+    lid = client.post("/api/v1/agreements", headers=H, json={
+        "title": f"W1084 lease {tag}", "text": "w1084 a made-up lease",
+        "parties": [{"party_id": pids[0], "role": "lessor"}, {"party_id": pids[1], "role": "lessee"}]}).json()["id"]
+    body = {"what": f"a made-up robot W1084-{tag}", "kind": "robot", "owned_by": pids[0], "possessed_by": pids[1],
+            "agreement_id": lid}
+
+    def keys(o):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                yield k
+                yield from keys(v)
+        elif isinstance(o, list):
+            for v in o:
+                yield from keys(v)
+
+    def rules(answer):
+        bad = {k for k in keys(answer["rules"]) if re.search(r"permit(ted|s)?$|allowed|lawful|legal$", k)}
+        assert not bad, ("a rule is shown as a permission", bad)
+        assert answer["rules"]["basis"] == _as.RULES_BASIS
+        return answer["rules"]
+
+    bad = client.post("/api/v1/assets", headers=H, json={**body, "use": "the moon"})
+    assert bad.status_code == 400 and "Where it would be used is one of" in bad.json()["detail"], bad.text[:300]
+    #  1. entered at entry: a workplace - the register's two rows, each as the register holds it
+    a = client.post("/api/v1/assets", headers=H, json={**body, "use": "workplace"})
+    assert a.status_code == 200, a.text[:300]
+    r = rules(a.json())
+    assert r["use"] == "workplace" and r["use_name"] == "in a workplace" and r["entered_by"] == who and r["entered_at"]
+    assert [x["id"] for x in r["rows"]] == list(_as.RULE_ROWS["workplace"]), r["rows"]
+    for x in r["rows"]:
+        src = register[x["id"]]
+        assert (x["names"], x["read_on"], x["read_by"], x["says"], x["not_read"], x["stands"]) == (
+            src["names"], src["read_on"], src["read_by"], src["says"], src["not_read"], src["status"]), x["id"]
+        fresh = (datetime.now(timezone.utc).date() - date.fromisoformat(src["read_on"])).days <= 90
+        assert x["recently_checked"] is fresh
+    #  the review window passes: each row says it was not recently checked
+    monkeypatch.setattr(_as, "_today", lambda: date(2027, 3, 1))
+    late = rules(client.get(f"/api/v1/assets/{a.json()['id']}", headers=H).json())
+    assert all(x["recently_checked"] is False and "not since" in x["checked_basis"] for x in late["rows"]), late["rows"]
+    monkeypatch.setattr(_as, "_today", lambda: datetime.now(timezone.utc).date())
+
+    #  2. entered afterwards: none, then a public footway, then the air - the earlier entry kept
+    b = client.post("/api/v1/assets", headers=H, json=body).json()
+    assert rules(b)["said"] == _as.USE_NOT_ENTERED and b["rules"]["rows"] == [] and b["rules"]["use"] is None
+    bid = b["id"]
+    for bad_use, words in (({"use": "nowhere"}, "is not one"), ({"use": "air", "altitude": 120}, "'altitude' is not part of it")):
+        rr = client.post(f"/api/v1/assets/{bid}/use", headers=H, json=bad_use)
+        assert rr.status_code == 400 and words in rr.json()["detail"], (bad_use, rr.text[:300])
+    foot = rules(client.post(f"/api/v1/assets/{bid}/use", headers=H, json={"use": "footway"}).json())
+    assert foot["said"] == "No source permitting this use was found." and foot["rows"] == [], foot
+    air = client.post(f"/api/v1/assets/{bid}/use", headers=H, json={"use": "air"}).json()
+    ra = rules(air)
+    assert [x["id"] for x in ra["rows"]] == ["caa-drone-requirements"] and "said" not in ra
+    assert [h["use"] for h in ra["history"]] == ["footway"] and ra["history"][0]["entered_by"] == who
+    else_ = rules(client.post(f"/api/v1/assets/{bid}/use", headers=H, json={"use": "elsewhere"}).json())
+    assert else_["said"] == _as.NO_SOURCE_READ and else_["rows"] == []
+    #  3. a register that cannot be read is said, never shown as no rule
+    monkeypatch.setattr(_as, "_sources_register", lambda: (None, None))
+    gone = rules(client.get(f"/api/v1/assets/{a.json()['id']}", headers=H).json())
+    assert gone["rows"] == [] and gone["said"] == "The register of sources could not be read, so no regime is shown."
+    #  another person cannot enter a use on it
+    other = f"w1084-other-{tag}"
+    users = _ac._load_users()
+    users[other] = {**users[who], "user_id": other, "username": other}
+    _ac._save_users(users)
+    H2 = {"Authorization": "Bearer " + client.post("/api/v1/auth/token", data={"username": other, "password": "pw12345678"}).json()["access_token"]}
+    assert client.post(f"/api/v1/assets/{bid}/use", headers=H2, json={"use": "road"}).status_code == 404
+
+    #  4. the page says the rows as the route gave them, and where it would be used is a person's choice
+    panel = _code_only((root / "apps/workstation-superapp/src/components/AssetsPanel.tsx").read_text(encoding="utf-8"))
+    for said in ("{open.rules?.said}", "{open.rules?.basis}", "${r.read_on}", "${r.read_by}", "${r.says}", "${r.not_read}",
+                 "${r.checked_basis}", "apiJson(`${BASE}/${id}/use`"):
+        assert said in panel, said
+    assert not re.search(r"permitted|allowed|lawful", panel, re.I), "the panel says a use is permitted"
+
+    #  5. the journey is a row of the coverage register, driven by this test
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("w1084_cov", root / "scripts/coverage_register.py")
+    cov = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cov)
+    reg = cov.load()
+    row = next(x for x in reg["rows"] if x["id"] == "law-asset-rules")
+    assert row["state"] == "journey" and row["driven_by"] == "test_w1084_p519_which_rules_apply_to_an_asset_are_the_rows_of_the_register_for_its_use"
+    assert "no source permitting the use was found" in row["today"] and cov.check(reg)["problems"] == []
