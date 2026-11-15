@@ -12,7 +12,7 @@ import os
 from typing import Any, Dict, List, Literal
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from agentic_core.ai.native import orchestrator, registry
 from agentic_core.ai.native.model_resource import external_allowed
@@ -1470,7 +1470,17 @@ async def native_selfcheck():
             "all_live": live == len(modules), "modules": modules}
 
 
+def _refuse_nothing_asked(text: str, field: str) -> None:
+    """W1065 - a request with no text to ask is refused before any gate or call, as W1046 refuses one on the AI
+    fabric's routes: answered, it returned the native engine's frame about nothing as though it had been asked."""
+    if not (text or "").strip():
+        raise HTTPException(status_code=422, detail=(
+            f"nothing to ask: the request carries no text in `{field}`, so no call was made"))
+
+
 class CompleteRequest(BaseModel):
+    #  W1065 - a field this request does not read is refused by its name (W1046), never dropped in silence
+    model_config = ConfigDict(extra="forbid")
     prompt: str
     agent: str = "assistant"
     prefer_external: bool = False
@@ -1482,6 +1492,7 @@ class CompleteRequest(BaseModel):
 
 
 class EnsembleRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")   # W1065
     prompt: str
     agent: str = "ensemble"
     models: List[str] = []      # tier ids (e.g. ["ollama:llama3.2","ollama:llama2","native"]); empty = all owned
@@ -1493,6 +1504,7 @@ class EnsembleRequest(BaseModel):
 async def native_ensemble(req: EnsembleRequest):
     """§6 — run a prompt across MULTIPLE owned models in parallel, then synthesise a consensus. Owned
     orchestration as a composable resource; every member reports which owned resource served it."""
+    _refuse_nothing_asked(req.prompt, "prompt")   # W1065
     #  W627 (FU-531) - the same constitutional pre-gate and response checkpoint /complete and /swarm carry
     from agentic_core.ai.gateway import console_pre_gate, console_post_gate
     _halt = console_pre_gate(req.agent)
@@ -1524,6 +1536,7 @@ async def native_ensemble(req: EnsembleRequest):
 @router.post("/complete")
 @_states_level("/complete")
 async def native_complete(req: CompleteRequest):
+    _refuse_nothing_asked(req.prompt, "prompt")   # W1065 - before the gates: an empty ask is not a request
     # W619 (FU-496) — the console reaches the orchestrator directly, so it gets the gateway's gates here
     from agentic_core.ai.gateway import console_pre_gate, console_post_gate
     _halt = console_pre_gate(req.agent)
@@ -1590,6 +1603,7 @@ async def native_swarm(req: SwarmRequest):
 
 
 class TreeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")   # W1065
     goal: str
     context: str = ""
     max_parallel: int = 4
@@ -1924,6 +1938,7 @@ async def native_tree(req: TreeRequest):
     """Autonomous workflow-TREE orchestration: the native swarm decomposes the goal into a dependency
     tree and runs it in-house-first with PARALLEL branches — the living-organism cascade (immune-throttled
     parallelism + biobus signals + learning loop). Every node reports the OWNED resource that served it."""
+    _refuse_nothing_asked(req.goal, "goal")   # W1065
     #  W627 (FU-531) - gated as /complete and /swarm are; the orchestrator itself applies no policy
     from agentic_core.ai.gateway import console_pre_gate, console_post_gate
     _halt = console_pre_gate("tree")

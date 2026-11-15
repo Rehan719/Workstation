@@ -87208,3 +87208,62 @@ def test_w1064_fu1251_the_in_house_assistant_drops_an_answer_for_a_conversation_
     assert fx["models"]["body"]["local_models"] == [] and fx["models_failed"]["status"] == 500
     assert fx["ask_first"]["agent"] == "workstation-assistant" and fx["ask_first"]["prompt"].endswith(
         "User: What is the current system state?\n\nAssistant:")
+
+
+def test_w1065_fu1252_the_native_ai_routes_refuse_a_request_that_asks_nothing(client, monkeypatch):
+    """W1065 (FU-1252). W1046 refused an empty ask, and an unread field by its name, on the AI fabric's query and
+    completion routes. W1064's capture found the native completion route still answering an empty prompt with 200 and
+    the floor's frame about nothing, served_by native, as though it had been asked something; a probe of every native
+    AI route that takes a person's text found two more that compose an answer about nothing, the ensemble (every member
+    answers the empty prompt) and the workflow tree (a tree for "the subject (not identified to this engine)"). Each of
+    the three refuses an ask with no text now, before any gate or call, and refuses a field it does not read by its
+    name. /intent and /entailment already say there was nothing to read, and are left as they are.
+
+    Held here: each route's refusal of an empty and a blank ask, made before the constitutional gate is consulted; an
+    unread field refused by its name; a real ask still answered; and every page that posts to these routes sending
+    only the fields they read."""
+    import pathlib
+    import re
+    import agentic_core.ai.gateway as _gw
+    import agentic_core.api.native_ai as _na
+    consulted = []
+    real_gate = _gw.console_pre_gate
+    monkeypatch.setattr(_gw, "console_pre_gate", lambda agent: consulted.append(agent) or real_gate(agent))
+    for route, field in (("/api/v1/native-ai/complete", "prompt"), ("/api/v1/native-ai/ensemble", "prompt"),
+                         ("/api/v1/native-ai/tree", "goal")):
+        for empty in ("", "  \n\t "):
+            r = client.post(route, json={field: empty})
+            assert r.status_code == 422, (route, repr(empty), r.status_code, r.text[:200])
+            assert r.json()["detail"] == f"nothing to ask: the request carries no text in `{field}`, so no call was made", r.json()
+        #  a field the request does not read is refused by its name, never dropped in silence
+        r = client.post(route, json={field: "W1065 a real ask", "message": "a field this route does not read"})
+        assert r.status_code == 422, (route, r.text[:200])
+        assert any(e.get("type") == "extra_forbidden" and e.get("loc") == ["body", "message"] for e in r.json()["detail"]), r.json()
+    assert consulted == [], ("an empty ask reached the constitutional gate before it was refused", consulted)
+    ok = client.post("/api/v1/native-ai/complete", json={"prompt": "W1065 made up: name one thing a repair cafe needs"})
+    assert ok.status_code == 200 and ok.json().get("served_by"), ok.text[:200]
+    #  every page that posts to them sends only the fields they read
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fields = {"complete": set(_na.CompleteRequest.model_fields), "ensemble": set(_na.EnsembleRequest.model_fields),
+              "tree": set(_na.TreeRequest.model_fields)}
+    na = (src / "pages/developers/NativeAI.tsx").read_text(encoding="utf-8")
+    panel = (src / "components/NativeAgentPanel.tsx").read_text(encoding="utf-8")
+    sent = {
+        "complete": [re.search(r"'/api/v1/native-ai/complete', \{\s*method: 'POST', body: \{([^}]*)\}", na).group(1),
+                     re.search(r"body: \{ (prompt: buildPrompt\(history, text\)[^}]*)\}", panel).group(1)],
+        "ensemble": [re.search(r"'/api/v1/native-ai/ensemble', \{\s*method: 'POST', body: \{([^}]*)\}", na).group(1)],
+        "tree": [re.search(r"'/api/v1/native-ai/tree', \{.*?body: JSON\.stringify\(\{([^}]*)\}\)", na, re.S).group(1)],
+    }
+    for route, bodies in sent.items():
+        for body in bodies:
+            flat = re.sub(r"\([^()]*\)", "", body)       # a call's own arguments are not keys
+            keys = {k.split(":")[0].strip() for k in flat.split(",") if k.strip()}
+            assert keys and keys <= fields[route], (route, keys, fields[route])
+    #  the refusal is the first thing each handler does
+    import inspect
+    for fn, field in ((_na.native_complete, "prompt"), (_na.native_ensemble, "prompt"), (_na.native_tree, "goal")):
+        body = inspect.getsource(fn)
+        at = body.index(f'_refuse_nothing_asked(req.{field}, "{field}")')
+        assert at < body.index("console_pre_gate"), fn.__name__
+    for m in (_na.CompleteRequest, _na.EnsembleRequest, _na.TreeRequest):
+        assert m.model_config.get("extra") == "forbid", m.__name__

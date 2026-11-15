@@ -25337,6 +25337,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: clearing starts another conversation, an answer for the one before is dropped, and nothing is left being answered. The rendered test (five cases) has four vitest blinds; test_w1064 holds the code (four blinds)."
+    },
+    {
+      "id": "FU-1252",
+      "title": "The native AI completion, ensemble and workflow-tree routes answered a request with no text as though they had been asked something, and dropped fields they do not read in silence",
+      "why": "W1046 refused an empty ask, and an unread field by its name, on the AI fabric's query and completion routes (integration_surface) but not on the native AI routes. W1064's capture of the shell's in-house assistant found /native-ai/complete answering an empty prompt with 200 and the floor's frame about nothing, served_by native. A probe of every native AI route that takes a person's text found /native-ai/ensemble (every member answers the empty prompt) and /native-ai/tree (a tree for the subject, not identified to this engine) doing the same; /intent and /entailment already say there was nothing to read.",
+      "source": "W1065 (found by W1064's capture; the native routes W1046 did not reach)",
+      "found": "2026-11-15",
+      "files": [
+        "agentic_core/api/native_ai.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1065",
+      "note": "",
+      "slot_source": "the rule W1046 set for the AI fabric's routes, carried to the native routes; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the three routes refuse an empty or blank ask before any gate or call, and refuse a field they do not read by its name; every page that posts to them sends only the fields they read. test_w1065 drives each route (six blinds)."
     }
   ],
   "routes": [
