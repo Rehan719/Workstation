@@ -194,4 +194,53 @@ describe('SwarmIntelligence, rendered against its routes\' own answers', () => {
     await waitFor(() => expect(screen.getByTestId('cascade-runs-empty')).toBeTruthy());
     expect(screen.queryByTestId('cascade-runs-unreadable')).toBeNull();
   });
+
+  // W1109 (FU-399 part 98) - the chips and headings the hub draws, read against the routes' own answers
+  it('on opening, the axis the cascade runs on, the delegate runs heading and the QMS chart\'s caption are said', async () => {
+    serve();
+    mount();
+    const ask = captured.ask;
+    await waitFor(() => expect(screen.getByTestId('cascade-axis-fixed').textContent).toBe(
+      `runs as domain ${ask.domain} · realm ${ask.realm} — fixed on this tab whatever the mission says; no CoE specialism is sent`));
+    expect(screen.getByTestId('emergence-heading').textContent).toBe('Completed delegate runs (most recent first)');
+    expect(screen.getByTestId('pareto-title').textContent).toBe('QMS coverage vs run duration (gate-assessed runs only)');
+  });
+
+  it('a cascade\'s chips say the run\'s own figures: its axis, the intent gate, BMS, EMS, what operated, and the fabric', async () => {
+    serve();
+    mount();
+    await chooseEntityPlan();
+    fireEvent.change(screen.getByPlaceholderText('Describe the mission for the agent swarm...'), { target: { value: captured.mission } });
+    fireEvent.click(screen.getByRole('button', { name: 'Cascade' }));
+    const ask = captured.ask;
+    await waitFor(() => expect(screen.getByTestId('cascade-axis').textContent).toBe(`run as: ${ask.domain} / ${ask.realm}`));
+    const gov = DELIVERY.governance;
+    expect(gov.content_screened).toBe(true);
+    expect(screen.getByTestId('cascade-gov-chip').textContent).toBe(`intent gate: ${gov.status}`);
+    expect(screen.getByTestId('cascade-gov-chip').getAttribute('title')).toBe(gov.scope);
+    const ms = DELIVERY.management_systems;
+    expect(screen.getByTestId('bms-chip').textContent).toBe(
+      `BMS ${ms.bms.status.replace(/_/g, ' ')} · $${ms.bms.cost_per_insight_usd}/insight (sim)`);
+    expect(screen.getByTestId('bms-chip').getAttribute('title')).toBe(ms.bms.status_basis);
+    expect(screen.getByTestId('ems-chip').textContent).toBe(
+      `EMS · CO₂ this run ${ms.ems.co2_kg_this_run}kg (est.) · process total ${ms.ems.process_total_co2_kg}kg`
+      + ` · efficiency ${ms.ems.efficiency_gain_constant} (constant, not measured)`);
+    expect(screen.getByTestId('ems-chip').getAttribute('title')).toBe(ms.ems.caveat);
+    expect(screen.getByTestId('mgmt-operated-chip').textContent).toBe(`mgmt operated: ${ms.operated_this_run.join('·')}`);
+    expect(screen.getByTestId('mgmt-operated-chip').getAttribute('title')).toBe(ms.operated_basis);
+    const fr = DELIVERY.fabric_requisitions;
+    const fs = DELIVERY.fabric_requisitions_summary;
+    expect('records_queried' in fs).toBe(false);
+    const queried = fr.filter(f => f.kind === 'query').length;
+    expect(screen.getByTestId('fabric-requisitions-heading').textContent).toBe(
+      `§7 fabric requisitioned (${fr.length}) — ${fs.facilities_ran} ran, ${fs.state_read + queried} read only`);
+  });
+
+  it('the delegate runs panel says a run list it could not read as unknown, with the route\'s reason', async () => {
+    serve({ runs: captured.runs_failed, history: [captured.cascade_runs_failed, captured.cascade_runs] });
+    mount();
+    await waitFor(() => expect(screen.getByTestId('swarm-runs-unreadable').textContent).toBe(
+      `[--:--:--] UNREADABLE: the swarm run list could not be read (Failed (HTTP 500): ${captured.runs_failed.body.detail})`
+      + ' — whether any run exists is unknown.'));
+  });
 });

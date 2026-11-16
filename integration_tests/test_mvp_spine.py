@@ -91080,3 +91080,44 @@ def test_w1108_fu399_the_organism_dashboard_s_figures_are_read_where_they_are_dr
                  "expect(screen.getByTestId('organism-work-budget-fraction').textContent).toBe(wb.fraction_basis);",
                  "expect(screen.getByTestId('reconfig-wiring-basis').textContent).toBe(s.systems.reconfiguration.wiring_basis);"):
         assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1109_fu399_the_swarm_hub_s_chips_and_headings_are_read_where_they_are_drawn(client):
+    """FU-399 part 98 (W1109). Ten of the Swarm Intelligence hub's elements were drawn in its rendered test and
+    never read: the axis the cascade runs on, the intent gate's chip, the BMS and EMS chips, which management systems
+    operated, the fabric requisitioned, the delegate runs' heading, the QMS chart's caption, and the line for a run
+    list that could not be read. Held here:
+    - the delivery the test serves is in the state the cases read: the gate screened the content, BMS was not
+      assessed, EMS states its efficiency as a constant, and the fabric was requisitioned and read, not run;
+    - the cascade route still answers every field the chips read, today, and the axis the tab sends;
+    - the rendered test reads each element against the routes' own answers."""
+    import json
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components" / "organism"
+    fx = json.loads((src / "SwarmIntelligence.fixture.json").read_text(encoding="utf-8"))
+    d = fx["cascade"]["body"]
+    assert (fx["ask"]["domain"], fx["ask"]["realm"]) == ("enterprise", "enterprise")
+    assert d["governance"]["content_screened"] is True and d["governance"]["scope"]
+    ms = d["management_systems"]
+    assert ms["bms"]["status"] == "not_assessed" and ms["bms"]["status_basis"].startswith("NOT ASSESSED")
+    assert ms["ems"]["efficiency_measured"] is False and ms["ems"]["process_total_co2_kg"] is not None
+    assert ms["operated_this_run"] and ms["operated_basis"]
+    fs = d["fabric_requisitions_summary"]
+    assert len(d["fabric_requisitions"]) == fs["requisitioned"] and "records_queried" not in fs
+    assert fx["runs_failed"]["status"] == 500 and fx["runs_failed"]["body"]["detail"]
+
+    page = (src / "SwarmIntelligence.tsx").read_text(encoding="utf-8")
+    assert "const CASCADE_AXIS = { domain: 'enterprise', realm: 'enterprise' } as const;" in page
+
+    spec = (src / "SwarmIntelligence.test.tsx").read_text(encoding="utf-8")
+    for line in ("await waitFor(() => expect(screen.getByTestId('cascade-axis-fixed').textContent).toBe(",
+                 "expect(screen.getByTestId('emergence-heading').textContent).toBe('Completed delegate runs (most recent first)');",
+                 "expect(screen.getByTestId('pareto-title').textContent).toBe('QMS coverage vs run duration (gate-assessed runs only)');",
+                 "await waitFor(() => expect(screen.getByTestId('cascade-axis').textContent).toBe(`run as: ${ask.domain} / ${ask.realm}`));",
+                 "expect(screen.getByTestId('cascade-gov-chip').getAttribute('title')).toBe(gov.scope);",
+                 "expect(screen.getByTestId('bms-chip').getAttribute('title')).toBe(ms.bms.status_basis);",
+                 "expect(screen.getByTestId('ems-chip').getAttribute('title')).toBe(ms.ems.caveat);",
+                 "expect(screen.getByTestId('mgmt-operated-chip').textContent).toBe(`mgmt operated: ${ms.operated_this_run.join('·')}`);",
+                 "expect(screen.getByTestId('fabric-requisitions-heading').textContent).toBe(",
+                 "await waitFor(() => expect(screen.getByTestId('swarm-runs-unreadable').textContent).toBe("):
+        assert line in spec, ("the rendered test no longer reads this", line)
