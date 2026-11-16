@@ -43,6 +43,31 @@ describe('OrganismAnatomy, rendered against the organism routes\' own answers', 
     vi.unstubAllGlobals();
   });
 
+  // W1113 (FU-399 part 102) - what the anatomy page draws from its answers, read: the immune reading over no
+  // observation, the blend's caption, the wired key whose consumer cannot act, and the genomes' bases
+  it('the immune reading, the blend, a key that cannot act and the genomes are said in the answers\' own words', async () => {
+    serve();
+    render(<OrganismAnatomy />);
+    const im = captured.systems.immune;
+    expect(im.observations_in_window).toBe(0);
+    await waitFor(() => expect(screen.getByTestId('anatomy-immune-reading').textContent).toBe(`nothing observed ${im.threat_level}`));
+    expect(screen.getByTestId('anatomy-immune-reading').getAttribute('title')).toBe(im.observed_basis);
+    const terms = Object.values(captured.health.composite_health_terms);
+    expect(terms.every(t => t.measured === false)).toBe(true);
+    expect(screen.getByTestId('blend-caption').textContent).toBe(
+      `blended (${Math.round(terms.reduce((a, t) => a + t.weight, 0) * 100)}% not measured)`);
+    const cannot = captured.config.key_wiring.filter(k => 'consumer_can_act' in k && k.consumer_can_act === false);
+    expect(cannot.map(k => `${k.section}.${k.key}`)).toEqual(['organism.metabolic_throttle']);
+    expect(screen.getAllByTestId('consumer-cannot-act').map(e => e.textContent)).toEqual(
+      cannot.map(k => ('consumer_can_act_basis' in k ? k.consumer_can_act_basis : '')));
+    const pop = captured.genome.population;
+    expect([pop.mean_fitness, pop.mean_declared_fitness, Object.keys(pop.fitness_composition)]).toEqual([null, null, []]);
+    expect(screen.getByTestId('genome-mean-not-measured').textContent).toBe(pop.mean_fitness_basis);
+    //  nothing else is said of the population: no self-declared mean and no composition were returned
+    expect(screen.getByTestId('genome-population-basis').textContent).toBe(pop.mean_fitness_basis);
+    expect(screen.getByTestId('entity-genomes-basis').textContent).toBe(captured.genome.entity_genomes.basis);
+  });
+
   it('every read answered: no failure is said, and an empty healing log is said as empty', async () => {
     serve();
     render(<OrganismAnatomy />);

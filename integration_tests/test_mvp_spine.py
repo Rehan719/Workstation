@@ -91240,3 +91240,43 @@ def test_w1112_fu399_the_economy_page_says_what_its_answers_say_where_it_is_draw
                  "expect(screen.getByTestId('pnl-operating').textContent).toBe(",
                  "expect(screen.getByTestId('vsb-organism-posture').getAttribute('title')).toBe(po.composite_health_basis);"):
         assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1113_fu399_the_anatomy_page_s_readings_are_read_where_they_are_drawn(client):
+    """FU-399 part 102 (W1113). Six of the Organism Anatomy page's elements were drawn in its rendered test and never
+    read: the immune reading over a window with no call observed, the blend's caption, the wired key whose consumer
+    cannot act, the genome population's basis and its unmeasured mean, and the entities' genomes' basis. Held here:
+    - the answers the test serves are in the state the case reads: no call observed, every term of the blend
+      unmeasured, one key whose consumer cannot act, and a population with no measured or declared mean;
+    - the genome and config routes still answer every field the page reads, today;
+    - the rendered test reads each element in the answers' own words."""
+    import json
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "organism"
+    fx = json.loads((src / "OrganismAnatomy.fixture.json").read_text(encoding="utf-8"))
+    im = fx["systems"]["immune"]
+    assert im["observations_in_window"] == 0 and im["observed_basis"] and im["threat_level"]
+    assert all(t["measured"] is False for t in fx["health"]["composite_health_terms"].values())
+    cannot = [k for k in fx["config"]["key_wiring"] if k.get("consumer_can_act") is False]
+    assert [(k["section"], k["key"]) for k in cannot] == [("organism", "metabolic_throttle")] and cannot[0]["consumer_can_act_basis"]
+    pop = fx["genome"]["population"]
+    assert pop["mean_fitness"] is None and pop["mean_declared_fitness"] is None and pop["fitness_composition"] == {}
+    assert pop["mean_fitness_basis"] and fx["genome"]["entity_genomes"]["basis"]
+
+    g = client.get("/api/v1/organism/genome")
+    c = client.get("/api/v1/organism/config")
+    assert g.status_code == 200 and c.status_code == 200, (g.text[:200], c.text[:200])
+    assert {"mean_fitness", "mean_fitness_basis", "mean_declared_fitness", "fitness_composition"} <= set(g.json()["population"])
+    assert "basis" in g.json()["entity_genomes"]
+    live_cannot = [k for k in c.json()["key_wiring"] if k.get("consumer_can_act") is False]
+    assert all(k.get("consumer_can_act_basis") for k in live_cannot), live_cannot
+
+    spec = (src / "OrganismAnatomy.test.tsx").read_text(encoding="utf-8")
+    for line in ("await waitFor(() => expect(screen.getByTestId('anatomy-immune-reading').textContent).toBe(`nothing observed ${im.threat_level}`));",
+                 "expect(screen.getByTestId('anatomy-immune-reading').getAttribute('title')).toBe(im.observed_basis);",
+                 "expect(screen.getByTestId('blend-caption').textContent).toBe(",
+                 "expect(screen.getAllByTestId('consumer-cannot-act').map(e => e.textContent)).toEqual(",
+                 "expect(screen.getByTestId('genome-mean-not-measured').textContent).toBe(pop.mean_fitness_basis);",
+                 "expect(screen.getByTestId('genome-population-basis').textContent).toBe(pop.mean_fitness_basis);",
+                 "expect(screen.getByTestId('entity-genomes-basis').textContent).toBe(captured.genome.entity_genomes.basis);"):
+        assert line in spec, ("the rendered test no longer reads this", line)
