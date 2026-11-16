@@ -91036,3 +91036,47 @@ def test_w1107_fu399_the_delivery_plan_says_the_register_s_own_figures_where_the
                  "expect(screen.getByTestId('plan-next').textContent).toBe(",
                  "expect(screen.getByTestId('plan-priority').textContent).toBe("):
         assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1108_fu399_the_organism_dashboard_s_figures_are_read_where_they_are_drawn(client):
+    """FU-399 part 97 (W1108). Nine of the Organism Dashboard's elements were drawn in its rendered test and never
+    read: the headline and the blend beside it, the mode's basis, the immune reading, the genomes stored, the work
+    budget, its fraction and the carrying capacity, and the stored switches' wiring. Held here:
+    - the status the test serves is in the state the case reads: nothing measured, every term of the blend
+      unmeasured, no call observed, no carrying capacity derived;
+    - the route still answers every field the page reads, today;
+    - the rendered test reads each element in the status's own words."""
+    import json
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "organism"
+    s = json.loads((src / "OrganismDashboard.fixture.json").read_text(encoding="utf-8"))["status"]
+    assert s["composite_health_measured_only"] is None and s["mode_basis"] and s["composite_health_basis"]
+    assert s["composite_health_terms"] and all(t["measured"] is False for t in s["composite_health_terms"].values())
+    sy = s["systems"]
+    assert sy["immune"]["observations_in_window"] == 0 and sy["immune"]["observed_basis"]
+    wb = sy["work_budget"]
+    assert wb["fraction_basis"] and wb["carrying_capacity"]["entities"] is None and wb["carrying_capacity"]["basis"]
+    assert sy["reconfiguration"]["wiring_basis"] and isinstance(sy["genome"]["total_genomes"], int)
+
+    live = client.get("/api/v1/organism/status")
+    assert live.status_code == 200, live.text[:300]
+    ls = live.json()
+    for k in ("composite_health", "composite_health_measured_only", "composite_health_terms", "composite_health_basis",
+              "mode_basis"):
+        assert k in ls, k
+    ly = ls["systems"]
+    assert {"observations_in_window", "observed_basis", "health"} <= set(ly["immune"])
+    assert {"seconds_spent", "capacity_seconds", "gate_basis", "spend_basis", "fraction_basis",
+            "carrying_capacity"} <= set(ly["work_budget"])
+    assert "wiring_basis" in ly["reconfiguration"] and "total_genomes" in ly["genome"]
+
+    spec = (src / "OrganismDashboard.test.tsx").read_text(encoding="utf-8")
+    for line in ("await waitFor(() => expect(screen.getByTestId('composite-health-headline').firstElementChild?.textContent).toBe('not measured'));",
+                 "expect(headline.lastElementChild?.getAttribute('title')).toBe(s.composite_health_basis);",
+                 "expect(blend.getAttribute('title')).toBe(terms.map(([k, t]) => `${k}: ${t.basis}`).join(' | '));",
+                 "expect(screen.getByTestId('mode-basis').textContent).toBe(s.mode_basis);",
+                 "expect(screen.getByTestId('dash-immune-reading').textContent).toBe('nothing observed');",
+                 "expect(screen.getByTestId('genome-count').textContent).toBe(String(s.systems.genome.total_genomes));",
+                 "expect(screen.getByTestId('organism-work-budget-fraction').textContent).toBe(wb.fraction_basis);",
+                 "expect(screen.getByTestId('reconfig-wiring-basis').textContent).toBe(s.systems.reconfiguration.wiring_basis);"):
+        assert line in spec, ("the rendered test no longer reads this", line)

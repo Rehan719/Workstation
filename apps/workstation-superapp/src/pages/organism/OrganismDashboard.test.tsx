@@ -6,7 +6,7 @@
 // page's source, so none can say what a person looking at the card sees: a figure with its basis is a claim about
 // what is RENDERED, the kind FU-399 converts. This mounts the real page against the API's own answers, captured
 // from the app's routes (OrganismDashboard.fixture.json), and reads the card in the DOM.
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import axios from 'axios';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -77,5 +77,41 @@ describe('OrganismDashboard, the Metabolic card, rendered', () => {
     serve({ energy_ratio: null });
     const { figure } = await metabolicCard();
     expect(figure.textContent).toBe('—');
+  });
+
+  // W1108 (FU-399 part 97) - the rest of what this status draws, read: the headline and the blend beside it, the
+  // mode's basis, the immune reading, the genomes stored, the work budget, its fraction and the carrying capacity, and
+  // the stored switches' wiring - each in the status's own words, with nothing measured said as nothing measured
+  it('the headline, the blend, the mode, the immune reading, the genomes, the work budget and the wiring are the status\'s own words', async () => {
+    serve();
+    const s = captured.status;
+    await metabolicCard();
+    expect(s.composite_health_measured_only).toBeNull();
+    await waitFor(() => expect(screen.getByTestId('composite-health-headline').firstElementChild?.textContent).toBe('not measured'));
+    const headline = screen.getByTestId('composite-health-headline');
+    expect(headline.lastElementChild?.textContent).toBe('blended');
+    expect(headline.lastElementChild?.getAttribute('title')).toBe(s.composite_health_basis);
+    const terms = Object.entries(s.composite_health_terms);
+    expect(terms.every(([, t]) => t.measured === false)).toBe(true);
+    const blend = screen.getByTestId('composite-health-basis');
+    expect(blend.textContent).toBe(
+      `The blended composite is ${Math.round(s.composite_health * 100)}%, of which `
+      + `${Math.round(terms.reduce((a, [, t]) => a + t.weight, 0) * 100)}% is not measured`
+      + ` (${terms.map(([k]) => k.replace(/_/g, ' ')).join(', ')}).`);
+    expect(blend.getAttribute('title')).toBe(terms.map(([k, t]) => `${k}: ${t.basis}`).join(' | '));
+    expect(screen.getByTestId('mode-basis').textContent).toBe(s.mode_basis);
+    const im = s.systems.immune;
+    expect(im.observations_in_window).toBe(0);
+    expect(screen.getByTestId('dash-immune-reading').textContent).toBe('nothing observed');
+    expect(screen.getByTestId('dash-immune-reading').getAttribute('title')).toBe(im.observed_basis);
+    expect(screen.getByTestId('genome-count').textContent).toBe(String(s.systems.genome.total_genomes));
+    const wb = s.systems.work_budget;
+    expect(screen.getByTestId('organism-work-budget').firstElementChild?.textContent).toBe(
+      `Work budget: ${wb.seconds_spent}s of ${wb.capacity_seconds}s this window — ${wb.gate_basis}. ${wb.spend_basis}`);
+    expect(screen.getByTestId('organism-work-budget-fraction').textContent).toBe(wb.fraction_basis);
+    expect(wb.carrying_capacity.entities).toBeNull();
+    expect(screen.getByTestId('organism-carrying-capacity').textContent).toBe(
+      `Carrying capacity: unmeasured — ${wb.carrying_capacity.basis}`);
+    expect(screen.getByTestId('reconfig-wiring-basis').textContent).toBe(s.systems.reconfiguration.wiring_basis);
   });
 });
