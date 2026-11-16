@@ -90990,3 +90990,49 @@ def test_w1106_fu399_the_statute_panel_is_rendered_and_where_help_is_said_in_the
                  "expect(page.querySelector('a')?.getAttribute('href')).toBe(h.the_page);",
                  "expect(screen.queryByTestId('law-statute-text')).toBeNull();"):
         assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1107_fu399_the_delivery_plan_says_the_register_s_own_figures_where_the_dashboard_draws_them(client):
+    """FU-399 part 96 (W1107). Seven of the Transformation Dashboard's delivery-plan elements were drawn in its
+    rendered test and never read: where the plan is going, the plan's completion pace, the next bundle, the basis of
+    the completion figure, what is done and next, and how the rows are ordered. Held here:
+    - the register the test serves is in the state the case reads (a pace that can be projected, a next item, a
+      bundle cut from a larger component that advances other items, a readable plan, a gate phase with a weighted
+      completion);
+    - the route still answers every field the page reads, today;
+    - the rendered test reads each element against the answer's own figures."""
+    import json
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+    f = json.loads((src / "TransformationDashboard.fixture.json").read_text(encoding="utf-8"))["followups"]
+    fc = f["forecast"]
+    assert fc["assessable"] is True and fc["rate_used"] and fc["next_item"]["rounds_projected"] is not None
+    assert fc["items_rounds_projected"] is not None and fc["items_open_owner_switch"] > 0 and fc["items_open_unmarked"] == []
+    bn = f["bundles"]["bundles"][0]
+    assert bn["component_size"] > bn["size"] and bn["also_touching"]
+    assert not bn["above_measured_ceiling"] and not bn["possibly_under_connected"]
+    assert f["plan"]["readable"] is True and f["plan"]["next"]["followups"] == 0
+    assert f["priority"]["completion"]["by_phase"][f["priority"]["gate_phase"]]["weighted_pct"] is not None
+
+    #  every field the page reads is still in the route's answer
+    live = client.get("/api/v1/plan/followups")
+    assert live.status_code == 200, live.text[:300]
+    lf = live.json()
+    for k in ("forecast", "plan", "priority", "bundles"):
+        assert k in lf, k
+    read = ("assessable", "rate_used", "next_item", "all_rows_rounds_projected", "open_rows", "items_rounds_projected",
+            "items_open_build", "items_open_owner_switch", "items_owner_switch_slots", "item_build_rate_per_round",
+            "item_rate_phases", "items_sized_build", "items_open_unmarked")
+    assert set(read) <= set(lf["forecast"]), sorted(set(read) - set(lf["forecast"]))
+    assert {"done", "total", "phases", "next", "readable"} <= set(lf["plan"])
+    assert {"gate_phase", "config", "config_problems", "completion"} <= set(lf["priority"])
+
+    spec = (src / "TransformationDashboard.test.tsx").read_text(encoding="utf-8")
+    for line in ("await waitFor(() => expect(screen.getByTestId('plan-pace').querySelectorAll('p')[1].textContent).toBe(",
+                 "expect(screen.getByTestId('plan-completion-pace').textContent).toBe(",
+                 "expect(screen.getByTestId('next-bundle').textContent).toBe(",
+                 "expect(screen.getByTestId('plan-completion-basis').textContent).toBe(",
+                 "expect(screen.getByTestId('plan-now').querySelector('p')?.textContent).toBe(",
+                 "expect(screen.getByTestId('plan-next').textContent).toBe(",
+                 "expect(screen.getByTestId('plan-priority').textContent).toBe("):
+        assert line in spec, ("the rendered test no longer reads this", line)

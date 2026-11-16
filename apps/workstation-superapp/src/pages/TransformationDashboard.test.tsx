@@ -146,4 +146,48 @@ describe('TransformationDashboard, rendered against its routes\' own answers', (
     await waitFor(() => expect(screen.getByTestId('followups-card').textContent).toContain(
       'The follow-up register could not be loaded (Failed (HTTP 500): the register is locked).'));
   });
+
+  // W1107 (FU-399 part 96) - the delivery plan says the register's own figures: where it is going, in rounds and
+  // never a date, the plan's own completion, the next bundle, what is done and next, and how the rows are ordered
+  it('the delivery plan\'s pace, completion, next bundle, next item and priority are the register\'s own figures', async () => {
+    serve();
+    render(<TransformationDashboard />);
+    const f = captured.followups;
+    const fc = f.forecast;
+    const rounds = (n: number) => `${n} round${n === 1 ? '' : 's'}`;
+    //  the state this answer is in, which decides what the page draws
+    expect(fc.assessable).toBe(true);
+    expect(fc.next_item.rounds_projected).not.toBeNull();
+    expect(fc.items_rounds_projected).not.toBeNull();
+    expect(fc.items_open_unmarked).toEqual([]);
+    await waitFor(() => expect(screen.getByTestId('plan-pace').querySelectorAll('p')[1].textContent).toBe(
+      `~${rounds(fc.next_item.rounds_projected)} to finish ${fc.next_item.slot} (${fc.next_item.open_rows} open rows) · `
+      + `~${rounds(fc.all_rows_rounds_projected)} for all ${fc.open_rows} open rows`));
+    expect(screen.getByTestId('plan-completion-pace').textContent).toBe(
+      `~${rounds(fc.items_rounds_projected)} for the ${fc.items_open_build} open BUILD plan items`
+      + ` · ${fc.items_open_owner_switch} the Owner flips (${fc.items_owner_switch_slots.join(', ')}) — not projected`);
+    const bn = f.bundles.bundles[0];
+    expect([bn.component_size > bn.size, bn.also_touching.length > 0, bn.above_measured_ceiling, bn.possibly_under_connected])
+      .toEqual([true, true, false, false]);
+    expect(screen.getByTestId('next-bundle').textContent).toBe(
+      `NEXT BUNDLE: ${bn.slot} — one subsystem, ${bn.size} rows across ${bn.files_count} files`
+      + ` · cut from a ${bn.component_size}-row component`
+      + ` · advances ${bn.also_touching.join(', ')} (advances — their own ACCEPT criteria close them)`);
+    expect(screen.getByTestId('plan-completion-basis').textContent).toBe(
+      `At ${fc.item_build_rate_per_round} plan items per round — a rate measured entirely on ${fc.item_rate_phases.join(', ')},`
+      + ' so it is the rate THAT work closed at, applied to phases whose work differs.'
+      + ` Coverage: ${fc.items_sized_build} of ${fc.items_open_build} build items carry a registered row; the other`
+      + ` ${fc.items_open_build - fc.items_sized_build} have never been sized, so this is the weakest figure on this page.`);
+    expect(screen.getByTestId('plan-now').querySelector('p')?.textContent).toBe(
+      `Done ${f.plan.done} of ${f.plan.total} items — ${f.plan.phases.map(p => `${p.phase} ${p.done}/${p.total}`).join(' · ')}`);
+    expect(f.plan.next.followups).toBe(0);
+    expect(screen.getByTestId('plan-next').textContent).toBe(`Next: ${f.plan.next.slot} ${f.plan.next.title} — no follow-ups ride it`);
+    const pr = f.priority;
+    const gp = pr.completion.by_phase[pr.gate_phase as keyof typeof pr.completion.by_phase];
+    expect(pr.config_problems).toEqual([]);
+    expect(screen.getByTestId('plan-priority').textContent).toBe(
+      'Rows run highest priority first (vision area × truth tier × reach × criticality × breadth × effort; weights in '
+      + `${pr.config}) · follow-up completion weighted by priority — ${pr.gate_phase}: ${gp.weighted_pct}% of its rows' priority`
+      + ` closed (${gp.rows_closed} of ${gp.rows_closed + gp.rows_open} rows)`);
+  });
 });
