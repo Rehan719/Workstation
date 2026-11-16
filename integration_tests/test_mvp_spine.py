@@ -91344,3 +91344,37 @@ def test_w1115_fu399_the_business_plan_says_what_wrote_its_strategy_and_action_p
                  "expect(screen.getByTestId('chiefs-opening').querySelector('h3')?.textContent).toBe(",
                  "expect(screen.getByLabelText(/What should the plan cover\\?/)).toBe(box);"):
         assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1116_fu399_the_instrument_cell_says_what_it_checked_and_what_a_resource_cannot_do_here(client):
+    """FU-399 part 105 (W1116). Five of the instrument cell's elements were drawn in its rendered test and never read:
+    the cell's heading, what each need was checked against with its basis, the kept specifications' section, the run
+    check's section and what it says it does not do, and each proposed resource's need narrowed here. Held here:
+    - the answers the test serves are in the state the case reads: a count of needs checked available and
+      unavailable with its basis, and a proposed set whose resources carry needs narrowed here, each with why;
+    - the availability route still answers every field the page reads, today;
+    - the rendered test reads each element in the routes' own words."""
+    import json
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components"
+    fx = json.loads((src / "InstrumentCellPanel.fixture.json").read_text(encoding="utf-8"))
+    a = fx["availability"]["body"]
+    assert a["checked_counts"] and set(a["checked_counts"]) <= {"available", "unavailable", "not_checked"} and a["needs_basis"]
+    narrowed = [n for s in fx["proposed_stated"]["body"]["selection"]["selected"]
+                for n in (s.get("availability") or {}).get("needs_narrowed") or []]
+    assert narrowed and all(n["needs"] and n["why"] for n in narrowed), narrowed
+
+    live = client.get("/api/v1/resources/cell/availability")
+    assert live.status_code == 200, live.text[:200]
+    body = live.json()
+    assert body.get("checked_counts") and body.get("needs_basis"), sorted(body)
+    assert set(body["checked_counts"]) <= {"available", "unavailable", "not_checked"}, body["checked_counts"]
+
+    spec = (src / "InstrumentCellPanel.test.tsx").read_text(encoding="utf-8")
+    for line in ("await waitFor(() => expect(screen.getByTestId('cell-checked').textContent).toBe(",
+                 "expect(screen.getByTestId('instrument-cell').querySelector('h2')?.textContent).toBe('Instrument Cell');",
+                 "expect(screen.getByTestId('cell-specifications').querySelector('p')?.textContent).toBe('Kept specifications');",
+                 "const verify = screen.getByTestId('cell-verify').querySelectorAll('p');",
+                 ".flatMap(s => (s.availability.needs_narrowed ?? []).map(n => `Here, without ${n.needs}: ${n.why}`));",
+                 "expect(screen.getAllByTestId('cell-needs-narrowed').map(e => e.textContent)).toEqual(narrowed);"):
+        assert line in spec, ("the rendered test no longer reads this", line)

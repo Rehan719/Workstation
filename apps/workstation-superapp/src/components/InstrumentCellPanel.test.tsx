@@ -225,4 +225,35 @@ describe('InstrumentCellPanel, rendered against its routes\' own answers', () =>
     expect(screen.getByRole('button', { name: KEPT.id })).toBeTruthy();
     expect(screen.queryByText(NONE_KEPT)).toBeNull();
   });
+
+  // W1116 (FU-399 part 105) - what the cell draws and no test read: what it is, what each need was checked against,
+  // the kept specifications' and the run check's sections, and each proposed resource's need narrowed here
+  it('says what each need was checked against, and what each proposed resource cannot do here, in the routes\' own words', async () => {
+    serve();
+    mount();
+    const a = captured.availability.body;
+    const word: Record<string, string> = { available: 'available', unavailable: 'unavailable', not_checked: 'not checked' };
+    await waitFor(() => expect(screen.getByTestId('cell-checked').textContent).toBe(
+      `Checked against what each declares it needs: ${Object.entries(a.checked_counts).map(([k, v]) => `${v} ${word[k] ?? k}`).join(' · ')}.`
+      + a.needs_basis));
+    expect(screen.getByTestId('instrument-cell').querySelector('h2')?.textContent).toBe('Instrument Cell');
+    expect(screen.getByTestId('cell-specifications').querySelector('p')?.textContent).toBe('Kept specifications');
+    const verify = screen.getByTestId('cell-verify').querySelectorAll('p');
+    expect([verify[0].textContent, verify[1].textContent]).toEqual([
+      'Check a recorded run against stated criteria',
+      'This reads a run that already happened; it runs nothing. A criterion nothing here can read ends as not assessed,'
+      + ' and not assessed never counts as met.']);
+    //  a set proposed as the capture asked: each selected resource's need narrowed here, in the route's words
+    type('Objective', OBJECTIVE);
+    press('Suggest requirements');
+    await waitFor(() => expect(screen.getByTestId('cell-proposal').textContent).toContain(captured.proposed_open.body.suggestion_basis));
+    press(`+ ${STATED}`);
+    press('Propose a set');
+    await waitFor(() => expect(screen.getByTestId('cell-keep')).toBeTruthy());
+    type Narrowed = { availability: { needs_narrowed?: { needs: string; why: string }[] } };
+    const narrowed = (captured.proposed_stated.body.selection.selected as Narrowed[])
+      .flatMap(s => (s.availability.needs_narrowed ?? []).map(n => `Here, without ${n.needs}: ${n.why}`));
+    expect(narrowed.length).toBeGreaterThan(0);
+    expect(screen.getAllByTestId('cell-needs-narrowed').map(e => e.textContent)).toEqual(narrowed);
+  });
 });
