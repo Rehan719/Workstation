@@ -200,3 +200,99 @@ describe('DomainTool, a claim that an answer is wrong, rendered', () => {
     expect(screen.queryByRole('button', { name: 'Raise a claim about this answer' })).toBeNull();
   });
 });
+
+// W1104 (FU-399 part 93) — WHAT THE FLOOR DID AND DID NOT DO, SAID UNDER THE ANSWER, against the care plan route's own
+// answers (DomainTool.fixture.json, captured by w1104_capture.py on a fresh store with no model, asked as the Care page
+// asks: its five fields, as CareHub.tsx declares them). One answer is for a reader whose language is Welsh, with a
+// made-up profile on record; one names a gambling support group among the care needs. Each note is the server's own
+// sentence, under the answer it belongs to, and a note the answer does not call for is not drawn.
+describe('DomainTool, what the floor did and did not do, said under the answer, rendered', () => {
+  const ENDPOINT = '/api/v1/care/care-plan';
+  type Captured = { asked: { patient_profile: Record<string, string>; care_needs: string[] }; body: unknown };
+
+  function serve() {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      const r = (status: number, body: unknown) => ({ ok: status < 400, status, statusText: '', json: async () => body });
+      if (url === '/api/v1/review-options?endpoint=' + encodeURIComponent(ENDPOINT)) {
+        return r(captured.review_care_plan.status, captured.review_care_plan.body);
+      }
+      if (url === '/api/v1/native-ai/status') return r(200, captured.status);
+      return r(599, { detail: `the test served nothing for ${url}` });
+    }));
+  }
+
+  //  the Care page's care plan tool, its fields as CareHub.tsx declares them; the reader's language as the page keeps it
+  async function ask(answer: Captured, language: string) {
+    localStorage.setItem('ws_user_prefs_v1', JSON.stringify({ language }));
+    const post = vi.spyOn(axios, 'post').mockResolvedValue({ data: answer.body } as never);
+    render(
+      <MemoryRouter>
+        <DomainTool title="Care plan" description="what it does" endpoint={ENDPOINT} resultKey="care_plan"
+          submitLabel="Build care plan"
+          fields={[
+            { name: 'patient_profile', label: 'Patient profile (key: value per line)', type: 'keyvalue', default: 'age: \ncondition: \nmobility: ' },
+            { name: 'care_needs', label: 'Care needs (one per line)', type: 'list', placeholder: 'breathlessness management\nfalls prevention' },
+            { name: 'setting', label: 'Setting', type: 'select', options: ['community', 'hospital', 'care_home', 'mental_health'], default: 'community' },
+            { name: 'duration_weeks', label: 'Duration (weeks)', type: 'text', default: '4' },
+            { name: 'care_model', label: 'Care model', type: 'text', default: 'person_centred' },
+          ]} />
+      </MemoryRouter>,
+    );
+    //  said once, for every tool, before anything is typed: what "own AI" delivers depends on what is serving
+    expect(screen.getByTestId('tool-serving-note').textContent).toBe(
+      '"Own AI" means an owned model when one is serving. When none is, the result is a structured frame built from '
+      + 'what you typed, not model-written work, and the result says which it was.');
+    fireEvent.change(screen.getByLabelText('Patient profile (key: value per line)'), { target: { value:
+      Object.entries(answer.asked.patient_profile).map(([k, v]) => `${k}: ${v}`).join('\n') } });
+    fireEvent.change(screen.getByLabelText('Care needs (one per line)'), { target: { value: answer.asked.care_needs.join('\n') } });
+    fireEvent.click(screen.getByRole('button', { name: /Build care plan/ }));
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+    const [url, body, config] = post.mock.calls[0] as unknown as [string, unknown, { headers: Record<string, string> }];
+    expect(url).toBe(ENDPOINT);
+    expect(body).toEqual(answer.asked);
+    expect(config.headers['Accept-Language']).toBe(language);
+  }
+
+  afterEach(() => {
+    localStorage.removeItem('ws_user_prefs_v1');
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('an answer composed in English for a Welsh reader says so, and that the saved profile did not shape it', async () => {
+    const answer = captured.care_plan_welsh;
+    const prov = answer.body.ai_provenance;
+    serve();
+    await ask(answer, answer.language);
+    await waitFor(() => expect(screen.getByTestId('tool-language-note').textContent).toBe(prov.language_basis));
+    expect(screen.getByTestId('tool-language-note').getAttribute('title')).toBe(prov.language_basis);
+    expect(prov.language_basis.startsWith('NOT DELIVERED IN CY: ')).toBe(true);
+    expect(screen.getByTestId('domain-profile-not-usable').textContent).toBe(`profile: ${prov.profile_basis}`);
+    expect(screen.getByTestId('domain-floor-note').textContent).toBe(prov.floor_note);
+    //  the screen could not clear it, and its REVIEW is not the echo's: no reason of the echo's is said
+    expect(prov.quality_assurance.compliance_echo_only).toBe(false);
+    expect(screen.getByTestId('domain-compliance-chip').textContent).toBe('§11 compliance REVIEW — the screen could not clear this output');
+    expect(screen.queryByTestId('domain-compliance-echo')).toBeNull();
+    //  the floor names no model, so no model is said to have answered
+    expect(prov.served_identity.model).toBeNull();
+    expect(screen.queryByTestId('domain-served-identity')).toBeNull();
+  });
+
+  it('a REVIEW that came only from the person\'s own words says the server\'s reason inside the verdict', async () => {
+    const answer = captured.care_plan_echo;
+    const prov = answer.body.ai_provenance;
+    const qa = prov.quality_assurance;
+    serve();
+    await ask(answer, answer.language);
+    await waitFor(() => expect(screen.getByTestId('domain-compliance-echo').textContent).toBe(qa.compliance_basis));
+    expect(qa.compliance_echo_only).toBe(true);
+    expect(screen.getByTestId('domain-compliance-chip').textContent).toBe(
+      `§11 compliance REVIEW — the screen could not clear this output${qa.compliance_basis}`);
+    expect(screen.getByTestId('domain-floor-note').textContent).toBe(prov.floor_note);
+    //  asked in English and answered in English: no language note; no profile on record: no profile note
+    expect([prov.language_requested, prov.language_delivered]).toEqual(['en', 'en']);
+    expect(screen.queryByTestId('tool-language-note')).toBeNull();
+    expect(prov.profile_state).toBe('none_written');
+    expect(screen.queryByTestId('domain-profile-not-usable')).toBeNull();
+  });
+});

@@ -90829,3 +90829,73 @@ def test_w1103_fu399_each_agreement_action_says_its_refusal_beside_its_button_an
         assert row in spec, f"the rendered test no longer drives a refusal: {row}"
     assert "it('a form typed for one agreement is empty when another is opened'" in spec
     assert "for (const label of typed) expect((screen.getByLabelText(label) as HTMLInputElement).value).toBe('');" in spec
+
+
+def test_w1104_fu399_what_the_floor_did_and_did_not_do_is_said_under_the_answer_in_the_server_s_words(client):
+    """FU-399 part 93 (W1104). Six of DomainTool's notes under an answer were drawn and never read by a rendered test:
+    the language note, the floor's own note, the note that a saved profile did not shape the answer, the section 11
+    verdict and the echo's reason inside it, and the sentence before the form saying what "own AI" means. Held here:
+    - the fixture holds the care plan route's own answers, asked as the Care page asks (its five fields): one for a
+      Welsh reader with a made-up profile on record, one naming a gambling support group among the care needs;
+    - the route answers the same today: the same notes, the same verdict and its reason (the language note up to the
+      reading of the local models, which is the machine's);
+    - the rendered test asks with the Care page's own fields, and reads each note in the server's words, and that a
+      note the answer does not call for is not drawn."""
+    import json
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    src = root / "apps" / "workstation-superapp" / "src"
+    fx = json.loads((src / "components" / "DomainTool.fixture.json").read_text(encoding="utf-8"))
+    w, e = fx["care_plan_welsh"], fx["care_plan_echo"]
+    pw, pe = w["body"]["ai_provenance"], e["body"]["ai_provenance"]
+    assert fx["care_plan_profile"]["status"] == 200 and fx["care_plan_profile"]["body"]["profile"]["about_you"]
+    assert fx["review_care_plan"]["status"] == 200 and fx["review_care_plan"]["endpoint"] == "/api/v1/care/care-plan"
+    assert (w["language"], pw["language_requested"], pw["language_delivered"]) == ("cy", "cy", "en")
+    assert pw["language_basis"].startswith("NOT DELIVERED IN CY: the deterministic native floor composed this")
+    assert pw["profile_state"] == "not_usable_by_floor" and pw["profile_basis"].startswith(
+        "your saved profile reached the prompt, but the deterministic floor served this")
+    assert pe["profile_state"] == "none_written" and (pe["language_requested"], pe["language_delivered"]) == ("en", "en")
+    for a in (w, e):
+        p = a["body"]["ai_provenance"]
+        assert a["status"] == 200 and p["served_by"] == "native" and p["served_identity"]["model"] is None
+        assert p["floor_note"].startswith("Composed by the native floor, not by a model")
+        assert "floor_note" not in a["body"], "an answer with a note of its own is not given the provenance's"
+        assert p["quality_assurance"]["compliance_overall"] == "review"
+    assert pw["quality_assurance"]["compliance_echo_only"] is False
+    assert pe["quality_assurance"]["compliance_echo_only"] is True
+    assert pe["quality_assurance"]["compliance_basis"].startswith("REVIEW, not a finding about generated content")
+    assert "gambling" in e["asked"]["care_needs"][0] and "gambling" not in json.dumps(w["asked"])
+
+    #  the route answers the same today (no profile is written here: the store is shared with the rest of the suite)
+    for a in (w, e):
+        live = client.post("/api/v1/care/care-plan", json=a["asked"], headers={"Accept-Language": a["language"]})
+        assert live.status_code == 200, live.text[:300]
+        lp, cp = live.json()["ai_provenance"], a["body"]["ai_provenance"]
+        assert lp["floor_note"] == cp["floor_note"]
+        assert (lp["language_requested"], lp["language_delivered"]) == (cp["language_requested"], cp["language_delivered"])
+        assert lp["language_basis"].split(" Of the local models: ")[0] == cp["language_basis"].split(" Of the local models: ")[0]
+        for k in ("compliance_overall", "compliance_echo_only", "compliance_basis"):
+            assert lp["quality_assurance"][k] == cp["quality_assurance"][k], k
+
+    #  the rendered test asks with the Care page's own fields, and reads each note
+    spec = (src / "components" / "DomainTool.test.tsx").read_text(encoding="utf-8")
+    page = (src / "pages" / "domains" / "CareHub.tsx").read_text(encoding="utf-8")
+    for field in ("{ name: 'patient_profile', label: 'Patient profile (key: value per line)', type: 'keyvalue', default: 'age: \\ncondition: \\nmobility: ' },",
+                  "{ name: 'care_needs', label: 'Care needs (one per line)', type: 'list', placeholder: 'breathlessness management\\nfalls prevention' },",
+                  "{ name: 'setting', label: 'Setting', type: 'select', options: ['community', 'hospital', 'care_home', 'mental_health'], default: 'community' },",
+                  "{ name: 'duration_weeks', label: 'Duration (weeks)', type: 'text', default: '4' },",
+                  "{ name: 'care_model', label: 'Care model', type: 'text', default: 'person_centred' },"):
+        assert field in page, ("the Care page no longer declares this field as the rendered test asks it", field)
+        assert field in spec, ("the rendered test no longer asks with the Care page's field", field)
+    for line in ("await waitFor(() => expect(screen.getByTestId('tool-language-note').textContent).toBe(prov.language_basis));",
+                 "expect(screen.getByTestId('tool-language-note').getAttribute('title')).toBe(prov.language_basis);",
+                 "expect(screen.getByTestId('domain-profile-not-usable').textContent).toBe(`profile: ${prov.profile_basis}`);",
+                 "expect(screen.getByTestId('domain-floor-note').textContent).toBe(prov.floor_note);",
+                 "await waitFor(() => expect(screen.getByTestId('domain-compliance-echo').textContent).toBe(qa.compliance_basis));",
+                 "expect(screen.queryByTestId('domain-compliance-echo')).toBeNull();",
+                 "expect(screen.queryByTestId('tool-language-note')).toBeNull();",
+                 "expect(screen.queryByTestId('domain-profile-not-usable')).toBeNull();",
+                 "expect(screen.queryByTestId('domain-served-identity')).toBeNull();",
+                 "expect(screen.getByTestId('tool-serving-note').textContent).toBe(",
+                 "expect(config.headers['Accept-Language']).toBe(language);"):
+        assert line in spec, ("the rendered test no longer reads this", line)
