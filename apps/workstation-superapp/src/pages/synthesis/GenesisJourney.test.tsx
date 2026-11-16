@@ -11,6 +11,7 @@ import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { PRODUCTS, PRODUCT_LABELS } from '../../lib/taxonomy';
 import captured from './GenesisJourney.fixture.json';
 import { GenesisJourney } from './GenesisJourney';
 
@@ -48,6 +49,50 @@ const why = (i: number) => screen.getByTestId(`rail-why-${i}`).textContent;
 describe('GenesisJourney, the stage rail and the rank stage, rendered', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  // W1111 (FU-399 part 100) - what a floor journey produced and what served it, in the journey's own words: the product
+  // chosen and how it is recorded, the heading, the two stages' subtitles, the calls and what served them, and the gate
+  it('a floor journey says what it produced, what served it, the product it recorded and the gate it passed', async () => {
+    const j = serve();
+    render(
+      <MemoryRouter>
+        <GenesisJourney />
+      </MemoryRouter>,
+    );
+    const picker = screen.getByTestId('genesis-product-picker');
+    expect(Array.from(picker.querySelectorAll('button')).map(b => b.getAttribute('title'))).toEqual(PRODUCTS.map(p => PRODUCT_LABELS[p]));
+    expect(screen.getByTestId('genesis-product-record-only').textContent).toBe(
+      'Recorded only: the product is saved with this journey and its entity, but no stage runs differently by product yet.');
+    fireEvent.click(within(picker).getByTitle(PRODUCT_LABELS[captured.request.product]));
+    fireEvent.change(screen.getByPlaceholderText(/Describe the problem to solve/), { target: { value: captured.request.problem } });
+    fireEvent.click(screen.getByText('Launch Genesis Journey'));
+    expect([j.status, j.enterprise_established]).toEqual(['complete', false]);
+    await waitFor(() => expect(screen.getByTestId('journey-complete-heading').textContent).toBe(
+      'Journey Complete — Record Only (no enterprise established)'));
+    const post = vi.mocked(fetch).mock.calls.find(([u, i]) => u === '/api/v1/genesis/journey' && i?.method === 'POST');
+    const posted = JSON.parse(String(post?.[1]?.body));
+    expect([posted.problem, posted.product]).toEqual([captured.request.problem, captured.request.product]);
+    expect(screen.getByTestId('journey-product').textContent).toBe(`Product: ${j.product_label} — ${j.product_source}`);
+    expect([j.stage_verifications.research.floor_served, j.stage_verifications.operations.floor_served]).toEqual([true, true]);
+    expect(screen.getByTestId('genesis-research-subtitle').textContent).toBe(
+      'The structured floor served this stage, not a model: what follows is a frame built from your own words under the'
+      + ' requested headings. No approach was found, researched or compared.');
+    expect(screen.getByTestId('genesis-operations-subtitle').textContent).toBe(
+      'The structured floor served this stage, not a model: the headings below name deliverability, compliance and'
+      + ' operability, and nothing under them assessed any of the three.'
+      + ' The §11 screen below reads the design and commercialisation text — a keyword and vocabulary screen, not a certification.');
+    expect(screen.getByTestId('journey-engines-basis').textContent).toBe(j.engines_used_basis);
+    const sb = j.ai_provenance.served_by;
+    expect(Object.keys(sb)).toEqual(['native']);
+    expect(screen.getByTestId('engines-used-basis').textContent).toBe(
+      `These are the calls this journey made, not engines that reasoned: all ${sb.native} of its AI calls were served by`
+      + ' the deterministic floor, which answers each with a structured frame. gaas.v5 is the intent gate.');
+    const g = j.governance;
+    expect(g.content_screened).toBe(false);
+    expect(screen.getByTestId('journey-intent-gate').textContent).toBe(
+      `intent gate: ${g.status} · content not screened · checkpoint ${g.checkpoint}`);
+    expect(screen.getByTestId('journey-intent-gate').getAttribute('title')).toBe(g.scope);
   });
 
   it('a floor journey: each stage says it ran with the journey\'s own reason, and the rank stage says not ranked', async () => {

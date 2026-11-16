@@ -91158,3 +91158,44 @@ def test_w1110_fu399_a_cycle_s_roadmap_is_read_where_it_is_drawn_in_the_cycle_s_
                  "expect(screen.getByTestId('directive-no-verdict').getAttribute('title')).toBe(d.verdict_source);",
                  "expect(screen.getByTestId('evolution-previous-basis').textContent).toBe(c.previous_cycle.basis);"):
         assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1111_fu399_a_floor_journey_says_what_it_produced_and_what_served_it_where_it_is_drawn(client):
+    """FU-399 part 100 (W1111). Nine of the Genesis journey page's elements were drawn in its rendered test and never
+    read: the product picker and the note that a product is recorded only, the heading, the research and operations
+    stages' subtitles on the floor, the line under the calls' chips, the basis for those names, the product the
+    journey recorded, and the intent gate. Held here:
+    - the journey the test serves is in the state the case reads: complete with no enterprise established, every
+      call served by the floor, the research and operations stages floor-served, the content not screened by the gate,
+      and the product the capture asked with recorded as chosen by the caller;
+    - the products the picker offers are the taxonomy's, and the capture asked with one of them;
+    - the rendered test reads each element in the journey's own words."""
+    import json
+    import re
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    fx = json.loads((src / "pages" / "synthesis" / "GenesisJourney.fixture.json").read_text(encoding="utf-8"))
+    j = fx["journey"]
+    assert (j["status"], j["enterprise_established"]) == ("complete", False)
+    assert set(j["ai_provenance"]["served_by"]) == {"native"} and j["ai_provenance"]["served_by"]["native"] > 0
+    assert j["stage_verifications"]["research"]["floor_served"] is True
+    assert j["stage_verifications"]["operations"]["floor_served"] is True
+    assert j["governance"]["content_screened"] is False and j["governance"]["checkpoint"] and j["governance"]["scope"]
+    assert j["product"] == fx["request"]["product"] and j["product_source"] == "chosen by the caller"
+    assert j["engines_used_basis"]
+    taxonomy = (src / "lib" / "taxonomy.ts").read_text(encoding="utf-8")
+    products = re.search(r"export const PRODUCTS = \[([^\]]*)\] as const;", taxonomy).group(1)
+    assert f"'{fx['request']['product']}'" in products, products
+
+    spec = (src / "pages" / "synthesis" / "GenesisJourney.test.tsx").read_text(encoding="utf-8")
+    assert "import { PRODUCTS, PRODUCT_LABELS } from '../../lib/taxonomy';" in spec
+    for line in ("expect(screen.getByTestId('genesis-product-record-only').textContent).toBe(",
+                 "await waitFor(() => expect(screen.getByTestId('journey-complete-heading').textContent).toBe(",
+                 "expect([posted.problem, posted.product]).toEqual([captured.request.problem, captured.request.product]);",
+                 "expect(screen.getByTestId('journey-product').textContent).toBe(`Product: ${j.product_label} — ${j.product_source}`);",
+                 "expect(screen.getByTestId('genesis-research-subtitle').textContent).toBe(",
+                 "expect(screen.getByTestId('genesis-operations-subtitle').textContent).toBe(",
+                 "expect(screen.getByTestId('journey-engines-basis').textContent).toBe(j.engines_used_basis);",
+                 "expect(screen.getByTestId('engines-used-basis').textContent).toBe(",
+                 "expect(screen.getByTestId('journey-intent-gate').getAttribute('title')).toBe(g.scope);"):
+        assert line in spec, ("the rendered test no longer reads this", line)
