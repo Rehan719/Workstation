@@ -91313,3 +91313,34 @@ def test_w1114_fu399_the_marketplace_says_what_serves_nothing_and_what_is_not_fo
                  "pairs(listings.map(l => ['unpriced — not for sale', l.price_basis])));",
                  "expect(screen.getByTestId('listings-unpriced-count').textContent).toBe("):
         assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1115_fu399_the_business_plan_says_what_wrote_its_strategy_and_action_plan_where_it_is_drawn(client):
+    """FU-399 part 104 (W1115). Five of the Business Plan page's elements were drawn in its rendered test and never
+    read: the opening's card, the box for what the plan should cover, the line under the strategy saying which cadence
+    wrote it, the action plan, and the line under it saying the same. Held here:
+    - the plan the test serves is in the state the case reads: its strategy and its action plan are each the text of
+      the last applied refresh row for that field, with the date, what served it and its basis;
+    - the plan route still answers every field the page reads, today;
+    - the rendered test reads each element in the plan's own words."""
+    import json
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "enterprise"
+    plan = json.loads((src / "BusinessPlan.fixture.json").read_text(encoding="utf-8"))["plan_one"]
+    for field in ("strategy", "action_plan"):
+        rows = [r for r in plan["refreshes"] if r.get("plan_field") == field and r.get("applied") is not False]
+        assert rows and rows[-1]["content"] == plan[field], field
+        assert rows[-1]["at"] and rows[-1]["served_by"] and rows[-1]["provenance_basis"], field
+
+    live = client.get("/api/v1/business-plan", params={"scope": "workstation"})
+    assert live.status_code == 200, live.text[:200]
+    for k in ("strategy", "action_plan", "refreshes", "executive_summary", "concept", "vision"):
+        assert k in live.json(), k
+
+    spec = (src / "BusinessPlan.test.tsx").read_text(encoding="utf-8")
+    for line in ("await waitFor(() => expect(screen.getByTestId('plan-strategy-source').textContent).toBe(wrote('strategy', 'strategic')));",
+                 "expect(ap.querySelectorAll('p')[1].textContent).toBe(plan.action_plan);",
+                 "expect(screen.getByTestId('plan-action-plan-source').textContent).toBe(wrote('action_plan', 'action-plan'));",
+                 "expect(screen.getByTestId('chiefs-opening').querySelector('h3')?.textContent).toBe(",
+                 "expect(screen.getByLabelText(/What should the plan cover\\?/)).toBe(box);"):
+        assert line in spec, ("the rendered test no longer reads this", line)

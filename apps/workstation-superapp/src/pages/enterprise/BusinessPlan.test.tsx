@@ -91,6 +91,32 @@ describe('BusinessPlan, rendered against the plan routes\' own answers', () => {
       `The owner edit was NOT saved: ${said(captured.set_refused)}`));
   });
 
+  // W1115 (FU-399 part 104) - what wrote the plan's strategy and its action plan, said under each in the plan's own
+  // words: the cadence's refresh row for that field, its date, what served it and its basis
+  it('says which cadence wrote the strategy and the action plan, from the plan\'s own refresh rows', async () => {
+    serve(ok(captured.plan_one));
+    mount();
+    const plan = captured.plan_one;
+    const row = (field: string) => plan.refreshes.filter(r => r.plan_field === field && r.applied !== false).slice(-1)[0];
+    const wrote = (field: string, layer: string) => {
+      const r = row(field);
+      expect(r.content).toBe(field === 'strategy' ? plan.strategy : plan.action_plan);
+      return `Written by the ${layer} cadence on ${r.at.slice(0, 10)} — served by ${r.served_by}. ${r.provenance_basis}`;
+    };
+    await waitFor(() => expect(screen.getByTestId('plan-strategy-source').textContent).toBe(wrote('strategy', 'strategic')));
+    const ap = screen.getByTestId('plan-action-plan');
+    expect(ap.querySelectorAll('p')[1].textContent).toBe(plan.action_plan);
+    expect(screen.getByTestId('plan-action-plan-source').textContent).toBe(wrote('action_plan', 'action-plan'));
+    expect(screen.queryByTestId('plan-action-plan-absent')).toBeNull();
+    expect(screen.getByTestId('chiefs-opening').querySelector('h3')?.textContent).toBe(
+      'Plan Opening — Executive Summary · Concept · Vision');
+    //  the box for what the plan should cover is the one its label names, and keeps what is typed
+    const box = screen.getByTestId('plan-generate-context') as HTMLTextAreaElement;
+    expect(screen.getByLabelText(/What should the plan cover\?/)).toBe(box);
+    fireEvent.change(box, { target: { value: 'W1115 made up: a plan for a repair cafe' } });
+    expect(box.value).toBe('W1115 made up: a plan for a repair cafe');
+  });
+
   it('a plan that cannot be read is said with its file, and nothing written is said once', async () => {
     const r = captured.plan_unreadable;
     serve(r);
