@@ -90899,3 +90899,54 @@ def test_w1104_fu399_what_the_floor_did_and_did_not_do_is_said_under_the_answer_
                  "expect(screen.getByTestId('tool-serving-note').textContent).toBe(",
                  "expect(config.headers['Accept-Language']).toBe(language);"):
         assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1105_fu399_the_ratified_plan_entry_is_rendered_previewed_first_and_entered_by_one_confirmed_action(client):
+    """FU-399 part 94 (W1105). The Owner's ratified plan entry (components/RatifiedPlanEntry.tsx, W726) had no
+    rendered test: all nine of its elements were unread. Held here:
+    - the fixture holds the routes' own answers on a fresh store: with sign-in off it cannot be entered and says why;
+      a made-up person with no role reads no plan; a made-up administrator previews, is refused a fingerprint that
+      is not the document's, enters it, enters it again to no effect, and one field edited by hand after is named;
+    - the route answers the same today with sign-in off, for the same document;
+    - the rendered test reads each element in the routes' words, and sends the fingerprint of the document shown."""
+    import json
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components"
+    fx = json.loads((src / "RatifiedPlanEntry.fixture.json").read_text(encoding="utf-8"))
+    off, user, admin = fx["preview_off"], fx["preview_user"], fx["preview_admin"]
+    assert off["status"] == 200 and off["body"]["can_enter"] is False
+    assert off["body"]["cannot_because"].startswith("sign-in is off, so nobody can be recorded as having entered this")
+    assert user["status"] == 404 and user["body"]["detail"] == "No plan for workstation."
+    assert admin["status"] == 200 and admin["body"]["can_enter"] is True and admin["body"]["already_entered"] is None
+    assert fx["enter_stale"]["status"] == 409 and fx["enter_stale"]["body"]["detail"].startswith(
+        "Nothing was entered: the document has changed since the preview you were shown")
+    e = fx["entered"]["body"]
+    assert fx["entered"]["status"] == 200 and e["entered"] is True
+    assert e["objectives_added"] == len(admin["body"]["objectives"]) > 0
+    assert e["stamp"]["sha256"] == admin["body"]["sha256"] == fx["preview_entered"]["body"]["already_entered"]["sha256"]
+    assert fx["preview_entered"]["body"]["edited_since"] == []
+    assert fx["entered_again"]["status"] == 200 and fx["entered_again"]["body"]["objectives_added"] == 0
+    assert fx["preview_edited"]["body"]["edited_since"] == ["strategy"]
+    assert all(n.startswith("w1105-made-up-") for n in fx["names"].values()), fx["names"]
+    assert fx["preview_entered"]["body"]["already_entered"]["entered_by"] == fx["names"]["admin"]
+
+    #  the route answers the same today with sign-in off, for the same document
+    live = client.get("/api/v1/business-plan/ratified/preview")
+    assert live.status_code == 200, live.text[:300]
+    lb = live.json()
+    assert lb["can_enter"] is False and lb["cannot_because"] == off["body"]["cannot_because"]
+    assert lb["document"] == off["body"]["document"] == "docs/business/BUSINESS_PLAN.md"
+    assert set(lb) - {"edited_since", "edited_since_basis"} == set(off["body"]) - {"edited_since", "edited_since_basis"}
+    assert set(lb["fields"]) == set(admin["body"]["fields"])
+
+    spec = (src / "RatifiedPlanEntry.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './RatifiedPlanEntry.fixture.json';" in spec
+    for line in ("expect(sent).toEqual([]);",
+                 "expect(sent[1]).toEqual({ url: ENTER, method: 'POST', body: { sha256: a.sha256 } });",
+                 "await waitFor(() => expect(screen.getByTestId('ratified-said').textContent).toBe(",
+                 "await waitFor(() => expect(screen.getByTestId('ratified-cannot').textContent).toBe(",
+                 "`Failed (HTTP 409): ${captured.enter_stale.body.detail}`));",
+                 "`Failed (HTTP 404): ${captured.preview_user.body.detail}`));",
+                 "+ ` Edited by hand since: ${ed.edited_since.join(', ')}.`));",
+                 "expect(screen.getByTestId('ratified-not-entered').textContent).toBe("):
+        assert line in spec, ("the rendered test no longer reads this", line)
