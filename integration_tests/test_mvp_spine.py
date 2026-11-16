@@ -91121,3 +91121,40 @@ def test_w1109_fu399_the_swarm_hub_s_chips_and_headings_are_read_where_they_are_
                  "expect(screen.getByTestId('fabric-requisitions-heading').textContent).toBe(",
                  "await waitFor(() => expect(screen.getByTestId('swarm-runs-unreadable').textContent).toBe("):
         assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1110_fu399_a_cycle_s_roadmap_is_read_where_it_is_drawn_in_the_cycle_s_own_words(client):
+    """FU-399 part 99 (W1110). Eight of the Sovereign Evolution page's elements were drawn in its rendered test and
+    never read: when the cycle's readings were taken and that they are not live, what served the cycle, who curated
+    it and on what basis, a directive the AI CEO did not issue, a directive no C-Suite verdict was parsed for, and the
+    previous cycle's card and basis. Held here:
+    - the cycle the test serves is in the state the case reads: its one directive is the platform's default with no
+      parsed verdict, and no previous cycle is recorded;
+    - the roadmap route still answers, today;
+    - the rendered test reads each element in the cycle's own words."""
+    import json
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "evolution"
+    c = json.loads((src / "SovereignEvolution.fixture.json").read_text(encoding="utf-8"))["cycle"]
+    assert c["cycle_id"] and isinstance(c["duration_ms"], int) and c["created_at"]
+    assert "served_by" not in c and "any_external" not in c, "the cycle now says what served it; read it on the badge"
+    assert c["curated_by"] and c["curated_by_basis"]
+    assert len(c["ceo_directives"]) == 1
+    d = c["ceo_directives"][0]
+    assert d["source"] == "default" and d["source_basis"].startswith("NOT ISSUED BY THE AI CEO")
+    assert d["verdict"] is None and d["verdict_source"]
+    assert c["previous_cycle"]["directives"] == [] and c["previous_cycle"]["basis"]
+
+    live = client.get("/api/v1/sovereign-evolution/roadmap")
+    assert live.status_code == 200, live.text[:300]
+
+    spec = (src / "SovereignEvolution.test.tsx").read_text(encoding="utf-8")
+    assert "import { provenanceMapBadge } from '../../lib/api';" in spec
+    for line in ("await waitFor(() => expect(screen.getByTestId('introspection-as-of').textContent).toBe(",
+                 "expect(screen.getByTestId('introspection-staleness').textContent).toBe(",
+                 "expect(screen.getByTestId('cycle-provenance').getAttribute('title')).toBe(b.title);",
+                 "expect(screen.getByTestId('evolution-curated-by').getAttribute('title')).toBe(c.curated_by_basis);",
+                 "expect(screen.getByTestId('directive-defaulted').textContent).toBe(d.source_basis);",
+                 "expect(screen.getByTestId('directive-no-verdict').getAttribute('title')).toBe(d.verdict_source);",
+                 "expect(screen.getByTestId('evolution-previous-basis').textContent).toBe(c.previous_cycle.basis);"):
+        assert line in spec, ("the rendered test no longer reads this", line)

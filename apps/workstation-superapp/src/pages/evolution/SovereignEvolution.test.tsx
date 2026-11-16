@@ -8,6 +8,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { provenanceMapBadge } from '../../lib/api';
 import captured from './SovereignEvolution.fixture.json';
 import { SovereignEvolution } from './SovereignEvolution';
 
@@ -78,6 +79,35 @@ describe('SovereignEvolution, rendered against its routes\' own answers', () => 
     fireEvent.click(screen.getByRole('button', { name: /Run a Curation Cycle Now/ }));
     await waitFor(() => expect(screen.queryByTestId('evolution-no-cycle')).toBeNull());
     expect(screen.queryByTestId('evolution-error')).toBeNull();
+  });
+
+  // W1110 (FU-399 part 99) - the roadmap a cycle returns says, in its own words, when its readings were taken, what
+  // served it, who curated it, where each directive came from and whether it carries a verdict, and the cycle before
+  it('a cycle\'s roadmap says when it read, what served it, who curated it, each directive\'s source and verdict, and the cycle before', async () => {
+    serve();
+    render(<SovereignEvolution />);
+    await screen.findByTestId('evolution-no-cycle');
+    fireEvent.click(screen.getByRole('button', { name: /Run a Curation Cycle Now/ }));
+    const c = captured.cycle;
+    await waitFor(() => expect(screen.getByTestId('introspection-as-of').textContent).toBe(
+      `cycle ${c.cycle_id} · ${c.duration_ms}ms · run ${c.created_at}`));
+    expect(screen.getByTestId('introspection-staleness').textContent).toBe(
+      'These are the readings that cycle took, not live values. Run a cycle to refresh them.');
+    //  the cycle's answer carries no record of what served it, and the badge says that state, not a server
+    expect(['served_by', 'any_external'].filter(k => k in c)).toEqual([]);
+    const b = provenanceMapBadge(undefined, undefined);
+    expect(screen.getByTestId('cycle-provenance').textContent).toBe(b.label);
+    expect(screen.getByTestId('cycle-provenance').getAttribute('title')).toBe(b.title);
+    expect(screen.getByTestId('evolution-curated-by').textContent).toBe(c.curated_by.join(' → '));
+    expect(screen.getByTestId('evolution-curated-by').getAttribute('title')).toBe(c.curated_by_basis);
+    const [d] = c.ceo_directives;
+    expect([d.source, d.verdict]).toEqual(['default', null]);
+    expect(screen.getByTestId('directive-defaulted').textContent).toBe(d.source_basis);
+    expect(screen.getByTestId('directive-no-verdict').textContent).toBe('no C-Suite verdict');
+    expect(screen.getByTestId('directive-no-verdict').getAttribute('title')).toBe(d.verdict_source);
+    expect(c.previous_cycle.directives).toEqual([]);
+    expect(screen.getByTestId('evolution-previous-cycle').querySelector('h3')?.textContent).toBe('What the previous cycle did');
+    expect(screen.getByTestId('evolution-previous-basis').textContent).toBe(c.previous_cycle.basis);
   });
 
   it('a refused cycle says the server\'s reason', async () => {
