@@ -91199,3 +91199,44 @@ def test_w1111_fu399_a_floor_journey_says_what_it_produced_and_what_served_it_wh
                  "expect(screen.getByTestId('engines-used-basis').textContent).toBe(",
                  "expect(screen.getByTestId('journey-intent-gate').getAttribute('title')).toBe(g.scope);"):
         assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1112_fu399_the_economy_page_says_what_its_answers_say_where_it_is_drawn(client):
+    """FU-399 part 101 (W1112). Six of the VSB Economy page's elements were drawn in its rendered test and never read:
+    the notice that the books are a simulation's, who a payout would go to, the charity pot's label, the P&L's basis
+    and its result before distributions, and the organism's posture beside the board pack. Held here:
+    - the answers the test serves are in the state the case reads: the books are an unregistered id's, no owner is
+      recorded and the account has no name of its own, and the health figure is not measured;
+    - the board pack and owner payments routes still answer every field the page reads, today;
+    - the rendered test reads each element in the answers' own words."""
+    import json
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "enterprise"
+    a = json.loads((src / "VSBEconomy.fixture.json").read_text(encoding="utf-8"))["answers"]
+    PACK = "/api/v1/economy/board-pack?vsb_id=workstation-idbo&entity_type=waqf_ltd_hybrid"
+    PAY = "/api/v1/economy/owner-payments?vsb_id=workstation-idbo"
+    bp, pay = a[PACK]["body"], a[PAY]["body"]
+    assert bp["registration"] == "UNREGISTERED" and bp["registration_basis"]
+    assert pay["owner_recorded"] is False and pay["account_name"] is None and pay["simulated"] is False and pay["owner_basis"]
+    assert bp["organism_posture"]["composite_health_measured_only"] is None
+    assert bp["charitable_giving"]["label"] and bp["charitable_giving"]["basis"]
+    assert bp["statements"]["profit_and_loss"]["net_profit_basis"]
+
+    live_pack = client.get(PACK)
+    live_pay = client.get(PAY)
+    assert live_pack.status_code == 200 and live_pay.status_code == 200, (live_pack.text[:200], live_pay.text[:200])
+    lp = live_pack.json()
+    for k in ("registration", "registration_basis", "charitable_giving", "statements", "organism_posture"):
+        assert k in lp, k
+    assert {"net_profit_basis", "operating_result_before_distributions_wst", "distributions_wst"} <= set(lp["statements"]["profit_and_loss"])
+    assert {"energy_ratio", "composite_health", "composite_health_measured_only", "composite_health_basis"} <= set(lp["organism_posture"])
+    assert {"owner", "owner_recorded", "owner_basis", "account_name", "simulated"} <= set(live_pay.json())
+
+    spec = (src / "VSBEconomy.test.tsx").read_text(encoding="utf-8")
+    for line in ("await waitFor(() => expect(screen.getByTestId('economy-simulation-notice').textContent).toBe(",
+                 "expect(governed.querySelector('span')?.getAttribute('title')).toBe(pay.owner_basis);",
+                 "expect(screen.getByTestId('pack-charity-label').getAttribute('title')).toBe(bp.charitable_giving.basis);",
+                 "expect(screen.getByTestId('pnl-net-basis').textContent).toBe(pnl.net_profit_basis);",
+                 "expect(screen.getByTestId('pnl-operating').textContent).toBe(",
+                 "expect(screen.getByTestId('vsb-organism-posture').getAttribute('title')).toBe(po.composite_health_basis);"):
+        assert line in spec, ("the rendered test no longer reads this", line)

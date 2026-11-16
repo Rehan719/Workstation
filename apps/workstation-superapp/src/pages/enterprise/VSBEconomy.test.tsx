@@ -40,6 +40,45 @@ describe('VSBEconomy, rendered against its routes\' own answers', () => {
     vi.unstubAllGlobals();
   });
 
+  // W1112 (FU-399 part 101) - what the answers say, read where the page draws it: that the books are a simulation's,
+  // who a payout would go to, the charity pot's label, the P&L's basis and result before distributions, and the
+  // organism's posture beside the pack
+  it('says the simulation, the payee, the charity label, the P&L\'s basis and the organism\'s posture in the answers\' own words', async () => {
+    serve();
+    mount();
+    type Pack = {
+      registration: string; registration_basis: string; charitable_giving: { label: string; basis: string };
+      statements: { profit_and_loss: { net_profit_basis: string; operating_result_before_distributions_wst: number; distributions_wst: number } };
+      organism_posture: { energy_ratio: number; composite_health: number; composite_health_measured_only: number | null; composite_health_basis: string };
+    };
+    type Payments = { owner: string | null; owner_recorded: boolean; owner_basis: string; account_name: string | null; simulated: boolean };
+    const bp = answers['/api/v1/economy/board-pack?vsb_id=workstation-idbo&entity_type=waqf_ltd_hybrid'].body as Pack;
+    const pay = answers['/api/v1/economy/owner-payments?vsb_id=workstation-idbo'].body as Payments;
+    expect([bp.registration, pay.simulated]).toEqual(['UNREGISTERED', false]);
+    await waitFor(() => expect(screen.getByTestId('economy-simulation-notice').textContent).toBe(
+      `SIMULATION — ${bp.registration_basis} Its funds are not transferred or invested into registered entities,`
+      + ' and it pays nothing into the shared capital fund.'));
+    expect([pay.owner_recorded, pay.account_name]).toEqual([false, null]);
+    const governed = screen.getByTestId('owner-payout-governed');
+    expect(governed.textContent).toBe(
+      'Every payout is held at Change Control for the decision of a person, whatever its amount. A request pays nothing;'
+      + ' once it is approved there, request the same amount again to apply it. The payee is the owner the entity\'s'
+      + ' record names, not the name stored on the account: none - the entity has no owner record.');
+    expect(governed.querySelector('span')?.getAttribute('title')).toBe(pay.owner_basis);
+    expect(screen.getByTestId('pack-charity-label').textContent).toBe(bp.charitable_giving.label);
+    expect(screen.getByTestId('pack-charity-label').getAttribute('title')).toBe(bp.charitable_giving.basis);
+    const pnl = bp.statements.profit_and_loss;
+    expect(screen.getByTestId('pnl-net-basis').textContent).toBe(pnl.net_profit_basis);
+    expect(screen.getByTestId('pnl-operating').textContent).toBe(
+      `before distributions: ${pnl.operating_result_before_distributions_wst.toLocaleString()} WST`
+      + ` · distributed ${pnl.distributions_wst.toLocaleString()} WST`);
+    const po = bp.organism_posture;
+    expect(po.composite_health_measured_only).toBeNull();
+    expect(screen.getByTestId('vsb-organism-posture').textContent).toBe(
+      `work budget left ${Math.round(po.energy_ratio * 100)}% · health not measured · blended ${Math.round(po.composite_health * 100)}%`);
+    expect(screen.getByTestId('vsb-organism-posture').getAttribute('title')).toBe(po.composite_health_basis);
+  });
+
   it('opens on what each read answered, and says no failure', async () => {
     serve();
     mount();
