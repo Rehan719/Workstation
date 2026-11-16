@@ -48,6 +48,30 @@ describe('LivingMarketplace, rendered against its routes\' own answers', () => {
     vi.unstubAllGlobals();
   });
 
+  // W1114 (FU-399 part 103) - what is not served and what is not for sale, said where the page draws it: each legacy
+  // archive and source pointer, each feature declared and not built, each unpriced listing, and the count of them
+  it('says which entries serve nothing, which features are not built, and that no listing is for sale, in the answers\' words', async () => {
+    serve();
+    mount();
+    const products = captured.catalog.body.products;
+    const listings = captured.listings.body;
+    await waitFor(() => expect(screen.getAllByTestId('catalog-legacy').length).toBe(products.filter(p => p.status === 'legacy').length));
+    for (const e of screen.getAllByTestId('catalog-legacy')) expect(e.textContent).toBe('Legacy archive — not a served product');
+    expect(screen.getAllByTestId('catalog-source').map(e => e.textContent)).toEqual(
+      products.filter(p => p.status === 'source').map(() => 'Source pointer — nothing served yet'));
+    const notBuilt = products.flatMap(p => p.features_declared_not_built.map(f => ({ f, basis: p.features_basis })));
+    expect(notBuilt.length).toBeGreaterThan(0);
+    //  the grid orders the catalogue its own way, so the features are compared as a set
+    const pairs = (xs: (string | null)[][]) => xs.map(x => JSON.stringify(x)).sort();
+    expect(pairs(screen.getAllByTestId('catalog-not-built').map(e => [e.textContent, e.getAttribute('title')]))).toEqual(
+      pairs(notBuilt.map(({ f, basis }) => [`${f}not built`, basis || 'declared for this product and not built in this repository'])));
+    expect(listings.every(l => l.price_wst === 0)).toBe(true);
+    expect(pairs(screen.getAllByTestId('listing-unpriced').map(e => [e.textContent, e.getAttribute('title')]))).toEqual(
+      pairs(listings.map(l => ['unpriced — not for sale', l.price_basis])));
+    expect(screen.getByTestId('listings-unpriced-count').textContent).toBe(
+      `Nothing is offered for sale yet, of ${listings.length} registered listings: ${listings.length} have no WST price.`);
+  });
+
   it('shows the catalogue and the listings the routes answered', async () => {
     serve();
     mount();

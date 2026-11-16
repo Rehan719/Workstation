@@ -91280,3 +91280,36 @@ def test_w1113_fu399_the_anatomy_page_s_readings_are_read_where_they_are_drawn(c
                  "expect(screen.getByTestId('genome-population-basis').textContent).toBe(pop.mean_fitness_basis);",
                  "expect(screen.getByTestId('entity-genomes-basis').textContent).toBe(captured.genome.entity_genomes.basis);"):
         assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1114_fu399_the_marketplace_says_what_serves_nothing_and_what_is_not_for_sale_where_it_is_drawn(client):
+    """FU-399 part 103 (W1114). Five of the Living Marketplace's elements were drawn in its rendered test and never
+    read: a catalogue entry that is a legacy archive, one that is a source pointer with nothing served, each feature
+    declared and not built, each listing's word that it is unpriced and not for sale, and the count of listings with
+    no price. Held here:
+    - the answers the test serves are in the state the case reads: legacy and source entries, features declared and
+      not built with their basis, and every listing unpriced with its reason;
+    - the catalogue and listings routes still answer every field the page reads, today;
+    - the rendered test reads each element in the answers' own words."""
+    import json
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "marketplace"
+    fx = json.loads((src / "LivingMarketplace.fixture.json").read_text(encoding="utf-8"))
+    products, listings = fx["catalog"]["body"]["products"], fx["listings"]["body"]
+    assert {"legacy", "source", "live"} <= {p["status"] for p in products}
+    assert sum(len(p["features_declared_not_built"]) for p in products) > 0
+    assert listings and all(l["price_wst"] == 0 and l["price_basis"] for l in listings)
+
+    cat = client.get("/api/v1/catalog/products")
+    assert cat.status_code == 200, cat.text[:200]
+    for p in cat.json()["products"]:
+        assert {"status", "features", "features_declared_not_built", "features_basis"} <= set(p), p.get("slug")
+
+    spec = (src / "LivingMarketplace.test.tsx").read_text(encoding="utf-8")
+    for line in ("for (const e of screen.getAllByTestId('catalog-legacy')) expect(e.textContent).toBe('Legacy archive — not a served product');",
+                 "expect(screen.getAllByTestId('catalog-source').map(e => e.textContent)).toEqual(",
+                 "expect(pairs(screen.getAllByTestId('catalog-not-built').map(e => [e.textContent, e.getAttribute('title')]))).toEqual(",
+                 "expect(pairs(screen.getAllByTestId('listing-unpriced').map(e => [e.textContent, e.getAttribute('title')]))).toEqual(",
+                 "pairs(listings.map(l => ['unpriced — not for sale', l.price_basis])));",
+                 "expect(screen.getByTestId('listings-unpriced-count').textContent).toBe("):
+        assert line in spec, ("the rendered test no longer reads this", line)
