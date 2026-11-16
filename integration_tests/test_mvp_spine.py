@@ -90950,3 +90950,43 @@ def test_w1105_fu399_the_ratified_plan_entry_is_rendered_previewed_first_and_ent
                  "+ ` Edited by hand since: ${ed.edited_since.join(', ')}.`));",
                  "expect(screen.getByTestId('ratified-not-entered').textContent).toBe("):
         assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1106_fu399_the_statute_panel_is_rendered_and_where_help_is_said_in_the_server_s_words(client):
+    """FU-399 part 95 (W1106). The Law page's statute panel (components/StatutePanel.tsx, W724) had no rendered test:
+    all ten of its elements were unread. Held here:
+    - the fixture holds the routes' own answers on a fresh store: where help from a person is, with the five
+      expectations as the server assesses them, and an address that names no provision, refused before anything is
+      fetched;
+    - the routes answer the same today;
+    - the rendered test reads each of them in the routes' words, and fetches nothing until asked.
+    A provision's own text needs its publisher, which the capture's network refused; none is captured."""
+    import json
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components"
+    fx = json.loads((src / "StatutePanel.fixture.json").read_text(encoding="utf-8"))
+    h, bad = fx["help"], fx["not_an_address"]
+    assert h["status"] == 200 and len(h["body"]["regulated_and_free_help"]) == 8
+    assert len({p["link"] for p in h["body"]["regulated_and_free_help"]}) == 8, "two places share a link"
+    rows = h["body"]["expectations"]["rows"]
+    assert len(rows) == 5 and all(r["state"] in ("met", "partly", "not met") for r in rows), rows
+    assert bad["status"] == 422 and bad["body"]["detail"].startswith("That does not name a provision: ")
+    assert bad["body"]["detail"].endswith("Nothing was fetched.")
+    assert bad["url"] == "/api/v1/law/statute/{kind}/{year}/{number}/section/{section}".format(**fx["ask"])
+
+    #  the routes answer the same today: neither reaches a publisher
+    live = client.get("/api/v1/law/help")
+    assert live.status_code == 200 and live.json() == h["body"], "the help the panel was rendered against is not the route's"
+    live = client.get(bad["url"])
+    assert live.status_code == 422 and live.json() == bad["body"]
+
+    spec = (src / "StatutePanel.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './StatutePanel.fixture.json';" in spec
+    for line in ("expect(sent).toEqual([]);",
+                 "expect(readIt.disabled).toBe(true);",
+                 "`Failed (HTTP 422): ${refused.body.detail}`));",
+                 "h.expectations.rows.map(e => `${e.expectation}: ${e.state}. ${e.how}`));",
+                 "expect(link.getAttribute('href')).toBe(p.link);",
+                 "expect(page.querySelector('a')?.getAttribute('href')).toBe(h.the_page);",
+                 "expect(screen.queryByTestId('law-statute-text')).toBeNull();"):
+        assert line in spec, ("the rendered test no longer reads this", line)
