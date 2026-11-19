@@ -91416,3 +91416,51 @@ def test_w1117_fu399_the_price_panel_says_what_generating_an_entity_costs_in_the
                  "await waitFor(() => expect(screen.getByTestId('generation-price-waived').textContent).toBe(`${w.waived_basis}.`));",
                  "await waitFor(() => expect(screen.getByTestId('generation-price-unread').textContent).toBe("):
         assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1118_fu399_the_archive_search_says_each_passage_by_its_line_and_what_it_could_not_look_inside(client, monkeypatch, tmp_path):
+    """FU-399 part 107 (W1118). The Horizon Companion's archive search had no rendered test, and none of its six
+    elements was read: the panel, the counts, the located passages, how a passage can be cited, the passages that
+    cannot be, and the files not searched. Held here:
+    - the answers the test serves are the route's own, in the state the cases read: after four made-up files were
+      scanned, two are indexed, one is not read and one is excluded by its name; the word two files use is found in
+      four passages, each of which is the text at its own line of its own file; the files not searched are exactly
+      the two not indexed; a word no file uses matches nothing;
+    - the routes still answer exactly that today, for the same inbox, scanned into a store of the test's own;
+    - the rendered test reads each element in the route's words."""
+    import json
+    from pathlib import Path
+    from agentic_core.horizon import archive
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components"
+    fx = json.loads((src / "ArchiveSearchPanel.fixture.json").read_text(encoding="utf-8"))
+    inbox, found, none = fx["inbox"], fx["found"]["body"], fx["none"]["body"]
+    assert fx["scan"]["body"]["counts"] == {"INDEXED": 2, "NOT_READ": 1, "EXCLUDED": 1}, fx["scan"]["body"]["counts"]
+    assert found["passages_matched"] == len(found["passages"]) == 4 and found["not_citable"] == []
+    for p in found["passages"]:
+        #  a located passage is the text at its own line of its own file, so the citation resolves
+        assert inbox[p["path"]].splitlines()[p["line"] - 1].strip() == p["text"], p
+    states = {f["path"]: f["state"] for f in fx["scan"]["body"]["files"]}
+    assert sorted(found["not_searched"]) == sorted(k for k, s in states.items() if s != "INDEXED"), (found["not_searched"], states)
+    assert none["passages_matched"] == 0 and none["matched_files"] == 0 and none["passages"] == []
+
+    #  the same inbox, scanned into a store of this test's own, answers what the test serves
+    box = tmp_path / "inbox"
+    box.mkdir()
+    for name, text in inbox.items():
+        (box / name).write_text(text, encoding="utf-8", newline="\n")
+    monkeypatch.setattr(archive, "_inbox", lambda: str(box))
+    monkeypatch.setattr(archive, "_store", lambda: tmp_path / "asset_index.json")
+    scanned = client.post("/api/v1/horizon/archive/scan")
+    assert scanned.status_code == 200 and scanned.json()["counts"] == fx["scan"]["body"]["counts"], scanned.text[:300]
+    for key in ("found", "none"):
+        live = client.get(fx[key]["url"])
+        assert live.status_code == 200, (key, live.text[:200])
+        assert live.json() == fx[key]["body"], (key, "the route no longer answers what the test serves; recapture")
+
+    spec = (src / "ArchiveSearchPanel.test.tsx").read_text(encoding="utf-8")
+    for line in ("`${r.passages_matched} passage(s) matched · ${r.shown_files} of ${r.matched_files} file(s) shown · ${r.file_hits_basis}`;",
+                 "f.passages.map(p => `${p.path}:${p.line} — ${p.text}`));",
+                 "expect(screen.getByTestId('archive-search-citation-basis').textContent).toBe(f.citation_basis);",
+                 "`Not searched (not read into the index): ${f.not_searched.join(', ')}`);",
+                 "await waitFor(() => expect(screen.getByText('Search failed: Failed — backend unreachable.')).toBeTruthy());"):
+        assert line in spec, ("the rendered test no longer reads this", line)

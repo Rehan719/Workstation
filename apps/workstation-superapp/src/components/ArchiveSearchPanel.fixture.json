@@ -1,0 +1,171 @@
+{
+ "inbox": {
+  "orchard_notes.txt": "W1118 made-up notes for a community orchard\nThe orchard needs a water rota.\n\nAsk the orchard group about the rota.\n",
+  "rota.md": "# Rota\nThe orchard water rota starts in spring.\n",
+  "minutes.pdf": "%PDF-1.4 made up, never read\n",
+  "house_key_codes.txt": "made up, never read\n"
+ },
+ "scan": {
+  "url": "/api/v1/horizon/archive/scan",
+  "status": 200,
+  "body": {
+   "scanned_at": 1795128558.8185484,
+   "inbox": "/tmp/w1118cap_jv67iqe8/horizon/inbox",
+   "files": [
+    {
+     "path": "house_key_codes.txt",
+     "state": "EXCLUDED",
+     "rule": "the name contains 'key'",
+     "ext": ".txt",
+     "basis": "EXCLUDED by rule: the name contains 'key'. The file is LISTED so the exclusion is visible — an exclusion nobody can see looks exactly like a file that was never there — and its content was never read"
+    },
+    {
+     "path": "minutes.pdf",
+     "state": "NOT_READ",
+     "ext": ".pdf",
+     "needs": "pypdf",
+     "basis": "NOT_READ: pypdf is installed but this module does not yet call it. Reporting INDEXED here would claim a read that did not happen"
+    },
+    {
+     "path": "orchard_notes.txt",
+     "state": "INDEXED",
+     "ext": ".txt",
+     "bytes": 115,
+     "tokens": 13,
+     "passages": 3,
+     "passages_capped": false,
+     "basis": "INDEXED: read as UTF-8 text and reduced to 13 lexical token(s) and 3 located passage(s), each carrying its line number so a claim can be traced to a place in the document and not merely to the document. No embedding was computed"
+    },
+    {
+     "path": "rota.md",
+     "state": "INDEXED",
+     "ext": ".md",
+     "bytes": 48,
+     "tokens": 6,
+     "passages": 2,
+     "passages_capped": false,
+     "basis": "INDEXED: read as UTF-8 text and reduced to 6 lexical token(s) and 2 located passage(s), each carrying its line number so a claim can be traced to a place in the document and not merely to the document. No embedding was computed"
+    }
+   ],
+   "counts": {
+    "INDEXED": 2,
+    "NOT_READ": 1,
+    "EXCLUDED": 1
+   },
+   "total": 4,
+   "file_cap_reached": false,
+   "bounds": {
+    "max_files": 2000,
+    "max_bytes": 2097152,
+    "max_passages_per_file": 400,
+    "passage_basis": "a document contributes at most 400 located passages; a file longer than that is indexed to that line and the file's own entry says so, because a cap nobody is told about reads as a complete index",
+    "exclusion_rules": [
+     "a .env file holds configuration secrets",
+     "a .env file holds configuration secrets",
+     "the name contains 'key'",
+     "the name contains 'secret'",
+     "the name begins 'credentials'",
+     "the name begins 'id_rsa' (a private key)",
+     "a .pem file is a certificate or private key"
+    ],
+    "text_extensions": [
+     ".txt",
+     ".md",
+     ".json",
+     ".csv",
+     ".yaml",
+     ".yml",
+     ".log",
+     ".ini",
+     ".cfg",
+     ".tsv"
+    ],
+    "extractor_extensions": {
+     ".pdf": "pypdf",
+     ".docx": "python-docx",
+     ".pptx": "python-pptx"
+    },
+    "basis": "at most 2000 files are listed and at most 2097152 bytes are read from any one of them. A file beyond the size cap is listed as NOT_READ with the cap named, not silently truncated, because a half-read file in a search index answers questions about a document nobody has"
+   },
+   "extractors": {
+    "pypdf": true,
+    "python-docx": true,
+    "python-pptx": true
+   },
+   "embedding_backend": null,
+   "search_basis": "search is this platform's OWN LEXICAL index — exact token matching, no embedding, no stemming and no synonyms. There is no embedding backend installed, so this is not semantic recall and must not be read as it",
+   "counts_basis": "2 indexed, 1 not read, 1 excluded, 4 listed in total. Every listed file carries exactly one state and the three counts sum to the total — a file in no state would be a file this manifest had lost",
+   "locality_basis": "this index is LOCAL DATA under the data directory. It is never committed and nothing in this module sends it anywhere"
+  }
+ },
+ "found": {
+  "url": "/api/v1/horizon/archive/search?term=orchard",
+  "status": 200,
+  "body": {
+   "term": "orchard",
+   "hits": [
+    "orchard_notes.txt",
+    "rota.md"
+   ],
+   "matched_files": 2,
+   "shown_files": 2,
+   "truncated": false,
+   "passages": [
+    {
+     "path": "orchard_notes.txt",
+     "line": 1,
+     "text": "W1118 made-up notes for a community orchard"
+    },
+    {
+     "path": "orchard_notes.txt",
+     "line": 2,
+     "text": "The orchard needs a water rota."
+    },
+    {
+     "path": "orchard_notes.txt",
+     "line": 4,
+     "text": "Ask the orchard group about the rota."
+    },
+    {
+     "path": "rota.md",
+     "line": 2,
+     "text": "The orchard water rota starts in spring."
+    }
+   ],
+   "passages_matched": 4,
+   "not_citable": [],
+   "citation_basis": "4 passage(s) matched, each carrying its document and LINE so the claim can be checked at the source. A passage with no resolvable line is listed under not_citable rather than returned without one: a claim traced to a document but not to a place in it is not traceable.",
+   "file_hits_basis": "2 file(s) matched and 2 are shown, none omitted",
+   "searched_files": 2,
+   "not_searched": [
+    "house_key_codes.txt",
+    "minutes.pdf"
+   ],
+   "basis": "exact lexical match over 2 indexed file(s). 2 listed file(s) were NOT searched because their text is not in the index — they are unread or excluded, and nothing unread is in the knowledge base. This is token matching, not semantic recall: a document about the subject that never uses the word does not match",
+   "embedding_backend": null
+  }
+ },
+ "none": {
+  "url": "/api/v1/horizon/archive/search?term=quince",
+  "status": 200,
+  "body": {
+   "term": "quince",
+   "hits": [],
+   "matched_files": 0,
+   "shown_files": 0,
+   "truncated": false,
+   "passages": [],
+   "passages_matched": 0,
+   "not_citable": [],
+   "citation_basis": "0 passage(s) matched, each carrying its document and LINE so the claim can be checked at the source. A passage with no resolvable line is listed under not_citable rather than returned without one: a claim traced to a document but not to a place in it is not traceable.",
+   "file_hits_basis": "0 file(s) matched and 0 are shown, none omitted",
+   "searched_files": 2,
+   "not_searched": [
+    "house_key_codes.txt",
+    "minutes.pdf"
+   ],
+   "basis": "exact lexical match over 2 indexed file(s). 2 listed file(s) were NOT searched because their text is not in the index — they are unread or excluded, and nothing unread is in the knowledge base. This is token matching, not semantic recall: a document about the subject that never uses the word does not match",
+   "embedding_backend": null
+  }
+ }
+}
