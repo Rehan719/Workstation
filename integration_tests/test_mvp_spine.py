@@ -91378,3 +91378,41 @@ def test_w1116_fu399_the_instrument_cell_says_what_it_checked_and_what_a_resourc
                  ".flatMap(s => (s.availability.needs_narrowed ?? []).map(n => `Here, without ${n.needs}: ${n.why}`));",
                  "expect(screen.getAllByTestId('cell-needs-narrowed').map(e => e.textContent)).toEqual(narrowed);"):
         assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1117_fu399_the_price_panel_says_what_generating_an_entity_costs_in_the_routes_words(client):
+    """FU-399 part 106 (W1117). The Genesis journey's price panel had no rendered test of its own, and none of its seven
+    elements was read: the panel, its price basis, the credit, the waiver, that nothing is charged and why, each
+    condition, and a read that failed. Held here:
+    - the answers the test serves are the route's own, in the state the cases read: the standing price is credited,
+      not waived and charges nothing, with three conditions none of which exists; the answer for an entity that
+      distributes nothing is waived with its basis and credits nothing; neither answer charges;
+    - the route still answers every field the panel reads, both ways, today;
+    - the rendered test reads each element in the route's words."""
+    import json
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components"
+    fx = json.loads((src / "GenerationPrice.fixture.json").read_text(encoding="utf-8"))
+    s, w = fx["standing"]["body"], fx["non_distributing"]["body"]
+    assert fx["standing"]["url"] == "/api/v1/genesis/price" and fx["standing"]["status"] == 200
+    assert s["credited_against_first_profit_share"] is True and s["waived"] is False and s["charged_now"] is False, s
+    assert len(s["conditions"]) == 3 and all(c["condition"] and c["basis"] and c["met"] is False for c in s["conditions"])
+    assert w["waived"] is True and w["waived_basis"] and w["credited_against_first_profit_share"] is False, w
+    assert s["this_answer_charges"] is False and w["this_answer_charges"] is False
+
+    read = {"price_basis", "credited_against_first_profit_share", "credit_basis", "waived", "waived_basis",
+            "charged_now", "conditions", "not_charged_basis"}
+    for key in ("standing", "non_distributing"):
+        live = client.get(fx[key]["url"])
+        assert live.status_code == 200, (key, live.text[:200])
+        assert read <= set(live.json()), (key, sorted(read - set(live.json())))
+        assert {"condition", "met", "basis"} <= set(live.json()["conditions"][0]), key
+
+    spec = (src / "GenerationPrice.test.tsx").read_text(encoding="utf-8")
+    for line in ("const said = (c: Condition) => `${c.met ? 'exists' : 'does not exist yet'} · ${c.condition} — ${c.basis}`;",
+                 "await waitFor(() => expect(screen.getByTestId('generation-price-basis').textContent).toBe(`${p.price_basis}.`));",
+                 "expect(screen.getByTestId('generation-price-credit').textContent).toBe(`${p.credit_basis}.`);",
+                 "expect(screen.getByTestId('generation-price-not-charged').textContent).toBe(`${p.not_charged_basis}.`);",
+                 "await waitFor(() => expect(screen.getByTestId('generation-price-waived').textContent).toBe(`${w.waived_basis}.`));",
+                 "await waitFor(() => expect(screen.getByTestId('generation-price-unread').textContent).toBe("):
+        assert line in spec, ("the rendered test no longer reads this", line)
