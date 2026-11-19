@@ -91464,3 +91464,59 @@ def test_w1118_fu399_the_archive_search_says_each_passage_by_its_line_and_what_i
                  "`Not searched (not read into the index): ${f.not_searched.join(', ')}`);",
                  "await waitFor(() => expect(screen.getByText('Search failed: Failed — backend unreachable.')).toBeTruthy());"):
         assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1119_fu399_the_time_limit_panel_says_the_limit_what_it_omits_and_who_to_ask_in_the_routes_words(client, monkeypatch):
+    """FU-399 part 108 (W1119). The Law page's time-limit panel had no rendered test, and none of its four elements was
+    read: the panel, the rules' failed read, a refusal, and the limit worked out. Held here:
+    - the answers the test serves are the routes' own, in the state the cases read: the rules this platform can work
+      out; a limit worked out from 2026-10-03 as the rule's months on, ending the day before; the same ask over a
+      provision without the rule's words, not worked out; and the same ask with the publisher unreachable, refused
+      with who to ask;
+    - the routes still answer exactly that today, with the provision stood in the same way (the suite reaches no
+      outside host, so test_w875 stands it in too);
+    - the rendered test reads each element in the routes' words."""
+    import datetime as _dt
+    import json
+    from pathlib import Path
+    from agentic_core.legal import statute as _st
+    from agentic_core.legal import time_limits as _tl
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components"
+    fx = json.loads((src / "TimeLimitPanel.fixture.json").read_text(encoding="utf-8"))
+    rules, done, gone, refused = fx["rules"]["body"], fx["computed"], fx["words_gone"], fx["refused"]
+    assert [r["id"] for r in rules["rules"]] == list(_tl.RULES), rules
+    ask = done["request"]
+    assert gone["request"] == refused["request"] == ask and ask["rule"] == rules["rules"][0]["id"]
+    rule = _tl.RULES[ask["rule"]]
+    end = _tl.last_day(_dt.date.fromisoformat(ask["event_date"]), rule["months"])
+    assert done["body"]["computed"] is True and done["body"]["last_day"] == end.isoformat(), done["body"]
+    assert done["body"]["route"]["name"] == rule["route"]["name"] and done["body"]["provision_address"], done["body"]
+    assert gone["body"]["computed"] is False and gone["body"]["last_day"] is None
+    assert refused["status"] == 502 and rule["route"]["name"] in refused["body"]["detail"], refused
+
+    #  the routes answer exactly that today, the provision stood in as the capture stood it in
+    assert client.get(fx["rules"]["url"]).json() == rules
+
+    def stood_in(text):
+        async def _provision(kind, year, number, section):
+            return {"parts": [{"level": 1, "number": "(2)", "text": text}],
+                    "address": f"https://www.legislation.gov.uk/{kind}/{year}/{number}/section/{section}"}
+        return _provision
+
+    async def _unreachable(*_a, **_k):
+        raise _st.PublisherRefused("the publisher could not be reached (ConnectError)")
+    for key, prov in (("computed", stood_in(f"(a) before the end of the period of {rule['words']}, or")),
+                      ("words_gone", stood_in("(a) before the end of the period of six months, or")),
+                      ("refused", _unreachable)):
+        monkeypatch.setattr(_st, "provision", prov)
+        live = client.post(fx["rules"]["url"], json=ask)
+        assert (live.status_code, live.json()) == (fx[key]["status"], fx[key]["body"]), (key, live.text[:300])
+
+    spec = (src / "TimeLimitPanel.test.tsx").read_text(encoding="utf-8")
+    for line in ("await waitFor(() => expect(said()[0]).toBe(`The primary limit ends at the end of ${a.last_day}.`));",
+                 "`Ask ${a.route.name} - ${a.route.for_what}.`,",
+                 "`${a.act}, section ${a.section} - ${a.provision_address}. ${a.arithmetic}. ${a.not_advice}`,",
+                 "expect(said().slice(1, 3)).toEqual([g.basis, `It does not account for ${g.does_not_account_for}.`]);",
+                 "`Failed (HTTP ${r.status}): ${r.body.detail}`));",
+                 "await waitFor(() => expect(screen.getByTestId('law-time-limit-rules-note').textContent).toBe("):
+        assert line in spec, ("the rendered test no longer reads this", line)
