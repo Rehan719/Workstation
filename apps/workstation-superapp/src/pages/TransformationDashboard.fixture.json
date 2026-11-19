@@ -1,0 +1,1623 @@
+{
+ "picture": {
+  "vision_summary": "AI-mediate working for any user in any realm/domain — Concept→Design→Delivery — generating a bespoke living Enterprise IDBO (VSB); one self-running living organism.",
+  "realisation": {
+   "overall_realisation": 0.849,
+   "pillars": [
+    {
+     "id": "end_to_end",
+     "pillar": "AI-mediated end-to-end Concept→Design→Delivery",
+     "realisation": 1.0,
+     "status": "realised",
+     "evidence": [
+      {
+       "label": "Genesis journey live",
+       "met": true
+      },
+      {
+       "label": "Process-intelligence engines live",
+       "met": true
+      }
+     ],
+     "checks_met": 2,
+     "checks_assessed": 2,
+     "checks_status": "all checks present",
+     "coverage_basis": "2 of 2 presence check(s) passed: whether a route is mounted or a store has a record. This is coverage, not delivery; it does not say the pillar is realised."
+    },
+    {
+     "id": "generate_vsb",
+     "pillar": "Generate a living Enterprise IDBO (VSB) for the user",
+     "realisation": 0.667,
+     "status": "partial",
+     "evidence": [
+      {
+       "label": "Establish endpoint live",
+       "met": true
+      },
+      {
+       "label": "VSB entities exist",
+       "met": false
+      },
+      {
+       "label": "VSB spawn pipeline live",
+       "met": true
+      }
+     ],
+     "checks_met": 2,
+     "checks_assessed": 3,
+     "checks_status": "some checks present",
+     "coverage_basis": "2 of 3 presence check(s) passed: whether a route is mounted or a store has a record. This is coverage, not delivery; it does not say the pillar is realised."
+    },
+    {
+     "id": "vsb_org",
+     "pillar": "VSB org curates work (Board→AI CEO→C-Suite→CoE→BTO)",
+     "realisation": 1.0,
+     "status": "realised",
+     "evidence": [
+      {
+       "label": "Board of Directors live",
+       "met": true
+      },
+      {
+       "label": "Org swarm cascade live",
+       "met": true
+      },
+      {
+       "label": "Sovereign Evolution Office live",
+       "met": true
+      }
+     ],
+     "checks_met": 3,
+     "checks_assessed": 3,
+     "checks_status": "all checks present",
+     "coverage_basis": "3 of 3 presence check(s) passed: whether a route is mounted or a store has a record. This is coverage, not delivery; it does not say the pillar is realised."
+    },
+    {
+     "id": "chief_twin",
+     "pillar": "Chief = the Owner's digital twin as a ROLE (apex, arms-length) — no twin model is trained",
+     "realisation": 1.0,
+     "status": "realised",
+     "evidence": [
+      {
+       "label": "Board / Chief live",
+       "met": true
+      }
+     ],
+     "checks_met": 1,
+     "checks_assessed": 1,
+     "checks_status": "all checks present",
+     "coverage_basis": "1 of 1 presence check(s) passed: whether a route is mounted or a store has a record. This is coverage, not delivery; it does not say the pillar is realised."
+    },
+    {
+     "id": "resource_fabric",
+     "pillar": "Reconfigurable, combinable resource fabric",
+     "realisation": 1.0,
+     "status": "realised",
+     "evidence": [
+      {
+       "label": "Resource Fabric live",
+       "met": true
+      },
+      {
+       "label": "Resources federated (≥10)",
+       "met": true
+      }
+     ],
+     "checks_met": 2,
+     "checks_assessed": 2,
+     "checks_status": "all checks present",
+     "coverage_basis": "2 of 2 presence check(s) passed: whether a route is mounted or a store has a record. This is coverage, not delivery; it does not say the pillar is realised."
+    },
+    {
+     "id": "self_running",
+     "pillar": "One self-running, self-healing, self-improving organism",
+     "realisation": 0.667,
+     "status": "partial",
+     "evidence": [
+      {
+       "label": "Self-evolution live",
+       "met": true
+      },
+      {
+       "label": "An evolution cycle has run",
+       "met": false
+      },
+      {
+       "label": "Continuous heartbeat (scheduler)",
+       "met": true
+      }
+     ],
+     "checks_met": 2,
+     "checks_assessed": 3,
+     "checks_status": "some checks present",
+     "coverage_basis": "2 of 3 presence check(s) passed: whether a route is mounted or a store has a record. This is coverage, not delivery; it does not say the pillar is realised."
+    },
+    {
+     "id": "synthesis_lab",
+     "pillar": "Synthesis Lab — any/all content output types",
+     "realisation": 1.0,
+     "status": "realised",
+     "evidence": [
+      {
+       "label": "Synthesis Studio live",
+       "met": true
+      },
+      {
+       "label": "Multi-type output pipelines (Forge)",
+       "met": true
+      }
+     ],
+     "checks_met": 2,
+     "checks_assessed": 2,
+     "checks_status": "all checks present",
+     "coverage_basis": "2 of 2 presence check(s) passed: whether a route is mounted or a store has a record. This is coverage, not delivery; it does not say the pillar is realised."
+    },
+    {
+     "id": "governance",
+     "pillar": "Constitutional governance throughout (gaas.v5 + UEG)",
+     "realisation": 0.5,
+     "status": "partial",
+     "evidence": [
+      {
+       "label": "gaas.v5 gate live",
+       "met": true
+      },
+      {
+       "label": "GaaS gate on EVERY output (§17.5 invariant 2): 37 of 70 API modules",
+       "met": false,
+       "basis": "37 of 70 API modules call a constitutional or output gate somewhere in their code (a call-site count: it does not prove every output of those modules passes it). There is NO global gate - the HTTP middleware observes and does not gate - so an output of the other 33 passes no GaaS gate. §17.5 invariant 2 is NOT held."
+      }
+     ],
+     "checks_met": 1,
+     "checks_assessed": 2,
+     "checks_status": "some checks present",
+     "coverage_basis": "1 of 2 presence check(s) passed: whether a route is mounted or a store has a record. This is coverage, not delivery; it does not say the pillar is realised."
+    },
+    {
+     "id": "biomimetic",
+     "pillar": "Biomimetic + biogeo-physical mediation",
+     "realisation": 1.0,
+     "status": "realised",
+     "evidence": [
+      {
+       "label": "Economic metabolism live",
+       "met": true
+      }
+     ],
+     "checks_met": 1,
+     "checks_assessed": 1,
+     "checks_status": "all checks present",
+     "coverage_basis": "1 of 1 presence check(s) passed: whether a route is mounted or a store has a record. This is coverage, not delivery; it does not say the pillar is realised."
+    },
+    {
+     "id": "economy",
+     "pillar": "VSB as hybrid Waqf/Trust autonomous economy",
+     "realisation": 0.5,
+     "status": "partial",
+     "evidence": [
+      {
+       "label": "Economy engine live",
+       "met": true
+      },
+      {
+       "label": "A VSB ledger exists",
+       "met": false
+      }
+     ],
+     "checks_met": 1,
+     "checks_assessed": 2,
+     "checks_status": "some checks present",
+     "coverage_basis": "1 of 2 presence check(s) passed: whether a route is mounted or a store has a record. This is coverage, not delivery; it does not say the pillar is realised."
+    },
+    {
+     "id": "living_alignment",
+     "pillar": "Living alignment: vision ↔ current state ↔ plan",
+     "realisation": 1.0,
+     "status": "realised",
+     "evidence": [
+      {
+       "label": "Living Plan API live",
+       "met": true
+      },
+      {
+       "label": "Transformation engine live",
+       "met": true
+      }
+     ],
+     "checks_met": 2,
+     "checks_assessed": 2,
+     "checks_status": "all checks present",
+     "coverage_basis": "2 of 2 presence check(s) passed: whether a route is mounted or a store has a record. This is coverage, not delivery; it does not say the pillar is realised."
+    }
+   ],
+   "evidence_counts": {
+    "vsbs": 0,
+    "economy_ledgers": 0,
+    "resources": 66,
+    "compositions": 0,
+    "last_evolution": null,
+    "organism_health": 1.0,
+    "organism_health_basis": "the immune system's health: lowered by every recorded event that is not a review flag - AI gateway and model-tier calls that failed or timed out; compliance fails and regressions; quality non-conformances; any operation reported as failed - while compliance review flags are reported beside it and do not lower it, and route 5xx failures are not tracked, so this is not the health of the whole platform",
+    "organism_health_observations": 0,
+    "organism_health_observed_basis": "NO call was observed in the last 5 minutes, so the health figure is the absence of failures and not a reading of anything"
+   },
+   "route_census": {
+    "flat_paths": 602,
+    "schema_paths": 597,
+    "paths": 602,
+    "error": null,
+    "basis": "602 distinct paths: the OpenAPI schema's 597 plus the 602 flat routes' paths (a route hidden from the schema is counted if flat)"
+   },
+   "measure": "API surface coverage — pillar routers mounted and stores non-empty; not delivery (the delivery measure is /api/v1/plan/state)",
+   "reconciled_at": "2026-11-13T23:08:46Z"
+  },
+  "transformation_plan": {
+   "immediate_gaps": [
+    {
+     "pillar": "Generate a living Enterprise IDBO (VSB) for the user",
+     "realisation": 0.667,
+     "missing": [
+      "VSB entities exist"
+     ]
+    },
+    {
+     "pillar": "One self-running, self-healing, self-improving organism",
+     "realisation": 0.667,
+     "missing": [
+      "An evolution cycle has run"
+     ]
+    },
+    {
+     "pillar": "Constitutional governance throughout (gaas.v5 + UEG)",
+     "realisation": 0.5,
+     "missing": [
+      "GaaS gate on EVERY output (§17.5 invariant 2): 37 of 70 API modules"
+     ]
+    },
+    {
+     "pillar": "VSB as hybrid Waqf/Trust autonomous economy",
+     "realisation": 0.5,
+     "missing": [
+      "A VSB ledger exists"
+     ]
+    }
+   ],
+   "immediate_gaps_basis": "4 of 11 pillar(s) are listed as a gap: each has a presence check that is not met (a route not mounted or a store with no record). The other 7 pass every presence check, which is why they are not listed - that is coverage, not a statement that they are delivered (the delivery measure is /api/v1/plan/state).",
+   "short_term": [],
+   "long_term": [],
+   "plan_lists_basis": "no short- or long-term list is derived from the gaps above; the maintained plan and each item's state are at /api/v1/plan/state",
+   "principle": "Transformation = close the gap between vision (the pillars) and live realisation."
+  },
+  "source_of_truth": "docs/WORKSTATION_IDBO_UNDERSTANDING.md + WORKSTATION_IDBO_LIVING_PLAN.md"
+ },
+ "runs_empty": {
+  "runs": [],
+  "total": 0,
+  "unreadable": 0,
+  "unreadable_records": []
+ },
+ "orchestrate": {
+  "transformation_id": "tx-734763916b",
+  "scope": "workstation",
+  "objective": "Close the remaining vision→realisation gap and reach launch-ready.",
+  "realisation_before": 0.849,
+  "cascade": [
+   {
+    "step": 1,
+    "tier": "Chief (the Owner's charter)",
+    "delegates_to": "Board",
+    "action": "Set the transformation mandate: Close the remaining vision→realisation gap and reach launch-ready.",
+    "output": {
+     "chief": "Chief of the Board — owner's standing charter, instructions and recorded decisions on the owned fabric (no twin model is trained; the Chief reports whether it is a modelled twin or a role)",
+     "mission": "",
+     "vision": "",
+     "aims": [],
+     "objective": "Close the remaining vision→realisation gap and reach launch-ready.",
+     "realisation": 0.849
+    },
+    "verified": null,
+    "checks": "presence",
+    "basis": "presence only: the Owner's Board always resolves a Chief, so this check cannot fail — nothing about the mandate is verified",
+    "signal": "cognitive"
+   },
+   {
+    "step": 2,
+    "tier": "Board of Directors",
+    "delegates_to": "Action Planning",
+    "action": "Deliver strategy via 7 specialist directors",
+    "output": {
+     "directors": [
+      {
+       "director": "Director of Strategy & Vision",
+       "theme": "Close the remaining vision→realisation gap and reach launch-ready."
+      },
+      {
+       "director": "Director of Technology & Architecture",
+       "theme": "Close the remaining vision→realisation gap and reach launch-ready."
+      },
+      {
+       "director": "Director of Governance & Compliance",
+       "theme": "Close the remaining vision→realisation gap and reach launch-ready."
+      },
+      {
+       "director": "Director of Biomimetic Systems",
+       "theme": "Close the remaining vision→realisation gap and reach launch-ready."
+      },
+      {
+       "director": "Director of Operations & Delivery",
+       "theme": "Close the remaining vision→realisation gap and reach launch-ready."
+      },
+      {
+       "director": "Director of Finance & Capital",
+       "theme": "Close the remaining vision→realisation gap and reach launch-ready."
+      },
+      {
+       "director": "Director of Evolution & Learning",
+       "theme": "Close the remaining vision→realisation gap and reach launch-ready."
+      }
+     ],
+     "governance": "arms-length: AI CEO cannot instruct the board; board directs the AI CEO"
+    },
+    "verified": null,
+    "checks": "presence",
+    "basis": "presence only: 7 specialist director(s) exist on the Board (a constant roster) — no strategy delivery is verified",
+    "signal": "motor"
+   },
+   {
+    "step": 3,
+    "tier": "Action Planning Office",
+    "delegates_to": "AI CEO",
+    "action": "Resourced action plan with timelines, routed gap→owning-tier (adaptive)",
+    "output": {
+     "tasks": [
+      {
+       "objective": "Close the remaining vision→realisation gap and reach launch-ready.",
+       "owner_tier": "generate_vsb",
+       "timeline": "Q1 2026",
+       "engines": [
+        "Business Development Process",
+        "Scientific Process Intelligence"
+       ],
+       "status": "planned"
+      }
+     ]
+    },
+    "verified": null,
+    "checks": "none",
+    "basis": "not assessable — one task derived from the request; there are no plan objectives to resource",
+    "signal": "motor"
+   },
+   {
+    "step": 4,
+    "tier": "AI CEO",
+    "delegates_to": "C-Suite",
+    "action": "Integrate the living systems (BMS·QMS·DCS·EMS) + organism telemetry",
+    "output": {
+     "living_systems": {
+      "QMS": "ISO 9001 quality",
+      "BMS": "business management",
+      "DCS": "document control",
+      "EMS": "ISO 14001 environmental"
+     },
+     "organism_health": 1.0,
+     "organism_health_basis": "the immune system's health: lowered by every recorded event that is not a review flag - AI gateway and model-tier calls that failed or timed out; compliance fails and regressions; quality non-conformances; any operation reported as failed - while compliance review flags are reported beside it and do not lower it, and route 5xx failures are not tracked, so this is not the health of the whole platform",
+     "organism_health_observations": 0,
+     "organism_health_observed_basis": "NO call was observed in the last 5 minutes, so the health figure is the absence of failures and not a reading of anything",
+     "arousal": "DORMANT"
+    },
+    "verified": null,
+    "checks": "presence",
+    "basis": "presence only: organism telemetry was read (immune health, nervous arousal); the BMS·QMS·DCS·EMS list is a static label and no integration is checked",
+    "signal": "motor"
+   },
+   {
+    "step": 5,
+    "tier": "C-Suite",
+    "delegates_to": "Centres of Excellence",
+    "action": "Delegate to specialist C-Suite, each driving their CoE",
+    "output": {
+     "delegation": {
+      "CFO": [
+       "Commercial",
+       "Capital"
+      ],
+      "CTO": [
+       "Engineering",
+       "Architecture"
+      ],
+      "COO": [
+       "Operations",
+       "BTO"
+      ],
+      "CLO": [
+       "Compliance",
+       "Legal"
+      ],
+      "CSO": [
+       "Science",
+       "Research"
+      ],
+      "CXO": [
+       "Design",
+       "Experience"
+      ]
+     }
+    },
+    "verified": null,
+    "checks": "none",
+    "basis": "not assessable — static delegation map — nothing is checked",
+    "signal": "motor"
+   },
+   {
+    "step": 6,
+    "tier": "Business Transformation Office",
+    "delegates_to": "Build-to-Order",
+    "action": "Coordinate delivery via BTO → Build-to-Order, assembling operational delivery resources and the products/services catalogue, and DELIVER one artefact through the living-deliverables engine",
+    "output": {
+     "operational_delivery_resources": [
+      "Synthesis Lab",
+      "Reactor · Incubate + Experiment + Studio",
+      "Production Factory",
+      "Evolution Incubator",
+      "Petri Dish",
+      "Reactor · Experimentation",
+      "Reactor · Studio",
+      "Artefact Generator",
+      "Digital Twin & Simulator",
+      "Adaptive Resource Optimiser"
+     ],
+     "biomimetic_systems": [
+      "Constitutional Gate (gaas.v5)",
+      "Sovereign Evolution Office",
+      "Nervous System",
+      "Immune System",
+      "Self-Healing Reflex",
+      "Metabolic / ATP",
+      "Circadian Heartbeat",
+      "Genome Registry"
+     ],
+     "products_services_catalogue": [
+      "OctoVeritas Engine",
+      "Capital Fund",
+      "Digital Reactor (Simulation-as-a-Service)",
+      "QEP-as-a-Service SDK"
+     ],
+     "build_to_order": "/api/v1/bto/configure",
+     "products": "/api/v1/catalog/products",
+     "delivered": null,
+     "delivery_basis": "NOT ASSESSABLE: deliverable deliv-b7dcfe65 landed in the store, so something WAS delivered, but its QMS gate returned None — nothing assessed the outcome. This is not a failed delivery and is not an attested one"
+    },
+    "verified": null,
+    "checks": "delivery",
+    "basis": "NOT ASSESSABLE: deliverable deliv-b7dcfe65 landed in the store, so something WAS delivered, but its QMS gate returned None — nothing assessed the outcome. This is not a failed delivery and is not an attested one",
+    "signal": "motor"
+   },
+   {
+    "step": 7,
+    "tier": "Change Control Agency (arms-length)",
+    "delegates_to": "Digital Twin",
+    "action": "Submit the transformation under arms-length change control",
+    "output": {
+     "change_id": "cca-beaa3724ce",
+     "tier": "LOW",
+     "status": "approved",
+     "commitment": null
+    },
+    "verified": true,
+    "checks": "decision",
+    "basis": "change request cca-beaa3724ce was approved",
+    "signal": "motor"
+   },
+   {
+    "step": 8,
+    "tier": "Digital Twin Studio",
+    "delegates_to": "Validation",
+    "action": "Generate the VSB structural twin model and compute a projection from live state (not a simulation)",
+    "output": {
+     "model_id": "twin-df9a4a4397",
+     "components": [
+      "Chief (the Owner's charter — not a trained twin)",
+      "Board of Directors",
+      "AI CEO",
+      "C-Suite",
+      "CoE",
+      "Business Transformation Office",
+      "Build-to-Order",
+      "Living systems (BMS·QMS·DCS·EMS)",
+      "Change Control",
+      "Biomimetic organism",
+      "Digital resources"
+     ],
+     "projection": {
+      "of": "api_surface_coverage",
+      "formula": "coverage x (0.5 + 0.5 x immune_health), capped at 1.0",
+      "inputs": {
+       "api_surface_coverage": 0.849,
+       "immune_health": 1.0
+      },
+      "projected": 0.849,
+      "current": 0.849,
+      "compared_with_current": "equal to the current figure",
+      "note": "a projection, not a simulation: nothing is modelled over time, and because immune health cannot exceed 1.0 this figure can never be above the current one"
+     }
+    },
+    "verified": true,
+    "checks": "artifact",
+    "basis": "artifact only: twin model twin-df9a4a4397 was written to the digital-twin store as a structural template — nothing about the transformation is verified by the write",
+    "signal": "cognitive"
+   }
+  ],
+  "digital_twin": {
+   "model_id": "twin-df9a4a4397",
+   "components": [
+    "Chief (the Owner's charter — not a trained twin)",
+    "Board of Directors",
+    "AI CEO",
+    "C-Suite",
+    "CoE",
+    "Business Transformation Office",
+    "Build-to-Order",
+    "Living systems (BMS·QMS·DCS·EMS)",
+    "Change Control",
+    "Biomimetic organism",
+    "Digital resources"
+   ],
+   "model_spec": "# VSB Digital Twin — workstation\n\n## System Boundary\nThe VSB delivery organisation, from the Chief (Chief of the Board — owner's standing charter, instructions and recorded decisions on the owned fabric (no twin model is trained; the Chief reports whether it is a modelled twin or a role)) down to Build-to-Order, plus its living systems and biomimetic organism.\n\n## Components\n- Chief (the Owner's charter — not a trained twin)\n- Board of Directors\n- AI CEO\n- C-Suite\n- CoE\n- Business Transformation Office\n- Build-to-Order\n- Living systems (BMS·QMS·DCS·EMS)\n- Change Control\n- Biomimetic organism\n- Digital resources\n\n## Feedback Loops\n- Delegation cascade (Chief→Board→AI CEO→C-Suite→CoE→BTO) — forward drive.\n- Change Control (arms-length) — negative feedback / governance damping.\n- Biomimetic homeostasis (immune·nervous·metabolic) — stabilising feedback.\n- Transformation tick (realisation→alignment) — error-correcting loop.\n\n## State Variables\n- api_surface_coverage = 0.849 (what /transformation/realisation measures: routes mounted and stores non-empty — NOT delivery)\n- organism_health = 1.0\n- open_objectives = 1\n\n## Governing Dynamics\nDelivery rate ∝ organism_health × delegation_depth; governance refuses changes that reduce realisation or breach the constitution.\n",
+   "projection": {
+    "of": "api_surface_coverage",
+    "formula": "coverage x (0.5 + 0.5 x immune_health), capped at 1.0",
+    "inputs": {
+     "api_surface_coverage": 0.849,
+     "immune_health": 1.0
+    },
+    "projected": 0.849,
+    "current": 0.849,
+    "compared_with_current": "equal to the current figure",
+    "note": "a projection, not a simulation: nothing is modelled over time, and because immune health cannot exceed 1.0 this figure can never be above the current one"
+   },
+   "persisted": true,
+   "persist_error": null
+  },
+  "operational_delivery_resources": [
+   "Synthesis Lab",
+   "Reactor · Incubate + Experiment + Studio",
+   "Production Factory",
+   "Evolution Incubator",
+   "Petri Dish",
+   "Reactor · Experimentation",
+   "Reactor · Studio",
+   "Artefact Generator",
+   "Digital Twin & Simulator",
+   "Adaptive Resource Optimiser"
+  ],
+  "products_services_catalogue": [
+   {
+    "name": "OctoVeritas Engine",
+    "slug": "OctoVeritasEngine",
+    "tagline": ""
+   },
+   {
+    "name": "Capital Fund",
+    "slug": "capital_fund",
+    "tagline": ""
+   },
+   {
+    "name": "Digital Reactor (Simulation-as-a-Service)",
+    "slug": "digital_reactor",
+    "tagline": ""
+   },
+   {
+    "name": "QEP-as-a-Service SDK",
+    "slug": "qep-sdk",
+    "tagline": ""
+   }
+  ],
+  "native_cognition": null,
+  "governance": {
+   "status": "allowed",
+   "screened": "intent + domain",
+   "content_screened": false,
+   "checkpoint": "CHK-1794611326730",
+   "node": "transformation-orchestration-node",
+   "scope": "intent + domain only — this gate screened the request's intent label against the prohibited list and its own constant attestation sentence. The delivery's content was NOT screened, so this verdict is not a judgement on what was produced."
+  },
+  "validation": {
+   "stages": 8,
+   "assessable_stages": 2,
+   "verified_stages": 2,
+   "failed_stages": 0,
+   "not_assessable_stages": 6,
+   "presence_stages": 3,
+   "delivery_verified_stages": [],
+   "end_to_end_chief_to_bto": true,
+   "biomimetic_signals_fired": 8,
+   "governed": true,
+   "validated": null,
+   "validated_basis": "no stage checks a DELIVERED outcome — this run verified only presence, a governance decision and a written artifact",
+   "validated_rule": "validated only when a DELIVERY check verified a delivered outcome, no checked stage failed and governance 'allowed'; presence checks (something the platform always creates exists) never count, and a run with no delivery check is NOT ASSESSABLE",
+   "ai_in_house": false,
+   "report": "The cascade ran 8 stages of the delegation chain. Verified: Change Control Agency (arms-length): change request cca-beaa3724ce was approved; Digital Twin Studio: artifact only: twin model twin-df9a4a4397 was written to the digital-twin store as a structural template — nothing about the transformation is verified by the write. 6 stage(s) were not assessable — 3 of them presence checks that cannot fail, 3 that checked nothing. Not validated: no stage checks a DELIVERED outcome — this run verified only presence, a governance decision and a written artifact. 8 biomimetic signals fired; governance: allowed."
+  },
+  "method_check": {
+   "method_available": true,
+   "checked_at": "2026-11-13T23:08:46Z",
+   "requirements": [
+    {
+     "requirement": "three-state-verdicts",
+     "lesson": "M-VERIF-10",
+     "state": "MET",
+     "basis": "every stage carries a True/False/None verdict and a basis saying what it rests on",
+     "checkable_from": "the cascade's own stages"
+    },
+    {
+     "requirement": "a-check-that-cannot-fail-reports-nothing",
+     "lesson": "M-VERIF-01",
+     "state": "MET",
+     "basis": "no stage reports success for a check that cannot fail",
+     "checkable_from": "the cascade's own stages"
+    },
+    {
+     "requirement": "a-count-states-its-population",
+     "lesson": "M-MEAS-03",
+     "state": "MET",
+     "basis": "the figure is 2 of 2 ASSESSABLE stages, out of 8 run — the denominator is what could be assessed, not what exists",
+     "checkable_from": "the cascade's validation figure"
+    },
+    {
+     "requirement": "every-real-check-produced-a-verdict",
+     "lesson": "M-DELIV-01",
+     "state": "UNMET",
+     "basis": "stage(s) [6] declare a real check kind and produced NO verdict — a check that could have decided and did not is the case a reader most needs named, and their bases carry the reason",
+     "checkable_from": "the cascade's own stages (the checks kind and the verdict, not the prose)"
+    },
+    {
+     "requirement": "m-verif-06",
+     "lesson": "M-VERIF-06",
+     "state": "NOT_ASSESSABLE",
+     "basis": "NOT VISIBLE in a cascade's output: whether this round's own fixes were refuted",
+     "checkable_from": null
+    },
+    {
+     "requirement": "m-verif-05",
+     "lesson": "M-VERIF-05",
+     "state": "NOT_ASSESSABLE",
+     "basis": "NOT VISIBLE in a cascade's output: whether each basis string was computed from state or asserted",
+     "checkable_from": null
+    },
+    {
+     "requirement": "m-exec-03",
+     "lesson": "M-EXEC-03",
+     "state": "NOT_ASSESSABLE",
+     "basis": "NOT VISIBLE in a cascade's output: whether every writer of a changed field was found",
+     "checkable_from": null
+    }
+   ],
+   "counts": {
+    "met": 3,
+    "unmet": 1,
+    "not_assessable": 3
+   },
+   "follows_the_method_where_checkable": false,
+   "why_not": "every-real-check-produced-a-verdict: stage(s) [6] declare a real check kind and produced NO verdict — a check that could have decided and did not is the case a reader most needs named, and their bases carry the reason",
+   "limits": "3 of 7 requirements are NOT ASSESSABLE from a cascade's output. A clean result here says this run's OWN ARTEFACT is consistent with the four method rules a cascade can be checked against — it is not a statement that the round followed the method."
+  },
+  "responsive": true,
+  "created_at": "2026-11-13T23:08:46Z",
+  "outcome_not_recorded": "not assessable: no delivery check ran, so neither a success nor a failure is filed against this resource"
+ },
+ "runs": {
+  "runs": [
+   {
+    "transformation_id": "tx-734763916b",
+    "scope": "workstation",
+    "objective": "Close the remaining vision→realisation gap and reach launch-ready.",
+    "validated": null,
+    "created_at": "2026-11-13T23:08:46Z"
+   }
+  ],
+  "total": 1,
+  "unreadable": 1,
+  "unreadable_records": [
+   {
+    "record": "w987-cut-off.json",
+    "error": "JSONDecodeError"
+   }
+  ]
+ },
+ "assess": {
+  "overall_realisation": 0.849,
+  "measure": "API surface coverage — pillar routers mounted and stores non-empty; not delivery (the delivery measure is /api/v1/plan/state)",
+  "assessment": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Transformation Intelligence of the Workstation IDBO. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Faithfulness Assessment\nSubject: the subject (not identified to this engine by the tool that called it) (domain: WITHHELD — no domain was declared for this call).\nStructured frame over the terms most frequent in the request (a term count, not an analysis):\n- (no terms were counted for this reply)\n\n## Biggest Gaps\nStructured risk frame for this dimension — surface, don't invent. The items below are terms taken from the request to CHECK, not risks this engine identified:\n- Check: the stated context.\n- Likelihood × impact to be scored; mitigations and owners to be assigned.\n- The native engine flags areas needing attention; a model resource details them.\n\n## Recommended Next Transformation Steps\nStructured option frame for: the subject (not identified to this engine by the tool that called it).\n- Generate ≥3 distinct variants of the approach.\n- Score each against value, feasibility, risk, and values-fit (halal/beneficence).\n- Recommend the highest-scoring; record why — to be enriched by a model resource.\n\n## Risks\nStructured risk frame for this dimension — surface, don't invent. The items below are terms taken from the request to CHECK, not risks this engine identified:\n- Check: the stated context.\n- Likelihood × impact to be scored; mitigations and owners to be assigned.\n- The native engine flags areas needing attention; a model resource details them.",
+  "ai_provenance": {
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+   "served_by": "native",
+   "is_external": false
+  }
+ },
+ "tick": {
+  "overall_realisation": 0.849,
+  "measure": "API surface coverage — pillar routers mounted and stores non-empty; not delivery (the delivery measure is /api/v1/plan/state)",
+  "next_gap": "Generate a living Enterprise IDBO (VSB) for the user",
+  "open_immediate_gaps": 4,
+  "ticked_at": "2026-11-13T23:08:46Z",
+  "note": "Continuous heartbeat; feed /api/v1/sovereign-evolution/cycle to act on gaps."
+ },
+ "followups": {
+  "register": "docs/FOLLOWUPS.json",
+  "available": true,
+  "counts": {
+   "open": 43,
+   "scheduled": 29,
+   "unscheduled": 0,
+   "high": 1,
+   "awaiting_owner": 14,
+   "done": 1132,
+   "dropped": 19
+  },
+  "next_plan_item": "P2.40",
+  "schedule": [
+   {
+    "slot": "P4.1",
+    "title": "AUTH_ENABLED on, with the auth-ON suite green and the perimeter (P2.6) closed",
+    "items": [
+     {
+      "id": "FU-849",
+      "title": "The heartbeat acts on any owner's entity with no principal, and the ownership check lets an absent user through",
+      "why": "The Owner ruled: a per-entity opt-in, and a named service identity once authentication is on. Done when an entity that has not opted in is skipped by the beat and says so, and a beat-driven cycle's record names the service identity and the lever that allowed it.",
+      "source": "W672 (assessment section 19: the external people-and-organisation brief, verified against the code)",
+      "found": "2026-10-11",
+      "files": [
+       "agentic_core/organism/heartbeat.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ruled by the Owner on 2026-10-11: fixed in one authentication-readiness round after P5 and before the final audit",
+      "tier": 3,
+      "priority": {
+       "score": 2.1,
+       "parts": {
+        "vision": 0.7,
+        "truth": 0.2,
+        "reach": 0.3,
+        "criticality": 0.5,
+        "breadth": 1.0,
+        "effort": 1.0,
+        "effort_measured": true
+       },
+       "score_is_upper_bound": false,
+       "area": "organism",
+       "tier": 3,
+       "basis": {
+        "area": "§8 the biomimetic living organism (primary file agentic_core/organism/heartbeat.py)",
+        "truth": "Tier-3",
+        "reach": "internal (no page named)",
+        "criticality": "a later phase",
+        "breadth": "1 finding",
+        "effort": "1 file"
+       }
+      }
+     }
+    ],
+    "delivered_by": "owner-switch",
+    "open_priority": 2.1
+   },
+   {
+    "slot": "P4.4",
+    "title": "Managed Postgres — migration dry-run script and rollback proven on a copy first",
+    "items": [
+     {
+      "id": "FU-284",
+      "title": "P4.4's pre-flight has not been started: six database dependencies are declared and imported by nothing, so no migration dry-run or rollback exists to prove",
+      "why": "P4.4 reads 'Managed Postgres - migration dry-run script and rollback proven on a copy first'. That pre-flight is OURS to build; the switch is the Owner's. Measured while correcting FU-282: sqlalchemy, sqlmodel and psycopg2-binary are DIRECT dependencies in pyproject.toml and no .py under agentic_core, integration_tests or scripts imports any of them; asyncpg and alembic are pinned in requirements.txt as transitive dependencies of prefect. So the toolchain for a Postgres migration is installed and NOTHING has been written with it - there is no schema, no migration, no dry-run script and no rollback, which is exactly what P4.4 says must exist before the Owner is asked to flip anything. A driver is legitimately loaded by URL rather than imported, so their presence is not the defect; the ABSENCE of the pre-flight they were installed for is. THE WORK, when P4.4's round comes: a schema derived from the stores that actually accumulate (VSB entities, the token ledger, the UEG chain, marketplace listings), a migration that runs against a COPY, a rollback proven on that copy, and a measured statement of what the JSON stores hold today so the migration has a known input. NOTHING is switched by this row.",
+      "source": "W500 (the corrected FU-282 analysis: the database dependencies exist for P4.4 and nothing imports them)",
+      "found": "2026-09-27",
+      "files": [
+       "pyproject.toml"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "W500: it IS P4.4's own pre-flight - the item says the migration dry-run and rollback are proven before the Owner flips anything",
+      "tier": 3,
+      "priority": {
+       "score": 1.5,
+       "parts": {
+        "vision": 0.5,
+        "truth": 0.2,
+        "reach": 0.3,
+        "criticality": 0.5,
+        "breadth": 1.0,
+        "effort": 1.0,
+        "effort_measured": true
+       },
+       "score_is_upper_bound": false,
+       "area": null,
+       "tier": 3,
+       "basis": {
+        "area": "unmapped (no area matches)",
+        "truth": "Tier-3",
+        "reach": "internal (no page named)",
+        "criticality": "a later phase",
+        "breadth": "1 finding",
+        "effort": "1 file"
+       }
+      }
+     }
+    ],
+    "delivered_by": "owner-switch",
+    "open_priority": 1.5
+   }
+  ],
+  "unscheduled": [],
+  "awaiting_owner": [
+   {
+    "id": "FU-1005",
+    "title": "Half the capital fund is held by three test allocations made in June that nothing can release",
+    "why": "Three allocations of 50,000, 4,975,000 and 1,000 to project ids that are not entities, still marked active; the fund page shows half deployed. Ruled 2026-10-12: reversed by a recorded reversal. The fund's reversal does not exist yet.",
+    "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+    "found": "2026-10-12",
+    "files": [
+     "agentic_core/api/capital_fund.py"
+    ],
+    "severity": "medium",
+    "owner_gated": true,
+    "slot": "OWNER",
+    "status": "open",
+    "closed_by": null,
+    "note": "",
+    "slot_source": "measured in this round and not done in it",
+    "tier": 2
+   },
+   {
+    "id": "FU-1038",
+    "title": "The durable defect loop has never completed a cycle: nineteen defects opened, none corrected, none re-verified",
+    "why": "Read from the Owner's store: 73 gates run, 19 defects, all open; fifteen belong to a door since retired. Ruled: the loop is turned once for real - those fifteen closed with that reason, the other four corrected and re-verified or reported as not reproducible.",
+    "source": "W677 (the quality and cell documents re-read against this machine's own records; assessment section 26; ruled 2026-10-12)",
+    "found": "2026-10-12",
+    "files": [
+     "agentic_core/vbs/quality.py"
+    ],
+    "severity": "medium",
+    "owner_gated": true,
+    "slot": "OWNER",
+    "status": "open",
+    "closed_by": null,
+    "note": "",
+    "slot_source": "measured in this round and not done in it",
+    "tier": 2
+   }
+  ],
+  "closed": [
+   {
+    "id": "FU-001",
+    "title": "Transformation stage verification honest — not-assessable stages, twin persistence, validated only on an allowed gate",
+    "why": "stages 5/6 were constant True, a halted or partial gate still validated, and a validated run moves the Owner's living-plan objectives",
+    "source": "W460 audit (P1.12)",
+    "found": "2026-09-13",
+    "files": [
+     "agentic_core/api/transformation_orchestration.py"
+    ],
+    "severity": "high",
+    "owner_gated": false,
+    "slot": "NEXT",
+    "status": "done",
+    "closed_by": "W461",
+    "note": ""
+   },
+   {
+    "id": "FU-002",
+    "title": "A blocked transfer can re-approve an approval an EARLIER action already spent",
+    "why": "_materiality_gate returns None both below the threshold (nothing consumed) and after consuming an approval, and the blocked-transfer paths call _restore_consumed_approval unconditionally, which re-approves the latest implemented record with the matching title — so a blocked non-material transfer can hand the next material transfer a spent approval",
+    "source": "W462 register review (read, not yet reproduced)",
+    "found": "2026-09-13",
+    "files": [
+     "agentic_core/api/economy.py",
+     "agentic_core/economy/governance.py"
+    ],
+    "severity": "high",
+    "owner_gated": false,
+    "slot": "NEXT",
+    "status": "done",
+    "closed_by": "W463",
+    "note": ""
+   }
+  ],
+  "priority": {
+   "gate_phase": "P2",
+   "config": "docs/PRIORITY.json",
+   "config_problems": [],
+   "completion": {
+    "by_phase": {
+     "P1": {
+      "weighted_pct": 100.0,
+      "rows_closed": 104,
+      "rows_open": 0,
+      "closed_priority": 4632.4,
+      "open_priority": 0.0
+     },
+     "P2": {
+      "weighted_pct": 100.0,
+      "rows_closed": 613,
+      "rows_open": 0,
+      "closed_priority": 20704.9,
+      "open_priority": 0.0
+     },
+     "P3": {
+      "weighted_pct": 100.0,
+      "rows_closed": 271,
+      "rows_open": 0,
+      "closed_priority": 2406.8,
+      "open_priority": 0.0
+     },
+     "P4": {
+      "weighted_pct": 89.8,
+      "rows_closed": 20,
+      "rows_open": 4,
+      "closed_priority": 210.1,
+      "open_priority": 23.8
+     },
+     "P5": {
+      "weighted_pct": 85.5,
+      "rows_closed": 82,
+      "rows_open": 25,
+      "closed_priority": 1159.3,
+      "open_priority": 196.0
+     },
+     "retired NEXT (pre-plan)": {
+      "weighted_pct": 100.0,
+      "rows_closed": 12,
+      "rows_open": 0,
+      "closed_priority": 120.8,
+      "open_priority": 0.0
+     }
+    },
+    "gate_phase": "P2",
+    "overall_weighted_pct": 99.3
+   },
+   "suggested_order": [
+    "P5.1",
+    "P5.10",
+    "P5.12",
+    "P5.15",
+    "P5.16",
+    "P4.5",
+    "P5.18",
+    "P5.19",
+    "P5.22",
+    "P5.7",
+    "P5.20",
+    "P4.1",
+    "P4.4",
+    "P5.13",
+    "P5.17"
+   ]
+  },
+  "plan": {
+   "readable": true,
+   "next": {
+    "slot": "P2.40",
+    "title": "THE FIFTEENTH TRUTH PASS",
+    "followups": 0,
+    "ever": 26,
+    "by_severity": {
+     "high": 0,
+     "medium": 0,
+     "low": 0
+    },
+    "open_priority": 0,
+    "top": []
+   },
+   "open_items": [
+    {
+     "slot": "P2.40",
+     "title": "THE FIFTEENTH TRUTH PASS",
+     "followups": 0,
+     "ever": 26,
+     "by_severity": {
+      "high": 0,
+      "medium": 0,
+      "low": 0
+     },
+     "open_priority": 0,
+     "top": []
+    },
+    {
+     "slot": "P2.41",
+     "title": "THE INVISIBLE SHORTFALLS, TENTH PASS",
+     "followups": 0,
+     "ever": 58,
+     "by_severity": {
+      "high": 0,
+      "medium": 0,
+      "low": 0
+     },
+     "open_priority": 0,
+     "top": []
+    }
+   ],
+   "phases": [
+    {
+     "phase": "P1",
+     "done": 18,
+     "total": 18
+    },
+    {
+     "phase": "P2",
+     "done": 39,
+     "total": 41
+    },
+    {
+     "phase": "P3",
+     "done": 30,
+     "total": 32
+    },
+    {
+     "phase": "P4",
+     "done": 0,
+     "total": 6
+    },
+    {
+     "phase": "P5",
+     "done": 2,
+     "total": 22
+    }
+   ],
+   "done": 89,
+   "total": 119,
+   "followups": {
+    "open": 43,
+    "scheduled": 29,
+    "unscheduled": 0,
+    "high": 1,
+    "awaiting_owner": 14,
+    "done": 1132,
+    "dropped": 19
+   },
+   "unscheduled": [],
+   "priority": {
+    "gate_phase": "P2",
+    "config": "docs/PRIORITY.json",
+    "config_problems": [],
+    "completion": {
+     "by_phase": {
+      "P1": {
+       "weighted_pct": 100.0,
+       "rows_closed": 104,
+       "rows_open": 0,
+       "closed_priority": 4632.4,
+       "open_priority": 0.0
+      },
+      "P2": {
+       "weighted_pct": 100.0,
+       "rows_closed": 613,
+       "rows_open": 0,
+       "closed_priority": 20704.9,
+       "open_priority": 0.0
+      },
+      "P3": {
+       "weighted_pct": 100.0,
+       "rows_closed": 271,
+       "rows_open": 0,
+       "closed_priority": 2406.8,
+       "open_priority": 0.0
+      },
+      "P4": {
+       "weighted_pct": 89.8,
+       "rows_closed": 20,
+       "rows_open": 4,
+       "closed_priority": 210.1,
+       "open_priority": 23.8
+      },
+      "P5": {
+       "weighted_pct": 85.5,
+       "rows_closed": 82,
+       "rows_open": 25,
+       "closed_priority": 1159.3,
+       "open_priority": 196.0
+      },
+      "retired NEXT (pre-plan)": {
+       "weighted_pct": 100.0,
+       "rows_closed": 12,
+       "rows_open": 0,
+       "closed_priority": 120.8,
+       "open_priority": 0.0
+      }
+     },
+     "gate_phase": "P2",
+     "overall_weighted_pct": 99.3
+    },
+    "suggested_order": [
+     "P5.1",
+     "P5.10",
+     "P5.12",
+     "P5.15",
+     "P5.16",
+     "P4.5",
+     "P5.18",
+     "P5.19",
+     "P5.22",
+     "P5.7",
+     "P5.20",
+     "P4.1",
+     "P4.4",
+     "P5.13",
+     "P5.17"
+    ]
+   }
+  },
+  "forecast": {
+   "assessable": true,
+   "not_assessable_because": null,
+   "window": {
+    "rounds": [
+     "W961",
+     "W962",
+     "W963",
+     "W965",
+     "W967",
+     "W969"
+    ],
+    "count": 6,
+    "closed_per_round": 1.0,
+    "found_per_round": 0.5,
+    "net_per_round": 0.5
+   },
+   "steady": {
+    "rounds": [
+     "W961",
+     "W962",
+     "W963",
+     "W965",
+     "W967",
+     "W969"
+    ],
+    "count": 6,
+    "excluded": [],
+    "closed_per_round": 1.0,
+    "found_per_round": 0.5,
+    "net_per_round": 0.5
+   },
+   "rate_used": {
+    "closed_per_round": 1.0,
+    "net_per_round": 0.5,
+    "rounds": 6,
+    "source": "steady (one-time intakes excluded)"
+   },
+   "open_rows": 43,
+   "open_rows_scheduled": 29,
+   "items_open": 30,
+   "items_with_no_row": [
+    "P2.40",
+    "P2.41",
+    "P3.30",
+    "P3.32",
+    "P4.2",
+    "P4.3",
+    "P4.6",
+    "P5.2",
+    "P5.3",
+    "P5.6",
+    "P5.8",
+    "P5.9",
+    "P5.11",
+    "P5.14",
+    "P5.21"
+   ],
+   "item_rate_per_round": 0.181,
+   "item_span_rounds": 492,
+   "items_done_total": 89,
+   "item_rounds_in_window": [],
+   "items_closed_in_window": 0,
+   "items_open_build": 24,
+   "items_open_owner_switch": 6,
+   "items_owner_switch_slots": [
+    "P4.1",
+    "P4.2",
+    "P4.3",
+    "P4.4",
+    "P4.5",
+    "P4.6"
+   ],
+   "items_open_unmarked": [],
+   "item_rate_phases": [
+    "P1",
+    "P2",
+    "P3",
+    "P5"
+   ],
+   "item_build_rate_per_round": 0.181,
+   "items_sized_build": 12,
+   "items_rounds_projected": 133,
+   "items_basis": "89 of 119 plan item(s) carry a DONE marker, across a span of 492 round(s) (W449 to W940) - a rate of 0.181 item(s) per round, which is the rate an ITEM is completed at and not the row rate. Over the last 6 build round(s) 0 item(s) closed (none); a six-round window cannot measure something that takes many rounds, which is why the span is used. 30 item(s) remain open, of which 15 carry NO registered row - their work is their own ACCEPT criteria and no row count covers it. THE RATE'S POPULATION: every completed item is in P1, P2, P3, P5, so this is the rate THAT work closed at, applied to phases whose work differs. NOT PROJECTED: 6 open item(s) (P4.1, P4.2, P4.3, P4.4, P4.5, P4.6) are declared owner-switch - a switch the Owner flips is not closed by a round, so counting it as rounds would invent them. PROJECTION COVERAGE: 12 of 24 build item(s) carry a registered row; the other 12 have never been sized, so the figure is an average over a population most of which no round has measured - it is the weakest number on this page.",
+   "open_rows_awaiting_owner": 14,
+   "awaiting_owner_ids": [
+    "FU-1005",
+    "FU-1038",
+    "FU-1040",
+    "FU-1046",
+    "FU-1095",
+    "FU-1151",
+    "FU-1165",
+    "FU-1166",
+    "FU-1174",
+    "FU-1176",
+    "FU-1185",
+    "FU-1187",
+    "FU-1188",
+    "FU-1191"
+   ],
+   "next_item": {
+    "slot": "P2.40",
+    "title": "THE FIFTEENTH TRUTH PASS",
+    "open_rows": 0,
+    "rounds_projected": 0,
+    "rate_used": 0.0,
+    "basis": "no open row rides this item"
+   },
+   "by_item": [
+    {
+     "slot": "P2.40",
+     "open_rows": 0,
+     "rounds_projected": 0,
+     "rate_used": 0.0,
+     "basis": "no open row rides this item"
+    },
+    {
+     "slot": "P2.41",
+     "open_rows": 0,
+     "rounds_projected": 0,
+     "rate_used": 0.0,
+     "basis": "no open row rides this item"
+    },
+    {
+     "slot": "P3.30",
+     "open_rows": 0,
+     "rounds_projected": 0,
+     "rate_used": 0.0,
+     "basis": "no open row rides this item"
+    },
+    {
+     "slot": "P3.32",
+     "open_rows": 0,
+     "rounds_projected": 0,
+     "rate_used": 0.0,
+     "basis": "no open row rides this item"
+    },
+    {
+     "slot": "P4.1",
+     "open_rows": 1,
+     "rounds_projected": null,
+     "rate_used": 0.0,
+     "basis": "not projected: only 0 of the last 6 build round(s) closed a row on P4.1 (a rate needs 3); the overall rate is measured over every item's rows and is not this item's"
+    },
+    {
+     "slot": "P4.2",
+     "open_rows": 0,
+     "rounds_projected": 0,
+     "rate_used": 0.0,
+     "basis": "no open row rides this item"
+    },
+    {
+     "slot": "P4.3",
+     "open_rows": 0,
+     "rounds_projected": 0,
+     "rate_used": 0.0,
+     "basis": "no open row rides this item"
+    },
+    {
+     "slot": "P4.4",
+     "open_rows": 1,
+     "rounds_projected": null,
+     "rate_used": 0.0,
+     "basis": "not projected: only 0 of the last 6 build round(s) closed a row on P4.4 (a rate needs 3); the overall rate is measured over every item's rows and is not this item's"
+    },
+    {
+     "slot": "P4.5",
+     "open_rows": 2,
+     "rounds_projected": null,
+     "rate_used": 0.0,
+     "basis": "not projected: only 0 of the last 6 build round(s) closed a row on P4.5 (a rate needs 3); the overall rate is measured over every item's rows and is not this item's"
+    },
+    {
+     "slot": "P4.6",
+     "open_rows": 0,
+     "rounds_projected": 0,
+     "rate_used": 0.0,
+     "basis": "no open row rides this item"
+    },
+    {
+     "slot": "P5.1",
+     "open_rows": 6,
+     "rounds_projected": null,
+     "rate_used": 0.17,
+     "basis": "not projected: only 1 of the last 6 build round(s) closed a row on P5.1 (a rate needs 3); the overall rate is measured over every item's rows and is not this item's"
+    },
+    {
+     "slot": "P5.2",
+     "open_rows": 0,
+     "rounds_projected": 0,
+     "rate_used": 0.0,
+     "basis": "no open row rides this item"
+    },
+    {
+     "slot": "P5.3",
+     "open_rows": 0,
+     "rounds_projected": 0,
+     "rate_used": 0.0,
+     "basis": "no open row rides this item"
+    },
+    {
+     "slot": "P5.6",
+     "open_rows": 0,
+     "rounds_projected": 0,
+     "rate_used": 0.0,
+     "basis": "no open row rides this item"
+    },
+    {
+     "slot": "P5.7",
+     "open_rows": 3,
+     "rounds_projected": null,
+     "rate_used": 0.33,
+     "basis": "not projected: only 2 of the last 6 build round(s) closed a row on P5.7 (a rate needs 3); the overall rate is measured over every item's rows and is not this item's"
+    },
+    {
+     "slot": "P5.8",
+     "open_rows": 0,
+     "rounds_projected": 0,
+     "rate_used": 0.0,
+     "basis": "no open row rides this item"
+    },
+    {
+     "slot": "P5.9",
+     "open_rows": 0,
+     "rounds_projected": 0,
+     "rate_used": 0.0,
+     "basis": "no open row rides this item"
+    },
+    {
+     "slot": "P5.10",
+     "open_rows": 5,
+     "rounds_projected": null,
+     "rate_used": 0.33,
+     "basis": "not projected: only 2 of the last 6 build round(s) closed a row on P5.10 (a rate needs 3); the overall rate is measured over every item's rows and is not this item's"
+    },
+    {
+     "slot": "P5.11",
+     "open_rows": 0,
+     "rounds_projected": 0,
+     "rate_used": 0.0,
+     "basis": "no open row rides this item"
+    },
+    {
+     "slot": "P5.12",
+     "open_rows": 1,
+     "rounds_projected": null,
+     "rate_used": 0.0,
+     "basis": "not projected: only 0 of the last 6 build round(s) closed a row on P5.12 (a rate needs 3); the overall rate is measured over every item's rows and is not this item's"
+    },
+    {
+     "slot": "P5.13",
+     "open_rows": 1,
+     "rounds_projected": null,
+     "rate_used": 0.0,
+     "basis": "not projected: only 0 of the last 6 build round(s) closed a row on P5.13 (a rate needs 3); the overall rate is measured over every item's rows and is not this item's"
+    },
+    {
+     "slot": "P5.14",
+     "open_rows": 0,
+     "rounds_projected": 0,
+     "rate_used": 0.0,
+     "basis": "no open row rides this item"
+    },
+    {
+     "slot": "P5.15",
+     "open_rows": 1,
+     "rounds_projected": null,
+     "rate_used": 0.0,
+     "basis": "not projected: only 0 of the last 6 build round(s) closed a row on P5.15 (a rate needs 3); the overall rate is measured over every item's rows and is not this item's"
+    },
+    {
+     "slot": "P5.16",
+     "open_rows": 1,
+     "rounds_projected": null,
+     "rate_used": 0.0,
+     "basis": "not projected: only 0 of the last 6 build round(s) closed a row on P5.16 (a rate needs 3); the overall rate is measured over every item's rows and is not this item's"
+    },
+    {
+     "slot": "P5.17",
+     "open_rows": 1,
+     "rounds_projected": null,
+     "rate_used": 0.0,
+     "basis": "not projected: only 0 of the last 6 build round(s) closed a row on P5.17 (a rate needs 3); the overall rate is measured over every item's rows and is not this item's"
+    },
+    {
+     "slot": "P5.18",
+     "open_rows": 2,
+     "rounds_projected": null,
+     "rate_used": 0.0,
+     "basis": "not projected: only 0 of the last 6 build round(s) closed a row on P5.18 (a rate needs 3); the overall rate is measured over every item's rows and is not this item's"
+    },
+    {
+     "slot": "P5.19",
+     "open_rows": 2,
+     "rounds_projected": null,
+     "rate_used": 0.0,
+     "basis": "not projected: only 0 of the last 6 build round(s) closed a row on P5.19 (a rate needs 3); the overall rate is measured over every item's rows and is not this item's"
+    },
+    {
+     "slot": "P5.20",
+     "open_rows": 1,
+     "rounds_projected": null,
+     "rate_used": 0.17,
+     "basis": "not projected: only 1 of the last 6 build round(s) closed a row on P5.20 (a rate needs 3); the overall rate is measured over every item's rows and is not this item's"
+    },
+    {
+     "slot": "P5.21",
+     "open_rows": 0,
+     "rounds_projected": 0,
+     "rate_used": 0.0,
+     "basis": "no open row rides this item"
+    },
+    {
+     "slot": "P5.22",
+     "open_rows": 1,
+     "rounds_projected": null,
+     "rate_used": 0.0,
+     "basis": "not projected: only 0 of the last 6 build round(s) closed a row on P5.22 (a rate needs 3); the overall rate is measured over every item's rows and is not this item's"
+    }
+   ],
+   "items": {
+    "done": 89,
+    "total": 119,
+    "open": 30
+   },
+   "all_rows_rounds_projected": 29,
+   "basis": "measured from the register: which round closed each row and which round found it. The rate is the mean over the last 6 round(s) that closed anything, ACROSS EVERY ITEM - a class-wide batch closes rows on five or six items at once, so no single item moves at this rate. The projection covers the rows that RIDE A PLAN ITEM, which is the population the rate was measured over; rows awaiting an Owner decision are counted separately and are NOT projected, because no build round can close one. Each ITEM is projected at the rate measured on its own rows, or not projected at all. A projection is arithmetic over that mean, in ROUNDS — the register does not record how long a round takes, and this is not a date, a deadline or a promise. Rounds that only registered findings are counted as finding work, never as burning it."
+  },
+  "batches": {
+   "batches": [],
+   "unclassed": [
+    "FU-1033",
+    "FU-1036",
+    "FU-1054",
+    "FU-1055",
+    "FU-1057",
+    "FU-1060",
+    "FU-1067",
+    "FU-1071",
+    "FU-1072",
+    "FU-1075",
+    "FU-1077",
+    "FU-1078",
+    "FU-1079",
+    "FU-1081",
+    "FU-1085",
+    "FU-1086",
+    "FU-1156",
+    "FU-284",
+    "FU-301",
+    "FU-399",
+    "FU-417",
+    "FU-603",
+    "FU-809",
+    "FU-810",
+    "FU-811",
+    "FU-849",
+    "FU-991",
+    "FU-992",
+    "FU-993"
+   ],
+   "unclassed_count": 29,
+   "awaiting_owner": [
+    "FU-1005",
+    "FU-1038",
+    "FU-1040",
+    "FU-1046",
+    "FU-1095",
+    "FU-1151",
+    "FU-1165",
+    "FU-1166",
+    "FU-1174",
+    "FU-1176",
+    "FU-1185",
+    "FU-1187",
+    "FU-1188",
+    "FU-1191"
+   ],
+   "awaiting_owner_count": 14,
+   "rows": 29,
+   "basis": "grouped by the sweep class each row's own evidence cites (W477's ten). `closes` are rows citing ONLY this class — one mechanism can finish them; `partial` cite others too, so this batch advances them without closing them, and they are counted separately. Rows citing no class are listed, never guessed at. A suggestion beside the plan's order, not a replacement for it: the gate still decides which item is open."
+  },
+  "bundles": {
+   "bundles": [
+    {
+     "slot": "P5.1",
+     "rows": [
+      "FU-417",
+      "FU-399",
+      "FU-1072"
+     ],
+     "size": 3,
+     "files": [
+      "agentic_core/organism/cadence.py",
+      "agentic_core/organism/heartbeat.py",
+      "apps/workstation-superapp/vite.config.js",
+      "integration_tests/test_mvp_spine.py"
+     ],
+     "files_count": 4,
+     "rows_per_file": {
+      "agentic_core/organism/cadence.py": 1,
+      "agentic_core/organism/heartbeat.py": 3,
+      "apps/workstation-superapp/vite.config.js": 1,
+      "integration_tests/test_mvp_spine.py": 4
+     },
+     "thinnest_file_rows": 1,
+     "component_size": 6,
+     "also_touching": [
+      "OWNER",
+      "P4.1",
+      "P5.10"
+     ],
+     "priority": 14.6,
+     "above_measured_ceiling": false,
+     "possibly_under_connected": false
+    },
+    {
+     "slot": "P5.1",
+     "rows": [
+      "FU-301",
+      "FU-1071",
+      "FU-1085"
+     ],
+     "size": 3,
+     "files": [
+      ".github/workflows/spine.yml",
+      "integration_tests/conftest.py"
+     ],
+     "files_count": 2,
+     "rows_per_file": {
+      ".github/workflows/spine.yml": 2,
+      "integration_tests/conftest.py": 2
+     },
+     "thinnest_file_rows": 2,
+     "component_size": 3,
+     "also_touching": [],
+     "priority": 7.8,
+     "above_measured_ceiling": false,
+     "possibly_under_connected": false
+    }
+   ],
+   "components": 21,
+   "ceiling": {
+    "rows": 37,
+    "rounds": [
+     "W677"
+    ],
+    "median": 1,
+    "rounds_measured": 361,
+    "basis": "the most rows any one round has closed is 37 (W677), over 361 round(s) that closed anything; the median round closed 1. This is a CEILING REACHED, not a limit imposed - a bundle above it is still proposed, flagged as larger than anything yet done."
+   },
+   "rows": 29,
+   "cap_basis": "a component is sub-partitioned BY ITEM, and every proposal that was cut says so ('cut from a N-row component'). The limit is not edit conflict but GUARD BREADTH: a guard spanning many surfaces is where vacuous legs come from (five of thirty-three in W499, three of ten in W500), and an item is the unit that already carries its own ACCEPT criteria",
+   "basis": "a bundle is a FILE-CONNECTED COMPONENT cut by ITEM. Components come from each row's DECLARED files, so an under-declared row under-connects and its bundle is flagged. The cut is by item because that is the clean one (measured) and because an item already carries its own ACCEPT criteria, so the round has one guard subject. A bundle ADVANCES the other items whose rows touch the same files; it never closes them - only an item's own ACCEPT criteria do that."
+  },
+  "integrity": {
+   "ok": true,
+   "problems": []
+  }
+ },
+ "followups_unavailable": {
+  "register": "docs/FOLLOWUPS.json",
+  "available": false,
+  "reason": "w987-not-shipped.md is not readable here (missing) — the docs are not shipped in the runtime image"
+ }
+}

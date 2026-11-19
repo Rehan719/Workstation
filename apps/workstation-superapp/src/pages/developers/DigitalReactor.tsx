@@ -1,9 +1,11 @@
+import { silenceIsRight } from '../../components/ReadFailures';   // W961 (FU-1181)
 import React, { useState, useRef, useCallback } from 'react';
 import { WORKSPACE_DOMAINS } from '../../lib/taxonomy';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '@workstation/ui';
 import { Play, Square, Terminal, Zap, Bug, Share2, Download, Loader2, CheckCircle2 } from 'lucide-react';
-import { provenanceBadge, provenanceLine } from '../../lib/api';
+import { errorMessage, provenanceBadge, provenanceLine } from '../../lib/api';
+import { refusalOf } from '../../lib/stream';   // W1009
 
 const DOMAINS = WORKSPACE_DOMAINS;   // §17.1 (W321) — one shared workspace list
 type Domain = typeof DOMAINS[number];
@@ -80,7 +82,9 @@ export const DigitalReactor: React.FC = () => {
         // orchestrator.complete as `prefer`). `params` used to carry four switches nothing read.
         body: JSON.stringify({ domain, params: {}, label: `${domain} narrative`, model: serving }),
       });
-      if (!response.ok || !response.body) throw new Error(`HTTP ${response.status}`);
+      //  W1009 - a refusal says the server's status and reason (it said "HTTP 422" alone), in lib/stream.ts's sentence
+      if (!response.ok) { appendLog(`[ERROR] ${await refusalOf(response)}`); return; }
+      if (!response.body) { appendLog('[ERROR] The server answered without a stream, so nothing ran here.'); return; }
 
       const reader = response.body.getReader();
       readerRef.current = reader;
@@ -127,12 +131,12 @@ export const DigitalReactor: React.FC = () => {
             } else if (ev.error) {
               appendLog(`[ERROR] ${ev.error}`);
             }
-          } catch { /* malformed */ }
+          } catch { silenceIsRight('a stream frame that is not JSON, a heartbeat or a cut line, carries nothing to show')(); }
         }
         requestAnimationFrame(() => logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' }));
       }
-    } catch (err: any) {
-      appendLog(`[ERROR] ${err.message}`);
+    } catch (err) {
+      appendLog(`[ERROR] ${errorMessage(err)}`);   // W1009 - an unreachable server, as one
     } finally {
       setIsRunning(false);
       readerRef.current = null;

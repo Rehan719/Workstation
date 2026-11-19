@@ -1,0 +1,314 @@
+{
+ "compositions": {
+  "compositions": [
+   {
+    "id": "comp-75bcc537",
+    "owner_id": "default",
+    "name": "Weekly compliance read",
+    "usage_area": "synthesis",
+    "resources": [
+     {
+      "id": "compliance",
+      "name": "Unified Compliance Engine",
+      "resource_class": "process_intelligence",
+      "endpoint": "/api/v1/compliance/check",
+      "config": {
+       "subject": "str",
+       "domain": "str",
+       "jurisdiction": "str"
+      }
+     }
+    ],
+    "model": {
+     "unset_params": {
+      "compliance": [
+       "subject",
+       "domain",
+       "jurisdiction"
+      ]
+     }
+    },
+    "commit_ready": null,
+    "reusable": true,
+    "rerunnable": true,
+    "created_at": "2026-11-13T09:19:29Z",
+    "expires_at": "2026-11-14T10:20:29Z",
+    "lifecycle": {
+     "state": "provisioned",
+     "runnable": true,
+     "expires_at": "2026-11-14T10:20:29Z",
+     "expired": false,
+     "runs_kept": 0,
+     "last_run_at": null,
+     "not_known_because": null,
+     "read_at": "2026-11-13T10:20:29Z",
+     "basis": "Derived on this read and never stored, from the composition's own declared expiry and from the runs of it that the history keeps. expired: its declared expires_at has passed, and a run of it is refused before anything runs (renew it with a later expires_at, or retire it). operating: the history keeps at least one run of it. provisioned: saved, and the history, which covers its whole life, keeps no run of it. A state the stores cannot settle is 'not known'. A simulation (POST /api/v1/resources/compose/simulate) stores nothing, so no saved composition is ever 'requested'. Retiring (DELETE) removes the design from the store and keeps the rows of its runs, so no saved composition reads 'retired'. The beat records an expiry once, on the first beat after it passes, as the service identity (expiry_recorded); a run is refused at the expiry whether or not that record has been written yet. A change to the expiry is kept in the composition's own lifecycle_events.",
+     "expiry_recorded": null
+    }
+   },
+   {
+    "id": "comp-e12973df",
+    "owner_id": "default",
+    "name": "Standing compliance read",
+    "usage_area": "synthesis",
+    "resources": [
+     {
+      "id": "compliance",
+      "name": "Unified Compliance Engine",
+      "resource_class": "process_intelligence",
+      "endpoint": "/api/v1/compliance/check",
+      "config": {
+       "subject": "str",
+       "domain": "str",
+       "jurisdiction": "str"
+      }
+     }
+    ],
+    "model": {
+     "unset_params": {
+      "compliance": [
+       "subject",
+       "domain",
+       "jurisdiction"
+      ]
+     }
+    },
+    "commit_ready": null,
+    "reusable": true,
+    "rerunnable": true,
+    "created_at": "2026-11-13T09:19:29Z",
+    "lifecycle": {
+     "state": "operating",
+     "runnable": true,
+     "expires_at": null,
+     "expired": false,
+     "runs_kept": 1,
+     "last_run_at": "2026-11-13T09:19:29Z",
+     "not_known_because": null,
+     "read_at": "2026-11-13T10:20:29Z",
+     "basis": "Derived on this read and never stored, from the composition's own declared expiry and from the runs of it that the history keeps. expired: its declared expires_at has passed, and a run of it is refused before anything runs (renew it with a later expires_at, or retire it). operating: the history keeps at least one run of it. provisioned: saved, and the history, which covers its whole life, keeps no run of it. A state the stores cannot settle is 'not known'. A simulation (POST /api/v1/resources/compose/simulate) stores nothing, so no saved composition is ever 'requested'. Retiring (DELETE) removes the design from the store and keeps the rows of its runs, so no saved composition reads 'retired'. The beat records an expiry once, on the first beat after it passes, as the service identity (expiry_recorded); a run is refused at the expiry whether or not that record has been written yet. A change to the expiry is kept in the composition's own lifecycle_events.",
+     "expiry_recorded": null
+    }
+   },
+   {
+    "id": "comp-1158125b",
+    "owner_id": "default",
+    "name": "One-off compliance probe",
+    "usage_area": "synthesis",
+    "resources": [
+     {
+      "id": "compliance",
+      "name": "Unified Compliance Engine",
+      "resource_class": "process_intelligence",
+      "endpoint": "/api/v1/compliance/check",
+      "config": {
+       "subject": "str",
+       "domain": "str",
+       "jurisdiction": "str"
+      }
+     }
+    ],
+    "model": {
+     "unset_params": {
+      "compliance": [
+       "subject",
+       "domain",
+       "jurisdiction"
+      ]
+     }
+    },
+    "commit_ready": null,
+    "reusable": true,
+    "rerunnable": true,
+    "created_at": "2026-11-13T09:19:29Z",
+    "expires_at": "2026-11-13T10:19:29Z",
+    "expiry_recorded": {
+     "expired_at": "2026-11-13T10:19:29Z",
+     "recorded_at": "2026-11-13T10:20:29Z",
+     "recorded_by": "service:organism-heartbeat"
+    },
+    "lifecycle_events": [
+     {
+      "event": "expired",
+      "expired_at": "2026-11-13T10:19:29Z",
+      "recorded_at": "2026-11-13T10:20:29Z",
+      "recorded_by": "service:organism-heartbeat"
+     }
+    ],
+    "lifecycle": {
+     "state": "expired",
+     "runnable": false,
+     "expires_at": "2026-11-13T10:19:29Z",
+     "expired": true,
+     "runs_kept": 1,
+     "last_run_at": "2026-11-13T09:19:29Z",
+     "not_known_because": null,
+     "read_at": "2026-11-13T10:20:29Z",
+     "basis": "Derived on this read and never stored, from the composition's own declared expiry and from the runs of it that the history keeps. expired: its declared expires_at has passed, and a run of it is refused before anything runs (renew it with a later expires_at, or retire it). operating: the history keeps at least one run of it. provisioned: saved, and the history, which covers its whole life, keeps no run of it. A state the stores cannot settle is 'not known'. A simulation (POST /api/v1/resources/compose/simulate) stores nothing, so no saved composition is ever 'requested'. Retiring (DELETE) removes the design from the store and keeps the rows of its runs, so no saved composition reads 'retired'. The beat records an expiry once, on the first beat after it passes, as the service identity (expiry_recorded); a run is refused at the expiry whether or not that record has been written yet. A change to the expiry is kept in the composition's own lifecycle_events.",
+     "expiry_recorded": {
+      "expired_at": "2026-11-13T10:19:29Z",
+      "recorded_at": "2026-11-13T10:20:29Z",
+      "recorded_by": "service:organism-heartbeat"
+     }
+    }
+   }
+  ]
+ },
+ "resources": {
+  "resources": [
+   {
+    "id": "compliance",
+    "name": "Unified Compliance Engine",
+    "resource_class": "process_intelligence",
+    "type": "engine",
+    "description": "Sharia/Halal · UK Legal (London) · Regulatory · EHS · Ethical · Constitutional — one federated check.",
+    "capabilities": [
+     "halal/sharia",
+     "uk legal",
+     "regulatory",
+     "ehs",
+     "ethical",
+     "constitutional"
+    ],
+    "reconfigurable_params": {
+     "subject": "str",
+     "domain": "str",
+     "jurisdiction": "str"
+    },
+    "endpoint": "/api/v1/compliance/check",
+    "methods": [
+     "POST"
+    ],
+    "reusable": true,
+    "rerunnable": true,
+    "biomimetic": false,
+    "usable_in": [
+     "synthesis",
+     "design",
+     "development",
+     "delivery",
+     "commercialisation",
+     "governance",
+     "forge",
+     "build_to_order"
+    ],
+    "needs": [
+     {
+      "kind": "module",
+      "module": "agentic_core.api.compliance",
+      "attr": "check",
+      "why": "the handler calls it"
+     }
+    ],
+    "fabric_runs_engine": true,
+    "fabric_runs_basis": "the fabric's real-resource handler has a branch for it",
+    "fabric_handler_kind": "facility_run",
+    "endpoint_retired": false,
+    "endpoint_retired_basis": "no retirement switch is recorded for this path; whether its handler answers a real request is known only by calling it"
+   }
+  ],
+  "total": 66,
+  "classes": {
+   "process_intelligence": 11,
+   "digital_resource": 10,
+   "organism_system": 8,
+   "enterprise_org": 7,
+   "ai_native": 3,
+   "output_media": 1,
+   "federation": 1,
+   "domain_form": 25
+  },
+  "usage_areas": [
+   "synthesis",
+   "design",
+   "development",
+   "delivery",
+   "build_to_order",
+   "forge",
+   "commercialisation",
+   "governance",
+   "evolution"
+  ]
+ },
+ "cell_availability": {
+  "resources": [
+   {
+    "id": "compliance",
+    "state": "available",
+    "reason": "the fabric's real-resource handler has a branch for it",
+    "handler_kind": "facility_run",
+    "runs_engine": true,
+    "runs_engine_basis": "the fabric's real-resource handler has a branch for it",
+    "needs_declared": true,
+    "needs_state": "met",
+    "needs": [
+     {
+      "kind": "module",
+      "optional": false,
+      "why": "the handler calls it",
+      "needs": "agentic_core.api.compliance.check",
+      "met": true,
+      "basis": "imported at this call"
+     }
+    ],
+    "needs_per_run": [],
+    "needs_basis": "1 declared need(s) checked at this call and met",
+    "needs_narrowed": [],
+    "needs_declared_none": false,
+    "checked": "available",
+    "checked_basis": "the fabric has a handler for it, and 1 declared need(s) checked at this call and met",
+    "endpoint_state": "served",
+    "endpoint_basis": "the declared endpoint and method are in the route table",
+    "endpoint_retired": false,
+    "endpoint_retired_basis": "no retirement switch is recorded for this path; whether its handler answers a real request is known only by calling it",
+    "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+    "name": "Unified Compliance Engine"
+   }
+  ],
+  "counts": {
+   "available": 64,
+   "prompt_stage_only": 2
+  },
+  "total": 66,
+  "needs_counts": {
+   "met": 65,
+   "unmet": 1
+  },
+  "checked_counts": {
+   "available": 63,
+   "unavailable": 3
+  },
+  "needs_declared": 66,
+  "needs_basis": "66 of 66 registration(s) declare what they need, and each declared need was checked at this call. None is without a declaration: a registration that declares nothing is refused when the registry is read at import. 5 start here with less than they declare: an optional need is absent, and each says what that costs",
+  "needs_narrowed_count": 5,
+  "retired_endpoints": [
+   {
+    "id": "synthesis_studio",
+    "endpoint": "/api/v1/studio/synthesise",
+    "basis": "the door at /api/v1/studio/synthesise is RETIRED: it is in the route table and answers 410 to every request. Its own reason: This door is retired (Owner ruling 2026-10-11): one door establishes an enterprise, and it is Genesis. Nothing was composed and nothing was created. Establish through the Genesis page (/genesis), or POST /api/v1/genesis/establish. This route's code is kept and the retirement is reversible."
+   }
+  ],
+  "declaration_defects": [],
+  "available_without_engine": [
+   "build_to_order",
+   "capital_fund",
+   "change_control",
+   "circadian",
+   "digital_twin",
+   "federation_mesh",
+   "immune",
+   "metabolic",
+   "omnimedia",
+   "products_catalogue",
+   "self_healing",
+   "sovereign_evolution"
+  ],
+  "basis": "read at this call from the fabric's handler and the application's route table. 'available' means the fabric has a handler for the resource. It does NOT mean an engine runs: 12 of the available resource(s) run no engine when composed (they read state, query records, draft a blueprint or write a narrative) and are named in available_without_engine. Nor does it mean an engine that runs will succeed"
+ },
+ "specifications": {
+  "specifications": [],
+  "total": 0,
+  "limit": 500,
+  "basis": "every kept specification you can access, newest first. Each version is its own record; `superseded_by` and `digest_ok` are computed at this read"
+ }
+}

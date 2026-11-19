@@ -1,0 +1,928 @@
+{
+ "mission": "W1063 made up: plan the first month of a repair cafe run by volunteers in a library",
+ "vsb_id": "vsb-c9a9410632",
+ "runs": {
+  "status": 200,
+  "body": {
+   "runs": [],
+   "total": 0
+  }
+ },
+ "cascade_runs": {
+  "status": 200,
+  "body": {
+   "runs": [],
+   "total": 0,
+   "store_incomplete": null,
+   "total_is_incomplete": false,
+   "total_basis": "every run persisted in the cascade history"
+  }
+ },
+ "entities": {
+  "status": 200,
+  "body": {
+   "entities": [
+    {
+     "vsb_id": "vsb-c9a9410632",
+     "name": "W1063 Repair Cafe",
+     "domain": "enterprise",
+     "status": "registered - not operating",
+     "stage": "",
+     "owner_id": "owner",
+     "created_at": "2026-11-15T03:48:29Z",
+     "has_board": true,
+     "entity_type": "waqf_ltd_hybrid",
+     "business_plan_scope": "vsb-c9a9410632",
+     "has_native_swarm": true
+    }
+   ],
+   "total": 1
+  }
+ },
+ "plan": {
+  "status": 200,
+  "body": {
+   "scope": "vsb-c9a9410632",
+   "owner": "owner",
+   "executive_summary": "W1063 Repair Cafe is a VSB IDBO established to solve: W1063 made up: a repair cafe run by volunteers in a library.",
+   "concept": "Optimal solution concept for: W1063 made up: a repair cafe run by volunteers in a library",
+   "vision": "A waqf_ltd_hybrid VSB IDBO to commercialise this solution beneficently.",
+   "mission": "Deliver: W1063 made up: a repair cafe run by volunteers in a library",
+   "strategy": "Concept → Design → Commercialisation, governed by the Board (Chief — the Owner's standing charter; no twin model is trained) → AI CEO → C-Suite → CoE → BTO.",
+   "aims": [],
+   "objectives": [
+    {
+     "id": "obj-7d9e8fca",
+     "title": "Validate the concept",
+     "kpi": "",
+     "timeline": "",
+     "owner_role": "AI CEO",
+     "progress_pct": 0,
+     "status": "planned",
+     "reviews": [],
+     "draft": true,
+     "source": "establish_seed",
+     "created_at": "2026-11-15T03:48:29Z"
+    },
+    {
+     "id": "obj-c0d1580c",
+     "title": "Deliver the design",
+     "kpi": "",
+     "timeline": "",
+     "owner_role": "AI CEO",
+     "progress_pct": 0,
+     "status": "planned",
+     "reviews": [],
+     "draft": true,
+     "source": "establish_seed",
+     "created_at": "2026-11-15T03:48:29Z"
+    },
+    {
+     "id": "obj-e3c36bf4",
+     "title": "Launch to market",
+     "kpi": "",
+     "timeline": "",
+     "owner_role": "AI CEO",
+     "progress_pct": 0,
+     "status": "planned",
+     "reviews": [],
+     "draft": true,
+     "source": "establish_seed",
+     "created_at": "2026-11-15T03:48:29Z"
+    }
+   ],
+   "updated_at": "2026-11-15T03:48:29Z",
+   "provenance": {
+    "evidence_level": "behaviour",
+    "evidence_level_number": 1,
+    "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+    "served_by": null,
+    "body_pending": [],
+    "name_source": "founder",
+    "field_sources": {
+     "executive_summary": "establish_template",
+     "concept": "establish_template",
+     "vision": "establish_template",
+     "mission": "establish_template",
+     "strategy": "establish_template"
+    },
+    "templated_fields": [
+     "executive_summary",
+     "vision",
+     "mission",
+     "strategy",
+     "concept"
+    ],
+    "opening_written_by": "code templates filled from the establish request — not the Chief, and not a model. Edit any field to replace it with your own; a model or the Chief has composed nothing here."
+   },
+   "roadmap": {
+    "living": true,
+    "phases": [
+     {
+      "timeline": "Unscheduled",
+      "progress_pct": 0,
+      "complete": false,
+      "count": 3,
+      "objectives": [
+       {
+        "id": "obj-7d9e8fca",
+        "title": "Validate the concept",
+        "progress_pct": 0,
+        "status": "planned",
+        "kpi": "",
+        "owner_role": "AI CEO"
+       },
+       {
+        "id": "obj-c0d1580c",
+        "title": "Deliver the design",
+        "progress_pct": 0,
+        "status": "planned",
+        "kpi": "",
+        "owner_role": "AI CEO"
+       },
+       {
+        "id": "obj-e3c36bf4",
+        "title": "Launch to market",
+        "progress_pct": 0,
+        "status": "planned",
+        "kpi": "",
+        "owner_role": "AI CEO"
+       }
+      ]
+     }
+    ],
+    "phase_count": 1,
+    "objective_count": 3,
+    "overall_progress_pct": 0,
+    "current_phase": null,
+    "next_milestone": null,
+    "unscheduled_count": 3,
+    "unparsed_timelines": [],
+    "note": "Living roadmap derived from the plan's objectives — it updates as objectives progress. PHASES ARE IN TIME ORDER, parsed from each objective's timeline (Q1 2026 / 2026 Q1, a month and year, 2026-01, or a bare year). A timeline that does not parse is NOT a phase: those objectives are listed under Unscheduled, which is excluded from current_phase and next_milestone and counted in unscheduled_count — so the roadmap never drops them silently, and never claims an unplaceable objective comes next."
+   }
+  }
+ },
+ "ask": {
+  "mission": "W1063 made up: plan the first month of a repair cafe run by volunteers in a library",
+  "domain": "enterprise",
+  "realm": "enterprise",
+  "csuite_roles": [
+   "CSO",
+   "CFO",
+   "CTO",
+   "COO",
+   "CLO"
+  ],
+  "scope": "vsb-c9a9410632"
+ },
+ "cascade": {
+  "status": 200,
+  "body": {
+   "run_id": "87cd41deab",
+   "mission": "W1063 made up: plan the first month of a repair cafe run by volunteers in a library",
+   "delivery_sha256": "964db04b6384408c96436a75771ebc17c612edb8f25f9606a4ccaf275be68e9f",
+   "persistence": {
+    "proposed_catalogue": {
+     "persisted": true
+    },
+    "org_cascade_runs": {
+     "persisted": true
+    }
+   },
+   "business_plan_scope": "vsb-c9a9410632",
+   "plan_binding": null,
+   "economic_event": null,
+   "org_hierarchy": [
+    "Chief of the Board of Directors",
+    "Board of Directors",
+    "AI CEO",
+    "C-Suite",
+    "Centres of Excellence",
+    "Business Transformation Office",
+    "Build-to-Order"
+   ],
+   "level_0_chief_of_board": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Chief of the Board of Directors — the founder's standing charter (no trained model of them exists) and the. The native floor takes no role - what follows is a frame, not that role's work._\n\n_Composed for the enterprise realm. This engine RECORDS the realm and does not act on it: it composes from the text the calling tool identified as yours, and a house style is a directive only a served model can follow._\n\n## Intent & Values\nStructured go-to-market frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from volunteers library.\n- Positioning wedge from run volunteers.\n- Positioning wedge from month repair.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.\n\n## Strategic North Star\nNative structured frame for 'Strategic North Star' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Strategy\nNative structured frame for 'Strategy' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Living Roadmap\nStructured phased frame (deterministic scaffold):\n- Phase 1 — validate: cheapest test of the riskiest assumption.\n- Phase 2 — build: the smallest end-to-end slice that delivers value.\n- Phase 3 — launch & learn: ship, instrument, iterate.\n- Each phase grounded in enterprise; dates to be set against capacity.\n\n## Boundaries\nNative structured frame for 'Boundaries' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Mandate to the Board\nNative structured frame for 'Mandate to the Board' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe",
+   "level_0b_board_resolution": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Board of Directors of this VSB. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Intent & Values\nStructured go-to-market frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from volunteers library.\n- Positioning wedge from run volunteers.\n- Positioning wedge from month repair.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.\n\n## Resolution\nNative structured frame for 'Resolution' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Governance Guardrails\nNative structured frame for 'Governance Guardrails' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Action Plan\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG.\n\n## Authority Delegated to the AI CEO\nNative structured frame for 'Authority Delegated to the AI CEO' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Board-level Success Criteria\nStructured measurement frame:\n- Candidate KPI from volunteers library.\n- Candidate KPI from run volunteers.\n- Candidate KPI from month repair.\n- Candidate KPI from first month.\n- Each KPI needs a baseline, target, and cadence; tie to the objective above.",
+   "level_1_ceo_directive": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: AI CEO of a VSB, accountable to the Board. The native floor takes no role - what follows is a frame, not that role's work._\n\n_Composed for the enterprise realm. This engine RECORDS the realm and does not act on it: it composes from the text the calling tool identified as yours, and a house style is a directive only a served model can follow._\n\n## Intent & Values\nStructured go-to-market frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from volunteers library.\n- Positioning wedge from run volunteers.\n- Positioning wedge from month repair.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.\n\n## Mission Statement\nNative structured frame for 'Mission Statement' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Strategic Priorities\nNative structured frame for 'Strategic Priorities' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## C-Suite Assignments\nNative structured frame for 'C-Suite Assignments' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Success Metrics\nStructured measurement frame:\n- Candidate KPI from volunteers library.\n- Candidate KPI from run volunteers.\n- Candidate KPI from month repair.\n- Candidate KPI from first month.\n- Each KPI needs a baseline, target, and cadence; tie to the objective above.\n\n## Timeline\nStructured phased frame (deterministic scaffold):\n- Phase 1 — validate: cheapest test of the riskiest assumption.\n- Phase 2 — build: the smallest end-to-end slice that delivers value.\n- Phase 3 — launch & learn: ship, instrument, iterate.\n- Each phase grounded in enterprise; dates to be set against capacity.",
+   "level_2_csuite": {
+    "CSO": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Chief Strategy Officer. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Intent & Values\nStructured go-to-market frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from volunteers library.\n- Positioning wedge from run volunteers.\n- Positioning wedge from month repair.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.\n\n## Your Workstream\nNative structured frame for 'Your Workstream' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Key Actions\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG.\n\n## Resources Required\nNative structured frame for 'Resources Required' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Metrics You Own\nStructured measurement frame:\n- Candidate KPI from volunteers library.\n- Candidate KPI from run volunteers.\n- Candidate KPI from month repair.\n- Candidate KPI from first month.\n- Each KPI needs a baseline, target, and cadence; tie to the objective above.\n\n## Your Centre of Excellence\nNative structured frame for 'Your Centre of Excellence' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe",
+    "CFO": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Chief Financial Officer. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Intent & Values\nStructured go-to-market frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from volunteers library.\n- Positioning wedge from run volunteers.\n- Positioning wedge from month repair.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.\n\n## Your Workstream\nNative structured frame for 'Your Workstream' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Key Actions\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG.\n\n## Resources Required\nNative structured frame for 'Resources Required' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Metrics You Own\nStructured measurement frame:\n- Candidate KPI from volunteers library.\n- Candidate KPI from run volunteers.\n- Candidate KPI from month repair.\n- Candidate KPI from first month.\n- Each KPI needs a baseline, target, and cadence; tie to the objective above.\n\n## Your Centre of Excellence\nNative structured frame for 'Your Centre of Excellence' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe",
+    "CTO": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Chief Technology Officer. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Intent & Values\nStructured go-to-market frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from volunteers library.\n- Positioning wedge from run volunteers.\n- Positioning wedge from month repair.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.\n\n## Your Workstream\nNative structured frame for 'Your Workstream' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Key Actions\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG.\n\n## Resources Required\nNative structured frame for 'Resources Required' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Metrics You Own\nStructured measurement frame:\n- Candidate KPI from volunteers library.\n- Candidate KPI from run volunteers.\n- Candidate KPI from month repair.\n- Candidate KPI from first month.\n- Each KPI needs a baseline, target, and cadence; tie to the objective above.\n\n## Your Centre of Excellence\nNative structured frame for 'Your Centre of Excellence' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe",
+    "COO": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Chief Operating Officer. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Intent & Values\nStructured go-to-market frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from volunteers library.\n- Positioning wedge from run volunteers.\n- Positioning wedge from month repair.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.\n\n## Your Workstream\nNative structured frame for 'Your Workstream' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Key Actions\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG.\n\n## Resources Required\nNative structured frame for 'Resources Required' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Metrics You Own\nStructured measurement frame:\n- Candidate KPI from volunteers library.\n- Candidate KPI from run volunteers.\n- Candidate KPI from month repair.\n- Candidate KPI from first month.\n- Each KPI needs a baseline, target, and cadence; tie to the objective above.\n\n## Your Centre of Excellence\nNative structured frame for 'Your Centre of Excellence' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe",
+    "CLO": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Chief Legal Officer. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Intent & Values\nStructured go-to-market frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from volunteers library.\n- Positioning wedge from run volunteers.\n- Positioning wedge from month repair.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.\n\n## Your Workstream\nNative structured frame for 'Your Workstream' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Key Actions\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG.\n\n## Resources Required\nNative structured frame for 'Resources Required' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Metrics You Own\nStructured measurement frame:\n- Candidate KPI from volunteers library.\n- Candidate KPI from run volunteers.\n- Candidate KPI from month repair.\n- Candidate KPI from first month.\n- Each KPI needs a baseline, target, and cadence; tie to the objective above.\n\n## Your Centre of Excellence\nNative structured frame for 'Your Centre of Excellence' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe"
+   },
+   "level_3_coe": {
+    "CSO CoE": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Head of the Centre of Excellence reporting to the Chief Strategy Officer (Strategy, competitive positioning. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Intent & Values\nStructured go-to-market frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from volunteers library.\n- Positioning wedge from run volunteers.\n- Positioning wedge from month repair.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.\n\n## Specialist Capability Applied\nStructured feature frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Capability volunteers library.\n- Capability run volunteers.\n- Capability month repair.\n- Capability first month.\n- Tie each feature to a user job and an outcome — not a bare spec list.\n\n## Operational Delivery\nNative structured frame for 'Operational Delivery' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Standards & Best Practice Enforced\nNative structured frame for 'Standards & Best Practice Enforced' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe",
+    "CFO CoE": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Head of the Centre of Excellence reporting to the Chief Financial Officer (Financial modelling, budgeting. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Intent & Values\nStructured go-to-market frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from volunteers library.\n- Positioning wedge from run volunteers.\n- Positioning wedge from month repair.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.\n\n## Specialist Capability Applied\nStructured feature frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Capability volunteers library.\n- Capability run volunteers.\n- Capability month repair.\n- Capability first month.\n- Tie each feature to a user job and an outcome — not a bare spec list.\n\n## Operational Delivery\nNative structured frame for 'Operational Delivery' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Standards & Best Practice Enforced\nNative structured frame for 'Standards & Best Practice Enforced' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe",
+    "CTO CoE": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Head of the Centre of Excellence reporting to the Chief Technology Officer (Architecture, technology. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Intent & Values\nStructured go-to-market frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from volunteers library.\n- Positioning wedge from run volunteers.\n- Positioning wedge from month repair.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.\n\n## Specialist Capability Applied\nStructured feature frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Capability volunteers library.\n- Capability run volunteers.\n- Capability month repair.\n- Capability first month.\n- Tie each feature to a user job and an outcome — not a bare spec list.\n\n## Operational Delivery\nNative structured frame for 'Operational Delivery' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Standards & Best Practice Enforced\nNative structured frame for 'Standards & Best Practice Enforced' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe",
+    "COO CoE": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Head of the Centre of Excellence reporting to the Chief Operating Officer (Process design, operational. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Intent & Values\nStructured go-to-market frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from volunteers library.\n- Positioning wedge from run volunteers.\n- Positioning wedge from month repair.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.\n\n## Specialist Capability Applied\nStructured feature frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Capability volunteers library.\n- Capability run volunteers.\n- Capability month repair.\n- Capability first month.\n- Tie each feature to a user job and an outcome — not a bare spec list.\n\n## Operational Delivery\nNative structured frame for 'Operational Delivery' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Standards & Best Practice Enforced\nNative structured frame for 'Standards & Best Practice Enforced' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe",
+    "CLO CoE": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Head of the Centre of Excellence reporting to the Chief Legal Officer (Contracts, compliance, IP, regulatory. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Intent & Values\nStructured go-to-market frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from volunteers library.\n- Positioning wedge from run volunteers.\n- Positioning wedge from month repair.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.\n\n## Specialist Capability Applied\nStructured feature frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Capability volunteers library.\n- Capability run volunteers.\n- Capability month repair.\n- Capability first month.\n- Tie each feature to a user job and an outcome — not a bare spec list.\n\n## Operational Delivery\nNative structured frame for 'Operational Delivery' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Standards & Best Practice Enforced\nNative structured frame for 'Standards & Best Practice Enforced' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe"
+   },
+   "csuite_roster": {
+    "engaged": [
+     "CSO",
+     "CFO",
+     "CTO",
+     "COO",
+     "CLO"
+    ],
+    "available": [
+     "CSO",
+     "CFO",
+     "CTO",
+     "CPO",
+     "COO",
+     "CIO",
+     "CLO",
+     "Forecasting",
+     "Policy"
+    ],
+    "each_drives_coe": true,
+    "requested": [
+     "CSO",
+     "CFO",
+     "CTO",
+     "COO",
+     "CLO"
+    ],
+    "not_run": [],
+    "defaulted": false,
+    "basis": "every role asked for ran. A cascade engages officers from `available`; a custom CoE specialism is honoured, a custom officer is not."
+   },
+   "appraisals": {
+    "chief_appraises_board": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Chief of the Board. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Intent & Values\nStructured go-to-market frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from volunteers library.\n- Positioning wedge from run volunteers.\n- Positioning wedge from month repair.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.\n\n## Appraisal\nNative structured frame for 'Appraisal' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Development Action\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.",
+    "board_appraises_ceo": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Board of Directors. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Intent & Values\nStructured go-to-market frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from volunteers library.\n- Positioning wedge from run volunteers.\n- Positioning wedge from month repair.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.\n\n## Appraisal\nNative structured frame for 'Appraisal' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Development Action\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.",
+    "ceo_appraises_csuite": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: AI CEO. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Appraisal\nNative structured frame for 'Appraisal' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Development Action\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.",
+    "csuite_appraises_coe": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: specialist C-Suite (each officer, for the CoE it drives). The native floor takes no role - what follows is a frame, not that role's work._\n\n## Appraisal\nNative structured frame for 'Appraisal' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Development Action\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.",
+    "ceo_appraises_bto": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: AI CEO. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Workstreams\nNative structured frame for 'Workstreams' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Appraisal\nNative structured frame for 'Appraisal' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Development Action\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.; record outcomes to memory/UEG.",
+    "bto_appraises_build": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Business Transformation Office. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Workstreams\nNative structured frame for 'Workstreams' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Operational Delivery R\nNative structured frame for 'Operational Delivery R' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Appraisal\nNative structured frame for 'Appraisal' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Development Action\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise). The list below is the request's most frequent terms, not findings about them.; record outcomes to memory/UEG."
+   },
+   "development_applied": {},
+   "development_applied_basis": null,
+   "tier_identity_applied": {},
+   "quality": {
+    "bar": [
+     "specifically designed",
+     "modelled",
+     "simulated",
+     "optimised",
+     "categorised",
+     "ranked",
+     "best-in-class",
+     "innovative",
+     "effective",
+     "safe",
+     "efficient",
+     "commercially viable",
+     "compliant",
+     "verified",
+     "tested",
+     "validated"
+    ],
+    "delivery_coverage": null,
+    "delivery_coverage_basis": "4 declared section(s) checked against the delivered content",
+    "substantive_length": null,
+    "stub_found": null,
+    "stub_marker_found": false,
+    "stub_screen_basis": "the length and stub screen ran on this text, whether or not the coverage gate could: no stub marker matched and the text is not under the minimum length",
+    "served_by": "native×16",
+    "not_assessable": true,
+    "compliance": {
+     "overall": "review",
+     "compliant": null,
+     "verdicts": [
+      {
+       "framework": "sharia_halal",
+       "status": "review",
+       "reason": "no engine covers this area — the haram-term screen matched nothing and no halal vocabulary is present; not a certification (engine ran and produced no finding here, so it backs no verdict)",
+       "coverage": "none"
+      },
+      {
+       "framework": "uk_legal",
+       "status": "review",
+       "reason": "no engine covers this area — keyword screen + employment-statute vocabulary matched nothing (jurisdiction UK / London); not legal advice (UK engine ran and produced no finding here, so it backs no verdict · audit fc49c7b8b5702c02… over the subject)",
+       "coverage": "none"
+      },
+      {
+       "framework": "regulatory",
+       "status": "not_assessed",
+       "reason": "keyword screen found no regulated-activity trigger — the absence of a trigger word is not a regulatory clearance; nothing here assessed this subject",
+       "coverage": "screen"
+      },
+      {
+       "framework": "ehs",
+       "status": "not_assessed",
+       "reason": "keyword screen found no hazard term — the absence of a hazard word is not an EHS clearance; nothing here assessed this subject",
+       "coverage": "screen"
+      },
+      {
+       "framework": "ethical",
+       "status": "not_assessed",
+       "reason": "human: not_assessed; environment: not_assessed; quality: not_assessed; value: not_assessed (engine ran and produced no finding here, so it backs no verdict)",
+       "coverage": "none",
+       "dimensions_not_assessed": [
+        "human",
+        "environment",
+        "quality",
+        "value"
+       ]
+      }
+     ],
+     "coverage_gaps": [
+      "ehs",
+      "ethical",
+      "regulatory",
+      "sharia_halal",
+      "uk_legal"
+     ],
+     "assessed_by": [],
+     "basis": "keyword and vocabulary screens plus the ethical dimensions. A screen can refuse and can escalate; it cannot clear — so only a row with coverage 'engine' can carry a pass, and `coverage_gaps` names every area nothing here assessed — NOTHING here assessed this subject, so the overall is 'review' and no part of it may be reported as compliant"
+    },
+    "qms_gate_passed": null,
+    "qms_basis": "not assessable — floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+    "qms_min_coverage": 0.95,
+    "qms_non_conformance_rate": null,
+    "qms_defects": {
+     "gates_run": 0,
+     "defects_total": 0,
+     "gate_failures": 0,
+     "open": 0,
+     "corrected": 0,
+     "closed": 0,
+     "closed_source_retired": 0,
+     "not_reproducible": 0,
+     "non_conformance_rate": null,
+     "what_if_gates": 0,
+     "reported_total": 0,
+     "person_reported_open": 0,
+     "what_if_failures": 0,
+     "open_from_retired_labels": 0,
+     "closed_basis": "'closed' counts defects re-verified and passed. A defect closed because its source was retired, or reported not reproducible, was not re-verified: each is counted apart and moves nothing in the rate",
+     "dispositions_basis": "0 defect(s) closed because the surface that opened them was retired and 0 reported not reproducible, each with the reason, name and time its person gave; neither is a re-verification, so neither is counted as closed above, as a gate pass or in the rate. Open now under a label no live surface opens a defect under: 0",
+     "attested_reverifications": 0,
+     "attested_counted_since": null,
+     "defects_closed_on_attestation": 0,
+     "attested_basis": "No caller-attested re-verification has been counted: the counter starts at the first one after it was added, and any run before that is in the rate and not in this count. 0 defect(s) closed now were last re-verified on typed figures. By ruling (OWNER 2026-10-11) attested re-verifications STAY in the rate: these counts stand beside it and change it by nothing.",
+     "rate_basis": "gate failures / gates run across ALL deliveries on this platform (every entity and tenant share one QMS store) — not one entity's record. What-if gates run on typed metrics, and re-verifications of the defects they open, are counted separately and excluded. A re-verification of a DELIVERY defect does count, including one attested by its caller (W316: a correction that does not hold must raise the rate)."
+    },
+    "bar_measured": {
+     "criteria": {
+      "specifically designed": {
+       "met": null,
+       "basis": "not assessable — floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+       "measured": false,
+       "attested": false,
+       "source": "none"
+      },
+      "verified": {
+       "met": null,
+       "basis": "not assessable — floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+       "measured": false,
+       "attested": false,
+       "source": "none"
+      },
+      "compliant": {
+       "met": null,
+       "measured": false,
+       "attested": false,
+       "source": "screen",
+       "basis": "§11 screen verdicts: {'sharia_halal': 'review', 'uk_legal': 'review', 'regulatory': 'not_assessed', 'ehs': 'not_assessed', 'ethical': 'not_assessed'} — not established: ehs, ethical, regulatory, sharia_halal, uk_legal could not assess this subject (a keyword screen can refuse, not clear)"
+      },
+      "safe": {
+       "met": null,
+       "measured": false,
+       "attested": false,
+       "source": "screen",
+       "basis": "§11 safety-bearing frameworks: {'sharia_halal': 'review', 'ehs': 'not_assessed', 'ethical': 'not_assessed'} — not established: ehs, ethical, sharia_halal could not assess this subject (a keyword screen can refuse, not clear)"
+      },
+      "modelled": {
+       "met": null,
+       "basis": "not measured by this gate",
+       "measured": false,
+       "attested": false,
+       "source": "none"
+      },
+      "simulated": {
+       "met": null,
+       "basis": "not measured by this gate",
+       "measured": false,
+       "attested": false,
+       "source": "none"
+      },
+      "optimised": {
+       "met": null,
+       "basis": "not measured by this gate",
+       "measured": false,
+       "attested": false,
+       "source": "none"
+      },
+      "categorised": {
+       "met": null,
+       "basis": "not measured by this gate",
+       "measured": false,
+       "attested": false,
+       "source": "none"
+      },
+      "ranked": {
+       "met": null,
+       "basis": "not measured by this gate",
+       "measured": false,
+       "attested": false,
+       "source": "none"
+      },
+      "best-in-class": {
+       "met": null,
+       "basis": "not measured by this gate",
+       "measured": false,
+       "attested": false,
+       "source": "none"
+      },
+      "innovative": {
+       "met": null,
+       "basis": "not measured by this gate",
+       "measured": false,
+       "attested": false,
+       "source": "none"
+      },
+      "effective": {
+       "met": null,
+       "basis": "not measured by this gate",
+       "measured": false,
+       "attested": false,
+       "source": "none"
+      },
+      "efficient": {
+       "met": null,
+       "basis": "not measured by this gate",
+       "measured": false,
+       "attested": false,
+       "source": "none"
+      },
+      "commercially viable": {
+       "met": null,
+       "basis": "not measured by this gate",
+       "measured": false,
+       "attested": false,
+       "source": "none"
+      },
+      "tested": {
+       "met": null,
+       "basis": "not measured by this gate",
+       "measured": false,
+       "attested": false,
+       "source": "none"
+      },
+      "validated": {
+       "met": null,
+       "basis": "not measured by this gate",
+       "measured": false,
+       "attested": false,
+       "source": "none"
+      }
+     },
+     "measured": 0,
+     "met": 0,
+     "attested": 0,
+     "not_measured": 16,
+     "not_measured_basis": "16 = 14 with no source + 2 screen-only: a criterion only a screen read is not measured either. The summary prints the two as separate buckets so that its figures add up to the bar's 16",
+     "screen_only": 2,
+     "screen_only_criteria": [
+      "compliant",
+      "safe"
+     ],
+     "summary": "0 measured · 0 attested · 2 screen-only · 14 not measured (of 16)",
+     "total": 16,
+     "gate_measurements": {},
+     "gate_measurements_summary": "none - the gate did not run on this output (see the criteria's basis)",
+     "gate_measurements_basis": "structure only: whether every declared section heading is present, and whether a stub marker (or too little text) was found. The content was not read, so a pass here is not a finding that the delivery is specifically designed or verified",
+     "measured_criteria": [],
+     "attested_criteria": []
+    },
+    "quality_record_hash": "9c41692307c7d8fe3495704ceb21bd465840af40062d1eac5018a91be5a9c3b5519efa92d639cd0ccde37510b76f7aa6302bd597cb0fe7ab1b62f84a23aa65a0",
+    "document_controlled": true,
+    "proxies_basis": "NOT ASSESSED - the gate is not assessable on floor-served text, so the stub, length and coverage proxies are withheld rather than read as passes"
+   },
+   "biomimetic": {
+    "layers": [
+     "Immune"
+    ],
+    "layers_declared": [
+     "Genome",
+     "Nervous",
+     "Immune",
+     "Cardiovascular",
+     "Respiratory",
+     "Musculoskeletal",
+     "Endocrine"
+    ],
+    "self": "self-managing · improving · healing",
+    "immune": {
+     "health": 1.0,
+     "threat_level": "NOMINAL",
+     "hot_endpoint_errors": 0,
+     "hot_endpoint_tied": [],
+     "errors_in_window": 0,
+     "review_flags_in_window": 0,
+     "events_in_window": 0,
+     "health_basis": "health and threat are computed from 0 failure(s) in the window; 0 compliance review flag(s) are reported beside them and are NOT counted — a flag asks a human to look, it is not a finding of harm",
+     "window_seconds": 300,
+     "observations_in_window": 16,
+     "observed_basis": "16 call(s) were observed in the last 5 minutes",
+     "by_type": {},
+     "hot_endpoint": null,
+     "response_playbook": [
+      "recommended: passive surveillance"
+     ]
+    },
+    "circadian": "MAINTENANCE_REST",
+    "layers_not_contributing": [
+     "Genome",
+     "Nervous",
+     "Cardiovascular",
+     "Respiratory",
+     "Musculoskeletal",
+     "Endocrine"
+    ],
+    "layer_states": {
+     "Genome": "implemented_not_on_this_path",
+     "Nervous": "engaged_no_value",
+     "Immune": "engaged_with_value",
+     "Cardiovascular": "measurement_under_this_name",
+     "Respiratory": "implemented_not_on_this_path",
+     "Musculoskeletal": "implemented_not_on_this_path",
+     "Endocrine": "engaged_no_value"
+    },
+    "layer_basis": {
+     "Genome": "agentic_core/organism/genome.py — encode/crossover/mutate, mounted under /api/v1/organism/genome; a quality record does not exercise it",
+     "Nervous": "agentic_core/organism/nervous.py — the fire_signal below routes into the NervousSystem; it contributes no value to this record",
+     "Immune": "agentic_core/organism/immune.py — immune.status() is read into this record",
+     "Cardiovascular": "agentic_core/app_mvp.py serves resource_flow = 100 - cpu_percent as 'cardiovascular'. That is host CPU headroom, honestly measured, under an anatomical name — there is no circulatory subsystem",
+     "Respiratory": "agentic_core/api/agent_hub.py — the Agent Hub (the vision's 17.2 map): a bus that RECORDS messages between agents; nothing is subscribed to execute what it records, and a quality record does not exercise it. NOT THE LAYER: agentic_core/molecular/triad_integration.py CANNOT BE IMPORTED: it imports six siblings from agentic_core/molecular/ and only atp_simulator still exists (p53_oscillator, ubiquitin_system, hsp_network, redox_sensor and chaperone_cascade were archived), so it raises ModuleNotFoundError and the TriadIntegrator can never be instantiated. Nothing imports it either, but that is the weaker of the two facts - this basis used to say it held a REAL TriadIntegrator, which is what code_exists_unreached is meant to mean",
+     "Musculoskeletal": "agentic_core/api/resource_fabric.py — composable facilities that run real engines, EXCEPT the composed Digital Twin stage, which is a model-written scenario narrative and runs no simulator; a quality record does not exercise them",
+     "Endocrine": "agentic_core/organism/biobus.py — the signal bus and shared context (the vision's 17.2 map); this record's own fire_signal travels on it and it contributes no value to the record. NOT THE LAYER, though it carries a similar name: agentic_core/biomimicry/geospheric/regulator.py holds a HomeostaticRegulator that does a PROPORTIONAL THRESHOLD COMPARISON and names a corrective action as a string - no integral accumulates, no derivative is read, nothing actuates - and NOTHING IMPORTS IT; a second copy of the same class sits in geospheric/homeostatic_regulator.py. W434's note vouched for this layer and W446 measured that vouching as the overclaim"
+    },
+    "layers_note": "1 of 7 declared layers contributed a value to this record: Immune. Engaged on this path without contributing a value: Nervous, Endocrine. Implemented and reachable, but not on this path: Genome, Respiratory, Musculoskeletal. A measurement published under this anatomical name, not an organ: Cardiovascular. `layer_basis` names the module behind each claim."
+   },
+   "homeostasis": {
+    "max_parallel": 3,
+    "posture": "reduced",
+    "metabolic_load": 1.0,
+    "atp_mode": "run",
+    "organism": {
+     "mode": "NOMINAL",
+     "composite_health": 0.872,
+     "circadian": "MAINTENANCE_REST",
+     "is_peak_focus": false,
+     "atp_ratio": 0.358,
+     "atp_measured": false,
+     "atp_basis": "the metabolic term is an ATPSimulator on a load clamped to its declared 0-1 domain, where production (0.5 x efficiency, efficiency 0.8 or 1.0) always exceeds consumption (0.1 x load), so within that domain it only rises — from 0.333 at boot to 1.0 — and the thresholds written against it cannot fire. It is a simulation, not a reading of this platform's energy.",
+     "atp_can_fall": false,
+     "conserving_posture_reachable": false,
+     "energy_ratio": 1.0,
+     "energy_acts": false,
+     "energy_basis": "1 - 0.0s spent / 3600s stated capacity this window (the capacity is a stated assumption); the work budget is switched off (WORKSTATION_WORK_BUDGET), so nothing reads this figure: the energy thresholds read the ATP simulator, which cannot fall, and stay inert as ruled",
+     "conserve_reads": "atp_simulator",
+     "conserving_posture_basis": "the 'conserving' posture is selected below an ATP of 0.3 and the figure cannot fall to it: consumption is at most 0.10 per tick (0.1 x a load clamped to 1.0) and production at least 0.40 (0.5 x the lowest efficiency this code passes, 0.8), so production exceeds consumption at every reachable combination and the ratio only RISES to its ceiling. It does not deplete - and NOT because of the 0.5 floor, which never binds.",
+     "immune_threat": "NOMINAL",
+     "should_throttle": false
+    },
+    "work_budget": {
+     "enabled": false,
+     "holds": false,
+     "reason": null,
+     "fraction_spent": 0.0,
+     "basis": "0.0s of a stated 3600s capacity is recorded spent this window, from 0 run(s) whose duration was measured — and it GATES NOTHING: the budget ships inert until WORKSTATION_WORK_BUDGET=true, per the Owner's ruling",
+     "spend_basis": "the sum of the run durations the platform recorded, each nest counted once (W847): a run recorded inside a marked run (a model attempt inside the AI call that made it; an AI call inside a deliverable, a composition, a swarm, a cascade tier, the board or a transformation) is held by the outermost run, which spends its own duration with the tokens its inner runs counted. A run made where the mark does not reach (a worker thread started without it) can still be counted at two levels. Durations a caller reported through /api/v1/operations/record are not counted"
+    },
+    "governed_by": "homeostatic controller (§8 organism → §6 cognition). The immune, self-healing and circadian terms are read from live state; the metabolic (ATP) term is simulated and says so in organism.atp_basis"
+   },
+   "homeostasis_adaptation": {
+    "demand_nodes_reported": 22,
+    "granted_parallel": 3,
+    "csuite_concurrent": true
+   },
+   "level_4_business_transformation_office": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Business Transformation Office (BTO) of this VSB. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Workstreams\nNative structured frame for 'Workstreams' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Operating Model Changes\nNative structured frame for 'Operating Model Changes' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Delivery Roadmap\nStructured phased frame (deterministic scaffold):\n- Phase 1 — validate: cheapest test of the riskiest assumption.\n- Phase 2 — build: the smallest end-to-end slice that delivers value.\n- Phase 3 — launch & learn: ship, instrument, iterate.\n- Each phase grounded in WITHHELD — no domain was declared for this call; dates to be set against capacity.\n\n## Dependencies & Risks\nStructured risk frame for this dimension — surface, don't invent. The items below are terms taken from the request to CHECK, not risks this engine identified:\n- Check: volunteers library.\n- Check: run volunteers.\n- Check: month repair.\n- Check: first month.\n- Likelihood × impact to be scored; mitigations and owners to be assigned.\n- The native engine flags areas needing attention; a model resource details them.\n\n## Handover to Build-to-Order\nStructured architecture frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Core capability: address volunteers library.\n- Component for volunteers library.\n- Component for run volunteers.\n- Component for month repair.\n- Component for first month.\n- Interfaces & data: specify inputs/outputs and contracts.\n- Non-functionals: reliability, security, and constitutional governance (gaas.v5), fit for WITHHELD — no domain was declared for this call.",
+   "fabric_requisitions": [
+    {
+     "resource": "metabolic",
+     "kind": "status_read",
+     "kind_phrase": "read platform state that was already there — no facility ran for this mission",
+     "outcome": "read",
+     "outcome_phrase": "read platform state that was already there — no facility ran for this mission",
+     "error": null,
+     "side_effect": "reading the organism context advances the ATP simulator (the read is not free)",
+     "endpoint": "/api/v1/organism/status",
+     "invocation": "in_process",
+     "match_hits": 2,
+     "output": "{\"metabolic\": {\"atp_ratio\": 0.358, \"measured\": false, \"can_fall\": false, \"basis\": \"the metabolic term is an ATPSimulator on a load clamped to its declared 0-1 domain, where production (0.5 x efficiency, efficiency 0.8 or 1.0) always exceeds consumption (0.1 x load), so within that domain it only rises \\u2014 from 0.333 at boot to 1.0 \\u2014 and the thresholds written against it cannot fire. It is "
+    }
+   ],
+   "fabric_requisitions_summary": {
+    "requisitioned": 1,
+    "facilities_ran": 0,
+    "state_read": 1,
+    "blueprints_drafted": 0,
+    "failed": 0,
+    "refused": 0,
+    "withheld": 0,
+    "outcome_not_recorded": 0,
+    "basis": "counted by what each resource DID on this run, over every resource this cascade selected and invoked — an attempt that raised is neither a run nor a read. Every handler is invoked in-process; no HTTP call is made"
+   },
+   "level_5_build_to_order": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Build-to-Order (BTO) operational delivery engine of this VSB. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Workstreams\nNative structured frame for 'Workstreams' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Operational Delivery Resources\nNative structured frame for 'Operational Delivery Resources' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Work Breakdown\nNative structured frame for 'Work Breakdown' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Quality Gates & Acceptance Criteria\nStructured service frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Offering: what is delivered and the scope boundary.\n- Delivery model: how it is provided (cadence, channel, roles).\n- Quality measure for volunteers library.\n- Quality measure for run volunteers.\n- Quality measure for month repair.\n- SLAs & assurance: the commitments and how they're governed for enterprise.\n\n## Go-Live & Operations\nNative structured frame for 'Go-Live & Operations' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe",
+   "products_services_catalogue": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Build-to-Order delivery engine compiling the customer-facing Products & Services Catalogue for this venture. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n- made plan\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'cascade_catalogue', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG.",
+   "catalogue_items_proposed": [],
+   "management_systems": {
+    "operated_this_run": [
+     "dcms",
+     "bms",
+     "ems"
+    ],
+    "document_control": {
+     "ceo_directive": "0a709264a37cf9b239069dd90b45552b3e41815e0a3d73db4c4e25f076be64830270c2fe405807deb2375bd471fe1a0a8550e2a99f00cf42f07ab7cfa99d8fa4",
+     "board_action_plan": "1a754205543587ef72408e521026c8390c7631f63727ba1ad1eac8ca6181ef050f542b81ecfb42fb3b2cf84e3ee82a3580fd744ccdbc4e6c311cd561a8fda9ad",
+     "bto_programme": "28fd5a4017bc2e7cac123339025f32430d1adea921fe202651f9c0d66dcef2820e6c45e737474939849c5aa0781536048eb3ad6a8fbcdbd057a978a088152b84",
+     "build_to_order": "49b8cb8b74464cc68ea60f5abe642852c952fb75ab42487778a01ae04fa5ac2fff44354d648377184911466ea05933aff5ad90507c222dfd779ddaa487c0f54b"
+    },
+    "catalogue": [
+     "bms",
+     "qms",
+     "ems",
+     "dcms",
+     "backbone"
+    ],
+    "bms": {
+     "cost_per_insight_usd": 1e-06,
+     "roi": 333333.333,
+     "roi_basis": "(insights x $0.5 simulated value) / energy cost",
+     "status": "not_assessed",
+     "status_measured": false,
+     "status_basis": "NOT ASSESSED — cost_per_insight ($0.00000150) is computed from a simulated $0.00015/Wh constant and a duration-derived energy estimate, not from a measured cost. Against the $0.01 target it can only ever come out EFFICIENT, so no efficiency verdict is given. The arithmetic below is real; its inputs are simulated.",
+     "unit_cost_target": 0.01,
+     "target_comparison_on_simulated_inputs": "below target",
+     "insights_count": 10,
+     "energy_wh_estimate": 0.1,
+     "caveat": "energy is a duration-derived estimate; $/Wh is the catalogue's simulated constant"
+    },
+    "ems": {
+     "co2_kg_this_run": 4.5e-05,
+     "process_total_co2_kg": 4.5e-05,
+     "efficiency_gain_constant": 0.85,
+     "efficiency_measured": false,
+     "energy_wh_estimate": 0.1,
+     "caveat": "emissions = energy estimate x 0.00045 kgCO2/Wh (a constant); the efficiency figure is the fixed 0.85 and is not measured; the process total accrues across every run since this server started"
+    },
+    "operated_basis": "systems that produced a value for this run; the catalogue lists what exists. qms appears only when its gate returned a verdict (it does not run on floor-served content), and backbone is never exercised by this cascade."
+   },
+   "governance": {
+    "status": "allowed",
+    "screened": "intent + domain + the delivered content of every tier",
+    "content_screened": true,
+    "checkpoint": "CHK-1794714515989",
+    "node": "org-cascade-node",
+    "arms_length": true,
+    "content_chars": 31954,
+    "tiers_screened": [
+     "Chief",
+     "Board of Directors",
+     "AI CEO",
+     "C-Suite: CSO",
+     "C-Suite: CFO",
+     "C-Suite: CTO",
+     "C-Suite: COO",
+     "C-Suite: CLO",
+     "CoE: CSO CoE",
+     "CoE: CFO CoE",
+     "CoE: CTO CoE",
+     "CoE: COO CoE",
+     "CoE: CLO CoE",
+     "Business Transformation Office",
+     "Build-to-Order"
+    ],
+    "content_compliant": true,
+    "content_violations": [],
+    "content_screen_basis": "the gaas.v5 post gate is a deterministic pattern screen over the delivered text. A clean result means no listed pattern matched - it is not a judgement that the delivery is correct or constitutional.",
+    "scope": "intent + domain + the delivered content — this gate screened the request's intent label against the prohibited list AND the content that was delivered. This verdict does cover what was produced, to the extent the screens themselves cover it."
+   },
+   "ueg_hash": "e8edc3e49de31c6c5f981c09eb72d2f73df9cf0f293e8df873d3d403cfa9442f64f88d96284ef41ab816f1fc2bc7c100b4768a7d02a3e2e689422f1db7cbf55b",
+   "ai_provenance": {
+    "posture": "in-house-first",
+    "served_by": {
+     "native": 22
+    },
+    "any_external": false,
+    "evidence_level": "behaviour",
+    "evidence_level_number": 1,
+    "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer"
+   },
+   "duration_ms": 6068,
+   "created_at": "2026-11-15T03:48:35Z"
+  }
+ },
+ "cascade_seconds": 6.1,
+ "runs_after": {
+  "status": 200,
+  "body": {
+   "runs": [],
+   "total": 0
+  }
+ },
+ "cascade_runs_after": {
+  "status": 200,
+  "body": {
+   "runs": [
+    {
+     "evidence_level": "behaviour",
+     "evidence_level_number": 1,
+     "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+     "run_id": "87cd41deab",
+     "mission": "W1063 made up: plan the first month of a repair cafe run by volunteers in a library",
+     "domain": "enterprise",
+     "delivery_sha256": "964db04b6384408c96436a75771ebc17c612edb8f25f9606a4ccaf275be68e9f",
+     "csuite_engaged": [
+      "CSO",
+      "CFO",
+      "CTO",
+      "COO",
+      "CLO"
+     ],
+     "appraisals": {
+      "chief_appraises_board": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Chief of the Board. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Intent & Values\nStructured go-to-market frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from volunteers library.\n- Positioning wedge from run volunteers.\n- Positioning wedge from month repair.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.\n\n## Appraisal\nNative structured frame for 'Appraisal' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Development Action\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.",
+      "board_appraises_ceo": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Board of Directors. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Intent & Values\nStructured go-to-market frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from volunteers library.\n- Positioning wedge from run volunteers.\n- Positioning wedge from month repair.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.\n\n## Appraisal\nNative structured frame for 'Appraisal' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Development Action\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.",
+      "ceo_appraises_csuite": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: AI CEO. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Appraisal\nNative structured frame for 'Appraisal' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Development Action\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.",
+      "csuite_appraises_coe": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: specialist C-Suite (each officer, for the CoE it drives). The native floor takes no role - what follows is a frame, not that role's work._\n\n## Appraisal\nNative structured frame for 'Appraisal' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Development Action\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.",
+      "ceo_appraises_bto": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: AI CEO. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Workstreams\nNative structured frame for 'Workstreams' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Appraisal\nNative structured frame for 'Appraisal' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Development Action\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.; record outcomes to memory/UEG.",
+      "bto_appraises_build": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Business Transformation Office. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Workstreams\nNative structured frame for 'Workstreams' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Operational Delivery R\nNative structured frame for 'Operational Delivery R' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Appraisal\nNative structured frame for 'Appraisal' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Development Action\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise). The list below is the request's most frequent terms, not findings about them.; record outcomes to memory/UEG."
+     },
+     "csuite_requested": [
+      "CSO",
+      "CFO",
+      "CTO",
+      "COO",
+      "CLO"
+     ],
+     "csuite_not_run": [],
+     "quality": {
+      "qms_gate_passed": null,
+      "qms_basis": "not assessable — floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+      "delivery_coverage": null,
+      "qms_non_conformance_rate": null,
+      "stub_found": null,
+      "proxies_basis": "NOT ASSESSED - the gate is not assessable on floor-served text, so the stub, length and coverage proxies are withheld rather than read as passes",
+      "compliance_overall": "review"
+     },
+     "governance": "allowed",
+     "ueg_hash": "e8edc3e49de31c6c5f981c09eb72d2f73df9cf0f293e8df873d3d403cfa9442f64f88d96284ef41ab816f1fc2bc7c100b4768a7d02a3e2e689422f1db7cbf55b",
+     "served_by": {
+      "native": 22
+     },
+     "any_external": false,
+     "fabric_requisitions": [
+      {
+       "resource": "metabolic",
+       "kind": "status_read",
+       "outcome": "read",
+       "error": null,
+       "endpoint": "/api/v1/organism/status",
+       "match_hits": 2
+      }
+     ],
+     "plan_binding": null,
+     "business_plan_scope": "vsb-c9a9410632",
+     "duration_ms": 6068,
+     "created_at": "2026-11-15T03:48:35Z",
+     "acceptance": null
+    }
+   ],
+   "total": 1,
+   "store_incomplete": null,
+   "total_is_incomplete": false,
+   "total_basis": "every run persisted in the cascade history"
+  }
+ },
+ "accept_wrong": {
+  "status": 409,
+  "body": {
+   "detail": "that is not the version this run delivered, so nothing was accepted"
+  }
+ },
+ "accepted": {
+  "status": 200,
+  "body": {
+   "accepted": true,
+   "run_id": "87cd41deab",
+   "scope": "vsb-c9a9410632",
+   "delivery_sha256": "964db04b6384408c96436a75771ebc17c612edb8f25f9606a4ccaf275be68e9f",
+   "accepted_by": "the operator of this single-user deployment",
+   "accepted_by_verified": false,
+   "at": "2026-11-15T03:48:36Z",
+   "earned_wst": null,
+   "earns_basis": "acceptance records that a person accepted this version of this delivery. By itself it earns nothing: only an accepted contract's agreed amount is earned, through the contract's own settlement, and a constant never is (FU-1049, the recommendation followed)"
+  }
+ },
+ "accept_again": {
+  "status": 409,
+  "body": {
+   "detail": "this delivery was already accepted by the operator of this single-user deployment at 2026-11-15T03:48:36Z"
+  }
+ },
+ "cascade_runs_accepted": {
+  "status": 200,
+  "body": {
+   "runs": [
+    {
+     "evidence_level": "behaviour",
+     "evidence_level_number": 1,
+     "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+     "run_id": "87cd41deab",
+     "mission": "W1063 made up: plan the first month of a repair cafe run by volunteers in a library",
+     "domain": "enterprise",
+     "delivery_sha256": "964db04b6384408c96436a75771ebc17c612edb8f25f9606a4ccaf275be68e9f",
+     "csuite_engaged": [
+      "CSO",
+      "CFO",
+      "CTO",
+      "COO",
+      "CLO"
+     ],
+     "appraisals": {
+      "chief_appraises_board": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Chief of the Board. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Intent & Values\nStructured go-to-market frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from volunteers library.\n- Positioning wedge from run volunteers.\n- Positioning wedge from month repair.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.\n\n## Appraisal\nNative structured frame for 'Appraisal' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Development Action\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.",
+      "board_appraises_ceo": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Board of Directors. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Intent & Values\nStructured go-to-market frame for: W1063 made up: plan the first month of a repair cafe run by volunteers in a library.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from volunteers library.\n- Positioning wedge from run volunteers.\n- Positioning wedge from month repair.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.\n\n## Appraisal\nNative structured frame for 'Appraisal' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Development Action\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.",
+      "ceo_appraises_csuite": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: AI CEO. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Appraisal\nNative structured frame for 'Appraisal' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Development Action\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.",
+      "csuite_appraises_coe": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: specialist C-Suite (each officer, for the CoE it drives). The native floor takes no role - what follows is a frame, not that role's work._\n\n## Appraisal\nNative structured frame for 'Appraisal' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Development Action\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.",
+      "ceo_appraises_bto": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: AI CEO. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Workstreams\nNative structured frame for 'Workstreams' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Appraisal\nNative structured frame for 'Appraisal' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Development Action\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.; record outcomes to memory/UEG.",
+      "bto_appraises_build": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Business Transformation Office. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Workstreams\nNative structured frame for 'Workstreams' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Operational Delivery R\nNative structured frame for 'Operational Delivery R' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Appraisal\nNative structured frame for 'Appraisal' over: W1063 made up: plan the first month of a repair cafe run by volunteers in a library (domain: enterprise). The list below is the request's most frequent terms, not findings about them.). The list below is the request's most frequent terms, not findings about them.\n- volunteers library\n- run volunteers\n- month repair\n- first month\n- repair cafe\n\n## Development Action\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise). The list below is the request's most frequent terms, not findings about them.; record outcomes to memory/UEG."
+     },
+     "csuite_requested": [
+      "CSO",
+      "CFO",
+      "CTO",
+      "COO",
+      "CLO"
+     ],
+     "csuite_not_run": [],
+     "quality": {
+      "qms_gate_passed": null,
+      "qms_basis": "not assessable — floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+      "delivery_coverage": null,
+      "qms_non_conformance_rate": null,
+      "stub_found": null,
+      "proxies_basis": "NOT ASSESSED - the gate is not assessable on floor-served text, so the stub, length and coverage proxies are withheld rather than read as passes",
+      "compliance_overall": "review"
+     },
+     "governance": "allowed",
+     "ueg_hash": "e8edc3e49de31c6c5f981c09eb72d2f73df9cf0f293e8df873d3d403cfa9442f64f88d96284ef41ab816f1fc2bc7c100b4768a7d02a3e2e689422f1db7cbf55b",
+     "served_by": {
+      "native": 22
+     },
+     "any_external": false,
+     "fabric_requisitions": [
+      {
+       "resource": "metabolic",
+       "kind": "status_read",
+       "outcome": "read",
+       "error": null,
+       "endpoint": "/api/v1/organism/status",
+       "match_hits": 2
+      }
+     ],
+     "plan_binding": null,
+     "business_plan_scope": "vsb-c9a9410632",
+     "duration_ms": 6068,
+     "created_at": "2026-11-15T03:48:35Z",
+     "acceptance": {
+      "run_id": "87cd41deab",
+      "scope": "vsb-c9a9410632",
+      "delivery_sha256": "964db04b6384408c96436a75771ebc17c612edb8f25f9606a4ccaf275be68e9f",
+      "accepted_by": "the operator of this single-user deployment",
+      "accepted_by_verified": false,
+      "at": "2026-11-15T03:48:36Z",
+      "earned_wst": null,
+      "earns_basis": "acceptance records that a person accepted this version of this delivery. By itself it earns nothing: only an accepted contract's agreed amount is earned, through the contract's own settlement, and a constant never is (FU-1049, the recommendation followed)"
+     }
+    }
+   ],
+   "total": 1,
+   "store_incomplete": null,
+   "total_is_incomplete": false,
+   "total_basis": "every run persisted in the cascade history"
+  }
+ },
+ "runs_failed": {
+  "status": 500,
+  "body": {
+   "detail": "GET /api/v1/swarm/runs failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/swarm/runs",
+   "cause_established": false
+  }
+ },
+ "cascade_runs_failed": {
+  "status": 500,
+  "body": {
+   "detail": "GET /api/v1/swarm/cascade/runs failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/swarm/cascade/runs",
+   "cause_established": false
+  }
+ }
+}

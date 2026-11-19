@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W461 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W461 — transformation stage verification is honest, in a real browser against the built bundle on a
 // FRESH backend (AI_DISABLE_LOCAL=1): /transformation → Orchestrate renders the cascade with three states
 // (✓ verified · — not assessable · ○ checked and not verified), "n/m assessable", and a badge that says

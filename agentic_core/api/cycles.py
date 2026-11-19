@@ -138,6 +138,13 @@ async def _declared(name: str) -> Dict[str, Any]:
 async def list_cycles(vsb_id: Optional[str] = None,
                       user: dict | None = Depends(get_current_user)) -> Dict[str, Any]:
     """Every cycle, what it is bound to, and what it refuses to claim."""
+    #  W1075 - another person's entity: its books were read to whoever named its id (the waterfall pots' total, the
+    #  count of its postings). An id that names no entity is read as before: the cycles read books by id, and a
+    #  ledger can stand without an entity record.
+    from agentic_core.api.vsb import names_anothers_entity
+    if names_anothers_entity(vsb_id, user):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail=f"No entity {vsb_id} was found, so its cycles were not read.")
     bound = bindings.read_all(vsb_id)
     out = []
     for name, b in bound.items():

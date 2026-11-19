@@ -1,0 +1,313 @@
+{
+ "status": {
+  "total_capital": 10000.0,
+  "currency": "WST",
+  "allocated": 1005.0,
+  "available": 8995.0,
+  "utilisation_pct": 10.1,
+  "allocation_count": 2,
+  "seed_capital_wst": null,
+  "contributed_wst": 0.0,
+  "capital_basis": "NOT RECORDED - this store predates the seed marker, so how much of the 10,000 WST pool was seeded rather than contributed is not known from it. 0.00 WST is recorded as cycle contributions.",
+  "set_aside_reconciliation": {
+   "known": true,
+   "set_aside_wst": 0,
+   "received_wst": 0.0,
+   "set_aside_by_simulations_wst": 0,
+   "set_aside_by_registered_wst": 0,
+   "registration_not_known_wst": 0,
+   "registered_not_received_wst": 0.0,
+   "ledgers_counted": 0,
+   "ledgers_unreadable": [],
+   "largest": [],
+   "basis": "Cycles set aside 0.00 WST for the fund across 0 ledger(s), and the fund recorded 0.00 WST received. 0.00 WST was set aside by scopes that are not registered entities: simulations, whose share is never paid in (ruled 2026-10-10). 0.00 WST was set aside by registered entities, as the roster reads now, and 0.00 WST of it is not recorded as received: set aside before W294, when nothing was paid in, or a write that failed silently before W814. The stores cannot tell those two apart."
+  },
+  "fund_health": "HEALTHY",
+  "fund_health_basis": "allocations are 10.1% of the pool",
+  "store_quarantined": null,
+  "store_incomplete": null,
+  "balances_are_incomplete": false,
+  "balances_basis": null,
+  "fund_health_is_incomplete": false,
+  "fund_health_incomplete_basis": null,
+  "organism": {
+   "mode": "NOMINAL",
+   "composite_health": 0.877,
+   "composite_health_measured_only": null,
+   "composite_health_unmeasured_weight": 1.0,
+   "composite_health_measured_weight": 0.0,
+   "composite_health_basis": "0% of this figure's weight is measured (nothing); the rest is an immune term with NO call observed in its window (the absence of failures, not a reading), a self-healing term defaulted to 1.0 and a simulated metabolic term. The measured-only score is None, and that is what decides the mode and every gate.",
+   "atp_ratio": 0.383,
+   "energy_ratio": 1.0,
+   "energy_acts": false,
+   "energy_basis": "1 - 0.0s spent / 3600s stated capacity this window (the capacity is a stated assumption); the work budget is switched off (WORKSTATION_WORK_BUDGET), so nothing reads this figure: the energy thresholds read the ATP simulator, which cannot fall, and stay inert as ruled"
+  }
+ },
+ "portfolio": {
+  "total_capital": 10000.0,
+  "allocated": 1005.0,
+  "available": 8995.0,
+  "currency": "WST",
+  "allocations": [
+   {
+    "allocation_id": "alloc-w981-capture-a",
+    "project_id": "w981-not-an-entity",
+    "project_name": "W981 capture test",
+    "amount": 5.0,
+    "purpose": "test",
+    "domain": "w981dom",
+    "realm": "w981realm",
+    "status": "active",
+    "allocated_at": "2026-06-29T10:00:00Z",
+    "record_state": "ungoverned_legacy",
+    "record_state_label": "recorded before allocations were governed"
+   },
+   {
+    "allocation_id": "alloc-w981-capture-b",
+    "project_id": "w981-kept",
+    "project_name": "W981 capture kept",
+    "amount": 1000.0,
+    "purpose": "kept",
+    "domain": "w981keep",
+    "realm": "w981realm",
+    "status": "active",
+    "allocated_at": "2026-06-29T10:00:00Z",
+    "record_state": "ungoverned_legacy",
+    "record_state_label": "recorded before allocations were governed"
+   }
+  ],
+  "allocation_count": 2,
+  "allocation_requests": [],
+  "allocation_requests_basis": "every Change Control record the fund's gate filed; each state is computed from that record when this is read",
+  "reversal_requests": [],
+  "reversal_requests_basis": "every reversal request the fund's gate filed, as its Change Control record stands now; a request moves nothing until it is approved and the same reversal is requested again",
+  "by_domain": {
+   "w981dom": 5.0,
+   "w981keep": 1000.0
+  },
+  "by_realm": {
+   "w981realm": 1005.0
+  },
+  "store_incomplete": null,
+  "allocations_are_incomplete": false,
+  "allocations_basis": "every allocation recorded in the fund store"
+ },
+ "reverse_held": {
+  "allocation_id": "alloc-w981-capture-a",
+  "applied": false,
+  "status": "held",
+  "amount": 5.0,
+  "cca_id": "cca-fcdacf8596",
+  "available": 8995.0,
+  "request_recorded": "recorded",
+  "basis": "HELD, NOT REVERSED: this request is Change Control record cca-fcdacf8596. Nothing moves until an explicit decision approves it and the reversal is then requested again; the allocation stays active and the fund's available figure is unchanged at 8995.0 WST.",
+  "real_money_moved": false
+ },
+ "portfolio_held": {
+  "total_capital": 10000.0,
+  "allocated": 1005.0,
+  "available": 8995.0,
+  "currency": "WST",
+  "allocations": [
+   {
+    "allocation_id": "alloc-w981-capture-a",
+    "project_id": "w981-not-an-entity",
+    "project_name": "W981 capture test",
+    "amount": 5.0,
+    "purpose": "test",
+    "domain": "w981dom",
+    "realm": "w981realm",
+    "status": "active",
+    "allocated_at": "2026-06-29T10:00:00Z",
+    "record_state": "ungoverned_legacy",
+    "record_state_label": "recorded before allocations were governed"
+   },
+   {
+    "allocation_id": "alloc-w981-capture-b",
+    "project_id": "w981-kept",
+    "project_name": "W981 capture kept",
+    "amount": 1000.0,
+    "purpose": "kept",
+    "domain": "w981keep",
+    "realm": "w981realm",
+    "status": "active",
+    "allocated_at": "2026-06-29T10:00:00Z",
+    "record_state": "ungoverned_legacy",
+    "record_state_label": "recorded before allocations were governed"
+   }
+  ],
+  "allocation_count": 2,
+  "allocation_requests": [],
+  "allocation_requests_basis": "every Change Control record the fund's gate filed; each state is computed from that record when this is read",
+  "reversal_requests": [
+   {
+    "cca_id": "cca-fcdacf8596",
+    "status": "submitted",
+    "allocation_id": "alloc-w981-capture-a",
+    "amount": 5.0,
+    "reason": "w981 a made-up allocation to a project id that is no entity, for the capture",
+    "requested_by": "single-user-mode",
+    "requested_at": "2026-11-13T21:41:02Z"
+   }
+  ],
+  "reversal_requests_basis": "every reversal request the fund's gate filed, as its Change Control record stands now; a request moves nothing until it is approved and the same reversal is requested again",
+  "by_domain": {
+   "w981dom": 5.0,
+   "w981keep": 1000.0
+  },
+  "by_realm": {
+   "w981realm": 1005.0
+  },
+  "store_incomplete": null,
+  "allocations_are_incomplete": false,
+  "allocations_basis": "every allocation recorded in the fund store"
+ },
+ "reverse_applied": {
+  "allocation_id": "alloc-w981-capture-a",
+  "applied": true,
+  "status": "reversed",
+  "amount": 5.0,
+  "cca_id": "cca-fcdacf8596",
+  "available": 9000.0,
+  "allocated": 1000.0,
+  "audit_event": "recorded",
+  "real_money_moved": false,
+  "basis": "REVERSED (VIRTUAL): Change Control record cca-fcdacf8596 approved this reversal and was spent on it. 5.0 WST returned to the fund's available capital; the allocation is kept, marked reversed, with its reason. No real money moved."
+ },
+ "portfolio_reversed": {
+  "total_capital": 10000.0,
+  "allocated": 1000.0,
+  "available": 9000.0,
+  "currency": "WST",
+  "allocations": [
+   {
+    "allocation_id": "alloc-w981-capture-a",
+    "project_id": "w981-not-an-entity",
+    "project_name": "W981 capture test",
+    "amount": 5.0,
+    "purpose": "test",
+    "domain": "w981dom",
+    "realm": "w981realm",
+    "status": "reversed",
+    "allocated_at": "2026-06-29T10:00:00Z",
+    "reversal": {
+     "reason": "w981 a made-up allocation to a project id that is no entity, for the capture",
+     "amount": 5.0,
+     "reversed_at": "2026-11-13T21:41:02Z",
+     "requested_by": "single-user-mode",
+     "requested_by_verified": false,
+     "cca_id": "cca-fcdacf8596",
+     "consume_id": "consume-8878b5c1f8d1"
+    },
+    "record_state": "ungoverned_legacy",
+    "record_state_label": "recorded before allocations were governed"
+   },
+   {
+    "allocation_id": "alloc-w981-capture-b",
+    "project_id": "w981-kept",
+    "project_name": "W981 capture kept",
+    "amount": 1000.0,
+    "purpose": "kept",
+    "domain": "w981keep",
+    "realm": "w981realm",
+    "status": "active",
+    "allocated_at": "2026-06-29T10:00:00Z",
+    "record_state": "ungoverned_legacy",
+    "record_state_label": "recorded before allocations were governed"
+   }
+  ],
+  "allocation_count": 2,
+  "allocation_requests": [],
+  "allocation_requests_basis": "every Change Control record the fund's gate filed; each state is computed from that record when this is read",
+  "reversal_requests": [
+   {
+    "cca_id": "cca-fcdacf8596",
+    "status": "implemented",
+    "allocation_id": "alloc-w981-capture-a",
+    "amount": 5.0,
+    "reason": "w981 a made-up allocation to a project id that is no entity, for the capture",
+    "requested_by": "single-user-mode",
+    "requested_at": "2026-11-13T21:41:02Z"
+   }
+  ],
+  "reversal_requests_basis": "every reversal request the fund's gate filed, as its Change Control record stands now; a request moves nothing until it is approved and the same reversal is requested again",
+  "by_domain": {
+   "w981keep": 1000.0
+  },
+  "by_realm": {
+   "w981realm": 1000.0
+  },
+  "store_incomplete": null,
+  "allocations_are_incomplete": false,
+  "allocations_basis": "every allocation recorded in the fund store"
+ },
+ "status_reversed": {
+  "total_capital": 10000.0,
+  "currency": "WST",
+  "allocated": 1000.0,
+  "available": 9000.0,
+  "utilisation_pct": 10.0,
+  "allocation_count": 2,
+  "seed_capital_wst": null,
+  "contributed_wst": 0.0,
+  "capital_basis": "NOT RECORDED - this store predates the seed marker, so how much of the 10,000 WST pool was seeded rather than contributed is not known from it. 0.00 WST is recorded as cycle contributions.",
+  "set_aside_reconciliation": {
+   "known": true,
+   "set_aside_wst": 0,
+   "received_wst": 0.0,
+   "set_aside_by_simulations_wst": 0,
+   "set_aside_by_registered_wst": 0,
+   "registration_not_known_wst": 0,
+   "registered_not_received_wst": 0.0,
+   "ledgers_counted": 0,
+   "ledgers_unreadable": [],
+   "largest": [],
+   "basis": "Cycles set aside 0.00 WST for the fund across 0 ledger(s), and the fund recorded 0.00 WST received. 0.00 WST was set aside by scopes that are not registered entities: simulations, whose share is never paid in (ruled 2026-10-10). 0.00 WST was set aside by registered entities, as the roster reads now, and 0.00 WST of it is not recorded as received: set aside before W294, when nothing was paid in, or a write that failed silently before W814. The stores cannot tell those two apart."
+  },
+  "fund_health": "HEALTHY",
+  "fund_health_basis": "allocations are 10.0% of the pool",
+  "store_quarantined": null,
+  "store_incomplete": null,
+  "balances_are_incomplete": false,
+  "balances_basis": null,
+  "fund_health_is_incomplete": false,
+  "fund_health_incomplete_basis": null,
+  "organism": {
+   "mode": "NOMINAL",
+   "composite_health": 0.877,
+   "composite_health_measured_only": null,
+   "composite_health_unmeasured_weight": 1.0,
+   "composite_health_measured_weight": 0.0,
+   "composite_health_basis": "0% of this figure's weight is measured (nothing); the rest is an immune term with NO call observed in its window (the absence of failures, not a reading), a self-healing term defaulted to 1.0 and a simulated metabolic term. The measured-only score is None, and that is what decides the mode and every gate.",
+   "atp_ratio": 0.383,
+   "energy_ratio": 1.0,
+   "energy_acts": false,
+   "energy_basis": "1 - 0.0s spent / 3600s stated capacity this window (the capacity is a stated assumption); the work budget is switched off (WORKSTATION_WORK_BUDGET), so nothing reads this figure: the energy thresholds read the ATP simulator, which cannot fall, and stay inert as ruled"
+  }
+ },
+ "refused_short": {
+  "status": 422,
+  "body": {
+   "detail": [
+    {
+     "type": "string_too_short",
+     "loc": [
+      "body",
+      "reason"
+     ],
+     "msg": "String should have at least 12 characters",
+     "input": "too short",
+     "ctx": {
+      "min_length": 12
+     }
+    }
+   ]
+  }
+ },
+ "refused_unknown": {
+  "status": 404,
+  "body": {
+   "detail": "No allocation 'alloc-w981-no-such' is recorded in the fund."
+  }
+ }
+}

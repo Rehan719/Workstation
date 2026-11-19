@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W444 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W444 — drive the residual-cluster wiring in a real browser against the built bundle:
 // the QEP ops strip + intelligence tab, the marketplace listing drawer (edit/price/valuation
 // refusal), and the anatomy config additions (history, reset guard) must work end-to-end.

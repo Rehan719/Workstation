@@ -1,7 +1,8 @@
 """
 UEG provenance ledger — Workstation's OWN tamper-evident audit chain, as a shared in-house capability.
 
-The VSBUEGLogger is a real hash-chained, append-only SHA3-512 Merkle-DAG ledger: every event embeds the
+The VSBUEGLogger is a real hash-chained, append-only SHA3-512 ledger - a linear chain, not a Merkle tree (W807):
+every event embeds the
 previous event's hash as its parent, and verify_chain() walks the whole file to confirm integrity. This
 module exposes ONE shared singleton (its own dedicated log file) so the in-house AI fabric and the API
 write to a single, continuously-verifiable chain — giving the AI's actions verifiable provenance.

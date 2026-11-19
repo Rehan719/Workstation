@@ -1,0 +1,120 @@
+{
+ "models_empty": {
+  "models": [],
+  "total": 0
+ },
+ "composed": {
+  "model_id": "twin-a00ab84348",
+  "system_name": "W993 made-up lending library",
+  "model_spec": "_[Workstation native structured engine — owned, no external dependency]_\n\n## System Boundary\nStructured architecture frame for: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them..\n- Core capability: address made-up lending.\n- Component for made-up lending.\n- Component for lending library.\n- Component for neighbourhood library.\n- Component for members borrow.\n- Interfaces & data: specify inputs/outputs and contracts.\n- Non-functionals: reliability, security, and constitutional governance (gaas.v5), fit for general.\n\n## Components\nStructured architecture frame for: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them..\n- Core capability: address made-up lending.\n- Component for made-up lending.\n- Component for lending library.\n- Component for neighbourhood library.\n- Component for members borrow.\n- Interfaces & data: specify inputs/outputs and contracts.\n- Non-functionals: reliability, security, and constitutional governance (gaas.v5), fit for general.\n\n## Feedback Loops\nNative structured frame for 'Feedback Loops' over: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them. (domain: general). The list below is the request's most frequent terms, not findings about them.\n- made-up lending\n- lending library\n- neighbourhood library\n- members borrow\n- tools members\n\n## Inputs and Outputs\nNative structured frame for 'Inputs and Outputs' over: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them. (domain: general). The list below is the request's most frequent terms, not findings about them.\n- made-up lending\n- lending library\n- neighbourhood library\n- members borrow\n- tools members\n\n## State Variables\nNative structured frame for 'State Variables' over: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them. (domain: general). The list below is the request's most frequent terms, not findings about them.\n- made-up lending\n- lending library\n- neighbourhood library\n- members borrow\n- tools members\n\n## Key Equations or Relationships\nNative structured frame for 'Key Equations or Relationships' over: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them. (domain: general). The list below is the request's most frequent terms, not findings about them.\n- made-up lending\n- lending library\n- neighbourhood library\n- members borrow\n- tools members\n\n## Data Requirements\nNative structured frame for 'Data Requirements' over: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them. (domain: general). The list below is the request's most frequent terms, not findings about them.\n- made-up lending\n- lending library\n- neighbourhood library\n- members borrow\n- tools members\n\n## Simulation Time Step and Duration\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for general; record outcomes to memory/UEG.\n\n## Validation Strategy\nNative structured frame for 'Validation Strategy' over: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them. (domain: general). The list below is the request's most frequent terms, not findings about them.\n- made-up lending\n- lending library\n- neighbourhood library\n- members borrow\n- tools members\n\n## Failure Modes\nStructured risk frame for this dimension — surface, don't invent. The items below are terms taken from the request to CHECK, not risks this engine identified:\n- Check: made-up lending.\n- Check: lending library.\n- Check: neighbourhood library.\n- Check: members borrow.\n- Likelihood × impact to be scored; mitigations and owners to be assigned.\n- The native engine flags areas needing attention; a model resource details them.\n\n## Key Metrics Output\nStructured measurement frame:\n- Candidate KPI from made-up lending.\n- Candidate KPI from lending library.\n- Candidate KPI from neighbourhood library.\n- Candidate KPI from members borrow.\n- Each KPI needs a baseline, target, and cadence; tie to the objective above.",
+  "composition": {
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+   "kind": "narrative",
+   "computed": false,
+   "served_by": "native",
+   "is_external": false,
+   "basis": "this model specification is TEXT composed by native. Nothing was computed: no model was integrated over time and no objective was optimised, so any figure or table in it was written, not calculated"
+  }
+ },
+ "models": {
+  "models": [
+   {
+    "model_id": "twin-a00ab84348",
+    "system_name": "W993 made-up lending library",
+    "domain": "general",
+    "model_type": "process",
+    "created_at": "2026-11-14T00:34:42Z"
+   }
+  ],
+  "total": 1
+ },
+ "model": {
+  "model_id": "twin-a00ab84348",
+  "system_name": "W993 made-up lending library",
+  "system_description": "A neighbourhood library that lends tools: members borrow for a week and return them.",
+  "domain": "general",
+  "model_type": "process",
+  "complexity": "standard",
+  "model_spec": "_[Workstation native structured engine — owned, no external dependency]_\n\n## System Boundary\nStructured architecture frame for: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them..\n- Core capability: address made-up lending.\n- Component for made-up lending.\n- Component for lending library.\n- Component for neighbourhood library.\n- Component for members borrow.\n- Interfaces & data: specify inputs/outputs and contracts.\n- Non-functionals: reliability, security, and constitutional governance (gaas.v5), fit for general.\n\n## Components\nStructured architecture frame for: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them..\n- Core capability: address made-up lending.\n- Component for made-up lending.\n- Component for lending library.\n- Component for neighbourhood library.\n- Component for members borrow.\n- Interfaces & data: specify inputs/outputs and contracts.\n- Non-functionals: reliability, security, and constitutional governance (gaas.v5), fit for general.\n\n## Feedback Loops\nNative structured frame for 'Feedback Loops' over: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them. (domain: general). The list below is the request's most frequent terms, not findings about them.\n- made-up lending\n- lending library\n- neighbourhood library\n- members borrow\n- tools members\n\n## Inputs and Outputs\nNative structured frame for 'Inputs and Outputs' over: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them. (domain: general). The list below is the request's most frequent terms, not findings about them.\n- made-up lending\n- lending library\n- neighbourhood library\n- members borrow\n- tools members\n\n## State Variables\nNative structured frame for 'State Variables' over: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them. (domain: general). The list below is the request's most frequent terms, not findings about them.\n- made-up lending\n- lending library\n- neighbourhood library\n- members borrow\n- tools members\n\n## Key Equations or Relationships\nNative structured frame for 'Key Equations or Relationships' over: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them. (domain: general). The list below is the request's most frequent terms, not findings about them.\n- made-up lending\n- lending library\n- neighbourhood library\n- members borrow\n- tools members\n\n## Data Requirements\nNative structured frame for 'Data Requirements' over: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them. (domain: general). The list below is the request's most frequent terms, not findings about them.\n- made-up lending\n- lending library\n- neighbourhood library\n- members borrow\n- tools members\n\n## Simulation Time Step and Duration\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for general; record outcomes to memory/UEG.\n\n## Validation Strategy\nNative structured frame for 'Validation Strategy' over: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them. (domain: general). The list below is the request's most frequent terms, not findings about them.\n- made-up lending\n- lending library\n- neighbourhood library\n- members borrow\n- tools members\n\n## Failure Modes\nStructured risk frame for this dimension — surface, don't invent. The items below are terms taken from the request to CHECK, not risks this engine identified:\n- Check: made-up lending.\n- Check: lending library.\n- Check: neighbourhood library.\n- Check: members borrow.\n- Likelihood × impact to be scored; mitigations and owners to be assigned.\n- The native engine flags areas needing attention; a model resource details them.\n\n## Key Metrics Output\nStructured measurement frame:\n- Candidate KPI from made-up lending.\n- Candidate KPI from lending library.\n- Candidate KPI from neighbourhood library.\n- Candidate KPI from members borrow.\n- Each KPI needs a baseline, target, and cadence; tie to the objective above.",
+  "composition": {
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+   "kind": "narrative",
+   "computed": false,
+   "served_by": "native",
+   "is_external": false,
+   "basis": "this model specification is TEXT composed by native. Nothing was computed: no model was integrated over time and no objective was optimised, so any figure or table in it was written, not calculated"
+  },
+  "simulations": [],
+  "created_at": "2026-11-14T00:34:42Z"
+ },
+ "scenario": {
+  "simulation_id": "2328d475",
+  "model_id": "twin-a00ab84348",
+  "scenario_name": "W993 twice the members",
+  "scenario_description": "Membership doubles.",
+  "parameters": {},
+  "time_horizon": "90 days",
+  "result": "_[Workstation native structured engine — owned, no external dependency]_\n\n## System Boundary\nStructured architecture frame for: W993 twice the members Membership doubles..\n- Core capability: address membership doubles.\n- Component for membership doubles.\n- Component for twice.\n- Interfaces & data: specify inputs/outputs and contracts.\n- Non-functionals: reliability, security, and constitutional governance (gaas.v5), fit for WITHHELD — no domain was declared for this call.\n\n## Components\nStructured architecture frame for: W993 twice the members Membership doubles..\n- Core capability: address membership doubles.\n- Component for membership doubles.\n- Component for twice.\n- Interfaces & data: specify inputs/outputs and contracts.\n- Non-functionals: reliability, security, and constitutional governance (gaas.v5), fit for WITHHELD — no domain was declared for this call.\n\n## Simulation Setup\nNative structured frame for 'Simulation Setup' over: W993 twice the members Membership doubles. (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- membership doubles\n- twice\n\n## Phase 1: Early Dynamics\nStructured phased frame (deterministic scaffold):\n- Phase 1 — validate: cheapest test of the riskiest assumption.\n- Phase 2 — build: the smallest end-to-end slice that delivers value.\n- Phase 3 — launch & learn: ship, instrument, iterate.\n- Each phase grounded in WITHHELD — no domain was declared for this call; dates to be set against capacity.\n\n## Phase 2: Mid-Point State\nStructured phased frame (deterministic scaffold):\n- Phase 1 — validate: cheapest test of the riskiest assumption.\n- Phase 2 — build: the smallest end-to-end slice that delivers value.\n- Phase 3 — launch & learn: ship, instrument, iterate.\n- Each phase grounded in WITHHELD — no domain was declared for this call; dates to be set against capacity.\n\n## Phase 3: End State\nStructured phased frame (deterministic scaffold):\n- Phase 1 — validate: cheapest test of the riskiest assumption.\n- Phase 2 — build: the smallest end-to-end slice that delivers value.\n- Phase 3 — launch & learn: ship, instrument, iterate.\n- Each phase grounded in WITHHELD — no domain was declared for this call; dates to be set against capacity.\n\n## Key Metrics Over Time\nStructured measurement frame:\n- Candidate KPI from membership doubles.\n- Candidate KPI from twice.\n- Each KPI needs a baseline, target, and cadence; tie to the objective above.\n\n## Emergent Behaviours Observed\nNative structured frame for 'Emergent Behaviours Observed' over: W993 twice the members Membership doubles. (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- membership doubles\n- twice\n\n## Failure Modes Triggered\nStructured risk frame for this dimension — surface, don't invent. The items below are terms taken from the request to CHECK, not risks this engine identified:\n- Check: membership doubles.\n- Check: twice.\n- Likelihood × impact to be scored; mitigations and owners to be assigned.\n- The native engine flags areas needing attention; a model resource details them.\n\n## Sensitivity Analysis\nNative structured frame for 'Sensitivity Analysis' over: W993 twice the members Membership doubles. (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- membership doubles\n- twice\n\n## Conclusions and Recommendations\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.",
+  "composition": {
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+   "kind": "narrative",
+   "computed": false,
+   "served_by": "native",
+   "is_external": false,
+   "basis": "this simulation is TEXT composed by native. Nothing was computed: no model was integrated over time and no objective was optimised, so any figure or table in it was written, not calculated"
+  },
+  "run_at": "2026-11-14T00:34:42Z"
+ },
+ "model_after": {
+  "model_id": "twin-a00ab84348",
+  "system_name": "W993 made-up lending library",
+  "system_description": "A neighbourhood library that lends tools: members borrow for a week and return them.",
+  "domain": "general",
+  "model_type": "process",
+  "complexity": "standard",
+  "model_spec": "_[Workstation native structured engine — owned, no external dependency]_\n\n## System Boundary\nStructured architecture frame for: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them..\n- Core capability: address made-up lending.\n- Component for made-up lending.\n- Component for lending library.\n- Component for neighbourhood library.\n- Component for members borrow.\n- Interfaces & data: specify inputs/outputs and contracts.\n- Non-functionals: reliability, security, and constitutional governance (gaas.v5), fit for general.\n\n## Components\nStructured architecture frame for: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them..\n- Core capability: address made-up lending.\n- Component for made-up lending.\n- Component for lending library.\n- Component for neighbourhood library.\n- Component for members borrow.\n- Interfaces & data: specify inputs/outputs and contracts.\n- Non-functionals: reliability, security, and constitutional governance (gaas.v5), fit for general.\n\n## Feedback Loops\nNative structured frame for 'Feedback Loops' over: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them. (domain: general). The list below is the request's most frequent terms, not findings about them.\n- made-up lending\n- lending library\n- neighbourhood library\n- members borrow\n- tools members\n\n## Inputs and Outputs\nNative structured frame for 'Inputs and Outputs' over: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them. (domain: general). The list below is the request's most frequent terms, not findings about them.\n- made-up lending\n- lending library\n- neighbourhood library\n- members borrow\n- tools members\n\n## State Variables\nNative structured frame for 'State Variables' over: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them. (domain: general). The list below is the request's most frequent terms, not findings about them.\n- made-up lending\n- lending library\n- neighbourhood library\n- members borrow\n- tools members\n\n## Key Equations or Relationships\nNative structured frame for 'Key Equations or Relationships' over: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them. (domain: general). The list below is the request's most frequent terms, not findings about them.\n- made-up lending\n- lending library\n- neighbourhood library\n- members borrow\n- tools members\n\n## Data Requirements\nNative structured frame for 'Data Requirements' over: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them. (domain: general). The list below is the request's most frequent terms, not findings about them.\n- made-up lending\n- lending library\n- neighbourhood library\n- members borrow\n- tools members\n\n## Simulation Time Step and Duration\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for general; record outcomes to memory/UEG.\n\n## Validation Strategy\nNative structured frame for 'Validation Strategy' over: W993 made-up lending library A neighbourhood library that lends tools: members borrow for a week and return them. (domain: general). The list below is the request's most frequent terms, not findings about them.\n- made-up lending\n- lending library\n- neighbourhood library\n- members borrow\n- tools members\n\n## Failure Modes\nStructured risk frame for this dimension — surface, don't invent. The items below are terms taken from the request to CHECK, not risks this engine identified:\n- Check: made-up lending.\n- Check: lending library.\n- Check: neighbourhood library.\n- Check: members borrow.\n- Likelihood × impact to be scored; mitigations and owners to be assigned.\n- The native engine flags areas needing attention; a model resource details them.\n\n## Key Metrics Output\nStructured measurement frame:\n- Candidate KPI from made-up lending.\n- Candidate KPI from lending library.\n- Candidate KPI from neighbourhood library.\n- Candidate KPI from members borrow.\n- Each KPI needs a baseline, target, and cadence; tie to the objective above.",
+  "composition": {
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+   "kind": "narrative",
+   "computed": false,
+   "served_by": "native",
+   "is_external": false,
+   "basis": "this model specification is TEXT composed by native. Nothing was computed: no model was integrated over time and no objective was optimised, so any figure or table in it was written, not calculated"
+  },
+  "simulations": [
+   {
+    "simulation_id": "2328d475",
+    "scenario_name": "W993 twice the members",
+    "scenario_description": "Membership doubles.",
+    "parameters": {},
+    "time_horizon": "90 days",
+    "composition": {
+     "evidence_level": "behaviour",
+     "evidence_level_number": 1,
+     "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+     "kind": "narrative",
+     "computed": false,
+     "served_by": "native",
+     "is_external": false,
+     "basis": "this simulation is TEXT composed by native. Nothing was computed: no model was integrated over time and no objective was optimised, so any figure or table in it was written, not calculated"
+    },
+    "run_at": "2026-11-14T00:34:42Z"
+   }
+  ],
+  "created_at": "2026-11-14T00:34:42Z"
+ },
+ "missing": {
+  "status": 404,
+  "body": {
+   "detail": "Model twin-w993-none not found."
+  }
+ }
+}

@@ -1,0 +1,446 @@
+{
+  "delete_refused": {
+    "body": {
+      "detail": "File not found"
+    },
+    "status": 404
+  },
+  "generate": {
+    "basis": "assembled from the recorded profile only; any number or year an output contains that the record does not is listed in that output's unsupported_specifics",
+    "generated_count": 1,
+    "refused": null,
+    "results": [
+      {
+        "ai_provenance": {
+          "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+          "evidence_level": "behaviour",
+          "evidence_level_number": 1,
+          "floor_note": "Composed by the native floor, not by a model: the headings are a structure filled with terms taken from your input. NO research, legal or clinical analysis, guidance, marking, market data or safeguarding assessment was performed - read it as an outline to work from, not as an answer.",
+          "is_external": false,
+          "language_basis": "no language was requested, so no claim is made about the output's language",
+          "language_delivered": null,
+          "language_requested": null,
+          "material": {
+            "basis": "all 275 characters of the candidate record were handed over; it was marked as data and not as instruction",
+            "chars": 275,
+            "delimiter_marks_defused": false,
+            "label": "CANDIDATE RECORD",
+            "limit": 24000,
+            "read_chars": 275,
+            "read_whole": true
+          },
+          "model_tokens": null,
+          "model_tokens_basis": "NOT COUNTED - the deterministic floor served this and runs no model, so there are no tokens to count; null, never 0",
+          "posture": "in-house-first",
+          "profile_applied": false,
+          "profile_basis": "you have not written a profile",
+          "profile_state": "none_written",
+          "quality_assurance": {
+            "compliance_basis": "keyword and vocabulary screens plus the ethical dimensions. A screen can refuse and can escalate; it cannot clear \u2014 so only a row with coverage 'engine' can carry a pass, and `coverage_gaps` names every area nothing here assessed \u2014 NOTHING here assessed this subject, so the overall is 'review' and no part of it may be reported as compliant",
+            "compliance_echo_only": false,
+            "compliance_overall": "review",
+            "delivery_coverage": null,
+            "qms_basis": "not assessable \u2014 floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+            "qms_gate_passed": null,
+            "quality_record_hash": "354da68e5263316b778aebbe69a3dbaad0957379ba2658f34e42663514f7b5e9e7d3c85ae13f5b7e2341439037bbb5d29ea90ecdf01915c86e90cd4ce5862dd4",
+            "stub_found": false
+          },
+          "review": {
+            "basis": "no review of this tool is recorded: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed",
+            "known": true,
+            "label": "Unreviewed",
+            "of_tiers": [
+              "Checked by rule",
+              "Reviewed by Workstation's specialist agent",
+              "Signed by a qualified person"
+            ],
+            "records_counted": 0,
+            "records_not_counted": 0,
+            "tier": "unreviewed"
+          },
+          "served_by": "native",
+          "served_identity": {
+            "basis": "the deterministic floor answered: no model ran",
+            "build_digest": null,
+            "model": null,
+            "processor": null
+          }
+        },
+        "content": "_[Workstation native structured engine \u2014 owned, no external dependency]_\n\n## Understanding\nThe request concerns: W1026 made up: a delivery coordinator role (domain: WITHHELD \u2014 no domain was declared for this call).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs \u2014 not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- delivery coordinator\n- coordinator role\n- made delivery\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'career_generator', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD \u2014 no domain was declared for this call; record outcomes to memory/UEG.",
+        "output_id": "04de7c260b",
+        "output_type": "cv",
+        "timestamp": "2026-11-14T12:22:04Z",
+        "title": "CV",
+        "unsupported_specifics": []
+      }
+    ],
+    "unread_basis": "",
+    "unread_files": []
+  },
+  "generate_refused": {
+    "body": {
+      "detail": "At least one output_type required."
+    },
+    "status": 400
+  },
+  "job_search": {
+    "ai_provenance": {
+      "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+      "evidence_level": "behaviour",
+      "evidence_level_number": 1,
+      "floor_note": "Composed by the native floor, not by a model: the headings are a structure filled with terms taken from your input. NO research, legal or clinical analysis, guidance, marking, market data or safeguarding assessment was performed - read it as an outline to work from, not as an answer.",
+      "is_external": false,
+      "language_basis": "no language was requested, so no claim is made about the output's language",
+      "language_delivered": null,
+      "language_requested": null,
+      "material": {
+        "basis": "all 206 characters of the search were handed over; it was marked as data and not as instruction",
+        "chars": 206,
+        "delimiter_marks_defused": false,
+        "label": "SEARCH",
+        "limit": 6000,
+        "read_chars": 206,
+        "read_whole": true
+      },
+      "model_tokens": null,
+      "model_tokens_basis": "NOT COUNTED - the deterministic floor served this and runs no model, so there are no tokens to count; null, never 0",
+      "posture": "in-house-first",
+      "profile_applied": false,
+      "profile_basis": "you have not written a profile",
+      "profile_state": "none_written",
+      "quality_assurance": {
+        "compliance_basis": "keyword and vocabulary screens plus the ethical dimensions. A screen can refuse and can escalate; it cannot clear \u2014 so only a row with coverage 'engine' can carry a pass, and `coverage_gaps` names every area nothing here assessed \u2014 NOTHING here assessed this subject, so the overall is 'review' and no part of it may be reported as compliant",
+        "compliance_echo_only": false,
+        "compliance_overall": "review",
+        "delivery_coverage": null,
+        "qms_basis": "not assessable \u2014 floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+        "qms_gate_passed": null,
+        "quality_record_hash": "52035097a79e6d9dec0e85148acaae8a30a0b25d009e323a9777911efc2faca359dea97f5913d49ac79b91b7f8e39fd964b2d5cba171cbb829d361eda74d88c3",
+        "stub_found": false
+      },
+      "review": {
+        "basis": "no review of this tool is recorded: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed",
+        "known": true,
+        "label": "Unreviewed",
+        "of_tiers": [
+          "Checked by rule",
+          "Reviewed by Workstation's specialist agent",
+          "Signed by a qualified person"
+        ],
+        "records_counted": 0,
+        "records_not_counted": 0,
+        "tier": "unreviewed"
+      },
+      "served_by": "native",
+      "served_identity": {
+        "basis": "the deterministic floor answered: no model ran",
+        "build_digest": null,
+        "model": null,
+        "processor": null
+      }
+    },
+    "basis": "AI-synthesised example listings \u2014 not a live job board; no listing here links to a real advert, and every employer, role and figure must be verified independently",
+    "illustrative": true,
+    "none_basis": "Nothing came back in the shape a listing is asked for. No listing could be synthesised here \u2014 this says nothing about whether such roles exist.",
+    "query": "W1026 made up: delivery coordinator",
+    "read_basis": "all 206 characters of the search were handed over; it was marked as data and not as instruction",
+    "read_cut": null,
+    "results": [],
+    "sources_used": [],
+    "total": 0
+  },
+  "job_search_model": {
+    "ai_provenance": {
+      "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+      "evidence_level": "behaviour",
+      "evidence_level_number": 1,
+      "is_external": false,
+      "language_basis": null,
+      "language_delivered": null,
+      "language_requested": null,
+      "material": {
+        "basis": "all 206 characters of the search were handed over; it was marked as data and not as instruction",
+        "chars": 206,
+        "delimiter_marks_defused": false,
+        "label": "SEARCH",
+        "limit": 6000,
+        "read_chars": 206,
+        "read_whole": true
+      },
+      "model_tokens": null,
+      "model_tokens_basis": null,
+      "posture": "in-house-first",
+      "profile_applied": null,
+      "profile_basis": null,
+      "profile_state": null,
+      "quality_assurance": {
+        "compliance_basis": "keyword and vocabulary screens plus the ethical dimensions. A screen can refuse and can escalate; it cannot clear \u2014 so only a row with coverage 'engine' can carry a pass, and `coverage_gaps` names every area nothing here assessed \u2014 NOTHING here assessed this subject, so the overall is 'review' and no part of it may be reported as compliant",
+        "compliance_echo_only": false,
+        "compliance_overall": "review",
+        "delivery_coverage": null,
+        "qms_basis": "not assessable \u2014 this delivery declared no required sections, so the gate's coverage comparison has nothing to compare; the length and stub screen ran and found substantive content, which is not a gate pass (served_by=ollama:w1026-made-up)",
+        "qms_gate_passed": null,
+        "quality_record_hash": "78b845dfc39a701bdb4ede2e5b38f72eda9fa1f98886056d72f0211104e6599981fce5fb48298b04080d569b8c48013488f499b1a4ddf6b82c14731393c554b0",
+        "stub_found": false
+      },
+      "review": {
+        "basis": "no review of this tool is recorded: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed",
+        "known": true,
+        "label": "Unreviewed",
+        "of_tiers": [
+          "Checked by rule",
+          "Reviewed by Workstation's specialist agent",
+          "Signed by a qualified person"
+        ],
+        "records_counted": 0,
+        "records_not_counted": 0,
+        "tier": "unreviewed"
+      },
+      "served_by": "ollama:w1026-made-up",
+      "served_identity": {
+        "basis": "the model the answer was routed to; the runtime reports no digest for it, so which build answered is not known; where it ran (the processor) is not known: the runtime did not report the model as loaded with its sizes",
+        "build_digest": null,
+        "model": "w1026-made-up",
+        "processor": null
+      }
+    },
+    "basis": "AI-synthesised example listings \u2014 not a live job board; no listing here links to a real advert, and every employer, role and figure must be verified independently",
+    "illustrative": true,
+    "none_basis": null,
+    "query": "W1026 made up: delivery coordinator",
+    "read_basis": "all 206 characters of the search were handed over; it was marked as data and not as instruction",
+    "read_cut": null,
+    "results": [
+      {
+        "basis": "AI-synthesised example \u2014 not a live advert; verify any role, employer or figure independently",
+        "company": "W1026 made up: a bakery cooperative",
+        "description": "W1026 made up: plans the two vans.",
+        "illustrative": true,
+        "listing_id": "6a08d8926c",
+        "location": "W1026 made up: a market town",
+        "salary_estimate": null,
+        "tags": [
+          "logistics"
+        ],
+        "title": "W1026 made up: delivery coordinator"
+      },
+      {
+        "basis": "AI-synthesised example \u2014 not a live advert; verify any role, employer or figure independently",
+        "company": null,
+        "description": "W1026 made up: runs the one booking line.",
+        "illustrative": true,
+        "listing_id": "97aca79719",
+        "location": null,
+        "salary_estimate": null,
+        "tags": [
+          "scheduling"
+        ],
+        "title": "W1026 made up: booking line lead"
+      }
+    ],
+    "sources_used": [],
+    "total": 2
+  },
+  "job_search_prose": {
+    "ai_provenance": {
+      "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+      "evidence_level": "behaviour",
+      "evidence_level_number": 1,
+      "is_external": false,
+      "language_basis": null,
+      "language_delivered": null,
+      "language_requested": null,
+      "material": {
+        "basis": "all 206 characters of the search were handed over; it was marked as data and not as instruction",
+        "chars": 206,
+        "delimiter_marks_defused": false,
+        "label": "SEARCH",
+        "limit": 6000,
+        "read_chars": 206,
+        "read_whole": true
+      },
+      "model_tokens": null,
+      "model_tokens_basis": null,
+      "posture": "in-house-first",
+      "profile_applied": null,
+      "profile_basis": null,
+      "profile_state": null,
+      "quality_assurance": {
+        "compliance_basis": "keyword and vocabulary screens plus the ethical dimensions. A screen can refuse and can escalate; it cannot clear \u2014 so only a row with coverage 'engine' can carry a pass, and `coverage_gaps` names every area nothing here assessed \u2014 NOTHING here assessed this subject, so the overall is 'review' and no part of it may be reported as compliant",
+        "compliance_echo_only": false,
+        "compliance_overall": "review",
+        "delivery_coverage": null,
+        "qms_basis": "not assessable \u2014 this delivery declared no required sections, so the gate's coverage comparison has nothing to compare; the length and stub screen ran and found a stub or too little content, which is not a gate pass (served_by=ollama:w1026-made-up)",
+        "qms_gate_passed": null,
+        "quality_record_hash": "65f1e42c1065827336a1bf5f6cc4bfde29c0dbc7bb9a9b673e405f491aba358b872d893b4ec304d6c562fb5c274b03a9a2fca8bb5a6252623097bc49d7124ddd",
+        "stub_found": true
+      },
+      "review": {
+        "basis": "no review of this tool is recorded: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed",
+        "known": true,
+        "label": "Unreviewed",
+        "of_tiers": [
+          "Checked by rule",
+          "Reviewed by Workstation's specialist agent",
+          "Signed by a qualified person"
+        ],
+        "records_counted": 0,
+        "records_not_counted": 0,
+        "tier": "unreviewed"
+      },
+      "served_by": "ollama:w1026-made-up",
+      "served_identity": {
+        "basis": "the model the answer was routed to; the runtime reports no digest for it, so which build answered is not known; where it ran (the processor) is not known: the runtime did not report the model as loaded with its sizes",
+        "build_digest": null,
+        "model": "w1026-made-up",
+        "processor": null
+      }
+    },
+    "basis": "AI-synthesised example listings \u2014 not a live job board; no listing here links to a real advert, and every employer, role and figure must be verified independently",
+    "illustrative": true,
+    "none_basis": "Nothing came back in the shape a listing is asked for. No listing could be synthesised here \u2014 this says nothing about whether such roles exist.",
+    "query": "W1026 made up: delivery coordinator",
+    "read_basis": "all 206 characters of the search were handed over; it was marked as data and not as instruction",
+    "read_cut": null,
+    "results": [],
+    "sources_used": [],
+    "total": 0
+  },
+  "review_options": {
+    "/api/v1/career/generate": {
+      "discipline": "employment",
+      "endpoint": "/api/v1/career/generate",
+      "person": {
+        "basis": "The release sentence is the Owner's ruling of 2026-10-12 (P5.15). When a person is warranted is Workstation's own statement (W925): it claims no professional's role, and it does not say that any person has reviewed anything.",
+        "kept_by_the_ruling": null,
+        "option": "A qualified person's review is an option for anything this tool gives. Workstation does not arrange one. When a person signs a review of this tool, it is recorded as the third tier, with their credential as they stated it.",
+        "release": "Release is the Owner's switch. A released tool may answer on the review of Workstation's calibrated specialist agent alone, and each answer then says that no qualified person reviewed it.",
+        "warranted_when": "Before you rely on it for a contract, pay, a dismissal or a dispute with an employer, take it to an employment adviser or a solicitor: those are legal questions."
+      },
+      "review": {
+        "basis": "no review of this tool is recorded: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed",
+        "known": true,
+        "label": "Unreviewed",
+        "of_tiers": [
+          "Checked by rule",
+          "Reviewed by Workstation's specialist agent",
+          "Signed by a qualified person"
+        ],
+        "records_counted": 0,
+        "records_not_counted": 0,
+        "tier": "unreviewed"
+      },
+      "tool": "career_generator"
+    },
+    "/api/v1/career/job-search": {
+      "discipline": "employment",
+      "endpoint": "/api/v1/career/job-search",
+      "person": {
+        "basis": "The release sentence is the Owner's ruling of 2026-10-12 (P5.15). When a person is warranted is Workstation's own statement (W925): it claims no professional's role, and it does not say that any person has reviewed anything.",
+        "kept_by_the_ruling": null,
+        "option": "A qualified person's review is an option for anything this tool gives. Workstation does not arrange one. When a person signs a review of this tool, it is recorded as the third tier, with their credential as they stated it.",
+        "release": "Release is the Owner's switch. A released tool may answer on the review of Workstation's calibrated specialist agent alone, and each answer then says that no qualified person reviewed it.",
+        "warranted_when": "Before you rely on it for a contract, pay, a dismissal or a dispute with an employer, take it to an employment adviser or a solicitor: those are legal questions."
+      },
+      "review": {
+        "basis": "no review of this tool is recorded: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed",
+        "known": true,
+        "label": "Unreviewed",
+        "of_tiers": [
+          "Checked by rule",
+          "Reviewed by Workstation's specialist agent",
+          "Signed by a qualified person"
+        ],
+        "records_counted": 0,
+        "records_not_counted": 0,
+        "tier": "unreviewed"
+      },
+      "tool": "career_job_search"
+    },
+    "/api/v1/career/uploads/auto": {
+      "discipline": "employment",
+      "endpoint": "/api/v1/career/uploads/auto",
+      "person": {
+        "basis": "The release sentence is the Owner's ruling of 2026-10-12 (P5.15). When a person is warranted is Workstation's own statement (W925): it claims no professional's role, and it does not say that any person has reviewed anything.",
+        "kept_by_the_ruling": null,
+        "option": "A qualified person's review is an option for anything this tool gives. Workstation does not arrange one. When a person signs a review of this tool, it is recorded as the third tier, with their credential as they stated it.",
+        "release": "Release is the Owner's switch. A released tool may answer on the review of Workstation's calibrated specialist agent alone, and each answer then says that no qualified person reviewed it.",
+        "warranted_when": "Before you rely on it for a contract, pay, a dismissal or a dispute with an employer, take it to an employment adviser or a solicitor: those are legal questions."
+      },
+      "review": {
+        "basis": "no review of this tool is recorded: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed",
+        "known": true,
+        "label": "Unreviewed",
+        "of_tiers": [
+          "Checked by rule",
+          "Reviewed by Workstation's specialist agent",
+          "Signed by a qualified person"
+        ],
+        "records_counted": 0,
+        "records_not_counted": 0,
+        "tier": "unreviewed"
+      },
+      "tool": "career_classifier"
+    }
+  },
+  "uploads": [
+    {
+      "category": "cv_history",
+      "content_type": "text/plain",
+      "extracted_text": "W1026 made up. A delivery coordinator for a cooperative of village bakeries: two vans, one booking line, orders closing at four in the afternoon.",
+      "extraction_basis": "the file is plain text and was read in full",
+      "extraction_method": "read as UTF-8 text from disk",
+      "file_id": "f47f353e-9738-47be-b6a1-1b5051c4997d",
+      "filename": "w1026-made-up-cv.txt",
+      "in_knowledge_base": true,
+      "owner_id": "default",
+      "size": 145,
+      "status": "EXTRACTED",
+      "timestamp": "2026-11-14T12:22:04.348483"
+    }
+  ],
+  "uploads_after_use": [
+    {
+      "category": "cv_history",
+      "content_type": "text/plain",
+      "extracted_text": "W1026 made up. A delivery coordinator for a cooperative of village bakeries: two vans, one booking line, orders closing at four in the afternoon.",
+      "extraction_basis": "the file is plain text and was read in full",
+      "extraction_method": "read as UTF-8 text from disk",
+      "file_id": "f47f353e-9738-47be-b6a1-1b5051c4997d",
+      "filename": "w1026-made-up-cv.txt",
+      "in_knowledge_base": true,
+      "owner_id": "default",
+      "size": 145,
+      "status": "EXTRACTED",
+      "timestamp": "2026-11-14T12:22:04.348483"
+    },
+    {
+      "category": "job_ad",
+      "content_type": "text/plain",
+      "extracted_text": "# Target role (ILLUSTRATIVE \u2014 an AI-synthesised example listing, not a live advert; verify the employer, role and figures independently)\n\nTitle: W1026 made up: delivery coordinator\nCompany: not stated\nLocation: not stated\n\nW1026 made up.\n",
+      "extraction_basis": "",
+      "extraction_method": null,
+      "file_id": "bc8972f0-81a0-4917-a637-5a9cc016f3f8",
+      "filename": "illustrative-listing-W1026 made up: delivery coordinator.md",
+      "in_knowledge_base": false,
+      "owner_id": null,
+      "size": 240,
+      "status": "INGESTED",
+      "timestamp": "2026-11-14T12:22:04.436021"
+    }
+  ],
+  "use": {
+    "category": "job_ad",
+    "file_id": "bc8972f0-81a0-4917-a637-5a9cc016f3f8",
+    "illustrative": true,
+    "listing_id": "w1026-made-up",
+    "status": "attached",
+    "title": "W1026 made up: delivery coordinator"
+  },
+  "use_refused": {
+    "body": {
+      "detail": "a listing needs at least a title or a description"
+    },
+    "status": 422
+  }
+}

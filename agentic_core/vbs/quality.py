@@ -314,6 +314,13 @@ def _measure_bar(coverage: float, stub: bool, qms_passed: Optional[bool], min_co
     return {"criteria": crit,
             "measured": len(_m), "met": sum(1 for c in _m if c["met"]),
             "attested": len(_a), "not_measured": len(_n) + len(_s),
+            #  W797 (FU-980, ledger v17 R1[2]) - `not_measured` counts the screen-only criteria too, and the
+            #  summary prints those as their own bucket so its figures add up to the bar; side by side the two
+            #  read as a disagreement (16 here, "14 not measured" there). The arithmetic is stated beside it.
+            "not_measured_basis": (f"{len(_n) + len(_s)} = {len(_n)} with no source + {len(_s)} screen-only: a "
+                                   f"criterion only a screen read is not measured either. The summary prints "
+                                   f"the two as separate buckets so that its figures add up to the bar's "
+                                   f"{len(crit)}"),
             # W483 — the screen-only criteria are counted OUT of 'measured' and named in their own
             # bucket, so a reader is never shown a §11 keyword screen as a measurement.
             "screen_only": len(_s),

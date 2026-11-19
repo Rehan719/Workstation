@@ -14,9 +14,11 @@
  *     never a green badge over controls that did not run.
  */
 import React, { useEffect, useState } from 'react';
+import { errorMessage } from '../../lib/api';   // W1015 - a caught failure, said as what it was
+import { refusalOf } from '../../lib/stream';   // W1025 - a refused read by its reason
 import { Card, Button } from '@workstation/ui';
-import { Brain, Loader2, AlertCircle, ShieldCheck, GitBranch, Scale } from 'lucide-react';
-import { provenanceBadge } from '../../lib/api';
+import { Brain, Loader2, ShieldCheck, GitBranch, Scale } from 'lucide-react';
+import { provenanceBadge, bodyOrNull, bodyDetail } from '../../lib/api';
 import { DOMAINS as CANON_DOMAINS, DOMAIN_LABELS } from '../../lib/taxonomy';   // W758 (FU-969)
 
 const Chip: React.FC<{ tone: 'ok' | 'warn' | 'bad' | 'dim'; children: React.ReactNode; title?: string }> = ({ tone, children, title }) => (
@@ -36,57 +38,74 @@ const QEPIntelligence: React.FC = () => {
   const [blueprint, setBlueprint] = useState<any>(null);
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState('');
-  const [err, setErr] = useState('');
+  //  W1072 - each action's failure, said beside its own button: one line at the foot of the page said every
+  //  failure away from the action that met it, and the next action took it away
+  const [xaiErr, setXaiErr] = useState('');
+  const [weightsErr, setWeightsErr] = useState('');
+  const [adaptErr, setAdaptErr] = useState('');
   const [loadErr, setLoadErr] = useState('');
 
-  const jget = (url: string) => fetch(url).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); });
+  const jget = (url: string) => fetch(url).then(async r => { if (!r.ok) throw new Error(await refusalOf(r)); return r.json(); });   // W1025
   const loadAll = () => {
     setLoadErr('');
-    jget('/api/v1/qep/adaptation/registry').then(setReg).catch(() => setLoadErr('registry unavailable'));
-    jget('/api/v1/qep/compliance/audit').then(setAudit).catch(() => setLoadErr(e => e ? `${e} · audit unavailable` : 'audit unavailable'));
+    //  W1025 - each read says why it was not read; both said only "unavailable"
+    //  W1072 - a record that could not be read is taken off the page, as the sentence says
+    jget('/api/v1/qep/adaptation/registry').then(setReg).catch(e => {
+      setReg(null);
+      const why = `the registry was not read: ${errorMessage(e)}`;
+      setLoadErr(prev => (prev ? `${prev} · ${why}` : why));
+    });
+    jget('/api/v1/qep/compliance/audit').then(setAudit).catch(e => {
+      setAudit(null);
+      const why = `the audit was not read: ${errorMessage(e)}`;
+      setLoadErr(prev => (prev ? `${prev} · ${why}` : why));
+    });
   };
   useEffect(() => { loadAll(); }, []);
 
   const explain = async () => {
-    setBusy('xai'); setErr('');
+    setBusy('xai'); setXaiErr(''); setXai(null);   // W1072 - an explanation of other inputs is not left standing
     try {
       const q = new URLSearchParams(Object.entries(xaiIn).map(([k, v]) => [k, String(v)]));
       const r = await fetch(`/api/v1/qep/xai/explanations?${q}`);
-      const d = await r.json();
-      if (!r.ok) { setErr(typeof d.detail === 'string' ? d.detail : JSON.stringify(d.detail).slice(0, 200)); setBusy(''); return; }
+      //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
+      const d = r.ok ? await r.json() : await bodyOrNull(r);
+      if (!r.ok) { setXaiErr(`Not explained: Failed (HTTP ${r.status}): ${bodyDetail(d, 'no reason given')}`); setBusy(''); return; }   // W1013, W1072
       setXai(d);
       setWeights({ ease_weight: d.model_weights.ease_weight, interval_weight: d.model_weights.interval_weight, quality_weight: d.model_weights.quality_weight });
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+    } catch (e: any) { setXaiErr(`Not explained: ${errorMessage(e)}`); }
     setBusy('');
   };
 
   const saveWeights = async () => {
-    setBusy('weights'); setErr(''); setMsg('');
+    setBusy('weights'); setWeightsErr(''); setMsg('');
     try {
       const r = await fetch('/api/v1/qep/recommendation/update', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(weights),
       });
-      const d = await r.json();
-      if (!r.ok) { setErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); setBusy(''); return; }
+      //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
+      const d = r.ok ? await r.json() : await bodyOrNull(r);
+      if (!r.ok) { setWeightsErr(`Not proposed: Failed (HTTP ${r.status}): ${bodyDetail(d, 'no reason given')}`); setBusy(''); return; }   // W1013, W1072
       //  W687 (OWNER RULING 2026-10-12) - nothing was applied: the shared weights change only through a change
       //  record. The sentence is the server's own, with the record's id and its state.
       setMsg(`${d.status} — ${d.basis} Change record ${d.cca_id ?? 'not filed'}${d.change_status ? ` (${d.change_status})` : ''}.`);
       loadAll();
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+    } catch (e: any) { setWeightsErr(`Not proposed: ${errorMessage(e)}`); }
     setBusy('');
   };
 
   const runAdapt = async () => {
-    setBusy('adapt'); setErr(''); setBlueprint(null);
+    setBusy('adapt'); setAdaptErr(''); setBlueprint(null);
     try {
       const r = await fetch('/api/v1/qep/adaptation/execute', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(adapt),
       });
-      const d = await r.json();
-      if (!r.ok) { setErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); setBusy(''); return; }
+      //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
+      const d = r.ok ? await r.json() : await bodyOrNull(r);
+      if (!r.ok) { setAdaptErr(`No blueprint: Failed (HTTP ${r.status}): ${bodyDetail(d, 'no reason given')}`); setBusy(''); return; }   // W1013, W1072
       setBlueprint(d);
       loadAll();
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+    } catch (e: any) { setAdaptErr(`No blueprint: ${errorMessage(e)}`); }
     setBusy('');
   };
 
@@ -118,6 +137,7 @@ const QEPIntelligence: React.FC = () => {
             {busy === 'xai' ? <Loader2 size={12} className="animate-spin" /> : <Brain size={12} />} Explain
           </Button>
         </div>
+        {xaiErr && <p role="alert" data-testid="qep-xai-error" className="text-vital text-[10px] font-bold mb-2">{xaiErr}</p>}
         {xai && (
           <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
             <p className="text-sm font-black text-white">
@@ -169,6 +189,7 @@ const QEPIntelligence: React.FC = () => {
             {busy === 'weights' ? <Loader2 size={12} className="animate-spin" /> : <ShieldCheck size={12} />} Propose weights
           </Button>
         </div>
+        {weightsErr && <p role="alert" data-testid="qep-weights-error" className="text-vital text-[10px] font-bold mt-2">{weightsErr}</p>}
         {msg && <p className="text-emerald-400 text-[10px] font-bold mt-2 flex items-center gap-1.5"><ShieldCheck size={12} /> {msg}</p>}
       </Card>
 
@@ -213,6 +234,7 @@ const QEPIntelligence: React.FC = () => {
             {busy === 'adapt' ? <Loader2 size={12} className="animate-spin" /> : <GitBranch size={12} />} Generate blueprint
           </Button>
         </div>
+        {adaptErr && <p role="alert" data-testid="qep-adapt-error" className="text-vital text-[10px] font-bold mt-2">{adaptErr}</p>}
         {blueprint && (
           <div className="mt-3 p-3 rounded-xl bg-slate-950 border border-slate-900">
             <div className="flex items-center gap-1.5 mb-1.5">
@@ -255,7 +277,6 @@ const QEPIntelligence: React.FC = () => {
         {audit?.note && <p className="text-[9px] text-amber-400/80 italic mt-2">{audit.note}</p>}
       </Card>
 
-      {err && <p role="alert" className="text-vital text-[10px] font-bold flex items-center gap-1.5"><AlertCircle size={12} /> {err}</p>}
     </div>
   );
 };

@@ -1,0 +1,370 @@
+{
+ "drawn": {
+  "status": 200,
+  "body": {
+   "title": "W1006 made-up quarterly orders",
+   "domain": "enterprise",
+   "chart_type": "bar",
+   "dimensions": 2,
+   "series": [
+    {
+     "label": "Q1",
+     "value": 12.0,
+     "z": null
+    },
+    {
+     "label": "Q2",
+     "value": 18.0,
+     "z": null
+    },
+    {
+     "label": "Q3",
+     "value": 9.0,
+     "z": null
+    },
+    {
+     "label": "Q4",
+     "value": 21.0,
+     "z": null
+    }
+   ],
+   "analytics": {
+    "count": 4,
+    "total": 60.0,
+    "mean": 15.0,
+    "min": {
+     "label": "Q3",
+     "value": 9.0,
+     "tied_with": []
+    },
+    "max": {
+     "label": "Q4",
+     "value": 21.0,
+     "tied_with": []
+    },
+    "range": 12.0
+   },
+   "insight": "_[Workstation native structured engine — owned, no external dependency]_\n\n## Insight\nNative structured frame for 'Insight' over: W1006 made-up quarterly orders (domain: enterprise, 2D bar chart). Interpret ONLY these real data points (do not invent any numbers):). The list below is the request's most frequent terms, not findings about them.\n- made-up quarterly\n- quarterly orders\n\n## Notable Pattern\nNative structured frame for 'Notable Pattern' over: W1006 made-up quarterly orders (domain: enterprise, 2D bar chart). Interpret ONLY these real data points (do not invent any numbers):). The list below is the request's most frequent terms, not findings about them.\n- made-up quarterly\n- quarterly orders\n\n## Recommended Action\nStructured option frame for: W1006 made-up quarterly orders.\n- Generate ≥3 distinct variants of the approach.\n- Score each against value, feasibility, risk, and values-fit (halal/beneficence).\n- Recommend the highest-scoring; record why — to be enriched by a model resource.",
+   "ai_provenance": {
+    "posture": "in-house-first",
+    "served_by": {
+     "native": 1
+    },
+    "any_external": false,
+    "evidence_level": "behaviour",
+    "evidence_level_number": 1,
+    "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer"
+   },
+   "quality_assurance": {
+    "quality": {
+     "bar": [
+      "specifically designed",
+      "modelled",
+      "simulated",
+      "optimised",
+      "categorised",
+      "ranked",
+      "best-in-class",
+      "innovative",
+      "effective",
+      "safe",
+      "efficient",
+      "commercially viable",
+      "compliant",
+      "verified",
+      "tested",
+      "validated"
+     ],
+     "delivery_coverage": 0.0,
+     "delivery_coverage_basis": "4 declared section(s) checked against the delivered content",
+     "substantive_length": true,
+     "stub_found": false,
+     "stub_marker_found": false,
+     "stub_screen_basis": "the length and stub screen ran on this text, whether or not the coverage gate could: no stub marker matched and the text is not under the minimum length",
+     "served_by": "native×1",
+     "not_assessable": true,
+     "compliance": {
+      "overall": "review",
+      "compliant": null,
+      "verdicts": [
+       {
+        "framework": "sharia_halal",
+        "status": "review",
+        "reason": "the text screened contains halal vocabulary ('halal') and no prohibited (haram) term matched — the screen cannot tell whether that word is the subject's own claim or wording this platform composed around it; either way it is not a certification and not an assessment; a halal verdict comes from a certifying body (engine ran and produced no finding here, so it backs no verdict)",
+        "coverage": "vocabulary"
+       },
+       {
+        "framework": "uk_legal",
+        "status": "review",
+        "reason": "no engine covers this area — keyword screen + employment-statute vocabulary matched nothing (jurisdiction UK / London); not legal advice (UK engine ran and produced no finding here, so it backs no verdict · audit ab87edac222bb7d7… over the subject)",
+        "coverage": "none"
+       },
+       {
+        "framework": "regulatory",
+        "status": "not_assessed",
+        "reason": "keyword screen found no regulated-activity trigger — the absence of a trigger word is not a regulatory clearance; nothing here assessed this subject",
+        "coverage": "screen"
+       },
+       {
+        "framework": "ehs",
+        "status": "not_assessed",
+        "reason": "keyword screen found no hazard term — the absence of a hazard word is not an EHS clearance; nothing here assessed this subject",
+        "coverage": "screen"
+       },
+       {
+        "framework": "ethical",
+        "status": "not_assessed",
+        "reason": "human: not_assessed; environment: not_assessed; quality: not_assessed; value: not_assessed (engine ran and produced no finding here, so it backs no verdict)",
+        "coverage": "none",
+        "dimensions_not_assessed": [
+         "human",
+         "environment",
+         "quality",
+         "value"
+        ]
+       }
+      ],
+      "coverage_gaps": [
+       "ehs",
+       "ethical",
+       "regulatory",
+       "uk_legal"
+      ],
+      "assessed_by": [],
+      "basis": "keyword and vocabulary screens plus the ethical dimensions. A screen can refuse and can escalate; it cannot clear — so only a row with coverage 'engine' can carry a pass, and `coverage_gaps` names every area nothing here assessed. Matched only by a word list, which establishes nothing either way: sharia_halal — NOTHING here assessed this subject, so the overall is 'review' and no part of it may be reported as compliant"
+     },
+     "qms_gate_passed": null,
+     "qms_basis": "not assessable — floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+     "qms_min_coverage": 0.95,
+     "qms_non_conformance_rate": null,
+     "qms_defects": {
+      "gates_run": 0,
+      "defects_total": 0,
+      "gate_failures": 0,
+      "open": 0,
+      "corrected": 0,
+      "closed": 0,
+      "closed_source_retired": 0,
+      "not_reproducible": 0,
+      "non_conformance_rate": null,
+      "what_if_gates": 0,
+      "reported_total": 0,
+      "person_reported_open": 0,
+      "what_if_failures": 0,
+      "open_from_retired_labels": 0,
+      "closed_basis": "'closed' counts defects re-verified and passed. A defect closed because its source was retired, or reported not reproducible, was not re-verified: each is counted apart and moves nothing in the rate",
+      "dispositions_basis": "0 defect(s) closed because the surface that opened them was retired and 0 reported not reproducible, each with the reason, name and time its person gave; neither is a re-verification, so neither is counted as closed above, as a gate pass or in the rate. Open now under a label no live surface opens a defect under: 0",
+      "attested_reverifications": 0,
+      "attested_counted_since": null,
+      "defects_closed_on_attestation": 0,
+      "attested_basis": "No caller-attested re-verification has been counted: the counter starts at the first one after it was added, and any run before that is in the rate and not in this count. 0 defect(s) closed now were last re-verified on typed figures. By ruling (OWNER 2026-10-11) attested re-verifications STAY in the rate: these counts stand beside it and change it by nothing.",
+      "rate_basis": "gate failures / gates run across ALL deliveries on this platform (every entity and tenant share one QMS store) — not one entity's record. What-if gates run on typed metrics, and re-verifications of the defects they open, are counted separately and excluded. A re-verification of a DELIVERY defect does count, including one attested by its caller (W316: a correction that does not hold must raise the rate)."
+     },
+     "bar_measured": {
+      "criteria": {
+       "specifically designed": {
+        "met": null,
+        "basis": "not assessable — floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "verified": {
+        "met": null,
+        "basis": "not assessable — floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "compliant": {
+        "met": null,
+        "measured": false,
+        "attested": false,
+        "source": "screen",
+        "basis": "§11 screen verdicts: {'sharia_halal': 'review', 'uk_legal': 'review', 'regulatory': 'not_assessed', 'ehs': 'not_assessed', 'ethical': 'not_assessed'} — not established: ehs, ethical, regulatory, sharia_halal, uk_legal could not assess this subject (a keyword screen can refuse, not clear)"
+       },
+       "safe": {
+        "met": null,
+        "measured": false,
+        "attested": false,
+        "source": "screen",
+        "basis": "§11 safety-bearing frameworks: {'sharia_halal': 'review', 'ehs': 'not_assessed', 'ethical': 'not_assessed'} — not established: ehs, ethical, sharia_halal could not assess this subject (a keyword screen can refuse, not clear)"
+       },
+       "modelled": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "simulated": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "optimised": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "categorised": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "ranked": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "best-in-class": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "innovative": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "effective": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "efficient": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "commercially viable": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "tested": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       },
+       "validated": {
+        "met": null,
+        "basis": "not measured by this gate",
+        "measured": false,
+        "attested": false,
+        "source": "none"
+       }
+      },
+      "measured": 0,
+      "met": 0,
+      "attested": 0,
+      "not_measured": 16,
+      "not_measured_basis": "16 = 14 with no source + 2 screen-only: a criterion only a screen read is not measured either. The summary prints the two as separate buckets so that its figures add up to the bar's 16",
+      "screen_only": 2,
+      "screen_only_criteria": [
+       "compliant",
+       "safe"
+      ],
+      "summary": "0 measured · 0 attested · 2 screen-only · 14 not measured (of 16)",
+      "total": 16,
+      "gate_measurements": {},
+      "gate_measurements_summary": "none - the gate did not run on this output (see the criteria's basis)",
+      "gate_measurements_basis": "structure only: whether every declared section heading is present, and whether a stub marker (or too little text) was found. The content was not read, so a pass here is not a finding that the delivery is specifically designed or verified",
+      "measured_criteria": [],
+      "attested_criteria": []
+     },
+     "quality_record_hash": "4cbd53561190bd9adc7fd76c3aff146dcca387f05b35eb5d43c31cda4b2fa63e2699158ed3d297ef443b55cf5c5d0c0bba914504eb1e3b99ccfa7ffe589814fd",
+     "document_controlled": true
+    },
+    "biomimetic": {
+     "layers": [
+      "Immune"
+     ],
+     "layers_declared": [
+      "Genome",
+      "Nervous",
+      "Immune",
+      "Cardiovascular",
+      "Respiratory",
+      "Musculoskeletal",
+      "Endocrine"
+     ],
+     "self": "self-managing · improving · healing",
+     "immune": {
+      "health": 1.0,
+      "threat_level": "NOMINAL",
+      "hot_endpoint_errors": 0,
+      "hot_endpoint_tied": [],
+      "errors_in_window": 0,
+      "review_flags_in_window": 0,
+      "events_in_window": 0,
+      "health_basis": "health and threat are computed from 0 failure(s) in the window; 0 compliance review flag(s) are reported beside them and are NOT counted — a flag asks a human to look, it is not a finding of harm",
+      "window_seconds": 300,
+      "observations_in_window": 2,
+      "observed_basis": "2 call(s) were observed in the last 5 minutes",
+      "by_type": {},
+      "hot_endpoint": null,
+      "response_playbook": [
+       "recommended: passive surveillance"
+      ]
+     },
+     "circadian": "MAINTENANCE_REST",
+     "layers_not_contributing": [
+      "Genome",
+      "Nervous",
+      "Cardiovascular",
+      "Respiratory",
+      "Musculoskeletal",
+      "Endocrine"
+     ],
+     "layer_states": {
+      "Genome": "implemented_not_on_this_path",
+      "Nervous": "engaged_no_value",
+      "Immune": "engaged_with_value",
+      "Cardiovascular": "measurement_under_this_name",
+      "Respiratory": "implemented_not_on_this_path",
+      "Musculoskeletal": "implemented_not_on_this_path",
+      "Endocrine": "engaged_no_value"
+     },
+     "layer_basis": {
+      "Genome": "agentic_core/organism/genome.py — encode/crossover/mutate, mounted under /api/v1/organism/genome; a quality record does not exercise it",
+      "Nervous": "agentic_core/organism/nervous.py — the fire_signal below routes into the NervousSystem; it contributes no value to this record",
+      "Immune": "agentic_core/organism/immune.py — immune.status() is read into this record",
+      "Cardiovascular": "agentic_core/app_mvp.py serves resource_flow = 100 - cpu_percent as 'cardiovascular'. That is host CPU headroom, honestly measured, under an anatomical name — there is no circulatory subsystem",
+      "Respiratory": "agentic_core/api/agent_hub.py — the Agent Hub (the vision's 17.2 map): a bus that RECORDS messages between agents; nothing is subscribed to execute what it records, and a quality record does not exercise it. NOT THE LAYER: agentic_core/molecular/triad_integration.py CANNOT BE IMPORTED: it imports six siblings from agentic_core/molecular/ and only atp_simulator still exists (p53_oscillator, ubiquitin_system, hsp_network, redox_sensor and chaperone_cascade were archived), so it raises ModuleNotFoundError and the TriadIntegrator can never be instantiated. Nothing imports it either, but that is the weaker of the two facts - this basis used to say it held a REAL TriadIntegrator, which is what code_exists_unreached is meant to mean",
+      "Musculoskeletal": "agentic_core/api/resource_fabric.py — composable facilities that run real engines, EXCEPT the composed Digital Twin stage, which is a model-written scenario narrative and runs no simulator; a quality record does not exercise them",
+      "Endocrine": "agentic_core/organism/biobus.py — the signal bus and shared context (the vision's 17.2 map); this record's own fire_signal travels on it and it contributes no value to the record. NOT THE LAYER, though it carries a similar name: agentic_core/biomimicry/geospheric/regulator.py holds a HomeostaticRegulator that does a PROPORTIONAL THRESHOLD COMPARISON and names a corrective action as a string - no integral accumulates, no derivative is read, nothing actuates - and NOTHING IMPORTS IT; a second copy of the same class sits in geospheric/homeostatic_regulator.py. W434's note vouched for this layer and W446 measured that vouching as the overclaim"
+     },
+     "layers_note": "1 of 7 declared layers contributed a value to this record: Immune. Engaged on this path without contributing a value: Nervous, Endocrine. Implemented and reachable, but not on this path: Genome, Respiratory, Musculoskeletal. A measurement published under this anatomical name, not an organ: Cardiovascular. `layer_basis` names the module behind each claim."
+    }
+   },
+   "generated_at": 1794630254.1251292
+  }
+ },
+ "refused": {
+  "status": 400,
+  "body": {
+   "detail": "Provide at least one data point (label + value)."
+  }
+ }
+}

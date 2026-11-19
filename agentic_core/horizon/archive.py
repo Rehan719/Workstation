@@ -272,6 +272,12 @@ def recount() -> Dict[str, Any]:
     """
     data = _read_index()
     man = data.get("manifest") or {}
+    #  W978 - A STORE NEVER SCANNED HAS NO COUNTS TO CHECK. It was reported as published counts that DISAGREE with
+    #  a recount - "at least one file is in a state the counts do not reflect" - about an inbox nothing had read.
+    if not man:
+        return {"stated": None, "recounted": None, "total_stated": None, "total_recounted": None, "agrees": None,
+                "basis": ("no scan of the inbox is recorded, so there are no published counts to check against a "
+                          "recount; nothing is indexed until a scan runs")}
     files = man.get("files") or []
     fresh = {s: sum(1 for f in files if f.get("state") == s) for s in (INDEXED, NOT_READ, EXCLUDED)}
     stated = man.get("counts") or {}

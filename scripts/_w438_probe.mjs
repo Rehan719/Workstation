@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W438 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W438 — drive /organism?tab=anatomy in a real browser against the built bundle: the audited
 // organism cluster must be REACHABLE and its honesty fields must RENDER (measured-vs-blended
 // health, genome provenance, config wiring truth, governed proposals routed through the CCA).

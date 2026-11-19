@@ -1,0 +1,155 @@
+{
+ "frameworks": {
+  "frameworks": [
+   {
+    "id": "bloom",
+    "name": "Bloom's Taxonomy",
+    "region": "International",
+    "held": "name only"
+   },
+   {
+    "id": "uk_national",
+    "name": "National Curriculum (England)",
+    "region": "England",
+    "page": "https://www.gov.uk/national-curriculum",
+    "read_on": "2026-10-12",
+    "says": "the national curriculum of England's maintained schools; academies and private schools need not follow it",
+    "held": "name only"
+   },
+   {
+    "id": "cambridge_igcse",
+    "name": "Cambridge IGCSE",
+    "region": "International",
+    "held": "name only"
+   },
+   {
+    "id": "ib",
+    "name": "International Baccalaureate (IB)",
+    "region": "International",
+    "held": "name only"
+   },
+   {
+    "id": "montessori",
+    "name": "Montessori Method",
+    "region": "International",
+    "held": "name only"
+   },
+   {
+    "id": "stem",
+    "name": "STEM Framework",
+    "region": "International",
+    "held": "name only"
+   },
+   {
+    "id": "competency_based",
+    "name": "Competency-Based Education",
+    "region": "International",
+    "held": "name only"
+   },
+   {
+    "id": "ubd",
+    "name": "Understanding by Design (UbD)",
+    "region": "International",
+    "held": "name only"
+   }
+  ],
+  "total": 8,
+  "held_basis": "only this framework's NAME is held: none of its content is in this platform, so nothing below was checked against it"
+ },
+ "tools": {
+  "forms": [
+   {
+    "id": "lesson_plan",
+    "route": "/api/v1/education/lesson-plan",
+    "does": "Drafts a lesson plan for the subject, topic and level you give. The needs and prior knowledge you type are handed over as material, never as instruction.",
+    "with_a_model": "An AI-drafted lesson plan. For a teacher or an adult learner. A draft for a teacher to check and adapt: nothing in it was checked against a curriculum or by a person. Not reviewed as religious teaching content: this platform's subject screen did not flag it. The screen cannot certify a subject as secular - it can only flag one.",
+    "when_no_model_serves": "Composed by the native floor, not by a model: a structured frame, with nothing generated, reasoned or interpreted by AI. For a teacher or an adult learner. A draft for a teacher to check and adapt: nothing in it was checked against a curriculum or by a person. Not reviewed as religious teaching content: this platform's subject screen did not flag it. The screen cannot certify a subject as secular - it can only flag one."
+   },
+   {
+    "id": "curriculum",
+    "route": "/api/v1/education/curriculum",
+    "does": "Drafts a curriculum outline for the subject, level and number of weeks you give. Only a framework's name is held, so nothing is checked against one.",
+    "with_a_model": "An AI-drafted curriculum outline. For a teacher or an adult learner. Framework: only this framework's NAME is held: none of its content is in this platform, so nothing below was checked against it.",
+    "when_no_model_serves": "Composed by the native floor, not by a model: a structured frame, with nothing generated, reasoned or interpreted by AI. For a teacher or an adult learner. Framework: only this framework's NAME is held: none of its content is in this platform, so nothing below was checked against it."
+   },
+   {
+    "id": "assessment",
+    "route": "/api/v1/education/assessment",
+    "does": "Drafts an assessment of the type you choose, with an answer key and mark scheme that nobody has checked.",
+    "with_a_model": "An AI-drafted assessment. For a teacher or an adult learner. A draft: the answer key and mark scheme were checked by nobody - check every answer before use. Not an official paper of any awarding body. Not reviewed as religious teaching content: this platform's subject screen did not flag it. The screen cannot certify a subject as secular - it can only flag one.",
+    "when_no_model_serves": "Composed by the native floor, not by a model: a structured frame, with nothing generated, reasoned or interpreted by AI. For a teacher or an adult learner. A draft: the answer key and mark scheme were checked by nobody - check every answer before use. Not an official paper of any awarding body. Not reviewed as religious teaching content: this platform's subject screen did not flag it. The screen cannot certify a subject as secular - it can only flag one."
+   },
+   {
+    "id": "feedback",
+    "route": "/api/v1/education/feedback",
+    "does": "Reads pasted work against the task and any rubric. With a model serving and the work read whole, it gives an indicative level; on the native floor, or when the work was not read whole, the criteria and level sections are withheld. Blank work is refused.",
+    "with_a_model": "AI-assisted marking and feedback. An aid for the teacher's professional judgement — indicative only, NOT a final or official grade. The teacher remains responsible for the mark awarded.",
+    "when_no_model_serves": "Composed by the native floor, not by a model: a structured frame, with nothing generated, reasoned or interpreted by AI. An aid for the teacher's professional judgement — indicative only, NOT a final or official grade. The teacher remains responsible for the mark awarded."
+   }
+  ],
+  "basis": "Read from this router's constants: each sentence is the disclaimer the form's answer carries, with a model and on the native floor. Whether a model is serving now is the native status's reading, not this list's.",
+  "composed": false
+ },
+ "serving": {
+  "evidence_level": "configuration",
+  "evidence_level_number": null,
+  "evidence_basis": "which resource is listed first and which one served the last recorded completion. Configuration - what is configured, declared or reachable; below level 1 and not a statement about behaviour",
+  "posture": "in-house-first",
+  "external_allowed": false,
+  "owned_resources_available": [
+   "native"
+  ],
+  "selection_order": [
+   "native"
+  ],
+  "active_model": "native",
+  "active_model_label": "native",
+  "is_real_model": false,
+  "mode": "deterministic_floor",
+  "mode_predicted": "deterministic_floor",
+  "mode_measured": "unmeasured",
+  "measured_recent_server": null,
+  "mode_note": "mode follows the most recent completion that actually SERVED (a successful recorded row) when history exists, prediction only until then — the two disagree when a listed model keeps failing, or is disabled by configuration and skipped",
+  "floor_active": true,
+  "floor_active_basis": "no successful completion has been recorded yet; predicted from whether a real model is listed",
+  "floor_note": "The deterministic native floor is serving — honest structured reasoning, NOT an LLM. Run a local Ollama model (or enable an external accelerant) for generative prose.",
+  "guarantee": "Workstation always produces a real, structured result from its OWN resources with NO external dependency; external providers are optional accelerants (flag-gated by AI_ALLOW_EXTERNAL).",
+  "resources": [
+   {
+    "name": "native",
+    "kind": "native",
+    "available": true,
+    "is_external": false,
+    "note": "Workstation's own structured engine — always available, owned."
+   },
+   {
+    "name": "ollama",
+    "kind": "local",
+    "available": false,
+    "is_external": false,
+    "model": null,
+    "configured_model": "llama3.2",
+    "local_models": [],
+    "promoted_default": null,
+    "retired": [],
+    "note": "Self-hosted local model(s) — owned capability when running. Route to a specific one with model='ollama:<name>'."
+   },
+   {
+    "name": "anthropic",
+    "kind": "external",
+    "available": false,
+    "is_external": true,
+    "model": "claude-sonnet-4-6",
+    "note": "Optional accelerant — only with a key AND AI_ALLOW_EXTERNAL=true."
+   },
+   {
+    "name": "openai",
+    "kind": "external",
+    "available": false,
+    "is_external": true,
+    "model": "gpt-4o-mini",
+    "note": "Optional accelerant — only with a key AND AI_ALLOW_EXTERNAL=true."
+   }
+  ]
+ }
+}

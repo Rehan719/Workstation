@@ -40,6 +40,19 @@ router = APIRouter(prefix="/method", tags=["Delivery Method"])
 
 _METHOD_DOC = "docs/DELIVERY_METHOD.json"
 
+
+#  W827 (FU-908) - THE FILED AMENDMENTS, kept beside the change records they filed: which lessons each batch named,
+#  so whether a decided proposal was carried into the method can be read from both artefacts. This module still
+#  never writes the method; an edit that carries a proposal out names its change record in each lesson's `ratified`.
+def _amendments_path():
+    from agentic_core.config import data_path
+    return data_path("method_amendments.json")
+
+
+def _amendments_read() -> Dict[str, Any]:
+    from agentic_core.config import read_json_strict
+    return read_json_strict(_amendments_path(), dict, expect=dict)
+
 # The three states a method requirement may return. NOT_ASSESSABLE is not a failure and not a pass: it is the
 # statement that this platform cannot tell from what it holds, which for most of the method is the truth.
 MET = "MET"
@@ -122,7 +135,10 @@ async def get_method(group: Optional[str] = None, user: dict | None = Depends(ge
                       [m for m in d["mechanisms"] if m.get("group") == group],
         "enforcement": _enforcement_summary(d["lessons"]),
         "amended_by": ("Change Control only. POST /api/v1/method/derive proposes a CANDIDATE; the agency "
-                       "ratifies it. The agency that checks changes against the method also owns it."),
+                       "ratifies it. The agency that checks changes against the method also owns it. An edit "
+                       "that carries a ratified proposal out names its change record in each lesson's "
+                       "`ratified`, and GET /api/v1/method/amendments says whether each filed amendment was "
+                       "carried out (W827)."),
     }
 
 
@@ -330,13 +346,77 @@ async def file_amendment(req: AmendmentRequest, user: dict | None = Depends(get_
         raise HTTPException(status_code=503, detail={
             "message": "No change record was filed: Change Control did not accept the submission.",
             "why": f"{e.__class__.__name__}: {str(e)[:300]}"}) from e
+    #  W827 (FU-908) - the batch is kept beside its record, so whether it is carried out can be read. A batch whose
+    #  keeping failed is said in this answer: its record stands, and whether it is carried out cannot be read
+    _kept827 = "kept: GET /api/v1/method/amendments reads whether it is carried out"
+    try:
+        from agentic_core.config import atomic_write_json, store_lock
+        with store_lock(_amendments_path()):
+            _a827 = _amendments_read()
+            _a827[str(cca.get("cca_id"))] = {
+                "kind": "record_of_a_ruling" if ruled else "proposal", "lesson_ids": [l.id for l in req.lessons],
+                "ruled_by": ruled or None, "title": req.title.strip()[:200],
+                "filed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+            atomic_write_json(_amendments_path(), _a827)
+    except Exception as e:                           # noqa: BLE001 - said in the answer, never silent
+        _kept827 = (f"NOT KEPT ({e.__class__.__name__}: {str(e)[:200]}): the change record stands, and whether "
+                    f"this batch is carried out cannot be read")
     return {"change_control": {"submitted": True, "cca_id": cca.get("cca_id"), "status": cca.get("status")},
+            "amendment_record": _kept827,
             "records_filed": 1, "lessons_in_record": len(req.lessons), "lesson_ids": [l.id for l in req.lessons],
             "kind": "record_of_a_ruling" if ruled else "proposal",
             "wrote_the_method": False,
             "basis": ("one change record carries the whole batch. This route does not write the method: a "
                       "proposal enters it only after the record is ratified, and a record of a ruling names "
                       "lessons the method already shows as ruled.")}
+
+
+@router.get("/amendments")
+async def list_amendments():
+    """W827 (FU-908) - each filed amendment, its change record's decision, and whether the method carries it out.
+
+    Read from both artefacts; nothing is written. A batch is carried out when every lesson it named is in the method
+    with a `ratified` field that names its change record (a record of a ruling: that carries the ruling, which was
+    checked when it was filed)."""
+    from agentic_core.api.change_control import _load_change
+    from agentic_core.config import StoreUnavailable
+    try:
+        recs = _amendments_read()
+    except StoreUnavailable as e:
+        raise HTTPException(status_code=503, detail=f"{e}") from e
+    method = _load_method()
+    held = {str(l.get("id")): l for l in method.get("lessons", []) if isinstance(l, dict)}
+    out: List[Dict[str, Any]] = []
+    for cca_id, a in sorted(recs.items(), key=lambda kv: str((kv[1] or {}).get("filed_at") or "")):
+        a = a if isinstance(a, dict) else {}
+        c = _load_change(str(cca_id)) or {}
+        ruled = str(a.get("ruled_by") or "")
+        lessons = []
+        for lid in a.get("lesson_ids") or []:
+            l = held.get(str(lid))
+            rat = str((l or {}).get("ratified") or "")
+            names = l is not None and (str(cca_id) in rat or (bool(ruled) and rat == ruled))
+            lessons.append({"id": lid, "in_method": l is not None, "ratified": rat or None,
+                            "names_this_record": names})
+        n = sum(1 for x in lessons if x["names_this_record"])
+        decided = c.get("status") in ("approved", "implemented") or a.get("kind") == "record_of_a_ruling"
+        carried = ("yes" if lessons and n == len(lessons) else "partly" if n else
+                   "no" if decided else "not decided")
+        out.append({
+            "cca_id": cca_id, "kind": a.get("kind"), "title": a.get("title"), "filed_at": a.get("filed_at"),
+            "status": c.get("status"), "decided": decided, "carried_out": carried, "lessons": lessons,
+            "carried_out_basis": {
+                "yes": "every lesson it named is in the method, and its `ratified` names this record",
+                "partly": (f"{n} of {len(lessons)} lesson(s) it named are in the method naming this record; the "
+                           f"rest are not"),
+                "no": ("its change record is decided, and no lesson it named is in the method naming the record: "
+                       "the amendment is recorded only"),
+                "not decided": "its change record is not decided, so nothing is to be carried out yet",
+            }[carried]})
+    return {"amendments": out, "count": len(out),
+            "basis": ("each amendment filed through POST /api/v1/method/amendment since W827, read against the "
+                      "method document and its change record. A batch filed before then was not kept, so it is "
+                      "not listed here")}
 
 
 # ── (c) THE GATE, ARMS-LENGTH ──────────────────────────────────────────────────────────────────────────────
@@ -2028,6 +2108,9 @@ def _retrospect(rows: List[Dict[str, Any]], reg: Any) -> Dict[str, Any]:
                 "rounds_that_closed_something": None, "rounds_that_only_found": None,
                 "closed_total": None, "found_total": None, "backlog_growing": None,
                 "what_the_pattern_means": "not measured: the round record could not be read",
+                #  W1001 - the three keys W561 added to the answer and not here: the mix of why rows closed
+                "closure_kinds": None, "closures_with_a_kind": None,
+                "closure_kind_basis": "not measured: the round record could not be read",
                 "limits": "nothing was read, so nothing is claimed about the pattern"}
 
     done = [r for r in rows if r.get("status") == "done"]
@@ -2036,7 +2119,8 @@ def _retrospect(rows: List[Dict[str, Any]], reg: Any) -> Dict[str, Any]:
     share = round(len(dropped) / resolved, 3) if resolved else None
 
     closing = sorted(r for r, a in act.items() if a.get("closed", 0) > 0)
-    finding_only = sorted(r for r, a in act.items() if a.get("closed", 0) == 0 and a.get("found", 0) > 0)
+    finding_only = sorted((r for r, a in act.items() if a.get("closed", 0) == 0 and a.get("found", 0) > 0),
+                          key=_fu.round_key)            # W999: in the order the rounds ran, W999 before W1000
     closed_total = sum(a.get("closed", 0) for a in act.values())
     found_total = sum(a.get("found", 0) for a in act.values())
 
@@ -2054,8 +2138,13 @@ def _retrospect(rows: List[Dict[str, Any]], reg: Any) -> Dict[str, Any]:
 
     return {
         "state": MET if resolved else NOT_ASSESSABLE,
-        "basis": None,                 # the answer's meaning is in what_the_pattern_means; `basis` is the
-        "rounds": None,                # refusal branch's field, carried here so the shapes match
+        #  W1003 - every reading states how it was read: the appraisal page shows each reading by its basis, and
+        #  this one alone stated none, so the page said it "states no basis". It reads two populations, named here
+        "basis": ("read from the register's own record. The rows in this scope, by status: built or satisfied, "
+                  "dropped as refuted, and why each closed where it records why. The rounds, and whether the "
+                  "backlog is growing, over the whole register: which round closed each row and which round "
+                  "found it"),
+        "rounds": None,                # the refusal branch's field, carried here so the shapes match
         "closure_kinds": _kinds,
         "closures_with_a_kind": _recorded,
         "closure_kind_basis": (
@@ -2080,7 +2169,8 @@ def _retrospect(rows: List[Dict[str, Any]], reg: Any) -> Dict[str, Any]:
              f"is an upper bound on the work and not a measure of it (M-FCAST-02). The totals cannot show "
              f"this, because closing a satisfied row and closing a built one are the same increment."
              if resolved else "no row has been resolved, so there is no pattern to read yet.")
-            + (f" {len(finding_only)} round(s) closed nothing and only registered findings: those add work "
+            + (f" Across the whole register, {len(finding_only)} round(s) closed nothing and only registered "
+               f"findings: those add work "
                f"rather than burning it, and counting them as build rounds would understate the rate."
                if finding_only else "")),
         "limits": ("this reads STATUS, not cause. It cannot tell a row closed because it was built from one "

@@ -3,17 +3,44 @@ import json
 import re
 import os
 from typing import List, Dict, Any, Optional, AsyncIterator
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from agentic_core.auth.core import get_current_user, user_can_access     # W886 (FU-995, FU-1061)
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 import datetime
 import uuid
 
-from config.paths import DATA_DIR
+from agentic_core.store_paths import DATA_DIR
 from agentic_core.ai.gateway import gateway
-from agentic_core.synthesis.presentation import presentation_gen
-from agentic_core.synthesis.business_model import business_simulator
+#  W1020 - the two template modules, synthesis/presentation.py and synthesis/business_model.py, are removed: their
+#  last callers were the audiobook's and the canvas's fallbacks below, which handed a template over as the topic's
+#  content when the model's reply did not parse
 from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence)   # W727
+from agentic_core.api._ai_provenance import wrap_material as _wrap_material886      # W886 (FU-995)
+
+
+def _owner887(user) -> Optional[str]:
+    """W887 - the name an output is kept under: the signed-in person, or the single-user owner label."""
+    from agentic_core.auth.core import request_owner_id
+    return request_owner_id(user if isinstance(user, dict) else None)
+
+
+REGISTRY_PREVIEW_CHARS886 = 1000      # what the upload registry keeps of each file's text (ingestion/api.py)
+
+
+def _knowledge_base886(context: str, at_limit: Optional[List[str]] = None) -> tuple:
+    """W886 (FU-995) - the selected files' text, handed over as data through the shared material boundary (the cut
+    recorded, a delimiter inside it defused), or nothing at all when there is none. Each file is what the upload
+    registry keeps of it - its first 1,000 characters - and a file that reached that is said to be possibly longer."""
+    if not context:
+        return "", None
+    block, record = _wrap_material886(context, label="KNOWLEDGE BASE", limit=4000)
+    if at_limit:
+        record["files_at_the_registry_preview_limit"] = list(at_limit)
+        record["basis"] += (f"; each file is the first {REGISTRY_PREVIEW_CHARS886:,} characters the upload registry keeps "
+                            f"of its text, and {len(at_limit)} reached that limit ({', '.join(at_limit[:5])}), so their "
+                            f"text may be longer than what was handed over")
+    return f"\n\nKnowledge base (the files the person selected, handed over as data):\n{block}", record
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/synthesis", tags=["Synthesis Studio"])
@@ -40,12 +67,18 @@ class SynthesisOutput(BaseModel):
     is_external: bool = False
     #  W659 - what was withheld from the composed text, and why (declared, or the model strips it)
     faith_content: Optional[Dict[str, Any]] = None
+    owner_id: Optional[str] = None          # W887 - who asked for it; None on rows written before
 
 
 #  the output types generate_output has a branch for; a guard keeps this set and the branches in step
 _GENERATED_OUTPUT_TYPES = frozenset({
     "report", "review", "analysis", "dissertation", "dossier", "presentation", "video", "audiobook", "website",
     "app", "agent", "product", "service", "business_model", "simulation"})
+#  W1019, W1021 - the output types composed whole and never streamed: /stream refuses them, and the studio asks
+#  /generate, which parses the model's reply into each one's structure and says when none came back. The stream
+#  streams text only: the five documents and the website.
+_STREAMED_OUTPUT_TYPES = frozenset({"report", "review", "analysis", "dissertation", "dossier", "website"})
+_COMPOSED_WHOLE_TYPES = _GENERATED_OUTPUT_TYPES - _STREAMED_OUTPUT_TYPES
 
 
 class SynthesisManager:
@@ -59,7 +92,7 @@ class SynthesisManager:
 
     # ── Context resolution ──────────────────────────────────────────────────────
 
-    def _resolve_context(self, content_ids: List[str]) -> tuple:
+    def _resolve_context(self, content_ids: List[str], user: Optional[dict] = None) -> tuple:
         """Looks up extracted text for the selected file IDs from the ingestion registry."""
         from agentic_core.ingestion.api import ingestion_manager  # lazy import — avoids circular
 
@@ -71,9 +104,14 @@ class SynthesisManager:
         # rendering), a sentence for everything else. A file the platform could not read contributes
         # nothing to a prompt, and the skipped ones are named rather than silently thinning the context.
         skipped: List[str] = []
+        not_found: List[str] = []
         for cid in content_ids:
             for entry in ingestion_manager.registry:
                 if entry["file_id"] == cid:
+                    #  W886 (FU-1061) - a file the caller may not see is not found, never composed into their output
+                    if not user_can_access(user if isinstance(user, dict) else None, entry.get("owner_id")):
+                        not_found.append(cid)
+                        break
                     text = (entry.get("extracted_text") or "").strip()
                     if entry.get("status") != "EXTRACTED" or not text:
                         skipped.append(f"{entry['filename']} ({entry.get('status') or 'NOT_EXTRACTED'})")
@@ -84,6 +122,11 @@ class SynthesisManager:
                     )
                     break
         self._last_context_skipped = skipped
+        self._last_context_not_found = not_found                 # W886 (FU-1061)
+        self._last_context_at_limit = [e["filename"] for cid in content_ids for e in ingestion_manager.registry
+                                       if e.get("file_id") == cid and e.get("status") == "EXTRACTED"
+                                       and cid not in not_found
+                                       and len(e.get("extracted_text") or "") >= REGISTRY_PREVIEW_CHARS886]
         if skipped:
             logger.warning("synthesis context: %d selected file(s) contributed nothing because the "
                            "platform has not read them: %s", len(skipped), "; ".join(skipped))
@@ -136,29 +179,38 @@ class SynthesisManager:
         return meta.get("output", "")
 
     @staticmethod
-    def _extract_json_array(text: str) -> Optional[list]:
-        m = re.search(r'\[[\s\S]*?\]', text, re.DOTALL)
-        if m:
+    def _first_json(text: str, opener: str, accept) -> Any:
+        """W1022 - the first JSON value in a model's reply that opens with `opener` and that `accept` takes, read by
+        the JSON decoder itself. The two readers below were regular expressions: the array one stopped at the first
+        `]`, so a deck or an audiobook with a list inside an entry (a slide's bullets) was cut, failed to parse, and
+        was said as "The model did not return a usable ..." although it had; the object one ran from the first `{`
+        to the last `}`, so a reply that said anything with a brace after its object failed the same way."""
+        dec = json.JSONDecoder()
+        at = text.find(opener)
+        while at != -1:
             try:
-                return json.loads(m.group())
+                value, _end = dec.raw_decode(text, at)
+                if accept(value):
+                    return value
             except json.JSONDecodeError:
-                pass
+                pass                    # not a value from here: the next opener is tried
+            at = text.find(opener, at + 1)
         return None
 
     @staticmethod
+    def _extract_json_array(text: str) -> Optional[list]:
+        #  W1022 - a list of entries (slides, chapters). A list of anything else was taken as a deck, and its
+        #  entries were then given slide defaults, which raised on a string: a 500 for a reply the route can say
+        return SynthesisManager._first_json(text or "", "[", lambda v: isinstance(v, list) and bool(v)
+                                            and all(isinstance(x, dict) for x in v))
+
+    @staticmethod
     def _extract_json_object(text: str) -> Optional[dict]:
-        # Prefer outermost complete object
-        m = re.search(r'\{[\s\S]*\}', text, re.DOTALL)
-        if m:
-            try:
-                return json.loads(m.group())
-            except json.JSONDecodeError:
-                pass
-        return None
+        return SynthesisManager._first_json(text or "", "{", lambda v: isinstance(v, dict) and bool(v))
 
     # ── Main generation entry point ──────────────────────────────────────────────
 
-    async def generate_output(self, request: SynthesisRequest) -> Dict[str, Any]:
+    async def generate_output(self, request: SynthesisRequest, user: Optional[dict] = None) -> Dict[str, Any]:
         output_id = str(uuid.uuid4())
         timestamp = datetime.datetime.utcnow().isoformat()
         otype = request.output_type
@@ -170,14 +222,16 @@ class SynthesisManager:
                 f"output_type {otype!r} is not one this route generates. It generates: "
                 f"{', '.join(sorted(_GENERATED_OUTPUT_TYPES))}. Nothing was generated or saved."))
 
-        context, inferred_topic = self._resolve_context(request.content_ids)
+        context, inferred_topic = self._resolve_context(request.content_ids, user)
         instructions = request.instructions.strip()
         topic = instructions or inferred_topic
 
-        ctx_block = f"\n\nKnowledge base:\n{context[:4000]}" if context else ""
+        ctx_block, _kb886 = _knowledge_base886(context, self._last_context_at_limit)   # W886 (FU-995)
 
         content = ""
         metadata: Dict[str, Any] = {"type": otype}
+        if _kb886:
+            metadata["knowledge_base_handed_over"] = _kb886
         if instructions:
             metadata["instructions"] = instructions
 
@@ -212,6 +266,7 @@ class SynthesisManager:
             )
             raw = await self._query(prompt, "presentation", said=instructions)
             slides = self._extract_json_array(raw)
+            made = bool(slides)
             if not slides:
                 # W414 — this substituted presentation_gen.generate_presentation(), which returns a
                 # FIXED 10-slide deck about advanced-therapy safety (AAV, CAR-T, mRNA) whatever the
@@ -230,7 +285,9 @@ class SynthesisManager:
                 s.setdefault("id", i + 1)
                 s.setdefault("animation", ["fade-in", "slide-left", "zoom-in"][i % 3])
             content = json.dumps(slides, indent=2)
-            metadata.update(format="json", slides_count=len(slides), title=f"Presentation: {topic}")
+            #  W1021 - the count is of slides made: the one that says none came back is not a slide, and the studio
+            #  read a count of 1 as a deck its player can open
+            metadata.update(format="json", slides_count=len(slides) if made else 0, title=f"Presentation: {topic}")
 
         # ── Audiobook ────────────────────────────────────────────────────────────
         elif otype == "audiobook":
@@ -242,10 +299,23 @@ class SynthesisManager:
             )
             raw = await self._query(prompt, "audiobook", said=instructions)
             chapters = self._extract_json_array(raw)
+            narrated = bool(chapters)
             if not chapters:
-                chapters = presentation_gen.generate_audiobook(topic)
+                # W1020 - this substituted presentation_gen.generate_audiobook(), which narrated the FIXED deck W414
+                # took off the presentation path: whatever the topic, ten chapters on AAV, CAR-T and mRNA safety citing
+                # three papers that do not exist ("Wu et al 2025", "Chazarin et al 2026", "Gifford et al 2025")
+                # and a market figure nothing derived. An audiobook on a bakery cooperative was narrated that.
+                chapters = [{
+                    "id": 1,
+                    "title": f"Audiobook: {topic}",
+                    "narration": "",
+                    "generated": False,
+                    "detail": ("The model did not return a usable audiobook for this topic, so none is narrated. "
+                               "A fixed template on another subject was previously substituted here."),
+                }]
             content = json.dumps(chapters, indent=2)
-            metadata.update(format="json", chapters_count=len(chapters), title=f"Audiobook: {topic}")
+            #  W1020 - the count is of chapters narrated: the one that says none came back is not a chapter
+            metadata.update(format="json", chapters_count=len(chapters) if narrated else 0, title=f"Audiobook: {topic}")
 
         # ── Website ──────────────────────────────────────────────────────────────
         elif otype == "website":
@@ -288,10 +358,13 @@ class SynthesisManager:
             raw = await self._query(prompt, otype, said=instructions)
             artifact = self._extract_json_object(raw)
             if not artifact:
+                # W1020 - this said the reply's first 600 characters as the specification's description, cut without
+                # a word, and stamped it "Generated — ready for development": with no model, the floor's own headings
+                # were offered as a specification ready to build, and with no reply the description was made up.
                 artifact = {
-                    "title": f"{doc_label}: {topic}",
-                    "description": raw[:600] if raw else f"Specification for {topic}",
-                    "status": "Generated — ready for development",
+                    "generated": False,
+                    "detail": (f"The model did not return a parseable {doc_label.lower()} for this topic, so none "
+                               "is shown, and nothing here is ready for development."),
                 }
             artifact.setdefault("title", f"{doc_label}: {topic}")
             artifact["timestamp"] = timestamp
@@ -311,7 +384,15 @@ class SynthesisManager:
             raw = await self._query(prompt, "business_model", said=instructions)
             canvas = self._extract_json_object(raw)
             if not canvas:
-                canvas = business_simulator.generate_business_model_canvas(topic)
+                # W1020 - this substituted business_simulator.generate_business_model_canvas(), one FIXED canvas that
+                # used the topic in two strings: every business got the same segments ("Enterprise R&D teams",
+                # "Regulatory bodies"), channels, partners and revenue streams, and the platform's own engines as its
+                # key resources, with nothing marking it as a template.
+                canvas = {
+                    "generated": False,
+                    "detail": ("The model did not return a parseable business model canvas for this topic, so none "
+                               "is shown. A fixed template was previously substituted here."),
+                }
             canvas.setdefault("title", f"Business Model Canvas: {topic}")
             canvas["timestamp"] = timestamp
             content = json.dumps(canvas, indent=2)
@@ -393,6 +474,7 @@ class SynthesisManager:
             # W490 — None when no call served this output; the page renders that as "not recorded"
             "served_by": getattr(self, "_last_served_by", None),
             "is_external": bool(getattr(self, "_last_is_external", False)),
+            "owner_id": _owner887(user),           # W887 - who asked for it
         }
         self.history.append(result)
         logger.info("Synthesis complete: type=%s id=%s", otype, output_id)
@@ -403,16 +485,16 @@ synthesis_manager = SynthesisManager()
 
 
 @router.post("/generate", response_model=SynthesisOutput)
-async def generate_synthesis(request: SynthesisRequest):
+async def generate_synthesis(request: SynthesisRequest, user: dict | None = Depends(get_current_user)):
     """AI-powered multi-modal synthesis from knowledge base content."""
     #  W659 - the person's instructions, before anything is composed
     from agentic_core.religious_domain.composed_text import refuse_faith_ruling as _refuse_ruling659
     _refuse_ruling659(request.instructions, "synthesis request")
-    return await synthesis_manager.generate_output(request)
+    return await synthesis_manager.generate_output(request, user if isinstance(user, dict) else None)
 
 
 @router.post("/stream")
-async def stream_synthesis(request: SynthesisRequest):
+async def stream_synthesis(request: SynthesisRequest, user: dict | None = Depends(get_current_user)):
     """
     Server-Sent Events endpoint that streams the synthesis token-by-token.
     On completion emits a final JSON event with the full output_id and download URL.
@@ -420,10 +502,29 @@ async def stream_synthesis(request: SynthesisRequest):
     #  W659 - refused HERE, before the generator exists: a refusal raised inside a stream arrives after a 200
     from agentic_core.religious_domain.composed_text import refuse_faith_ruling as _refuse_ruling659
     _refuse_ruling659(request.instructions, "synthesis request")
-    context, inferred_topic = synthesis_manager._resolve_context(request.content_ids)
+    #  W1019 - A SIMULATION IS COMPOSED WHOLE. This route fell through to its markdown prompt for one and saved the
+    #  reply as a .json file, so the studio's dashboard, which parses the simulation, drew nothing on the path the
+    #  studio tries first, and the download was markdown under a .json name, without the provenance a parsed
+    #  simulation's download carries. /generate asks the model for the simulation's structure and says when none came
+    #  back. Refused before anything is asked, written or recorded, and after the ruling check, as /generate refuses.
+    #  W1021 - and so is every structured type: a deck, an audiobook, the four specifications and a canvas were each
+    #  handed to the studio as text, which every display that parses its output drew nothing from. A type nothing
+    #  here generates is refused as /generate refuses it (W645): this route asked for any string at all as
+    #  markdown and saved it, so a typo was filed in the history as an output.
+    if request.output_type not in _GENERATED_OUTPUT_TYPES:
+        raise HTTPException(status_code=422, detail=(
+            f"output_type {request.output_type!r} is not one this route generates. It streams: "
+            f"{', '.join(sorted(_STREAMED_OUTPUT_TYPES))}; POST /api/v1/synthesis/generate composes "
+            f"{', '.join(sorted(_COMPOSED_WHOLE_TYPES))}. Nothing was generated or saved."))
+    if request.output_type in _COMPOSED_WHOLE_TYPES:
+        raise HTTPException(status_code=422, detail=(
+            f"output_type {request.output_type!r} is composed whole, not streamed: POST /api/v1/synthesis/generate "
+            "asks the model for its structure and says when none came back. Nothing was generated or saved."))
+    context, inferred_topic = synthesis_manager._resolve_context(request.content_ids,
+                                                                 user if isinstance(user, dict) else None)
     instructions = request.instructions.strip()
     topic = instructions or inferred_topic
-    ctx_block = f"\n\nKnowledge base:\n{context[:4000]}" if context else ""
+    ctx_block, _kb886 = _knowledge_base886(context, synthesis_manager._last_context_at_limit)   # W886 (FU-995)
     otype = request.output_type
 
     label_map = {
@@ -438,33 +539,21 @@ async def stream_synthesis(request: SynthesisRequest):
             f"Format as clean markdown with sections: Abstract, Introduction, Analysis, Discussion, Conclusion. "
             f"Be specific and cite knowledge base content where relevant."
         )
-    elif otype in ("presentation", "video"):
-        prompt = (
-            f'Create a 10-slide executive presentation on: "{topic}".{ctx_block}\n\n'
-            "Return a JSON array of 10 slide objects, each with: id (int), title (str), content (str), narration (str)."
-        )
     elif otype == "website":
         prompt = (
             f'Write a complete single-page HTML5 website about: "{topic}".{ctx_block}\n\n'
             "Dark theme: background #0b0f19, accent #64ffda, text #e2e8f0. "
             "Include: hero, key findings, features grid, CTA. Return full HTML only."
         )
-    elif otype == "business_model":
-        prompt = (
-            f'Generate a comprehensive Business Model Canvas for: "{topic}".{ctx_block}\n\n'
-            "Return a JSON object with: title, value_proposition, customer_segments, channels, "
-            "revenue_streams, key_resources, key_activities, key_partners, cost_structure, "
-            "market_opportunity, competitive_advantage."
-        )
-    else:
-        prompt = (
-            f'Generate a detailed {otype} document on: "{topic}".{ctx_block}\n\n'
-            "Return clean markdown."
-        )
+    else:   # unreachable while the refusals above and the branches agree; if they ever disagree, SAY SO
+        raise HTTPException(status_code=500, detail=(
+            f"output_type {otype!r} is listed as streamed and no branch streams it. Nothing was generated."))
 
     output_id = str(uuid.uuid4())
     timestamp = datetime.datetime.utcnow().isoformat()
     collected: list[str] = []
+    from agentic_core.auth.core import request_owner_id as _rqo886
+    _stream_owner886 = _rqo886(user if isinstance(user, dict) else None)   # W886 - the stream records under its caller
 
     async def event_stream() -> AsyncIterator[str]:
         fin: dict = {}
@@ -476,7 +565,8 @@ async def stream_synthesis(request: SynthesisRequest):
         # P2.2 (W511) — stated, not inherited. This was one of the 29 call sites W489 found carrying
         # another request's content when the default was True.
         async for ev in gateway.stream_meta(prompt, agent=f"synthesis:stream:{otype}", augment=False,
-                                            user_text=(instructions or None)):   # W646
+                                            user_text=(instructions or None),   # W646
+                                            owner_id=_stream_owner886):         # W886
             if "token" in ev:
                 _tok659 = _flt659.feed(ev["token"])
                 collected.append(_tok659)
@@ -490,7 +580,7 @@ async def stream_synthesis(request: SynthesisRequest):
             content, _faith659 = "".join(collected), _flt659.record()
         else:
             content, _faith659 = _withhold659(fin.get("output") or "")
-        ext = "html" if otype == "website" else ("json" if otype in ("presentation", "video", "audiobook", "business_model", "simulation") else "md")
+        ext = "html" if otype == "website" else "md"      # W1021 - the stream streams a document or a website
         output_path = synthesis_manager.output_dir / f"{output_id}.{ext}"
         # W490 (refutation) — the STREAM path persists its own file too; it carries the provenance the
         # done frame already reports, so the downloaded copy says what the screen said.
@@ -501,7 +591,9 @@ async def stream_synthesis(request: SynthesisRequest):
             "output_id": output_id,
             "output_url": f"/api/v1/synthesis/download/{output_id}",
             "content": content,
-            "metadata": {"type": otype, "format": ext, "title": topic},
+            "owner_id": _owner887(user),           # W887 - who asked for it
+            "metadata": {"type": otype, "format": ext, "title": topic,
+                         **({"knowledge_base_handed_over": _kb886} if _kb886 else {})},     # W886 (FU-995)
             "timestamp": timestamp,
             #  W645 (FU-647) - the stream's history row carries what served it, as the done frame does. Without
             #  these the response model filled is_external False by default, whatever had actually served.
@@ -510,21 +602,9 @@ async def stream_synthesis(request: SynthesisRequest):
             "faith_content": _faith659,
         })
 
-        # W494 (FU-148 refutation) - the done frame sent no `format` and no `slides_count`, so the
-        # studio page invented `format: 'md'` for every streamed type and its slides_count branch was
-        # dead. Both are computed here already (`ext`, and the content for a slide deck is the JSON the
-        # player parses), so the stream reports them instead of leaving the page to guess. slides_count
-        # is omitted rather than defaulted when the content does not parse to a deck.
-        _slides_n = None
-        if otype in ("presentation", "video"):
-            try:
-                _parsed = json.loads(content)
-                if isinstance(_parsed, list):
-                    _slides_n = len(_parsed)
-                elif isinstance(_parsed, dict) and isinstance(_parsed.get("slides"), list):
-                    _slides_n = len(_parsed["slides"])
-            except Exception:
-                _slides_n = None
+        # W494 (FU-148 refutation) - the done frame sent no `format`, so the studio page invented `format: 'md'`
+        # for every streamed type; it reports `ext`. W1021 - a deck is no longer streamed (/generate composes it and
+        # counts its slides), so the frame carries no slide count.
         _done = {**_reply_evidence(fin.get('served_by')), 'done': True, 'output_id': output_id,
                  'download_url': f'/api/v1/synthesis/download/{output_id}', 'timestamp': timestamp,
                  'format': ext,
@@ -532,23 +612,27 @@ async def stream_synthesis(request: SynthesisRequest):
                  'profile_applied': bool(fin.get('profile_applied')),
                  'faith_content': _faith659,
                  'model_tokens': fin.get('model_tokens'), 'model_tokens_basis': fin.get('model_tokens_basis')}   # W776
-        if _slides_n is not None:
-            _done['slides_count'] = _slides_n
         yield f"data: {json.dumps(_done)}\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 @router.get("/history", response_model=List[SynthesisOutput])
-async def get_synthesis_history():
-    """Returns all synthesis outputs generated in this server session."""
-    return list(reversed(synthesis_manager.history))
+async def get_synthesis_history(user: dict | None = Depends(get_current_user)):
+    """Returns the synthesis outputs generated in this server session that the caller may see. W887 - with sign-in
+    on this listed every person's outputs, whole."""
+    u = user if isinstance(user, dict) else None
+    return [r for r in reversed(synthesis_manager.history) if user_can_access(u, r.get("owner_id"))]
 
 
 @router.get("/download/{output_id}")
-async def download_output(output_id: str):
-    """Downloads a synthesized output file. Protected against path traversal."""
+async def download_output(output_id: str, user: dict | None = Depends(get_current_user)):
+    """Downloads a synthesized output file. Protected against path traversal. W887 - another person's output is not
+    found; a file with no history row has no owner to match, so under sign-in it is an administrator's."""
     clean_id = os.path.basename(output_id)
+    _row887 = next((r for r in synthesis_manager.history if r.get("output_id") == clean_id), None)
+    if not user_can_access(user if isinstance(user, dict) else None, (_row887 or {}).get("owner_id")):
+        raise HTTPException(status_code=404, detail="Output file not found")
     files = list(synthesis_manager.output_dir.glob(f"{clean_id}.*"))
     if not files:
         raise HTTPException(status_code=404, detail="Output file not found")

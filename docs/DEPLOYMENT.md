@@ -101,6 +101,22 @@ The payments rails (`agentic_core/api/v310/payments.py`) operate in modes
   the recommendation stands: **swap the local `.env` to a `sk_test_` key.** Never commit `.env` (it
   is gitignored), never set `STRIPE_LIVE_ENABLED`, and never deploy the live key to Render.
 
+## Watching the first deploy: failures are recorded, not alerted
+
+Every route failure is recorded in the outcome ledger (`agentic_core/api/operational_excellence.py`) and in the
+event chain, and shown on the Operations page (`/operations`). Nothing sends a failure to anyone, so an outage on
+the first deploy would reach no person (FU-1095). The smallest addition, for that deploy:
+
+1. An uptime check on `/health` from OUTSIDE the machine, in your own cloud account beside the billing alert,
+   e-mailing you when it fails. A boot failure cannot report itself, so the check must not run on the machine it
+   watches.
+2. Name it in the deploy dry run. Drive it once at the deploy, with you watching: stop the service, see the alert
+   arrive, start the service, see it clear.
+3. `/health` returns a fixed body, so the check sees only a process that is dead or unreachable. A process that is
+   up and failing its routes still answers it; those failures are read on the Operations page.
+
+The check, its address and its e-mail are yours to set up: this platform sends nothing.
+
 ## Verify before deploy
 
 ```bash

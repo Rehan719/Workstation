@@ -1,0 +1,64 @@
+{
+  "status": {
+    "active_model": "native",
+    "active_model_label": "native",
+    "evidence_basis": "which resource is listed first and which one served the last recorded completion. Configuration - what is configured, declared or reachable; below level 1 and not a statement about behaviour",
+    "evidence_level": "configuration",
+    "evidence_level_number": null,
+    "external_allowed": false,
+    "floor_active": true,
+    "floor_active_basis": "no successful completion has been recorded yet; predicted from whether a real model is listed",
+    "floor_note": "The deterministic native floor is serving \u2014 honest structured reasoning, NOT an LLM. Run a local Ollama model (or enable an external accelerant) for generative prose.",
+    "guarantee": "Workstation always produces a real, structured result from its OWN resources with NO external dependency; external providers are optional accelerants (flag-gated by AI_ALLOW_EXTERNAL).",
+    "is_real_model": false,
+    "measured_recent_server": null,
+    "mode": "deterministic_floor",
+    "mode_measured": "unmeasured",
+    "mode_note": "mode follows the most recent completion that actually SERVED (a successful recorded row) when history exists, prediction only until then \u2014 the two disagree when a listed model keeps failing, or is disabled by configuration and skipped",
+    "mode_predicted": "deterministic_floor",
+    "owned_resources_available": [
+      "native"
+    ],
+    "posture": "in-house-first",
+    "resources": [
+      {
+        "available": true,
+        "is_external": false,
+        "kind": "native",
+        "name": "native",
+        "note": "Workstation's own structured engine \u2014 always available, owned."
+      },
+      {
+        "available": false,
+        "configured_model": "llama3.2",
+        "is_external": false,
+        "kind": "local",
+        "local_models": [],
+        "model": null,
+        "name": "ollama",
+        "note": "Self-hosted local model(s) \u2014 owned capability when running. Route to a specific one with model='ollama:<name>'.",
+        "promoted_default": null,
+        "retired": []
+      },
+      {
+        "available": false,
+        "is_external": true,
+        "kind": "external",
+        "model": "claude-sonnet-4-6",
+        "name": "anthropic",
+        "note": "Optional accelerant \u2014 only with a key AND AI_ALLOW_EXTERNAL=true."
+      },
+      {
+        "available": false,
+        "is_external": true,
+        "kind": "external",
+        "model": "gpt-4o-mini",
+        "name": "openai",
+        "note": "Optional accelerant \u2014 only with a key AND AI_ALLOW_EXTERNAL=true."
+      }
+    ],
+    "selection_order": [
+      "native"
+    ]
+  }
+}

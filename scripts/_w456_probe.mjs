@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W456 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W456 (delivery-plan P1.8) — the tafsir surface completes §11, in a real browser against the built bundle on
 // a FRESH backend (AI_DISABLE_LOCAL=1 → the floor serves): /religion?tab=tafsir for 2:1-20 shows the sourced
 // Arabic (or the honest "source unreachable" line), the range note (covers 2:1-10), the floor note (no

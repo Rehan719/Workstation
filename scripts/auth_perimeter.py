@@ -91,6 +91,11 @@ def verdict(rows, has_list, strict=False):
 
 def main():
     rows, names, has_list = measure()
+    #  W808 (FU-1154) - a perimeter of no route has no gap because it has no edge
+    if not rows:
+        print("REFUSING: examined nothing - the app mounts no route-method this could read, so no perimeter was "
+              "measured.")
+        return 1
     c = collections.Counter(r["state"] for r in rows)
     und = [r for r in rows if r["state"] == "UNDECIDED"]
     by_mod = collections.Counter(r["module"].rsplit(".", 1)[-1] for r in und)

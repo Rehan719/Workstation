@@ -1,0 +1,35 @@
+{
+ "produced": {
+  "status": 200,
+  "body": {
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+   "artefact_type": "code",
+   "format": "python",
+   "output": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: artefact generator. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: W1006 made up: a REST endpoint that validates and stores a user record (domain: software).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- rest endpoint\n- made rest\n- validates\n- stores\n- record\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'generator', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for software; record outcomes to memory/UEG.",
+   "served_by": "native",
+   "is_external": false,
+   "run_id": "0a502e91d86b"
+  }
+ },
+ "refused": {
+  "status": 422,
+  "body": {
+   "detail": [
+    {
+     "type": "missing",
+     "loc": [
+      "body",
+      "spec"
+     ],
+     "msg": "Field required",
+     "input": {
+      "artefact_type": "code",
+      "domain": "software"
+     }
+    }
+   ]
+  }
+ }
+}

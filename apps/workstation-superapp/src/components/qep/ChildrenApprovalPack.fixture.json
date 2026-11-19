@@ -1,0 +1,455 @@
+{
+ "pack": {
+  "status": 200,
+  "body": {
+   "pack_hash": "56f7b14c573793b4783ddb6813b2702a",
+   "state": "awaiting_review",
+   "basis": "no scholar has decided on this pack",
+   "decision": null,
+   "sections": {
+    "rules": [
+     {
+      "id": "R1",
+      "rule": "W1074 made up: rule 1 every children's tool keeps"
+     },
+     {
+      "id": "R2",
+      "rule": "W1074 made up: rule 2 every children's tool keeps"
+     },
+     {
+      "id": "R3",
+      "rule": "W1074 made up: rule 3 every children's tool keeps"
+     },
+     {
+      "id": "R4",
+      "rule": "W1074 made up: rule 4 every children's tool keeps"
+     },
+     {
+      "id": "R5",
+      "rule": "W1074 made up: rule 5 every children's tool keeps"
+     },
+     {
+      "id": "R6",
+      "rule": "W1074 made up: rule 6 every children's tool keeps"
+     },
+     {
+      "id": "R7",
+      "rule": "W1074 made up: rule 7 every children's tool keeps"
+     }
+    ],
+    "tools": [
+     {
+      "id": "memorisation-practice",
+      "name": "W1074 made-up tool 1",
+      "run_by": "W1074 made up: who runs tool 1",
+      "what_a_child_sees": "W1074 made up: what a child sees in tool 1",
+      "steps": [
+       "W1074 made up: step 1 of tool 1",
+       "W1074 made up: step 2 of tool 1",
+       "W1074 made up: step 3 of tool 1",
+       "W1074 made up: step 4 of tool 1",
+       "W1074 made up: step 5 of tool 1",
+       "W1074 made up: step 6 of tool 1"
+      ],
+      "wording": [
+       "W1074 made up: wording 1 of tool 1",
+       "W1074 made up: wording 2 of tool 1",
+       "W1074 made up: wording 3 of tool 1",
+       "W1074 made up: wording 4 of tool 1",
+       "W1074 made up: wording 5 of tool 1"
+      ],
+      "arabic_from": "W1074 made up: the named edition a verse is fetched from",
+      "routes": [
+       "GET /api/v1/qep/children/memorisation/{surah_number}/{ayah_number}",
+       "GET /api/v1/qep/children/memorisation/{surah_number}/{ayah_number}/next"
+      ]
+     },
+     {
+      "id": "own-past-challenge",
+      "name": "W1074 made-up tool 2",
+      "run_by": "W1074 made up: who runs tool 2",
+      "what_a_child_sees": "W1074 made up: what a child sees in tool 2",
+      "steps": [
+       "W1074 made up: step 1 of tool 2",
+       "W1074 made up: step 2 of tool 2",
+       "W1074 made up: step 3 of tool 2",
+       "W1074 made up: step 4 of tool 2",
+       "W1074 made up: step 5 of tool 2"
+      ],
+      "wording": [
+       "W1074 made up: wording 1 of tool 2",
+       "W1074 made up: wording 2 of tool 2",
+       "W1074 made up: wording 3 of tool 2",
+       "W1074 made up: wording 4 of tool 2"
+      ],
+      "arabic_from": "W1074 made up: the named edition a verse is fetched from",
+      "routes": [
+       "POST /api/v1/qep/children/challenge/{child}/practised",
+       "GET /api/v1/qep/children/challenge/{child}",
+       "DELETE /api/v1/qep/children/challenge/{child}"
+      ]
+     },
+     {
+      "id": "teaching-aids",
+      "name": "W1074 made-up tool 3",
+      "run_by": "W1074 made up: who runs tool 3",
+      "what_a_child_sees": "W1074 made up: what a child sees in tool 3",
+      "steps": [
+       "W1074 made up: step 1 of tool 3",
+       "W1074 made up: step 2 of tool 3",
+       "W1074 made up: step 3 of tool 3",
+       "W1074 made up: step 4 of tool 3",
+       "W1074 made up: step 5 of tool 3"
+      ],
+      "wording": [
+       "W1074 made up: wording 1 of tool 3",
+       "W1074 made up: wording 2 of tool 3",
+       "W1074 made up: wording 3 of tool 3",
+       "W1074 made up: wording 4 of tool 3"
+      ],
+      "arabic_from": "W1074 made up: the named edition a verse is fetched from",
+      "routes": [
+       "GET /api/v1/qep/children/teaching/sheet/{surah_number}"
+      ]
+     },
+     {
+      "id": "private-reflection",
+      "name": "W1074 made-up tool 4",
+      "run_by": "W1074 made up: who runs tool 4",
+      "what_a_child_sees": "W1074 made up: what a child sees in tool 4",
+      "steps": [
+       "W1074 made up: step 1 of tool 4",
+       "W1074 made up: step 2 of tool 4",
+       "W1074 made up: step 3 of tool 4",
+       "W1074 made up: step 4 of tool 4"
+      ],
+      "wording": [
+       "W1074 made up: wording 1 of tool 4",
+       "W1074 made up: wording 2 of tool 4"
+      ],
+      "arabic_from": "W1074 made up: the named edition a verse is fetched from",
+      "routes": [
+       "GET /api/v1/qep/children/reflection/prompts"
+      ]
+     },
+     {
+      "id": "self-check-in",
+      "name": "W1074 made-up tool 5",
+      "run_by": "W1074 made up: who runs tool 5",
+      "what_a_child_sees": "W1074 made up: what a child sees in tool 5",
+      "steps": [
+       "W1074 made up: step 1 of tool 5",
+       "W1074 made up: step 2 of tool 5",
+       "W1074 made up: step 3 of tool 5",
+       "W1074 made up: step 4 of tool 5"
+      ],
+      "questions": [
+       {
+        "id": "feel",
+        "question": "W1074 made up: question 1 of tool 5",
+        "answers": [
+         "answer 1",
+         "answer 2",
+         "answer 3",
+         "answer 4"
+        ]
+       },
+       {
+        "id": "help",
+        "question": "W1074 made up: question 2 of tool 5",
+        "answers": [
+         "answer 1",
+         "answer 2",
+         "answer 3"
+        ]
+       }
+      ],
+      "wording": [
+       "W1074 made up: wording 1 of tool 5",
+       "W1074 made up: wording 2 of tool 5",
+       "W1074 made up: wording 3 of tool 5"
+      ],
+      "arabic_from": "W1074 made up: the named edition a verse is fetched from",
+      "routes": [
+       "GET /api/v1/qep/children/check-in/questions"
+      ]
+     }
+    ],
+    "learner_content": []
+   },
+   "counts": {
+    "rules": 7,
+    "tools": 5,
+    "learner_content": 0
+   },
+   "whole": "one decision covers everything in this pack; a change to any part re-opens review",
+   "children_tools": {
+    "open": false,
+    "pack_hash": "56f7b14c573793b4783ddb6813b2702a",
+    "pack_state": "awaiting_review",
+    "basis": "HELD: sign-in is off, and no children's tool opens before it is on; and the scholar's approval pack is awaiting review: no scholar has decided on this pack"
+   },
+   "footing": {
+    "authentication": "off",
+    "who_adds_a_scholar": "the Owner (single-user mode)",
+    "who_decides": "the Owner, on the named scholar's behalf: entered by the Owner on the scholar's behalf - attested, not verified"
+   }
+  }
+ },
+ "scholar_ask": {
+  "scholar_id": "w1074-made-up",
+  "name": "W1074 made-up reviewer",
+  "credential": "W1074 made up: a credential stated for this capture"
+ },
+ "scholar_added": {
+  "status": 200,
+  "body": {
+   "scholar_id": "w1074-made-up",
+   "name": "W1074 made-up reviewer",
+   "credential": "W1074 made up: a credential stated for this capture",
+   "added_by": "the Owner (single-user mode)",
+   "added_at": "2026-11-15T09:35:09Z",
+   "credential_basis": "the credential is recorded as stated; this platform has not verified it"
+  }
+ },
+ "return_ask": {
+  "scholar_id": "w1074-made-up",
+  "decision": "return",
+  "notes": "W1074 made up: notes returned with the pack",
+  "seen_hash": "56f7b14c573793b4783ddb6813b2702a"
+ },
+ "returned": {
+  "status": 200,
+  "body": {
+   "ok": true,
+   "decision": {
+    "decision": "return",
+    "scholar_id": "w1074-made-up",
+    "pack_hash": "56f7b14c573793b4783ddb6813b2702a",
+    "decided_at": null,
+    "notes": "W1074 made up: notes returned with the pack"
+   }
+  }
+ },
+ "pack_after": {
+  "status": 200,
+  "body": {
+   "pack_hash": "56f7b14c573793b4783ddb6813b2702a",
+   "state": "returned",
+   "basis": "returned by w1074-made-up on 2026-11-15T09:35:09Z with notes",
+   "decision": {
+    "pack_hash": "56f7b14c573793b4783ddb6813b2702a",
+    "decision": "return",
+    "scholar_id": "w1074-made-up",
+    "notes": "W1074 made up: notes returned with the pack",
+    "section_notes": {},
+    "at": "2026-11-15T09:35:09Z",
+    "entered_by": "the Owner (single-user mode)",
+    "attestation": "entered by the Owner on the scholar's behalf - attested, not verified"
+   },
+   "sections": {
+    "rules": [
+     {
+      "id": "R1",
+      "rule": "W1074 made up: rule 1 every children's tool keeps"
+     },
+     {
+      "id": "R2",
+      "rule": "W1074 made up: rule 2 every children's tool keeps"
+     },
+     {
+      "id": "R3",
+      "rule": "W1074 made up: rule 3 every children's tool keeps"
+     },
+     {
+      "id": "R4",
+      "rule": "W1074 made up: rule 4 every children's tool keeps"
+     },
+     {
+      "id": "R5",
+      "rule": "W1074 made up: rule 5 every children's tool keeps"
+     },
+     {
+      "id": "R6",
+      "rule": "W1074 made up: rule 6 every children's tool keeps"
+     },
+     {
+      "id": "R7",
+      "rule": "W1074 made up: rule 7 every children's tool keeps"
+     }
+    ],
+    "tools": [
+     {
+      "id": "memorisation-practice",
+      "name": "W1074 made-up tool 1",
+      "run_by": "W1074 made up: who runs tool 1",
+      "what_a_child_sees": "W1074 made up: what a child sees in tool 1",
+      "steps": [
+       "W1074 made up: step 1 of tool 1",
+       "W1074 made up: step 2 of tool 1",
+       "W1074 made up: step 3 of tool 1",
+       "W1074 made up: step 4 of tool 1",
+       "W1074 made up: step 5 of tool 1",
+       "W1074 made up: step 6 of tool 1"
+      ],
+      "wording": [
+       "W1074 made up: wording 1 of tool 1",
+       "W1074 made up: wording 2 of tool 1",
+       "W1074 made up: wording 3 of tool 1",
+       "W1074 made up: wording 4 of tool 1",
+       "W1074 made up: wording 5 of tool 1"
+      ],
+      "arabic_from": "W1074 made up: the named edition a verse is fetched from",
+      "routes": [
+       "GET /api/v1/qep/children/memorisation/{surah_number}/{ayah_number}",
+       "GET /api/v1/qep/children/memorisation/{surah_number}/{ayah_number}/next"
+      ]
+     },
+     {
+      "id": "own-past-challenge",
+      "name": "W1074 made-up tool 2",
+      "run_by": "W1074 made up: who runs tool 2",
+      "what_a_child_sees": "W1074 made up: what a child sees in tool 2",
+      "steps": [
+       "W1074 made up: step 1 of tool 2",
+       "W1074 made up: step 2 of tool 2",
+       "W1074 made up: step 3 of tool 2",
+       "W1074 made up: step 4 of tool 2",
+       "W1074 made up: step 5 of tool 2"
+      ],
+      "wording": [
+       "W1074 made up: wording 1 of tool 2",
+       "W1074 made up: wording 2 of tool 2",
+       "W1074 made up: wording 3 of tool 2",
+       "W1074 made up: wording 4 of tool 2"
+      ],
+      "arabic_from": "W1074 made up: the named edition a verse is fetched from",
+      "routes": [
+       "POST /api/v1/qep/children/challenge/{child}/practised",
+       "GET /api/v1/qep/children/challenge/{child}",
+       "DELETE /api/v1/qep/children/challenge/{child}"
+      ]
+     },
+     {
+      "id": "teaching-aids",
+      "name": "W1074 made-up tool 3",
+      "run_by": "W1074 made up: who runs tool 3",
+      "what_a_child_sees": "W1074 made up: what a child sees in tool 3",
+      "steps": [
+       "W1074 made up: step 1 of tool 3",
+       "W1074 made up: step 2 of tool 3",
+       "W1074 made up: step 3 of tool 3",
+       "W1074 made up: step 4 of tool 3",
+       "W1074 made up: step 5 of tool 3"
+      ],
+      "wording": [
+       "W1074 made up: wording 1 of tool 3",
+       "W1074 made up: wording 2 of tool 3",
+       "W1074 made up: wording 3 of tool 3",
+       "W1074 made up: wording 4 of tool 3"
+      ],
+      "arabic_from": "W1074 made up: the named edition a verse is fetched from",
+      "routes": [
+       "GET /api/v1/qep/children/teaching/sheet/{surah_number}"
+      ]
+     },
+     {
+      "id": "private-reflection",
+      "name": "W1074 made-up tool 4",
+      "run_by": "W1074 made up: who runs tool 4",
+      "what_a_child_sees": "W1074 made up: what a child sees in tool 4",
+      "steps": [
+       "W1074 made up: step 1 of tool 4",
+       "W1074 made up: step 2 of tool 4",
+       "W1074 made up: step 3 of tool 4",
+       "W1074 made up: step 4 of tool 4"
+      ],
+      "wording": [
+       "W1074 made up: wording 1 of tool 4",
+       "W1074 made up: wording 2 of tool 4"
+      ],
+      "arabic_from": "W1074 made up: the named edition a verse is fetched from",
+      "routes": [
+       "GET /api/v1/qep/children/reflection/prompts"
+      ]
+     },
+     {
+      "id": "self-check-in",
+      "name": "W1074 made-up tool 5",
+      "run_by": "W1074 made up: who runs tool 5",
+      "what_a_child_sees": "W1074 made up: what a child sees in tool 5",
+      "steps": [
+       "W1074 made up: step 1 of tool 5",
+       "W1074 made up: step 2 of tool 5",
+       "W1074 made up: step 3 of tool 5",
+       "W1074 made up: step 4 of tool 5"
+      ],
+      "questions": [
+       {
+        "id": "feel",
+        "question": "W1074 made up: question 1 of tool 5",
+        "answers": [
+         "answer 1",
+         "answer 2",
+         "answer 3",
+         "answer 4"
+        ]
+       },
+       {
+        "id": "help",
+        "question": "W1074 made up: question 2 of tool 5",
+        "answers": [
+         "answer 1",
+         "answer 2",
+         "answer 3"
+        ]
+       }
+      ],
+      "wording": [
+       "W1074 made up: wording 1 of tool 5",
+       "W1074 made up: wording 2 of tool 5",
+       "W1074 made up: wording 3 of tool 5"
+      ],
+      "arabic_from": "W1074 made up: the named edition a verse is fetched from",
+      "routes": [
+       "GET /api/v1/qep/children/check-in/questions"
+      ]
+     }
+    ],
+    "learner_content": []
+   },
+   "counts": {
+    "rules": 7,
+    "tools": 5,
+    "learner_content": 0
+   },
+   "whole": "one decision covers everything in this pack; a change to any part re-opens review",
+   "children_tools": {
+    "open": false,
+    "pack_hash": "56f7b14c573793b4783ddb6813b2702a",
+    "pack_state": "returned",
+    "basis": "HELD: sign-in is off, and no children's tool opens before it is on; and the scholar's approval pack is returned: returned by w1074-made-up on 2026-11-15T09:35:09Z with notes"
+   },
+   "footing": {
+    "authentication": "off",
+    "who_adds_a_scholar": "the Owner (single-user mode)",
+    "who_decides": "the Owner, on the named scholar's behalf: entered by the Owner on the scholar's behalf - attested, not verified"
+   }
+  }
+ },
+ "stale_decide": {
+  "status": 409,
+  "body": {
+   "detail": "The pack changed after it was read (it is not the pack you saw). Read it again and decide on what it holds now."
+  }
+ },
+ "pack_failed": {
+  "status": 500,
+  "body": {
+   "detail": "GET /api/v1/scholar-review/pack failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/scholar-review/pack",
+   "cause_established": false
+  }
+ }
+}

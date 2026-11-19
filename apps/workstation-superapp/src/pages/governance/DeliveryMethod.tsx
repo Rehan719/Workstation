@@ -18,6 +18,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card } from '@workstation/ui';
 import { BookOpen, ShieldCheck, ShieldAlert, Loader2, AlertCircle, Wrench, Search, RefreshCw, TrendingUp } from 'lucide-react';
+import { apiJson, errorMessage } from '../../lib/api';
 
 interface Lesson {
   id: string;
@@ -87,40 +88,20 @@ export const DeliveryMethod: React.FC = () => {
   const [pace, setPace] = useState<any>(null);
   const [paceErr, setPaceErr] = useState<string | null>(null);
 
+  //  W974 (FU-399 part 8) - each read goes through the checked helper. Each used to parse the body before it looked at
+  //  the status, so a refusal whose body is not JSON (a proxy's 502) was said as a parse error and its status was lost.
+  //  A refusal is now said with its status and the server's reason, in the place of what it would have shown.
   useEffect(() => {
-    const get = (url: string, ok: (b: any) => void, bad: (m: string) => void) =>
-      fetch(url)
-        .then(async r => {
-          const b = await r.json();
-          if (!r.ok) throw new Error(typeof b.detail === 'string' ? b.detail : `HTTP ${r.status}`);
-          return b;
-        })
-        .then(ok)
-        .catch(e => bad(e?.message ?? String(e)));
-    get('/api/v1/method/learning', setLoop, setLoopErr);
-    get('/api/v1/method/forecast', setPace, setPaceErr);
+    apiJson('/api/v1/method/learning').then(setLoop).catch(e => setLoopErr(errorMessage(e)));
+    apiJson('/api/v1/method/forecast').then(setPace).catch(e => setPaceErr(errorMessage(e)));
   }, []);
 
   useEffect(() => {
-    fetch('/api/v1/method/defect-classes')
-      .then(async r => {
-        const b = await r.json();
-        if (!r.ok) throw new Error(typeof b.detail === 'string' ? b.detail : `HTTP ${r.status}`);
-        return b;
-      })
-      .then(setClasses)
-      .catch(e => setClassErr(e?.message ?? String(e)));
+    apiJson('/api/v1/method/defect-classes').then(setClasses).catch(e => setClassErr(errorMessage(e)));
   }, []);
 
   useEffect(() => {
-    fetch('/api/v1/method')
-      .then(async r => {
-        const b = await r.json();
-        if (!r.ok) throw new Error(typeof b.detail === 'string' ? b.detail : `HTTP ${r.status}`);
-        return b;
-      })
-      .then(setData)
-      .catch(e => setErr(e?.message ?? String(e)));
+    apiJson('/api/v1/method').then(setData).catch(e => setErr(errorMessage(e)));
   }, []);
 
   if (err) {

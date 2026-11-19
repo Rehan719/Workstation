@@ -2,10 +2,11 @@
 paths it calls, grouped into shards of similar weight. Deterministic — the coverage is fixed before any agent runs."""
 import json
 import re
+import tempfile
 from collections import defaultdict
 from pathlib import Path
 
-ROOT = Path("C:/Users/rehan/Workstation")
+ROOT = Path(__file__).resolve().parents[1]      # W785 - the repository this script sits in, not one machine's path
 SRC = ROOT / "apps/workstation-superapp/src"
 UI = ROOT / "packages/ui/src"
 API_RE = re.compile(r"""['"`](/api/[A-Za-z0-9_\-/{}$.:?=&]+)""")
@@ -22,6 +23,11 @@ for base in (SRC, UI):
         renders = bool(re.search(r"%|verified|pass|healthy|live|active|synchron|realis|score|certif|compliant|safe", t))
         if apis or (renders and "/pages/" in rel) or rel.startswith("packages/ui/"):
             files.append({"file": rel, "lines": t.count("\n") + 1, "apis": apis})
+
+#  W808 (FU-1154) - an inventory of no surface is not an inventory: shards built from it would sweep nothing
+if not files:
+    raise SystemExit(f"REFUSING: examined nothing - no surface was found under {SRC} or {UI}, so there is no "
+                     f"inventory to shard.")
 
 # group by the directory a user thinks in (pages/<area>, components/<area>, lib, packages/ui)
 groups = defaultdict(list)
@@ -53,7 +59,8 @@ if cur:
     shards.append(cur)
 out = [{"shard": i + 1, "files": [f["file"] for f in s], "lines": sum(f["lines"] for f in s),
         "apis": sorted({a for f in s for a in f["apis"]})} for i, s in enumerate(shards)]
-json.dump(out, open("C:/tmp/w477_inventory.json", "w", encoding="utf-8", newline="\n"), indent=1)
+_OUT = Path(tempfile.gettempdir()) / "w477_inventory.json"   # W788 - the machine's temp directory, not one Windows path
+json.dump(out, open(_OUT, "w", encoding="utf-8", newline="\n"), indent=1)
 print(f"{len(files)} surfaces, {sum(f['lines'] for f in files)} lines, "
       f"{len({a for f in files for a in f['apis']})} distinct /api paths → {len(out)} shards")
 for s in out:

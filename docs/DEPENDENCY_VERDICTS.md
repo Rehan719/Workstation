@@ -18,9 +18,9 @@ Owner ruling 2026-10-07b: the REMOVABLE ones may be removed, in a separate commi
 | sqlalchemy | HELD — P4.4 | Managed Postgres migration dry-run; `config/database.py` builds on sqlmodel over it |
 | sqlmodel | HELD — P4.4 | `config/database.py` imports it (outside the scanned dirs); the P4.4 store layer |
 | psycopg2-binary | HELD — P4.4 | A driver loaded by database URL, never imported; P4.4's Postgres target |
-| streamlit | REACHED without a scanned import | `src/dashboard/app.py`, launched by `.devcontainer/devcontainer.json` (`streamlit run`) |
-| pandas | REACHED without a scanned import | `src/dashboard/app.py` (the same devcontainer dashboard) |
-| plotly | REACHED without a scanned import | `src/dashboard/app.py` (the same devcontainer dashboard) |
+| streamlit | REMOVABLE, not ruled (W908) | Was REACHED through `src/dashboard/app.py`, which W896 moved aside with the devcontainer's launch. Nothing live imports it, and nothing in the lock requires it |
+| pandas | REMOVABLE as a DIRECT dependency, not ruled (W908) | Was REACHED through the same dashboard. Nothing live imports it. camel-tools and mesa require it, so it stays installed |
+| plotly | REMOVABLE, not ruled (W908) | Was REACHED through the same dashboard. Nothing live imports it, and nothing in the lock requires it |
 | redis | REMOVABLE | Only `_archive/` and an unrelated comment in `agentic_core/api/method.py`; no `redis://` URL anywhere live |
 | langchain | REMOVABLE | Named only in `_archive/` notes and the lock files |
 | langchain-community | REMOVABLE | Named only in the dependency files |
@@ -79,4 +79,80 @@ whole-tree search outside `_archive/` now finds firebase-admin only in the depen
 register's own test. The REMOVABLE verdict therefore holds without the W628b correction. **It was not removed
 here**: removal rides FU-283's retry plan above (in halves, on a fresh venv built only from the new
 `requirements.txt`, in its own commit), because the torch-absent boot failure W628b met is not yet bisected.
+
+## W906 (FU-607) — the three dependency files come from one source (2026-11-13)
+
+Measured line by line before this round, the three files had not come from one source since at least W555, the
+last time the lock and `requirements.txt` were written:
+
+- `poetry.lock`'s content hash did not match `pyproject.toml`. `anthropic` was declared and not locked, and `POT`
+  was locked although W637 had removed it from the declarations.
+- `requirements.txt` held three lines no export writes: `anthropic>=0.109.0`, `python-jose[cryptography]>=3.3.0`
+  and `passlib[bcrypt]>=1.7.4`. Being unpinned, they installed whatever was newest. This machine's venv had
+  anthropic 2.6.0, and an install made today resolves 2.8.0.
+- Six pins were in no lock: fpdf2, openpyxl, pypdf, python-docx, python-pptx and torchsde.
+
+No pin that was in both files disagreed.
+
+What changed: the nine packages live code needs are declared in `pyproject.toml`, with python-multipart, which
+W628b found was installed only because another package required it. fpdf2 and pypdf are held at the versions CI
+installed (2.8.7 and 6.19.0); their newer releases are a change of their own. The lock was made by `poetry lock`,
+which keeps every package already locked at its version, and `requirements.txt` was exported from it. Every
+version CI installed before this round is the version it installs after it. anthropic, python-jose and passlib,
+and the packages they and the document libraries bring, are now pinned at what an unpinned install resolved
+today. The note that Stripe is deliberately left out moved into `pyproject.toml`, because an export carries no
+comment.
+
+**How to change a dependency from now on.** Edit `pyproject.toml`, then run:
+
+```
+poetry lock
+poetry export -f requirements.txt --without-hashes -o requirements.txt
+```
+
+`poetry export` is a plugin (`poetry self add poetry-plugin-export`). `test_w906` fails when `pyproject.toml` is
+changed without re-locking, when `requirements.txt` holds a line the export does not write, or when a pin differs
+from the lock. FU-604's removal retry uses the same two commands, then a fresh venv built only from the new
+`requirements.txt`.
+
+## W907 (FU-604) — the nineteen REMOVABLE dependencies are removed (2026-11-13)
+
+The Owner's ruling of 2026-10-07b allowed the REMOVABLE rows above to be removed. W628b did it once and was
+reverted (above). This round carries out the retry plan:
+
+- **firebase-admin.** What reached it was the capital-fund package, archived in W673. W783 found no live importer
+  since, and this round's scan of `agentic_core`, `scripts` and `integration_tests` (outside `_archive/`) finds no
+  import or availability probe of any of the nineteen.
+- **A fresh venv.** It is built only from the new `requirements.txt`, plus pytest and pytest-xdist, which CI
+  installs beside it. Each pinned distribution is hard-linked from an installed venv at its pinned version, so
+  nothing else is present and nothing is downloaded (`pin_venv.py`, kept with the session's round tools). Both
+  tests W628b failed pass in it: the firebase-admin import and the torch-absent boot. Then the full suite ran in
+  it before this round's own suite.
+- **Halves.** The plan said to remove the nineteen in two halves so that a failure would point at a half. A
+  fresh-venv run of the whole suite now reproduces CI's install locally, so they were removed in one commit.
+
+`pyproject.toml` no longer declares them. The lock was made again and `requirements.txt` exported from it: 306 pins
+became 188. Three of the nineteen stay pinned because packages kept here require them: sympy (torch, onnxruntime),
+scikit-learn and transformers. They are no longer declared, and nothing live imports them. `test_w907` fails if any
+of the nineteen is declared again or imported by live code, or if one of them stays pinned with nothing that
+requires it.
+
+Not decided here, and not part of the ruling: the rows marked REACHED without a scanned import named
+`src/dashboard/app.py`. W896 moved `src/` aside, so those three (streamlit, pandas, plotly) need a fresh verdict.
+
+## W908 — a fresh verdict for streamlit, pandas and plotly (2026-11-13)
+
+All three were REACHED without a scanned import: `src/dashboard/app.py` imported them, and the devcontainer launched
+it with `streamlit run`. W896 moved `src/` aside and removed that launch. Measured again: nothing live imports or
+probes any of the three. In the lock, nothing requires streamlit or plotly, and camel-tools and mesa require pandas.
+Their rows above now say REMOVABLE, not ruled.
+
+The ruling of 2026-10-07b covered the rows that were REMOVABLE then. These three were REACHED then, so their removal
+is the Owner's call, asked by an OWNER DECISION row that W908 added. **Recommended: remove them.** That means
+streamlit and plotly, pandas as a direct declaration (camel-tools and mesa keep it installed), and the devcontainer's
+`pip3 install --user streamlit`. Remove them with the two commands above, after a full suite in a fresh venv, as
+W907 did. A trial lock shows 13 pins leaving `requirements.txt` (188 become 175): streamlit, plotly, and eleven
+packages that only streamlit brings (altair, blinker, gitdb, gitpython, narwhals, pyarrow, pydeck, smmap, toml,
+tornado, watchdog). Nothing live imports any of them. `test_w908` holds the verdict until the Owner rules: none
+of the fourteen is imported by live code, the devcontainer launches no dashboard, and the three stay declared.
 

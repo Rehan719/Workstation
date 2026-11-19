@@ -45,7 +45,7 @@ export const Header: React.FC<HeaderProps> = ({ avatar }) => {
   const { currentMode, setCurrentMode, setCurrentTab } = useStore();
   const navigate = useNavigate();
   const [showAssistant, setShowAssistant] = useState(false);
-  const { messages, input, setInput, sending, sendMessage } = avatar;
+  const { messages, input, setInput, sending, sendMessage, sendError } = avatar;
 
   const modes = [
     { id: 'ACTIVE' as const, label: 'Active', icon: Zap, color: 'text-aura' },
@@ -152,6 +152,8 @@ export const Header: React.FC<HeaderProps> = ({ avatar }) => {
                 {m.content}
               </div>
             ))}
+            {/* W1076 - the same conversation's reply that did not come, said as that */}
+            {sendError && <p role="alert" className="text-[10px] font-bold text-vital px-1">{sendError}</p>}
             {sending && (
               <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold px-1">
                 <Loader2 size={12} className="animate-spin" /> Thinking...

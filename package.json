@@ -6,8 +6,7 @@
     "packages/*"
   ],
   "scripts": {
-    "web:dev": "npm run dev -w apps/web",
-    "mobile:start": "npm run start -w apps/mobile",
+    "web:dev": "npm run dev -w apps/workstation-superapp",
     "ui:build": "npm run build -w packages/ui"
   },
   "dependencies": {

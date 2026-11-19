@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W472 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W472 (P1.15 stores that refuse, never replace) — in a real browser against the built bundle on a FRESH backend
 // (AI_DISABLE_LOCAL=1; virtual WST only). The probe writes malformed bytes into the backend's OWN data directory (the
 // stores this round made strict) and checks that the writers refuse, the bytes stand, and the pages say so.

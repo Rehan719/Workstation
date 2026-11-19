@@ -1,3 +1,4 @@
+import { silenceIsRight } from '../components/ReadFailures';   // W961 (FU-1181)
 import { useCallback, useEffect, useState } from 'react';
 import { getPrefs } from './userPrefs';
 
@@ -357,7 +358,7 @@ export function applyDocumentDirection(lang?: string): void {
     const root = document.documentElement;
     root.setAttribute('lang', code);
     root.setAttribute('dir', isRTL(code) ? 'rtl' : 'ltr');
-  } catch { /* no DOM (SSR/tests) — nothing to apply */ }
+  } catch { silenceIsRight('with no document, as in tests, there is no page direction to apply')(); }
 }
 
 /** What is ACTUALLY translated for a language, so the UI can state coverage without overclaiming. */

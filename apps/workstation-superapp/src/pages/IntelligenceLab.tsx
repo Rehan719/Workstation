@@ -1,3 +1,4 @@
+import { streamPost } from '../lib/stream';   // W1008 - one reader of a streamed answer
 import React, { useState, useRef, useEffect } from 'react';
 import { DOMAINS as CANON_DOMAINS } from '../lib/taxonomy';
 import { Card, Button } from '@workstation/ui';
@@ -16,42 +17,7 @@ interface IntelEvent {
   data?: Record<string, any>;
 }
 
-async function streamPost(
-  url: string,
-  body: object,
-  onChunk: (ev: IntelEvent) => void,
-  onDone: () => void,
-  onError: (e: string) => void,
-) {
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) { onError(`HTTP ${res.status}`); return; }
-    const reader = res.body!.getReader();
-    const dec = new TextDecoder();
-    let buf = '';
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += dec.decode(value, { stream: true });
-      const lines = buf.split('\n');
-      buf = lines.pop()!;
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const raw = line.slice(6).trim();
-          if (raw === '[DONE]') continue;
-          try { onChunk(JSON.parse(raw)); } catch {}
-        }
-      }
-    }
-    onDone();
-  } catch (e: any) {
-    onError(e?.message ?? String(e));
-  }
-}
+//  W1008 - the stream reader is lib/stream.ts, one for the five pages that each carried a copy
 
 // ── Stage display ─────────────────────────────────────────────────────────────
 
@@ -99,7 +65,7 @@ export const IntelligenceLab: React.FC = () => {
     const url = `/api/v1/intelligence/${mode}`;
     const body = { challenge: input, domain, rigor, focus };
 
-    await streamPost(url, body,
+    await streamPost<IntelEvent>(url, body,
       ev => setEvents(prev => [...prev, ev]),
       () => setRunning(false),
       e => { setError(e); setRunning(false); },

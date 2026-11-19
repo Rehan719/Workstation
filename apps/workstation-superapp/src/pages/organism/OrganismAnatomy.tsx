@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Dna, Loader2, Settings2, ShieldCheck, Waves, Play, GitMerge, Sparkles, Send } from 'lucide-react';
-import { apiJson, errorMessage, provenanceBadge, immuneReading } from '../../lib/api';
+import { apiJson, errorMessage, provenanceBadge, immuneReading, bodyOrNull, bodyDetail } from '../../lib/api';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W998
 
 // W438 — the organism's ANATOMY, finally reachable: 18 routes (config · genome · nervous ·
 // self-healing · health/lifecycle) existed server-side with no page. Every sub-area was AUDITED
@@ -68,25 +69,25 @@ export const OrganismAnatomy: React.FC = () => {
   } | null>(null);
   const [config, setConfig] = useState<ConfigPayload | null>(null);
   const [err, setErr] = useState('');
-  const [loadErrs, setLoadErrs] = useState<string[]>([]);
+  //  W998 (FU-399 part 30) - EACH READ SAYS ITS OWN FAILURE. These said "<url> → HTTP 503" with no reason, named a URL
+  //  where the page names what it reads, and only the first three were listed. A refusal is said by what was being read,
+  //  with the server's status and reason, and a read that succeeds again clears it. The status is still checked on
+  //  every GET (apiJson), so an error body is never rendered as a result.
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();
+  const [healUnread, setHealUnread] = useState(false);
+  const [signalsUnread, setSignalsUnread] = useState(false);
 
   const loadAll = () => {
-    setLoadErrs([]);
-    // r.ok checked on every GET — the repo's Round-11 class-kill ("HTTP-status blindness"): a raw
-    // .then(r => r.json()) renders a FastAPI error body as a result, and a swallowed catch turns
-    // a failed fetch into a fabricated empty state
-    const getJson = (url: string, set: (d: any) => void) =>
-      fetch(url)
-        .then(r => (r.ok ? r.json() : Promise.reject(new Error(`${url} → HTTP ${r.status}`))))
-        .then(set)
-        .catch(e => setLoadErrs(errs => [...errs, String(e?.message ?? e)]));
-    getJson('/api/v1/organism/health-summary', setHealth);
-    getJson('/api/v1/organism/lifecycle', setLife);
-    getJson('/api/v1/organism/systems', setSystems);
-    getJson('/api/v1/organism/nervous/signals?n=25', d => setSignals(d.signals || []));
-    getJson('/api/v1/organism/self-healing/log', setHealLog);
-    getJson('/api/v1/organism/genome', d => { setGenomes(d.genomes || []); setPop(d.population ?? null); setEntGenomes(d.entity_genomes ?? null); });
-    getJson('/api/v1/organism/config', setConfig);
+    const read = (url: string, what: string, set: (d: any) => void, unread?: (u: boolean) => void) =>
+      apiJson(url).then(d => { set(d); unread?.(false); clearRead(what); })
+        .catch(e => { unread?.(true); noteRead(what)(e); });
+    read('/api/v1/organism/health-summary', 'the health summary', setHealth);
+    read('/api/v1/organism/lifecycle', 'the lifecycle', setLife);
+    read('/api/v1/organism/systems', 'the systems', setSystems);
+    read('/api/v1/organism/nervous/signals?n=25', 'the signal feed', d => setSignals(d.signals || []), setSignalsUnread);
+    read('/api/v1/organism/self-healing/log', 'the healing log', setHealLog, setHealUnread);
+    read('/api/v1/organism/genome', 'the genome population', d => { setGenomes(d.genomes || []); setPop(d.population ?? null); setEntGenomes(d.entity_genomes ?? null); });
+    read('/api/v1/organism/config', 'the organism config', setConfig);
   };
   useEffect(loadAll, []);
 
@@ -195,9 +196,10 @@ export const OrganismAnatomy: React.FC = () => {
         // the route's ONLY honest behaviour is the 409 — success would mean the guard vanished
         setErr('reset unexpectedly succeeded without Change Control — the governance guard is missing');
       } else {
-        const body = await r.json().catch(() => null);
+        const body = await bodyOrNull(r);
         const d = body?.detail;
-        setResetRefusal(d && typeof d === 'object' ? d : { why: typeof d === 'string' ? d : `HTTP ${r.status}` });
+        //  W1013 - a structured refusal is kept whole; a field check (a list) is said by its field, not dropped
+        setResetRefusal(d && typeof d === 'object' && !Array.isArray(d) ? d : { why: bodyDetail(body, `HTTP ${r.status}`) });
       }
     } catch {
       setErr('reset check failed — backend unreachable');
@@ -225,11 +227,7 @@ export const OrganismAnatomy: React.FC = () => {
   return (
     <div className="space-y-6">
       {err && <p className="text-vital text-xs font-bold">{err}</p>}
-      {loadErrs.length > 0 && (
-        <p className="text-amber-400 text-[10px] font-bold">
-          {loadErrs.length} section(s) failed to load — {loadErrs.slice(0, 3).join(' · ')}
-        </p>
-      )}
+      <ReadFailures failures={readFailures} />
 
       {/* ── Health & lifecycle ─────────────────────────────────────────── */}
       <div className="grid grid-cols-1 @[960px]:grid-cols-2 gap-4">
@@ -350,6 +348,9 @@ export const OrganismAnatomy: React.FC = () => {
             <div>
               <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-1">Signal feed (latest 25)</p>
               <div className="max-h-36 overflow-y-auto space-y-0.5">
+                {signalsUnread && signals.length === 0 && (
+                  <p className="text-[9px] text-amber-400 italic" data-testid="anatomy-signals-unread">The signal feed could not be read, so this is not a feed of none.</p>
+                )}
                 {signals.map((s, i) => (
                   <p key={i} className="text-[9px] text-slate-500 truncate">
                     <span className="text-slate-600">{s.age_seconds}s</span> · <span className="text-aura">{s.signal_type}</span> · {s.source} — {s.payload}
@@ -365,7 +366,10 @@ export const OrganismAnatomy: React.FC = () => {
                 {(healLog?.events || []).slice().reverse().map((e, i) => (
                   <p key={i} className="text-[9px] text-slate-500 truncate">{e.ts.slice(11, 19)} · {e.endpoint} → <span className="text-amber-400">{e.state}</span> — {e.reason}</p>
                 ))}
-                {(!healLog || healLog.events.length === 0) && <p className="text-[9px] text-slate-700 italic">no healing events this process</p>}
+                {/* W998 - an unread log said "no healing events this process" */}
+                {healUnread && !healLog
+                  ? <p className="text-[9px] text-amber-400 italic" data-testid="anatomy-heal-log-unread">The healing log could not be read, so this is not a log of none.</p>
+                  : (!healLog || healLog.events.length === 0) && <p className="text-[9px] text-slate-700 italic">no healing events this process</p>}
               </div>
             </div>
           </div>
@@ -431,7 +435,8 @@ export const OrganismAnatomy: React.FC = () => {
                 )}
               </div>
             )}
-            {genomes === null && loadErrs.length > 0 && <p className="text-[10px] text-amber-400 italic">genome list failed to load — not empty, unknown</p>}
+            {/* W998 - this fired when ANY section had failed; it is the genome population's own failure */}
+            {genomes === null && readFailures['the genome population'] && <p className="text-[10px] text-amber-400 italic" data-testid="anatomy-genomes-unread">genome list failed to load — not empty, unknown</p>}
           </div>
           {selGenome ? (
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">

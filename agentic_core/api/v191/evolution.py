@@ -18,7 +18,8 @@ import uuid
 from pathlib import Path
 from agentic_core.config import data_path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from agentic_core.auth.core import require_admin   # W1096 (FU-1272)
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
@@ -30,13 +31,16 @@ _STORE = data_path("evolution_proposals.json")
 
 
 def _load() -> list[dict]:
-    _STORE.parent.mkdir(parents=True, exist_ok=True)
-    if _STORE.exists():
-        try:
-            return json.loads(_STORE.read_text())
-        except Exception:
-            pass
-    return []
+    """W1096 (FU-1272) - the proposals, read whole or refused. A store that could not be read was taken for none:
+    the list said nothing was pending, a decision said a proposal was not found, and the next generation wrote its
+    proposals over the store, replacing what it held (W472). It is said as that now, with why."""
+    from agentic_core.config import StoreUnavailable, read_json_strict
+    try:
+        rows = read_json_strict(_STORE, [], expect=list)
+    except StoreUnavailable as e:
+        raise HTTPException(status_code=503, detail=(
+            f"{e}; the evolution proposals could not be read, so none is listed, decided or added")) from e
+    return [p for p in rows if isinstance(p, dict)]
 
 
 def _save(proposals: list[dict]) -> None:
@@ -90,6 +94,7 @@ async def generate_proposals(req: GenerateRequest):
     """
     Observe system state and generate AI improvement proposals.
     """
+    _load()   # W1096 (FU-1272) - a store that cannot be read is refused before any model runs
     system_context = ""
     try:
         from agentic_core.projects.api import _all_projects
@@ -194,8 +199,10 @@ def _is_removed_default(p: dict) -> bool:
     return (p.get("title"), p.get("rationale")) == _REMOVED_DEFAULT and not p.get("served_by")
 
 
+#  W1096 (FU-1272) - a proposal is to change the platform itself, so deciding it is an administrator's, as sovereign
+#  evolution's decisions are (W505); with sign-in off, the one person's using this machine
 @router.post("/proposals/{proposal_id}/approve")
-async def approve_proposal(proposal_id: str):
+async def approve_proposal(proposal_id: str, user: dict = Depends(require_admin)):
     """Approving a self-modification proposal now files a REAL Change Control request and holds the
     proposal `under_change_control` — the arms-length chain (LOW auto-approve when healthy;
     MEDIUM/HIGH AI review; CRITICAL blocked; HIGH/CRITICAL twin pre-validation) decides, not this
@@ -237,7 +244,7 @@ async def approve_proposal(proposal_id: str):
 
 
 @router.post("/proposals/{proposal_id}/reject")
-async def reject_proposal(proposal_id: str):
+async def reject_proposal(proposal_id: str, user: dict = Depends(require_admin)):   # W1096 (FU-1272)
     proposals = _load()
     for p in proposals:
         if p["id"] == proposal_id:

@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W469 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W469 — the delivery plan is live on /transformation: the card reads PLAN NOW from the real plan and register, refreshes
 // itself every minute, and keeps the last good plan when a refresh fails. Runs in a real browser against the built
 // bundle on a FRESH backend (AI_DISABLE_LOCAL=1). No seed: the backend reads this repository's own

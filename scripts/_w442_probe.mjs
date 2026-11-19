@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W442 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W442 — drive the economy operations in a real browser against the built bundle: the venture
 // portfolio (returns half of §6), the CFO period close, the federation transfer form, and the
 // charity candidates pool must render honestly; the close must actually close the books.

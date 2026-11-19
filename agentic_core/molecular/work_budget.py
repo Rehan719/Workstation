@@ -13,7 +13,7 @@ WHAT IT MEASURES, and what it refuses to measure
     only `response`. The native orchestrator's local route and the gateway's stream now read that count and
     hand it to `record_outcome(tokens=...)`, which passes it to `spend()` in the SAME call as the run's
     seconds, so a counted run is still one run. A run nothing counted (the deterministic floor runs no model;
-    an external accelerant's reported usage is not read) adds nothing, and `tokens_spent` stays None with a
+    an external answer that names no usage) adds nothing, and `tokens_spent` stays None with a
     reason until something has counted, because zero would read as "no tokens were used" when the truth is
     "nobody counted".
 
@@ -124,7 +124,8 @@ def _book(rec: Dict[str, Any], owner_id: Optional[str], vsb_id: Optional[str], s
 
 
 def spend(seconds: float = 0.0, tokens: Optional[int] = None, *,
-          owner_id: Optional[str] = None, vsb_id: Optional[str] = None) -> None:
+          owner_id: Optional[str] = None, vsb_id: Optional[str] = None,
+          answers: Optional[int] = None) -> None:
     """Record work actually done. Never raises into a caller — accounting is not the work.
 
     Written under `store_lock` + `atomic_write_json`: this is a shared store, and the concurrency class that
@@ -154,7 +155,9 @@ def spend(seconds: float = 0.0, tokens: Optional[int] = None, *,
             #  count is kept beside the total, because a total over some runs is not a total over all of them.
             if tokens is not None:
                 rec["tokens_spent"] = int(rec.get("tokens_spent") or 0) + int(tokens)
-                rec["token_calls"] = int(rec.get("token_calls") or 0) + 1
+                #  W847 (FU-1121) - one spend can carry several counted answers: the outermost run of a nest
+                #  spends once with every count inside it, and says how many it carries
+                rec["token_calls"] = int(rec.get("token_calls") or 0) + (max(1, int(answers)) if answers else 1)
             rec["calls"] = int(rec.get("calls") or 0) + 1
             _book(rec, owner_id, vsb_id, seconds)       # S18.6 (W743) - the entity that ran it, and no other
             atomic_write_json(_store(), rec)
@@ -232,6 +235,24 @@ def _carrying_capacity(rec: Dict[str, Any]) -> Dict[str, Any]:
                       "STATED ASSUMPTION (capacity_basis). It is " + _ENTITY_GATE_NOTE)}
 
 
+def birth_reading() -> Dict[str, Any]:
+    """FU-1116 (W839) - what the derived carrying capacity says at a birth: read, recorded on the birth, and never
+    acted on. Whether a birth may be refused over capacity is the Owner's decision, so nothing refuses on it, and the
+    S18.1 switch (WORKSTATION_WORK_BUDGET) does not reach births. A budget that cannot be read whole is said."""
+    rec, why = _load()
+    if why:
+        cap = {"entities": None, "entities_measured": None, "over_capacity": None,
+               "basis": f"the work budget could not be read whole ({why}), so no capacity was derived at this birth"}
+    else:
+        cap = _carrying_capacity(rec)
+    return {"consulted": True, "enforced": False,
+            "carrying_capacity": cap.get("entities"), "entities_measured": cap.get("entities_measured"),
+            "over_capacity": cap.get("over_capacity"), "capacity_basis": cap.get("basis"),
+            "basis": ("the derived carrying capacity, read at this birth and recorded on it. Nothing is refused over "
+                      "it: whether a birth may be refused over capacity is the Owner's decision, and the S18.1 "
+                      "switch does not reach births")}
+
+
 def _entity_view(rec: Dict[str, Any], why: Optional[str], owner_id: Optional[str],
                  vsb_id: Optional[str]) -> Dict[str, Any]:
     owners = _owners(rec)
@@ -307,9 +328,10 @@ def state() -> Dict[str, Any]:
         "tokens_basis": (f"measured - {tokens} token(s) reported by the serving model itself, over "
                          f"{int(rec.get('token_calls') or 0)} counted model answer(s) this window; "
                          f"{int(rec.get('calls') or 0)} spend(s) were recorded in all, which is not a count of "
-                         "answers: a wrapper that times the same call records its own, and a run nothing "
-                         "counted adds no tokens (the deterministic floor runs no model, and an external "
-                         "accelerant's reported usage is not read)"
+                         "answers: since W847 a nest spends once, with every model answer inside it, and a run "
+                         "nothing counted adds no tokens (the deterministic floor runs no model, and an external "
+                         "accelerant's answer is counted from the usage it reports, since W870, or not at all when "
+                         "it names none)"
                          if tokens is not None else
                          "NOT RECORDED — no run this window reported a token count (a count comes only from a "
                          "model's own answer; the deterministic floor runs no model), so this is null rather "
@@ -323,9 +345,12 @@ def state() -> Dict[str, Any]:
         "holding_reason": _hold_reason(fraction, why),
         "gate_basis": _gate_basis(fraction, why),
         #  W742 - what the figure is a sum OF, said where the gate reads it
-        "spend_basis": ("the sum of every run duration the platform recorded; a run recorded inside another "
-                        "(a model attempt inside the AI call or run that made it) can be counted at each level, "
-                        "so this can exceed the wall-clock time actually worked. Durations a caller reported "
+        "spend_basis": ("the sum of the run durations the platform recorded, each nest counted once (W847): a run "
+                        "recorded inside a marked run (a model attempt inside the AI call that made it; an AI call "
+                        "inside a deliverable, a composition, a swarm, a cascade tier, the board or a "
+                        "transformation) is held by the outermost run, which spends its own duration with the "
+                        "tokens its inner runs counted. A run made where the mark does not reach (a worker thread "
+                        "started without it) can still be counted at two levels. Durations a caller reported "
                         "through /api/v1/operations/record are not counted"),
         "basis": (f"{spent:.1f}s of a stated {CAPACITY_SECONDS:.0f}s capacity is recorded spent this window, "
                   f"from {int(rec.get('calls') or 0)} run(s) whose duration was measured — and "
@@ -336,6 +361,37 @@ def state() -> Dict[str, Any]:
         "carrying_capacity": _carrying_capacity(rec),
         "store_incomplete": why,
     }
+
+
+def energy() -> Dict[str, Any]:
+    """W900 (FU-1112, S18.1) - THE ENERGY RATIO, DERIVED FROM WHAT IS SPENT: the share of this window's stated
+    capacity that is left, 1.0 when the window opens and 0.0 when the capacity is spent. `acts` says whether the
+    Owner's setting is on: only then do the energy thresholds read this figure (energy_term), which is the ruling's
+    inert setting - switching the budget on is what makes those thresholds reachable."""
+    rec, why = _load()
+    spent = float(rec.get("seconds_spent") or 0.0)
+    fraction = min(1.0, spent / CAPACITY_SECONDS) if CAPACITY_SECONDS else 0.0
+    acts = enabled()
+    return {"ratio": round(max(0.0, 1.0 - fraction), 4), "acts": acts,
+            "unit": "the share of this window's stated capacity left, in wall-clock seconds",
+            "basis": (f"1 - {spent:.1f}s spent / {CAPACITY_SECONDS:.0f}s stated capacity this window (the capacity "
+                      "is a stated assumption)"
+                      + (f"; the record could not be read whole ({why})" if why else "")
+                      + ("; the work budget is switched on, so the energy thresholds and the composite's metabolic "
+                         "term read this figure" if acts else
+                         "; the work budget is switched off (WORKSTATION_WORK_BUDGET), so nothing reads this "
+                         "figure: the energy thresholds read the ATP simulator, which cannot fall, and stay inert "
+                         "as ruled")),
+            "store_incomplete": why}
+
+
+def energy_term(simulated: Optional[float], reading: Optional[Dict[str, Any]] = None) -> tuple:
+    """W900 (FU-1112, S18.1) - the figure an energy threshold reads, and where it came from: the work budget's
+    remaining share while the budget is switched on, and the ATP simulator's figure while it is off."""
+    e = reading if reading is not None else energy()
+    if e.get("acts") and e.get("ratio") is not None:
+        return float(e["ratio"]), "work_budget"
+    return simulated, "atp_simulator"
 
 
 def _hold_reason(fraction: float, why: Optional[str]) -> Optional[str]:

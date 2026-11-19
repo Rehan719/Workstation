@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W454 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W454 (delivery-plan P1.6) — Employment default-tab honesty, in a real browser against the built bundle on a
 // FRESH backend (AI_DISABLE_LOCAL=1): the hub opens on the CV tools; the Application Studio's job search says
 // "not a live job board", renders illustrative listings with no live link and a provenance badge, and every

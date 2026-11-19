@@ -1,0 +1,177 @@
+{
+ "profile_empty": {
+  "owner_id": "default",
+  "profile": {
+   "about_you": "",
+   "context": "",
+   "goals": "",
+   "constraints": "",
+   "success_criteria": ""
+  },
+  "preamble_preview": "",
+  "applied_to": "generation prompts on this platform (never shared with other users)",
+  "is_recall": false,
+  "store_incomplete": null,
+  "profile_is_incomplete": false
+ },
+ "profile_put": {
+  "owner_id": "default",
+  "profile": {
+   "about_you": "w980 a made-up teacher, for the capture",
+   "context": "a made-up primary school",
+   "goals": "plan a term of fractions",
+   "constraints": "one hour a week",
+   "success_criteria": "the class can add halves"
+  },
+  "preamble_preview": "Take the following into account; it was written by the person you are answering.\nAbout the person: w980 a made-up teacher, for the capture\nTheir situation: a made-up primary school\nWhat they are trying to achieve: plan a term of fractions\nConstraints they are working under: one hour a week\nWhat success looks like to them: the class can add halves\n\n",
+  "updated_at": "2026-11-13T21:17:14Z"
+ },
+ "profile_saved": {
+  "owner_id": "default",
+  "profile": {
+   "about_you": "w980 a made-up teacher, for the capture",
+   "context": "a made-up primary school",
+   "goals": "plan a term of fractions",
+   "constraints": "one hour a week",
+   "success_criteria": "the class can add halves"
+  },
+  "preamble_preview": "Take the following into account; it was written by the person you are answering.\nAbout the person: w980 a made-up teacher, for the capture\nTheir situation: a made-up primary school\nWhat they are trying to achieve: plan a term of fractions\nConstraints they are working under: one hour a week\nWhat success looks like to them: the class can add halves\n\n",
+  "applied_to": "generation prompts on this platform (never shared with other users)",
+  "is_recall": false,
+  "store_incomplete": null,
+  "profile_is_incomplete": false
+ },
+ "ratifications_empty": {
+  "user_id": "demo_user",
+  "ratifications": [],
+  "high_impact_modes": [
+   "emergency",
+   "inspector"
+  ]
+ },
+ "ratification_recorded": {
+  "recorded": true,
+  "refused": null,
+  "ratification": {
+   "id": "rat-b4d7323f47",
+   "user_id": "demo_user",
+   "purpose": "w980 help me revise fractions, for the capture",
+   "modes": [
+    "instructor"
+   ],
+   "signatories": [
+    "demo_user"
+   ],
+   "recorded_by": "demo_user",
+   "recorded_at": "2026-11-13T21:17:14Z",
+   "revoked_at": null
+  },
+  "basis": "recorded: a learner's standing approval, scoped by MODE"
+ },
+ "ratifications": {
+  "user_id": "demo_user",
+  "ratifications": [
+   {
+    "id": "rat-b4d7323f47",
+    "user_id": "demo_user",
+    "purpose": "w980 help me revise fractions, for the capture",
+    "modes": [
+     "instructor"
+    ],
+    "signatories": [
+     "demo_user"
+    ],
+    "recorded_by": "demo_user",
+    "recorded_at": "2026-11-13T21:17:14Z",
+    "revoked_at": null
+   }
+  ],
+  "high_impact_modes": [
+   "emergency",
+   "inspector"
+  ]
+ },
+ "goals": {
+  "objectives": null,
+  "basis": "no goals are recorded: the Owner has not yet said which way each measured property should go, so gate 3 has nothing to balance against and withholds",
+  "measured": {
+   "words": "the number of words in the draft",
+   "mean_sentence_words": "words per sentence, sentences split on . ! ?",
+   "mean_word_chars": "letters per word"
+  },
+  "directions": [
+   "min",
+   "max"
+  ]
+ },
+ "protected_unnamed": {
+  "rule": "The Owner's own two entities and the apex are protected. Everything else is removable only by the Owner, as a reversible move.",
+  "ruling": "Owner, 2026-10-11",
+  "apex": [
+   "workstation-idbo"
+  ],
+  "removal": {
+   "by": "owner",
+   "as": "reversible_move",
+   "through": "Change Control (propose, approve, implement); the entity's record and books are kept"
+  },
+  "record_exists": false,
+  "named": {},
+  "named_count": 0,
+  "expected_owner_own": 2,
+  "count_matches_rule": null,
+  "state": "not_named",
+  "name_them_at": "PUT /api/v1/economy/protected-entities",
+  "basis": "The Owner's own entities have NOT been named yet, so every removal is refused: the Owner's own two entities are not identified anywhere in the repository (docs/R13_TEST_OWNED_ENTITIES.md lists only the test-owned ids, and the plan records the Owner's as a count), and the round that wrote this record was not permitted to read the data directory. They are named by the Owner, in the data directory's own record. Name them at PUT /api/v1/economy/protected-entities."
+ },
+ "protected_refused": {
+  "status": 400,
+  "body": {
+   "detail": "Not recorded: w980-no-such-entity is not a stored entity, so naming it would protect nothing. Nothing was written."
+  }
+ },
+ "protected_put": {
+  "rule": "The Owner's own two entities and the apex are protected. Everything else is removable only by the Owner, as a reversible move.",
+  "ruling": "Owner, 2026-10-11",
+  "apex": [
+   "workstation-idbo"
+  ],
+  "removal": {
+   "by": "owner",
+   "as": "reversible_move",
+   "through": "Change Control (propose, approve, implement); the entity's record and books are kept"
+  },
+  "record_exists": true,
+  "named": {
+   "vsb-150eca5f3f": "the capture's own made-up enterprise"
+  },
+  "named_count": 1,
+  "expected_owner_own": 2,
+  "count_matches_rule": false,
+  "state": "named",
+  "name_them_at": "PUT /api/v1/economy/protected-entities",
+  "basis": "1 entity is named as protected, beside the apex - the Owner's rule speaks of 2, so this record and the rule do not agree; the record is what is enforced. Any other entity is removable only by the Owner, through Change Control, with its record kept."
+ },
+ "protected_named": {
+  "rule": "The Owner's own two entities and the apex are protected. Everything else is removable only by the Owner, as a reversible move.",
+  "ruling": "Owner, 2026-10-11",
+  "apex": [
+   "workstation-idbo"
+  ],
+  "removal": {
+   "by": "owner",
+   "as": "reversible_move",
+   "through": "Change Control (propose, approve, implement); the entity's record and books are kept"
+  },
+  "record_exists": true,
+  "named": {
+   "vsb-150eca5f3f": "the capture's own made-up enterprise"
+  },
+  "named_count": 1,
+  "expected_owner_own": 2,
+  "count_matches_rule": false,
+  "state": "named",
+  "name_them_at": "PUT /api/v1/economy/protected-entities",
+  "basis": "1 entity is named as protected, beside the apex - the Owner's rule speaks of 2, so this record and the rule do not agree; the record is what is enforced. Any other entity is removable only by the Owner, through Change Control, with its record kept."
+ }
+}

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { HeartPulse, Loader2, Play, Square, Activity, Sun, Moon, ShieldCheck, Zap } from 'lucide-react';
+import { apiJson } from '../../lib/api';   // W927 - a read is used only on a 2xx
+import { refusalOf } from '../../lib/stream';   // W1025 - a refused action by its reason
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W929
 
 // W617 (FU-506, M2 v8 R6.2) — steps_failed is recorded per beat since W611 and was rendered by nothing
 interface Beat { beat: number; phase: string; intensity: number; realisation: number | null; health: number | null; actions: string[]; at: string; self_recovery?: string | null; steps_failed?: Record<string, string>; steps_failed_basis?: string }
@@ -74,11 +77,12 @@ const PHASE_ICON: Record<string, React.ComponentType<any>> = {
 };
 
 export const HeartbeatMonitor: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W929 - a read that fails is said
   const [s, setS] = useState<Status | null>(null);
   const [busy, setBusy] = useState(false);
   const [actErr, setActErr] = useState('');   // W329 — actions never fail silently
 
-  const load = () => fetch('/api/v1/heartbeat/status').then(r => r.json()).then(setS).catch(() => {});
+  const load = () => apiJson('/api/v1/heartbeat/status').then(x => { clearRead('the heartbeat status'); setS(x); }).catch(noteRead('the heartbeat status'));
   useEffect(() => { load(); const t = setInterval(load, 8000); return () => clearInterval(t); }, []);
 
   const act = async (path: string, body?: object) => {
@@ -86,7 +90,7 @@ export const HeartbeatMonitor: React.FC = () => {
     setActErr('');
     try {
       const r = await fetch(`/api/v1/heartbeat/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
-      if (!r.ok) setActErr(`Action failed (HTTP ${r.status}) — nothing changed`);
+      if (!r.ok) setActErr(`${await refusalOf(r)} — nothing changed`);   // W1025
       await load();
     } catch {
       setActErr('Backend unreachable — nothing changed');
@@ -98,6 +102,7 @@ export const HeartbeatMonitor: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-24">
+      <ReadFailures failures={readFailures} />
       {actErr && <p className="text-vital text-xs font-bold">{actErr}</p>}
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Continuous Autonomy</p>
@@ -338,7 +343,7 @@ export const HeartbeatMonitor: React.FC = () => {
             <Card className="p-6">
               <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Recent Beats</h3>
               {/* W633 (FU-572) — said where the beats are read, not only in a hover title */}
-              <p data-testid="heartbeat-survival-note" className="text-[10px] text-slate-500 mb-4">The survival instinct and energy regulation run on a simulated ATP model in which ATP cannot fall, so they do not fire in practice.</p>
+              <p data-testid="heartbeat-survival-note" className="text-[10px] text-slate-500 mb-4">The survival instinct and energy regulation read the simulated ATP model while the work budget is switched off, and ATP cannot fall, so they do not fire in practice. With the budget switched on they read what is left of it, and they fire when it runs low.</p>
               <div className="space-y-2">
                 {s.recent.slice().reverse().map(b => (
                   <div key={b.beat} className="flex items-center justify-between p-3 bg-slate-950 rounded-lg border border-slate-900 text-xs">

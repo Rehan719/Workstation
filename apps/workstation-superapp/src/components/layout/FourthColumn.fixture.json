@@ -1,0 +1,142 @@
+{
+ "sessions": {
+  "status": 200,
+  "body": []
+ },
+ "session_opened": {
+  "status": 200,
+  "body": {
+   "session_id": "74c17c93-357e-4ebf-8824-2a6c03af0d83",
+   "avatar_id": "did:workstation:8a15bb073a18425d",
+   "state_checksum": "0dc6c6d69d0f27996844bbf25ec7086372c5340e1b0bec7b35417b751d5efd0b07ac2e54015b859a7f12052d9aec7b48f04bf0f4956dbe3b8e10f5c7b005d4dc"
+  }
+ },
+ "chat_ask": {
+  "message": "W1067 made up: which tools does a repair cafe volunteer bring?",
+  "context": "employment"
+ },
+ "chat": {
+  "status": 200,
+  "body": {
+   "session_id": "1c0a430b-b4a9-416d-aca1-06a28c3d836f",
+   "response": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Employment Hub avatar. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: W1067 made up: which tools does a repair cafe volunteer bring? (domain: cross-domain (the avatar is a conversation across every domain, not a domain tool)).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- volunteer bring\n- cafe volunteer\n- which tools\n- does repair\n- repair cafe\n- made which\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'avatar:employment', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for cross-domain (the avatar is a conversation across every domain, not a domain tool); record outcomes to memory/UEG.",
+   "cleared": null,
+   "clearance_reason": "NOT cleared by the constitutional clearance chain: no approval is recorded for this learner in mode 'instructor', so the chain was not run and this is the avatar's ordinary answer. Record what you want the avatar for to have replies cleared",
+   "clearance_gates": null,
+   "image_understood": false,
+   "image_served_by": null,
+   "image_is_external": false,
+   "image_status": "none",
+   "image_refusal": null,
+   "image_accepts": [],
+   "context": "employment",
+   "served_by": "native",
+   "is_external": false,
+   "grounded_in": null,
+   "grounding_used": null,
+   "grounding_basis": null,
+   "language": null,
+   "language_note": null,
+   "profile_applied": false,
+   "profile_state": "none_written",
+   "profile_basis": "you have not written a profile",
+   "suggested_areas": [],
+   "suggested_areas_basis": "No platform area is suggested: no word or phrase in your message is on the keyword list for any of the 14 areas. The list reads words, not meaning, so this does not say that no area of the platform fits what you asked."
+  }
+ },
+ "sessions_after": {
+  "status": 200,
+  "body": [
+   {
+    "session_id": "1c0a430b-b4a9-416d-aca1-06a28c3d836f",
+    "avatar_id": "did:workstation:f7a58eac8fb14d7f",
+    "context": "employment",
+    "message_count": 2,
+    "last_message": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Employment Hub avatar. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: W1067 made up: which tools does a repair cafe volunteer bring? (domain: cross-domain (the avatar is a conversation across every domain, not a domain tool)).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- volunteer bring\n- cafe volunteer\n- which tools\n- does repair\n- repair cafe\n- made which\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'avatar:employment', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for cross-domain (the avatar is a conversation across every domain, not a domain tool); record outcomes to memory/UEG."
+   },
+   {
+    "session_id": "74c17c93-357e-4ebf-8824-2a6c03af0d83",
+    "avatar_id": "did:workstation:8a15bb073a18425d",
+    "context": "general",
+    "message_count": 0,
+    "last_message": null
+   }
+  ]
+ },
+ "git_history": {
+  "status": 200,
+  "body": {
+   "commits": [
+    {
+     "hash": "3a74159",
+     "author": "w1067-capture",
+     "when": "0 seconds ago",
+     "message": "W1067 made up: say which tools need a second pair of hands"
+    },
+    {
+     "hash": "0491eac",
+     "author": "w1067-capture",
+     "when": "0 seconds ago",
+     "message": "W1067 made up: add the volunteers' tool list"
+    },
+    {
+     "hash": "5c729be",
+     "author": "w1067-capture",
+     "when": "0 seconds ago",
+     "message": "W1067 made up: list the repair cafe's opening hours"
+    }
+   ],
+   "returned": 3,
+   "limit": 12,
+   "repository_commits_total": 3,
+   "counts_basis": "`returned` is how many this call fetched (bounded by `limit`); `repository_commits_total` is the repository's own count, or null when it could not be read — the two are never the same number by construction",
+   "subject": "workstation_platform_source",
+   "is_user_project_activity": false,
+   "repository": "w1067repo_0rxic7ge",
+   "readable": true,
+   "unreadable_reason": null,
+   "basis": "git log of the working directory the server process was started in; a user's own project activity is not tracked here"
+  }
+ },
+ "git_unreadable": {
+  "status": 200,
+  "body": {
+   "commits": [],
+   "returned": 0,
+   "limit": 12,
+   "repository_commits_total": null,
+   "counts_basis": "`returned` is how many this call fetched (bounded by `limit`); `repository_commits_total` is the repository's own count, or null when it could not be read — the two are never the same number by construction",
+   "subject": "workstation_platform_source",
+   "is_user_project_activity": false,
+   "repository": null,
+   "readable": false,
+   "unreadable_reason": "fatal: not a git repository (or any of the parent directories): .git",
+   "basis": "git log of the working directory the server process was started in; a user's own project activity is not tracked here"
+  }
+ },
+ "git_refused": {
+  "status": 200,
+  "body": {
+   "commits": [],
+   "returned": 0,
+   "limit": 12,
+   "repository_commits_total": null,
+   "counts_basis": "`returned` is how many this call fetched (bounded by `limit`); `repository_commits_total` is the repository's own count, or null when it could not be read — the two are never the same number by construction",
+   "subject": "workstation_platform_source",
+   "is_user_project_activity": false,
+   "repository": null,
+   "readable": false,
+   "unreadable_reason": "fatal: detected dubious ownership in repository at '/tmp/w1067foreign_f1_529ur'\nTo add an exception for this directory, call:\n\n\tgit config --global --add safe.directory /tmp/w1067foreign_f1_529ur",
+   "basis": "git log of the working directory the server process was started in; a user's own project activity is not tracked here"
+  }
+ },
+ "sessions_failed": {
+  "status": 500,
+  "body": {
+   "detail": "GET /api/v1/avatar/sessions failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/avatar/sessions",
+   "cause_established": false
+  }
+ }
+}

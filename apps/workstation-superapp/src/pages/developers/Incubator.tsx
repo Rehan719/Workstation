@@ -5,6 +5,7 @@ import { Beaker, Trophy, Plus, X, FlaskConical, TrendingUp, Loader2, MinusCircle
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { provenanceMapBadge } from '../../lib/api';
+import { describeReadFailure } from '../../components/ReadFailures';   // W1010
 
 const DOMAINS = WORKSPACE_DOMAINS;   // §17.1 (W321) — one shared workspace list
 
@@ -91,8 +92,10 @@ export const Incubator: React.FC = () => {
         fitness_criteria: fitness,
       });
       updateTournament(id, { status: 'done', result: data });
-    } catch (err: any) {
-      updateTournament(id, { status: 'error', error: err.response?.data?.detail ?? err.message });
+    } catch (err) {
+      //  W1010 - a field check's reason is a list, and rendered as it came it took the page down; a refusal is said
+      //  by its status and reason, a field check by its field, and an unreachable server as one
+      updateTournament(id, { status: 'error', error: describeReadFailure(err) });
     }
   };
 

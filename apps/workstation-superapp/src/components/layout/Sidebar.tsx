@@ -169,7 +169,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
 
   // §14 (W317) — the real session state (auth-off / anonymous / authenticated)
   const [identity, setIdentity] = useState<WhoAmI | null>(null);
-  useEffect(() => { whoami().then(setIdentity).catch(() => {}); }, []);
+  //  W930 - whoami says an unknown session itself; a throw it never makes is said the same way, not dropped
+  useEffect(() => { whoami().then(setIdentity).catch(e => setIdentity({ mode: 'unknown', basis: String(e) })); }, []);
 
   // §9 — user-customisable interface: a personal "Pinned" quick-access section (persisted locally).
   const [pinned, setPinned] = useState<string[]>(getPinned());
@@ -306,11 +307,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                 className="text-[10px] font-black text-aura uppercase tracking-wider hover:text-white transition-colors">
                 Sign in →
               </button>
-            ) : (
+            ) : identity?.mode === 'auth-off' ? (
               <>
                 <p className="text-[10px] @[160px]:text-[11px] font-black text-white uppercase tracking-wider break-words leading-tight">{user?.displayName || 'Sovereign'}</p>
                 <p className="text-[8px] text-aura/50 uppercase font-black tracking-[0.2em] truncate">Single-user · auth off</p>
               </>
+            ) : (
+              //  W930 - "auth off" is said only when the server said it: while reading, and when the read failed, not
+              <p data-testid="session-not-known" title={identity?.basis}
+                className="text-[8px] text-amber-400/80 uppercase font-black tracking-[0.2em] break-words">
+                {identity ? 'Session not known' : 'Reading the session…'}
+              </p>
             )}
           </div>
         </div>

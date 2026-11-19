@@ -6,9 +6,13 @@ import { Mic, MicOff, Play, CheckCircle2, AlertCircle, Sparkles, BookOpen, Troph
 import QEPIntelligence from '../../components/qep/QEPIntelligence';
 import QepDonorStatement from '../../components/QepDonorStatement';
 import ScholarReviewPanel from '../../components/qep/ScholarReviewPanel';
+import { useTab } from '../../lib/useTab';   // W1027 - the tab is in the address
+
+const QEP_TABS = ['coach', 'mem', 'comp', 'intel', 'lab', 'review'] as const;
 
 export const QEPReligionHub: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('coach');
+  //  W1027 - the tab is in the address (it was kept in state only, so no link could open the scholar review)
+  const [activeTab, setActiveTab] = useTab(QEP_TABS, 'coach');
 
   return (
     <div className="space-y-10 pb-24">
@@ -162,8 +166,11 @@ const TajwidCoach = () => {
                     <p className="text-4xl font-bold text-white mb-4 leading-loose font-arabic" dir="rtl">
                        {ayah.text_arabic}
                     </p>
-                    {ayah.basmala_separated && ayah.basmala_basis && (
-                      <p className="mx-auto max-w-md text-[10px] text-slate-500 font-semibold leading-relaxed">
+                    {/* W1079 - the route's own sentence on whether a prefix was separated, whatever it found: it was
+                        shown only when one was separated, so "not checked ... no boundary is asserted" never reached
+                        the reader of a verse whose text may carry the prefix */}
+                    {ayah.basmala_basis && (
+                      <p data-testid="coach-basmala-basis" className="mx-auto max-w-md text-[10px] text-slate-500 font-semibold leading-relaxed">
                          {ayah.basmala_basis}
                       </p>
                     )}

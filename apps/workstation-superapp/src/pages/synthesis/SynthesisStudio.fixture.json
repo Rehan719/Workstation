@@ -1,0 +1,591 @@
+{
+  "files": [
+    {
+      "category": null,
+      "content_type": "text/plain",
+      "extracted_text": "W1021 made up. Twelve village bakeries share two delivery vans and one booking line. Orders close at four in the afternoon and the vans leave at five in the morning.",
+      "extraction_basis": "the file is plain text and was read in full",
+      "extraction_method": "read as UTF-8 text from disk",
+      "file_id": "79742177-08ed-495c-90d8-e749da492c4d",
+      "filename": "w1021-made-up-bakery-note.txt",
+      "in_knowledge_base": true,
+      "owner_id": "default",
+      "size": 165,
+      "status": "EXTRACTED",
+      "timestamp": "2026-11-14T10:23:58.242846"
+    }
+  ],
+  "generate": {
+    "agent": {
+      "content": "{\n  \"generated\": false,\n  \"detail\": \"The model did not return a parseable ai agent blueprint for this topic, so none is shown, and nothing here is ready for development.\",\n  \"title\": \"AI Agent Blueprint: W1021 made up: a delivery cooperative for village bakeries\",\n  \"timestamp\": \"2026-11-14T10:23:58.326006\"\n}",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "format": "json",
+        "instructions": "W1021 made up: a delivery cooperative for village bakeries",
+        "knowledge_base_handed_over": {
+          "basis": "all 205 characters of the knowledge base were handed over; it was marked as data and not as instruction",
+          "chars": 205,
+          "delimiter_marks_defused": false,
+          "label": "KNOWLEDGE BASE",
+          "limit": 4000,
+          "read_chars": 205,
+          "read_whole": true
+        },
+        "title": "AI Agent Blueprint: W1021 made up: a delivery cooperative for village bakeries",
+        "type": "agent"
+      },
+      "output_id": "b5c59d23-2192-4a27-91eb-488f7d9cb997",
+      "output_url": "/api/v1/synthesis/download/b5c59d23-2192-4a27-91eb-488f7d9cb997",
+      "owner_id": "default",
+      "served_by": "native",
+      "timestamp": "2026-11-14T10:23:58.326006"
+    },
+    "app": {
+      "content": "{\n  \"generated\": false,\n  \"detail\": \"The model did not return a parseable application specification for this topic, so none is shown, and nothing here is ready for development.\",\n  \"title\": \"Application Specification: W1021 made up: a delivery cooperative for village bakeries\",\n  \"timestamp\": \"2026-11-14T10:23:58.316482\"\n}",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "format": "json",
+        "instructions": "W1021 made up: a delivery cooperative for village bakeries",
+        "knowledge_base_handed_over": {
+          "basis": "all 205 characters of the knowledge base were handed over; it was marked as data and not as instruction",
+          "chars": 205,
+          "delimiter_marks_defused": false,
+          "label": "KNOWLEDGE BASE",
+          "limit": 4000,
+          "read_chars": 205,
+          "read_whole": true
+        },
+        "title": "Application Specification: W1021 made up: a delivery cooperative for village bakeries",
+        "type": "app"
+      },
+      "output_id": "e4531d00-6182-4b90-a99d-667feed2c763",
+      "output_url": "/api/v1/synthesis/download/e4531d00-6182-4b90-a99d-667feed2c763",
+      "owner_id": "default",
+      "served_by": "native",
+      "timestamp": "2026-11-14T10:23:58.316482"
+    },
+    "audiobook": {
+      "content": "[\n  {\n    \"id\": 1,\n    \"title\": \"Audiobook: W1021 made up: a delivery cooperative for village bakeries\",\n    \"narration\": \"\",\n    \"generated\": false,\n    \"detail\": \"The model did not return a usable audiobook for this topic, so none is narrated. A fixed template on another subject was previously substituted here.\"\n  }\n]",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "chapters_count": 0,
+        "format": "json",
+        "instructions": "W1021 made up: a delivery cooperative for village bakeries",
+        "knowledge_base_handed_over": {
+          "basis": "all 205 characters of the knowledge base were handed over; it was marked as data and not as instruction",
+          "chars": 205,
+          "delimiter_marks_defused": false,
+          "label": "KNOWLEDGE BASE",
+          "limit": 4000,
+          "read_chars": 205,
+          "read_whole": true
+        },
+        "title": "Audiobook: W1021 made up: a delivery cooperative for village bakeries",
+        "type": "audiobook"
+      },
+      "output_id": "c196b9c5-6f15-46f7-bf42-96db65070b48",
+      "output_url": "/api/v1/synthesis/download/c196b9c5-6f15-46f7-bf42-96db65070b48",
+      "owner_id": "default",
+      "served_by": "native",
+      "timestamp": "2026-11-14T10:23:58.306768"
+    },
+    "business_model": {
+      "content": "{\n  \"generated\": false,\n  \"detail\": \"The model did not return a parseable business model canvas for this topic, so none is shown. A fixed template was previously substituted here.\",\n  \"title\": \"Business Model Canvas: W1021 made up: a delivery cooperative for village bakeries\",\n  \"timestamp\": \"2026-11-14T10:23:58.351814\"\n}",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "format": "json",
+        "instructions": "W1021 made up: a delivery cooperative for village bakeries",
+        "knowledge_base_handed_over": {
+          "basis": "all 205 characters of the knowledge base were handed over; it was marked as data and not as instruction",
+          "chars": 205,
+          "delimiter_marks_defused": false,
+          "label": "KNOWLEDGE BASE",
+          "limit": 4000,
+          "read_chars": 205,
+          "read_whole": true
+        },
+        "title": "Business Model Canvas: W1021 made up: a delivery cooperative for village bakeries",
+        "type": "business_model"
+      },
+      "output_id": "d73c6f08-1878-448e-b27e-68bfd7675e0b",
+      "output_url": "/api/v1/synthesis/download/d73c6f08-1878-448e-b27e-68bfd7675e0b",
+      "owner_id": "default",
+      "served_by": "native",
+      "timestamp": "2026-11-14T10:23:58.351814"
+    },
+    "presentation": {
+      "content": "[\n  {\n    \"id\": 1,\n    \"title\": \"Presentation: W1021 made up: a delivery cooperative for village bakeries\",\n    \"content\": \"The model did not return a usable slide deck for this topic, so none is shown.\",\n    \"narration\": \"\",\n    \"generated\": false,\n    \"animation\": \"fade-in\"\n  }\n]",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "format": "json",
+        "instructions": "W1021 made up: a delivery cooperative for village bakeries",
+        "knowledge_base_handed_over": {
+          "basis": "all 205 characters of the knowledge base were handed over; it was marked as data and not as instruction",
+          "chars": 205,
+          "delimiter_marks_defused": false,
+          "label": "KNOWLEDGE BASE",
+          "limit": 4000,
+          "read_chars": 205,
+          "read_whole": true
+        },
+        "slides_count": 0,
+        "title": "Presentation: W1021 made up: a delivery cooperative for village bakeries",
+        "type": "presentation"
+      },
+      "output_id": "5f1f26dd-0515-4ba1-abba-0e85924d7d50",
+      "output_url": "/api/v1/synthesis/download/5f1f26dd-0515-4ba1-abba-0e85924d7d50",
+      "owner_id": "default",
+      "served_by": "native",
+      "timestamp": "2026-11-14T10:23:58.264841"
+    },
+    "product": {
+      "content": "{\n  \"generated\": false,\n  \"detail\": \"The model did not return a parseable product brief for this topic, so none is shown, and nothing here is ready for development.\",\n  \"title\": \"Product Brief: W1021 made up: a delivery cooperative for village bakeries\",\n  \"timestamp\": \"2026-11-14T10:23:58.335407\"\n}",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "format": "json",
+        "instructions": "W1021 made up: a delivery cooperative for village bakeries",
+        "knowledge_base_handed_over": {
+          "basis": "all 205 characters of the knowledge base were handed over; it was marked as data and not as instruction",
+          "chars": 205,
+          "delimiter_marks_defused": false,
+          "label": "KNOWLEDGE BASE",
+          "limit": 4000,
+          "read_chars": 205,
+          "read_whole": true
+        },
+        "title": "Product Brief: W1021 made up: a delivery cooperative for village bakeries",
+        "type": "product"
+      },
+      "output_id": "c1b6f39a-8355-4b55-b40f-5d004b10ce8c",
+      "output_url": "/api/v1/synthesis/download/c1b6f39a-8355-4b55-b40f-5d004b10ce8c",
+      "owner_id": "default",
+      "served_by": "native",
+      "timestamp": "2026-11-14T10:23:58.335407"
+    },
+    "service": {
+      "content": "{\n  \"generated\": false,\n  \"detail\": \"The model did not return a parseable service definition for this topic, so none is shown, and nothing here is ready for development.\",\n  \"title\": \"Service Definition: W1021 made up: a delivery cooperative for village bakeries\",\n  \"timestamp\": \"2026-11-14T10:23:58.342986\"\n}",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "format": "json",
+        "instructions": "W1021 made up: a delivery cooperative for village bakeries",
+        "knowledge_base_handed_over": {
+          "basis": "all 205 characters of the knowledge base were handed over; it was marked as data and not as instruction",
+          "chars": 205,
+          "delimiter_marks_defused": false,
+          "label": "KNOWLEDGE BASE",
+          "limit": 4000,
+          "read_chars": 205,
+          "read_whole": true
+        },
+        "title": "Service Definition: W1021 made up: a delivery cooperative for village bakeries",
+        "type": "service"
+      },
+      "output_id": "f05a41fe-093e-46f1-be33-b53c79582294",
+      "output_url": "/api/v1/synthesis/download/f05a41fe-093e-46f1-be33-b53c79582294",
+      "owner_id": "default",
+      "served_by": "native",
+      "timestamp": "2026-11-14T10:23:58.342986"
+    },
+    "simulation": {
+      "content": "{\n  \"title\": \"Simulation: W1021 made up: a delivery cooperative for village bakeries\",\n  \"generated\": false,\n  \"detail\": \"The model did not return a parseable simulation for this topic, so none is shown. A template was previously substituted here.\",\n  \"timestamp\": \"2026-11-14T10:23:58.360672\",\n  \"sim_results\": null,\n  \"sim_results_note\": \"The model did not return simulation results. None are shown, because any shown here would be invented.\",\n  \"projections\": null,\n  \"projections_note\": \"The model did not return financial projections. None are shown.\"\n}",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "format": "json",
+        "instructions": "W1021 made up: a delivery cooperative for village bakeries",
+        "knowledge_base_handed_over": {
+          "basis": "all 205 characters of the knowledge base were handed over; it was marked as data and not as instruction",
+          "chars": 205,
+          "delimiter_marks_defused": false,
+          "label": "KNOWLEDGE BASE",
+          "limit": 4000,
+          "read_chars": 205,
+          "read_whole": true
+        },
+        "title": "Simulation: W1021 made up: a delivery cooperative for village bakeries",
+        "type": "simulation"
+      },
+      "output_id": "c0262675-5f5c-4da6-8296-d98fdb5b89e0",
+      "output_url": "/api/v1/synthesis/download/c0262675-5f5c-4da6-8296-d98fdb5b89e0",
+      "owner_id": "default",
+      "served_by": "native",
+      "timestamp": "2026-11-14T10:23:58.360672"
+    },
+    "video": {
+      "content": "[\n  {\n    \"id\": 1,\n    \"title\": \"Presentation: W1021 made up: a delivery cooperative for village bakeries\",\n    \"content\": \"The model did not return a usable slide deck for this topic, so none is shown.\",\n    \"narration\": \"\",\n    \"generated\": false,\n    \"animation\": \"fade-in\"\n  }\n]",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "format": "json",
+        "instructions": "W1021 made up: a delivery cooperative for village bakeries",
+        "knowledge_base_handed_over": {
+          "basis": "all 205 characters of the knowledge base were handed over; it was marked as data and not as instruction",
+          "chars": 205,
+          "delimiter_marks_defused": false,
+          "label": "KNOWLEDGE BASE",
+          "limit": 4000,
+          "read_chars": 205,
+          "read_whole": true
+        },
+        "slides_count": 0,
+        "title": "Presentation: W1021 made up: a delivery cooperative for village bakeries",
+        "type": "video"
+      },
+      "output_id": "b4da99bc-2728-4e88-b5ac-06f7f4947ce3",
+      "output_url": "/api/v1/synthesis/download/b4da99bc-2728-4e88-b5ac-06f7f4947ce3",
+      "owner_id": "default",
+      "served_by": "native",
+      "timestamp": "2026-11-14T10:23:58.296822"
+    }
+  },
+  "history": [
+    {
+      "content": "_[Workstation native structured engine \u2014 owned, no external dependency]_\n\n## Understanding\nThe request concerns: W1021 made up: a delivery cooperative for village bakeries (domain: WITHHELD \u2014 no domain was declared for this call).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs \u2014 not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- delivery cooperative\n- village bakeries\n- made delivery\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'synthesis:stream:report', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD \u2014 no domain was declared for this call; record outcomes to memory/UEG.",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "format": "md",
+        "knowledge_base_handed_over": {
+          "basis": "all 205 characters of the knowledge base were handed over; it was marked as data and not as instruction",
+          "chars": 205,
+          "delimiter_marks_defused": false,
+          "label": "KNOWLEDGE BASE",
+          "limit": 4000,
+          "read_chars": 205,
+          "read_whole": true
+        },
+        "title": "W1021 made up: a delivery cooperative for village bakeries",
+        "type": "report"
+      },
+      "output_id": "30c27874-7701-43a5-ae88-471dbeef36aa",
+      "output_url": "/api/v1/synthesis/download/30c27874-7701-43a5-ae88-471dbeef36aa",
+      "owner_id": "default",
+      "served_by": "native",
+      "timestamp": "2026-11-14T10:23:58.370036"
+    },
+    {
+      "content": "{\n  \"title\": \"Simulation: W1021 made up: a delivery cooperative for village bakeries\",\n  \"generated\": false,\n  \"detail\": \"The model did not return a parseable simulation for this topic, so none is shown. A template was previously substituted here.\",\n  \"timestamp\": \"2026-11-14T10:23:58.360672\",\n  \"sim_results\": null,\n  \"sim_results_note\": \"The model did not return simulation results. None are shown, because any shown here would be invented.\",\n  \"projections\": null,\n  \"projections_note\": \"The model did not return financial projections. None are shown.\"\n}",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "format": "json",
+        "instructions": "W1021 made up: a delivery cooperative for village bakeries",
+        "knowledge_base_handed_over": {
+          "basis": "all 205 characters of the knowledge base were handed over; it was marked as data and not as instruction",
+          "chars": 205,
+          "delimiter_marks_defused": false,
+          "label": "KNOWLEDGE BASE",
+          "limit": 4000,
+          "read_chars": 205,
+          "read_whole": true
+        },
+        "title": "Simulation: W1021 made up: a delivery cooperative for village bakeries",
+        "type": "simulation"
+      },
+      "output_id": "c0262675-5f5c-4da6-8296-d98fdb5b89e0",
+      "output_url": "/api/v1/synthesis/download/c0262675-5f5c-4da6-8296-d98fdb5b89e0",
+      "owner_id": "default",
+      "served_by": "native",
+      "timestamp": "2026-11-14T10:23:58.360672"
+    },
+    {
+      "content": "{\n  \"generated\": false,\n  \"detail\": \"The model did not return a parseable business model canvas for this topic, so none is shown. A fixed template was previously substituted here.\",\n  \"title\": \"Business Model Canvas: W1021 made up: a delivery cooperative for village bakeries\",\n  \"timestamp\": \"2026-11-14T10:23:58.351814\"\n}",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "format": "json",
+        "instructions": "W1021 made up: a delivery cooperative for village bakeries",
+        "knowledge_base_handed_over": {
+          "basis": "all 205 characters of the knowledge base were handed over; it was marked as data and not as instruction",
+          "chars": 205,
+          "delimiter_marks_defused": false,
+          "label": "KNOWLEDGE BASE",
+          "limit": 4000,
+          "read_chars": 205,
+          "read_whole": true
+        },
+        "title": "Business Model Canvas: W1021 made up: a delivery cooperative for village bakeries",
+        "type": "business_model"
+      },
+      "output_id": "d73c6f08-1878-448e-b27e-68bfd7675e0b",
+      "output_url": "/api/v1/synthesis/download/d73c6f08-1878-448e-b27e-68bfd7675e0b",
+      "owner_id": "default",
+      "served_by": "native",
+      "timestamp": "2026-11-14T10:23:58.351814"
+    },
+    {
+      "content": "{\n  \"generated\": false,\n  \"detail\": \"The model did not return a parseable service definition for this topic, so none is shown, and nothing here is ready for development.\",\n  \"title\": \"Service Definition: W1021 made up: a delivery cooperative for village bakeries\",\n  \"timestamp\": \"2026-11-14T10:23:58.342986\"\n}",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "format": "json",
+        "instructions": "W1021 made up: a delivery cooperative for village bakeries",
+        "knowledge_base_handed_over": {
+          "basis": "all 205 characters of the knowledge base were handed over; it was marked as data and not as instruction",
+          "chars": 205,
+          "delimiter_marks_defused": false,
+          "label": "KNOWLEDGE BASE",
+          "limit": 4000,
+          "read_chars": 205,
+          "read_whole": true
+        },
+        "title": "Service Definition: W1021 made up: a delivery cooperative for village bakeries",
+        "type": "service"
+      },
+      "output_id": "f05a41fe-093e-46f1-be33-b53c79582294",
+      "output_url": "/api/v1/synthesis/download/f05a41fe-093e-46f1-be33-b53c79582294",
+      "owner_id": "default",
+      "served_by": "native",
+      "timestamp": "2026-11-14T10:23:58.342986"
+    },
+    {
+      "content": "{\n  \"generated\": false,\n  \"detail\": \"The model did not return a parseable product brief for this topic, so none is shown, and nothing here is ready for development.\",\n  \"title\": \"Product Brief: W1021 made up: a delivery cooperative for village bakeries\",\n  \"timestamp\": \"2026-11-14T10:23:58.335407\"\n}",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "format": "json",
+        "instructions": "W1021 made up: a delivery cooperative for village bakeries",
+        "knowledge_base_handed_over": {
+          "basis": "all 205 characters of the knowledge base were handed over; it was marked as data and not as instruction",
+          "chars": 205,
+          "delimiter_marks_defused": false,
+          "label": "KNOWLEDGE BASE",
+          "limit": 4000,
+          "read_chars": 205,
+          "read_whole": true
+        },
+        "title": "Product Brief: W1021 made up: a delivery cooperative for village bakeries",
+        "type": "product"
+      },
+      "output_id": "c1b6f39a-8355-4b55-b40f-5d004b10ce8c",
+      "output_url": "/api/v1/synthesis/download/c1b6f39a-8355-4b55-b40f-5d004b10ce8c",
+      "owner_id": "default",
+      "served_by": "native",
+      "timestamp": "2026-11-14T10:23:58.335407"
+    },
+    {
+      "content": "{\n  \"generated\": false,\n  \"detail\": \"The model did not return a parseable ai agent blueprint for this topic, so none is shown, and nothing here is ready for development.\",\n  \"title\": \"AI Agent Blueprint: W1021 made up: a delivery cooperative for village bakeries\",\n  \"timestamp\": \"2026-11-14T10:23:58.326006\"\n}",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "format": "json",
+        "instructions": "W1021 made up: a delivery cooperative for village bakeries",
+        "knowledge_base_handed_over": {
+          "basis": "all 205 characters of the knowledge base were handed over; it was marked as data and not as instruction",
+          "chars": 205,
+          "delimiter_marks_defused": false,
+          "label": "KNOWLEDGE BASE",
+          "limit": 4000,
+          "read_chars": 205,
+          "read_whole": true
+        },
+        "title": "AI Agent Blueprint: W1021 made up: a delivery cooperative for village bakeries",
+        "type": "agent"
+      },
+      "output_id": "b5c59d23-2192-4a27-91eb-488f7d9cb997",
+      "output_url": "/api/v1/synthesis/download/b5c59d23-2192-4a27-91eb-488f7d9cb997",
+      "owner_id": "default",
+      "served_by": "native",
+      "timestamp": "2026-11-14T10:23:58.326006"
+    },
+    {
+      "content": "{\n  \"generated\": false,\n  \"detail\": \"The model did not return a parseable application specification for this topic, so none is shown, and nothing here is ready for development.\",\n  \"title\": \"Application Specification: W1021 made up: a delivery cooperative for village bakeries\",\n  \"timestamp\": \"2026-11-14T10:23:58.316482\"\n}",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "format": "json",
+        "instructions": "W1021 made up: a delivery cooperative for village bakeries",
+        "knowledge_base_handed_over": {
+          "basis": "all 205 characters of the knowledge base were handed over; it was marked as data and not as instruction",
+          "chars": 205,
+          "delimiter_marks_defused": false,
+          "label": "KNOWLEDGE BASE",
+          "limit": 4000,
+          "read_chars": 205,
+          "read_whole": true
+        },
+        "title": "Application Specification: W1021 made up: a delivery cooperative for village bakeries",
+        "type": "app"
+      },
+      "output_id": "e4531d00-6182-4b90-a99d-667feed2c763",
+      "output_url": "/api/v1/synthesis/download/e4531d00-6182-4b90-a99d-667feed2c763",
+      "owner_id": "default",
+      "served_by": "native",
+      "timestamp": "2026-11-14T10:23:58.316482"
+    },
+    {
+      "content": "[\n  {\n    \"id\": 1,\n    \"title\": \"Audiobook: W1021 made up: a delivery cooperative for village bakeries\",\n    \"narration\": \"\",\n    \"generated\": false,\n    \"detail\": \"The model did not return a usable audiobook for this topic, so none is narrated. A fixed template on another subject was previously substituted here.\"\n  }\n]",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "chapters_count": 0,
+        "format": "json",
+        "instructions": "W1021 made up: a delivery cooperative for village bakeries",
+        "knowledge_base_handed_over": {
+          "basis": "all 205 characters of the knowledge base were handed over; it was marked as data and not as instruction",
+          "chars": 205,
+          "delimiter_marks_defused": false,
+          "label": "KNOWLEDGE BASE",
+          "limit": 4000,
+          "read_chars": 205,
+          "read_whole": true
+        },
+        "title": "Audiobook: W1021 made up: a delivery cooperative for village bakeries",
+        "type": "audiobook"
+      },
+      "output_id": "c196b9c5-6f15-46f7-bf42-96db65070b48",
+      "output_url": "/api/v1/synthesis/download/c196b9c5-6f15-46f7-bf42-96db65070b48",
+      "owner_id": "default",
+      "served_by": "native",
+      "timestamp": "2026-11-14T10:23:58.306768"
+    },
+    {
+      "content": "[\n  {\n    \"id\": 1,\n    \"title\": \"Presentation: W1021 made up: a delivery cooperative for village bakeries\",\n    \"content\": \"The model did not return a usable slide deck for this topic, so none is shown.\",\n    \"narration\": \"\",\n    \"generated\": false,\n    \"animation\": \"fade-in\"\n  }\n]",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "format": "json",
+        "instructions": "W1021 made up: a delivery cooperative for village bakeries",
+        "knowledge_base_handed_over": {
+          "basis": "all 205 characters of the knowledge base were handed over; it was marked as data and not as instruction",
+          "chars": 205,
+          "delimiter_marks_defused": false,
+          "label": "KNOWLEDGE BASE",
+          "limit": 4000,
+          "read_chars": 205,
+          "read_whole": true
+        },
+        "slides_count": 0,
+        "title": "Presentation: W1021 made up: a delivery cooperative for village bakeries",
+        "type": "video"
+      },
+      "output_id": "b4da99bc-2728-4e88-b5ac-06f7f4947ce3",
+      "output_url": "/api/v1/synthesis/download/b4da99bc-2728-4e88-b5ac-06f7f4947ce3",
+      "owner_id": "default",
+      "served_by": "native",
+      "timestamp": "2026-11-14T10:23:58.296822"
+    },
+    {
+      "content": "[\n  {\n    \"id\": 1,\n    \"title\": \"Presentation: W1021 made up: a delivery cooperative for village bakeries\",\n    \"content\": \"The model did not return a usable slide deck for this topic, so none is shown.\",\n    \"narration\": \"\",\n    \"generated\": false,\n    \"animation\": \"fade-in\"\n  }\n]",
+      "faith_content": {
+        "arabic_passages_withheld": 0,
+        "basis": null,
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+      },
+      "is_external": false,
+      "metadata": {
+        "format": "json",
+        "instructions": "W1021 made up: a delivery cooperative for village bakeries",
+        "knowledge_base_handed_over": {
+          "basis": "all 205 characters of the knowledge base were handed over; it was marked as data and not as instruction",
+          "chars": 205,
+          "delimiter_marks_defused": false,
+          "label": "KNOWLEDGE BASE",
+          "limit": 4000,
+          "read_chars": 205,
+          "read_whole": true
+        },
+        "slides_count": 0,
+        "title": "Presentation: W1021 made up: a delivery cooperative for village bakeries",
+        "type": "presentation"
+      },
+      "output_id": "5f1f26dd-0515-4ba1-abba-0e85924d7d50",
+      "output_url": "/api/v1/synthesis/download/5f1f26dd-0515-4ba1-abba-0e85924d7d50",
+      "owner_id": "default",
+      "served_by": "native",
+      "timestamp": "2026-11-14T10:23:58.264841"
+    }
+  ],
+  "refused": {
+    "body": {
+      "detail": {
+        "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else",
+        "message": "Not done: this synthesis request asks for a religious ruling or a theological proof, which no AI on this platform gives. A qualified scholar is the route for that question.",
+        "refused_by": [
+          "religious_ruling"
+        ]
+      }
+    },
+    "status": 409
+  },
+  "stream_report": "data: {\"token\": \"_[Workstation native structured engine \\u2014 owned, no external dependency]_\\\\n\\\\n## Understanding\\\\nThe \"}\n\ndata: {\"token\": \"request concerns: W1021 made up: a delivery cooperative for village bakeries (domain: WITHHELD \\u2014 \"}\n\ndata: {\"token\": \"no domain was declared for this call).\\\\n\\\\n## Terms most frequent in the text you wrote\\\\n_Extracted \"}\n\ndata: {\"token\": \"by counting words and adjacent pairs \\u2014 not an analysis of the subject. Counted over the text the \"}\n\ndata: {\"token\": \"calling tool identified as yours, and over nothing else._\\\\n- delivery cooperative\\\\n- village \"}\n\ndata: {\"token\": \"bakeries\\\\n- made delivery\\\\n\\\\n## Native approach\\\\nWorkstation composes a structured response from its \"}\n\ndata: {\"token\": \"own process-intelligence and knowledge for the agent 'synthesis:stream:report', framing the \"}\n\ndata: {\"token\": \"request above rather than analysing it.\\\\n\\\\n## Next steps\\\\n- Validate the structured outputs above \"}\n\ndata: {\"token\": \"against the stated objective.\\\\n- Route richer generation to a model resource (local-first; \"}\n\ndata: {\"token\": \"external only if enabled).\\\\n- Iterate via the orchestrator's cascade for WITHHELD \\u2014 no domain was \"}\n\ndata: {\"token\": \"declared for this call; record outcomes to memory/UEG.\"}\n\ndata: {\"evidence_level\": \"behaviour\", \"evidence_level_number\": 1, \"evidence_basis\": \"what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer\", \"done\": true, \"output_id\": \"30c27874-7701-43a5-ae88-471dbeef36aa\", \"download_url\": \"/api/v1/synthesis/download/30c27874-7701-43a5-ae88-471dbeef36aa\", \"timestamp\": \"2026-11-14T10:23:58.370036\", \"format\": \"md\", \"served_by\": \"native\", \"is_external\": false, \"profile_applied\": false, \"faith_content\": {\"arabic_passages_withheld\": 0, \"basis\": null, \"coverage\": \"a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else\"}, \"model_tokens\": null, \"model_tokens_basis\": \"NOT COUNTED - the deterministic floor served this and runs no model, so there are no tokens to count; null, never 0\"}\n\n"
+}

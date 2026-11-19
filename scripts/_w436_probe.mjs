@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W436 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W436 — drive /genesis in a real browser against the built bundle: run a journey and assert the
 // four item-1 surfaces render. Floor-served journeys complete in seconds, so this is cheap.
 import { chromium } from 'playwright';

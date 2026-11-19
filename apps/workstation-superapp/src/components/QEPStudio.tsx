@@ -1,8 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { BookOpen, Brain, Loader2, Sparkles, Trophy, Languages, CheckCircle2 } from 'lucide-react';
-import { apiJson, errorMessage } from '../lib/api';
+import { apiJson, bodyDetail, errorMessage } from '../lib/api';
+import { refusalOf } from '../lib/stream';   // W1025 - the surah list's refusal by its reason
+import { whoami } from '../lib/auth';
 import { HifzPractice } from './HifzPractice';
+import { AskPerson } from './AskPerson';   // W968 (P5.14 clause 6)
 
 // W439 — the REAL Quran Education Platform surface (Owner directive: QEP lives in the Religion
 // domain). Every capability here is a wired backend route that was AUDITED before wiring:
@@ -26,7 +29,9 @@ interface OwnProgress { this_month: MonthCount; last_month: MonthCount; basis: s
 interface GamiState { xp: number; level: number; level_basis: string; achievements: string[]; days_reviewed_this_month: number; days_reviewed_basis: string; awards_recorded: number; scope: string; own_progress?: OwnProgress }
 interface Recall { comparable: boolean; reason?: string; text_similarity?: number; similarity_basis?: string; exact_similarity?: number; exact_similarity_basis?: string; missing_rule_markers?: string[]; markers_basis?: string; scope?: string }
 
-const UID = 'local';
+//  W852 (FU-1167) - with sign-in off every record is keyed by this id; with sign-in on the studio uses the signed-in
+//  learner's own id (W848 answers any other id as not found)
+const LOCAL_UID = 'local';
 
 function Chip({ tone, children, title }: { tone: 'ok' | 'warn' | 'dim'; children: React.ReactNode; title?: string }) {
   const cls = tone === 'ok' ? 'bg-emerald-500/15 text-emerald-400' : tone === 'warn' ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-400';
@@ -40,16 +45,24 @@ export const QEPStudio: React.FC = () => {
   const [surahMeta, setSurahMeta] = useState<CorpusProvenance | null>(null);
   const [progress, setProgress] = useState<HifzProgress | null>(null);
   const [gami, setGami] = useState<GamiState | null>(null);
-  const [err, setErr] = useState('');
+  //  W1073 - each card says its own failure: one line at the top of the studio said all seven actions' failures,
+  //  away from the card that met them, and whatever was done next took it away
+  const [readerErr, setReaderErr] = useState('');
+  const [reviewErr, setReviewErr] = useState('');
+  const [lessonErr, setLessonErr] = useState('');
   const [loadErrs, setLoadErrs] = useState<string[]>([]);
+  const [uid, setUid] = useState<string | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
+  const [recordMsg, setRecordMsg] = useState('');
+  const [askingDelete, setAskingDelete] = useState(false);   // W968 - the question before the record is deleted
   const [busy, setBusy] = useState('');
 
   const getJson = (url: string, set: (d: any) => void) =>
     fetch(url)
       .then(r => (r.ok ? r.json() : r.json().catch(() => ({})).then((b: any) =>
-        Promise.reject(new Error(b?.detail ? String(b.detail).slice(0, 140) : `${url} → HTTP ${r.status}`)))))
+        Promise.reject(new Error(bodyDetail(b, '') || `${url} → HTTP ${r.status}`)))))   // W1012 - text, whatever its shape
       .then(set)
-      .catch(e => setLoadErrs(errs => [...errs, String(e?.message ?? e)]));
+      .catch(e => setLoadErrs(errs => [...errs, errorMessage(e)]));
 
   // W444 — the platform's own honesty statement (per-component truth lines + the constitutional
   // constraints) and the translation availability were served but never shown to anyone.
@@ -57,34 +70,64 @@ export const QEPStudio: React.FC = () => {
   const [trStatus, setTrStatus] = useState<any>(null);
   const loadCore = () => {
     setLoadErrs([]);
-    getJson(`/api/v1/qep/hifz/progress/${UID}`, setProgress);
-    getJson(`/api/v1/qep/gamification/${UID}`, setGami);
+    getJson(`/api/v1/qep/hifz/progress/${encodeURIComponent(uid ?? LOCAL_UID)}`, setProgress);
+    getJson(`/api/v1/qep/gamification/${encodeURIComponent(uid ?? LOCAL_UID)}`, setGami);
     getJson('/api/v1/qep/status', setQepStatus);
     fetch('/api/v1/qep/translation/status')
       .then(r => (r.ok ? r.json() : Promise.reject()))
       .then(setTrStatus)
       .catch(() => setTrStatus(null));   // unknown availability is shown as unknown, never assumed
   };
-  const [suwarFailed, setSuwarFailed] = useState(false);
+  //  W1025 - why the list was not read: it said "source unreachable" for a refusal too
+  const [suwarFailed, setSuwarFailed] = useState<string | false>(false);
   const loadSuwar = () => {
     setSuwarFailed(false);
     fetch('/api/v1/qep/suwar')
-      .then(r => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(async r => (r.ok ? r.json() : Promise.reject(new Error(await refusalOf(r)))))
       .then(d => setSuwar(d.suwar || []))
-      .catch(() => setSuwarFailed(true));   // refuter catch: a failed load showed 'loading…' forever
+      .catch(e => setSuwarFailed(errorMessage(e)));   // refuter catch: a failed load showed 'loading…' forever
   };
   useEffect(() => {
     loadSuwar();
-    loadCore();
+    whoami().then(w => {
+      const mine = w.mode === 'authenticated' && w.username;
+      setSignedIn(Boolean(mine));
+      setUid(mine ? String(w.username) : LOCAL_UID);
+    }).catch(() => setUid(LOCAL_UID));
   }, []);
+  useEffect(() => { if (uid) loadCore(); }, [uid]);
+
+  //  W852 (FU-1167) - the learner's record is theirs to keep and to remove (sign-in on)
+  const exportRecord = async () => {
+    setRecordMsg('');
+    try {
+      const rec = await apiJson(`/api/v1/qep/learner/${encodeURIComponent(uid ?? LOCAL_UID)}/export`);
+      const blob = new Blob([JSON.stringify(rec, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `quran-learner-record-${uid}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      setRecordMsg(String((rec as any)?.basis ?? 'exported'));
+    } catch (e) { setRecordMsg(errorMessage(e)); }
+  };
+  const deleteRecord = async () => {
+    setAskingDelete(false);
+    setRecordMsg('');
+    try {
+      const out: any = await apiJson(`/api/v1/qep/learner/${encodeURIComponent(uid ?? LOCAL_UID)}`, { method: 'DELETE' });
+      setRecordMsg(`${out.basis}${(out.removed ?? []).length ? `: ${out.removed.join(', ')}` : ''}`);
+      loadCore();
+    } catch (e) { setRecordMsg(errorMessage(e)); }
+  };
 
   const loadSurah = async (n: number) => {
-    setBusy('surah'); setErr(''); setAyaat(null); setSurahMeta(null);
+    setBusy('surah'); setReaderErr(''); setAyaat(null); setSurahMeta(null);
     try {
       const d = await apiJson(`/api/v1/qep/surah/${n}`);
       setAyaat(d.ayaat || []);
       setSurahMeta(d);
-    } catch (e) { setErr(errorMessage(e)); }
+    } catch (e) { setReaderErr(`Surah ${n} was not read: ${errorMessage(e)}`); }
     setBusy('');
   };
 
@@ -92,15 +135,19 @@ export const QEPStudio: React.FC = () => {
   const [rangeStart, setRangeStart] = useState(1);
   const [rangeEnd, setRangeEnd] = useState(5);
   const schedule = async () => {
-    setBusy('schedule'); setErr('');
+    setBusy('schedule'); setReaderErr('');
     try {
-      await apiJson('/api/v1/qep/hifz/schedule', { method: 'POST', body: { uid: UID, surah_number: surahNo, ayaat_range: [rangeStart, rangeEnd] } });
+      await apiJson('/api/v1/qep/hifz/schedule', { method: 'POST', body: { uid: uid ?? LOCAL_UID, surah_number: surahNo, ayaat_range: [rangeStart, rangeEnd] } });
       loadCore();
-    } catch (e) { setErr(errorMessage(e)); }
+    } catch (e) { setReaderErr(errorMessage(e)); }
     setBusy('');
   };
 
   const [reviewRef, setReviewRef] = useState<string | null>(null);
+  //  W1073 - the reference being reviewed. A verse, its translation, a review and a recall are said only under the
+  //  reference they were asked for: a verse that answered after another was opened was said under that other's
+  //  reference
+  const reviewing = useRef<string | null>(null);
   const [reviewAyah, setReviewAyah] = useState<({ text_arabic: string; surah_name: string } & CorpusProvenance) | null>(null);
   //  P3.9 — the route already returns the e-factor and the basis; the screen typed neither, so a
   //  learner saw an interval with no indication of what it was computed from, and the one line
@@ -109,9 +156,13 @@ export const QEPStudio: React.FC = () => {
   const [meaning, setMeaning] = useState<{ translation_text: string; translator: string; work: string; first_published: number; source: string; edition: string; label: string; register_note: string; licence_basis: string } | null>(null);
   const showMeaning = async () => {
     if (!reviewRef) return;
-    setBusy('meaning'); setErr('');
-    const [ms, ma] = reviewRef.split(':');
-    try { setMeaning(await apiJson(`/api/v1/qep/translation/${ms}/${ma}`)); } catch (e) { setErr(errorMessage(e)); }
+    const forRef = reviewRef;
+    setBusy('meaning'); setReviewErr('');
+    const [ms, ma] = forRef.split(':');
+    try {
+      const d = await apiJson(`/api/v1/qep/translation/${ms}/${ma}`);
+      if (reviewing.current === forRef) setMeaning(d);
+    } catch (e) { if (reviewing.current === forRef) setReviewErr(`No translation of ${forRef} was read: ${errorMessage(e)}`); }
     setBusy('');
   };
   //  W717 (OWNER RULING 2026-10-13) - a REFERENCE recitation to listen to, the words lighting as it plays.
@@ -132,6 +183,7 @@ export const QEPStudio: React.FC = () => {
   const wordsLight = !!listenVerse && listenVerse.words.length === shownWords.length;
   const startListening = async (chosen?: number) => {
     if (!reviewRef) return;
+    const forRef = reviewRef;
     setBusy('listen'); setListenRefusal(''); setLitWord(null);
     try {
       let list = reciters;
@@ -143,9 +195,10 @@ export const QEPStudio: React.FC = () => {
       const id = chosen ?? reciterId ?? (list.find(r => /husar/i.test(r.name)) ?? list[0])?.id;
       if (id == null) { setListen(null); setListenRefusal('The publisher lists no reciter, so nothing can be played.'); setBusy(''); return; }
       setReciterId(id);
-      const [ls] = reviewRef.split(':');
-      setListen(await apiJson(`/api/v1/qep/recitation/audio/${ls}?reciter_id=${id}`));
-    } catch (e) { setListen(null); setListenRefusal(errorMessage(e)); }
+      const [ls] = forRef.split(':');
+      const heard = await apiJson(`/api/v1/qep/recitation/audio/${ls}?reciter_id=${id}`);
+      if (reviewing.current === forRef) setListen(heard);
+    } catch (e) { if (reviewing.current === forRef) { setListen(null); setListenRefusal(errorMessage(e)); } }
     setBusy('');
   };
   const onAudioReady = () => { if (audioRef.current && listenVerse) audioRef.current.currentTime = listenVerse.from_ms / 1000; };
@@ -166,18 +219,24 @@ export const QEPStudio: React.FC = () => {
     setLitWord(i >= 0 ? i : null);
   };
   const openReview = async (ref: string) => {
+    reviewing.current = ref;
     setReviewRef(ref); setReviewAyah(null); setReviewResult(null); setRecall(null); setRecallText(''); setMeaning(null);
-    setListen(null); setListenRefusal(''); setLitWord(null);
+    setListen(null); setListenRefusal(''); setLitWord(null); setReviewErr('');
     const [s, a] = ref.split(':');
-    try { setReviewAyah(await apiJson(`/api/v1/qep/ayah/${s}/${a}`)); } catch (e) { setErr(errorMessage(e)); }
+    try {
+      const d = await apiJson(`/api/v1/qep/ayah/${s}/${a}`);
+      if (reviewing.current === ref) setReviewAyah(d);
+    } catch (e) { if (reviewing.current === ref) setReviewErr(`The verse ${ref} could not be read: ${errorMessage(e)}`); }
   };
   const submitReview = async (quality: number) => {
     if (!reviewRef) return;
-    setBusy('review'); setErr('');
+    const forRef = reviewRef;
+    setBusy('review'); setReviewErr('');
     try {
-      setReviewResult(await apiJson('/api/v1/qep/hifz/review', { method: 'POST', body: { uid: UID, ayah_ref: reviewRef, quality } }));
+      const d = await apiJson('/api/v1/qep/hifz/review', { method: 'POST', body: { uid: uid ?? LOCAL_UID, ayah_ref: forRef, quality } });
+      if (reviewing.current === forRef) setReviewResult(d);
       loadCore();
-    } catch (e) { setErr(errorMessage(e)); }
+    } catch (e) { if (reviewing.current === forRef) setReviewErr(`The review of ${forRef} was not recorded: ${errorMessage(e)}`); }
     setBusy('');
   };
 
@@ -186,13 +245,14 @@ export const QEPStudio: React.FC = () => {
   const [recall, setRecall] = useState<Recall | null>(null);
   const checkRecall = async () => {
     if (!reviewAyah) return;
-    setBusy('recall'); setErr('');
+    const forRef = reviewRef;
+    setBusy('recall'); setReviewErr('');
     try {
       // W630 (FU-545) — the server fetches the reference from surah + ayah; the page no longer supplies it
-      const [rs, ra] = (reviewRef ?? '').split(':').map(Number);
+      const [rs, ra] = (forRef ?? '').split(':').map(Number);
       const d = await apiJson('/api/v1/qep/tajweed/analyse', { method: 'POST', body: { surah: rs, ayah: ra, recited_text: recallText } });
-      setRecall(d.comparison);
-    } catch (e) { setErr(errorMessage(e)); }
+      if (reviewing.current === forRef) setRecall(d.comparison);
+    } catch (e) { if (reviewing.current === forRef) setReviewErr(`The recollection was not compared: ${errorMessage(e)}`); }
     setBusy('');
   };
 
@@ -202,9 +262,9 @@ export const QEPStudio: React.FC = () => {
   // showed the "outline" chip and an empty box, and never the reason nothing appeared.
   const [lesson, setLesson] = useState<{ lesson_plan: string | null; served_by: string; floor_served: boolean; floor_note?: string; disclaimer: string; review_state?: string; review_note?: string; withheld_note?: string | null } | null>(null);
   const runLesson = async () => {
-    setBusy('lesson'); setErr(''); setLesson(null);
+    setBusy('lesson'); setLessonErr(''); setLesson(null);
     try { setLesson(await apiJson('/api/v1/qep/tajweed/lesson', { method: 'POST', body: { rule_name: rule } })); }
-    catch (e) { setErr(errorMessage(e)); }
+    catch (e) { setLessonErr(`No lesson outline: ${errorMessage(e)}`); }
     setBusy('');
   };
 
@@ -213,7 +273,7 @@ export const QEPStudio: React.FC = () => {
   const [trResult, setTrResult] = useState<{ translation: string | null; served_by: string; label: string; withheld_note?: string | null } | null>(null);
   const [trRefusal, setTrRefusal] = useState('');
   const runTranslate = async () => {
-    setBusy('translate'); setErr(''); setTrResult(null); setTrRefusal('');
+    setBusy('translate'); setTrResult(null); setTrRefusal('');
     try { setTrResult(await apiJson('/api/v1/qep/translation/translate', { method: 'POST', body: { text: trText, target_language: 'English' } })); }
     catch (e) { setTrRefusal(errorMessage(e)); }   // the 503 refusal is the honesty working
     setBusy('');
@@ -223,9 +283,8 @@ export const QEPStudio: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {err && <p className="text-vital text-xs font-bold">{err}</p>}
       {loadErrs.length > 0 && (
-        <p className="text-amber-400 text-[10px] font-bold">{loadErrs.length} section(s) failed to load — {loadErrs.slice(0, 2).join(' · ')}</p>
+        <p role="alert" data-testid="qep-sections-unread" className="text-amber-400 text-[10px] font-bold">{loadErrs.length} section(s) failed to load — {loadErrs.slice(0, 2).join(' · ')}</p>
       )}
 
       {/* W685 (OWNER RULING 2026-10-12) — A LEARNER SEES THEIR OWN PROGRESS, NEVER A RANK. The ranking of learners
@@ -287,7 +346,7 @@ export const QEPStudio: React.FC = () => {
               className="text-[11px] bg-slate-950 border border-slate-900 rounded-lg p-2 text-slate-300 max-w-56">
               {(suwar ?? []).map(s => <option key={s.number} value={s.number}>{s.number}. {s.name_transliteration} ({s.ayah_count} ayaat)</option>)}
               {suwar === null && !suwarFailed && <option>loading surahs…</option>}
-              {suwarFailed && <option>surah list unavailable — source unreachable</option>}
+              {suwarFailed && <option>surah list not read — {suwarFailed}</option>}
             </select>
             {suwarFailed && (
               <button type="button" onClick={loadSuwar} className="text-[9px] font-black uppercase px-2 py-1 rounded border border-slate-700 text-slate-400 hover:text-white">Retry</button>
@@ -318,16 +377,19 @@ export const QEPStudio: React.FC = () => {
             </>
           )}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[9px] font-black uppercase text-slate-500">memorise ayaat</span>
+            {/* W957 (P5.17 clause 1) - cards are for a trouble spot the learner marks; a portion goes on the plan */}
+            <span className="text-[9px] font-black uppercase text-slate-500"
+                  title="Cards are for the few ayaat you keep stumbling on. A portion goes on the plan's three tracks.">mark a trouble spot: ayaat</span>
             <input type="number" min={1} max={selSurah?.ayah_count ?? 286} value={rangeStart} onChange={e => setRangeStart(Number(e.target.value))}
               className="w-16 text-[11px] bg-slate-950 border border-slate-900 rounded-lg p-1.5 text-slate-300" />
             <span className="text-slate-600 text-[10px]">to</span>
             <input type="number" min={1} max={selSurah?.ayah_count ?? 286} value={rangeEnd} onChange={e => setRangeEnd(Number(e.target.value))}
               className="w-16 text-[11px] bg-slate-950 border border-slate-900 rounded-lg p-1.5 text-slate-300" />
             <Button onClick={schedule} disabled={busy === 'schedule'} className="flex items-center gap-1.5 bg-slate-900 text-aura text-[10px]">
-              {busy === 'schedule' ? <Loader2 size={11} className="animate-spin" /> : <Brain size={11} />} Schedule (SM-2)
+              {busy === 'schedule' ? <Loader2 size={11} className="animate-spin" /> : <Brain size={11} />} Make cards for this spot (SM-2)
             </Button>
           </div>
+          {readerErr && <p role="alert" data-testid="qep-reader-error" className="text-vital text-[10px] font-bold mt-2">{readerErr}</p>}
         </Card>
 
         {/* ── Hifz reviews — real SM-2 ── */}
@@ -343,6 +405,27 @@ export const QEPStudio: React.FC = () => {
               )}
               <Chip tone={progress.due_today > 0 ? 'warn' : 'dim'}>{progress.due_today} due today</Chip>
               <Chip tone="dim">{progress.total_sessions} sessions</Chip>
+              {/* W852 (FU-1167) - the learner's own record, to keep or to remove; offered once sign-in is on */}
+              {signedIn ? (
+                <span className="basis-full flex flex-wrap gap-1.5 items-center">
+                  <button type="button" data-testid="hifz-export" onClick={exportRecord}
+                    className="text-[9px] font-black uppercase px-2 py-0.5 rounded border border-slate-700 text-slate-300 hover:text-white">download my record</button>
+                  <button type="button" data-testid="hifz-delete" onClick={() => setAskingDelete(true)}
+                    className="text-[9px] font-black uppercase px-2 py-0.5 rounded border border-vital/40 text-vital hover:bg-vital/10">delete my record</button>
+                  {recordMsg && <span data-testid="hifz-record-message" className="text-[9px] text-slate-400">{recordMsg}</span>}
+                  {askingDelete && (
+                    <AskPerson question="Delete your whole memorisation and award record?" kind="confirmation"
+                      options={[
+                        { id: 'delete', label: 'Delete my record', differs: 'every session, card and award the record holds is removed from this platform', undo: 'it cannot be undone here: a record you downloaded first is the only copy' },
+                        { id: 'keep', label: 'Keep it', differs: 'nothing changes, and you can download the record first', undo: 'there is nothing to undo', recommended: true },
+                      ]}
+                      typeBack={{ optionId: 'delete', text: 'delete my record', label: 'Type "delete my record" to delete it' }}
+                      onChoose={id => { if (id === 'delete') void deleteRecord(); else setAskingDelete(false); }} />
+                  )}
+                </span>
+              ) : (
+                <p data-testid="hifz-record-sign-in" className="basis-full text-[9px] text-slate-500">Exporting or deleting this record is offered once sign-in is on: with sign-in off it is tied to no person.</p>
+              )}
             </div>
           )}
           <div className="flex flex-wrap gap-1.5 mb-3">
@@ -355,6 +438,7 @@ export const QEPStudio: React.FC = () => {
               <p className="text-[9px] text-slate-600">showing the first {progress.due_refs.length} of {progress.due_today} due</p>
             )}
           </div>
+          {reviewErr && <p role="alert" data-testid="qep-review-error" className="text-vital text-[10px] font-bold mb-2">{reviewErr}</p>}
           {reviewRef && reviewAyah && (
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
               {/* W717 - the same fetched text in both branches: split on spaces and joined with spaces, never altered */}
@@ -479,6 +563,7 @@ export const QEPStudio: React.FC = () => {
               {busy === 'lesson' ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />} Generate
             </Button>
           </div>
+          {lessonErr && <p role="alert" data-testid="qep-lesson-error" className="text-vital text-[10px] font-bold mb-2">{lessonErr}</p>}
           {lesson && (
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
               <div className="flex gap-1.5 mb-1.5">
@@ -530,7 +615,7 @@ export const QEPStudio: React.FC = () => {
       </div>
 
       {/* W684 — memorisation practice: the plan in three tracks, the hidden verse, similar verses side by side */}
-      <HifzPractice uid={UID} />
+      {uid && <HifzPractice uid={uid} />}
 
       <p className="text-[9px] text-slate-600 flex items-center gap-2">
         <Trophy size={11} className="text-slate-700" />

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import { Target, Loader2, Sparkles, Plus, CheckCircle2, Clock, AlertCircle, Crown, PenLine } from 'lucide-react';
-import { provenanceMapBadge, provenanceMapFromTrace } from '../../lib/api';
+import { provenanceMapBadge, provenanceMapFromTrace, bodyOrNull, bodyDetail, apiJson, errorMessage } from '../../lib/api';
 import { PlanOpening } from '../../components/PlanOpening';   // W505 (FU-074) — one component, both pages
 import { CadencePanel } from '../../components/CadencePanel';   // W620 (FU-492)
 
@@ -31,7 +31,8 @@ interface Plan { provenance?: PlanProvenance; owner_edits?: Record<string, strin
 // P3.30 (ledger v16 R3.9) — WHAT WROTE THE TEXT ON SCREEN. The latest cadence refresh that was WRITTEN to this
 // field, and only while the field still holds that refresh's text: an Owner's edit or a model's draft made
 // since is not the cadence's, and saying so would mislabel it. Null means no such refresh is on record.
-const layerSource = (plan: Plan, field: 'strategy' | 'action_plan'): string | null => {
+// W822 (FU-830) - exported: the Cockpit's plan tab reads what wrote a layer through this same helper
+export const layerSource = (plan: Plan, field: 'strategy' | 'action_plan'): string | null => {
   const rows = (plan.refreshes ?? []).filter(r => !!r && r.plan_field === field && r.applied !== false);
   const last = rows[rows.length - 1];
   if (!last) return null;
@@ -60,16 +61,16 @@ export const BusinessPlan: React.FC = () => {
   const load = async () => {
     try {
       const r = await fetch(`/api/v1/business-plan?scope=${encodeURIComponent(scope)}`);
-      const data = await r.json().catch(() => null);
+      const data = await bodyOrNull(r);
       if (!r.ok) {
         setPlan(null);
-        setPlanErr(String(data?.detail || `the plan could not be read (HTTP ${r.status})`));
+        setPlanErr(bodyDetail(data, `the plan could not be read (HTTP ${r.status})`));   // W1012 - text, whatever its shape
         return;
       }
       setPlanErr(''); setPlan(data);
     } catch (e: any) {
       setPlan(null);
-      setPlanErr(`the plan could not be fetched (${e?.message || 'network error'}) — nothing was changed`);
+      setPlanErr(`the plan could not be fetched (${errorMessage(e)}) — nothing was changed`);
     }
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [scope]);
@@ -89,32 +90,33 @@ export const BusinessPlan: React.FC = () => {
       const context = genContext.trim();
       const r = await fetch('/api/v1/business-plan/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(context ? { scope, context } : { scope }) });
       if (!r.ok) {
-        const ed = (await r.json().catch(() => null))?.detail;
-        setActErr(`Generate failed (HTTP ${r.status})${ed ? `: ${typeof ed === 'string' ? ed : JSON.stringify(ed)}` : ''}`);
+        const ed = bodyDetail(await bodyOrNull(r), '');   // W1013 - a field check by its field (it said JSON)
+        setActErr(`Generate failed (HTTP ${r.status})${ed ? `: ${ed}` : ''}`);
       }
-      else { const d = await r.json().catch(() => null); setGenNote(d?.reason || (d?.written?.length ? `Chief wrote: ${d.written.join(', ')}` : '')); }
+      else { const d = await bodyOrNull(r); setGenNote(d?.reason || (d?.written?.length ? `Chief wrote: ${d.written.join(', ')}` : '')); }
       await load();
     } catch { setActErr('Backend unreachable — nothing changed'); }
     setBusy(false);
   };
+  //  W988 (FU-399 part 20) - A REFUSAL SAYS THE SERVER'S REASON. These said only the status ("Objective not saved
+  //  (HTTP 503)", "Review not recorded (HTTP 404)") and dropped what the server said: the plan file it could not
+  //  read, the objective it did not hold. apiJson carries the reason; an unreachable server is said as that.
   const addObjective = async () => {
     if (!newObj.title.trim()) return;
     setBusy(true);
     setActErr('');
     try {
-      const r = await fetch('/api/v1/business-plan/objective', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope, ...newObj }) });
-      if (r.ok) setNewObj({ title: '', kpi: '', timeline: '', owner_role: 'AI CEO' });   // the typed objective survives an error
-      else setActErr(`Objective not saved (HTTP ${r.status})`);
-      await load();
-    } catch { setActErr('Backend unreachable — the objective was NOT saved'); }
+      await apiJson('/api/v1/business-plan/objective', { method: 'POST', body: { scope, ...newObj } });
+      setNewObj({ title: '', kpi: '', timeline: '', owner_role: 'AI CEO' });   // the typed objective survives an error
+    } catch (e) { setActErr(`The objective was NOT saved: ${errorMessage(e)}`); }
+    await load();
     setBusy(false);
   };
   const review = async (oid: string, progress_pct: number, status: string) => {
     setActErr('');
     try {
-      const r = await fetch(`/api/v1/business-plan/objective/${oid}/review`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope, progress_pct, status }) });
-      if (!r.ok) setActErr(`Review not recorded (HTTP ${r.status})`);
-    } catch { setActErr('Backend unreachable — the review was NOT recorded'); }
+      await apiJson(`/api/v1/business-plan/objective/${oid}/review`, { method: 'POST', body: { scope, progress_pct, status } });
+    } catch (e) { setActErr(`The review was NOT recorded: ${errorMessage(e)}`); }
     load();
   };
   const orchestrate = async (oid: string) => {
@@ -125,10 +127,11 @@ export const BusinessPlan: React.FC = () => {
     // been REFUSED - on a page whose own comment says "actions never fail silently".
     try {
       const r = await fetch(`/api/v1/business-plan/objective/${oid}/orchestrate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope }) });
-      const data = await r.json().catch(() => null);
+      const data = await bodyOrNull(r);
       if (!r.ok) {
         const d = data?.detail;
-        const why = typeof d === 'string' ? d : (d?.error || d?.reason || data?.error);
+        //  W1013 - a structured refusal by its error or reason; a sentence or a field check as bodyDetail reads it
+        const why = (d && typeof d === 'object' && !Array.isArray(d) ? (d.error || d.reason) : bodyDetail(data, '')) || data?.error;
         setActErr(why ? `Delivery refused: ${why}` : `Delivery refused (HTTP ${r.status})`);
       } else if (!data?.tree) {
         setActErr('The orchestrator returned no workflow tree, so nothing is shown for this objective.');
@@ -137,17 +140,18 @@ export const BusinessPlan: React.FC = () => {
       }
       await load();
     } catch (e) {
-      setActErr(`Delivery could not be attempted: ${e instanceof Error ? e.message : 'the backend was unreachable'} - nothing changed`);
+      setActErr(`Delivery could not be attempted: ${errorMessage(e)} - nothing changed`);
     }
     setOrchestrating('');
   };
 
   const objectives = plan?.objectives || [];      // W488 — never index into a body the API refused to give
-  const overall = objectives.length ? Math.round(objectives.reduce((s, o) => s + o.progress_pct, 0) / objectives.length) : 0;
+  //  W988 - a mean over no objective is not a measurement: null, and the page says there is nothing to measure
+  const overall = objectives.length ? Math.round(objectives.reduce((s, o) => s + o.progress_pct, 0) / objectives.length) : null;
 
   return (
     <div className="space-y-10 pb-24">
-      {actErr && <p className="text-vital text-xs font-bold">{actErr}</p>}
+      {actErr && <p className="text-vital text-xs font-bold" data-testid="plan-action-error">{actErr}</p>}
       {/* W488 — the plan could not be read: say which file and that nothing was written, never a blank page */}
       {planErr && (
         <Card className="p-6 border-vital/50 bg-vital/5" data-testid="plan-unreadable">
@@ -255,9 +259,16 @@ export const BusinessPlan: React.FC = () => {
                 <div className="flex flex-wrap gap-2">{plan.aims.map((a, i) => <span key={i} className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[10px] font-bold">{a}</span>)}</div>
               </div>
             )}
-            <div className="flex items-end gap-3 mt-5 pt-4 border-t border-highlight/20">
-              <span className="text-3xl font-black text-emerald-400">{overall}%</span>
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">overall objective progress · {plan.objectives.length} objectives</span>
+            {/* W988 (FU-399 part 20) - with no objective this printed "0% overall objective progress · 0 objectives" */}
+            <div className="flex items-end gap-3 mt-5 pt-4 border-t border-highlight/20" data-testid="plan-overall">
+              {overall !== null ? (
+                <>
+                  <span className="text-3xl font-black text-emerald-400">{overall}%</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">overall objective progress · {objectives.length} objective{objectives.length === 1 ? '' : 's'}</span>
+                </>
+              ) : (
+                <span className="text-[11px] font-bold text-slate-500">No objective is recorded on this plan yet, so there is no progress to measure.</span>
+              )}
             </div>
           </Card>
 

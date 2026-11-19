@@ -24,7 +24,7 @@ import time
 import uuid
 from pathlib import Path
 from agentic_core.config import atomic_write_json, data_path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
 from agentic_core.api._ai_provenance import reply_evidence as _reply_evidence   # W698: the level travels with the record
@@ -134,6 +134,8 @@ class ForgeRunRequest(BaseModel):
 
 
 _DEFAULT_PIPELINE = ["petri_dish", "laboratory", "factory"]
+#  W805 (FU-823) - the most stages one pipeline runs; a longer one is refused rather than cut
+_MAX_STAGES = 7
 
 
 async def _execute(req: ForgeRunRequest) -> Dict[str, Any]:
@@ -148,56 +150,74 @@ async def _execute(req: ForgeRunRequest) -> Dict[str, Any]:
             f"unknown Forge stage type(s): {', '.join(repr(u[:60]) for u in _unknown)}. Nothing was run and "
             f"nothing was stored. The stage types are: {', '.join(sorted(_STAGES))}. Send no stages at all "
             f"to run the default pipeline ({' -> '.join(_DEFAULT_PIPELINE)})."))
+    #  W805 (FU-823) - A PIPELINE LONGER THAN A RUN IS REFUSED, NOT CUT. The loop ran the first seven while the
+    #  record listed every stage asked for, so a stage that never ran was reported as part of the pipeline.
+    if len(req.stages) > _MAX_STAGES:
+        raise HTTPException(status_code=422, detail=(
+            f"a Forge pipeline runs at most {_MAX_STAGES} stages and this one names {len(req.stages)}, so nothing "
+            f"was run and nothing was stored. Send {_MAX_STAGES} or fewer."))
     run_id = f"forge-{uuid.uuid4().hex[:8]}"
     start = time.time()
     stage_ids = [s.type for s in req.stages] or list(_DEFAULT_PIPELINE)
     _pipeline_source = "requested" if req.stages else "default"
-    configs = {s.type: s.config for s in req.stages}
+    #  W805 (FU-823) - BY POSITION, not by type: two stages of one type each keep their own configuration
+    configs = [s.config for s in req.stages]
 
     # In-house-first AI with provenance: every stage records which OWNED resource served it.
     provenance: Dict[str, Any] = {"posture": "in-house-first", "served_by": {}, "any_external": False, **_reply_evidence()}
 
-    async def _q(prompt: str, agent: str) -> str:
+    async def _q_meta(prompt: str, agent: str, user_text: Optional[str] = None) -> tuple:
+        """The output and what served it; served_by is None when the call failed (W805, FU-823). Each caller says
+        which words the person wrote (W651, FU-675), as every gateway call does."""
         try:
-            res = await gateway.query_meta(prompt, agent=agent, augment=False,
-                                           user_text=(req.objective or None))   # W651 (FU-675)
+            res = await gateway.query_meta(prompt, agent=agent, augment=False, user_text=user_text)
             sb = res.get("served_by", "native")
             provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
             provenance["any_external"] = provenance["any_external"] or bool(res.get("is_external"))
-            return res.get("output", "")
+            return res.get("output", ""), sb
         except Exception as e:
-            return f"[{agent} unavailable: {e}]"
+            return f"[{agent} unavailable: {e}]", None
 
     # 1. AI CEO frames the objective (swarm hierarchy entry)
-    ceo = await _q(
+    #  W979 (FU-399 part 12) - WHAT SERVED THE FRAMING is kept with it, as each stage's has been since W805, so every
+    #  call a run makes names what served it: the framing, each stage and the integration (None when the call failed).
+    #  The framing and the integration went through _q, which returned the text alone; it had no other caller.
+    ceo, ceo_served_by = await _q_meta(
         f"You are the AI CEO of a VSB. Frame this objective for a Forge pipeline that will run these "
         f"digital resources in cascade: {', '.join(_STAGES[s]['name'] for s in stage_ids)}.\n\n"
         f"Objective: {req.objective}\nDomain: {req.domain} | Realm: {req.realm}\n\n"
         "## Framing (what success looks like)\n## Directive to the resource pipeline",
-        "forge_ceo")
+        "forge_ceo", user_text=(req.objective or None))   # W651 (FU-675)
 
     # 2. Each resource processes in cascade, carrying accumulated context
     context = f"CEO framing: {ceo[:500]}"
     outputs: List[Dict[str, Any]] = []
-    for sid in stage_ids[:7]:
+    for _pos805, sid in enumerate(stage_ids):
         stage = _STAGES[sid]
-        cfg = configs.get(sid, {})
+        cfg = (configs[_pos805] if _pos805 < len(configs) else {}) or {}
         prompt = (f"{stage['prompt']}\n\nObjective: {req.objective}\nDomain: {req.domain}\n"
                   + (f"Configuration: {cfg}\n" if cfg else "")
                   + f"Prior pipeline context: {context[-600:]}")
-        result = await _q(prompt, f"forge_{sid}")
+        result, _served805 = await _q_meta(prompt, f"forge_{sid}", user_text=(req.objective or None))
         context += f"\n\n## {stage['name']} output\n{result[:400]}"
+        #  W803 (FU-983, ledger v17 R4[5]) - WHAT THE STAGE IS. Each is a prompt asking the serving resource to act as
+        #  the facility it is named after; the facility's own engine is not called. The page said so; the body did not.
         outputs.append({"resource": sid, "name": stage["name"], "biomimetic": stage["biomimetic"],
-                        "config": cfg, "output": result})
+                        "config": cfg, "output": result,
+                        #  W805 (FU-823) - what served THIS stage (None when its call failed), and so its level
+                        "served_by": _served805, **_reply_evidence(_served805),
+                        "kind": "persona_prompt",
+                        "kind_basis": (f"a prompt asking the serving resource to act as the {stage['name']}; the "
+                                       f"{stage['name']} facility's own engine was not called")})
 
     # 3. CoE integrates the multi-type outputs (swarm synthesis)
-    integration = await _q(
+    integration, integration_served_by = await _q_meta(
         "You are the Centre of Excellence integrating a Forge pipeline's outputs into one coherent, "
         f"high-quality deliverable for Concept → Commercialisation.\n\nObjective: {req.objective}\n"
         f"Pipeline: {' → '.join(_STAGES[s]['name'] for s in stage_ids)}\n"
         f"Stage outputs:\n{context[-1500:]}\n\n"
         "## Integrated Deliverable\n## Multi-Type Outputs Produced\n## Path to Commercialisation (next: establish a VSB)",
-        "forge_coe")
+        "forge_coe", user_text=(req.objective or None))   # W651 (FU-675); W979 - what served it is kept
 
     # Governance attestation + audit
     governance = "ungated"
@@ -231,8 +251,11 @@ async def _execute(req: ForgeRunRequest) -> Dict[str, Any]:
                            "the request named no stage, so the default pipeline ran: "
                            + " -> ".join(_DEFAULT_PIPELINE)),
         "ceo_framing": ceo,
+        #  W979 - what served the framing and the integration (None when the call failed); each stage's is on it
+        "ceo_served_by": ceo_served_by,
         "stage_outputs": outputs,
         "integrated_deliverable": integration,
+        "integration_served_by": integration_served_by,
         "governance": governance,
         "ai_provenance": provenance,
         "reusable": True, "rerunnable": True,
@@ -276,17 +299,26 @@ async def forge_rerun(run_id: str):
     for r in _load():
         if r["run_id"] == run_id:
             # the config as RUN, recovered from the stage outputs rather than from the type list
-            saved_cfg = {str(o.get("resource")): (o.get("config") or {})
-                         for o in (r.get("stage_outputs") or []) if isinstance(o, dict)}
-            stages = [StageConfig(type=sid, config=saved_cfg.get(str(sid), {})) for sid in r["pipeline"]]
+            #  W805 (FU-823) - BY POSITION: keyed by type, two stages of one type took the last one's configuration
+            _outs805 = [o for o in (r.get("stage_outputs") or []) if isinstance(o, dict)]
+            _cfgs805 = [((_outs805[i].get("config") or {}) if i < len(_outs805)
+                         and str(_outs805[i].get("resource")) == str(sid) else {})
+                        for i, sid in enumerate(r["pipeline"])]
+            saved_cfg = {str(o.get("resource")): (o.get("config") or {}) for o in _outs805}
+            stages = [StageConfig(type=sid, config=_cfgs805[i]) for i, sid in enumerate(r["pipeline"])]
             req = ForgeRunRequest(objective=r["objective"], domain=r["domain"], realm=r["realm"],
                                   stages=stages,
                                   usage_area=r.get("usage_area", "forge"), name=f"{r['name']} (rerun)")
             out = await _execute(req)
             if isinstance(out, dict):
-                carried = {sid: bool(saved_cfg.get(str(sid))) for sid in r["pipeline"]}
+                carried = {}
+                for i, sid in enumerate(r["pipeline"]):
+                    carried[sid] = carried.get(sid, False) or bool(_cfgs805[i])
                 out["rerun_of"] = run_id
                 out["config_carried"] = carried
+                #  W805 - exact per position, where the map above (kept for its readers) cannot tell two of a type apart
+                out["config_carried_by_position"] = [{"position": i + 1, "stage": sid, "carried": bool(_cfgs805[i])}
+                                                     for i, sid in enumerate(r["pipeline"])]
                 out["rerun_basis"] = (
                     ("every stage was re-run with the configuration the original carried"
                      if all(carried.values()) else

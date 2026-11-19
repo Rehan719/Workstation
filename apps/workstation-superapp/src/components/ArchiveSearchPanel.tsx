@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { errorMessage } from '../lib/api';   // W1015 - a caught failure, said as what it was
 import { apiJson } from '../lib/api';
 
 type Dict = Record<string, any>;
@@ -14,7 +15,7 @@ export const ArchiveSearchPanel: React.FC = () => {
   const [err, setErr] = useState('');
   const run = async () => {
     try { setRes(await apiJson<Dict>(`/api/v1/horizon/archive/search?term=${encodeURIComponent(term)}`)); setErr(''); }
-    catch (e: any) { setRes(null); setErr(`Search failed: ${String(e?.message ?? e)}`); }
+    catch (e: any) { setRes(null); setErr(`Search failed: ${errorMessage(e)}`); }
   };
   return (
     <div className="space-y-2 text-[11px]" data-testid="archive-search-panel">

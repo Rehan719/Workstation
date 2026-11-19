@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { describeReadFailure, silenceIsRight } from '../components/ReadFailures';   // W931
 import { useLocation } from 'react-router-dom';
 import axios from 'axios';
+import { axiosDetail, errorMessage } from '../lib/api';   // W1011 - a refusal's detail as text, whatever its shape
 import { getPrefs } from '../lib/userPrefs';
 
 export interface AvatarSuggestedArea {
@@ -16,6 +18,7 @@ export interface AvatarMessage {
   servedBy?: string;     // which OWNED resource answered (in-house provenance)
   isExternal?: boolean;
   suggestedAreas?: AvatarSuggestedArea[];  // §5/§9 guided navigation — "Take me there"
+  suggestedAreasBasis?: string;            // W820 (FU-826) - how the areas were matched, as the server says
   // W490 (sweep S10.11, C7) — the backend ALREADY says when it could not honour the request:
   // image_understood=false when no vision model read the attachment, and language=null when the
   // deterministic floor could not answer in the language asked for. The hook dropped all of it, so a
@@ -39,20 +42,23 @@ export interface AvatarMessage {
 
 export type AvatarFaceState = 'idle' | 'thinking' | 'speaking';
 
-// W325 — resolve the user's grounding VSB once per page load (most recent owned entity; the
-// bearer layer scopes the listing, so only accessible entities resolve). Null = no VSB yet.
-let _groundingVsb: string | null | undefined;
+// W325 — the user's grounding VSB: their most recent owned entity (the bearer layer scopes the listing, so only
+// accessible entities resolve). Null = no VSB yet.
+//  W1076 - read for each message: it was read once per page load and kept, so an entity made or updated since was
+//  never the one grounded while the reply said "your most recently updated one", and a person who signed in after
+//  another on the same page sent the other person's entity with every message
 async function resolveGroundingVsb(): Promise<string | null> {
-  if (_groundingVsb !== undefined) return _groundingVsb ?? null;
   try {
     const r = await fetch('/api/v1/vsb');
+    //  W1029 - a refused read of the entities is not "no entity": it is not kept, so the next message asks again (its
+    //  {detail} was read as a list of none, and none was kept for the page's whole life)
+    if (!r.ok) return null;
     const d = await r.json();
     const rows: any[] = d.entities ?? [];
     // W625 (FU-535, M2 v9 R5.2) — /api/v1/vsb lists MOST RECENT FIRST, so rows[0] is the latest; this took the last
     // row, the least-recently-touched entity, while its own comment said "most recent".
-    _groundingVsb = rows.length ? (rows[0].vsb_id ?? null) : null;
-  } catch { _groundingVsb = null; }
-  return _groundingVsb ?? null;
+    return rows.length ? (rows[0].vsb_id ?? null) : null;
+  } catch { return null; }
 }
 
 const _LANG_NAMES: Record<string, string> = {
@@ -118,6 +124,11 @@ export function useAvatarSession() {
   const [volume, setVolume] = useState(1);
   const [hasPlayedAudio, setHasPlayedAudio] = useState(false);
   const [aiStatus, setAiStatus] = useState<AiStatus>('checking');
+  const [sendError, setSendError] = useState('');   // W1076 - a reply that did not come, said beside the input
+  //  W1076 - the conversation on screen. Clearing it, or a change of who is signed in, starts another; an answer
+  //  still on its way for the one before is dropped. One message is answered at a time.
+  const conversation = useRef(0);
+  const inFlight = useRef(false);
 
   // Real-time amplitude (0-100), sampled from an actual Web Audio analyser —
   // never randomized/faked. `amplitude` tracks TTS playback, `micAmplitude`
@@ -194,7 +205,8 @@ export function useAvatarSession() {
         u.onend = () => { setSpeaking(false); setAmplitude(0); };
         u.onerror = () => { setSpeaking(false); setAmplitude(0); };
         window.speechSynthesis.speak(u);
-        setHasPlayedAudio(true);
+        //  W1076 - a reply the browser speaks is no audio element and cannot be rewound: the rewind control was
+        //  offered for it and did nothing
         return;
       } catch { setSpeaking(false); }
     }
@@ -216,23 +228,31 @@ export function useAvatarSession() {
         source.connect(analyser);
         analyser.connect(ctx.destination);
         analyserRef.current = analyser;
-      } catch {
-        // Web Audio graph is best-effort visual flair; playback still works without it.
-      }
+      } catch { silenceIsRight('the Web Audio level graph is optional visual flair; playback works without it')(); }
 
       audio.onended = () => { setSpeaking(false); setAmplitude(0); };
       await audio.play();
     } catch (err: any) {
       setSpeaking(false);
-      setNotice(err?.response?.data?.detail || 'Voice output is currently unavailable.');
+      setNotice(axiosDetail(err, 'Voice output is currently unavailable.'));
     }
   }, [volume]);
 
   const sendMessage = useCallback(async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
     if (!text && !pendingImage) return;
+    //  W1076 - one message at a time: the send button waits for the answer and Enter did not, so a second message
+    //  went while the first was answered (the first exchange opened two sessions; replies came back in either
+    //  order). Words heard while one is answered are put in the box, not lost.
+    if (inFlight.current) {
+      if (overrideText) setInput(prev => (prev.trim() ? `${prev} ${text}` : text));
+      return;
+    }
+    inFlight.current = true;
+    const asked = conversation.current;
     setSending(true);
     setNotice('');
+    setSendError('');
     const userMsg: AvatarMessage = { role: 'user', content: text, imageDataUrl: pendingImage || undefined };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
@@ -250,12 +270,21 @@ export function useAvatarSession() {
         vsb_id: await resolveGroundingVsb(),
         language: prefLanguageName(),
       });
+      //  W1076 - an answer for a conversation cleared while it was on its way is dropped, and a session it opened
+      //  is closed: it was said in the new conversation under no question, and the next message continued it
+      if (asked !== conversation.current) {
+        const opened: string | null = !sessionId ? (resp.data?.session_id ?? null) : null;
+        if (opened) axios.delete(`/api/v1/avatar/session/${opened}`)
+          .catch(e => setNotice(`The conversation was cleared here, but not on the server: ${describeReadFailure(e)}`));
+        return;
+      }
       if (!sessionId) setSessionId(resp.data.session_id);
       const replyText: string = resp.data.response;
       setMessages(prev => [...prev, {
         role: 'assistant', content: replyText,
         servedBy: resp.data.served_by, isExternal: resp.data.is_external,
         suggestedAreas: resp.data.suggested_areas || [],
+        suggestedAreasBasis: resp.data.suggested_areas_basis ?? undefined,
         // W490 — carried, because a reply that did not read the image must not look like one that did
         imageRequested: Boolean(imageBase64),
         imageUnderstood: Boolean(resp.data.image_understood),
@@ -278,17 +307,32 @@ export function useAvatarSession() {
       if (speakReplies) speakText(replyText);
       setAiStatus('online');
     } catch (err: any) {
+      if (asked !== conversation.current) return;
       const detail: string =
-        err?.response?.data?.detail ||
-        (err?.code === 'ECONNREFUSED' || err?.code === 'ERR_NETWORK'
+        axiosDetail(err, '') ||
+        //  W1028 - a server that answered with no reason is said by its status: it was "Could not reach the avatar
+        //  backend"; only a call that reached no server is said as one
+        (err?.response ? errorMessage(err)
+          : err?.code === 'ECONNREFUSED' || err?.code === 'ERR_NETWORK'
           ? 'Backend server is not running. Start the Workstation API server.'
-          : 'Could not reach the avatar backend.');
+          : errorMessage(err));
       setAiStatus('offline');
-      setMessages(prev => [...prev, { role: 'assistant', content: detail }]);
+      //  W1076 - said as the failure it was, beside the input: it was put in the conversation in the avatar's own
+      //  voice, under "Avatar"
+      setSendError(`No reply came: ${detail}`);
     } finally {
-      setSending(false);
+      if (asked === conversation.current) {
+        inFlight.current = false;
+        setSending(false);
+      }
     }
   }, [input, pendingImage, sessionId, context, speakReplies, speakText]);
+
+  //  W1076 - a voice message is sent as the conversation stands when it is heard: the recogniser's and the
+  //  recorder's answers called the send as it was when the recording started, so a session opened meanwhile was
+  //  not continued (another was opened)
+  const sendLatest = useRef(sendMessage);
+  useEffect(() => { sendLatest.current = sendMessage; }, [sendMessage]);
 
   const startRecording = useCallback(async () => {
     // W325 — IN-HOUSE voice input first: the browser's Web Speech recognition needs no key; the
@@ -303,7 +347,7 @@ export function useAvatarSession() {
         rec.maxAlternatives = 1;
         rec.onresult = (ev: any) => {
           const text = ev.results?.[0]?.[0]?.transcript || '';
-          if (text) sendMessage(text);
+          if (text) sendLatest.current(text);
           setRecording(false);
         };
         rec.onerror = () => { setRecording(false); setNotice('Voice input failed — try typing instead.'); };
@@ -312,7 +356,7 @@ export function useAvatarSession() {
         rec.start();
         setRecording(true);
         return;
-      } catch { /* fall through to the recorder path */ }
+      } catch { silenceIsRight('browser speech recognition could not start, so the recorder path below is used instead')(); }
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -324,9 +368,7 @@ export function useAvatarSession() {
         micAnalyser.fftSize = 64;
         micSource.connect(micAnalyser);
         micAnalyserRef.current = micAnalyser;
-      } catch {
-        // best-effort; recording still works without the live level visual
-      }
+      } catch { silenceIsRight('the live microphone level is optional visual flair; recording works without it')(); }
 
       const recorder = new MediaRecorder(stream);
       audioChunksRef.current = [];
@@ -341,9 +383,9 @@ export function useAvatarSession() {
           formData.append('file', blob, 'recording.webm');
           const resp = await axios.post('/api/v1/avatar/transcribe', formData);
           const text: string = resp.data.text;
-          if (text) sendMessage(text);
+          if (text) sendLatest.current(text);
         } catch (err: any) {
-          setNotice(err?.response?.data?.detail || 'Voice transcription is currently unavailable.');
+          setNotice(axiosDetail(err, 'Voice transcription is currently unavailable.'));
         } finally {
           setTranscribing(false);
         }
@@ -357,7 +399,7 @@ export function useAvatarSession() {
   }, [sendMessage]);
 
   const stopRecording = useCallback(() => {
-    try { speechRecRef.current?.stop?.(); } catch { /* browser STT may already be stopped */ }
+    try { speechRecRef.current?.stop?.(); } catch { silenceIsRight('the browser speech recognition may already have stopped')(); }
     mediaRecorderRef.current?.stop();
     setRecording(false);
   }, []);
@@ -374,13 +416,39 @@ export function useAvatarSession() {
 
   const clearConversation = useCallback(() => {
     if (sessionId) {
-      axios.delete(`/api/v1/avatar/session/${sessionId}`).catch(() => {});
+      //  W931 - the screen is emptied at once; a delete the server refuses is said, never left as a clear that happened
+      axios.delete(`/api/v1/avatar/session/${sessionId}`)
+        .catch(e => setNotice(`The conversation was cleared here, but not on the server: ${describeReadFailure(e)}`));
     }
+    conversation.current += 1;   // W1076 - an answer still on its way belongs to the cleared conversation
+    inFlight.current = false;
+    setSending(false);
     setMessages([]);
     setSessionId(null);
     setNotice('');
+    setSendError('');
     setHasPlayedAudio(false);
   }, [sessionId]);
+
+  //  W1076 - a change of who is signed in sets the conversation aside: the shell outlives a sign-out (the sign-in
+  //  page is inside it), so the next person saw the previous person's conversation and their next message went
+  //  to it. The session stays the previous person's; nothing here can close it for them.
+  useEffect(() => {
+    const aside = () => {
+      conversation.current += 1;
+      inFlight.current = false;
+      setSending(false);
+      setMessages([]);
+      setSessionId(null);
+      setInput('');
+      setPendingImage(null);
+      setNotice('');
+      setSendError('');
+      setHasPlayedAudio(false);
+    };
+    window.addEventListener('ws:identity', aside);
+    return () => window.removeEventListener('ws:identity', aside);
+  }, []);
 
   const rewind = useCallback((seconds: number = 5) => {
     const audio = audioPlayerRef.current;
@@ -408,6 +476,7 @@ export function useAvatarSession() {
     speaking,
     pendingImage, setPendingImage,
     notice, setNotice,
+    sendError,
     volume, setVolumeLevel,
     amplitude, micAmplitude,
     canRewind: hasPlayedAudio,

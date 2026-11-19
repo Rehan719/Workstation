@@ -1,8 +1,10 @@
+import { silenceIsRight } from '../components/ReadFailures';   // W961 (FU-1181)
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, ThumbsUp, ThumbsDown, MoreHorizontal, X, WifiOff, RefreshCw, ChevronLeft, FolderPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { provenanceBadge } from '../lib/api';
+import { refusalOf } from '../lib/stream';   // W1024 - a refused answer, said by its status and reason
 
 // W451 (P1.3) — the CEO answers from the owned fabric, grounded in the Board + living plan; the pill
 // and every assistant message say WHO served it (amber on the floor). No persona, no roleplay copy.
@@ -18,20 +20,13 @@ export const CEOChat: React.FC = () => {
   const [lastProv, setLastProv] = useState<{ servedBy: string | null; isExternal: boolean } | null>(null);
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
-  const [sentiment, setSentiment] = useState('analytical');
   const [showMenu, setShowMenu] = useState(false);
   const [feedback, setFeedback] = useState<Record<number, 'up' | 'down'>>({});
   const [aiStatus, setAiStatus] = useState<'online' | 'offline'>('online');
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const getAvatarColor = () => {
-    switch (sentiment) {
-      case 'joyful': return 'text-emerald-400';
-      case 'frustrated': return 'text-vital';
-      case 'curious': return 'text-highlight';
-      default: return 'text-aura';
-    }
-  };
+  // W1024 - the avatar's colour said a mood read off the person's own words ("great" joyful, "error" frustrated,
+  // "why" curious). The page says it has no persona (W451); the colour no longer moves.
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -61,7 +56,13 @@ export const CEOChat: React.FC = () => {
 
       clearTimeout(timeoutId);
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      //  W1024 - a refusal is said by its reason, and the AI is not said offline over it: this threw `HTTP 404`, which
+      //  the catch below said as "The AI backend is currently unreachable", and the pill went to AI Offline
+      if (!response.ok) {
+        const why = await refusalOf(response);
+        setMessages(prev => [...prev, { role: 'assistant', content: `Not answered. ${why}` }]);
+        return;
+      }
       if (!response.body) throw new Error('No response body');
 
       const reader = response.body.getReader();
@@ -69,11 +70,6 @@ export const CEOChat: React.FC = () => {
       let assistantMessage: CeoMessage = { role: 'assistant', content: '' };
       let pending = '';   // a `data:` line split across chunks is completed, not dropped
       let streamError = false;
-
-      if (input.toLowerCase().includes("great") || input.toLowerCase().includes("good")) setSentiment('joyful');
-      else if (input.toLowerCase().includes("error") || input.toLowerCase().includes("fail")) setSentiment('frustrated');
-      else if (input.toLowerCase().includes("how") || input.toLowerCase().includes("why")) setSentiment('curious');
-      else setSentiment('analytical');
 
       setMessages(prev => [...prev, assistantMessage]);
 
@@ -106,9 +102,7 @@ export const CEOChat: React.FC = () => {
                 updated[updated.length - 1] = { ...assistantMessage };
                 return updated;
               });
-            } catch {
-              // malformed SSE line — skip
-            }
+            } catch { silenceIsRight('a stream frame that is not JSON, a heartbeat or a cut line, carries nothing to show')(); }
           }
         }
       }
@@ -166,8 +160,8 @@ export const CEOChat: React.FC = () => {
           </button>
 
           <div className={`p-1 rounded-2xl transition-all duration-700 relative group bg-aura/20 shadow-[0_0_20px_rgba(100,255,218,0.2)] overflow-hidden`}>
-            <div className="w-14 h-14 bg-slate-950 rounded-xl flex items-center justify-center relative">
-               <Bot size={28} className={`${getAvatarColor()} relative z-10 transition-colors duration-500`} />
+            <div data-testid="ceo-avatar" className="w-14 h-14 bg-slate-950 rounded-xl flex items-center justify-center relative">
+               <Bot size={28} className="text-aura relative z-10" />
                <motion.div
                  animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
                  transition={{ duration: 4, repeat: Infinity }}
@@ -289,7 +283,7 @@ export const CEOChat: React.FC = () => {
                    {m.role === 'assistant' && m.servedBy !== undefined && (() => { const b = provenanceBadge(m.servedBy, m.isExternal); return (
                      <div className="flex flex-wrap items-center gap-2 ml-2">
                        <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>
-                       {m.grounding && <span data-testid="ceo-grounding-cited" className="text-[9px] text-slate-500" title={m.grounding.cited_basis ?? 'what the answer was handed'}>{/* W627 (FU-526) — handed is not used: the chip says what the answer NAMES */}handed {m.grounding.directives ?? 0} directive{m.grounding.directives === 1 ? '' : 's'} · {m.grounding.objectives ?? 0} objective{m.grounding.objectives === 1 ? '' : 's'} · the answer names {m.grounding.cited?.directives ?? 0} and {m.grounding.cited?.objectives ?? 0} · scope {m.grounding.scope}</span>}
+                       {m.grounding && <span data-testid="ceo-grounding-cited" className="text-[9px] text-slate-500" title={[m.grounding.cited_basis, m.grounding.recited_basis].filter(Boolean).join(' · ') || 'what the answer was handed'}>{/* W627 (FU-526) — handed is not used: the chip says what the answer NAMES */}handed {m.grounding.directives ?? 0} directive{m.grounding.directives === 1 ? '' : 's'} · {m.grounding.objectives ?? 0} objective{m.grounding.objectives === 1 ? '' : 's'} · the answer names {m.grounding.cited?.directives ?? 0} and {m.grounding.cited?.objectives ?? 0}{/* W801 (FU-982 R3[9]) - on the floor the records are recited after the reply, and said apart from what it named */}{m.grounding.recited ? ` · recited as stored, not answered from: ${m.grounding.recited.directives ?? 0} and ${m.grounding.recited.objectives ?? 0}` : ''} · scope {m.grounding.scope}</span>}
                        {/* W574 (M1 R3.2) — the answer printed a "## Board directives" section with
                            three bullets while the chip beside it said "grounded in 0 directives".
                            A count the reader has to cross-check against the prose is not a

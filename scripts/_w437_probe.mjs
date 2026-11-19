@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W437 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W437 — drive /native-ai in a real browser against the built bundle: the primitive console must
 // RUN primitives and render the honest payload (basis strings, population_source, null-with-reason).
 import { chromium } from 'playwright';

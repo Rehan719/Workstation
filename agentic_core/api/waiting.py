@@ -1,0 +1,694 @@
+"""P5.14 clause 4 and P5.18 clause 3 (W1085, W1087) - THE ONE LIST OF WHAT WAITS ON A PERSON.
+
+One list, reached from the first screen, of what waits on the person asking, read from the stores that exist:
+- the obligations on their agreement records (W1085): each one falling due within the window or past its date, and
+  each one no person has confirmed;
+- their projects (W867): each proposal to move one to another stage, which waits on their decision;
+- their asset records (W1082): a fact whose evidence lapses within the window, a fact whose evidence has lapsed with
+  nothing current in its place, and a declaration of readiness withdrawn because what it rests on lapsed;
+- Change Control: each change waiting on a decision, each a review approved that waits for the Board's ratification,
+  and each material economy action a review approved, which only the Owner's own decision releases. An administrator
+  records all three, so they wait on an administrator; with sign-in off, on the one person using this machine.
+The census of the stores that hold something waiting on a person (W1087) found more; each was named as not read yet
+until the list read it, and since W1095 the list reads every one of them (FU-1270).
+The agreement and asset records are kept only for a signed-in person (the Owner's ruling of 2026-10-12), so with
+sign-in off the list says so and reads the rest. A store it cannot read is said in its place, with why, and the rest
+of the list still stands. What it does not read yet is named, so an empty list is never taken for nothing waiting
+anywhere. A date on it is a record's own; none is computed here and none is taken from a model."""
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, HTTPException
+
+from agentic_core.auth.core import auth_enabled, get_current_user
+
+router = APIRouter(prefix="/api/v1/waiting", tags=["waiting"])
+
+READS = ["the obligations on your agreement records: each one falling due within the window or past its date, and "
+         "each one no person has confirmed",
+         "your projects: each proposal to move one to another stage, which waits on your decision",
+         "your asset records: a fact whose evidence lapses within the window, a fact whose evidence has lapsed with "
+         "nothing current in its place, and a declaration of readiness withdrawn because what it rests on lapsed",
+         "Change Control: each change waiting on a decision, each a review approved that waits for the Board's "
+         "ratification, and each material economy action a review approved, which only the Owner's own decision "
+         "releases; an administrator records all three, so with sign-in on they wait on an administrator",
+         #  W1088 (FU-1270)
+         "your entities: a stage held at its review gate until you decide it, and an entity whose working name is "
+         "not published until you name it",
+         "your entities' service contracts: an offer to accept or decline, an accepted contract to deliver, and a "
+         "delivered one to settle, each on the side that acts next; and a delivery to your entity waiting for you to "
+         "accept its version",
+         #  W1089 (FU-1270)
+         "the reviewers' queues you are on the roster for: a composed item in scholar review and the children's "
+         "approval pack, waiting on a scholar, and a GMP record waiting on a QA signatory",
+         #  W1090 (FU-1270)
+         "the Owner's own approvals, which an administrator records: a filing-shaped legal draft, and a learner's "
+         "standing approval for a high-impact avatar mode waiting on the Owner's co-signature",
+         #  W1091 (FU-1270)
+         "a support answer waiting on your confirmation, and a quality defect of yours waiting on a correction or "
+         "a re-verification",
+         #  W1092 (FU-1270)
+         "an evolution proposal waiting on a decision: a proposal to change the platform, so with sign-in on it "
+         "waits on an administrator",
+         "the offerings a cascade proposed, waiting to be curated into the marketplace: for your entity, on you; "
+         "for the platform, on an administrator; they wait until one is curated or the catalogue is declined",
+         #  W1095 (FU-1270)
+         "a method amendment Change Control decided and the method does not carry out yet, an immune defence in "
+         "place until it is lifted, and a follow-up in the platform's register waiting on the Owner's decision; an "
+         "administrator records all three, so with sign-in on they wait on an administrator"]
+#  W1087 - the census of the stores that hold something waiting on a person found these as well; each is named until
+#  the list reads it (FU-1270)
+NOT_READ_YET: list = []   # W1095 - the list reads every store the census found (FU-1270)
+WHERE = {"agreement": "the agreements on the Law page", "asset": "the assets on the Law page",
+         "change": "Change Control's queue", "ratification": "the Board's ratifications",
+         #  W1088 (FU-1270)
+         "entity": "the entity's Cockpit", "gate": "the entity's review gates on its Cockpit",
+         "contract": "the service contracts on the VSB Economy page",
+         "delivery": "the deliveries on the Living Organisation hub",
+         #  W1089 (FU-1270)
+         "review": "the scholar review panel on the Quran platform's hub",
+         "pack": "the children's approval pack on the Quran platform's hub",
+         "gmp": "the GMP sign-off on the Science page",
+         #  W1090 (FU-1270) - no page offers these yet
+         "legal": "no page yet: an administrator approves it through the Law matter's approval route",
+         "cosign": "no page yet: an administrator co-signs it through the avatar ratification route",
+         #  W1091 (FU-1270)
+         "support": "your support ticket on the Support page",
+         "defect": "the defects on the Cockpit's VBS panel",
+         #  W1092 (FU-1270) - no page offers these yet
+         "evolution": "no page yet: a decision is recorded through the evolution proposal's approve or reject route",
+         "catalogue": ("no page yet: an offering is curated, or the catalogue declined, through the proposed "
+                       "catalogue's curate and decline routes"),
+         #  W1095 (FU-1270)
+         "amendment": ("no page yet: a method edit that names its change record carries it out, and GET "
+                       "/api/v1/method/amendments says which are"),
+         "defence": "no page yet: an administrator lifts it through Change Control's immune revert route",
+         "followup": "the follow-up register on the Transformation Dashboard"}
+NOT_KEPT = ("Your agreement and asset records are kept only once you are signed in, and sign-in is off, so nothing "
+            "of theirs is on this list.")
+BASIS = ("One list of what waits on you, from the records it reads; a record it could not read is said with why, and "
+         "what it does not read yet is named, so an empty list says only that nothing it reads is waiting.")
+DATE_BASIS = ("Each date here is a record's own: an obligation's date and when a piece of evidence lapses are a "
+              "person's entries, and a proposal or a change is dated when it was raised. None is computed by this "
+              "platform, and none is taken from a model.")
+NOTHING = "Nothing that this list reads is waiting on you."
+NOTHING_READ = ("Nothing in what this list could read is waiting on you; what it could not read is said with it, so "
+                "this is not a list of none.")
+#  soonest first: what has a date (falling due, lapsing, lapsed), then decisions, oldest first, then the rest
+_RANK = {"falls_due": 0, "evidence_lapses": 0, "evidence_lapsed": 0, "decision": 1, "ratification": 1,
+         "readiness_withdrawn": 2, "unconfirmed": 3,
+         "name": 1, "gate": 1, "offered": 1, "accepted": 1, "delivered": 1, "acceptance": 1,   # W1088
+         "review": 1, "pack": 1, "qa": 1,   # W1089
+         "approval": 1, "cosign": 1,   # W1090
+         "confirm": 1, "correct": 1, "reverify": 1,   # W1091
+         "proposal": 1, "curate": 1,   # W1092
+         "carry": 1, "owner": 1, "lift": 2}   # W1095
+
+
+def _iso(ts) -> str:
+    return datetime.fromtimestamp(float(ts), timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _ago(iso: str) -> str:
+    try:
+        days = (datetime.now(timezone.utc).date() - datetime.fromisoformat(str(iso).replace("Z", "+00:00")).date()).days
+    except ValueError:
+        return "raised on a date its record does not say"
+    return "raised today" if days <= 0 else f"raised {days} day{'s' if days != 1 else ''} ago"
+
+
+def _decider(user) -> bool:
+    """Whether Change Control's decisions are this person's to record: with sign-in on, an administrator's."""
+    return not auth_enabled() or (isinstance(user, dict) and user.get("role") == "admin")
+
+
+def _agreements(user, within_days: int) -> list:
+    from agentic_core.api.agreements import falling_due
+    return [{**i, "source": "agreement", "on": i.get("agreement_title"), "ref": i.get("clause"),
+             "where": WHERE["agreement"]} for i in falling_due(user, within_days)["items"]]
+
+
+def _assets(user, within_days: int) -> list:
+    from agentic_core.api.assets import lapsing
+    return [{**i, "source": "asset", "where": WHERE["asset"]} for i in lapsing(user, within_days)["items"]]
+
+
+def _projects(user) -> tuple:
+    """A pending proposal on a project of this person's waits on their decision (the project's owner decides it, W883).
+    With sign-in on, an unowned project is an administrator's; with it off, every project is the one person's."""
+    from agentic_core.projects import api as pj
+    projects, unread_projects = pj._projects_read()
+    read = pj._proposals_read()
+    me = user.get("username") if isinstance(user, dict) else None
+    admin = isinstance(user, dict) and user.get("role") == "admin"
+    items = []
+    for p in projects:
+        if auth_enabled() and not (me and p.owner_id == me or (not p.owner_id and admin)):
+            continue
+        w = pj._waiting_on_person(p, read)
+        for on in w.get("on") or []:
+            since = _iso(on["since"])
+            items.append({"source": "project", "kind": "decision", "project_id": p.id, "proposal_id": on["proposal_id"],
+                          "what": on["what"], "on": p.title, "ref": None, "where": w.get("where"), "since": since,
+                          "said": _ago(since)})
+    unread = []
+    if unread_projects:
+        unread.append({"store": "projects", "said": (
+            f"{unread_projects} project record(s) could not be read, so a decision on one of them that waits on you "
+            f"is not shown.")})
+    if read[1]:
+        unread.append({"store": "proposals", "said": (
+            f"{read[1]} proposal record(s) could not be read, so a decision that waits on you may not be shown.")})
+    return items, unread
+
+
+def _changes(user) -> tuple:
+    """Change Control's queue and the Board's ratifications, for the person who records their decisions. Every record
+    is read through Change Control's own loader; one it could not read is counted and said."""
+    if not _decider(user):
+        return [], []
+    from agentic_core.api import change_control as cc
+    from agentic_core.economy.governance import _owner_decided
+    items, unread = [], 0
+    for p in list(cc._CCA_STORE.glob("*.json")):
+        c = cc._load_change(p.stem)
+        if c is None:
+            if p.exists():
+                unread += 1
+            continue
+        if c.get("status") in ("submitted", "under_review"):
+            kind, what, where = "decision", "a decision on this change", WHERE["change"]
+        elif cc.awaiting_board_ratification(c):
+            kind, what, where = ("ratification", "the Board's ratification of this change, on the Owner's direction",
+                                 WHERE["ratification"])
+        elif (c.get("status") == "approved" and c.get("change_type") == "economy_material"
+              and not _owner_decided(c)):
+            #  a material economy action is released only by the Owner's explicit decision (W464): an approval
+            #  recorded any other way releases nothing, so it still waits
+            kind, what, where = ("decision", "the Owner's own decision on this change: a review's approval of a "
+                                             "material economy action releases nothing", WHERE["change"])
+        elif (c.get("change_type") == "immune_reconfiguration" and c.get("status") == "implemented"
+              and c.get("reversible") and not c.get("reverted_at")):
+            #  W1095 (FU-1270) - an immune defence in place stays until an administrator lifts it, once the threat it
+            #  answered has passed; its prior value was captured, so it can be
+            kind, what, where = ("lift", "an administrator's lifting of this immune defence, once the threat it "
+                                         "answered has passed", WHERE["defence"])
+        else:
+            continue
+        since = str(c.get("submitted_at") or "")
+        items.append({"source": "change", "kind": kind, "cca_id": c.get("cca_id"), "what": what,
+                      "on": c.get("title") or c.get("cca_id"), "ref": f"tier {cc.effective_tier(c)}", "where": where,
+                      "since": since, "said": _ago(since)})
+    return items, ([{"store": "changes", "said": (
+        f"{unread} Change Control record(s) could not be read, so a change waiting on a decision may not be shown.")}]
+        if unread else [])
+
+
+def _theirs(user, owner) -> bool:
+    """W1088 - whether a record owned by `owner` waits on this person: with sign-in on, it is theirs, or it is unowned and
+    they are an administrator (an unowned record is an administrator's, user_can_access); with it off, every record
+    is the one person's using this machine."""
+    if not auth_enabled():
+        return True
+    me = user.get("username") if isinstance(user, dict) else None
+    admin = isinstance(user, dict) and user.get("role") == "admin"
+    return bool(me and owner == me) or (not owner and admin)
+
+
+def _entities(user) -> tuple:
+    """W1088 (FU-1270) - an entity of this person's waiting on them: a stage held at its review gate until they decide
+    it (W452, Mode 3), and an entity whose working name is not published until its founder names it (W450). Every
+    entity record is read here, counted when it cannot be; the owners and names read serve the contracts and the
+    deliveries, whose own records name entities by id."""
+    import json
+    from agentic_core.api import vsb as vs
+    items, unread, owners, names = [], 0, {}, {}
+    for p in list(vs._VSB_STORE.glob("*.json")):
+        try:
+            v = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            if p.exists():
+                unread += 1
+            continue
+        if isinstance(v, dict) and not v.get("vsb_id") and v.get("entity_id"):
+            continue   # the synthesis studio keeps its own entities in this folder, by entity_id
+        if not (isinstance(v, dict) and v.get("vsb_id")):
+            unread += 1
+            continue
+        vid = str(v["vsb_id"])
+        owners[vid], names[vid] = v.get("owner_id"), (v.get("name") or vid)
+        if not _theirs(user, v.get("owner_id")):
+            continue
+        since = str(v.get("created_at") or "")
+        if v.get("name_pending"):
+            items.append({"source": "entity", "kind": "name", "vsb_id": vid, "what": "a name for this enterprise, from its founder",
+                          "on": names[vid], "ref": None, "where": WHERE["entity"], "since": since,
+                          "said": "its body is not published under a working name until it is named"})
+        rg = v.get("review_gates") if isinstance(v.get("review_gates"), dict) else {}
+        for st in (vs._gate_status(rg, s) for s in (rg.get("stages") or [])):
+            if st.get("status") == "pending":
+                items.append({"source": "entity", "kind": "gate", "vsb_id": vid,
+                              "what": f"a decision at the review gate of its '{st['stage']}' stage",
+                              "on": names[vid], "ref": None, "where": WHERE["gate"], "since": since,
+                              "said": "the stage does not go ahead until it is decided"})
+    return items, ([{"store": "entities", "said": (
+        f"{unread} entity record(s) could not be read, so a decision or a name one of them waits on may not be "
+        f"shown.")}] if unread else []), owners, names
+
+
+_CONTRACT_WAITS = {   # status -> (whose side acts, what waits)
+    "offered": ("provider_vsb", "an answer to this offer of a service contract: accept it or decline it"),
+    "accepted": ("provider_vsb", "the delivery of this accepted service contract"),
+    "delivered": ("client_vsb", "the settlement of this delivered service contract"),
+}
+
+
+def _contracts(user, owners: dict, names: dict) -> list:
+    """W1088 (FU-1270) - a service contract between entities waits on the owner of the side that acts next: an offer
+    on the provider's, to accept or decline; an accepted contract on the provider's, to deliver; a delivered one on the
+    client's, to settle. The contract store is read strictly, and a store it cannot read is said by its caller."""
+    from agentic_core.api.economy import _read_contracts
+    items = []
+    for c in _read_contracts():
+        side = _CONTRACT_WAITS.get(c.get("status"))
+        if not side:
+            continue
+        vid = str(c.get(side[0]) or "")
+        if vid not in owners or not _theirs(user, owners[vid]):
+            continue
+        since = str(c.get("offered_at") or "")
+        items.append({"source": "contract", "kind": c.get("status"), "contract_id": c.get("id"), "vsb_id": vid,
+                      "what": side[1], "on": names.get(vid, vid),
+                      "ref": f"{c.get('brief', '')[:80]}; {c.get('price_wst')} virtual WST", "where": WHERE["contract"],
+                      "since": since, "said": _ago(since)})
+    return items
+
+
+def _deliveries(user, owners: dict, names: dict) -> tuple:
+    """W1088 (FU-1270) - a cascade's delivery to an entity waits on its owner's acceptance of that version (W851): a run
+    scoped to an entity, with the version it delivered, and no acceptance recorded for it. The run history is read
+    tolerantly and says when it was not read whole; the acceptances are read strictly."""
+    from agentic_core.config import StoreUnavailable, data_path, read_json_reported
+    from agentic_core.api.swarm import _acceptances
+    unread = []
+    runs, why = read_json_reported(data_path("org_cascade_runs.json"), [])
+    if why:
+        unread.append({"store": "cascade runs", "said": (
+            f"The cascade run history could not be read whole ({why}), so a delivery waiting to be accepted may not "
+            f"be shown.")})
+    try:
+        accepted = {a.get("run_id") for a in _acceptances()}
+    except StoreUnavailable as e:
+        return [], unread + [{"store": "acceptances", "said": (
+            f"The record of accepted deliveries could not be read ({e}), so no delivery is said to wait on you: one "
+            f"may already be accepted.")}]
+    items = []
+    for r in runs if isinstance(runs, list) else []:
+        if not isinstance(r, dict):
+            continue
+        vid = str(r.get("business_plan_scope") or "")
+        if vid in ("", "workstation") or not r.get("delivery_sha256") or r.get("run_id") in accepted:
+            continue
+        if vid not in owners or not _theirs(user, owners[vid]):
+            continue
+        since = str(r.get("created_at") or "")
+        items.append({"source": "delivery", "kind": "acceptance", "run_id": r.get("run_id"), "vsb_id": vid,
+                      "what": f"an acceptance of this version of the delivery for '{str(r.get('mission') or '')[:80]}'",
+                      "on": names.get(vid, vid), "ref": None, "where": WHERE["delivery"], "since": since,
+                      "said": _ago(since)})
+    return items, unread
+
+
+def _reviewer(user, roster: dict) -> bool:
+    """W1089 (FU-1270) - whether a reviewers' queue waits on this person. With sign-in on, on the account whose username
+    is on the roster (a scholar decides only from their own account; a QA signatory is named on the roster), or, while
+    the roster is empty, on an administrator, who adds the first; with sign-in off, on the one person using this
+    machine, who enters a decision on a named reviewer's behalf."""
+    if not auth_enabled():
+        return True
+    me = user.get("username") if isinstance(user, dict) else None
+    admin = isinstance(user, dict) and user.get("role") == "admin"
+    return bool(me and me in roster) or (not roster and admin)
+
+
+def _reviews(user) -> tuple:
+    """W1089 (FU-1270) - a composed item in the scholar review queue (in review), and the children's approval pack while
+    it awaits a decision or has changed since one, wait on a scholar on the roster. The item is named by where it was
+    composed and its reference, never by its text."""
+    from agentic_core.config import StoreUnavailable
+    from agentic_core.api import scholar_review as sr
+    try:
+        roster = sr.roster()
+        recs = sr._load(sr._review_path())
+    except StoreUnavailable as e:
+        return [], [{"store": "scholar review", "said": (
+            f"The scholar review queue or its roster could not be read ({e}), so an item waiting on a scholar may not "
+            f"be shown.")}]
+    if not _reviewer(user, roster):
+        return [], []
+    items, unread = [], []
+    for key, r in recs.items():
+        if not isinstance(r, dict) or r.get("state") != sr.IN_REVIEW:
+            continue
+        since = str(r.get("submitted_at") or "")
+        items.append({"source": "review", "kind": "review", "content_key": key,
+                      "what": "a scholar's decision on this composed item", "on": str(r.get("surface") or key),
+                      "ref": r.get("reference") or None, "where": WHERE["review"], "since": since,
+                      "said": (_ago(since) if roster else
+                               "no scholar is on the roster, so it cannot be decided until one is added")})
+    try:
+        from agentic_core.religious_domain import approval_pack as ap
+        pack = ap.assemble()
+    except StoreUnavailable as e:
+        unread.append({"store": "approval pack", "said": (
+            f"The children's approval pack could not be read ({e}), so whether it waits on a scholar is not known.")})
+    else:
+        if pack.get("state") in ("awaiting_review", "changed_since_approval"):
+            items.append({"source": "review", "kind": "pack", "pack_hash": pack.get("pack_hash"),
+                          "what": "a scholar's decision on the children's approval pack, as a whole",
+                          "on": "the children's approval pack", "ref": None, "where": WHERE["pack"], "since": "",
+                          "said": (str(pack.get("basis") or pack.get("state")) if roster else
+                                   "no scholar is on the roster, so it cannot be decided until one is added")})
+    return items, unread
+
+
+def _gmp(user) -> tuple:
+    """W1089 (FU-1270) - a GMP record pending QA waits on a signatory on the QA roster. Records name no owner, so the
+    roster is who they wait on."""
+    from agentic_core.config import StoreUnavailable
+    from agentic_core.science import gmp_signoff as gs
+    try:
+        roster, recs = gs._load("roster"), gs._load("records")
+    except StoreUnavailable as e:
+        return [], [{"store": "GMP records", "said": (
+            f"The GMP records or their QA roster could not be read ({e}), so a record waiting on a signatory may not "
+            f"be shown.")}]
+    if not _reviewer(user, roster):
+        return [], []
+    items = []
+    for rid, r in recs.items():
+        if not isinstance(r, dict) or r.get("state") != gs.PENDING:
+            continue
+        since = str(r.get("submitted_at") or "")
+        items.append({"source": "gmp", "kind": "qa", "record_id": rid, "what": "a QA signatory's sign-off",
+                      "on": f"the GMP {r.get('kind') or 'record'} {rid}", "ref": None, "where": WHERE["gmp"],
+                      "since": since, "said": (_ago(since) if roster else
+                                               "no QA signatory is on the roster, so it cannot be signed until one is "
+                                               "added")})
+    return items, []
+
+
+def _owners_call(user) -> bool:
+    """W1090 (FU-1270) - whether the Owner's own approval waits on this person: with sign-in on, an administrator's,
+    who records the Owner's decision; with it off, the one person using this machine."""
+    return not auth_enabled() or (isinstance(user, dict) and user.get("role") == "admin")
+
+
+def _artefacts(user) -> tuple:
+    """W1090 (FU-1270) - a filing-shaped legal draft waits on the Owner's approval (legal/specialist.py). No page offers
+    the approval yet; an administrator records it through the Law matter's route."""
+    if not _owners_call(user):
+        return [], []
+    from agentic_core.config import StoreUnavailable, read_json_strict
+    from agentic_core.legal import specialist as sp
+    try:
+        d = read_json_strict(sp._store(), missing={"artefacts": {}}, expect=dict)
+    except StoreUnavailable as e:
+        return [], [{"store": "legal artefacts", "said": (
+            f"The legal drafts could not be read ({e}), so one waiting on the Owner's approval may not be shown.")}]
+    items = []
+    for aid, a in (d.get("artefacts") or {}).items():
+        if not isinstance(a, dict) or a.get("status") != "draft_awaiting_owner_approval":
+            continue
+        since = str(a.get("created_at") or "")
+        items.append({"source": "legal", "kind": "approval", "artefact_id": aid,
+                      "what": "the Owner's approval of this filing-shaped draft",
+                      "on": f"the legal draft {aid} ({a.get('template_id')})", "ref": None, "where": WHERE["legal"],
+                      "since": since, "said": _ago(since)})
+    return items, []
+
+
+def _cosigns(user) -> tuple:
+    """W1090 (FU-1270) - a learner's standing approval for a high-impact avatar mode waits on the Owner's co-signature
+    while it is not revoked (avatars/core/ratifications.py). No page offers the co-signature yet."""
+    if not _owners_call(user):
+        return [], []
+    from agentic_core.config import StoreUnavailable
+    from agentic_core.avatars.core import ratifications as rt
+    try:
+        d = rt._load()
+    except StoreUnavailable as e:
+        return [], [{"store": "avatar ratifications", "said": (
+            f"The avatar ratifications could not be read ({e}), so one waiting on the Owner's co-signature may not be "
+            f"shown.")}]
+    items = []
+    for r in d.get("ratifications") or []:
+        if not isinstance(r, dict) or r.get("revoked_at"):
+            continue
+        high = [m for m in (r.get("modes") or []) if m in rt.HIGH_IMPACT_MODES]
+        if not high or rt.OWNER_SIGNATORY in (r.get("signatories") or []):
+            continue
+        since = str(r.get("recorded_at") or "")
+        items.append({"source": "avatar", "kind": "cosign", "ratification_id": r.get("id"),
+                      "what": (f"the Owner's co-signature on a learner's standing approval for the "
+                               f"{', '.join(high)} mode{'s' if len(high) != 1 else ''}"),
+                      "on": f"the learner {r.get('user_id')}", "ref": None, "where": WHERE["cosign"],
+                      "since": since, "said": _ago(since)})
+    return items, []
+
+
+def _tickets(user) -> tuple:
+    """W1091 (FU-1270) - a support ticket whose answer its asker has not confirmed waits on them (support/tickets.py):
+    with sign-in on, the asker by their account; with it off, the one person using this machine. One asked while
+    signed out waits on nobody who can be named."""
+    from agentic_core.config import StoreUnavailable
+    from agentic_core.support import tickets as tk
+    try:
+        rows = tk._read()
+    except StoreUnavailable as e:
+        return [], [{"store": "support tickets", "said": (
+            f"The support tickets could not be read ({e}), so an answer waiting on your confirmation may not be "
+            f"shown.")}]
+    items = []
+    for t in rows:
+        if not isinstance(t, dict) or t.get("answer") in (None, "") or t.get("confirmed") is not tk.UNCONFIRMED:
+            continue
+        if not _theirs(user, t.get("user_id")):
+            continue
+        at = t.get("answered_at")
+        since = _iso(at) if isinstance(at, (int, float)) else str(at or "")
+        items.append({"source": "support", "kind": "confirm", "ticket_id": t.get("id"),
+                      "what": "your confirmation that this answer resolved your question",
+                      "on": f"the support ticket {t.get('id')}", "ref": None, "where": WHERE["support"],
+                      "since": since, "said": _ago(since)})
+    return items, []
+
+
+def _defects(user) -> tuple:
+    """W1091 (FU-1270) - a quality defect waits on its owner (vbs/qms.py): an open one for a correction, a corrected one
+    for a re-verification. A platform-level defect, with no owner, is an administrator's. The store is read
+    tolerantly, and when it was not read whole that is said."""
+    from agentic_core.config import data_path, read_json_reported
+    st, why = read_json_reported(data_path("qms_state_vbs.json"), {"defects": []})
+    unread = ([{"store": "quality defects", "said": (
+        f"The quality defects could not be read whole ({why}), so one waiting on you may not be shown.")}] if why else [])
+    items = []
+    for d in ((st.get("defects") if isinstance(st, dict) else None) or []):
+        if not isinstance(d, dict) or d.get("status") not in ("open", "corrected"):
+            continue
+        if not _theirs(user, d.get("owner_id")):
+            continue
+        since = str(d.get("opened_at") or "")
+        corrected = d.get("status") == "corrected"
+        items.append({"source": "defect", "kind": "reverify" if corrected else "correct", "defect_id": d.get("id"),
+                      "what": "a re-verification of its correction" if corrected else "a correction",
+                      "on": f"the defect {d.get('id')} ({d.get('label')})", "ref": None, "where": WHERE["defect"],
+                      "since": since, "said": _ago(since)})
+    return items, unread
+
+
+def _proposals(user) -> tuple:
+    """W1092 (FU-1270) - a pending evolution proposal waits on a decision (api/v191/evolution.py): approved, it is filed
+    with Change Control; rejected, it is closed. A proposal is to change the platform itself, so, as Change Control's
+    decisions do, it waits on an administrator with sign-in on, and on the one person using this machine with it off
+    (the route that records the decision is an administrator's too, W1096). The proposals are read strictly here,
+    and a store that cannot be read is said in its place. A proposal's words are a
+    model's, so it is named by its id."""
+    if not _decider(user):
+        return [], []
+    from agentic_core.config import StoreUnavailable, read_json_strict
+    from agentic_core.api.v191 import evolution as ev
+    try:
+        rows = read_json_strict(ev._STORE, missing=[], expect=list)
+    except StoreUnavailable as e:
+        return [], [{"store": "evolution proposals", "said": (
+            f"The evolution proposals could not be read ({e}), so one waiting on a decision may not be shown.")}]
+    items = []
+    for p in rows:
+        if not isinstance(p, dict) or p.get("status") != "pending":
+            continue
+        since = str(p.get("generated_at") or "")
+        canned = ev._is_removed_default(p)
+        items.append({"source": "evolution", "kind": "proposal", "proposal_id": p.get("id"),
+                      "what": ("a rejection of this row, which nothing proposed" if canned else
+                               "a decision on this proposal to change the platform: approved, it goes to Change "
+                               "Control; rejected, it is closed"),
+                      "on": f"the evolution proposal {p.get('id')}", "ref": None, "where": WHERE["evolution"],
+                      "since": since,
+                      "said": ("it is the default this route filed when nothing was proposed, written by nothing, so "
+                               "it can only be rejected" if canned else _ago(since))})
+    return items, []
+
+
+def _catalogue(user, owners: dict, names: dict) -> tuple:
+    """W1092 (FU-1270) - the offerings a cascade proposed wait to be curated into the marketplace (api/swarm.py, W294:
+    the cascade proposes, a person curates). A cascade run for an entity proposed them for it, so they wait on its
+    owner; a run for the platform, or one whose run or entity is not found, on an administrator; with sign-in off, on
+    the one person using this machine. They wait until one is curated or the catalogue is declined (W1096). The
+    catalogue is read strictly and the run history tolerantly (the deliveries say when it was
+    not read whole). The offerings' names are a model's, so the list names the run, never them."""
+    from agentic_core.config import StoreUnavailable, data_path, read_json_reported, read_json_strict
+    try:
+        rows = read_json_strict(data_path("proposed_catalogue.json"), missing=[], expect=list)
+    except StoreUnavailable as e:
+        return [], [{"store": "proposed catalogue", "said": (
+            f"The proposed catalogue could not be read ({e}), so offerings waiting to be curated may not be shown.")}]
+    runs, _why = read_json_reported(data_path("org_cascade_runs.json"), [])
+    scope = {r.get("run_id"): str(r.get("business_plan_scope") or "")
+             for r in (runs if isinstance(runs, list) else []) if isinstance(r, dict)}
+    items = []
+    for c in rows:
+        if not isinstance(c, dict) or c.get("status") != "proposed":
+            continue
+        offered = [i for i in (c.get("items") or []) if str(i).strip()]
+        if not offered:
+            continue
+        rid = c.get("run_id")
+        vid = scope.get(rid)
+        platform = vid in ("", "workstation")
+        entity = not platform and vid in owners
+        if not _theirs(user, owners[vid] if entity else None):
+            continue
+        since = str(c.get("created_at") or "")
+        n = len(offered)
+        items.append({"source": "catalogue", "kind": "curate", "run_id": rid, **({"vsb_id": vid} if entity else {}),
+                      "what": f"a curation of the {n} offering{'s' if n != 1 else ''} this cascade proposed",
+                      "on": names.get(vid, vid) if entity else "the marketplace",
+                      "ref": f"the cascade run {rid} for '{str(c.get('mission') or '')[:80]}'",
+                      "where": WHERE["catalogue"], "since": since,
+                      "said": (_ago(since) if entity or platform else
+                               "whose it is could not be found (its cascade run or its entity was not read), so it is "
+                               "listed for an administrator")})
+    return items, []
+
+
+def _amendments_waiting(am) -> list:
+    """W1095 (FU-1270) - a method amendment Change Control decided and the method does not carry out yet (W827): its
+    `carried_out` is "no" or "partly". Read from GET /api/v1/method/amendments' own answer, so the rule is the
+    method's. A method edit that names the amendment's change record carries it out."""
+    items = []
+    for a in (am.get("amendments") if isinstance(am, dict) else None) or []:
+        if not isinstance(a, dict) or not a.get("decided") or a.get("carried_out") not in ("no", "partly"):
+            continue
+        since = str(a.get("filed_at") or "")
+        items.append({"source": "method", "kind": "carry", "cca_id": a.get("cca_id"),
+                      "what": ("the method edit that carries this amendment out" if a.get("carried_out") == "no"
+                               else "the method edit that carries the rest of this amendment out"),
+                      "on": a.get("title") or f"the method amendment {a.get('cca_id')}", "ref": a.get("cca_id"),
+                      "where": WHERE["amendment"], "since": since,
+                      "said": str(a.get("carried_out_basis") or "") or _ago(since)})
+    return items
+
+
+def _owner_rows(user) -> tuple:
+    """W1095 (FU-1270) - a follow-up in the platform's register that only the Owner decides (docs/FOLLOWUPS.json: open
+    and owner_gated). An administrator records the Owner's decision; with sign-in off, it is the one person's using
+    this machine. The register is the repository's own document, and a runtime that does not carry it says so."""
+    if not _owners_call(user):
+        return [], []
+    from agentic_core import plan_followups as fu
+    try:
+        reg = fu.parse_register(fu.REGISTER.read_bytes())
+    except FileNotFoundError:
+        return [], [{"store": "follow-ups", "said": (
+            "The follow-up register (docs/FOLLOWUPS.json) is not on this machine, so a follow-up waiting on the "
+            "Owner's decision is not shown.")}]
+    except (OSError, ValueError) as e:
+        return [], [{"store": "follow-ups", "said": (
+            f"The follow-up register could not be read ({type(e).__name__}), so a follow-up waiting on the Owner's "
+            f"decision may not be shown.")}]
+    items = []
+    for r in (reg.get("items") if isinstance(reg, dict) else None) or []:
+        if not isinstance(r, dict) or r.get("status") != "open" or not r.get("owner_gated"):
+            continue
+        since = str(r.get("found") or "")
+        items.append({"source": "followup", "kind": "owner", "followup_id": r.get("id"),
+                      "what": "the Owner's decision on this follow-up", "on": f"the follow-up {r.get('id')}",
+                      "ref": str(r.get("title") or "")[:160] or None, "where": WHERE["followup"],
+                      "since": since, "said": _ago(since)})
+    return items, []
+
+
+@router.get("")
+async def what_waits(within_days: int = 30, user: dict | None = Depends(get_current_user)):
+    """What waits on this person, from the records the list reads, soonest first; each store it could not read, with
+    why; and what it does not read yet."""
+    if not 0 <= within_days <= 365:
+        raise HTTPException(status_code=400, detail=(
+            f"The window is a number of days from 0 to 365; {within_days} is not one, so nothing was read."))
+    if user is not None and not isinstance(user, dict):
+        user = None
+    items, unread = [], []
+    #  each store on its own: one that cannot be read is said in its place, and the others still stand
+    kept_records = auth_enabled()
+    for store, read in ((("agreements", lambda: _agreements(user, within_days)),
+                         ("assets", lambda: _assets(user, within_days))) if kept_records else ()):
+        try:
+            items += read()
+        except HTTPException as e:
+            if e.status_code != 503:
+                raise
+            unread.append({"store": store, "said": str(e.detail)})
+    for read in (lambda: _projects(user), lambda: _changes(user)):
+        got, missed = read()
+        items += got
+        unread += missed
+    #  W1088 (FU-1270) - an entity's own waits, then the contracts and deliveries that name entities by id
+    got, missed, owners, names = _entities(user)
+    items += got
+    unread += missed
+    try:
+        items += _contracts(user, owners, names)
+    except HTTPException as e:
+        if e.status_code != 503:
+            raise
+        unread.append({"store": "contracts", "said": str(e.detail)})
+    got, missed = _deliveries(user, owners, names)
+    items += got
+    unread += missed
+    #  W1089 (FU-1270) - the reviewers' queues the person is on the roster for
+    for read in (lambda: _reviews(user), lambda: _gmp(user),
+                 lambda: _artefacts(user), lambda: _cosigns(user),   # W1090 - the Owner's own approvals
+                 lambda: _tickets(user), lambda: _defects(user),   # W1091 - a support answer, a defect
+                 lambda: _proposals(user), lambda: _catalogue(user, owners, names)):   # W1092
+        got, missed = read()
+        items += got
+        unread += missed
+    #  W1095 (FU-1270) - a follow-up waiting on the Owner, and a method amendment not carried out, read from the
+    #  method's own answer; an administrator records both
+    got, missed = _owner_rows(user)
+    items += got
+    unread += missed
+    if _decider(user):
+        from agentic_core.api import method as _md
+        try:
+            items += _amendments_waiting(await _md.list_amendments())
+        except HTTPException as e:
+            if e.status_code != 503:
+                raise
+            unread.append({"store": "method amendments", "said": str(e.detail)})
+    items.sort(key=lambda i: (_RANK.get(i["kind"], 9), i.get("days") if i.get("days") is not None else 0,
+                              str(i.get("since") or "")))
+    return {"reads": READS, "not_read_yet": NOT_READ_YET, "basis": BASIS, "date_basis": DATE_BASIS,
+            "within_days": within_days, "items": items, "unread": unread,
+            **({} if kept_records else {"not_kept": NOT_KEPT}),
+            **({} if items else {"said": NOTHING_READ if unread else NOTHING})}

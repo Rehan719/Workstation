@@ -39,7 +39,7 @@ function read(): OutputRecord[] {
 }
 
 function write(records: OutputRecord[]) {
-  try { localStorage.setItem(KEY, JSON.stringify(records.slice(0, MAX_ENTRIES))); } catch { /* quota/full — ignore */ }
+  try { localStorage.setItem(KEY, JSON.stringify(records.slice(0, MAX_ENTRIES))); } catch { silenceIsRight('the local history of outputs is browser storage is a per-browser convenience that nothing else depends on; a full store keeps the older list')(); }
   // §9 — mirror every local change up to the user's server workspace (no-op when signed out)
   scheduleWorkspacePush();
 }
@@ -67,25 +67,27 @@ export function saveOutput(rec: Omit<OutputRecord, 'id' | 'ts'> & { id?: string;
   };
   const next = [record, ...read().filter(r => r.id !== record.id)].slice(0, MAX_ENTRIES);
   write(next);
-  try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { /* ignore */ }
+  try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { silenceIsRight('an in-page event asking other panels to re-read the local history; the next read shows the same')(); }
   return record;
 }
 
 export function removeOutput(id: string) {
   write(read().filter(r => r.id !== id));
-  try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { /* ignore */ }
+  try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { silenceIsRight('an in-page event asking other panels to re-read the local history; the next read shows the same')(); }
 }
 
 export function clearOutputs() {
   write([]);
-  try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { /* ignore */ }
+  try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { silenceIsRight('an in-page event asking other panels to re-read the local history; the next read shows the same')(); }
 }
 
 // ── Server sync (§9) ─────────────────────────────────────────────────────────────────────────
 // Only active when the user is signed in (a bearer token exists). Auth-off keeps the pure-local
 // behaviour, so single-user mode is untouched.
 
+import { silenceIsRight } from '../components/ReadFailures';   // W961 (FU-1181)
 import { getToken } from './auth';
+import { refusalOf } from './stream';   // W1025 - a refused sync by its reason, not its status alone
 import { getPrefs, setPrefs } from './userPrefs';
 
 const WORKSPACE_URL = '/api/v1/user/workspace';
@@ -110,11 +112,12 @@ export function scheduleWorkspacePush(): void {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ history: read(), prefs: getPrefs() }),
       });
-      _lastSyncError = res.ok ? '' : `Sync failed (HTTP ${res.status}) — your work is still saved in this browser.`;
+      //  W1025 - the reason: a push over a history the server could read only in part is refused with one (W577)
+      _lastSyncError = res.ok ? '' : `Sync refused, and your work is still saved in this browser: ${await refusalOf(res)}`;
     } catch {
       _lastSyncError = 'Sync failed — offline. Your work is still saved in this browser.';
     }
-    try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { /* ignore */ }
+    try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { silenceIsRight('an in-page event asking other panels to re-read the local history; the next read shows the same')(); }
   }, 1200);
 }
 
@@ -125,7 +128,7 @@ export async function syncWorkspaceFromServer(): Promise<number | null> {
   try {
     const res = await fetch(WORKSPACE_URL);
     if (!res.ok) {
-      _lastSyncError = `Could not load your saved work (HTTP ${res.status}).`;
+      _lastSyncError = `Could not load your saved work: ${await refusalOf(res)}`;   // W1025
       return null;
     }
     const doc = await res.json();
@@ -148,7 +151,7 @@ export async function syncWorkspaceFromServer(): Promise<number | null> {
       ? (doc.count_basis ?? 'Your saved work could not be read in full on the server, so some records '
          + 'may be missing from this list. Nothing in this browser has been lost.')
       : '';
-    try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { /* ignore */ }
+    try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { silenceIsRight('an in-page event asking other panels to re-read the local history; the next read shows the same')(); }
     if (merged.length !== serverHistory.length && !doc.count_is_incomplete) scheduleWorkspacePush();   // push what the server lacked
     return merged.length;
   } catch {
@@ -163,6 +166,6 @@ export async function clearWorkspaceEverywhere(): Promise<void> {
   if (!signedIn()) return;
   try {
     const res = await fetch(WORKSPACE_URL, { method: 'DELETE' });
-    _lastSyncError = res.ok ? '' : `Server copy not cleared (HTTP ${res.status}).`;
+    _lastSyncError = res.ok ? '' : `Server copy not cleared: ${await refusalOf(res)}`;   // W1025
   } catch { _lastSyncError = 'Server copy not cleared — offline.'; }
 }

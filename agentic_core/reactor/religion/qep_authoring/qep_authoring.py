@@ -52,7 +52,7 @@ class QEPAuthoringReactor(SpecializedReactor):
         _ref = str(params.get("reference") or "")
         _type = str(params.get("type", "tafsir"))
         _key = f"authoring:{_type}:{_ref or uuid.uuid4().hex[:8]}"
-        rec = _sr.submit_if_new(_key, f"qep_authoring/{_type}", content, reference=_ref)
+        rec = _sr.submit_if_new(_key, f"qep_authoring/{_type}", content, reference=_ref, served_by="person")   # W796
         logger.info("QEPAuthoring: contribution queued for scholarly review (%s)", _key)
         return {"status": "SUCCESS", "annotation_id": _key, "state": rec.get("state"),
                 "detail": ("queued for review. It is not published to any learner until a scholar on the "

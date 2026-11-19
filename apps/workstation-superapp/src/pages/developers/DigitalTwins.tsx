@@ -1,13 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { Card } from '@workstation/ui';
+import { Card, Button } from '@workstation/ui';
 import { Boxes, Loader2, Activity, ChevronRight } from 'lucide-react';
+import { apiJson, errorMessage } from '../../lib/api';   // W927 - a read is used only on a 2xx
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W929
 
 // W481 (FU-122, sweep S8.1) — the transformation cascade writes a PROJECTION (arithmetic over two live
 // readings), never a simulation; records written before W481 carry the old `simulations` shape and its
 // 'stable-and-improving' verdict, which was impossible by construction. Both are rendered as projections.
 interface Projection { of?: string; formula?: string; projected?: number; current?: number; note?: string;
   compared_with_current?: string }
-interface Simulation { scenario?: string; verdict?: string; projected_realisation?: number; time_horizon?: string }
+interface Simulation { scenario?: string; verdict?: string; projected_realisation?: number; time_horizon?: string;
+  // W831 (FU-747) - a scenario composed through /twin/simulate is stored in the same list. It carries its own id and
+  // its statement of how its text was produced; its text is returned when asked and is not stored.
+  simulation_id?: string; scenario_name?: string; run_at?: string;
+  composition?: { basis?: string; served_by?: string; computed?: boolean } | null }
+
+// W831 (FU-747) - ModelRequest's documented values; `complexity` selects the route's own specification text
+const MODEL_TYPES = ['process', 'biological', 'economic', 'physical', 'organisational'];
+const COMPLEXITIES = ['simple', 'standard', 'complex'];
+const FIELD = 'w-full text-xs bg-slate-950 border border-slate-900 rounded-xl p-2.5 text-white';
 interface TwinModel {
   model_id: string;
   system_name: string;
@@ -26,31 +37,79 @@ interface TwinModel {
 }
 
 export const DigitalTwins: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W929 - a read that fails is said
   const [models, setModels] = useState<TwinModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<TwinModel | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  //  W831 (FU-747) - composing a model, and asking a selected model for a scenario or an optimisation
+  const [form, setForm] = useState({ system_name: '', system_description: '', domain: 'general',
+                                     model_type: 'process', complexity: 'standard' });
+  const [composing, setComposing] = useState(false);
+  const [scenario, setScenario] = useState({ scenario_name: '', scenario_description: '', time_horizon: '90 days' });
+  const [objective, setObjective] = useState('');
+  const [constraints, setConstraints] = useState('');
+  const [asking, setAsking] = useState(false);
+  const [actionError, setActionError] = useState('');
+  const [answer, setAnswer] = useState<{ kind: 'scenario' | 'optimisation'; title: string; text: string;
+                                          basis?: string } | null>(null);
+
+  const loadModels = () => apiJson('/api/v1/twin/models')
+    .then(d => { clearRead('the twin models'); setModels(d.models ?? (Array.isArray(d) ? d : [])); })
+    .catch(noteRead('the twin models'));
 
   useEffect(() => {
-    fetch('/api/v1/twin/models')
-      .then(r => r.json())
-      .then(d => setModels(d.models ?? (Array.isArray(d) ? d : [])))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    loadModels().finally(() => setLoading(false));
   }, []);
 
-  const open = async (m: TwinModel) => {
-    setLoadingDetail(true); setSelected(m);
+  //  W993 (FU-399 part 25) - this said the server's detail when it was a string and only the status when it was not,
+  //  and read a body that was not JSON as no body. apiJson carries both, and errorMessage says them.
+  const post = (url: string, body: any) => apiJson(url, { method: 'POST', body });
+
+  const compose = async () => {
+    setComposing(true); setActionError('');
     try {
-      const r = await fetch(`/api/v1/twin/models/${m.model_id}`);
-      if (r.ok) setSelected(await r.json());
-      else setSelected({ ...m, _load_error: `HTTP ${r.status} — showing the summary row only` } as any);   // W329
-    } catch { setSelected({ ...m, _load_error: 'backend unreachable — showing the summary row only' } as any); }
+      const d = await post('/api/v1/twin/model', form);
+      await loadModels();
+      await open({ model_id: d.model_id, system_name: d.system_name } as TwinModel);
+      setForm(f => ({ ...f, system_name: '', system_description: '' }));
+    } catch (e) { setActionError(`The model was not composed: ${errorMessage(e)}`); }
+    setComposing(false);
+  };
+
+  const ask = async (kind: 'scenario' | 'optimisation') => {
+    if (!selected) return;
+    setAsking(true); setActionError(''); setAnswer(null);
+    try {
+      const d = kind === 'scenario'
+        ? await post('/api/v1/twin/simulate', { model_id: selected.model_id, ...scenario })
+        : await post('/api/v1/twin/optimise', { model_id: selected.model_id, optimisation_objective: objective,
+            constraints: constraints.split('\n').map(s => s.trim()).filter(Boolean) });
+      setAnswer({ kind, title: (kind === 'scenario' ? d.scenario_name : d.objective) ?? '', text: d.result ?? '',
+                  basis: d.composition?.basis });
+      if (kind === 'scenario') {        // the stored model now lists this scenario
+        //  W993 - a refused re-read was silent, and the earlier model stood as if it were current
+        try { setSelected(await apiJson(`/api/v1/twin/models/${selected.model_id}`)); }
+        catch (e) {
+          setSelected(s => (s ? { ...s, _load_error: `${errorMessage(e)} — the list of scenarios is the one read before this one ran` } as any : s));
+        }
+      }
+    } catch (e) { setActionError(`The ${kind === 'scenario' ? 'scenario' : 'optimisation'} was not run: ${errorMessage(e)}`); }
+    setAsking(false);
+  };
+
+  const open = async (m: TwinModel) => {
+    setAnswer(null);
+    setLoadingDetail(true); setSelected(m);
+    //  W993 (FU-399 part 25) - the failure was written to _load_error, which nothing on the page read; it is shown
+    try { setSelected(await apiJson(`/api/v1/twin/models/${m.model_id}`)); }
+    catch (e) { setSelected({ ...m, _load_error: `${errorMessage(e)} — showing the summary row only` } as any); }
     setLoadingDetail(false);
   };
 
   return (
     <div className="space-y-8 pb-24">
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Digital Resources</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Digital Twins</h1>
@@ -58,9 +117,38 @@ export const DigitalTwins: React.FC = () => {
           Living digital-twin models generated across the organism — including the VSB organisational
           twins produced by each transformation orchestration. Select a model to inspect its structure
           and projections. Nothing here is a trained model, and the transformation cascade's figure is a
-          projection (arithmetic over live readings), not a simulation.
+          projection (arithmetic over live readings), not a simulation. A model, a scenario or an optimisation
+          composed on this page is text written by whatever served it; nothing is computed, and each answer says so.
         </p>
       </header>
+
+      {/* W831 (FU-747) - the page could only read twins: the three routes that compose text had no caller here */}
+      <Card className="p-6" data-testid="twin-compose">
+        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+          <Boxes size={14} /> Compose a twin model (text)
+        </h3>
+        <div className="grid grid-cols-1 @[640px]:grid-cols-2 gap-2 mb-2">
+          <input value={form.system_name} onChange={e => setForm({ ...form, system_name: e.target.value })}
+            placeholder="System name" className={FIELD} />
+          <input value={form.domain} onChange={e => setForm({ ...form, domain: e.target.value })}
+            placeholder="Domain" className={FIELD} />
+          <select value={form.model_type} onChange={e => setForm({ ...form, model_type: e.target.value })}
+            className={FIELD} aria-label="Model type">
+            {MODEL_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <select value={form.complexity} onChange={e => setForm({ ...form, complexity: e.target.value })}
+            className={FIELD} aria-label="Complexity">
+            {COMPLEXITIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <textarea value={form.system_description} onChange={e => setForm({ ...form, system_description: e.target.value })}
+          rows={2} placeholder="What the system is and does" className={`${FIELD} mb-3`} />
+        <Button onClick={compose} disabled={composing || !form.system_name.trim() || !form.system_description.trim()}
+          className="flex items-center gap-2 text-xs">
+          {composing ? <Loader2 size={13} className="animate-spin" /> : <Boxes size={13} />} Compose the model text
+        </Button>
+        {actionError && <p className="text-vital text-xs font-bold mt-2" data-testid="twin-action-error">{actionError}</p>}
+      </Card>
 
       <div className="grid grid-cols-1 @[900px]:grid-cols-2 gap-6">
         {/* List */}
@@ -102,9 +190,14 @@ export const DigitalTwins: React.FC = () => {
                 <h3 className="text-sm font-black text-white">{selected.system_name}</h3>
                 {loadingDetail && <Loader2 size={13} className="animate-spin text-highlight" />}
               </div>
+              {(selected as any)._load_error && (
+                <p className="text-[10px] text-amber-400/90 font-bold mb-3 leading-relaxed" data-testid="twin-load-error">
+                  This model could not be read: {(selected as any)._load_error}.
+                </p>
+              )}
               {selected.trained === false && selected.template_note ? (
                 <p className="text-[10px] text-amber-400/90 font-semibold mb-3 leading-relaxed">{selected.template_note}</p>
-              ) : selected.trained === undefined && (selected.simulations?.length || /vision_realisation|owner twin/i.test(selected.model_spec || '')) ? (
+              ) : selected.trained === undefined && (selected.simulations?.some(s => !s.simulation_id) || /vision_realisation|owner twin/i.test(selected.model_spec || '')) ? (
                 /* W481 — records written before this round claim an owner twin and a 'vision_realisation' state
                    variable; nothing here is trained, and that is said on the record itself */
                 <p className="text-[10px] text-amber-400/90 font-semibold mb-3 leading-relaxed">
@@ -126,7 +219,14 @@ export const DigitalTwins: React.FC = () => {
               )}
               {selected.simulations && selected.simulations.length > 0 && (
                 <div className="mb-4 space-y-2">
-                  {selected.simulations.map((s, i) => (
+                  {selected.simulations.map((s, i) => s.simulation_id ? (
+                    /* W831 (FU-747) - a scenario composed through /twin/simulate, not a pre-W481 record */
+                    <div key={i} className="p-3 rounded-xl bg-slate-950 border border-slate-900" data-testid="twin-scenario-row">
+                      <p className="text-[10px] font-bold text-slate-300 flex items-center gap-1.5"><Activity size={11} className="text-slate-400" /> Scenario · {s.scenario_name}</p>
+                      <p className="text-[9px] text-slate-600">horizon {s.time_horizon ?? 'not stated'}{s.run_at ? ` · ${s.run_at}` : ''} · its text was returned when it was asked for and is not stored</p>
+                      <p className="text-[9px] text-amber-400/80 mt-1 leading-relaxed">{s.composition?.basis ?? 'This scenario row does not say how its text was produced.'}</p>
+                    </div>
+                  ) : (
                     <div key={i} className="p-3 rounded-xl bg-slate-950 border border-slate-900">
                       <p className="text-[10px] font-bold text-slate-300 flex items-center gap-1.5"><Activity size={11} className="text-slate-400" /> {s.scenario ?? 'Recorded before W481'}</p>
                       {s.projected_realisation != null && (
@@ -144,6 +244,44 @@ export const DigitalTwins: React.FC = () => {
                   ?? 'This record does not say how its text was produced.'}
               </p>
               <pre className="text-[10px] text-slate-400 leading-relaxed whitespace-pre-wrap font-mono bg-slate-950 rounded-xl p-4 max-h-[460px] overflow-auto border border-slate-900">{selected.model_spec ?? 'No model spec.'}</pre>
+
+              {/* W831 (FU-747) - ask this model for a scenario or an optimisation; both answers are text */}
+              <div className="mt-4 grid grid-cols-1 gap-3" data-testid="twin-ask">
+                <div className="p-3 rounded-xl bg-slate-950 border border-slate-900 space-y-2">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Compose a scenario narrative</p>
+                  <input value={scenario.scenario_name} onChange={e => setScenario({ ...scenario, scenario_name: e.target.value })}
+                    placeholder="Scenario name" className={FIELD} />
+                  <textarea value={scenario.scenario_description} onChange={e => setScenario({ ...scenario, scenario_description: e.target.value })}
+                    rows={2} placeholder="What changes in this scenario" className={FIELD} />
+                  <input value={scenario.time_horizon} onChange={e => setScenario({ ...scenario, time_horizon: e.target.value })}
+                    placeholder="Time horizon" className={FIELD} />
+                  <Button onClick={() => ask('scenario')} className="flex items-center gap-2 text-xs"
+                    disabled={asking || !scenario.scenario_name.trim() || !scenario.scenario_description.trim()}>
+                    {asking ? <Loader2 size={13} className="animate-spin" /> : <Activity size={13} />} Compose the scenario text
+                  </Button>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-950 border border-slate-900 space-y-2">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Ask for an optimisation</p>
+                  <input value={objective} onChange={e => setObjective(e.target.value)} placeholder="Objective" className={FIELD} />
+                  <textarea value={constraints} onChange={e => setConstraints(e.target.value)} rows={2}
+                    placeholder="Constraints, one per line (optional)" className={FIELD} />
+                  <Button onClick={() => ask('optimisation')} disabled={asking || !objective.trim()}
+                    className="flex items-center gap-2 text-xs">
+                    {asking ? <Loader2 size={13} className="animate-spin" /> : <Activity size={13} />} Compose the optimisation text
+                  </Button>
+                </div>
+              </div>
+              {answer && (
+                <div className="mt-4" data-testid="twin-answer">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
+                    {answer.kind === 'scenario' ? 'Scenario' : 'Optimisation'}{answer.title ? ` · ${answer.title}` : ''}
+                  </p>
+                  <p className="text-[10px] text-amber-400/90 leading-relaxed mb-2" data-testid="twin-answer-basis">
+                    {answer.basis ?? 'This answer does not say how its text was produced.'}
+                  </p>
+                  <pre className="text-[10px] text-slate-400 leading-relaxed whitespace-pre-wrap font-mono bg-slate-950 rounded-xl p-4 max-h-[460px] overflow-auto border border-slate-900">{answer.text || 'The answer carried no text.'}</pre>
+                </div>
+              )}
             </div>
           )}
         </Card>

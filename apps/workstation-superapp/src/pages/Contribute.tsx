@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Badge, Button, notImplemented} from '@workstation/ui';
+import { Card, Badge, Button } from '@workstation/ui';
 import { Github, Globe, MessageSquare, History, Info, ChevronRight, Zap, Star, Users, Terminal, BookOpen, HeartPulse } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -42,7 +42,7 @@ export const Contribute: React.FC = () => {
                </div>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                   {[
-                    { title: 'Genomic Core', desc: 'Enhance the Merkle-DAG and GRN engine.', icon: Zap },
+                    { title: 'Genomic Core', desc: 'Enhance the hash-chained audit log and the GRN engine.', icon: Zap },
                     { title: 'Domains', desc: 'Build tools for the six domains: Religion, Science, Education, Law, Employment and Care.', icon: HeartPulse },
                     { title: 'Orchestration', desc: 'Optimize L9 swarms and L10 evolution.', icon: Terminal },
                     { title: 'Standards', desc: 'Contribute to ACP/A2A specifications.', icon: BookOpen },
@@ -95,8 +95,12 @@ export const Contribute: React.FC = () => {
                   <h4 className="text-xl font-black uppercase tracking-tight">Join the Discussion</h4>
                </div>
                <div className="space-y-4">
-                  <Button onClick={() => notImplemented('Access Discourse Forum')} variant="outline" className="w-full py-4 text-[10px]">Access Discourse Forum</Button>
-                  <Button onClick={() => notImplemented('Join Discord Server')} variant="outline" className="w-full py-4 text-[10px]">Join Discord Server</Button>
+                  {/* W1033 - there is no forum and no chat server: the two buttons here only said "not implemented".
+                      The discussion that exists is the repository's */}
+                  <p className="text-xs text-slate-500 font-semibold leading-relaxed" data-testid="contribute-no-forum">
+                     There is no forum and no chat server. Discussion is on the repository.
+                  </p>
+                  <Button onClick={() => openExternal(`${REPO}/discussions`)} variant="outline" className="w-full py-4 text-[10px]">Open the repository's discussions</Button>
                </div>
             </Card>
 

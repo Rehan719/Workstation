@@ -1,0 +1,449 @@
+{
+ "catalog": {
+  "status": 200,
+  "body": {
+   "products": [
+    {
+     "slug": "Care",
+     "name": "Care Domain Signature Product",
+     "tier": "Legacy",
+     "category": "Legacy archive",
+     "features": [
+      "Archived VSB-SIG-CARE directory — not a served product"
+     ],
+     "features_declared_not_built": [],
+     "features_basis": "",
+     "source": null,
+     "route": null,
+     "status": "legacy",
+     "live": false,
+     "has_directory": true
+    },
+    {
+     "slug": "Education",
+     "name": "Education Domain Signature Product",
+     "tier": "Legacy",
+     "category": "Legacy archive",
+     "features": [
+      "Archived VSB-SIG-EDU directory — not a served product"
+     ],
+     "features_declared_not_built": [],
+     "features_basis": "",
+     "source": null,
+     "route": null,
+     "status": "legacy",
+     "live": false,
+     "has_directory": true
+    },
+    {
+     "slug": "OctoVeritasEngine",
+     "name": "OctoVeritas Engine",
+     "tier": "Enterprise+",
+     "category": "Platform",
+     "features": [
+      "Constitutional Compliance Checking",
+      "C-Suite Coordination",
+      "Quad-Engine Bridge"
+     ],
+     "features_declared_not_built": [],
+     "features_basis": "",
+     "source": null,
+     "route": "/constitution",
+     "status": "live",
+     "live": true,
+     "has_directory": true
+    },
+    {
+     "slug": "Religion",
+     "name": "Religion Domain Signature Product",
+     "tier": "Legacy",
+     "category": "Legacy archive",
+     "features": [
+      "Archived VSB-SIG-REL directory — not a served product"
+     ],
+     "features_declared_not_built": [],
+     "features_basis": "",
+     "source": null,
+     "route": null,
+     "status": "legacy",
+     "live": false,
+     "has_directory": true
+    },
+    {
+     "slug": "business_incubator",
+     "name": "Co-Evolutionary Business Incubator",
+     "tier": "Enterprise",
+     "category": "SDK",
+     "features": [
+      "Strategic Foresight",
+      "Constitutional Vetting",
+      "Co-Evolutionary Simulation"
+     ],
+     "features_declared_not_built": [],
+     "features_basis": "",
+     "source": "agentic_core/incubation/business_incubator.py",
+     "route": null,
+     "status": "source",
+     "live": false,
+     "has_directory": true
+    },
+    {
+     "slug": "capital_fund",
+     "name": "Capital Fund",
+     "tier": "Enterprise",
+     "category": "Platform",
+     "features": [
+      "Virtual WST pool with cycle contributions",
+      "Allocation to projects and VSB entities",
+      "Owner-set virtual endowment, disclosed as a seed"
+     ],
+     "features_declared_not_built": [
+      "Autonomous Rebalancing",
+      "On-Chain Gateway",
+      "Constitutional Evolution Voting"
+     ],
+     "features_basis": "the three declared features are served by nothing in this repository - a grep for each hits only this catalogue entry, and the fund's own dashboard states that no on-chain integration exists. Virtual WST only.",
+     "source": null,
+     "route": "/capital",
+     "status": "live",
+     "live": true,
+     "has_directory": false
+    },
+    {
+     "slug": "cognitive_scraper",
+     "name": "Cognitive Computing Scraper SDK",
+     "tier": "Enterprise",
+     "category": "SDK",
+     "features": [
+      "Frontier AI Ingestion",
+      "Concept Graph Mapping",
+      "Temporal Trend Analysis"
+     ],
+     "features_declared_not_built": [],
+     "features_basis": "",
+     "source": "agentic_core/synthesis/cognitive_scraper.py",
+     "route": null,
+     "status": "source",
+     "live": false,
+     "has_directory": true
+    },
+    {
+     "slug": "digital_reactor",
+     "name": "Digital Reactor (Simulation-as-a-Service)",
+     "tier": "Standard/Pro/Enterprise",
+     "category": "SDK",
+     "features": [
+      "Domain pipeline narratives on the owned fabric",
+      "Variant generation, ranked only when a scorer returns scores"
+     ],
+     "features_declared_not_built": [
+      "High-Fidelity Twinning",
+      "ABM/Physics Simulation",
+      "Synthetic Data Generation"
+     ],
+     "features_basis": "W496 (FU-114): a repo-wide grep for synthetic data generation finds nothing, and the reactor writes a narrative of how a pipeline would behave rather than executing a simulation - its own page states that nothing is executed. The three declared features are kept here, named as not built, rather than deleted or presented as served.",
+     "source": "agentic_core/simulation/engine.py",
+     "route": "/reactor",
+     "status": "live",
+     "live": true,
+     "has_directory": true
+    },
+    {
+     "slug": "enterprise-file-hub",
+     "name": "Enterprise File Hub",
+     "tier": "Enterprise",
+     "category": "Platform",
+     "features": [
+      "Agentic Document Pipelines",
+      "CLI Ingestion",
+      "Federated Storage"
+     ],
+     "features_declared_not_built": [],
+     "features_basis": "",
+     "source": null,
+     "route": null,
+     "status": "source",
+     "live": false,
+     "has_directory": true
+    },
+    {
+     "slug": "gse",
+     "name": "Grand Synthesis Engine",
+     "tier": "Enterprise+",
+     "category": "SDK",
+     "features": [
+      "Cross-Version Synthesis",
+      "Constitutional Generation",
+      "Audit Automation"
+     ],
+     "features_declared_not_built": [],
+     "features_basis": "",
+     "source": "agentic_core/synthesis/grand_synthesis_engine.py",
+     "route": null,
+     "status": "source",
+     "live": false,
+     "has_directory": true
+    },
+    {
+     "slug": "mjm-intelligence-engine",
+     "name": "MJM Intelligence Engine",
+     "tier": "Enterprise+",
+     "category": "Platform",
+     "features": [
+      "Mushahida / Jaiza / Muaina Learning Loop",
+      "Genomic Domain Configuration",
+      "Governed Self-Evolution"
+     ],
+     "features_declared_not_built": [],
+     "features_basis": "",
+     "source": null,
+     "route": null,
+     "status": "source",
+     "live": false,
+     "has_directory": true
+    },
+    {
+     "slug": "molecular_sdk",
+     "name": "Molecular Communication SDK",
+     "tier": "Enterprise",
+     "category": "SDK",
+     "features": [
+      "Neurotransmitter Signaling",
+      "Emotional Interfacing",
+      "Trust Modulation"
+     ],
+     "features_declared_not_built": [],
+     "features_basis": "",
+     "source": "agentic_core/biochemical/molecular_comm.py",
+     "route": null,
+     "status": "source",
+     "live": false,
+     "has_directory": true
+    },
+    {
+     "slug": "nanophotonic_navigation",
+     "name": "Neuromorphic Nanophotonic Navigator",
+     "tier": "Enterprise+",
+     "category": "SDK",
+     "features": [
+      "Polarised-Light Sensing",
+      "Ultra-Low Power Navigation",
+      "Insect-Inspired AI"
+     ],
+     "features_declared_not_built": [],
+     "features_basis": "",
+     "source": "agentic_core/simulation/nanophotonics.py",
+     "route": null,
+     "status": "source",
+     "live": false,
+     "has_directory": true
+    },
+    {
+     "slug": "qep-sdk",
+     "name": "QEP-as-a-Service SDK",
+     "tier": "Domain",
+     "category": "Domain (Quran Education Platform)",
+     "features": [
+      "Qur'an text retrieved from a named source, never generated",
+      "Memorisation review scheduling"
+     ],
+     "features_declared_not_built": [
+      "Quranic-studies analytics endpoints",
+      "Scholarly Annotation Trust Scoring"
+     ],
+     "features_basis": "no SDK package is published: the features listed are served by this platform's own Quran Education routes (their state is at /api/v1/qep/status), the analytics endpoints answer that they are not implemented, and the platform is free at the point of use, so no paid tier is offered",
+     "source": null,
+     "route": "/qep-religion",
+     "status": "live",
+     "live": true,
+     "has_directory": true
+    },
+    {
+     "slug": "scraping_suite",
+     "name": "Dual-Mode Sensory Scraper",
+     "tier": "Standard/Pro",
+     "category": "SDK",
+     "features": [
+      "Passive Sensory Mode",
+      "Active Swarm Missions",
+      "Reasoning Gate (WST)"
+     ],
+     "features_declared_not_built": [],
+     "features_basis": "",
+     "source": "agentic_core/synthesis/dual_mode_scraper.py",
+     "route": null,
+     "status": "source",
+     "live": false,
+     "has_directory": true
+    },
+    {
+     "slug": "signature-product-suite",
+     "name": "Signature Product Suite",
+     "tier": "Enterprise",
+     "category": "Platform",
+     "features": [
+      "Zero-Placeholder Certification Pipeline",
+      "Cross-Domain Packaging",
+      "Constitutional Validation Gates"
+     ],
+     "features_declared_not_built": [],
+     "features_basis": "",
+     "source": null,
+     "route": null,
+     "status": "source",
+     "live": false,
+     "has_directory": true
+    },
+    {
+     "slug": "uviap",
+     "name": "Unified Version Ingestion & Assimilation Pipeline",
+     "tier": "Enterprise",
+     "category": "SDK",
+     "features": [
+      "GitHub Deep Analysis",
+      "Biomimetic Pattern Recognition",
+      "Self-Evolution Logic"
+     ],
+     "features_declared_not_built": [],
+     "features_basis": "",
+     "source": "agentic_core/synthesis/uviap.py",
+     "route": null,
+     "status": "source",
+     "live": false,
+     "has_directory": true
+    }
+   ],
+   "count": 17,
+   "counts": {
+    "registered": 17,
+    "with_directory": 16,
+    "live": 4,
+    "source": 10,
+    "legacy": 3
+   }
+  }
+ },
+ "listings": {
+  "status": 200,
+  "body": [
+   {
+    "id": "f5147d08adc2",
+    "name": "QEP-as-a-Service SDK",
+    "description": "Qur'an text retrieved from a named source, never generated, Memorisation review scheduling",
+    "author": "Platform catalogue",
+    "category": "Domain",
+    "price_wst": 0.0,
+    "priced": false,
+    "price_basis": "NOT PRICED - derived from a product the catalogue serves; its identity is a fact and nobody has priced it. This is the absence of a price, not a price of zero",
+    "tier": "Domain",
+    "tags": [
+     "qep-sdk"
+    ],
+    "certified": false,
+    "source_deliverable_id": "",
+    "status": "active",
+    "compliance": {},
+    "sales_count": 0,
+    "created_at": 1794678224.7013674,
+    "updated_at": 1794678224.7013674,
+    "creator_id": "platform",
+    "origin": "catalog",
+    "route": "/qep-religion",
+    "vsb_id": ""
+   },
+   {
+    "id": "7e49fe56a9c1",
+    "name": "Digital Reactor (Simulation-as-a-Service)",
+    "description": "Domain pipeline narratives on the owned fabric, Variant generation, ranked only when a scorer returns scores",
+    "author": "Platform catalogue",
+    "category": "SDK",
+    "price_wst": 0.0,
+    "priced": false,
+    "price_basis": "NOT PRICED - derived from a product the catalogue serves; its identity is a fact and nobody has priced it. This is the absence of a price, not a price of zero",
+    "tier": "Standard/Pro/Enterprise",
+    "tags": [
+     "digital_reactor"
+    ],
+    "certified": false,
+    "source_deliverable_id": "",
+    "status": "active",
+    "compliance": {},
+    "sales_count": 0,
+    "created_at": 1794678224.7011669,
+    "updated_at": 1794678224.701167,
+    "creator_id": "platform",
+    "origin": "catalog",
+    "route": "/reactor",
+    "vsb_id": ""
+   },
+   {
+    "id": "f44cae417b2c",
+    "name": "Capital Fund",
+    "description": "Virtual WST pool with cycle contributions, Allocation to projects and VSB entities, Owner-set virtual endowment, disclosed as a seed",
+    "author": "Platform catalogue",
+    "category": "Platform",
+    "price_wst": 0.0,
+    "priced": false,
+    "price_basis": "NOT PRICED - derived from a product the catalogue serves; its identity is a fact and nobody has priced it. This is the absence of a price, not a price of zero",
+    "tier": "Enterprise",
+    "tags": [
+     "capital_fund"
+    ],
+    "certified": false,
+    "source_deliverable_id": "",
+    "status": "active",
+    "compliance": {},
+    "sales_count": 0,
+    "created_at": 1794678224.7009342,
+    "updated_at": 1794678224.7009344,
+    "creator_id": "platform",
+    "origin": "catalog",
+    "route": "/capital",
+    "vsb_id": ""
+   },
+   {
+    "id": "1454dd46df19",
+    "name": "OctoVeritas Engine",
+    "description": "Constitutional Compliance Checking, C-Suite Coordination, Quad-Engine Bridge",
+    "author": "Platform catalogue",
+    "category": "Platform",
+    "price_wst": 0.0,
+    "priced": false,
+    "price_basis": "NOT PRICED - derived from a product the catalogue serves; its identity is a fact and nobody has priced it. This is the absence of a price, not a price of zero",
+    "tier": "Enterprise+",
+    "tags": [
+     "octoveritasengine"
+    ],
+    "certified": false,
+    "source_deliverable_id": "",
+    "status": "active",
+    "compliance": {},
+    "sales_count": 0,
+    "created_at": 1794678224.7006092,
+    "updated_at": 1794678224.7006097,
+    "creator_id": "platform",
+    "origin": "catalog",
+    "route": "/constitution",
+    "vsb_id": ""
+   }
+  ]
+ },
+ "catalog_failed": {
+  "status": 500,
+  "body": {
+   "detail": "GET /api/v1/catalog/products failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/catalog/products",
+   "cause_established": false
+  }
+ },
+ "listings_failed": {
+  "status": 500,
+  "body": {
+   "detail": "GET /api/v1/marketplace/listings failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/marketplace/listings",
+   "cause_established": false
+  }
+ }
+}

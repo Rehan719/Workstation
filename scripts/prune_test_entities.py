@@ -163,9 +163,10 @@ def main() -> int:
             print()
 
     store = pathlib.Path(str(data_path("vsb_entities")))
+    #  W809 (FU-1154) - a store that is not there was not read: "0 test entities" would be a reading of nothing
     if not store.exists():
-        print(f"no entity store at {store}")
-        return 0
+        print(f"REFUSING: examined nothing - there is no entity store at {store}, so nothing was read.")
+        return 1
 
     patterns = [re.compile(p, re.I) for p in TEST_NAME_PATTERNS + args.pattern]
     linked = referenced_ids()
@@ -196,6 +197,10 @@ def main() -> int:
         by_name[name] = by_name.get(name, 0) + 1
         to_remove.append(path)
 
+    if not total:
+        print(f"REFUSING: examined nothing - {store} holds no entity record that could be read, so nothing was "
+              f"assessed for pruning.")
+        return 1
     print(f"entities in store            : {total}")
     print(f"test-named and safe to remove: {removable}")
     print(f"  ...of those, carrying board/plan/swarm state : {kept_real}  (reported, not a veto)")

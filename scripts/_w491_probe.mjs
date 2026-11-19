@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W491 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W491 (P1.18 + P2.4 + P2.6 + P2.8 + P2.9, the C10 batch repo-wide) — a count or a list says what
 // population it covers and what actually happened in it.
 //   node scripts/_w491_probe.mjs http://127.0.0.1:8096

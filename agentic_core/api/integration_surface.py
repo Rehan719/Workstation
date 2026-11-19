@@ -22,8 +22,8 @@ from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from agentic_core.auth.core import get_current_user
-from pydantic import BaseModel
+from agentic_core.auth.core import get_current_user, require_admin, user_can_access   # W1077
+from pydantic import BaseModel, ConfigDict   # W1046: ConfigDict
 
 from agentic_core.ai.gateway import gateway
 from agentic_core.api._ai_provenance import call_evidence as _call_evidence   # W727
@@ -74,14 +74,26 @@ async def ai_quotas():
 
 
 class AIQuery(BaseModel):
+    #  W1046 - a field this request does not hold is refused with its name: it was dropped, so a prompt sent as
+    #  `message` (W491's defect) reached the gateway as an empty one and was answered
+    model_config = ConfigDict(extra="forbid")
     prompt: str = ""
     query: str = ""
     agent: str = "ai_surface"
 
 
+def _refuse_nothing_asked(prompt: str) -> None:
+    """W1046 - a request with no text to ask is refused before any call: it was put to the gateway with an empty
+    prompt, and the native engine's frame about nothing was returned as the answer."""
+    if not (prompt or "").strip():
+        raise HTTPException(status_code=422, detail=(
+            "nothing to ask: the request carries no text in `query` or `prompt`, so no call was made"))
+
+
 @router.post("/api/v1/ai/completion")
 async def ai_completion(req: AIQuery):
     prompt = req.prompt or req.query
+    _refuse_nothing_asked(prompt)   # W1046
     # W506 (P2.2) - the completion says what served it. `served_by` is None on the failure path, which is
     # a different statement from the floor having served it, so the two cases stay distinguishable.
     _served, _ext = None, False
@@ -104,6 +116,7 @@ async def ai_completion(req: AIQuery):
 @router.post("/api/v1/ai/query")
 async def ai_query(req: AIQuery, user: dict | None = Depends(get_current_user)):
     prompt = req.query or req.prompt
+    _refuse_nothing_asked(prompt)   # W1046
     # W491 (refutation) — a failure was returned as the ANSWER ("[unavailable: …]"), a non-empty string
     # that every caller then rendered as the model's output. A caller cannot tell success from failure by
     # looking at a string, so the outcome is a field: `ok` plus `error`, and `answer` is null when nothing
@@ -133,7 +146,9 @@ async def ai_query(req: AIQuery, user: dict | None = Depends(get_current_user)):
 @router.get("/api/v154/status")
 async def v154_status():
     imm = _immune()
-    return {"status": "operational", "health": imm.get("health"), "threat_level": imm.get("threat_level"),
+    #  W967 (P5.10 clause 4) - a typed "status": "operational" stood here whatever the health beside it read. What this
+    #  answer says of the organism is the immune system's own reading, with its observations and basis.
+    return {"health": imm.get("health"), "threat_level": imm.get("threat_level"),
             "health_observations": imm.get("observations_in_window"),                # W658
             "health_observed_basis": imm.get("observed_basis"),
             "version": "v3.0-sovereign", "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
@@ -342,20 +357,22 @@ async def git_history(limit: int = 20):
         _top = subprocess.run(["git", "rev-parse", "--show-toplevel"],
                               capture_output=True, text=True, timeout=8, cwd=".")
         repository = (_top.stdout or "").strip() or None
+        #  W1067 - git's reason is said whole. It was cut at 160 characters, and git's remedy for a repository it
+        #  will not read for the user the server runs as (safe.directory and the path) is past the cut
         if repository is None:
-            unreadable_reason = ((_top.stderr or "").strip()[:160]
+            unreadable_reason = ((_top.stderr or "").strip()
                                  or "the directory the server runs in is not a git repository")
         else:
             out = subprocess.run(["git", "log", f"-{limit}", "--pretty=format:%h|%an|%ar|%s"],
                                  capture_output=True, text=True, timeout=8, cwd=".")
             if out.returncode != 0:
-                unreadable_reason = (out.stderr or "").strip()[:160] or f"git log exited {out.returncode}"
+                unreadable_reason = (out.stderr or "").strip() or f"git log exited {out.returncode}"
             for line in out.stdout.splitlines():
                 parts = line.split("|", 3)
                 if len(parts) == 4:
                     commits.append({"hash": parts[0], "author": parts[1], "when": parts[2], "message": parts[3]})
     except Exception as e:
-        unreadable_reason = f"{e.__class__.__name__}: {str(e)[:140]}"
+        unreadable_reason = f"{e.__class__.__name__}: {e}"   # W1067 - whole
     # W491 (refutation) — `total` was len(commits), i.e. the size of the page just fetched: ?limit=3 on a
     # repository of ~1500 commits returned total 3. That is the exact defect this round's rule names ("a
     # fetch limit is not a total") left standing in the endpoint the round rewrote for it. The page size
@@ -509,7 +526,8 @@ async def evo_metrics():
 
 
 @router.get("/api/v190/extrospection/signals")
-async def extrospection_signals(n: int = 30):
+async def extrospection_signals(n: int = 30, _admin: dict = Depends(require_admin)):
+    #  W1077 - an administrator's: the organism's signals carry every entity's events, and nothing says whose
     try:
         from agentic_core.organism.nervous import nervous
         sigs = nervous.recent_signals(min(n, 100))
@@ -520,12 +538,16 @@ async def extrospection_signals(n: int = 30):
 
 # ── v250 global search ────────────────────────────────────────────────────────
 @router.get("/api/v250/search/global")
-async def global_search(q: str = ""):
+async def global_search(q: str = "", user: dict | None = Depends(get_current_user)):
     ql = q.lower().strip()
+    #  W1077 - the caller's own entities and projects: every one, whoever's, was searched and listed
+    _u = user if isinstance(user, dict) else None
     results: List[Dict[str, Any]] = []
     try:
         from agentic_core.api.vsb import _list_vsbs
         for v in _list_vsbs():
+            if not user_can_access(_u, v.get("owner_id")):
+                continue
             if not ql or ql in str(v.get("name", "")).lower() or ql in str(v.get("domain", "")).lower():
                 results.append({"type": "vsb", "title": v.get("name"), "route": "/vsb", "id": v.get("vsb_id")})
     except Exception:
@@ -540,6 +562,8 @@ async def global_search(q: str = ""):
     try:
         from agentic_core.projects.api import _all_projects
         for p in _all_projects():
+            if not user_can_access(_u, p.owner_id):
+                continue
             hay = f"{p.title} {p.realm} {p.domain} {p.stage}".lower()
             if not ql or ql in hay:
                 results.append({"type": "project", "title": p.title, "route": "/projects", "id": p.id,
@@ -559,12 +583,14 @@ async def global_search(q: str = ""):
 
 # ── v210 / v220 federation twins ──────────────────────────────────────────────
 @router.get("/api/v210/federation/twins")
-async def federation_twins():
+async def federation_twins(user: dict | None = Depends(get_current_user)):
     twins = []
     try:
         from agentic_core.api.vsb import _list_vsbs
+        #  W1077 - the caller's own entities: every one, whoever's, was listed
+        _u = user if isinstance(user, dict) else None
         twins = [{"id": v.get("vsb_id"), "name": v.get("name"), "domain": v.get("domain"),
-                  "status": v.get("status")} for v in _list_vsbs()]
+                  "status": v.get("status")} for v in _list_vsbs() if user_can_access(_u, v.get("owner_id"))]
     except Exception:
         pass
     # W326 — the spawn-twin registrations are genuinely CONSUMED here (a real registry read)
@@ -611,10 +637,12 @@ async def spawn_twin(node_id: str = "node-1"):
 
 
 @router.get("/api/v220/twin/blueprint/{twin_id}")
-async def twin_blueprint(twin_id: str):
+async def twin_blueprint(twin_id: str, user: dict | None = Depends(get_current_user)):
     try:
-        from agentic_core.api.vsb import _load_vsb
-        v = _load_vsb(twin_id)
+        #  W1075 - another person's entity is answered as one that does not exist: its name, blueprint, genome and
+        #  economy were returned to any caller
+        from agentic_core.api.vsb import entity_for_caller
+        v = entity_for_caller(twin_id, user)
         if v:
             return {"twin_id": twin_id, "name": v.get("name"), "blueprint": v.get("genesis_blueprint", {}),
                     "genome": v.get("genome_spec", {}), "board": bool(v.get("board")), "economy": v.get("economy", {})}
@@ -717,12 +745,15 @@ class BountySubmission(BaseModel):
 @router.post("/api/security/bounty/submit")
 async def bounty_submit(req: BountySubmission):
     p = _store("bounty.json")
-    subs = []
-    if p.exists():
-        try:
-            subs = json.loads(p.read_text(encoding="utf-8"))
-        except Exception:
-            pass
+    #  W967 - an unreadable store was replaced by this one submission, so every earlier one was lost without a word.
+    #  It is read whole or refused, with nothing written.
+    from agentic_core.config import read_json_strict
+    try:
+        subs = read_json_strict(p, list, expect=list)
+    except Exception as e:                                # noqa: BLE001 - said, and nothing is written
+        raise HTTPException(status_code=503, detail=(
+            f"The bounty submissions could not be read ({type(e).__name__}), so this one was not stored and "
+            "nothing was overwritten.")) from None
     entry = {"id": f"bb-{len(subs)+1:04d}", "title": req.title, "severity": req.severity,
              "description": req.description, "reporter": req.reporter, "status": "received",
              "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}

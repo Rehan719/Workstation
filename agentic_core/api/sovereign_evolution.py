@@ -66,6 +66,34 @@ def _load_roadmap() -> Dict[str, Any]:
     return {}
 
 
+def _previous_cycle() -> Dict[str, Any]:
+    """W828 (FU-907) - the last cycle's directives, and the status NOW of what it submitted to Change Control."""
+    prev = _load_roadmap()
+    if not prev:
+        if _ROADMAP.exists():
+            return {"read": False, "created_at": None, "directives": [], "submissions": [],
+                    "basis": ("the previous roadmap exists and could not be read, so this cycle does not know "
+                              "what the last one did")}
+        return {"read": True, "created_at": None, "directives": [], "submissions": [],
+                "basis": "no previous cycle is recorded: this is the first"}
+    subs = []
+    try:
+        from agentic_core.api import change_control as _cc828
+        for s in prev.get("change_control_submissions") or []:
+            if isinstance(s, dict) and s.get("cca_id"):
+                c = _cc828._load_change(str(s["cca_id"])) or {}
+                subs.append({"cca_id": s["cca_id"], "title": s.get("title"), "status_then": s.get("status"),
+                             "status_now": c.get("status") or "not found"})
+    except Exception as e:                           # noqa: BLE001 - said, never a silent empty list
+        subs = [{"error": f"the submissions' status could not be read ({type(e).__name__}: {str(e)[:160]})"}]
+    dirs = [{"title": d.get("title"), "function": d.get("function"), "priority": d.get("priority")}
+            for d in (prev.get("ceo_directives") or []) if isinstance(d, dict)]
+    return {"read": True, "created_at": prev.get("created_at"), "directives": dirs, "submissions": subs,
+            "basis": (f"the previous cycle ({prev.get('created_at')}) issued {len(dirs)} directive(s) and submitted "
+                      f"{len([s for s in subs if s.get('cca_id')])} to Change Control; each submission's status is "
+                      f"read as it is now")}
+
+
 def _save_roadmap(data: Dict[str, Any]) -> None:
     _ROADMAP.parent.mkdir(parents=True, exist_ok=True)
     _ROADMAP.write_text(json.dumps(data, indent=2), encoding="utf-8")
@@ -232,6 +260,17 @@ async def run_cycle(req: CycleRequest):
     # 1. Introspection (sensory)
     state = _introspect()
     state_text = _state_text(state)
+    #  W828 (FU-907) - WHAT THE PREVIOUS CYCLE DID, read before the triage and recorded on this roadmap
+    previous_cycle = _previous_cycle()
+    _prior828 = ""
+    if previous_cycle.get("created_at"):
+        _prior828 = (f"Previous cycle ({previous_cycle['created_at']}) directives: "
+                     + ("; ".join(f"{d.get('function')} {d.get('priority')} {d.get('title')}"
+                                  for d in previous_cycle["directives"]) or "none")
+                     + ". Its Change Control submissions now: "
+                     + ("; ".join(f"{s.get('title')} - {s.get('status_now')}"
+                                  for s in previous_cycle["submissions"] if s.get("cca_id")) or "none")
+                     + ".\n")
 
     # 2. CEO triage — frame prioritised directives across the four self-* functions
     ceo_prompt = (
@@ -241,6 +280,7 @@ async def run_cycle(req: CycleRequest):
         "  improvement (optimise what works), maintenance (health/self-healing/debt),\n"
         "  development (advancement/new capability), correction (errors/bugs/gaps).\n\n"
         f"Organism state:\n{state_text}\n"
+        + _prior828
         + (f"CEO focus this cycle: {req.focus}\n" if req.focus else "")
         + "\nOutput 4-6 directives, ONE PER LINE, exactly as:\n"
         "FUNCTION | OWNER | PRIORITY | TITLE | RATIONALE\n"
@@ -335,6 +375,7 @@ async def run_cycle(req: CycleRequest):
         "duration_ms": int((time.time() - start) * 1000),
         "introspection": state,
         "ceo_directives": directives,
+        "previous_cycle": previous_cycle,          # W828 (FU-907)
         "bto_roadmap": bto_roadmap,
         # §8 (W496, FU-120) - the four curators were a literal on every cycle, including the cycles
         # where the CEO issued nothing this parser could read and no C-Suite verdict was returned. The

@@ -1,14 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { provenanceBadge, provenanceMapBadge, provenanceMapFromTrace } from '../../lib/api';
+import { errorMessage } from '../../lib/api';   // W1015 - a caught failure, said as what it was
+import { useTab } from '../../lib/useTab';   // W1027 - the tab is in the address
+import { asClause, axiosDetail, bodyDetail, provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, bodyOrNull } from '../../lib/api';   // W1011: axiosDetail; W1012: bodyDetail
+import { ReadFailures, useReadFailures, silenceIsRight } from '../../components/ReadFailures';   // W928
 import { VBSSystemsPanel } from '../../components/VBSSystemsPanel';
 import { downloadExport } from '../../lib/download';
 import axios from 'axios';
 import { Card, Button, Badge } from '@workstation/ui';
 import { Building2, Crown, Users, Target, ShieldCheck, Workflow, Loader2, Play, Boxes, ScrollText, MessageCircle, Send, Coins, Mic, Volume2, Paperclip, Download } from 'lucide-react';
 import { PlanOpening } from '../../components/PlanOpening';   // W505 (FU-074)
+import { layerSource } from './BusinessPlan';                  // W822 (FU-830) - one helper, both pages
 import { DictateButton } from '../../components/DictateButton';   // P3.30 (ledger v16 R3.14, R2.9)
 import { getPrefs } from '../../lib/userPrefs';
 import { domainLabel } from '../../lib/taxonomy';                 // P3.30 (ledger v16 R5.7)
+import { EntitySpecialists } from '../../components/EntitySpecialists';   // W933 (P5.15 clause 6, FU-1178)
+import { EntityWorkReview } from '../../components/EntityWorkReview';     // W935 (P5.15 clauses 5-6, FU-1178)
 
 // The VSB Enterprise Cockpit — interact with a generated living VSB IDBO Enterprise: its
 // organisational structure, the Chief's digital twin + Board, the living business plan
@@ -29,6 +35,7 @@ const TABS = [
   ['transform', 'Transformation', Workflow],
   ['chat', 'Converse', MessageCircle],
 ] as const;
+const TAB_IDS = TABS.map(([id]) => id);
 
 interface ChatMsg { role: 'you' | 'vsb'; text: string; served_by?: string; is_external?: boolean; attached?: boolean; image_understood?: boolean; image_served_by?: string | null; image_is_external?: boolean;
   // W490 (refutation) — the cockpit is the SECOND reader of these avatar fields and had neither of
@@ -59,11 +66,13 @@ const EditCascade: React.FC<{ cascadeId: string; onSaved: () => void }> = ({ cas
     setOpen(true); setErr(null); setMsg(null);
     try {
       const r = await fetch(`/api/v1/resources/swarm/${cascadeId}`);
-      const b = await r.json();
-      if (!r.ok) throw new Error(typeof b.detail === 'string' ? b.detail : `HTTP ${r.status}`);
+      //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
+      const b = r.ok ? await r.json() : await bodyOrNull(r);
+      if (!r.ok) throw new Error(bodyDetail(b, `HTTP ${r.status}`));   // W1013 - a field check by its field
       setStages((b.stages || []).map((st: any) => ({ role: st.role || '', instruction: st.instruction || '',
                                                      ...(st.model ? { model: String(st.model) } : {}) })));
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+    //  W1056 - says what failed: a bare reason said nothing of whether the cascade was read
+    } catch (e: any) { setErr(`The cascade could not be read: ${errorMessage(e)}`); }
   };
 
   const blank = (stages || []).some(st => !st.role.trim() || !st.instruction.trim());
@@ -76,11 +85,12 @@ const EditCascade: React.FC<{ cascadeId: string; onSaved: () => void }> = ({ cas
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stages }),
       });
-      const b = await r.json();
-      if (!r.ok) throw new Error(typeof b.detail === 'string' ? b.detail : `HTTP ${r.status}`);
+      //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
+      const b = r.ok ? await r.json() : await bodyOrNull(r);
+      if (!r.ok) throw new Error(bodyDetail(b, `HTTP ${r.status}`));   // W1013 - a field check by its field
       setMsg(`Saved ${(b.stages || []).length} stages. The next run of this cascade re-reads them — nothing further to apply.`);
       onSaved();
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+    } catch (e: any) { setErr(`The cascade was not saved: ${errorMessage(e)}`); }   // W1056 - and what failed
     setBusy(false);
   };
 
@@ -96,7 +106,7 @@ const EditCascade: React.FC<{ cascadeId: string; onSaved: () => void }> = ({ cas
   return (
     <div className="mt-3 p-3 rounded-xl bg-slate-950 border border-slate-900" data-testid="cascade-edit">
       <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">Reconfigure the delivery cascade</p>
-      {err && <p role="alert" className="text-[10px] font-bold text-vital mb-2">{err}</p>}
+      {err && <p role="alert" data-testid="cascade-edit-error" className="text-[10px] font-bold text-vital mb-2">{err}</p>}
       {stages === null && !err && <Loader2 size={13} className="animate-spin text-slate-500" />}
       {(stages || []).map((st, i) => (
         <div key={i} className="flex gap-2 mb-2">
@@ -142,6 +152,7 @@ const EditCascade: React.FC<{ cascadeId: string; onSaved: () => void }> = ({ cas
 };
 
 export const VSBCockpit: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W928 - a read that fails is said
   const [vsbs, setVsbs] = useState<VSBRow[]>([]);
   const [vsbFilter, setVsbFilter] = useState('');
   const [selected, setSelected] = useState<string>('');
@@ -153,6 +164,9 @@ export const VSBCockpit: React.FC = () => {
   const [objOrch, setObjOrch] = useState('');                 // objective id being delivered by the Chief
   const [objOrchResult, setObjOrchResult] = useState<Dict>({}); // tree result per objective id
   const [deliverables, setDeliverables] = useState<Dict[]>([]); // this VSB's living outputs (§13)
+  const [delivReadErr, setDelivReadErr] = useState('');   // W1050 - a list that could not be read is not a list of none
+  const [delivErr, setDelivErr] = useState('');           // W1050 - a production's failure, beside its button
+  const [delivDlErr, setDelivDlErr] = useState<{ id: string; msg: string } | null>(null);   // W1054 - an export's, under its row
   //  P3.2 clause (3) — THE OPERATING STATE, read from the server. Measured W598: this page showed none of
   //  last_operated, operating_cycles or the governing flags, so the clause's own failure case ("a page that
   //  shows 0 cycles for an entity that has run") was not even reachable — there was no cycle count to be
@@ -160,17 +174,19 @@ export const VSBCockpit: React.FC = () => {
   //  blanking the cockpit around it.
   const [operating, setOperating] = useState<Dict | null>(null);
   const [operatingErr, setOperatingErr] = useState('');
+  //  FU-869 (W833) - proposing the restore of a retired entity, and what Change Control answered
+  const [restoreWhy, setRestoreWhy] = useState('');
+  const [restoreNote, setRestoreNote] = useState('');
+  const [lifecycleMsg, setLifecycleMsg] = useState('');   // W1053 - a life-cycle change refused or not made, beside its toggle
   const [delivType, setDelivType] = useState('report');
   const [delivBrief, setDelivBrief] = useState('');
   const [delivProducing, setDelivProducing] = useState(false);
   const [delivFormat, setDelivFormat] = useState('md');
   const [delivFormats, setDelivFormats] = useState<{ id: string; label: string }[]>([{ id: 'md', label: 'Markdown (.md)' }]);
   const [standards, setStandards] = useState<Dict[]>([]);
-  // W440 — deep-linkable (?tab=), matching the app's hub pattern
-  const [tab, setTab] = useState<string>(() => {
-    const want = new URLSearchParams(window.location.search).get('tab');
-    return want && TABS.some(([id]) => id === want) ? want : 'org';
-  });
+  // W440 — deep-linkable (?tab=), matching the app's hub pattern. W1027 - and written back, as on the hubs: a tab
+  // chosen here was lost on a reload
+  const [tab, setTab] = useTab(TAB_IDS, 'org');
   const [loading, setLoading] = useState(false);
   const [cascadeTick, setCascadeTick] = useState(0);   // W508 (P2.8(2)) — bumped when a cascade edit saves
   const [tx, setTx] = useState<Dict | null>(null);
@@ -178,6 +194,7 @@ export const VSBCockpit: React.FC = () => {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [chatting, setChatting] = useState(false);
+  const [chatErr, setChatErr] = useState('');   // W1052 - a reply that did not come, said beside the input
   const [pendingImage, setPendingImage] = useState<{ b64: string; name: string } | null>(null);
   const [chatLang, setChatLang] = useState('');   // '' = English; otherwise respond in this language
   const [ledger, setLedger] = useState<Dict | null>(null);
@@ -202,8 +219,10 @@ export const VSBCockpit: React.FC = () => {
     const reasons = Array.isArray(d)
       ? d.map((x: any) => x?.msg && `${Array.isArray(x.loc) && x.loc.length ? `${x.loc[x.loc.length - 1]}: ` : ''}${x.msg}`)
         .filter(Boolean).join('; ') : '';
-    if (reasons) return `${fallback}: ${reasons}.`;
-    return e?.response ? `${fallback} (HTTP ${e.response.status}).` : `${fallback} — backend unreachable.`;
+    if (reasons) return `${fallback}: ${asClause(reasons)}.`;   // W1059 - one full stop
+    //  W1030 - an object reason is said too (its message, or the object): it was the status alone
+    return e?.response ? `${fallback} (HTTP ${e.response.status}): ${asClause(axiosDetail(e, 'no reason given'))}.`
+      : `${fallback} — backend unreachable.`;
   };
   const [lastCycle, setLastCycle] = useState<Dict | null>(null);
   const [cycling, setCycling] = useState(false);
@@ -223,6 +242,7 @@ export const VSBCockpit: React.FC = () => {
   // platform panel) rendered on first paint before the list arrived, and FOREVER after a failed
   // fetch, asserting "no VSBs" when the truth was "list unknown".
   const [vsbsState, setVsbsState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [vsbsErr, setVsbsErr] = useState('');   // W1049 - what the failed read of the list was
   useEffect(() => {
     axios.get('/api/v1/vsb').then(r => {
       const ents: VSBRow[] = r.data.entities || [];
@@ -232,18 +252,19 @@ export const VSBCockpit: React.FC = () => {
       const want = new URLSearchParams(window.location.search).get('vsb');
       const chosen = (want && ents.find(e => e.vsb_id === want)) || ents.find(e => e.has_board) || ents[0];
       if (chosen) setSelected(chosen.vsb_id);
-    }).catch(() => setVsbsState('error'));
-    axios.get('/api/v1/mgmt/standards').then(r => setStandards(r.data.standards || [])).catch(() => {});
-    axios.get('/api/v1/bto/components').then(r => setBtoComponents(r.data.components || [])).catch(() => {});
+    }).catch((e: unknown) => { setVsbsErr(errorMessage(e)); setVsbsState('error'); });
+    axios.get('/api/v1/mgmt/standards').then(r => setStandards(r.data.standards || [])).catch(noteRead('the management standards'));
+    axios.get('/api/v1/bto/components').then(r => setBtoComponents(r.data.components || [])).catch(noteRead('the transformation components'));
     axios.get('/api/v1/deliverables/output-formats').then(r => {
       if (Array.isArray(r.data?.live) && r.data.live.length) setDelivFormats(r.data.live.map((f: any) => ({ id: f.id, label: f.label })));
-    }).catch(() => {});
+    }).catch(noteRead('the output formats'));
   }, []);
 
   // §13 (W338) — drift honesty reaches the USER: the shipped-body manifest (stale flag + reason)
   // is read on selection and after every ship — previously no UI ever read the stale flag, so a
   // drifted shipped body was invisible end-to-end.
   const [shipState, setShipState] = useState<Dict | null>(null);
+  const [shipErr, setShipErr] = useState('');   // W1049 - a failed read of the shipped body that is not a 404
   //  P3.7 (W586) — §13 the repo's own tree, its files and the archive. `repoTree === null` means NOT
   //  LOADED and is never conflated with an empty repo; `repoNone` carries the backend's own sentence for
   //  an entity that HAS no repo, which is a different fact from one whose declared tree is empty.
@@ -252,27 +273,39 @@ export const VSBCockpit: React.FC = () => {
   const [repoErr, setRepoErr] = useState('');
   const [repoFile, setRepoFile] = useState<{ path: string; text: string; bytes: string } | null>(null);
   const [repoBusy, setRepoBusy] = useState('');
-  //  a BRACED function, deliberately: the loader beside this one is a concise arrow body, and inserting
-  //  a statement into one of those silently makes the inserted line the return value.
+  //  a BRACED function, deliberately: inserting a statement into a concise arrow body silently makes the inserted
+  //  line the return value.
   const loadRepoTree = (vid: string) => {
     setRepoTree(null); setRepoNone(''); setRepoErr(''); setRepoFile(null);
     axios.get(`/api/v1/vsb/${vid}/repo`, { validateStatus: () => true }).then(r => {
+      if (vid !== selectedRef.current) return;   // W1057 - said under the entity it was read for, never the next
       if (r.status === 200 && Array.isArray(r.data?.tree)) { setRepoTree(r.data.tree as string[]); }
-      else if (r.status === 404) { setRepoNone(String(r.data?.detail ?? 'This entity has no repository.')); }
-      else { setRepoErr(`The repository could not be read (HTTP ${r.status}). No tree is shown.`); }
-    }).catch(() => setRepoErr('The repository could not be reached. No tree is shown.'));
+      else if (r.status === 404) { setRepoNone(bodyDetail(r.data, 'This entity has no repository.')); }   // W1012
+      else { setRepoErr(`The repository could not be read (HTTP ${r.status}): ${asClause(bodyDetail(r.data, 'no reason given'))}. No tree is shown.`); }   // W1025
+    }).catch(() => { if (vid === selectedRef.current) setRepoErr('The repository could not be reached. No tree is shown.'); });
   };
-  const loadShipState = (vid: string) =>
-    axios.get(`/api/v1/vsb/${vid}/repo/ship`).then(r => setShipState(r.data))
-      .catch(() => setShipState(null));   // 404 = never shipped — honestly nothing to show
+  //  W1049 - a 404 is an entity never shipped, and shows nothing. Every other failure showed nothing too, so a body
+  //  whose manifest could not be read gave no sign that whether it is current was unknown; it is said
+  const loadShipState = (vid: string) => {
+    setShipErr(''); setShipState(null);   // W1057 - another entity's state is never left standing while this one is read
+    axios.get(`/api/v1/vsb/${vid}/repo/ship`).then(r => { if (vid === selectedRef.current) setShipState(r.data); })
+      .catch((e: any) => {
+        if (vid !== selectedRef.current) return;
+        setShipState(null);
+        if (e?.response?.status !== 404) setShipErr(`Whether the shipped body is current could not be read: ${errorMessage(e)}`);
+      });
+  };
 
   useEffect(() => {
     if (!selected) return;
-    setLoading(true); setTx(null); setMessages([]); setLastCycle(null); setLedgerErr(''); setActErr(''); setPlanErr('');
+    setLoading(true); setTx(null); setMessages([]); setLastCycle(null); setLedgerErr(''); setTxErr(''); setOrchErr({}); setCycleErr(''); setBtoErr(''); setPlanErr(''); setChatErr(''); setLifecycleMsg(''); setRestoreNote('');
     setCycleHold(null); setGrowthResult(null);   // W503 (FU-059) — never another entity's answer
     const issuedFor = selected;
     Promise.all([
-      axios.get(`/api/v1/vsb/${selected}`).then(r => r.data).catch(() => null),
+      //  W959 (FU-1181) - a failed read of the entity was the no-entity panel, as if nothing were selected
+      axios.get(`/api/v1/vsb/${selected}`)
+        .then(r => { if (issuedFor === selectedRef.current) clearRead('the entity'); return r.data; })
+        .catch(e => { if (issuedFor === selectedRef.current) noteRead('the entity')(e); return null; }),
       axios.get('/api/v1/business-plan', { params: { scope: selected } }).then(r => ({ data: r.data, err: '' }))
         .catch(e => ({ data: null, err: serverDetail(e, 'Could not load the business plan') })),
       axios.get(`/api/v1/economy/ledger/${selected}`).then(r => ({ data: r.data, err: '' }))
@@ -291,7 +324,12 @@ export const VSBCockpit: React.FC = () => {
   // W299 — the §13 GROWTH machinery reaches the user for THEIR entity (repo ship · repo cascade ·
   // evolve had zero UI callers); W300 — instruct THEIR Chief (apex delegation scoped to this VSB).
   const [growthBusy, setGrowthBusy] = useState('');
-  const [actErr, setActErr] = useState('');   // W344 — actions never fail silently
+  //  W344 - actions never fail silently. W1051 - and each says its failure beside its own button: one line above the
+  //  entity picker said all four, away from the tab each is on, and three of them never cleared it
+  const [txErr, setTxErr] = useState('');
+  const [orchErr, setOrchErr] = useState<Record<string, string>>({});
+  const [cycleErr, setCycleErr] = useState('');
+  const [btoErr, setBtoErr] = useState('');
   const [growthResult, setGrowthResult] = useState<Dict | null>(null);
 
   //  P3.7 (W586) — a tree entry opens its file THROUGH axios, so the Bearer that lib/auth.ts's request
@@ -300,14 +338,21 @@ export const VSBCockpit: React.FC = () => {
   //  component-level entity; the effect's own `issuedFor` is local to the effect and invisible here.
   const openRepoFile = (path: string) => {
     if (!selected) return;
+    const issuedFor = selected;   // W1057 - a file opened for one entity is never shown under the next
     setRepoBusy(path); setRepoFile(null); setRepoErr('');
     axios.get(`/api/v1/vsb/${selected}/repo/file`, {
       params: { path }, responseType: 'text', transformResponse: [(d: unknown) => d],
       validateStatus: () => true,
     }).then(r => {
+      if (issuedFor !== selectedRef.current) return;
       if (r.status === 200) setRepoFile({ path, text: String(r.data ?? ''), bytes: String(r.headers?.['x-repo-bytes'] ?? '') });
-      else setRepoErr(`${path} did not open (HTTP ${r.status}). Nothing is shown as its contents.`);
-    }).catch(() => setRepoErr(`${path} could not be fetched. Nothing is shown as its contents.`))
+      //  W1030 - the refusal's reason, read from the text the read asked for: it said the status alone
+      else {
+        const why = (() => { try { return bodyDetail(JSON.parse(String(r.data ?? '')), 'no reason given'); }
+                             catch { return 'no reason given'; } })();
+        setRepoErr(`${path} did not open (HTTP ${r.status}): ${asClause(why)}. Nothing is shown as its contents.`);
+      }
+    }).catch(() => { if (issuedFor === selectedRef.current) setRepoErr(`${path} could not be fetched. Nothing is shown as its contents.`); })
       .finally(() => setRepoBusy(''));
   };
 
@@ -316,15 +361,18 @@ export const VSBCockpit: React.FC = () => {
   //  exactly as true as the commercialise stage's label was. Through axios, because the route checks
   //  that the caller owns the entity.
   const [listedResult, setListedResult] = useState<Dict | null>(null);
+  useEffect(() => { setListedResult(null); }, [selected]);   // W1057 - one entity's listing never stands under the next
   const listEntityProducts = () => {
     if (!selected) return;
+    const issuedFor = selected;   // W1057 - said under the entity it was asked for, never the next
     setRepoBusy('listing'); setListedResult(null); setRepoErr('');
     axios.post(`/api/v1/marketplace/listings/from-entity/${selected}`, {}, { validateStatus: () => true })
       .then(r => {
+        if (issuedFor !== selectedRef.current) return;
         if (r.status === 200) setListedResult(r.data as Dict);
-        else setRepoErr(`The products were not listed (HTTP ${r.status}). Nothing was added to the marketplace.`);
+        else setRepoErr(`The products were not listed (HTTP ${r.status}): ${asClause(bodyDetail(r.data, 'no reason given'))}. Nothing was added to the marketplace.`);   // W1025
       })
-      .catch(() => setRepoErr('The marketplace could not be reached. Nothing was listed.'))
+      .catch(() => { if (issuedFor === selectedRef.current) setRepoErr('The marketplace could not be reached. Nothing was listed.'); })
       .finally(() => setRepoBusy(''));
   };
 
@@ -332,17 +380,23 @@ export const VSBCockpit: React.FC = () => {
   //  URL, so the download carries the token instead of being a link the browser follows unauthenticated.
   const downloadRepoZip = () => {
     if (!selected) return;
+    const issuedFor = selected;   // W1057 - its failure is said under the entity it was asked for
     setRepoBusy('zip'); setRepoErr('');
     axios.get(`/api/v1/vsb/${selected}/repo/zip`, { responseType: 'blob', validateStatus: () => true })
-      .then(r => {
-        if (r.status !== 200) { setRepoErr(`The archive was not produced (HTTP ${r.status}).`); return; }
+      .then(async r => {
+        //  W1025 - the archive is asked for as a blob, so a refusal's body is a blob too: its reason is read from it
+        if (r.status !== 200) {
+          const why = await (r.data as Blob).text().then(t => bodyDetail(JSON.parse(t), 'no reason given'), () => 'no reason given');
+          if (issuedFor === selectedRef.current) setRepoErr(`The archive was not produced (HTTP ${r.status}): ${why}`);
+          return;
+        }
         const url = URL.createObjectURL(r.data as Blob);
         const a = document.createElement('a');
         a.href = url; a.download = `${selected}-repo.zip`;
         document.body.appendChild(a); a.click(); a.remove();
         URL.revokeObjectURL(url);
       })
-      .catch(() => setRepoErr('The archive could not be fetched.'))
+      .catch(() => { if (issuedFor === selectedRef.current) setRepoErr('The archive could not be fetched.'); })
       .finally(() => setRepoBusy(''));
   };
   // W503 (FU-059) — a 200 that HELD, kept apart from a cycle that ran
@@ -350,6 +404,8 @@ export const VSBCockpit: React.FC = () => {
   const [chiefText, setChiefText] = useState('');
   const [chiefBusy, setChiefBusy] = useState(false);
   const [chiefResult, setChiefResult] = useState<Dict | null>(null);
+  //  W1055 - one entity's instruction, answer and failure are never left under another's Chief
+  useEffect(() => { setChiefText(''); setChiefResult(null); setChiefBusy(false); }, [selected]);
 
   // W452 — a Mode 3 gate refusal arrives as a dict {error, gate, status, …}: render the gate, not '[object Object]'
   const detailText = (d: any): string => (d && typeof d === 'object')
@@ -380,7 +436,7 @@ export const VSBCockpit: React.FC = () => {
     } catch (e: any) {
       setGrowthResult({ kind, forEntity: issuedFor,
                         error: (issuedFor !== selectedRef.current ? `${issuedFor}: ` : '')
-                               + detailText(e?.response?.data?.detail ?? e?.message) });
+                               + detailText(e?.response?.data?.detail ?? errorMessage(e)) });
     }
     setGrowthBusy('');
   };
@@ -398,7 +454,7 @@ export const VSBCockpit: React.FC = () => {
       setGates(r.data);
     } catch (e: any) {
       if (id !== selectedRef.current) return;
-      setGates(null); setGateMsg(`Review gates could not be read: ${detailText(e?.response?.data?.detail ?? e?.message)}`);
+      setGates(null); setGateMsg(`Review gates could not be read: ${detailText(e?.response?.data?.detail ?? errorMessage(e))}`);
     }
   };
   useEffect(() => { setGates(null); setGateMsg(''); if (selected && tab === 'chief') loadGates(selected); }, [selected, tab]);
@@ -413,7 +469,7 @@ export const VSBCockpit: React.FC = () => {
       await loadGates(issuedFor);
     } catch (e: any) {
       if (issuedFor !== selectedRef.current) return;
-      setGateMsg(`Not decided: ${detailText(e?.response?.data?.detail ?? e?.message)}`);
+      setGateMsg(`Not decided: ${detailText(e?.response?.data?.detail ?? errorMessage(e))}`);
     }
   };
 
@@ -432,7 +488,7 @@ export const VSBCockpit: React.FC = () => {
       setPackList(r.data);
     } catch (e: any) {
       if (id !== selectedRef.current) return;
-      setPackList(null); setPackMsg(`The board pack history could not be read: ${detailText(e?.response?.data?.detail ?? e?.message)}`);
+      setPackList(null); setPackMsg(`The board pack history could not be read: ${detailText(e?.response?.data?.detail ?? errorMessage(e))}`);
     }
   };
   const loadLatestPack = async (id: string) => {
@@ -444,7 +500,7 @@ export const VSBCockpit: React.FC = () => {
       if (id !== selectedRef.current) return;
       setPack(null);
       // a 404 is "none assembled yet", which the history's own count says; anything else is said here
-      if (e?.response?.status !== 404) setPackMsg(`The latest board pack could not be read: ${detailText(e?.response?.data?.detail ?? e?.message)}`);
+      if (e?.response?.status !== 404) setPackMsg(`The latest board pack could not be read: ${detailText(e?.response?.data?.detail ?? errorMessage(e))}`);
     }
   };
   useEffect(() => {
@@ -462,7 +518,7 @@ export const VSBCockpit: React.FC = () => {
       await loadPacks(issuedFor);
     } catch (e: any) {
       if (issuedFor !== selectedRef.current) return;
-      setPackMsg(`Not assembled: ${detailText(e?.response?.data?.detail ?? e?.message)}`);
+      setPackMsg(`Not assembled: ${detailText(e?.response?.data?.detail ?? errorMessage(e))}`);
     }
     if (issuedFor === selectedRef.current) setPackBusy(false);
   };
@@ -489,7 +545,7 @@ export const VSBCockpit: React.FC = () => {
       saved = r.data ?? {};
     } catch (e: any) {
       if (issuedFor === selectedRef.current) {
-        setBodyMsg(`${section}: NOT recorded — ${detailText(e?.response?.data?.detail ?? e?.message)}`);
+        setBodyMsg(`${section}: NOT recorded — ${detailText(e?.response?.data?.detail ?? errorMessage(e))}`);
         setBodyBusy('');
       }
       return;
@@ -508,29 +564,34 @@ export const VSBCockpit: React.FC = () => {
 
   const instructChief = async () => {
     if (!selected || !chiefText.trim()) return;
+    const issuedFor = selected;   // W1055 - the answer is said under the entity it was issued for (the W503 pattern)
     setChiefBusy(true); setChiefResult(null);
     try {
       const r = await axios.post('/api/v1/board/chief/instruct', {
         instruction: chiefText, owner: detail?.owner_id || 'the founder',
         scope: selected, cascade_to_ceo: true,
       });
+      if (issuedFor !== selectedRef.current) return;
       setChiefResult(r.data);
       setChiefText('');
     } catch (e: any) {
-      setChiefResult({ error: e?.response?.data?.detail ?? e?.message ?? 'failed' });
+      if (issuedFor !== selectedRef.current) return;
+      //  W1055 - said as an instruction not passed: the bare reason said nothing of what had failed
+      setChiefResult({ error: `Not instructed: ${axiosDetail(e, errorMessage(e))}` });
     }
     setChiefBusy(false);
   };
 
   const runTransformation = async () => {
     if (!selected) return;
-    setTxRunning(true); setTx(null);
+    setTxRunning(true); setTx(null); setTxErr('');
     try {
       const objective = plan?.mission || detail?.challenge || `Advance ${detail?.name || 'the venture'}`;
       const r = await axios.post('/api/v1/transformation/orchestrate',
         { objective, scope: selected, owner_id: detail?.owner_id || 'Owner', deep: false });
       setTx(r.data);
-    } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
+      //  W1028 - a refusal is said by its reason: this said every failure, a refusal included, as an unreachable server
+    } catch (e) { setTxErr(`The transformation failed: ${errorMessage(e)}`); }   // W344
     setTxRunning(false);
   };
 
@@ -538,12 +599,12 @@ export const VSBCockpit: React.FC = () => {
   // VSB (scope=selected), governed + sealed into the UEG chain. Mirrors the Business Plan page action.
   const orchestrateObjective = async (oid: string) => {
     if (!selected) return;
-    setObjOrch(oid);
+    setObjOrch(oid); setOrchErr(m => ({ ...m, [oid]: '' }));
     try {
       const r = await axios.post(`/api/v1/business-plan/objective/${oid}/orchestrate`, { scope: selected });
       if (r.data?.tree) setObjOrchResult(m => ({ ...m, [oid]: r.data.tree }));
-      else setActErr('Orchestration ran but returned no delivery tree.');
-    } catch (e: any) { setActErr(`Orchestration failed: ${detailText(e?.response?.data?.detail ?? 'backend unreachable')}`); }
+      else setOrchErr(m => ({ ...m, [oid]: 'Orchestration ran but returned no delivery tree.' }));
+    } catch (e: any) { setOrchErr(m => ({ ...m, [oid]: `Orchestration failed: ${detailText(e?.response?.data?.detail ?? errorMessage(e))}` })); }   // W1028
     setObjOrch('');
   };
 
@@ -554,7 +615,8 @@ export const VSBCockpit: React.FC = () => {
       .then(r => {
         if (r.status !== 200 || !r.data) {
           setOperating(null);
-          setOperatingErr(`The living roster is not reporting (HTTP ${r.status}). That is a statement about `
+          //  W1025 - with the server's reason when it gave one
+          setOperatingErr(`The living roster is not reporting (HTTP ${r.status}): ${asClause(bodyDetail(r.data, 'no reason given'))}. That is a statement about `
             + `reachability, not about whether this entity has operated.`);
           return;
         }
@@ -574,22 +636,24 @@ export const VSBCockpit: React.FC = () => {
   // exportable in any of the in-house formats.
   const loadDeliverables = (vid: string) =>
     axios.get('/api/v1/deliverables', { params: { vsb_id: vid } })
-      .then(r => setDeliverables(r.data.deliverables || [])).catch(() => setDeliverables([]));
+      .then(r => { setDeliverables(r.data.deliverables || []); setDelivReadErr(''); })
+      //  W1050 - said as unread: it set the list to none, so the tab counted no outputs for a list it had not read
+      .catch((e: unknown) => { setDeliverables([]); setDelivReadErr(`This entity's deliverables could not be read, so the list is not what is there: ${errorMessage(e)}`); });
 
   const produceDeliverable = async () => {
     if (!selected || !delivBrief.trim()) return;
-    setDelivProducing(true);
+    setDelivProducing(true); setDelivErr('');
     try {
       await axios.post('/api/v1/deliverables/produce', { type: delivType, brief: delivBrief, vsb_id: selected });
       setDelivBrief('');
       await loadDeliverables(selected);
-    } catch (e: any) { setActErr(`Produce failed: ${e?.response?.data?.detail ?? 'backend unreachable'}`); }
+    } catch (e: any) { setDelivErr(`Produce failed: ${errorMessage(e)}`); }   // W1028 - a refusal with no reason was said as an unreachable server
     setDelivProducing(false);
   };
 
   const speak = (text: string) => {
     if (!speakReplies || !canSpeak || !text) return;
-    try { window.speechSynthesis.cancel(); window.speechSynthesis.speak(new SpeechSynthesisUtterance(text.slice(0, 600))); } catch { /* ignore */ }
+    try { window.speechSynthesis.cancel(); window.speechSynthesis.speak(new SpeechSynthesisUtterance(text.slice(0, 600))); } catch { silenceIsRight('reading a reply aloud is an optional browser feature; the reply is on the page')(); }
   };
 
   const sendChat = async (override?: string) => {
@@ -597,7 +661,7 @@ export const VSBCockpit: React.FC = () => {
     if ((!msg && !pendingImage) || chatting || !selected) return;
     const img = pendingImage;
     setMessages(m => [...m, { role: 'you', text: msg || '(image)', attached: !!img }]);
-    setChatInput(''); setPendingImage(null); setChatting(true);
+    setChatInput(''); setPendingImage(null); setChatting(true); setChatErr('');
     try {
       const body: Record<string, any> = { message: msg || 'What is in this image?', context: 'vsb', vsb_id: selected };
       if (img) body.image_base64 = img.b64;
@@ -609,8 +673,10 @@ export const VSBCockpit: React.FC = () => {
                                image_status: r.data.image_status, attached_requested: Boolean(pendingImage),
                                language_requested: r.data.language ?? null, language_honoured: r.data.language ?? null }]);
       speak(reply);
-    } catch {
-      setMessages(m => [...m, { role: 'vsb', text: 'The enterprise avatar is unavailable right now.', is_external: false }]);
+    } catch (e: unknown) {
+      //  W1052 - said as the failure it was, beside the input: it was put in the conversation in the avatar's own voice,
+      //  one fixed sentence whatever the failure was
+      setChatErr(`No reply came: ${errorMessage(e)}`);
     }
     setChatting(false);
   };
@@ -628,7 +694,7 @@ export const VSBCockpit: React.FC = () => {
 
   const listenVoice = () => {
     if (!SpeechRec) return;
-    if (listening) { try { recognitionRef.current?.stop(); } catch { /* ignore */ } return; }
+    if (listening) { try { recognitionRef.current?.stop(); } catch { silenceIsRight('the browser speech recognition may already have stopped')(); } return; }
     const rec = new SpeechRec();
     recognitionRef.current = rec;
     rec.lang = 'en-GB'; rec.interimResults = false; rec.maxAlternatives = 1;
@@ -644,7 +710,7 @@ export const VSBCockpit: React.FC = () => {
   const runCycle = async () => {
     if (!selected || cycling) return;
     const issuedFor = selected;
-    setCycling(true); setActErr('');
+    setCycling(true); setCycleErr('');
     try {
       // W414 — this posted only { vsb_id }, and the backend defaulted revenue to 10000.0. Every
       // click therefore ran a cycle on ten thousand WST that nobody earned, writing the resulting
@@ -666,19 +732,20 @@ export const VSBCockpit: React.FC = () => {
       }
     } catch (e: any) {
       // W344 · W468 — the server's reason, when it gave one; named for its entity when another is on screen by now
-      setActErr((issuedFor !== selectedRef.current ? `${issuedFor}: ` : '') + serverDetail(e, 'The cycle failed'));
+      setCycleErr((issuedFor !== selectedRef.current ? `${issuedFor}: ` : '') + serverDetail(e, 'The cycle failed'));
     }
     setCycling(false);
   };
 
   const configureBto = async () => {
     if (btoBusy) return;
-    setBtoBusy(true);
+    setBtoBusy(true); setBtoErr('');
     try {
       const r = await axios.post('/api/v1/bto/configure',
         { entity_name: detail?.name || 'Enterprise', components: btoSel, product_resources: [] });
       setBtoBlueprint(r.data);
-    } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
+      //  W1028 - a refusal is said by its reason: this said every failure, a refusal included, as an unreachable server
+    } catch (e) { setBtoErr(`The configuration failed: ${errorMessage(e)}`); }   // W344
     setBtoBusy(false);
   };
 
@@ -691,7 +758,7 @@ export const VSBCockpit: React.FC = () => {
 
   return (
     <div className="space-y-8 pb-24">
-      {actErr && <p className="text-vital text-xs font-bold">{actErr}</p>}
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · VSB Enterprise</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">VSB Cockpit</h1>
@@ -736,8 +803,9 @@ export const VSBCockpit: React.FC = () => {
         if (vsbsState === 'error') {
           return (
             <Card className="p-8 text-center border-dashed border-slate-800">
-              <p className="text-amber-400 font-black uppercase tracking-widest text-xs">
-                VSB list unavailable — backend unreachable (this is not "no VSBs"; the list is unknown)
+              {/* W1049 - with what happened: it said the backend was unreachable whatever the failure was */}
+              <p role="alert" data-testid="cockpit-list-error" className="text-amber-400 font-black text-xs">
+                The VSB list could not be read, so this is not &ldquo;no VSBs&rdquo;: the list is unknown. {vsbsErr}
               </p>
             </Card>
           );
@@ -928,7 +996,9 @@ export const VSBCockpit: React.FC = () => {
                     no way to reconfigure it, while PUT /resources/swarm/{id} has done exactly that since
                     W267 — and POST /swarm/run re-reads the saved stages, so an edit takes effect on the next
                     run with nothing further to do. That second half is what the criterion asks be provable. */}
-                {swarm.cascade_id && <EditCascade cascadeId={swarm.cascade_id} onSaved={() => setCascadeTick(t => t + 1)} />}
+                {/* W1056 - keyed by the cascade it edits: the tab stays mounted while another entity is opened, so an
+                    open editor kept one entity's stages under the other's, and its Save put them to the other's */}
+                {swarm.cascade_id && <EditCascade key={swarm.cascade_id} cascadeId={swarm.cascade_id} onSaved={() => setCascadeTick(t => t + 1)} />}
               </Card>
             </div>
           )}
@@ -1036,7 +1106,7 @@ export const VSBCockpit: React.FC = () => {
                 </Button>
                 {chiefResult && (
                   <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 space-y-1">
-                    {chiefResult.error ? <p className="text-vital">{String(chiefResult.error)}</p> : (
+                    {chiefResult.error ? <p data-testid="cockpit-chief-error" role="alert" className="text-vital">{String(chiefResult.error)}</p> : (
                       <>
                         {/* W490 (sweep S1.3, C7) — the directive below is often the floor's own framing of the
                     prompt and never mentions the Owner's instruction; the response already carried
@@ -1113,6 +1183,23 @@ export const VSBCockpit: React.FC = () => {
                   <p className="text-sm text-slate-300 leading-relaxed">{(val as string) || <span className="text-slate-600">Not set.</span>}</p>
                 </Card>
               ))}
+              {/* W822 (FU-830) - THE ACTION-PLAN LAYER, as the Business Plan page shows it: what wrote it, or its
+                  absence said */}
+              <div data-testid="cockpit-plan-action-plan">
+                <Card className="p-6">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight mb-2">Action plan (§17.3)</h4>
+                  {typeof plan.action_plan === 'string' && plan.action_plan.trim() ? (
+                    <>
+                      <p className="text-sm text-slate-300 leading-relaxed">{plan.action_plan}</p>
+                      <p className="text-[10px] text-amber-300/80 mt-1 leading-relaxed" data-testid="cockpit-plan-action-plan-source">
+                        {layerSource(plan as any, 'action_plan') ?? 'No cadence refresh on record matches this text, so what composed it is not recorded here.'}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-[11px] text-slate-500" data-testid="cockpit-plan-action-plan-absent">No action plan is recorded for this scope: no action-plan refresh has been written to it.</p>
+                  )}
+                </Card>
+              </div>
               {Array.isArray(plan.aims) && plan.aims.length > 0 && (
                 <Card className="p-6">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight mb-2">Aims</h4>
@@ -1162,6 +1249,7 @@ export const VSBCockpit: React.FC = () => {
                         className="mt-2 text-[9px] font-black uppercase tracking-widest text-aura border border-aura/30 px-2 py-1 rounded flex items-center gap-1 disabled:opacity-50">
                         {objOrch === o.id ? <Loader2 size={10} className="animate-spin" /> : <Crown size={10} />} Chief: deliver via tree
                       </button>
+                      {orchErr[o.id] && <p data-testid="cockpit-orchestration-error" role="alert" className="text-[10px] font-bold text-vital mt-1">{orchErr[o.id]}</p>}
                       {objOrchResult[o.id] && (
                         <div className="mt-2 p-2 rounded-lg bg-aura/5 border border-aura/20">
                           <div className="flex items-center flex-wrap gap-1.5">
@@ -1190,6 +1278,10 @@ export const VSBCockpit: React.FC = () => {
           {/* Deliverables — this VSB's living outputs (§13), exportable in any in-house format */}
           {tab === 'deliverables' && (
             <div className="space-y-4">
+              {/* W933 (P5.15 clause 6) - the entity's own specialists, beside the work they review */}
+              {selected && <Card className="p-6"><EntitySpecialists vsbId={selected} /></Card>}
+              {/* W935 (P5.15 clauses 5 and 6) - the review each of its deliverables has reached, and the signing */}
+              {selected && <Card className="p-6"><EntityWorkReview vsbId={selected} /></Card>}
               <Card className="p-6">
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight mb-3 flex items-center gap-2"><ScrollText size={14} /> Produce a living deliverable for this VSB</h4>
                 <div className="grid grid-cols-1 @[560px]:grid-cols-4 gap-2 mb-2">
@@ -1201,16 +1293,18 @@ export const VSBCockpit: React.FC = () => {
                     {delivProducing ? <Loader2 size={14} className="animate-spin" /> : <ScrollText size={14} />} Produce
                   </Button>
                 </div>
+                {delivErr && <p data-testid="cockpit-deliverable-error" role="alert" className="text-[10px] font-bold text-vital mb-2">{delivErr}</p>}
                 <p className="text-[9px] text-slate-600">Filed under this VSB. Each row says what composed it — the
                   deterministic floor arranges headings and supplies no analysis.</p>
               </Card>
               <Card className="p-6">
                 <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight">Outputs ({deliverables.length})</h4>
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight">Outputs ({delivReadErr ? 'not read' : deliverables.length})</h4>
                   <select value={delivFormat} onChange={e => setDelivFormat(e.target.value)} aria-label="Export format" className="text-[10px] bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-slate-300">
                     {delivFormats.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
                   </select>
                 </div>
+                {delivReadErr && <p data-testid="cockpit-deliverables-unread" role="alert" className="text-[10px] font-bold text-vital mb-2">{delivReadErr}</p>}
                 <div className="space-y-2">
                   {deliverables.map((d: Dict) => (
                     <div key={d.id} className="flex items-center justify-between gap-2 p-3 rounded-xl bg-slate-900 border border-slate-800">
@@ -1236,16 +1330,19 @@ export const VSBCockpit: React.FC = () => {
                               ? `COULD NOT BE SCREENED: ${String(d.last_screened_error)}`
                               : 'not screened yet — the compliance beat screens one deliverable per beat and has not reached this one. That is not a clean verdict.'}
                         </p>
+                        {delivDlErr && delivDlErr.id === d.id && <p data-testid="cockpit-export-error" role="alert" className="text-[10px] font-bold text-vital mt-1">{delivDlErr.msg}</p>}
                       </div>
                       {/* W338 — bearer-carrying export (a raw anchor 401s under auth) */}
                       <button type="button" onClick={async () => {
+                          setDelivDlErr(null);
                           try { await downloadExport(`/api/v1/deliverables/${d.id}/export?format=${delivFormat}`, `${d.title || 'deliverable'}.${delivFormat}`); }
-                          catch (e: any) { alert(e?.message ?? 'Export failed'); }
+                          //  W1054 - under its row: a browser alert said nothing on the page about which row failed
+                          catch (e: any) { setDelivDlErr({ id: d.id, msg: errorMessage(e) }); }
                         }}
                         className="shrink-0 text-[10px] font-black uppercase text-sovereign bg-aura px-3 py-1.5 rounded-lg flex items-center gap-1 hover:opacity-90"><Download size={11} /> Export</button>
                     </div>
                   ))}
-                  {deliverables.length === 0 && <p className="text-slate-600 text-xs">No deliverables yet — produce one above.</p>}
+                  {deliverables.length === 0 && !delivReadErr && <p className="text-slate-600 text-xs">No deliverables yet — produce one above.</p>}
                 </div>
               </Card>
             </div>
@@ -1335,6 +1432,7 @@ export const VSBCockpit: React.FC = () => {
                     {cycling ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />} Run economic cycle
                   </Button>
                 </div>
+                {cycleErr && <p data-testid="cockpit-cycle-error" role="alert" className="text-[10px] font-bold text-vital">{cycleErr}</p>}
                 {ledger ? (
                   <>
                     <div className="grid grid-cols-2 @[560px]:grid-cols-4 gap-3">
@@ -1345,7 +1443,29 @@ export const VSBCockpit: React.FC = () => {
                         </div>
                       ))}
                     </div>
-                    <p className="text-[10px] text-slate-500 mt-3">Total revenue: <span className="text-white font-bold">{Number(ledger.total_revenue || 0).toLocaleString()}</span> · distributed: <span className="text-white font-bold">{Number(ledger.total_distributed || 0).toLocaleString()}</span> · entries: {ledger.entry_count ?? 0}</p>
+                    <p className="text-[10px] text-slate-500 mt-3">Total revenue (the pots' cumulative view): <span className="text-white font-bold">{Number(ledger.total_revenue || 0).toLocaleString()}</span> · distributed: <span className="text-white font-bold">{Number(ledger.total_distributed || 0).toLocaleString()}</span> · entries: {ledger.entry_count ?? 0}</p>
+                    {/* W862 (FU-1004) - the book of record is the double-entry book; the two are reconciled, never blended */}
+                    {ledger.revenue_reconciliation && (
+                      <div className="mt-1 space-y-0.5" data-testid="ledger-book-of-record" title={ledger.revenue_reconciliation.basis}>
+                        <p className="text-[10px] text-slate-400">
+                          Book of record: {String(ledger.book_of_record ?? ledger.revenue_reconciliation.book_of_record ?? '').replace('_', '-')} - the totals above are the {String(ledger.totals_book ?? 'pots')}'.
+                          {' '}Revenue on the book of record: <span className="text-white font-bold">{Number(ledger.revenue_reconciliation.revenue_double_entry_wst || 0).toLocaleString()}</span>
+                          {' '}· on the pots: {Number(ledger.revenue_reconciliation.revenue_pots_wst || 0).toLocaleString()}
+                        </p>
+                        {Number(ledger.revenue_reconciliation.difference_wst || 0) !== 0 && (
+                          <p className="text-[10px] text-amber-400/90" data-testid="ledger-reconciliation-gap">
+                            The pots hold {Number(ledger.revenue_reconciliation.difference_wst).toLocaleString()} more:
+                            {' '}{Number(ledger.revenue_reconciliation.pots_revenue_before_double_entry_wst || 0).toLocaleString()} recorded before double-entry began{ledger.revenue_reconciliation.double_entry_began ? ` (${ledger.revenue_reconciliation.double_entry_began})` : ''}
+                            {' '}and {Number(ledger.revenue_reconciliation.pots_revenue_unposted_since_wst || 0).toLocaleString()} since then with no posting
+                            {(ledger.revenue_reconciliation.pots_revenue_unposted_since ?? []).slice(0, 3).map((u: any) => ` · ${u.ts}: ${u.amount_wst} (${u.memo})`)}.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {/* W881 (FU-1010) - where this ledger's revenue entered, as each cycle's intake recorded it */}
+                    {ledger.revenue_entered?.basis && (
+                      <p data-testid="ledger-revenue-entered" className="text-[10px] text-slate-400 mt-1">{String(ledger.revenue_entered.basis)}</p>
+                    )}
                     {/* W503 (FU-169, S1.19 C5) — the tiles above are the CUMULATIVE view. The server has
                         said so since W442 (`balances_note`, `reserve_fund_wst`) and this page printed
                         neither, so a tile read "reserves 2,020" while the fund held 2,019 after a 1 WST
@@ -1422,6 +1542,7 @@ export const VSBCockpit: React.FC = () => {
               {shipState && !shipState.stale && (
                 <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500/80">Shipped body is current (shipped {String(shipState.shipped_at ?? '')})</p>
               )}
+              {shipErr && <p role="alert" data-testid="cockpit-ship-error" className="text-[10px] font-bold text-vital">{shipErr}</p>}
               {/* W503 (FU-264) — THE EVOLUTION LIFECYCLE, WHICH REACHED NO SURFACE. The record has
                   carried all of this since W493 and no page read any of it: a founder could run ten
                   cycles and see no trace, and an entity that never applied a mutation looked the same as
@@ -1479,15 +1600,48 @@ export const VSBCockpit: React.FC = () => {
                           className="ml-2 px-2 py-0.5 rounded border border-slate-700 text-[9px] text-slate-300 hover:bg-slate-800"
                           onClick={async () => {
                             const to = operating.lifecycle_state === 'dormant' ? 'awake' : 'dormant';
-                            const r = await axios.post<Dict>(`/api/v1/economy/living-vsbs/${selected}/lifecycle`, { to }, { validateStatus: () => true });
-                            if (r.status === 200 && r.data) setOperating({ ...operating, lifecycle_state: (r.data as Dict).to, lifecycle_basis: (r.data as Dict).basis });
-                            else setOperatingErr(`The life-cycle change was refused (HTTP ${r.status}): ${JSON.stringify((r.data as any)?.detail?.basis ?? r.data)}`);
+                            setLifecycleMsg('');
+                            //  W1053 - a call that reached no server is said: nothing caught it, so the press did nothing visible. A
+                            //  refusal is said beside the toggle, not in the roster's own line above the panel
+                            try {
+                              const r = await axios.post<Dict>(`/api/v1/economy/living-vsbs/${selected}/lifecycle`, { to }, { validateStatus: () => true });
+                              if (r.status === 200 && r.data) setOperating({ ...operating, lifecycle_state: (r.data as Dict).to, lifecycle_basis: (r.data as Dict).basis });
+                              else setLifecycleMsg(`The life-cycle change was refused (HTTP ${r.status}): ${String((r.data as any)?.detail?.basis ?? bodyDetail(r.data, 'no reason given'))}`);
+                            } catch (e: unknown) { setLifecycleMsg(`The life-cycle change was not made: ${errorMessage(e)}`); }
                           }}>
                           {operating.lifecycle_state === 'dormant' ? 'Wake' : 'Make dormant'}
                         </button>
                       )}
                     </p>
+                    {lifecycleMsg && <p role="alert" data-testid="cockpit-lifecycle-error" className="text-[10px] font-bold text-vital">{lifecycleMsg}</p>}
                     {operating.lifecycle_basis && <p className="text-[9px] text-slate-600 leading-relaxed">{String(operating.lifecycle_basis)}</p>}
+                    {/* FU-869 (W833) - a retired entity can be brought back: the Owner proposes a restore through Change Control */}
+                    {operating.lifecycle_state === 'retired' && (
+                      <div data-testid="cockpit-restore" className="mt-2 space-y-1">
+                        <div className="flex gap-2">
+                          <input value={restoreWhy} onChange={e => setRestoreWhy(e.target.value)} placeholder="Why restore it?"
+                            className="flex-1 text-[10px] bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200" />
+                          <button type="button" data-testid="cockpit-restore-propose" disabled={!restoreWhy.trim()}
+                            className="px-2 py-0.5 rounded border border-slate-700 text-[9px] text-slate-300 hover:bg-slate-800 disabled:opacity-40"
+                            onClick={async () => {
+                              setRestoreNote('');
+                              try {   // W1053 - a call that reached no server is said, as above
+                                const r = await axios.post<Dict>(`/api/v1/economy/living-vsbs/${selected}/propose-restore`, { why: restoreWhy }, { validateStatus: () => true });
+                                setRestoreNote(r.status === 200 && r.data
+                                  ? String((r.data as Dict).basis ?? 'filed through Change Control')
+                                  : `The restore was not filed (HTTP ${r.status}): ${String((r.data as any)?.detail?.basis ?? bodyDetail(r.data, 'no reason given'))}`);
+                              } catch (e: unknown) { setRestoreNote(`The restore was not filed: ${errorMessage(e)}`); }
+                            }}>
+                            Propose a restore
+                          </button>
+                        </div>
+                        {restoreNote && <p data-testid="cockpit-restore-note" className="text-[9px] text-slate-400 leading-relaxed">{restoreNote}</p>}
+                        <p className="text-[9px] text-slate-600 leading-relaxed">
+                          A restore is filed through Change Control and applied only when it is approved and implemented. It returns
+                          the entity to the state it was retired from; the balance its retirement moved to the Capital Fund stays in the fund.
+                        </p>
+                      </div>
+                    )}
                     {/* FU-470 — the lineage: whom this entity descends from, and how deep it sits */}
                     <p data-testid="cockpit-lineage" className="text-[9px] text-slate-500 mt-2 leading-relaxed">
                       {operating.lineage_state === 'resolved'
@@ -1510,14 +1664,18 @@ export const VSBCockpit: React.FC = () => {
                     {/* the governing flags, per entity, with ABSENT distinguished from stated-off */}
                     <p data-testid="cockpit-tending-flags" className="text-[9px] text-slate-500 mt-2 leading-relaxed">
                       Tending: auto_economy {operating.auto_economy === false ? 'OFF' : 'on'}
-                      {' · '}auto_compliance {operating.auto_compliance === false ? 'OFF' : 'on'}
+                      {' · '}auto_compliance {operating.auto_compliance === false ? 'OFF' : 'on'} (recorded; the re-screen does not read it)
                       {operating.auto_economy === undefined && operating.auto_compliance === undefined
                         ? ' — neither flag is recorded on this entity: it was registered before the fields '
                           + 'existed, and absent is read as ON because the organism was already tending it.'
                         : ''}
                     </p>
+                    {/* W799 (FU-1161) - which flag the beat reads. Both were shown as deciding tending, and neither
+                        was read; the economy cycle now reads its flag, and the re-screen deliberately reads none. */}
                     <p data-testid="cockpit-tending-basis" className="text-[9px] text-slate-600 mt-1 leading-relaxed">
-                      Tending needs BOTH: the organism beating with its own lever on, and this entity's flag.
+                      The economy cycle needs BOTH: the organism beating with its own lever on, and this entity's
+                      auto_economy flag. The §11 re-screen reads no entity flag: an entity may not opt out of being
+                      re-screened, so it takes every living entity in turn while the organism's re-screen lever is on.
                       A flag on an entity the heartbeat is not running for tends nothing.
                     </p>
                   </>
@@ -1744,6 +1902,7 @@ export const VSBCockpit: React.FC = () => {
                     {txRunning ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />} Run transformation
                   </Button>
                 </div>
+                {txErr && <p data-testid="cockpit-transformation-error" role="alert" className="text-[10px] font-bold text-vital mt-2">{txErr}</p>}
               </Card>
               {tx && (
                 <>
@@ -1812,6 +1971,7 @@ export const VSBCockpit: React.FC = () => {
                 <Button type="button" onClick={configureBto} disabled={btoBusy || btoSel.length === 0} className="bg-aura text-sovereign flex items-center gap-2 text-xs">
                   {btoBusy ? <Loader2 size={14} className="animate-spin" /> : <Boxes size={14} />} Configure build ({btoSel.length})
                 </Button>
+                {btoErr && <p data-testid="cockpit-configuration-error" role="alert" className="text-[10px] font-bold text-vital">{btoErr}</p>}
                 {btoBlueprint && (
                   <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
                     <p className="text-[11px] text-slate-300"><span className="text-white font-black">{btoBlueprint.entity_name}</span> — {btoBlueprint.component_count} components · {btoBlueprint.resource_count} product resources</p>
@@ -1911,6 +2071,7 @@ export const VSBCockpit: React.FC = () => {
                   {chatting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} Send
                 </Button>
               </div>
+              {chatErr && <p role="alert" data-testid="cockpit-chat-error" className="text-[10px] font-bold text-vital">{chatErr}</p>}
               <p className="text-[9px] text-slate-600">Voice (browser-native, in-house) + image (analysed in-house by a local Ollama vision model, with honest provenance) — no external service required.</p>
             </Card>
           )}

@@ -1,0 +1,1658 @@
+{
+ "whole": {
+  "scope": "the whole plan",
+  "axes": [
+   {
+    "axis": "reflection → reasoning",
+    "neither_end_alone": true
+   },
+   {
+    "axis": "attribution → recognition",
+    "neither_end_alone": true
+   },
+   {
+    "axis": "foresight → hindsight",
+    "neither_end_alone": true
+   },
+   {
+    "axis": "introspection → extrospection",
+    "neither_end_alone": true
+   }
+  ],
+  "structures": {
+   "axes": 4,
+   "spine": 1,
+   "faculties": 11
+  },
+  "faculties": {
+   "reflection": {
+    "items_done": 89,
+    "items_open": 30,
+    "rows_closed": 1134,
+    "rows_open": 43,
+    "rows_dropped": 19,
+    "basis": "read from the register's statuses and the plan's DONE markers. ITEMS closed is progress; ROWS closed is motion — 32 rows closed across six rounds while zero Phase 2 items closed in forty-eight, and reading the second as the first is the error this faculty exists for."
+   },
+   "reasoning": {
+    "blocked_by_ruling": {},
+    "closable_by_working_them": [
+     "P2.40",
+     "P2.41",
+     "P3.30",
+     "P3.32",
+     "P4.1",
+     "P4.2",
+     "P4.3",
+     "P4.4",
+     "P4.5",
+     "P4.6",
+     "P5.1",
+     "P5.2",
+     "P5.3",
+     "P5.6",
+     "P5.7",
+     "P5.8",
+     "P5.9",
+     "P5.10",
+     "P5.11",
+     "P5.12",
+     "P5.13",
+     "P5.14",
+     "P5.15",
+     "P5.16",
+     "P5.17",
+     "P5.18",
+     "P5.19",
+     "P5.20",
+     "P5.21",
+     "P5.22"
+    ],
+    "ceiling_without_clearing_the_gate": null,
+    "basis": "no item in this scope is recorded as held behind another, so the order is free and should follow vision value. A constraint nobody wrote down is invisible here.",
+    "the_one_lever": "verification dominates a round's cost — the suite is one full run per round, a blind sweep is one run per blind, refutation takes six to eight passes. The single measured lever is a worktree per blind (FU-253), because it is the only one that reduces the dominant term rather than the small one.",
+    "limits": "it reports the blocking order the plan STATES; it cannot discover a constraint nobody wrote."
+   },
+   "attribution": {
+    "rows_naming_their_source_round": 43,
+    "rows_with_no_source_round": [],
+    "share_attributed": 1.0,
+    "basis": "a row that names the round which found it can be re-measured; one that does not can only be believed. A row asserted '19 call sites' and the measured figure was ZERO — not dishonest, unattributed, so nothing could age it.",
+    "limits": "it checks that a source round is NAMED. Whether the figures in a row's body were measured that way is a reading of the body, and is the judgement half of this faculty."
+   },
+   "recognition": {
+    "rows_sharing_a_file": [
+     {
+      "files": [
+       "docs/SOURCES.json"
+      ],
+      "rows": [
+       "FU-1060",
+       "FU-1077",
+       "FU-1079",
+       "FU-1081",
+       "FU-1188"
+      ]
+     },
+     {
+      "files": [
+       "integration_tests/test_mvp_spine.py"
+      ],
+      "rows": [
+       "FU-399",
+       "FU-992",
+       "FU-1040",
+       "FU-1072"
+      ]
+     },
+     {
+      "files": [
+       "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "rows": [
+       "FU-809",
+       "FU-810",
+       "FU-811",
+       "FU-1086"
+      ]
+     },
+     {
+      "files": [
+       "agentic_core/organism/heartbeat.py"
+      ],
+      "rows": [
+       "FU-417",
+       "FU-849",
+       "FU-1072"
+      ]
+     },
+     {
+      "files": [
+       "pyproject.toml"
+      ],
+      "rows": [
+       "FU-284",
+       "FU-1174"
+      ]
+     },
+     {
+      "files": [
+       "integration_tests/conftest.py"
+      ],
+      "rows": [
+       "FU-301",
+       "FU-1085"
+      ]
+     },
+     {
+      "files": [
+       "docs/DEPLOYMENT.md"
+      ],
+      "rows": [
+       "FU-603",
+       "FU-1095"
+      ]
+     },
+     {
+      "files": [
+       "Dockerfile"
+      ],
+      "rows": [
+       "FU-603",
+       "FU-1156"
+      ]
+     },
+     {
+      "files": [
+       "scripts/workflows/fidelity_audit_v7.js"
+      ],
+      "rows": [
+       "FU-993",
+       "FU-1036"
+      ]
+     },
+     {
+      "files": [
+       "agentic_core/api/change_control.py"
+      ],
+      "rows": [
+       "FU-1046",
+       "FU-1187"
+      ]
+     },
+     {
+      "files": [
+       "agentic_core/economy/metabolism.py"
+      ],
+      "rows": [
+       "FU-1057",
+       "FU-1185"
+      ]
+     },
+     {
+      "files": [
+       "docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md"
+      ],
+      "rows": [
+       "FU-1067",
+       "FU-1191"
+      ]
+     }
+    ],
+    "rows_citing_no_file": [],
+    "defect_classes_available": [
+     "D-SELECT",
+     "D-FABRICATE",
+     "D-THEATRE",
+     "D-CONTRACT",
+     "D-SILENT",
+     "D-BEARER"
+    ],
+    "basis": "rows that share a file are candidates for ONE mechanism. Recognition is what turned twenty Phase 2 rows into seven mechanisms — the difference between twenty rounds and four — and what found that 25 sites of one sentence were a single class.",
+    "how_to_cut_a_round": "by mechanism and file connection under ONE item, never by row count",
+    "limits": "a shared file is a hint, not a class. A row citing no file is invisible to this and is listed above for that reason."
+   },
+   "foresight": {
+    "rounds_for_the_open_rows": 29,
+    "rounds_for_the_open_items": 133,
+    "item_rate_per_round": 0.181,
+    "items_never_sized": [
+     "P2.40",
+     "P2.41",
+     "P3.30",
+     "P3.32",
+     "P4.2",
+     "P4.3",
+     "P4.6",
+     "P5.2",
+     "P5.3",
+     "P5.6",
+     "P5.8",
+     "P5.9",
+     "P5.11",
+     "P5.14",
+     "P5.21"
+    ],
+    "weakest_number": "89 of 119 plan item(s) carry a DONE marker, across a span of 492 round(s) (W449 to W940) - a rate of 0.181 item(s) per round, which is the rate an ITEM is completed at and not the row rate. Over the last 6 build round(s) 0 item(s) closed (none); a six-round window cannot measure something that takes many rounds, which is why the span is used. 30 item(s) remain open, of which 15 carry NO registered row - their work is their own ACCEPT criteria and no row count covers it. THE RATE'S POPULATION: every completed item is in P1, P2, P3, P5, so this is the rate THAT work closed at, applied to phases whose work differs. NOT PROJECTED: 6 open item(s) (P4.1, P4.2, P4.3, P4.4, P4.5, P4.6) are declared owner-switch - a switch the Owner flips is not closed by a round, so counting it as rounds would invent them. PROJECTION COVERAGE: 12 of 24 build item(s) carry a registered row; the other 12 have never been sized, so the figure is an average over a population most of which no round has measured - it is the weakest number on this page.",
+    "computed_by": "agentic_core.plan_followups.forecast() — the ONE forecaster",
+    "basis": "rounds, never a date, and no rate is computed in this cell: a second forecaster would be two records disagreeing about one fact."
+   },
+   "hindsight": {
+    "state": "UNMET",
+    "items_with_a_round": 89,
+    "earlier_half": {
+     "rounds": "W449-W575",
+     "items": 44,
+     "rate": 0.346
+    },
+    "later_half": {
+     "rounds": "W583-W940",
+     "items": 45,
+     "rate": 0.126
+    },
+    "later_over_earlier": 0.36,
+    "basis": "the item rate is 0.346 per round over W449-W575 and 0.126 over W583-W940 — a ratio of 0.36. OUTSIDE a factor of two, so the span's average is a smooth line over a discontinuity and a projection from it will be wrong in a knowable direction.",
+    "and_ask_why": "a round that beats its projection is a finding before it is velocity: five of one item's six rows were already satisfied in W509, so the round closed them without doing the work the schedule assumed."
+   },
+   "introspection": {
+    "method_rules_nothing_enforces": 71,
+    "method_rules_total": 117,
+    "items_in_scope_with_no_row": [
+     "P2.40",
+     "P2.41",
+     "P3.30",
+     "P3.32",
+     "P4.2",
+     "P4.3",
+     "P4.6",
+     "P5.2",
+     "P5.3",
+     "P5.6",
+     "P5.8",
+     "P5.9",
+     "P5.11",
+     "P5.14",
+     "P5.21"
+    ],
+    "breaches_recorded": 0,
+    "basis": "the unenforced share, the unsized items and the unobserved breaches, as first-class figures. A breach count of zero means none was RECORDED - nothing observes a breach - and an item with no row has never been sized by anything.",
+    "limits": "this is the platform reading its own record. It is the half that cannot be trusted alone."
+   },
+   "extrospection": {
+    "state": "MET",
+    "candidates": [
+     {
+      "id": "FU-399",
+      "title": "81 page guards are still text scans and 295 data-testid attributes are still unexercised, now that a renderer exists",
+      "found_in_round": 579,
+      "files_changed_since": {
+       "integration_tests/test_mvp_spine.py": 1002,
+       "apps/workstation-superapp/vite.config.js": 977
+      },
+      "why": "the tree moved under this row: 2 of its file(s) were changed in a later round than W579, which found it"
+     },
+     {
+      "id": "FU-992",
+      "title": "Pages are verified by reading their source text, and one frontend test file exists for 130 page and component files",
+      "found_in_round": 676,
+      "files_changed_since": {
+       "integration_tests/test_mvp_spine.py": 1002
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W676, which found it"
+     },
+     {
+      "id": "FU-1040",
+      "title": "A test double's rows are in the Owner's real store",
+      "found_in_round": 677,
+      "files_changed_since": {
+       "integration_tests/test_mvp_spine.py": 1002
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W677, which found it"
+     },
+     {
+      "id": "FU-1072",
+      "title": "One repository test stalled twice inside a keyword selection and passes on its own",
+      "found_in_round": 700,
+      "files_changed_since": {
+       "integration_tests/test_mvp_spine.py": 1002,
+       "agentic_core/organism/heartbeat.py": 916
+      },
+      "why": "the tree moved under this row: 2 of its file(s) were changed in a later round than W700, which found it"
+     },
+     {
+      "id": "FU-809",
+      "title": "No public-facing sentence about the product has been drafted against its evidence",
+      "found_in_round": 666,
+      "files_changed_since": {
+       "docs/FABLE_DELIVERY_PROMPT.md": 1001
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W666, which found it"
+     },
+     {
+      "id": "FU-810",
+      "title": "The routes to public business support and to partners have not been read from their own pages",
+      "found_in_round": 666,
+      "files_changed_since": {
+       "docs/FABLE_DELIVERY_PROMPT.md": 1001
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W666, which found it"
+     },
+     {
+      "id": "FU-811",
+      "title": "No workpack sets out the legal routes for the business or what a registration would ask for",
+      "found_in_round": 666,
+      "files_changed_since": {
+       "docs/FABLE_DELIVERY_PROMPT.md": 1001
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W666, which found it"
+     },
+     {
+      "id": "FU-1086",
+      "title": "OWNER DECISION: the uncapped, census-partitioned final audit has no item that builds or runs it",
+      "found_in_round": 747,
+      "files_changed_since": {
+       "docs/FABLE_DELIVERY_PROMPT.md": 1001
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W747, which found it"
+     },
+     {
+      "id": "FU-1075",
+      "title": "No record of an agreement with an outside party exists: the first slice of the agreements item",
+      "found_in_round": 711,
+      "files_changed_since": {
+       "agentic_core/api/economy.py": 1000,
+       "agentic_core/api/law.py": 953
+      },
+      "why": "the tree moved under this row: 2 of its file(s) were changed in a later round than W711, which found it"
+     },
+     {
+      "id": "FU-1185",
+      "title": "OWNER DECISION: what arithmetic turns an entity's declared cost and its waterfall into a price?",
+      "found_in_round": 939,
+      "files_changed_since": {
+       "agentic_core/api/economy.py": 1000
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W939, which found it"
+     },
+     {
+      "id": "FU-1078",
+      "title": "No record of a physical asset exists: the first slice of the physical-assets item",
+      "found_in_round": 711,
+      "files_changed_since": {
+       "agentic_core/api/integration_surface.py": 967,
+       "agentic_core/api/digital_twin.py": 736
+      },
+      "why": "the tree moved under this row: 2 of its file(s) were changed in a later round than W711, which found it"
+     },
+     {
+      "id": "FU-1055",
+      "title": "The education department's thirteen headings have not been set against the Education tools",
+      "found_in_round": 679,
+      "files_changed_since": {
+       "agentic_core/api/education.py": 958
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W679, which found it"
+     },
+     {
+      "id": "FU-1095",
+      "title": "A failure on the first deployment reaches no person: failures are recorded and shown only on a page someone must open",
+      "found_in_round": 747,
+      "files_changed_since": {
+       "README.md": 956,
+       "docs/DEPLOYMENT.md": 904
+      },
+      "why": "the tree moved under this row: 2 of its file(s) were changed in a later round than W747, which found it"
+     },
+     {
+      "id": "FU-1054",
+      "title": "The Care reviewer agent and its calibration set: planted defects it must catch and clean answers it must pass",
+      "found_in_round": 679,
+      "files_changed_since": {
+       "agentic_core/api/care.py": 955
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W679, which found it"
+     },
+     {
+      "id": "FU-1060",
+      "title": "The sources check reads five kinds of file and four name patterns, and the domain pages still type their own sentences",
+      "found_in_round": 681,
+      "files_changed_since": {
+       "scripts/sources_check.py": 955,
+       "docs/SOURCES.json": 948
+      },
+      "why": "the tree moved under this row: 2 of its file(s) were changed in a later round than W681, which found it"
+     },
+     {
+      "id": "FU-1033",
+      "title": "The reuse terms of the three scoring instruments have not been read",
+      "found_in_round": 676,
+      "files_changed_since": {
+       "agentic_core/care/scoring.py": 951
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W676, which found it"
+     },
+     {
+      "id": "FU-1077",
+      "title": "Authorities the legal-operations brief names that have not been read at their publishers",
+      "found_in_round": 711,
+      "files_changed_since": {
+       "docs/SOURCES.json": 948
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W711, which found it"
+     },
+     {
+      "id": "FU-1079",
+      "title": "Two sources for the physical-assets item could not be opened at their publishers",
+      "found_in_round": 711,
+      "files_changed_since": {
+       "docs/SOURCES.json": 948
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W711, which found it"
+     },
+     {
+      "id": "FU-1081",
+      "title": "The terms on which a published commentary may be shown have not been read for any work",
+      "found_in_round": 723,
+      "files_changed_since": {
+       "docs/SOURCES.json": 948
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W723, which found it"
+     },
+     {
+      "id": "FU-1046",
+      "title": "A compliance finding on an entity's deliveries waited six weeks unread and the store kept no reason for it",
+      "found_in_round": 678,
+      "files_changed_since": {
+       "agentic_core/api/change_control.py": 941
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W678, which found it"
+     },
+     {
+      "id": "FU-991",
+      "title": "One file is named by standing findings in every one of ten audit editions",
+      "found_in_round": 676,
+      "files_changed_since": {
+       "agentic_core/api/vsb.py": 938
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W676, which found it"
+     },
+     {
+      "id": "FU-417",
+      "title": "A beat skipped the cadence for both layers in the full suite and the cause was never recorded; not reproduced since",
+      "found_in_round": 589,
+      "files_changed_since": {
+       "agentic_core/organism/cadence.py": 705,
+       "agentic_core/organism/heartbeat.py": 916
+      },
+      "why": "the tree moved under this row: 2 of its file(s) were changed in a later round than W589, which found it"
+     },
+     {
+      "id": "FU-849",
+      "title": "The heartbeat acts on any owner's entity with no principal, and the ownership check lets an absent user through",
+      "found_in_round": 672,
+      "files_changed_since": {
+       "agentic_core/organism/heartbeat.py": 916
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W672, which found it"
+     },
+     {
+      "id": "FU-284",
+      "title": "P4.4's pre-flight has not been started: six database dependencies are declared and imported by nothing, so no migration dry-run or rollback exists to prove",
+      "found_in_round": 500,
+      "files_changed_since": {
+       "pyproject.toml": 907
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W500, which found it"
+     },
+     {
+      "id": "FU-1071",
+      "title": "The Windows build job lost a worker to an access violation once",
+      "found_in_round": 699,
+      "files_changed_since": {
+       ".github/workflows/spine.yml": 905
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W699, which found it"
+     },
+     {
+      "id": "FU-1085",
+      "title": "A build job lost a test worker twice in one day, in unrelated tests: silently on Linux and to an access violation on Windows",
+      "found_in_round": 736,
+      "files_changed_since": {
+       ".github/workflows/spine.yml": 905,
+       "integration_tests/conftest.py": 899
+      },
+      "why": "the tree moved under this row: 2 of its file(s) were changed in a later round than W736, which found it"
+     },
+     {
+      "id": "FU-603",
+      "title": "The Google Cloud deployment path has no pre-flight: Vercel is retired and nothing measures the replacement",
+      "found_in_round": 636,
+      "files_changed_since": {
+       "docs/DEPLOYMENT.md": 904,
+       "Dockerfile": 896
+      },
+      "why": "the tree moved under this row: 2 of its file(s) were changed in a later round than W636, which found it"
+     },
+     {
+      "id": "FU-1005",
+      "title": "Half the capital fund is held by three test allocations made in June that nothing can release",
+      "found_in_round": 676,
+      "files_changed_since": {
+       "agentic_core/api/capital_fund.py": 901
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W676, which found it"
+     },
+     {
+      "id": "FU-1057",
+      "title": "No platform fee exists: an entity's whole profit goes through its own split",
+      "found_in_round": 679,
+      "files_changed_since": {
+       "agentic_core/economy/metabolism.py": 901
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W679, which found it"
+     },
+     {
+      "id": "FU-1166",
+      "title": "OWNER: may a birth be refused when the platform is over its derived carrying capacity?",
+      "found_in_round": 839,
+      "files_changed_since": {
+       "agentic_core/molecular/work_budget.py": 900
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W839, which found it"
+     },
+     {
+      "id": "FU-301",
+      "title": "The parallel suite stalls about one run in three, with every worker in flight at once - cause not established",
+      "found_in_round": 507,
+      "files_changed_since": {
+       "integration_tests/conftest.py": 899
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W507, which found it"
+     },
+     {
+      "id": "FU-1156",
+      "title": "The production Docker image serves no pages and carries no law corpus or plan",
+      "found_in_round": 787,
+      "files_changed_since": {
+       "Dockerfile": 896
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W787, which found it"
+     },
+     {
+      "id": "FU-1067",
+      "title": "The private test the Owner asked for before ruling on listening has not been run",
+      "found_in_round": 683,
+      "files_changed_since": {
+       "docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md": 844
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W683, which found it"
+     },
+     {
+      "id": "FU-1165",
+      "title": "OWNER: name your own two protected entities (Settings, Protected enterprises)",
+      "found_in_round": 833,
+      "files_changed_since": {
+       "agentic_core/economy/turnover.py": 839
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W833, which found it"
+     },
+     {
+      "id": "FU-1038",
+      "title": "The durable defect loop has never completed a cycle: nineteen defects opened, none corrected, none re-verified",
+      "found_in_round": 677,
+      "files_changed_since": {
+       "agentic_core/vbs/quality.py": 797
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W677, which found it"
+     },
+     {
+      "id": "FU-993",
+      "title": "The audit has never been run against planted defects or deliberately false findings",
+      "found_in_round": 676,
+      "files_changed_since": {
+       "scripts/workflows/fidelity_audit_v7.js": 785
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W676, which found it"
+     },
+     {
+      "id": "FU-1036",
+      "title": "Every audit edition examined the floor-only configuration, which is not what the Owner runs",
+      "found_in_round": 677,
+      "files_changed_since": {
+       "scripts/workflows/fidelity_audit_v7.js": 785
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W677, which found it"
+     },
+     {
+      "id": "FU-1151",
+      "title": "OWNER DECISION: two committed audit run records carry text of a private kind in the public tree",
+      "found_in_round": 749,
+      "files_changed_since": {
+       "docs/fidelity_runs/ledger_v15_W654_ab829862.json": 754
+      },
+      "why": "the tree moved under this row: 1 of its file(s) were changed in a later round than W749, which found it"
+     }
+    ],
+    "candidate_count": 38,
+    "not_considered_rows": [],
+    "not_considered_row_count": 0,
+    "commits_no_round_could_be_read_from": 92,
+    "not_considered_basis": "0 open row(s) name NO files, so this check cannot match them against any change and they are neither candidates nor cleared — they are UNEXAMINED by it. A further 92 of 400 commit(s) read carry a subject this parser could not read a round from, so whatever they changed is invisible here too. Neither number is a defect in the rows or the commits; both are the width of this instrument, counted instead of described",
+    "history_commits": 400,
+    "basis": "38 open row(s) name a file that a later round changed. Each is a CANDIDATE for re-reading and none is closed here: whether a row is satisfied is a reading of the code it names, not a diff.",
+    "limits": "It reads the last 400 commits and only commits whose subject declares a round. A row carrying no files, or found by a round the subject does not name, is invisible to it."
+   },
+   "retrospection": {
+    "state": "MET",
+    "basis": "read from the register's own record. The rows in this scope, by status: built or satisfied, dropped as refuted, and why each closed where it records why. The rounds, and whether the backlog is growing, over the whole register: which round closed each row and which round found it",
+    "rounds": null,
+    "closure_kinds": {
+     "not_recorded": 320,
+     "performed_not_assessable": 4,
+     "built": 796,
+     "refuted": 4,
+     "already_satisfied": 10
+    },
+    "closures_with_a_kind": 814,
+    "closure_kind_basis": "814 of 1134 closed row(s) record WHY they closed. The rest predate the field (W561) and are counted as not_recorded rather than as built — a round that closed six rows by measuring them already-satisfied is not the round that closed six by building, and guessing which is which would invent the distinction this field exists to stop inventing",
+    "rows_built_or_satisfied": 1134,
+    "rows_dropped_as_refuted": 19,
+    "refutation_share": 0.016,
+    "rounds_that_closed_something": 363,
+    "rounds_that_only_found": [
+     "W459",
+     "W460",
+     "W462",
+     "W469",
+     "W470",
+     "W471",
+     "W474",
+     "W476",
+     "W480",
+     "W482",
+     "W484",
+     "W487",
+     "W499",
+     "W508",
+     "W512",
+     "W514",
+     "W529",
+     "W532",
+     "W535",
+     "W539",
+     "W550",
+     "W551",
+     "W582",
+     "W587",
+     "W588",
+     "W589",
+     "W590",
+     "W596",
+     "W621",
+     "W629",
+     "W632",
+     "W634",
+     "W636",
+     "W652",
+     "W654",
+     "W665",
+     "W675",
+     "W689",
+     "W709",
+     "W711",
+     "W723",
+     "W726",
+     "W747",
+     "W787",
+     "W795",
+     "W883b",
+     "W908",
+     "W939",
+     "W941",
+     "W951",
+     "W953",
+     "W966"
+    ],
+    "closed_total": 1134,
+    "found_total": 1191,
+    "backlog_growing": true,
+    "what_the_pattern_means": "19 of 1153 resolved rows were DROPPED as refuted rather than built, a refutation share of 0.016. A row dropped as false and a row closed because it was already satisfied are both work the register ASKED FOR and did not need — which is why the open count is an upper bound on the work and not a measure of it (M-FCAST-02). The totals cannot show this, because closing a satisfied row and closing a built one are the same increment. Across the whole register, 52 round(s) closed nothing and only registered findings: those add work rather than burning it, and counting them as build rounds would understate the rate.",
+    "limits": "this reads STATUS, not cause. It cannot tell a row closed because it was built from one closed because it was already satisfied — that distinction lives in the closing round's own words, and recording it is what would make this faculty sharper."
+   },
+   "observation": {
+    "read_at": "2026-11-14T03:50:18Z",
+    "state": "UNMET",
+    "beating": false,
+    "beats": 1,
+    "circadian_phase": "MAINTENANCE_REST",
+    "phase_intensity": 0.3,
+    "last_beat": "2026-11-14T03:50:17Z",
+    "last_actions": {
+     "last_realisation": 0.849,
+     "last_genome": {
+      "total": 0,
+      "mean_fitness": null,
+      "mean_fitness_basis": "no genomes stored yet",
+      "mean_declared_fitness": null,
+      "fitness_composition": {},
+      "max_generation": 0
+     }
+    },
+    "basis": "THE HEARTBEAT IS STOPPED. Nothing is being operated, nothing is being screened, and the figures above are the last ones it recorded rather than current ones. A stopped beat is not a healthy zero.",
+    "limits": "a reading of NOW is stale the moment it is taken, and this one does not re-read. It says when it was taken so a reader can judge that, which is the only honest thing available."
+   },
+   "prospection": {
+    "state": "MET",
+    "branches": [
+     {
+      "branch": "the Owner decides FU-1005",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "measured in this round and not done in it",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1038",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "measured in this round and not done in it",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1040",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "measured in this round and not done in it",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1046",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "found by a dated read of the Owner's store in W678; the area has no routed owner",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1095",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "the deploy pre-flight is this item's",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1151",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "Owner ruling 2026-11-06 (W754): accepted as recommended: v15's paths replaced in W754; the v16 note remains, for the session that located it",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1165",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "no reason recorded, which is itself a gap",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1166",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "no reason recorded, which is itself a gap",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1174",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "a dependency removal is the Owner's: the 2026-10-07b ruling covered only the rows that were REMOVABLE then",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1176",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "a production channel's price touches the production deploy, and a money figure in a business document stands only beside an Owner ruling",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1185",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "P5.2 derives a price from the waterfall, which splits a profit and does not set one; what margin or target the derivation uses is the Owner's",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1187",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "P5.3's measured remaining work names the claim's Change Control tier as the Owner's to rule",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1188",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "FU-1066 says the two letters are drafted for the Owner to send",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1191",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "P5.7 clause 2 names seven investment gates the tree does not define",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "an unsized item turns out larger than the average",
+      "assumption": "15 item(s) in scope carry no registered row, so nothing has measured them",
+      "what_becomes_possible": [],
+      "consequence": "the projection is an average over a population most of which no round has opened — this branch is why the forecaster calls that its weakest number"
+     }
+    ],
+    "count": 15,
+    "basis": "each branch names the ASSUMPTION it rests on. They are possibilities, not predictions.",
+    "never": "ranked, weighted, given a probability, or given a date. A possibility with a likelihood is a prediction, and this platform has ONE forecaster (agentic_core.plan_followups.forecast) — a second voice on the same question is two records disagreeing about one fact (M-DELIV-08).",
+    "limits": "it enumerates the branches the ARTEFACTS record — a ruling, an owner-gated row, an unsized item. A future nobody wrote down is invisible to it, which is most of them."
+   }
+  },
+  "what_a_cell_is": "Most groups in this register are lists of rules an operator follows. APPRAISAL is a CELL: a reusable unit that takes a scope and produces eight readings over it, in four paired axes, where neither end of an axis is sufficient alone. It is named for the organism's functional unit because that is what it is — the faculties are its organelles, and it can be run by the Transformation Office over a transformation's scope or by Change Control over a change's, as well as over the delivery plan itself. Its structures are FOUR AXES of two ends each and ONE SPINE of three: an axis is a dyad whose ends check each other, a spine is a triad whose middle is the present. The Owner's cognitive map is the source of the spine — Past ↔ Present ↔ Future, Memory ↔ Perception ↔ Imagination, Learning ↔ Orientation ↔ Planning.",
+  "spine": {
+   "spine": "retrospection → observation → prospection",
+   "why_a_spine_and_not_an_axis": "time has a MIDDLE. The four axes are dyads whose ends check each other; this is a triad, and its middle is the present — the faculty this cell was built without.",
+   "neither_end_alone": "retrospection without observation is nostalgia; prospection without observation is fantasy; observation without either is drift."
+  },
+  "reconciliation": "Neither end of an axis is sufficient alone. REFLECTION without REASONING is a diary and reasoning without reflection is invention; ATTRIBUTION without RECOGNITION is a list of sources and recognition without attribution is a pattern nobody can check; FORESIGHT without HINDSIGHT is a promise and hindsight without foresight is regret; INTROSPECTION without EXTROSPECTION is a platform grading its own homework and extrospection without introspection is a platform that cannot say what it does not know. Read the pairs together or the cell has not run. And the SPINE is read as a whole for the same reason: RETROSPECTION without OBSERVATION is nostalgia, PROSPECTION without OBSERVATION is fantasy, and observation without either is drift.",
+  "this_cell_never_says": "that a scope is sound, ready, or on track. Two of its eight faculties are largely judgement and say so, and the evidence for a delivery is a guard that was made to fail first.",
+  "lessons": [
+   {
+    "id": "M-APPR-01",
+    "axis": "reflection → reasoning",
+    "faculty": "reflection",
+    "rule": "REFLECTION: read the record of what was actually DONE before forming any view of where things stand. A view formed from activity is not a view of progress."
+   },
+   {
+    "id": "M-APPR-02",
+    "axis": "reflection → reasoning",
+    "faculty": "reasoning",
+    "rule": "REASONING: derive the ORDER from constraints, never from priority alone. An item held behind another cannot be closed by working it, however high it scores."
+   },
+   {
+    "id": "M-APPR-03",
+    "axis": "attribution → recognition",
+    "faculty": "attribution",
+    "rule": "ATTRIBUTION: every claim names its PRODUCER and the round that made it. A figure with no attribution cannot be re-measured, only believed."
+   },
+   {
+    "id": "M-APPR-04",
+    "axis": "attribution → recognition",
+    "faculty": "recognition",
+    "rule": "RECOGNITION: name the CLASS a finding belongs to before acting on it. A finding treated as unique is fixed at its site, and a site fix is made again."
+   },
+   {
+    "id": "M-APPR-05",
+    "axis": "foresight → hindsight",
+    "faculty": "foresight",
+    "rule": "FORESIGHT: project in ROUNDS, from one forecaster, and name the projection's weakest input in the same breath as the number."
+   },
+   {
+    "id": "M-APPR-06",
+    "axis": "foresight → hindsight",
+    "faculty": "hindsight",
+    "rule": "HINDSIGHT: check the projection's own BASIS against what happened. A rate measured on one population and applied to another is an assumption, and the assumption is testable."
+   },
+   {
+    "id": "M-APPR-07",
+    "axis": "introspection → extrospection",
+    "faculty": "introspection",
+    "rule": "INTROSPECTION: state what the platform's own record CANNOT see. A platform that reports only what it holds is grading its own homework."
+   },
+   {
+    "id": "M-APPR-08",
+    "axis": "introspection → extrospection",
+    "faculty": "extrospection",
+    "rule": "EXTROSPECTION: read the TREE, not the record, before believing the record. The record is a claim about the world; the world is checkable."
+   },
+   {
+    "id": "M-APPR-09",
+    "axis": null,
+    "faculty": "retrospection",
+    "rule": "RETROSPECTION: read the record for its PATTERN, not its totals. A count says what happened; a pattern says what keeps happening."
+   },
+   {
+    "id": "M-APPR-10",
+    "axis": null,
+    "faculty": "observation",
+    "rule": "OBSERVATION: read what is happening NOW, from the live system, before inferring anything about it. Inference without observation is the most expensive habit available."
+   },
+   {
+    "id": "M-APPR-11",
+    "axis": null,
+    "faculty": "prospection",
+    "rule": "PROSPECTION: enumerate what COULD happen and refuse to rank it. A possibility given a probability has been turned into a prediction, and this platform has exactly one forecaster."
+   }
+  ],
+  "hand_off": {
+   "kept": false,
+   "kept_basis": "this appraisal is a reading made at this call. The route writes nothing, so it is not stored and no later appraisal can read this one",
+   "authorises": false,
+   "authorises_basis": "this route files, approves and applies nothing. A person may send one of its recommendations, and that route appraises the scope again and SUBMITS one record; the method's other filers also only submit. Change Control decides",
+   "next_route": "POST /api/v1/cca/submit",
+   "next_route_basis": "to act on this reading a person files a change there, naming the affected systems. Change Control attaches the appraisal of the scope those systems point at (`scope_appraisal`, which is never a gate), and a review decides the change",
+   "method_filers": [
+    "POST /api/v1/method/derive",
+    "POST /api/v1/method/breach",
+    "POST /api/v1/method/correct",
+    "POST /api/v1/method/amendment",
+    "POST /api/v1/method/appraise/recommend"
+   ],
+   "method_filers_basis": "the 5 method routes that can raise a change, each on a person's request (a confirmed defect, a recorded breach, a proposed correction, a batch of lessons, one recommendation of an appraisal). One of them reads an appraisal, and it appraises the scope again at the call and files what that reading says",
+   "not_established": "whether an implemented change did what it was filed for. The status and effect listed here are Change Control's own record of what it decided and applied; nothing re-reads the changed state after implementation, and this appraisal reads no outcome beyond them",
+   "records_read": 0,
+   "records_unreadable": 0,
+   "changes_carrying_this_scope": {
+    "count": 0,
+    "by_status": {},
+    "records": [],
+    "records_listed": 0
+   },
+   "statement": "no Change Control record carries an appraisal of a scope: nothing that has been filed points at it. This appraisal does not change that - it files nothing"
+  },
+  "recommendations": [
+   {
+    "id": "size-the-items",
+    "from_faculty": "foresight",
+    "count": 15,
+    "subjects": [
+     "P2.40",
+     "P2.41",
+     "P3.30",
+     "P3.32",
+     "P4.2",
+     "P4.3",
+     "P4.6",
+     "P5.2",
+     "P5.3",
+     "P5.6",
+     "P5.8",
+     "P5.9",
+     "P5.11",
+     "P5.14",
+     "P5.21"
+    ],
+    "recommendation": "Size 15 plan item(s) that have never been sized: P2.40, P2.41, P3.30, P3.32, P4.2, P4.3, P4.6, P5.2 and 7 more. A forecast over an unsized item projects from nothing.",
+    "affected_systems": [
+     "docs/FABLE_DELIVERY_PROMPT.md"
+    ],
+    "rests_on": "rounds, never a date, and no rate is computed in this cell: a second forecaster would be two records disagreeing about one fact."
+   },
+   {
+    "id": "file-a-row",
+    "from_faculty": "introspection",
+    "count": 15,
+    "subjects": [
+     "P2.40",
+     "P2.41",
+     "P3.30",
+     "P3.32",
+     "P4.2",
+     "P4.3",
+     "P4.6",
+     "P5.2",
+     "P5.3",
+     "P5.6",
+     "P5.8",
+     "P5.9",
+     "P5.11",
+     "P5.14",
+     "P5.21"
+    ],
+    "recommendation": "File a register row for 15 open plan item(s) that have none: P2.40, P2.41, P3.30, P3.32, P4.2, P4.3, P4.6, P5.2 and 7 more. An item with no row has no recorded next step.",
+    "affected_systems": [
+     "docs/FOLLOWUPS.json",
+     "docs/FABLE_DELIVERY_PROMPT.md"
+    ],
+    "rests_on": "the unenforced share, the unsized items and the unobserved breaches, as first-class figures. A breach count of zero means none was RECORDED - nothing observes a breach - and an item with no row has never been sized by anything."
+   },
+   {
+    "id": "re-read-changed-rows",
+    "from_faculty": "extrospection",
+    "count": 38,
+    "subjects": [
+     "FU-399",
+     "FU-992",
+     "FU-1040",
+     "FU-1072",
+     "FU-809",
+     "FU-810",
+     "FU-811",
+     "FU-1086",
+     "FU-1075",
+     "FU-1185",
+     "FU-1078",
+     "FU-1055",
+     "FU-1095",
+     "FU-1054",
+     "FU-1060",
+     "FU-1033",
+     "FU-1077",
+     "FU-1079",
+     "FU-1081",
+     "FU-1046",
+     "FU-991",
+     "FU-417",
+     "FU-849",
+     "FU-284",
+     "FU-1071",
+     "FU-1085",
+     "FU-603",
+     "FU-1005",
+     "FU-1057",
+     "FU-1166",
+     "FU-301",
+     "FU-1156",
+     "FU-1067",
+     "FU-1165",
+     "FU-1038",
+     "FU-993",
+     "FU-1036",
+     "FU-1151"
+    ],
+    "recommendation": "Re-read 38 open row(s) naming a file a later round changed: FU-399, FU-992, FU-1040, FU-1072, FU-809, FU-810, FU-811, FU-1086 and 30 more. Each is a candidate for re-reading and none is closed by this; whether a row still holds is a reading of the code it names.",
+    "affected_systems": [
+     "docs/FOLLOWUPS.json"
+    ],
+    "rests_on": "38 open row(s) name a file that a later round changed. Each is a CANDIDATE for re-reading and none is closed here: whether a row is satisfied is a reading of the code it names, not a diff."
+   }
+  ],
+  "recommendations_basis": "each recommendation is a fixed sentence over what one faculty counted at this call, and is listed only while that count is above zero. Nothing here is composed by a model, ranked or weighted. The cell files nothing: a person sends one recommendation, the scope is appraised again, and Change Control decides.",
+  "recommendation_route": "POST /api/v1/method/appraise/recommend"
+ },
+ "phase": {
+  "scope": "P3",
+  "axes": [
+   {
+    "axis": "reflection → reasoning",
+    "neither_end_alone": true
+   },
+   {
+    "axis": "attribution → recognition",
+    "neither_end_alone": true
+   },
+   {
+    "axis": "foresight → hindsight",
+    "neither_end_alone": true
+   },
+   {
+    "axis": "introspection → extrospection",
+    "neither_end_alone": true
+   }
+  ],
+  "structures": {
+   "axes": 4,
+   "spine": 1,
+   "faculties": 11
+  },
+  "faculties": {
+   "reflection": {
+    "items_done": 30,
+    "items_open": 2,
+    "rows_closed": 271,
+    "rows_open": 0,
+    "rows_dropped": 6,
+    "basis": "read from the register's statuses and the plan's DONE markers. ITEMS closed is progress; ROWS closed is motion — 32 rows closed across six rounds while zero Phase 2 items closed in forty-eight, and reading the second as the first is the error this faculty exists for."
+   },
+   "reasoning": {
+    "blocked_by_ruling": {},
+    "closable_by_working_them": [
+     "P3.30",
+     "P3.32"
+    ],
+    "ceiling_without_clearing_the_gate": null,
+    "basis": "no item in this scope is recorded as held behind another, so the order is free and should follow vision value. A constraint nobody wrote down is invisible here.",
+    "the_one_lever": "verification dominates a round's cost — the suite is one full run per round, a blind sweep is one run per blind, refutation takes six to eight passes. The single measured lever is a worktree per blind (FU-253), because it is the only one that reduces the dominant term rather than the small one.",
+    "limits": "it reports the blocking order the plan STATES; it cannot discover a constraint nobody wrote."
+   },
+   "attribution": {
+    "rows_naming_their_source_round": 0,
+    "rows_with_no_source_round": [],
+    "share_attributed": null,
+    "basis": "a row that names the round which found it can be re-measured; one that does not can only be believed. A row asserted '19 call sites' and the measured figure was ZERO — not dishonest, unattributed, so nothing could age it.",
+    "limits": "it checks that a source round is NAMED. Whether the figures in a row's body were measured that way is a reading of the body, and is the judgement half of this faculty."
+   },
+   "recognition": {
+    "rows_sharing_a_file": [],
+    "rows_citing_no_file": [],
+    "defect_classes_available": [
+     "D-SELECT",
+     "D-FABRICATE",
+     "D-THEATRE",
+     "D-CONTRACT",
+     "D-SILENT",
+     "D-BEARER"
+    ],
+    "basis": "rows that share a file are candidates for ONE mechanism. Recognition is what turned twenty Phase 2 rows into seven mechanisms — the difference between twenty rounds and four — and what found that 25 sites of one sentence were a single class.",
+    "how_to_cut_a_round": "by mechanism and file connection under ONE item, never by row count",
+    "limits": "a shared file is a hint, not a class. A row citing no file is invisible to this and is listed above for that reason."
+   },
+   "foresight": {
+    "rounds_for_the_open_rows": 29,
+    "rounds_for_the_open_items": 133,
+    "item_rate_per_round": 0.181,
+    "items_never_sized": [
+     "P2.40",
+     "P2.41",
+     "P3.30",
+     "P3.32",
+     "P4.2",
+     "P4.3",
+     "P4.6",
+     "P5.2",
+     "P5.3",
+     "P5.6",
+     "P5.8",
+     "P5.9",
+     "P5.11",
+     "P5.14",
+     "P5.21"
+    ],
+    "weakest_number": "89 of 119 plan item(s) carry a DONE marker, across a span of 492 round(s) (W449 to W940) - a rate of 0.181 item(s) per round, which is the rate an ITEM is completed at and not the row rate. Over the last 6 build round(s) 0 item(s) closed (none); a six-round window cannot measure something that takes many rounds, which is why the span is used. 30 item(s) remain open, of which 15 carry NO registered row - their work is their own ACCEPT criteria and no row count covers it. THE RATE'S POPULATION: every completed item is in P1, P2, P3, P5, so this is the rate THAT work closed at, applied to phases whose work differs. NOT PROJECTED: 6 open item(s) (P4.1, P4.2, P4.3, P4.4, P4.5, P4.6) are declared owner-switch - a switch the Owner flips is not closed by a round, so counting it as rounds would invent them. PROJECTION COVERAGE: 12 of 24 build item(s) carry a registered row; the other 12 have never been sized, so the figure is an average over a population most of which no round has measured - it is the weakest number on this page.",
+    "computed_by": "agentic_core.plan_followups.forecast() — the ONE forecaster",
+    "basis": "rounds, never a date, and no rate is computed in this cell: a second forecaster would be two records disagreeing about one fact."
+   },
+   "hindsight": {
+    "state": "UNMET",
+    "items_with_a_round": 89,
+    "earlier_half": {
+     "rounds": "W449-W575",
+     "items": 44,
+     "rate": 0.346
+    },
+    "later_half": {
+     "rounds": "W583-W940",
+     "items": 45,
+     "rate": 0.126
+    },
+    "later_over_earlier": 0.36,
+    "basis": "the item rate is 0.346 per round over W449-W575 and 0.126 over W583-W940 — a ratio of 0.36. OUTSIDE a factor of two, so the span's average is a smooth line over a discontinuity and a projection from it will be wrong in a knowable direction.",
+    "and_ask_why": "a round that beats its projection is a finding before it is velocity: five of one item's six rows were already satisfied in W509, so the round closed them without doing the work the schedule assumed."
+   },
+   "introspection": {
+    "method_rules_nothing_enforces": 71,
+    "method_rules_total": 117,
+    "items_in_scope_with_no_row": [
+     "P3.30",
+     "P3.32"
+    ],
+    "breaches_recorded": 0,
+    "basis": "the unenforced share, the unsized items and the unobserved breaches, as first-class figures. A breach count of zero means none was RECORDED - nothing observes a breach - and an item with no row has never been sized by anything.",
+    "limits": "this is the platform reading its own record. It is the half that cannot be trusted alone."
+   },
+   "extrospection": {
+    "state": "NOT_ASSESSABLE",
+    "candidates": [],
+    "candidate_count": 0,
+    "not_considered_rows": [],
+    "not_considered_row_count": 0,
+    "commits_no_round_could_be_read_from": 92,
+    "not_considered_basis": "0 open row(s) name NO files, so this check cannot match them against any change and they are neither candidates nor cleared — they are UNEXAMINED by it. A further 92 of 400 commit(s) read carry a subject this parser could not read a round from, so whatever they changed is invisible here too. Neither number is a defect in the rows or the commits; both are the width of this instrument, counted instead of described",
+    "history_commits": 400,
+    "basis": "no open row names a file changed by a later round, within the history read. A row whose files nobody touched can still be false - two were dropped as factually wrong in W507. This is NOT a statement that every row is current.",
+    "limits": "It reads the last 400 commits and only commits whose subject declares a round. A row carrying no files, or found by a round the subject does not name, is invisible to it."
+   },
+   "retrospection": {
+    "state": "MET",
+    "basis": "read from the register's own record. The rows in this scope, by status: built or satisfied, dropped as refuted, and why each closed where it records why. The rounds, and whether the backlog is growing, over the whole register: which round closed each row and which round found it",
+    "rounds": null,
+    "closure_kinds": {
+     "not_recorded": 45,
+     "built": 217,
+     "refuted": 2,
+     "already_satisfied": 6,
+     "performed_not_assessable": 1
+    },
+    "closures_with_a_kind": 226,
+    "closure_kind_basis": "226 of 271 closed row(s) record WHY they closed. The rest predate the field (W561) and are counted as not_recorded rather than as built — a round that closed six rows by measuring them already-satisfied is not the round that closed six by building, and guessing which is which would invent the distinction this field exists to stop inventing",
+    "rows_built_or_satisfied": 271,
+    "rows_dropped_as_refuted": 6,
+    "refutation_share": 0.022,
+    "rounds_that_closed_something": 363,
+    "rounds_that_only_found": [
+     "W459",
+     "W460",
+     "W462",
+     "W469",
+     "W470",
+     "W471",
+     "W474",
+     "W476",
+     "W480",
+     "W482",
+     "W484",
+     "W487",
+     "W499",
+     "W508",
+     "W512",
+     "W514",
+     "W529",
+     "W532",
+     "W535",
+     "W539",
+     "W550",
+     "W551",
+     "W582",
+     "W587",
+     "W588",
+     "W589",
+     "W590",
+     "W596",
+     "W621",
+     "W629",
+     "W632",
+     "W634",
+     "W636",
+     "W652",
+     "W654",
+     "W665",
+     "W675",
+     "W689",
+     "W709",
+     "W711",
+     "W723",
+     "W726",
+     "W747",
+     "W787",
+     "W795",
+     "W883b",
+     "W908",
+     "W939",
+     "W941",
+     "W951",
+     "W953",
+     "W966"
+    ],
+    "closed_total": 1134,
+    "found_total": 1191,
+    "backlog_growing": true,
+    "what_the_pattern_means": "6 of 277 resolved rows were DROPPED as refuted rather than built, a refutation share of 0.022. A row dropped as false and a row closed because it was already satisfied are both work the register ASKED FOR and did not need — which is why the open count is an upper bound on the work and not a measure of it (M-FCAST-02). The totals cannot show this, because closing a satisfied row and closing a built one are the same increment. Across the whole register, 52 round(s) closed nothing and only registered findings: those add work rather than burning it, and counting them as build rounds would understate the rate.",
+    "limits": "this reads STATUS, not cause. It cannot tell a row closed because it was built from one closed because it was already satisfied — that distinction lives in the closing round's own words, and recording it is what would make this faculty sharper."
+   },
+   "observation": {
+    "read_at": "2026-11-14T03:50:19Z",
+    "state": "UNMET",
+    "beating": false,
+    "beats": 1,
+    "circadian_phase": "MAINTENANCE_REST",
+    "phase_intensity": 0.3,
+    "last_beat": "2026-11-14T03:50:17Z",
+    "last_actions": {
+     "last_realisation": 0.849,
+     "last_genome": {
+      "total": 0,
+      "mean_fitness": null,
+      "mean_fitness_basis": "no genomes stored yet",
+      "mean_declared_fitness": null,
+      "fitness_composition": {},
+      "max_generation": 0
+     }
+    },
+    "basis": "THE HEARTBEAT IS STOPPED. Nothing is being operated, nothing is being screened, and the figures above are the last ones it recorded rather than current ones. A stopped beat is not a healthy zero.",
+    "limits": "a reading of NOW is stale the moment it is taken, and this one does not re-read. It says when it was taken so a reader can judge that, which is the only honest thing available."
+   },
+   "prospection": {
+    "state": "MET",
+    "branches": [
+     {
+      "branch": "the Owner decides FU-1005",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "measured in this round and not done in it",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1038",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "measured in this round and not done in it",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1040",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "measured in this round and not done in it",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1046",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "found by a dated read of the Owner's store in W678; the area has no routed owner",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1095",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "the deploy pre-flight is this item's",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1151",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "Owner ruling 2026-11-06 (W754): accepted as recommended: v15's paths replaced in W754; the v16 note remains, for the session that located it",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1165",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "no reason recorded, which is itself a gap",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1166",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "no reason recorded, which is itself a gap",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1174",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "a dependency removal is the Owner's: the 2026-10-07b ruling covered only the rows that were REMOVABLE then",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1176",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "a production channel's price touches the production deploy, and a money figure in a business document stands only beside an Owner ruling",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1185",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "P5.2 derives a price from the waterfall, which splits a profit and does not set one; what margin or target the derivation uses is the Owner's",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1187",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "P5.3's measured remaining work names the claim's Change Control tier as the Owner's to rule",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1188",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "FU-1066 says the two letters are drafted for the Owner to send",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "the Owner decides FU-1191",
+      "assumption": "a decision is recorded either way",
+      "what_becomes_possible": [
+       "OWNER"
+      ],
+      "why_it_is_the_owners": "P5.7 clause 2 names seven investment gates the tree does not define",
+      "what_this_is_not": "not a recommendation, and not a guess at which way it goes"
+     },
+     {
+      "branch": "an unsized item turns out larger than the average",
+      "assumption": "2 item(s) in scope carry no registered row, so nothing has measured them",
+      "what_becomes_possible": [],
+      "consequence": "the projection is an average over a population most of which no round has opened — this branch is why the forecaster calls that its weakest number"
+     }
+    ],
+    "count": 15,
+    "basis": "each branch names the ASSUMPTION it rests on. They are possibilities, not predictions.",
+    "never": "ranked, weighted, given a probability, or given a date. A possibility with a likelihood is a prediction, and this platform has ONE forecaster (agentic_core.plan_followups.forecast) — a second voice on the same question is two records disagreeing about one fact (M-DELIV-08).",
+    "limits": "it enumerates the branches the ARTEFACTS record — a ruling, an owner-gated row, an unsized item. A future nobody wrote down is invisible to it, which is most of them."
+   }
+  },
+  "what_a_cell_is": "Most groups in this register are lists of rules an operator follows. APPRAISAL is a CELL: a reusable unit that takes a scope and produces eight readings over it, in four paired axes, where neither end of an axis is sufficient alone. It is named for the organism's functional unit because that is what it is — the faculties are its organelles, and it can be run by the Transformation Office over a transformation's scope or by Change Control over a change's, as well as over the delivery plan itself. Its structures are FOUR AXES of two ends each and ONE SPINE of three: an axis is a dyad whose ends check each other, a spine is a triad whose middle is the present. The Owner's cognitive map is the source of the spine — Past ↔ Present ↔ Future, Memory ↔ Perception ↔ Imagination, Learning ↔ Orientation ↔ Planning.",
+  "spine": {
+   "spine": "retrospection → observation → prospection",
+   "why_a_spine_and_not_an_axis": "time has a MIDDLE. The four axes are dyads whose ends check each other; this is a triad, and its middle is the present — the faculty this cell was built without.",
+   "neither_end_alone": "retrospection without observation is nostalgia; prospection without observation is fantasy; observation without either is drift."
+  },
+  "reconciliation": "Neither end of an axis is sufficient alone. REFLECTION without REASONING is a diary and reasoning without reflection is invention; ATTRIBUTION without RECOGNITION is a list of sources and recognition without attribution is a pattern nobody can check; FORESIGHT without HINDSIGHT is a promise and hindsight without foresight is regret; INTROSPECTION without EXTROSPECTION is a platform grading its own homework and extrospection without introspection is a platform that cannot say what it does not know. Read the pairs together or the cell has not run. And the SPINE is read as a whole for the same reason: RETROSPECTION without OBSERVATION is nostalgia, PROSPECTION without OBSERVATION is fantasy, and observation without either is drift.",
+  "this_cell_never_says": "that a scope is sound, ready, or on track. Two of its eight faculties are largely judgement and say so, and the evidence for a delivery is a guard that was made to fail first.",
+  "lessons": [
+   {
+    "id": "M-APPR-01",
+    "axis": "reflection → reasoning",
+    "faculty": "reflection",
+    "rule": "REFLECTION: read the record of what was actually DONE before forming any view of where things stand. A view formed from activity is not a view of progress."
+   },
+   {
+    "id": "M-APPR-02",
+    "axis": "reflection → reasoning",
+    "faculty": "reasoning",
+    "rule": "REASONING: derive the ORDER from constraints, never from priority alone. An item held behind another cannot be closed by working it, however high it scores."
+   },
+   {
+    "id": "M-APPR-03",
+    "axis": "attribution → recognition",
+    "faculty": "attribution",
+    "rule": "ATTRIBUTION: every claim names its PRODUCER and the round that made it. A figure with no attribution cannot be re-measured, only believed."
+   },
+   {
+    "id": "M-APPR-04",
+    "axis": "attribution → recognition",
+    "faculty": "recognition",
+    "rule": "RECOGNITION: name the CLASS a finding belongs to before acting on it. A finding treated as unique is fixed at its site, and a site fix is made again."
+   },
+   {
+    "id": "M-APPR-05",
+    "axis": "foresight → hindsight",
+    "faculty": "foresight",
+    "rule": "FORESIGHT: project in ROUNDS, from one forecaster, and name the projection's weakest input in the same breath as the number."
+   },
+   {
+    "id": "M-APPR-06",
+    "axis": "foresight → hindsight",
+    "faculty": "hindsight",
+    "rule": "HINDSIGHT: check the projection's own BASIS against what happened. A rate measured on one population and applied to another is an assumption, and the assumption is testable."
+   },
+   {
+    "id": "M-APPR-07",
+    "axis": "introspection → extrospection",
+    "faculty": "introspection",
+    "rule": "INTROSPECTION: state what the platform's own record CANNOT see. A platform that reports only what it holds is grading its own homework."
+   },
+   {
+    "id": "M-APPR-08",
+    "axis": "introspection → extrospection",
+    "faculty": "extrospection",
+    "rule": "EXTROSPECTION: read the TREE, not the record, before believing the record. The record is a claim about the world; the world is checkable."
+   },
+   {
+    "id": "M-APPR-09",
+    "axis": null,
+    "faculty": "retrospection",
+    "rule": "RETROSPECTION: read the record for its PATTERN, not its totals. A count says what happened; a pattern says what keeps happening."
+   },
+   {
+    "id": "M-APPR-10",
+    "axis": null,
+    "faculty": "observation",
+    "rule": "OBSERVATION: read what is happening NOW, from the live system, before inferring anything about it. Inference without observation is the most expensive habit available."
+   },
+   {
+    "id": "M-APPR-11",
+    "axis": null,
+    "faculty": "prospection",
+    "rule": "PROSPECTION: enumerate what COULD happen and refuse to rank it. A possibility given a probability has been turned into a prediction, and this platform has exactly one forecaster."
+   }
+  ],
+  "hand_off": {
+   "kept": false,
+   "kept_basis": "this appraisal is a reading made at this call. The route writes nothing, so it is not stored and no later appraisal can read this one",
+   "authorises": false,
+   "authorises_basis": "this route files, approves and applies nothing. A person may send one of its recommendations, and that route appraises the scope again and SUBMITS one record; the method's other filers also only submit. Change Control decides",
+   "next_route": "POST /api/v1/cca/submit",
+   "next_route_basis": "to act on this reading a person files a change there, naming the affected systems. Change Control attaches the appraisal of the scope those systems point at (`scope_appraisal`, which is never a gate), and a review decides the change",
+   "method_filers": [
+    "POST /api/v1/method/derive",
+    "POST /api/v1/method/breach",
+    "POST /api/v1/method/correct",
+    "POST /api/v1/method/amendment",
+    "POST /api/v1/method/appraise/recommend"
+   ],
+   "method_filers_basis": "the 5 method routes that can raise a change, each on a person's request (a confirmed defect, a recorded breach, a proposed correction, a batch of lessons, one recommendation of an appraisal). One of them reads an appraisal, and it appraises the scope again at the call and files what that reading says",
+   "not_established": "whether an implemented change did what it was filed for. The status and effect listed here are Change Control's own record of what it decided and applied; nothing re-reads the changed state after implementation, and this appraisal reads no outcome beyond them",
+   "records_read": 0,
+   "records_unreadable": 0,
+   "changes_carrying_this_scope": {
+    "count": 0,
+    "by_status": {},
+    "records": [],
+    "records_listed": 0
+   },
+   "statement": "no Change Control record carries an appraisal of P3: nothing that has been filed points at it. This appraisal does not change that - it files nothing"
+  },
+  "recommendations": [
+   {
+    "id": "size-the-items",
+    "from_faculty": "foresight",
+    "count": 2,
+    "subjects": [
+     "P3.30",
+     "P3.32"
+    ],
+    "recommendation": "Size 2 plan item(s) that have never been sized: P3.30, P3.32. A forecast over an unsized item projects from nothing.",
+    "affected_systems": [
+     "docs/FABLE_DELIVERY_PROMPT.md"
+    ],
+    "rests_on": "rounds, never a date, and no rate is computed in this cell: a second forecaster would be two records disagreeing about one fact."
+   },
+   {
+    "id": "file-a-row",
+    "from_faculty": "introspection",
+    "count": 2,
+    "subjects": [
+     "P3.30",
+     "P3.32"
+    ],
+    "recommendation": "File a register row for 2 open plan item(s) that have none: P3.30, P3.32. An item with no row has no recorded next step.",
+    "affected_systems": [
+     "docs/FOLLOWUPS.json",
+     "docs/FABLE_DELIVERY_PROMPT.md"
+    ],
+    "rests_on": "the unenforced share, the unsized items and the unobserved breaches, as first-class figures. A breach count of zero means none was RECORDED - nothing observes a breach - and an item with no row has never been sized by anything."
+   }
+  ],
+  "recommendations_basis": "each recommendation is a fixed sentence over what one faculty counted at this call, and is listed only while that count is above zero. Nothing here is composed by a model, ranked or weighted. The cell files nothing: a person sends one recommendation, the scope is appraised again, and Change Control decides.",
+  "recommendation_route": "POST /api/v1/method/appraise/recommend"
+ },
+ "sent": {
+  "change_control": {
+   "submitted": true,
+   "cca_id": "cca-d276cf948e",
+   "status": "submitted"
+  },
+  "records_filed": 1,
+  "recommendation": {
+   "id": "size-the-items",
+   "from_faculty": "foresight",
+   "count": 15,
+   "subjects": [
+    "P2.40",
+    "P2.41",
+    "P3.30",
+    "P3.32",
+    "P4.2",
+    "P4.3",
+    "P4.6",
+    "P5.2",
+    "P5.3",
+    "P5.6",
+    "P5.8",
+    "P5.9",
+    "P5.11",
+    "P5.14",
+    "P5.21"
+   ],
+   "recommendation": "Size 15 plan item(s) that have never been sized: P2.40, P2.41, P3.30, P3.32, P4.2, P4.3, P4.6, P5.2 and 7 more. A forecast over an unsized item projects from nothing.",
+   "affected_systems": [
+    "docs/FABLE_DELIVERY_PROMPT.md"
+   ],
+   "rests_on": "rounds, never a date, and no rate is computed in this cell: a second forecaster would be two records disagreeing about one fact."
+  },
+  "scope": "the whole plan",
+  "applied": false,
+  "basis": "one change record was filed from the reading as it stands now. Nothing was applied and nothing is approved by sending: Change Control decides the record."
+ },
+ "refused_send": {
+  "status": 409,
+  "body": {
+   "detail": {
+    "message": "No change record was filed: appraised again just now, this scope gives no such recommendation. Either the finding behind it has gone or the id was never one.",
+    "scope": "the whole plan",
+    "recommendations_now": [
+     "file-a-row",
+     "re-read-changed-rows",
+     "size-the-items"
+    ]
+   }
+  }
+ }
+}

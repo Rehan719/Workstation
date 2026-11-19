@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W493 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W493 (P1.18 + P2.4 + P2.9, the C4 batch repo-wide) — a present-tense claim about a process must be
 // backed by that process actually running, and a control names what it does.
 //   node scripts/_w493_probe.mjs http://127.0.0.1:8098

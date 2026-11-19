@@ -47,7 +47,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
   //  matters most: a screen-reader user in Arabic or Urdu also gets an RTL layout.
   const { t } = useT();
   const {
-    messages, input, setInput, sending, notice, context,
+    messages, input, setInput, sending, notice, sendError, context,
     sendMessage, clearConversation, pendingImage, setPendingImage, handleImageFile,
     speakReplies, setSpeakReplies,   // W325 — spoken replies are finally REACHABLE
   } = avatar;
@@ -176,6 +176,10 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
                       <Compass size={9} /> {a.label} →
                     </button>
                   ))}
+                  {m.suggestedAreasBasis && (
+                    // W820 (FU-826) - how these were matched, in the server's words
+                    <p className="w-full text-[8px] text-slate-500" data-testid="suggested-areas-basis">{m.suggestedAreasBasis}</p>
+                  )}
                 </div>
               )}
             </div>
@@ -193,6 +197,14 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
         <div className="shrink-0 mt-2 px-3 py-2 text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-xl">
           {notice}
         </div>
+      )}
+
+      {/* W1076 - a reply that did not come, said as that beside the input: it was put in the conversation in the
+          avatar's own voice */}
+      {sendError && (
+        <p role="alert" data-testid="avatar-send-error" className="shrink-0 mt-2 px-1 text-[10px] font-bold text-vital">
+          {sendError}
+        </p>
       )}
 
       {pendingImage && (
@@ -249,8 +261,9 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
 
       {messages.length === 0 && (
         <p className="shrink-0 mt-1.5 text-[10px] text-slate-600 font-bold leading-relaxed">
-          Ask anything — text, voice, or attach an image. Responses are tailored to the{' '}
-          <span className="text-aura/70">{context}</span> context you're currently in.
+          Ask anything — by text or voice; an attached image is read only where a local vision model is installed.
+          Your question is sent with the <span className="text-aura/70">{context}</span> context, and each reply says
+          whether a model or the deterministic floor answered it.
         </p>
       )}
     </div>

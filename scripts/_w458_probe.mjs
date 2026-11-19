@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W458 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W458 (delivery-plan P1.10) — "disabled ≠ failed" and status honesty, in a real browser against the
 // built bundle on a FRESH backend (AI_DISABLE_LOCAL=1, so the local model is disabled by configuration):
 //   · the headline card says the deterministic floor is active and shows the ROW the verdict came from;

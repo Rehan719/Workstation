@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W466 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W466 — a stranded inter-VSB transfer (the sender debited, the receiver never credited) is completed once from the page,
 // in a real browser against the built bundle on a FRESH backend (AI_DISABLE_LOCAL=1; virtual WST only). Seed first with
 // scripts/_w466_probe_seed.py <tag> under the same isolated env (it leaves one REAL stranded debit), then:

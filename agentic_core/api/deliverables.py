@@ -81,6 +81,18 @@ def _save(rows: List[Dict[str, Any]]) -> None:
     atomic_write_json(_STORE, rows[-_ROW_CAP:])
 
 
+def _title_of(brief: str, limit: int = 60) -> str:
+    """W1050 - a deliverable with no title is titled with its brief, whole when it fits. A cut falls between words
+    and is marked: the title was the brief cut at its sixtieth character, mid-word, with nothing to say so. Runs of
+    white space are one space. The rule a blueprint's name follows (W1038)."""
+    text = " ".join((brief or "").split())
+    if len(text) <= limit:
+        return text
+    head = text[:limit + 1]
+    head = head[:head.rfind(" ")] if " " in head else text[:limit]
+    return head.rstrip(" ,;:.-\u2014") + "\u2026"
+
+
 def _grounding(vsb_id: Optional[str]) -> str:
     if not vsb_id:
         return ""
@@ -119,7 +131,7 @@ async def _generate(d_type: str, title: str, brief: str, domain: str,
            f"Realm: {REALM_LABELS.get(normalise_realm(realm), 'Enterprise')}\n")
     prompt = (
         _rd
-        + f"Produce a {d_type} titled '{title or brief[:60]}'.\n"
+        + f"Produce a {d_type} titled '{title or _title_of(brief)}'.\n"
         + f"Brief: {brief}\nDomain: {domain}{_grounding(vsb_id)}\n\n"
         + "\n".join(f"## {s}" for s in secs)
     )
@@ -255,12 +267,22 @@ async def output_formats():
     }
 
 
+from agentic_core.api.operational_excellence import spans_run    # W847 (FU-1121)
+
+
 @router.post("/produce")
+@spans_run("deliverable")          # W847 (FU-1121) - the AI call and model attempts inside are held
 async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_user)):
     """Produce a new LIVING deliverable on the native fabric (in-house provenance)."""
     if req.type not in _TYPES and not req.sections:
         raise HTTPException(status_code=400,
                             detail=f"Unknown type '{req.type}'. Known: {list(_TYPES)} (or pass sections).")
+    #  W1075 - another person's entity: the deliverable was grounded in it (its name and mission in the prompt) and
+    #  filed against it
+    from agentic_core.api.vsb import names_anothers_entity
+    if names_anothers_entity(req.vsb_id, user):
+        raise HTTPException(status_code=404, detail=f"No entity {req.vsb_id} was found, so no deliverable was "
+                                                    f"produced for it.")
     _t0 = time.time()
     if req.content.strip():
         # §4.9 (W306) — verbatim ingest: output already produced elsewhere on the platform (a Genesis
@@ -310,7 +332,7 @@ async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_u
         # §14 (W320) — server-stamped ownership (never caller-claimed under auth)
         "owner_id": _owner,
         "type": req.type,
-        "title": req.title or req.brief[:60],
+        "title": req.title or _title_of(req.brief),   # W1050 - between words, and marked
         "brief": req.brief,
         "domain": req.domain,
         # W427 — WITHOUT this line the regenerate path below reads a realm that was never
@@ -329,6 +351,10 @@ async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_u
         "versions": [{"brief": req.brief, "content": gen["content"],
                       "ai_provenance": gen["ai_provenance"], "quality_assurance": qa, "created_at": now}],
         "reusable": True, "rerunnable": True, "living": True,
+        #  W800 (FU-981, ledger v17 R2[7]) - a constant with nothing saying what it means is a claim nobody can check
+        "living_basis": ("re-runnable from its stored brief and versioned on each run; re-screened by the "
+                         "heartbeat's section 11 rotation, one deliverable a beat, only while the organism's "
+                         "re-screen lever is on and at least one living entity is on the roster"),
         "created_at": now, "updated_at": now,
     }
     rows = _load()

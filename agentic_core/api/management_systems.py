@@ -373,6 +373,11 @@ async def record_nonconformance(req: NonConformanceRequest, user: dict | None = 
     if req.severity not in ("minor", "major", "critical"):
         raise HTTPException(status_code=422, detail=(
             f"'{req.severity}' is not a severity. Use minor, major or critical. Nothing was signalled."))
+    #  W1075 - a defect filed against another person's entity, and its threat signal raised for it
+    from agentic_core.api.vsb import names_anothers_entity
+    if names_anothers_entity(req.vsb_id, user):
+        raise HTTPException(status_code=404, detail=(
+            f"No entity {req.vsb_id} was found, so no non-conformance was recorded against it."))
     # Feed into immune system — non-conformances are organism errors
     error_type = {
         "minor": "quality_minor",

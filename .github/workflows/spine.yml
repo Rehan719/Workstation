@@ -125,7 +125,16 @@ jobs:
       - name: Build the frontend (the backend serves this dist)
         run: npm run build --workspace=apps/workstation-superapp
       - name: Install Chromium for Playwright
-        run: npx playwright install --with-deps chromium
+        #  The runner's package mirror has failed to resolve for long stretches (three runs on 2026-11-11 died
+        #  here, before a page was opened, while npm and PyPI resolved in the same job). The system packages come
+        #  from that mirror; the browser comes from Playwright's own host. So the install is tried once with its
+        #  packages, then the browser alone is installed and the runner image's own libraries and fonts are used.
+        #  The smoke step below is never retried: a page that fails, or a browser that cannot start, still fails
+        #  the run.
+        run: |
+          npx playwright install --with-deps chromium && exit 0
+          echo "the browser's system packages could not be installed; installing the browser alone"
+          npx playwright install chromium
       - name: Start the backend (serves the built SPA)
         env:
           AI_DISABLE_LOCAL: '1'          # deterministic: the floor answers instantly, no model waits
@@ -157,3 +166,7 @@ jobs:
         run: npm install
       - name: Typecheck + build (tsc && vite build)
         run: npm run build --workspace=apps/workstation-superapp
+      #  W905 (FU-399 part 1) - the rendered page tests (vitest, jsdom) run on every push. Before this round the one
+      #  rendered test in the repository (W579) ran nowhere
+      - name: Rendered page tests (vitest, jsdom)
+        run: npm run test --workspace=apps/workstation-superapp

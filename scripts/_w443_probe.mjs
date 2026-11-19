@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W443 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W443 — drive the Agent Hub tab in a real browser against the built bundle: the participants
 // split must render honestly, a posted message must arrive over the live SSE stream, and the
 // work-order letterbox must show a filed handoff moving recorded → done through the UI.

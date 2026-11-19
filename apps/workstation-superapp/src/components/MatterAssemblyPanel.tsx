@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { errorMessage } from '../lib/api';   // W1015 - a caught failure, said as what it was
 import { apiJson } from '../lib/api';
 
 type Dict = Record<string, any>;
@@ -18,7 +19,7 @@ export const MatterAssemblyPanel: React.FC = () => {
   const [err, setErr] = useState('');
 
   useEffect(() => {
-    apiJson<Dict>('/api/v1/law/bundle').then(setBundle).catch(e => setErr(`The matter folder could not be read: ${String(e?.message ?? e)}`));
+    apiJson<Dict>('/api/v1/law/bundle').then(setBundle).catch(e => setErr(`The matter folder could not be read: ${errorMessage(e)}`));
   }, []);
 
   const assemble = async () => {
@@ -30,7 +31,7 @@ export const MatterAssemblyPanel: React.FC = () => {
       };
       setArt(await apiJson<Dict>('/api/v1/law/matter/assemble', { method: 'POST', body }));
       setErr('');
-    } catch (e: any) { setErr(`Not assembled: ${String(e?.message ?? e)}`); }
+    } catch (e: any) { setErr(`Not assembled: ${errorMessage(e)}`); }
   };
 
   return (
@@ -64,6 +65,10 @@ export const MatterAssemblyPanel: React.FC = () => {
               </li>
             ))}
           </ul>
+          {art.authorities_held?.basis && (
+            // W821 (FU-1001) - what an authority is resolved against, however thin
+            <p className="text-[10px] text-slate-500" data-testid="matter-authorities-held">{String(art.authorities_held.basis)}</p>
+          )}
           <ul className="space-y-1" data-testid="matter-authorities">
             {(art.authorities || []).map((a: Dict, i: number) => (
               <li key={i} className={a.resolved ? 'text-slate-300' : 'text-vital'}>{String(a.authority)}: {a.resolved ? 'resolved' : 'REFUSED'} — {String(a.basis)}</li>

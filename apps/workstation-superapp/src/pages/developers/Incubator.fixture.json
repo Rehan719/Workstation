@@ -1,0 +1,77 @@
+{
+ "evolved": {
+  "tournament_id": "5bccaf3a62",
+  "name": "W1010 made-up welcome line",
+  "variants_evaluated": 3,
+  "winner": null,
+  "winner_basis": "NO WINNER — the serving resource scored no variant, so none was evaluated and none is ranked. On the deterministic floor the scorer emits no VARIANT|SCORE lines and the variants come back as the same text.",
+  "scored": false,
+  "leaderboard": [
+   {
+    "variant_id": "v-5bccaf3a62-g2-1",
+    "rank": null,
+    "fitness_score": null,
+    "response": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: AI Prompt Evolution Engine (generation 2). The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: No variant was scored in the previous generation, so no winning approach was identified. Produce a fresh attempt at the original task:",
+    "strengths": null,
+    "weaknesses": null,
+    "scored": false,
+    "score_basis": "NOT SCORED - the serving resource returned no VARIANT|SCORE lines, so no variant was evaluated. All variants came back as the same text, so there is nothing to rank either. A fitness figure here would be a number nothing computed."
+   },
+   {
+    "variant_id": "v-5bccaf3a62-g2-2",
+    "rank": null,
+    "fitness_score": null,
+    "response": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: AI Prompt Evolution Engine (generation 2). The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: No variant was scored in the previous generation, so no winning approach was identified. Produce a fresh attempt at the original task:",
+    "strengths": null,
+    "weaknesses": null,
+    "scored": false,
+    "score_basis": "NOT SCORED - the serving resource returned no VARIANT|SCORE lines, so no variant was evaluated. All variants came back as the same text, so there is nothing to rank either. A fitness figure here would be a number nothing computed."
+   },
+   {
+    "variant_id": "v-5bccaf3a62-g2-3",
+    "rank": null,
+    "fitness_score": null,
+    "response": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: AI Prompt Evolution Engine (generation 2). The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: No variant was scored in the previous generation, so no winning approach was identified. Produce a fresh attempt at the original task:",
+    "strengths": null,
+    "weaknesses": null,
+    "scored": false,
+    "score_basis": "NOT SCORED - the serving resource returned no VARIANT|SCORE lines, so no variant was evaluated. All variants came back as the same text, so there is nothing to rank either. A fitness figure here would be a number nothing computed."
+   }
+  ],
+  "analysis": "_[Workstation native structured engine — owned, no external dependency]_\n\n## Understanding\nThe request concerns: W1010 made up: write a two-line welcome for a bakery cooperative's order page (domain: enterprise.).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- bakery cooperative\n- cooperative order\n- two-line welcome\n- write two-line\n- made write\n- order page\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'incubator', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise.; record outcomes to memory/UEG.",
+  "ai_provenance": {
+   "posture": "in-house-first",
+   "served_by": {
+    "native": 5
+   },
+   "any_external": false,
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer"
+  },
+  "completed_at": 1794633349.883787,
+  "generations_run": 2
+ },
+ "refused": {
+  "status": 422,
+  "body": {
+   "detail": [
+    {
+     "type": "missing",
+     "loc": [
+      "body",
+      "base_prompt"
+     ],
+     "msg": "Field required",
+     "input": {
+      "name": "W1010 made-up welcome line",
+      "domain": "enterprise",
+      "variants": 3,
+      "iterations": 2,
+      "fitness_criteria": "relevance, clarity, commercial value, originality"
+     }
+    }
+   ]
+  }
+ }
+}

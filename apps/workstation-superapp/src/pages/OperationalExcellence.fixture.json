@@ -1,0 +1,174 @@
+{
+ "summary_empty": {
+  "total_runs": 0,
+  "assessed_runs": 0,
+  "unassessed_runs": 0,
+  "success_rate": null,
+  "success_rate_basis": "NOT ASSESSED — no quality gate evaluated any of these 0 run(s). 0 returned output, which the deterministic floor always does, so it is not a success measure.",
+  "produced_rate": null,
+  "in_house_rate": null,
+  "caller_reported_runs": 0,
+  "in_house_rate_excluding_caller_reported": null,
+  "in_house_rate_basis": "No run is recorded, so there is no in-house rate.",
+  "distinct_resources": 0,
+  "top_resource": null,
+  "kinds": [],
+  "rows_before_suite_isolation": 0,
+  "rows_undated": 0,
+  "rows_before_suite_isolation_basis": "None of the 0 row(s) read here was recorded before 2026-08-31, when the test suite's store was isolated (W394)."
+ },
+ "rankings_empty": {
+  "rankings": [],
+  "rows": 0,
+  "assessed_rows": 0,
+  "basis": "None of 0 recorded run(s) carries a quality gate's verdict, so this ranks what produced output - by how much ran in-house, speed and volume - and not how good any output was."
+ },
+ "outcomes_empty": {
+  "outcomes": [],
+  "total": 0
+ },
+ "models_empty": {
+  "models": [],
+  "total_attempts": 0,
+  "rule": "A non-native model is flagged here when its windowed runs >= 5 and windowed success_rate < 0.25 — the router's own demotion test (orchestrator._reorder_by_health). The router additionally grants a demoted model one probation retry after 10 minutes untried, which this flag does not model: while that retry is pending the router is trying the model although the flag still reads 'deprioritised'. Rows counted are recorded attempts AND measured-quality verdicts (kind=model_attempt / model_quality, the same window the router scores); a resource disabled by configuration or refused by the spend policy is never attempted, so it is skipped and recorded nowhere."
+ },
+ "failures_empty": {
+  "failures": [],
+  "total_failures": 0,
+  "ledger_rows": 0,
+  "state": "nothing_recorded_at_all",
+  "basis": "the outcome ledger is EMPTY, so no failure has been recorded because NOTHING has been recorded. This says nothing about reliability and must not be read as health",
+  "recording_since": null
+ },
+ "summary": {
+  "total_runs": 3,
+  "assessed_runs": 0,
+  "unassessed_runs": 3,
+  "success_rate": null,
+  "success_rate_basis": "NOT ASSESSED — no quality gate evaluated any of these 3 run(s). 2 returned output, which the deterministic floor always does, so it is not a success measure.",
+  "produced_rate": 0.667,
+  "in_house_rate": 0.667,
+  "caller_reported_runs": 0,
+  "in_house_rate_excluding_caller_reported": 0.667,
+  "in_house_rate_basis": "2 of 3 row(s) are not marked external. None of them was written through POST /operations/record. Every row says who reported it.",
+  "distinct_resources": 2,
+  "top_resource": "w986-resource-a",
+  "kinds": [
+   "w986-capture"
+  ],
+  "rows_before_suite_isolation": 0,
+  "rows_undated": 0,
+  "rows_before_suite_isolation_basis": "None of the 3 row(s) read here was recorded before 2026-08-31, when the test suite's store was isolated (W394)."
+ },
+ "rankings": {
+  "rankings": [
+   {
+    "resource": "w986-resource-a",
+    "kind": "w986-capture",
+    "runs": 2,
+    "success_rate": null,
+    "assessed_runs": 0,
+    "unassessed_runs": 2,
+    "produced_rate": 0.5,
+    "success_basis": "NOT ASSESSED — no quality gate evaluated any of this resource's 2 run(s); 1 produced output, which is not the same thing",
+    "avg_duration_ms": 108,
+    "in_house_rate": 1.0,
+    "last_seen": "2026-11-13T22:55:37Z"
+   },
+   {
+    "resource": "w986-resource-b",
+    "kind": "w986-capture",
+    "runs": 1,
+    "success_rate": null,
+    "assessed_runs": 0,
+    "unassessed_runs": 1,
+    "produced_rate": 1.0,
+    "success_basis": "NOT ASSESSED — no quality gate evaluated any of this resource's 1 run(s); 1 produced output, which is not the same thing",
+    "avg_duration_ms": 300,
+    "in_house_rate": 0.0,
+    "last_seen": "2026-11-13T22:55:37Z"
+   }
+  ],
+  "rows": 3,
+  "assessed_rows": 0,
+  "basis": "None of 3 recorded run(s) carries a quality gate's verdict, so this ranks what produced output - by how much ran in-house, speed and volume - and not how good any output was."
+ },
+ "outcomes": {
+  "outcomes": [
+   {
+    "id": "op-1d09fefc",
+    "kind": "w986-capture",
+    "resource": "w986-resource-b",
+    "served_by": "w986-external-model",
+    "reported_by": "platform",
+    "is_external": true,
+    "duration_ms": 300,
+    "produced": true,
+    "quality_gate": null,
+    "success": true,
+    "quality_verdict": null,
+    "success_basis": "NOT ASSESSED — no quality gate evaluated this run; it produced output",
+    "ref": null,
+    "vsb_id": null,
+    "run_id": null,
+    "served_by_all": null,
+    "budget": "spent: no run around it",
+    "created_at": "2026-11-13T22:55:37Z"
+   },
+   {
+    "id": "op-f6a51d34",
+    "kind": "w986-capture",
+    "resource": "w986-resource-a",
+    "served_by": "native",
+    "reported_by": "platform",
+    "is_external": false,
+    "duration_ms": 95,
+    "produced": false,
+    "quality_gate": null,
+    "success": false,
+    "quality_verdict": null,
+    "success_basis": "NOT ASSESSED — no quality gate evaluated this run; it produced nothing",
+    "ref": null,
+    "vsb_id": null,
+    "run_id": null,
+    "served_by_all": null,
+    "budget": "spent: no run around it",
+    "created_at": "2026-11-13T22:55:37Z"
+   },
+   {
+    "id": "op-3224f7a7",
+    "kind": "w986-capture",
+    "resource": "w986-resource-a",
+    "served_by": "native",
+    "reported_by": "platform",
+    "is_external": false,
+    "duration_ms": 120,
+    "produced": true,
+    "quality_gate": null,
+    "success": true,
+    "quality_verdict": null,
+    "success_basis": "NOT ASSESSED — no quality gate evaluated this run; it produced output",
+    "ref": null,
+    "vsb_id": null,
+    "run_id": null,
+    "served_by_all": null,
+    "budget": "spent: no run around it",
+    "created_at": "2026-11-13T22:55:37Z"
+   }
+  ],
+  "total": 3
+ },
+ "models": {
+  "models": [],
+  "total_attempts": 0,
+  "rule": "A non-native model is flagged here when its windowed runs >= 5 and windowed success_rate < 0.25 — the router's own demotion test (orchestrator._reorder_by_health). The router additionally grants a demoted model one probation retry after 10 minutes untried, which this flag does not model: while that retry is pending the router is trying the model although the flag still reads 'deprioritised'. Rows counted are recorded attempts AND measured-quality verdicts (kind=model_attempt / model_quality, the same window the router scores); a resource disabled by configuration or refused by the spend policy is never attempted, so it is skipped and recorded nowhere."
+ },
+ "failures": {
+  "failures": [],
+  "total_failures": 0,
+  "ledger_rows": 3,
+  "state": "none_recorded",
+  "basis": "no failure has been recorded across 3 outcome row(s), so recording is working and nothing reached the handler - this IS a statement about reliability",
+  "recording_since": "2026-11-13T22:55:37Z"
+ }
+}

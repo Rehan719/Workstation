@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Network, CheckCircle2, Circle, Loader2, Sparkles, GitBranch, Layers, Brain } from 'lucide-react';
 import { apiJson, errorMessage } from '../lib/api';
+import { ReadFailures, useReadFailures } from '../components/ReadFailures';   // W929
 import { StageBadge, StageMark, FLOOR_STAGE_NOTE, stageOutcome, type StageData } from '../components/StageOutcome';
 
 interface Tier { tier: string; endpoint: string; role: string; connected: boolean;
@@ -14,10 +15,14 @@ interface Gap { gap: string; realisation: number; routed_to: string; endpoint: s
 interface Align { overall_realisation: number; measure?: string; gaps_routed: Gap[]; executed: any[]; gaps_basis?: string }
 
 export const CognitionIntegration: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W929 - a read that fails is said
   const [wiring, setWiring] = useState<Wiring | null>(null);
   const [knowledge, setKnowledge] = useState<any>(null);
   const [align, setAlign] = useState<Align | null>(null);
   const [alignErr, setAlignErr] = useState('');   // W329 — actions never fail silently
+  //  W1007 - each action says its own failure, where it is run: the cascade's was said as the alignment's, on one
+  //  line at the top of the page under neither name
+  const [solveErr, setSolveErr] = useState('');
   // W493 (FU-176) - the page claimed CONTINUOUS alignment; that is the heartbeat's auto_align lever,
   // so the lever is read and its real state is stated. null means it could not be read.
   const [autoAlign, setAutoAlign] = useState<boolean | null>(null);
@@ -32,9 +37,9 @@ export const CognitionIntegration: React.FC = () => {
   const [solveRes, setSolveRes] = useState<any>(null);
 
   useEffect(() => {
-    fetch('/api/v1/cognition/wiring').then(r => r.json()).then(setWiring).catch(() => {});
-    fetch('/api/v1/cognition/knowledge').then(r => r.json()).then(setKnowledge).catch(() => {});
-    fetch('/api/v1/intelligence/cognitive-engines').then(r => r.json()).then(d => setEngineCat(d.engines || [])).catch(() => {});
+    apiJson('/api/v1/cognition/wiring').then(setWiring).catch(noteRead('the cognition wiring'));
+    apiJson('/api/v1/cognition/knowledge').then(setKnowledge).catch(noteRead('the knowledge sources'));
+    apiJson('/api/v1/intelligence/cognitive-engines').then(d => setEngineCat(d.engines || [])).catch(noteRead('the cognitive engines'));
   }, []);
 
   const toggleEngine = (id: string) =>
@@ -42,12 +47,12 @@ export const CognitionIntegration: React.FC = () => {
 
   const runSolve = async () => {
     if (!problem.trim()) return;
-    setSolving(true); setSolveRes(null);
+    setSolving(true); setSolveRes(null); setSolveErr('');
     try {
       // Ledger cluster 2 — a failed cascade must say WHY, never render an empty success pane
       setSolveRes(await apiJson('/api/v1/intelligence/solve', {
         method: 'POST', body: { problem, domain: 'general', engines: [...selEngines] } }));
-    } catch (e) { setAlignErr(errorMessage(e)); }
+    } catch (e) { setSolveErr(`The cascade did not run: ${errorMessage(e)}`); }
     setSolving(false);
   };
 
@@ -61,15 +66,15 @@ export const CognitionIntegration: React.FC = () => {
   }, []);
 
   const runAlign = async () => {
-    setBusy(true);
+    setBusy(true); setAlignErr('');   // W1007 - a failure is taken off when the action runs again
     try { setAlign(await apiJson('/api/v1/cognition/align', { method: 'POST', body: { execute: false } })); }
-    catch (e) { setAlignErr(errorMessage(e)); }   // W329 + cluster 2: 4xx/5xx surfaces too
+    catch (e) { setAlignErr(`The alignment could not be read: ${errorMessage(e)}`); }   // W329 + cluster 2: 4xx/5xx surfaces too
     setBusy(false);
   };
 
   return (
     <div className="space-y-10 pb-24">
-      {alignErr && <p className="text-vital text-xs font-bold">{alignErr}</p>}
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Integration</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Cognition &amp; Alignment</h1>
@@ -120,6 +125,7 @@ export const CognitionIntegration: React.FC = () => {
             {solving ? 'Running cascade…' : `Run cascade${selEngines.size ? ` (${selEngines.size} engine${selEngines.size > 1 ? 's' : ''})` : ''}`}
           </Button>
         </div>
+        {solveErr && <p className="text-vital text-xs font-bold mt-3" data-testid="solve-error">{solveErr}</p>}
         {solveRes && (
           <div className="mt-4 space-y-3">
             {/* W479 (FU-121 refutation) — three gateway calls: the lenses as ONE prompt, MJM, the synthesis. The list
@@ -261,6 +267,7 @@ export const CognitionIntegration: React.FC = () => {
             {busy ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Route Gaps
           </Button>
         </div>
+        {alignErr && <p className="text-vital text-xs font-bold mb-3" data-testid="align-error">{alignErr}</p>}
         {align ? (
           align.gaps_routed.length === 0
             /* W672 (ledger v16 R6.6) - an empty list was printed in green as alignment; it means every presence check passed */

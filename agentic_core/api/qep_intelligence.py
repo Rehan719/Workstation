@@ -372,9 +372,17 @@ async def translation_translate(req: TranslateRequest,
     #  licensed, sourced editions. Only non-Arabic educational text reaches the model-gated path below.
     if _is_sacred_source(req):
         from fastapi import HTTPException
-        raise HTTPException(status_code=422, detail=_SACRED_REFUSAL)
+        #  W795 - WHY it was refused is said when the script decided it. Urdu, Persian and other languages written in
+        #  Arabic script are refused too: the script alone cannot tell teaching text from Qur'anic Arabic, and the
+        #  refusal did not say so, so a person who declared Urdu read a refusal of "Arabic / Qur'anic text".
+        _declared = str(req.source_language or "").strip().lower()
+        _by_script = _declared not in ("", "arabic", "ar", "quranic arabic", "classical arabic")
+        raise HTTPException(status_code=422, detail=_SACRED_REFUSAL + (
+            f" This text was refused for its Arabic script although '{req.source_language}' was declared: text in that "
+            f"script (Urdu and Persian included) is refused, because the script alone cannot tell teaching text from "
+            f"Qur'anic Arabic." if _by_script else ""))
     prompt = (
-        f"Translate the following from {req.source_language} to {req.target_language}. "
+        f"Translate the following from {req.source_language or 'the language it is written in'} to {req.target_language}. "   # W795 - not 'from None'
         "Preserve meaning and scholarly register"
         #  W692 - no tajwid or recitation note is asked for: not composed, not assessed (A.9.1)
         + f".\n\nText:\n{req.text}\n\nReturn only the translation."
@@ -413,7 +421,7 @@ async def translation_translate(req: TranslateRequest,
     from agentic_core.api import scholar_review as _sr
     _composed = meta.get("output") or ""
     _key = "qep_translation:" + _sr.body_hash(f"{req.target_language}|{req.text}")
-    _sr.submit_if_new(_key, "qep/translation/translate", _composed,
+    _sr.submit_if_new(_key, "qep/translation/translate", _composed, served_by=served_by,   # W796
                       reference=f"{req.source_language or 'language not stated'} to {req.target_language}")
     _published, _state, _why = _sr.published_body(_key, _composed)
     return {**_reply_evidence(served_by), 

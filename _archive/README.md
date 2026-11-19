@@ -30,6 +30,41 @@ This was **Stage 1** (whole-dir archival). A later, more surgical Stage 2 may ar
 **modules inside partially-wired dirs**. The real-vs-mock record of the integration sweep is in
 `docs/AGENTIC_CORE_INTEGRATION_AUDIT.md`; the canonical vision/state docs are in `docs/`.
 
+## Later moves: config/ (2026-11-13, W897)
+
+**What moved:** the Python half of the top-level `config/` folder, the last tree W877's measure found beside
+agentic_core (FU-1168). Its one live module, `config/paths.py` (where the memory store, the interaction log and the
+synthesis, ingestion, CEO and QEP stores live), moved into the live tree as `agentic_core/store_paths.py`, and its ten
+importers now import it from there. `config/loader.py` and `config/database.py`, which nothing imports, and
+`config/__init__.py` moved here as `_archive/config/`. The data files (`privacy_allow.json`, read at run time, and the
+YAML) stay in `config/`, which is configuration, not a source tree.
+
+**On whose ruling:** the same refusal (a) of 2026-09-30. Nothing was deleted.
+
+## Later moves: src/ (2026-11-13, W896)
+
+**What moved:** the top-level `src/` package, the second tree W877's measure found beside agentic_core (FU-1168). Of
+its 24 tracked files the live code reached three, and only through `agentic_core/avatars/tools/tool_registry.py`:
+`organs/openclaw_adapter.py`, `neural/event_bus.py` and `neural/event_types.py` moved into the live tree as
+`agentic_core/avatars/tools/`, beside that importer. The other 21 moved here verbatim as `_archive/src/`: the bridges,
+the evidence and ai_gateway modules, `core/audit.py`, the Streamlit dashboard, `ueg/`, two documents and a YAML. Three
+of them import modules that no longer exist (the dashboard, `legacy_adapter.py`, `nematron_adapter.py`).
+
+**On whose ruling:** the same refusal (a) of 2026-09-30 as below. Nothing was deleted.
+
+## Later moves: core/ (2026-11-12, W877)
+
+**What moved:** the rest of the top-level `core/` package. Its one live module,
+`core/transcendent_subsystems/tfel.py` (the thermodynamic free-energy ledger), moved into the live tree as
+`agentic_core/transcendent_subsystems/tfel.py`, and its two importers (`agentic_core/api/minimisation.py` and
+`agentic_core/avatars/core/recirculation_orchestrator.py`) now import it from there. `core/identity.py`, which
+imports two modules this archive already holds (`nemoclaw_runtime`, `hardware_abstraction`) and so could not be
+imported at all, and `core/__init__.py` moved here beside the rest of `_archive/core/`.
+
+**On whose ruling:** the Owner's refusal (a) of 2026-09-30, ratified: NO PARALLEL SOURCE TREE beside agentic_core,
+one organism, one home. The Stage 1 archive above kept `core/` because one module in it was reachable; it was never
+moved after that. Nothing was deleted.
+
 ## Later moves: products/capital_fund (2026-10-12)
 
 **What moved:** the whole Python package `products/capital_fund/` (41 tracked files, its tree kept) to

@@ -3,7 +3,8 @@ Unified Event Graph (UEG) Logger — GaaS v5.
 
 A tamper-evident, append-only event log. Each constitutional event is chained to
 its predecessor with a SHA3-512 hash, so the entire governance history forms a
-verifiable Merkle-DAG: altering any past event invalidates every hash after it.
+verifiable LINEAR chain: altering any past event invalidates every hash after it. (W807, FU-851: it was described
+as a Merkle structure; no Merkle tree is built - each event names one parent.)
 
 Used by the v16-Omega interceptor and the self-tuning circuit breaker to record
 gates, halts, executions, failures and checkpoints — and by the modules that log their own

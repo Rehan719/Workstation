@@ -1,0 +1,29 @@
+{
+  "ask": "W1024 made up: should the bakery cooperative buy a third van?",
+  "field_refused": {
+    "body": {
+      "detail": [
+        {
+          "input": {
+            "context": [],
+            "scope": "workstation"
+          },
+          "loc": [
+            "body",
+            "message"
+          ],
+          "msg": "Field required",
+          "type": "missing"
+        }
+      ]
+    },
+    "status": 422
+  },
+  "scope_refused": {
+    "body": {
+      "detail": "scope vsb-w1024-none not found"
+    },
+    "status": 404
+  },
+  "stream": "data: {\"content\": \"_[Workstation native structured engine \\u2014 owned, no external dependency]_\\n\\n_Role the prompt asked \", \"done\": false}\n\ndata: {\"content\": \"for: AI CEO of this Workstation IDBO enterprise. The native floor takes no role - what follows \", \"done\": false}\n\ndata: {\"content\": \"is a frame, not that role's work._\\n\\n## Assessment\\nSubject: W1024 made up: should the bakery \", \"done\": false}\n\ndata: {\"content\": \"cooperative buy a third van? (domain: WITHHELD \\u2014 no domain was declared for this \", \"done\": false}\n\ndata: {\"content\": \"call).\\nStructured frame over the terms most frequent in the request (a term count, not an \", \"done\": false}\n\ndata: {\"content\": \"analysis):\\n- bakery cooperative\\n- cooperative buy\\n- buy third\\n- third van\\n- made\\n\\n## \", \"done\": false}\n\ndata: {\"content\": \"Priorities\\nNative structured frame for 'Priorities' over: W1024 made up: should the bakery \", \"done\": false}\n\ndata: {\"content\": \"cooperative buy a third van? (domain: WITHHELD \\u2014 no domain was declared for this call). The list \", \"done\": false}\n\ndata: {\"content\": \"below is the request's most frequent terms, not findings about them.\\n- bakery cooperative\\n- \", \"done\": false}\n\ndata: {\"content\": \"cooperative buy\\n- buy third\\n- third van\\n- made\\n\\n## Next actions\\n- Validate the structured \", \"done\": false}\n\ndata: {\"content\": \"outputs above against the stated objective.\\n- Route richer generation to a model resource \", \"done\": false}\n\ndata: {\"content\": \"(local-first; external only if enabled).\\n- Iterate via the orchestrator's cascade for WITHHELD \\u2014 \", \"done\": false}\n\ndata: {\"content\": \"no domain was declared for this call; record outcomes to memory/UEG.\", \"done\": false}\n\ndata: {\"evidence_level\": \"behaviour\", \"evidence_level_number\": 1, \"evidence_basis\": \"what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer\", \"content\": \"\", \"done\": true, \"served_by\": \"native\", \"is_external\": false, \"guardrail_passed\": true, \"profile_applied\": false, \"model_tokens\": null, \"model_tokens_basis\": \"NOT COUNTED - the deterministic floor served this and runs no model, so there are no tokens to count; null, never 0\", \"grounding\": {\"scope\": \"workstation\", \"directives\": 0, \"objectives\": 0, \"plan_score\": 0.3, \"debate_entries\": 0, \"cited\": {\"directives\": 0, \"objectives\": 0}, \"cited_basis\": \"handed 0 directive(s) and 0 objective(s); the answer names 0 and 0 of them. A record handed in and not named was not answered from\"}, \"grounding_conflicts\": []}\n\n"
+}

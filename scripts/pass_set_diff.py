@@ -90,7 +90,7 @@ def compare(a_path: str, b_path: str, a_label: str = "A", b_label: str = "B",
     if not a or not b:
         return {"verdict": INCOMPLETE, "a_count": len(a), "b_count": len(b),
                 "basis": (f"{a_label} reported {len(a)} test(s) and {b_label} reported {len(b)}; a run that "
-                          f"reported nothing did not finish, and an empty set cannot be compared")}
+                          f"reported nothing did not finish and examined nothing, and an empty set cannot be compared")}
     only_a = sorted(set(a) - set(b))
     only_b = sorted(set(b) - set(a))
     differing = sorted(n for n in (set(a) & set(b)) if a[n] != b[n])

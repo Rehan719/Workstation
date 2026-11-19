@@ -105,13 +105,13 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route — POST /api/v1/synthesis/generate with output_type="simulation"; charted in BusinessModelDashboard.tsx (SynthesisStudio.tsx:518)
 
 ### `agentic_core/synthesis/business_model.py:9`
-- **status:** FIXED (W407)
+- **status:** FIXED (W407); the module is removed in W1020, with the canvas template listed at the end
 - **claim:** BusinessModelSimulator.generate_model() ignores its `data` argument and returns `sim_results` keyed by engine name: aro_efficiency.resource_optimization_gain 0.28 (comment: "# 28% gain via SciPy"), bto_roadmap.implementation_speed_multiplier 2.4 ("# 2.4x faster via AI Swarms"), bto_roadmap.milestone_confidence 0.94, drad_resilience.compliance_score 0.99, drad_resilience.adaptation_latency_ms 142, plus ese_adoption revenue/market_share per segment.
 - **why it is a fabrication:** The class is named Simulator, the key is `sim_results`, and each block is labelled with a real engine (ESE/ARO/BTO/DRAD) — an API consumer reasonably believes these engines ran. No engine is invoked, SciPy is never imported, and the ingested `data` string is discarded. A 0.99 "compliance_score" in particular is a compliance pass nothing screened.
 - **reach:** live route — the fallback path of POST /api/v1/synthesis/generate (output_type="simulation"), agentic_core/synthesis/api.py:249 and :254
 
 ### `agentic_core/synthesis/presentation.py:8`
-- **status:** FIXED (W414)
+- **status:** FIXED (W414) on the presentation path only. The audiobook's fallback narrated the same deck, its three citations included, until W1020 removed the module
 - **claim:** generate_presentation(topic) ignores `topic` except in slide 1's title and returns a fixed 10-slide deck: "Wu et al. 2025: Integration risks higher than estimated", "Chazarin et al. 2026: Longitudinal tracking required", "Gifford et al. 2025: Identifying regulatory lag in mRNA stability", "$4.2B market projected by 2030", "30% reduction in clinical trial attrition for early adopters".
 - **why it is a fabrication:** Three invented academic citations with author names and years, a market size, and an ROI figure — presented to the user as the researched content of the presentation they asked for. Nothing researched, retrieved or computed any of it. agentic_core/synthesis/api.py:140 serves this verbatim as the deliverable whenever `_extract_json_array(raw)` returns None (the gateway's native structured-engine floor returns prose, not a JSON array, so this fires on any deployment without a live JSON-capable model), and labels it `metadata.title = "Presentation: {topic}"` with no fallback marker. A user who as
 - **reach:** live route — POST /api/v1/synthesis/generate (mounted /api/v1 in app_mvp.py:64); rendered by SynthesisStudio.tsx:489 and downloadable via /api/v1/synthesis/download/{id}
@@ -395,3 +395,11 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **claim:** `setVitals({ sentience: 85 + Math.random() * 10, compliance: 98 + Math.random() * 2, throughput: 12 + Math.random() * 5, load: 45 + Math.random() * 20, stability: 95 + Math.random() * 5 })` on a 3-second interval, rendered as 'Compliance 99.4%', 'System Sentience 91.2%', 'Stability 97.8%' etc. under the heading 'Organism Health Vitals'.
 - **why it is a fabrication:** A compliance percentage produced by a random number generator, refreshed every 3 seconds so it appears to be live telemetry. This is the purest fabrication in the frontend — no data source is even gestured at. Ranked below the reachable findings only because the component is never imported: no file outside components/organism/ references OrganismVitals, so it currently renders nowhere. It should be deleted rather than fixed, or it will be wired up by someone later.
 - **reach:** unreachable — not imported by any page or component
+
+## Found after the sweep
+
+### `agentic_core/synthesis/business_model.py:56`
+- **status:** FIXED (W1020)
+- **claim:** generate_business_model_canvas(topic) used `topic` only in the title and the value proposition and returned one fixed canvas: customer segments "Enterprise R&D teams", "Regulatory bodies" and "Independent researchers"; key resources "Multi-Modal Fabric (L12)", "Genome/Evolution engine" and "Constitutional AI layer"; and fixed channels, relationships, revenue streams, activities, partners and costs.
+- **why it is a fabrication:** A canvas is a claim about one business. Every business got the same segments and partners, and the platform's own engines as its key resources, with nothing marking the canvas as a template.
+- **reach:** live route: the fallback path of POST /api/v1/synthesis/generate (output_type="business_model") whenever the model's reply did not parse, which with no model installed is every time; saved as the output's download and its history row.

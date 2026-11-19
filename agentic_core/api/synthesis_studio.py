@@ -498,9 +498,12 @@ async def spawn_vsb_entity(req: SpawnRequest, user: dict | None = Depends(get_cu
 
 
 @router.get("/vsb")
-async def list_vsb_entities():
-    """List all VSB entities."""
-    entities = _list_vsb()
+async def list_vsb_entities(user: dict | None = Depends(get_current_user)):
+    """List the VSB entities this caller may read."""
+    #  W1075 - every entity, whoever's, was listed to every caller; with sign-in off every entity is the caller's
+    from agentic_core.auth.core import user_can_access
+    _u = user if isinstance(user, dict) else None
+    entities = [e for e in _list_vsb() if user_can_access(_u, e.get("owner_id"))]
     return {
         "entities": [
             {
@@ -519,9 +522,13 @@ async def list_vsb_entities():
 
 
 @router.get("/vsb/{entity_id}")
-async def get_vsb_entity(entity_id: str):
+async def get_vsb_entity(entity_id: str, user: dict | None = Depends(get_current_user)):
     """Retrieve a full VSB entity by ID."""
     entity = _load_vsb(entity_id)
+    #  W1075 - another person's entity is answered as one that does not exist: it was returned whole to any caller
+    from agentic_core.auth.core import user_can_access
+    if entity and not user_can_access(user if isinstance(user, dict) else None, entity.get("owner_id")):
+        entity = None
     if not entity:
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail=f"VSB entity {entity_id} not found.")

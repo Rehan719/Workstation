@@ -1,0 +1,603 @@
+{
+ "status": {
+  "board": "Workstation IDBO Board of Directors",
+  "scope": "workstation",
+  "represents_owner": "owner",
+  "represents_owner_basis": "WORKSTATION_OWNER_ID is not set to an identity, so the record carries the role word 'owner': the one person this single-user deployment serves (no name is written in the code)",
+  "hierarchy": [
+   "Owner",
+   "Chief (the Owner's charter)",
+   "Board of Directors",
+   "AI CEO",
+   "C-Suite",
+   "CoE",
+   "BTO",
+   "Operational Delivery"
+  ],
+  "chief": {
+   "id": "chief",
+   "title": "Chief of the Board (the Owner's charter and instructions — no twin model is trained)",
+   "mandate": "Represent the Owner; set direction; lead/appraise/develop the board; delegate to the AI CEO."
+  },
+  "directors": [
+   {
+    "id": "dir_strategy",
+    "title": "Director of Strategy & Vision",
+    "mandate": "Business plan, strategy, aims, mission, objectives — coherence with the Owner's vision."
+   },
+   {
+    "id": "dir_technology",
+    "title": "Director of Technology & Architecture",
+    "mandate": "Technical direction, architecture integrity, build quality, scalability."
+   },
+   {
+    "id": "dir_governance",
+    "title": "Director of Governance & Compliance",
+    "mandate": "Constitutional alignment, gaas.v5 gate, risk, change control, audit integrity."
+   },
+   {
+    "id": "dir_biomimetic",
+    "title": "Director of Biomimetic Systems",
+    "mandate": "Highest authority to monitor/change/control all VSB living processes (immune/nervous/genome/evolution)."
+   },
+   {
+    "id": "dir_operations",
+    "title": "Director of Operations & Delivery",
+    "mandate": "BTO, Build-to-Order, facilities management, operational delivery to timeline."
+   },
+   {
+    "id": "dir_finance",
+    "title": "Director of Finance & Capital",
+    "mandate": "Capital allocation, unit economics, commercial sustainability."
+   },
+   {
+    "id": "dir_evolution",
+    "title": "Director of Evolution & Learning",
+    "mandate": "Continual self-improvement; ties the Sovereign Evolution Office to board direction."
+   }
+  ],
+  "live": {
+   "organism_health": 1.0,
+   "organism_health_basis": "the immune system's health: lowered by every recorded event that is not a review flag - AI gateway and model-tier calls that failed or timed out; compliance fails and regressions; quality non-conformances; any operation reported as failed - while compliance review flags are reported beside it and do not lower it, and route 5xx failures are not tracked, so this is not the health of the whole platform",
+   "organism_health_observations": 0,
+   "organism_health_observed_basis": "NO call was observed in the last 5 minutes, so the health figure is the absence of failures and not a reading of anything"
+  },
+  "recent_directives": [],
+  "latest_owner_instruction": null,
+  "recent_directives_basis": "the last 0 row(s) of the board record, of every kind; 0 of them are the twin's unprompted restatements or their receipts, which are not instructions from the Owner",
+  "pending_ratifications": 0
+ },
+ "charter": {
+  "owner": {
+   "role": "Founder / Owner / Curator",
+   "vision_summary": "Workstation IDBO AI-mediates working for any user in any realm/domain — taking a challenge end-to-end (Concept → Design → Delivery) and generating a bespoke, living Enterprise IDBO (a VSB) that commercialises the user's solution. One self-running, self-healing, self-improving living organism.",
+   "fidelity_charter": "Represent the Owner precisely, effectively, efficiently, systematically and punctually — reflecting their exact wishes and instructions, perfectly understood and remembered, with due diligence, honesty, sincerity, loyalty, determination, resilience and perfectionism.",
+   "name": "owner",
+   "name_basis": "WORKSTATION_OWNER_ID is not set to an identity, so the record carries the role word 'owner': the one person this single-user deployment serves (no name is written in the code)"
+  },
+  "board": [
+   {
+    "id": "chief",
+    "title": "Chief of the Board (the Owner's charter and instructions — no twin model is trained)",
+    "mandate": "Represent the Owner; set direction; lead/appraise/develop the board; delegate to the AI CEO."
+   },
+   {
+    "id": "dir_strategy",
+    "title": "Director of Strategy & Vision",
+    "mandate": "Business plan, strategy, aims, mission, objectives — coherence with the Owner's vision."
+   },
+   {
+    "id": "dir_technology",
+    "title": "Director of Technology & Architecture",
+    "mandate": "Technical direction, architecture integrity, build quality, scalability."
+   },
+   {
+    "id": "dir_governance",
+    "title": "Director of Governance & Compliance",
+    "mandate": "Constitutional alignment, gaas.v5 gate, risk, change control, audit integrity."
+   },
+   {
+    "id": "dir_biomimetic",
+    "title": "Director of Biomimetic Systems",
+    "mandate": "Highest authority to monitor/change/control all VSB living processes (immune/nervous/genome/evolution)."
+   },
+   {
+    "id": "dir_operations",
+    "title": "Director of Operations & Delivery",
+    "mandate": "BTO, Build-to-Order, facilities management, operational delivery to timeline."
+   },
+   {
+    "id": "dir_finance",
+    "title": "Director of Finance & Capital",
+    "mandate": "Capital allocation, unit economics, commercial sustainability."
+   },
+   {
+    "id": "dir_evolution",
+    "title": "Director of Evolution & Learning",
+    "mandate": "Continual self-improvement; ties the Sovereign Evolution Office to board direction."
+   }
+  ],
+  "arms_length_agency": "The AI CEO and below cannot instruct the board or mutate the genome directly. Direction flows Owner → Chief → Board → AI CEO. The board can monitor, change, update, control and impact all VSB living processes (highest authority).",
+  "applies_to": "The Workstation IDBO and every VSB IDBO entity it generates.",
+  "ratification": "A HIGH-tier change approved by a review (the reviewing model's decision marker or the organism-health threshold rule) waits for the Board to ratify it; nothing implements it until the Board, on the Owner's direction, ratifies or refuses it. The Owner's own explicit decisions need no ratification, and every material economy action is decided by the Owner directly (CRITICAL)."
+ },
+ "model_role": {
+  "profile": {
+   "text": "Standing values from the Owner's documented canon: faith-rooted halal ethics and beneficence · honesty over polish (never fabricate, never pad) · decide-and-build · real user enablement · virtual/simulated finance only (real rails stay Owner-gated).",
+   "source": "the platform's standing canon, identical for every Chief",
+   "declared_by_owner": false
+  },
+  "instructions": {
+   "count": 0,
+   "recent": [],
+   "scope": null,
+   "owner": null,
+   "source": "the board store's instruction rows across every scope",
+   "readable": true
+  },
+  "decisions": {
+   "count": 0,
+   "recent": [],
+   "source": "the Owner's ratify/refuse decisions recorded by the Board in Change Control"
+  },
+  "owner_inputs": 0,
+  "is_modelled_twin": false,
+  "carries_owner_record": false,
+  "reported_as": "role",
+  "basis": "A ROLE, NOT A MODELLED TWIN: this Owner has written no instruction and made no recorded decision, so there is nothing of theirs to model. The standing canon is carried and is the platform's, identical for every Chief, so it cannot stand in for a lived record - a Chief built from it alone represents the platform's values and not this person.",
+  "method": "a Chief CARRIES THE OWNER'S RECORD only when the Owner has written an instruction or made a recorded decision; nothing is modelled, trained or fitted in either case. This Chief does not: no such input is on record, so it is a role. `is_modelled_twin` (False) is the older name of `carries_owner_record` (False) and always equals it. The standing canon is carried either way and is the platform's, identical for every Chief, so it is never counted as this Owner's own declaration"
+ },
+ "ratifications_empty": {
+  "pending": [],
+  "total": 0,
+  "apex_scoped": 0,
+  "vsb_scoped": 0,
+  "rule": "A HIGH change approved by a review waits here; the board named on the row ratifies or refuses it on that owner's direction. Nothing implements it until then.",
+  "routing": "A change carrying a vsb_id belongs to that VSB's own board, not to the workstation apex board. Both queue here; `ratifying_board` on each row says which decides it."
+ },
+ "pending": {
+  "pending": [
+   {
+    "cca_id": "cca-556b6664c5",
+    "title": "Raise the beat's visit limit for the largest entities",
+    "change_type": "code_change",
+    "impact_tier": "HIGH",
+    "status": "approved",
+    "decision_source": "model_decision_marker",
+    "approved_at": "2026-11-13T11:24:44Z",
+    "decision_source_inferred": false,
+    "submitted_by": "system",
+    "submitted_at": "2026-11-13T11:24:44Z",
+    "vsb_id": null,
+    "description": "A code change a review approved, waiting for the Board.",
+    "review_result": "[DECISION: APPROVED]",
+    "twin_prevalidation": {
+     "verdict": "pass",
+     "source": "twin_marker",
+     "source_label": "model twin verdict"
+    },
+    "ratifying_board": {
+     "scope": "workstation",
+     "tier": "apex",
+     "represents_owner": "owner",
+     "vsb_id": null
+    }
+   }
+  ],
+  "total": 1,
+  "apex_scoped": 1,
+  "vsb_scoped": 0,
+  "rule": "A HIGH change approved by a review waits here; the board named on the row ratifies or refuses it on that owner's direction. Nothing implements it until then.",
+  "routing": "A change carrying a vsb_id belongs to that VSB's own board, not to the workstation apex board. Both queue here; `ratifying_board` on each row says which decides it."
+ },
+ "ratified": {
+  "cca_id": "cca-556b6664c5",
+  "decision": "ratified",
+  "status": "approved",
+  "by": "single-user-mode",
+  "by_verified": false,
+  "ueg_logged": true,
+  "note": "Ratified — the approval stands; the change may now be implemented (a HIGH change still needs a recorded §17.5 pre-validation PASS).",
+  "ratifying_board": {
+   "scope": "workstation",
+   "tier": "apex",
+   "represents_owner": "owner",
+   "vsb_id": null
+  }
+ },
+ "topic": "Should the platform open a second domain this quarter?",
+ "topic_answer": {
+  "kind": "board_directive",
+  "topic": "Should the platform open a second domain this quarter?",
+  "domain": "enterprise",
+  "resolution": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Chief (the Owner's standing charter — no trained model of them exists; represent only what the Owner has. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nSubject: Should the platform open a second domain this quarter? (domain: enterprise).\nStructured frame over the terms most frequent in the request (a term count, not an analysis):\n- platform open\n- open second\n- quarter\n\n## Terms most frequent in the text you\nNative structured frame for 'Terms most frequent in the text you' over: Should the platform open a second domain this quarter? (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- platform open\n- open second\n- quarter\n\n## Terms most frequent in the text\nNative structured frame for 'Terms most frequent in the text' over: Should the platform open a second domain this quarter? (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- platform open\n- open second\n- quarter\n\n## Board Position\nNative structured frame for 'Board Position' over: Should the platform open a second domain this quarter? (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- platform open\n- open second\n- quarter\n\n## Directive to the AI CEO\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG.\n\n## Guardrails\nNative structured frame for 'Guardrails' over: Should the platform open a second domain this quarter? (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- platform open\n- open second\n- quarter",
+  "director_inputs": {
+   "dir_strategy": {
+    "title": "Director of Strategy & Vision",
+    "live_grounding": "living plan objectives by status: none yet",
+    "input": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Director of Strategy & Vision on the Workstation IDBO Board. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: Should the platform open a second domain this quarter? (domain: enterprise).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- platform open\n- open second\n- quarter\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'board_dir_strategy', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG."
+   },
+   "dir_operations": {
+    "title": "Director of Operations & Delivery",
+    "live_grounding": "org cascade runs: 0; last quality: qms=None coverage=None",
+    "input": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Director of Operations & Delivery on the Workstation IDBO Board. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: Should the platform open a second domain this quarter? (domain: enterprise).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- platform open\n- open second\n- quarter\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'board_dir_operations', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG."
+   }
+  },
+  "directors_engaged": [
+   "dir_strategy",
+   "dir_operations"
+  ],
+  "ai_provenance": {
+   "posture": "in-house-first",
+   "served_by": {
+    "native": 3
+   },
+   "any_external": false,
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+   "served_by_agent": {
+    "board_dir_strategy": "native",
+    "board_dir_operations": "native",
+    "board_directive": "native"
+   }
+  },
+  "chaired_by": "Chief (the Owner's charter and instructions)",
+  "status": "framed_floor_not_deliberated",
+  "status_basis": "every director and the Chief were served by the deterministic floor, so the topic was FRAMED, not deliberated: nothing here weighed it",
+  "created_at": "2026-11-13T11:24:44Z"
+ },
+ "status_after_topic": {
+  "board": "Workstation IDBO Board of Directors",
+  "scope": "workstation",
+  "represents_owner": "owner",
+  "represents_owner_basis": "WORKSTATION_OWNER_ID is not set to an identity, so the record carries the role word 'owner': the one person this single-user deployment serves (no name is written in the code)",
+  "hierarchy": [
+   "Owner",
+   "Chief (the Owner's charter)",
+   "Board of Directors",
+   "AI CEO",
+   "C-Suite",
+   "CoE",
+   "BTO",
+   "Operational Delivery"
+  ],
+  "chief": {
+   "id": "chief",
+   "title": "Chief of the Board (the Owner's charter and instructions — no twin model is trained)",
+   "mandate": "Represent the Owner; set direction; lead/appraise/develop the board; delegate to the AI CEO."
+  },
+  "directors": [
+   {
+    "id": "dir_strategy",
+    "title": "Director of Strategy & Vision",
+    "mandate": "Business plan, strategy, aims, mission, objectives — coherence with the Owner's vision."
+   },
+   {
+    "id": "dir_technology",
+    "title": "Director of Technology & Architecture",
+    "mandate": "Technical direction, architecture integrity, build quality, scalability."
+   },
+   {
+    "id": "dir_governance",
+    "title": "Director of Governance & Compliance",
+    "mandate": "Constitutional alignment, gaas.v5 gate, risk, change control, audit integrity."
+   },
+   {
+    "id": "dir_biomimetic",
+    "title": "Director of Biomimetic Systems",
+    "mandate": "Highest authority to monitor/change/control all VSB living processes (immune/nervous/genome/evolution)."
+   },
+   {
+    "id": "dir_operations",
+    "title": "Director of Operations & Delivery",
+    "mandate": "BTO, Build-to-Order, facilities management, operational delivery to timeline."
+   },
+   {
+    "id": "dir_finance",
+    "title": "Director of Finance & Capital",
+    "mandate": "Capital allocation, unit economics, commercial sustainability."
+   },
+   {
+    "id": "dir_evolution",
+    "title": "Director of Evolution & Learning",
+    "mandate": "Continual self-improvement; ties the Sovereign Evolution Office to board direction."
+   }
+  ],
+  "live": {
+   "organism_health": 1.0,
+   "organism_health_basis": "the immune system's health: lowered by every recorded event that is not a review flag - AI gateway and model-tier calls that failed or timed out; compliance fails and regressions; quality non-conformances; any operation reported as failed - while compliance review flags are reported beside it and do not lower it, and route 5xx failures are not tracked, so this is not the health of the whole platform",
+   "organism_health_observations": 3,
+   "organism_health_observed_basis": "3 call(s) were observed in the last 5 minutes"
+  },
+  "recent_directives": [
+   {
+    "kind": "board_directive",
+    "topic": "Should the platform open a second domain this quarter?",
+    "domain": "enterprise",
+    "resolution": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Chief (the Owner's standing charter — no trained model of them exists; represent only what the Owner has. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nSubject: Should the platform open a second domain this quarter? (domain: enterprise).\nStructured frame over the terms most frequent in the request (a term count, not an analysis):\n- platform open\n- open second\n- quarter\n\n## Terms most frequent in the text you\nNative structured frame for 'Terms most frequent in the text you' over: Should the platform open a second domain this quarter? (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- platform open\n- open second\n- quarter\n\n## Terms most frequent in the text\nNative structured frame for 'Terms most frequent in the text' over: Should the platform open a second domain this quarter? (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- platform open\n- open second\n- quarter\n\n## Board Position\nNative structured frame for 'Board Position' over: Should the platform open a second domain this quarter? (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- platform open\n- open second\n- quarter\n\n## Directive to the AI CEO\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG.\n\n## Guardrails\nNative structured frame for 'Guardrails' over: Should the platform open a second domain this quarter? (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- platform open\n- open second\n- quarter",
+    "director_inputs": {
+     "dir_strategy": {
+      "title": "Director of Strategy & Vision",
+      "live_grounding": "living plan objectives by status: none yet",
+      "input": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Director of Strategy & Vision on the Workstation IDBO Board. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: Should the platform open a second domain this quarter? (domain: enterprise).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- platform open\n- open second\n- quarter\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'board_dir_strategy', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG."
+     },
+     "dir_operations": {
+      "title": "Director of Operations & Delivery",
+      "live_grounding": "org cascade runs: 0; last quality: qms=None coverage=None",
+      "input": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Director of Operations & Delivery on the Workstation IDBO Board. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: Should the platform open a second domain this quarter? (domain: enterprise).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- platform open\n- open second\n- quarter\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'board_dir_operations', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG."
+     }
+    },
+    "directors_engaged": [
+     "dir_strategy",
+     "dir_operations"
+    ],
+    "ai_provenance": {
+     "posture": "in-house-first",
+     "served_by": {
+      "native": 3
+     },
+     "any_external": false,
+     "evidence_level": "behaviour",
+     "evidence_level_number": 1,
+     "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+     "served_by_agent": {
+      "board_dir_strategy": "native",
+      "board_dir_operations": "native",
+      "board_directive": "native"
+     }
+    },
+    "chaired_by": "Chief (the Owner's charter and instructions)",
+    "status": "framed_floor_not_deliberated",
+    "status_basis": "every director and the Chief were served by the deterministic floor, so the topic was FRAMED, not deliberated: nothing here weighed it",
+    "created_at": "2026-11-13T11:24:44Z"
+   }
+  ],
+  "latest_owner_instruction": null,
+  "recent_directives_basis": "the last 1 row(s) of the board record, of every kind; 0 of them are the twin's unprompted restatements or their receipts, which are not instructions from the Owner",
+  "pending_ratifications": 0
+ },
+ "instruction": "Keep every entity's books reconciled before any payout.",
+ "instruct_answer": {
+  "directive_id": "dir-fd86c1ca",
+  "owner": "owner",
+  "owner_source": "WORKSTATION_OWNER_ID is not set to an identity, so the record carries the role word 'owner': the one person this single-user deployment serves (no name is written in the code) (the request named no owner)",
+  "owner_as_requested": null,
+  "instruction": "Keep every entity's books reconciled before any payout.",
+  "unprompted": false,
+  "restated_kind": null,
+  "instruction_source": "supplied directly by the caller as the Owner's own instruction",
+  "chief_directive": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Chief of the Board — the standing charter of owner, the Owner/Founder of the Workstation IDBO. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Owner Intent\nNative structured frame for 'Owner Intent' over: Keep every entity's books reconciled before any payout. (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- reconciled before\n- books reconciled\n- every entity\n- entity books\n- keep every\n\n## Board Directive\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.\n\n## Director Assignments\nNative structured frame for 'Director Assignments' over: Keep every entity's books reconciled before any payout. (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- reconciled before\n- books reconciled\n- every entity\n- entity books\n- keep every\n\n## Success Criteria\nStructured measurement frame:\n- Candidate KPI from reconciled before.\n- Candidate KPI from books reconciled.\n- Candidate KPI from every entity.\n- Candidate KPI from entity books.\n- Each KPI needs a baseline, target, and cadence; tie to the objective above.",
+  "directive_reason": "the native floor composed this directive. It was told which words are yours and built a structured frame around them; it did not interpret them, so the text below is a frame, not the Chief's response to your instruction. Your instruction itself is recorded verbatim above",
+  "ceo_action_plan": "",
+  "ceo_plan_reason": null,
+  "business_plan_scope": "workstation",
+  "objectives_added": 0,
+  "objectives_parsed": 0,
+  "objectives_fallback": false,
+  "objectives_not_added_reason": null,
+  "ai_provenance": {
+   "posture": "in-house-first",
+   "served_by": {
+    "native": 1
+   },
+   "any_external": false,
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+   "served_by_agent": {
+    "board_chief": "native"
+   }
+  },
+  "governance": {
+   "status": "allowed",
+   "checkpoint": "CHK-1794569084916",
+   "screened": "the declared intent, owner and scope labels of this request",
+   "covers_directive_content": false,
+   "basis": "the gaas.v5 pre-gate compares the DECLARED INTENT against a fixed list of prohibited intents and checks whether a declared human approval is outstanding. It does not read the directive's prose. A status of 'allowed' therefore means nothing on that list matched — it is not a judgement that the directive is constitutional."
+  },
+  "delegation_chain": [
+   "Chief"
+  ],
+  "delegation_chain_basis": "the tiers whose prompts ran for this directive. The C-Suite, CoE and BTO are NOT invoked by a directive; the org cascade runs them.",
+  "created_at": "2026-11-13T11:24:44Z"
+ },
+ "status_after_instruction": {
+  "board": "Workstation IDBO Board of Directors",
+  "scope": "workstation",
+  "represents_owner": "owner",
+  "represents_owner_basis": "WORKSTATION_OWNER_ID is not set to an identity, so the record carries the role word 'owner': the one person this single-user deployment serves (no name is written in the code)",
+  "hierarchy": [
+   "Owner",
+   "Chief (the Owner's charter)",
+   "Board of Directors",
+   "AI CEO",
+   "C-Suite",
+   "CoE",
+   "BTO",
+   "Operational Delivery"
+  ],
+  "chief": {
+   "id": "chief",
+   "title": "Chief of the Board (the Owner's charter and instructions — no twin model is trained)",
+   "mandate": "Represent the Owner; set direction; lead/appraise/develop the board; delegate to the AI CEO."
+  },
+  "directors": [
+   {
+    "id": "dir_strategy",
+    "title": "Director of Strategy & Vision",
+    "mandate": "Business plan, strategy, aims, mission, objectives — coherence with the Owner's vision."
+   },
+   {
+    "id": "dir_technology",
+    "title": "Director of Technology & Architecture",
+    "mandate": "Technical direction, architecture integrity, build quality, scalability."
+   },
+   {
+    "id": "dir_governance",
+    "title": "Director of Governance & Compliance",
+    "mandate": "Constitutional alignment, gaas.v5 gate, risk, change control, audit integrity."
+   },
+   {
+    "id": "dir_biomimetic",
+    "title": "Director of Biomimetic Systems",
+    "mandate": "Highest authority to monitor/change/control all VSB living processes (immune/nervous/genome/evolution)."
+   },
+   {
+    "id": "dir_operations",
+    "title": "Director of Operations & Delivery",
+    "mandate": "BTO, Build-to-Order, facilities management, operational delivery to timeline."
+   },
+   {
+    "id": "dir_finance",
+    "title": "Director of Finance & Capital",
+    "mandate": "Capital allocation, unit economics, commercial sustainability."
+   },
+   {
+    "id": "dir_evolution",
+    "title": "Director of Evolution & Learning",
+    "mandate": "Continual self-improvement; ties the Sovereign Evolution Office to board direction."
+   }
+  ],
+  "live": {
+   "organism_health": 1.0,
+   "organism_health_basis": "the immune system's health: lowered by every recorded event that is not a review flag - AI gateway and model-tier calls that failed or timed out; compliance fails and regressions; quality non-conformances; any operation reported as failed - while compliance review flags are reported beside it and do not lower it, and route 5xx failures are not tracked, so this is not the health of the whole platform",
+   "organism_health_observations": 4,
+   "organism_health_observed_basis": "4 call(s) were observed in the last 5 minutes"
+  },
+  "recent_directives": [
+   {
+    "kind": "board_directive",
+    "topic": "Should the platform open a second domain this quarter?",
+    "domain": "enterprise",
+    "resolution": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Chief (the Owner's standing charter — no trained model of them exists; represent only what the Owner has. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nSubject: Should the platform open a second domain this quarter? (domain: enterprise).\nStructured frame over the terms most frequent in the request (a term count, not an analysis):\n- platform open\n- open second\n- quarter\n\n## Terms most frequent in the text you\nNative structured frame for 'Terms most frequent in the text you' over: Should the platform open a second domain this quarter? (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- platform open\n- open second\n- quarter\n\n## Terms most frequent in the text\nNative structured frame for 'Terms most frequent in the text' over: Should the platform open a second domain this quarter? (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- platform open\n- open second\n- quarter\n\n## Board Position\nNative structured frame for 'Board Position' over: Should the platform open a second domain this quarter? (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- platform open\n- open second\n- quarter\n\n## Directive to the AI CEO\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG.\n\n## Guardrails\nNative structured frame for 'Guardrails' over: Should the platform open a second domain this quarter? (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- platform open\n- open second\n- quarter",
+    "director_inputs": {
+     "dir_strategy": {
+      "title": "Director of Strategy & Vision",
+      "live_grounding": "living plan objectives by status: none yet",
+      "input": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Director of Strategy & Vision on the Workstation IDBO Board. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: Should the platform open a second domain this quarter? (domain: enterprise).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- platform open\n- open second\n- quarter\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'board_dir_strategy', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG."
+     },
+     "dir_operations": {
+      "title": "Director of Operations & Delivery",
+      "live_grounding": "org cascade runs: 0; last quality: qms=None coverage=None",
+      "input": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Director of Operations & Delivery on the Workstation IDBO Board. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: Should the platform open a second domain this quarter? (domain: enterprise).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- platform open\n- open second\n- quarter\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'board_dir_operations', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG."
+     }
+    },
+    "directors_engaged": [
+     "dir_strategy",
+     "dir_operations"
+    ],
+    "ai_provenance": {
+     "posture": "in-house-first",
+     "served_by": {
+      "native": 3
+     },
+     "any_external": false,
+     "evidence_level": "behaviour",
+     "evidence_level_number": 1,
+     "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+     "served_by_agent": {
+      "board_dir_strategy": "native",
+      "board_dir_operations": "native",
+      "board_directive": "native"
+     }
+    },
+    "chaired_by": "Chief (the Owner's charter and instructions)",
+    "status": "framed_floor_not_deliberated",
+    "status_basis": "every director and the Chief were served by the deterministic floor, so the topic was FRAMED, not deliberated: nothing here weighed it",
+    "created_at": "2026-11-13T11:24:44Z"
+   },
+   {
+    "directive_id": "dir-fd86c1ca",
+    "owner": "owner",
+    "owner_source": "WORKSTATION_OWNER_ID is not set to an identity, so the record carries the role word 'owner': the one person this single-user deployment serves (no name is written in the code) (the request named no owner)",
+    "owner_as_requested": null,
+    "instruction": "Keep every entity's books reconciled before any payout.",
+    "unprompted": false,
+    "restated_kind": null,
+    "instruction_source": "supplied directly by the caller as the Owner's own instruction",
+    "chief_directive": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Chief of the Board — the standing charter of owner, the Owner/Founder of the Workstation IDBO. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Owner Intent\nNative structured frame for 'Owner Intent' over: Keep every entity's books reconciled before any payout. (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- reconciled before\n- books reconciled\n- every entity\n- entity books\n- keep every\n\n## Board Directive\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.\n\n## Director Assignments\nNative structured frame for 'Director Assignments' over: Keep every entity's books reconciled before any payout. (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- reconciled before\n- books reconciled\n- every entity\n- entity books\n- keep every\n\n## Success Criteria\nStructured measurement frame:\n- Candidate KPI from reconciled before.\n- Candidate KPI from books reconciled.\n- Candidate KPI from every entity.\n- Candidate KPI from entity books.\n- Each KPI needs a baseline, target, and cadence; tie to the objective above.",
+    "directive_reason": "the native floor composed this directive. It was told which words are yours and built a structured frame around them; it did not interpret them, so the text below is a frame, not the Chief's response to your instruction. Your instruction itself is recorded verbatim above",
+    "ceo_action_plan": "",
+    "ceo_plan_reason": null,
+    "business_plan_scope": "workstation",
+    "objectives_added": 0,
+    "objectives_parsed": 0,
+    "objectives_fallback": false,
+    "objectives_not_added_reason": null,
+    "ai_provenance": {
+     "posture": "in-house-first",
+     "served_by": {
+      "native": 1
+     },
+     "any_external": false,
+     "evidence_level": "behaviour",
+     "evidence_level_number": 1,
+     "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+     "served_by_agent": {
+      "board_chief": "native"
+     }
+    },
+    "governance": {
+     "status": "allowed",
+     "checkpoint": "CHK-1794569084916",
+     "screened": "the declared intent, owner and scope labels of this request",
+     "covers_directive_content": false,
+     "basis": "the gaas.v5 pre-gate compares the DECLARED INTENT against a fixed list of prohibited intents and checks whether a declared human approval is outstanding. It does not read the directive's prose. A status of 'allowed' therefore means nothing on that list matched — it is not a judgement that the directive is constitutional."
+    },
+    "delegation_chain": [
+     "Chief"
+    ],
+    "delegation_chain_basis": "the tiers whose prompts ran for this directive. The C-Suite, CoE and BTO are NOT invoked by a directive; the org cascade runs them.",
+    "created_at": "2026-11-13T11:24:44Z"
+   }
+  ],
+  "latest_owner_instruction": {
+   "directive_id": "dir-fd86c1ca",
+   "instruction": "Keep every entity's books reconciled before any payout.",
+   "created_at": "2026-11-13T11:24:44Z",
+   "business_plan_scope": "workstation"
+  },
+  "recent_directives_basis": "the last 2 row(s) of the board record, of every kind; 0 of them are the twin's unprompted restatements or their receipts, which are not instructions from the Owner",
+  "pending_ratifications": 0
+ },
+ "model_twin": {
+  "profile": {
+   "text": "Standing values from the Owner's documented canon: faith-rooted halal ethics and beneficence · honesty over polish (never fabricate, never pad) · decide-and-build · real user enablement · virtual/simulated finance only (real rails stay Owner-gated).",
+   "source": "the platform's standing canon, identical for every Chief",
+   "declared_by_owner": false
+  },
+  "instructions": {
+   "count": 1,
+   "recent": [
+    {
+     "at": "2026-11-13T11:24:44",
+     "instruction": "Keep every entity's books reconciled before any payout."
+    }
+   ],
+   "scope": null,
+   "owner": null,
+   "source": "the board store's instruction rows across every scope",
+   "readable": true
+  },
+  "decisions": {
+   "count": 1,
+   "recent": [
+    {
+     "cca_id": "cca-556b6664c5",
+     "decision": "ratified",
+     "title": "Raise the beat's visit limit for the largest entities",
+     "at": "2026-11-13T11:24:44Z",
+     "notes": ""
+    }
+   ],
+   "source": "the Owner's ratify/refuse decisions recorded by the Board in Change Control"
+  },
+  "owner_inputs": 2,
+  "is_modelled_twin": true,
+  "carries_owner_record": true,
+  "reported_as": "chief carrying your record",
+  "basis": "CARRYING YOUR RECORD, NOT A FITTED MODEL: 1 instruction(s) the Owner wrote and 1 decision(s) the Owner made are handed to the Chief's prompt; nothing is trained, fitted or evaluated on them. The standing canon is also carried and is the PLATFORM's, identical for every Chief - it is not counted as this Owner's own declaration.",
+  "method": "a Chief CARRIES THE OWNER'S RECORD only when the Owner has written an instruction or made a recorded decision; nothing is modelled, trained or fitted in either case. This Chief carries it: 2 such input(s) are on record. `is_modelled_twin` (True) is the older name of `carries_owner_record` (True) and always equals it. The standing canon is carried either way and is the platform's, identical for every Chief, so it is never counted as this Owner's own declaration"
+ }
+}

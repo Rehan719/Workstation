@@ -1,0 +1,67 @@
+{
+ "status": {
+  "circadian": {
+   "cycle": "MAINTENANCE_REST"
+  },
+  "cardiovascular": {
+   "resource_flow": 74.8,
+   "peristaltic_delay": 1,
+   "host_cpu_percent": 25.2,
+   "host_cpu_window_seconds": 1.007,
+   "host_cpu_basis": "psutil.cpu_percent over a 1.007 s window that ended 0.0 s ago, sampled on this module's own thread so no other reader can shorten it; the whole machine - every program running on it, not this platform alone",
+   "resource_flow_basis": "host CPU headroom (100 − cpu%) — spare capacity, not workload",
+   "peristaltic_delay_basis": "host memory percent ÷ 20 — a load index, not milliseconds"
+  },
+  "workload": {
+   "platform_busy": false,
+   "active_projects": 0,
+   "open_channels": 0,
+   "basis": "the platform's own running projects and open channels"
+  },
+  "cognition": {
+   "state": "STABLE",
+   "primary_drive": "DISCOVERY",
+   "basis": "a LOAD reading, not cognition: derived from host CPU% and the running-project count, qualified by immune health. No cognitive engine is read"
+  },
+  "communication": {
+   "active_channels": [],
+   "neurotransmitter": "Oxytocin",
+   "is_active": false,
+   "basis": "a label, not a signal: it names which of three cases holds - no socket is open and no project is running"
+  },
+  "immune": {
+   "health": 1.0,
+   "threat_level": "NOMINAL",
+   "hot_endpoint_errors": 0,
+   "hot_endpoint_tied": [],
+   "errors_in_window": 0,
+   "review_flags_in_window": 0,
+   "events_in_window": 0,
+   "health_basis": "health and threat are computed from 0 failure(s) in the window; 0 compliance review flag(s) are reported beside them and are NOT counted — a flag asks a human to look, it is not a finding of harm",
+   "window_seconds": 300,
+   "observations_in_window": 0,
+   "observed_basis": "NO call was observed in the last 5 minutes, so the health figure is the absence of failures and not a reading of anything",
+   "by_type": {},
+   "hot_endpoint": null,
+   "response_playbook": [
+    "recommended: passive surveillance"
+   ]
+  },
+  "metabolic": {
+   "efficiency": 0.95,
+   "atp_ratio": 0.358,
+   "atp_measured": false,
+   "atp_basis": "simulated — an ATP production/consumption model on a load derived from CPU. consumption is at most 0.10 per tick (0.1 x a load clamped to 1.0) and production at least 0.40 (0.5 x the lowest efficiency this code passes, 0.8), so production exceeds consumption at every reachable combination and the ratio only RISES to its ceiling. It does not deplete - and NOT because of the 0.5 floor, which never binds. It is not a live vital. THE REAL BUDGET, measured in wall-clock seconds of recorded run time: 360.0s of 3600.0s spent (10%) over 1 recorded run(s) — and it GATES NOTHING: the budget ships inert until WORKSTATION_WORK_BUDGET=true, per the Owner's ruling",
+   "efficiency_basis": "the mean of energy_ratio (the work budget's remaining share, derived from the seconds spent) and stage_efficiency",
+   "energy_ratio": 0.9,
+   "energy_acts": false,
+   "energy_basis": "1 - 360.0s spent / 3600s stated capacity this window (the capacity is a stated assumption); the work budget is switched off (WORKSTATION_WORK_BUDGET), so nothing reads this figure: the energy thresholds read the ATP simulator, which cannot fall, and stay inert as ruled",
+   "concept_projects": 0,
+   "total_projects": 0
+  },
+  "nervous": {
+   "arousal_state": "DORMANT",
+   "signal_rate": 0.017
+  }
+ }
+}

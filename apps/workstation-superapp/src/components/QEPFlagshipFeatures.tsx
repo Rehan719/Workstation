@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Badge, notImplemented} from '@workstation/ui';
+import { Card, Button, Badge } from '@workstation/ui';
 import {
   Mic,
   Book,
@@ -155,9 +155,7 @@ export const QEPFlagshipFeatures: React.FC = () => {
                           governance check that never happened. The version tag is a fact and stays. */}
                       <Badge color="highlight">v0.9-P0</Badge>
                    </div>
-                   <Button onClick={() => notImplemented('Launch Full Dashboard')} className="bg-aura text-sovereign px-8 py-4 rounded-xl font-black uppercase tracking-widest text-[10px]">
-                      Launch Full Dashboard
-                   </Button>
+                   {/* W793 (FU-984 R5[2]) - a 'Launch Full Dashboard' button stood here and opened nothing */}
                 </div>
               </div>
             </Card>

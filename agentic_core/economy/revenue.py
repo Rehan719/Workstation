@@ -154,7 +154,8 @@ def peek_pending(vsb_id: str) -> Dict[str, Any]:
             sources[ev.get("source", "?")] = sources.get(ev.get("source", "?"), 0) + 1
             ids.append(ev["id"])
             # W463 — per-event amounts, so a governed cycle can release exactly the events an approval names
-            items[ev["id"]] = {"kind": ev.get("kind"), "amount_wst": float(ev.get("amount_wst") or 0.0)}
+            items[ev["id"]] = {"kind": ev.get("kind"), "amount_wst": float(ev.get("amount_wst") or 0.0),
+                               "source": ev.get("source")}       # W881 (FU-1010) - where its value entered
     return {"revenue": round(revenue, 6), "costs": round(costs, 6), "events": len(ids),
             "sources": sources, "ids": ids, "items": items}
 

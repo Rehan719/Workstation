@@ -1,0 +1,284 @@
+{
+ "resources": {
+  "resources": [
+   {
+    "id": "petri_dish",
+    "name": "Petri Dish",
+    "role": "Small-scale controlled experimentation — test viability/hypothesis cheaply.",
+    "biomimetic": "culture in a controlled micro-environment",
+    "params": {
+     "hypothesis": "str"
+    }
+   },
+   {
+    "id": "incubator",
+    "name": "Incubator",
+    "role": "Iterative development — evolve and rank variants of the concept.",
+    "biomimetic": "nurture & grow under optimal conditions",
+    "params": {
+     "variations": "int"
+    }
+   },
+   {
+    "id": "laboratory",
+    "name": "Laboratory",
+    "role": "Research synthesis & analysis — rigorous findings from inputs.",
+    "biomimetic": "deep analysis & synthesis bench",
+    "params": {
+     "depth": "str"
+    }
+   },
+   {
+    "id": "factory",
+    "name": "Factory",
+    "role": "Production — generate a production-grade artifact.",
+    "biomimetic": "production line",
+    "params": {
+     "artifact": "str"
+    }
+   },
+   {
+    "id": "generator",
+    "name": "Generator",
+    "role": "Generate a specific output type (doc / site / app scaffold / model).",
+    "biomimetic": "morphogenesis — generate form",
+    "params": {
+     "output_type": "str"
+    }
+   },
+   {
+    "id": "simulator",
+    "name": "Simulator",
+    "role": "Model & simulate — scenario testing and optimisation via digital twin.",
+    "biomimetic": "digital-twin scenario modelling",
+    "params": {
+     "scenario": "str"
+    }
+   },
+   {
+    "id": "reactor",
+    "name": "Reactor",
+    "role": "Domain-specific processing pipeline.",
+    "biomimetic": "domain processing chamber",
+    "params": {
+     "domain": "str"
+    }
+   }
+  ],
+  "params_basis": "`params` lists the keys a stage's configuration may carry. On POST /forge/run each stage is {\"type\": <id>, \"config\": {<key>: <value>}} - the request field is `config`, and a stage `type` that is not one of the ids above is refused (422).",
+  "usage_areas": [
+   "synthesis",
+   "build_to_order",
+   "forge"
+  ],
+  "reconfigurable": true,
+  "rerunnable": true,
+  "reusable": true
+ },
+ "run": {
+  "run_id": "forge-0f338f58",
+  "name": "Forge: w979 a made-up objective: a weekly bread delivery ",
+  "objective": "w979 a made-up objective: a weekly bread delivery for one street, for the capture",
+  "domain": "enterprise",
+  "realm": "enterprise",
+  "usage_area": "forge",
+  "pipeline": [
+   "petri_dish",
+   "laboratory",
+   "factory"
+  ],
+  "pipeline_source": "requested",
+  "pipeline_basis": "the stages the request named, in its order",
+  "ceo_framing": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: AI CEO of a VSB. The native floor takes no role - what follows is a frame, not that role's work._\n\n_Composed for the enterprise realm. This engine RECORDS the realm and does not act on it: it composes from the text the calling tool identified as yours, and a house style is a directive only a served model can follow._\n\n## Framing\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise | Realm: enterprise; record outcomes to memory/UEG.\n\n## Directive to the resource pipeline\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise | Realm: enterprise; record outcomes to memory/UEG.",
+  "ceo_served_by": "native",
+  "stage_outputs": [
+   {
+    "resource": "petri_dish",
+    "name": "Petri Dish",
+    "biomimetic": "culture in a controlled micro-environment",
+    "config": {
+     "hypothesis": "a made-up hypothesis, for the capture"
+    },
+    "output": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Digital Petri Dish, run a small-scale controlled experiment on the objective. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Observations\nNative structured frame for 'Observations' over: w979 a made-up objective: a weekly bread delivery for one street, for the capture (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- bread delivery\n- weekly bread\n- one street\n- made-up\n- capture\n\n## Viability Verdict\nStructured research frame for: w979 a made-up objective: a weekly bread delivery for one street, for the capture.\n- Question/hypothesis: state it falsifiably.\n- Variable bread delivery.\n- Variable weekly bread.\n- Variable one street.\n- Variable made-up.\n- Method: how evidence is gathered; controls and validity threats.\n- Findings/verdict: to be populated from real evidence — the native engine sets the rigour, not the claims.\n\n## Framing\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG.",
+    "served_by": "native",
+    "evidence_level": "behaviour",
+    "evidence_level_number": 1,
+    "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+    "kind": "persona_prompt",
+    "kind_basis": "a prompt asking the serving resource to act as the Petri Dish; the Petri Dish facility's own engine was not called"
+   },
+   {
+    "resource": "laboratory",
+    "name": "Laboratory",
+    "biomimetic": "deep analysis & synthesis bench",
+    "config": {},
+    "output": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Digital Laboratory, perform rigorous research synthesis on the objective. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Findings\nStructured research frame for: w979 a made-up objective: a weekly bread delivery for one street, for the capture.\n- Question/hypothesis: state it falsifiably.\n- Variable bread delivery.\n- Variable weekly bread.\n- Variable one street.\n- Variable made-up.\n- Method: how evidence is gathered; controls and validity threats.\n- Findings/verdict: to be populated from real evidence — the native engine sets the rigour, not the claims.\n\n## Implications\nNative structured frame for 'Implications' over: w979 a made-up objective: a weekly bread delivery for one street, for the capture (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- bread delivery\n- weekly bread\n- one street\n- made-up\n- capture\n\n## Framing\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG.\n\n## Observations\nNative structured frame for 'Observations' over: w979 a made-up objective: a weekly bread delivery for one street, for the capture (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- bread delivery\n- weekly bread\n- one street\n- made-up\n- capture",
+    "served_by": "native",
+    "evidence_level": "behaviour",
+    "evidence_level_number": 1,
+    "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+    "kind": "persona_prompt",
+    "kind_basis": "a prompt asking the serving resource to act as the Laboratory; the Laboratory facility's own engine was not called"
+   },
+   {
+    "resource": "factory",
+    "name": "Factory",
+    "biomimetic": "production line",
+    "config": {},
+    "output": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Digital Factory, produce a production-grade artifact for the objective. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Quality Notes\nStructured service frame for: w979 a made-up objective: a weekly bread delivery for one street, for the capture.\n- Offering: what is delivered and the scope boundary.\n- Delivery model: how it is provided (cadence, channel, roles).\n- Quality measure for bread delivery.\n- Quality measure for weekly bread.\n- Quality measure for one street.\n- SLAs & assurance: the commitments and how they're governed for enterprise.\n\n## Observations\nNative structured frame for 'Observations' over: w979 a made-up objective: a weekly bread delivery for one street, for the capture (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- bread delivery\n- weekly bread\n- one street\n- made-up\n- capture\n\n## Findings\nStructured research frame for: w979 a made-up objective: a weekly bread delivery for one street, for the capture.\n- Question/hypothesis: state it falsifiably.\n- Variable bread delivery.\n- Variable weekly bread.\n- Variable one street.\n- Variable made-up.\n- Method: how evidence is gathered; controls and validity threats.\n- Findings/verdict: to be populated from real evidence — the native engine sets the rigour, not the claims.",
+    "served_by": "native",
+    "evidence_level": "behaviour",
+    "evidence_level_number": 1,
+    "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+    "kind": "persona_prompt",
+    "kind_basis": "a prompt asking the serving resource to act as the Factory; the Factory facility's own engine was not called"
+   }
+  ],
+  "integrated_deliverable": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Centre of Excellence integrating a Forge pipeline's outputs into one coherent, high-quality deliverable for. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Framing\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.\n\n## Observations\nNative structured frame for 'Observations' over: w979 a made-up objective: a weekly bread delivery for one street, for the capture (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- bread delivery\n- weekly bread\n- one street\n- made-up\n- capture\n\n## Findings\nStructured research frame for: w979 a made-up objective: a weekly bread delivery for one street, for the capture.\n- Question/hypothesis: state it falsifiably.\n- Variable bread delivery.\n- Variable weekly bread.\n- Variable one street.\n- Variable made-up.\n- Method: how evidence is gathered; controls and validity threats.\n- Findings/verdict: to be populated from real evidence — the native engine sets the rigour, not the claims.\n\n## Quality Notes\nStructured service frame for: w979 a made-up objective: a weekly bread delivery for one street, for the capture.\n- Offering: what is delivered and the scope boundary.\n- Delivery model: how it is provided (cadence, channel, roles).\n- Quality measure for bread delivery.\n- Quality measure for weekly bread.\n- Quality measure for one street.\n- SLAs & assurance: the commitments and how they're governed for WITHHELD — no domain was declared for this call.\n\n## Integrated Deliverable\nSubject: w979 a made-up objective: a weekly bread delivery for one street, for the capture (domain: WITHHELD — no domain was declared for this call).\nStructured frame over the terms most frequent in the request (a term count, not an analysis):\n- bread delivery\n- weekly bread\n- one street\n- made-up\n- capture\n\n## Multi-Type Outputs Produced\nNative structured frame for 'Multi-Type Outputs Produced' over: w979 a made-up objective: a weekly bread delivery for one street, for the capture (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- bread delivery\n- weekly bread\n- one street\n- made-up\n- capture\n\n## Path to Commercialisation\nStructured go-to-market frame for: w979 a made-up objective: a weekly bread delivery for one street, for the capture.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from bread delivery.\n- Positioning wedge from weekly bread.\n- Positioning wedge from one street.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.",
+  "integration_served_by": "native",
+  "governance": {
+   "status": "allowed",
+   "screened": "intent + domain",
+   "content_screened": false,
+   "checkpoint": "CHK-1794603743977",
+   "node": "forge-node",
+   "scope": "intent + domain only — this gate screened the request's intent label against the prohibited list and its own constant attestation sentence. The delivery's content was NOT screened, so this verdict is not a judgement on what was produced."
+  },
+  "ai_provenance": {
+   "posture": "in-house-first",
+   "served_by": {
+    "native": 5
+   },
+   "any_external": false,
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer"
+  },
+  "reusable": true,
+  "rerunnable": true,
+  "duration_ms": 43,
+  "created_at": "2026-11-13T21:02:23Z",
+  "next": "POST /api/v1/genesis/establish to commercialise this as a living VSB IDBO entity."
+ },
+ "rerun": {
+  "run_id": "forge-f98c0d0f",
+  "name": "Forge: w979 a made-up objective: a weekly bread delivery  (rerun)",
+  "objective": "w979 a made-up objective: a weekly bread delivery for one street, for the capture",
+  "domain": "enterprise",
+  "realm": "enterprise",
+  "usage_area": "forge",
+  "pipeline": [
+   "petri_dish",
+   "laboratory",
+   "factory"
+  ],
+  "pipeline_source": "requested",
+  "pipeline_basis": "the stages the request named, in its order",
+  "ceo_framing": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: AI CEO of a VSB. The native floor takes no role - what follows is a frame, not that role's work._\n\n_Composed for the enterprise realm. This engine RECORDS the realm and does not act on it: it composes from the text the calling tool identified as yours, and a house style is a directive only a served model can follow._\n\n## Framing\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise | Realm: enterprise; record outcomes to memory/UEG.\n\n## Directive to the resource pipeline\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise | Realm: enterprise; record outcomes to memory/UEG.",
+  "ceo_served_by": "native",
+  "stage_outputs": [
+   {
+    "resource": "petri_dish",
+    "name": "Petri Dish",
+    "biomimetic": "culture in a controlled micro-environment",
+    "config": {
+     "hypothesis": "a made-up hypothesis, for the capture"
+    },
+    "output": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Digital Petri Dish, run a small-scale controlled experiment on the objective. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Observations\nNative structured frame for 'Observations' over: w979 a made-up objective: a weekly bread delivery for one street, for the capture (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- bread delivery\n- weekly bread\n- one street\n- made-up\n- capture\n\n## Viability Verdict\nStructured research frame for: w979 a made-up objective: a weekly bread delivery for one street, for the capture.\n- Question/hypothesis: state it falsifiably.\n- Variable bread delivery.\n- Variable weekly bread.\n- Variable one street.\n- Variable made-up.\n- Method: how evidence is gathered; controls and validity threats.\n- Findings/verdict: to be populated from real evidence — the native engine sets the rigour, not the claims.\n\n## Framing\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG.",
+    "served_by": "native",
+    "evidence_level": "behaviour",
+    "evidence_level_number": 1,
+    "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+    "kind": "persona_prompt",
+    "kind_basis": "a prompt asking the serving resource to act as the Petri Dish; the Petri Dish facility's own engine was not called"
+   },
+   {
+    "resource": "laboratory",
+    "name": "Laboratory",
+    "biomimetic": "deep analysis & synthesis bench",
+    "config": {},
+    "output": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Digital Laboratory, perform rigorous research synthesis on the objective. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Findings\nStructured research frame for: w979 a made-up objective: a weekly bread delivery for one street, for the capture.\n- Question/hypothesis: state it falsifiably.\n- Variable bread delivery.\n- Variable weekly bread.\n- Variable one street.\n- Variable made-up.\n- Method: how evidence is gathered; controls and validity threats.\n- Findings/verdict: to be populated from real evidence — the native engine sets the rigour, not the claims.\n\n## Implications\nNative structured frame for 'Implications' over: w979 a made-up objective: a weekly bread delivery for one street, for the capture (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- bread delivery\n- weekly bread\n- one street\n- made-up\n- capture\n\n## Framing\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG.\n\n## Observations\nNative structured frame for 'Observations' over: w979 a made-up objective: a weekly bread delivery for one street, for the capture (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- bread delivery\n- weekly bread\n- one street\n- made-up\n- capture",
+    "served_by": "native",
+    "evidence_level": "behaviour",
+    "evidence_level_number": 1,
+    "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+    "kind": "persona_prompt",
+    "kind_basis": "a prompt asking the serving resource to act as the Laboratory; the Laboratory facility's own engine was not called"
+   },
+   {
+    "resource": "factory",
+    "name": "Factory",
+    "biomimetic": "production line",
+    "config": {},
+    "output": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Digital Factory, produce a production-grade artifact for the objective. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Quality Notes\nStructured service frame for: w979 a made-up objective: a weekly bread delivery for one street, for the capture.\n- Offering: what is delivered and the scope boundary.\n- Delivery model: how it is provided (cadence, channel, roles).\n- Quality measure for bread delivery.\n- Quality measure for weekly bread.\n- Quality measure for one street.\n- SLAs & assurance: the commitments and how they're governed for enterprise.\n\n## Observations\nNative structured frame for 'Observations' over: w979 a made-up objective: a weekly bread delivery for one street, for the capture (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- bread delivery\n- weekly bread\n- one street\n- made-up\n- capture\n\n## Findings\nStructured research frame for: w979 a made-up objective: a weekly bread delivery for one street, for the capture.\n- Question/hypothesis: state it falsifiably.\n- Variable bread delivery.\n- Variable weekly bread.\n- Variable one street.\n- Variable made-up.\n- Method: how evidence is gathered; controls and validity threats.\n- Findings/verdict: to be populated from real evidence — the native engine sets the rigour, not the claims.",
+    "served_by": "native",
+    "evidence_level": "behaviour",
+    "evidence_level_number": 1,
+    "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+    "kind": "persona_prompt",
+    "kind_basis": "a prompt asking the serving resource to act as the Factory; the Factory facility's own engine was not called"
+   }
+  ],
+  "integrated_deliverable": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Centre of Excellence integrating a Forge pipeline's outputs into one coherent, high-quality deliverable for. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Framing\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.\n\n## Observations\nNative structured frame for 'Observations' over: w979 a made-up objective: a weekly bread delivery for one street, for the capture (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- bread delivery\n- weekly bread\n- one street\n- made-up\n- capture\n\n## Findings\nStructured research frame for: w979 a made-up objective: a weekly bread delivery for one street, for the capture.\n- Question/hypothesis: state it falsifiably.\n- Variable bread delivery.\n- Variable weekly bread.\n- Variable one street.\n- Variable made-up.\n- Method: how evidence is gathered; controls and validity threats.\n- Findings/verdict: to be populated from real evidence — the native engine sets the rigour, not the claims.\n\n## Quality Notes\nStructured service frame for: w979 a made-up objective: a weekly bread delivery for one street, for the capture.\n- Offering: what is delivered and the scope boundary.\n- Delivery model: how it is provided (cadence, channel, roles).\n- Quality measure for bread delivery.\n- Quality measure for weekly bread.\n- Quality measure for one street.\n- SLAs & assurance: the commitments and how they're governed for WITHHELD — no domain was declared for this call.\n\n## Integrated Deliverable\nSubject: w979 a made-up objective: a weekly bread delivery for one street, for the capture (domain: WITHHELD — no domain was declared for this call).\nStructured frame over the terms most frequent in the request (a term count, not an analysis):\n- bread delivery\n- weekly bread\n- one street\n- made-up\n- capture\n\n## Multi-Type Outputs Produced\nNative structured frame for 'Multi-Type Outputs Produced' over: w979 a made-up objective: a weekly bread delivery for one street, for the capture (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- bread delivery\n- weekly bread\n- one street\n- made-up\n- capture\n\n## Path to Commercialisation\nStructured go-to-market frame for: w979 a made-up objective: a weekly bread delivery for one street, for the capture.\n- Segment & need: who is served and the job-to-be-done.\n- Positioning wedge from bread delivery.\n- Positioning wedge from weekly bread.\n- Positioning wedge from one street.\n- Channels: how the segment is reached (CAC to be measured).\n- Moat: the durable advantage that compounds.",
+  "integration_served_by": "native",
+  "governance": {
+   "status": "allowed",
+   "screened": "intent + domain",
+   "content_screened": false,
+   "checkpoint": "CHK-1794603744009",
+   "node": "forge-node",
+   "scope": "intent + domain only — this gate screened the request's intent label against the prohibited list and its own constant attestation sentence. The delivery's content was NOT screened, so this verdict is not a judgement on what was produced."
+  },
+  "ai_provenance": {
+   "posture": "in-house-first",
+   "served_by": {
+    "native": 5
+   },
+   "any_external": false,
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer"
+  },
+  "reusable": true,
+  "rerunnable": true,
+  "duration_ms": 26,
+  "created_at": "2026-11-13T21:02:24Z",
+  "next": "POST /api/v1/genesis/establish to commercialise this as a living VSB IDBO entity.",
+  "rerun_of": "forge-0f338f58",
+  "config_carried": {
+   "petri_dish": true,
+   "laboratory": false,
+   "factory": false
+  },
+  "config_carried_by_position": [
+   {
+    "position": 1,
+    "stage": "petri_dish",
+    "carried": true
+   },
+   {
+    "position": 2,
+    "stage": "laboratory",
+    "carried": false
+   },
+   {
+    "position": 3,
+    "stage": "factory",
+    "carried": false
+   }
+  ],
+  "rerun_basis": "the stages whose original carried a configuration were re-run with it; 2 stage(s) had none"
+ },
+ "refused_run": {
+  "status": 422,
+  "body": {
+   "detail": "unknown Forge stage type(s): 'w979-no-such-stage'. Nothing was run and nothing was stored. The stage types are: factory, generator, incubator, laboratory, petri_dish, reactor, simulator. Send no stages at all to run the default pipeline (petri_dish -> laboratory -> factory)."
+  }
+ },
+ "refused_rerun": {
+  "status": 404,
+  "body": {
+   "detail": "Run w979-no-such-run not found."
+  }
+ }
+}

@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): an interactive sweep last measured 2026-09-01 (its blind spots are in the W429 entry). Kept as a pattern to reuse, not an instrument: nothing runs it.
 /**
  * Interactive button / user-journey sweep.
  *

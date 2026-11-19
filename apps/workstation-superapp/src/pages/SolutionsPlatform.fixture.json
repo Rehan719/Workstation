@@ -1,0 +1,108 @@
+{
+ "brief": {
+  "solution_name": "W1045 made up: a timetable checker",
+  "domains": [
+   "Education"
+  ],
+  "description": "W1045 made up: checks a school timetable for rooms booked twice in one period",
+  "objectives": [
+   "W1045 made up: name every clash with its room and period"
+  ],
+  "ai_model": "Recorded in the spec text — the platform routes in-house first"
+ },
+ "ask": {
+  "query": "You are a sovereign solutions architect. Design a concise technical specification for the following solution.\n\nSolution: W1045 made up: a timetable checker\nDomains: Education\nDescription: W1045 made up: checks a school timetable for rooms booked twice in one period\nObjectives: W1045 made up: name every clash with its room and period\nAI Model: Recorded in the spec text — the platform routes in-house first\n\nRespond with a structured spec covering: overview, architecture layers, AI integration points, deployment requirements, and success metrics. Be concise and actionable."
+ },
+ "answered": {
+  "status": 200,
+  "body": {
+   "answer": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: sovereign solutions architect. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: You are a sovereign solutions architect. Design a concise technical specification for the following solution. Solution: W1045 made up: a timetable checker Domains: Education Description: W1045 made up: checks a school … [cut at 220 of 574 characters] (domain: WITHHELD — no domain was declared for this call).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- technical specification\n- sovereign solutions\n- solutions architect\n- following solution\n- concise technical\n- timetable checker\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'solutions', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.",
+   "ok": true,
+   "error": null,
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+   "served_by": "native",
+   "is_external": false,
+   "query": "You are a sovereign solutions architect. Design a concise technical specification for the following solution.\n\nSolution:"
+  }
+ },
+ "status": {
+  "status": 200,
+  "body": {
+   "evidence_level": "configuration",
+   "evidence_level_number": null,
+   "evidence_basis": "which resource is listed first and which one served the last recorded completion. Configuration - what is configured, declared or reachable; below level 1 and not a statement about behaviour",
+   "posture": "in-house-first",
+   "external_allowed": false,
+   "owned_resources_available": [
+    "native"
+   ],
+   "selection_order": [
+    "native"
+   ],
+   "active_model": "native",
+   "active_model_label": "native",
+   "is_real_model": false,
+   "mode": "deterministic_floor",
+   "mode_predicted": "deterministic_floor",
+   "mode_measured": "deterministic_floor",
+   "measured_recent_server": "native",
+   "mode_note": "mode follows the most recent completion that actually SERVED (a successful recorded row) when history exists, prediction only until then — the two disagree when a listed model keeps failing, or is disabled by configuration and skipped",
+   "floor_active": true,
+   "floor_active_basis": "most recent SUCCESSFUL recorded completion was served by native (one row, at 2026-11-14T20:29:24Z) — this is history, not a live probe; a resource disabled by configuration is skipped, not counted",
+   "floor_note": "The deterministic native floor is serving — honest structured reasoning, NOT an LLM. Run a local Ollama model (or enable an external accelerant) for generative prose.",
+   "guarantee": "Workstation always produces a real, structured result from its OWN resources with NO external dependency; external providers are optional accelerants (flag-gated by AI_ALLOW_EXTERNAL).",
+   "resources": [
+    {
+     "name": "native",
+     "kind": "native",
+     "available": true,
+     "is_external": false,
+     "note": "Workstation's own structured engine — always available, owned."
+    },
+    {
+     "name": "ollama",
+     "kind": "local",
+     "available": false,
+     "is_external": false,
+     "model": null,
+     "configured_model": "llama3.2",
+     "local_models": [],
+     "promoted_default": null,
+     "retired": [],
+     "note": "Self-hosted local model(s) — owned capability when running. Route to a specific one with model='ollama:<name>'."
+    },
+    {
+     "name": "anthropic",
+     "kind": "external",
+     "available": false,
+     "is_external": true,
+     "model": "claude-sonnet-4-6",
+     "note": "Optional accelerant — only with a key AND AI_ALLOW_EXTERNAL=true."
+    },
+    {
+     "name": "openai",
+     "kind": "external",
+     "available": false,
+     "is_external": true,
+     "model": "gpt-4o-mini",
+     "note": "Optional accelerant — only with a key AND AI_ALLOW_EXTERNAL=true."
+    }
+   ]
+  }
+ },
+ "verify": {
+  "status": 200,
+  "body": {
+   "valid": true,
+   "outcome": "verified",
+   "events": 2,
+   "root_hash": "a553b2c8af9363415003b0c21f7c6d85e5967ec578222d8463c83c4db9f10ba62fd5ea9fabcc58a401857e97c56e1896b08a7fef2b2c19ed0d9b6c20f743c888",
+   "anchor_checked": true,
+   "anchor_state": "present",
+   "anchor_reason": null,
+   "verified_basis": "every stored hash recomputed, and the chain head matches the tail anchor, so truncation and rollback are ruled out"
+  }
+ }
+}

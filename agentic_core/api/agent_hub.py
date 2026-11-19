@@ -598,8 +598,12 @@ async def update_handoff_status(handoff_id: str, req: HandoffStatusRequest,
                 if not isinstance(rec, dict) or rec.get("handoff_id") != handoff_id:
                     continue
                 rec["status"] = req.status
-                rec["status_note"] = req.note or ("claimed by an executor" if req.status == "in_progress"
-                                                  else "completed")
+                #  W1066 - the default note names who moved it. It credited an executor, and none is subscribed: a
+                #  person moved it (the panel says so). With sign-in off that is this deployment's single operator,
+                #  not a verified person
+                _who = ("the operator of this single-user deployment" if principal == "local" else principal)
+                rec["status_note"] = req.note or (f"claimed by {_who}" if req.status == "in_progress"
+                                                  else f"marked done by {_who}")
                 rec.setdefault("status_history", []).append(
                     {"status": req.status, "at": now, "by": principal, "note": req.note})
                 atomic_write_json(f, rec)

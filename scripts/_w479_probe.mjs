@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W479 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W479 (P1.18 FU-121/FU-153) — the intelligence engines on a FRESH backend (AI_DISABLE_LOCAL=1, so every call is the
 // structured floor): the streams by fetch, the Authorship and Nexus pages in a real browser against the built bundle.
 //   node scripts/_w479_probe.mjs http://127.0.0.1:8088

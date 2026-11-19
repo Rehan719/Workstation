@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
-import { provenanceMapBadge } from '../../lib/api';
+import { provenanceMapBadge, apiJson, errorMessage } from '../../lib/api';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W931
 import {
   Dna, Loader2, AlertCircle, Crown, Briefcase, Award, GitBranch,
   Wrench, Sparkles, Rocket, Bug, ShieldCheck, Activity,
@@ -24,6 +25,13 @@ interface Roadmap {
   // across the cycle's own calls and returns it. The page never read it, so a cycle curated by the
   // deterministic floor was indistinguishable from one a model served.
   served_by?: Record<string, number> | null; any_external?: boolean; calls?: number;
+  // W828 (FU-907) - what the previous cycle did, as this cycle read it before its triage: its directives,
+  // and the status NOW of each change it submitted to Change Control beside the status recorded then.
+  previous_cycle?: {
+    read: boolean; created_at: string | null; basis: string;
+    directives: { title?: string; function?: string; priority?: string }[];
+    submissions: { cca_id?: string; title?: string; status_then?: string | null; status_now?: string; error?: string }[];
+  } | null;
 }
 
 const FN_ICON: Record<string, React.ComponentType<any>> = {
@@ -49,6 +57,7 @@ function verdictTone(v?: string) {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const SovereignEvolution: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W931 - a read that fails is said
   const [focus, setFocus] = useState('');
   const [submitCC, setSubmitCC] = useState(false);
   const [running, setRunning] = useState(false);
@@ -56,38 +65,39 @@ export const SovereignEvolution: React.FC = () => {
   // button said "Run Autonomous Cycle", while the ONLY autonomous caller is the heartbeat gated on
   // auto_evolve, which is False by default. The page never read that lever. It reads it now, and a
   // lever set to true still does nothing while the heartbeat is stopped, so both are read.
-  const [autoEvolve, setAutoEvolve] = useState<boolean | null>(null);
-  const [beating, setBeating] = useState<boolean | null>(null);
+  //  W992 (FU-399 part 24) - undefined: not yet read; null: the read failed or did not say
+  const [autoEvolve, setAutoEvolve] = useState<boolean | null | undefined>(undefined);
+  const [beating, setBeating] = useState<boolean | null | undefined>(undefined);
+  const [noCycle, setNoCycle] = useState(false);   // W992 - the route says no cycle has run
   const [error, setError] = useState('');
   const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
 
   useEffect(() => {
-    fetch('/api/v1/sovereign-evolution/roadmap')
-      .then(r => r.json())
-      .then(d => { if (d && d.ceo_directives) setRoadmap(d); })
-      .catch(() => {});
-    fetch('/api/v1/heartbeat/status')
-      .then(r => r.json())
+    apiJson('/api/v1/sovereign-evolution/roadmap')
+      .then(d => {
+        if (d && d.ceo_directives) setRoadmap(d);
+        //  W992 - with no cycle run the route says so (roadmap null), and the page said nothing at all
+        else if (d && 'roadmap' in d && d.roadmap === null) setNoCycle(true);
+      })
+      .catch(noteRead('the roadmap'));
+    apiJson('/api/v1/heartbeat/status')
       .then(h => {
         setAutoEvolve(typeof h?.auto_evolve === 'boolean' ? h.auto_evolve : null);
         setBeating(typeof h?.running === 'boolean' ? h.running : null);
       })
-      .catch(() => { setAutoEvolve(null); setBeating(null); });
+      //  W992 - a refused read was caught in silence; it is said where the page's reads are said
+      .catch(e => { setAutoEvolve(null); setBeating(null); noteRead("the heartbeat's levers")(e); });
   }, []);
 
   const runCycle = async () => {
     setRunning(true);
     setError('');
+    //  W992 (FU-399 part 24) - a refusal said only "HTTP 503"; apiJson carries the server's status and reason
     try {
-      const res = await fetch('/api/v1/sovereign-evolution/cycle', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ focus, submit_to_change_control: submitCC }),
-      });
-      if (!res.ok) { setError(`HTTP ${res.status}`); setRunning(false); return; }
-      setRoadmap(await res.json());
-    } catch (e: any) {
-      setError(e?.message ?? String(e));
+      setRoadmap(await apiJson('/api/v1/sovereign-evolution/cycle', {
+        method: 'POST', body: { focus, submit_to_change_control: submitCC } }));   // the roadmap replaces no-cycle
+    } catch (e) {
+      setError(`The cycle was not run: ${errorMessage(e)}`);
     }
     setRunning(false);
   };
@@ -97,6 +107,7 @@ export const SovereignEvolution: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-24">
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Self-Evolution</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Sovereign Evolution Office</h1>
@@ -106,7 +117,9 @@ export const SovereignEvolution: React.FC = () => {
           that roadmap; it does not change the organism by itself.
           {' '}
           <span data-testid="evolution-autonomy-basis">
-            {autoEvolve === null
+            {autoEvolve === undefined
+              ? 'Reading whether a cycle also runs on the beat…'
+              : autoEvolve === null
               ? 'Whether a cycle also runs on the beat could not be read.'
               : !autoEvolve
               ? 'Running on the beat is OFF (the Self-evolve lever on the heartbeat), so a cycle happens only when you press the button below.'
@@ -168,9 +181,15 @@ export const SovereignEvolution: React.FC = () => {
                 thing it is not. */}
             {running ? 'Curating Evolution Cycle…' : 'Run a Curation Cycle Now'}
           </Button>
-          {error && <p className="text-vital text-xs font-bold flex items-center gap-2"><AlertCircle size={14} /> {error}</p>}
+          {error && <p className="text-vital text-xs font-bold flex items-center gap-2" data-testid="evolution-error"><AlertCircle size={14} /> {error}</p>}
         </div>
       </Card>
+
+      {!roadmap && noCycle && (
+        <p className="text-[11px] font-bold text-slate-400" data-testid="evolution-no-cycle">
+          No evolution cycle has run yet, so there is no roadmap to show. Run one above.
+        </p>
+      )}
 
       {roadmap && (
         <div className="space-y-6">
@@ -297,6 +316,44 @@ export const SovereignEvolution: React.FC = () => {
                 ))}
               </div>
             </Card>
+          )}
+
+          {/* W828 (FU-907) - what the previous cycle did, as this cycle read it before its triage */}
+          {roadmap.previous_cycle ? (
+            <Card className="p-6" data-testid="evolution-previous-cycle">
+              <div className="flex items-center gap-3 mb-2">
+                <Activity size={16} className="text-slate-500" />
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">What the previous cycle did</h3>
+              </div>
+              <p className={`text-xs mb-3 ${roadmap.previous_cycle.read ? 'text-slate-400' : 'text-amber-400'}`}
+                 data-testid="evolution-previous-basis">{roadmap.previous_cycle.basis}</p>
+              {roadmap.previous_cycle.directives.length > 0 && (
+                <ul className="space-y-1 mb-3 text-xs text-slate-300" data-testid="evolution-previous-directives">
+                  {roadmap.previous_cycle.directives.map((d, i) => (
+                    <li key={i}><span className="font-mono text-[10px] text-slate-500">{d.function} · {d.priority}</span> {d.title}</li>
+                  ))}
+                </ul>
+              )}
+              {roadmap.previous_cycle.submissions.length > 0 && (
+                <div className="space-y-2" data-testid="evolution-previous-submissions">
+                  {roadmap.previous_cycle.submissions.map((s, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 bg-slate-950 rounded-lg border border-slate-900 text-xs">
+                      <span className="text-slate-300 font-bold truncate">{s.title ?? s.error ?? 'submission'}</span>
+                      {s.cca_id && (
+                        <span className="font-mono text-[10px] text-slate-500 shrink-0"
+                              title="the status recorded when it was submitted, then the status its change record holds now">
+                          {s.status_then ?? 'not recorded'} → {s.status_now} · {s.cca_id}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          ) : (
+            <p className="text-[10px] text-slate-600" data-testid="evolution-previous-absent">
+              This cycle did not record what the previous one did: it ran before a cycle read its predecessor.
+            </p>
           )}
         </div>
       )}

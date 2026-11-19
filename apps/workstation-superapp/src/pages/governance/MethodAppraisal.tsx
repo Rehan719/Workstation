@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Loader2, Send } from 'lucide-react';
-import { apiJson, errorMessage } from '../../lib/api';
+import { apiJson, axiosDetail, bodyOrNull, errorMessage } from '../../lib/api';
 
 // W697 — THE APPRAISAL CELL, ON A PAGE (Owner ruling 2026-10-13). The cell's readings over a scope, what
 // becomes of an appraisal, and what its findings recommend. A person may send ONE recommendation to Change
@@ -45,10 +45,23 @@ export const MethodAppraisal: React.FC = () => {
     setSending(id);
     setSendErr(p => ({ ...p, [id]: '' }));
     try {
-      const d = await apiJson<any>('/api/v1/method/appraise/recommend', {
-        method: 'POST', body: { scope: asked || null, recommendation_id: id },
+      //  W1003 - the answer is read whole. A refusal's detail here is an object (its reason, the scope, and the
+      //  recommendations that stand now), which apiJson hands on as its JSON text, so the page said
+      //  "Not sent: Failed (HTTP 409): {"message": ...". The reason is said in its own words
+      const r = await fetch('/api/v1/method/appraise/recommend', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scope: asked || null, recommendation_id: id }),
       });
-      setSent(p => ({ ...p, [id]: `Change record ${d.change_control?.cca_id} filed (${d.change_control?.status}). ${d.basis}` }));
+      const d = await bodyOrNull(r);
+      if (!r.ok) {
+        setSendErr(p => ({ ...p, [id]: `Failed (HTTP ${r.status}): ${axiosDetail({ response: { data: d } }, 'no reason given')}` }));
+        return;
+      }
+      if (!d?.change_control) {
+        setSendErr(p => ({ ...p, [id]: 'The server answered without saying what it filed: look in Change Control before sending it again.' }));
+        return;
+      }
+      setSent(p => ({ ...p, [id]: `Change record ${d.change_control.cca_id} filed (${d.change_control.status}). ${d.basis}` }));
     } catch (e) {
       setSendErr(p => ({ ...p, [id]: errorMessage(e) }));
     } finally { setSending(''); }

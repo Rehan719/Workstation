@@ -1,0 +1,92 @@
+{
+ "entities": [
+  {
+   "vsb_id": "vsb-w997-client",
+   "name": "W997 made-up bakery"
+  },
+  {
+   "vsb_id": "vsb-w997-provider",
+   "name": "W997 made-up delivery cooperative"
+  }
+ ],
+ "contracts_empty": {
+  "contracts": [],
+  "total": 0
+ },
+ "offered": {
+  "id": "ctr-abaaabc496",
+  "client_vsb": "vsb-w997-client",
+  "provider_vsb": "vsb-w997-provider",
+  "brief": "W997 made-up: deliver forty loaves each morning",
+  "price_wst": 120.0,
+  "status": "offered",
+  "delivery": null,
+  "settlement": null,
+  "offered_at": "2026-11-14T01:36:10Z"
+ },
+ "contracts": {
+  "contracts": [
+   {
+    "id": "ctr-abaaabc496",
+    "client_vsb": "vsb-w997-client",
+    "provider_vsb": "vsb-w997-provider",
+    "brief": "W997 made-up: deliver forty loaves each morning",
+    "price_wst": 120.0,
+    "status": "offered",
+    "delivery": null,
+    "settlement": null,
+    "offered_at": "2026-11-14T01:36:10Z"
+   }
+  ],
+  "total": 1
+ },
+ "cancelled": {
+  "id": "ctr-abaaabc496",
+  "client_vsb": "vsb-w997-client",
+  "provider_vsb": "vsb-w997-provider",
+  "brief": "W997 made-up: deliver forty loaves each morning",
+  "price_wst": 120.0,
+  "status": "cancelled",
+  "delivery": null,
+  "settlement": null,
+  "offered_at": "2026-11-14T01:36:10Z",
+  "withdrawn": {
+   "by": "client",
+   "from_status": "offered",
+   "at": "2026-11-14T01:36:10Z"
+  }
+ },
+ "offered_2": {
+  "id": "ctr-0cc865577b",
+  "client_vsb": "vsb-w997-client",
+  "provider_vsb": "vsb-w997-provider",
+  "brief": "W997 made-up: a weekly order of flour",
+  "price_wst": 80.0,
+  "status": "offered",
+  "delivery": null,
+  "settlement": null,
+  "offered_at": "2026-11-14T01:36:10Z"
+ },
+ "declined": {
+  "id": "ctr-0cc865577b",
+  "client_vsb": "vsb-w997-client",
+  "provider_vsb": "vsb-w997-provider",
+  "brief": "W997 made-up: a weekly order of flour",
+  "price_wst": 80.0,
+  "status": "declined",
+  "delivery": null,
+  "settlement": null,
+  "offered_at": "2026-11-14T01:36:10Z",
+  "withdrawn": {
+   "by": "provider",
+   "from_status": "offered",
+   "at": "2026-11-14T01:36:10Z"
+  }
+ },
+ "offer_refused": {
+  "status": 400,
+  "body": {
+   "detail": "An entity cannot contract itself."
+  }
+ }
+}

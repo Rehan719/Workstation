@@ -1,10 +1,12 @@
 import React from 'react';
 // P2.2 (W511) — this is a props CHILD, not a page: it makes no fetch by design, and its parent
-// SynthesisStudio already carries provenance. So the badge travels in on the `data` prop it already
-// receives and is read from the server's own field, never composed here.
+// SynthesisStudio already carries provenance. W1019 — that provenance is the RESULT's: `data` is the simulation
+// parsed from the result's content, which never carries served_by, so a badge read from it said "provenance not
+// recorded" over every simulation, the floor's included. The studio hands the result's own served_by and
+// is_external in beside it; the badge is read from those and never composed here.
 import { provenanceBadge } from '../../lib/api';
-import { Card, Badge, Button, toast } from '@workstation/ui';
-import { BarChart3, TrendingUp, Users, Zap, PieChart, ArrowUpRight } from 'lucide-react';
+import { Card, Badge } from '@workstation/ui';
+import { BarChart3, Users, Zap, PieChart, ArrowUpRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 // W407 — the four stat cards below were HARDCODED ("$4.2B", "+28%", "2.4x", "0.99") and rendered
@@ -13,12 +15,6 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 // projections {4.5e7, 2.1e8, 8.4e8} onto real model output when the model omitted them, so a
 // genuine result and invented financials were rendered side by side with nothing distinguishing
 // them. Both ends now report absence as absence.
-const fmtMoney = (n: unknown): string => {
-  if (typeof n !== "number" || !isFinite(n)) return "—";
-  if (n >= 1e9) return `$${(n / 1e9).toFixed(1)}B`;
-  if (n >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
-  return `$${n.toLocaleString()}`;
-};
 const fmtPct = (n: unknown): string =>
   typeof n === "number" && isFinite(n) ? `${(n * 100).toFixed(0)}%` : "—";
 const fmtNum = (n: unknown, suffix = ""): string =>
@@ -33,7 +29,8 @@ const SIM_KEYS: [string, string, (v: any) => string][] = [
   ['drad_resilience', 'DRAD Resilience', v => fmtNum(v?.adaptation_latency_ms, 'ms')],
 ];
 
-export const BusinessModelDashboard: React.FC<{ data: any }> = ({ data }) => {
+export const BusinessModelDashboard: React.FC<{ data: any; servedBy?: string | null; isExternal?: boolean }> = (
+  { data, servedBy, isExternal }) => {
   const sim = data?.sim_results ?? null;
   const proj = data?.projections ?? null;
   const chartData = proj
@@ -44,9 +41,10 @@ export const BusinessModelDashboard: React.FC<{ data: any }> = ({ data }) => {
       ].filter(d => typeof d.value === "number")
     : [];
 
-  // P2.2 (W511) — read from the SERVER's field on the same payload the figures come from, so a model
-  // result and a floor-composed one are distinguishable on the page that shows their numbers.
-  const prov = provenanceBadge(data?.served_by, data?.is_external);
+  // P2.2 (W511) — read from the SERVER's field, so a model result and a floor-composed one are distinguishable on
+  // the page that shows their numbers. W1019 — the result's field, handed in: the simulation's JSON is the model's
+  // own, and a served_by in it would be the model naming its own server.
+  const prov = provenanceBadge(servedBy, isExternal);
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex items-center gap-2">
@@ -60,8 +58,9 @@ export const BusinessModelDashboard: React.FC<{ data: any }> = ({ data }) => {
           {data?.detail || data?.sim_results_note || data?.projections_note}
         </p>
       )}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-         <StatCard label="Market Size" value={fmtMoney(data?.market_size)} icon={TrendingUp} color="text-aura" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+         {/* W1019 — a "Market Size" card read data.market_size, a field the route never asks the model for and no
+             writer of a simulation emits, so it said "—" over every one. Removed, as the alignment card was. */}
          <StatCard label="ROI Efficiency" value={fmtPct(sim?.aro_efficiency?.resource_optimization_gain)} icon={Zap} color="text-highlight" />
          <StatCard label="Swarm Multiplier" value={fmtNum(sim?.bto_roadmap?.implementation_speed_multiplier, "x")} icon={Users} color="text-vital" />
          {/* W460 (P1.12) — a green "GaaS Alignment" card showed a number the MODEL invented in its JSON; the
@@ -132,9 +131,9 @@ export const BusinessModelDashboard: React.FC<{ data: any }> = ({ data }) => {
                  </p>
                )}
             </div>
-            <div className="space-y-4 pt-10">
-               <Button onClick={() => toast('PDF export coming in next release — strategy data available via the AI CEO chat')} className="w-full bg-white text-sovereign text-[9px] uppercase font-black py-4">Download Strategy PDF</Button>
-            </div>
+            {/* W1019 — a "Download Strategy PDF" button here downloaded nothing: it showed a toast promising the
+                export in a later release and sent the reader to the CEO chat, which holds none of this simulation.
+                The result's own Download, above this dashboard, saves the simulation as the route wrote it. */}
          </Card>
       </div>
 

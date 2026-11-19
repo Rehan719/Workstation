@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W483 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W483 (P1.18, the §10/§11 class) — a keyword screen flags and never clears, on a FRESH backend:
 // the API by fetch, and the Compliance page in a real browser against the built bundle.
 //   node scripts/_w483_probe.mjs http://127.0.0.1:8090

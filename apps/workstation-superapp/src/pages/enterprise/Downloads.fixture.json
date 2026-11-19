@@ -1,0 +1,30 @@
+{
+ "export_refused": {
+  "url": "/api/v1/deliverables/deliv-cc8f566d/export?format=md",
+  "status": 404,
+  "body": {
+   "detail": "Deliverable deliv-cc8f566d not found."
+  }
+ },
+ "download_refused": {
+  "url": "/api/v1/synthesis/download/b6f690ed1bd441c399b9897541f8f9ee",
+  "status": 404,
+  "body": {
+   "detail": "Output file not found"
+  }
+ },
+ "exported": {
+  "url": "/api/v1/deliverables/deliv-08950c86/export?format=md",
+  "status": 200,
+  "content_disposition": "attachment; filename=\"W1050-made-up--how-the-seed-exchange-records-what-each.md\"",
+  "content_type": "text/markdown; charset=utf-8",
+  "text": "# W1050 made up: how the seed exchange records what each…\n\n> **COMPLIANCE: REVIEW — not established: no area was cleared, and a screen can refuse but not certify · §10 bar: 0 measured · 0 attested · 2 screen-only · 14 not measured (of 16)**\n\n_report · structured floor — not model analysis: composed by the deterministic native structured engine (native), which arranges the headings it was asked for and does not supply analysis_\n\n> **Brief:** W1050 made up: how the seed exchange records what each member brings and takes\n\n_[Workstation native structured engine — owned, no external dependency]_\n\n_Composed for the Enterprise realm. This engine RECORDS the realm and does not act on it: it composes from the text the calling tool identified as yours, and a house style is a directive only a served model can follow._\n\n## Executive Summary\nSubject: W1050 made up: how the seed exchange records what each member brings and takes (domain: enterprise).\nStructured frame over the terms most frequent in the request (a term count, not an analysis):\n- exchange records\n- seed exchange\n- member brings\n- records what\n- each member\n- what each\n\n## Background\nNative structured frame for 'Background' over: W1050 made up: how the seed exchange records what each member brings and takes (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- exchange records\n- seed exchange\n- member brings\n- records what\n- each member\n\n## Analysis\nNative structured frame for 'Analysis' over: W1050 made up: how the seed exchange records what each member brings and takes (domain: enterprise). The list below is the request's most frequent terms, not findings about them.\n- exchange records\n- seed exchange\n- member brings\n- records what\n- each member\n\n## Findings\nStructured research frame for: W1050 made up: how the seed exchange records what each member brings and takes.\n- Question/hypothesis: state it falsifiably.\n- Variable exchange records.\n- Variable seed exchange.\n- Variable member brings.\n- Variable records what.\n- Method: how evidence is gathered; controls and validity threats.\n- Findings/verdict: to be populated from real evidence — the native engine sets the rigour, not the claims.\n\n## Recommendations\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG.\n\n## Next Steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for enterprise; record outcomes to memory/UEG.\n\n---\n_Living deliverable `deliv-08950c86` — version 1, updated 2026-11-14T22:53:56Z. Re-generate or reconfigure it any time in Workstation IDBO._\n"
+ },
+ "downloaded": {
+  "url": "/api/v1/synthesis/download/c90b367799ed44abbff44f2e9d520818",
+  "status": 200,
+  "content_disposition": "attachment; filename=\"c90b367799ed44abbff44f2e9d520818.txt\"",
+  "content_type": "text/plain; charset=utf-8",
+  "text": "_[composed by the deterministic in-house floor - not model-generated analysis]_\n\n_[Workstation native structured engine — owned, no external dependency]_\n\n_Composed for the enterprise realm. This engine RECORDS the realm and does not act on it: it composes from the text the calling tool identified as yours, and a house style is a directive only a served model can follow._\n\n## Understanding\nThe request concerns: W1044 made up: a reading-list planner W1044 made up: plans a term's reading from the books a class already owns (domain: product · Realm: enterprise).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- reading-list planner\n- made reading-list\n- class already\n- term reading\n- already owns\n- books class\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'projects', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for product · Realm: enterprise; record outcomes to memory/UEG."
+ }
+}

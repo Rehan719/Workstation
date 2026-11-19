@@ -1,0 +1,194 @@
+{
+ "seam": {
+  "gates": false,
+  "gating_basis": "OBSERVED, NOT ENFORCED. This record was written by the Horizon seam, which watches and records. Nothing acted on its decision: the request was served exactly as it would have been with no seam present, and no downstream component reads this row. AN ESCALATE HERE DID NOT ESCALATE ANYTHING — it is the decision the kernel's stated terms reach over what was observed, recorded as a fact, and it must never be read as evidence that this platform stopped, reviewed, re-routed or refused the request. Whether the seam should gate a named list of grave routes is an open question (P2.11); gating on this decision as it stands would refuse every request this platform serves, because nothing compresses and an uncompressed request of unknown domain fails closed",
+  "domain_prefixes": [
+   "/api/v1/law",
+   "/api/v1/science",
+   "/api/v1/education",
+   "/api/v1/care",
+   "/api/v1/religion",
+   "/api/v1/career"
+  ],
+  "observed_methods": [
+   "POST",
+   "PUT",
+   "PATCH",
+   "DELETE"
+  ],
+  "observed_kinds": [
+   "ai_call",
+   "deliverable",
+   "swarm_run",
+   "composition_run",
+   "transformation"
+  ],
+  "not_observed_kinds": {
+   "model_attempt": "a model attempt is a MECHANISM INSIDE ONE RUN — agentic_core/ai/native/orchestrator.py records one row per model it tries, and the gateway one per stream — so observing it would write several intents for a single request and the number of observed intents would stop meaning the number of requests. The run itself is observed under its own kind"
+  },
+  "body_read": false,
+  "body_basis": "the request BODY was not read. A domain request body may carry a medical note, a legal matter or a financial detail, and this is a long-lived store with no reader-level rules of its own, so the observation is the method and the path only. This is a deliberate narrowing of what is recorded, not a failure to capture it",
+  "decision_is_constant": "EVERY row this seam writes decides ESCALATE, and it does so BY CONSTRUCTION rather than by assessment: nothing compressed the request, so its domain is absent, and the kernel fails closed on an uncompressed request whose domain cannot be shown to be outside the grave set. So the decision on these rows carries no information about any individual request, and a reader must not read variation into a column that cannot vary. What the rows DO carry is the observation itself — what arrived, where, whether it was served — and the fact that nothing acted on any of it",
+  "route_domain_basis": "the domain this request's ROUTE belongs to, recorded under its own key and deliberately NOT written into the kernel's `domain` field. `domain` is a COMPRESSION field — it means 'the domain a model determined this request to be about' — and the kernel's escalation test matches that vocabulary: its list is money / legal / faith / medical / safety. Writing a route name there would make a request on the LAW route stop failing closed, because the string 'law' contains none of those words, so the record would read PROCEED on a legal matter nobody compressed. A route name is a true fact about where a request arrived and a false answer to what it was about",
+  "observed_decisions": {},
+  "observed_total": 0,
+  "observed_not_served": 0,
+  "errors": [],
+  "error_count": 0,
+  "store_cap": 2000,
+  "basis": "0 observation(s) recorded by this seam in this process; the counts are per decision. 0 of them were NOT SERVED — the application answered 4xx/5xx or the handler raised — and they are counted separately because an observed request that reached no handler is not domain activity. THE COUNTS ARE PER PROCESS AND NOT A HISTORY: a restart begins them again, and the stored rows in data/horizon/intent.json are the history (capped at 2000, oldest dropped first). 0 observation(s) FAILED and were counted rather than swallowed — the seam must never turn a failure to observe into a failure to serve, and a failure nobody counts is indistinguishable from a path it never reached"
+ },
+ "refused": {
+  "gates": [
+   {
+    "gate": "religious_ruling",
+    "refuses": "issuing a religious ruling; refers to a qualified human scholar",
+    "limit": "English phrase patterns only. Another language, an indirect phrasing, a misspelling or a paraphrase is NOT matched by this screen, and a non-match is therefore not a finding that the subject is absent. The patterns cover the common INFLECTIONS of each verb they name (enumerated, not derived) because two faults in this screen were both in a slot nobody had driven — but an inflection nobody enumerated is still a miss, and this sentence is not a claim that the enumeration is complete",
+    "certifies_absence": false
+   },
+   {
+    "gate": "theological_proof",
+    "refuses": "a claim that science proves or disproves a theological truth, in either direction",
+    "limit": "English phrase patterns only. Another language, an indirect phrasing, a misspelling or a paraphrase is NOT matched by this screen, and a non-match is therefore not a finding that the subject is absent. The patterns cover the common INFLECTIONS of each verb they name (enumerated, not derived) because two faults in this screen were both in a slot nobody had driven — but an inflection nobody enumerated is still a miss, and this sentence is not a claim that the enumeration is complete",
+    "certifies_absence": false
+   },
+   {
+    "gate": "clinical_care",
+    "refuses": "giving counsel to someone in distress; states plainly that the platform is not a person and shows the human route",
+    "limit": "English phrase patterns only. Another language, an indirect phrasing, a misspelling or a paraphrase is NOT matched by this screen, and a non-match is therefore not a finding that the subject is absent. The patterns cover the common INFLECTIONS of each verb they name (enumerated, not derived) because two faults in this screen were both in a slot nobody had driven — but an inflection nobody enumerated is still a miss, and this sentence is not a claim that the enumeration is complete",
+    "certifies_absence": false
+   }
+  ],
+  "distress_routes": null,
+  "distress_routes_supplied": false,
+  "distress_routes_basis": "NOT SUPPLIED: no human distress route is being shown. This is an UNFILLED FIELD shown as unfilled, not an absence of need — a route is supplied with the person or body who reviewed it, the date they checked it and the jurisdiction it answers in, and until a record passes all four this platform cannot name a route. No number, service name or placeholder stands in for one, because a person in distress might act on it. WHY IT IS EMPTY: 1 record(s) read from distress_routes.json; each is still held to accept_route, which refuses one that cannot name its reviewer, its check date or the jurisdiction it answers in. 1 supplied record(s) were REFUSED for want of a reviewer or a check date, which is why none is shown",
+  "distress_routes_state": "NOT_SUPPLIED",
+  "distress_routes_stale_count": 0,
+  "distress_routes_jurisdictions": [],
+  "distress_routes_cover_anywhere": false,
+  "distress_routes_refused": [
+   "REFUSED — reviewed_by is absent or blank: the person or body who confirmed this route reaches a human. NOT the platform, and not an agent: a software verdict on whether a distress route is real is worth nothing to the person dialling it"
+  ],
+  "not_a_person_statement": "I am not a person. I am software, I cannot judge how you are, and I must not give you counsel about this. Please reach a human being who can.",
+  "escalation_defaults_on_when_undecidable": true,
+  "basis": "every gate reports a verdict AND what it did not look at. NONE OF THEM CAN CERTIFY AN ABSENCE: each is an English phrase screen, so a non-match means its own patterns found nothing rather than that the subject was not there. Where a screen cannot run at all the escalation defaults ON, because a screen that did not run is not a screen that passed",
+  "unchanged_refusals": [
+   "Quran Arabic is never generated",
+   "Quranic text comes only from quran.com, alquran.cloud or tanzil.net, with provenance",
+   "recitation is never scored",
+   "AI content is labelled",
+   "Ruling A.9.5 stands - the Fitrah Spectrum is never a measurement and no AI verdict is passed on a person's spiritual state"
+  ]
+ },
+ "fresh": {
+  "gates": [
+   {
+    "gate": "religious_ruling",
+    "refuses": "issuing a religious ruling; refers to a qualified human scholar",
+    "limit": "English phrase patterns only. Another language, an indirect phrasing, a misspelling or a paraphrase is NOT matched by this screen, and a non-match is therefore not a finding that the subject is absent. The patterns cover the common INFLECTIONS of each verb they name (enumerated, not derived) because two faults in this screen were both in a slot nobody had driven — but an inflection nobody enumerated is still a miss, and this sentence is not a claim that the enumeration is complete",
+    "certifies_absence": false
+   },
+   {
+    "gate": "theological_proof",
+    "refuses": "a claim that science proves or disproves a theological truth, in either direction",
+    "limit": "English phrase patterns only. Another language, an indirect phrasing, a misspelling or a paraphrase is NOT matched by this screen, and a non-match is therefore not a finding that the subject is absent. The patterns cover the common INFLECTIONS of each verb they name (enumerated, not derived) because two faults in this screen were both in a slot nobody had driven — but an inflection nobody enumerated is still a miss, and this sentence is not a claim that the enumeration is complete",
+    "certifies_absence": false
+   },
+   {
+    "gate": "clinical_care",
+    "refuses": "giving counsel to someone in distress; states plainly that the platform is not a person and shows the human route",
+    "limit": "English phrase patterns only. Another language, an indirect phrasing, a misspelling or a paraphrase is NOT matched by this screen, and a non-match is therefore not a finding that the subject is absent. The patterns cover the common INFLECTIONS of each verb they name (enumerated, not derived) because two faults in this screen were both in a slot nobody had driven — but an inflection nobody enumerated is still a miss, and this sentence is not a claim that the enumeration is complete",
+    "certifies_absence": false
+   }
+  ],
+  "distress_routes": [
+   {
+    "route": "ask-a-human (a test record: it names no service and reaches no one)",
+    "reviewed_by": "a named test reviewer (a test record)",
+    "checked_on": "2026-10-14",
+    "jurisdiction": "ANY",
+    "stale": false,
+    "age_days": 30
+   }
+  ],
+  "distress_routes_supplied": true,
+  "distress_routes_basis": "1 route(s) supplied, each with a named reviewer and a check date inside the 180-day horizon",
+  "distress_routes_state": "SUPPLIED_FRESH",
+  "distress_routes_stale_count": 0,
+  "distress_routes_jurisdictions": [
+   "ANY"
+  ],
+  "distress_routes_cover_anywhere": true,
+  "distress_routes_refused": [],
+  "not_a_person_statement": "I am not a person. I am software, I cannot judge how you are, and I must not give you counsel about this. Please reach a human being who can.",
+  "escalation_defaults_on_when_undecidable": true,
+  "basis": "every gate reports a verdict AND what it did not look at. NONE OF THEM CAN CERTIFY AN ABSENCE: each is an English phrase screen, so a non-match means its own patterns found nothing rather than that the subject was not there. Where a screen cannot run at all the escalation defaults ON, because a screen that did not run is not a screen that passed",
+  "unchanged_refusals": [
+   "Quran Arabic is never generated",
+   "Quranic text comes only from quran.com, alquran.cloud or tanzil.net, with provenance",
+   "recitation is never scored",
+   "AI content is labelled",
+   "Ruling A.9.5 stands - the Fitrah Spectrum is never a measurement and no AI verdict is passed on a person's spiritual state"
+  ]
+ },
+ "stale": {
+  "gates": [
+   {
+    "gate": "religious_ruling",
+    "refuses": "issuing a religious ruling; refers to a qualified human scholar",
+    "limit": "English phrase patterns only. Another language, an indirect phrasing, a misspelling or a paraphrase is NOT matched by this screen, and a non-match is therefore not a finding that the subject is absent. The patterns cover the common INFLECTIONS of each verb they name (enumerated, not derived) because two faults in this screen were both in a slot nobody had driven — but an inflection nobody enumerated is still a miss, and this sentence is not a claim that the enumeration is complete",
+    "certifies_absence": false
+   },
+   {
+    "gate": "theological_proof",
+    "refuses": "a claim that science proves or disproves a theological truth, in either direction",
+    "limit": "English phrase patterns only. Another language, an indirect phrasing, a misspelling or a paraphrase is NOT matched by this screen, and a non-match is therefore not a finding that the subject is absent. The patterns cover the common INFLECTIONS of each verb they name (enumerated, not derived) because two faults in this screen were both in a slot nobody had driven — but an inflection nobody enumerated is still a miss, and this sentence is not a claim that the enumeration is complete",
+    "certifies_absence": false
+   },
+   {
+    "gate": "clinical_care",
+    "refuses": "giving counsel to someone in distress; states plainly that the platform is not a person and shows the human route",
+    "limit": "English phrase patterns only. Another language, an indirect phrasing, a misspelling or a paraphrase is NOT matched by this screen, and a non-match is therefore not a finding that the subject is absent. The patterns cover the common INFLECTIONS of each verb they name (enumerated, not derived) because two faults in this screen were both in a slot nobody had driven — but an inflection nobody enumerated is still a miss, and this sentence is not a claim that the enumeration is complete",
+    "certifies_absence": false
+   }
+  ],
+  "distress_routes": [
+   {
+    "route": "ask-a-human here (a test record: it names no service and reaches no one)",
+    "reviewed_by": "a named test reviewer (a test record)",
+    "checked_on": "2026-10-14",
+    "jurisdiction": "England",
+    "stale": false,
+    "age_days": 30
+   },
+   {
+    "route": "ask-a-human there (a test record: it names no service and reaches no one)",
+    "reviewed_by": "a named test reviewer (a test record)",
+    "checked_on": "2025-10-09",
+    "jurisdiction": "Wales",
+    "stale": true,
+    "age_days": 400
+   }
+  ],
+  "distress_routes_supplied": true,
+  "distress_routes_basis": "2 route(s) supplied, 1 of them STALE (last checked more than 180 days ago and shown as such, never as current)",
+  "distress_routes_state": "SUPPLIED_STALE",
+  "distress_routes_stale_count": 1,
+  "distress_routes_jurisdictions": [
+   "England",
+   "Wales"
+  ],
+  "distress_routes_cover_anywhere": false,
+  "distress_routes_refused": [],
+  "not_a_person_statement": "I am not a person. I am software, I cannot judge how you are, and I must not give you counsel about this. Please reach a human being who can.",
+  "escalation_defaults_on_when_undecidable": true,
+  "basis": "every gate reports a verdict AND what it did not look at. NONE OF THEM CAN CERTIFY AN ABSENCE: each is an English phrase screen, so a non-match means its own patterns found nothing rather than that the subject was not there. Where a screen cannot run at all the escalation defaults ON, because a screen that did not run is not a screen that passed",
+  "unchanged_refusals": [
+   "Quran Arabic is never generated",
+   "Quranic text comes only from quran.com, alquran.cloud or tanzil.net, with provenance",
+   "recitation is never scored",
+   "AI content is labelled",
+   "Ruling A.9.5 stands - the Fitrah Spectrum is never a measurement and no AI verdict is passed on a person's spiritual state"
+  ]
+ }
+}

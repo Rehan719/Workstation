@@ -142,8 +142,15 @@ def screen_living_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
     prior = rec.get("overall")
     regression = bool(prior and prior != "fail" and screen["overall"] == "fail")
     entries = (rec.get("history") or [])[-19:]
-    entries.append({"overall": screen["overall"],
-                    "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+    _entry = {"overall": screen["overall"], "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    #  W791 (FU-1155) - A FINDING KEEPS ITS REASON. An entry held only "fail" and its time, and the verdicts beside it
+    #  were the latest screen's alone, so a FAIL recorded weeks ago carried no reason once the next screen ran (five
+    #  change records on the Owner's store met exactly this). A failing entry keeps which frameworks failed and why.
+    if screen.get("overall") == "fail":
+        _entry["failing"] = [{"framework": str(v.get("framework") or ""), "reason": str(v.get("reason") or "")[:240]}
+                             for v in (screen.get("verdicts") or [])
+                             if isinstance(v, dict) and v.get("status") == "fail"][:6]
+    entries.append(_entry)
     # W506 (P2.7(6)) - the latest screen's VERDICTS are persisted, with the coverage statement that
     # qualifies them. `screen_compliance` returns all three and this writer kept only `overall`, so the
     # roster's `verdicts` field could never be filled and every row showed an empty list for an entity
@@ -668,6 +675,18 @@ class OrganismHeartbeat:
                 }
                 actions.append("metabolic_cycle_failed")
 
+        # 2h. W916 (FU-609 part 3) - A SAVED COMPOSITION'S DECLARED EXPIRY IS RECORDED ON THE BEAT, ONCE. A run of
+        #     an expired composition is already refused at its run (W915), read from its own record. This writes
+        #     the fact on the composition, as the service identity, so the page and the trail say when it ended.
+        #     It runs nothing and deletes nothing, and nothing is added to `actions` when nothing expired.
+        try:
+            from agentic_core.api.resource_fabric import record_expired_compositions
+            from agentic_core.economy.living_vsbs import SERVICE_IDENTITY as _svc916
+            for _cid916 in record_expired_compositions(by=_svc916):
+                actions.append(f"composition_expired:{_cid916}")
+        except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+            self._step_failed("composition_expiry", _swallowed)
+
         # 3. Transformation tick — vision-realisation introspection (no AI)
         try:
             from agentic_core.api.transformation import _realise
@@ -734,7 +753,11 @@ class OrganismHeartbeat:
                 _ctx = _bb.organism_context()
                 # §8 (W341) — atp_ratio lives under the 'metabolic' key: the old top-level read
                 # always defaulted to 1.0, so the W310 defensive lever could NEVER fire.
-                if float(((_ctx.get("metabolic") or {}).get("atp_ratio")) or 1.0) < 0.2:
+                #  W900 (FU-1112, S18.1) - the work budget's remaining share while it is switched on, else the
+                #  simulator's figure. A spent budget is 0.0, which `or 1.0` would have read as full
+                _m900 = _ctx.get("metabolic") or {}
+                _e900 = _m900.get("energy_ratio") if _m900.get("energy_acts") else _m900.get("atp_ratio")
+                if float(_e900 if _e900 is not None else 1.0) < 0.2:
                     _throttled = True
                     actions.append("metabolic_throttle")
         except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
@@ -943,8 +966,12 @@ class OrganismHeartbeat:
         out: Dict[str, Any] = {"read": False, "atp": None, "recovered": False}
         try:
             from agentic_core.organism.biobus import atp_depletion_state, biobus
-            atp = (biobus.organism_context().get("metabolic", {}) or {}).get("atp_ratio", 1.0)
+            _m900 = biobus.organism_context().get("metabolic", {}) or {}
+            #  W900 (FU-1112, S18.1) - the work budget's remaining share while it is switched on, else the simulator's
+            _acts900 = bool(_m900.get("energy_acts")) and _m900.get("energy_ratio") is not None
+            atp = _m900.get("energy_ratio") if _acts900 else _m900.get("atp_ratio", 1.0)
             out["read"], out["atp"] = True, atp
+            out["reads"] = "work_budget" if _acts900 else "atp_simulator"
             # §8 (W506, P2.7(4)) - this threshold is UNREACHABLE on the current model, and said so rather
             # than silently never firing. Measured from the arithmetic: consumption is at most 0.1 per tick
             # and production at least 0.4 at the lowest efficiency this code passes, so the ratio only rises
@@ -954,11 +981,18 @@ class OrganismHeartbeat:
             _dep = atp_depletion_state()
             out["threshold"] = self.ENERGY_THRESHOLD
             out["can_deplete"] = _dep["can_deplete"]
-            if not _dep["can_deplete"]:
+            if not _dep["can_deplete"] and not _acts900:
                 out["why_not"] = ("the energy figure cannot fall to the threshold on this model, so no "
                                   "recovery can be triggered by it: " + _dep["basis"])
                 return out
             if atp < self.ENERGY_THRESHOLD:     # energy depleted → autonomously rest & recover
+                if _acts900:
+                    #  W900 - resting runs the ATP simulator; it restores nothing that was spent. The budget is
+                    #  seconds of recorded work, and it starts again only when a new window opens
+                    out["why_not"] = ("the work budget is below the threshold, and resting does not restore it: "
+                                      "it is seconds of work already spent, and it starts again when a new window "
+                                      "opens")
+                    return out
                 from agentic_core.ai.native.homeostasis import homeostasis
                 rec = homeostasis.recover(cycles=3)
                 if rec.get("recovered"):
@@ -1219,6 +1253,8 @@ class OrganismHeartbeat:
         if _hist_why:
             logger.error("the VSB compliance history could not be read whole, so this rotation may be "
                          "choosing on incomplete timestamps: %s", _hist_why)
+        #  W799 (FU-1161) - NO ENTITY FLAG IS READ HERE, deliberately: an entity may not opt out of being
+        #  re-screened, so its recorded auto_compliance does not filter this rotation (living_vsbs.tending says so)
         target = sorted(living, key=lambda v: ((hist.get(v.get("vsb_id"), {}) or {}).get("last_at") or ""))[0]
         _vsb_res = screen_living_vsb(target.get("vsb_id"))
         #  FU-461 — a side effect of the screen that failed reaches the beat's record, by name

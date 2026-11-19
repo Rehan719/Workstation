@@ -1,3 +1,4 @@
+import { streamPost } from '../../lib/stream';   // W1008 - one reader of a streamed answer
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import {
@@ -33,44 +34,7 @@ interface NexusEvent {
   };
 }
 
-// ── SSE stream helper ─────────────────────────────────────────────────────────
-
-async function streamPost(
-  url: string,
-  body: object,
-  onChunk: (ev: NexusEvent) => void,
-  onDone: () => void,
-  onError: (e: string) => void,
-) {
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) { onError(`HTTP ${res.status}`); return; }
-    const reader = res.body!.getReader();
-    const dec = new TextDecoder();
-    let buf = '';
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += dec.decode(value, { stream: true });
-      const lines = buf.split('\n');
-      buf = lines.pop()!;
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const raw = line.slice(6).trim();
-          if (raw === '[DONE]') continue;
-          try { onChunk(JSON.parse(raw)); } catch {}
-        }
-      }
-    }
-    onDone();
-  } catch (e: any) {
-    onError(e?.message ?? String(e));
-  }
-}
+//  W1008 - the stream reader is lib/stream.ts, one for the five pages that each carried a copy
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -153,7 +117,7 @@ export const SynthesisNexus: React.FC = () => {
     setError('');
     setExpanded(null);
 
-    await streamPost(
+    await streamPost<NexusEvent>(
       '/api/v1/intelligence/nexus',
       { challenge, domain, activity },
       ev => setEvents(prev => [...prev, ev]),
@@ -454,16 +418,17 @@ export const SynthesisNexus: React.FC = () => {
             <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800">
               {React.createElement(engineIcon(selectedEngine), { size: 12, className: 'text-highlight shrink-0' })}
               {decision?.decided === false ? (
+                //  W1041 - the words are spaced by spaces, not by margins: the text read "defaulted toBDPbecause"
                 <p className="text-[10px] font-black uppercase tracking-widest text-amber-400">
-                  Not selected: defaulted to
-                  <span className="ml-2">{selectedEngine.toUpperCase()}</span>
-                  <span className="ml-2 normal-case tracking-normal font-bold text-slate-400">because {decision.reason}</span>
+                  Not selected: defaulted to{' '}
+                  <span>{selectedEngine.toUpperCase()}</span>{' '}
+                  <span className="normal-case tracking-normal font-bold text-slate-400">because {decision.reason}</span>
                 </p>
               ) : (
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                  Primary engine:
-                  <span className="text-highlight ml-2">{selectedEngine.toUpperCase()}</span>
-                  {decision?.reason && <span className="ml-2 normal-case tracking-normal font-bold text-slate-500">({decision.reason})</span>}
+                  Primary engine:{' '}
+                  <span className="text-highlight">{selectedEngine.toUpperCase()}</span>
+                  {decision?.reason && <>{' '}<span className="normal-case tracking-normal font-bold text-slate-500">({decision.reason})</span></>}
                 </p>
               )}
             </div>

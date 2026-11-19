@@ -76,7 +76,7 @@ class EpigeneticMemoryEngine:
 
         self.markers.append(marker)
 
-        # 4. UEG Merkle-DAG Persistence
+        # 4. UEG hash-chain persistence (a linear chain - W807)
         await self.ueg.log_event("EPIGENETIC_FIXATION", {
             "marker_id": marker.marker_id,
             "type": adaptation_type,

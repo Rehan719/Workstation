@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { bodyDetail, errorMessage } from '../lib/api';   // W1078 - a refused reading is said by its reason
 
 export type CircadianCycle =
   | 'ACTIVE_FOCUS'
@@ -21,6 +22,7 @@ export interface WorkstationBiometrics {
     resource_flow: number;    // 0–100
     peristaltic_delay: number; // host memory percent ÷ 20 — a load index, not milliseconds
     host_cpu_percent?: number;
+    host_cpu_window_seconds?: number | null;   // W1078 - the window the CPU figure covers (W756)
     resource_flow_basis?: string;
     peristaltic_delay_basis?: string;
   };
@@ -34,15 +36,21 @@ export interface WorkstationBiometrics {
   cognition: {
     state: CognitionState;
     primary_drive: string;
+    basis?: string;   // W1078 - the route's own sentence for what this reading is
   };
   communication: {
     active_channels: string[];
     neurotransmitter: NeurotransmitterState;
     is_active: boolean;
+    basis?: string;   // W1078 - the route's own sentence for what this label is
   };
   systemState: SystemState;
   loaded: boolean;
   live: boolean;   // W329 — true ONLY when the readings came from the backend (never for defaults)
+  //  W1078 - whether any reading has come back, and why the newest is not live: a first read that failed left the
+  //  hook's defaults on screen as the host's figures, and a refusal's reason was dropped
+  everRead: boolean;
+  unread: string | null;
 }
 
 const DEFAULT: WorkstationBiometrics = {
@@ -53,9 +61,11 @@ const DEFAULT: WorkstationBiometrics = {
   systemState:    'IDLE',
   loaded:         false,
   live:           false,
+  everRead:       false,
+  unread:         null,
 };
 
-function deriveSystemState(b: Omit<WorkstationBiometrics, 'systemState' | 'loaded' | 'live'>): SystemState {
+function deriveSystemState(b: Omit<WorkstationBiometrics, 'systemState' | 'loaded' | 'live' | 'everRead' | 'unread'>): SystemState {
   if (b.communication.is_active)                                          return 'COMMUNICATING';
   if (b.circadian.cycle === 'MAINTENANCE_FOCUS' ||
       b.circadian.cycle === 'MAINTENANCE_REST')                           return 'MAINTENANCE';
@@ -79,12 +89,13 @@ export function useWorkstationBiometrics(pollIntervalMs = 6000): WorkstationBiom
       if (res.status !== 200) {
         // W746 - a refusal (503: the host could not be read) is not a live reading. The previous figures stay,
         // but the dot goes grey rather than presenting them as current.
-        setData(prev => ({ ...prev, loaded: true, live: false }));
+        setData(prev => ({ ...prev, loaded: true, live: false,
+          unread: bodyDetail(res.data, `the vitals route answered ${res.status}`) }));
         return;
       }
       const r = res.data ?? {};
 
-      const next: Omit<WorkstationBiometrics, 'systemState' | 'loaded' | 'live'> = {
+      const next: Omit<WorkstationBiometrics, 'systemState' | 'loaded' | 'live' | 'everRead' | 'unread'> = {
         circadian: {
           cycle: r.circadian?.cycle ?? 'ACTIVE_FOCUS',
         },
@@ -92,6 +103,7 @@ export function useWorkstationBiometrics(pollIntervalMs = 6000): WorkstationBiom
           resource_flow:    r.cardiovascular?.resource_flow    ?? 100,
           peristaltic_delay: r.cardiovascular?.peristaltic_delay ?? 5,
           host_cpu_percent: r.cardiovascular?.host_cpu_percent,
+          host_cpu_window_seconds: r.cardiovascular?.host_cpu_window_seconds ?? null,
           resource_flow_basis: r.cardiovascular?.resource_flow_basis,
           peristaltic_delay_basis: r.cardiovascular?.peristaltic_delay_basis,
         },
@@ -105,18 +117,20 @@ export function useWorkstationBiometrics(pollIntervalMs = 6000): WorkstationBiom
         cognition: {
           state:         r.cognition?.state         ?? 'STABLE',
           primary_drive: r.cognition?.primary_drive ?? 'ACHIEVEMENT',
+          basis:         r.cognition?.basis,
         },
         communication: {
           active_channels: r.communication?.active_channels ?? [],
           neurotransmitter: r.communication?.neurotransmitter ?? 'Serotonin',
           is_active: (r.communication?.active_channels ?? []).length > 0,
+          basis: r.communication?.basis,
         },
       };
 
-      setData({ ...next, systemState: deriveSystemState(next), loaded: true, live: true });
-    } catch {
+      setData({ ...next, systemState: deriveSystemState(next), loaded: true, live: true, everRead: true, unread: null });
+    } catch (e) {
       // Backend unavailable — loaded (no spinner) but NOT live: the chrome must not fabricate health
-      setData(prev => ({ ...prev, loaded: true, live: false }));
+      setData(prev => ({ ...prev, loaded: true, live: false, unread: errorMessage(e) }));
     }
   };
 

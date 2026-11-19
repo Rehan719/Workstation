@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W481 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W481 (P1.18 FU-122/FU-231) — the transformation cascade on a FRESH backend: the API by fetch, the
 // /transformation page in a real browser against the built bundle.
 //   node scripts/_w481_probe.mjs http://127.0.0.1:8089

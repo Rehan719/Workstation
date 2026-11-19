@@ -1,0 +1,233 @@
+{
+ "first": "What is the current system state?",
+ "second": "W1064 made up: and what would you check first?",
+ "models": {
+  "status": 200,
+  "body": {
+   "evidence_level": "configuration",
+   "evidence_level_number": null,
+   "evidence_basis": "the local model names the runtime lists. Configuration - what is configured, declared or reachable; below level 1 and not a statement about behaviour",
+   "local_models": [],
+   "default_local": null,
+   "promoted_default": null,
+   "retired": [],
+   "tiers": [
+    {
+     "id": "auto",
+     "label": "Auto (in-house-first)",
+     "kind": "policy"
+    },
+    {
+     "id": "native",
+     "label": "Native floor (deterministic)",
+     "kind": "native"
+    }
+   ],
+   "store_incomplete": null,
+   "retired_is_incomplete": false,
+   "note": "Owned models. Route a completion to any with model=<id>. External providers are opt-in accelerants (AI_ALLOW_EXTERNAL); the native floor is always available."
+  }
+ },
+ "ask_first": {
+  "prompt": "You are the assistant embedded in Workstation, a sovereign intelligence platform. Be concise, precise and practical. If you do not know something about this deployment, say so rather than inventing it.\n\nUser: What is the current system state?\n\nAssistant:",
+  "agent": "workstation-assistant",
+  "model": "auto",
+  "timeout": 120
+ },
+ "first_reply": {
+  "status": 200,
+  "body": {
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "one reply and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches",
+   "output": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: assistant embedded in Workstation, a sovereign intelligence platform. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: You are the assistant embedded in Workstation, a sovereign intelligence platform. Be concise, precise and practical. If you do not know something about this deployment, say so rather than inventing it. User: What is the … [cut at 220 of 252 characters] (domain: WITHHELD — no domain was declared for this call).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- sovereign intelligence\n- workstation sovereign\n- intelligence platform\n- embedded workstation\n- assistant embedded\n- platform concise\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'workstation-assistant', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.",
+   "served_by": "native",
+   "is_external": false,
+   "resources_tried": [
+    "native"
+   ],
+   "model_tokens": null,
+   "model_tokens_basis": "NOT COUNTED - the deterministic floor served this and runs no model, so there are no tokens to count; null, never 0",
+   "data_class": {
+    "declared": "person_entered",
+    "class_basis": "what a person typed for this request, or saved in a design they run, with the platform's own instructions and records composed around it",
+    "legal_matter_read": false,
+    "external": "not attempted",
+    "checks": [],
+    "barred": [
+     "legal_matter"
+    ]
+   },
+   "arabic": {
+    "arabic_passages_withheld": 0,
+    "basis": null,
+    "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else",
+    "labelled": false,
+    "language": null
+   },
+   "governance_checkpoint": {
+    "gate": "constitutional_policy_gate_v5",
+    "pre_allowed": true,
+    "post_checked": true,
+    "post_compliant": true,
+    "violations": [],
+    "post_screened": "unsafe_payload_patterns",
+    "post_coverage_limit": "screened for a small set of unsafe payload patterns only (a destructive shell command, DROP / TRUNCATE, an unbounded DELETE, a private-key header). `compliant` means none of those matched. It is NOT an assessment of the output against the constitution, the law or any framework.",
+    "response_screen_withheld": false,
+    "recorded": true,
+    "event_hash": "f1dc075075eeb66da7f2fea529919e134fb3c7e1128d98957ab8de475ccc622ba8bc3b923ef18089ef51abcd914aa1cf822aad7714cd5b84e581dc4bdf8b48ba"
+   }
+  }
+ },
+ "ask_second": {
+  "prompt": "You are the assistant embedded in Workstation, a sovereign intelligence platform. Be concise, precise and practical. If you do not know something about this deployment, say so rather than inventing it.\n\nUser: What is the current system state?\n\nAssistant: _[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: assistant embedded in Workstation, a sovereign intelligence platform. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: You are the assistant embedded in Workstation, a sovereign intelligence platform. Be concise, precise and practical. If you do not know something about this deployment, say so rather than inventing it. User: What is the … [cut at 220 of 252 characters] (domain: WITHHELD — no domain was declared for this call).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- sovereign intelligence\n- workstation sovereign\n- intelligence platform\n- embedded workstation\n- assistant embedded\n- platform concise\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'workstation-assistant', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.\n\nUser: W1064 made up: and what would you check first?\n\nAssistant:",
+  "agent": "workstation-assistant",
+  "model": "auto",
+  "timeout": 120
+ },
+ "second_reply": {
+  "status": 200,
+  "body": {
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "one reply and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches",
+   "output": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: assistant embedded in Workstation, a sovereign intelligence platform. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nSubject: You are the assistant embedded in Workstation, a sovereign intelligence platform. Be concise, precise and practical. If you do not know something about this deployment, say so rather than inventing it. User: What is the … [cut at 220 of 1763 characters] (domain: WITHHELD — no domain was declared for this call).).\nStructured frame over the terms most frequent in the request (a term count, not an analysis):\n- sovereign intelligence\n- workstation sovereign\n- intelligence platform\n- embedded workstation\n- assistant embedded\n- platform concise\n\n## Terms most frequent in the text you wrote\nNative structured frame for 'Terms most frequent in the text you wrote' over: You are the assistant embedded in Workstation, a sovereign intelligence platform. Be concise, precise and practical. If you do not know something about this deployment, say so rather than inventing it. User: What is the … [cut at 220 of 1763 characters] (domain: WITHHELD — no domain was declared for this call).). The list below is the request's most frequent terms, not findings about them.\n- sovereign intelligence\n- workstation sovereign\n- intelligence platform\n- embedded workstation\n- assistant embedded\n\n## Native approach\nNative structured frame for 'Native approach' over: You are the assistant embedded in Workstation, a sovereign intelligence platform. Be concise, precise and practical. If you do not know something about this deployment, say so rather than inventing it. User: What is the … [cut at 220 of 1763 characters] (domain: WITHHELD — no domain was declared for this call).). The list below is the request's most frequent terms, not findings about them.\n- sovereign intelligence\n- workstation sovereign\n- intelligence platform\n- embedded workstation\n- assistant embedded\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call).; record outcomes to memory/UEG.",
+   "served_by": "native",
+   "is_external": false,
+   "resources_tried": [
+    "native"
+   ],
+   "model_tokens": null,
+   "model_tokens_basis": "NOT COUNTED - the deterministic floor served this and runs no model, so there are no tokens to count; null, never 0",
+   "data_class": {
+    "declared": "person_entered",
+    "class_basis": "what a person typed for this request, or saved in a design they run, with the platform's own instructions and records composed around it",
+    "legal_matter_read": false,
+    "external": "not attempted",
+    "checks": [],
+    "barred": [
+     "legal_matter"
+    ]
+   },
+   "arabic": {
+    "arabic_passages_withheld": 0,
+    "basis": null,
+    "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else",
+    "labelled": false,
+    "language": null
+   },
+   "governance_checkpoint": {
+    "gate": "constitutional_policy_gate_v5",
+    "pre_allowed": true,
+    "post_checked": true,
+    "post_compliant": true,
+    "violations": [],
+    "post_screened": "unsafe_payload_patterns",
+    "post_coverage_limit": "screened for a small set of unsafe payload patterns only (a destructive shell command, DROP / TRUNCATE, an unbounded DELETE, a private-key header). `compliant` means none of those matched. It is NOT an assessment of the output against the constitution, the law or any framework.",
+    "response_screen_withheld": false,
+    "recorded": true,
+    "event_hash": "837f595419708283efdb1b63f42d38bbed67329b3c872ffced6ee4f94c3038513977d7a4682ee541d6967aed49983817eb4ab985ff233522a1d0622136aaa130"
+   }
+  }
+ },
+ "not_installed": {
+  "status": 200,
+  "body": {
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "one reply and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches",
+   "output": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: assistant embedded in Workstation, a sovereign intelligence platform. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: You are the assistant embedded in Workstation, a sovereign intelligence platform. Be concise, precise and practical. If you do not know something about this deployment, say so rather than inventing it. User: What is the … [cut at 220 of 252 characters] (domain: WITHHELD — no domain was declared for this call).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- sovereign intelligence\n- workstation sovereign\n- intelligence platform\n- embedded workstation\n- assistant embedded\n- platform concise\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'workstation-assistant', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.",
+   "served_by": "native",
+   "is_external": false,
+   "resources_tried": [
+    "ollama:w1064-not-installed (disabled by config, skipped)",
+    "native"
+   ],
+   "model_tokens": null,
+   "model_tokens_basis": "NOT COUNTED - the deterministic floor served this and runs no model, so there are no tokens to count; null, never 0",
+   "data_class": {
+    "declared": "person_entered",
+    "class_basis": "what a person typed for this request, or saved in a design they run, with the platform's own instructions and records composed around it",
+    "legal_matter_read": false,
+    "external": "not attempted",
+    "checks": [],
+    "barred": [
+     "legal_matter"
+    ]
+   },
+   "arabic": {
+    "arabic_passages_withheld": 0,
+    "basis": null,
+    "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else",
+    "labelled": false,
+    "language": null
+   },
+   "governance_checkpoint": {
+    "gate": "constitutional_policy_gate_v5",
+    "pre_allowed": true,
+    "post_checked": true,
+    "post_compliant": true,
+    "violations": [],
+    "post_screened": "unsafe_payload_patterns",
+    "post_coverage_limit": "screened for a small set of unsafe payload patterns only (a destructive shell command, DROP / TRUNCATE, an unbounded DELETE, a private-key header). `compliant` means none of those matched. It is NOT an assessment of the output against the constitution, the law or any framework.",
+    "response_screen_withheld": false,
+    "recorded": true,
+    "event_hash": "bb88213e0dd2e33ac4db4f35e7c1a8014cac542f7c86342a07c0e8132730cea05c371f38e3bd72f7b54288e70e241387123c43f486cfa4a6f625118fc16fabbe"
+   }
+  }
+ },
+ "no_prompt": {
+  "status": 200,
+  "body": {
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "one reply and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches",
+   "output": "_[Workstation native structured engine — owned, no external dependency]_\n\n## Understanding\nThis engine was not told which part of its input you wrote, so it states no subject for your request and attributes nothing to you. That is a limit of the tool that called it, not of what you asked (domain: WITHHELD — no domain was declared for this call).\n\n## Terms most frequent in the text you wrote\n_WITHHELD: the calling tool did not identify which text is yours, so any list here would be counted over the platform's own prompt._\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'workstation-assistant', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.",
+   "served_by": "native",
+   "is_external": false,
+   "resources_tried": [
+    "native"
+   ],
+   "model_tokens": null,
+   "model_tokens_basis": "NOT COUNTED - the deterministic floor served this and runs no model, so there are no tokens to count; null, never 0",
+   "data_class": {
+    "declared": "person_entered",
+    "class_basis": "what a person typed for this request, or saved in a design they run, with the platform's own instructions and records composed around it",
+    "legal_matter_read": false,
+    "external": "not attempted",
+    "checks": [],
+    "barred": [
+     "legal_matter"
+    ]
+   },
+   "arabic": {
+    "arabic_passages_withheld": 0,
+    "basis": null,
+    "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else",
+    "labelled": false,
+    "language": null
+   },
+   "governance_checkpoint": {
+    "gate": "constitutional_policy_gate_v5",
+    "pre_allowed": true,
+    "post_checked": true,
+    "post_compliant": true,
+    "violations": [],
+    "post_screened": "unsafe_payload_patterns",
+    "post_coverage_limit": "screened for a small set of unsafe payload patterns only (a destructive shell command, DROP / TRUNCATE, an unbounded DELETE, a private-key header). `compliant` means none of those matched. It is NOT an assessment of the output against the constitution, the law or any framework.",
+    "response_screen_withheld": false,
+    "recorded": true,
+    "event_hash": "555d43c80f8e84959824c71ec46bdd50458223c6fe0f08bb8b7d5e8df60b9de6d0b62720b91d9fbe35102326797d20d39ab288bf72f1b0b37d9d8b6785498f6e"
+   }
+  }
+ },
+ "models_failed": {
+  "status": 500,
+  "body": {
+   "detail": "GET /api/v1/native-ai/models failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/native-ai/models",
+   "cause_established": false
+  }
+ }
+}

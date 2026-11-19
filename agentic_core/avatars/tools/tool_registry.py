@@ -10,8 +10,8 @@ from datetime import datetime, timezone
 import logging
 
 from agentic_core.tools.registry import ToolRegistry as CoreToolRegistry
-from src.organism.python.organs.openclaw_adapter import OpenClawAdapter
-from src.organism.python.neural.event_bus import AsyncEventBus
+from agentic_core.avatars.tools.openclaw_adapter import OpenClawAdapter   # W896 (FU-1168) - moved from src/
+from agentic_core.avatars.tools.event_bus import AsyncEventBus
 
 logger = logging.getLogger(__name__)
 

@@ -654,8 +654,13 @@ A separate application concept, documented in `Personalized Guidance and Learnin
 > **⚠ SUPERSEDED — read as history, not as a plan.** Everything in Part V reflects mid-2025 availability
 > and was compiled by the Jules agent, not authored by the Owner. Model rosters, speech and emotion SDKs,
 > event-bus and database selections, hosting and free-tier strategies, and the vendor-ecosystem mapping are
-> all dated. Workstation supplies every one of these from its own native fabric — see
-> `WORKSTATION_IDBO_WHOLE_VISION.md` §6, §7 and **Appendix A.10**, which excludes this Part from the
+> all dated. Workstation does not adopt this stack, and it does not supply every one of these either. Checked
+> against the code on 2026-11-11 (W837): its owned local model and its deterministic native floor stand in for the
+> model rosters; its in-process event bus for the event-bus selection; and file stores under its data directory
+> (JSON, with SQLite for the interaction log), not a database server, for the database selections. Speech runs only where a local engine (whisper.cpp, Piper, Vosk or pyttsx3) is installed on
+> the machine, and is otherwise absent. No emotion SDK runs, because emotion inference is forbidden by its §11.
+> Nothing is hosted, since a production deployment is the Owner's decision. A free-tier strategy has nothing to apply
+> to. See `WORKSTATION_IDBO_WHOLE_VISION.md` §6, §7 and **Appendix A.10**, which excludes this Part from the
 > canon-resident QEP vision. It is retained here because it is part of the historical record of what those
 > repositories contained, and because the *capabilities* named beneath the technology remain valid.
 

@@ -5,6 +5,7 @@ import {
   Sparkles, HeartPulse, AlertCircle, Eye, Map, Workflow, ShieldCheck, ListChecks,
 } from 'lucide-react';
 import { apiJson, errorMessage, provenanceBadge } from '../lib/api';
+import { ReadFailures, useReadFailures } from '../components/ReadFailures';   // W931
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -22,6 +23,8 @@ interface Picture {
 interface CascadeStage { step: number; tier: string; delegates_to: string; action: string; verified: boolean | null; basis?: string | null; signal: string;
   checks?: 'presence' | 'decision' | 'artifact' | 'delivery' | 'none' }   // W481 — what KIND of check ran
 interface OrchRunSummary { transformation_id: string; scope: string; objective: string; validated: boolean | null; created_at: string }
+// W987 - a run record the server could not read, named by the route rather than skipped
+interface UnreadableRun { record: string; error: string }
 interface OrchestrationRun {
   transformation_id: string;
   objective: string;
@@ -107,6 +110,7 @@ const PLAN_REFRESH_MS = 60_000;
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const TransformationDashboard: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W931 - a read that fails is said
   const [pic, setPic] = useState<Picture | null>(null);
   const [assessing, setAssessing] = useState(false);
   const [ticking, setTicking] = useState(false);
@@ -114,13 +118,21 @@ export const TransformationDashboard: React.FC = () => {
   const [orch, setOrch] = useState<OrchestrationRun | null>(null);
   const [orchestrating, setOrchestrating] = useState(false);
   const [runs, setRuns] = useState<OrchRunSummary[]>([]);
+  const [runsUnreadable, setRunsUnreadable] = useState<UnreadableRun[]>([]);   // W987
   const [error, setError] = useState('');
   const [followups, setFollowups] = useState<Followups | null>(null);
   const [followupsAt, setFollowupsAt] = useState('');       // when the live plan was last read
   const [followupsErr, setFollowupsErr] = useState('');     // a refresh that failed keeps the last good plan on screen
 
-  const load = () => fetch('/api/v1/transformation').then(r => r.json()).then(setPic).catch(() => setError('Failed to load'));
-  const loadRuns = () => fetch('/api/v1/transformation/orchestrate/runs').then(r => r.json()).then(d => setRuns(d.runs ?? [])).catch(() => {});
+  //  W987 (FU-399 part 19) - a refused read of the picture said only "Failed to load": not which read, nor the
+  //  server's status and reason. It is said where the page's reads are said, and a later read clears it.
+  const load = () => apiJson('/api/v1/transformation')
+    .then(d => { clearRead('the realisation picture'); setPic(d); }).catch(noteRead('the realisation picture'));
+  const loadRuns = () => apiJson('/api/v1/transformation/orchestrate/runs')
+    .then(d => {
+      clearRead('the orchestration runs'); setRuns(d.runs ?? []);
+      setRunsUnreadable(Array.isArray(d.unreadable_records) ? d.unreadable_records : []);   // W987
+    }).catch(noteRead('the orchestration runs'));
   // apiJson, so a 500 or a 404 from an older backend is named as such — never 'backend unreachable'
   const loadFollowups = () => apiJson<Followups>('/api/v1/plan/followups')
     .then(d => {
@@ -143,8 +155,10 @@ export const TransformationDashboard: React.FC = () => {
     return () => clearInterval(t);
   }, []);
 
+  //  W987 - each action clears the last action's message when it starts: a Tick refused and then retried
+  //  successfully left "Failed (HTTP 503)" on the page, a failure shown as current after a success
   const tick = async () => {
-    setTicking(true);
+    setTicking(true); setError('');
     try { await apiJson('/api/v1/transformation/tick', { method: 'POST' }); await load(); } catch (e) { setError(errorMessage(e)); }   // cluster 2: 4xx/5xx surfaces too
     setTicking(false);
   };
@@ -153,7 +167,7 @@ export const TransformationDashboard: React.FC = () => {
   // served it; this holds it so the panel can.
   const [assessProv, setAssessProv] = useState<{ served_by?: string | null; is_external?: boolean } | null>(null);
   const assess = async () => {
-    setAssessing(true); setAssessment(''); setAssessProv(null);
+    setAssessing(true); setAssessment(''); setAssessProv(null); setError('');   // W987
     try {
       const d = await apiJson('/api/v1/transformation/assess', { method: 'POST' });
       setAssessment(d.assessment ?? '');
@@ -163,11 +177,11 @@ export const TransformationDashboard: React.FC = () => {
     setAssessing(false);
   };
   const orchestrate = async () => {
-    setOrchestrating(true); setOrch(null);
+    setOrchestrating(true); setOrch(null); setError('');   // W987
     try {
       // Ledger cluster 2 — an error body must never reach the orch.validation render (it crashed the page)
       setOrch(await apiJson('/api/v1/transformation/orchestrate', {
-        method: 'POST', body: { scope: 'workstation', owner_id: 'Rehan' } }));
+        method: 'POST', body: { scope: 'workstation' /* W812 (FU-1153): no owner is sent - the server takes the plan's own */ } }));
       loadRuns();
     } catch (e) { setError(errorMessage(e)); }
     setOrchestrating(false);
@@ -177,6 +191,7 @@ export const TransformationDashboard: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-24">
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Living Alignment</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Vision · Realisation · Transformation</h1>
@@ -190,7 +205,7 @@ export const TransformationDashboard: React.FC = () => {
         )}
       </header>
 
-      {error && <p className="text-vital text-xs font-bold flex items-center gap-2"><AlertCircle size={14} /> {error}</p>}
+      {error && <p className="text-vital text-xs font-bold flex items-center gap-2" data-testid="action-error"><AlertCircle size={14} /> {error}</p>}
 
       {pic && (
         <>
@@ -285,28 +300,6 @@ export const TransformationDashboard: React.FC = () => {
             </Card>
           )}
 
-          {/* Recent orchestration runs (Chief → BTO history) */}
-          {runs.length > 0 && (
-            <Card className="p-6">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
-                <GitBranch size={14} /> Recent Transformation Orchestrations
-              </h3>
-              <div className="space-y-2">
-                {runs.slice(0, 8).map(r => (
-                  <div key={r.transformation_id} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-900">
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-white truncate">{r.objective}</p>
-                      <p className="text-[9px] text-slate-600">{r.scope} · {r.created_at ? new Date(r.created_at).toLocaleString() : '—'}</p>
-                    </div>
-                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded shrink-0 ${r.validated === true ? 'bg-emerald-500/20 text-emerald-400' : r.validated === false ? 'bg-vital/20 text-vital' : 'bg-slate-800 text-slate-400'}`}>
-                      {r.validated === true ? 'VALIDATED' : r.validated === false ? 'NOT VALIDATED' : 'NOT ASSESSABLE'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          )}
-
           {/* Pillars — vision mapped to live evidence */}
           <div>
             <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><Target size={14} /> Vision Pillars (router and store checks — coverage, not delivery)</h3>
@@ -374,6 +367,37 @@ export const TransformationDashboard: React.FC = () => {
             )}
           </Card>
         </>
+      )}
+
+      {/* Recent orchestration runs (Chief → BTO history). W987 (FU-399 part 19) - shown on their own: they sat
+          inside the picture's block, so a refused read of the picture hid the runs that had been read. A run
+          record the server could not read is said, never left out in silence. */}
+      {(runs.length > 0 || runsUnreadable.length > 0) && (
+        <Card className="p-6">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+            <GitBranch size={14} /> Recent Transformation Orchestrations
+          </h3>
+          {runsUnreadable.length > 0 && (
+            <p className="text-[10px] text-amber-400 font-bold mb-2" data-testid="runs-unreadable">
+              {runsUnreadable.length} run record{runsUnreadable.length === 1 ? '' : 's'} could not be read, so
+              {runsUnreadable.length === 1 ? ' it is' : ' they are'} not listed:{' '}
+              {runsUnreadable.map(u => `${u.record} (${u.error})`).join(' · ')}
+            </p>
+          )}
+          <div className="space-y-2">
+            {runs.slice(0, 8).map(r => (
+              <div key={r.transformation_id} data-testid="orchestration-run" className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-900">
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-white truncate">{r.objective}</p>
+                  <p className="text-[9px] text-slate-600">{r.scope} · {r.created_at ? new Date(r.created_at).toLocaleString() : '—'}</p>
+                </div>
+                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded shrink-0 ${r.validated === true ? 'bg-emerald-500/20 text-emerald-400' : r.validated === false ? 'bg-vital/20 text-vital' : 'bg-slate-800 text-slate-400'}`}>
+                  {r.validated === true ? 'VALIDATED' : r.validated === false ? 'NOT VALIDATED' : 'NOT ASSESSABLE'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
       )}
 
       {/* W462 — every task a round found and did not do, slotted into the delivery plan and scheduled */}

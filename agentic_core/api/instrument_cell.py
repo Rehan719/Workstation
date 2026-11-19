@@ -443,6 +443,8 @@ def contract(rid: str) -> Dict[str, Any]:
     side = _fab._READ_SIDE_EFFECTS.get(rid)
     if side:
         persists, persists_basis = "side_effect", side
+    elif rid in _fab._OTHER_KIND_PERSISTS:                  # W835 (FU-910) - a handler that writes, whatever its kind
+        persists, persists_basis = _fab._OTHER_KIND_PERSISTS[rid]
     elif kind in ("status_read", "query", "blueprint", "narrative"):
         persists, persists_basis = "nothing", _WHEN_RUN[kind]
     elif rid in _fab._FACILITY_PERSISTS:
@@ -679,6 +681,44 @@ def recheck(spec: Dict[str, Any], app=None) -> List[Dict[str, Any]]:
 
 
 # ── criteria: met / unmet / not assessed, each with the evidence it was read from ─────────────────
+#  W832 (FU-896) - every kind `assess` reads. Anything else is free text, which nothing here can read a run against.
+CRITERION_KINDS = ("resource_outcome", "quality_gate", "served_by", "duration", "calls")
+_STRUCTURAL = {"served_by": ("served_by", "is"), "duration": ("duration_ms", "at_most_ms"), "calls": ("calls", "at_most")}
+
+
+def _structural(c: Dict[str, Any], run: Dict[str, Any], by_resource: Dict[Any, Dict[str, Any]]) -> Dict[str, Any]:
+    """W832 (FU-896) - a STRUCTURAL criterion, read from one field of the run's own record: what served a resource
+    (`served_by`), how long a resource or the whole run took (`duration`, at most `at_most_ms`), and how many calls a
+    resource reported (`calls`, at most `at_most`). A field the record does not hold is not assessed, never met."""
+    kind, rid = c.get("kind"), c.get("resource")
+    field, key = _STRUCTURAL[kind]
+    want = c.get(key)
+    if kind == "served_by" and not (isinstance(want, str) and want.strip()):
+        return {"state": "not_assessed", "evidence": None,
+                "basis": "a served_by criterion names what should serve the resource in `is`"}
+    if kind != "served_by" and (isinstance(want, bool) or not isinstance(want, (int, float))):
+        return {"state": "not_assessed", "evidence": None,
+                "basis": f"a {kind} criterion states its limit as a number in `{key}`"}
+    if kind == "duration" and rid is None:
+        src, where = run, "the run"
+    elif kind != "duration" and rid is None:
+        return {"state": "not_assessed", "evidence": None, "basis": f"a {kind} criterion names its `resource`"}
+    else:
+        src, where = by_resource.get(rid), f"resource {rid!r}"
+        if src is None:
+            return {"state": "not_assessed", "evidence": None,
+                    "basis": f"resource {rid!r} was not attempted in this run"}
+    got = src.get(field)
+    stand_in = (f". {rid} ran here as a STAND-IN for {src['alternative_for']}; this is not evidence about "
+                f"{src['alternative_for']}" if rid is not None and src.get("alternative_for") else "")
+    if got is None or (kind != "served_by" and (isinstance(got, bool) or not isinstance(got, (int, float)))):
+        return {"state": "not_assessed", "evidence": {field: got},
+                "basis": f"the run's record does not hold {where}'s {field}, so this cannot be read" + stand_in}
+    met = (got == want) if kind == "served_by" else (got <= want)
+    return {"state": "met" if met else "unmet", "evidence": {"resource": rid, field: got, key: want},
+            "basis": f"read from the run's own record of {where}'s {field}" + stand_in}
+
+
 def assess(criteria: List[Any], run: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     rows: List[Dict[str, Any]] = []
     by_resource = {x.get("resource"): x for x in ((run or {}).get("real_resources") or [])}
@@ -711,10 +751,13 @@ def assess(criteria: List[Any], run: Optional[Dict[str, Any]]) -> Dict[str, Any]
             else:
                 row.update(state="met" if gate else "unmet", evidence={"qms_gate_passed": gate},
                            basis="read from the run's recorded quality-gate verdict")
+        elif isinstance(c, dict) and c.get("kind") in _STRUCTURAL:
+            row.update(**_structural(c, run, by_resource))           # W832 (FU-896)
         else:
             row.update(state="not_assessed", evidence=None,
                        basis=("a criterion in free text: nothing here can read a run against a sentence. State "
-                              "it as a resource_outcome or a quality_gate criterion, or assess it yourself"))
+                              "it as one of the kinds this reads (" + ", ".join(CRITERION_KINDS) + "), or assess "
+                              "it yourself"))
         rows.append(row)
     counts = {s: sum(1 for r in rows if r["state"] == s) for s in ("met", "unmet", "not_assessed")}
     return {"criteria": rows, "counts": counts,

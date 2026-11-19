@@ -1,0 +1,79 @@
+{
+ "entities": [
+  {
+   "vsb_id": "vsb-w1000-orchard",
+   "name": "W1000 made-up orchard"
+  },
+  {
+   "vsb_id": "vsb-w1000-press",
+   "name": "W1000 made-up cider press"
+  }
+ ],
+ "portfolio": {
+  "vsb_id": "vsb-w1000-orchard",
+  "currency": "WST",
+  "invested_total": 0.0,
+  "positions_count": 0,
+  "holdings": [],
+  "pending_returns_wst": 0.0,
+  "returns_total": 0.0,
+  "recycled_total_wst": 0.0,
+  "funding_state": "recorded_unfunded",
+  "funding_basis": "recorded, unfunded — the investee is NOT credited. The position is the investor's own record of an allocation; no intake is queued for the named entity and its waterfall never receives this amount. Virtual WST throughout.",
+  "funding_share": null,
+  "funding_share_source": null,
+  "funded_total_wst": 0.0,
+  "last_funding": null,
+  "note": "No venture investments yet (virtual)."
+ },
+ "candidates": {
+  "candidates": [
+   {
+    "id": "vsb:vsb-w1000-press",
+    "name": "W1000 made-up cider press",
+    "domain": "enterprise",
+    "kind": "living_vsb_offspring",
+    "outcome": 0.6,
+    "value": 0.6,
+    "benefit": 0.55,
+    "feasibility": 0.6,
+    "strategic_fit": 0.65,
+    "metrics_source": "derived deterministically from live stage/status/governance (documented policy weights, not estimates)",
+    "score": 0.595,
+    "score_basis": "policy constants (stage/operating/governance/domain) — not a measurement",
+    "tied_with": 0
+   }
+  ],
+  "method": "policy score: weighted sum of eligibility constants (outcome .30 + value .25 + benefit .20 + feasibility .15 + strategic_fit .10)",
+  "method_basis": "nothing here is measured: the five inputs are constants keyed on stage, operating history, governance and domain, so candidates in the same bucket share a score and their order between each other is arbitrary",
+  "using_demo_candidates": false,
+  "disclaimer": "Virtual/simulated WST. Candidates are the platform's REAL projects/VSBs with deterministically-derived metrics — the demo set only when the platform is empty."
+ },
+ "open": {
+  "from_vsb": "vsb-w1000-orchard",
+  "open": [],
+  "credited_unclosed": [],
+  "settling": [],
+  "ledger_unreadable": false,
+  "receiver_queue_unreadable": false,
+  "disclaimer": "Virtual/simulated WST — no real funds moved."
+ },
+ "intake": {
+  "vsb_id": "vsb-w1000-orchard",
+  "readable": true,
+  "credits": [],
+  "recorded_credits": 0,
+  "from_unregistered_now": 0,
+  "sender_not_known": 0,
+  "credited_ids_on_record": null,
+  "basis": "FLAGGED, NOT REVERSED (Owner ruling 2026-10-10): 0 of 0 recorded credit(s) name a sender that is not a registered living entity on the roster as it is read NOW - which is not a statement about the roster when the credit was made. 0 name no sender or could not be checked. This record keeps no list of credited ids, so whether older credits exist is not known from it. Nothing here was moved, reversed or written.",
+  "disclaimer": "Virtual/simulated WST — no real funds moved."
+ },
+ "transfer": {
+  "status": 400,
+  "body": {
+   "detail": "Insufficient virtual funds: vsb-w1000-orchard reserve fund holds 0.0 WST < transfer 5.0 WST."
+  },
+  "headers": {}
+ }
+}

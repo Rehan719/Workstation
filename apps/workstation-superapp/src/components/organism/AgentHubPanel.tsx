@@ -12,6 +12,10 @@
  *     means recorded: no executor is subscribed and nothing runs these automatically.
  */
 import React, { useEffect, useRef, useState } from 'react';
+import { errorMessage } from '../../lib/api';   // W1015 - a caught failure, said as what it was
+import { refusalOf } from '../../lib/stream';   // W1025 - a refused read by its reason
+import { ReadFailures, useReadFailures, silenceIsRight } from '../../components/ReadFailures';   // W931
+import { bodyOrNull, bodyDetail } from '../../lib/api';   // W982; W1013: bodyDetail
 import { Card, Button } from '@workstation/ui';
 import { Radio, Loader2, AlertCircle, ShieldCheck, Send, Inbox, Users } from 'lucide-react';
 
@@ -26,12 +30,18 @@ interface Handoff {
 }
 
 const AgentHubPanel: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W931 - a read that fails is said
   const [agents, setAgents] = useState<any>(null);
   const [msgs, setMsgs] = useState<HubMsg[]>([]);
   // W443 refuter catch: a failed message load was swallowed into msgs=[] and rendered the
   // honest-looking "quiet bus" empty state — a false statement over a failed read.
-  const [msgsFailed, setMsgsFailed] = useState(false);
+  //  W1066 - what the bus's read said: the reason it failed, or that it answered (only then is it said as empty)
+  const [msgsErr, setMsgsErr] = useState('');
+  const [msgsListed, setMsgsListed] = useState(false);
   const [handoffs, setHandoffs] = useState<Handoff[] | null>(null);
+  //  W1066 - the letterbox's failed read, with its reason; and a refused move, said on its own work-order
+  const [handoffsErr, setHandoffsErr] = useState('');
+  const [moveErr, setMoveErr] = useState<{ id: string; why: string } | null>(null);
   const [loadErr, setLoadErr] = useState('');
   // 'sse' = live EventSource; 'polling' = auth mode fallback (EventSource cannot carry the
   // bearer header, so under auth the stream 401s — refuter catch); 'off' = no live channel
@@ -43,21 +53,23 @@ const AgentHubPanel: React.FC = () => {
   const esRef = useRef<EventSource | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const jget = (url: string) => fetch(url).then(r => {
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const jget = (url: string) => fetch(url).then(async r => {
+    if (!r.ok) throw new Error(await refusalOf(r));   // W1025
     return r.json();
   });
 
   const loadMsgs = () =>
     jget('/api/v1/hub/messages?limit=30')
-      .then(d => { setMsgs(d); setMsgsFailed(false); })
-      .catch(() => setMsgsFailed(true));
+      .then(d => { setMsgs(d); setMsgsErr(''); setMsgsListed(true); })
+      .catch(e => setMsgsErr(errorMessage(e)));
 
   const loadAll = () => {
     setLoadErr('');
-    jget('/api/v1/hub/agents').then(setAgents).catch(e => setLoadErr(`Hub unreachable — ${e.message}`));
+    //  W1025 - it said "Hub unreachable" over a refusal too
+    jget('/api/v1/hub/agents').then(setAgents).catch(e => setLoadErr(`The hub's agents were not read: ${errorMessage(e)}`));
     loadMsgs();
-    jget('/api/v1/hub/handoffs?limit=20').then(d => setHandoffs(d.handoffs)).catch(() => setHandoffs(null));
+    jget('/api/v1/hub/handoffs?limit=20').then(d => { setHandoffs(d.handoffs); setHandoffsErr(''); })
+      .catch(e => { setHandoffs(null); setHandoffsErr(errorMessage(e)); });
   };
 
   useEffect(() => {
@@ -86,7 +98,7 @@ const AgentHubPanel: React.FC = () => {
         if (payload.event === 'message' && payload.data) {
           setMsgs(prev => [payload.data, ...prev].slice(0, 50));
         }
-      } catch { /* heartbeats/gaps are not renderable messages */ }
+      } catch { silenceIsRight('a hub stream frame that is not a message (a heartbeat or a gap) has nothing to render')(); }
     };
     return () => { es.close(); if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
@@ -98,8 +110,9 @@ const AgentHubPanel: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sender_id: 'owner-console', sender_role: 'USER', content: draft }),
       });
-      const d = await r.json();
-      if (!r.ok) { setErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); setBusy(false); return; }
+      //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
+      const d = r.ok ? await r.json() : await bodyOrNull(r);
+      if (!r.ok) { setErr(bodyDetail(d, `HTTP ${r.status}`)); setBusy(false); return; }   // W1013 - a field check by its field
       // W443 refuter catch: "(including this panel)" was claimed unconditionally — it is only
       // true when THIS panel's stream is actually connected; and without the SSE echo the
       // poster's own message never appeared until a remount, so refetch when not live.
@@ -108,24 +121,25 @@ const AgentHubPanel: React.FC = () => {
         : 'Stored — no live subscribers received it (nothing on the platform consumes hub messages by itself).');
       setDraft('');
       if (feedMode !== 'sse') loadMsgs();
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+    } catch (e: any) { setErr(errorMessage(e)); }
     setBusy(false);
   };
 
   const moveStatus = async (id: string, status: 'in_progress' | 'done') => {
-    setErr('');
+    setMoveErr(null);
     try {
       const r = await fetch(`/api/v1/hub/handoffs/${id}/status`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       });
-      if (!r.ok) { const d = await r.json(); setErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); return; }
-      jget('/api/v1/hub/handoffs?limit=20').then(d => setHandoffs(d.handoffs)).catch(() => {});
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+      if (!r.ok) { const d = await bodyOrNull(r); setMoveErr({ id, why: `Not moved: Failed (HTTP ${r.status}): ${bodyDetail(d, 'no reason given')}` }); return; }   // W1013, W1066
+      jget('/api/v1/hub/handoffs?limit=20').then(d => { clearRead('the handoffs'); setHandoffs(d.handoffs); }).catch(noteRead('the handoffs'));
+    } catch (e: any) { setMoveErr({ id, why: `Not moved: ${errorMessage(e)}` }); }
   };
 
   return (
     <div className="space-y-6">
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-1">Respiratory layer · Agent Hub</p>
         <h2 className="text-2xl font-black tracking-tight text-white uppercase italic">Agent Collaboration Hub</h2>
@@ -144,7 +158,7 @@ const AgentHubPanel: React.FC = () => {
         <div className="grid grid-cols-1 @[560px]:grid-cols-2 gap-4">
           <div>
             <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-1.5">Registered sessions</p>
-            {(agents?.registered?.length ?? 0) === 0
+            {agents === null ? null : (agents.registered?.length ?? 0) === 0
               ? <p className="text-[10px] text-slate-600 italic">none — no external agent session has registered on the hub</p>
               : agents.registered.map((a: any) => (
                 <p key={a.agent_id} className="text-[10px] text-slate-300 font-mono">
@@ -191,8 +205,8 @@ const AgentHubPanel: React.FC = () => {
         {notice && <p className="text-emerald-400 text-[10px] font-bold mb-2 flex items-center gap-1.5"><ShieldCheck size={12} /> {notice}</p>}
         {err && <p className="text-vital text-[10px] font-bold mb-2 flex items-center gap-1.5"><AlertCircle size={12} /> {err}</p>}
         <div className="space-y-1.5 max-h-72 overflow-y-auto">
-          {msgsFailed && <p role="alert" className="text-[10px] font-bold text-vital">message feed unavailable — the read failed (this is not a quiet bus)</p>}
-          {!msgsFailed && msgs.length === 0 && <p className="text-[10px] text-slate-600 italic">no messages — the bus is real, and currently quiet</p>}
+          {msgsErr && <p role="alert" data-testid="hub-messages-unread" className="text-[10px] font-bold text-vital">The message feed could not be read: {msgsErr} This is not a quiet bus.</p>}
+          {!msgsErr && msgsListed && msgs.length === 0 && <p className="text-[10px] text-slate-600 italic">no messages — the bus is real, and currently quiet</p>}
           {msgs.map(m => (
             <div key={m.id} className="p-2.5 rounded-lg bg-slate-950 border border-slate-900">
               <div className="flex items-center justify-between gap-2 text-[9px] font-mono text-slate-600">
@@ -215,7 +229,7 @@ const AgentHubPanel: React.FC = () => {
           subscribed; nothing runs these automatically.</span> A person (or a future consumer behind an Owner
           approval gate) moves their status here.
         </p>
-        {handoffs === null && <p className="text-[10px] text-slate-600 italic">letterbox unavailable</p>}
+        {handoffsErr && <p role="alert" data-testid="hub-handoffs-unread" className="text-[10px] font-bold text-vital">The letterbox could not be read: {handoffsErr} No work-order is listed.</p>}
         {handoffs !== null && handoffs.length === 0 && <p className="text-[10px] text-slate-600 italic">no work-orders filed</p>}
         <div className="space-y-2">
           {(handoffs ?? []).map(h => (
@@ -242,6 +256,9 @@ const AgentHubPanel: React.FC = () => {
                 </div>
               </div>
               {h.status_note && <p className="text-[9px] text-slate-600 italic mt-1">{h.status_note}</p>}
+              {moveErr && moveErr.id === h.handoff_id && (
+                <p role="alert" data-testid="hub-handoff-move-error" className="text-[9px] font-bold text-vital mt-1">{moveErr.why}</p>
+              )}
             </div>
           ))}
         </div>

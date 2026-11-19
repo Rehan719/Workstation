@@ -10,9 +10,10 @@ person recording it ticked - a claim standing where a measurement was ruled. Cal
 a RUN: the cases of a named set, what the agent flagged on each, and the two rates this module computes from
 them. A caller cannot assert a rate; a run on a different version of the set does not count for this one.
 
-THE SET. `docs/CARE_REVIEW_CALIBRATION.json` holds the Care cases. Each is DESCRIBED today, not written out in
-full, and the file says so - so no reviewer can yet be run on it, no agent has met the bar, and every agent's
-review is labelled uncalibrated. That is the true state.
+THE SET. `docs/CARE_REVIEW_CALIBRATION.json` holds the Care cases, each written out from the tree (W1099): a
+route's answer, a prompt it sends or an entry it held, and for a planted case one of those with one fix undone,
+named in its `from`. WHETHER IT CAN BE RUN IS COMPUTED (runnable, below), never read from a flag: W1099 found
+`"runnable": false` typed in the file and read as the state - a claim where the rule is a measurement.
 """
 from __future__ import annotations
 
@@ -40,6 +41,69 @@ def load_set(discipline: str) -> Optional[Dict[str, Any]]:
     if not p.exists():
         return None
     return json.loads(p.read_text(encoding="utf-8"))
+
+
+def _register():
+    """The one register of sources (docs/SOURCES.json): its rows by id, and its review period in days."""
+    d = json.loads((_root() / "docs" / "SOURCES.json").read_text(encoding="utf-8"))
+    return ({str(r["id"]): r for r in d.get("rows") or [] if isinstance(r, dict) and r.get("id")},
+            int(d.get("review_days") or 90))
+
+
+def _not_read(row: Dict[str, Any]) -> List[str]:
+    """What a row says was NOT READ, in its own words: each 'NOT READ: ...' to the end of its sentence."""
+    return [part.split(".")[0].strip() for part in str(row.get("says") or "").split("NOT READ:")[1:]]
+
+
+def runnable(the_set: Dict[str, Any], on: Any = None) -> Dict[str, Any]:
+    """W1099 (FU-1054) - whether a set can be run on date `on` (today when not given), and EVERY reason it cannot.
+    Computed from the cases and the register of sources; a `runnable` key in the file is not read. It cannot be run
+    while a case is not written out (`shown`), a planted case does not say where this repository had its defect
+    (`from`), or a row a case relies on is not in the status the case names: missing from the register, in another
+    status, a current row not read within the register's review period of `on` (or read after it), or a part of
+    the row the case relies on that the row says was NOT READ."""
+    import datetime as _dt
+    if isinstance(on, _dt.date):
+        day = on
+    else:
+        try:
+            day = _dt.date.fromisoformat(str(on)[:10]) if on else _dt.date.today()
+        except ValueError:
+            return {"runnable": False, "on": None, "why_not": [f"{on!r} is not a date"]}
+    try:
+        rows, review = _register()
+    except Exception as e:                       # noqa: BLE001 - said: no source is known to be read
+        return {"runnable": False, "on": day.isoformat(), "why_not": [
+            f"the register of sources could not be read ({type(e).__name__}), so no source a case relies on is "
+            f"known to be read"]}
+    why: List[str] = []
+    for c in the_set.get("cases") or []:
+        cid, shown = c.get("id"), c.get("shown")
+        if not ((isinstance(shown, str) and shown.strip()) or (isinstance(shown, dict) and shown)):
+            why.append(f"{cid} is described, not written out in full"
+                       + (f": {c['not_written']}" if c.get("not_written") else ""))
+        if c.get("planted") and not str(c.get("from") or "").strip():
+            why.append(f"{cid} does not say where this repository had its defect")
+        for need in c.get("relies_on") or []:
+            rid, status, part = str(need.get("row")), need.get("status"), need.get("part")
+            r = rows.get(rid)
+            if r is None:
+                why.append(f"{cid} relies on {rid}, which is not a row of the register of sources")
+                continue
+            if r.get("status") != status:
+                why.append(f"{cid} relies on {rid} being {status}, and the register holds it as {r.get('status')}")
+                continue
+            if status == "current":
+                try:
+                    age = (day - _dt.date.fromisoformat(str(r.get("read_on")))).days
+                except ValueError:
+                    age = None
+                if age is None or age < 0 or age > review:
+                    why.append(f"{cid} relies on {rid}, which was not read within the register's {review}-day "
+                               f"review period before {day.isoformat()}")
+            if part and part in _not_read(r):
+                why.append(f"{cid} relies on {part} ({rid}), which the register says was NOT READ")
+    return {"runnable": not why, "on": day.isoformat(), "why_not": why}
 
 
 def score(cases: List[Dict[str, Any]], flags: Dict[str, List[str]]) -> Dict[str, Any]:
@@ -103,10 +167,14 @@ def calibration_of(agent: str, discipline: str = "care") -> Dict[str, Any]:
     the_set = load_set(discipline)
     if not the_set:
         return {"calibrated": False, "known": True, "why_not": f"no calibration set exists for {discipline!r}"}
-    if not the_set.get("runnable"):
+    can = runnable(the_set)
+    if not can["runnable"]:
+        #  W1099 (FU-1054) - computed now, never read from a flag; while the set cannot be run, no agent counts as
+        #  calibrated on it, so a calibration whose sources have gone unread past their period stops counting
         return {"calibrated": False, "known": True, "set_version": the_set.get("version"),
-                "why_not": ("the calibration set cannot be run yet: its cases are described, not written out in "
-                            "full, so no agent has been calibrated on it")}
+                "set_cannot_run": can["why_not"],
+                "why_not": ("the calibration set cannot be run yet, so no agent has been calibrated on it: "
+                            + "; ".join(can["why_not"]))}
     runs = _runs()
     if runs is None:
         return {"calibrated": False, "known": False,

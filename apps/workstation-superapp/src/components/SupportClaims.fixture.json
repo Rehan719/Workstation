@@ -1,0 +1,237 @@
+{
+ "deliverables_empty": {
+  "deliverables": [],
+  "total": 0,
+  "truncated": false,
+  "total_basis": "every deliverable held: 0 of a 300-row cap, so none has been dropped"
+ },
+ "empty": {
+  "claims": [],
+  "open": 0,
+  "basis": "A claim is OPEN until a person decides the change it was filed as, and then ANSWERED with that decision; its state is read from Change Control on every read and nothing reads the clock to change it."
+ },
+ "deliverables": {
+  "deliverables": [
+   {
+    "evidence_level": "behaviour",
+    "evidence_level_number": 1,
+    "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+    "id": "deliv-4f677932",
+    "type": "report",
+    "title": "W942 report",
+    "vsb_id": "vsb-846134f56a",
+    "versions": 1,
+    "served_by": "native",
+    "is_external": false,
+    "qms_gate_passed": null,
+    "stub_found": false,
+    "stub_marker_found": false,
+    "substantive_length": true,
+    "compliance_overall": "review",
+    "updated_at": "2026-11-13T14:31:08Z"
+   }
+  ],
+  "total": 1,
+  "truncated": false,
+  "total_basis": "every deliverable held: 1 of a 300-row cap, so none has been dropped"
+ },
+ "raise_request": {
+  "artefact_kind": "deliverable",
+  "artefact_id": "deliv-4f677932",
+  "what_is_wrong": "the second section names the wrong year"
+ },
+ "raised": {
+  "claim_id": "claim-54c83ded78",
+  "artefact_kind": "deliverable",
+  "artefact_id": "deliv-4f677932",
+  "what_is_wrong": "the second section names the wrong year",
+  "raised_by": "single-user-mode",
+  "raised_at": "2026-11-13T14:31:08Z",
+  "named_owner": {
+   "owner": "owner",
+   "basis": "sign-in is off, so the Owner answers every claim; the owner shown is the one the entity's record names"
+  },
+  "artefact": {
+   "title": "W942 report",
+   "vsb_id": "vsb-846134f56a",
+   "type": "report",
+   "version": 1,
+   "ai_provenance": {
+    "evidence_level": "behaviour",
+    "evidence_level_number": 1,
+    "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+    "posture": "in-house-first",
+    "served_by": "native",
+    "is_external": false
+   },
+   "qms_gate_passed": null,
+   "compliance_overall": "review",
+   "content_sha256": "ee8a9149f5fe46d2b2bd5a5fe83f623f973bdcaad93e6134f6fcc5e4dd9818fe"
+  },
+  "cca_id": "cca-28c2948c1e",
+  "ueg": {
+   "recorded": true,
+   "entry": "7f4e1a545897eb97f03d04cd0f880be265b0a705152df2883342cbe3f4b2a0c76a15ffa606437362fe84694ffae65ffa54283e341b75edddbfe179365794f84e",
+   "basis": "appended to the ledger as support.claim_raised; the attestation is an UNSIGNED digest (env:WORKSTATION_ATTESTATION_KEY (unset)), so an altered record is detectable but no signer is established"
+  },
+  "state": "OPEN",
+  "change": {
+   "cca_id": "cca-28c2948c1e",
+   "status": "submitted",
+   "impact_tier": "CRITICAL",
+   "decision_source": null
+  },
+  "state_basis": "the change is submitted and no person has decided it; a claim nobody has answered stays OPEN",
+  "basis": "A claim is OPEN until a person decides the change it was filed as, and then ANSWERED with that decision; its state is read from Change Control on every read and nothing reads the clock to change it."
+ },
+ "after_raise": {
+  "claims": [
+   {
+    "claim_id": "claim-54c83ded78",
+    "artefact_kind": "deliverable",
+    "artefact_id": "deliv-4f677932",
+    "what_is_wrong": "the second section names the wrong year",
+    "raised_by": "single-user-mode",
+    "raised_at": "2026-11-13T14:31:08Z",
+    "named_owner": {
+     "owner": "owner",
+     "basis": "sign-in is off, so the Owner answers every claim; the owner shown is the one the entity's record names"
+    },
+    "artefact": {
+     "title": "W942 report",
+     "vsb_id": "vsb-846134f56a",
+     "type": "report",
+     "version": 1,
+     "ai_provenance": {
+      "evidence_level": "behaviour",
+      "evidence_level_number": 1,
+      "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+      "posture": "in-house-first",
+      "served_by": "native",
+      "is_external": false
+     },
+     "qms_gate_passed": null,
+     "compliance_overall": "review",
+     "content_sha256": "ee8a9149f5fe46d2b2bd5a5fe83f623f973bdcaad93e6134f6fcc5e4dd9818fe"
+    },
+    "cca_id": "cca-28c2948c1e",
+    "ueg": {
+     "recorded": true,
+     "entry": "7f4e1a545897eb97f03d04cd0f880be265b0a705152df2883342cbe3f4b2a0c76a15ffa606437362fe84694ffae65ffa54283e341b75edddbfe179365794f84e",
+     "basis": "appended to the ledger as support.claim_raised; the attestation is an UNSIGNED digest (env:WORKSTATION_ATTESTATION_KEY (unset)), so an altered record is detectable but no signer is established"
+    },
+    "state": "OPEN",
+    "change": {
+     "cca_id": "cca-28c2948c1e",
+     "status": "submitted",
+     "impact_tier": "CRITICAL",
+     "decision_source": null
+    },
+    "state_basis": "the change is submitted and no person has decided it; a claim nobody has answered stays OPEN"
+   }
+  ],
+  "open": 1,
+  "basis": "A claim is OPEN until a person decides the change it was filed as, and then ANSWERED with that decision; its state is read from Change Control on every read and nothing reads the clock to change it."
+ },
+ "after_answer": {
+  "claims": [
+   {
+    "claim_id": "claim-54c83ded78",
+    "artefact_kind": "deliverable",
+    "artefact_id": "deliv-4f677932",
+    "what_is_wrong": "the second section names the wrong year",
+    "raised_by": "single-user-mode",
+    "raised_at": "2026-11-13T14:31:08Z",
+    "named_owner": {
+     "owner": "owner",
+     "basis": "sign-in is off, so the Owner answers every claim; the owner shown is the one the entity's record names"
+    },
+    "artefact": {
+     "title": "W942 report",
+     "vsb_id": "vsb-846134f56a",
+     "type": "report",
+     "version": 1,
+     "ai_provenance": {
+      "evidence_level": "behaviour",
+      "evidence_level_number": 1,
+      "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+      "posture": "in-house-first",
+      "served_by": "native",
+      "is_external": false
+     },
+     "qms_gate_passed": null,
+     "compliance_overall": "review",
+     "content_sha256": "ee8a9149f5fe46d2b2bd5a5fe83f623f973bdcaad93e6134f6fcc5e4dd9818fe"
+    },
+    "cca_id": "cca-28c2948c1e",
+    "ueg": {
+     "recorded": true,
+     "entry": "7f4e1a545897eb97f03d04cd0f880be265b0a705152df2883342cbe3f4b2a0c76a15ffa606437362fe84694ffae65ffa54283e341b75edddbfe179365794f84e",
+     "basis": "appended to the ledger as support.claim_raised; the attestation is an UNSIGNED digest (env:WORKSTATION_ATTESTATION_KEY (unset)), so an altered record is detectable but no signer is established"
+    },
+    "state": "ANSWERED",
+    "decision": "rejected",
+    "change": {
+     "cca_id": "cca-28c2948c1e",
+     "status": "rejected",
+     "impact_tier": "CRITICAL",
+     "decision_source": "admin_override"
+    },
+    "state_basis": "a person decided the change this claim was filed as: rejected",
+    "answer_logged": true,
+    "answer_logged_basis": "the decision is in the constitutional ledger as cca.change_rejected"
+   }
+  ],
+  "open": 0,
+  "basis": "A claim is OPEN until a person decides the change it was filed as, and then ANSWERED with that decision; its state is read from Change Control on every read and nothing reads the clock to change it."
+ },
+ "refused_blank": "Not raised: a claim says what is wrong.",
+ "unreadable": "The claims could not be read (StoreUnavailable), so none is shown and none is raised.",
+ "answer_request": {
+  "artefact_kind": "answer",
+  "artefact_id": "f8e6bdadab7d1ff94af6e7afec11ead3d3983eaeeb3ee719793ec77aa67ecc0d",
+  "endpoint": "/api/v1/care/care-plan",
+  "served_by": "native",
+  "what_is_wrong": "the plan leaves out the evening medication"
+ },
+ "answer_claims": {
+  "claims": [
+   {
+    "claim_id": "claim-554caa33d0",
+    "artefact_kind": "answer",
+    "artefact_id": "f8e6bdadab7d1ff94af6e7afec11ead3d3983eaeeb3ee719793ec77aa67ecc0d",
+    "what_is_wrong": "the plan leaves out the evening medication",
+    "raised_by": "single-user-mode",
+    "raised_at": "2026-11-13T19:13:08Z",
+    "named_owner": {
+     "owner": "the Owner",
+     "basis": "sign-in is off, so the Owner answers every claim; an answer belongs to no entity"
+    },
+    "artefact": {
+     "endpoint": "/api/v1/care/care-plan",
+     "tool": "care_planner",
+     "served_by_as_reported": "native",
+     "content_sha256": "f8e6bdadab7d1ff94af6e7afec11ead3d3983eaeeb3ee719793ec77aa67ecc0d",
+     "text_kept": false,
+     "basis": "This platform keeps no answer it was not asked to save, so this claim holds what the page reported: the route that gave the answer and the tool declared there, what served it as the answer said, and the sha256 of its text as it was shown, computed where it was shown. The text itself was never sent and is not kept; whoever answers the claim matches it against a copy by that fingerprint."
+    },
+    "cca_id": "cca-a68ffbeb99",
+    "ueg": {
+     "recorded": true,
+     "entry": "2dffe878b21387061a6d08ce71fffa6663293d1d3d02ac6f4c6782a31139150a6480fedbec8b273813a49f8b7a940de87dbbe7a6a1ae25a00ec5bad9c5285e51",
+     "basis": "appended to the ledger as support.claim_raised; the attestation is an UNSIGNED digest (env:WORKSTATION_ATTESTATION_KEY (unset)), so an altered record is detectable but no signer is established"
+    },
+    "state": "OPEN",
+    "change": {
+     "cca_id": "cca-a68ffbeb99",
+     "status": "submitted",
+     "impact_tier": "CRITICAL",
+     "decision_source": null
+    },
+    "state_basis": "the change is submitted and no person has decided it; a claim nobody has answered stays OPEN"
+   }
+  ],
+  "open": 1,
+  "basis": "A claim is OPEN until a person decides the change it was filed as, and then ANSWERED with that decision; its state is read from Change Control on every read and nothing reads the clock to change it."
+ }
+}

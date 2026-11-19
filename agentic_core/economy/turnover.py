@@ -265,7 +265,10 @@ def apply_retirement(vsb_id: str, cca_id: str) -> Dict[str, Any]:
     if total > 0:
         contribute_from_cycle(vsb_id, total)
     from agentic_core.api.capital_fund import _load_fund
-    fund_after = (_load_fund() or {}).get("total_capital")
+    try:
+        fund_after = (_load_fund() or {}).get("total_capital")
+    except Exception:                                   # W814 (FU-877) - a fund that cannot be known is not read
+        fund_after = None
     stamp = _lv._now()
     with store_lock(_lv._STORE):
         d = _lv._load()
@@ -282,6 +285,110 @@ def apply_retirement(vsb_id: str, cca_id: str) -> Dict[str, Any]:
     out["basis"] = (f"retired: {total} WST moved from its books to the Capital Fund "
                       f"({', '.join(f'{k} {v}' for k, v in moved.items()) or 'it held nothing'}); its record and books "
                       f"are kept and the organism no longer operates it")
+    return out
+
+
+#  ── FU-869 (W833, Owner ruling 2026-10-11) — A RETIREMENT IS REVERSIBLE, AND THE WAY BACK IS BUILT FIRST ──────
+#  A restore is the retirement's mirror: PROPOSED through Change Control (the Owner alone may propose it) and applied
+#  only by Change Control's implement step, which re-checks that the entity is still retired and returns it to the
+#  life-cycle state its retirement recorded it leaving. Its record and books were kept, so nothing is recreated.
+#  The balance the retirement moved into the Capital Fund STAYS in the fund, attributed to this entity: returning
+#  it is a decision about the fund, and the restore says so rather than moving money nobody decided to move.
+RESTORE_CHANGE_TYPE = "entity_restore"
+
+
+def _restorable(vsb_id: str, rec: Any) -> Dict[str, Any]:
+    """Whether this roster record can be restored, and to which state - read from its own life-cycle history."""
+    from agentic_core.economy import living_vsbs as _lv
+    out: Dict[str, Any] = {"ok": False, "refused": None, "to": None, "left_in_fund_wst": None, "basis": ""}
+    if not isinstance(rec, dict):
+        out.update(refused="not_on_roster", basis=f"{vsb_id} is not on the living roster")
+        return out
+    if rec.get("lifecycle_state") != "retired":
+        out.update(refused="not_retired", basis=(f"{vsb_id} is {rec.get('lifecycle_state') or 'in no recorded state'}, "
+                                                 f"not retired, so there is nothing to restore"))
+        return out
+    moves = [h for h in (rec.get("lifecycle_history") or []) if isinstance(h, dict) and h.get("to") == "retired"]
+    if not moves:
+        out.update(refused="state_unknown", basis=(f"{vsb_id} cannot be restored: its history records no move to "
+                                                   f"retired, so the state to return it to is not known"))
+        return out
+    prev = moves[-1].get("from")
+    if prev is not None and (prev not in _lv.LIFECYCLE_STATES or prev == "retired"):
+        out.update(refused="state_unknown", basis=(f"{vsb_id} cannot be restored: the state it left, {prev!r}, is "
+                                                   f"not one it can return to"))
+        return out
+    out.update(ok=True, to=prev, left_in_fund_wst=(rec.get("retirement") or {}).get("conserved_wst"),
+               basis=f"retired from {prev}" if prev else "retired from no recorded state, which it returns to")
+    return out
+
+
+def restore_check(vsb_id: str) -> Dict[str, Any]:
+    from agentic_core.economy import living_vsbs as _lv
+    return _restorable(vsb_id, (_lv._load() or {}).get(vsb_id))
+
+
+async def propose_restore(vsb_id: str, why: str, by: str) -> Dict[str, Any]:
+    why, by = str(why or "").strip(), str(by or "").strip()
+    out: Dict[str, Any] = {"filed": False, "refused": None, "cca_id": None, "check": None, "basis": ""}
+    if not why or not by:
+        out.update(refused="incomplete", basis="REFUSED: a restore names why it is proposed and who proposes it")
+        return out
+    chk = restore_check(vsb_id)
+    out["check"] = chk
+    if not chk["ok"]:
+        out.update(refused=chk["refused"], basis=f"NOT FILED: {chk['basis']}")
+        return out
+    _left = chk.get("left_in_fund_wst")
+    from agentic_core.api.change_control import SubmitChangeRequest, submit_change
+    rec = await submit_change(SubmitChangeRequest(
+        title=f"[turnover] restore {vsb_id}", change_type=RESTORE_CHANGE_TYPE, vsb_id=vsb_id,
+        description=(f"Restore retired entity {vsb_id} to the living roster, in the state it was retired from "
+                     f"({chk['to'] or 'no recorded state'}). Its record and books were kept. "
+                     + (f"The {_left} WST its retirement moved to the Capital Fund stays in the fund, attributed to it."
+                        if _left is not None else
+                        "What its retirement moved to the Capital Fund stays in the fund (no amount is recorded).")
+                     + f" Why: {why}"),
+        rationale=why, submitted_by=by,
+        affected_systems=[vsb_id, "living roster"],
+        rollback_plan="a restored entity can be retired again, through Change Control"))
+    out.update(filed=True, cca_id=rec.get("cca_id"),
+               basis=(f"filed through Change Control as {rec.get('cca_id')}; nothing changes until it is approved "
+                      f"and implemented"))
+    return out
+
+
+def apply_restore(vsb_id: str, cca_id: str) -> Dict[str, Any]:
+    """Change Control's implement step for an approved restore. Re-checks under the roster's lock, then returns the
+    entity to the state it was retired from. Nothing is recreated and no balance moves."""
+    from agentic_core.config import store_lock
+    from agentic_core.economy import living_vsbs as _lv
+    out: Dict[str, Any] = {"restored": False, "refused": None, "to": None, "operable": None,
+                           "left_in_fund_wst": None, "basis": ""}
+    with store_lock(_lv._STORE):
+        d = _lv._load()
+        rec = d.get(vsb_id)
+        chk = _restorable(vsb_id, rec)
+        if not chk["ok"]:
+            out.update(refused=chk["refused"], basis=f"NOT RESTORED: {chk['basis']}")
+            return out
+        to, stamp = chk["to"], _lv._now()
+        if to is None:
+            rec.pop("lifecycle_state", None)
+        else:
+            rec["lifecycle_state"] = to
+        rec["lifecycle_basis"] = _lv.lifecycle(rec)["basis"]
+        rec.setdefault("lifecycle_history", []).append(
+            {"from": "retired", "to": to, "by": f"cca:{cca_id}", "at": stamp, "note": "governed restore"})
+        rec.setdefault("restorations", []).append(
+            {"cca_id": cca_id, "at": stamp, "to": to, "left_in_fund_wst": chk.get("left_in_fund_wst")})
+        operable = _lv.lifecycle(rec)["operable"]
+        _lv._save(d)
+    out.update(restored=True, to=to, operable=operable, left_in_fund_wst=chk.get("left_in_fund_wst"),
+               basis=(f"restored: {vsb_id} is {to or 'in no recorded state'} again"
+                      + (" and the organism may operate it" if operable else ", which the organism does not operate")
+                      + "; its record and books were kept, and the balance its retirement moved to the Capital Fund "
+                        "stays in the fund"))
     return out
 
 
@@ -325,6 +432,14 @@ def _mitosis_check(parent_id: str, amount: float) -> Dict[str, Any]:
 
 async def propose_mitosis(parent_id: str, child_name: str, amount: float, why: str, by: str) -> Dict[str, Any]:
     out: Dict[str, Any] = {"filed": False, "refused": None, "cca_id": None, "check": None, "basis": ""}
+    #  FU-1116 (W839) - a division is a birth: the derived carrying capacity is read and recorded on the proposal,
+    #  consulted and never enforced (refusing a birth over capacity is the Owner's decision)
+    try:
+        from agentic_core.molecular.work_budget import birth_reading
+        out["capacity_at_birth"] = birth_reading()
+    except Exception as exc:                        # noqa: BLE001 - said, never a silent absence
+        out["capacity_at_birth"] = {"consulted": False, "enforced": False,
+                                    "basis": f"the carrying capacity could not be read ({type(exc).__name__})"}
     if not str(child_name or "").strip() or not str(why or "").strip() or not str(by or "").strip():
         out.update(refused="incomplete", basis="REFUSED: a division names the child, why, and who proposes it")
         return out

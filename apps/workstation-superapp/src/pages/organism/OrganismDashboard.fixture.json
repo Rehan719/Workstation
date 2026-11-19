@@ -1,0 +1,227 @@
+{
+  "_about": "W909 (FU-399) - the three answers OrganismDashboard reads, captured from the app's own routes (/api/v1/organism/status, /api/v1/organism/signals?n=30, /api/v1/native-ai/homeostasis) on an empty store with the work budget switched off. OrganismDashboard.test.tsx mounts the page against them.",
+  "status": {
+    "composite_health": 0.872,
+    "composite_health_basis": "0% of this figure's weight is measured (nothing); the rest is an immune term with NO call observed in its window (the absence of failures, not a reading), a self-healing term defaulted to 1.0 and a simulated metabolic term. The measured-only score is None, and that is what decides the mode and every gate.",
+    "composite_health_measured_only": null,
+    "composite_health_measured_weight": 0.0,
+    "composite_health_terms": {
+      "immune_health": {
+        "basis": "no call was observed in the sensor's window - this value is the absence of failures, not a measurement",
+        "measured": false,
+        "observations": 0,
+        "value": 1.0,
+        "weight": 0.4
+      },
+      "metabolic": {
+        "basis": "ATPSimulator on a constant metabolic_load — simulated, not a measurement of this platform",
+        "measured": false,
+        "value": 0.358,
+        "weight": 0.2
+      },
+      "self_healing_health": {
+        "basis": "no circuits tracked yet — defaulted to 1.0, not a measurement",
+        "measured": false,
+        "value": 1.0,
+        "weight": 0.4
+      }
+    },
+    "health_summary": "Nothing was measured in the last 5 minutes: no call was observed and no circuit is tracked. The mode shown (NOMINAL) is the default, not an assessment; health-gated changes are held for an explicit decision.",
+    "measured_weight_basis": "0% of the blend's weight is measured; no circuit is tracked yet, so self-healing is a default rather than a reading, and the metabolic term is a simulation. This is the confidence behind the figure, not a rule about who may decide.",
+    "measured_weight_below_half": true,
+    "mode": "NOMINAL",
+    "mode_basis": "THE DEFAULT - nothing was measured in the last 5 minutes (no call observed, no circuit tracked), so this mode is not an assessment (0% of the blend's weight is measured). The blended figure 0.872 also carries a self-healing term defaulted to 1.0 and a simulated metabolic term, so it cannot be read as a measurement.",
+    "mode_decidable": false,
+    "mode_decidable_basis": "NOTHING is measured: no call was observed in the immune sensor's window and no circuit is tracked. The measured-only score is None, so every gate that tests it HOLDS for an explicit decision; the mode shown is the default.",
+    "mode_decided_on": "composite_health_measured_only",
+    "operations": {
+      "change_control": {
+        "approved": 0,
+        "awaiting_board_ratification": 0,
+        "implemented": 0,
+        "pending": 0
+      },
+      "lifecycle": {
+        "by_stage": {
+          "commercialise": 0,
+          "concept": 0,
+          "prototype": 0
+        },
+        "commercialisation_rate": 0.0,
+        "pipeline_health": "DORMANT",
+        "pipeline_health_basis": "FLOURISHING: >30% commercialised · GROWING: any project touched in 30 days (0 were) · STATIC: projects exist but idle · DORMANT: none",
+        "running": 0,
+        "total_projects": 0
+      },
+      "vsb": {
+        "by_status": {},
+        "domains": [],
+        "domains_total": 0,
+        "legacy_operating": 0,
+        "operating": 0,
+        "operational": 0,
+        "operational_basis": "counts status == 'operating', which is what _derived_status returns today (0 entit(ies)), plus 0 written by pre-W496 paths that still carry ['operational', 'active'] on disk. Statuses NOT counted as operating: none",
+        "total": 0
+      }
+    },
+    "organism": "Workstation IDBO",
+    "recommended": {
+      "max_parallel_agents": 3,
+      "priority": "normal",
+      "should_throttle": false,
+      "temperature": "neutral"
+    },
+    "systems": {
+      "circadian": {
+        "cycle": "ACTIVE_REST",
+        "is_peak_focus": false
+      },
+      "genome": {
+        "dominant_trait": null,
+        "dominant_trait_basis": "no genomes stored yet",
+        "dominant_trait_tied": [],
+        "encoded_basis": "no genomes stored yet",
+        "encoded_genomes": 0,
+        "fitness_composition": {},
+        "max_generation": 0,
+        "mean_declared_fitness": null,
+        "mean_fitness": null,
+        "mean_fitness_basis": "no genomes stored yet",
+        "total_genomes": 0
+      },
+      "immune": {
+        "errors_in_window": 0,
+        "events_in_window": 0,
+        "health": 1.0,
+        "health_basis": "health and threat are computed from 0 failure(s) in the window; 0 compliance review flag(s) are reported beside them and are NOT counted — a flag asks a human to look, it is not a finding of harm",
+        "hot_endpoint": null,
+        "hot_endpoint_errors": 0,
+        "hot_endpoint_tied": [],
+        "observations_in_window": 0,
+        "observed_basis": "NO call was observed in the last 5 minutes, so the health figure is the absence of failures and not a reading of anything",
+        "response_playbook": [
+          "recommended: passive surveillance"
+        ],
+        "review_flags_in_window": 0,
+        "threat_level": "NOMINAL"
+      },
+      "metabolic": {
+        "atp_ratio": 0.358,
+        "basis": "the metabolic term is an ATPSimulator on a load clamped to its declared 0-1 domain, where production (0.5 x efficiency, efficiency 0.8 or 1.0) always exceeds consumption (0.1 x load), so within that domain it only rises — from 0.333 at boot to 1.0 — and the thresholds written against it cannot fire. It is a simulation, not a reading of this platform's energy.",
+        "can_fall": false,
+        "energy_acts": false,
+        "energy_basis": "1 - 0.0s spent / 3600s stated capacity this window (the capacity is a stated assumption); the work budget is switched off (WORKSTATION_WORK_BUDGET), so nothing reads this figure: the energy thresholds read the ATP simulator, which cannot fall, and stay inert as ruled",
+        "energy_ratio": 1.0,
+        "measured": false,
+        "thresholds_read": "atp_simulator"
+      },
+      "nervous": {
+        "arousal_state": "DORMANT",
+        "by_type": {},
+        "reflex_arcs": 0,
+        "signal_rate_per_second": 0.0,
+        "signals_last_60s": 0,
+        "total_signals": {}
+      },
+      "reconfiguration": {
+        "domains_enabled": 6,
+        "domains_total": 6,
+        "domains_wired": 0,
+        "features_active": 9,
+        "features_total": 9,
+        "features_wired": 0,
+        "preferred_provider": "auto",
+        "preferred_provider_wired": false,
+        "rpm_limit": 20,
+        "rpm_limit_wired": true,
+        "wiring_basis": "These are stored switches. 0 of 9 feature flag(s) and 0 of 6 domain flag(s) are read by anything, so switching any other one changes nothing. The provider preference is stored only - nothing reads it; the RPM limit is read by: ai.gateway rate limiter (re-synced ~30s via _sync_reconfig). The per-key table is on the Anatomy tab."
+      },
+      "self_healing": {
+        "open_circuits": 0,
+        "overall_health": null,
+        "recent_events": []
+      },
+      "work_budget": {
+        "basis": "0.0s of a stated 3600s capacity is recorded spent this window, from 0 run(s) whose duration was measured — and it GATES NOTHING: the budget ships inert until WORKSTATION_WORK_BUDGET=true, per the Owner's ruling",
+        "by_entity": [],
+        "calls_recorded": 0,
+        "capacity_basis": "3600 seconds per 6-hour window is a STATED ASSUMPTION, not a measurement — nothing here has yet measured what this platform's sustainable rate is",
+        "capacity_seconds": 3600.0,
+        "capacity_tokens": null,
+        "carrying_capacity": {
+          "basis": "UNMEASURED - no run this window was attributed to an entity, so no per-entity demand is measured and no carrying capacity is derived; it is never set by hand",
+          "entities": null,
+          "entities_measured": 0,
+          "mean_seconds_per_entity": null,
+          "over_capacity": null
+        },
+        "consumers": {
+          "native homeostasis admission": "while the gate holds, the native tree and the org cascade run their nodes one at a time; single model calls, deliverables and every other AI door are not held, and no run is refused or deferred"
+        },
+        "enabled": false,
+        "entities": {
+          "attributed_seconds": 0,
+          "basis": "0.0s of the 0.0s recorded this window came from runs that named the owner they ran for; the rest named none, so it counts in the platform total and is apportioned to no one. These figures are reported, not enforced: the S18.1 gate (gate()) reads the platform total, not an entity's own figure",
+          "entities_measured": 0,
+          "owners_measured": 0,
+          "unattributed_seconds": 0.0
+        },
+        "fraction_basis": "seconds_spent / capacity_seconds, SECONDS ALONE: tokens are recorded beside it but no token capacity is stated, so tokens do not enter the fraction and cannot hold anything",
+        "fraction_spent": 0.0,
+        "gate_basis": "it GATES NOTHING: the budget ships inert until WORKSTATION_WORK_BUDGET=true, per the Owner's ruling",
+        "gates_anything": false,
+        "holding_reason": null,
+        "seconds_spent": 0.0,
+        "spend_basis": "the sum of the run durations the platform recorded, each nest counted once (W847): a run recorded inside a marked run (a model attempt inside the AI call that made it; an AI call inside a deliverable, a composition, a swarm, a cascade tier, the board or a transformation) is held by the outermost run, which spends its own duration with the tokens its inner runs counted. A run made where the mark does not reach (a worker thread started without it) can still be counted at two levels. Durations a caller reported through /api/v1/operations/record are not counted",
+        "store_incomplete": null,
+        "tokens_basis": "NOT RECORDED — no run this window reported a token count (a count comes only from a model's own answer; the deterministic floor runs no model), so this is null rather than 0; zero would read as 'no tokens were used' when nobody counted",
+        "tokens_counted_calls": 0,
+        "tokens_spent": null,
+        "unit": "wall-clock seconds of recorded run time",
+        "window_seconds": 21600.0,
+        "window_started": 1794552548.8524601
+      }
+    },
+    "timestamp": "2026-11-13T06:49:08Z",
+    "version": "1.0.0"
+  },
+  "signals": {
+    "arousal_state": "DORMANT",
+    "count": 0,
+    "signal_rate_per_second": 0.0,
+    "signals": []
+  },
+  "homeostasis": {
+    "atp_mode": "projection",
+    "governed_by": "homeostatic controller (§8 organism → §6 cognition). The immune, self-healing and circadian terms are read from live state; the metabolic (ATP) term is simulated and says so in organism.atp_basis",
+    "max_parallel": 3,
+    "metabolic_load": 0.2,
+    "organism": {
+      "atp_basis": "the metabolic term is an ATPSimulator on a load clamped to its declared 0-1 domain, where production (0.5 x efficiency, efficiency 0.8 or 1.0) always exceeds consumption (0.1 x load), so within that domain it only rises — from 0.333 at boot to 1.0 — and the thresholds written against it cannot fire. It is a simulation, not a reading of this platform's energy.",
+      "atp_can_fall": false,
+      "atp_measured": false,
+      "atp_ratio": 0.358,
+      "circadian": "ACTIVE_REST",
+      "composite_health": 0.872,
+      "conserve_reads": "atp_simulator",
+      "conserving_posture_basis": "the 'conserving' posture is selected below an ATP of 0.3 and the figure cannot fall to it: consumption is at most 0.10 per tick (0.1 x a load clamped to 1.0) and production at least 0.40 (0.5 x the lowest efficiency this code passes, 0.8), so production exceeds consumption at every reachable combination and the ratio only RISES to its ceiling. It does not deplete - and NOT because of the 0.5 floor, which never binds.",
+      "conserving_posture_reachable": false,
+      "energy_acts": false,
+      "energy_basis": "1 - 0.0s spent / 3600s stated capacity this window (the capacity is a stated assumption); the work budget is switched off (WORKSTATION_WORK_BUDGET), so nothing reads this figure: the energy thresholds read the ATP simulator, which cannot fall, and stay inert as ruled",
+      "energy_ratio": 1.0,
+      "immune_threat": "NOMINAL",
+      "is_peak_focus": false,
+      "mode": "NOMINAL",
+      "should_throttle": false
+    },
+    "posture": "reduced",
+    "work_budget": {
+      "basis": "0.0s of a stated 3600s capacity is recorded spent this window, from 0 run(s) whose duration was measured — and it GATES NOTHING: the budget ships inert until WORKSTATION_WORK_BUDGET=true, per the Owner's ruling",
+      "enabled": false,
+      "fraction_spent": 0.0,
+      "holds": false,
+      "reason": null,
+      "spend_basis": "the sum of the run durations the platform recorded, each nest counted once (W847): a run recorded inside a marked run (a model attempt inside the AI call that made it; an AI call inside a deliverable, a composition, a swarm, a cascade tier, the board or a transformation) is held by the outermost run, which spends its own duration with the tokens its inner runs counted. A run made where the mark does not reach (a worker thread started without it) can still be counted at two levels. Durations a caller reported through /api/v1/operations/record are not counted"
+    }
+  }
+}

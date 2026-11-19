@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from typing import Dict, Any, List
 
 router = APIRouter(prefix="/contribute", tags=["User Empowerment"])
@@ -12,6 +12,12 @@ async def submit_feedback(data: Dict[str, Any]):
     # scores feedback; the number said only that the request had been received.
     return {"status": "ingested", "received": len(FEEDBACK)}
 
+VOTE_REFUSED = ("No enhancement proposal register exists on this deployment, so there is nothing to vote on and "
+                "no vote is recorded.")
+
+
 @router.post("/vote")
 async def vote_enhancement(proposal_id: str):
-    return {"status": "recorded", "proposal": proposal_id}
+    """W967 (P5.10 clause 4) - this answered "recorded" for any proposal id and kept nothing. Nothing records a
+    vote, so it is refused with that sentence."""
+    raise HTTPException(status_code=404, detail=f"{VOTE_REFUSED} (Asked: {proposal_id}.)")

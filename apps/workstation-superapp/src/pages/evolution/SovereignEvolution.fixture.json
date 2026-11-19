@@ -1,0 +1,337 @@
+{
+ "roadmap_none": {
+  "roadmap": null,
+  "message": "No cycle has run yet. POST /cycle to generate one."
+ },
+ "heartbeat": {
+  "running": false,
+  "beats": 1,
+  "circadian_phase": "MAINTENANCE_REST",
+  "phase_intensity": 0.3,
+  "last_beat": "2026-11-14T00:25:07Z",
+  "last_realisation": 0.849,
+  "last_realisation_measure": "API surface coverage — pillar routers mounted and stores non-empty; not delivery (the delivery measure is /api/v1/plan/state)",
+  "last_self_healing": null,
+  "last_recovery": null,
+  "last_heal": null,
+  "last_genome": {
+   "total": 0,
+   "mean_fitness": null,
+   "mean_fitness_basis": "no genomes stored yet",
+   "mean_declared_fitness": null,
+   "fitness_composition": {},
+   "max_generation": 0
+  },
+  "last_cadence": {
+   "beat": 1,
+   "refreshed": [
+    {
+     "scope": "workstation",
+     "layer": "strategic",
+     "trigger": "never_refreshed",
+     "reason": "this layer has NEVER been refreshed, which is not the same as refreshed long ago - there is no previous quarterly refresh to measure from",
+     "at": "2026-11-14T00:25:07Z",
+     "served_by": "deterministic-floor"
+    },
+    {
+     "scope": "workstation",
+     "layer": "action_plan",
+     "trigger": "never_refreshed",
+     "reason": "this layer has NEVER been refreshed, which is not the same as refreshed long ago - there is no previous weekly refresh to measure from",
+     "at": "2026-11-14T00:25:07Z",
+     "served_by": "deterministic-floor"
+    }
+   ],
+   "could_not_run": null,
+   "nothing_was_due": false,
+   "at": "2026-11-14T00:25:07Z",
+   "scopes": [
+    "workstation"
+   ],
+   "scope_basis": "the apex only",
+   "basis": "2 layer(s) refreshed on beat 1 across 1 scope(s) (the apex only) and 0 could not run. A layer that could not run is still DUE - this is not 'nothing was due'"
+  },
+  "last_twin_directive": null,
+  "last_evolution": null,
+  "last_vsb_operated": null,
+  "last_vsb_failed": null,
+  "last_vsb_not_operated": null,
+  "last_transfer_reconcile": null,
+  "last_intake_reconcile": null,
+  "last_vsb_evolved": null,
+  "last_reshipped": null,
+  "auto_ship": false,
+  "auto_metabolic": false,
+  "circadian_to_atp": false,
+  "circadian_to_atp_basis": "runtime only, default OFF (Owner ruling 2026-10-07): when on, the phase's intensity (1.0/0.7/0.5/0.3) is the ATP production efficiency; a restart returns it to off",
+  "metabolic_every": 10,
+  "auto_metabolic_basis": "runtime only: set through /heartbeat/configure and NOT persisted, so a restart returns it to off",
+  "interval_seconds": 60,
+  "effective_interval_seconds": 200.0,
+  "interval_basis": "interval_seconds is the BASE; the loop waits base / phase intensity, which is effective_interval_seconds for the current phase and changes when the phase does",
+  "auto_evolve": false,
+  "evolve_every": 30,
+  "beats_since_evolve": 1,
+  "evolve_pacing": "Self-improve is attempted once every 30 beats, and only in a maintenance phase; 1 beat(s) have passed since the last attempt",
+  "auto_economy": false,
+  "auto_align": false,
+  "auto_compliance": false,
+  "autonomy_persisted": true,
+  "autonomy_restored_at": null,
+  "evolution_auto_apply": {
+   "enabled": false,
+   "readable": true,
+   "governed_by": "Change Control Agency",
+   "consumer": "organism.heartbeat applies CCA-APPROVED evolution proposals each beat",
+   "how_to_change": "submit a change request to the CCA at /change-control",
+   "why_not_a_toggle": "the arms-length approval it sits behind is the point",
+   "effect_when_off": "approved evolution proposals are never applied; they wait"
+  },
+  "last_compliance": null,
+  "reflex_arcs_registered": 2,
+  "reflex_arcs": [
+   "organism.reflex.health",
+   "organism.reflex.circuits"
+  ],
+  "reflex_reactions": 0,
+  "last_reflex": null,
+  "last_immune_defence": null,
+  "immune_quarantine": {
+   "engaged": false,
+   "open_circuits_at_engagement": null,
+   "engaged_by": null,
+   "revert_with": null,
+   "basis": "not engaged - self-healing probes open circuits"
+  },
+  "defends_at": "HIGH",
+  "recent": [
+   {
+    "beat": 1,
+    "phase": "MAINTENANCE_REST",
+    "intensity": 0.3,
+    "realisation": 0.849,
+    "health": 1.0,
+    "health_observations": 0,
+    "health_measured": false,
+    "health_basis": "NOT A MEASUREMENT - no call was observed in the immune window, so 1.0 is the absence of failures and not a reading of anything",
+    "self_recovery": null,
+    "actions": [
+     "pulse",
+     "homeostasis",
+     "cadence_refresh",
+     "transformation_tick"
+    ],
+    "at": "2026-11-14T00:25:07Z",
+    "steps_failed": {},
+    "steps_failed_basis": "steps attempted on this beat that raised, by name, cleared at the start of every beat so a failure never outlives the beat that had it. They are deliberately NOT in `actions`: an action is something the beat performed. Since W611 (FU-461) EVERY beat step's failure is recorded here, so an EMPTY steps_failed means no step raised. That includes a step that CAUGHT its own error and reports it in a field of its own (the four homeostatic responders, the cadence, the two reconciliations and the metabolic cycle): each is recorded here as well. One thing is not a step failure and is not here: a single unreadable ship record skipped while looking for stale bodies."
+   }
+  ],
+  "integrations": [
+   "circadian",
+   "central_nervous_system",
+   "immune",
+   "self_healing",
+   "metabolic_atp",
+   "genome",
+   "UEG_audit",
+   "constitutional_arms_length"
+  ],
+  "last_metabolic": null,
+  "metabolic_basis": "the metabolic cycle has not run on this process, so there is no outcome to report — the loop is paced and OFF by default, and this is not a withheld emission",
+  "note": "Continuous circadian autonomy — cheap pulse every beat; expensive cognition opt-in + paced."
+ },
+ "cycle": {
+  "cycle_id": "133e1bc802",
+  "created_at": "2026-11-14T00:25:08Z",
+  "duration_ms": 28,
+  "introspection": {
+   "projects": {
+    "total": 0,
+    "by_stage": {}
+   },
+   "immune": {
+    "health": 1.0,
+    "threat_level": "NOMINAL",
+    "hot_endpoint_errors": 0,
+    "hot_endpoint_tied": [],
+    "errors_in_window": 0,
+    "review_flags_in_window": 0,
+    "events_in_window": 0,
+    "health_basis": "health and threat are computed from 0 failure(s) in the window; 0 compliance review flag(s) are reported beside them and are NOT counted — a flag asks a human to look, it is not a finding of harm",
+    "window_seconds": 300,
+    "observations_in_window": 0,
+    "observed_basis": "NO call was observed in the last 5 minutes, so the health figure is the absence of failures and not a reading of anything",
+    "by_type": {},
+    "hot_endpoint": null,
+    "response_playbook": [
+     "recommended: passive surveillance"
+    ]
+   },
+   "self_healing": {
+    "overall_health": null,
+    "health_basis": "no circuit has carried a call yet — nothing measured, health unknown",
+    "measured_endpoints": 0,
+    "circuits": {},
+    "open_circuits": 0,
+    "tracked_endpoints": 0,
+    "healing_log": [],
+    "thresholds": {
+     "failure_threshold": 5,
+     "window_seconds": 60.0,
+     "recovery_timeout": 30.0
+    },
+    "scope": "in-memory, this server process since start",
+    "process_started_at": "2026-11-14T00:25:02Z",
+    "pid": 3831
+   },
+   "resources": {
+    "cpu_percent": 56.4,
+    "memory_percent": 9.8,
+    "cpu_window_seconds": 1.064,
+    "scope": "host"
+   }
+  },
+  "ceo_directives": [
+   {
+    "id": "dir-d682f227",
+    "function": "maintenance",
+    "owner": "COO",
+    "priority": "P2",
+    "title": "Routine organism health review",
+    "rationale": "No parseable CEO directives; defaulting to a maintenance sweep.",
+    "source": "default",
+    "source_basis": "NOT ISSUED BY THE AI CEO - the CEO call returned no line this parser could read, so this is the platform's maintenance default",
+    "verdict": null,
+    "verdict_source": "default: no C-Suite verdict was parsed for this directive",
+    "effort": null,
+    "execution_note": ""
+   }
+  ],
+  "previous_cycle": {
+   "read": true,
+   "created_at": null,
+   "directives": [],
+   "submissions": [],
+   "basis": "no previous cycle is recorded: this is the first"
+  },
+  "bto_roadmap": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Centres of Excellence (quality/standards) and the Business Transformation Office (sequencing) of the VSB. The native floor takes no role - what follows is a frame, not that role's work._\n\n## CoE Quality Gate\nStructured service frame for: the subject (not identified to this engine by the tool that called it).\n- Offering: what is delivered and the scope boundary.\n- Delivery model: how it is provided (cadence, channel, roles).\n- Quality measure for the stated context.\n- SLAs & assurance: the commitments and how they're governed for WITHHELD — no domain was declared for this call.\n\n## Transformation Roadmap\nStructured phased frame (deterministic scaffold):\n- Phase 1 — validate: cheapest test of the riskiest assumption.\n- Phase 2 — build: the smallest end-to-end slice that delivers value.\n- Phase 3 — launch & learn: ship, instrument, iterate.\n- Each phase grounded in WITHHELD — no domain was declared for this call; dates to be set against capacity.\n\n## Governance\nNative structured frame for 'Governance' over: the subject (not identified to this engine by the tool that called it) (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- (no terms were counted for this reply)",
+  "curated_by": [
+   "CoE",
+   "BTO"
+  ],
+  "curated_by_basis": "the CEO call returned no directive this parser could read, so the maintenance default stood in; 0 of 1 directive(s) carry a parsed C-Suite verdict; the CoE and BTO sections are the text those two prompts returned",
+  "items_proceeding": 0,
+  "items_rejected": 0,
+  "items_unevaluated": 1,
+  "items_basis": "0 directive(s) carry a parsed 'proceed', 0 a 'reject', and 1 were never evaluated - an unevaluated directive is not a decision to proceed",
+  "change_control_submissions": [],
+  "change_control_handoff": {
+   "requested": false,
+   "directives_considered": 0,
+   "met_the_rule": 0,
+   "submitted": 0,
+   "rule": "a directive is handed to Change Control automatically only when its priority is P1 or its function is correction - a maintenance or development item at P2/P3 is recorded on the roadmap and not queued, so the Owner's governance queue stays readable",
+   "priorities_present": [],
+   "functions_present": [],
+   "why_nothing_was_submitted": null,
+   "why_not_requested": "the run did not ask for a Change Control hand-off"
+  }
+ },
+ "roadmap": {
+  "cycle_id": "133e1bc802",
+  "created_at": "2026-11-14T00:25:08Z",
+  "duration_ms": 28,
+  "introspection": {
+   "projects": {
+    "total": 0,
+    "by_stage": {}
+   },
+   "immune": {
+    "health": 1.0,
+    "threat_level": "NOMINAL",
+    "hot_endpoint_errors": 0,
+    "hot_endpoint_tied": [],
+    "errors_in_window": 0,
+    "review_flags_in_window": 0,
+    "events_in_window": 0,
+    "health_basis": "health and threat are computed from 0 failure(s) in the window; 0 compliance review flag(s) are reported beside them and are NOT counted — a flag asks a human to look, it is not a finding of harm",
+    "window_seconds": 300,
+    "observations_in_window": 0,
+    "observed_basis": "NO call was observed in the last 5 minutes, so the health figure is the absence of failures and not a reading of anything",
+    "by_type": {},
+    "hot_endpoint": null,
+    "response_playbook": [
+     "recommended: passive surveillance"
+    ]
+   },
+   "self_healing": {
+    "overall_health": null,
+    "health_basis": "no circuit has carried a call yet — nothing measured, health unknown",
+    "measured_endpoints": 0,
+    "circuits": {},
+    "open_circuits": 0,
+    "tracked_endpoints": 0,
+    "healing_log": [],
+    "thresholds": {
+     "failure_threshold": 5,
+     "window_seconds": 60.0,
+     "recovery_timeout": 30.0
+    },
+    "scope": "in-memory, this server process since start",
+    "process_started_at": "2026-11-14T00:25:02Z",
+    "pid": 3831
+   },
+   "resources": {
+    "cpu_percent": 56.4,
+    "memory_percent": 9.8,
+    "cpu_window_seconds": 1.064,
+    "scope": "host"
+   }
+  },
+  "ceo_directives": [
+   {
+    "id": "dir-d682f227",
+    "function": "maintenance",
+    "owner": "COO",
+    "priority": "P2",
+    "title": "Routine organism health review",
+    "rationale": "No parseable CEO directives; defaulting to a maintenance sweep.",
+    "source": "default",
+    "source_basis": "NOT ISSUED BY THE AI CEO - the CEO call returned no line this parser could read, so this is the platform's maintenance default",
+    "verdict": null,
+    "verdict_source": "default: no C-Suite verdict was parsed for this directive",
+    "effort": null,
+    "execution_note": ""
+   }
+  ],
+  "previous_cycle": {
+   "read": true,
+   "created_at": null,
+   "directives": [],
+   "submissions": [],
+   "basis": "no previous cycle is recorded: this is the first"
+  },
+  "bto_roadmap": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Centres of Excellence (quality/standards) and the Business Transformation Office (sequencing) of the VSB. The native floor takes no role - what follows is a frame, not that role's work._\n\n## CoE Quality Gate\nStructured service frame for: the subject (not identified to this engine by the tool that called it).\n- Offering: what is delivered and the scope boundary.\n- Delivery model: how it is provided (cadence, channel, roles).\n- Quality measure for the stated context.\n- SLAs & assurance: the commitments and how they're governed for WITHHELD — no domain was declared for this call.\n\n## Transformation Roadmap\nStructured phased frame (deterministic scaffold):\n- Phase 1 — validate: cheapest test of the riskiest assumption.\n- Phase 2 — build: the smallest end-to-end slice that delivers value.\n- Phase 3 — launch & learn: ship, instrument, iterate.\n- Each phase grounded in WITHHELD — no domain was declared for this call; dates to be set against capacity.\n\n## Governance\nNative structured frame for 'Governance' over: the subject (not identified to this engine by the tool that called it) (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- (no terms were counted for this reply)",
+  "curated_by": [
+   "CoE",
+   "BTO"
+  ],
+  "curated_by_basis": "the CEO call returned no directive this parser could read, so the maintenance default stood in; 0 of 1 directive(s) carry a parsed C-Suite verdict; the CoE and BTO sections are the text those two prompts returned",
+  "items_proceeding": 0,
+  "items_rejected": 0,
+  "items_unevaluated": 1,
+  "items_basis": "0 directive(s) carry a parsed 'proceed', 0 a 'reject', and 1 were never evaluated - an unevaluated directive is not a decision to proceed",
+  "change_control_submissions": [],
+  "change_control_handoff": {
+   "requested": false,
+   "directives_considered": 0,
+   "met_the_rule": 0,
+   "submitted": 0,
+   "rule": "a directive is handed to Change Control automatically only when its priority is P1 or its function is correction - a maintenance or development item at P2/P3 is recorded on the roadmap and not queued, so the Owner's governance queue stays readable",
+   "priorities_present": [],
+   "functions_present": [],
+   "why_nothing_was_submitted": null,
+   "why_not_requested": "the run did not ask for a Change Control hand-off"
+  }
+ }
+}

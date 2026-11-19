@@ -1,4 +1,5 @@
 import { provenanceMapBadge, apiJson, errorMessage } from '../../lib/api';
+import { refusalOf } from '../../lib/stream';   // W1025 - a refused instruction by its reason
 import { DictateButton } from '../../components/DictateButton';   // P3.30 (ledger v16 R3.14)
 import { getPrefs } from '../../lib/userPrefs';
 import React, { useState, useEffect } from 'react';
@@ -28,7 +29,7 @@ interface PendingRatification {
   twin_prevalidation?: { verdict?: string; source?: string; source_label?: string } | null;
 }
 interface Status {
-  board: string; represents_owner: string; hierarchy: string[];
+  board: string; represents_owner: string; represents_owner_basis?: string; hierarchy: string[];
   chief: Director; directors: Director[]; live?: { organism_health?: number };
   recent_directives?: any[];
   // W671 (ledger v16 R3.5)
@@ -106,13 +107,16 @@ export const BoardOfDirectors: React.FC = () => {
   };
 
   useEffect(() => {
-    fetch('/api/v1/board/status').then(r => r.json()).then(setStatus)
-      .catch(() => setLoadErr('Could not load the board status.'));
-    fetch('/api/v1/board/charter').then(r => r.json()).then(setCharter)
-      .catch(() => setLoadErr('Could not load the board charter.'));
+    //  W926 (FU-399 part 7) - each read goes through the checked helper. A refusal's body used to be set as the answer:
+    //  a failed read of the Chief's model rendered as "A role, not a modelled twin", and a failed status read blanked
+    //  the page. A refusal is now said with the server's reason, and nothing is drawn from it.
+    apiJson<Status>('/api/v1/board/status').then(setStatus)
+      .catch(e => setLoadErr(`Could not load the board status — ${errorMessage(e)}`));
+    apiJson<Charter>('/api/v1/board/charter').then(setCharter)
+      .catch(e => setLoadErr(`Could not load the board charter — ${errorMessage(e)}`));
     //  P3.4 (W587) — whether this Chief is a modelled twin or a role, and what it was built from
-    fetch('/api/v1/board/chief/model').then(r => r.json()).then(setChiefModel)
-      .catch(() => setChiefModelErr('Could not read whether this Chief is a modelled twin or a role.'));
+    apiJson<NonNullable<typeof chiefModel>>('/api/v1/board/chief/model').then(setChiefModel)
+      .catch(e => setChiefModelErr(`Could not read whether this Chief is a modelled twin or a role — ${errorMessage(e)}`));
     loadRatifications();
   }, []);
 
@@ -175,8 +179,8 @@ export const BoardOfDirectors: React.FC = () => {
         { method: 'POST', body: d ? { topic: t, domain: d, scope: 'workstation' } : { topic: t, scope: 'workstation' } });
       setBoardResult(r);
       setTopic('');
-      fetch('/api/v1/board/status').then(x => x.json()).then(setStatus)
-        .catch(() => setLoadErr('The topic was recorded, but the list of recent deliberations could not be re-read.'));
+      apiJson<Status>('/api/v1/board/status').then(setStatus)
+        .catch(e => setLoadErr(`The topic was recorded, but the list of recent deliberations could not be re-read — ${errorMessage(e)}`));
     } catch (e) {
       setBoardErr(`Not put to the Board: ${errorMessage(e)}`);
     }
@@ -189,11 +193,12 @@ export const BoardOfDirectors: React.FC = () => {
     try {
       const r = await fetch('/api/v1/board/chief/instruct', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ instruction, owner: status?.represents_owner ?? 'Rehan', cascade_to_ceo: cascade }),
+        // W812 (FU-1153) - no owner is sent: the server records the configured owner and says it was not asked for
+        body: JSON.stringify({ instruction, cascade_to_ceo: cascade }),
       });
-      if (!r.ok) { setError(`HTTP ${r.status}`); setRunning(false); return; }
+      if (!r.ok) { setError(await refusalOf(r)); setRunning(false); return; }   // W1025
       setResult(await r.json());
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+    } catch (e: any) { setError(errorMessage(e)); }
     setRunning(false);
   };
 
@@ -204,7 +209,7 @@ export const BoardOfDirectors: React.FC = () => {
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Board of Directors</h1>
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
           The apex governance tier — above the AI CEO. Chaired by your <span className="text-highlight">Chief</span>,
-          standing for you ({status?.represents_owner ?? 'the Owner'}) in your presence and absence and directing the
+          standing for you (<span title={status?.represents_owner_basis}>{status?.represents_owner ?? 'the Owner'}</span>) in your presence and absence and directing the
           whole organism on your behalf.
         </p>
         {/* W623 (FU-528, M1 v9 R3.5) — this said "no digital-twin model… Mode 2 is planned" while the same page labelled
@@ -274,7 +279,7 @@ export const BoardOfDirectors: React.FC = () => {
                 : q.decision_source === 'unrecorded_decision' ? 'a decision made before W459 that recorded no source (read as a review\u2019s)'
                 : q.decision_source}
               {q.decision_source_inferred && (
-                <span data-testid="ratification-source-inferred"> (read from the record\u2019s shape; the record itself names no source)</span>
+                <span data-testid="ratification-source-inferred"> (read from the record&rsquo;s shape; the record itself names no source)</span>
               )}
               {q.approved_at ? ` · ${q.approved_at}` : ''}{q.submitted_by ? ` · submitted by ${q.submitted_by}` : ''}{q.vsb_id ? ` · VSB ${q.vsb_id}` : ''}
             </p>
@@ -354,7 +359,9 @@ export const BoardOfDirectors: React.FC = () => {
           </label>
           <Button onClick={instruct} disabled={running || !instruction.trim()} className="flex items-center gap-2 bg-highlight text-sovereign ml-auto">
             {running ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-            {running ? 'Chief deliberating…' : 'Issue Instruction'}
+            {/* W801 (FU-982 R3[3]) - the Chief is the Owner's standing charter and instructions, not an agent
+                that deliberates; the label says what the request is doing */}
+            {running ? 'Filing the instruction…' : 'Issue Instruction'}
           </Button>
           {error && <p className="text-vital text-xs font-bold flex items-center gap-2"><AlertCircle size={14} /> {error}</p>}
         </div>
@@ -495,6 +502,12 @@ export const BoardOfDirectors: React.FC = () => {
                   {(d as any).unprompted === true && (
                     <span data-testid="directive-unprompted" title={String((d as any).instruction_source ?? '')}
                       className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400">restated by your Chief on a beat — not a new instruction from you</span>
+                  )}
+                  {(d as any).unprompted === true && (d as any).restated_kind && (
+                    <span data-testid="directive-restated-kind"
+                      className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">
+                      {(d as any).restated_kind === 'decision' ? 'restates your last recorded decision' : 'restates your last instruction'}
+                    </span>
                   )}
                   {(d as any).status && (
                     <span data-testid="deliberation-status" title={(d as any).status_basis}

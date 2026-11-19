@@ -1,0 +1,70 @@
+{
+ "standing": {
+  "url": "/api/v1/genesis/price",
+  "status": 200,
+  "body": {
+   "price_gbp": 99,
+   "price_basis": "set by the Owner on 2026-10-13 from comparable prices read at their publishers' pages: 99 pounds, once",
+   "credited_against_first_profit_share": true,
+   "credit_basis": "the price is taken off the first share of profit the platform would receive, so an entity that earns pays nothing extra",
+   "waived": false,
+   "waived_basis": null,
+   "charged_now": false,
+   "charged_now_gbp": 0,
+   "chargeable": false,
+   "conditions": [
+    {
+     "condition": "a named reviewer's pass on what is generated",
+     "met": false,
+     "basis": "no record of a reviewer's pass on a generated entity exists on this platform"
+    },
+    {
+     "condition": "a solicitor's view on whether a founder buying this is a consumer",
+     "met": false,
+     "basis": "no record of a solicitor's view exists on this platform; the Owner arranges it"
+    },
+    {
+     "condition": "the real-money switch, which is the Owner's",
+     "met": false,
+     "basis": "read from the platform's own setting"
+    }
+   ],
+   "not_charged_basis": "nothing is charged for generating an entity. It will not be until each of these exists: a named reviewer's pass on what is generated; a solicitor's view on whether a founder buying this is a consumer; the real-money switch, which is the Owner's. 0 of 3 exist today",
+   "this_answer_charges": false
+  }
+ },
+ "non_distributing": {
+  "url": "/api/v1/genesis/price?non_distributing=true",
+  "status": 200,
+  "body": {
+   "price_gbp": 0,
+   "price_basis": "set by the Owner on 2026-10-13 from comparable prices read at their publishers' pages: 99 pounds, once",
+   "credited_against_first_profit_share": false,
+   "credit_basis": "the price is taken off the first share of profit the platform would receive, so an entity that earns pays nothing extra",
+   "waived": true,
+   "waived_basis": "a charitable or non-distributing entity pays no price and no share; a stated gift, decided on the fund's written criteria",
+   "charged_now": false,
+   "charged_now_gbp": 0,
+   "chargeable": false,
+   "conditions": [
+    {
+     "condition": "a named reviewer's pass on what is generated",
+     "met": false,
+     "basis": "no record of a reviewer's pass on a generated entity exists on this platform"
+    },
+    {
+     "condition": "a solicitor's view on whether a founder buying this is a consumer",
+     "met": false,
+     "basis": "no record of a solicitor's view exists on this platform; the Owner arranges it"
+    },
+    {
+     "condition": "the real-money switch, which is the Owner's",
+     "met": false,
+     "basis": "read from the platform's own setting"
+    }
+   ],
+   "not_charged_basis": "nothing is charged for generating an entity. It will not be until each of these exists: a named reviewer's pass on what is generated; a solicitor's view on whether a founder buying this is a consumer; the real-money switch, which is the Owner's. 0 of 3 exist today",
+   "this_answer_charges": false
+  }
+ }
+}

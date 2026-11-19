@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { qmsChip, provenanceMapBadge, complianceChip } from '../../lib/api';
+import { axiosDetail, bodyOrNull, complianceChip, errorMessage, provenanceMapBadge, qmsChip } from '../../lib/api';
 import { Card, Button } from '@workstation/ui';
 import { BarChart3, LineChart, ScatterChart, Loader2, Sparkles } from 'lucide-react';
 
@@ -133,9 +133,15 @@ export const ReactorStudio: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, domain, chart_type: chartType, series }),
       });
-      if (!r.ok) { setError(`HTTP ${r.status}`); setRunning(false); return; }
+      //  W1006 - a refusal says the server's status and reason (it said "HTTP 400" alone)
+      if (!r.ok) {
+        const d = await bodyOrNull(r);
+        setError(`Failed (HTTP ${r.status}): ${axiosDetail({ response: { data: d } }, 'no reason given')}`);
+        setRunning(false);
+        return;
+      }
       setResult(await r.json());
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+    } catch (e) { setError(errorMessage(e)); }   // W1006 - an unreachable server is said as one
     setRunning(false);
   };
 

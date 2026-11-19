@@ -11,7 +11,9 @@ type Provision = {
   publisher: string; address: string; licence: string; fetched_at: string; what_this_is: string;
   fidelity: { checked: boolean; matches: boolean; basis: string };
 };
-type Help = { regulated_and_free_help: { name: string; link: string; for_what: string }[]; this_platform_is_not: string[]; to_complain: string; basis: string };
+type Help = { regulated_and_free_help: { name: string; link: string; for_what: string }[]; this_platform_is_not: string[]; to_complain: string; basis: string;
+  //  W874 (FU-1082, P5.20 clause 7) - the five expectations, as the server assesses them
+  expectations?: { rows: { id: string; expectation: string; state: string; how: string }[]; basis: string; source_basis: string } };
 
 const KINDS: [string, string][] = [
   ['ukpga', 'Act of the UK Parliament'], ['uksi', 'UK statutory instrument'], ['asp', 'Act of the Scottish Parliament'],
@@ -100,6 +102,23 @@ const StatutePanel: React.FC = () => {
           <ul className="text-[10px] text-slate-500 list-disc ml-4">{help.this_platform_is_not.map(s => <li key={s}>{s}</li>)}</ul>
           <p className="text-[10px] text-slate-400">{help.to_complain}</p>
           <p className="text-[9px] text-slate-600">{help.basis}</p>
+          {/* W953 (P5.20 clause 6) - the one page of where help is lives on the support page */}
+          <p data-testid="law-help-the-page" className="text-[10px] text-slate-400">
+            The same list, with how to find a qualified scholar and how to raise a claim, is on the{' '}
+            <a href="/support#where-help-is" className="underline text-sky-400">support page</a>.
+          </p>
+          {/* W874 (FU-1082, P5.20 clause 7) - what people expect of an AI legal tool, and how this platform measures
+              against each, in the server's words */}
+          {help.expectations && Array.isArray(help.expectations.rows) && (
+            <div data-testid="law-expectations" className="pt-2 border-t border-slate-900 space-y-1">
+              <p className="text-[10px] text-slate-400" title={help.expectations.source_basis}>{help.expectations.basis}</p>
+              {help.expectations.rows.map(e => (
+                <p key={e.id} data-testid="law-expectation" className="text-[10px] text-slate-400">
+                  <span className="font-bold text-slate-200">{e.expectation}</span>: {e.state}. {e.how}
+                </p>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

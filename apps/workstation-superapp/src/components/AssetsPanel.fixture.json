@@ -1,0 +1,1443 @@
+{
+ "captured_on": "2026-11-15",
+ "list_off": {
+  "status": 200,
+  "body": {
+   "assets": [],
+   "kept": false,
+   "not_kept_because": "Nothing is kept here before sign-in: an asset record names who owns and who possesses it, real persons and registered bodies, and the Owner's ruling of 2026-10-12 builds after sign-in anything that keeps something about a person. Sign-in is the Owner's switch.",
+   "controlled_basis": "Nothing here connects to it, sends it a command or takes in anything from it: it is a record, and no twin or simulation is evidence of its safety."
+  }
+ },
+ "parties": {
+  "status": 200,
+  "body": {
+   "parties": [
+    {
+     "id": "pty-6ead417fa1",
+     "kind": "person",
+     "name": "Eve W1083-Madeup",
+     "registered_on": null,
+     "registered_number": null,
+     "read_from": "the made-up lease's signature block",
+     "read_on": "2026-11-14",
+     "entered_by": "w1083-made-up-person",
+     "entered_at": "2026-11-15T14:36:57Z",
+     "checked_by_this_platform": false,
+     "basis": "As entered by w1083-made-up-person, read from the made-up lease's signature block on 2026-11-14. This platform did not check it against any register or document."
+    },
+    {
+     "id": "pty-8436a12a4f",
+     "kind": "registered_body",
+     "name": "W1083 Made-up Robot Leasing Ltd",
+     "registered_on": "a made-up register (W1083)",
+     "registered_number": "W1083-0001",
+     "read_from": "the made-up register's page for it",
+     "read_on": "2026-11-14",
+     "entered_by": "w1083-made-up-person",
+     "entered_at": "2026-11-15T14:36:57Z",
+     "checked_by_this_platform": false,
+     "basis": "As entered by w1083-made-up-person, read from the made-up register's page for it on 2026-11-14. This platform did not check it against any register or document."
+    }
+   ],
+   "kept": true,
+   "total": 2,
+   "not_legal_advice": "Nothing here is legal advice, and this platform is not a solicitor."
+  }
+ },
+ "agreements": {
+  "status": 200,
+  "body": {
+   "agreements": [
+    {
+     "id": "agr-5f059a77c0",
+     "title": "W1083 Made-up Robot Lease",
+     "version": 1,
+     "hash": "sha256:0b711329ba7a3019d2f3ba543869b79848ca6639d819cdf54aeff5f6e35b0d74",
+     "parties": [
+      {
+       "role": "lessor",
+       "name": "W1083 Made-up Robot Leasing Ltd"
+      },
+      {
+       "role": "lessee",
+       "name": "Eve W1083-Madeup"
+      }
+     ],
+     "facts": [
+      {
+       "state": "drafted",
+       "recorded": true,
+       "by": "w1083-made-up-person",
+       "at": "2026-11-15T14:36:57Z"
+      },
+      {
+       "state": "reviewed",
+       "recorded": false
+      },
+      {
+       "state": "approved",
+       "recorded": false
+      },
+      {
+       "state": "executed",
+       "recorded": false
+      },
+      {
+       "state": "in_force",
+       "recorded": false
+      },
+      {
+       "state": "ended",
+       "recorded": false
+      }
+     ]
+    }
+   ],
+   "kept": true,
+   "total": 1,
+   "internal_service_contracts": {
+    "what_these_are": "Service contracts between two entities of this platform, priced in virtual units (WST): records of this platform's own economy, not agreements with an outside party, and never listed as one. Neither side of one is a person in law.",
+    "route": "/api/v1/economy/contracts",
+    "contracts": [],
+    "total": 0,
+    "unread": null
+   },
+   "not_legal_advice": "Nothing here is legal advice, and this platform is not a solicitor."
+  }
+ },
+ "list_empty": {
+  "status": 200,
+  "body": {
+   "assets": [],
+   "kept": true,
+   "total": 0,
+   "controlled_basis": "Nothing here connects to it, sends it a command or takes in anything from it: it is a record, and no twin or simulation is evidence of its safety.",
+   "judged_basis": "Each piece of evidence is recorded as the person attached it; this platform judges none of it, and computes no score and no single word of readiness from the six."
+  }
+ },
+ "asset_refused": {
+  "status": 400,
+  "body": {
+   "detail": "No agreement was named: an asset is held under an agreement record of yours, so nothing was kept."
+  }
+ },
+ "asset": {
+  "status": 200,
+  "body": {
+   "id": "ast-5a72c6bf92",
+   "what": "a made-up delivery robot, serial W1083-1",
+   "kind": "robot",
+   "owned_by": {
+    "party_id": "pty-8436a12a4f",
+    "name": "W1083 Made-up Robot Leasing Ltd",
+    "kind": "registered_body"
+   },
+   "possessed_by": {
+    "party_id": "pty-6ead417fa1",
+    "name": "Eve W1083-Madeup",
+    "kind": "person"
+   },
+   "held_under": {
+    "agreement_id": "agr-5f059a77c0",
+    "title": "W1083 Made-up Robot Lease",
+    "basis": "The agreement it is held under is recorded as stated. It is not, of itself, evidence of the right to use it or of any place's permission to use it there."
+   },
+   "entered_by": "w1083-made-up-person",
+   "entered_at": "2026-11-15T14:36:57Z",
+   "rules": {
+    "use": null,
+    "use_name": null,
+    "rows": [],
+    "basis": "These are the rows of the register of sources for this use, each as it was read: what it says, on what date, by whom, and what was not read. Nothing here says whether the law permits this use, and no row is a permission.",
+    "said": "Where it would be used is not entered, so no regime is shown.",
+    "entered_by": null,
+    "entered_at": null,
+    "history": []
+   },
+   "facts": [
+    {
+     "fact": "right_to_use",
+     "name": "the right to use it",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "place_permission",
+     "name": "the permission of the place it would be used in",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "maker_conformity",
+     "name": "the maker's evidence of conformity",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "user_safety",
+     "name": "the user's own safety evidence (assessment, training, inspection and maintenance)",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "insurance",
+     "name": "insurance",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "readiness",
+     "name": "a named person's declaration that it is ready",
+     "evidence": [],
+     "said": "not evidenced"
+    }
+   ],
+   "controlled": false,
+   "controlled_basis": "Nothing here connects to it, sends it a command or takes in anything from it: it is a record, and no twin or simulation is evidence of its safety.",
+   "judged_basis": "Each piece of evidence is recorded as the person attached it; this platform judges none of it, and computes no score and no single word of readiness from the six."
+  }
+ },
+ "list_one": {
+  "status": 200,
+  "body": {
+   "assets": [
+    {
+     "id": "ast-5a72c6bf92",
+     "what": "a made-up delivery robot, serial W1083-1",
+     "kind": "robot",
+     "owned_by": {
+      "party_id": "pty-8436a12a4f",
+      "name": "W1083 Made-up Robot Leasing Ltd",
+      "kind": "registered_body"
+     },
+     "possessed_by": {
+      "party_id": "pty-6ead417fa1",
+      "name": "Eve W1083-Madeup",
+      "kind": "person"
+     },
+     "held_under": {
+      "agreement_id": "agr-5f059a77c0",
+      "title": "W1083 Made-up Robot Lease",
+      "basis": "The agreement it is held under is recorded as stated. It is not, of itself, evidence of the right to use it or of any place's permission to use it there."
+     },
+     "entered_by": "w1083-made-up-person",
+     "entered_at": "2026-11-15T14:36:57Z",
+     "rules": {
+      "use": null,
+      "use_name": null,
+      "rows": [],
+      "basis": "These are the rows of the register of sources for this use, each as it was read: what it says, on what date, by whom, and what was not read. Nothing here says whether the law permits this use, and no row is a permission.",
+      "said": "Where it would be used is not entered, so no regime is shown.",
+      "entered_by": null,
+      "entered_at": null,
+      "history": []
+     },
+     "facts": [
+      {
+       "fact": "right_to_use",
+       "name": "the right to use it",
+       "evidence": [],
+       "said": "not evidenced"
+      },
+      {
+       "fact": "place_permission",
+       "name": "the permission of the place it would be used in",
+       "evidence": [],
+       "said": "not evidenced"
+      },
+      {
+       "fact": "maker_conformity",
+       "name": "the maker's evidence of conformity",
+       "evidence": [],
+       "said": "not evidenced"
+      },
+      {
+       "fact": "user_safety",
+       "name": "the user's own safety evidence (assessment, training, inspection and maintenance)",
+       "evidence": [],
+       "said": "not evidenced"
+      },
+      {
+       "fact": "insurance",
+       "name": "insurance",
+       "evidence": [],
+       "said": "not evidenced"
+      },
+      {
+       "fact": "readiness",
+       "name": "a named person's declaration that it is ready",
+       "evidence": [],
+       "said": "not evidenced"
+      }
+     ],
+     "controlled": false,
+     "controlled_basis": "Nothing here connects to it, sends it a command or takes in anything from it: it is a record, and no twin or simulation is evidence of its safety.",
+     "judged_basis": "Each piece of evidence is recorded as the person attached it; this platform judges none of it, and computes no score and no single word of readiness from the six."
+    }
+   ],
+   "kept": true,
+   "total": 1,
+   "controlled_basis": "Nothing here connects to it, sends it a command or takes in anything from it: it is a record, and no twin or simulation is evidence of its safety.",
+   "judged_basis": "Each piece of evidence is recorded as the person attached it; this platform judges none of it, and computes no score and no single word of readiness from the six."
+  }
+ },
+ "ev_refused": {
+  "status": 400,
+  "body": {
+   "detail": "The person declaring it ready is needed, and none was given, so nothing was kept."
+  }
+ },
+ "ev_right": {
+  "status": 200,
+  "body": {
+   "id": "ast-5a72c6bf92",
+   "what": "a made-up delivery robot, serial W1083-1",
+   "kind": "robot",
+   "owned_by": {
+    "party_id": "pty-8436a12a4f",
+    "name": "W1083 Made-up Robot Leasing Ltd",
+    "kind": "registered_body"
+   },
+   "possessed_by": {
+    "party_id": "pty-6ead417fa1",
+    "name": "Eve W1083-Madeup",
+    "kind": "person"
+   },
+   "held_under": {
+    "agreement_id": "agr-5f059a77c0",
+    "title": "W1083 Made-up Robot Lease",
+    "basis": "The agreement it is held under is recorded as stated. It is not, of itself, evidence of the right to use it or of any place's permission to use it there."
+   },
+   "entered_by": "w1083-made-up-person",
+   "entered_at": "2026-11-15T14:36:57Z",
+   "rules": {
+    "use": null,
+    "use_name": null,
+    "rows": [],
+    "basis": "These are the rows of the register of sources for this use, each as it was read: what it says, on what date, by whom, and what was not read. Nothing here says whether the law permits this use, and no row is a permission.",
+    "said": "Where it would be used is not entered, so no regime is shown.",
+    "entered_by": null,
+    "entered_at": null,
+    "history": []
+   },
+   "facts": [
+    {
+     "fact": "right_to_use",
+     "name": "the right to use it",
+     "evidence": [
+      {
+       "id": "evd-58337d6aa4",
+       "fact": "right_to_use",
+       "evidence": "the made-up lease, clause 2, as stated",
+       "lapses_on": "2027-12-20",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "current"
+      }
+     ]
+    },
+    {
+     "fact": "place_permission",
+     "name": "the permission of the place it would be used in",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "maker_conformity",
+     "name": "the maker's evidence of conformity",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "user_safety",
+     "name": "the user's own safety evidence (assessment, training, inspection and maintenance)",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "insurance",
+     "name": "insurance",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "readiness",
+     "name": "a named person's declaration that it is ready",
+     "evidence": [],
+     "said": "not evidenced"
+    }
+   ],
+   "controlled": false,
+   "controlled_basis": "Nothing here connects to it, sends it a command or takes in anything from it: it is a record, and no twin or simulation is evidence of its safety.",
+   "judged_basis": "Each piece of evidence is recorded as the person attached it; this platform judges none of it, and computes no score and no single word of readiness from the six."
+  }
+ },
+ "ev_conformity": {
+  "status": 200,
+  "body": {
+   "id": "ast-5a72c6bf92",
+   "what": "a made-up delivery robot, serial W1083-1",
+   "kind": "robot",
+   "owned_by": {
+    "party_id": "pty-8436a12a4f",
+    "name": "W1083 Made-up Robot Leasing Ltd",
+    "kind": "registered_body"
+   },
+   "possessed_by": {
+    "party_id": "pty-6ead417fa1",
+    "name": "Eve W1083-Madeup",
+    "kind": "person"
+   },
+   "held_under": {
+    "agreement_id": "agr-5f059a77c0",
+    "title": "W1083 Made-up Robot Lease",
+    "basis": "The agreement it is held under is recorded as stated. It is not, of itself, evidence of the right to use it or of any place's permission to use it there."
+   },
+   "entered_by": "w1083-made-up-person",
+   "entered_at": "2026-11-15T14:36:57Z",
+   "rules": {
+    "use": null,
+    "use_name": null,
+    "rows": [],
+    "basis": "These are the rows of the register of sources for this use, each as it was read: what it says, on what date, by whom, and what was not read. Nothing here says whether the law permits this use, and no row is a permission.",
+    "said": "Where it would be used is not entered, so no regime is shown.",
+    "entered_by": null,
+    "entered_at": null,
+    "history": []
+   },
+   "facts": [
+    {
+     "fact": "right_to_use",
+     "name": "the right to use it",
+     "evidence": [
+      {
+       "id": "evd-58337d6aa4",
+       "fact": "right_to_use",
+       "evidence": "the made-up lease, clause 2, as stated",
+       "lapses_on": "2027-12-20",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "current"
+      }
+     ]
+    },
+    {
+     "fact": "place_permission",
+     "name": "the permission of the place it would be used in",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "maker_conformity",
+     "name": "the maker's evidence of conformity",
+     "evidence": [
+      {
+       "id": "evd-8a2e65834a",
+       "fact": "maker_conformity",
+       "evidence": "the maker's made-up declaration of conformity, as stated",
+       "lapses_on": "2027-12-20",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "current"
+      }
+     ]
+    },
+    {
+     "fact": "user_safety",
+     "name": "the user's own safety evidence (assessment, training, inspection and maintenance)",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "insurance",
+     "name": "insurance",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "readiness",
+     "name": "a named person's declaration that it is ready",
+     "evidence": [],
+     "said": "not evidenced"
+    }
+   ],
+   "controlled": false,
+   "controlled_basis": "Nothing here connects to it, sends it a command or takes in anything from it: it is a record, and no twin or simulation is evidence of its safety.",
+   "judged_basis": "Each piece of evidence is recorded as the person attached it; this platform judges none of it, and computes no score and no single word of readiness from the six."
+  }
+ },
+ "ev_safety": {
+  "status": 200,
+  "body": {
+   "id": "ast-5a72c6bf92",
+   "what": "a made-up delivery robot, serial W1083-1",
+   "kind": "robot",
+   "owned_by": {
+    "party_id": "pty-8436a12a4f",
+    "name": "W1083 Made-up Robot Leasing Ltd",
+    "kind": "registered_body"
+   },
+   "possessed_by": {
+    "party_id": "pty-6ead417fa1",
+    "name": "Eve W1083-Madeup",
+    "kind": "person"
+   },
+   "held_under": {
+    "agreement_id": "agr-5f059a77c0",
+    "title": "W1083 Made-up Robot Lease",
+    "basis": "The agreement it is held under is recorded as stated. It is not, of itself, evidence of the right to use it or of any place's permission to use it there."
+   },
+   "entered_by": "w1083-made-up-person",
+   "entered_at": "2026-11-15T14:36:57Z",
+   "rules": {
+    "use": null,
+    "use_name": null,
+    "rows": [],
+    "basis": "These are the rows of the register of sources for this use, each as it was read: what it says, on what date, by whom, and what was not read. Nothing here says whether the law permits this use, and no row is a permission.",
+    "said": "Where it would be used is not entered, so no regime is shown.",
+    "entered_by": null,
+    "entered_at": null,
+    "history": []
+   },
+   "facts": [
+    {
+     "fact": "right_to_use",
+     "name": "the right to use it",
+     "evidence": [
+      {
+       "id": "evd-58337d6aa4",
+       "fact": "right_to_use",
+       "evidence": "the made-up lease, clause 2, as stated",
+       "lapses_on": "2027-12-20",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "current"
+      }
+     ]
+    },
+    {
+     "fact": "place_permission",
+     "name": "the permission of the place it would be used in",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "maker_conformity",
+     "name": "the maker's evidence of conformity",
+     "evidence": [
+      {
+       "id": "evd-8a2e65834a",
+       "fact": "maker_conformity",
+       "evidence": "the maker's made-up declaration of conformity, as stated",
+       "lapses_on": "2027-12-20",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "current"
+      }
+     ]
+    },
+    {
+     "fact": "user_safety",
+     "name": "the user's own safety evidence (assessment, training, inspection and maintenance)",
+     "evidence": [
+      {
+       "id": "evd-45aeca51ae",
+       "fact": "user_safety",
+       "evidence": "a made-up risk assessment, as stated",
+       "lapses_on": "2026-11-25",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "current"
+      }
+     ]
+    },
+    {
+     "fact": "insurance",
+     "name": "insurance",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "readiness",
+     "name": "a named person's declaration that it is ready",
+     "evidence": [],
+     "said": "not evidenced"
+    }
+   ],
+   "controlled": false,
+   "controlled_basis": "Nothing here connects to it, sends it a command or takes in anything from it: it is a record, and no twin or simulation is evidence of its safety.",
+   "judged_basis": "Each piece of evidence is recorded as the person attached it; this platform judges none of it, and computes no score and no single word of readiness from the six."
+  }
+ },
+ "ev_insurance": {
+  "status": 200,
+  "body": {
+   "id": "ast-5a72c6bf92",
+   "what": "a made-up delivery robot, serial W1083-1",
+   "kind": "robot",
+   "owned_by": {
+    "party_id": "pty-8436a12a4f",
+    "name": "W1083 Made-up Robot Leasing Ltd",
+    "kind": "registered_body"
+   },
+   "possessed_by": {
+    "party_id": "pty-6ead417fa1",
+    "name": "Eve W1083-Madeup",
+    "kind": "person"
+   },
+   "held_under": {
+    "agreement_id": "agr-5f059a77c0",
+    "title": "W1083 Made-up Robot Lease",
+    "basis": "The agreement it is held under is recorded as stated. It is not, of itself, evidence of the right to use it or of any place's permission to use it there."
+   },
+   "entered_by": "w1083-made-up-person",
+   "entered_at": "2026-11-15T14:36:57Z",
+   "rules": {
+    "use": null,
+    "use_name": null,
+    "rows": [],
+    "basis": "These are the rows of the register of sources for this use, each as it was read: what it says, on what date, by whom, and what was not read. Nothing here says whether the law permits this use, and no row is a permission.",
+    "said": "Where it would be used is not entered, so no regime is shown.",
+    "entered_by": null,
+    "entered_at": null,
+    "history": []
+   },
+   "facts": [
+    {
+     "fact": "right_to_use",
+     "name": "the right to use it",
+     "evidence": [
+      {
+       "id": "evd-58337d6aa4",
+       "fact": "right_to_use",
+       "evidence": "the made-up lease, clause 2, as stated",
+       "lapses_on": "2027-12-20",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "current"
+      }
+     ]
+    },
+    {
+     "fact": "place_permission",
+     "name": "the permission of the place it would be used in",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "maker_conformity",
+     "name": "the maker's evidence of conformity",
+     "evidence": [
+      {
+       "id": "evd-8a2e65834a",
+       "fact": "maker_conformity",
+       "evidence": "the maker's made-up declaration of conformity, as stated",
+       "lapses_on": "2027-12-20",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "current"
+      }
+     ]
+    },
+    {
+     "fact": "user_safety",
+     "name": "the user's own safety evidence (assessment, training, inspection and maintenance)",
+     "evidence": [
+      {
+       "id": "evd-45aeca51ae",
+       "fact": "user_safety",
+       "evidence": "a made-up risk assessment, as stated",
+       "lapses_on": "2026-11-25",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "current"
+      }
+     ]
+    },
+    {
+     "fact": "insurance",
+     "name": "insurance",
+     "evidence": [
+      {
+       "id": "evd-5c186692ef",
+       "fact": "insurance",
+       "evidence": "a made-up policy that ended yesterday, as stated",
+       "lapses_on": "2026-11-14",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "lapsed"
+      }
+     ]
+    },
+    {
+     "fact": "readiness",
+     "name": "a named person's declaration that it is ready",
+     "evidence": [],
+     "said": "not evidenced"
+    }
+   ],
+   "controlled": false,
+   "controlled_basis": "Nothing here connects to it, sends it a command or takes in anything from it: it is a record, and no twin or simulation is evidence of its safety.",
+   "judged_basis": "Each piece of evidence is recorded as the person attached it; this platform judges none of it, and computes no score and no single word of readiness from the six."
+  }
+ },
+ "ev_ready": {
+  "status": 200,
+  "body": {
+   "id": "ast-5a72c6bf92",
+   "what": "a made-up delivery robot, serial W1083-1",
+   "kind": "robot",
+   "owned_by": {
+    "party_id": "pty-8436a12a4f",
+    "name": "W1083 Made-up Robot Leasing Ltd",
+    "kind": "registered_body"
+   },
+   "possessed_by": {
+    "party_id": "pty-6ead417fa1",
+    "name": "Eve W1083-Madeup",
+    "kind": "person"
+   },
+   "held_under": {
+    "agreement_id": "agr-5f059a77c0",
+    "title": "W1083 Made-up Robot Lease",
+    "basis": "The agreement it is held under is recorded as stated. It is not, of itself, evidence of the right to use it or of any place's permission to use it there."
+   },
+   "entered_by": "w1083-made-up-person",
+   "entered_at": "2026-11-15T14:36:57Z",
+   "rules": {
+    "use": null,
+    "use_name": null,
+    "rows": [],
+    "basis": "These are the rows of the register of sources for this use, each as it was read: what it says, on what date, by whom, and what was not read. Nothing here says whether the law permits this use, and no row is a permission.",
+    "said": "Where it would be used is not entered, so no regime is shown.",
+    "entered_by": null,
+    "entered_at": null,
+    "history": []
+   },
+   "facts": [
+    {
+     "fact": "right_to_use",
+     "name": "the right to use it",
+     "evidence": [
+      {
+       "id": "evd-58337d6aa4",
+       "fact": "right_to_use",
+       "evidence": "the made-up lease, clause 2, as stated",
+       "lapses_on": "2027-12-20",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "current"
+      }
+     ]
+    },
+    {
+     "fact": "place_permission",
+     "name": "the permission of the place it would be used in",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "maker_conformity",
+     "name": "the maker's evidence of conformity",
+     "evidence": [
+      {
+       "id": "evd-8a2e65834a",
+       "fact": "maker_conformity",
+       "evidence": "the maker's made-up declaration of conformity, as stated",
+       "lapses_on": "2027-12-20",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "current"
+      }
+     ]
+    },
+    {
+     "fact": "user_safety",
+     "name": "the user's own safety evidence (assessment, training, inspection and maintenance)",
+     "evidence": [
+      {
+       "id": "evd-45aeca51ae",
+       "fact": "user_safety",
+       "evidence": "a made-up risk assessment, as stated",
+       "lapses_on": "2026-11-25",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "current"
+      }
+     ]
+    },
+    {
+     "fact": "insurance",
+     "name": "insurance",
+     "evidence": [
+      {
+       "id": "evd-5c186692ef",
+       "fact": "insurance",
+       "evidence": "a made-up policy that ended yesterday, as stated",
+       "lapses_on": "2026-11-14",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "lapsed"
+      }
+     ]
+    },
+    {
+     "fact": "readiness",
+     "name": "a named person's declaration that it is ready",
+     "evidence": [
+      {
+       "id": "evd-cd2bda035f",
+       "fact": "readiness",
+       "evidence": "a made-up declaration, as stated",
+       "lapses_on": "2027-12-20",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "named_person": "Dee W1083-Madeup, as named",
+       "rests_on": [
+        "evd-58337d6aa4",
+        "evd-8a2e65834a",
+        "evd-45aeca51ae"
+       ],
+       "state": "current"
+      }
+     ]
+    }
+   ],
+   "controlled": false,
+   "controlled_basis": "Nothing here connects to it, sends it a command or takes in anything from it: it is a record, and no twin or simulation is evidence of its safety.",
+   "judged_basis": "Each piece of evidence is recorded as the person attached it; this platform judges none of it, and computes no score and no single word of readiness from the six."
+  }
+ },
+ "asset_workplace": {
+  "status": 200,
+  "body": {
+   "id": "ast-c0494deb8e",
+   "what": "a made-up workshop robot, serial W1083-2",
+   "kind": "robot",
+   "owned_by": {
+    "party_id": "pty-8436a12a4f",
+    "name": "W1083 Made-up Robot Leasing Ltd",
+    "kind": "registered_body"
+   },
+   "possessed_by": {
+    "party_id": "pty-6ead417fa1",
+    "name": "Eve W1083-Madeup",
+    "kind": "person"
+   },
+   "held_under": {
+    "agreement_id": "agr-5f059a77c0",
+    "title": "W1083 Made-up Robot Lease",
+    "basis": "The agreement it is held under is recorded as stated. It is not, of itself, evidence of the right to use it or of any place's permission to use it there."
+   },
+   "entered_by": "w1083-made-up-person",
+   "entered_at": "2026-11-15T14:36:57Z",
+   "rules": {
+    "use": "workplace",
+    "use_name": "in a workplace",
+    "rows": [
+     {
+      "id": "hse-puwer-overview",
+      "names": [
+       "Provision and Use of Work Equipment Regulations 1998",
+       "PUWER"
+      ],
+      "kind": "regulator guidance",
+      "nation": [
+       "Great Britain"
+      ],
+      "page": "https://www.hse.gov.uk/work-equipment-machinery/puwer-overview.htm",
+      "read_on": "2026-10-13",
+      "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
+      "says": "Shown as updated 21 November 2024. Duties fall on those who own, operate or have control over work equipment, whether owned by them or not; those who provide equipment for others are covered.",
+      "not_read": "the Regulations themselves; the approved code of practice; the lifting regulations",
+      "stands": "current",
+      "recently_checked": true
+     },
+     {
+      "id": "si-2026-867-machinery",
+      "names": [
+       "Supply of Machinery (Safety) Regulations 2008",
+       "S.I. 2026/867"
+      ],
+      "kind": "statutory instrument",
+      "nation": [
+       "Great Britain",
+       "Northern Ireland"
+      ],
+      "page": "https://www.legislation.gov.uk/uksi/2026/867/introduction/made",
+      "read_on": "2026-10-13",
+      "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
+      "says": "Made 22 July 2026, in force 20 January 2027; Part 2 applies to Great Britain and Part 3 to Northern Ireland. It amends the supply-side rules for machinery.",
+      "not_read": "what it changes for a robot; the 2008 Regulations; the EU machinery regulation's own text and date (the publisher's page could not be opened)",
+      "stands": "current",
+      "recently_checked": true
+     }
+    ],
+    "basis": "These are the rows of the register of sources for this use, each as it was read: what it says, on what date, by whom, and what was not read. Nothing here says whether the law permits this use, and no row is a permission.",
+    "entered_by": "w1083-made-up-person",
+    "entered_at": "2026-11-15T14:36:57Z",
+    "history": []
+   },
+   "facts": [
+    {
+     "fact": "right_to_use",
+     "name": "the right to use it",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "place_permission",
+     "name": "the permission of the place it would be used in",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "maker_conformity",
+     "name": "the maker's evidence of conformity",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "user_safety",
+     "name": "the user's own safety evidence (assessment, training, inspection and maintenance)",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "insurance",
+     "name": "insurance",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "readiness",
+     "name": "a named person's declaration that it is ready",
+     "evidence": [],
+     "said": "not evidenced"
+    }
+   ],
+   "controlled": false,
+   "controlled_basis": "Nothing here connects to it, sends it a command or takes in anything from it: it is a record, and no twin or simulation is evidence of its safety.",
+   "judged_basis": "Each piece of evidence is recorded as the person attached it; this platform judges none of it, and computes no score and no single word of readiness from the six."
+  }
+ },
+ "use_footway": {
+  "status": 200,
+  "body": {
+   "id": "ast-5a72c6bf92",
+   "what": "a made-up delivery robot, serial W1083-1",
+   "kind": "robot",
+   "owned_by": {
+    "party_id": "pty-8436a12a4f",
+    "name": "W1083 Made-up Robot Leasing Ltd",
+    "kind": "registered_body"
+   },
+   "possessed_by": {
+    "party_id": "pty-6ead417fa1",
+    "name": "Eve W1083-Madeup",
+    "kind": "person"
+   },
+   "held_under": {
+    "agreement_id": "agr-5f059a77c0",
+    "title": "W1083 Made-up Robot Lease",
+    "basis": "The agreement it is held under is recorded as stated. It is not, of itself, evidence of the right to use it or of any place's permission to use it there."
+   },
+   "entered_by": "w1083-made-up-person",
+   "entered_at": "2026-11-15T14:36:57Z",
+   "rules": {
+    "use": "footway",
+    "use_name": "on a public footway",
+    "rows": [],
+    "basis": "These are the rows of the register of sources for this use, each as it was read: what it says, on what date, by whom, and what was not read. Nothing here says whether the law permits this use, and no row is a permission.",
+    "said": "No source permitting this use was found.",
+    "entered_by": "w1083-made-up-person",
+    "entered_at": "2026-11-15T14:36:57Z",
+    "history": []
+   },
+   "facts": [
+    {
+     "fact": "right_to_use",
+     "name": "the right to use it",
+     "evidence": [
+      {
+       "id": "evd-58337d6aa4",
+       "fact": "right_to_use",
+       "evidence": "the made-up lease, clause 2, as stated",
+       "lapses_on": "2027-12-20",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "current"
+      }
+     ]
+    },
+    {
+     "fact": "place_permission",
+     "name": "the permission of the place it would be used in",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "maker_conformity",
+     "name": "the maker's evidence of conformity",
+     "evidence": [
+      {
+       "id": "evd-8a2e65834a",
+       "fact": "maker_conformity",
+       "evidence": "the maker's made-up declaration of conformity, as stated",
+       "lapses_on": "2027-12-20",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "current"
+      }
+     ]
+    },
+    {
+     "fact": "user_safety",
+     "name": "the user's own safety evidence (assessment, training, inspection and maintenance)",
+     "evidence": [
+      {
+       "id": "evd-45aeca51ae",
+       "fact": "user_safety",
+       "evidence": "a made-up risk assessment, as stated",
+       "lapses_on": "2026-11-25",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "current"
+      }
+     ]
+    },
+    {
+     "fact": "insurance",
+     "name": "insurance",
+     "evidence": [
+      {
+       "id": "evd-5c186692ef",
+       "fact": "insurance",
+       "evidence": "a made-up policy that ended yesterday, as stated",
+       "lapses_on": "2026-11-14",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "lapsed"
+      }
+     ]
+    },
+    {
+     "fact": "readiness",
+     "name": "a named person's declaration that it is ready",
+     "evidence": [
+      {
+       "id": "evd-cd2bda035f",
+       "fact": "readiness",
+       "evidence": "a made-up declaration, as stated",
+       "lapses_on": "2027-12-20",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "named_person": "Dee W1083-Madeup, as named",
+       "rests_on": [
+        "evd-58337d6aa4",
+        "evd-8a2e65834a",
+        "evd-45aeca51ae"
+       ],
+       "state": "current"
+      }
+     ]
+    }
+   ],
+   "controlled": false,
+   "controlled_basis": "Nothing here connects to it, sends it a command or takes in anything from it: it is a record, and no twin or simulation is evidence of its safety.",
+   "judged_basis": "Each piece of evidence is recorded as the person attached it; this platform judges none of it, and computes no score and no single word of readiness from the six."
+  }
+ },
+ "list_two": {
+  "status": 200,
+  "body": {
+   "assets": [
+    {
+     "id": "ast-c0494deb8e",
+     "what": "a made-up workshop robot, serial W1083-2",
+     "kind": "robot",
+     "owned_by": {
+      "party_id": "pty-8436a12a4f",
+      "name": "W1083 Made-up Robot Leasing Ltd",
+      "kind": "registered_body"
+     },
+     "possessed_by": {
+      "party_id": "pty-6ead417fa1",
+      "name": "Eve W1083-Madeup",
+      "kind": "person"
+     },
+     "held_under": {
+      "agreement_id": "agr-5f059a77c0",
+      "title": "W1083 Made-up Robot Lease",
+      "basis": "The agreement it is held under is recorded as stated. It is not, of itself, evidence of the right to use it or of any place's permission to use it there."
+     },
+     "entered_by": "w1083-made-up-person",
+     "entered_at": "2026-11-15T14:36:57Z",
+     "rules": {
+      "use": "workplace",
+      "use_name": "in a workplace",
+      "rows": [
+       {
+        "id": "hse-puwer-overview",
+        "names": [
+         "Provision and Use of Work Equipment Regulations 1998",
+         "PUWER"
+        ],
+        "kind": "regulator guidance",
+        "nation": [
+         "Great Britain"
+        ],
+        "page": "https://www.hse.gov.uk/work-equipment-machinery/puwer-overview.htm",
+        "read_on": "2026-10-13",
+        "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
+        "says": "Shown as updated 21 November 2024. Duties fall on those who own, operate or have control over work equipment, whether owned by them or not; those who provide equipment for others are covered.",
+        "not_read": "the Regulations themselves; the approved code of practice; the lifting regulations",
+        "stands": "current",
+        "recently_checked": true
+       },
+       {
+        "id": "si-2026-867-machinery",
+        "names": [
+         "Supply of Machinery (Safety) Regulations 2008",
+         "S.I. 2026/867"
+        ],
+        "kind": "statutory instrument",
+        "nation": [
+         "Great Britain",
+         "Northern Ireland"
+        ],
+        "page": "https://www.legislation.gov.uk/uksi/2026/867/introduction/made",
+        "read_on": "2026-10-13",
+        "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
+        "says": "Made 22 July 2026, in force 20 January 2027; Part 2 applies to Great Britain and Part 3 to Northern Ireland. It amends the supply-side rules for machinery.",
+        "not_read": "what it changes for a robot; the 2008 Regulations; the EU machinery regulation's own text and date (the publisher's page could not be opened)",
+        "stands": "current",
+        "recently_checked": true
+       }
+      ],
+      "basis": "These are the rows of the register of sources for this use, each as it was read: what it says, on what date, by whom, and what was not read. Nothing here says whether the law permits this use, and no row is a permission.",
+      "entered_by": "w1083-made-up-person",
+      "entered_at": "2026-11-15T14:36:57Z",
+      "history": []
+     },
+     "facts": [
+      {
+       "fact": "right_to_use",
+       "name": "the right to use it",
+       "evidence": [],
+       "said": "not evidenced"
+      },
+      {
+       "fact": "place_permission",
+       "name": "the permission of the place it would be used in",
+       "evidence": [],
+       "said": "not evidenced"
+      },
+      {
+       "fact": "maker_conformity",
+       "name": "the maker's evidence of conformity",
+       "evidence": [],
+       "said": "not evidenced"
+      },
+      {
+       "fact": "user_safety",
+       "name": "the user's own safety evidence (assessment, training, inspection and maintenance)",
+       "evidence": [],
+       "said": "not evidenced"
+      },
+      {
+       "fact": "insurance",
+       "name": "insurance",
+       "evidence": [],
+       "said": "not evidenced"
+      },
+      {
+       "fact": "readiness",
+       "name": "a named person's declaration that it is ready",
+       "evidence": [],
+       "said": "not evidenced"
+      }
+     ],
+     "controlled": false,
+     "controlled_basis": "Nothing here connects to it, sends it a command or takes in anything from it: it is a record, and no twin or simulation is evidence of its safety.",
+     "judged_basis": "Each piece of evidence is recorded as the person attached it; this platform judges none of it, and computes no score and no single word of readiness from the six."
+    },
+    {
+     "id": "ast-5a72c6bf92",
+     "what": "a made-up delivery robot, serial W1083-1",
+     "kind": "robot",
+     "owned_by": {
+      "party_id": "pty-8436a12a4f",
+      "name": "W1083 Made-up Robot Leasing Ltd",
+      "kind": "registered_body"
+     },
+     "possessed_by": {
+      "party_id": "pty-6ead417fa1",
+      "name": "Eve W1083-Madeup",
+      "kind": "person"
+     },
+     "held_under": {
+      "agreement_id": "agr-5f059a77c0",
+      "title": "W1083 Made-up Robot Lease",
+      "basis": "The agreement it is held under is recorded as stated. It is not, of itself, evidence of the right to use it or of any place's permission to use it there."
+     },
+     "entered_by": "w1083-made-up-person",
+     "entered_at": "2026-11-15T14:36:57Z",
+     "rules": {
+      "use": "footway",
+      "use_name": "on a public footway",
+      "rows": [],
+      "basis": "These are the rows of the register of sources for this use, each as it was read: what it says, on what date, by whom, and what was not read. Nothing here says whether the law permits this use, and no row is a permission.",
+      "said": "No source permitting this use was found.",
+      "entered_by": "w1083-made-up-person",
+      "entered_at": "2026-11-15T14:36:57Z",
+      "history": []
+     },
+     "facts": [
+      {
+       "fact": "right_to_use",
+       "name": "the right to use it",
+       "evidence": [
+        {
+         "id": "evd-58337d6aa4",
+         "fact": "right_to_use",
+         "evidence": "the made-up lease, clause 2, as stated",
+         "lapses_on": "2027-12-20",
+         "attached_by": "w1083-made-up-person",
+         "attached_at": "2026-11-15T14:36:57Z",
+         "state": "current"
+        }
+       ]
+      },
+      {
+       "fact": "place_permission",
+       "name": "the permission of the place it would be used in",
+       "evidence": [],
+       "said": "not evidenced"
+      },
+      {
+       "fact": "maker_conformity",
+       "name": "the maker's evidence of conformity",
+       "evidence": [
+        {
+         "id": "evd-8a2e65834a",
+         "fact": "maker_conformity",
+         "evidence": "the maker's made-up declaration of conformity, as stated",
+         "lapses_on": "2027-12-20",
+         "attached_by": "w1083-made-up-person",
+         "attached_at": "2026-11-15T14:36:57Z",
+         "state": "current"
+        }
+       ]
+      },
+      {
+       "fact": "user_safety",
+       "name": "the user's own safety evidence (assessment, training, inspection and maintenance)",
+       "evidence": [
+        {
+         "id": "evd-45aeca51ae",
+         "fact": "user_safety",
+         "evidence": "a made-up risk assessment, as stated",
+         "lapses_on": "2026-11-25",
+         "attached_by": "w1083-made-up-person",
+         "attached_at": "2026-11-15T14:36:57Z",
+         "state": "current"
+        }
+       ]
+      },
+      {
+       "fact": "insurance",
+       "name": "insurance",
+       "evidence": [
+        {
+         "id": "evd-5c186692ef",
+         "fact": "insurance",
+         "evidence": "a made-up policy that ended yesterday, as stated",
+         "lapses_on": "2026-11-14",
+         "attached_by": "w1083-made-up-person",
+         "attached_at": "2026-11-15T14:36:57Z",
+         "state": "lapsed"
+        }
+       ]
+      },
+      {
+       "fact": "readiness",
+       "name": "a named person's declaration that it is ready",
+       "evidence": [
+        {
+         "id": "evd-cd2bda035f",
+         "fact": "readiness",
+         "evidence": "a made-up declaration, as stated",
+         "lapses_on": "2027-12-20",
+         "attached_by": "w1083-made-up-person",
+         "attached_at": "2026-11-15T14:36:57Z",
+         "named_person": "Dee W1083-Madeup, as named",
+         "rests_on": [
+          "evd-58337d6aa4",
+          "evd-8a2e65834a",
+          "evd-45aeca51ae"
+         ],
+         "state": "current"
+        }
+       ]
+      }
+     ],
+     "controlled": false,
+     "controlled_basis": "Nothing here connects to it, sends it a command or takes in anything from it: it is a record, and no twin or simulation is evidence of its safety.",
+     "judged_basis": "Each piece of evidence is recorded as the person attached it; this platform judges none of it, and computes no score and no single word of readiness from the six."
+    }
+   ],
+   "kept": true,
+   "total": 2,
+   "controlled_basis": "Nothing here connects to it, sends it a command or takes in anything from it: it is a record, and no twin or simulation is evidence of its safety.",
+   "judged_basis": "Each piece of evidence is recorded as the person attached it; this platform judges none of it, and computes no score and no single word of readiness from the six."
+  }
+ },
+ "read_withdrawn": {
+  "status": 200,
+  "body": {
+   "id": "ast-5a72c6bf92",
+   "what": "a made-up delivery robot, serial W1083-1",
+   "kind": "robot",
+   "owned_by": {
+    "party_id": "pty-8436a12a4f",
+    "name": "W1083 Made-up Robot Leasing Ltd",
+    "kind": "registered_body"
+   },
+   "possessed_by": {
+    "party_id": "pty-6ead417fa1",
+    "name": "Eve W1083-Madeup",
+    "kind": "person"
+   },
+   "held_under": {
+    "agreement_id": "agr-5f059a77c0",
+    "title": "W1083 Made-up Robot Lease",
+    "basis": "The agreement it is held under is recorded as stated. It is not, of itself, evidence of the right to use it or of any place's permission to use it there."
+   },
+   "entered_by": "w1083-made-up-person",
+   "entered_at": "2026-11-15T14:36:57Z",
+   "rules": {
+    "use": "footway",
+    "use_name": "on a public footway",
+    "rows": [],
+    "basis": "These are the rows of the register of sources for this use, each as it was read: what it says, on what date, by whom, and what was not read. Nothing here says whether the law permits this use, and no row is a permission.",
+    "said": "No source permitting this use was found.",
+    "entered_by": "w1083-made-up-person",
+    "entered_at": "2026-11-15T14:36:57Z",
+    "history": []
+   },
+   "facts": [
+    {
+     "fact": "right_to_use",
+     "name": "the right to use it",
+     "evidence": [
+      {
+       "id": "evd-58337d6aa4",
+       "fact": "right_to_use",
+       "evidence": "the made-up lease, clause 2, as stated",
+       "lapses_on": "2027-12-20",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "current"
+      }
+     ]
+    },
+    {
+     "fact": "place_permission",
+     "name": "the permission of the place it would be used in",
+     "evidence": [],
+     "said": "not evidenced"
+    },
+    {
+     "fact": "maker_conformity",
+     "name": "the maker's evidence of conformity",
+     "evidence": [
+      {
+       "id": "evd-8a2e65834a",
+       "fact": "maker_conformity",
+       "evidence": "the maker's made-up declaration of conformity, as stated",
+       "lapses_on": "2027-12-20",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "current"
+      }
+     ]
+    },
+    {
+     "fact": "user_safety",
+     "name": "the user's own safety evidence (assessment, training, inspection and maintenance)",
+     "evidence": [
+      {
+       "id": "evd-45aeca51ae",
+       "fact": "user_safety",
+       "evidence": "a made-up risk assessment, as stated",
+       "lapses_on": "2026-11-25",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "lapsed"
+      }
+     ]
+    },
+    {
+     "fact": "insurance",
+     "name": "insurance",
+     "evidence": [
+      {
+       "id": "evd-5c186692ef",
+       "fact": "insurance",
+       "evidence": "a made-up policy that ended yesterday, as stated",
+       "lapses_on": "2026-11-14",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "state": "lapsed"
+      }
+     ]
+    },
+    {
+     "fact": "readiness",
+     "name": "a named person's declaration that it is ready",
+     "evidence": [
+      {
+       "id": "evd-cd2bda035f",
+       "fact": "readiness",
+       "evidence": "a made-up declaration, as stated",
+       "lapses_on": "2027-12-20",
+       "attached_by": "w1083-made-up-person",
+       "attached_at": "2026-11-15T14:36:57Z",
+       "named_person": "Dee W1083-Madeup, as named",
+       "rests_on": [
+        "evd-58337d6aa4",
+        "evd-8a2e65834a",
+        "evd-45aeca51ae"
+       ],
+       "state": "withdrawn",
+       "withdrawn_because": "it rests on evidence that has lapsed: the user's own safety evidence (assessment, training, inspection and maintenance) (a made-up risk assessment, as stated), lapsed on 2026-11-25. It stays withdrawn until a person declares again."
+      }
+     ]
+    }
+   ],
+   "controlled": false,
+   "controlled_basis": "Nothing here connects to it, sends it a command or takes in anything from it: it is a record, and no twin or simulation is evidence of its safety.",
+   "judged_basis": "Each piece of evidence is recorded as the person attached it; this platform judges none of it, and computes no score and no single word of readiness from the six."
+  }
+ },
+ "list_unread": {
+  "status": 503,
+  "body": {
+   "detail": "assets.json could not be read whole (not valid JSON: Expecting property name enclosed in double quotes: line 1 column 3 (char 2)) — nothing was written"
+  }
+ },
+ "parties_unread": {
+  "status": 503,
+  "body": {
+   "detail": "agreement_parties.json could not be read whole (not valid JSON: Expecting property name enclosed in double quotes: line 1 column 3 (char 2)) — nothing was written"
+  }
+ },
+ "agreements_unread": {
+  "status": 503,
+  "body": {
+   "detail": "agreements.json could not be read whole (not valid JSON: Expecting property name enclosed in double quotes: line 1 column 3 (char 2)) — nothing was written"
+  }
+ }
+}

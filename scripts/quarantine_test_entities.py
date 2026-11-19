@@ -215,6 +215,10 @@ def main() -> int:
         return restore(pathlib.Path(a.restore))
     root = pathlib.Path(str(data_path("."))).resolve()
     pl = plan(root)
+    #  W809 (FU-1154) - a plan over no entity record is a plan over nothing; it is refused, not written as "0 eligible"
+    if not (pl.get("counts") or {}).get("entities"):
+        print(f"REFUSING: examined nothing - no entity record was found under {root}, so there is nothing to plan.")
+        return 1
     out = pathlib.Path(a.list_out) if a.list_out else root / "_prune_plan.json"
     atomic_write_json(out, pl)
     c = pl["counts"]

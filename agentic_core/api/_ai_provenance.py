@@ -169,15 +169,29 @@ def note_withheld(provenance: "dict | None", sections_withheld: "list | None") -
         return provenance
     qa = provenance.get("quality_assurance")
     if isinstance(qa, dict):
-        n = len(sections_withheld)
+        #  W806 (FU-839) - SECTIONS, NOT ENTRIES. The scholar gate's list carries summary entries beside the named
+        #  sections: "N further section(s) under the model's own headings" is N sections, and "text under no
+        #  heading" is none. Counting entries reported each of those as one section.
+        n, _unheaded806 = 0, False
+        for _e806 in sections_withheld:
+            _m806 = re.match(r"\s*(\d+) further section", str(_e806))
+            if _m806:
+                n += int(_m806.group(1))
+            elif str(_e806).strip() == "text under no heading":
+                _unheaded806 = True
+            else:
+                n += 1
         qa["delivery_coverage_before_withholding"] = qa.get("delivery_coverage")
         qa["delivery_coverage"] = None
         qa["stub_found"] = None
         qa["sections_withheld_count"] = n
+        if _unheaded806:
+            qa["text_without_heading_withheld"] = True
         _was = str(qa.get("qms_basis") or "").rstrip()
         qa["qms_basis"] = ((_was + " ") if _was else "") + (
-            f"Coverage and the stub check were measured on the text BEFORE {n} section(s) were withheld; no "
-            f"figure is reported for the text returned.")
+            f"Coverage and the stub check were measured on the text BEFORE {n} section(s)"
+            + (" and the text under no heading" if _unheaded806 else "")
+            + " were withheld; no figure is reported for the text returned.")
     return provenance
 
 
@@ -206,12 +220,44 @@ def wrap_material(material: str, label: str = "MATERIAL", limit: int = DEFAULT_M
     return f"{MATERIAL_OPEN.format(label=label)}\n{read}\n{MATERIAL_CLOSE}", record
 
 
+#  W856 (FU-1059) - THE THREE PIECES EVERY CALLER MOVING A PERSON'S TEXT OUT OF ITS INSTRUCTION USES (career,
+#  employment, science and care): the material keywords, a short field put on one line, and the sentence said when the
+#  material was not read whole.
+def one_line(value) -> str:
+    """A short field a person typed, put on one line for the instruction: a line break typed into it cannot open a
+    section there."""
+    return " ".join(str(value or "").split())
+
+
+def person_material(label: str, limit: int = DEFAULT_MATERIAL_LIMIT, **parts) -> Dict[str, Any]:
+    """The ai_text keywords that hand what a person wrote over as material, each named part under its own heading -
+    or none at all when they wrote nothing, so no empty block is sent."""
+    body = "".join(f"{name.replace('_', ' ').upper()}:\n{text}\n" for name, text in parts.items()
+                   if str(text or "").strip())
+    #  keyword arguments for ai_text(**...), not an answer's fields
+    return dict(material=body, material_label=label, material_limit=limit) if body else {}
+
+
+def material_cut_said(provenance, what: str = "WHAT YOU SUPPLIED"):
+    """A sentence when the person's material was not read whole (the helper cut it at its limit), else None."""
+    m = (provenance or {}).get("material") or {}
+    if not m or m.get("read_whole", True):
+        return None
+    return (f"ONLY PART OF {what} WAS READ: the first {m.get('read_chars', 0):,} of {m.get('chars', 0):,} "
+            f"characters. Nothing here speaks for the rest.")
+
+
+from agentic_core.api.operational_excellence import spans_run as _spans_run847
+
+
+@_spans_run847("ai_call")          # W847 (FU-1121) - the model attempt inside is held, not spent twice
 async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
                   owner_id: str | None = None, augment: bool = False,
                   realm: str = "", domain: str = "",
                   user_text: str | None = None,
                   material: str | None = None, material_label: str = "MATERIAL",
-                  material_limit: int = DEFAULT_MATERIAL_LIMIT) -> Tuple[str, Dict[str, Any]]:
+                  material_limit: int = DEFAULT_MATERIAL_LIMIT,
+                  context: Dict[str, Any] | None = None) -> Tuple[str, Dict[str, Any]]:
     """Return (text, provenance) where provenance = {posture, served_by, is_external}.
 
     Every call is recorded into the operational-excellence learning loop (best-effort, non-critical)
@@ -232,9 +278,19 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
     #  an answer must have are read from IT ALONE, so a heading inside a person's document is never one.
     _instruction = prompt.replace(MATERIAL_SLOT, "")
     _material = None
+    #  W958 (P5.12 clause 1) - A SECOND BLOCK, BEFORE THE MATERIAL: what the person supplied to frame it (a task and a
+    #  rubric beside a student's work), cut at its own limit and recorded apart, so the material's own cut and record
+    #  are unchanged. `context` takes the keywords person_material makes; an empty one sends nothing.
+    _context, _cblock = None, ""
+    if context and context.get("material") is not None:
+        _cblock, _context = wrap_material(context["material"], context.get("material_label") or "CONTEXT",
+                                          context.get("material_limit") or DEFAULT_MATERIAL_LIMIT)
     if material is not None:
         _block, _material = wrap_material(material, material_label, material_limit)
+        _block = (_cblock + "\n\n" + _block) if _cblock else _block
         prompt = prompt.replace(MATERIAL_SLOT, _block, 1) if MATERIAL_SLOT in prompt else f"{prompt}\n\n{_block}"
+    elif _cblock:
+        prompt = prompt.replace(MATERIAL_SLOT, _cblock, 1) if MATERIAL_SLOT in prompt else f"{prompt}\n\n{_cblock}"
     elif MATERIAL_SLOT in prompt:
         prompt = prompt.replace(MATERIAL_SLOT, "")
     if str(realm or "").strip():
@@ -249,8 +305,13 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
         prompt = f"Domain: {domain.strip()}\n{prompt}"
     t0 = time.monotonic()
     owner_id = owner_id or request_user() or None     # W619 (FU-501) — the authenticated caller, when there is one
+    #  W952 (FU-1189) - a person's own words or material, with no signed-in person owning them, are not stored: the
+    #  gateway logs that the call was made and keeps none of its text for recall
+    from agentic_core.auth.core import auth_enabled as _auth952
+    _keep952 = (not (str(user_text or "").strip() or material is not None or _context is not None)
+                or bool(_auth952() and owner_id))                   # W958 - a context is a person's words too
     res = await gateway.query_meta(prompt, agent=agent, timeout=timeout,
-                                   owner_id=owner_id, augment=augment, user_text=user_text,
+                                   owner_id=owner_id, augment=augment, user_text=user_text, keep_text=_keep952,
                                    #  P3.6 clause (2) — the request's own language, so the output can be
                                    #  labelled when it is not delivered in it ("the defect is silent
                                    #  English"). One seam, so all six domain tools are covered at once.
@@ -258,17 +319,8 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
     output = res.get("output", "")
     served_by = res.get("served_by", "native")
     is_external = bool(res.get("is_external"))
-    try:
-        from agentic_core.api.operational_excellence import record_outcome
-        record_outcome("ai_call", f"agent:{agent}", served_by=served_by, is_external=is_external,
-                       # W495 (FU-125, S7.3) — this wrapper sees no quality gate at all, so it records
-                       # that the run PRODUCED output and leaves the verdict unset (NOT ASSESSED) rather
-                       # than filing "the floor returned text" as a success.
-                       duration_ms=int((time.monotonic() - t0) * 1000), success=bool(output),
-                       owner_id=owner_id,     # S18.6 (W743) - booked to that owner's own budget
-                       quality_gate=None)
-    except Exception:
-        pass
+    #  W873 (FU-1039) - the call's own seconds, taken before the gate below runs: the row records them after it
+    _call_ms873 = int((time.monotonic() - t0) * 1000)
     provenance: Dict[str, Any] = {"posture": "in-house-first", "served_by": served_by,
                                   "is_external": is_external,
                                   #  P3.6 clause (2) — the verdict travels WITH the provenance the page
@@ -289,8 +341,14 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
                                   "model_tokens_basis": res.get("model_tokens_basis"),
                                   #  W698 - the level of evidence this answer is, or that a refusal is none
                                   **reply_evidence(served_by)}
+    #  W842 (FU-1092) - the model and the build that answered, beside the server's name: the gateway's own statement,
+    #  or the same reading of the server's name when a return carries none (a refusal's early return)
+    from agentic_core.ai.gateway import served_identity_of as _sid842
+    provenance["served_identity"] = res.get("served_identity") or _sid842(served_by)
     if _material is not None:
         provenance["material"] = _material          # how much was read of how much, on every answer
+    if _context is not None:
+        provenance["context_material"] = _context  # W958 - the second block's own figure
     #  W688 (OWNER RULING 2026-10-12, the review cell's first clause) - THE TIER OF REVIEW THIS TOOL HAS REACHED,
     #  on the provenance every domain router returns, so no router can leave it out. With no record it says
     #  UNREVIEWED. A failure to read it is said as not known; it is never left off and never read as reviewed.
@@ -336,4 +394,16 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
         }
     except Exception as exc:   # the gate itself must never cost the user their output
         provenance["quality_assurance_error"] = str(exc)
+    #  W873 (FU-1039, ruled) - THE ROW'S QUALITY FIELD IS WRITTEN FROM THE GATE THAT HOLDS THE VERDICT. This row was
+    #  written before the gate above ran, so it carried no verdict on every domain tool's answer (W495 recorded
+    #  NOT ASSESSED rather than "the floor returned text"). It is written now with the gate's own verdict: pass or
+    #  fail when the gate assessed the text, None when it did not (the floor is not assessable) or could not run.
+    try:
+        from agentic_core.api.operational_excellence import record_outcome
+        record_outcome("ai_call", f"agent:{agent}", served_by=served_by, is_external=is_external,
+                       duration_ms=_call_ms873, success=bool(output),
+                       owner_id=owner_id,     # S18.6 (W743) - booked to that owner's own budget
+                       quality_gate=(provenance.get("quality_assurance") or {}).get("qms_gate_passed"))
+    except Exception:
+        pass
     return output, provenance

@@ -47,7 +47,14 @@ def components(rows: list) -> list:
 
 
 def main() -> int:
-    rows = open_rows()
+    reg = json.loads(io.open(REGISTER, encoding="utf-8").read())
+    _all = reg.get("items") if isinstance(reg, dict) else reg
+    #  W808 (FU-1154) - a register with no row was not read as one: "0 components" would be a reading of nothing.
+    #  A register whose rows are all closed is a real state, and is reported as such below.
+    if not _all:
+        print(f"REFUSING: examined nothing - {REGISTER} holds no row, so there are no components to report.")
+        return 1
+    rows = open_rows(reg)
     comps = components(rows)
     # the components must PARTITION the rows: every open row in exactly one, none invented
     seen = [i for c in comps for i in c["rows"]]

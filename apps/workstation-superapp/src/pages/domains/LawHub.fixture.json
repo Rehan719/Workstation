@@ -1,0 +1,309 @@
+{
+ "templates": {
+  "templates": [
+   {
+    "id": "nda",
+    "name": "Non-Disclosure Agreement",
+    "category": "Contracts",
+    "jurisdiction": "England & Wales"
+   },
+   {
+    "id": "employment_contract",
+    "name": "Employment Contract",
+    "category": "Employment",
+    "jurisdiction": "England & Wales"
+   },
+   {
+    "id": "service_agreement",
+    "name": "Service Level Agreement",
+    "category": "Contracts",
+    "jurisdiction": "England & Wales"
+   },
+   {
+    "id": "partnership_deed",
+    "name": "Partnership Deed",
+    "category": "Governance",
+    "jurisdiction": "England & Wales"
+   },
+   {
+    "id": "privacy_policy",
+    "name": "Privacy Policy (GDPR)",
+    "category": "Compliance",
+    "jurisdiction": "UK GDPR"
+   },
+   {
+    "id": "terms_of_service",
+    "name": "Terms of Service",
+    "category": "Compliance",
+    "jurisdiction": "England & Wales"
+   },
+   {
+    "id": "ip_assignment",
+    "name": "IP Assignment Agreement",
+    "category": "Intellectual Property",
+    "jurisdiction": "England & Wales"
+   },
+   {
+    "id": "et1_claim",
+    "name": "Employment Tribunal ET1 Claim",
+    "category": "Litigation",
+    "jurisdiction": "England & Wales"
+   },
+   {
+    "id": "cease_desist",
+    "name": "Cease and Desist Letter",
+    "category": "Litigation",
+    "jurisdiction": "England & Wales"
+   },
+   {
+    "id": "data_processing_agreement",
+    "name": "Data Processing Agreement",
+    "category": "Compliance",
+    "jurisdiction": "UK GDPR"
+   }
+  ],
+  "total": 10,
+  "held": {
+   "templates": [
+    "partnership_deed"
+   ],
+   "reason": "it is a deed, and preparing certain instruments is reserved to authorised persons by the Legal Services Act 2007 (section 12 and Schedule 2). No qualified person has yet read that Schedule for this platform, so no deed is composed here. This is a hold, and says nothing about whether this particular deed is reserved. A solicitor can prepare one."
+  },
+  "matter_jurisdiction": "England & Wales",
+  "matter_jurisdiction_basis": "INFERRED FROM THIS REPOSITORY'S OWN CONTENT AND CONFIRMED BY THE OWNER on 2026-10-03, not asserted by either alone. (a) knowledge/Law/EmploymentTribunal/ontology/uk_employment_law_v9.json declares domain UK_EMPLOYMENT_LAW and names ACAS Conciliation 26 times — ACAS covers GREAT BRITAIN, so Northern Ireland is ruled out by the content itself, as NI uses the Labour Relations Agency. (b) the same corpus says 'Employment Tribunal', not 'Industrial Tribunal', which is again GB and not NI. (c) it names the Equality Act 2010, which is GB. (d) agentic_core/api/law.py already carried 'England & Wales' in ten document templates including the ET1 claim, so this is what the deployed code already assumed. WHAT THIS DOES NOT ESTABLISH: England & Wales versus SCOTLAND. Both use the Employment Tribunal and the ACAS Code and the evidence above does not separate them; the Owner accepted England & Wales and a correction to Scotland changes procedure only, so nothing built on the tribunal or the Code is wasted either way."
+ },
+ "tools": {
+  "needs_no_model": [
+   {
+    "id": "statute",
+    "name": "Read a provision of an Act",
+    "does": "Fetches one provision from its publisher when you ask, and shows it word for word with the date of its version and the changes not yet applied to it.",
+    "does_not": "It does not say whether the provision applies to your situation, or explain it."
+   },
+   {
+    "id": "help",
+    "name": "Where help from a person is",
+    "does": "Lists regulated and free legal help by name and address, says what this platform is not, and says how to complain.",
+    "does_not": "It does not choose one for you, and nothing is copied from their sites."
+   },
+   {
+    "id": "time_limit",
+    "name": "How long a time limit runs",
+    "does": "Works out the primary limit for a tribunal claim from the date it runs from, using the words of the provision that sets it, read from its publisher when you ask, and names who to ask.",
+    "does_not": "It does not account for early conciliation or any extension, and it works nothing out if the provision no longer has the words the rule was built from."
+   },
+   {
+    "id": "matter",
+    "name": "Assemble the matter's papers",
+    "does": "Fills each particular only from a located line of a document in the matter's one folder, or leaves it blank, and resolves each authority against the corpus or refuses it.",
+    "does_not": "It does not compose a particular, an argument or a conclusion, and a filing-shaped draft waits for the Owner's approval."
+   }
+  ],
+  "needs_a_model": [
+   {
+    "id": "compliance",
+    "route": "/api/v1/law/analyse",
+    "when_no_model_serves": "Composed by the native floor, not by a model: NO legal research or analysis was performed, no law was looked up, and the 'Relevant Law' and 'Conclusion' headings hold terms from your question. It is not legal advice - consult a qualified solicitor."
+   },
+   {
+    "id": "draft",
+    "route": "/api/v1/law/generate",
+    "when_no_model_serves": "Composed by the native floor, not by a model: a structured frame, with nothing generated, reasoned or interpreted by AI. It must be reviewed by a qualified solicitor before use. Nothing here is legal advice."
+   },
+   {
+    "id": "research",
+    "route": "/api/v1/law/research",
+    "when_no_model_serves": "Composed by the native floor, not by a model: NO legal research or analysis was performed, no law was looked up, and the 'Relevant Law' and 'Conclusion' headings hold terms from your question. It is not legal advice - consult a qualified solicitor."
+   }
+  ],
+  "basis": "Read from this router's code. The first three call no model at all: a publisher's text word for word, a list of names and addresses, lines located in the matter's folder. Each form's sentence is the disclaimer its answer carries when the native floor composed it. Whether a model is serving now is the native status's reading, not this list's.",
+  "composed": false
+ },
+ "serving": {
+  "evidence_level": "configuration",
+  "evidence_level_number": null,
+  "evidence_basis": "which resource is listed first and which one served the last recorded completion. Configuration - what is configured, declared or reachable; below level 1 and not a statement about behaviour",
+  "posture": "in-house-first",
+  "external_allowed": false,
+  "owned_resources_available": [
+   "native"
+  ],
+  "selection_order": [
+   "native"
+  ],
+  "active_model": "native",
+  "active_model_label": "native",
+  "is_real_model": false,
+  "mode": "deterministic_floor",
+  "mode_predicted": "deterministic_floor",
+  "mode_measured": "unmeasured",
+  "measured_recent_server": null,
+  "mode_note": "mode follows the most recent completion that actually SERVED (a successful recorded row) when history exists, prediction only until then — the two disagree when a listed model keeps failing, or is disabled by configuration and skipped",
+  "floor_active": true,
+  "floor_active_basis": "no successful completion has been recorded yet; predicted from whether a real model is listed",
+  "floor_note": "The deterministic native floor is serving — honest structured reasoning, NOT an LLM. Run a local Ollama model (or enable an external accelerant) for generative prose.",
+  "guarantee": "Workstation always produces a real, structured result from its OWN resources with NO external dependency; external providers are optional accelerants (flag-gated by AI_ALLOW_EXTERNAL).",
+  "resources": [
+   {
+    "name": "native",
+    "kind": "native",
+    "available": true,
+    "is_external": false,
+    "note": "Workstation's own structured engine — always available, owned."
+   },
+   {
+    "name": "ollama",
+    "kind": "local",
+    "available": false,
+    "is_external": false,
+    "model": null,
+    "configured_model": "llama3.2",
+    "local_models": [],
+    "promoted_default": null,
+    "retired": [],
+    "note": "Self-hosted local model(s) — owned capability when running. Route to a specific one with model='ollama:<name>'."
+   },
+   {
+    "name": "anthropic",
+    "kind": "external",
+    "available": false,
+    "is_external": true,
+    "model": "claude-sonnet-4-6",
+    "note": "Optional accelerant — only with a key AND AI_ALLOW_EXTERNAL=true."
+   },
+   {
+    "name": "openai",
+    "kind": "external",
+    "available": false,
+    "is_external": true,
+    "model": "gpt-4o-mini",
+    "note": "Optional accelerant — only with a key AND AI_ALLOW_EXTERNAL=true."
+   }
+  ]
+ },
+ "help": {
+  "a_qualified_scholar": {
+   "heading": "How to find a qualified scholar",
+   "steps": [
+    "Ask in person. At a mosque or a place of learning you trust, ask who answers questions like yours, and take your question to that scholar with the details of your own situation.",
+    "A ruling on your own situation comes from a scholar who has heard it. No answer on this platform is one.",
+    "If it matters to you, ask the scholar what they studied and with whom."
+   ],
+   "names_none_because": "This platform names no scholar and no body: it cannot check anyone's standing as a scholar, and which scholar to ask is for you and your community to choose.",
+   "this_platform": "This platform is not a scholar and gives no religious ruling. What its AI composes on religion is withheld until a named scholar approves that exact text, and no scholar answers questions from the public here."
+  },
+  "regulated_and_free_help": [
+   {
+    "name": "Find legal advice (GOV.UK)",
+    "link": "https://www.gov.uk/find-legal-advice",
+    "for_what": "finding a solicitor, a legal adviser or free advice in England and Wales"
+   },
+   {
+    "name": "Check if you can get legal aid (GOV.UK)",
+    "link": "https://www.gov.uk/legal-aid/check-legal-aid",
+    "for_what": "seeing whether the cost of advice or representation may be met"
+   },
+   {
+    "name": "Citizens Advice",
+    "link": "https://www.citizensadvice.org.uk/",
+    "for_what": "free, independent advice on work, money, housing and consumer problems"
+   },
+   {
+    "name": "Acas",
+    "link": "https://www.acas.org.uk/",
+    "for_what": "free advice on rights at work, and conciliation before a tribunal claim"
+   },
+   {
+    "name": "Law Centres Network",
+    "link": "https://www.lawcentres.org.uk/",
+    "for_what": "free legal help from a local law centre, where one serves the area"
+   },
+   {
+    "name": "Advicenow",
+    "link": "https://www.advicenow.org.uk/",
+    "for_what": "plain guides for a person handling a legal problem themselves"
+   },
+   {
+    "name": "Advocate",
+    "link": "https://weareadvocate.org.uk/",
+    "for_what": "free help from a volunteer barrister, for those who cannot pay and cannot get legal aid"
+   },
+   {
+    "name": "LawWorks",
+    "link": "https://www.lawworks.org.uk/legal-advice-individuals",
+    "for_what": "free legal advice clinics run by volunteer solicitors"
+   }
+  ],
+  "this_platform_is_not": [
+   "a solicitor, a barrister or any regulated legal services provider",
+   "a source of legal advice: it shows published law word for word and labels what its own AI composes",
+   "able to tell you whether a provision applies to your situation"
+  ],
+  "to_complain": "To complain about an answer, raise a claim. Under the answer of each of the 25 domain tools on the Law, Care, Education, Employment, Science and Religion pages, say what is wrong and the claim is raised from there; against a saved deliverable, raise a claim on the support page. A claim about an answer carries the fingerprint of its text and what served it, never the text itself. A claim is filed as a change that only a person decides, and it stays open until a person answers it; with sign-in off, the Owner answers every claim. This platform is not a regulated provider, so no ombudsman or regulator handles complaints about it.",
+  "basis": "Names and addresses only: nothing is copied from any of these sites, and none of them endorses this platform. Each address resolved when it was opened on 2026-10-13. No scholar and no religious body is named.",
+  "the_page": "/support#where-help-is",
+  "composed": false,
+  "expectations": {
+   "rows": [
+    {
+     "id": "accuracy",
+     "expectation": "a minimum level of accuracy",
+     "state": "partly",
+     "how": "Enacted law is shown word for word from its publisher, with a fidelity check that can fail, and text that does not match its own record is not shown. A composed answer's accuracy is not measured; with no model serving nothing is researched at all, and each answer says which it was.",
+     "made_true_by": [
+      "agentic_core.legal.statute:fidelity",
+      "agentic_core.api.law:_FLOOR_LAW"
+     ],
+     "made_true_by_missing": []
+    },
+    {
+     "id": "consent",
+     "expectation": "no consequential action without informed consent",
+     "state": "met",
+     "how": "Nothing is filed, sent or signed. A filing-shaped document is assembled as a draft and stays one until the Owner approves it.",
+     "made_true_by": [
+      "agentic_core.legal.specialist:approve",
+      "agentic_core.api.law:matter_approve"
+     ],
+     "made_true_by_missing": []
+    },
+    {
+     "id": "oversight",
+     "expectation": "some human oversight",
+     "state": "not met",
+     "how": "No qualified person reviews an answer before it is shown. Each answer says its tier of review, which is unreviewed until a record says otherwise, and a question about a person's own case is routed to people instead of being answered.",
+     "made_true_by": [
+      "agentic_core.api._review_tier:review_statement",
+      "agentic_core.legal.own_case:own_case_route"
+     ],
+     "made_true_by_missing": []
+    },
+    {
+     "id": "redress",
+     "expectation": "access to redress",
+     "state": "partly",
+     "how": "The help list says how to complain to the Owner of this platform, and that no ombudsman or regulator handles complaints about it, because it is not a regulated provider.",
+     "made_true_by": [
+      "agentic_core.api.law:help_from_a_person"
+     ],
+     "made_true_by_missing": []
+    },
+    {
+     "id": "personal_data",
+     "expectation": "protection of personal data",
+     "state": "partly",
+     "how": "While the external switch is off, no question leaves this machine; a person's words reach the model marked as data, and the matter folder is never sent anywhere. What is asked is kept on this machine: a person's workspace history can be cleared by them, and the record of interactions and the memory layer keep what was asked and are not cleared on request.",
+     "made_true_by": [
+      "agentic_core.api._ai_provenance:MATERIAL_SLOT",
+      "agentic_core.legal.bundle:status"
+     ],
+     "made_true_by_missing": []
+    }
+   ],
+   "source": "lsb-ai-consumer-expectations-2026",
+   "source_basis": "the five expectations as the register of sources records them from the Legal Services Board's page (published 10 June 2026), read through a fetch that summarises the page and not re-read by a second reader; the two reports themselves were not read",
+   "basis": "a self-assessment by this platform against the five expectations, each row naming the code that makes it true; not a regulator's finding",
+   "composed": false
+  }
+ }
+}

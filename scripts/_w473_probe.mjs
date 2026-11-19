@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W473 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W473 (P1.16 canon and suite hygiene) — the Command Center prints nothing it does not measure, in a real browser
 // against the built bundle on a FRESH backend (AI_DISABLE_LOCAL=1). No seed.
 //   node scripts/_w473_probe.mjs http://127.0.0.1:8082

@@ -45,9 +45,121 @@ RULES: List[Dict[str, str]] = [
                          "portions were practised and when, for the adult running the tool."},
 ]
 
-#  each children's tool AS A CHILD WOULD MEET IT. A tool is listed here in the same change that builds it; the
-#  guard fails if a children's tool route exists that this list does not describe.
-CHILDREN_TOOLS: List[Dict[str, Any]] = []
+#  every children's tool route is under this one prefix, on agentic_core/api/qep_children.py's router, which asks
+#  the gate before any handler runs (W943)
+CHILDREN_PREFIX = "/api/v1/qep/children"
+
+#  each children's tool AS A CHILD WOULD MEET IT. A tool is listed here in the same change that builds it, with the
+#  routes it serves: test_w943's census fails on a route under CHILDREN_PREFIX that this list does not describe,
+#  and on a route it describes that is not mounted.
+CHILDREN_TOOLS: List[Dict[str, Any]] = [
+    #  W943 - P5.21 clause 4, the first tool
+    {"id": "memorisation-practice",
+     "name": "Memorisation practice, run by a parent or teacher",
+     "run_by": ("a parent or teacher, on their own screen, sitting with the child. The adult chooses the verse; "
+                "the child does not sign in and is not named"),
+     "what_a_child_sees": ("The first word of one verse, fetched from the named edition, with the edition named "
+                           "(more of its first words if the adult chooses). The next word, or the whole verse, "
+                           "only when the adult shows it. No mark, no score, no count, and no record of how it "
+                           "went."),
+     "steps": ["The adult chooses a surah and a verse the child is learning.",
+               "The screen shows the verse's first word, as fetched from the named edition, and names the edition.",
+               "The child says the rest of the verse from memory to the adult. Nothing listens, and nothing marks it.",
+               "If the child pauses, the adult may show the next word.",
+               "The adult may show the whole verse, for the child to look at with them.",
+               "Nothing is recorded: not the child, not the verse, and not how it went."],
+     "wording": ["Say the rest of this verse from memory, to the grown-up with you.",
+                 "Nothing here listens to you or marks you.",
+                 "Show the next word",
+                 "Show the whole verse",
+                 "This verse is shown as it was fetched from:"],
+     "arabic_from": ("the verse as fetched from alquran.cloud, edition quran-uthmani, with the edition and its "
+                     "provenance named beside it. Nothing is generated, and a verse that cannot be fetched is not "
+                     "shown."),
+     "routes": [f"GET {CHILDREN_PREFIX}/memorisation/{{surah_number}}/{{ayah_number}}",
+                f"GET {CHILDREN_PREFIX}/memorisation/{{surah_number}}/{{ayah_number}}/next"]},
+    #  W944 - P5.21 clause 4, the second tool
+    {"id": "own-past-challenge",
+     "name": "A challenge against the child's own past, run by a parent or teacher",
+     "run_by": ("a parent or teacher, signed in on their own account. The child is one of the adult's numbered "
+                "children, 1 to 9, and is never named"),
+     "what_a_child_sees": ("How many portions they have practised this week, beside their own earlier weeks. Never "
+                           "another child's number, and no rank, award, streak or score."),
+     "steps": ["After a practice, the adult notes the portion the child practised: a surah, and its first and last "
+               "verse.",
+               "The platform keeps which portion was practised and on which day, for this adult and this numbered "
+               "child only.",
+               "The adult opens the challenge. It shows this week's count of portions practised beside the child's "
+               "own earlier weeks.",
+               "Nothing compares the child with any other child, and nothing counts days in a row.",
+               "The adult can remove the child's record at any time, and nothing of it is kept afterwards."],
+     "wording": ["Portions practised this week: {this_week}.",
+                 "Last week: {last_week}.",
+                 "Can you practise as many this week as last week?",
+                 "This is only about you. Nobody else sees it, and you are not compared with anyone."],
+     "arabic_from": "none: this tool shows no Arabic, only the surah and verse numbers the adult noted.",
+     "routes": [f"POST {CHILDREN_PREFIX}/challenge/{{child}}/practised",
+                f"GET {CHILDREN_PREFIX}/challenge/{{child}}",
+                f"DELETE {CHILDREN_PREFIX}/challenge/{{child}}"]},
+    #  W945 - P5.21 clause 4, the third tool
+    {"id": "teaching-aids",
+     "name": "Teaching aids for a teacher",
+     "run_by": "a teacher, or a parent teaching, signed in on their own account and preparing a lesson",
+     "what_a_child_sees": ("A sheet of one portion, shown or printed: each verse as fetched from the named edition, "
+                           "with the edition named, or for recall practice only each verse's first word. No mark, "
+                           "score or name is on it."),
+     "steps": ["The teacher chooses a surah, and the first and last verse of a portion of at most 40 verses.",
+               "The sheet lists each verse of the portion as fetched from the named edition, and names the edition.",
+               "For recall practice, the teacher may choose the sheet that shows only each verse's first word.",
+               "A verse that cannot be fetched is named as missing, and nothing is put in its place.",
+               "Nothing is recorded about the teacher's class or any child."],
+     "wording": ["Portion: surah {surah}, verses {from_ayah} to {to_ayah}.",
+                 "Each verse is shown as it was fetched from:",
+                 "Say the rest of each verse from memory.",
+                 "Not available, so not shown:"],
+     "arabic_from": ("each verse as fetched from alquran.cloud, edition quran-uthmani, with the edition named on "
+                     "the sheet. Nothing is generated, and a verse that cannot be fetched is named as missing and "
+                     "not shown."),
+     "routes": [f"GET {CHILDREN_PREFIX}/teaching/sheet/{{surah_number}}"]},
+    #  W946 - P5.21 clause 4, the fourth tool
+    {"id": "private-reflection",
+     "name": "Private written reflection, on prompts a scholar has approved",
+     "run_by": "a parent or teacher, signed in on their own account, sitting with the child",
+     "what_a_child_sees": ("One reflection prompt at a time, in the exact words a scholar approved, and a space to "
+                           "write in. What they write stays on the device; nobody sees it unless the child shows "
+                           "them."),
+     "steps": ["A person proposes each prompt, which goes to the scholar's review. This platform composes none.",
+               "Only a prompt a scholar on the roster has approved, in its exact words, is shown.",
+               "The child writes in the space on the device. Nothing they write is sent anywhere.",
+               "Nothing reads, judges or keeps what the child wrote, and nothing says anything about the child's "
+               "faith."],
+     "wording": ["Write what you think. There is no right or wrong answer.",
+                 "What you write stays on this device. Nobody sees it unless you show them."],
+     "arabic_from": ("none: a prompt holds no Arabic. One that does is refused when it is proposed, because every "
+                     "verse a child sees is fetched from a named edition."),
+     "routes": [f"GET {CHILDREN_PREFIX}/reflection/prompts"]},
+    #  W947 - P5.21 clause 4, the fifth tool
+    {"id": "self-check-in",
+     "name": "Check-ins the child answers, run by a parent or teacher",
+     "run_by": "a parent or teacher, signed in on their own account, sitting with the child",
+     "what_a_child_sees": ("A few short questions about their practice, each with answers to choose from, "
+                           "including I'd rather not say. Any question can be skipped. Nothing is guessed about the "
+                           "child, and nothing they answer is sent or kept."),
+     "steps": ["The adult opens the check-in with the child.",
+               "The child reads each question and chooses an answer, or skips it.",
+               "The answers are shown back on the screen, to the child and the adult.",
+               "When the screen is closed the answers are gone: nothing the child chose is sent or kept, and "
+               "nothing is worked out from it."],
+     "questions": [{"id": "feel", "question": "How did practising feel today?",
+                    "answers": ["Easy", "Just right", "Hard", "I'd rather not say"]},
+                   {"id": "help", "question": "Is there anything you would like help with next time?",
+                    "answers": ["Yes", "No", "I'd rather not say"]}],
+     "wording": ["Answer only if you want to. You can skip any question.",
+                 "Your answers stay on this screen. They are not saved or sent.",
+                 "Skip"],
+     "arabic_from": "none: this tool shows no Arabic.",
+     "routes": [f"GET {CHILDREN_PREFIX}/check-in/questions"]},
+]
 
 PACK_STORE = "scholar_pack_decisions.json"
 _RESEARCH_PREFIX = "religion-research:"
@@ -165,6 +277,9 @@ def as_document() -> str:
         lines += [f"### {t.get('name')}", f"Run by: {t.get('run_by')}", "", f"What the child sees: {t.get('what_a_child_sees')}", ""]
         lines += [f"{i}. {s}" for i, s in enumerate(t.get("steps") or [], 1)]
         lines += ["", "Exact wording on screen:"] + [f"> {w}" for w in (t.get("wording") or [])]
+        if t.get("questions"):                                    # W947 - a tool's questions, word for word
+            lines += ["", "Questions, each with the answers to choose from:"]
+            lines += [f"- {q['question']} ({' / '.join(q['answers'])})" for q in t["questions"]]
         lines += ["", f"Where any Arabic comes from: {t.get('arabic_from')}", ""]
     lines += ["## 3. Learner-facing text awaiting or holding a decision", ""]
     if not st["sections"]["learner_content"]:

@@ -70,8 +70,9 @@
    "domain": "Law",
    "subject": "How long a person has to bring an employment tribunal claim",
    "nation": "England, Wales, Scotland",
-   "state": "nothing_built",
-   "today": "asked this, the research form returns the question's own words; the calculator is built in a later round"
+   "state": "arithmetic",
+   "today": "the primary limit is worked out from the date it runs from, using the words of the provision that sets it, read from its publisher when asked, with who to ask; early conciliation and extensions are not accounted for (built in W875; this row was left as nothing built until W953)",
+   "driven_by": "test_w875_how_long_a_time_limit_runs_is_arithmetic_on_the_rules_own_words_with_a_route"
   },
   {
    "id": "law-urgent-routes",
@@ -86,8 +87,9 @@
    "domain": "Law",
    "subject": "Where to go for help from a person",
    "nation": "England",
-   "state": "nothing_built",
-   "today": "no directory is held"
+   "state": "journey",
+   "today": "one page, on the support page, lists regulated and free legal help by name and address with one line of this platform's own for each, says how to find a qualified scholar without naming one, and says how to complain; the Law page's help is built from the same source, and nothing is copied from any site",
+   "driven_by": "test_w953_the_one_page_of_where_help_is_says_how_to_find_a_scholar_and_is_off_the_law_route"
   },
   {
    "id": "law-research",
@@ -537,7 +539,7 @@
    "subject": "A child's safeguarding concern",
    "nation": "England",
    "state": "excluded",
-   "today": "the adult form still accepts it until the tier-2 round",
+   "today": "the safeguarding form asks who the concern is about; a concern about a child or young person gets the children's route for England, with the emergency line first, and nothing is composed",
    "excluded_by": "Owner ruling 2026-10-12 (care, 4): the form is the adult route for England; a child's concern gets the children's route and nothing composed"
   },
   {
@@ -568,12 +570,22 @@
    "driven_by": "test_w684_similar_verses_are_counted_from_the_fetched_text_and_say_what_they_cover"
   },
   {
+   "id": "qep-trouble-spot-cards",
+   "domain": "Quran platform",
+   "subject": "Spaced-review cards for an isolated trouble spot",
+   "nation": "any - the sourced text and its practice are the same everywhere",
+   "state": "journey",
+   "today": "a learner marks a trouble spot of at most five ayaat and each ayah gets a spaced-review card; a wider range is refused and sent to the plan's three tracks, and nothing is scheduled",
+   "driven_by": "test_w957_p517_the_card_scheduler_is_kept_only_for_isolated_trouble_spots"
+  },
+  {
    "id": "qep-listen-follow",
    "domain": "Quran platform",
    "nation": "any - the sourced text and its practice are the same everywhere",
    "subject": "Listening to a named reciter with each word highlighted",
-   "state": "nothing_built",
-   "today": "nothing here plays a recitation; the source's terms are read and not yet entered"
+   "state": "journey",
+   "today": "a learner listens to a named reciter's recitation of a verse, fetched for each request from the Quran Foundation and never kept, with each word lit as it plays; nothing listens to the learner",
+   "driven_by": "test_w717_a_reference_recitation_is_listened_to_and_nothing_listens_to_the_learner"
   },
   {
    "id": "qep-hear-yourself",
@@ -623,6 +635,42 @@
    "state": "journey",
    "driven_by": "test_w724_a_statute_provision_is_shown_word_for_word_and_help_is_a_list_of_links",
    "today": "one section is fetched from legislation.gov.uk on request and shown word for word with its version date, extent, the publisher's list of changes not yet applied and the licence; it is not advice and says nothing about whether it applies to a person"
+  },
+  {
+   "id": "law-agreement-records",
+   "domain": "Law",
+   "subject": "Keeping a record of the enterprise's own agreement with an outside party",
+   "nation": "Any: the record states no rule of law",
+   "state": "journey",
+   "driven_by": "test_w1080_p518_a_party_is_a_person_or_a_registered_body_and_an_agreements_six_facts_stay_apart",
+   "today": "on the Law page, a signed-in person enters each party as a person or a registered body with where and when it was read, drafts an agreement on those party records only, and records its review, the approval of one exact version, its execution as their own entry of the evidence and the formalities met, that it is in force and its end, each with who and when; a change to the text ends the approval it had; nothing is kept before sign-in, which formalities the law requires is not stated, and nothing here is legal advice (built in W1080 and W1081)"
+  },
+  {
+   "id": "law-asset-evidence",
+   "domain": "Law",
+   "subject": "Keeping the evidence for a physical asset held under the enterprise's agreement",
+   "nation": "Any: the record states no rule of law",
+   "state": "journey",
+   "driven_by": "test_w1082_p519_an_asset_is_a_record_held_under_an_agreement_and_its_six_facts_are_never_merged",
+   "today": "on the Law page, a signed-in person enters a vehicle, robot, drone or instrument as a record owned and possessed by party records and held under an agreement record, and attaches evidence to its six facts apart - the right to use it, the place's permission, the maker's conformity, their own safety evidence, insurance and a named person's declaration of readiness - each with who, when and when it lapses; evidence past its date reads lapsed and a declaration resting on it withdrawn; no score or word of readiness is computed, nothing is connected or controlled, and nothing is kept before sign-in (built in W1082 and W1083)"
+  },
+  {
+   "id": "law-asset-rules",
+   "domain": "Law",
+   "subject": "Which rules apply where a physical asset would be used, as sources",
+   "nation": "Great Britain and the UK, as each row of the register of sources says",
+   "state": "journey",
+   "driven_by": "test_w1084_p519_which_rules_apply_to_an_asset_are_the_rows_of_the_register_for_its_use",
+   "today": "on the Law page, a signed-in person says where an asset would be used - in a workplace, on a road, on a public footway, in the air or somewhere else - and is shown the rows of the register of sources for that use, each with what it says, the date it was read, by whom and what was not read; where no source permitting the use was found, the record says so in those words; nothing says whether the law permits the use (built in W1084)"
+  },
+  {
+   "id": "law-agreement-obligations",
+   "domain": "Law",
+   "subject": "What the enterprise's agreement obliges, and when, and what waits on a person",
+   "nation": "Any: the record states no rule of law",
+   "state": "journey",
+   "driven_by": "test_w1085_p518_an_obligation_names_its_clause_and_who_confirmed_it_and_what_falls_due_is_on_one_list",
+   "today": "on the Law page, a signed-in person enters each obligation an agreement's text sets - who owes what to whom, the clause it was read from and the date it falls due as they read it - and confirms it; the notice period is said as not known until it is entered from its clause; what falls due, or waits for a confirmation, is on the one list of what waits on them, which says what it does not read yet; every date is a person's entry, none computed and none taken from a model, and the text is kept as data on this machine (built in W1085 and W1086)"
   }
  ]
 }

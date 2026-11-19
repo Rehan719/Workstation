@@ -93,7 +93,9 @@ class ParticularSpec(BaseModel):
 class AssembleRequest(BaseModel):
     template_id: str
     particulars: list[ParticularSpec] = []   # each filled ONLY from a located bundle line
-    authorities: list = []        # names of statutes or cases - each resolved against the corpus or refused
+    #  W816 (FU-825) - typed: a non-string entry is refused at the door with a 422 naming the field, as a
+    #  particular sent in the wrong shape already is
+    authorities: list[str] = []   # names of statutes or cases - each resolved against the corpus or refused
 
 
 @router.post("/matter/assemble")
@@ -175,7 +177,7 @@ class AnalyseRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/analyse")
+@router.post("/analyse", openapi_extra={"x-review-tool": "law_analyst"})
 async def analyse_document(req: AnalyseRequest):
     """
     Analyse a legal document using AI. Returns structured risk assessment,
@@ -244,11 +246,34 @@ class ResearchRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/research")
+@router.post("/research", openapi_extra={"x-review-tool": "law_researcher"})
 async def legal_research(req: ResearchRequest):
     """Structured legal research / issue analysis using the IRAC method (Issue → Relevant Law → Application →
     Conclusion) with practical considerations, risks, and next steps. AI-generated informational guidance —
     NOT legal advice."""
+    #  W874 (FU-1082, P5.20 clause 5) - A QUESTION ABOUT THE PERSON'S OWN LIVE DISPUTE IS ROUTED TO PEOPLE, before
+    #  anything composes: no model and no floor is asked. The screen may route; recognising nothing is not a clearance.
+    from agentic_core.legal.own_case import COVERAGE as _cov874, own_case_route as _own874
+    from agentic_core.api._ai_provenance import no_reply_evidence as _no_reply_evidence874
+    _routed874 = _own874(req.question, req.context)
+    if _routed874:
+        return {
+            "research_id": uuid.uuid4().hex[:10],
+            "question": req.question,
+            "jurisdiction": req.jurisdiction,
+            "area_of_law": req.area_of_law,
+            "analysis": _routed874["message"],
+            "method": "routed to people - not answered",
+            "routed_to_people": _routed874["people"],
+            "published_material": _routed874["published_material"],
+            "own_case_screen": {"recognised": True, "coverage": _cov874},
+            "ai_provenance": {"served_by": "none", "is_external": False, "routed_by": "own_case_screen",
+                              "composed": False, **_no_reply_evidence874(),
+                              "basis": "no model and no floor composed this: the question was routed before anything ran"},
+            "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "disclaimer": ("Not answered: a question about a person's own case is routed to people. Nothing here is "
+                           "legal advice."),
+        }
     prompt = (
         f"Set out the following {req.area_of_law} question under {req.jurisdiction} law using the IRAC "
         f"method. Claim no professional role.\n\n"
@@ -279,6 +304,9 @@ async def legal_research(req: ResearchRequest):
         "area_of_law": req.area_of_law,
         "analysis": analysis,
         "method": "IRAC",
+        #  W874 (FU-1082) - the screen did not recognise a question about the person's own case; that clears nothing
+        "own_case_screen": {"recognised": False, "coverage": _cov874,
+                            "basis": "not recognised as a question about the person's own case, which is not a clearance"},
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": (_FLOOR_LAW if provenance.get("floor_note") else
@@ -286,6 +314,14 @@ async def legal_research(req: ResearchRequest):
             "legal advice. Laws change and outcomes are fact-specific — consult a qualified solicitor."
         ),
     }
+
+
+#  The drafter's disclaimer, in two parts: what a model's draft is, and what any draft needs before use. W866 named
+#  them here so the list of Law tools says, before the form, the sentence the answer carries when the floor served.
+_DRAFT_CLAIM = "This document is AI-generated and provided as a starting point only."
+_DRAFT_SAFETY = ("It must be reviewed by a qualified solicitor before use. "
+                 #  P3.23 — the not-legal-advice statement is on EVERY response a person reads, not only the matter's
+                 "Nothing here is legal advice.")
 
 
 class GenerateRequest(BaseModel):
@@ -296,7 +332,7 @@ class GenerateRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/generate")
+@router.post("/generate", openapi_extra={"x-review-tool": "law_generator"})
 async def generate_document(req: GenerateRequest):
     """
     Generate a legal document from a template using AI.
@@ -357,11 +393,7 @@ async def generate_document(req: GenerateRequest):
         "document": document,
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "disclaimer": disclaimer_for(
-            provenance, "This document is AI-generated and provided as a starting point only.",
-            "It must be reviewed by a qualified solicitor before use. "
-            #  P3.23 — the not-legal-advice statement is on EVERY response a person reads, not only the matter's
-            "Nothing here is legal advice."),
+        "disclaimer": disclaimer_for(provenance, _DRAFT_CLAIM, _DRAFT_SAFETY),
     }
 
 
@@ -385,43 +417,108 @@ async def statute_provision(kind: str, year: str, number: str, section: str):
             + ". Nothing was composed in its place.")) from None
 
 
-#  Each entry is a NAME, an ADDRESS and one line of OUR OWN saying who it is for. No sentence of any linked
-#  site is copied. Every address was opened once on 2026-10-13 and resolved; two bodies whose pages refused
-#  an automated visit are not listed until a person has opened them.
-HELP_FROM_A_PERSON = (
-    {"name": "Find legal advice (GOV.UK)", "link": "https://www.gov.uk/find-legal-advice",
-     "for_what": "finding a solicitor, a legal adviser or free advice in England and Wales"},
-    {"name": "Check if you can get legal aid (GOV.UK)", "link": "https://www.gov.uk/legal-aid/check-legal-aid",
-     "for_what": "seeing whether the cost of advice or representation may be met"},
-    {"name": "Citizens Advice", "link": "https://www.citizensadvice.org.uk/",
-     "for_what": "free, independent advice on work, money, housing and consumer problems"},
-    {"name": "Acas", "link": "https://www.acas.org.uk/",
-     "for_what": "free advice on rights at work, and conciliation before a tribunal claim"},
-    {"name": "Law Centres Network", "link": "https://www.lawcentres.org.uk/",
-     "for_what": "free legal help from a local law centre, where one serves the area"},
-    {"name": "Advicenow", "link": "https://www.advicenow.org.uk/",
-     "for_what": "plain guides for a person handling a legal problem themselves"},
-    {"name": "Advocate", "link": "https://weareadvocate.org.uk/",
-     "for_what": "free help from a volunteer barrister, for those who cannot pay and cannot get legal aid"},
-    {"name": "LawWorks", "link": "https://www.lawworks.org.uk/legal-advice-individuals",
-     "for_what": "free legal advice clinics run by volunteer solicitors"},
+#  W953 (P5.20 clause 6) - the eight places of legal help moved, unchanged, to the one page's source
+#  (agentic_core/api/where_help.py); they are re-exported here because the own-case screen reads them from law.
+from agentic_core.api.where_help import HELP_FROM_A_PERSON  # noqa: E402
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W866 (FU-1013) - WHAT THIS MACHINE DOES IN LAW, said before a form is filled. The page opened on three forms
+#  and said only inside each answer that, with no model serving, no legal research had been done. This lists the
+#  Law tools in the order the page shows them: first the three that call no model, each with what it does and
+#  what it does not do; then the three forms, each with the sentence its answer carries when the native floor
+#  composed it, built from the same constants the answer is built from. Whether a model is serving now is the
+#  native status's reading, which the page already reads once per load; this list claims nothing about it.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+NO_MODEL_TOOLS = (
+    {"id": "statute", "name": "Read a provision of an Act",
+     "does": ("Fetches one provision from its publisher when you ask, and shows it word for word with the date of "
+              "its version and the changes not yet applied to it."),
+     "does_not": "It does not say whether the provision applies to your situation, or explain it."},
+    {"id": "help", "name": "Where help from a person is",
+     "does": ("Lists regulated and free legal help by name and address, says what this platform is not, and says "
+              "how to complain."),
+     "does_not": "It does not choose one for you, and nothing is copied from their sites."},
+    {"id": "time_limit", "name": "How long a time limit runs",                      # W875 (FU-1012)
+     "does": ("Works out the primary limit for a tribunal claim from the date it runs from, using the words of the "
+              "provision that sets it, read from its publisher when you ask, and names who to ask."),
+     "does_not": ("It does not account for early conciliation or any extension, and it works nothing out if the "
+                  "provision no longer has the words the rule was built from.")},
+    {"id": "matter", "name": "Assemble the matter's papers",
+     "does": ("Fills each particular only from a located line of a document in the matter's one folder, or leaves "
+              "it blank, and resolves each authority against the corpus or refuses it."),
+     "does_not": ("It does not compose a particular, an argument or a conclusion, and a filing-shaped draft waits "
+                  "for the Owner's approval.")},
 )
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W875 (FU-1012) - HOW LONG A TIME LIMIT RUNS. A deadline is arithmetic on a dated rule and a route is a row in a
+#  directory; neither needs generation. The provision that sets the limit is fetched from its publisher on a
+#  person's action, and nothing is computed unless the rule's own words are in it as published now.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+class TimeLimitRequest(BaseModel):
+    rule: str
+    event_date: str
+
+
+@router.get("/time-limit")
+def time_limit_rules():
+    """The time-limit rules this platform can work out, each with the provision and the words it is built from."""
+    from agentic_core.legal import time_limits as _tl
+    return {"rules": [{"id": k, "name": r["name"], "act": r["provision"]["act"], "section": r["provision"]["section"],
+                       "words": r["words"], "event": r["event"]} for k, r in _tl.RULES.items()],
+            "arithmetic": _tl.ARITHMETIC, "composed": False}
+
+
+@router.post("/time-limit")
+async def time_limit(req: TimeLimitRequest):
+    """The primary limit a rule sets from a date, checked against the provision as its publisher returns it now, with
+    what it does not account for and who to ask. Nothing is composed, and nothing here is legal advice."""
+    from agentic_core.legal import statute as _st, time_limits as _tl
+    rule = _tl.RULES.get(req.rule)
+    if rule is None:
+        raise HTTPException(status_code=422, detail=(f"No such rule: {req.rule!r}. The rules are: {', '.join(_tl.RULES)}. "
+                                                     f"Nothing was computed."))
+    p = rule["provision"]
+    try:
+        provision = await _st.provision(p["kind"], p["year"], p["number"], p["section"])
+    except _st.PublisherRefused as exc:
+        raise HTTPException(status_code=502, detail=(
+            f"No limit is computed: the provision that sets it could not be read from its publisher ({exc}), so the "
+            f"rule cannot be checked against its words. Ask {rule['route']['name']}.")) from None
+    return _tl.limit(req.rule, req.event_date, provision)
+
+
+@router.get("/tools")
+def law_tools():
+    """W866 (FU-1013) - the Law tools in the order the page shows them, those that call no model first, and what each
+    form's answer says when no model composed it. Nothing is composed here."""
+    return {
+        "needs_no_model": [dict(t) for t in NO_MODEL_TOOLS],
+        "needs_a_model": [
+            {"id": "compliance", "route": "/api/v1/law/analyse", "when_no_model_serves": _FLOOR_LAW},
+            {"id": "draft", "route": "/api/v1/law/generate",
+             "when_no_model_serves": disclaimer_for({"floor_note": "the native floor"}, _DRAFT_CLAIM, _DRAFT_SAFETY)},
+            {"id": "research", "route": "/api/v1/law/research", "when_no_model_serves": _FLOOR_LAW},
+        ],
+        "basis": ("Read from this router's code. The first three call no model at all: a publisher's text word for "
+                  "word, a list of names and addresses, lines located in the matter's folder. Each form's sentence is "
+                  "the disclaimer its answer carries when the native floor composed it. Whether a model is serving "
+                  "now is the native status's reading, not this list's."),
+        "composed": False,
+    }
 
 
 @router.get("/help")
 def help_from_a_person():
     """Where regulated and free legal help is, what this platform is not, and how to complain. Links only."""
+    from agentic_core.legal import expectations as _exp874     # W874 (FU-1082, P5.20 clause 7)
+    from agentic_core.api import where_help as _wh953          # W953 (P5.20 clause 6) - the one page's one source
     return {
-        "regulated_and_free_help": [dict(h) for h in HELP_FROM_A_PERSON],
-        "this_platform_is_not": [
-            "a solicitor, a barrister or any regulated legal services provider",
-            "a source of legal advice: it shows published law word for word and labels what its own AI composes",
-            "able to tell you whether a provision applies to your situation",
-        ],
-        "to_complain": ("To complain about an answer here, tell the Owner of this platform what you asked, what "
-                        "you were shown and what was wrong with it. This platform is not a regulated provider, "
-                        "so no ombudsman or regulator handles complaints about it."),
-        "basis": ("Names and addresses only: nothing is copied from any of these sites, and none of them "
-                  "endorses this platform. Each address resolved when it was opened on 2026-10-13."),
+        **_wh953.page(),
+        #  W874 (FU-1082, P5.20 clause 7) - the five things people expect of an AI legal tool, and how this platform
+        #  measures against each: a self-assessment, each row naming the code that makes it true
+        "expectations": _exp874.assessment(),
         "composed": False,
     }

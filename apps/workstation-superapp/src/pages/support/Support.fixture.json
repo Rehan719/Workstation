@@ -1,0 +1,202 @@
+{
+ "sla": {
+  "rate": null,
+  "confirmed_resolved": 0,
+  "confirmed_unresolved": 0,
+  "unconfirmed": 0,
+  "answered": 0,
+  "tickets": 0,
+  "unreadable": null,
+  "basis": "NOT COMPUTED: none of 0 ticket(s) carries a confirmation, so there is no denominator. This is not 0.0 and it is certainly not 1.0 — 0 ticket(s) have an answer, which is a different thing from a resolution",
+  "simulated": false,
+  "method": "confirmed_resolved / (confirmed_resolved + confirmed_unresolved). Tickets with no confirmation are excluded from BOTH sides rather than counted as successes, which is the difference between this figure and the archived monitor's 100%: that one divided over tickets it had invented, against a success field that was an unconditional literal"
+ },
+ "satisfaction": {
+  "mean": null,
+  "count": 0,
+  "state": "not_measured",
+  "scale": "1-5, given explicitly by a person",
+  "subject": null,
+  "distribution": {},
+  "rejected_non_explicit": 0,
+  "basis": "NOT MEASURED: no person has given a rating. This is the absence of a signal, not a low one - nothing is counted as a zero and no default stands in for silence, so this figure says nothing about whether anyone is satisfied.",
+  "recent": [],
+  "simulated": false,
+  "inferred_from_behaviour": false,
+  "method": "the mean of ratings a person gave explicitly, on a declared 1-5 scale. A rating is refused rather than clamped or coerced, silence is not a rating, and NOTHING is inferred from how anyone behaved - no dwell time, no implicit signal and no behavioural aggregate (Owner's ruling 2026-10-03c, option (a))"
+ },
+ "ask": {
+  "ticket_id": "tkt-25644cffe0c6",
+  "answer": "_[Workstation native structured engine — owned, no external dependency]_\n\n## Understanding\nThe request concerns: W995 made-up: the export button does nothing (domain: WITHHELD — no domain was declared for this call).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- export button\n- does nothing\n- button does\n- made-up\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'support_answer', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for WITHHELD — no domain was declared for this call; record outcomes to memory/UEG.",
+  "answered": true,
+  "provenance": {
+   "served_by": "native",
+   "is_external": false,
+   "failed": false,
+   "latency_ms": 38.7,
+   "provenance_basis": "served by native (in-house); 38.7ms measured, not simulated"
+  },
+  "resolved": null,
+  "resolved_basis": "NOT RESOLVED and not unresolved: resolving is recorded only from a confirmation, so an answer alone never sets it. Post to /api/v1/support/confirm to record one",
+  "next_step": "confirm whether this resolved it, or reply with what still fails",
+  "escalated": false,
+  "ledger": {
+   "attestation": {
+    "signed": false,
+    "basis": "NOT SIGNED: no attestation key is configured (WORKSTATION_ATTESTATION_KEY is unset or empty), so nothing was signed. This is a refusal rather than a fallback: a signature keyed with a constant in the source verifies against itself and proves nothing to anyone, which is what the retired pqc_hardening module did. No placeholder is written in its place",
+    "algorithm": null,
+    "key_source": "env:WORKSTATION_ATTESTATION_KEY (unset)",
+    "payload_digest": "b5e09e6ea5f1c018868d8fdc9b6ec65759ede0c3beff8cdb6297fa2a0942b59b5d0faeb5b4aa04476fb846fb6a35bb34d5ffc4c11f716b294c51ffd0b8d9f37a",
+    "payload_digest_algorithm": "SHA3-512",
+    "canonical_form": "json.dumps(payload, sort_keys=True, separators=(',', ':'), default=str), UTF-8 encoded",
+    "what_this_is_not": "a keyed MAC over a symmetric secret, not a public-key signature and not post-quantum. It shows that the holder of the configured key produced this payload; it does not identify a signer to a third party"
+   },
+   "ledger_entry": "d80c7d5d1985ae845516b1f2f301eeb8b3e4cc121cbf6c74ae78504c2bb50c5071fe969f00a05fb4a55fb030b38cb4cb8e2b0263c9493666c86f8b854d235c3c",
+   "recorded": true,
+   "basis": "appended to the ledger as support.answered; the attestation is an UNSIGNED digest (env:WORKSTATION_ATTESTATION_KEY (unset)), so an altered record is detectable but no signer is established"
+  }
+ },
+ "confirm": {
+  "ticket_id": "tkt-25644cffe0c6",
+  "confirmed": true,
+  "confirmed_by": "user:anonymous",
+  "ledger": {
+   "attestation": {
+    "signed": false,
+    "basis": "NOT SIGNED: no attestation key is configured (WORKSTATION_ATTESTATION_KEY is unset or empty), so nothing was signed. This is a refusal rather than a fallback: a signature keyed with a constant in the source verifies against itself and proves nothing to anyone, which is what the retired pqc_hardening module did. No placeholder is written in its place",
+    "algorithm": null,
+    "key_source": "env:WORKSTATION_ATTESTATION_KEY (unset)",
+    "payload_digest": "ae53bc064d5b412f31594c16a6a910842aba78adef7824ba9b7cb9527d9312e4ffd2e66f8827f75d034f2b4137cc8cabe6cec2a7e5d61405eada5b50bb96a361",
+    "payload_digest_algorithm": "SHA3-512",
+    "canonical_form": "json.dumps(payload, sort_keys=True, separators=(',', ':'), default=str), UTF-8 encoded",
+    "what_this_is_not": "a keyed MAC over a symmetric secret, not a public-key signature and not post-quantum. It shows that the holder of the configured key produced this payload; it does not identify a signer to a third party"
+   },
+   "ledger_entry": "2d95eaddd33e05848cef60a317c1169e893720eff226a351c3c84c5fe1b28bc3a83744777362adc733f459f1695daeba230c1458ebb83b61f9ddc78ce413ee23",
+   "recorded": true,
+   "basis": "appended to the ledger as support.confirmed; the attestation is an UNSIGNED digest (env:WORKSTATION_ATTESTATION_KEY (unset)), so an altered record is detectable but no signer is established"
+  },
+  "basis": "recorded from a confirmation naming its source. Nothing on this platform confirms a resolution on a user's behalf"
+ },
+ "confirm_refused": {
+  "status": 404,
+  "body": {
+   "detail": "no ticket tkt-w995-none"
+  }
+ },
+ "sla_after": {
+  "rate": 1.0,
+  "confirmed_resolved": 1,
+  "confirmed_unresolved": 0,
+  "unconfirmed": 0,
+  "answered": 1,
+  "tickets": 1,
+  "unreadable": null,
+  "basis": "1 of 1 CONFIRMED ticket(s) were confirmed resolved. 0 ticket(s) carry no confirmation and are excluded from both sides of this rate: an answered ticket is not a resolved one, and counting an unconfirmed ticket either way would invent the user's verdict",
+  "simulated": false,
+  "method": "confirmed_resolved / (confirmed_resolved + confirmed_unresolved). Tickets with no confirmation are excluded from BOTH sides rather than counted as successes, which is the difference between this figure and the archived monitor's 100%: that one divided over tickets it had invented, against a success field that was an unconditional literal"
+ },
+ "rate": {
+  "rating_id": "rate-dfc535c59707",
+  "subject": "the platform",
+  "rating": 4,
+  "scale": "1-5",
+  "given_by": "user:anonymous",
+  "signal": "explicit-rating-by-a-person",
+  "ledger": {
+   "attestation": {
+    "signed": false,
+    "basis": "NOT SIGNED: no attestation key is configured (WORKSTATION_ATTESTATION_KEY is unset or empty), so nothing was signed. This is a refusal rather than a fallback: a signature keyed with a constant in the source verifies against itself and proves nothing to anyone, which is what the retired pqc_hardening module did. No placeholder is written in its place",
+    "algorithm": null,
+    "key_source": "env:WORKSTATION_ATTESTATION_KEY (unset)",
+    "payload_digest": "6b567bcb2875db54b69d33e24e2e3b6e54bff0f45977b10a052c09ee86974b49647f78226214ff04f2e0185195a5b8fbc02841a354dec832d83fcc7415195d65",
+    "payload_digest_algorithm": "SHA3-512",
+    "canonical_form": "json.dumps(payload, sort_keys=True, separators=(',', ':'), default=str), UTF-8 encoded",
+    "what_this_is_not": "a keyed MAC over a symmetric secret, not a public-key signature and not post-quantum. It shows that the holder of the configured key produced this payload; it does not identify a signer to a third party"
+   },
+   "ledger_entry": "1ca4b370bf6f72bf4a5eba40336478792d2cc21e8fcb76f9def2f3a8fa8de2865bbc84c91d17da4bc2786ae125a33c6d9cbdea345c954bbeba70db4190797a98",
+   "recorded": true,
+   "basis": "appended to the ledger as support.satisfaction_rating; the attestation is an UNSIGNED digest (env:WORKSTATION_ATTESTATION_KEY (unset)), so an altered record is detectable but no signer is established"
+  },
+  "basis": "recorded from what a person explicitly said, naming its source. Nothing on this platform rates its own work on a user's behalf, and nothing is inferred from how anyone behaved"
+ },
+ "rate_refused": {
+  "status": 422,
+  "body": {
+   "detail": "9 is outside the 1-5 scale, so it was not given on this scale - a rating is refused rather than clamped, because a clamped value reads as one somebody gave"
+  }
+ },
+ "help": {
+  "a_qualified_scholar": {
+   "heading": "How to find a qualified scholar",
+   "steps": [
+    "Ask in person. At a mosque or a place of learning you trust, ask who answers questions like yours, and take your question to that scholar with the details of your own situation.",
+    "A ruling on your own situation comes from a scholar who has heard it. No answer on this platform is one.",
+    "If it matters to you, ask the scholar what they studied and with whom."
+   ],
+   "names_none_because": "This platform names no scholar and no body: it cannot check anyone's standing as a scholar, and which scholar to ask is for you and your community to choose.",
+   "this_platform": "This platform is not a scholar and gives no religious ruling. What its AI composes on religion is withheld until a named scholar approves that exact text, and no scholar answers questions from the public here."
+  },
+  "regulated_and_free_help": [
+   {
+    "name": "Find legal advice (GOV.UK)",
+    "link": "https://www.gov.uk/find-legal-advice",
+    "for_what": "finding a solicitor, a legal adviser or free advice in England and Wales"
+   },
+   {
+    "name": "Check if you can get legal aid (GOV.UK)",
+    "link": "https://www.gov.uk/legal-aid/check-legal-aid",
+    "for_what": "seeing whether the cost of advice or representation may be met"
+   },
+   {
+    "name": "Citizens Advice",
+    "link": "https://www.citizensadvice.org.uk/",
+    "for_what": "free, independent advice on work, money, housing and consumer problems"
+   },
+   {
+    "name": "Acas",
+    "link": "https://www.acas.org.uk/",
+    "for_what": "free advice on rights at work, and conciliation before a tribunal claim"
+   },
+   {
+    "name": "Law Centres Network",
+    "link": "https://www.lawcentres.org.uk/",
+    "for_what": "free legal help from a local law centre, where one serves the area"
+   },
+   {
+    "name": "Advicenow",
+    "link": "https://www.advicenow.org.uk/",
+    "for_what": "plain guides for a person handling a legal problem themselves"
+   },
+   {
+    "name": "Advocate",
+    "link": "https://weareadvocate.org.uk/",
+    "for_what": "free help from a volunteer barrister, for those who cannot pay and cannot get legal aid"
+   },
+   {
+    "name": "LawWorks",
+    "link": "https://www.lawworks.org.uk/legal-advice-individuals",
+    "for_what": "free legal advice clinics run by volunteer solicitors"
+   }
+  ],
+  "this_platform_is_not": [
+   "a solicitor, a barrister or any regulated legal services provider",
+   "a source of legal advice: it shows published law word for word and labels what its own AI composes",
+   "able to tell you whether a provision applies to your situation"
+  ],
+  "to_complain": "To complain about an answer, raise a claim. Under the answer of each of the 25 domain tools on the Law, Care, Education, Employment, Science and Religion pages, say what is wrong and the claim is raised from there; against a saved deliverable, raise a claim on the support page. A claim about an answer carries the fingerprint of its text and what served it, never the text itself. A claim is filed as a change that only a person decides, and it stays open until a person answers it; with sign-in off, the Owner answers every claim. This platform is not a regulated provider, so no ombudsman or regulator handles complaints about it.",
+  "basis": "Names and addresses only: nothing is copied from any of these sites, and none of them endorses this platform. Each address resolved when it was opened on 2026-10-13. No scholar and no religious body is named.",
+  "the_page": "/support#where-help-is",
+  "composed": false
+ },
+ "claims": {
+  "claims": [],
+  "open": 0,
+  "basis": "A claim is OPEN until a person decides the change it was filed as, and then ANSWERED with that decision; its state is read from Change Control on every read and nothing reads the clock to change it."
+ },
+ "deliverables": {
+  "deliverables": [],
+  "total": 0,
+  "truncated": false,
+  "total_basis": "every deliverable held: 0 of a 300-row cap, so none has been dropped"
+ }
+}

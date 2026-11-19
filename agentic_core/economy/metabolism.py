@@ -115,9 +115,47 @@ _CYCLE_ROLE = {
 }
 
 
+def revenue_entered_as(typed: float, origin: Any, returns: float, transfers: float) -> Dict[str, float]:
+    """W881 (FU-1010) - WHAT ONE CYCLE'S INTAKE WAS MADE OF. `origin` is the caller's statement of where the revenue
+    it supplied entered (the heartbeat names the recorded events it consumed, by their source); without one, the
+    revenue is a number the caller typed at the cycle. What the cycle drained itself is added by name. A statement
+    that claims more than the caller supplied is not used, and one that claims less leaves the rest not stated."""
+    out: Dict[str, float] = {}
+    stated: Dict[str, float] = {}
+    if isinstance(origin, dict) and origin:
+        for k, v in origin.items():
+            try:
+                amt = round(float(v), 2)
+            except (TypeError, ValueError):
+                continue
+            if amt >= 0.005:
+                stated[str(k)] = round(stated.get(str(k), 0.0) + amt, 2)
+    total = round(sum(stated.values()), 2)
+    if stated and total <= typed + 0.005:
+        out.update(stated)
+        if typed - total >= 0.005:
+            out["not_stated"] = round(typed - total, 2)
+    elif stated:
+        out["not_stated"] = round(typed, 2)
+    elif typed >= 0.005:
+        out["typed_at_cycle"] = round(typed, 2)
+    if returns >= 0.005:
+        out["venture_returns"] = round(returns, 2)
+    if transfers >= 0.005:
+        out["transfers_received"] = round(transfers, 2)
+    return out
+
+
 class EconomicMetabolism:
-    def __init__(self, vsb_id: str, entity_type: str = "waqf_ltd_hybrid", owner: str = "Rehan"):
+    def __init__(self, vsb_id: str, entity_type: str = "waqf_ltd_hybrid", owner: str | None = None):
         self.vsb_id = vsb_id
+        #  W813 (FU-887) - a cycle built naming no owner carries the configured single-user owner, not a name in
+        #  the code. What was NAMED is kept apart and is what the owner account is offered: it resolves its own
+        #  owner when first opened (the living registry's for a registered entity, else this, else the configured)
+        self.owner_named = owner or None
+        if not owner:
+            from agentic_core.config import single_user_owner as _suo813
+            owner = _suo813()["owner_id"]
         self.owner = owner
         self.template = get_template(entity_type)
         self.entity_type = entity_type
@@ -156,6 +194,7 @@ class EconomicMetabolism:
         between the gate and this cycle waits for the next one (it used to be drained and distributed
         without the Change Control hold its size required). None = drain everything (ungoverned use)."""
         revenue = max(0.0, float(revenue))
+        _typed881 = revenue          # W881 (FU-1010) - what the caller supplied, before this cycle drains anything
         costs = max(0.0, float(costs))
 
         # W468 (register FU-041) — a ledger that cannot be read whole is refused BEFORE anything is drained from the
@@ -217,7 +256,12 @@ class EconomicMetabolism:
         # The §8→§12 survival instinct returns the moment the term can actually fall — see P2.7(4).
         metabolic_energy = self._atp_ratio()
         effective_reserve = float(reserve_rate)
-        _atp_measured = False      # W494 measured this; the qualifier lives on the organism context
+        #  W901 (FU-1112, S18.1) - MEASURED while the work budget is switched on: the term is then the budget's
+        #  remaining share (W900), seconds actually spent, so the reserve raise below can be reached. Off, it is
+        #  the simulator, as W494 measured, and the reserve is not adjusted for it
+        from agentic_core.molecular import work_budget as _wb901
+        _energy901 = _wb901.energy()
+        _atp_measured = bool(_energy901["acts"])
         if metabolic_energy is None:
             energy_state = "unavailable (the organism's metabolic term could not be read)"
         elif not _atp_measured:
@@ -245,10 +289,13 @@ class EconomicMetabolism:
         # and receipts this cycle drained go back to their queues (they used to vanish, posted nowhere). W467 (FU-022):
         # the caller learns whether the ledger was written (`progress`), so a cycle that wrote nothing can give back the
         # events it consumed, and the released action counts as run only once it has written.
+        _entered881 = revenue_entered_as(_typed881, (progress or {}).get("revenue_origin"),
+                                         returns_recycled, transfers_received)
         try:
             self.ledger.record("revenue", revenue, memo="cycle intake (revenue)",
                                source="cycle_intake",
-                               ref=(progress or {}).get("cycle_token"))
+                               ref=(progress or {}).get("cycle_token"),
+                               entered_as=_entered881)
         except BaseException:
             given = self._give_back_drained(returns_recycled, transfers_received)
             if progress is not None:
@@ -306,7 +353,7 @@ class EconomicMetabolism:
                 #  W658 - accrue() decides the mark itself (one floor for both of its callers); the cycle reads
                 #  it back from the ENTRY just written, so its own answer says what was recorded, not a second
                 #  opinion formed here
-                _acct658 = _accrue_owner(self.vsb_id, splits["owner"], self.owner,
+                _acct658 = _accrue_owner(self.vsb_id, splits["owner"], self.owner_named,
                                          memo="cycle owner share (§4 waterfall)")
                 owner_accrual["accrued"] = True
                 _last658 = ((_acct658 or {}).get("entries") or [{}])[-1] if isinstance(_acct658, dict) else {}
@@ -318,7 +365,7 @@ class EconomicMetabolism:
                 # Saying so (W465) was the right first step; it left the Owner short for ever.
                 try:
                     from .owner_payments import record_missed as _park_owner
-                    _parked = _park_owner(self.vsb_id, splits["owner"], self.owner,
+                    _parked = _park_owner(self.vsb_id, splits["owner"], self.owner_named,
                                           "cycle owner share (§4 waterfall)", owner_accrual["error"])
                     if isinstance(_parked, dict) and _parked.get("parked") is False:
                         owner_accrual["recoverable"] = False
@@ -356,8 +403,13 @@ class EconomicMetabolism:
             if splits.get("capital_fund", 0.0) > 0:
                 from agentic_core.api.capital_fund import contribute_from_cycle
                 capital_contribution = contribute_from_cycle(self.vsb_id, splits["capital_fund"])
-        except Exception:
-            capital_contribution = None
+        except Exception as _cf_err:
+            #  W814 (FU-877) - a contribution that could not be written is said, in the shape a refused one has; it
+            #  read as None, the same as a cycle with no capital-fund share at all
+            capital_contribution = {"vsb_id": self.vsb_id, "contributed": False,
+                                    "amount_wst": round(float(splits.get("capital_fund", 0.0) or 0.0), 2),
+                                    "reason": (f"the capital fund could not be written ({type(_cf_err).__name__}: "
+                                               f"{str(_cf_err)[:240]})")}
 
         # 5. Giving-back — intelligent charity allocation (nutrient-return loop)
         charity_alloc = self.charity.allocate(splits.get("charity", 0.0)) if splits.get("charity", 0.0) > 0 else None
@@ -419,6 +471,7 @@ class EconomicMetabolism:
             "intake_revenue": revenue,
             "venture_returns_recycled_wst": returns_recycled,   # §6 — returns that re-entered this waterfall
             "inter_vsb_received_wst": transfers_received,       # federation — receipts from other VSBs (W262)
+            "revenue_entered_as": _entered881,                  # W881 (FU-1010) - what this intake was made of
             **({"inter_vsb_receipts_error": receipts_error} if receipts_error else {}),   # W465 — none taken, and why
             "homeostasis_reserves": reserves,
             "operating_costs": costs,                  # W475 — posted as an expense, not inside the reserve
@@ -449,6 +502,9 @@ class EconomicMetabolism:
             "venture_investment": ventures_alloc,
             "venture_store_note": venture_store_note,          # W472 — an unreadable portfolio is said, not silent
             "metabolic_energy": metabolic_energy,
+            #  W901 (FU-1112) - the basis the economy page reads (typed since W617): set only when the term is
+            #  measured, so the page's 'simulated, not measured' label stays true while the budget is off
+            "metabolic_energy_basis": _energy901["basis"] if _atp_measured else None,
             "capital_preserved": self.template["capital_preserved"],
             #  W672 (ledger v16 R6.8) - the flag is a property of the entity FORM and was read as a result
             "capital_preserved_basis": (
@@ -528,7 +584,11 @@ class EconomicMetabolism:
             from agentic_core.organism.biobus import _get_atp
             atp = _get_atp()
             # ATP/ADP energy state (0.5–15); normalise to 0–1.
-            return round(max(0.0, min(1.0, float(atp.ratio) / 15.0)), 3) if atp else None
+            _sim = round(max(0.0, min(1.0, float(atp.ratio) / 15.0)), 3) if atp else None
+            #  W900 (FU-1112, S18.1) - the work budget's remaining share while the budget is switched on: the
+            #  cycle's reserve raise reads this, and it stays inert until the Owner's setting turns it on
+            from agentic_core.molecular import work_budget as _wb900
+            return _wb900.energy_term(_sim)[0]
         except Exception:
             return None
 

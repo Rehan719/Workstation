@@ -1,0 +1,435 @@
+{
+ "wiring": {
+  "route_census": {
+   "flat_paths": 602,
+   "schema_paths": 597,
+   "paths": 602,
+   "error": null,
+   "basis": "602 distinct paths: the OpenAPI schema's 597 plus the 602 flat routes' paths (a route hidden from the schema is counted if flat)"
+  },
+  "tiers": [
+   {
+    "tier": "Chief (the Owner's charter; twin model planned) + Board",
+    "endpoint": "/api/v1/board",
+    "role": "apex direction; represents the Owner",
+    "route_mounted": true,
+    "connected": true,
+    "connected_basis": "a route starting with this tier's prefix is mounted in this process; nothing here checks that the knowledge system reaches the tier"
+   },
+   {
+    "tier": "AI CEO → C-Suite → CoE (swarm cascade)",
+    "endpoint": "/api/v1/swarm",
+    "role": "executes direction; org intelligence",
+    "route_mounted": true,
+    "connected": true,
+    "connected_basis": "a route starting with this tier's prefix is mounted in this process; nothing here checks that the knowledge system reaches the tier"
+   },
+   {
+    "tier": "BTO / Build-to-Order / Catalogue",
+    "endpoint": "/api/v1/catalog",
+    "role": "production & delivery",
+    "route_mounted": true,
+    "connected": true,
+    "connected_basis": "a route starting with this tier's prefix is mounted in this process; nothing here checks that the knowledge system reaches the tier"
+   },
+   {
+    "tier": "Arms-length Change Control Agency",
+    "endpoint": "/api/v1/cca",
+    "role": "governs material changes",
+    "route_mounted": true,
+    "connected": true,
+    "connected_basis": "a route starting with this tier's prefix is mounted in this process; nothing here checks that the knowledge system reaches the tier"
+   },
+   {
+    "tier": "Sovereign Evolution Office",
+    "endpoint": "/api/v1/sovereign-evolution",
+    "role": "self-improvement curation",
+    "route_mounted": true,
+    "connected": true,
+    "connected_basis": "a route starting with this tier's prefix is mounted in this process; nothing here checks that the knowledge system reaches the tier"
+   },
+   {
+    "tier": "Organism Heartbeat (continuous autonomy)",
+    "endpoint": "/api/v1/heartbeat",
+    "role": "the rhythm that runs it all",
+    "route_mounted": true,
+    "connected": true,
+    "connected_basis": "a route starting with this tier's prefix is mounted in this process; nothing here checks that the knowledge system reaches the tier"
+   },
+   {
+    "tier": "Vision→Realisation→Transformation",
+    "endpoint": "/api/v1/transformation",
+    "role": "measures vision realisation",
+    "route_mounted": true,
+    "connected": true,
+    "connected_basis": "a route starting with this tier's prefix is mounted in this process; nothing here checks that the knowledge system reaches the tier"
+   },
+   {
+    "tier": "Living Plan",
+    "endpoint": "/api/v1/plan",
+    "role": "vision↔state↔action bridge",
+    "route_mounted": true,
+    "connected": true,
+    "connected_basis": "a route starting with this tier's prefix is mounted in this process; nothing here checks that the knowledge system reaches the tier"
+   },
+   {
+    "tier": "VSB Economy (metabolism)",
+    "endpoint": "/api/v1/economy",
+    "role": "value flows & charitable giving",
+    "route_mounted": true,
+    "connected": true,
+    "connected_basis": "a route starting with this tier's prefix is mounted in this process; nothing here checks that the knowledge system reaches the tier"
+   },
+   {
+    "tier": "Resource Fabric",
+    "endpoint": "/api/v1/resources",
+    "role": "reconfigurable resources",
+    "route_mounted": true,
+    "connected": true,
+    "connected_basis": "a route starting with this tier's prefix is mounted in this process; nothing here checks that the knowledge system reaches the tier"
+   },
+   {
+    "tier": "Genesis / VSB generation",
+    "endpoint": "/api/v1/genesis",
+    "role": "generates living Enterprise IDBOs",
+    "route_mounted": true,
+    "connected": true,
+    "connected_basis": "a route starting with this tier's prefix is mounted in this process; nothing here checks that the knowledge system reaches the tier"
+   },
+   {
+    "tier": "gaas.v5 + UEG (constitutional)",
+    "endpoint": "/api/v1/gaas",
+    "role": "governance & tamper-evident audit",
+    "route_mounted": true,
+    "connected": true,
+    "connected_basis": "a route starting with this tier's prefix is mounted in this process; nothing here checks that the knowledge system reaches the tier"
+   },
+   {
+    "tier": "Monitoring / introspection",
+    "endpoint": "/api/v1/plan/state",
+    "role": "live current-state evidence (scraping seam)",
+    "route_mounted": true,
+    "connected": true,
+    "connected_basis": "a route starting with this tier's prefix is mounted in this process; nothing here checks that the knowledge system reaches the tier"
+   }
+  ],
+  "connected": 13,
+  "routes_mounted": 13,
+  "total": 13,
+  "coherence": 1.0,
+  "coherence_measured": false,
+  "coherence_basis": "13 of 13 tiers have a route mounted under their prefix. This is a MOUNTED-ROUTE count, not a measurement of integration: every tier's router is imported at startup, so it cannot come out below 100% while the app answers at all. Nothing here exercises a tier or checks that knowledge reaches it.",
+  "principle": "Knowledge layers → Transformation (measures realisation) → routed to the right tier (Board / Evolution / Change Control) → governed by gaas/UEG → continuous via the Heartbeat."
+ },
+ "knowledge": {
+  "understanding": {
+   "doc": "docs/WORKSTATION_IDBO_UNDERSTANDING.md",
+   "role": "the same-page artifact: who the Owner is, vision, what I believe you want, open questions"
+  },
+  "plan": {
+   "doc": "docs/WORKSTATION_IDBO_LIVING_PLAN.md",
+   "api": "/api/v1/plan",
+   "process": "docs/KNOWLEDGE_OPERATING_PROCESS.md",
+   "vision_pillars": [
+    "AI-mediated end-to-end Concept→Design→Delivery",
+    "Generate a living Enterprise IDBO (VSB) for the user",
+    "VSB org (Board→AI CEO→C-Suite→CoE→BTO) curates work",
+    "Chief = the Owner's digital twin as a ROLE (apex, arms-length) — a standing charter plus the last instructions; no twin MODEL is trained (Mode 2 planned, P3.4)",
+    "Reconfigurable, combinable resource fabric — compositions run their REAL engines",
+    "One self-running, self-healing, self-improving organism",
+    "Synthesis Lab — any/all content output types",
+    "Constitutional governance throughout (gaas.v5 + UEG; governed economy)",
+    "Biomimetic mediation (biology/biogeo-physical)",
+    "Foundational values (integrity, halal, stewardship)"
+   ]
+  },
+  "memory": {
+   "location": "agent memory canon (MEMORY.md + project/feedback/reference notes)"
+  },
+  "code_live_state": {
+   "api": "/api/v1/plan/state + /api/v1/transformation/realisation",
+   "overall_realisation": 0.849,
+   "measure": "API surface coverage — pillar routers mounted and stores non-empty; not delivery (the delivery measure is /api/v1/plan/state)"
+  }
+ },
+ "engines": {
+  "engines": [
+   {
+    "id": "inkashaf",
+    "name": "INKASHAF (Pattern Discovery & Revelation)"
+   },
+   {
+    "id": "samajh",
+    "name": "SAMAJH (Deep Comprehension & Contextual Understanding)"
+   },
+   {
+    "id": "soch",
+    "name": "SOCH (Reflective Thinking & Hypothesis Generation)"
+   },
+   {
+    "id": "aqal",
+    "name": "AQAL (Logical Reasoning & Strategic Planning)"
+   },
+   {
+    "id": "hoshiyari",
+    "name": "HOSHIYARI (Anomaly Detection & Risk Intelligence)"
+   },
+   {
+    "id": "iman",
+    "name": "IMAN (Values Alignment & Ethical Conviction)"
+   }
+  ],
+  "note": "Select any subset for /solve (or the cascade); empty = all run."
+ },
+ "heartbeat": {
+  "running": false,
+  "beats": 1,
+  "circadian_phase": "MAINTENANCE_REST",
+  "phase_intensity": 0.3,
+  "last_beat": "2026-11-14T04:34:35Z",
+  "last_realisation": 0.849,
+  "last_realisation_measure": "API surface coverage — pillar routers mounted and stores non-empty; not delivery (the delivery measure is /api/v1/plan/state)",
+  "last_self_healing": null,
+  "last_recovery": null,
+  "last_heal": null,
+  "last_genome": {
+   "total": 0,
+   "mean_fitness": null,
+   "mean_fitness_basis": "no genomes stored yet",
+   "mean_declared_fitness": null,
+   "fitness_composition": {},
+   "max_generation": 0
+  },
+  "last_cadence": {
+   "beat": 1,
+   "refreshed": [
+    {
+     "scope": "workstation",
+     "layer": "strategic",
+     "trigger": "never_refreshed",
+     "reason": "this layer has NEVER been refreshed, which is not the same as refreshed long ago - there is no previous quarterly refresh to measure from",
+     "at": "2026-11-14T04:34:35Z",
+     "served_by": "deterministic-floor"
+    },
+    {
+     "scope": "workstation",
+     "layer": "action_plan",
+     "trigger": "never_refreshed",
+     "reason": "this layer has NEVER been refreshed, which is not the same as refreshed long ago - there is no previous weekly refresh to measure from",
+     "at": "2026-11-14T04:34:35Z",
+     "served_by": "deterministic-floor"
+    }
+   ],
+   "could_not_run": null,
+   "nothing_was_due": false,
+   "at": "2026-11-14T04:34:35Z",
+   "scopes": [
+    "workstation"
+   ],
+   "scope_basis": "the apex only",
+   "basis": "2 layer(s) refreshed on beat 1 across 1 scope(s) (the apex only) and 0 could not run. A layer that could not run is still DUE - this is not 'nothing was due'"
+  },
+  "last_twin_directive": null,
+  "last_evolution": null,
+  "last_vsb_operated": null,
+  "last_vsb_failed": null,
+  "last_vsb_not_operated": null,
+  "last_transfer_reconcile": null,
+  "last_intake_reconcile": null,
+  "last_vsb_evolved": null,
+  "last_reshipped": null,
+  "auto_ship": false,
+  "auto_metabolic": false,
+  "circadian_to_atp": false,
+  "circadian_to_atp_basis": "runtime only, default OFF (Owner ruling 2026-10-07): when on, the phase's intensity (1.0/0.7/0.5/0.3) is the ATP production efficiency; a restart returns it to off",
+  "metabolic_every": 10,
+  "auto_metabolic_basis": "runtime only: set through /heartbeat/configure and NOT persisted, so a restart returns it to off",
+  "interval_seconds": 60,
+  "effective_interval_seconds": 200.0,
+  "interval_basis": "interval_seconds is the BASE; the loop waits base / phase intensity, which is effective_interval_seconds for the current phase and changes when the phase does",
+  "auto_evolve": false,
+  "evolve_every": 30,
+  "beats_since_evolve": 1,
+  "evolve_pacing": "Self-improve is attempted once every 30 beats, and only in a maintenance phase; 1 beat(s) have passed since the last attempt",
+  "auto_economy": false,
+  "auto_align": false,
+  "auto_compliance": false,
+  "autonomy_persisted": true,
+  "autonomy_restored_at": null,
+  "evolution_auto_apply": {
+   "enabled": false,
+   "readable": true,
+   "governed_by": "Change Control Agency",
+   "consumer": "organism.heartbeat applies CCA-APPROVED evolution proposals each beat",
+   "how_to_change": "submit a change request to the CCA at /change-control",
+   "why_not_a_toggle": "the arms-length approval it sits behind is the point",
+   "effect_when_off": "approved evolution proposals are never applied; they wait"
+  },
+  "last_compliance": null,
+  "reflex_arcs_registered": 2,
+  "reflex_arcs": [
+   "organism.reflex.health",
+   "organism.reflex.circuits"
+  ],
+  "reflex_reactions": 0,
+  "last_reflex": null,
+  "last_immune_defence": null,
+  "immune_quarantine": {
+   "engaged": false,
+   "open_circuits_at_engagement": null,
+   "engaged_by": null,
+   "revert_with": null,
+   "basis": "not engaged - self-healing probes open circuits"
+  },
+  "defends_at": "HIGH",
+  "recent": [
+   {
+    "beat": 1,
+    "phase": "MAINTENANCE_REST",
+    "intensity": 0.3,
+    "realisation": 0.849,
+    "health": 1.0,
+    "health_observations": 0,
+    "health_measured": false,
+    "health_basis": "NOT A MEASUREMENT - no call was observed in the immune window, so 1.0 is the absence of failures and not a reading of anything",
+    "self_recovery": null,
+    "actions": [
+     "pulse",
+     "homeostasis",
+     "cadence_refresh",
+     "transformation_tick"
+    ],
+    "at": "2026-11-14T04:34:35Z",
+    "steps_failed": {},
+    "steps_failed_basis": "steps attempted on this beat that raised, by name, cleared at the start of every beat so a failure never outlives the beat that had it. They are deliberately NOT in `actions`: an action is something the beat performed. Since W611 (FU-461) EVERY beat step's failure is recorded here, so an EMPTY steps_failed means no step raised. That includes a step that CAUGHT its own error and reports it in a field of its own (the four homeostatic responders, the cadence, the two reconciliations and the metabolic cycle): each is recorded here as well. One thing is not a step failure and is not here: a single unreadable ship record skipped while looking for stale bodies."
+   }
+  ],
+  "integrations": [
+   "circadian",
+   "central_nervous_system",
+   "immune",
+   "self_healing",
+   "metabolic_atp",
+   "genome",
+   "UEG_audit",
+   "constitutional_arms_length"
+  ],
+  "last_metabolic": null,
+  "metabolic_basis": "the metabolic cycle has not run on this process, so there is no outcome to report — the loop is paced and OFF by default, and this is not a withheld emission",
+  "note": "Continuous circadian autonomy — cheap pulse every beat; expensive cognition opt-in + paced."
+ },
+ "solved": {
+  "problem": "W1007 made up: how should a small bakery cooperative schedule its morning deliveries?",
+  "domain": "general",
+  "cognitive_cascade": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Cognitive Architecture — 6 specialised intelligence systems operating in biological cascade sequence. The native floor takes no role - what follows is a frame, not that role's work._\n\n## INKASHAF\nNative structured frame for 'INKASHAF' over: W1007 made up: how should a small bakery cooperative schedule its morning deliveries? (domain: general). The list below is the request's most frequent terms, not findings about them.\n- cooperative schedule\n- bakery cooperative\n- morning deliveries\n- small bakery\n- schedule its\n\n## SAMAJH\nNative structured frame for 'SAMAJH' over: W1007 made up: how should a small bakery cooperative schedule its morning deliveries? (domain: general). The list below is the request's most frequent terms, not findings about them.\n- cooperative schedule\n- bakery cooperative\n- morning deliveries\n- small bakery\n- schedule its\n\n## SOCH\nNative structured frame for 'SOCH' over: W1007 made up: how should a small bakery cooperative schedule its morning deliveries? (domain: general). The list below is the request's most frequent terms, not findings about them.\n- cooperative schedule\n- bakery cooperative\n- morning deliveries\n- small bakery\n- schedule its\n\n## AQAL\nNative structured frame for 'AQAL' over: W1007 made up: how should a small bakery cooperative schedule its morning deliveries? (domain: general). The list below is the request's most frequent terms, not findings about them.\n- cooperative schedule\n- bakery cooperative\n- morning deliveries\n- small bakery\n- schedule its\n\n## HOSHIYARI\nNative structured frame for 'HOSHIYARI' over: W1007 made up: how should a small bakery cooperative schedule its morning deliveries? (domain: general). The list below is the request's most frequent terms, not findings about them.\n- cooperative schedule\n- bakery cooperative\n- morning deliveries\n- small bakery\n- schedule its\n\n## IMAN\nNative structured frame for 'IMAN' over: W1007 made up: how should a small bakery cooperative schedule its morning deliveries? (domain: general). The list below is the request's most frequent terms, not findings about them.\n- cooperative schedule\n- bakery cooperative\n- morning deliveries\n- small bakery\n- schedule its",
+  "mjm_assessment": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: MJM Orchestrator — the meta-judgement system operating above the cognitive engines. The native floor takes no role - what follows is a frame, not that role's work._\n\n## INKASHAF\nNative structured frame for 'INKASHAF' over: W1007 made up: how should a small bakery cooperative schedule its morning deliveries? (domain: general). The list below is the request's most frequent terms, not findings about them.\n- cooperative schedule\n- bakery cooperative\n- morning deliveries\n- small bakery\n- schedule its\n\n## SAMAJH\nNative structured frame for 'SAMAJH' over: W1007 made up: how should a small bakery cooperative schedule its morning deliveries? (domain: general). The list below is the request's most frequent terms, not findings about them.\n- cooperative schedule\n- bakery cooperative\n- morning deliveries\n- small bakery\n- schedule its\n\n## SOCH\nNative structured frame for 'SOCH' over: W1007 made up: how should a small bakery cooperative schedule its morning deliveries? (domain: general). The list below is the request's most frequent terms, not findings about them.\n- cooperative schedule\n- bakery cooperative\n- morning deliveries\n- small bakery\n- schedule its\n\n## MUSHAHIDA\nNative structured frame for 'MUSHAHIDA' over: W1007 made up: how should a small bakery cooperative schedule its morning deliveries? (domain: general). The list below is the request's most frequent terms, not findings about them.\n- cooperative schedule\n- bakery cooperative\n- morning deliveries\n- small bakery\n- schedule its\n\n## JAIZA\nNative structured frame for 'JAIZA' over: W1007 made up: how should a small bakery cooperative schedule its morning deliveries? (domain: general). The list below is the request's most frequent terms, not findings about them.\n- cooperative schedule\n- bakery cooperative\n- morning deliveries\n- small bakery\n- schedule its\n\n## MUAINA\nNative structured frame for 'MUAINA' over: W1007 made up: how should a small bakery cooperative schedule its morning deliveries? (domain: general). The list below is the request's most frequent terms, not findings about them.\n- cooperative schedule\n- bakery cooperative\n- morning deliveries\n- small bakery\n- schedule its\n\n## MJM SYNTHESIS\nSubject: W1007 made up: how should a small bakery cooperative schedule its morning deliveries? (domain: general).\nStructured frame over the terms most frequent in the request (a term count, not an analysis):\n- cooperative schedule\n- bakery cooperative\n- morning deliveries\n- small bakery\n- schedule its\n- its morning",
+  "synthesis": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: IDBO Synthesis Engine integrating all intelligence layers. The native floor takes no role - what follows is a frame, not that role's work._\n\n## INKASHAF\nNative structured frame for 'INKASHAF' over: W1007 made up: how should a small bakery cooperative schedule its morning deliveries? (domain: general). The list below is the request's most frequent terms, not findings about them.\n- cooperative schedule\n- bakery cooperative\n- morning deliveries\n- small bakery\n- schedule its\n\n## SAMAJH\nNative structured frame for 'SAMAJH' over: W1007 made up: how should a small bakery cooperative schedule its morning deliveries? (domain: general). The list below is the request's most frequent terms, not findings about them.\n- cooperative schedule\n- bakery cooperative\n- morning deliveries\n- small bakery\n- schedule its\n\n## SOCH\nNative structured frame for 'SOCH' over: W1007 made up: how should a small bakery cooperative schedule its morning deliveries? (domain: general). The list below is the request's most frequent terms, not findings about them.\n- cooperative schedule\n- bakery cooperative\n- morning deliveries\n- small bakery\n- schedule its\n\n## Core Insight\nNative structured frame for 'Core Insight' over: W1007 made up: how should a small bakery cooperative schedule its morning deliveries? (domain: general). The list below is the request's most frequent terms, not findings about them.\n- cooperative schedule\n- bakery cooperative\n- morning deliveries\n- small bakery\n- schedule its\n\n## Root Cause Analysis\nNative structured frame for 'Root Cause Analysis' over: W1007 made up: how should a small bakery cooperative schedule its morning deliveries? (domain: general). The list below is the request's most frequent terms, not findings about them.\n- cooperative schedule\n- bakery cooperative\n- morning deliveries\n- small bakery\n- schedule its\n\n## Recommended Approach\nStructured option frame for: W1007 made up: how should a small bakery cooperative schedule its morning deliveries?.\n- Generate ≥3 distinct variants of the approach.\n- Score each against value, feasibility, risk, and values-fit (halal/beneficence).\n- Recommend the highest-scoring; record why — to be enriched by a model resource.\n\n## Priority Action Steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for general; record outcomes to memory/UEG.\n\n## Success Criteria\nStructured measurement frame:\n- Candidate KPI from cooperative schedule.\n- Candidate KPI from bakery cooperative.\n- Candidate KPI from morning deliveries.\n- Candidate KPI from small bakery.\n- Each KPI needs a baseline, target, and cadence; tie to the objective above.\n\n## Risks & Mitigations\nStructured risk frame for this dimension — surface, don't invent. The items below are terms taken from the request to CHECK, not risks this engine identified:\n- Check: cooperative schedule.\n- Check: bakery cooperative.\n- Check: morning deliveries.\n- Check: small bakery.\n- Likelihood × impact to be scored; mitigations and owners to be assigned.\n- The native engine flags areas needing attention; a model resource details them.\n\n## Synergistic Opportunities\nNative structured frame for 'Synergistic Opportunities' over: W1007 made up: how should a small bakery cooperative schedule its morning deliveries? (domain: general). The list below is the request's most frequent terms, not findings about them.\n- cooperative schedule\n- bakery cooperative\n- morning deliveries\n- small bakery\n- schedule its",
+  "status": "complete",
+  "engines_used": [
+   "INKASHAF",
+   "SAMAJH",
+   "SOCH",
+   "AQAL",
+   "HOSHIYARI",
+   "IMAN",
+   "MJM",
+   "AIGateway"
+  ],
+  "engines_used_basis": "the lenses you selected, named in the prompt as headings — this run attempts THREE gateway calls (the lenses as one prompt, MJM, the synthesis), not one call per engine; all 3 ran",
+  "calls_attempted": 3,
+  "calls_made": 3,
+  "run_summary": "3 of 3 stages ran. 3 composed by the structured floor: scaffolds built from your request, not model analysis.",
+  "provenance": {
+   "cognitive_cascade": {
+    "evidence_level": "behaviour",
+    "evidence_level_number": 1,
+    "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+    "served_by": "native",
+    "is_external": false,
+    "failed": false
+   },
+   "mjm_assessment": {
+    "evidence_level": "behaviour",
+    "evidence_level_number": 1,
+    "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+    "served_by": "native",
+    "is_external": false,
+    "failed": false
+   },
+   "synthesis": {
+    "evidence_level": "behaviour",
+    "evidence_level_number": 1,
+    "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+    "served_by": "native",
+    "is_external": false,
+    "failed": false
+   },
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+   "served_by": {
+    "native": 3
+   },
+   "calls": 3,
+   "floor_calls": 3,
+   "failed_calls": 0,
+   "model_calls": 0,
+   "any_external": false,
+   "external_models": []
+  }
+ },
+ "aligned": {
+  "overall_realisation": 0.849,
+  "measure": "API surface coverage — pillar routers mounted and stores non-empty; not delivery (the delivery measure is /api/v1/plan/state)",
+  "gaps_routed": [
+   {
+    "gap": "Generate a living Enterprise IDBO (VSB) for the user",
+    "realisation": 0.667,
+    "routed_to": "Board",
+    "endpoint": "/api/v1/board/directive",
+    "action": "prioritise VSB generation",
+    "missing": [
+     "VSB entities exist"
+    ],
+    "executed": false
+   },
+   {
+    "gap": "One self-running, self-healing, self-improving organism",
+    "realisation": 0.667,
+    "routed_to": "Heartbeat",
+    "endpoint": "/api/v1/heartbeat/configure",
+    "action": "tune autonomy",
+    "missing": [
+     "An evolution cycle has run"
+    ],
+    "executed": false
+   },
+   {
+    "gap": "Constitutional governance throughout (gaas.v5 + UEG)",
+    "realisation": 0.5,
+    "routed_to": "Change Control",
+    "endpoint": "/api/v1/cca/submit",
+    "action": "governed change",
+    "missing": [
+     "GaaS gate on EVERY output (§17.5 invariant 2): 37 of 70 API modules"
+    ],
+    "executed": false
+   },
+   {
+    "gap": "VSB as hybrid Waqf/Trust autonomous economy",
+    "realisation": 0.5,
+    "routed_to": "Board",
+    "endpoint": "/api/v1/board/directive",
+    "action": "economic direction",
+    "missing": [
+     "A VSB ledger exists"
+    ],
+    "executed": false
+   }
+  ],
+  "gaps_basis": "4 of 11 pillar(s) are listed as a gap: each has a presence check that is not met (a route not mounted or a store with no record). The other 7 pass every presence check, which is why they are not listed - that is coverage, not a statement that they are delivered (the delivery measure is /api/v1/plan/state).",
+  "executed": [],
+  "aligned_at": "2026-11-14T04:34:36Z",
+  "note": "Evidence-based routing of vision gaps to the living tiers. Set execute=true to act."
+ }
+}

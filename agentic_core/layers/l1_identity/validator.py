@@ -13,7 +13,7 @@ class ConstitutionalValidatorL1:
         # W473 (register FU-028) — the path resolves through config.paths (the repository's genome directory),
         # never the working directory; a backend started elsewhere used to read nothing and fall to the default
         if constitution_path is None:
-            from config.paths import GENOME_DIR
+            from agentic_core.store_paths import GENOME_DIR
             constitution_path = str(GENOME_DIR / "constitution.work")
         self.constitution_path = constitution_path
         self.genome_loaded = False

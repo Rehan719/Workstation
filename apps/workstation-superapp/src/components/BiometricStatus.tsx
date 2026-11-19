@@ -144,7 +144,18 @@ export const BiometricStatus: React.FC<BiometricStatusProps> = ({
 }) => {
   // W617 (FU-497, M2 v8 R4.4) — the dot is HOST CPU HEADROOM under an anatomical name; there is no
   // circulatory subsystem. The backend sends that basis and the shell never showed it.
-  const CARDIO_TITLE = `Cardiovascular — host CPU headroom ${b.cardiovascular.resource_flow != null ? Math.round(b.cardiovascular.resource_flow) + '%' : ''}${(b.cardiovascular as any).host_cpu_window_seconds != null ? ` (CPU sampled over ${(b.cardiovascular as any).host_cpu_window_seconds} s)` : ''} (spare capacity on this machine, not workload; there is no circulatory subsystem)`;
+  //  W1078 - a reading that is not live is said as that, with the reason: a first read that failed was titled with the
+  //  hook's default headroom (100%) and labelled Idle, and a refused read kept the last figures as though current
+  const notLive = b.live ? '' : ` — the last reading, not live now: ${b.unread ?? 'not read again yet'}`;
+  const CARDIO_TITLE = !b.live && !b.everRead
+    ? `Cardiovascular — host CPU headroom not read: ${b.unread ?? 'the vitals have not been read yet'}`
+    : `Cardiovascular — host CPU headroom ${b.cardiovascular.resource_flow != null ? Math.round(b.cardiovascular.resource_flow) + '%' : ''}${b.cardiovascular.host_cpu_window_seconds != null ? ` (CPU sampled over ${b.cardiovascular.host_cpu_window_seconds} s)` : ''} (spare capacity on this machine, not workload; there is no circulatory subsystem)${notLive}`;
+  const LOAD_TITLE = !b.live && !b.everRead
+    ? `Load state — not read: ${b.unread ?? 'the vitals have not been read yet'}`
+    : `Load state — ${b.cognition.basis ?? "derived from host CPU and running projects; no cognitive engine is read"}${notLive}`;
+  const COMM_TITLE = !b.live && !b.everRead
+    ? `Communication — not read: ${b.unread ?? 'the vitals have not been read yet'}`
+    : `Communication — ${b.communication.basis ?? 'whether a channel is open'}${notLive}`;
   const cardioCol  = cardioClass(b.cardiovascular.resource_flow, b.live);
   const cardioDur  = cardioDuration(b.cardiovascular.resource_flow);
   const cogCol     = cognitionClass(b.cognition.state);
@@ -153,7 +164,7 @@ export const BiometricStatus: React.FC<BiometricStatusProps> = ({
   const commDur    = commDuration(b.communication.is_active, b.communication.neurotransmitter);
   const ecgDur     = ecgDuration(b.circadian.cycle);
   const iconColor  = ecgColor(b);
-  const label      = stateLabel(b.systemState);
+  const label      = b.live ? stateLabel(b.systemState) : 'Unread';   // W1078 - no state is claimed of a reading not live
 
   // Single layout that works at any container width:
   //   < ~56px  → vertical dots + icon only (no label, no pill)
@@ -176,11 +187,11 @@ export const BiometricStatus: React.FC<BiometricStatusProps> = ({
         />
         <span
           className={`w-1.5 h-1.5 rounded-full shrink-0 ${cogCol} animate-pulse ${cogDur} [animation-delay:300ms]`}
-          title={`Load state — ${(b.cognition as any).basis ?? "derived from host CPU and running projects; no cognitive engine is read"}`}
+          title={LOAD_TITLE}
         />
         <span
           className={`w-1.5 h-1.5 rounded-full shrink-0 ${commCol} animate-pulse ${commDur} [animation-delay:600ms]`}
-          title="Communication"
+          title={COMM_TITLE}
         />
         <span className="hidden @[56px]:block text-[7px] font-black uppercase tracking-widest text-slate-500 mt-0.5">
           {label}
@@ -201,11 +212,11 @@ export const BiometricStatus: React.FC<BiometricStatusProps> = ({
           />
           <span
             className={`w-1.5 h-1.5 rounded-full shrink-0 ${cogCol} animate-pulse ${cogDur} [animation-delay:300ms]`}
-            title={`Load state — ${(b.cognition as any).basis ?? "derived from host CPU and running projects; no cognitive engine is read"}`}
+            title={LOAD_TITLE}
           />
           <span
             className={`w-1.5 h-1.5 rounded-full shrink-0 ${commCol} animate-pulse ${commDur} [animation-delay:600ms]`}
-            title="Communication"
+            title={COMM_TITLE}
           />
         </div>
         <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 truncate">

@@ -27,6 +27,15 @@ export interface ApiOptions {
   signal?: AbortSignal;
 }
 
+//  W959 (FU-1181) - THE ONE PLACE A BODY THAT IS NOT JSON IS SILENT. Each caller of bodyOrNull checks the answer's
+//  status itself and says a refusal with it, so a body that cannot be parsed - a proxy's HTML 502, an empty 204, a
+//  cut stream - is not a second failure to report: it reads as no body.
+const notJson = (): null => null;
+/** The body of an answer, or null when it is not JSON. The caller says the status either way. */
+export function bodyOrNull<T = any>(r: Response): Promise<T | null> {
+  return r.json().then((b: T) => b, notJson);
+}
+
 /** fetch → checked JSON. Throws ApiError (with the backend's own `detail`) on any non-2xx,
  *  and TypeError on network failure — never lets an error body flow into a success path. */
 export async function apiJson<T = any>(url: string, opts: ApiOptions = {}): Promise<T> {
@@ -39,13 +48,13 @@ export async function apiJson<T = any>(url: string, opts: ApiOptions = {}): Prom
   });
   if (!res.ok) {
     let detail = res.statusText || 'request failed';
-    try {
-      const j = await res.json();
-      if (j && typeof j === 'object' && 'detail' in j) {
-        detail = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail);
-      }
-    } catch { /* non-JSON error body — keep the status text */ }
-    throw new ApiError(res.status, detail.slice(0, 300));
+    const j = await bodyOrNull(res);              // W960 (FU-1181) - a body that is not JSON keeps the status text
+    if (j && typeof j === 'object' && 'detail' in j) {
+      detail = bodyDetail(j, detail);   // W1013 - a field check by its field, an object by its message (it said JSON)
+    }
+    //  W1062 - the reason whole: a cut at 300 characters ended a route's own sentence mid-word, unmarked ("... not a
+    //  problem with th"), and a refusal often says last what was kept or what to do next
+    throw new ApiError(res.status, detail);
   }
   return res.json() as Promise<T>;
 }
@@ -57,12 +66,19 @@ export async function apiJson<T = any>(url: string, opts: ApiOptions = {}): Prom
  *  surface crashes rather than showing a bad message. Twenty-two call sites read `e?.response?.data?.detail`
  *  straight into error state, so this is a class and not a site.
  *
- *  A structured detail is rendered by its `message` when it has one, because that is the sentence written
- *  for a reader; otherwise by its JSON, which is ugly but TRUE and far better than a blank panel claiming
- *  the backend is unavailable when it in fact refused and gave a reason.
+ *  A structured detail is rendered by the sentence written for a reader (W1058: its `message`, `detail`, `why`,
+ *  `note` or `basis`, and only then its `error`, which most routes fill with a code); otherwise by its JSON,
+ *  which is ugly but TRUE and far better than a blank panel claiming the backend is unavailable when it in fact
+ *  refused and gave a reason.
  *
  *  `errorMessage` above does the same job for the fetch path. The two now agree.
  */
+//  W1058 - a structured refusal's sentence keys, in the order they are read. Most routes that refuse with an object
+//  put a code in `error` ("kpi_gate", "compliance_fail_hold", "blocked_by_screen") and the sentence beside it;
+//  this read `error` before `note` and never read `detail`, `why` or `basis`, so the code was said and the
+//  sentence dropped. `error` is read last: one route, the review gate, writes its sentence there and nothing else.
+export const REFUSAL_SENTENCE_KEYS = ['message', 'detail', 'why', 'note', 'basis', 'error'] as const;
+
 export function axiosDetail(e: any, fallback: string): string {
   const d = e?.response?.data?.detail;
   if (typeof d === 'string' && d) return d;
@@ -79,12 +95,27 @@ export function axiosDetail(e: any, fallback: string): string {
     return reasons || fallback;
   }
   if (d && typeof d === 'object') {
-    const m = (d as Record<string, unknown>).message ?? (d as Record<string, unknown>).error
-              ?? (d as Record<string, unknown>).note;
-    if (typeof m === 'string' && m) return m;
+    for (const k of REFUSAL_SENTENCE_KEYS) {
+      const m = (d as Record<string, unknown>)[k];
+      if (typeof m === 'string' && m.trim()) return m;
+    }
     try { return JSON.stringify(d); } catch { return fallback; }
   }
   return fallback;
+}
+
+//  W1059 - a reason said inside a longer sentence: its own closing full stop is dropped, so the sentence around it
+//  ends once ("... are not gated by it.. Nothing was added" said it twice). Only a full stop: a question or an
+//  ellipsis is the reason's own and stays.
+export function asClause(reason: string): string {
+  return reason.replace(/\s*\.\s*$/, '');
+}
+
+/** W1012 - the reason in a refused answer's body that a page read by hand (a fetch, or axios told to accept every
+ *  status), as text whatever its shape: axiosDetail's reading, so a sentence is itself, a field check is said by
+ *  its field and an object by its message. String() of a field check's list said "[object Object]". */
+export function bodyDetail(body: unknown, fallback: string): string {
+  return axiosDetail({ response: { data: body } }, fallback);
 }
 
 /** Honest, user-facing message for anything a failed call can throw. */
@@ -92,7 +123,17 @@ export function errorMessage(e: unknown): string {
   if (e instanceof ApiError) return e.status === 401
     ? 'Not signed in — your session may have expired.'
     : `Failed (HTTP ${e.status}): ${e.detail}`;
+  //  W1015 - axios says a refusal and an unreachable server in its own words ("Request failed with status code
+  //  409", "Network Error"): a refusal is said by its status and reason, a call that reached no server as one
+  const ax = e as { isAxiosError?: boolean; response?: { status?: number }; name?: string } | null;
+  if (ax?.isAxiosError) {
+    if (typeof ax.response?.status === 'number') return `Failed (HTTP ${ax.response.status}): ${axiosDetail(e, 'no reason given')}`;
+    return ax.name === 'CanceledError' ? 'Cancelled.' : 'Failed — backend unreachable.';
+  }
   if (e instanceof Error && e.name === 'AbortError') return 'Cancelled.';
+  //  W1015 - a sentence a page threw itself (a plain Error) is said as itself; fetch's TypeError is a server that
+  //  could not be reached, and so is anything else this cannot read
+  if (e instanceof Error && e.name === 'Error' && e.message) return e.message;
   return 'Failed — backend unreachable.';
 }
 

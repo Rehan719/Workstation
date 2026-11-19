@@ -45,7 +45,9 @@ export default defineConfig(({ mode }) => {
       globals: true,
       setupFiles: ['./vitest.setup.ts'],
       // only the rendered tests — the Python suite owns everything else, and a runner that silently
-      // collected .py or e2e files would report a green nobody asked for
+      // collected .py or e2e files would report a green nobody asked for. W977: one exception, by name:
+      // src/audit/FidelityAuditFinal.test.ts drives the final audit's workflow script with planted agents. It
+      // renders no page; it is here because this is the only JavaScript runner the repository's CI declares
       include: ['src/**/*.test.{ts,tsx}'],
       restoreMocks: true,
     },

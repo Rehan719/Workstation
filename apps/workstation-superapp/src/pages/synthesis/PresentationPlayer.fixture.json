@@ -1,0 +1,48 @@
+{
+  "answer": {
+    "content": "[\n  {\n    \"id\": 1,\n    \"title\": \"W1023 made up: two vans\",\n    \"content\": \"W1023 made up: two vans serve twelve bakeries.\",\n    \"narration\": \"W1023 made up: the vans leave at five.\",\n    \"bullets\": [\n      \"W1023 made up: one van north\",\n      \"one van south\"\n    ],\n    \"animation\": \"fade-in\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"W1023 made up: one booking line\",\n    \"content\": \"W1023 made up: orders close at four.\",\n    \"narration\": \"W1023 made up: one line takes every order.\",\n    \"animation\": \"slide-left\"\n  },\n  {\n    \"id\": 3,\n    \"title\": \"W1023 made up: the next step\",\n    \"content\": \"W1023 made up: a third van in spring.\",\n    \"narration\": \"\",\n    \"animation\": \"zoom-in\"\n  }\n]",
+    "faith_content": {
+      "arabic_passages_withheld": 0,
+      "basis": null,
+      "coverage": "a phrase screen over what was asked and a script test over what was composed. Either can withhold or refuse; neither clears: a request that was not refused was not found sound, and text with no Arabic script was not checked for anything else"
+    },
+    "is_external": false,
+    "metadata": {
+      "format": "json",
+      "instructions": "W1023 made up: a delivery cooperative for village bakeries",
+      "slides_count": 3,
+      "title": "Presentation: W1023 made up: a delivery cooperative for village bakeries",
+      "type": "presentation"
+    },
+    "owner_id": "default",
+    "served_by": "ollama:w1023-made-up",
+    "timestamp": "2026-11-14T11:01:10.841152"
+  },
+  "slides": [
+    {
+      "animation": "fade-in",
+      "bullets": [
+        "W1023 made up: one van north",
+        "one van south"
+      ],
+      "content": "W1023 made up: two vans serve twelve bakeries.",
+      "id": 1,
+      "narration": "W1023 made up: the vans leave at five.",
+      "title": "W1023 made up: two vans"
+    },
+    {
+      "animation": "slide-left",
+      "content": "W1023 made up: orders close at four.",
+      "id": 2,
+      "narration": "W1023 made up: one line takes every order.",
+      "title": "W1023 made up: one booking line"
+    },
+    {
+      "animation": "zoom-in",
+      "content": "W1023 made up: a third van in spring.",
+      "id": 3,
+      "narration": "",
+      "title": "W1023 made up: the next step"
+    }
+  ]
+}

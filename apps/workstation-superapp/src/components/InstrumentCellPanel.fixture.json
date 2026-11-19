@@ -1,0 +1,1816 @@
+{
+ "objective": "W1061 made up: a risk ranking of a village hall's booking requests each week",
+ "availability": {
+  "status": 200,
+  "body": {
+   "resources": [
+    {
+     "id": "bdp",
+     "name": "Business Development Process",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "spi",
+     "name": "Scientific Process Intelligence",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "apie",
+     "name": "Scholarship & Authorship Intelligence",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "ddpie",
+     "name": "Design & Development Intelligence",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "cognitive_cascade",
+     "name": "Cognitive Lenses + MJM",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "mjm",
+     "name": "MJM Meta-Judgement",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "nexus",
+     "name": "Synthesis Nexus",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met; optional and absent: a served model above the deterministic floor",
+     "needs_per_run": [],
+     "needs_narrowed": [
+      {
+       "needs": "a served model above the deterministic floor",
+       "kind": "model",
+       "why": "only a model's reply chooses the primary engine; on the floor it is BDP by a stated default",
+       "basis": "no model is served: only the deterministic floor is in the selection order read at this call"
+      }
+     ],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met; optional and absent: a served model above the deterministic floor"
+    },
+    {
+     "id": "genesis",
+     "name": "Genesis Sovereign Journey",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "synthesis_studio",
+     "name": "Synthesis Lab",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table. That door is retired and answers 410, so nothing is served by calling it; the fabric runs this resource in-process and does not call the address",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "reactor",
+     "name": "Reactor · Incubate + Experiment + Studio",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met; optional and absent: a served model above the deterministic floor",
+     "needs_per_run": [],
+     "needs_narrowed": [
+      {
+       "needs": "a served model above the deterministic floor",
+       "kind": "model",
+       "why": "on the floor no variant is scored, so there is no winner and no chart",
+       "basis": "no model is served: only the deterministic floor is in the selection order read at this call"
+      }
+     ],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met; optional and absent: a served model above the deterministic floor"
+    },
+    {
+     "id": "factory",
+     "name": "Production Factory",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "incubator",
+     "name": "Evolution Incubator",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met; optional and absent: a served model above the deterministic floor",
+     "needs_per_run": [],
+     "needs_narrowed": [
+      {
+       "needs": "a served model above the deterministic floor",
+       "kind": "model",
+       "why": "on the floor the scorer returns no score lines, so no variant is scored and no winner is named",
+       "basis": "no model is served: only the deterministic floor is in the selection order read at this call"
+      }
+     ],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met; optional and absent: a served model above the deterministic floor"
+    },
+    {
+     "id": "petri_dish",
+     "name": "Petri Dish",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met; optional and absent: a served model above the deterministic floor",
+     "needs_per_run": [],
+     "needs_narrowed": [
+      {
+       "needs": "a served model above the deterministic floor",
+       "kind": "model",
+       "why": "on the floor viability is not assessable: the floor does not judge it",
+       "basis": "no model is served: only the deterministic floor is in the selection order read at this call"
+      }
+     ],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met; optional and absent: a served model above the deterministic floor"
+    },
+    {
+     "id": "experimentation",
+     "name": "Reactor · Experimentation",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met; optional and absent: a served model above the deterministic floor",
+     "needs_per_run": [],
+     "needs_narrowed": [
+      {
+       "needs": "a served model above the deterministic floor",
+       "kind": "model",
+       "why": "on the floor the scenarios are not ranked: the comparison comes back as a generic frame",
+       "basis": "no model is served: only the deterministic floor is in the selection order read at this call"
+      }
+     ],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met; optional and absent: a served model above the deterministic floor"
+    },
+    {
+     "id": "studio",
+     "name": "Reactor · Studio",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "1 declared need(s) checked at this call and met; series must be set in a configuration and was not checked here",
+     "needs_per_run": [
+      "series"
+     ],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 1 declared need(s) checked at this call and met; series must be set in a configuration and was not checked here"
+    },
+    {
+     "id": "generator",
+     "name": "Artefact Generator",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "digital_twin",
+     "name": "Digital Twin & Simulator",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "gaas_v5",
+     "name": "Constitutional Gate (gaas.v5)",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "1 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 1 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "sovereign_evolution",
+     "name": "Sovereign Evolution Office",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "1 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 1 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "nervous_system",
+     "name": "Nervous System",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "immune",
+     "name": "Immune System",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "1 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 1 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "self_healing",
+     "name": "Self-Healing Reflex",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "1 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 1 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "metabolic",
+     "name": "Metabolic / ATP",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "1 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 1 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "circadian",
+     "name": "Circadian Heartbeat",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "1 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 1 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "genome",
+     "name": "Genome Registry",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "unmet",
+     "needs_basis": "a served model above the deterministic floor: no model is served: only the deterministic floor is in the selection order read at this call",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "unavailable",
+     "checked_basis": "a served model above the deterministic floor: no model is served: only the deterministic floor is in the selection order read at this call"
+    },
+    {
+     "id": "vsb_spawn",
+     "name": "VSB Spawn Pipeline",
+     "state": "prompt_stage_only",
+     "reason": "registered, and the fabric's real-resource handler has no branch for it: composing it adds a prompt stage to the swarm and does not run its engine",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "declares that it needs nothing - declared, from what was read: the fabric's real-resource handler has no branch for this id, so composing it starts no engine",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "unavailable",
+     "checked_basis": "registered, and the fabric's real-resource handler has no branch for it: composing it adds a prompt stage to the swarm and does not run its engine"
+    },
+    {
+     "id": "genesis_establish",
+     "name": "Establish Enterprise IDBO",
+     "state": "prompt_stage_only",
+     "reason": "registered, and the fabric's real-resource handler has no branch for it: composing it adds a prompt stage to the swarm and does not run its engine",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "declares that it needs nothing - declared, from what was read: the fabric's real-resource handler has no branch for this id, so composing it starts no engine",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "unavailable",
+     "checked_basis": "registered, and the fabric's real-resource handler has no branch for it: composing it adds a prompt stage to the swarm and does not run its engine"
+    },
+    {
+     "id": "vsb_org_swarm",
+     "name": "AI CEO → C-Suite → CoE",
+     "state": "available",
+     "reason": "run by the composition runner itself (the organisation cascade)",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "change_control",
+     "name": "Change Control Agency",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "3 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 3 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "capital_fund",
+     "name": "Capital Fund",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "products_catalogue",
+     "name": "Products Catalogue",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "1 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 1 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "build_to_order",
+     "name": "Build-to-Order",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "compliance",
+     "name": "Unified Compliance Engine",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "1 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 1 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "native_orchestrator",
+     "name": "Native AI Orchestrator",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "native_ensemble",
+     "name": "Native AI Model Ensemble",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "native_swarm",
+     "name": "Native AI Swarm",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "omnimedia",
+     "name": "Omnimedia Output Factory",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "1 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 1 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "federation_mesh",
+     "name": "Federation Mesh",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "1 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 1 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "mega_project",
+     "name": "Mega-Project Synthesiser",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "resource_optimizer",
+     "name": "Adaptive Resource Optimiser",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "truth_consensus",
+     "name": "Collective Truth Consensus",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "1 declared need(s) checked at this call and met; claims must be set in a configuration and was not checked here",
+     "needs_per_run": [
+      "claims"
+     ],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 1 declared need(s) checked at this call and met; claims must be set in a configuration and was not checked here"
+    },
+    {
+     "id": "form_law_analyse",
+     "name": "Legal document analysis",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_law_research",
+     "name": "Legal research outline",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_law_generate",
+     "name": "Legal document draft",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_edu_curriculum",
+     "name": "Curriculum outline",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_edu_lesson_plan",
+     "name": "Lesson plan",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_edu_feedback",
+     "name": "Feedback on a piece of work",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_edu_assessment",
+     "name": "Assessment",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_care_plan",
+     "name": "Care plan organiser",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_care_risk_assess",
+     "name": "Risk assessment",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_care_safeguarding",
+     "name": "Safeguarding process guidance",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_care_handover",
+     "name": "Handover",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_sci_synthesise",
+     "name": "Research synthesis outline",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_sci_hypothesis",
+     "name": "Hypotheses",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_sci_experiment",
+     "name": "Experiment design",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_sci_literature",
+     "name": "Literature review outline",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_emp_cv",
+     "name": "CV",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_emp_cover_letter",
+     "name": "Cover letter",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_emp_interview",
+     "name": "Interview preparation",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_emp_career_path",
+     "name": "Career path",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_emp_salary",
+     "name": "Salary negotiation",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_emp_application",
+     "name": "Application support",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_rel_fiqh_research",
+     "name": "Jurisprudence research",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_rel_hadith",
+     "name": "Hadith study",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_rel_halal",
+     "name": "Halal pre-assessment",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    },
+    {
+     "id": "form_rel_tafsir",
+     "name": "Tafsir of retrieved verses",
+     "state": "available",
+     "reason": "the fabric's real-resource handler has a branch for it",
+     "endpoint_state": "served",
+     "endpoint_basis": "the declared endpoint and method are in the route table",
+     "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome",
+     "needs_declared": true,
+     "needs_state": "met",
+     "needs_basis": "2 declared need(s) checked at this call and met",
+     "needs_per_run": [],
+     "needs_narrowed": [],
+     "checked": "available",
+     "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met"
+    }
+   ],
+   "counts": {
+    "available": 64,
+    "prompt_stage_only": 2
+   },
+   "total": 66,
+   "needs_counts": {
+    "met": 65,
+    "unmet": 1
+   },
+   "checked_counts": {
+    "available": 63,
+    "unavailable": 3
+   },
+   "needs_declared": 66,
+   "needs_basis": "66 of 66 registration(s) declare what they need, and each declared need was checked at this call. None is without a declaration: a registration that declares nothing is refused when the registry is read at import. 5 start here with less than they declare: an optional need is absent, and each says what that costs",
+   "needs_narrowed_count": 5,
+   "retired_endpoints": [
+    {
+     "id": "synthesis_studio",
+     "endpoint": "/api/v1/studio/synthesise",
+     "basis": "the door at /api/v1/studio/synthesise is RETIRED: it is in the route table and answers 410 to every request. Its own reason: This door is retired (Owner ruling 2026-10-11): one door establishes an enterprise, and it is Genesis. Nothing was composed and nothing was created. Establish through the Genesis page (/genesis), or POST /api/v1/genesis/establish. This route's code is kept and the retirement is reversible."
+    }
+   ],
+   "declaration_defects": [],
+   "available_without_engine": [
+    "build_to_order",
+    "capital_fund",
+    "change_control",
+    "circadian",
+    "digital_twin",
+    "federation_mesh",
+    "immune",
+    "metabolic",
+    "omnimedia",
+    "products_catalogue",
+    "self_healing",
+    "sovereign_evolution"
+   ],
+   "basis": "read at this call from the fabric's handler and the application's route table. 'available' means the fabric has a handler for the resource. It does NOT mean an engine runs: 12 of the available resource(s) run no engine when composed (they read state, query records, draft a blueprint or write a narrative) and are named in available_without_engine. Nor does it mean an engine that runs will succeed"
+  }
+ },
+ "runs": {
+  "status": 200,
+  "body": {
+   "runs": [],
+   "store_incomplete": null,
+   "listing_is_incomplete": false,
+   "listing_basis": "every run you can access in the persisted history"
+  }
+ },
+ "specifications": {
+  "status": 200,
+  "body": {
+   "specifications": [],
+   "total": 0,
+   "limit": 500,
+   "basis": "every kept specification you can access, newest first. Each version is its own record; `superseded_by` and `digest_ok` are computed at this read"
+  }
+ },
+ "ask_open": {
+  "objective": "W1061 made up: a risk ranking of a village hall's booking requests each week",
+  "required_capabilities": []
+ },
+ "proposed_open": {
+  "status": 200,
+  "body": {
+   "objective": "W1061 made up: a risk ranking of a village hall's booking requests each week",
+   "saved": false,
+   "ran": false,
+   "what_this_is": "a proposal: nothing was saved and nothing was run",
+   "limits": {
+    "max_stages": 12,
+    "ceiling": 12,
+    "ceiling_basis": "declared policy: a ceiling against a runaway composition. It is not derived from a measurement of what the organism can carry",
+    "attempts_per_resource": 1,
+    "attempts_basis": "each resource is attempted once per run; the fabric retries nothing"
+   },
+   "requirements_confirmed": false,
+   "selection": null,
+   "suggested_requirements": [
+    {
+     "capability": "ranking",
+     "first_declared_by": "incubator"
+    },
+    {
+     "capability": "risk",
+     "first_declared_by": "bdp"
+    }
+   ],
+   "suggestion_basis": "capability tags that appear as whole words in the objective. A tag match, not an understanding of the objective: confirm, change or replace them and send them back as required_capabilities",
+   "criteria": {
+    "criteria": [],
+    "counts": {
+     "met": 0,
+     "unmet": 0,
+     "not_assessed": 0
+    },
+    "all_met": false,
+    "all_met_basis": "true only when every stated criterion was assessed AND met; none stated is not met"
+   }
+  }
+ },
+ "first_suggestion": "ranking",
+ "ask_stated": {
+  "objective": "W1061 made up: a risk ranking of a village hall's booking requests each week",
+  "required_capabilities": [
+   "ranking"
+  ]
+ },
+ "proposed_stated": {
+  "status": 200,
+  "body": {
+   "objective": "W1061 made up: a risk ranking of a village hall's booking requests each week",
+   "saved": false,
+   "ran": false,
+   "what_this_is": "a proposal: nothing was saved and nothing was run",
+   "limits": {
+    "max_stages": 12,
+    "ceiling": 12,
+    "ceiling_basis": "declared policy: a ceiling against a runaway composition. It is not derived from a measurement of what the organism can carry",
+    "attempts_per_resource": 1,
+    "attempts_basis": "each resource is attempted once per run; the fabric retries nothing"
+   },
+   "requirements_confirmed": true,
+   "selection": {
+    "requirements": [
+     "ranking"
+    ],
+    "selected": [
+     {
+      "id": "experimentation",
+      "name": "Reactor · Experimentation",
+      "covers": [
+       "ranking"
+      ],
+      "by_capability": {
+       "ranking": "ranking"
+      },
+      "contract": {
+       "id": "experimentation",
+       "inputs": {
+        "subject": "str",
+        "scenarios": "list (one what-if per line)",
+        "domain": "str"
+       },
+       "inputs_basis": "the registry's declared parameters, each with its declared type or example; `required` lists the ones without which the fabric's handler runs nothing",
+       "takes_no_input": false,
+       "required": [],
+       "required_basis": "declared by the registration: no parameter is required to start it",
+       "needs": [
+        {
+         "kind": "module",
+         "module": "agentic_core.api.products",
+         "attr": "reactor_experiment",
+         "why": "the handler calls it"
+        },
+        {
+         "kind": "completion",
+         "why": "each scenario and the comparison are completions"
+        },
+        {
+         "kind": "model",
+         "optional": true,
+         "why": "on the floor the scenarios are not ranked: the comparison comes back as a generic frame"
+        }
+       ],
+       "needs_declared": true,
+       "yields": "facility_run",
+       "when_run": "when run, it runs its engine and produces an output",
+       "persists": "records",
+       "persists_basis": "its own QMS gate seals a quality record in the document-control registry and logs the compliance screen to the UEG audit log on every run, including a floor-served run the gate could not assess; it also fires a QMS signal",
+       "capabilities": [
+        "what-if scenarios",
+        "outcome projection",
+        "scenario comparison",
+        "ranking"
+       ],
+       "usable_in": [
+        "synthesis",
+        "design",
+        "development",
+        "forge",
+        "evolution"
+       ],
+       "equivalents": [],
+       "equivalents_basis": "registrations declaring the same endpoint as a status read; empty means the registry establishes no interchangeable resource"
+      },
+      "availability": {
+       "id": "experimentation",
+       "state": "available",
+       "reason": "the fabric's real-resource handler has a branch for it",
+       "handler_kind": "facility_run",
+       "runs_engine": true,
+       "runs_engine_basis": "the fabric's real-resource handler has a branch for it",
+       "needs_declared": true,
+       "needs_state": "met",
+       "needs": [
+        {
+         "kind": "module",
+         "optional": false,
+         "why": "the handler calls it",
+         "needs": "agentic_core.api.products.reactor_experiment",
+         "met": true,
+         "basis": "imported at this call"
+        },
+        {
+         "kind": "completion",
+         "optional": false,
+         "why": "each scenario and the comparison are completions",
+         "needs": "an owned completion tier",
+         "met": true,
+         "served_first": "native",
+         "basis": "native is the first owned tier in the selection order read at this call; that is the deterministic floor, so this need is met WITHOUT a model"
+        },
+        {
+         "kind": "model",
+         "optional": true,
+         "why": "on the floor the scenarios are not ranked: the comparison comes back as a generic frame",
+         "needs": "a served model above the deterministic floor",
+         "met": false,
+         "served_first": "native",
+         "basis": "no model is served: only the deterministic floor is in the selection order read at this call"
+        }
+       ],
+       "needs_per_run": [],
+       "needs_basis": "2 declared need(s) checked at this call and met; optional and absent: a served model above the deterministic floor",
+       "needs_narrowed": [
+        {
+         "needs": "a served model above the deterministic floor",
+         "kind": "model",
+         "why": "on the floor the scenarios are not ranked: the comparison comes back as a generic frame",
+         "basis": "no model is served: only the deterministic floor is in the selection order read at this call"
+        }
+       ],
+       "needs_declared_none": false,
+       "checked": "available",
+       "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met; optional and absent: a served model above the deterministic floor",
+       "endpoint_state": "served",
+       "endpoint_basis": "the declared endpoint and method are in the route table",
+       "endpoint_retired": false,
+       "endpoint_retired_basis": "no retirement switch is recorded for this path; whether its handler answers a real request is known only by calling it",
+       "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome"
+      }
+     }
+    ],
+    "uncovered": [],
+    "uncovered_basis": "no AVAILABLE registered resource declares a capability matching these; a requirement left here is not met by widening the match",
+    "excluded": [],
+    "method": "exhaustive: no set of fewer than 1 available resource(s) covers the coverable requirements, and among sets of 1 the one declaring the fewest capabilities was taken",
+    "needs_not_declared": [],
+    "needs_not_declared_basis": "these are proposed because the fabric has a handler for each; none declares what it needs, so nothing else about them was checked"
+   },
+   "alternatives": {
+    "experimentation": []
+   },
+   "alternatives_basis": "declared equivalents are NAMED here; a proposal tries nothing. At RUN time the fabric tries one declared equivalent, once, when a status read fails (Owner ruling 2026-10-10) - never for a resource that runs an engine or writes, and never a second one",
+   "criteria": {
+    "criteria": [],
+    "counts": {
+     "met": 0,
+     "unmet": 0,
+     "not_assessed": 0
+    },
+    "all_met": false,
+    "all_met_basis": "true only when every stated criterion was assessed AND met; none stated is not met"
+   }
+  }
+ },
+ "keep_ask": {
+  "objective": "W1061 made up: a risk ranking of a village hall's booking requests each week",
+  "required_capabilities": [
+   "ranking"
+  ],
+  "acceptance_criteria": []
+ },
+ "kept": {
+  "status": 200,
+  "body": {
+   "id": "spec-1f606e5138",
+   "kind": "assembly_specification",
+   "lineage": "spec-1f606e5138",
+   "version": 1,
+   "supersedes": null,
+   "digest": "ab4d41c4d0e08db06056d9db9c123c9b6a9fd74b6d695710bbca84532f1d7561",
+   "objective": "W1061 made up: a risk ranking of a village hall's booking requests each week",
+   "required_capabilities": [
+    "ranking"
+   ],
+   "acceptance_criteria": [],
+   "usage_area": null,
+   "max_stages": 12,
+   "proposed": [
+    {
+     "id": "experimentation",
+     "covers": [
+      "ranking"
+     ],
+     "registration_digest": "baaec0c7093eb4c4bb17b7f3b9306d56ce201ac857e053e2ccfc90ebf1189270"
+    }
+   ],
+   "selection_rule": "exhaustive: no set of fewer than 1 available resource(s) covers the coverable requirements, and among sets of 1 the one declaring the fewest capabilities was taken",
+   "uncovered": [],
+   "owner_id": "default",
+   "saved_by": "default",
+   "saved_at": "2026-11-15T02:30:37Z",
+   "superseded_by": null,
+   "is_latest": true,
+   "digest_recomputed": "ab4d41c4d0e08db06056d9db9c123c9b6a9fd74b6d695710bbca84532f1d7561",
+   "digest_ok": true,
+   "immutable_basis": "a kept specification is never changed. Keeping a changed one makes the next version, which names this one as the one it supersedes",
+   "saved": true,
+   "already_saved": false,
+   "ran": false,
+   "what_this_is": "a kept specification: the proposal as the cell computed it at this call. Nothing was run"
+  }
+ },
+ "specifications_after": {
+  "status": 200,
+  "body": {
+   "specifications": [
+    {
+     "id": "spec-1f606e5138",
+     "kind": "assembly_specification",
+     "lineage": "spec-1f606e5138",
+     "version": 1,
+     "supersedes": null,
+     "digest": "ab4d41c4d0e08db06056d9db9c123c9b6a9fd74b6d695710bbca84532f1d7561",
+     "objective": "W1061 made up: a risk ranking of a village hall's booking requests each week",
+     "required_capabilities": [
+      "ranking"
+     ],
+     "acceptance_criteria": [],
+     "usage_area": null,
+     "max_stages": 12,
+     "proposed": [
+      {
+       "id": "experimentation",
+       "covers": [
+        "ranking"
+       ],
+       "registration_digest": "baaec0c7093eb4c4bb17b7f3b9306d56ce201ac857e053e2ccfc90ebf1189270"
+      }
+     ],
+     "selection_rule": "exhaustive: no set of fewer than 1 available resource(s) covers the coverable requirements, and among sets of 1 the one declaring the fewest capabilities was taken",
+     "uncovered": [],
+     "owner_id": "default",
+     "saved_by": "default",
+     "saved_at": "2026-11-15T02:30:37Z",
+     "superseded_by": null,
+     "is_latest": true,
+     "digest_recomputed": "ab4d41c4d0e08db06056d9db9c123c9b6a9fd74b6d695710bbca84532f1d7561",
+     "digest_ok": true,
+     "immutable_basis": "a kept specification is never changed. Keeping a changed one makes the next version, which names this one as the one it supersedes"
+    }
+   ],
+   "total": 1,
+   "limit": 500,
+   "basis": "every kept specification you can access, newest first. Each version is its own record; `superseded_by` and `digest_ok` are computed at this read"
+  }
+ },
+ "specification": {
+  "status": 200,
+  "body": {
+   "id": "spec-1f606e5138",
+   "kind": "assembly_specification",
+   "lineage": "spec-1f606e5138",
+   "version": 1,
+   "supersedes": null,
+   "digest": "ab4d41c4d0e08db06056d9db9c123c9b6a9fd74b6d695710bbca84532f1d7561",
+   "objective": "W1061 made up: a risk ranking of a village hall's booking requests each week",
+   "required_capabilities": [
+    "ranking"
+   ],
+   "acceptance_criteria": [],
+   "usage_area": null,
+   "max_stages": 12,
+   "proposed": [
+    {
+     "id": "experimentation",
+     "covers": [
+      "ranking"
+     ],
+     "registration_digest": "baaec0c7093eb4c4bb17b7f3b9306d56ce201ac857e053e2ccfc90ebf1189270"
+    }
+   ],
+   "selection_rule": "exhaustive: no set of fewer than 1 available resource(s) covers the coverable requirements, and among sets of 1 the one declaring the fewest capabilities was taken",
+   "uncovered": [],
+   "owner_id": "default",
+   "saved_by": "default",
+   "saved_at": "2026-11-15T02:30:37Z",
+   "superseded_by": null,
+   "is_latest": true,
+   "digest_recomputed": "ab4d41c4d0e08db06056d9db9c123c9b6a9fd74b6d695710bbca84532f1d7561",
+   "digest_ok": true,
+   "immutable_basis": "a kept specification is never changed. Keeping a changed one makes the next version, which names this one as the one it supersedes",
+   "versions": [
+    {
+     "id": "spec-1f606e5138",
+     "version": 1,
+     "digest": "ab4d41c4d0e08db06056d9db9c123c9b6a9fd74b6d695710bbca84532f1d7561",
+     "supersedes": null,
+     "saved_by": "default",
+     "saved_at": "2026-11-15T02:30:37Z"
+    }
+   ],
+   "availability_now": [
+    {
+     "id": "experimentation",
+     "registered": true,
+     "available": true,
+     "because": "the fabric's real-resource handler has a branch for it",
+     "state": "available",
+     "needs_state": "met",
+     "registration_changed": false,
+     "equivalents": []
+    }
+   ],
+   "unavailable_now": [],
+   "replay": {
+    "route": "/api/v1/resources/compositions/{cid}/run",
+    "send": {
+     "specification_id": "spec-1f606e5138",
+     "specification_digest": "ab4d41c4d0e08db06056d9db9c123c9b6a9fd74b6d695710bbca84532f1d7561"
+    },
+    "compositions": [],
+    "is_reproduction": false,
+    "reproduction_basis": "a specification keeps the objective, the criteria and the resources by id. It holds no configuration and no run parameters: a run from it uses each composition's configuration as it is NOW and the parameters sent with that run, so its output is not a reproduction of anything",
+    "basis": "a specification is run again through the composition run route, naming it. The run attempts what the COMPOSITION holds; `missing` and `extra` say how each saved composition differs from what was proposed, and the run's record says which proposed resources were attempted. A proposed resource that is unavailable now is reported and nothing is put in its place; a declared equivalent is tried by the runner only for a status read that fails, once"
+   }
+  }
+ },
+ "second_suggestion": "risk",
+ "ask_second": {
+  "objective": "W1061 made up: a risk ranking of a village hall's booking requests each week",
+  "required_capabilities": [
+   "risk"
+  ]
+ },
+ "proposed_second": {
+  "status": 200,
+  "body": {
+   "objective": "W1061 made up: a risk ranking of a village hall's booking requests each week",
+   "saved": false,
+   "ran": false,
+   "what_this_is": "a proposal: nothing was saved and nothing was run",
+   "limits": {
+    "max_stages": 12,
+    "ceiling": 12,
+    "ceiling_basis": "declared policy: a ceiling against a runaway composition. It is not derived from a measurement of what the organism can carry",
+    "attempts_per_resource": 1,
+    "attempts_basis": "each resource is attempted once per run; the fabric retries nothing"
+   },
+   "requirements_confirmed": true,
+   "selection": {
+    "requirements": [
+     "risk"
+    ],
+    "selected": [
+     {
+      "id": "form_care_risk_assess",
+      "name": "Risk assessment",
+      "covers": [
+       "risk"
+      ],
+      "by_capability": {
+       "risk": "risk assessment"
+      },
+      "contract": {
+       "id": "form_care_risk_assess",
+       "inputs": {
+        "tool": "str (default 'news2')",
+        "patient_data": "dict (default {})",
+        "clinical_context": "str (default '')",
+        "realm": "str (default '')"
+       },
+       "inputs_basis": "the registry's declared parameters, each with its declared type or example; `required` lists the ones without which the fabric's handler runs nothing",
+       "takes_no_input": false,
+       "required": [],
+       "required_basis": "declared by the registration: no parameter is required to start it",
+       "needs": [
+        {
+         "kind": "module",
+         "module": "agentic_core.api.care",
+         "attr": "risk_assessment",
+         "why": "the form's own route handler - a composition calls the same function the form's page does"
+        },
+        {
+         "kind": "completion",
+         "why": "one completion composes the answer; on the floor it is a frame over the request, and the answer says so"
+        }
+       ],
+       "needs_declared": true,
+       "yields": "facility_run",
+       "when_run": "when run, it runs its engine and produces an output",
+       "persists": "nothing",
+       "persists_basis": "its engine function writes no store of its own; what the completion layer keeps about each call is not declared here",
+       "capabilities": [
+        "risk assessment",
+        "care form"
+       ],
+       "usable_in": [
+        "domain_working",
+        "composition"
+       ],
+       "equivalents": [],
+       "equivalents_basis": "registrations declaring the same endpoint as a status read; empty means the registry establishes no interchangeable resource"
+      },
+      "availability": {
+       "id": "form_care_risk_assess",
+       "state": "available",
+       "reason": "the fabric's real-resource handler has a branch for it",
+       "handler_kind": "facility_run",
+       "runs_engine": true,
+       "runs_engine_basis": "the fabric's real-resource handler has a branch for it",
+       "needs_declared": true,
+       "needs_state": "met",
+       "needs": [
+        {
+         "kind": "module",
+         "optional": false,
+         "why": "the form's own route handler - a composition calls the same function the form's page does",
+         "needs": "agentic_core.api.care.risk_assessment",
+         "met": true,
+         "basis": "imported at this call"
+        },
+        {
+         "kind": "completion",
+         "optional": false,
+         "why": "one completion composes the answer; on the floor it is a frame over the request, and the answer says so",
+         "needs": "an owned completion tier",
+         "met": true,
+         "served_first": "native",
+         "basis": "native is the first owned tier in the selection order read at this call; that is the deterministic floor, so this need is met WITHOUT a model"
+        }
+       ],
+       "needs_per_run": [],
+       "needs_basis": "2 declared need(s) checked at this call and met",
+       "needs_narrowed": [],
+       "needs_declared_none": false,
+       "checked": "available",
+       "checked_basis": "the fabric has a handler for it, and 2 declared need(s) checked at this call and met",
+       "endpoint_state": "served",
+       "endpoint_basis": "the declared endpoint and method are in the route table",
+       "endpoint_retired": false,
+       "endpoint_retired_basis": "no retirement switch is recorded for this path; whether its handler answers a real request is known only by calling it",
+       "not_checked": "whether its engine succeeds on a real input - that is known only by running it, and a run records it as its outcome"
+      }
+     }
+    ],
+    "uncovered": [],
+    "uncovered_basis": "no AVAILABLE registered resource declares a capability matching these; a requirement left here is not met by widening the match",
+    "excluded": [],
+    "method": "exhaustive: no set of fewer than 1 available resource(s) covers the coverable requirements, and among sets of 1 the one declaring the fewest capabilities was taken",
+    "needs_not_declared": [],
+    "needs_not_declared_basis": "these are proposed because the fabric has a handler for each; none declares what it needs, so nothing else about them was checked"
+   },
+   "alternatives": {
+    "form_care_risk_assess": []
+   },
+   "alternatives_basis": "declared equivalents are NAMED here; a proposal tries nothing. At RUN time the fabric tries one declared equivalent, once, when a status read fails (Owner ruling 2026-10-10) - never for a resource that runs an engine or writes, and never a second one",
+   "criteria": {
+    "criteria": [],
+    "counts": {
+     "met": 0,
+     "unmet": 0,
+     "not_assessed": 0
+    },
+    "all_met": false,
+    "all_met_basis": "true only when every stated criterion was assessed AND met; none stated is not met"
+   }
+  }
+ },
+ "keep_second_ask": {
+  "objective": "W1061 made up: a risk ranking of a village hall's booking requests each week",
+  "required_capabilities": [
+   "risk"
+  ],
+  "acceptance_criteria": []
+ },
+ "kept_second": {
+  "status": 200,
+  "body": {
+   "id": "spec-6154e2fdf2",
+   "kind": "assembly_specification",
+   "lineage": "spec-6154e2fdf2",
+   "version": 1,
+   "supersedes": null,
+   "digest": "e489605657dc83695f90a5bbe56cad81ec9afb0c367c8d3c61d5454b2e3039cc",
+   "objective": "W1061 made up: a risk ranking of a village hall's booking requests each week",
+   "required_capabilities": [
+    "risk"
+   ],
+   "acceptance_criteria": [],
+   "usage_area": null,
+   "max_stages": 12,
+   "proposed": [
+    {
+     "id": "form_care_risk_assess",
+     "covers": [
+      "risk"
+     ],
+     "registration_digest": "3529685a67e1f55768cc4aa89441315cf4e70606750fd1b119cf5dfb03c9823c"
+    }
+   ],
+   "selection_rule": "exhaustive: no set of fewer than 1 available resource(s) covers the coverable requirements, and among sets of 1 the one declaring the fewest capabilities was taken",
+   "uncovered": [],
+   "owner_id": "default",
+   "saved_by": "default",
+   "saved_at": "2026-11-15T02:30:37Z",
+   "superseded_by": null,
+   "is_latest": true,
+   "digest_recomputed": "e489605657dc83695f90a5bbe56cad81ec9afb0c367c8d3c61d5454b2e3039cc",
+   "digest_ok": true,
+   "immutable_basis": "a kept specification is never changed. Keeping a changed one makes the next version, which names this one as the one it supersedes",
+   "saved": true,
+   "already_saved": false,
+   "ran": false,
+   "what_this_is": "a kept specification: the proposal as the cell computed it at this call. Nothing was run"
+  }
+ },
+ "specifications_failed": {
+  "status": 503,
+  "body": {
+   "detail": "The kept specifications could not be read: assembly_specifications.json could not be read whole (not valid JSON: Expecting property name enclosed in double quotes: line 1 column 3 (char 2)) — nothing was written. Nothing was written and nothing was run. This is a store problem, not a problem with the request."
+  }
+ },
+ "specifications_again": {
+  "status": 200,
+  "body": {
+   "specifications": [
+    {
+     "id": "spec-6154e2fdf2",
+     "kind": "assembly_specification",
+     "lineage": "spec-6154e2fdf2",
+     "version": 1,
+     "supersedes": null,
+     "digest": "e489605657dc83695f90a5bbe56cad81ec9afb0c367c8d3c61d5454b2e3039cc",
+     "objective": "W1061 made up: a risk ranking of a village hall's booking requests each week",
+     "required_capabilities": [
+      "risk"
+     ],
+     "acceptance_criteria": [],
+     "usage_area": null,
+     "max_stages": 12,
+     "proposed": [
+      {
+       "id": "form_care_risk_assess",
+       "covers": [
+        "risk"
+       ],
+       "registration_digest": "3529685a67e1f55768cc4aa89441315cf4e70606750fd1b119cf5dfb03c9823c"
+      }
+     ],
+     "selection_rule": "exhaustive: no set of fewer than 1 available resource(s) covers the coverable requirements, and among sets of 1 the one declaring the fewest capabilities was taken",
+     "uncovered": [],
+     "owner_id": "default",
+     "saved_by": "default",
+     "saved_at": "2026-11-15T02:30:37Z",
+     "superseded_by": null,
+     "is_latest": true,
+     "digest_recomputed": "e489605657dc83695f90a5bbe56cad81ec9afb0c367c8d3c61d5454b2e3039cc",
+     "digest_ok": true,
+     "immutable_basis": "a kept specification is never changed. Keeping a changed one makes the next version, which names this one as the one it supersedes"
+    },
+    {
+     "id": "spec-1f606e5138",
+     "kind": "assembly_specification",
+     "lineage": "spec-1f606e5138",
+     "version": 1,
+     "supersedes": null,
+     "digest": "ab4d41c4d0e08db06056d9db9c123c9b6a9fd74b6d695710bbca84532f1d7561",
+     "objective": "W1061 made up: a risk ranking of a village hall's booking requests each week",
+     "required_capabilities": [
+      "ranking"
+     ],
+     "acceptance_criteria": [],
+     "usage_area": null,
+     "max_stages": 12,
+     "proposed": [
+      {
+       "id": "experimentation",
+       "covers": [
+        "ranking"
+       ],
+       "registration_digest": "baaec0c7093eb4c4bb17b7f3b9306d56ce201ac857e053e2ccfc90ebf1189270"
+      }
+     ],
+     "selection_rule": "exhaustive: no set of fewer than 1 available resource(s) covers the coverable requirements, and among sets of 1 the one declaring the fewest capabilities was taken",
+     "uncovered": [],
+     "owner_id": "default",
+     "saved_by": "default",
+     "saved_at": "2026-11-15T02:30:37Z",
+     "superseded_by": null,
+     "is_latest": true,
+     "digest_recomputed": "ab4d41c4d0e08db06056d9db9c123c9b6a9fd74b6d695710bbca84532f1d7561",
+     "digest_ok": true,
+     "immutable_basis": "a kept specification is never changed. Keeping a changed one makes the next version, which names this one as the one it supersedes"
+    }
+   ],
+   "total": 2,
+   "limit": 500,
+   "basis": "every kept specification you can access, newest first. Each version is its own record; `superseded_by` and `digest_ok` are computed at this read"
+  }
+ },
+ "availability_failed": {
+  "status": 500,
+  "body": {
+   "detail": "GET /api/v1/resources/cell/availability failed with RuntimeError. The failure is recorded; the cause is not established.",
+   "failure_class": "RuntimeError",
+   "route": "/api/v1/resources/cell/availability",
+   "cause_established": false
+  }
+ }
+}

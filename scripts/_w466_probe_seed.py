@@ -1,3 +1,4 @@
+# HISTORY (W811, FU-924): the seed data for round W466's one-round browser probe. Nothing runs it; it is kept as that round's record.
 """W466 probe seed — run with the probe backend's isolated DATA_DIR/WORKSTATION_DATA_DIR/WORKSTATION_UEG_PATH env BEFORE
 starting that backend. Registers two living entities, funds the sender with one cycle (materiality raised in THIS
 process only), and leaves one REAL stranded transfer: the sender debited, the receiver's queue lock made to time out

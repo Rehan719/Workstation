@@ -91,6 +91,32 @@ def roster_is_empty() -> bool:
     return not roster()
 
 
+RETIRED_STORE = "scholar_roster_retired.json"
+
+
+def retired() -> Dict[str, Any]:
+    """W796 (FU-980 R1[3]) - scholars taken off the roster, each kept with who retired them, when and why."""
+    from agentic_core.config import data_path
+    return _load(data_path(RETIRED_STORE))
+
+
+def retire_scholar(scholar_id: str, reason: str, retired_by: str) -> Optional[Dict[str, Any]]:
+    """W796 (FU-980 R1[3]) - THE ROSTER HAD NO WAY BACK. A scholar could be added and never removed, so a person who
+    stopped reviewing stayed able to approve. Retiring moves the entry to a kept record (nothing is deleted); the
+    decisions they recorded before stay as recorded. None when the id is not on the roster."""
+    from agentic_core.config import data_path
+    r = roster()
+    if scholar_id not in r:
+        return None
+    entry = {**r.pop(scholar_id), "retired_by": retired_by, "reason": reason,
+             "retired_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    gone = retired()
+    gone[scholar_id] = (gone.get(scholar_id) if isinstance(gone.get(scholar_id), list) else []) + [entry]
+    _save(data_path(RETIRED_STORE), gone)       # the kept record first: a crash between the two leaves both copies,
+    _save(_roster_path(), r)                     # never neither
+    return entry
+
+
 def add_scholar(scholar_id: str, name: str, credential: str, added_by: str) -> Dict[str, Any]:
     """Only the Owner's hand puts a person here; every field is recorded, none is inferred."""
     r = roster()
@@ -133,7 +159,20 @@ def _full_sentence(full: Dict[str, int]) -> str:
               "make room")
 
 
-def submit(content_key: str, surface: str, body: str, reference: str = "") -> Dict[str, Any]:
+def _served_basis(served_by: Optional[str]) -> str:
+    """W796 (FU-980 R1[3]) - what composed an item, said on it, so a scholar is never shown a floor frame as a draft."""
+    if served_by in (None, ""):
+        return "what composed this was not recorded by the tool that queued it"
+    if served_by == "native":
+        return ("the deterministic floor composed this, not a model: it is the requested headings filled with terms "
+                "from the request, not a draft to approve on its merits")
+    if served_by == "person":
+        return "written by a person and submitted for review"
+    return f"composed by {served_by}"
+
+
+def submit(content_key: str, surface: str, body: str, reference: str = "",
+           served_by: Optional[str] = None) -> Dict[str, Any]:
     """Record a composed item as awaiting review. Submitting never approves anything."""
     recs = _load(_review_path())
     if content_key not in recs:
@@ -154,13 +193,15 @@ def submit(content_key: str, surface: str, body: str, reference: str = "") -> Di
         "reviewer_id": None,
         "reviewed_at": None,
         "decision_note": None,
+        "served_by": served_by, "served_by_basis": _served_basis(served_by),      # W796 (FU-980 R1[3])
     }
     recs[content_key] = rec
     _save(_review_path(), recs)
     return rec
 
 
-def submit_if_new(content_key: str, surface: str, body: str, reference: str = "") -> Dict[str, Any]:
+def submit_if_new(content_key: str, surface: str, body: str, reference: str = "",
+                  served_by: Optional[str] = None) -> Dict[str, Any]:
     """Queue this item unless an identical one is already queued or approved.
 
     `submit` overwrites, which would make the request AFTER an approval reset that approval to
@@ -171,7 +212,7 @@ def submit_if_new(content_key: str, surface: str, body: str, reference: str = ""
     rec = recs.get(content_key)
     if rec and rec.get("body_hash") == body_hash(body):
         return rec
-    return submit(content_key, surface, body, reference)
+    return submit(content_key, surface, body, reference, served_by=served_by)
 
 
 ATTESTED = "entered by the Owner on the scholar's behalf - attested, not verified"
@@ -348,6 +389,26 @@ async def scholar_review_add(req: ScholarRequest, user: dict | None = Depends(ge
             "credential_basis": "the credential is recorded as stated; this platform has not verified it"}
 
 
+class RetireRequest(BaseModel):
+    reason: str
+
+
+@router.post("/roster/{scholar_id}/retire")
+async def scholar_review_retire(scholar_id: str, req: RetireRequest, user: dict | None = Depends(get_current_user)):
+    """W796 (FU-980 R1[3]) - take a scholar off the roster. Kept, never deleted; their earlier decisions stand."""
+    if not req.reason.strip():
+        raise HTTPException(status_code=422, detail="A scholar is retired with a stated reason; it may not be blank.")
+    if auth_enabled() and not (isinstance(user, dict) and user.get("role") == "admin"):
+        raise HTTPException(status_code=403, detail="Only an administrator retires a scholar from the roster.")
+    by = (user.get("username") if isinstance(user, dict) and auth_enabled() else "the Owner (single-user mode)")
+    entry = retire_scholar(scholar_id.strip(), req.reason.strip(), retired_by=str(by))
+    if entry is None:
+        raise HTTPException(status_code=404, detail=f"{scholar_id!r} is not on the scholar roster, so nothing was retired.")
+    return {"scholar_id": scholar_id, "retired": entry, "scholars_on_roster": len(roster()),
+            "basis": ("taken off the roster and kept in the retired record; decisions this scholar recorded before "
+                      "stay as recorded, and they can approve nothing from now")}
+
+
 @router.post("/decide")
 async def scholar_review_decide(req: DecisionRequest, user: dict | None = Depends(get_current_user)):
     if auth_enabled():
@@ -409,3 +470,42 @@ def scholar_pack_decide(req: PackDecisionRequest, user: dict | None = Depends(ge
     if not out["ok"]:
         raise HTTPException(status_code=409, detail=out["detail"])
     return out
+
+
+# -- W946 (P5.21) - A REFLECTION PROMPT IS A PERSON'S WORDS, SHOWN ONLY ONCE A SCHOLAR APPROVES THEM ---------------
+#  The children's reflection tool (agentic_core/api/qep_children.py) shows only prompts a scholar on the roster has
+#  approved in their exact text. A person proposes each one here; this platform composes none. Proposing never
+#  approves: the prompt waits IN REVIEW and is in the scholar's pack. A prompt holding Arabic is refused, because
+#  every verse a child sees is fetched from a named edition (R1), never typed into a prompt.
+import re as _re946                                              # noqa: E402
+
+REFLECTION_PREFIX = "children-reflection:"
+REFLECTION_SURFACE = "children-reflection-prompt"
+_REFLECTION_MOST_CHARS = 400
+_ARABIC = _re946.compile("[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]")
+
+
+class ReflectionPromptRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+    text: str
+
+
+@router.post("/reflection-prompts")
+def scholar_review_reflection_prompt(req: ReflectionPromptRequest, user: dict | None = Depends(get_current_user)):
+    text = " ".join(str(req.text).split())
+    if not text:
+        raise HTTPException(status_code=422, detail="A reflection prompt is written by a person; it may not be blank.")
+    if len(text) > _REFLECTION_MOST_CHARS:
+        raise HTTPException(status_code=422, detail=f"A reflection prompt is at most {_REFLECTION_MOST_CHARS} "
+                                                    f"characters.")
+    if _ARABIC.search(text):
+        raise HTTPException(status_code=422, detail=(
+            "A reflection prompt holds no Arabic. Every verse a child sees is fetched from a named edition, "
+            "never typed into a prompt."))
+    if auth_enabled() and not (isinstance(user, dict) and user.get("role") == "admin"):
+        raise HTTPException(status_code=403, detail="Only an administrator proposes a reflection prompt.")
+    rec = submit_if_new(REFLECTION_PREFIX + body_hash(text)[:16], REFLECTION_SURFACE, text, served_by="person")
+    if rec.get("state") == NOT_QUEUED:
+        raise HTTPException(status_code=409, detail=rec["why"])
+    return {**rec, "basis": ("proposed for the children's reflection tool; it is shown to no one until a scholar "
+                             "on the roster approves this exact text")}

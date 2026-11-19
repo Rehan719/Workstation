@@ -14,12 +14,14 @@ constitutional GaaS gate, a 24h cooling period and a manual flag, none of which 
   LOW    — auto-approved at submit when composite health >= 0.6 AND immune threat is
            NOMINAL/ELEVATED; otherwise held for review
   MEDIUM — review required. A single [DECISION: …] marker from the serving model decides it. With
-           no marker (the deterministic floor) or conflicting markers, the verdict is the
-           ORGANISM-HEALTH THRESHOLD RULE (composite_health >= 0.5 → approved, else rejected), and the
-           record says so in `decision_source` and at the head of the review text. With auth
-           enabled, a rule verdict is applied only when an ADMIN requests the review; a non-admin's
-           review is HELD with the rule's verdict recorded as a recommendation.
-  HIGH   — as MEDIUM, plus a recorded §17.5 pre-validation PASS before /implement. W464 (FU-012, the Owner's
+           no marker (the deterministic floor) or conflicting markers, nothing read the change, so it is
+           HELD for an explicit decision (W802, FU-982): the ORGANISM-HEALTH THRESHOLD RULE's verdict
+           (composite_health >= 0.5 → approved, else rejected) is recorded as a recommendation, never applied.
+  HIGH   — review required as MEDIUM was before W802: a single marker decides it, and with no marker or
+           conflicting markers the health threshold rule's verdict is applied and the record says so in
+           `decision_source` and at the head of the review text. With auth enabled, a rule verdict is applied
+           only when an ADMIN requests the review; a non-admin's review is HELD with the rule's verdict
+           recorded as a recommendation. Plus a recorded §17.5 pre-validation PASS before /implement. W464 (FU-012, the Owner's
            ruling of 2026-09-14): a HIGH change approved by a REVIEW (the model's marker or the health rule)
            waits for BOARD RATIFICATION — /implement, and anything else acting on the approval, refuses it until
            the Board records the Owner's direction (POST /api/v1/board/ratifications/{cca_id}). The Owner's own
@@ -182,7 +184,7 @@ def _decider_and_submitter(c: dict, principal: Any, verified: bool) -> dict:
     """W672 (OWNER RULING 2026-10-11) - WHETHER THE PERSON DECIDING A CHANGE IS THE PERSON WHO SUBMITTED IT,
     recorded on the decision. It is a fact about two CHECKED names, so it is stated only when both were
     checked by the auth layer; otherwise it is None and the basis says why. Nothing is refused on it here:
-    the rule that they must differ applies once a second administrator exists, and is not built yet."""
+    refuse_own_decision (W882) applies the rule that they must differ, once a second administrator exists."""
     _sub = c.get("submitted_by")
     if verified and c.get("submitted_by_verified") and _sub:
         _same = str(principal) == str(_sub)
@@ -195,6 +197,38 @@ def _decider_and_submitter(c: dict, principal: Any, verified: bool) -> dict:
                                        if not auth_enabled() else
                                        "the submitter or the decider was not a checked account "
                                        f"(submitted by {_sub or 'nobody recorded'})"))}
+
+
+def admins_counted() -> int | None:
+    """W882 (FU-850) - how many administrator accounts exist, or None when the account store cannot be read."""
+    try:
+        from agentic_core.auth.core import _load_users
+        return sum(1 for u in (_load_users() or {}).values() if isinstance(u, dict) and u.get("role") == "admin")
+    except Exception:                                    # noqa: BLE001 - not known is said, never guessed
+        return None
+
+
+def refuse_own_decision(c: dict, principal: Any, verified: bool, step: str) -> None:
+    """W882 (FU-850; OWNER RULING) - A HIGH OR CRITICAL CHANGE IS NOT DECIDED BY THE PERSON WHO SUBMITTED IT once a
+    second administrator exists. One comparison, at review (an override included) and at ratification, on two
+    names the auth layer checked; with one administrator the present behaviour stands. Raised inside the record's
+    critical section, so a refusal writes nothing."""
+    tier = str(effective_tier(c) or "").upper()
+    if tier not in ("HIGH", "CRITICAL"):
+        return
+    if _decider_and_submitter(c, principal, verified).get("decider_is_submitter") is not True:
+        return
+    n = admins_counted()
+    if n is None:
+        raise HTTPException(status_code=503, detail=(
+            f"Change {c.get('cca_id')} was not {step}: the account store could not be read, so whether a second "
+            f"administrator exists - and so whether the person who submitted this {tier} change may decide it - is "
+            f"not known. Nothing was changed."))
+    if n >= 2:
+        raise HTTPException(status_code=403, detail=(
+            f"Change {c.get('cca_id')} was not {step}: it is a {tier} change and {principal} submitted it. With {n} "
+            f"administrators, the person who submitted a high or critical change may not decide it (the Owner's "
+            f"ruling); another administrator must. Nothing was changed."))
 
 
 @contextmanager
@@ -268,7 +302,26 @@ def _decision_account(record: dict, decision: str, decision_source: str, review_
     }
 
 
-def _list_changes(status_filter: str | None = None) -> list[dict]:
+def _caller_may_see_change(c: dict | None, user: dict | None) -> bool:
+    """W1077 - WHOSE CHANGE IT IS. With sign-in off, or for an administrator, every change. Otherwise a change the
+    caller submitted (as the server stamped it), or one naming an entity the caller owns: every person's changes
+    were listed, and read by id, for whoever asked. A non-dict `user` is an in-process call, read as nobody."""
+    if not c:
+        return False
+    if user is not None and not isinstance(user, dict):
+        user = None
+    if not auth_enabled() or user is None or user.get("role") == "admin":
+        return True
+    if c.get("submitted_by_verified") and c.get("submitted_by") == user.get("username"):
+        return True
+    if c.get("vsb_id"):
+        from agentic_core.api.vsb import entity_for_caller
+        return entity_for_caller(c.get("vsb_id"), user) is not None
+    return False
+
+
+def _list_changes(status_filter: str | None = None, for_caller: bool = False,
+                  user: dict | None = None) -> list[dict]:
     result = []
     # W459 — stat() ran outside the try, so a record removed mid-scan raised out of GET /queue; and
     # the listing now reads through _load_change, so it agrees with the by-id routes on every file
@@ -278,6 +331,8 @@ def _list_changes(status_filter: str | None = None) -> list[dict]:
             if not c:
                 continue
             if status_filter and c.get("status") != status_filter:
+                continue
+            if for_caller and not _caller_may_see_change(c, user):   # W1077
                 continue
             result.append({
                 "cca_id": c["cca_id"],
@@ -349,11 +404,16 @@ _TIER_MAP: dict[str, ImpactTier] = {
     "entity_retirement":    "HIGH",
     # P3.26 clause (5) (W609) — an entity dividing creates a new one and moves funds: also MAJOR
     "entity_mitosis":       "HIGH",
+    # FU-869 (W833) — returning a retired entity to the roster is the mirror of its death: also MAJOR
+    "entity_restore":       "HIGH",
     # W464 (FU-014, the Owner's ruling of 2026-09-14) — both fell through to MEDIUM by the default, so their tier
     # was an accident rather than a decision. A code correction is HIGH (a review's approval waits for Board
     # ratification); a material economy action is CRITICAL (decided only by the Owner's explicit decision).
     "code_change":          "HIGH",
     "economy_material":     "CRITICAL",
+    # P5.3 (W941) - a claim that an output is wrong is decided only by a person: a review or a rule closing it would
+    # answer nobody (the tier is put to the Owner, with this recommendation)
+    "support_claim":        "CRITICAL",
 }
 
 
@@ -1269,6 +1329,12 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
 async def submit_change_route(req: SubmitChangeRequest,
                               user: dict | None = Depends(get_current_user)):
     """HTTP entry: stamps the authenticated principal (auth ON) or keeps the caller's name (OFF)."""
+    #  W1075 - a change filed against another person's entity (a retirement, a mitosis, a restore among them) by
+    #  whoever named its id
+    from agentic_core.api.vsb import names_anothers_entity
+    if names_anothers_entity(req.vsb_id, user):
+        raise HTTPException(status_code=404, detail=(
+            f"No entity {req.vsb_id} was found, so no change was submitted for it."))
     return await submit_change(req, principal=_actor(user, req.submitted_by or "system"))
 
 
@@ -1547,10 +1613,12 @@ async def immune_reconfigure_revert(cca_id: str, user: dict = Depends(require_ad
 
 
 @router.get("/ledger-gaps")
-async def ledger_gaps():
+async def ledger_gaps(user: dict | None = Depends(get_current_user)):
     """W505 (FU-031) — decisions whose constitutional node is missing or unproven, so a reconciliation has
     something to read. A gap never undoes the decision; it says the audit trail is incomplete and where."""
     rows = decisions_missing_ledger_node()
+    #  W1077 - the gaps of the caller's own changes; an administrator's are every change's
+    rows = [r for r in rows if _caller_may_see_change(_load_change(str(r.get("cca_id") or "")), user)]
     return {"gaps": rows, "total": len(rows),
             "marked": sum(1 for r in rows if r.get("kind") == "marked"),
             "unproven": sum(1 for r in rows if r.get("kind") == "unproven"),
@@ -1560,31 +1628,36 @@ async def ledger_gaps():
 
 
 @router.get("/queue")
-async def get_queue():
-    """List all pending change requests awaiting review."""
-    pending = _list_changes("submitted") + _list_changes("under_review")
+async def get_queue(user: dict | None = Depends(get_current_user)):
+    """List the pending change requests awaiting review that the caller may see (W1077)."""
+    pending = (_list_changes("submitted", for_caller=True, user=user)
+               + _list_changes("under_review", for_caller=True, user=user))
     return {"queue": pending, "total": len(pending)}
 
 
 @router.get("/approved")
-async def get_approved():
-    return {"changes": _list_changes("approved"), "total": len(_list_changes("approved"))}
+async def get_approved(user: dict | None = Depends(get_current_user)):
+    _c = _list_changes("approved", for_caller=True, user=user)   # W1077
+    return {"changes": _c, "total": len(_c)}
 
 
 @router.get("/rejected")
-async def get_rejected():
-    return {"changes": _list_changes("rejected"), "total": len(_list_changes("rejected"))}
+async def get_rejected(user: dict | None = Depends(get_current_user)):
+    _c = _list_changes("rejected", for_caller=True, user=user)   # W1077
+    return {"changes": _c, "total": len(_c)}
 
 
 @router.get("/implemented")
-async def get_implemented():
-    return {"changes": _list_changes("implemented"), "total": len(_list_changes("implemented"))}
+async def get_implemented(user: dict | None = Depends(get_current_user)):
+    _c = _list_changes("implemented", for_caller=True, user=user)   # W1077
+    return {"changes": _c, "total": len(_c)}
 
 
 @router.get("/{cca_id}")
-async def get_change(cca_id: str):
+async def get_change(cca_id: str, user: dict | None = Depends(get_current_user)):
     c = _load_change(cca_id)
-    if not c:
+    #  W1077 - another person's change is answered as one that does not exist
+    if not _caller_may_see_change(c, user):
         raise HTTPException(status_code=404, detail=f"Change {cca_id} not found.")
     # W464 — the tier it is decided under, and whether the approval waits for the Board (read-time; the stored
     # record keeps the tier it was filed with until a decision stamps the effective one)
@@ -1763,6 +1836,13 @@ async def review_change(cca_id: str, req: ReviewDecision,
                 + (" A material economy action is CRITICAL: it is decided only by the Owner's explicit decision "
                    "(the Governance hub's Sovereign Sanctum)." if c.get("change_type") == "economy_material" else "")))
 
+    #  W882 (FU-850) - BEFORE ANYTHING IS WRITTEN: a review that will decide (an override, or a HIGH change whose
+    #  review an administrator asked for) is refused to the change's submitter once a second administrator exists.
+    #  A review that only holds (a CRITICAL change without an override, a non-admin's review) decides nothing.
+    _u882 = _principal(user)
+    if req.override_decision or (tier == "HIGH" and bool(_u882 and _u882.get("role") == "admin")):
+        refuse_own_decision(c, principal, _verified(user), "decided")
+
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
     def _start(fresh: dict) -> None:
@@ -1934,6 +2014,22 @@ async def review_change(cca_id: str, req: ReviewDecision,
                 f"HELD — {why_no_marker}, so only the organism-health threshold rule could decide "
                 f"this change, and {rule_clause}. A rule with no evaluable input is not an "
                 "approval: this waits for an explicit decision."
+                + model_out)
+        elif tier == "MEDIUM":
+            #  W802 (FU-982, ledger v17 R3[1]) - A MEDIUM CHANGE IS NOT DECIDED BY A RULE THAT READ NONE OF IT. With
+            #  no marker the health rule decided a MEDIUM change from the organism's health alone: nothing read the
+            #  change, and a request for a review became an approval. Decided on the recommendation (Owner
+            #  instruction 2026-11-10): the rule's verdict is recorded as a RECOMMENDATION and the change waits for
+            #  an explicit decision, as a non-admin's review already does with sign-in on. HIGH is unchanged - a
+            #  review's approval of it waits for Board ratification (the Owner's ruling of 2026-09-14) - and LOW
+            #  keeps the rule.
+            decision, held, hold_reason = None, True, "nothing_read_the_change"
+            decision_source = "held_awaiting_admin"
+            recommendation = {"verdict": rule_verdict, "source": "health_threshold_rule"}
+            review_text = (
+                f"HELD — {why_no_marker}, so nothing read this change. The organism-health threshold rule "
+                f"({rule_clause}) measures the platform, not the change, so on a MEDIUM change its verdict is "
+                f"recorded as a recommendation and the change waits for an explicit decision."
                 + model_out)
         else:
             decision, decision_source = rule_verdict, "health_threshold_rule"
@@ -2261,6 +2357,18 @@ def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
         applied = _mit
         _retirement_effect = _mit["basis"]
         c["audit_trail"].append({"event": "entity_divided", "ts": now, "applied": _mit})
+    # FU-869 (W833) — A RESTORE is applied here and nowhere else, re-checking that the entity is still retired
+    if c.get("change_type") == "entity_restore":
+        from agentic_core.economy.turnover import apply_restore
+        _rst = apply_restore(str(c.get("vsb_id") or ""), cca_id)
+        if not _rst.get("restored"):
+            c["audit_trail"].append({"event": "implement_refused_restore", "ts": now, "by": principal,
+                                     "by_verified": verified, "basis": _rst.get("basis")})
+            _save_change(c)
+            raise HTTPException(status_code=409, detail=_rst)
+        applied = _rst
+        _retirement_effect = _rst["basis"]
+        c["audit_trail"].append({"event": "entity_restored", "ts": now, "applied": _rst})
 
     c["status"] = "implemented"
     c["implemented_at"] = now
@@ -2332,6 +2440,7 @@ def ratify_change(cca_id: str, decision: str, notes: str, principal: str, verifi
                 f"{approval_source(fresh) or 'nothing recorded'}"
                 + (f", Board decision {_ratification_decision(fresh)}" if _ratification_decision(fresh) else "")
                 + "). Only a HIGH change approved by a review waits for the Board."))
+        refuse_own_decision(fresh, principal, verified, "ratified")               # W882 (FU-850)
         seen["approval_decision_source"] = approval_source(fresh)
         fresh["board_ratification"] = {
             "decision": "ratified" if decision == "ratify" else "refused", "at": now, "by": principal,
@@ -2373,10 +2482,11 @@ def ratify_change(cca_id: str, decision: str, notes: str, principal: str, verifi
 
 
 @router.get("/impact/{cca_id}")
-async def impact_assessment(cca_id: str):
+async def impact_assessment(cca_id: str, user: dict | None = Depends(get_current_user)):
     """AI-generated impact assessment for a change request."""
     c = _load_change(cca_id)
-    if not c:
+    #  W1077 - another person's change is answered as one that does not exist (an assessment was composed for it)
+    if not _caller_may_see_change(c, user):
         raise HTTPException(status_code=404, detail=f"Change {cca_id} not found.")
 
     ctx = biobus.organism_context()
@@ -2396,16 +2506,17 @@ async def impact_assessment(cca_id: str):
     )
     # W506 (P2.2)
     _ia = await gateway.query_meta(prompt, agent="cca_impact", augment=False,   # W651 (FU-675)
-                                   user_text=_change_said(c))
+                                   user_text=_change_said(c),
+                                   owner_id=(user.get("username") if isinstance(user, dict) else None))   # W1077
     assessment = _ia.get("output", "")
     biobus.fire_signal("cognitive", "cca.impact", f"Impact assessed: {c['title']}", 0.4)
     return {"cca_id": cca_id, "assessment": assessment, "organism_mode": ctx["mode"]}
 
 
 @router.get("")
-async def list_all_changes():
-    """List all change requests across all statuses."""
-    all_changes = _list_changes()
+async def list_all_changes(user: dict | None = Depends(get_current_user)):
+    """List the change requests the caller may see, across all statuses (W1077: every person's were listed)."""
+    all_changes = _list_changes(for_caller=True, user=user)
     by_status: dict[str, int] = {}
     for c in all_changes:
         s = c["status"]

@@ -9,7 +9,8 @@ import { apiJson, errorMessage } from '../../lib/api';
 // any part re-opens review. No children's tool opens until sign-in is on AND the current pack is approved.
 
 interface Rule { id: string; rule: string }
-interface Tool { id: string; name: string; run_by: string; what_a_child_sees: string; steps?: string[]; wording?: string[]; arabic_from?: string }
+interface Tool { id: string; name: string; run_by: string; what_a_child_sees: string; steps?: string[]; wording?: string[]; arabic_from?: string;
+  questions?: { id: string; question: string; answers: string[] }[] }   // W947 - a tool's questions, word for word
 interface Pack {
   pack_hash: string; state: string; basis: string; whole: string;
   sections: { rules: Rule[]; tools: Tool[]; learner_content: unknown[] };
@@ -17,7 +18,8 @@ interface Pack {
   children_tools: { open: boolean; basis: string };
 }
 
-export const ChildrenApprovalPack: React.FC<{ roster: [string, { name: string }][]; chosen: string }> = ({ roster, chosen }) => {
+//  W1069 - `roster` is null until the panel has read it: an unread roster is not said as one with nobody on it
+export const ChildrenApprovalPack: React.FC<{ roster: [string, { name: string }][] | null; chosen: string }> = ({ roster, chosen }) => {
   const [pack, setPack] = useState<Pack | null>(null);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
@@ -25,7 +27,8 @@ export const ChildrenApprovalPack: React.FC<{ roster: [string, { name: string }]
   const [busy, setBusy] = useState(false);
   const load = useCallback(async () => {
     try { setPack(await apiJson<Pack>('/api/v1/scholar-review/pack')); setErr(''); }
-    catch (e) { setErr(`The approval pack could not be read. ${errorMessage(e)}`); }
+    //  W1074 - a pack that could not be read is not left on the page: the one read before stood under this sentence
+    catch (e) { setPack(null); setErr(`The approval pack could not be read. ${errorMessage(e)}`); }
   }, []);
   useEffect(() => { void load(); }, [load]);
 
@@ -37,7 +40,9 @@ export const ChildrenApprovalPack: React.FC<{ roster: [string, { name: string }]
         body: { scholar_id: chosen, decision, notes, seen_hash: pack.pack_hash } });
       setMsg(decision === 'approve' ? 'The whole pack is recorded as approved.' : 'The pack is recorded as returned, with your notes.');
       setNotes(''); await load();
-    } catch (e) { setMsg(`Not recorded. ${errorMessage(e)}`); }
+    //  W1074 - a refused decision reads the pack again: a pack that changed was refused with "Read it again" over
+    //  the old pack, and nothing here read it again
+    } catch (e) { setMsg(`Not recorded. ${errorMessage(e)}`); await load(); }
     setBusy(false);
   };
 
@@ -65,12 +70,15 @@ export const ChildrenApprovalPack: React.FC<{ roster: [string, { name: string }]
               <p className="text-[11px] text-slate-300 mt-1">{t.what_a_child_sees}</p>
               {t.steps && <ol className="list-decimal ml-5 mt-1 text-[11px] text-slate-400">{t.steps.map((s, i) => <li key={i}>{s}</li>)}</ol>}
               {t.wording && <div className="mt-1">{t.wording.map((w, i) => <p key={i} className="text-[11px] text-slate-300 italic">“{w}”</p>)}</div>}
+              {t.questions && <ul className="mt-1 space-y-0.5" data-testid="pack-tool-questions">{t.questions.map(q => <li key={q.id} className="text-[11px] text-slate-300">{q.question} <span className="text-slate-500">({q.answers.join(' / ')})</span></li>)}</ul>}
               {t.arabic_from && <p className="text-[10px] text-slate-500 mt-1">Arabic from: {t.arabic_from}</p>}
             </div>
           ))}
 
         <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-4 mb-2">3. The decision on the whole pack</h5>
-        {roster.length === 0
+        {roster === null
+          ? <p className="text-[11px] text-slate-500" data-testid="pack-roster-unread">The roster has not been read, so whether a decision on the pack can be recorded is not known here.</p>
+          : roster.length === 0
           ? <p className="text-[11px] text-slate-500" data-testid="pack-no-scholar">No scholar is on the roster, so no decision on the pack can be recorded.</p>
           : (<>
             <textarea aria-label="Notes on the pack" value={notes} onChange={e => setNotes(e.target.value)} rows={3}

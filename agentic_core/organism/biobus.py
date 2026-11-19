@@ -298,7 +298,12 @@ class BiomimeticBus:
             _sh_raw = sh["overall_health"]
             sh_untracked = _sh_raw is None
             sh_health = 1.0 if sh_untracked else _sh_raw
-            metabolic = atp_ratio
+            #  W900 (FU-1112, S18.1) - the metabolic term is the work budget's remaining share while the budget is
+            #  switched on, and the ATP simulator's figure while it is off, so nothing reads the budget until the
+            #  Owner's setting turns it on (the ruling ships it inert)
+            from agentic_core.molecular import work_budget as _wb900
+            _energy900 = _wb900.energy()
+            metabolic, _metabolic_from900 = _wb900.energy_term(atp_ratio, _energy900)
             composite_health = round((immune_health * 0.4 + sh_health * 0.4 + metabolic * 0.2), 3)
             # §8 · §17.2 (W422) — the metabolic term is 20% of this score and is SIMULATED, not
             # measured: ATPSimulator is driven by a constant metabolic_load (default 0.3) and the
@@ -457,6 +462,12 @@ class BiomimeticBus:
                     "measured": False,
                     "can_fall": False,
                     "basis": _atp_inert,
+                    #  W900 (FU-1112, S18.1) - the figure derived from the work budget, and which of the two the
+                    #  energy thresholds and the composite's metabolic term read
+                    "energy_ratio": _energy900["ratio"],
+                    "energy_acts": _energy900["acts"],
+                    "energy_basis": _energy900["basis"],
+                    "thresholds_read": _metabolic_from900,
                 },
                 "circadian": {
                     "cycle": cycle,

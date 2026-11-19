@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
-import { complianceChip } from '../../lib/api';
+import { complianceChip, apiJson, errorMessage } from '../../lib/api';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W931
 import { ShieldCheck, Loader2, AlertCircle, CheckCircle2, XCircle, AlertTriangle, Scale, MinusCircle } from 'lucide-react';
 
 interface Verdict { framework: string; status: string; reason: string; coverage?: string; escalate?: string[] }
@@ -10,12 +11,16 @@ interface Result {
   subject: string; jurisdiction: string; overall: string;
   compliant: boolean | null; verdicts: Verdict[];
   coverage_gaps?: string[]; assessed_by?: string[]; basis?: string;
+  // W797 - the third list: frameworks matched only by a word list, which are in neither list above
+  vocabulary_only?: string[];
 }
 
 // W455 — two more honest states: not_checked (this row cannot read this kind of subject) and error
 // (an engine raised — recorded, never a pass)
-const STATUS_ICON: Record<string, React.ComponentType<any>> = { pass: CheckCircle2, review: AlertTriangle, fail: XCircle, not_checked: MinusCircle, error: XCircle };
-const STATUS_TONE: Record<string, string> = { pass: 'text-emerald-400', review: 'text-amber-400', fail: 'text-vital', not_checked: 'text-slate-500', error: 'text-vital' };
+//  W991 (FU-399 part 23) - the screen answers not_assessed for an area only a word list looked at, and neither map
+//  knew it: the icon fell back to MinusCircle with the class "undefined". It is the slate of an area nothing assessed.
+const STATUS_ICON: Record<string, React.ComponentType<any>> = { pass: CheckCircle2, review: AlertTriangle, fail: XCircle, not_checked: MinusCircle, not_assessed: MinusCircle, error: XCircle };
+const STATUS_TONE: Record<string, string> = { pass: 'text-emerald-400', review: 'text-amber-400', fail: 'text-vital', not_checked: 'text-slate-500', not_assessed: 'text-slate-500', error: 'text-vital' };
 
 // W574 (M1 R1.2) — THE MEASURED CONSUMERS OF THE §11 FEDERATED SCREEN. Each carries the module
 // that calls it, so this list is checkable rather than remembered: `test_w574_...` asserts every
@@ -33,27 +38,35 @@ const SCREEN_CONSUMERS: { label: string; module: string }[] = [
 ];
 
 export const ComplianceChecker: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W931 - a read that fails is said
   const [frameworks, setFrameworks] = useState<any[]>([]);
   const [subject, setSubject] = useState('');
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<Result | null>(null);
 
-  useEffect(() => { fetch('/api/v1/compliance/frameworks').then(r => r.json()).then(d => setFrameworks(d.frameworks ?? [])).catch(() => {}); }, []);
+  //  W991 (FU-399 part 23) - an unread list is not an empty one: the Frameworks card says it was not read
+  const [frameworksUnread, setFrameworksUnread] = useState(false);
+  useEffect(() => {
+    apiJson('/api/v1/compliance/frameworks')
+      .then(d => { setFrameworks(d.frameworks ?? []); setFrameworksUnread(false); clearRead('the frameworks'); })
+      .catch(e => { setFrameworksUnread(true); noteRead('the frameworks')(e); });
+  }, []);
 
   const check = async () => {
     if (!subject.trim()) return;
     setRunning(true); setError(''); setResult(null);
+    //  W991 (FU-399 part 23) - a refusal said only "HTTP 503", and an unreachable server the browser's "Failed to
+    //  fetch". apiJson carries the server's status and reason; errorMessage says which it was.
     try {
-      const r = await fetch('/api/v1/compliance/check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subject }) });
-      if (!r.ok) { setError(`HTTP ${r.status}`); setRunning(false); return; }
-      setResult(await r.json());
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+      setResult(await apiJson<Result>('/api/v1/compliance/check', { method: 'POST', body: { subject } }));
+    } catch (e) { setError(`The check was not run: ${errorMessage(e)}`); }
     setRunning(false);
   };
 
   return (
     <div className="space-y-10 pb-24">
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Governance</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Compliance</h1>
@@ -80,6 +93,11 @@ export const ComplianceChecker: React.FC = () => {
       <Card className="p-6">
         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-2"><Scale size={14} /> Frameworks</h3>
         <div className="flex flex-wrap gap-2">
+          {frameworksUnread && frameworks.length === 0 && (
+            <p className="text-[11px] font-bold text-amber-400/90" data-testid="frameworks-unread">
+              The frameworks could not be read, so this is not a list of none.
+            </p>
+          )}
           {/* W455 — each framework says what it actually checks (the card had shown only the names) */}
           {frameworks.map(f => (
             <div key={f.id} className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 max-w-xs" title={f.engine}>
@@ -97,7 +115,7 @@ export const ComplianceChecker: React.FC = () => {
             {running ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
             {running ? 'Checking…' : 'Run Compliance Check'}
           </Button>
-          {error && <p className="text-vital text-xs font-bold flex items-center gap-2"><AlertCircle size={14} /> {error}</p>}
+          {error && <p className="text-vital text-xs font-bold flex items-center gap-2" data-testid="compliance-error"><AlertCircle size={14} /> {error}</p>}
         </div>
       </Card>
 
@@ -117,12 +135,19 @@ export const ComplianceChecker: React.FC = () => {
                   <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${_c.cls}`} title={_c.title}>{_c.label}</span>
                   <span className="text-[10px] font-mono text-slate-500 ml-auto">{result.jurisdiction}</span>
                 </div>
-                <p className="text-[10px] text-slate-400 mt-2 leading-relaxed">
+                <p data-testid="compliance-coverage-line" className="text-[10px] text-slate-400 mt-2 leading-relaxed">
                   {_assessed
                     ? `Assessed by: ${(result.assessed_by ?? []).join(' · ')}.`
                     : 'NOTHING here assessed this subject. A keyword screen can refuse a subject; it cannot clear one.'}
                   {(result.coverage_gaps ?? []).length > 0 &&
                     ` Not assessed: ${(result.coverage_gaps ?? []).join(' · ')}.`}
+                  {/* W797 (FU-980, ledger v17 R1[1]) - THE THIRD LIST. The screen returns three lists that
+                      between them account for every framework it screened, and this line printed two. A
+                      framework matched only by a word list was in neither, so a halal-food subject read
+                      "Not assessed" without its halal row, and a reader taking the two as the whole concluded
+                      that area was fine - the reading the backend's third list was added to stop. */}
+                  {(result.vocabulary_only ?? []).length > 0 &&
+                    ` Matched only by a word list, which establishes nothing either way: ${(result.vocabulary_only ?? []).join(' · ')}.`}
                 </p>
               </Card>
             );

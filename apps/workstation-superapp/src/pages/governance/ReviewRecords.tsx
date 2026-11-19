@@ -12,18 +12,21 @@ interface Rec {
   record_id: string; tool: string; tier: string; date: string; counts: boolean; why_not: string | null;
   entered_by?: string; entered_at?: string; name?: string; credential_as_stated?: string; lapses_on?: string;
   rule?: string; test?: string; checklist?: string; model?: string; agent?: string;
+  tool_version?: string;          // W921 (P5.15 clause 2)
 }
 interface Listing { records: Rec[]; total: number; counted: number; tools: Record<string, string>; credential_basis: string; basis: string }
 
 const TIERS: { id: string; fields: string[] }[] = [
   { id: 'checked_by_rule', fields: ['rule', 'test'] },
-  { id: 'reviewed_by_workstation_agent', fields: ['agent', 'checklist', 'sources_read', 'model', 'could_not_check'] },
+  { id: 'reviewed_by_workstation_agent', fields: ['agent', 'checklist', 'tool_version', 'sources_read', 'model', 'could_not_check'] },
   { id: 'signed_by_a_qualified_person', fields: ['name', 'credential_as_stated', 'reviewed', 'lapses_on'] },
 ];
 const FIELD_LABEL: Record<string, string> = {
   agent: 'The agent that reviewed (its calibration is read from its recorded run)',
-  rule: 'The rule', test: 'The test that runs it', checklist: 'The checklist used', sources_read: 'Sources read (comma-separated ids)',
-  model: 'The model that reviewed', could_not_check: 'What it could not check', name: 'The person’s name',
+  rule: 'The rule', test: 'The test that runs it', checklist: 'The checklist used',
+  tool_version: 'The version of the tool it reviewed',
+  sources_read: 'Sources read, one per line: register id | page or section | date read (YYYY-MM-DD)',
+  model: 'The model that reviewed', could_not_check: 'What it could not check ("nothing" if so)', name: 'The person’s name',
   credential_as_stated: 'Their credential, as they state it', reviewed: 'What was reviewed', lapses_on: 'Lapses on (YYYY-MM-DD)',
 };
 const inputCls = 'text-[11px] bg-slate-950 border border-slate-900 rounded-lg p-1.5 text-slate-300';
@@ -51,7 +54,14 @@ export const ReviewRecords: React.FC = () => {
     for (const f of fields) {
       const v = (values[f] ?? '').trim();
       if (!v) continue;
-      body[f] = f === 'sources_read' ? v.split(',').map(s => s.trim()).filter(Boolean) : v;
+      //  W921 (P5.15 clause 2) - one source per line: register id | page or section | date read. The route
+      //  refuses one that lacks a part, in its own words; the page judges none of them
+      body[f] = f === 'sources_read'
+        ? v.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+          const [source, page, read_on] = l.split('|').map(s => s.trim());
+          return { source, page, read_on };
+        })
+        : v;
     }
     try {
       const d = await apiJson<any>('/api/v1/review/record', { method: 'POST', body });
@@ -84,6 +94,7 @@ export const ReviewRecords: React.FC = () => {
                     <span className="font-mono">{r.tool}</span> · {r.tier.replace(/_/g, ' ')} · {r.date}
                     {r.name ? ` · ${r.name}, ${r.credential_as_stated ?? ''} (as stated), until ${r.lapses_on ?? ''}` : ''}
                     {r.test ? ` · ${r.test}` : ''}{r.agent ? ` · ${r.agent}` : ''}{r.model ? ` · ${r.model}` : ''}
+                    {r.tool_version ? ` · version ${r.tool_version}` : ''}
                   </p>
                   {!r.counts && r.why_not && (
                     <p data-testid={`review-record-why-not-${r.record_id}`} className="text-[9px] text-amber-400">Does not count: {r.why_not}.</p>
@@ -107,7 +118,10 @@ export const ReviewRecords: React.FC = () => {
           <input aria-label="Date" value={date} onChange={e => setDate(e.target.value)} placeholder="YYYY-MM-DD" className={`${inputCls} w-28`} />
         </div>
         <div className="grid sm:grid-cols-2 gap-2 mb-2">
-          {fields.map(f => (
+          {fields.map(f => f === 'sources_read' ? (
+            <textarea key={f} aria-label={FIELD_LABEL[f]} value={values[f] ?? ''} placeholder={FIELD_LABEL[f]} rows={3}
+              onChange={e => setValues({ ...values, [f]: e.target.value })} className={`${inputCls} sm:col-span-2`} />
+          ) : (
             <input key={f} aria-label={FIELD_LABEL[f]} value={values[f] ?? ''} placeholder={FIELD_LABEL[f]}
               onChange={e => setValues({ ...values, [f]: e.target.value })} className={inputCls} />
           ))}

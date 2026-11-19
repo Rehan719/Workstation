@@ -186,6 +186,18 @@ class BlueprintResponse(BaseModel):
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
+def _name_of(intent: str, limit: int = 60) -> str:
+    """W1038 - a blueprint's name is its intent, whole when it fits. A cut to fit a heading falls between words
+    and is marked: the name cut the intent at its sixtieth character, mid-word, and said nothing ("... for one
+    str"). Runs of white space are one space, so a name is one line wherever it is a heading."""
+    text = " ".join((intent or "").split())
+    if len(text) <= limit:
+        return text
+    head = text[:limit + 1]
+    head = head[:head.rfind(" ")] if " " in head else text[:limit]
+    return head.rstrip(" ,;:.-—") + "…"
+
+
 @router.post("/generate-blueprint", response_model=BlueprintResponse)
 async def generate_blueprint(req: BlueprintRequest) -> BlueprintResponse:
     """
@@ -248,7 +260,7 @@ async def generate_blueprint(req: BlueprintRequest) -> BlueprintResponse:
     return BlueprintResponse(
         status="complete",
         blueprint_id=uuid.uuid4().hex,
-        name=f"{req.intent.strip()[:60]} — {stage_key.title()} Blueprint",
+        name=f"{_name_of(req.intent)} — {stage_key.title()} Blueprint",
         stage=stage_key,
         realm=req.realm,
         domain=req.domain,
