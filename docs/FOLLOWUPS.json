@@ -26133,10 +26133,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.5",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1138",
       "note": "",
-      "slot_source": "found by P4.5's drill: a release replaces the image's own folders"
+      "slot_source": "found by P4.5's drill: a release replaces the image's own folders",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1138: where a deployment sets the data root, the logs folder the autonomy pipelines write is under it, so what they wrote survives a release; a checkout without a data root keeps it beside the code, as before. The image keeps matplotlib's font cache under /tmp. FU-603's drill, run again on an image built with the change, found nothing written outside the records' volume and /tmp, and the restore and the rollback, drilled again on it, read the same record back; its record in docs/DEPLOYMENT.md says so. The genome and models folders hold nothing the platform writes and stay beside the code."
     },
     {
       "id": "FU-1288",

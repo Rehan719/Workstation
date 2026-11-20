@@ -355,12 +355,16 @@ can't be reused" [wif]. Only main, the release channel, may deploy. The workflow
 `workload_identity_provider` and `service_account` [wif]. NOT READ HERE: the roles the deploying service account
 needs, and whether a later version of that action is current.
 
-DRILLED ON THIS MACHINE, 2026-11-20 (W1137): the image built from the current tree (workstation:db8c3793) and
-the one built from W1128's tree (workstation:9dfc0f37), each started with the flags `deploy/gcp/startup.sh` gives the
-release machine and the free tier's 1 GiB of memory, on Docker volumes standing in for the data disk.
-- The current release came up healthy in 7.3 seconds and wrote a made-up project. After
-  the writes, `docker diff` showed the container had changed two things outside the volume and `/tmp`: `/app/logs/autonomy`, where the autonomy pipelines keep what they write, which a release or a rollback would lose (row FU-1287), and matplotlib's font cache under `/home/app`, which it rebuilds when it is missing. The records themselves are on the volume.
-- RESTORE: the volume was copied whole (3618 bytes compressed) and restored onto a fresh volume in
+DRILLED ON THIS MACHINE, 2026-11-20 (W1137): run again in W1138 on an image with FU-1287's change. The image
+built from the current tree (workstation:w1138) and the one built from W1128's tree (workstation:9dfc0f37), each
+started with the flags `deploy/gcp/startup.sh` gives the release machine and the free tier's 1 GiB of memory, on
+Docker volumes standing in for the data disk.
+- The current release came up healthy in 7.4 seconds and wrote a made-up project. After
+  the writes, `docker diff` showed the container had changed nothing outside the volume and `/tmp`: the records, and
+  everything else the platform wrote in the drill, are on the volume. The first drill found `/app/logs/autonomy`, where the
+  autonomy pipelines keep what they write, beside the code, and matplotlib's font cache under `/home/app`
+  (FU-1287); W1138 put the logs folder on the data root and the cache under `/tmp`.
+- RESTORE: the volume was copied whole (3669 bytes compressed) and restored onto a fresh volume in
   0.6 seconds; the 13 files on the copy are byte-identical to the
   original, owned by the image's user. The current release on the copy came up in
   7.3 seconds and read the project back (HTTP 200).

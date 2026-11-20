@@ -17319,7 +17319,9 @@ def test_w473_canon_and_suite_hygiene_before_m1(client, tmp_path, monkeypatch):
 
     # ── FU-026: the data root is the repository; a larger legacy store is named, never switched away from silently ──
     from agentic_core import store_paths as paths            # W897 (FU-1168) - moved from config/paths.py
-    assert paths.BASE_DIR == root and paths.LOG_DIR == root / "logs" and paths.GENOME_DIR == root / "genome"
+    #  W1138 (FU-1287): where a data root is set, as it is here, the logs folder the platform writes is under it
+    assert paths.BASE_DIR == root and paths._ROOT_SET and paths.GENOME_DIR == root / "genome"
+    assert paths.LOG_DIR == paths.DATA_DIR / "logs"
     assert paths.legacy_store_warning() is None                               # tests run under WORKSTATION_DATA_DIR
     monkeypatch.delenv("WORKSTATION_DATA_DIR", raising=False)
     monkeypatch.setattr(paths, "_LEGACY_BASE", tmp_path)
@@ -92721,17 +92723,14 @@ def test_w1137_fu603_the_backup_is_a_snapshot_and_the_restore_and_rollback_are_d
 
     #  the record
     rec = flat.split("DRILLED ON THIS MACHINE, 2026-11-20 (W1137):", 1)[1].split("HTTPS is its own row", 1)[0]
-    for said in ("The records themselves are on the volume", "byte-identical to the original",
+    for said in ("the records, and everything else the platform wrote in the drill, are on the volume", "byte-identical to the original",
                  "read the project back (HTTP 200)", "read the project (HTTP 200) and listed it", "came up in"):
         assert said in rec, said
     #  what the drill found written outside the volume is said, and what a release would lose is a row of its own
-    m = re.search(r"the container had changed two things outside the volume and `/tmp`: `/app/logs/autonomy`, "
-                  r"where the autonomy pipelines keep what they write, which a release or a rollback would lose "
-                  r"\(row (FU-\d+)\), and matplotlib's font cache under `/home/app`", rec)
-    assert m, "the record does not say what the container wrote outside the volume"
-    rows0 = json.loads(read("docs/FOLLOWUPS.json"))["items"]
-    lost = [r for r in rows0 if r["id"] == m.group(1)]
-    assert lost and lost[0]["status"] == "open" and "not on the data disk" in lost[0]["title"], lost
+    #  W1138 (FU-1287): run again on an image with the folders on the data root, nothing is written outside it
+    assert "the container had changed nothing outside the volume and `/tmp`" in rec, (
+        "the record does not say the platform writes nothing outside its volume")
+    assert "The first drill found `/app/logs/autonomy`" in rec and "(FU-1287)" in rec
     seconds = [float(x) for x in re.findall(r"in ([\d.]+) seconds", rec)]
     assert len(seconds) >= 5 and all(0 < s < 120 for s in seconds), seconds
 
@@ -92741,3 +92740,47 @@ def test_w1137_fu603_the_backup_is_a_snapshot_and_the_restore_and_rollback_are_d
     assert len(owner) == 1 and owner[0]["owner_gated"] and owner[0]["status"] == "open", owner
     assert f"({owner[0]['id']})" in rec and f"{owner[0]['id']} (W1137):" in read("docs/FABLE_DELIVERY_PROMPT.md")
     assert f"({owner[0]['id']})" in read("docs/RESUME_ON_MY_MACHINE.md")
+
+
+def test_w1138_fu1287_the_logs_folder_the_platform_writes_follows_the_data_root(tmp_path):
+    """FU-1287 (W1138), P4.5, found by FU-603's drill (W1137): the image, run with its records on a volume, wrote
+    /app/logs/autonomy beside the code, which a release replaces, and matplotlib's font cache under the home folder.
+    Held here:
+    - where a deployment sets the data root, the logs folder is under it; a checkout with none keeps it beside the
+      code, as before; the genome and models folders hold nothing the platform writes and stay beside the code (each
+      read in a fresh interpreter, so no import order decides it);
+    - the autonomy pipelines write under LOG_DIR, and the image keeps matplotlib's cache under /tmp;
+    - the drill's record, run again on an image with the change, says nothing was written outside the volume, and
+      the hardening brief no longer names the folders as what the deploy lacks."""
+    import os
+    import pathlib
+    import re
+    import subprocess
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")
+    code = ("from agentic_core import store_paths as p; "
+            "print(p.DATA_DIR, p.LOG_DIR, p.GENOME_DIR, p.MODELS_DIR, sep='|')")
+
+    def folders(env):
+        e = {k: v for k, v in os.environ.items() if k not in ("DATA_DIR", "WORKSTATION_DATA_DIR")}
+        e.update(env)
+        out = subprocess.run([sys.executable, "-c", code], cwd=root, env=e, capture_output=True, text=True, timeout=120)
+        assert out.returncode == 0, out.stderr[-800:]
+        return [pathlib.Path(x) for x in out.stdout.strip().split("|")]
+
+    data, logs, genome, models = folders({"DATA_DIR": str(tmp_path / "root")})
+    assert data == tmp_path / "root" and logs == data / "logs", (data, logs)
+    assert (genome, models) == (root / "genome", root / "models"), (genome, models)
+    data, logs, genome, models = folders({"WORKSTATION_DATA_DIR": str(tmp_path / "other")})
+    assert logs == tmp_path / "other" / "logs", logs
+    data, logs, genome, models = folders({})
+    assert data == root / "data" and (logs, genome, models) == (root / "logs", root / "genome", root / "models")
+
+    assert 'log_dir = str(LOG_DIR / "autonomy")' in read("agentic_core/ai/ceo/autonomy_pipelines.py")
+    assert re.search(r"^\s*MPLCONFIGDIR=/tmp/\S+ \\$", read("Dockerfile"), re.M), "matplotlib's cache is not under /tmp"
+    flat = " ".join(read("docs/DEPLOYMENT.md").split())
+    assert "the container had changed nothing outside the volume and `/tmp`" in flat, "the drill's record says otherwise"
+    assert "run again in W1138 on an image with FU-1287's change" in flat
+    brief = " ".join(read("docs/business/PRODUCTION_HARDENING_BRIEF.md").split())
+    assert "row FU-1287" not in brief and "the drill found nothing written outside the data disk and `/tmp` (W1138" in brief

@@ -59,7 +59,9 @@ COPY --from=pages /build/apps/workstation-superapp/dist ./apps/workstation-super
 RUN mkdir -p /app/data && useradd -m app && chown -R app:app /app
 USER app
 
+# W1138 (FU-1287) - matplotlib keeps its font cache under /tmp, so a running image writes nothing beside the code
 ENV DATA_DIR=/app/data \
+    MPLCONFIGDIR=/tmp/matplotlib \
     AI_ALLOW_EXTERNAL=false \
     ENVIRONMENT=production \
     PORT=8000
