@@ -95324,7 +95324,7 @@ def test_w1164_the_owners_ten_decisions_of_2026_11_20_are_recorded_and_the_water
        score stays withheld and says why; the register's row says it was not read, and how it was tried; the row is
        closed as performed and not assessable, naming each of the three instruments;
     2. each owner-gated row the decisions cover says what was accepted, or answered, on 2026-11-20, and the audit
-       record still to open is named, since the go-ahead given named no file;
+       record is named, opened on the go-ahead that named it (W1175);
     3. the plan's list of what is with the Owner says the ten were accepted, and the cycles' new end;
     4. the local-session notes say the cycles run into December, give no end of November for them, and step 5 names
        only rows still open, with the two ventures as answered."""
@@ -95360,8 +95360,8 @@ def test_w1164_the_owners_ten_decisions_of_2026_11_20_are_recorded_and_the_water
         r = reg[rid]
         assert r["status"] == "open" and r["owner_gated"] is True, rid
         assert r["why"].count("RECOMMENDED (accepted 2026-11-20):") == n and "RECOMMENDED:" not in r["why"], rid
-    assert "(ledger_v14_W639_375c5ffb.json), which is not opened without your go-ahead; the go-ahead of 2026-11-20 " \
-           "named no file" in reg["FU-1286"]["why"], "the audit record still to open is not named"
+    assert "(ledger_v14_W639_375c5ffb.json), opened only on a go-ahead that names it. DONE W1175" \
+           in reg["FU-1286"]["why"], "the audit record is not named"   # W1175
     assert "ACCEPTED 2026-11-20 (the Owner's ten decisions, recommendation 4)" in reg["FU-1095"]["why"]
     assert ("ANSWERED 2026-11-20: the Owner's two are Atmospheric Harvest Solutions and Aerius Energy Harvest"
             in reg["FU-1165"]["why"]), "FU-1165 does not carry the Owner's answer"
@@ -95371,7 +95371,7 @@ def test_w1164_the_owners_ten_decisions_of_2026_11_20_are_recorded_and_the_water
     for said in ("Recommended, and accepted on 2026-11-20: send both as drafted.",
                  "(Ten put to the Owner on the afternoon of 2026-11-20 were accepted the same day, each as recommended:",
                  "the 8-hour cycles run into December, until the plan's build items are closed and the final audit has "
-                 "run, 2026-12-31 at the latest;", "opened once a go-ahead names it, since the one given named no file."):
+                 "run, 2026-12-31 at the latest;", "opened on the go-ahead that named it the same day:"):   # W1175
         assert said in fp, ("the plan's list no longer says", said)
 
     #  4. the local-session notes
@@ -96320,3 +96320,62 @@ def test_w1174_the_owners_five_decisions_of_the_evening_of_2026_11_20_are_record
     #  4. the children's gate
     assert f"{R}: the children's gate stays closed." in said("P5.12")
     assert f"{R}: the tools are built and held, as ruled; the gate stays closed" in said("P5.21")
+
+
+def test_w1175_fu1286_the_audit_record_the_owner_named_names_no_place_on_a_machine_by_its_path():
+    """FU-1286, place 1 (W1175). Files under docs/fidelity_runs/ are opened only on a go-ahead that names them; the
+    Owner's go-ahead of 2026-11-20 named the one record W1135 left unopened ("open ledger_v14_W639_375c5ffb.json"). It
+    named the Owner's Windows home folder in 8 places and the audit's data folder on the Owner's Windows machine in 9.
+    Held here:
+    1. the record names no place on a machine by its path: no drive path is left, and no Windows home folder;
+    2. each home-folder path starts at ~ with the rest of it unchanged, each data-folder path says what kind of place it
+       was, and the record is still whole: six regions, each with its ten findings and ten verdicts;
+    3. the three records the Owner allowed to be opened (editions 14, 15 and 16) all hold to the same;
+    4. FU-1286 stays open for the places that are the Owner's machine's: its first place says it is done and each of
+       the five still carries its accepted recommendation; the plan's list of what is with the Owner and the local
+       notes say the record was edited, and neither says it still waits on a go-ahead."""
+    import json
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    runs = root / "docs" / "fidelity_runs"
+    audit = "[the audit's data folder on the Owner's Windows machine]"
+    home = re.compile(r"(?i)\b[a-z]:[\\/]+users[\\/]+[^\\/\s`'\"<>()|,;:*?]+")
+    drive = re.compile(r"\b[A-Za-z]:(?:/|\\\\)")
+
+    #  1-2. the record the Owner named
+    raw = (runs / "ledger_v14_W639_375c5ffb.json").read_text(encoding="utf-8")
+    assert not drive.search(raw) and not home.search(raw), "the record names a place on a machine by its path"
+    assert (raw.count(audit), raw.count("~/Workstation/")) == (9, 8), (raw.count(audit), raw.count("~/Workstation/"))
+    for said in ("~/Workstation/agentic_core/api/vsb.py:1376-1390, 1796, 1839",
+                 "~/Workstation/agentic_core/api/genesis.py:276-282, 885-899",
+                 "~/Workstation/agentic_core/economy/living_vsbs.py:58-75",
+                 f"{audit}/vsb_repos/vsb-1a0e91006d/README.md line 7",
+                 f"generated repo on disk {audit}/vsb_repos/vsb-7da10787dc (compliance/QUALITY.md)",
+                 f"I wrote to the audit data directory ({audit}):"):
+        assert said in raw, ("a path's rest is not as the audit wrote it", said)
+    record = json.loads(raw)
+    assert [(r["region"], len(r["findings"]), len(r["verdicts"])) for r in record] == \
+        [(f"R{i}", 10, 10) for i in range(1, 7)], "the record is not whole"
+
+    #  3. the three records the Owner allowed to be opened
+    for name in ("ledger_v14_W639_375c5ffb.json", "ledger_v15_W654_ab829862.json", "ledger_v16_W665_ca081db0.json"):
+        text = (runs / name).read_text(encoding="utf-8")
+        assert not drive.search(text) and not home.search(text), (name, "names a place on a machine by its path")
+
+    #  4. FU-1286, the plan's list and the local notes
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    row = reg["FU-1286"]
+    assert (row["status"], row["owner_gated"], row["slot"]) == ("open", True, "OWNER"), row
+    assert ("(1) One audit record under docs/fidelity_runs/ (ledger_v14_W639_375c5ffb.json), opened only on a go-ahead "
+            "that names it. DONE W1175: your go-ahead of 2026-11-20 named it;") in row["why"], "place 1 is not said done"
+    assert row["why"].count("RECOMMENDED (accepted 2026-11-20):") == 5, "a place lost its accepted recommendation"
+    plan = " ".join((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8").split())
+    notes = " ".join((root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8").split())
+    assert ("the audit record is ledger_v14_W639_375c5ffb.json, opened on the go-ahead that named it the same day: its "
+            "home-folder paths start at ~, and its paths to the audit's data folder say what kind of place it was "
+            "(W1175).") in plan, "the plan's list of what is with the Owner does not say the record was edited"
+    assert ("audit record (docs/fidelity_runs/ledger_v14_W639_375c5ffb.json) was edited in the cloud session on "
+            "2026-11-20, on your go-ahead naming it (W1175).") in notes, "the local notes do not say the record was edited"
+    for stale in ("opened once a go-ahead names it", "named no file", "not opened without your go-ahead"):
+        assert stale not in plan and stale not in notes, ("still said to wait on a go-ahead", stale)

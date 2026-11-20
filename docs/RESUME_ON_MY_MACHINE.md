@@ -74,9 +74,10 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
     session has not added it.
   - Sending the two permission letters in `docs/letters/` (FU-1188).
   - Sending the request to the Quranic Audio Dataset's authors, also in `docs/letters/` (FU-1283).
-  - Five places that still name your Windows home folder (FU-1286), each as you accepted on 2026-11-20: `venv/`
+  - Five places that named your Windows home folder (FU-1286), each as you accepted on 2026-11-20: `venv/`
     and `.claude/settings.json` are step 5; the pinned fidelity ledgers and `_archive/` stay as they are; the
-    audit record (docs/fidelity_runs/ledger_v14_W639_375c5ffb.json) is opened once a go-ahead names it.
+    audit record (docs/fidelity_runs/ledger_v14_W639_375c5ffb.json) was edited in the cloud session on
+    2026-11-20, on your go-ahead naming it (W1175).
   - At the first deploy, restoring the data disk once from its snapshot, watching (FU-1288).
   - Buying a domain for the release machine and pointing it at the machine's fixed address (FU-1289).
   - At the first deploy, an uptime check on `/health` from your own cloud account, beside the billing alert
