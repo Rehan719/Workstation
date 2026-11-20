@@ -26715,6 +26715,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Done in W1172: the one page of where help is and the Law page's help say the platform is not a solicitor, a barrister, a law firm or any regulated legal services provider, and not an advice charity, a regulator or a court. The four captured answers carry the list as the route gives it, and the two pages' rendered tests read it. A guard holds the Law domain's one outside fetch, the statute reader, to the statute and time-limit route handlers, with no timer, loop or task in any Law module and nothing the heartbeat runs importing them."
+    },
+    {
+      "id": "FU-1816",
+      "title": "The browser smoke judged each page 1.2 seconds after it first painted, so a required section drawn once the page's own read answers was reported missing under load",
+      "why": "Measured in W1173b: PR #463's browser smoke went red on a78cbc53 on /native-ai, a page no round of the day touched; it rendered 1535 characters and its primitive console and fabric integrity strip were reported missing. Both are drawn inside the page's `{status && (` block, after its status read answers; under load in CI the read answered after the smoke's fixed settle.",
+      "source": "W1173b (PR #463's browser smoke read on a78cbc53)",
+      "found": "2026-11-20",
+      "files": [
+        "scripts/browser_smoke.mjs"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "done",
+      "closed_by": "W1173b",
+      "note": "",
+      "slot_source": "a check that reports a drawn section as missing is a finding the next look disproves",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1173b: the browser smoke waits, up to 20 seconds, for a route's required sections before it judges the page, so a section drawn once the page's own read answers is not reported missing because the read was slow; each must still appear, and one that never does is reported as before. Run twice here against one built copy of the tree, with the wait and as it stood, the smoke gave the same result: /native-ai drew both sections either way, and six failures of this machine's own (the Quran pages' reads answer 503 here; the marketplace shows no listing) were the same in both."
     }
   ],
   "routes": [

@@ -96231,3 +96231,27 @@ def test_w1173_p511_is_done_and_its_record_names_a_guard_that_holds_each_clause(
     rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
     riding = [r["id"] for r in rows if r.get("slot") == "P5.11" and r.get("status") == "open"]
     assert riding == [], ("a row rides the finished item open", riding)
+
+
+def test_w1173b_the_browser_smoke_waits_for_a_routes_required_sections_before_it_judges_the_page():
+    """W1173b: PR #463's browser smoke went red on a78cbc53 on /native-ai, a page no round of the day touched. Its two
+    required sections are drawn inside the page's `{status && (` block, so they appear once its status read answers;
+    the smoke judged each page 1.2 seconds after it first painted, and under load the read answered later. Held here:
+    the smoke waits for every required section of a route, up to 20 seconds, before it reads the page, and a section
+    that never appears is still a failure; /native-ai still requires both, and the page still draws both."""
+    import json
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    smoke = (root / "scripts" / "browser_smoke.mjs").read_text(encoding="utf-8")
+    wait = smoke.index("    const needles = REQUIRED_SECTIONS[route] ?? [];\n    if (needles.length) {\n      await page.waitForFunction(")
+    read = smoke.index("    const body = await page.evaluate(() => document.body.innerText || '');\n")
+    assert wait < read, "the smoke reads the page before it has waited for its required sections"
+    assert "return ns.every((n) => t.includes(n.toLowerCase())); },\n        needles, { timeout: 20_000 }," in smoke
+    assert "        failures.push(`${route}: required section missing — ${JSON.stringify(needle)}`);" in smoke, \
+        "a required section that never appears is no longer a failure"
+    assert "  '/native-ai': ['Primitive console', 'Fabric integrity']," in smoke
+    page = (root / "apps/workstation-superapp/src/pages/developers/NativeAI.tsx").read_text(encoding="utf-8")
+    assert "Primitive console" in page and "Fabric integrity" in page and "      {status && (" in page
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    fu = [r for r in rows if r.get("title", "").startswith("The browser smoke judged each page 1.2 seconds after")]
+    assert len(fu) == 1 and (fu[0]["status"], fu[0]["closed_by"], fu[0]["because"]) == ("done", "W1173b", "built"), fu
