@@ -1697,22 +1697,42 @@ def test_continuous_compliance_beat(client):
     # flag is genuinely consulted now (it was settable and reported but never checked in beat()).
     import asyncio as _aio, uuid as _uuid
     from agentic_core.organism.heartbeat import heartbeat
-    from agentic_core.economy.living_vsbs import register
+    from agentic_core.economy.living_vsbs import list_living, register
     loop = _ensure_loop()
     vid = f"vsb-w288-{_uuid.uuid4().hex[:6]}"
+    #  W1127 - THE ROTATION, NOT THE ONLY ENTITY. The beat screens the least-recently-screened living VSB and
+    #  visits the least-recently-operated one, so this entity comes first only when no other living entity is
+    #  ahead of it. In W1127's round an entity the swarm cascade made earlier in the same process was screened
+    #  instead. So the beat is driven until it reaches this entity, at most once per living entity: that bound is
+    #  the rotation's own promise (a held visit still advances last_operated, so nothing starves it).
+    _visits = {"operate_vsb", "vsb_held", "vsb_refused", "operate_vsb_failed", "operate_vsb_unclassified",
+               "roster_unavailable"}
     try:
         heartbeat.configure(auto_compliance=True, auto_economy=False)
         register(vid, name="Halal community nutrition venture", domain="care")
-        loop.run_until_complete(heartbeat.beat())
-        assert heartbeat.last_compliance and heartbeat.last_compliance["overall"] in ("pass", "review", "fail")
+        _turns = len((list_living() or {}).get("living_vsbs") or [])
+        assert _turns >= 1, "the entity just registered is not living"
+        for _ in range(_turns):
+            r_off = loop.run_until_complete(heartbeat.beat())     # auto_economy off → no visit of any kind
+            assert heartbeat.last_compliance and heartbeat.last_compliance["overall"] in ("pass", "review", "fail")
+            assert not _visits & set(r_off.get("actions", [])), r_off.get("actions")
+            if heartbeat.last_compliance.get("vsb_screened") == vid:
+                break
+        assert heartbeat.last_compliance.get("vsb_screened") == vid, (
+            "the rotation did not screen this entity in one turn per living entity", _turns,
+            heartbeat.last_compliance.get("vsb_screened"))
         from agentic_core.config import data_path, read_json_reported
         hist = read_json_reported(data_path("vsb_compliance_history.json"), {})[0]
         assert vid in hist and hist[vid]["history"]           # per-VSB history persisted
-        r_off = loop.run_until_complete(heartbeat.beat())     # auto_economy off → no operate action
-        assert "operate_vsb" not in r_off.get("actions", [])
         heartbeat.configure(auto_economy=True)
-        r_on = loop.run_until_complete(heartbeat.beat())      # on → the flag genuinely gates
-        assert "operate_vsb" in r_on.get("actions", [])
+        for _ in range(_turns):
+            r_on = loop.run_until_complete(heartbeat.beat())      # on → the flag genuinely gates
+            assert _visits & set(r_on.get("actions", [])), r_on.get("actions")
+            if heartbeat.last_vsb_operated == vid:
+                break
+        assert heartbeat.last_vsb_operated == vid and "operate_vsb" in r_on.get("actions", []), (
+            "the rotation did not operate this entity in one turn per living entity", _turns,
+            heartbeat.last_vsb_operated, r_on.get("actions"))
     finally:
         heartbeat.configure(auto_compliance=False, auto_economy=False)
     r = client.post("/api/v1/heartbeat/configure", json={"auto_compliance": True}).json()
@@ -6588,14 +6608,13 @@ def test_cca_ui_contract_shapes(client):
     try:
         assert "auto_approved" not in sub and sub["status"] in (
             "submitted", "under_review", "approved")
-        # Trailing slash is NOT forgiven when the built SPA is served (its catch-all route
-        # intercepts '/api/v1/cca/' before the slash-redirect — true in production and local dev).
-        # Without dist/ (CI's backend job) the 307 redirect fires instead — so assert the 404
-        # only in the SPA-mounted environment; the UI calls the bare path, correct in BOTH.
-        import pathlib as _pl
-        _spa = _pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "dist" / "index.html"
-        if _spa.exists():
-            assert client.get("/api/v1/cca/").status_code == 404
+        # W1133n (FU-1801) - the trailing slash is forgiven the same way whether the pages are built or not. It used
+        # to be a 404 only where the built pages were served, because their catch-all intercepted '/api/v1/cca/'
+        # before the slash redirect; the catch-all no longer matches an API path, so the redirect fires in
+        # production, local dev and CI alike. The UI calls the bare path.
+        _slash = client.get("/api/v1/cca/", follow_redirects=False)
+        assert _slash.status_code == 307 and _slash.headers.get("location", "").endswith("/api/v1/cca"), (
+            _slash.status_code, _slash.headers.get("location"))
         d = client.get("/api/v1/cca")
         assert d.status_code == 200
         body = d.json()
@@ -17299,7 +17318,9 @@ def test_w473_canon_and_suite_hygiene_before_m1(client, tmp_path, monkeypatch):
 
     # ── FU-026: the data root is the repository; a larger legacy store is named, never switched away from silently ──
     from agentic_core import store_paths as paths            # W897 (FU-1168) - moved from config/paths.py
-    assert paths.BASE_DIR == root and paths.LOG_DIR == root / "logs" and paths.GENOME_DIR == root / "genome"
+    #  W1138 (FU-1287): where a data root is set, as it is here, the logs folder the platform writes is under it
+    assert paths.BASE_DIR == root and paths._ROOT_SET and paths.GENOME_DIR == root / "genome"
+    assert paths.LOG_DIR == paths.DATA_DIR / "logs"
     assert paths.legacy_store_warning() is None                               # tests run under WORKSTATION_DATA_DIR
     monkeypatch.delenv("WORKSTATION_DATA_DIR", raising=False)
     monkeypatch.setattr(paths, "_LEGACY_BASE", tmp_path)
@@ -17871,12 +17892,19 @@ def test_w475_second_truth_pass_ledger_v4_tier1_entries(client, tmp_path, monkey
     stm = led.statements()
     assert stm["profit_and_loss"]["expenses"].get("operating_costs") == 200.0, stm["profit_and_loss"]   # the P&L shows the cost
     assert stm["balance_sheet"]["assets"].get("reserve_fund") == 200.0, stm["balance_sheet"]           # the reserve holds only the reserve
-    assert stm["profit_and_loss"]["net_profit_wst"] == 200.0 and led.trial_balance()["balanced"] is True
+    #  W1124 (FU-1057) - this scope is not a registered entity, so its fee (150, a quarter of the 600 profit) is shown
+    #  and never posted, and the split is over the 450 that remains: the 150 stays in its books, as profit
+    assert out["platform_fee"]["fee_wst"] == 150.0 and out["platform_fee"]["posted"] is False, out["platform_fee"]
+    assert stm["profit_and_loss"]["net_profit_wst"] == 350.0 and led.trial_balance()["balanced"] is True
     # (refutation, consumers) the board pack's P&L carries the costs, and its figures reconcile to the revenue
     pack = client.get("/api/v1/economy/board-pack", params={"vsb_id": vid}).json()
     pl = pack["profit_and_loss"]
     assert pl["total_costs_wst"] == 200.0, pl
-    assert abs(pl["total_costs_wst"] + pl["total_reserves_wst"] + pl["total_distributed_wst"] - pl["total_revenue_wst"]) < 0.02, pl
+    #  W1124 - and with the platform's fee they reconcile: none posted here, and the fee shown and never posted
+    _unposted1124 = 0.0 if out["platform_fee"]["posted"] else out["platform_fee"]["fee_wst"]
+    assert pl["total_platform_fee_wst"] == 0.0, pl
+    assert abs(pl["total_costs_wst"] + pl["total_reserves_wst"] + pl["total_platform_fee_wst"] + pl["total_distributed_wst"]
+               + _unposted1124 - pl["total_revenue_wst"]) < 0.02, pl
     # (refutation) the pages label the two figures as what they are
     ve2 = (root / "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8")
     assert 'label="Costs + reserves"' not in ve2 and 'label="Operating costs"' in ve2 and 'label="Reserve"' in ve2
@@ -22866,9 +22894,19 @@ def test_w499_the_plan_projects_only_the_work_a_round_closes(client):
     # close them.
     from agentic_core.plan_followups import schedule as _schedule
     _app = root / "apps/workstation-superapp/src"
-    _sc = _schedule(_reg, _text)
+    #  W1147 (FU-284): the last open row on a P4 item was closed, so the live schedule holds no owner-switch item
+    #  and the marker would be unreachable from it. The schedule's property is checked on the live register with
+    #  one made-up open row on P4.4, made from FU-284's own fields, so it never depends on a switch row being open.
+    #  W1174: P4.4 is done as the boundary it is, so the made-up open row stands on P4.1, which stays open
+    _stand_in = dict(next(r for r in _reg["items"] if r["id"] == "FU-284"), id="FU-99147", status="open",
+                     closed_by=None, slot="P4.1", title="made-up for test_w499: an open row on a switch item")
+    #  W1156: a live row can ride a P4 item as well (FU-1294 rides P4.5, found by the release's rule), so the
+    #  made-up row is held to add P4.4, and nothing else, to the items the live register already gives the Owner
+    _live_switch = [x["slot"] for x in _schedule(_reg, _text)["schedule"] if x.get("delivered_by") == "owner-switch"]
+    _sc = _schedule(dict(_reg, items=list(_reg["items"]) + [_stand_in]), _text)
     _switch_slots = [x["slot"] for x in _sc["schedule"] if x.get("delivered_by") == "owner-switch"]
-    assert _switch_slots, "no owner-switch item is in the schedule, so the queue marker is unreachable"
+    assert "P4.1" in _switch_slots and sorted(_switch_slots) == sorted(set(_live_switch) | {"P4.1"}), (
+        "the made-up switch row is not scheduled as the Owner's, or it moved another item", _switch_slots, _live_switch)
     assert all(x.startswith("P4.") for x in _switch_slots), _switch_slots
     assert all(x.get("delivered_by") == "build" for x in _sc["schedule"]
                if not x["slot"].startswith("P4.")), [x["slot"] for x in _sc["schedule"]]
@@ -25643,7 +25681,15 @@ def test_w505_fu033_a_record_missing_its_review_fields_is_reviewable(client):
     rr = client.post(f"/api/v1/cca/{cid}/review", json={})
     assert rr.status_code == 200, f"an incomplete record still answers {rr.status_code}: {rr.text[:300]}"
     rec = cc._load_change(cid)
-    assert rec["status"] != "under_review", f"the change was left stuck in {rec['status']}"
+    #  W1145 (FU-1292) - NOT STUCK is decided, or held for an explicit decision with the hold's reason on the record.
+    #  In a process that has measured no organism health the health rule cannot decide, and holds the change for an
+    #  admin, who decides it on this route with override_decision; after the rest of the suite health is measured
+    #  and the rule decides. FU-033's KeyError left neither: no review written, and no way out.
+    assert rec.get("reviewed_at") and rec.get("review_result"), "the review did not complete"
+    held = rec.get("decision_source") == "held_awaiting_admin" and bool(rec.get("hold_reason")) and any(
+        e.get("event") == "held_awaiting_admin_decision" for e in (rec.get("audit_trail") or []))
+    assert rec["status"] != "under_review" or held, (
+        f"the change was left stuck in {rec['status']}", rec.get("decision_source"), rec.get("hold_reason"))
     # and the absences are on the RECORD, not only in the prompt: a person reading this back needs to know
     # the change was reviewed without a rollback plan. (The first version of this guard looked in
     # `review_result`, where the sentence never was — it goes to the reviewing resource.)
@@ -36633,7 +36679,11 @@ def test_w566_the_supplied_distress_route_carries_its_reviewer_and_the_matter_ha
     #  No row was opened for the folder being empty, and that is only defensible because the condition
     #  is MEASURED rather than remembered. If this flag ever means "the Owner approved indexing", the
     #  approval and the readiness have been conflated and an empty folder could authorise a read.
-    assert str(_m.get("bundle_dir") or "").strip(), "no bundle folder is named"
+    #  W1129 (FU-1282) - NAMED ON THE MACHINE THAT HOLDS IT: the committed file names no folder, because a committed
+    #  path is a path on one person's machine (the dry run found it in the image and in the route's answer); its
+    #  basis says where the folder is named
+    assert not str(_m.get("bundle_dir") or "").strip(), "the committed file names a folder"
+    assert "LEGAL_MATTER_FOLDER" in str(_m.get("bundle_dir_basis") or ""), "the matter does not say where its folder is named"
     #  W605 (P3.23) — MEASURED, NOT REMEMBERED: the stored flag is gone, because a stored value is the opposite
     #  of the measurement this leg's own comment requires. legal/bundle.py computes it from the folder.
     assert "bundle_indexing_may_start" not in _m, (
@@ -37426,13 +37476,9 @@ def test_w571_a_starved_refutation_cannot_read_as_a_complete_one(client):
     assert "main, rest = wts[0], wts[1:]" in _src571, (
         "cleanup no longer separates the main worktree from the rest by position")
     assert "for w in rest:" in _src571, "cleanup iterates something other than the secondary worktrees"
-    _cl = _rg571.cleanup()
-    assert isinstance(_cl.get("removed"), list) and isinstance(_cl.get("failed"), list), _cl
-    #  it is honest when there is nothing to do, rather than claiming a recovery
-    assert "never touched" in _cl["basis"] or "nothing is claimed" in _cl["basis"], _cl["basis"][:160]
-    #  AND THIS REPOSITORY'S OWN MAIN WORKTREE SURVIVED THE CALL
-    assert (_root / ".git").exists() and (_root / "scripts" / "refutation_gate.py").exists(), (
-        "cleanup damaged the working tree it was run in")
+    #  W1159 - cleanup is driven by test_w1159, on repositories made for it. Called here, on the repository the
+    #  suite runs in, it removed every other worktree of that repository, forced, with whatever work each held.
+    assert "def cleanup(keep_main: bool = True, repo: str | None = None, force: bool = False)" in _src571
 
     # ── L7. THE ROUND RHYTHM NAMES THE GATE, or nobody runs it ──────────────────────────────────
     #  FU-259's fix (a) is "the round rhythm must CHECK free space before launching a refutation and
@@ -38372,7 +38418,7 @@ def test_w575_p24_the_scatter_closes_on_each_row_it_reproduced(client):
         "the Law asset changed shape; it is kept as a VOCABULARY precisely because it has no "
         "relations, and if it gained some the ruling would need revisiting", sorted(_law))
     #  W731 - the second file was a list of FILE PATHS over the Owner's own papers (293 entries, no edges), never
-    #  an ontology. It was moved out of this public repository to his private store, so the strongest form of
+    #  an ontology. It was moved out of this public repository to the Owner's private store, so the strongest form of
     #  "never served as a graph" now holds: it is not in the tree.
     assert not (_root / "knowledge/Law/EmploymentTribunal/ontology/unified_assimilated_graph.json").exists(), (
         "the file-path list over the Owner's own papers is back in the public tree")
@@ -59807,43 +59853,49 @@ def test_w676_no_test_or_audit_process_opens_the_owners_matter_folder(client, mo
     """W676 - the Owner's rule is that nothing about the matter leaves the machine. The folder was named by an
     absolute path in a committed file and no runner redirected it, so a test, an audit agent or a drive could be
     handed its lines. Three floors, each driven: the suite names a folder of no one; a process with no variable
-    is held back from the committed path; and the route says so."""
+    is held back from the machine's folder; and the route says so. W1129 (FU-1282) moved the folder out of the
+    committed file into the machine's own setting (LEGAL_MATTER_FOLDER, in its .env); this guard drives a folder of
+    its own in that setting, so it still proves the floor."""
     import json as _json
     import os as _os
     import pathlib as _pl
     from agentic_core.legal import bundle as _b
-    _committed = str(_json.loads((_pl.Path(_b.__file__).parent / "matter.json").read_text(encoding="utf-8")).get("bundle_dir") or "")
-    assert _committed, "the committed file names no folder, so this guard would prove nothing"
-    # 1. as the suite runs: the variable is set by the suite's own configuration, and it is not the committed path
+    _mine = tmp_path / "w676-machine-folder"
+    _mine.mkdir()
+    (_mine / "w676-letter.txt").write_text("w676 the machine's own matter line", encoding="utf-8")
+    monkeypatch.setenv(_b.MACHINE_VAR, str(_mine))
+    _named = _os.path.realpath(str(_mine))
+    # 1. as the suite runs: the variable is set by the suite's own configuration, and it is not the machine's folder
     _amb = _os.environ.get(_b.ENV_VAR, "")
-    assert _amb and _pl.Path(_amb).resolve() != _pl.Path(_committed).resolve(), _amb
+    assert _amb and _os.path.realpath(_amb) != _named, _amb
     _r = _b.resolve_bundle_dir()
-    assert _r.get("path") in (None, _os.path.realpath(_amb)) and _r.get("path") != _os.path.realpath(_committed), _r
-    # 2. the variable removed: the resolver itself holds the committed path back, and says why
+    assert _r.get("path") in (None, _os.path.realpath(_amb)) and _r.get("path") != _named, _r
+    # 2. the variable removed: the resolver itself holds the machine's folder back, and says why
     monkeypatch.delenv(_b.ENV_VAR, raising=False)
     _h = _b.resolve_bundle_dir()
     assert _h["state"] == _b.UNSET and _h["path"] is None and _h.get("held_back") is True, _h
-    assert "NOT opened" in _h["basis"] and _b.ENV_VAR in _h["basis"], _h["basis"]
+    assert "NOT opened" in _h["basis"] and _b.ENV_VAR in _h["basis"] and _b.MACHINE_VAR in _h["basis"], _h["basis"]
     _ls = _b.list_documents()
     assert _ls["documents"] is None and _ls["count"] is None, ("documents were listed from a folder that was held back", _ls)
     _s = client.get("/api/v1/law/bundle").json()
-    assert _committed not in _json.dumps(_s) or _s.get("folder") is None, ("the route still names the folder as open", _s)
+    assert _named not in _json.dumps(_s) and _s.get("folder_state") == _b.UNSET, ("the route still names the folder as open", _s)
     _a = client.post("/api/v1/law/matter/assemble", json={"template_id": "et1_claim",
-                     "particulars": [{"name": "w676 probe", "words": ["the"]}], "authorities": []})
-    assert _a.status_code == 200 and _committed not in _a.text, "the clerk answered from the committed folder"
+                     "particulars": [{"name": "w676 probe", "words": ["w676", "matter", "line"]}], "authorities": []})
+    assert _a.status_code == 200 and _named not in _a.text and "the machine's own matter line" not in _a.text, (
+        "the clerk answered from the machine's folder")
     # 2b. EVERY environment marker removed (as at import time, before a test is current): the fallback alone
-    #     still holds the path back, and says which marker it was
+    #     still holds the folder back, and says which marker it was
     for _k in _b._NOT_THE_OWNERS:
         monkeypatch.delenv(_k, raising=False)
     assert _b._not_the_owners_process() == "pytest is loaded", _b._not_the_owners_process()
     _hb = _b.resolve_bundle_dir()
     assert _hb.get("held_back") is True and "pytest is loaded" in _hb["basis"], _hb
-    # 3. with no marker at all the committed path IS resolved - so leg 2 is a refusal and not a missing folder
+    # 3. with no marker at all the machine's folder IS resolved - so leg 2 is a refusal and not a missing folder
     monkeypatch.setattr(_b, "_not_the_owners_process", lambda: "")
     _o = _b.resolve_bundle_dir()
     #    (only the folder's existence is asked; nothing in it is listed or read here)
-    assert _o.get("held_back") is not True and _o["state"] in (_b.CONFIGURED_PRESENT, _b.CONFIGURED_ABSENT), _o
-    assert _o["source"] == "agentic_core/legal/matter.json", _o
+    assert _o.get("held_back") is not True and _o["state"] == _b.CONFIGURED_PRESENT and _o["path"] == _named, _o
+    assert _b.MACHINE_VAR in str(_o["source"]), _o
     # 4. the audit backend names its own folder before anything is imported
     _boot = (_pl.Path(_b.__file__).resolve().parents[2] / "scripts" / "boot_audit_backend.py").read_text(encoding="utf-8")
     assert _boot.index('os.environ["LEGAL_BUNDLE_DIR"]') < _boot.index("os.environ.update({"), "the audit backend sets it too late"
@@ -62636,7 +62688,7 @@ def test_w683_every_mounted_route_asks_or_is_declared_public_and_the_strict_chec
     declared = {(d["method"], d["path"]) for d in _lines if not d.get("only_when")}
     mounted = {(r["method"], r["path"]) for r in rows}
     assert declared <= mounted, f"declared and not mounted: {sorted(declared - mounted)}"
-    assert sorted(d["path"] for d in _lines if d.get("only_when")) == ["/", "/{full_path:path}"], "only the two page routes may be conditional"
+    assert sorted(d["path"] for d in _lines if d.get("only_when")) == ["/", "/{full_path:page}"], "only the two page routes may be conditional"
 
 
 def test_w683_with_authentication_on_every_asking_route_refuses_an_anonymous_call(client, monkeypatch):
@@ -62659,7 +62711,7 @@ def test_w683_with_authentication_on_every_asking_route_refuses_an_anonymous_cal
     #  ... and a route declared public is not refused for want of a caller
     refused = []
     for r in public:
-        if r["path"] == "/{full_path:path}":
+        if r["path"] == "/{full_path:page}":
             continue
         path = _re.sub(r"\{[^}]+\}", "1", r["path"])
         got = client.request(r["method"], path)
@@ -63561,16 +63613,18 @@ def test_w691_a_reviewer_agent_is_calibrated_by_its_recorded_run_and_never_by_a_
 
     #  THE SET IN THE TREE says it cannot be run yet, so NO agent is calibrated - and a run on it is refused
     the_set = cal.load_set("care")
-    assert the_set and cal.runnable(the_set)["runnable"] is False and len(the_set["cases"]) == 16   # W1099: computed
+    assert the_set and len(the_set["cases"]) == 16   # W1099: computed
+    #  W1122: its last two sources were read on 2026-11-19, so it can be run from that day and could not before
+    assert cal.runnable(the_set, on="2026-11-15")["runnable"] is False and cal.runnable(the_set, on="2026-11-19")["runnable"] is True
     assert sum(1 for c in the_set["cases"] if c.get("planted")) == 10
     runs = tmp_path / "review_calibration_runs.json"
     monkeypatch.setattr(cal, "_runs_path", lambda: runs)
     now = cal.calibration_of("care-reviewer")
-    assert now["calibrated"] is False and "cannot be run yet" in now["why_not"]
+    assert now["calibrated"] is False, now          # no run of it is recorded here, whatever the date
     today = _dt.date.today().isoformat()
     refused = client.post("/api/v1/review/calibration/run", json={"agent": "care-reviewer", "model": "m", "configuration": "model",
-                                                                 "date": today, "flags": {}})
-    assert refused.status_code == 409 and "cannot be run on" in refused.json()["detail"] and not runs.exists()
+                                                                 "date": "2026-11-15", "flags": {}})
+    assert refused.status_code == 409 and "cannot be run on 2026-11-15" in refused.json()["detail"] and not runs.exists()
 
     #  WHEN A SET CAN BE RUN (made to happen here), the run is recorded and the RATES ARE COMPUTED BY THE SERVER
     #  W1099 - a set can be run when it is written out, never because it says so
@@ -64797,8 +64851,12 @@ def _w703_faults(text, root, plan_slots, row_ids, routes=None, public=False):
             faults.append(f"a statement carries no label: {first[:70]}")
     #  a money figure stands only inside a statement the Owner ruled. The WHOLE STATEMENT is read - the first
     #  version looked 400 characters ahead of the line and so passed on whatever happened to follow it
+    #  W1136 (FU-1278) - or, by the Owner's ruling of 2026-11-19 (FU-1176), a provider's published price marked
+    #  SOURCED, in the same statement as the date it was read and its page or the record that lists the pages
     for block in re.split(r"\n(?=- |\d+\. |\n)", text):
-        if re.search(r"\b(GBP|USD|EUR)\s*\d|[£$€]\s*\d", block) and "[owner-defined" not in block:
+        _sourced = ("SOURCED" in block and re.search(r"\b20\d\d-\d\d-\d\d\b", block)
+                    and ("https://" in block or "`docs/DEPLOYMENT.md`" in block))
+        if re.search(r"\b(GBP|USD|EUR)\s*\d|[£$€]\s*\d", block) and "[owner-defined" not in block and not _sourced:
             faults.append(f"a money figure is stated with no ruling behind it: {block.strip()[:70]}")
     for line in text.splitlines():
         if re.search(r"\b\d[\d,]*\s+(users|customers|subscribers|learners)\b", line):
@@ -65385,7 +65443,15 @@ def test_w711_the_two_chartered_items_keep_their_boundaries_and_every_source_say
         r = rows[rid]
         assert r["page"].startswith("https://") and re.fullmatch(r"\d{4}-\d{2}-\d{2}", r["read_on"]), rid
         assert len(r["says"]) > 40 and len(r["not_read"]) > 10, (rid, "a row must say what was read and what was not")
-        assert "NOT re-read by a second reader" in r["read_by"], (rid, "one reader's summary is presented as more than that")
+        #  W1148 (FU-1077): eight were re-read whole at their publishers and say so; the six whose sites this
+        #  environment refused still say they rest on one reader's summary, and that the re-reading was refused
+        if rid in ("hse-puwer-overview", "frc-frs-102-periodic-review-2024", "ec-ai-omnibus-2026",
+                   "lawcom-business-tenancies-renewal", "ico-duaa-2025", "caa-drone-requirements"):
+            assert "NOT re-read by a second reader" in r["read_by"] and "refused by this environment's network" in (
+                r["not_read"]), (rid, "one reader's summary is presented as more than that")
+        else:
+            assert r["read_on"] == "2026-11-20" and r["read_by"].startswith("round W1148, ") and "read whole" in (
+                r["read_by"]) and "not through a summary" in r["read_by"], (rid, r["read_by"])
     #  the date the external documents got wrong is recorded as the publisher gives it
     assert "entered into force on 27 July 2026" in rows["ec-ai-omnibus-2026"]["says"]
 
@@ -65957,7 +66023,9 @@ def test_w724_a_statute_provision_is_shown_word_for_word_and_help_is_a_list_of_l
     h = client.get("/api/v1/law/help").json()
     assert h["composed"] is False and len(h["regulated_and_free_help"]) >= 6
     for e in h["regulated_and_free_help"]:
-        assert set(e) == {"name", "link", "for_what"} and e["link"].startswith("https://"), e
+        #  W1163 (P5.11 clause 3) - each place is a row of the directory: its nations, the page that says so, the day
+        #  that page was read and how, and whether that was within ninety days
+        assert set(e) == {"name", "link", "for_what", "nations", "says_so", "how_read", "recently_checked", "checked"} and e["link"].startswith("https://"), e
         assert len(e["for_what"]) <= 110 and len(e["name"]) <= 60, ("an entry carries a paragraph", e)
     assert len({e["link"] for e in h["regulated_and_free_help"]}) == len(h["regulated_and_free_help"])
     assert "not a regulated provider" in h["to_complain"] and "nothing is copied" in h["basis"] and "none of them endorses" in h["basis"]
@@ -66197,8 +66265,8 @@ def test_w727_every_block_naming_a_resource_states_its_level_or_is_declared_not_
 
 
 # ══════════════════════════════════════════════════════════════════════════════════════════════════════════
-#  W731 - THE OWNER'S OWN PAPERS ARE NOT IN THE PUBLIC TREE. His legal matter and his career papers were moved
-#  to his private store on his word (2026-10-14). This holds the move: none of the folders is in the tree, and
+#  W731 - THE OWNER'S OWN PAPERS ARE NOT IN THE PUBLIC TREE. Their legal matter and their career papers were moved
+#  to their private store on their word (2026-10-14). This holds the move: none of the folders is in the tree, and
 #  each is ignored so a later `git add` cannot bring it back. No party, person or case is named here.
 # ══════════════════════════════════════════════════════════════════════════════════════════════════════════
 def test_w731_the_owners_own_papers_are_not_in_the_public_tree():
@@ -66528,7 +66596,7 @@ def test_w730_no_engine_returns_a_figure_nothing_computes(client, monkeypatch):
 
 # ══════════════════════════════════════════════════════════════════════════════════════════════════════════
 #  W740 - THE OWNER'S CHILD'S SCHOOL MATERIAL IS NOT IN THE PUBLIC TREE. A personalised exam-preparation pack and
-#  a learner profile were moved to his private store on his word (2026-10-14), as his career papers were; four
+#  a learner profile were moved to the Owner's private store on their word (2026-10-14), as their career papers were; four
 #  archived generator lines that named the school were made generic. No child or school is named here.
 # ══════════════════════════════════════════════════════════════════════════════════════════════════════════
 def test_w740_the_owners_childs_school_material_is_not_in_the_public_tree():
@@ -69597,7 +69665,7 @@ def test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_name
 
 
 # ══════════════════════════════════════════════════════════════════════════════════════════════════════════
-#  W753 (FU-1048, P2.41; the Owner's ruling of 2026-10-14) - THE OWNER'S ENTITIES ARE RECORDED UNDER HIS NAME.
+#  W753 (FU-1048, P2.41; the Owner's ruling of 2026-10-14) - THE OWNER'S ENTITIES ARE RECORDED UNDER THE OWNER'S OWN NAME.
 #  While sign-in was off, every door that made an entity recorded the single-user label, and an owner-name read then
 #  sorted the Owner's own entities with the test-era ones. A NEW entity now carries the configured single-user owner
 #  (read from the environment at the call, never a name in the code) and says how its owner was decided; a record
@@ -70721,6 +70789,8 @@ def test_w793_fu984_r5_the_stub_routers_are_archived_and_two_sentences_say_what_
         assert client.get(path).status_code == 404, path
     for path in ("/api/cross-platform/ar/scene",):
         assert client.get(path).status_code == 404, path
+    #  W1133l found this answering 405 where the pages are built (the page fallback's path matched every path);
+    #  FU-1801 (W1133n) fixed the fallback, so the retired path is a 404 with the pages built or not.
     assert client.post("/api/cross-platform/voice/command", json={}).status_code == 404
     app = pathlib.Path("apps/workstation-superapp/src/App.tsx").read_text(encoding="utf-8")
     assert "<PlayfulEffectsManager" not in app and "import { PlayfulEffectsManager }" not in app
@@ -75345,15 +75415,16 @@ def test_w875_how_long_a_time_limit_runs_is_arithmetic_on_the_rules_own_words_wi
     is a row in a directory. Each rule names the provision that sets its limit and the words it was built from; the
     provision is read from its publisher when a person asks (faked here: the suite reaches no outside host), and
     nothing is computed unless those words are in it. What the limit does not account for, and who to ask, travel
-    with it. Nothing is composed."""
+    with it. Nothing is composed. W1157: the rules are dated either side of 1 October 2026. This test works on dates
+    before it, whose words are the provision's as it stood on 30 September 2026; test_w1157 holds both sides."""
     import pathlib
     from agentic_core.legal import statute as _st875
     from agentic_core.legal import time_limits as _tl875
     asked = []
 
     def fake(text):
-        async def _provision(kind, year, number, section):
-            asked.append((kind, int(year), int(number), str(section)))
+        async def _provision(kind, year, number, section, version=None):
+            asked.append((kind, int(year), int(number), str(section), version))
             return {"parts": [{"level": 1, "number": "(2)", "text": text}],
                     "address": f"https://www.legislation.gov.uk/{kind}/{year}/{number}/section/{section}",
                     "version_dated": "2026-01-01"}
@@ -75361,29 +75432,33 @@ def test_w875_how_long_a_time_limit_runs_is_arithmetic_on_the_rules_own_words_wi
     words = ("(a) before the end of the period of three months beginning with the effective date of termination, or")
     monkeypatch.setattr(_st875, "provision", fake(words))
 
-    def work(rule="unfair_dismissal", date="2026-10-03"):
+    def work(rule="unfair_dismissal", date="2026-07-03"):
         return client.post("/api/v1/law/time-limit", json={"rule": rule, "event_date": date})
 
-    #  1. the rules, each with its provision and its words
+    #  1. the rules, each with its provision and the words of each of its periods
     listed = client.get("/api/v1/law/time-limit").json()
     assert {r["id"] for r in listed["rules"]} == set(_tl875.RULES) >= {"unfair_dismissal", "discrimination_at_work"}
-    assert all(r["words"] and r["act"] and r["section"] for r in listed["rules"])
+    assert all(r["periods"] and all(p["words"] for p in r["periods"]) and r["act"] and r["section"]
+               for r in listed["rules"])
 
-    #  2. the arithmetic: three months beginning with 3 October end at the end of 2 January
+    #  2. the arithmetic: three months beginning with 3 July 2026 end at the end of 2 October 2026
     r = work()
     assert r.status_code == 200, r.text[:200]
     a = r.json()
-    assert a["computed"] is True and a["last_day"] == "2027-01-02", a
-    assert asked[-1] == ("ukpga", 1996, 18, "111"), ("the rule's own provision was not the one read", asked)
+    assert a["computed"] is True and a["last_day"] == "2026-10-02", a
+    assert asked[-1] == ("ukpga", 1996, 18, "111", "2026-09-30"), (
+        "the rule's own provision, as it stood for the date, was not the one read", asked)
     assert a["route"]["name"] == "Acas" and "early conciliation" in a["does_not_account_for"] and a["composed"] is False
-    assert work(date="2026-10-31").json()["last_day"] == "2027-01-30"
-    #  ...and a date whose same date three months on does not exist is not worked out, and says so
-    end = work(date="2026-11-30").json()
-    assert end["computed"] is False and end["last_day"] is None and "NOT COMPUTED" in end["basis"], end
+    assert work(date="2026-07-31").json()["last_day"] == "2026-10-30"
+    #  ...and a date whose same date three months on does not exist is worked out, as the Owner ruled on 2026-10-12
+    #  (W1162), to the earlier of the two days it could end on, with the sentence that the provision does not settle it
+    end = work(date="2026-08-31").json()
+    assert (end["computed"], end["settled"], end["last_day"]) == (True, False, "2026-11-29"), end
+    assert "does not settle how such a period ends" in end["basis"], end["basis"]
     assert work(date="not a date").json()["computed"] is False
 
     #  3. a provision that no longer has the rule's words: nothing is computed
-    monkeypatch.setattr(_st875, "provision", fake("(a) before the end of the period of six months, or"))
+    monkeypatch.setattr(_st875, "provision", fake("(a) before the end of the period of nine months, or"))
     gone = work().json()
     assert gone["computed"] is False and gone["last_day"] is None and "does not contain the words" in gone["basis"], gone
 
@@ -75393,7 +75468,11 @@ def test_w875_how_long_a_time_limit_runs_is_arithmetic_on_the_rules_own_words_wi
     monkeypatch.setattr(_st875, "provision", _refused)
     down = work()
     assert down.status_code == 502 and "No limit is computed" in down.json()["detail"] and "Acas" in down.json()["detail"]
-    assert work(rule="no_such_rule").status_code == 422
+    #  W1161 - a claim with no rule here is answered, not refused: a time limit may still apply, and where to ask
+    #  today is said (test_w1161 holds it for each nation)
+    none = work(rule="no_such_rule")
+    assert none.status_code == 200 and none.json()["matched"] is False, none.text[:300]
+    assert none.json()["basis"].endswith("A time limit may still apply: ask today."), none.json()["basis"]
 
     #  5. the tool is among those that need no model, and the page shows it before the forms
     assert "time_limit" in [t["id"] for t in client.get("/api/v1/law/tools").json()["needs_no_model"]]
@@ -75454,7 +75533,7 @@ def test_w876_the_fund_says_where_the_shares_cycles_set_aside_for_it_went(client
     assert 'data-testid="fund-set-aside"' in page and "{fund.set_aside_reconciliation.basis}" in page
 
 
-def test_w877_no_parallel_source_tree_stands_beside_agentic_core_where_core_stood(client):
+def test_w877_no_parallel_source_tree_stands_beside_agentic_core_where_core_stood(client, tmp_path):
     """FU-605 (W877). A top-level core/ package stood beside agentic_core, against the Owner's ratified refusal (a) of
     2026-09-30 (NO PARALLEL SOURCE TREE), imported by two live modules. Measured first: it predates the refusal (the
     Stage 1 archive kept it for one reachable module and it was never moved), both importers take one class, and the
@@ -75463,7 +75542,18 @@ def test_w877_no_parallel_source_tree_stands_beside_agentic_core_where_core_stoo
     import ast
     import pathlib
     root = pathlib.Path(__file__).resolve().parents[1]
-    assert not (root / "core").exists(), "a top-level core/ tree stands beside agentic_core again"
+    #  W1133l - A FOLDER OF BYTECODE CACHES IS NOT A SOURCE TREE. On the Owner's machine core/ is still there holding
+    #  only __pycache__ from before the move, untracked and with no source file, and this read it as the tree standing
+    #  again. What the refusal forbids is source: any file outside a __pycache__ folder (a sourceless .pyc included).
+    def _source_files(d):
+        return sorted(p.relative_to(d).as_posix() for p in d.rglob("*") if p.is_file() and "__pycache__" not in p.parts)
+    (tmp_path / "t" / "__pycache__").mkdir(parents=True)
+    (tmp_path / "t" / "__pycache__" / "m.cpython-312.pyc").write_bytes(b"")
+    assert _source_files(tmp_path / "t") == [], "a folder of bytecode caches was read as a source tree"
+    (tmp_path / "t" / "m.py").write_bytes(b"")
+    assert _source_files(tmp_path / "t") == ["m.py"], "a source file in the folder was not seen"
+    assert not (root / "core").exists() or _source_files(root / "core") == [], (
+        "a top-level core/ tree stands beside agentic_core again", _source_files(root / "core")[:5])
     assert (root / "agentic_core" / "transcendent_subsystems" / "tfel.py").exists()
     assert (root / "_archive" / "core" / "identity.py").exists(), "the dead module was not kept in the archive"
 
@@ -75495,13 +75585,13 @@ def test_w877_no_parallel_source_tree_stands_beside_agentic_core_where_core_stoo
 
 
 def test_w878_a_document_says_which_metrics_are_measured_and_what_would_measure_the_rest(client):
-    """FU-743 (W878). No document said which business and product metrics are measured. docs/METRICS_MEASURED.md
+    """FU-743 (W878). No document said which business and product metrics are measured. docs/business/METRICS_MEASURED.md
     does: each metric MEASURED or PARTLY names the route that returns it, mounted on this app, with its denominator
     and freshness; each NOT MEASURED says what would measure it. Nothing records a person completing a task,
     returning, or accepting an output across people, and the document says so rather than leaving it to be assumed."""
     import pathlib
     import re as _re878
-    doc = (pathlib.Path(__file__).resolve().parents[1] / "docs" / "METRICS_MEASURED.md").read_text(encoding="utf-8")
+    doc = (pathlib.Path(__file__).resolve().parents[1] / "docs" / "business" / "METRICS_MEASURED.md").read_text(encoding="utf-8")
     rows = []
     for ln in doc.splitlines():
         cells = [c.strip() for c in ln.strip().strip("|").split("|")]
@@ -75522,7 +75612,7 @@ def test_w878_a_document_says_which_metrics_are_measured_and_what_would_measure_
             assert client.get(m.group(1)).status_code == 200, (r["metric"], m.group(1))
     states = {r["metric"]: r["state"] for r in rows}
     #  what the row named as unmeasured is said as unmeasured
-    for absent in ("A person completing a task", "A person returning", "Real-money revenue", "Paying customers"):
+    for absent in ("A person completing a task", "A person returning", "Real-money revenue", "Customers who pay"):
         assert states.get(absent) == "NOT MEASURED", (absent, states.get(absent))
     assert "virtual WST" in doc and "Owner" in doc
 
@@ -76230,7 +76320,8 @@ def test_w887_with_sign_in_on_a_second_person_reaches_none_of_the_first_persons_
 def test_w888_a_beat_driven_visit_names_the_service_identity_and_the_levers_that_allowed_it(client):
     """FU-849 (W888, the service-identity half). The Owner ruled a per-entity opt-in and a named service identity once
     authentication is on. A visit the beat makes now names the organism's service identity and both levers that let it
-    act; an establishment's first cycle names the establishment. The opt-in default is the Owner's and stays open."""
+    act; an establishment's first cycle names the establishment. The opt-in default was ruled on 2026-11-19: an entity
+    registered before the flag existed reads as opted in, and every establishment states the flag (W1127)."""
     import uuid as _uuid888
     from agentic_core.economy import living_vsbs as _lv888
     vid = f"vsb-w888-{_uuid888.uuid4().hex[:6]}"
@@ -76382,11 +76473,22 @@ def test_w890_a_test_doubles_rows_move_out_of_the_operations_record_and_back(mon
     assert store.is_relative_to(pathlib.Path(os.environ["DATA_DIR"]).resolve()), (
         "the operations record this run writes is not under its own store root", store)
 
-    #    and the Owner, who holds that store, has the steps in the resume prompt's list
+    #    and the Owner, who holds that store, has the steps in the resume prompt's list while the row is open.
+    #    W1133l - the move was made on the Owner's store, so the row is done: a done owner row leaves the list (W594's
+    #    rule), and the way back is kept in the row's close note instead.
     prompt = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
-    owner = prompt.split("FU-1040 (W890):")[1].split("THAT IS THE WHOLE LIST.")[0] if "FU-1040 (W890):" in prompt else ""
-    assert "quarantine_test_double_rows.py" in owner and "--apply" in owner and "--restore" in owner, (
-        "the Owner's list does not give the steps for moving the rows on the Owner's store", owner[:300])
+    row1040 = next(r for r in json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+                   if r["id"] == "FU-1040")
+    if row1040["status"] == "open":
+        owner = (prompt.split("FU-1040 (W890):")[1].split("THAT IS THE WHOLE LIST.")[0]
+                 if "FU-1040 (W890):" in prompt else "")
+        assert "quarantine_test_double_rows.py" in owner and "--apply" in owner and "--restore" in owner, (
+            "the Owner's list does not give the steps for moving the rows on the Owner's store", owner[:300])
+    else:
+        still = prompt.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
+        assert "FU-1040" not in still, "a done row is still put to the Owner"
+        said = " ".join(str(row1040.get("close_note") or "").split())
+        assert "_pruned_ops_" in said and "--restore" in said, ("the done row does not keep the way back", said[:300])
 
     # 2. on a planted record: a dry run moves nothing, apply takes the test double's rows, restore puts each back
     def _row(served, at, ok=True, resource=None):
@@ -76713,7 +76815,7 @@ def test_w895_a_row_just_written_is_read_even_when_the_os_withholds_the_file_for
     assert _oe895._load() == []
 
 
-def test_w896_src_no_longer_stands_beside_agentic_core_its_live_modules_moved_in_the_rest_archived():
+def test_w896_src_no_longer_stands_beside_agentic_core_its_live_modules_moved_in_the_rest_archived(tmp_path):
     """FU-1168, part 2: src/, the second tree W877's measure found beside agentic_core, against the Owner's ratified
     refusal (a) of 2026-09-30 (no parallel source tree). Read before moving: of its 24 tracked files the live code
     reached three, and only through the avatar tool registry. Those moved into agentic_core/avatars/tools/ beside it.
@@ -76724,7 +76826,17 @@ def test_w896_src_no_longer_stands_beside_agentic_core_its_live_modules_moved_in
     import pathlib
     import re
     root = pathlib.Path(__file__).resolve().parents[1]
-    assert not (root / "src").exists(), "a top-level src/ stands beside agentic_core again"
+    #  W1133l - as in W877: a folder holding only bytecode caches (as src/ still does, untracked, on the Owner's
+    #  machine) is not a source tree; any file outside a __pycache__ folder is.
+    def _source_files(d):
+        return sorted(p.relative_to(d).as_posix() for p in d.rglob("*") if p.is_file() and "__pycache__" not in p.parts)
+    (tmp_path / "t" / "__pycache__").mkdir(parents=True)
+    (tmp_path / "t" / "__pycache__" / "m.cpython-312.pyc").write_bytes(b"")
+    assert _source_files(tmp_path / "t") == [], "a folder of bytecode caches was read as a source tree"
+    (tmp_path / "t" / "m.py").write_bytes(b"")
+    assert _source_files(tmp_path / "t") == ["m.py"], "a source file in the folder was not seen"
+    assert not (root / "src").exists() or _source_files(root / "src") == [], (
+        "a top-level src/ stands beside agentic_core again", _source_files(root / "src")[:5])
 
     # 1. no live code imports the old tree
     offenders = []
@@ -77342,7 +77454,8 @@ def test_w907_fu604_the_nineteen_removable_dependencies_are_gone_and_nothing_liv
     prose. They are removed now, after the full suite ran in a fresh venv built only from the new requirements.txt.
     Three stay in the lock because packages kept here require them. This guard holds the removal: none of the
     nineteen is declared, none is imported or probed by live code, and none stays pinned without something that
-    requires it. The rows held for a plan item or reached another way are still declared."""
+    requires it. The rows held for a plan item or reached another way stayed declared until a ruling of their own
+    released them (W1141, W1147)."""
     import pathlib
     import re
     import tomllib
@@ -77383,9 +77496,10 @@ def test_w907_fu604_the_nineteen_removable_dependencies_are_gone_and_nothing_liv
             hits += [(str(f.relative_to(root)), m.group(1)) for m in probe.finditer(text)]
     assert not hits, ("live code reaches a removed dependency", hits[:10])
 
-    #  the rows FU-283 held for a plan item, or found reached another way, are not part of the ruling
-    for kept in ("sqlalchemy", "sqlmodel", "psycopg2-binary", "streamlit", "pandas", "plotly"):
-        assert kept in declared, (kept, "was removed, and the ruling covered only the REMOVABLE rows")
+    #  the rows FU-283 held for a plan item, or found reached another way, were not part of this ruling. Each left
+    #  by a ruling of its own: streamlit, pandas and plotly by the Owner's of 2026-11-19 (FU-1174, W1141), and the
+    #  three held for P4.4 by the Owner's deferral of P4.4 on 2026-10-12 (FU-284, W1147). test_w1141 and
+    #  test_w1147 hold them gone.
 
 
 def test_w908_streamlit_pandas_and_plotly_are_reached_by_nothing_live_and_their_removal_is_asked_of_the_owner():
@@ -77403,7 +77517,9 @@ def test_w908_streamlit_pandas_and_plotly_are_reached_by_nothing_live_and_their_
     dv = (root / "docs/DEPENDENCY_VERDICTS.md").read_text(encoding="utf-8")
     for dist in ("streamlit", "pandas", "plotly"):
         row = re.search(rf"^\| {dist} \| ([^|]+) \|", dv, re.M)
-        assert row and "REMOVABLE" in row.group(1) and "not ruled" in row.group(1), (dist, row and row.group(1))
+        #  W1141 (FU-1277): the Owner ruled on 2026-11-19 (FU-1174), and the three were removed
+        assert row and "REMOVABLE" in row.group(1) and "ruled 2026-11-19 (FU-1174)" in row.group(1) and (
+            "removed" in row.group(1)), (dist, row and row.group(1))
 
     #  1 - nothing live imports or probes them, or what only streamlit brings
     mods = ["streamlit", "pandas", "plotly", "altair", "blinker", "gitdb", "git", "narwhals", "pyarrow", "pydeck",
@@ -78045,7 +78161,65 @@ def test_w918_fu742_the_file_stores_are_backed_up_verified_and_restored_byte_for
     #  the brief says what exists now, and what still does not
     brief = (root / "docs/business/PRODUCTION_HARDENING_BRIEF.md").read_text(encoding="utf-8")
     assert "No backup script exists" not in brief and "`scripts/backup_stores.py`" in brief
-    assert "No backup is taken on a schedule, no copy leaves the machine" in brief
+    #  W1137 - the deploy's daily snapshot and its drilled restore are what exists now; no snapshot has been taken
+    assert "The deploy takes a daily snapshot of the data disk" in brief
+    assert "No snapshot has been taken, since nothing is deployed" in brief
+
+
+class _serving_on_its_own_port:
+    """FU-1802 (W1133o). Start a local server on a port it chooses itself, and wait until it names that port.
+
+    `cmd` asks for port 0, and `said` is a pattern whose one group is the port, matched in the line the server
+    prints once it listens. The guards used to choose the port themselves: bind port 0, read it, close it, and
+    hand the number on. That left the port free until the server listened, and on the Owner's machine a loopback
+    connect to a port nobody listens on can connect to itself, so a poll sent in that window read back its own
+    request (test_w919 in the full suite of W1133m). Here the listener holds the port from the moment it exists.
+
+    Used as `with _serving_on_its_own_port(cmd, said, cwd=...) as srv:`. srv.port is None if the server exited, or
+    `timeout` passed, before it named a port. srv.output() is what it printed (stdout and stderr), for the
+    failure message. The server is stopped when the block ends."""
+
+    def __init__(self, cmd, said, *, cwd, env=None, timeout=180):
+        self.cmd, self.said, self.cwd, self.env, self.timeout = list(cmd), said, cwd, env, timeout
+        self.port, self.proc, self.lines, self._found = None, None, [], None
+
+    def __enter__(self):
+        import re
+        import subprocess
+        import threading
+        named = threading.Event()
+
+        def read():
+            for raw in self.proc.stdout:
+                line = raw.decode("utf-8", "replace")
+                self.lines.append(line)
+                m = self._found is None and re.search(self.said, line)
+                if m:
+                    self._found = int(m.group(1))
+                    named.set()
+            named.set()                                   # it ended without naming a port
+
+        self.proc = subprocess.Popen(self.cmd, cwd=self.cwd, env=self.env, stdin=subprocess.DEVNULL,
+                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        self._reader = threading.Thread(target=read, daemon=True)
+        self._reader.start()
+        named.wait(self.timeout)
+        self.port = self._found
+        return self
+
+    def output(self, last=1500):
+        return "".join(self.lines)[-last:]
+
+    def __exit__(self, *exc):
+        import subprocess
+        self.proc.terminate()
+        try:
+            self.proc.wait(timeout=60)
+        except subprocess.TimeoutExpired:
+            self.proc.kill()
+            self.proc.wait()
+        self._reader.join(timeout=10)
+        return False
 
 
 def test_w919_fu742_the_windows_start_path_names_only_what_exists_and_starts_the_app_every_deployment_starts(tmp_path):
@@ -78068,10 +78242,7 @@ def test_w919_fu742_the_windows_start_path_names_only_what_exists_and_starts_the
     import os
     import pathlib
     import re
-    import socket
-    import subprocess
     import sys
-    import time
     import urllib.request
 
     root = pathlib.Path(__file__).resolve().parents[1]
@@ -78110,38 +78281,23 @@ def test_w919_fu742_the_windows_start_path_names_only_what_exists_and_starts_the
             assert (root / ws / "package.json").is_file(), (cmd, "names a workspace that does not exist")
     assert '"dev": "vite"' in (root / "apps/workstation-superapp/package.json").read_text(encoding="utf-8")
 
-    #  the app the backend script names really serves: started as the script starts it, on a free port
-    with socket.socket() as so:
-        so.bind(("127.0.0.1", 0))
-        port = so.getsockname()[1]
+    #  the app the backend script names really serves: started as the script starts it, on a port it chooses
+    #  itself and names before it is asked anything (FU-1802, W1133o)
     data = tmp_path / "data"
     env = {**os.environ, "DATA_DIR": str(data), "WORKSTATION_DATA_DIR": str(data),
            "WORKSTATION_UEG_PATH": str(data / "ueg.json"), "PROJECTS_DIR": str(data / "projects"),
            "PYTHONPATH": str(root), "AI_DISABLE_LOCAL": "1"}
     (module, attr), = apps
-    proc = subprocess.Popen([sys.executable, "-m", "uvicorn", f"{module}:{attr}", "--host", "127.0.0.1",
-                             "--port", str(port)], cwd=str(root), env=env,
-                            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
     direct = urllib.request.build_opener(urllib.request.ProxyHandler({}))     # never through a proxy
     health = None
-    try:
-        deadline = time.time() + 180
-        while time.time() < deadline and proc.poll() is None:
-            try:
-                with direct.open(f"http://127.0.0.1:{port}/health", timeout=5) as resp:
-                    health = (resp.status, json.loads(resp.read().decode("utf-8")))
-                    break
-            except OSError:
-                time.sleep(1)
-    finally:
-        proc.terminate()
-        try:
-            _, err = proc.communicate(timeout=60)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            _, err = proc.communicate()
+    with _serving_on_its_own_port([sys.executable, "-m", "uvicorn", f"{module}:{attr}", "--host", "127.0.0.1",
+                                   "--port", "0"], r"Uvicorn running on http://127\.0\.0\.1:(\d+)",
+                                  cwd=str(root), env=env) as srv:
+        if srv.port:
+            with direct.open(f"http://127.0.0.1:{srv.port}/health", timeout=30) as resp:
+                health = (resp.status, json.loads(resp.read().decode("utf-8")))
     assert health is not None and health[0] == 200, (
-        "the app the backend script names did not answer /health", (err or b"")[-1500:].decode("utf-8", "replace"))
+        "the app the backend script names did not answer /health", srv.output())
 
 
 def test_w920_fu742_the_founders_guide_gives_only_commands_a_guard_runs_on_the_tree_it_ships_with(tmp_path):
@@ -78163,10 +78319,8 @@ def test_w920_fu742_the_founders_guide_gives_only_commands_a_guard_runs_on_the_t
     import pathlib
     import re
     import shutil
-    import socket
     import subprocess
     import sys
-    import time
     from agentic_core import plan_followups as _fu
     from agentic_core.app_mvp import app as _app920
 
@@ -78213,9 +78367,6 @@ def test_w920_fu742_the_founders_guide_gives_only_commands_a_guard_runs_on_the_t
 
     #  the health check, as the guide writes it, against the app started as start_backend.bat names it
     (module, attr), = re.findall(r"-m uvicorn ([\w.]+):(\w+)", back)
-    with socket.socket() as so:
-        so.bind(("127.0.0.1", 0))
-        port = so.getsockname()[1]
     data = tmp_path / "data"
     no_proxy = {k: v for k, v in os.environ.items() if k.lower() not in ("http_proxy", "https_proxy", "all_proxy")}
     env = {**no_proxy, "DATA_DIR": str(data), "WORKSTATION_DATA_DIR": str(data), "PYTHONPATH": str(root),
@@ -78223,34 +78374,26 @@ def test_w920_fu742_the_founders_guide_gives_only_commands_a_guard_runs_on_the_t
     exe, url = health.split()
     exe = exe if sys.platform == "win32" else "curl"
     assert shutil.which(exe), f"{exe} is not on this machine, so the guide's health check cannot be run here"
-    url = url.replace(":8000/", f":{port}/")
-    proc = subprocess.Popen([sys.executable, "-m", "uvicorn", f"{module}:{attr}", "--host", "127.0.0.1", "--port",
-                             str(port)], cwd=str(root), env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
     answer = None
-    try:
-        deadline = time.time() + 180
-        while time.time() < deadline and proc.poll() is None:
-            r = subprocess.run([exe, url], env=no_proxy, capture_output=True, text=True, timeout=30)
+    #  on a port the app chooses itself and names before the check is run (FU-1802, W1133o)
+    with _serving_on_its_own_port([sys.executable, "-m", "uvicorn", f"{module}:{attr}", "--host", "127.0.0.1",
+                                   "--port", "0"], r"Uvicorn running on http://127\.0\.0\.1:(\d+)",
+                                  cwd=str(root), env=env) as srv:
+        if srv.port:
+            r = subprocess.run([exe, url.replace(":8000/", f":{srv.port}/")], env=no_proxy, capture_output=True,
+                               text=True, timeout=30)
             if r.returncode == 0 and r.stdout.strip():
                 answer = json.loads(r.stdout)
-                break
-            time.sleep(1)
-    finally:
-        proc.terminate()
-        try:
-            _, err = proc.communicate(timeout=60)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            _, err = proc.communicate()
     assert answer and answer.get("status") == "healthy", ("the guide's health check got no healthy answer",
-                                                          (err or b"")[-1500:].decode("utf-8", "replace"))
+                                                          srv.output())
     assert '"status": "healthy"' in guide
 
     #  the gates in the plan's order; no channel called free or priced; the mandates row names the guide
     assert re.findall(r"\[plan item (P4\.\d)\]", guide) == ["P4.1", "P4.2", "P4.3", "P4.4", "P4.5", "P4.6"]
     assert not re.search(r"\bfree\b", guide, re.I) and "No channel here is promised to cost nothing." in guide
-    #  W923 - the price section waits on the Owner's decision row, named where the guide stops
-    assert re.search(r"waits on your decision in row FU-\d+: whether this guide may quote", guide)
+    #  W923 - the price section waited on the Owner's decision row; W1136 (FU-1278) applies the ruling of
+    #  2026-11-19: the guide states the price as SOURCED, and still calls no channel free
+    assert "as the Owner ruled on 2026-11-19 in row FU-1176" in guide and "waits on your decision" not in guide
     mandates = (root / "docs/compliance/MANDATES.md").read_text(encoding="utf-8")
     assert "`docs/business/FOUNDERS_GUIDE.md`" in mandates and "the setup document does not" not in mandates
 
@@ -78390,18 +78533,24 @@ def test_w923_fu742_the_guides_price_section_is_put_to_the_owner_with_the_recomm
     row = next((r for r in reg if r.get("title", "").startswith(
         "OWNER DECISION: may the founder's guide state a provider's published price")), None)
     assert row, "the price question was not put to the Owner"
-    assert (row["status"], row.get("owner_gated"), row.get("slot")) == ("open", True, "OWNER"), row
+    #  W1120: RULED on 2026-11-19 (yes, as recommended): the row is closed with the ruling, and stating the price
+    #  is the row it names; until that round the guide still quotes no price
+    assert (row["status"], row.get("closed_by")) == ("done", "W1120") and row["close_note"].startswith("OWNER RULED 2026-11-19 (the recommendation accepted): "), row
     assert "RECOMMENDED: yes, for a provider's published price only" in row["why"]
     assert "docs/business/FOUNDERS_GUIDE.md" in (row.get("files") or [])
 
     prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
     still = prompt.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
-    assert f"{row['id']} (W923): may the founder's guide state a provider's published price" in still
+    assert f"{row['id']} (W923):" not in still, "a ruled question is still put to the Owner"
 
     guide = (root / "docs/business/FOUNDERS_GUIDE.md").read_text(encoding="utf-8")
-    assert f"waits on your decision in row {row['id']}: whether this guide may quote" in guide
-    assert "[owner decision]" in guide and "stays open for it" not in guide
-    assert not re.search(r"[£$€]\s*\d|\b(GBP|USD|EUR)\s*\d", guide), "the guide quotes a price before the ruling"
+    #  W1136 (FU-1278): the ruling is applied - the guide states the deploy channel's published price as SOURCED,
+    #  with its pages and the date they were read, and no longer says the question waits on the Owner
+    assert f"waits on your decision in row {row['id']}" not in guide and "stays open for it" not in guide
+    assert f"as the Owner ruled on 2026-11-19 in row {row['id']}. [owner-defined, 2026-11-19]" in guide
+    for _blk in re.split(r"\n(?=- |\d+\. |\n)", guide):
+        if re.search(r"[£$€]\s*\d|\b(GBP|USD|EUR)\s*\d", _blk):
+            assert "SOURCED" in _blk and "2026-11-20" in _blk and "`docs/DEPLOYMENT.md`" in _blk, _blk[:120]
 
 
 def test_w924_fu399_a_genesis_journeys_stage_rail_and_rank_stage_are_guarded_by_a_render(client):
@@ -79408,10 +79557,8 @@ def test_w938_p54_a_clean_clone_of_the_entity_repository_serves_its_own_pages_by
     import posixpath
     import re
     import shutil
-    import socket
     import subprocess
     import sys
-    import time
     import urllib.request
 
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))    # a local server is never reached by proxy
@@ -79440,24 +79587,14 @@ def test_w938_p54_a_clean_clone_of_the_entity_repository_serves_its_own_pages_by
         cmd = re.findall(r"(?m)^    python3 -m http\.server (\d+)$", run)
         assert len(cmd) == 1, run
         named = re.findall(r"http://localhost:" + cmd[0] + r"/(\S+?)\.?(?:\s|$)", run)
-        with socket.socket() as s:
-            s.bind(("127.0.0.1", 0))
-            port = s.getsockname()[1]
-        server = subprocess.Popen([sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1"], cwd=str(clone),
-                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        #  on a port the server chooses itself and names before it is asked anything (FU-1802, W1133o)
+        with _serving_on_its_own_port([sys.executable, "-u", "-m", "http.server", "0", "--bind", "127.0.0.1"],
+                                      r"Serving HTTP on 127\.0\.0\.1 port (\d+)", cwd=str(clone), timeout=20) as srv:
+            assert srv.port, ("the clone's server never named its port", srv.output())
 
-        def get(path):
-            with opener.open(f"http://127.0.0.1:{port}/{path}", timeout=10) as resp:
-                return resp.status, resp.read()
-        try:
-            deadline = time.time() + 20
-            while True:
-                try:
-                    get("")
-                    break
-                except Exception:                                        # noqa: BLE001 - not listening yet
-                    assert time.time() < deadline, "the clone's server never answered"
-                    time.sleep(0.2)
+            def get(path):
+                with opener.open(f"http://127.0.0.1:{srv.port}/{path}", timeout=10) as resp:
+                    return resp.status, resp.read()
             seen, todo = set(), [p for p in named if p.endswith(".html")] + ["web/index.html"]
             for page in named:
                 status, body = get(page)
@@ -79475,9 +79612,6 @@ def test_w938_p54_a_clean_clone_of_the_entity_repository_serves_its_own_pages_by
                     if target.endswith(".html"):
                         todo.append(target)
             return named, seen, get
-        finally:
-            server.terminate()
-            server.wait(timeout=10)
 
     vid = entity("W938 Served")
     m, clone = serve_clone(vid, ("website", "webapp", "mobile"))
@@ -79511,12 +79645,12 @@ def test_w939_p52_a_price_is_recomputed_on_read_and_is_null_while_an_input_is_ab
     prices; an absent input yields null and a reason, never a figure. Measured: no pricing module or route existed,
     no cost could be declared for a deliverable, and no ruling says what arithmetic turns a cost and a waterfall into
     a price. Driven here:
-    - a deliverable's price is null and names both absent inputs, the cost and the arithmetic; its waterfall input is
-      the one the waterfall page reads;
+    - a deliverable's price is null and names the absent cost (W1123: the arithmetic is ruled, so it is no longer
+      absent); its waterfall input is the one the waterfall page reads;
     - each short or wrong declaration of a cost is refused, with nothing written; a deliverable of another entity is
       not found;
-    - a declared cost is an input, with what it is made of, who declared it and when, and the price stays null on the
-      arithmetic alone; a later declaration supersedes an earlier one, which is kept;
+    - a declared cost is an input, with what it is made of, who declared it and when, and (W1123) the price is then the
+      ruled one; a later declaration supersedes an earlier one, which is kept;
     - the waterfall changed, the next read of the price carries the new one;
     - the arithmetic is put to the Owner: an open OWNER DECISION row with its recommendation, on the resume prompt's
       list of what is still with the Owner."""
@@ -79537,11 +79671,12 @@ def test_w939_p52_a_price_is_recomputed_on_read_and_is_null_while_an_input_is_ab
     vid, did = entity("W939 Priced")
     q = {"vsb_id": vid, "deliverable_id": did}
     a0 = client.get("/api/v1/economy/price", params=q).json()
-    assert a0["price_wst"] is None and [m["input"] for m in a0["missing"]] == ["cost", "arithmetic"], a0
+    #  W1123: the arithmetic is ruled (2026-11-19), so only the cost is missing
+    assert a0["price_wst"] is None and [m["input"] for m in a0["missing"]] == ["cost"], a0
     wf = client.get("/api/v1/economy/waterfall", params={"vsb_id": vid}).json()
     assert a0["inputs"]["waterfall"]["proportions"] == wf["waterfall"] and a0["inputs"]["waterfall"]["source"] == wf["source"]
     assert a0["inputs"]["cost"] is None and "never a default figure" in a0["basis"] and a0["currency"] == "WST (virtual)"
-    assert "does not set one" in a0["missing"][1]["says"]
+    assert a0["arithmetic"]["ruling"].startswith("OWNER RULING 2026-11-19 (FU-1185)") and a0["arithmetic"]["platform_margin"] == 0.2
 
     base = {**q, "cost_wst": 60, "made_of": "two days of one person's work, stated for this test"}
     _, other_did = entity("W939 Other")
@@ -79555,13 +79690,15 @@ def test_w939_p52_a_price_is_recomputed_on_read_and_is_null_while_an_input_is_ab
     d1 = client.post("/api/v1/economy/deliverable-cost", json=base)
     assert d1.status_code == 200, d1.text[:300]
     a1 = d1.json()["price_now"]
-    assert a1["price_wst"] is None and [m["input"] for m in a1["missing"]] == ["arithmetic"], a1["missing"]
+    assert a1["price_wst"] == 100.0 and a1["missing"] == [], a1
+    assert (a1["arithmetic"]["reserve_wst"], a1["arithmetic"]["distributable_profit_wst"]) == (20.0, 20.0), a1["arithmetic"]
     c = a1["inputs"]["cost"]
     assert (c["cost_wst"], c["made_of"], c["declared_by"]) == (60, base["made_of"], "single-user-mode") and c["declared_at"]
     assert client.post("/api/v1/economy/deliverable-cost", json={**base, "cost_wst": 75}).status_code == 200
     g = client.get("/api/v1/economy/deliverable-cost", params=q).json()
     assert g["cost"]["cost_wst"] == 75 and [x["cost_wst"] for x in g["superseded"]] == [60]
-    assert client.get("/api/v1/economy/price", params=q).json()["inputs"]["cost"]["cost_wst"] == 75
+    p75 = client.get("/api/v1/economy/price", params=q).json()
+    assert p75["inputs"]["cost"]["cost_wst"] == 75 and p75["price_wst"] == 125.0, p75
 
     #  the waterfall changed: the next read of the price carries the new one
     new = {"owner": 0.10, "self_investment": 0.25, "capital_fund": 0.20, "user_projects": 0.15, "charity": 0.30}
@@ -79570,18 +79707,23 @@ def test_w939_p52_a_price_is_recomputed_on_read_and_is_null_while_an_input_is_ab
     a2 = client.get("/api/v1/economy/price", params=q).json()
     assert a2["inputs"]["waterfall"]["proportions"] != a0["inputs"]["waterfall"]["proportions"]
     assert a2["inputs"]["waterfall"]["proportions"] == client.get("/api/v1/economy/waterfall", params={"vsb_id": vid}).json()["waterfall"]
-    assert a2["inputs"]["waterfall"]["source"] == "owner_override" and a2["price_wst"] is None
+    #  W1123: the waterfall splits the profit the price leaves; it does not move the price
+    assert a2["inputs"]["waterfall"]["source"] == "owner_override" and a2["price_wst"] == 125.0, a2
+    assert a2["arithmetic"]["split_of_distributable_wst"] == {s: round(25.0 * v, 2) for s, v in new.items()}, a2["arithmetic"]
 
     #  the arithmetic is the Owner's, put with the recommendation where the Owner reads
-    assert pricing.ARITHMETIC is None, "a price arithmetic was set without the Owner's ruling"
+    #  W1123: the ruled arithmetic, its reserve rate read from the cycle and its margin set once
+    assert pricing.PLATFORM_MARGIN == 0.2 and pricing.reserve_rate() == 0.2 and pricing.RULING.startswith("OWNER RULING 2026-11-19")
     reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
     row = next((r for r in reg if r.get("title") == (
         "OWNER DECISION: what arithmetic turns an entity's declared cost and its waterfall into a price?")), None)
-    assert row and (row["status"], row.get("owner_gated"), row.get("slot")) == ("open", True, "OWNER"), row
+    #  W1120: RULED on 2026-11-19 (the formula, as recommended): the row is closed with the ruling, and the price
+    #  module is the row it names (FU-1279), which W1123 built, as above
+    assert row and (row["status"], row.get("closed_by")) == ("done", "W1120") and row["close_note"].startswith("OWNER RULED 2026-11-19 (the recommendation accepted): "), row
     assert "RECOMMENDED: price = the declared cost / (1 - the prudential reserve rate" in row["why"]
     prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
     still = prompt.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
-    assert f"{row['id']} (W939): what arithmetic turns an entity's declared cost and its waterfall into a price?" in still
+    assert f"{row['id']} (W939):" not in still, "a ruled question is still put to the Owner"
 
 
 def test_w940_p55_what_is_not_for_sale_is_one_register_and_pricing_one_is_refused_with_its_ruling(client):
@@ -79720,11 +79862,12 @@ def test_w941_p53_a_claim_that_an_output_is_wrong_stays_open_until_a_person_answ
     reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
     row = next((x for x in reg if x.get("title") == (
         "OWNER DECISION: under which Change Control tier is a claim that an output is wrong filed?")), None)
-    assert row and (row["status"], row.get("owner_gated"), row.get("slot")) == ("open", True, "OWNER"), row
+    #  W1120: RULED on 2026-11-19 (CRITICAL, as built): the row is closed with the ruling, and nothing changes
+    assert row and (row["status"], row.get("closed_by")) == ("done", "W1120") and row["close_note"].startswith("OWNER RULED 2026-11-19 (the recommendation accepted): ") and row.get("because") == "already_satisfied", row
     assert "RECOMMENDED: CRITICAL, as built" in row["why"]
     prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
     still = prompt.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
-    assert f"{row['id']} (W941): under which Change Control tier is a claim that an output is wrong filed?" in still
+    assert f"{row['id']} (W941):" not in still, "a ruled question is still put to the Owner"
 
 
 def test_w942_p53_claims_are_on_the_support_page_and_an_answer_says_whether_it_reached_the_ledger(client):
@@ -80584,7 +80727,7 @@ def test_w952_fu1189_nothing_a_person_types_into_a_domain_tool_is_stored_before_
     assert not holding({mat}), ("material a person handed over was stored before sign-in", holding({mat}))
 
 
-def test_w953_the_one_page_of_where_help_is_says_how_to_find_a_scholar_and_is_off_the_law_route(client):
+def test_w953_the_one_page_of_where_help_is_says_how_to_find_a_scholar_and_is_off_the_law_route(client, monkeypatch):
     """P5.20 clause 6 (W953). The one page of where help is says how to find a qualified scholar, where regulated and
     free legal help is, and how to complain about an answer; advice charities are linked, never copied. Measured: the
     page said nothing of a scholar and lived only on the Law route, and its complaint sentence named no way to reach a
@@ -80603,6 +80746,11 @@ def test_w953_the_one_page_of_where_help_is_says_how_to_find_a_scholar_and_is_of
 
     from agentic_core.api import where_help as _wh
     root = Path(__file__).resolve().parents[1]
+    #  W1163 - each place now says whether its page was read within ninety days, so the routes are asked as on the
+    #  day the rendered tests' answers were captured
+    import datetime as _dt1163
+    from agentic_core.legal import time_limits as _tl1163
+    monkeypatch.setattr(_tl1163, "_today", lambda: _dt1163.date(2026, 11, 20))
     page = _wh.page()
 
     #  1. the route outside Law: the one page, from the one source, taking nothing from the caller
@@ -80673,7 +80821,8 @@ def test_w953_the_one_page_of_where_help_is_says_how_to_find_a_scholar_and_is_of
     assert rows["law-directory"]["state"] == "journey" and rows["law-directory"]["driven_by"] == me, rows["law-directory"]
     assert "qualified scholar" in rows["law-directory"]["today"]
     assert rows["law-tribunal-time-limit"]["state"] == "arithmetic"
-    assert rows["law-tribunal-time-limit"]["driven_by"].startswith("test_w875_")
+    #  W1157 - the dated rules' guard drives the time-limit row now
+    assert rows["law-tribunal-time-limit"]["driven_by"].startswith("test_w1157_")
     tests = set(re.findall(r"^def (test_\w+)", Path(__file__).read_text(encoding="utf-8"), re.M))
     assert cov.check(reg, tests)["problems"] == [], cov.check(reg, tests)["problems"]
 
@@ -80819,7 +80968,8 @@ def test_w955_p513_each_care_tool_points_at_its_rows_of_the_register_read_now(cl
             assert re.search(r"not (?:been )?read", t["standard"]), (t["id"], t["standard"])
         if not t["sources"]:
             assert re.search(r"no source|no single published standard", t["standard"]), (t["id"], t["standard"])
-    assert rows["nice-ng97"]["status"] == "named_not_read" and rows["care-act-2014"]["status"] == "named_not_read"
+    #  W1122: NG97 was read at its publisher's page on 2026-11-19; the Care Act 2014 is still named and not read
+    assert rows["nice-ng97"]["status"] == "current" and rows["care-act-2014"]["status"] == "named_not_read"
 
     #  2. the answer reads each row now and says it in one sentence
     r = client.get("/api/v1/care/tools")
@@ -80834,7 +80984,9 @@ def test_w955_p513_each_care_tool_points_at_its_rows_of_the_register_read_now(cl
     if n2["recently_checked"]:
         assert f"within the {body['review_days']}-day review period" in n2["status_said"], n2
     ng97 = cat["dementia_care"]["sources"][0]
-    assert ng97["read"] is False and ng97["status_said"] == "named only: not read at its publisher's page", ng97
+    assert ng97["read"] is True and ng97["read_on"] == rows["nice-ng97"]["read_on"] == "2026-11-19", ng97
+    act = cat["safeguarding"]["sources"][0]
+    assert act["read"] is False and act["status_said"] == "named only: not read at its publisher's page", act
     falls = {s["id"]: s for s in cat["falls_risk"]["sources"]}
     assert falls["nice-cg161"]["status"] == "replaced" and "replaced by nice-ng249" in falls["nice-cg161"]["status_said"]
     assert cat["mental_health"]["sources"] == [] and cat["discharge"]["sources"] == []
@@ -81253,11 +81405,16 @@ def test_w962_fu807_the_cost_model_marks_every_cost_by_where_it_came_from_and_fi
     for mark in ("QUOTED: a price a named supplier gave in writing", "SOURCED: a provider's published price",
                  "ASSUMED: a value chosen only so a calculation can be run", "NOT MEASURED: everything else"):
         assert mark in flat, mark
-    table = [ln for ln in text.splitlines() if ln.startswith("| ") and "---" not in ln and not ln.startswith("| Line")]
+    #  W1126: the cost table is the one under its own heading; the gates section has a table of its own
+    _costs1126 = text.split("## The cost lines", 1)[1].split("\n## ", 1)[0]
+    table = [ln for ln in _costs1126.splitlines() if ln.startswith("| ") and "---" not in ln and not ln.startswith("| Line")]
     assert len(table) == 8, len(table)
     for row in table:
         for cell in [c.strip() for c in row.strip("|").split("|")[1:4]]:
-            assert re.fullmatch(r"(free tier, )?NOT MEASURED|none|none kept off it|kept apart below", cell), (row, cell)
+            #  W1136 (FU-1278): a cell may be SOURCED, under the Owner's ruling of 2026-11-19; an amount only so
+            assert re.fullmatch(r"(free tier, )?NOT MEASURED|none|none kept off it|kept apart below|SOURCED[:,] [^|]+",
+                                cell), (row, cell)
+            assert not re.search(r"[£$€]\s*\d", cell) or cell.startswith("SOURCED"), (row, cell)
     assert "| The founder's time | kept apart below | kept apart below | kept apart below |" in text
     for scen in ("LEAN is the first deploy the Owner ruled", "BASE adds what opening to a first person other than the Owner would need",
                  "HIGHER ASSURANCE adds the outside help scoped in"):
@@ -81274,14 +81431,17 @@ def test_w962_fu807_the_cost_model_marks_every_cost_by_where_it_came_from_and_fi
     assert "the bill is not promised to be zero" in flat and "zero bill" in flat
     assert not re.search(r"\b\d[\d,.]*\s*(?:per cent|%)", text.split("## Unit economics", 1)[1]), "a figure crept into the formulas"
 
-    #  the seven gates: said not to be in the tree, and put to the Owner
+    #  the seven gates: not in the tree as a playbook, and ruled by the Owner on 2026-11-19 (W1126 marks each)
     gates = text.split("## The seven investment gates", 1)[1]
-    assert "was not received" in gates and "none is invented here" in gates and "[owner decision]" in gates
+    assert "was not received" in gates and "none is invented" in gates and "[owner-defined, 2026-11-19]" in gates
     row = next(r for r in reg if r.get("title") == "OWNER DECISION: which are the seven investment gates the cost model is to mark?")
     assert row.get("owner_gated") and row.get("slot") == "OWNER" and "RECOMMENDED" in row["why"]
     prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
-    assert f"{row['id']} (W962): which are the seven investment gates" in prompt
-    assert prompt.index(f"{row['id']} (W962):") < prompt.index("THAT IS THE WHOLE LIST.")
+    #  W1120: RULED on 2026-11-19 (P4.1 to P4.6 and a first offer, as recommended): the row is closed with the
+    #  ruling and has left the open-decisions list; marking the gates is the row it names
+    assert (row["status"], row.get("closed_by")) == ("done", "W1120") and row["close_note"].startswith("OWNER RULED 2026-11-19 (the recommendation accepted): "), row
+    still = prompt.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
+    assert f"{row['id']} (W962):" not in still, "a ruled question is still put to the Owner"
 
 
 def test_w963_p57_no_business_document_states_a_customer_a_partner_or_a_cleared_name_or_carries_a_personal_detail():
@@ -81448,7 +81608,7 @@ def test_w964_fu1190_a_claim_can_name_an_answer_that_was_never_saved_by_its_fing
         assert client.get(f"/api/v1/support/claims/{on['claim_id']}", headers=H[k]).status_code == (200 if sees else 404), k
 
 
-def test_w965_fu1190_a_claim_can_be_raised_under_the_answer_of_each_of_the_25_domain_tools(client):
+def test_w965_fu1190_a_claim_can_be_raised_under_the_answer_of_each_of_the_25_domain_tools(client, monkeypatch):
     """FU-1190 closed (W965, P5.20 clause 6). W964 let a claim name an answer by the sha256 of its text, the route that
     gave it and what served it. The shared form every domain tool runs through now offers it under the answer. Held:
     - the claim is sent with the fingerprint of the one composition the save, the copy and every download carry, the
@@ -81494,6 +81654,11 @@ def test_w965_fu1190_a_claim_can_be_raised_under_the_answer_of_each_of_the_25_do
 
     #  the one page of where help is says how to complain about any answer, and its rendered test reads it
     from agentic_core.api import where_help as _wh
+    #  W1163 - each place now says whether its page was read within ninety days, so the routes are asked as on the
+    #  day the rendered tests' answers were captured
+    import datetime as _dt1163
+    from agentic_core.legal import time_limits as _tl1163
+    monkeypatch.setattr(_tl1163, "_today", lambda: _dt1163.date(2026, 11, 20))
     got = client.get("/api/v1/support/where-help-is").json()
     assert got["to_complain"] == _wh.TO_COMPLAIN
     for words in ("Under the answer of each of the 25 domain tools", "never the text itself",
@@ -83417,7 +83582,8 @@ def test_w996_fu399_the_law_hub_says_each_refusals_reason_and_counts_the_forms_f
     #  both reads through apiJson, each failure said with the server's reason
     assert "apiJson('/api/v1/law/templates')" in code and "apiJson('/api/v1/law/tools')" in code
     assert "fetch('/api/v1/law/" not in code and "throw new Error(`HTTP ${r.status}`)" not in code
-    assert code.count("could not be read (${readFailure(e)})") == 2
+    #  W1166 - the urgent routes are the third read whose failure the page says
+    assert code.count("could not be read (${readFailure(e)})") == 3
     assert "const readFailure = (e: unknown) => (e instanceof ApiError || e instanceof TypeError ? errorMessage(e)" in code
     #  the count is the server's list's
     assert "The three forms further down need a model." not in code
@@ -90512,22 +90678,25 @@ def test_w1099_fu1054_the_care_calibration_set_is_written_out_and_run_only_when_
     raw = json.loads((root / "docs" / "CARE_REVIEW_CALIBRATION.json").read_text(encoding="utf-8"))
 
     #  1. THE SET IN THE TREE
-    assert "runnable" not in raw and "runnable_basis" not in raw and raw["version"] == "2-written", (
+    assert "runnable" not in raw and "runnable_basis" not in raw and raw["version"] == "3-written", (
         "a flag stands in the file where the computation was ruled")
     cases = {c["id"]: c for c in raw["cases"]}
     assert len(cases) == 16 and sum(1 for c in cases.values() if c.get("planted")) == 10
     for cid, c in cases.items():
-        assert bool(c.get("shown")) is (cid != "K06"), (cid, "written out" if c.get("shown") else "not written out")
+        #  W1122: the sixteenth, K06, is written out too, once NICE NG97 was read at its publisher's page
+        assert c.get("shown") and "not_written" not in c, (cid, "not written out")
         if c.get("planted"):
             assert c.get("must_flag") and len(str(c.get("from") or "")) > 40, (cid, c.get("from"))
         assert isinstance(c.get("relies_on"), list), cid
-    assert "NG97" in cases["K06"]["not_written"] and "verified against clinical guidance" in cases["C08"]["described_before"]
+    assert "NICE NG97" in cases["K06"]["shown"]["standard"] and "verified against clinical guidance" in cases["C08"]["described_before"]
+    #  W1122: the two causes outside this machine were read on 2026-11-19, so on that day the set can be run, and
+    #  on 2026-11-15 it could not: its four cases that rely on them rely on reads made after that date
+    assert cal.runnable(raw, on="2026-11-19") == {"runnable": True, "on": "2026-11-19", "why_not": []}
     on = cal.runnable(raw, on="2026-11-15")
-    chart = "relies on the chart itself (rcp-news2), which the register says was NOT READ"
+    late = "which was not read within the register's 90-day review period before 2026-11-15"
     assert on["runnable"] is False and sorted(on["why_not"]) == sorted([
-        f"C03 {chart}", f"C10 {chart}", f"K02 {chart}",
-        "K06 is described, not written out in full: " + cases["K06"]["not_written"],
-        "K06 relies on nice-ng97 being current, and the register holds it as named_not_read"]), on["why_not"]
+        f"C03 relies on rcp-news2, {late}", f"C10 relies on rcp-news2, {late}", f"K02 relies on rcp-news2, {late}",
+        f"K06 relies on nice-ng97, {late}"]), on["why_not"]
 
     #  ...and the route refuses a run on it with those reasons, writing nothing; no agent is calibrated on it
     runs = tmp_path / "review_calibration_runs.json"
@@ -90539,7 +90708,9 @@ def test_w1099_fu1054_the_care_calibration_set_is_written_out_and_run_only_when_
         "Not recorded: the calibration set cannot be run on 2026-11-15: " + "; ".join(on["why_not"]) + "."), refused.text[:400]
     assert not runs.exists(), "a refused run wrote the store"
     now = cal.calibration_of("w1099-reviewer")
-    assert now["calibrated"] is False and "cannot be run yet" in now["why_not"] and now["set_cannot_run"], now
+    #  W1122: read on today's date - the set can be run from 2026-11-19 until a source passes its review period
+    assert now["calibrated"] is False and ("cannot be run yet" in now["why_not"] if cal.runnable(raw)["runnable"] is False
+                                           else now["why_not"] == "this agent has never been run on the calibration set"), now
 
     #  2. COMPUTED FROM THE CASES AND THE REGISTER, each rule driven
     register = {"r-now": {"id": "r-now", "status": "current", "read_on": "2026-11-01",
@@ -90952,7 +91123,7 @@ def test_w1105_fu399_the_ratified_plan_entry_is_rendered_previewed_first_and_ent
         assert line in spec, ("the rendered test no longer reads this", line)
 
 
-def test_w1106_fu399_the_statute_panel_is_rendered_and_where_help_is_said_in_the_server_s_words(client):
+def test_w1106_fu399_the_statute_panel_is_rendered_and_where_help_is_said_in_the_server_s_words(client, monkeypatch):
     """FU-399 part 95 (W1106). The Law page's statute panel (components/StatutePanel.tsx, W724) had no rendered test:
     all ten of its elements were unread. Held here:
     - the fixture holds the routes' own answers on a fresh store: where help from a person is, with the five
@@ -90975,6 +91146,11 @@ def test_w1106_fu399_the_statute_panel_is_rendered_and_where_help_is_said_in_the
     assert bad["url"] == "/api/v1/law/statute/{kind}/{year}/{number}/section/{section}".format(**fx["ask"])
 
     #  the routes answer the same today: neither reaches a publisher
+    #  W1163 - each place now says whether its page was read within ninety days, so the routes are asked as on the
+    #  day the rendered tests' answers were captured
+    import datetime as _dt1163
+    from agentic_core.legal import time_limits as _tl1163
+    monkeypatch.setattr(_tl1163, "_today", lambda: _dt1163.date(2026, 11, 20))
     live = client.get("/api/v1/law/help")
     assert live.status_code == 200 and live.json() == h["body"], "the help the panel was rendered against is not the route's"
     live = client.get(bad["url"])
@@ -91464,3 +91640,4742 @@ def test_w1118_fu399_the_archive_search_says_each_passage_by_its_line_and_what_i
                  "`Not searched (not read into the index): ${f.not_searched.join(', ')}`);",
                  "await waitFor(() => expect(screen.getByText('Search failed: Failed — backend unreachable.')).toBeTruthy());"):
         assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1119_fu399_the_time_limit_panel_says_the_limit_what_it_omits_and_who_to_ask_in_the_routes_words(client, monkeypatch):
+    """FU-399 part 108 (W1119). The Law page's time-limit panel had no rendered test, and none of its four elements was
+    read: the panel, the rules' failed read, a refusal, and the limit worked out. Held here:
+    - the answers the test serves are the routes' own, in the state the cases read: the rules this platform can work
+      out; a limit worked out from 2026-10-03 as the rule's months on, ending the day before; the same ask over a
+      provision without the rule's words, not worked out; and the same ask with the publisher unreachable, refused
+      with who to ask;
+    - the routes still answer exactly that today, with the provision stood in the same way (the suite reaches no
+      outside host, so test_w875 stands it in too);
+    - the rendered test reads each element in the routes' words."""
+    import datetime as _dt
+    import json
+    from pathlib import Path
+    from agentic_core.legal import statute as _st
+    from agentic_core.legal import time_limits as _tl
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components"
+    fx = json.loads((src / "TimeLimitPanel.fixture.json").read_text(encoding="utf-8"))
+    rules, done, gone, refused = fx["rules"]["body"], fx["computed"], fx["words_gone"], fx["refused"]
+    assert [r["id"] for r in rules["rules"]] == list(_tl.RULES), rules
+    ask = done["request"]
+    assert gone["request"] == refused["request"] == ask and ask["rule"] == rules["rules"][0]["id"]
+    rule = _tl.RULES[ask["rule"]]
+    per = _tl.period_for(ask["rule"], ask["event_date"])          # W1157: the period the date falls in
+    end = _tl.last_day(_dt.date.fromisoformat(ask["event_date"]), per["months"])
+    assert done["body"]["computed"] is True and done["body"]["last_day"] == end.isoformat(), done["body"]
+    assert done["body"]["route"]["name"] == rule["route"]["name"] and done["body"]["provision_address"], done["body"]
+    assert gone["body"]["computed"] is False and gone["body"]["last_day"] is None
+    assert refused["status"] == 502 and rule["route"]["name"] in refused["body"]["detail"], refused
+
+    #  the routes answer exactly that today, the provision stood in as the capture stood it in; W1162 - each answer
+    #  says whether its sources were read within ninety days, so the routes are asked as on the capture's day
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2026, 11, 20))
+    assert client.get(fx["rules"]["url"]).json() == rules
+
+    def stood_in(text):
+        async def _provision(kind, year, number, section, version=None):
+            return {"parts": [{"level": 1, "number": "(2)", "text": text}],
+                    "address": (f"https://www.legislation.gov.uk/{kind}/{year}/{number}/section/{section}"
+                                + (f"/{version}" if version else ""))}
+        return _provision
+
+    async def _unreachable(*_a, **_k):
+        raise _st.PublisherRefused("the publisher could not be reached (ConnectError)")
+    for key, prov in (("computed", stood_in(f"(a) before the end of the period of {per['words']}, or")),
+                      ("words_gone", stood_in("(a) before the end of the period of nine months, or")),
+                      ("refused", _unreachable)):
+        monkeypatch.setattr(_st, "provision", prov)
+        live = client.post(fx["rules"]["url"], json=ask)
+        assert (live.status_code, live.json()) == (fx[key]["status"], fx[key]["body"]), (key, live.text[:300])
+
+    spec = (src / "TimeLimitPanel.test.tsx").read_text(encoding="utf-8")
+    for line in ("await waitFor(() => expect(said()[0]).toBe(`The primary limit ends at the end of ${a.last_day}.`));",
+                 "`Ask ${a.route.name} - ${a.route.for_what}.`,",
+                 #  W1161 - an Order's provision is an article, and the panel says the part the answer gives
+                 "`${a.act}, ${a.part} ${a.section} - ${a.provision_address}. ${a.arithmetic}. ${a.not_advice}`,",
+                 "expect(said().slice(1, 3)).toEqual([g.basis, `It does not account for ${g.does_not_account_for}.`]);",
+                 "`Failed (HTTP ${r.status}): ${r.body.detail}`));",
+                 "await waitFor(() => expect(screen.getByTestId('law-time-limit-rules-note').textContent).toBe("):
+        assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1120_the_owners_rulings_of_2026_11_19_are_recorded_where_the_work_reads_them():
+    """The Owner's rulings of 2026-11-19 (W1120). The Owner accepted the twenty-two recommendations put to them that
+    evening and delegated the six switches of their hand, with AI agents standing in for the people the invited stage would
+    invite. Held here:
+    - each ruling is in the plan where the work reads it: the switches proceeding in the ruled order without the Owner and
+      what stays theirs (the P4 heading), the opt-in rule (P4.1), the dry run (P4.5), real money staying off (P4.6),
+      the price (P5.2), a provider's price in the guide (P5.6), the seven gates (P5.7) and the fee's release (P5.16);
+    - the two rows whose ruling is what the code does are closed as satisfied, the four whose ruling sets work are
+      closed as answered, each close says who ruled and when, and each of the four names one row from this round,
+      on the item that builds it and not waiting on the Owner, that carries the work;
+    - the real-money switch is still off in the tree."""
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core import plan_followups as pf
+    from agentic_core.economy import owner_payments as _op
+    root = Path(__file__).resolve().parents[1]
+    plan = pf.read_doc(root / "docs" / "FABLE_DELIVERY_PROMPT.md")
+    flat = " ".join(plan.split())
+    R = "OWNER RULING 2026-11-19"
+    head = flat[flat.index("PHASE P4 — THE OWNER'S HAND"):flat.index(" P4.1 AUTH_ENABLED on")]
+    for words in (f"{R} (the twenty-two recommendations of that day accepted together): the six steps now proceed "
+                  "WITHOUT waiting on the Owner for each one",
+                  "the invited stage is run with AI agents standing in for the people invited, on made-up accounts that "
+                  "hold nothing about a real person",
+                  "real money stays off until a compliance and KYC review by qualified people (P4.6), which no agent "
+                  "stands in for"):
+        assert words in head, ("the P4 heading does not carry the ruling", words[:70])
+    blocks = pf._item_blocks(pf.delivery_plan_body(plan) or plan)
+    for slot, words in (("P4.1", " (FU-849): an entity registered before the opt-in flag existed is read as opted in"),
+                        ("P4.5", ": the dry run is taken now"),
+                        ("P4.6", ": the switch stays off. Its condition is a compliance and KYC review by qualified people"),
+                        ("P5.2", " (FU-1185): price = the declared cost / (1 - the prudential reserve rate, 20% - a "
+                                 "platform margin set once, 20%)"),
+                        ("P5.6", " (FU-1176): the founder's guide may state a provider's published price"),
+                        ("P5.7", " (FU-1191): with no founder playbook in the tree, the seven investment gates are the six "
+                                 "switches of the Owner's hand, P4.1 to P4.6"),
+                        ("P5.16", " (FU-1057): clause 3 is released for a made-up entity now")):
+        assert f"{R}{words}" in " ".join(blocks[slot].split()), ("the item does not carry its ruling", slot)
+
+    reg = {r["id"]: r for r in json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    for fid, because in (("FU-1166", "already_satisfied"), ("FU-1187", "already_satisfied"), ("FU-1174", "built"),
+                         ("FU-1176", "built"), ("FU-1185", "built"), ("FU-1191", "built")):
+        r = reg[fid]
+        assert (r["status"], r.get("closed_by"), r.get("because")) == ("done", "W1120", because), (fid, r["status"])
+        assert r["close_note"].startswith("OWNER RULED 2026-11-19 (the recommendation accepted): "), (fid, r["close_note"][:60])
+    for fid, slot in (("FU-1174", "P4.5"), ("FU-1176", "P5.6"), ("FU-1185", "P5.2"), ("FU-1191", "P5.7")):
+        carried = [reg[n] for n in re.findall(r"FU-\d+", reg[fid]["close_note"]) if n != fid]
+        assert len(carried) == 1, (fid, "names no single row that carries the work")
+        c = carried[0]
+        assert c["source"].startswith("W1120 ") and c["slot"] == slot and c["owner_gated"] is False, (fid, c["id"], c["slot"])
+        assert c["status"] == "open" or (c["status"] == "done" and c.get("closed_by") != "W1120"), (fid, c["id"], c["status"])
+    assert _op.REAL_MONEY_ENABLED is False, "the real-money switch is on in the tree; it stays off until people review it"
+
+
+def test_w1121_fu1151_the_two_audit_run_records_say_what_kind_of_place_each_was_and_name_none():
+    """FU-1151 (W1121). Two committed audit run records carried text of a private kind: edition 15's named a folder on
+    the Owner's Windows machine in five places, and edition 16's named that folder once and a folder in the Owner's home folder
+    once. The Owner allowed the two files to be opened on 2026-11-19. Held here:
+    - neither record names a place on a machine by its path: no drive path is left in either;
+    - each says what kind of place it was instead, as many times as it named one;
+    - both are still whole records: they parse, and edition 15's is still the one the coverage script reads."""
+    import json
+    import re
+    from pathlib import Path
+    runs = Path(__file__).resolve().parents[1] / "docs" / "fidelity_runs"
+    audit = "[the audit's data folder on the Owner's Windows machine]"
+    home = "[a data folder in the Owner's home folder on Windows]"
+    for name, want in (("ledger_v15_W654_ab829862.json", {audit: 5, home: 0}),
+                       ("ledger_v16_W665_ca081db0.json", {audit: 1, home: 1})):
+        raw = (runs / name).read_text(encoding="utf-8")
+        assert not re.search(r"\b[A-Za-z]:(?:/|\\\\)", raw), (name, "a record names a place on a machine by its path")
+        assert {k: raw.count(k) for k in want} == want, (name, {k: raw.count(k) for k in want})
+        assert json.loads(raw), name
+
+
+def test_w1122_fu1054_the_calibration_sets_last_two_sources_are_read_and_its_sixteenth_case_is_written(client):
+    """FU-1054 part 4 (W1122). The Care calibration set could not be run for two causes outside this machine: the
+    NEWS2 chart itself had not been read at the college's page, and NICE NG97 had not been read at all, so the
+    sixteenth case waited on it. Both were read at their publishers on 2026-11-19. Held here:
+    - the register records both reads: the charts, with no part of the NEWS2 row said to be NOT READ, and NG97 as a
+      current row with its page, its two dates and what it covers;
+    - every band of Chart 1 and every threshold of Chart 2 is the one the tree's NEWS2 scoring applies, at each
+      boundary the chart draws;
+    - the sixteenth case is the dementia entry as the tools route gives it now, citing NG97 with the date it was
+      read; the set can be run on 2026-11-19 and could not be on 2026-11-15, before the reads."""
+    import json
+    from pathlib import Path
+    from agentic_core.api import _review_calibration as cal
+    from agentic_core.care.scoring import score_news2
+    root = Path(__file__).resolve().parents[1]
+    rows = {r["id"]: r for r in json.loads((root / "docs" / "SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    n2, ng = rows["rcp-news2"], rows["nice-ng97"]
+    assert n2["read_on"] == "2026-11-19" and "NOT READ" not in n2["says"] and "THE CHARTS READ 2026-11-19" in n2["says"], n2
+    assert (ng["status"], ng["page"], ng["read_on"]) == ("current", "https://www.nice.org.uk/guidance/ng97", "2026-11-19"), ng
+    assert "Published 20 June 2018" in ng["says"] and "Last reviewed 24 October 2025" in ng["says"], ng["says"]
+
+    #  Chart 1, at each boundary it draws, against a set of observations that otherwise scores nothing
+    base = {"resp_rate": 16, "spo2": 97, "oxygen": "air", "systolic_bp": 120, "pulse": 70, "consciousness": "alert", "temp": 37.0}
+
+    def pts(key, value, comp, **extra):
+        return score_news2({**base, key: value, **extra})["components"][comp]["points"]
+    for key, comp, table in (
+            ("resp_rate", "respiratory_rate", ((8, 3), (9, 1), (11, 1), (12, 0), (20, 0), (21, 2), (24, 2), (25, 3))),
+            ("spo2", "spo2_scale_1", ((91, 3), (92, 2), (93, 2), (94, 1), (95, 1), (96, 0))),
+            ("systolic_bp", "systolic_bp", ((90, 3), (91, 2), (100, 2), (101, 1), (110, 1), (111, 0), (219, 0), (220, 3))),
+            ("pulse", "pulse", ((40, 3), (41, 1), (50, 1), (51, 0), (90, 0), (91, 1), (110, 1), (111, 2), (130, 2), (131, 3))),
+            ("temp", "temperature", ((35.0, 3), (35.1, 1), (36.0, 1), (36.1, 0), (38.0, 0), (38.1, 1), (39.0, 1), (39.1, 2)))):
+        for value, want in table:
+            assert pts(key, value, comp) == want, (comp, value)
+    assert pts("consciousness", "voice", "consciousness") == 3 and pts("oxygen", "yes", "air_or_oxygen") == 2
+    for value, o2, want in ((83, "yes", 3), (84, "yes", 2), (85, "yes", 2), (86, "yes", 1), (87, "yes", 1), (88, "yes", 0),
+                            (92, "yes", 0), (93, "yes", 1), (94, "yes", 1), (95, "yes", 2), (96, "yes", 2), (97, "yes", 3),
+                            (93, "no", 0), (97, "no", 0)):
+        assert pts("spo2", value, "spo2_scale_2", spo2_scale=2, oxygen=o2) == want, ("SpO2 scale 2", value, o2)
+    #  Chart 2: 0 to 4 low, a 3 in any one parameter low-medium, 5 or 6 medium, 7 or more high
+    for obs, total, band in (({}, 0, "low"), ({"resp_rate": 21, "pulse": 91}, 3, "low"),
+                             ({"resp_rate": 25}, 3, "low-medium"), ({"resp_rate": 21, "systolic_bp": 100, "pulse": 91}, 5, "medium"),
+                             ({"resp_rate": 25, "systolic_bp": 100, "pulse": 111}, 7, "high")):
+        r = score_news2({**base, **obs})
+        assert (r["total"], r["band"]) == (total, band), (obs, r["total"], r["band"])
+
+    #  the sixteenth case is the dementia entry as the tools route gives it now, and the set runs from the reads' day
+    the_set = json.loads((root / "docs" / "CARE_REVIEW_CALIBRATION.json").read_text(encoding="utf-8"))
+    k06 = next(c for c in the_set["cases"] if c["id"] == "K06")
+    live = next(t for t in client.get("/api/v1/care/tools").json()["tools"] if t["id"] == "dementia_care")
+    keep = lambda e: {k: e[k] for k in ("id", "name", "type", "does", "standard")} | {
+        "sources": [{k: s[k] for k in ("id", "status", "page", "read_on", "read")} for s in e["sources"]]}
+    assert keep(k06["shown"]) == keep(live), (keep(k06["shown"]), keep(live))
+    assert "NICE NG97" in live["standard"] and "2026-11-19" in live["standard"] and live["sources"][0]["read"] is True
+    assert cal.runnable(the_set, on="2026-11-19")["runnable"] is True and cal.runnable(the_set, on="2026-11-15")["runnable"] is False
+
+
+def test_w1123_fu1279_a_price_is_the_declared_cost_by_the_ruled_formula_and_the_waterfall_splits_what_it_leaves(client):
+    """FU-1279 (W1123), P5.2. The Owner ruled on 2026-11-19 (FU-1185, the recommendation accepted): price = the
+    declared cost / (1 - the prudential reserve rate - a platform margin set once, 20%). Held here:
+    - the arithmetic is the ruled one: the reserve rate is the cycle's own default, read from the cycle, and the margin
+      is set once;
+    - a deliverable that costs 60 WST is priced at 100 WST: 20 WST to the reserve and 20 WST of distributable profit,
+      which the entity's waterfall splits stage by stage; a cost of 45 WST is priced at 75 WST;
+    - a deliverable with no declared cost has no price and says so; changing the waterfall changes the split and not
+      the price;
+    - reading a price posts nothing: the entity's books are what they were."""
+    import inspect
+    from agentic_core.api import pricing
+    from agentic_core.economy.metabolism import EconomicMetabolism
+    assert pricing.reserve_rate() == inspect.signature(EconomicMetabolism.run_cycle).parameters["reserve_rate"].default == 0.2
+    assert pricing.PLATFORM_MARGIN == 0.2 and pricing.RULING.startswith("OWNER RULING 2026-11-19 (FU-1185)")
+
+    est = client.post("/api/v1/genesis/establish", json={"problem": "w1123 a priced report", "ship_output": False,
+                                                          "name": "W1123 Priced"})
+    assert est.status_code == 200, est.text[:300]
+    vid = est.json()["vsb_id"]
+    d = client.post("/api/v1/deliverables/produce", json={"vsb_id": vid, "type": "report", "title": "W1123 report",
+                                                           "brief": "w1123 a report whose price is asked"})
+    assert d.status_code == 200, d.text[:300]
+    q = {"vsb_id": vid, "deliverable_id": d.json()["id"]}
+    none = client.get("/api/v1/economy/price", params=q).json()
+    assert none["price_wst"] is None and [m["input"] for m in none["missing"]] == ["cost"], none
+
+    books = lambda: EconomicMetabolism(vid, none["inputs"]["waterfall"]["entity_type"]).ledger.balances()
+    before = books()
+    assert client.post("/api/v1/economy/deliverable-cost", json={**q, "cost_wst": 60,
+                                                                 "made_of": "two days of one person's work, made up"}).status_code == 200
+    p = client.get("/api/v1/economy/price", params=q).json()
+    a = p["arithmetic"]
+    assert (p["price_wst"], a["cost_wst"], a["reserve_wst"], a["distributable_profit_wst"]) == (100.0, 60.0, 20.0, 20.0), a
+    wf = p["inputs"]["waterfall"]["proportions"]
+    assert a["split_of_distributable_wst"] == {s: round(20.0 * v, 2) for s, v in wf.items()}, a
+    assert books() == before, "reading a price posted something"
+
+    new = {"owner": 0.10, "self_investment": 0.25, "capital_fund": 0.20, "user_projects": 0.15, "charity": 0.30}
+    assert client.post("/api/v1/economy/waterfall", json={"vsb_id": vid, "proportions": new}).status_code == 200
+    p2 = client.get("/api/v1/economy/price", params=q).json()
+    assert p2["price_wst"] == 100.0 and p2["arithmetic"]["split_of_distributable_wst"] == {s: round(20.0 * v, 2) for s, v in new.items()}
+    assert client.post("/api/v1/economy/deliverable-cost", json={**q, "cost_wst": 45,
+                                                                 "made_of": "a day and a half, made up"}).status_code == 200
+    assert client.get("/api/v1/economy/price", params=q).json()["price_wst"] == 75.0
+
+
+def test_w1124_fu1057_the_platform_fee_is_a_quarter_of_the_profit_taken_first_and_the_split_applies_to_what_remains(client):
+    """FU-1057 part 1 (W1124), P5.16 clauses 3 and 4. OWNER RULING 2026-10-12: each generated entity pays 25% of its
+    profit for updates and maintenance, TAKEN FIRST - the profit being the cycle's own figure (revenue less declared
+    costs less the prudential reserve, never below zero) - the fee one ledger line the entity's owner can see, and the
+    entity's own split applied to what remains. No profit, no fee; the apex and a non-distributing entity pay none; an
+    unregistered simulation's fee is shown and never posted. OWNER RULING 2026-11-19 (FU-1057): released for a
+    made-up entity now, ahead of the first walk. Held here, on made-up entities:
+    - a registered entity's cycle (1000 WST in, 200 of costs, the 20% reserve 200): profit 600, a fee of 150 posted
+      as one line (Dr platform_fee / Cr cash, its source named), and the split over the 450 that remains;
+    - over a grid of intakes, costs and reserve rates, the stages and the fee sum to the profit to the cent, and each
+      fee posted is the fee the cycle said;
+    - no profit, no fee and no fee line; a loss is not carried to the next cycle;
+    - the apex and a non-distributing form pay none, and their split is over the whole profit;
+    - an unregistered simulation's fee is shown and never posted, and its split is over what remains;
+    - nothing is credited for the price of generating an entity, because nothing has been charged for one."""
+    from agentic_core.economy.ledger import VirtualLedger
+    from agentic_core.economy.metabolism import PLATFORM_FEE_RATE, EconomicMetabolism
+    assert PLATFORM_FEE_RATE == 0.25
+
+    def establish(name, form):
+        r = client.post("/api/v1/genesis/establish", json={"problem": f"w1124 {name}: a made-up bakery", "name": name,
+                                                            "ship_output": False, "entity_type": form})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()["vsb_id"]
+
+    def fee_lines(vid):
+        return [p for p in VirtualLedger(vid)._data.get("postings", []) if p.get("source") == "cycle_platform_fee"]
+
+    def to_the_cent(rep):
+        stages = sum(v["amount_wst"] for v in rep["circulation"].values())
+        f = rep["platform_fee"]
+        assert round(stages, 2) == f["split_base_wst"] == rep["split_base_wst"], (stages, f, rep["split_base_wst"])
+        assert round(stages + f["fee_wst"], 2) == rep["distributable_profit"] == f["profit_wst"], (stages, f)
+
+    #  a registered, profit-distributing entity: the fee is taken first and posted as one line
+    vid = establish("W1124 Bakery", "ltd")
+    c = client.post("/api/v1/economy/cycle", json={"vsb_id": vid, "revenue": 1000, "costs": 200})
+    assert c.status_code == 200, c.text[:300]
+    rep = c.json().get("cycle") or c.json()
+    f = rep["platform_fee"]
+    assert (rep["distributable_profit"], f["fee_wst"], f["split_base_wst"], f["posted"], f["exempt"]) == (600.0, 150.0, 450.0, True, None), f
+    assert f["ruling"].startswith("OWNER RULING 2026-10-12 (P5.16 clause 3)") and "taken first" in f["basis"]
+    to_the_cent(rep)
+    assert rep["circulation"]["owner"]["amount_wst"] == 90.0, rep["circulation"]          # 20% of 450, never of 600
+    lines = fee_lines(vid)
+    assert [(p["debit"], p["credit"], p["amount"]) for p in lines] == [("platform_fee", "cash", 150.0)], lines
+    assert f["credit"]["applied_wst"] == 0.0 and "Nothing is credited" in f["credit"]["basis"], f["credit"]
+    pl = client.get("/api/v1/economy/board-pack", params={"vsb_id": vid}).json()["profit_and_loss"]
+    assert pl["total_platform_fee_wst"] == 150.0, pl
+    assert round(pl["total_costs_wst"] + pl["total_reserves_wst"] + pl["total_platform_fee_wst"]
+                 + pl["total_distributed_wst"], 2) == pl["total_revenue_wst"] == 1000.0, pl
+
+    #  the grid: the stages and the fee sum to the profit to the cent, and each posted fee is the one said
+    m = EconomicMetabolism(vid, "ltd")
+    said = [150.0]
+    for revenue in (0.01, 1.0, 33.33, 99.99, 1234.57):
+        for costs in (0.0, 0.07, revenue * 0.3):
+            for rate in (0.0, 0.2, 0.35):
+                r = m.run_cycle(revenue, costs, reserve_rate=rate)
+                to_the_cent(r)
+                if r["platform_fee"]["fee_wst"] > 0:
+                    assert r["platform_fee"]["posted"] is True, r["platform_fee"]
+                    said.append(r["platform_fee"]["fee_wst"])
+    assert [p["amount"] for p in fee_lines(vid)] == said
+
+    #  no profit, no fee and no fee line; and a loss is not carried to the next cycle
+    before = len(fee_lines(vid))
+    loss = m.run_cycle(100.0, 500.0)
+    assert (loss["distributable_profit"], loss["platform_fee"]["fee_wst"], loss["platform_fee"]["posted"]) == (0.0, 0.0, False)
+    assert "no profit" in loss["platform_fee"]["basis"] and len(fee_lines(vid)) == before
+    after = m.run_cycle(1000.0, 200.0)
+    assert after["platform_fee"]["fee_wst"] == 150.0, "a loss was carried into the next cycle's fee"
+
+    #  a non-distributing form and the apex pay none; their split is over the whole profit
+    charity = establish("W1124 Charity", "charity")
+    cr = client.post("/api/v1/economy/cycle", json={"vsb_id": charity, "revenue": 1000, "costs": 200}).json()
+    cr = cr.get("cycle") or cr
+    assert (cr["platform_fee"]["fee_wst"], cr["platform_fee"]["exempt"], cr["split_base_wst"]) == (0.0, "non_distributing", 600.0), cr["platform_fee"]
+    to_the_cent(cr)
+    assert fee_lines(charity) == []
+    apex = EconomicMetabolism("workstation-idbo", "waqf_ltd_hybrid").run_cycle(1000.0, 200.0)
+    assert (apex["platform_fee"]["fee_wst"], apex["platform_fee"]["exempt"]) == (0.0, "apex"), apex["platform_fee"]
+    to_the_cent(apex)
+    assert fee_lines("workstation-idbo") == []
+
+    #  an unregistered simulation: the fee is shown and never posted; its split is over what remains
+    sim = EconomicMetabolism("w1124-unregistered-scope", "ltd").run_cycle(1000.0, 200.0)
+    sf = sim["platform_fee"]
+    assert (sf["fee_wst"], sf["posted"], sf["simulated"], sim["split_base_wst"]) == (150.0, False, True, 450.0), sf
+    assert "never posted" in sf["basis"]
+    to_the_cent(sim)
+    assert fee_lines("w1124-unregistered-scope") == []
+
+
+def test_w1125_fu1057_the_economy_page_shows_the_profit_the_platform_fee_and_what_the_split_was_over(client):
+    """FU-1057 part 2 (W1125), P5.16. The ACCEPT asks that the cycle's answer AND the entity's page show profit, fee and
+    the base the split used. W1124 put them in the cycle's answer and the board pack; no page drew them. The VSB Economy
+    page now draws the fee and what the split was over beside the distributable profit, with the fee's own sentence,
+    and its board pack draws the fee the books carry, with its basis; VSBEconomy.fee.test.tsx renders them against the
+    routes' own answers. Held here:
+    - the fixture that rendered test reads is what the routes answer now, as the page asks them (10,000 WST in, 1,000
+      of costs): the apex's cycle pays no fee and its split is over the whole profit; a made-up registered entity's
+      cycle posts a quarter of its 7,000 profit and its split is over the 5,250 that remains; the pack after it
+      carries the 1,750; each compared with a live answer on every field of the fee;
+    - the page draws each of them where the rendered test reads them;
+    - the cockpit's latest cycle, which its rendered tests do not run, is its own row."""
+    import json
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    page = root / "apps/workstation-superapp/src/pages/enterprise"
+    fx = json.loads((page / "VSBEconomy.fee.fixture.json").read_text(encoding="utf-8"))
+
+    def cycle(case, vid):
+        ask = {**fx[case]["cycle"]["request"], "vsb_id": vid}
+        r = client.post("/api/v1/economy/cycle", json=ask)
+        assert r.status_code == 200, r.text[:300]
+        return r.json()["cycle"]
+
+    a, af = cycle("apex", "workstation-idbo"), fx["apex"]["cycle"]["body"]["cycle"]
+    assert a["platform_fee"] == af["platform_fee"] and a["split_base_wst"] == af["split_base_wst"] == a["distributable_profit"], (a["platform_fee"], af["platform_fee"])
+    assert (af["platform_fee"]["fee_wst"], af["platform_fee"]["exempt"]) == (0.0, "apex")
+
+    est = client.post("/api/v1/genesis/establish", json={"problem": "w1125 a made-up bakery for a village school",
+                                                         "name": "W1125 Village Bakery", "ship_output": False})
+    assert est.status_code == 200, est.text[:300]
+    vid = est.json()["vsb_id"]
+    e, ef = cycle("entity", vid), fx["entity"]["cycle"]["body"]["cycle"]
+    assert e["platform_fee"] == ef["platform_fee"], (e["platform_fee"], ef["platform_fee"])
+    assert (ef["distributable_profit"], ef["platform_fee"]["fee_wst"], ef["split_base_wst"], ef["platform_fee"]["posted"]) == (7000.0, 1750.0, 5250.0, True), ef["platform_fee"]
+    assert e["split_base_wst"] == ef["split_base_wst"] and e["distributable_profit"] == ef["distributable_profit"]
+    key = f"/api/v1/economy/board-pack?vsb_id={fx['entity']['vsb_id']}&entity_type=waqf_ltd_hybrid"
+    pf = fx["entity"]["after"][key]["body"]["profit_and_loss"]
+    pl = client.get("/api/v1/economy/board-pack", params={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid"}).json()["profit_and_loss"]
+    assert (pl["total_platform_fee_wst"], pl["total_platform_fee_wst_basis"]) == (pf["total_platform_fee_wst"], pf["total_platform_fee_wst_basis"]) == (1750.0, pf["total_platform_fee_wst_basis"]), pl
+
+    src = (page / "VSBEconomy.tsx").read_text(encoding="utf-8")
+    for drawn in ('<Metric label="Platform fee" value={cycle.platform_fee.fee_wst} />',
+                  '<Metric label="Split over" value={cycle.split_base_wst} />', 'data-testid="cycle-platform-fee"',
+                  '<Metric label="Platform fee (cumulative)"', 'data-testid="pack-platform-fee"'):
+        assert drawn in src, ("the page does not draw it", drawn)
+    test = (page / "VSBEconomy.fee.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './VSBEconomy.fee.fixture.json';" in test and test.count("it(") == 2
+
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    rows = [r for r in reg if r.get("title") == "The cockpit's latest cycle says the platform fee it took and what the split was over"]
+    assert len(rows) == 1 and rows[0]["slot"] == "P5.16" and rows[0]["source"].startswith("W1125 "), rows
+
+
+def test_w1126_fu1280_the_cost_model_marks_each_of_the_seven_gates_from_what_the_tree_shows():
+    """FU-1280 (W1126), P5.7. OWNER RULING 2026-11-19 (FU-1191, the recommendation accepted): with no founder playbook in
+    the tree, the seven investment gates are the six switches of plan items P4.1 to P4.6 and a first offer the
+    interviews support. The cost model marks each evidenced or not from what the tree shows, and invents none. Held
+    here, each gate's state computed from the tree and its row's mark held to it:
+    - P4.1, P4.2, P4.3: each switch reads off unless it is set, and the committed deploy file and image set two off;
+    - P4.4: the plan records it deferred by the Owner; P4.5: the dry run's rows are done (W1137) and no deploy is
+      recorded: the Owner's first restore at the deploy (FU-1288) is open;
+    - P4.6: REAL_MONEY_ENABLED is False;
+    - the first offer: no interview is recorded in the tree.
+    A gate whose state changes fails this until its row is marked again."""
+    import json
+    import pathlib
+    import re
+    from agentic_core.economy import owner_payments as _op
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda p: (root / p).read_text(encoding="utf-8")
+    auth, model = read("agentic_core/auth/core.py"), read("agentic_core/ai/native/model_resource.py")
+    reg = {r["id"]: r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"]}
+    flat = " ".join(read("docs/FABLE_DELIVERY_PROMPT.md").split())
+    p44 = flat[flat.index(" P4.4 ✅ DONE W1174 Managed Postgres"):flat.index(" P4.5 Production deploy")]   # W1174
+    interviews = [p for p in (root / "docs").rglob("*") if p.is_file() and re.search(r"interview", p.name, re.I)]
+    met = {
+        "P4.1 sign-in": 'os.getenv("AUTH_ENABLED", "false")' not in auth
+                        or not re.search(r'key: AUTH_ENABLED\n\s+value: "false"', read("render.yaml")),
+        "P4.2 self-serve sign-up": 'os.getenv("SELF_SERVE_SIGNUP_ENABLED", "false")' not in auth,
+        "P4.3 external models": 'os.getenv("AI_ALLOW_EXTERNAL", "false")' not in model
+                                or "AI_ALLOW_EXTERNAL=false" not in read("Dockerfile"),
+        "P4.4 managed Postgres": "DEFERRED BY THE OWNER" not in p44,
+        #  W1137 - the pre-flight measured AND the deploy made, which a round reads from the Owner's first restore at it
+        "P4.5 production deploy": (reg["FU-603"]["status"] == "done" and reg["FU-1156"]["status"] == "done"
+                                   and reg["FU-1288"]["status"] == "done"),
+        "P4.6 real money": _op.REAL_MONEY_ENABLED is not False,
+        "A first offer the interviews support": bool(interviews),
+    }
+    gates = read("docs/business/COST_MODEL.md").split("## The seven investment gates", 1)[1]
+    rows = dict(re.findall(r"^\| (.+?) \| .+? \| (yes|no) \|$", gates, re.M))
+    assert list(rows) == list(met), ("the seven gates are not the ruled seven, in order", list(rows))
+    for gate, ok in met.items():
+        assert rows[gate] == ("yes" if ok else "no"), (gate, "is marked", rows[gate], "and the tree shows", ok)
+    assert "OWNER RULING 2026-11-19 (FU-1191)" in gates and "So no gate is evidenced today." in gates
+    assert not any(met.values()), "a gate is met: its row and the closing line are to be marked again"
+
+
+def test_w1127_fu849_an_entity_says_whether_it_consents_to_be_tended_and_one_from_before_the_flag_reads_as_consenting(client):
+    """FU-849 (W1127), P4.1's readiness. The Owner ruled a per-entity opt-in and a named service identity once
+    authentication is on, and on 2026-11-19 (FU-849, the recommendation accepted): an entity registered before the
+    opt-in flag existed is read as opted in, and every new establishment records the flag explicitly. Measured: every
+    part is in the tree already (W799, W888, the roster's writer). Held here, together:
+    - an entity established through the route states both of its tending flags on its record;
+    - a record from before the flags reads as ON, and its basis says why;
+    - an entity whose own economy flag is off says it is not tended, naming the flag that is off;
+    - a beat visit names the organism's service identity and the two levers that allowed it;
+    - the plan's sign-in item carries the ruling."""
+    import pathlib
+    import uuid
+    from agentic_core import plan_followups as pf
+    from agentic_core.economy import living_vsbs as lv
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    est = client.post("/api/v1/genesis/establish", json={"problem": "w1127 a made-up orchard cooperative",
+                                                         "name": "W1127 Orchard", "ship_output": False})
+    assert est.status_code == 200, est.text[:300]
+    vid = est.json()["vsb_id"]
+    rec = lv._load()[vid]
+    t = lv.tending(rec)
+    assert (t["stated"], t["absent"]) == (["auto_economy", "auto_compliance"], []), t
+    assert (rec["auto_economy"], rec["auto_compliance"]) == (True, True), rec
+
+    legacy = {k: v for k, v in rec.items() if k not in lv.TENDING_FLAGS}
+    lt = lv.tending(legacy)
+    assert lt["flags"] == {"auto_economy": True, "auto_compliance": True} and lt["absent"] == ["auto_economy", "auto_compliance"], lt
+    assert lv.TENDING_ABSENT_MEANS in lt["basis"] and "read as ON" in lt["basis"], lt["basis"]
+
+    off = f"vsb-w1127-{uuid.uuid4().hex[:6]}"
+    lv.register(off, name="W1127 Declined", owner="w1127-owner", auto_economy=False)
+    try:
+        st = lv.living_statement(lv._load()[off])["entity_tending"]
+        assert (st["tended"], st["entity_flags"]["auto_economy"]) == (False, False) and "auto_economy is off" in st["basis"], st
+        visit = lv.operate_vsb(vid)
+        assert visit and visit.get("outcome") == "ran", visit
+        d = visit["driven_by"]
+        assert (d["identity"], d["kind"], len(d["levers"])) == (lv.SERVICE_IDENTITY, "service", 2), d
+    finally:
+        lv.deregister(off)
+
+    flat = " ".join(pf.read_doc(root / "docs" / "FABLE_DELIVERY_PROMPT.md").split())
+    p41 = flat[flat.index(" P4.1 AUTH_ENABLED on"):flat.index(" P4.2 SELF_SERVE_SIGNUP")]
+    assert ("OWNER RULING 2026-11-19 (FU-849): an entity registered before the opt-in flag existed is read as opted in, "
+            "and every new establishment records the flag explicitly") in p41
+
+
+def test_w1128_fu1156_the_image_carries_the_pages_what_the_routes_read_and_the_floor_and_keeps_out_every_private_folder():
+    """FU-1156 and FU-603 part 1 (W1128), P4.5's dry run. OWNER RULING 2026-11-19: the dry run is taken now - the image
+    carries the pages, the law corpus and the plan, and boots on a round's machine with a health probe; nothing is
+    deployed and no account is touched. The image copied the code alone: no pages, no plan, no corpus and no product
+    catalogue, though routes read all four, and .dockerignore's three patterns with a comment after them (apps/, data/,
+    integration_tests/) matched nothing, because Docker reads "#" as a comment only at the start of a line. Held here:
+    - the pages are built in a stage of their own, the way CI builds them, and the image that runs copies the built
+      pages to the folder the backend serves them from;
+    - the image copies what the routes read: docs/, knowledge/ and products/;
+    - the floor is installed without the GPU learning stack (torch, torchsde, triton and their CUDA libraries), exactly
+      the pins requirements.txt names for it, with --no-deps; no system package is installed, and the healthcheck asks
+      with Python;
+    - no .dockerignore line carries a comment after its pattern, and every private folder privacy_exposure names is left
+      out of the build context, while what the pages stage copies is not."""
+    import pathlib
+    import re
+    from agentic_core.privacy_exposure import PRIVATE_FOLDERS
+    root = pathlib.Path(__file__).resolve().parents[1]
+    df = (root / "Dockerfile").read_text(encoding="utf-8")
+    lines = [ln.strip() for ln in df.splitlines()]
+
+    #  the pages: a stage of their own, built as CI builds them, copied to where the backend serves them
+    assert "FROM node:20-slim AS pages" in lines, "the pages have no build stage"
+    assert "RUN npm ci --no-audit --no-fund && npm run build --workspace=apps/workstation-superapp" in lines
+    assert "npm run build --workspace=apps/workstation-superapp" in (root / ".github/workflows/spine.yml").read_text(encoding="utf-8")
+    assert "ENV ONNXRUNTIME_NODE_INSTALL_CUDA=skip" in lines
+    assert "COPY --from=pages /build/apps/workstation-superapp/dist ./apps/workstation-superapp/dist" in lines
+    app = (root / "agentic_core/app_mvp.py").read_text(encoding="utf-8")
+    assert '_FRONTEND_DIST = _Path(__file__).resolve().parent.parent / "apps" / "workstation-superapp" / "dist"' in app
+    assert lines.index("FROM node:20-slim AS pages") < lines.index("FROM python:3.12-slim")
+
+    #  what the routes read
+    for copied in ("COPY docs ./docs", "COPY knowledge ./knowledge", "COPY products ./products"):
+        assert copied in lines, copied
+
+    #  the floor, without the GPU learning stack, and no system package
+    gpu = re.compile(r"^(torch|torchsde|triton|nvidia-[a-z0-9-]+|cuda-[a-z0-9-]+)==")
+    pins = [ln for ln in (root / "requirements.txt").read_text(encoding="utf-8").splitlines() if "==" in ln]
+    left_out = [ln.split("==")[0] for ln in pins if gpu.match(ln)]
+    assert {"torch", "torchsde", "triton"} <= set(left_out) and len(left_out) == 21, left_out
+    assert ("RUN grep -v -E '^(torch|torchsde|triton|nvidia-[a-z0-9-]+|cuda-[a-z0-9-]+)==' requirements.txt > "
+            "requirements-floor.txt \\") in lines
+    assert "&& pip install --no-cache-dir --no-deps -r requirements-floor.txt" in lines
+    assert "apt-get" not in df and "build-essential" not in df and "curl " not in df, "the image installs system packages"
+    assert any(ln.startswith("CMD python -c \"import os, urllib.request;") for ln in lines), "the healthcheck is not Python's"
+
+    #  .dockerignore: patterns that match what they say, every private folder out, the pages' sources in
+    ignore = (root / ".dockerignore").read_text(encoding="utf-8").splitlines()
+    commented = [ln for ln in ignore if ln.strip() and not ln.lstrip().startswith("#") and "#" in ln]
+    assert commented == [], ("a pattern with a comment after it matches nothing in Docker", commented)
+    patterns = {ln.strip().rstrip("/") for ln in ignore if ln.strip() and not ln.lstrip().startswith("#")}
+    for private in PRIVATE_FOLDERS:
+        p = private.rstrip("/")
+        if p.split("/")[0] in ("knowledge", "products", "docs", "inputs", "outputs"):
+            assert p in patterns, ("a private folder would be in the build context", private)
+    for needed in ("apps", "apps/workstation-superapp", "packages", "package.json", "package-lock.json", "docs",
+                   "knowledge", "products", "requirements.txt"):
+        assert needed not in patterns, ("the build context leaves out what the image copies", needed)
+    for out in ("data", "integration_tests", "**/node_modules", "apps/workstation-superapp/dist", "docs/fidelity_runs"):
+        assert out in patterns, out
+
+    #  the dry run's record: measured, with how it was built here and what it did not do
+    import json
+    dep = " ".join((root / "docs/DEPLOYMENT.md").read_text(encoding="utf-8").split())
+    rec = dep.split("## The dry run (P4.5), measured on 2026-11-20 (W1128)", 1)[1].split("## ", 1)[0]
+    for said in ("healthy 8.3 seconds after it started", "225 MiB of memory at idle", "under the 1 GiB cap",
+                 "the image is 2.28 GB", "nothing is deployed and no account is touched",
+                 "The Dockerfile is the one committed here", "Done since (FU-603)"):
+        assert said in rec, said
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    found = [r for r in reg if r.get("title") == ("The image carries the legal matter's folder as a path on the Owner's own "
+                                                    "machine, and the bundle route answers with it")]
+    assert len(found) == 1 and found[0]["slot"] == "P4.5" and found[0]["source"].startswith("W1128 "), found
+    assert found[0]["id"] in rec, "the record does not name the row the dry run found"
+
+
+def test_w1129_fu1282_the_matter_folder_is_named_on_the_machine_that_holds_it_and_no_answer_carries_its_path(client, monkeypatch, tmp_path):
+    """FU-1282 (W1129), found by P4.5's dry run (W1128): the legal matter's folder was named in a committed file, as a
+    path on the Owner's own Windows machine, so the image carried it and GET /api/v1/law/bundle answered with it.
+    - no committed file names the folder: matter.json's bundle_dir is blank, and its basis says where it is named;
+    - the machine names it by LEGAL_MATTER_FOLDER in its own .env, which set-up never fills and the image leaves out;
+    - that setting is resolved for the Owner's own process and held back from a test, audit or drive process;
+    - no answer carries the folder's path: not the route, not the clerk's answer, not a basis, present or absent;
+    - the local-session notes carry the one line for the Owner's machine, and the deployment record says it closed."""
+    import json as _json
+    import os as _os
+    import pathlib as _pl
+    import re as _re
+    from agentic_core.legal import bundle as _b
+    root = _pl.Path(__file__).resolve().parents[1]
+    _m = _json.loads((root / "agentic_core/legal/matter.json").read_text(encoding="utf-8"))
+    assert _m.get("bundle_dir") == "", "the committed file names a folder"
+    _basis = _m.get("bundle_dir_basis") or ""
+    for _frag in ("LEGAL_MATTER_FOLDER", "never committed", "Created EMPTY by W566", "consent for that file"):
+        assert _frag in _basis, (_frag, _basis[:200])
+    #  no file this round wrote names a Windows home-folder path to the matter's folder (read by its shape, no name)
+    _win = _re.compile(r"[A-Za-z]:\\+Users\\+[^\\\s`\"]+\\+data\\+legal-matter")
+    for _rel in ("agentic_core/legal/matter.json", "agentic_core/legal/bundle.py", "docs/FABLE_DELIVERY_PROMPT.md",
+                 "docs/DEPLOYMENT.md", "docs/RESUME_ON_MY_MACHINE.md", ".env.example"):
+        assert not _win.search((root / _rel).read_text(encoding="utf-8")), (_rel, "names the folder by its path")
+    assert _b.MACHINE_VAR == "LEGAL_MATTER_FOLDER" and _b.ENV_VAR == "LEGAL_BUNDLE_DIR"
+
+    #  set-up never fills the setting, and the image leaves the machine's .env out
+    _ex = (root / ".env.example").read_text(encoding="utf-8")
+    assert not _re.findall(r"^LEGAL_MATTER_FOLDER\s*=", _ex, _re.M) and "# LEGAL_MATTER_FOLDER=" in _ex, (
+        "set-up would name a folder for a machine")
+    assert ".env" in (root / ".dockerignore").read_text(encoding="utf-8").splitlines(), "the image may carry .env"
+
+    #  the Owner's own process: present, and nothing that answers carries the path
+    _mine = tmp_path / "w1129-machine-folder"
+    _mine.mkdir()
+    (_mine / "w1129-letter.txt").write_text("w1129 a line in the machine's folder", encoding="utf-8")
+    _named = _os.path.realpath(str(_mine))
+    monkeypatch.delenv(_b.ENV_VAR, raising=False)
+    monkeypatch.setenv(_b.MACHINE_VAR, str(_mine))
+    monkeypatch.setattr(_b, "_not_the_owners_process", lambda: "")
+    _o = _b.resolve_bundle_dir()
+    assert _o["state"] == _b.CONFIGURED_PRESENT and _o["path"] == _named and _b.MACHINE_VAR in _o["source"], _o
+    _st = _b.status()
+    assert "folder" not in _st and _named not in _json.dumps(_st) and str(_mine) not in _json.dumps(_st), _st
+    assert _st["folder_state"] == _b.CONFIGURED_PRESENT and _st["document_count"] == 1, _st
+    _rt = client.get("/api/v1/law/bundle")
+    assert _rt.status_code == 200 and _named not in _rt.text and str(_mine) not in _rt.text, _rt.text[:300]
+    _as = client.post("/api/v1/law/matter/assemble", json={"template_id": "et1_claim",
+                      "particulars": [{"name": "w1129 probe", "words": ["w1129", "machine"]}], "authorities": []})
+    assert _as.status_code == 200 and _named not in _as.text and str(_mine) not in _as.text, _as.text[:300]
+
+    #  absent: the basis says which setting named it, never the path
+    _gone = tmp_path / "w1129-not-here"
+    monkeypatch.setenv(_b.MACHINE_VAR, str(_gone))
+    _ab = _b.resolve_bundle_dir()
+    assert _ab["state"] == _b.CONFIGURED_ABSENT and str(_gone) not in _ab["basis"] and _b.MACHINE_VAR in _ab["basis"], _ab
+    _rt2 = client.get("/api/v1/law/bundle")
+    assert _rt2.status_code == 200 and str(_gone) not in _rt2.text, _rt2.text[:300]
+
+    #  nothing named: the safe default says where a folder is named
+    monkeypatch.delenv(_b.MACHINE_VAR, raising=False)
+    _un = _b.resolve_bundle_dir()
+    assert _un["state"] == _b.UNSET and _b.MACHINE_VAR in _un["basis"] and "never in a committed file" in _un["basis"], _un
+
+    #  a test, audit or drive process is held back from the machine's folder
+    monkeypatch.setenv(_b.MACHINE_VAR, str(_mine))
+    monkeypatch.setattr(_b, "_not_the_owners_process", lambda: "PYTEST_CURRENT_TEST")
+    _hb = _b.resolve_bundle_dir()
+    assert _hb["state"] == _b.UNSET and _hb.get("held_back") is True and _hb["path"] is None, _hb
+
+    #  the Owner's machine: one line, in the local-session notes; the record says the row closed
+    _rs = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    assert "LEGAL_MATTER_FOLDER=${USERPROFILE}\\data\\legal-matter" in _rs, "the Owner's machine is not told its line"
+    _dp = " ".join((root / "docs/DEPLOYMENT.md").read_text(encoding="utf-8").split())
+    assert "Closed by W1129" in _dp and "never its path" in _dp, "the deployment record does not say the row closed"
+
+
+def test_w1130_the_readme_says_where_the_plan_stands_what_the_suite_measured_and_that_the_image_is_built():
+    """W1130 - the Owner asked whether the README was up to date (2026-11-20). Three statements were stale: a test
+    count from 2026-10-13, a three-phase roadmap naming a cycle log last changed 2026-10-03, and a deploy section
+    saying the Google Cloud plan was not built after P4.5's dry run (W1128) built and booted the image. Held here:
+    - the test count is a full suite's, dated, with the round it ran for;
+    - the roadmap names the plan's five phases, each with the total the plan's generated status gives it and a done
+      count no greater than that status's (a dated snapshot may lag, never lead), and points at the generated block;
+    - the deploy paragraph says the image is built, with the dry run's own figures as the deployment record states
+      them, and that the deploy is the Owner's."""
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    rd = (root / "README.md").read_text(encoding="utf-8")
+    flat = " ".join(rd.split())
+
+    m = re.search(r"\*\*([\d,]+) integration tests passing / (\d+) skipped\*\* \(the full suite run before W(\d+)'s "
+                  r"commit, (\d{4}-\d{2}-\d{2});", rd)
+    assert m and int(m.group(1).replace(",", "")) >= 1000, "the README's test count is not a dated full-suite figure"
+    assert "807 integration tests" not in rd, "the count of 2026-10-13 is still stated"
+
+    fp = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    live = re.search(r"Done: (\d+) of (\d+) items — P1 (\d+)/(\d+) · P2 (\d+)/(\d+) · P3 (\d+)/(\d+) · "
+                     r"P4 (\d+)/(\d+) · P5 (\d+)/(\d+)\.", fp)
+    assert live, "the plan's generated status has no Done line to compare with"
+    names = ["P1", "P2 Reach and disclosure", "P3 Capability", "P4 The Owner's switches",
+             "P5 Commercialisation, rehearsed on virtual WST"]
+    said_done = 0
+    for i, name in enumerate(names):
+        row = re.search(r"^\| " + re.escape(name) + r" \| (\d+) of (\d+) \| (\d+) open \|$", rd, re.M)
+        assert row, (name, "the roadmap does not state this phase")
+        x, y, left = (int(g) for g in row.groups())
+        live_done, live_total = int(live.group(3 + 2 * i)), int(live.group(4 + 2 * i))
+        assert y == live_total and x <= live_done and left == y - x, (name, (x, y, left), (live_done, live_total))
+        said_done += x
+    tot = re.search(r"from that generated block: \*\*(\d+) of (\d+) plan items done\.\*\*", rd)
+    assert tot and int(tot.group(1)) == said_done and int(tot.group(2)) == int(live.group(2)), "the totals disagree"
+    for frag in ("PLAN NOW block of `docs/FABLE_DELIVERY_PROMPT.md`", "`GET /api/v1/plan`", "`docs/FOLLOWUPS.json`",
+                 "`docs/AUTONOMOUS_PROGRESS.md` is the cycle log up to 2026-10-03"):
+        assert frag in flat, (frag, "the roadmap does not say where the current figures are")
+    assert "Phase 3 — ⛔ Owner-gated" not in rd, "the early three-phase summary is still the roadmap"
+
+    assert "That plan is not built yet" not in rd, "the README still says the deploy plan is not built"
+    dep = " ".join((root / "docs" / "DEPLOYMENT.md").read_text(encoding="utf-8").split())
+    run = dep[dep.index("## The dry run (P4.5)"):]
+    for figure in ("206 seconds", "8.3 seconds", "253 MiB", "1 GiB"):
+        assert figure in flat and figure in run, (figure, "the README's dry run differs from the deployment record")
+    assert "The project, its billing and the deploy itself are the Owner's" in flat, "the deploy is not said to be the Owner's"
+
+
+def test_w1131_the_local_prompt_names_every_row_waiting_on_the_owner_and_keeps_off_the_cloud_branch():
+    """W1131 - the Owner pasted the local-session prompt on 2026-11-20 and it was ten days old: it named a merged pull
+    request as the open one, gave figures from before ten rounds of closures, listed one of the five rows only the
+    Owner's machine can do, and would have had a local session push to the branch the cloud cycles push to.
+    Held here:
+    - every owner-gated row still open in the register is named in the notes, so none waits unseen;
+    - while the cloud cycles run, a local session keeps to a branch of its own (W1164: the cycles run into
+      December, so the notes no longer give 2026-12-01 as their end);
+    - the merged pull request is not offered for merging;
+    - the plan's figures are a dated snapshot whose phase totals equal the plan's own and whose done counts do not
+      lead it."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    notes = (root / "docs" / "RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    flat = " ".join(notes.split())
+
+    reg = json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    waiting = [r["id"] for r in reg if r.get("status") == "open" and (r.get("owner_gated") or r.get("slot") == "OWNER")]
+    assert waiting, "no row waits on the Owner, so this guard would prove nothing"
+    unnamed = [rid for rid in waiting if not re.search(re.escape(rid) + r"(?!\d)", notes)]
+    assert unnamed == [], ("a row waits on the Owner and the local notes do not name it", unnamed)
+    #  the summary and the steps agree: each row the summary sends to step 5 is a step of its own there
+    step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
+    sent = re.search(r"The rows in step 5: (.+?)\.", flat)
+    assert sent, "the summary does not say which rows step 5 carries"
+    ids = re.findall(r"FU-\d+", sent.group(1))
+    #  W1164 - the rows step 5 names are open ones: four the local session did on 2026-11-20 stood there after
+    assert ids and all(rid in waiting for rid in ids), (ids, waiting)
+    missing = [rid for rid in ids if not re.search(r"- " + re.escape(rid) + r":", step5)]
+    assert missing == [], ("the summary sends a row to step 5 and step 5 has no step for it", missing)
+
+    for frag in ("it may still be pushing to main-l1fsqo, so do not push there",
+                 "a branch of your own", "open its own pull request", "Never push to main without me"):
+        assert frag in flat, (frag, "the notes would let a local session push beside the cloud session")
+    assert "Merge PR #462" not in notes and "carried by **PR #462**" not in notes, "a merged pull request is offered"
+
+    fp = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    live = re.search(r"Done: (\d+) of (\d+) items — P1 (\d+)/(\d+) · P2 (\d+)/(\d+) · P3 (\d+)/(\d+) · "
+                     r"P4 (\d+)/(\d+) · P5 (\d+)/(\d+)\.", fp)
+    said = re.search(r"\*\*The plan,\*\* on (\d{4}-\d{2}-\d{2}): (\d+) of (\d+) items done \(P1 (\d+)/(\d+) · "
+                     r"P2 (\d+)/(\d+) · P3 (\d+)/(\d+) · P4 (\d+)/(\d+) · P5 (\d+)/(\d+)\)", flat)
+    assert live and said, "the plan's figures are not both there to compare"
+    assert int(said.group(3)) == int(live.group(2)), "the notes count a different number of items"
+    for i in range(5):
+        s_done, s_tot = int(said.group(4 + 2 * i)), int(said.group(5 + 2 * i))
+        l_done, l_tot = int(live.group(3 + 2 * i)), int(live.group(4 + 2 * i))
+        assert s_tot == l_tot and s_done <= l_done, (f"P{i + 1}", (s_done, s_tot), (l_done, l_tot))
+
+
+def test_w1132_fu1067_the_recordings_request_is_drafted_its_source_permits_nothing_and_the_owner_is_asked_to_send_it():
+    """FU-1067's next step (W1132; the Owner accepted the recommendation on 2026-11-20). The private test needs lawful
+    recordings of ordinary adult reciters, and the closest dataset states no licence for its recordings and cannot
+    rule children out. Held here:
+    - the letter is drafted for the Owner and sent by no one: it asks the licence, adult consent and a private test
+      that scores nothing, and promises no recording of a child;
+    - the dataset's row in the register of sources permits nothing, and names only the dataset's own address, which
+      no code reaches;
+    - an open, owner-gated row asks the Owner to send it, and both the plan's list and the local notes name it."""
+    import json
+    import pathlib
+    import re
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    letter = (root / "docs" / "letters" / "QURANIC_AUDIO_DATASET_REQUEST.md").read_text(encoding="utf-8")
+    flat = " ".join(letter.split())
+    for frag in ("DRAFTED FOR THE OWNER TO SEND", "Nothing has been sent", "[your name]", "[your address]",
+                 "under what licence the recordings are offered", "whether every participant was an adult",
+                 "It would score or grade no recording", "We will use no recording of a child",
+                 "nothing from the dataset is downloaded or used"):
+        assert frag in flat, (frag, "the letter does not say it")
+
+    src = json.loads((root / "docs" / "SOURCES.json").read_text(encoding="utf-8"))["rows"]
+    row = next((r for r in src if r.get("id") == "quranic-audio-dataset"), None)
+    assert row and row["permits"] == [] and row["read_on"] == "2026-11-19", row
+    assert row["hosts"] == ["huggingface.co/datasets/RetaSy"], ("the row bans more or less than the dataset's address", row)
+    sys.path.insert(0, str(root / "scripts"))
+    import sources_check as _sc
+    hits, files, banned = _sc.reached_but_not_permitted(_sc.load(), root)
+    assert files and not [h for h in hits if h[2] == "quranic-audio-dataset"], hits
+
+    reg = json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    ask = [r for r in reg if r.get("title", "").startswith("OWNER: send the request to the Quranic Audio Dataset's authors")
+           and "docs/letters/QURANIC_AUDIO_DATASET_REQUEST.md" in (r.get("why") or "")]
+    assert len(ask) == 1 and ask[0]["status"] == "open" and ask[0].get("owner_gated") and ask[0]["slot"] == "OWNER", ask
+    rid = ask[0]["id"]
+    fp = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    still = fp.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
+    assert re.search(re.escape(rid) + r" \(W1132\): send the request drafted in docs/letters/QURANIC_AUDIO_DATASET_REQUEST",
+                     " ".join(still.split())), "the plan's list does not ask the Owner to send it"
+    notes = (root / "docs" / "RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    assert f"Sending the request to the Quranic Audio Dataset's authors, also in `docs/letters/` ({rid})" in notes, (
+        "the local notes do not name it")
+
+
+def test_w1133_fu1055_the_departments_thirteen_headings_are_each_set_against_the_education_tools():
+    """FU-1055 (W1133), P5.12; the Owner's ruling of 2026-10-12 (the children's gate, its first step). The education
+    department's product safety standards, read at its page on 2026-11-20, set against the four Education forms in a
+    table: one row per heading, in the page's order, each marked met, partly met or not met, with what the tree has and
+    what meeting it would take. Held here:
+    - the thirteen headings, as the register of sources records them from the page, each a row, in order;
+    - every verdict is one of the three, and the count stated is the table's;
+    - every file a row names exists, and every route it names is served;
+    - the register of sources says the page was read whole, on the date, and points to the table;
+    - the gate stays closed."""
+    import json
+    import pathlib
+    import re
+    from agentic_core.app_mvp import app
+    root = pathlib.Path(__file__).resolve().parents[1]
+    heads = ["Stated purpose", "Educational use cases", "Filtering", "Monitoring and reporting", "Security",
+             "Privacy and data protection", "Intellectual property", "Design and testing", "Governance",
+             "Cognitive development", "Emotional and social development", "Mental health", "Manipulation"]
+    src = json.loads((root / "docs" / "SOURCES.json").read_text(encoding="utf-8"))["rows"]
+    row = next(r for r in src if r["id"] == "dfe-genai-product-safety")
+    assert row["read_on"] == "2026-11-20" and "the whole page" in row["read_by"], row
+    assert "NOT READ" not in row["says"] and "section 34" in row["says"], row["says"]
+    assert ", ".join(heads) in row["says"], "the register does not record the thirteen headings as the page has them"
+
+    doc = (root / "docs" / "INSTRUMENT_CELL_BRIEF_ASSESSMENT.md").read_text(encoding="utf-8")
+    sec = doc.split("\n## 34. Addendum (W1133)", 1)[1]
+    rows = re.findall(r"^\| (\d+) \| ([^|]+) \| ([^|]+) \| ([^|]+) \| ([^|]+) \| ([^|]+) \|$", sec, re.M)
+    assert [r[1].strip() for r in rows] == heads, ("the table's headings are not the page's thirteen, in order",
+                                                   [r[1].strip() for r in rows])
+    assert [int(r[0]) for r in rows] == list(range(1, 14))
+    verdicts = [r[3].strip() for r in rows]
+    assert set(verdicts) <= {"met", "partly met", "not met"}, verdicts
+    for n, (_, head, _for, _v, has, take) in enumerate(rows, 1):
+        assert len(has.strip()) > 40 and len(take.strip()) > 30, (head, "a row says too little to act on")
+    said = re.search(r"THE COUNT: (\w+) met, (\w+) partly met, (\w+) not met\.", " ".join(sec.split()))
+    words = {"none": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8,
+             "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13}
+    assert said, "the section states no count"
+    assert [words[said.group(i)] for i in (1, 2, 3)] == [verdicts.count("met"), verdicts.count("partly met"),
+                                                         verdicts.count("not met")], ("the count is not the table's",
+                                                                                     said.group(0))
+
+    for path in re.findall(r"`((?:agentic_core|apps|docs|scripts)/[A-Za-z0-9_./-]+)`", sec):
+        assert (root / path).exists(), (path, "a row names a file that does not exist")
+    served = {r.path for r in app.routes}
+    for route in re.findall(r"`GET (/api/[A-Za-z0-9_./-]+)`", sec):
+        assert route in served, (route, "a row names a route that is not served")
+    assert "the children's gate stays closed" in " ".join(sec.split()), "the table does not keep the gate closed"
+
+
+def test_w1133l_fu1046_a_statute_term_is_a_word_and_multi_disciplinary_names_no_acas_code(client):
+    """FU-1046 (W1133l) - five change records of 2026-09-01 failed Atmospheric Harvest Solutions' board pack,
+    repository, website, web app and mobile app on 'STATUTORY_BREACH: ACASCode'. Driven on the text kept in
+    the moved books, the only engine term in it is 'disciplinary' inside 'multi-disciplinary' (19 times), and
+    there is no whole-word statute term anywhere. The engine's vocabulary was matched as a substring, and the
+    code of that day made any vocabulary hit a FAIL. W455 made a hit a REVIEW; the substring match stayed, so
+    the same text still named the ACAS Code. A term now matches as a word, on the route a person uses."""
+    def legal(subject):
+        r = client.post("/api/v1/compliance/check", json={"subject": subject})
+        assert r.status_code == 200, r.text
+        return next(v for v in r.json()["verdicts"] if v["framework"] == "uk_legal")
+
+    # the venture's own words, as its board pack has them: no statute is named
+    for subject in ("The AWHEN framework is a holistic, multi-disciplinary solution that integrates water and "
+                    "energy harvesting technologies.",
+                    "An interdisciplinary team designs the condensers; a cross-disciplinary review signs them off."):
+        v = legal(subject)
+        assert "STATUTORY_BREACH" not in v["reason"] and v["coverage"] != "vocabulary", (subject, v)
+        assert "matched nothing" in v["reason"], (subject, v)
+    # a statute term as a word still names its statute: singular, plural, and a prefix that only turns the
+    # topic around
+    for subject, statute in (("our disciplinary procedure follows the code", "ACASCode"),
+                             ("staff grievances are heard within five days", "ACASCode"),
+                             ("a non-discrimination policy for every hire", "EqualityAct2010"),
+                             ("the plan involves unfair dismissal of staff", "ERA1996")):
+        v = legal(subject)
+        assert v["status"] == "review" and v["coverage"] == "vocabulary", (subject, v)
+        assert f"STATUTORY_BREACH: {statute}" in v["reason"], (subject, v)
+
+
+def test_w1133m_fu1038_a_defect_a_development_run_opened_leaves_the_loop_saying_so_and_its_failure_stays_counted(client):
+    """FU-1038 (W1133m; the Owner's ruling of 2026-11-20). Read on the Owner's store in W1133l, all nineteen open
+    defects had been opened by development runs that wrote into it (a page sweep, W433's reproduction and guard, a
+    browser export probe), and the studio door fifteen of them carry is live, so closing them as 'source retired' would
+    have been false, and the route refuses it, as built. Ruled: a third way out, 'opened by a development run'. It keeps
+    the row and the evidence, re-verifies nothing, moves no count, and says that the gate failure that opened the defect
+    stays counted in the rate as it was recorded, because the rate is never recomputed."""
+    import asyncio as _a1133
+    import pathlib as _pl1133
+    from agentic_core.vbs.registry import qms as _q1133
+
+    def opened(label):
+        before = {d["id"] for d in _q1133.defects}
+        _a1133.run(_q1133.run_quality_gates({"coverage": 0.1}, label=label))
+        return next(d["id"] for d in _q1133.defects if d["id"] not in before)
+
+    base = "/api/v1/vbs/qms/defects"
+
+    def summary():
+        return client.get(base).json()["summary"]
+
+    studio, second = opened("studio"), opened("studio")            # a live label, as on the Owner's store
+    s0 = summary()
+    assert "development_run" in s0, ("the summary has no count for the third way out", sorted(s0))
+    ev = ("opened by W433's reproduction on 2026-09-01: three studio calls within a second carrying the guard's three "
+          "series, against a development server on this store")
+    #  the live door still refuses 'retired', as built; the third way out is the true one
+    assert client.post(f"{base}/{studio}/close-source-retired", json={"reason": ev}).status_code == 409
+    assert client.post(f"{base}/{studio}/development-run", json={"evidence": "a test run"}).status_code == 422
+    r = client.post(f"{base}/{studio}/development-run", json={"evidence": ev})
+    assert r.status_code == 200, r.text[:300]
+    j = r.json()
+    d = j["defect"]
+    assert d["status"] == "development_run" and d["reverified"] is False, d
+    cl = d["closure"]
+    assert (cl["how"], cl["reason"], cl["by"], cl["by_verified"], cl["status_before"]) == (
+        "development_run", ev, "owner", False, "open"), cl
+    assert j["measured"] is False and j["counted_in_rate"] is False, j
+    assert "not re-verified" in j["basis"] and "stays counted there as it was recorded" in j["basis"], j["basis"]
+
+    s1 = summary()
+    for k in ("gates_run", "gate_failures", "defects_total", "what_if_gates", "what_if_failures", "closed",
+              "closed_source_retired", "not_reproducible", "non_conformance_rate", "attested_reverifications"):
+        assert s1[k] == s0[k], ("taking a development run's defect out of the loop moved a count", k, s0[k], s1[k])
+    assert s1["development_run"] == s0["development_run"] + 1 and s1["open"] == s0["open"] - 1, s1
+    said = " ".join(s1["dispositions_basis"].split())
+    assert f"{s1['development_run']} defect(s) closed because a development run opened them" in said, said
+    assert "stay counted in the rate as they were recorded" in said, said
+    assert "because a development run opened it" in s1["closed_basis"], s1["closed_basis"]
+
+    #  out of the loop: not taken out again, not reported, not re-verified
+    for path, body in (("development-run", {"evidence": ev}), ("not-reproducible", {"tried": ev}),
+                       ("reverify", {"coverage": 0.99})):
+        assert client.post(f"{base}/{studio}/{path}", json=body).status_code == 404, path
+    #  a corrected defect can leave this way too, and says what it was before
+    assert client.post(f"{base}/{second}/correct", json={"correction": "nothing to correct: a development run"}
+                       ).status_code == 200
+    d2 = client.post(f"{base}/{second}/development-run", json={"evidence": ev}).json()["defect"]
+    assert (d2["status"], d2["closure"]["status_before"]) == ("development_run", "corrected"), d2
+
+    #  the panel offers it and names it on a closed row (rendered in VBSSystemsPanel.test.tsx on the route's answers)
+    page = _code_only((_pl1133.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+                       / "components" / "VBSSystemsPanel.tsx").read_bytes().decode("utf-8"))
+    for needle in ('data-testid="defect-development-run"', "disposeDefect('development-run')",
+                   "development_run: 'closed — a development run opened it, not a delivery'"):
+        assert needle in page, ("the panel does not offer or name the third way out", needle)
+
+
+def test_w1133n_fu1801_with_the_pages_built_a_path_no_route_serves_is_a_404_whatever_the_method(client, tmp_path):
+    """FU-1801 (W1133n). Measured on the Owner's machine, where the pages are built as they are in the image: the page
+    fallback was GET /{full_path:path}, whose path matches every path, so a POST, PUT or DELETE to an API path no route
+    serves answered 405 Method Not Allowed with 'Allow: GET', saying the path exists and only the method is wrong. The
+    fallback's path is now a convertor that refuses the API prefixes, computed from the same tuple. Driven here on a
+    fresh app with a planted build (and with none), so it holds on the build server too, where no build exists."""
+    import re as _re1801
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from agentic_core import app_mvp as _am
+
+    dist = tmp_path / "dist"
+    (dist / "assets").mkdir(parents=True)
+    (dist / "index.html").write_bytes(b"<!doctype html><html><body>shell w1133n</body></html>")
+    (dist / "assets" / "a.js").write_bytes(b"console.log('w1133n')")
+    fresh = FastAPI()
+
+    @fresh.get("/api/v1/w1133n/thing")
+    async def _thing():
+        return {"ok": True}
+
+    @fresh.post("/api/v1/w1133n/make")
+    async def _make():
+        return {"made": True}
+
+    assert _am._mount_pages(fresh, dist) is True
+    c = TestClient(fresh)
+    #  a path no route serves, under every API prefix and with every method: not found, never 'method not allowed'
+    for method in ("POST", "PUT", "PATCH", "DELETE", "GET"):
+        for path in ("/api/v1/w1133n/nothing", "/api/cross-platform/voice/command", "/health", "/docs/x", "/ws/x"):
+            r = c.request(method, path)
+            assert r.status_code == 404, (method, path, r.status_code, r.headers.get("allow"))
+    #  a real 405 is unchanged: a wrong method on a route that exists, and on a page
+    r = c.post("/api/v1/w1133n/thing")
+    assert r.status_code == 405 and r.headers.get("allow") == "GET", (r.status_code, r.headers.get("allow"))
+    assert c.post("/api/v1/w1133n/make").json() == {"made": True}
+    r = c.post("/a/client/route")
+    assert r.status_code == 405 and r.headers.get("allow") == "GET", (r.status_code, r.headers.get("allow"))
+    #  the pages are still served: the shell at /, a client route, a deep link, an asset
+    for path in ("/", "/a/client/route", "/native-ai"):
+        assert c.get(path).status_code == 200 and "shell w1133n" in c.get(path).text, path
+    assert c.get("/assets/a.js").text == "console.log('w1133n')"
+    #  the refused prefixes are the tuple the fallback refuses, computed, not typed beside it
+    for p in _am._API_PREFIXES:
+        assert _re1801.fullmatch(_am._PagePath.regex, p + "x") is None, p
+    assert _re1801.fullmatch(_am._PagePath.regex, "native-ai") is not None
+
+    #  with no build, nothing is mounted
+    bare = FastAPI()
+    assert _am._mount_pages(bare, tmp_path / "no_build") is False
+    assert not [r for r in bare.routes if getattr(r, "path", "") in ("/", "/{full_path:page}", "/assets")], bare.routes
+    #  and the platform itself, built here or not: the retired path is not found
+    assert client.post("/api/cross-platform/voice/command", json={}).status_code == 404
+
+
+def test_w1133o_fu1802_a_server_a_guard_starts_chooses_its_own_port_and_names_it_before_it_is_asked(tmp_path):
+    """FU-1802 (W1133o). Seen in the full suite of W1133m on the Owner's machine: test_w919 read
+    'BadStatusLine: GET /health HTTP/1.1' from the backend it had started, and it passed alone on the same tree. That
+    line is the guard's own request read back. The guard chose the port by binding port 0, reading the number and
+    closing the socket. It then started the server there and polled /health while the server started, which takes
+    45 seconds on this machine, and in that window nobody listened on the port. Measured on this machine:
+    - a loopback connect from a port to the same port, with nobody listening, connects to itself and reads back
+      what it sent;
+    - Windows gives each new connect the next port of the range port 0 is chosen from.
+    Any other process could also take the port in that window. Three guards chose a port that way: test_w919,
+    test_w920 and test_w938.
+
+    Each now starts its server on port 0 through _serving_on_its_own_port. The helper waits for the line where the
+    server names the port it listens on, and nothing is sent before it. The listener holds the port from the moment
+    it exists, so nothing can connect to itself on it or take it. This guard:
+    - drives the helper with a real server: the port it gives is the one the server named, it answers, nobody else
+      can bind it while the server runs, and the server is stopped when the block ends;
+    - a server that ends without naming a port gives no port at once, with what it printed, not when the timeout
+      passes; one that never names a port gives none when the timeout passes, and is stopped;
+    - holds the test files to it, first on a planted fault. No function reads a socket's name to hand a port on.
+      None but the helper starts a server process itself, and the three guards start theirs through it."""
+    import pathlib
+    import re
+    import socket
+    import sys
+    import time
+    import urllib.request
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))     # a local server is never reached by proxy
+
+    #  a real server: the port is the one it named, it answers, it is held while the server runs, the server stops
+    (tmp_path / "page.txt").write_bytes(b"w1133o")
+    with _serving_on_its_own_port([sys.executable, "-u", "-m", "http.server", "0", "--bind", "127.0.0.1"],
+                                  r"Serving HTTP on 127\.0\.0\.1 port (\d+)", cwd=str(tmp_path), timeout=30) as srv:
+        assert srv.port and f"port {srv.port} " in srv.output(), ("the server named no port", srv.output())
+        with opener.open(f"http://127.0.0.1:{srv.port}/page.txt", timeout=10) as resp:
+            assert (resp.status, resp.read()) == (200, b"w1133o")
+        with socket.socket() as other:
+            with pytest.raises(OSError):
+                other.bind(("127.0.0.1", srv.port))
+    stopped = srv.proc.poll() is not None
+    srv.proc.kill()                                                         # never leave it running, even when red
+    assert stopped, "the server was still running when the block ended"
+
+    #  a server that ends without naming a port: no port, at once, with what it printed
+    t = time.time()
+    with _serving_on_its_own_port([sys.executable, "-c", "print('w1133o: no listening here')"], r"port (\d+)",
+                                  cwd=str(tmp_path), timeout=60) as gone:
+        took = time.time() - t
+        assert gone.port is None and took < 30, (gone.port, took, "it waited for the timeout")
+    assert "w1133o: no listening here" in gone.output(), gone.output()
+
+    #  one that never names a port: none when the timeout passes, and it is stopped
+    with _serving_on_its_own_port([sys.executable, "-c", "import time; print('w1133o waits', flush=True); "
+                                   "time.sleep(120)"], r"port (\d+)", cwd=str(tmp_path), timeout=3) as slow:
+        assert slow.port is None and slow.proc.poll() is None, (slow.port, slow.proc.poll())
+    stopped = slow.proc.poll() is not None
+    slow.proc.kill()
+    assert stopped, "a server that named no port was not stopped"
+
+    #  the test files: the rule, proved on a planted fault first
+    sock_name = ".getsock" + "name("                                       # built, so this guard does not match itself
+    starts = "Pop" + "en("
+    servers = ('"uvicorn"', '"http.server"')
+
+    def faults_in(text, fname):
+        out = []
+        for chunk in re.split(r"\n(?=(?:def|class) )", text):
+            m = re.match(r"(?:def|class) (\w+)", chunk)
+            name = m.group(1) if m else "<module>"
+            if name == "_serving_on_its_own_port":
+                continue
+            if sock_name in chunk:
+                out.append(f"{fname}::{name} reads a socket's name to hand a port on")
+            if starts in chunk and any(s in chunk for s in servers):
+                out.append(f"{fname}::{name} starts a server process itself")
+        return out
+
+    planted = ("def test_planted(tmp_path):\n    with socket.socket() as so:\n        so.bind(('127.0.0.1', 0))\n"
+               "        port = so" + sock_name + ")[1]\n    proc = subprocess." + starts + "[sys.executable, '-m', "
+               "\"uvicorn\", 'a:b', '--port', str(port)])\n")
+    assert faults_in(planted, "planted.py") == ["planted.py::test_planted reads a socket's name to hand a port on",
+                                                "planted.py::test_planted starts a server process itself"]
+    found = []
+    for f in sorted((root / "integration_tests").glob("*.py")):
+        found += faults_in(f.read_text(encoding="utf-8"), f.name)
+    assert found == [], found
+    tests = (root / "integration_tests/test_mvp_spine.py").read_text(encoding="utf-8")
+    for guard in ("test_w919_", "test_w920_", "test_w938_"):
+        body = tests.split(f"\ndef {guard}", 1)[1].split("\ndef ", 1)[0]
+        assert body.count("with _serving_on_its_own_port([") == 1, (guard, "does not start its server through the helper")
+        assert '"--port", "0"]' in body or '"http.server", "0",' in body, (guard, "does not ask for port 0")
+
+
+def test_w1134_fu603_the_google_cloud_deploy_is_written_from_googles_pages_and_no_disk_with_records_is_formatted(tmp_path):
+    """FU-603 part 2 (W1134), P4.5; the Owner's ruling of 2026-11-20 (the exact Google Cloud deploy steps go into
+    docs/DEPLOYMENT.md). Held here:
+    - every step cites a page the section lists, each listed page with its own last-updated date, and every listed
+      page is cited;
+    - the shape is the free tier's: one e2-micro in us-central1, standard disks of 30 GB together, a registry and a
+      bucket in the same region;
+    - the records' disk outlives the machine (auto-delete=no), and the machine is protected from deletion;
+    - the costs are stated from their pages, the address at $0.005 an hour, and the alert is said not to cap spend;
+    - no stored key: the workflow signs in through a pool whose condition names the repository by its number, as the
+      page advises, and only main may deploy;
+    - the startup script the machine runs is committed, keeps LF on every checkout, starts the image the Dockerfile
+      builds with its records where the Dockerfile keeps them, reads its tag from the metadata server and holds no key;
+    - driven on disk images: a blank disk is formatted once, a formatted one is kept byte for byte, and one holding
+      anything else, a short one or a missing one is refused, untouched;
+    - what is not done is said: the backup, the restore and the rollback drills (FU-603), and HTTPS (its own row)."""
+    import hashlib
+    import json
+    import os
+    import pathlib
+    import re
+    import shutil
+    import subprocess
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    dep = (root / "docs" / "DEPLOYMENT.md").read_text(encoding="utf-8")
+    head = "## The Google Cloud deploy, step by step (P4.5), read at Google's pages on 2026-11-20 (W1134)"
+    assert head in dep, "the deploy steps are not written"
+    sec = dep.split(head, 1)[1].split("\n## ", 1)[0]
+    flat = " ".join(sec.split())
+
+    # == THE PAGES: listed with their dates, and each step cites listed pages only, every one of them somewhere ==
+    listed = re.findall(r"^- \[([a-z-]+)\] (https://\S+) \(([^)]+)\)$", sec, re.M)    # W1140: beyond Google's too
+    pages = {k: (url, when) for k, url, when in listed}
+    assert len(pages) == len(listed) >= 15, ("a page is listed twice, or too few are listed", listed)
+    for k, (url, when) in pages.items():
+        assert re.fullmatch(r"20\d\d-\d\d-\d\d", when) or (when == "no date shown" and (
+            "pricing" in url or url.startswith("https://raw.githubusercontent.com/"))), (k, when)
+    steps = re.split(r"^\*\*Step (\d+)\. [^*]+\*\*", sec, flags=re.M)
+    numbers = [int(n) for n in steps[1::2]]
+    assert numbers == list(range(1, len(numbers) + 1)) and len(numbers) >= 10, numbers
+    body = sec.split("THE STEPS", 1)
+    assert len(body) == 2, "the section has no steps"
+    cited = set()
+    for n, text in zip(numbers, steps[2::2]):
+        tags = set(re.findall(r"\[([a-z][a-z-]*)\]", text))
+        assert tags, ("a step cites no page", n)
+        assert tags <= set(pages), ("a step cites a page the section does not list", n, sorted(tags - set(pages)))
+        cited |= tags
+    prose = sec.split("THE PAGES", 1)[0] + sec.split("THE SHAPE", 1)[1]
+    cited |= set(re.findall(r"\[([a-z][a-z-]*)\]", prose)) & set(pages)
+    assert cited == set(pages), ("a page is listed and never cited", sorted(set(pages) - cited))
+
+    # == THE COMMANDS, read as the Owner would run them ==
+    blocks = [" ".join(b.replace("\\\n", " ").split()) for b in re.findall(r"```bash\n(.*?)```", sec, re.S)]
+
+    def block(prefix):
+        found = [b for b in blocks if prefix in b]
+        assert len(found) == 1, (prefix, "is not in exactly one command block")
+        return found[0]
+
+    def flags(cmd):
+        return dict(re.findall(r"--([a-z-]+)=(\S+)", cmd))
+
+    vm_cmd = block("gcloud compute instances create workstation")
+    vm = flags(vm_cmd)
+    assert vm["machine-type"] == "e2-micro" and vm["zone"].startswith("us-central1-"), vm
+    assert vm["image-project"] == "cos-cloud" and vm["image-family"] == "cos-stable", vm
+    assert vm["boot-disk-type"] == "pd-standard", "the boot disk is not the free tier's standard disk"
+    disk = dict(p.split("=", 1) for p in vm["create-disk"].split(","))
+    assert disk.get("auto-delete") == "no", ("the records' disk would be deleted with the machine", disk)
+    assert disk.get("type") == "pd-standard", disk
+    total = int(vm["boot-disk-size"].rstrip("GB")) + int(disk["size"].rstrip("GB"))
+    assert total <= 30, ("the disks are more than the free tier's 30 GB-months", total)
+    assert "--deletion-protection" in vm_cmd, "the machine is not protected from deletion"
+    assert set(vm["labels"].split(",")) >= {"app=workstation", "channel=release"}, vm["labels"]
+    assert vm["metadata-from-file"] == "startup-script=deploy/gcp/startup.sh", vm["metadata-from-file"]
+    assert vm["metadata"].startswith("image-tag="), vm["metadata"]
+    fw = flags(block("gcloud compute firewall-rules create"))
+    #  W1140 (FU-1284): 443 as well, for the HTTPS front of step 12
+    assert fw["target-tags"] == vm["tags"] == "workstation" and fw["rules"] == "tcp:80,tcp:443", fw
+    reg = flags(block("gcloud artifacts repositories create workstation"))
+    assert reg["location"] == "us-central1" and reg["repository-format"] == "docker", reg
+    #  W1137: the backup is a daily snapshot of the data disk, beside it in us-central1, kept if the disk goes
+    snap = block("gcloud compute resource-policies create snapshot-schedule workstation-daily")
+    sf = flags(snap)
+    assert sf["region"] == sf["storage-location"] == "us-central1" and "--daily-schedule" in snap, sf
+    assert sf["on-source-disk-delete"] == "keep-auto-snapshots" and int(sf["max-retention-days"]) >= 7, sf
+    attach = flags(block("gcloud compute disks add-resource-policies workstation-data"))
+    assert attach["resource-policies"] == "workstation-daily", attach
+    push = block("docker push")
+    assert "docker push us-central1-docker.pkg.dev/PROJECT_ID/workstation/workstation:TAG" in push, push
+    budget = block("gcloud billing budgets create")
+    assert "--filter-projects=projects/PROJECT_ID" in budget and "--threshold-rule=percent=" in budget, budget
+    assert "doesn't automatically cap Google Cloud" in flat, "the section does not say the alert caps nothing"
+
+    # == THE COSTS, from their pages, the arithmetic shown ==
+    assert "$0.005 an hour" in flat and "covers one hour a month [network-pricing]" in flat, "the address's price"
+    assert "730-hour month" in flat and "about $3.65 a month" in flat and round(0.005 * 730, 2) == 3.65
+    assert "$0.000136986 per GiB-hour" in flat and round(0.000136986 * 730, 2) == 0.10
+
+    # == NO STORED KEY ==
+    wif = block("providers create-oidc")
+    cond = re.search(r'--attribute-condition="([^"]+)"', wif).group(1)
+    assert "assertion.repository_id==" in cond and "repository_owner" not in cond and "assertion.repository==" not in cond, (
+        "the condition names the repository by a name the page warns can be re-claimed", cond)
+    assert "assertion.ref=='refs/heads/main'" in cond, ("a branch other than main could deploy", cond)
+    assert "attribute.repository_id=assertion.repository_id" in wif, "the claim the grant names is not mapped"
+    assert '--issuer-uri="https://token.actions.githubusercontent.com/"' in wif
+    for key_shape in ("credentials_json", "GOOGLE_APPLICATION_CREDENTIALS", "BEGIN PRIVATE KEY", "keys create"):
+        assert key_shape not in sec, ("the section stores a key", key_shape)
+
+    # == THE STARTUP SCRIPT: committed, LF everywhere, the Dockerfile's own image and records ==
+    script_path = root / "deploy" / "gcp" / "startup.sh"
+    raw = script_path.read_bytes()
+    assert b"\r" not in raw, "the startup script has Windows line endings: bash on the machine would refuse it"
+    attrs = (root / ".gitattributes").read_text(encoding="utf-8").splitlines()
+    assert "deploy/gcp/startup.sh text eol=lf" in attrs, "nothing keeps the startup script LF on a Windows checkout"
+    script = raw.decode("utf-8")
+    df = (root / "Dockerfile").read_text(encoding="utf-8")
+    data_dir = re.search(r"\bDATA_DIR=(\S+)", df).group(1)
+    port = re.search(r"\bPORT=(\d+)", df).group(1)
+    assert f'--volume="$MNT":{data_dir} ' in script, ("the records are not mounted where the image keeps them", data_dir)
+    assert f"--publish=80:{port} " in script, ("the platform's port is not the image's", port)
+    assert 'DISK="${WORKSTATION_DISK:-/dev/disk/by-id/google-' + disk["device-name"] + '}"' in script, (
+        "the script looks for the data disk under another name than the steps give it")
+    assert 'metadata instance/attributes/image-tag' in script and 'metadata project/project-id' in script
+    assert '-H "Metadata-Flavor: Google"' in script
+    assert 'image="$REGION-docker.pkg.dev/$project/workstation/workstation:$tag"' in script
+    assert 'REGION="${WORKSTATION_REGION:-us-central1}"' in script
+    assert not re.search(r"(?i)(api[_-]?key|secret|passw|BEGIN [A-Z ]*PRIVATE KEY|sk_live)", script), "a key in the script"
+
+    # == THE DISK STEP, DRIVEN: only a blank disk is ever formatted ==
+    bash = shutil.which("bash")
+    path = os.pathsep.join([os.environ.get("PATH", ""), "/usr/sbin", "/sbin"])
+    mkfs = shutil.which("mkfs.ext4", path=path)
+    if sys.platform.startswith("linux"):
+        assert bash and mkfs, "the round's own machine must drive the disk step"
+    if os.name != "nt" and bash and mkfs:
+        env = dict(os.environ, PATH=path, WORKSTATION_STARTUP_SOURCED="1")
+
+        def prepare(img):
+            return subprocess.run([bash, "-c", 'source "$1"; prepare_disk "$2"', "bash", str(script_path), str(img)],
+                                  capture_output=True, text=True, env=env, timeout=120, stdin=subprocess.DEVNULL)
+
+        def digest(p):
+            return hashlib.sha256(p.read_bytes()).hexdigest()
+
+        def ext4(p):
+            with open(p, "rb") as fh:
+                fh.seek(1080)
+                return fh.read(2) == b"\x53\xef"
+
+        blank = tmp_path / "blank.img"
+        with open(blank, "wb") as fh:
+            fh.truncate(64 << 20)
+        r1 = prepare(blank)
+        assert r1.returncode == 0 and ext4(blank) and "formatting it once" in r1.stdout, (r1.stdout, r1.stderr[-400:])
+        before = digest(blank)
+        r2 = prepare(blank)
+        assert r2.returncode == 0 and "kept as it is" in r2.stdout and digest(blank) == before, (
+            "a disk that holds its file system was touched", r2.stdout)
+        noise = tmp_path / "noise.img"
+        data = bytearray(os.urandom(8 << 20))
+        data[1080:1082] = b"\x00\x00"
+        with open(noise, "wb") as fh:
+            fh.write(bytes(data))
+            fh.truncate(64 << 20)
+        before = digest(noise)
+        r3 = prepare(noise)
+        assert r3.returncode == 1 and "NOT formatted" in r3.stdout and digest(noise) == before, (
+            "a disk holding something else was formatted", r3.stdout, r3.stderr[-400:])
+        short = tmp_path / "short.img"
+        short.write_bytes(b"\x00" * (512 << 10))
+        r4 = prepare(short)
+        assert r4.returncode == 1 and short.read_bytes() == b"\x00" * (512 << 10), r4.stdout
+        r5 = prepare(tmp_path / "absent.img")
+        assert r5.returncode == 1 and "no data disk" in r5.stdout and not (tmp_path / "absent.img").exists(), r5.stdout
+
+    # == WHAT IS NOT DONE IS SAID, AND HTTPS IS A ROW OF ITS OWN ==
+    #  W1137: the backup, the restore and the rollback are drilled, and the record says so
+    assert "DRILLED ON THIS MACHINE, 2026-11-20 (W1137)" in flat, "the section does not record the drills"
+    rows = json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    https = [r for r in rows if r.get("title") == "The release machine would serve plain HTTP: no certificate fronts it"]
+    assert len(https) == 1 and https[0]["slot"] == "P4.5" and https[0]["source"].startswith("W1134 "), https
+    #  W1140 (FU-1284): HTTPS is step 12, and no person signs in until it is done
+    assert "Step 12. HTTPS, before anyone signs in" in flat and "no person signs in (P4.1) until this step is done" in flat
+    fu603 = [r for r in rows if r.get("id") == "FU-603"]
+    assert len(fu603) == 1, fu603
+    assert "Done since (FU-603): W1134 wrote the next section" in " ".join(dep.split())
+
+
+def test_w1135_no_tracked_document_names_the_owners_windows_home_folder_by_its_path():
+    """W1135 (found 2026-11-20 while walking the Owner through the local session). The local-session notes' header,
+    and more tracked files, named the Owner's Windows home folder by its full path, the user name in it.
+    Held here:
+    - no tracked text file outside the five places the Owner decides names a Windows home folder by its path: a path
+      starts at ~ instead, the rest of it unchanged (the folder is found by its shape; no name is written here). The
+      pinned fidelity ledgers are among the five: P5.22 pins each byte for byte, so no round edits one;
+    - the five places are each named, with a recommendation, in one open owner-gated row, which the plan's list of
+      what is with the Owner and the local-session notes both name;
+    - the local-session notes still say which folder to open: ~\\Workstation."""
+    import json
+    import pathlib
+    import re
+    import subprocess
+    root = pathlib.Path(__file__).resolve().parents[1]
+    home = re.compile(r"(?i)\b[a-z]:[\\/]+users[\\/]+[^\\/\s`'\"<>()|,;:*?]+")
+    left = ("_archive/", "docs/fidelity_runs/", "venv/", ".claude/", "docs/VISION_FIDELITY_LEDGER")
+    out = subprocess.run(["git", "ls-files", "-z"], cwd=root, capture_output=True, check=True).stdout
+    files = [f for f in out.decode("utf-8").split("\0") if f]
+    assert len(files) > 1000, ("git listed too few tracked files to mean anything", len(files))
+    named = []
+    for rel in files:
+        if rel.startswith(left):
+            continue
+        try:
+            text = (root / rel).read_bytes().decode("utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if home.search(text):
+            named.append(rel)
+    assert named == [], ("a tracked file names a Windows home folder by its path; start it at ~", named)
+
+    rows = json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    owner = [r for r in rows if r.get("title") == "OWNER: five places still name your Windows home folder by its path"]
+    assert len(owner) == 1, owner
+    row = owner[0]
+    assert row["status"] == "open" and row["owner_gated"] is True and row["slot"] == "OWNER", row
+    for place in ("docs/fidelity_runs/", "docs/VISION_FIDELITY_LEDGER", "docs/LEDGER_BLOBS.json", "venv/",
+                  ".claude/settings.json", "_archive/"):
+        assert place in row["why"], ("the Owner's row does not name a place this guard leaves out", place)
+    assert row["why"].count("RECOMMENDED") == 5, "each of the five places carries a recommendation"
+    fable = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    resume = (root / "docs" / "RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    assert f"{row['id']} (W1135):" in fable, "the plan's list of what is with the Owner does not name the row"
+    assert f"({row['id']})" in resume, "the local-session notes do not name the row"
+    assert "in your local clone** (`~\\Workstation`)" in resume, "the notes no longer say which folder to open"
+    fixed = [r for r in rows if r.get("title") == ("Tracked documents name the Owner's Windows home folder by its "
+                                                   "full path, the user name in it")]
+    assert len(fixed) == 1 and fixed[0]["source"].startswith("W1135 "), fixed
+
+
+def test_w1136_fu1278_the_deploy_channels_published_price_is_stated_as_sourced_with_its_pages_and_date():
+    """FU-1278 (W1136), P5.6; the Owner's ruling of 2026-11-19 (FU-1176): a provider's published price may be stated,
+    cited with its page and the date it was read, labelled observed; the guide promises no zero bill. Held here:
+    - the founder's guide and the cost model state Google's price as SOURCED, read on 2026-11-20, pointing at the
+      deploy section that lists the pages, and every figure either states is one that section states;
+    - neither says the question still waits on the Owner, and the guide still promises no channel costs nothing;
+    - P5.6's guard passes both, refuses a price with a date and a page but no SOURCED mark, and refuses one marked
+      SOURCED with no date read; the cost table holds an amount only in a SOURCED cell."""
+    import json
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _fu
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")
+    dep = read("docs/DEPLOYMENT.md").split("## The Google Cloud deploy, step by step (P4.5), read at Google's pages "
+                                           "on 2026-11-20 (W1134)", 1)[1].split("\n## ", 1)[0]
+    stated = set(re.findall(r"\$\d+(?:\.\d+)?", dep))
+    assert {"$0.005", "$3.65", "$0.16"} <= stated, stated
+    guide, cost = read("docs/business/FOUNDERS_GUIDE.md"), read("docs/business/COST_MODEL.md")
+
+    google = [b for b in re.split(r"\n(?=- )", guide) if b.startswith("- Google Cloud, plan item P4.5")]
+    assert len(google) == 1, "the guide has no single line for the Google Cloud channel"
+    line = " ".join(google[0].split())
+    for said in ("SOURCED from Google's own pages, read on 2026-11-20", "`docs/DEPLOYMENT.md`", "$0.005 an hour",
+                 "about $3.65 a month", "at most about $0.16 a month", "charged at a rate not read", "[observed]"):
+        assert said in line, said
+    for doc, name in ((guide, "guide"), (cost, "cost model")):
+        for amount in re.findall(r"\$\d+(?:\.\d+)?", doc):
+            assert amount in stated, (name, amount, "a figure the deploy section does not state")
+        flat = " ".join(doc.split())
+        for waits in ("waits on your decision in row FU-1176", "once row FU-1176 is decided",
+                      "the Owner's question (row FU-1176)"):
+            assert waits not in flat, (name, "still says the question waits on the Owner", waits)
+        assert "as the Owner ruled on 2026-11-19 in row FU-1176" in flat and "[owner-defined, 2026-11-19]" in flat, name
+    assert "- No channel here is promised to cost nothing. [observed]" in guide
+    assert "the bill is not promised to be zero" in " ".join(cost.split())
+
+    plan_slots = {i["slot"] for i in _fu.plan_items(read("docs/FABLE_DELIVERY_PROMPT.md"))}
+    rows = {r["id"] for r in json.loads(read("docs/FOLLOWUPS.json"))["items"]}
+    faults = _w703_faults
+    assert faults(guide, root, plan_slots, rows) == [] and faults(cost, root, plan_slots, rows) == []
+    opening = "# A\n\nDRAFT until the Owner ratifies it.\n\n## B\n\n"
+    unmarked = opening + "- The machine costs $4 a month, read on 2026-11-20 at `docs/DEPLOYMENT.md`. [observed]\n"
+    undated = opening + "- SOURCED: the machine costs $4 a month, at `docs/DEPLOYMENT.md`. [observed]\n"
+    marked = opening + "- SOURCED: the machine costs $4 a month, read on 2026-11-20 at `docs/DEPLOYMENT.md`. [observed]\n"
+    assert any("a money figure is stated with no ruling behind it" in f for f in faults(unmarked, root, plan_slots, rows))
+    assert any("a money figure is stated with no ruling behind it" in f for f in faults(undated, root, plan_slots, rows))
+    assert faults(marked, root, plan_slots, rows) == []
+    table = cost.split("## The cost lines", 1)[1].split("\n## ", 1)[0]
+    cells = [c.strip() for ln in table.splitlines() if ln.startswith("| ") and "---" not in ln
+             and not ln.startswith("| Line") for c in ln.strip("|").split("|")[1:4]]
+    priced = [c for c in cells if "$" in c]
+    assert priced and all(c.startswith("SOURCED") for c in priced), priced
+
+
+def test_w1137_fu603_the_backup_is_a_snapshot_and_the_restore_and_rollback_are_drilled():
+    """FU-603 part 3 (W1137), P4.5. The backup is a daily snapshot of the data disk that Google takes, the restore is
+    written from Google's references, and both the restore and the rollback were drilled with Docker on this
+    machine. Held here:
+    - the restore stops the machine before it detaches the disk, as the detach reference warns, makes the disk from a
+      snapshot, gives it the device name the startup script looks for, and starts the machine again;
+    - the snapshots' price is the pricing page's, and the cost model's cell for backups states that price;
+    - the drill is committed, LF on every checkout, and starts each release with the startup script's own flags: the
+      records where the image keeps them and the image's own port;
+    - the record of the drill: the records never left the volume, the copy was byte-identical, and the current
+      release, the previous one and the current one again each read the same record back;
+    - the first restore from a real snapshot is the Owner's, at the deploy, and is on the Owner's list."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")
+    dep = read("docs/DEPLOYMENT.md")
+    sec = dep.split("## The Google Cloud deploy, step by step (P4.5), read at Google's pages on 2026-11-20 (W1134)", 1)[1]
+    sec = sec.split("\n## ", 1)[0]
+    flat = " ".join(sec.split())
+
+    #  the restore, in its order
+    blocks = [" ".join(b.replace("\\\n", " ").split()) for b in re.findall(r"```bash\n(.*?)```", sec, re.S)]
+    restore = [b for b in blocks if "--source-snapshot=SNAPSHOT" in b]
+    assert len(restore) == 1, "the section has no restore, or more than one"
+    cmds = [c.strip() for c in re.split(r"(?=gcloud compute )", restore[0]) if c.strip()]
+    verbs = [c.split()[2] + " " + c.split()[3] for c in cmds]
+    assert verbs == ["instances stop", "disks create", "instances detach-disk", "instances attach-disk",
+                     "instances start"], verbs
+    flags = [dict(re.findall(r"--([a-z-]+)=(\S+)", c)) for c in cmds]
+    vm = [b for b in blocks if "gcloud compute instances create workstation" in b][0]
+    device = dict(p.split("=", 1) for p in dict(re.findall(r"--([a-z-]+)=(\S+)", vm))["create-disk"].split(","))["device-name"]
+    #  the restored disk takes the device name the machine's disk was made with, which the startup script looks for
+    assert flags[3]["device-name"] == flags[2]["device-name"] == device, (flags[2], flags[3], device)
+    assert "/dev/disk/by-id/google-" + device in read("deploy/gcp/startup.sh")
+    assert flags[3]["disk"] == "workstation-data-restored" and flags[1]["type"] == "pd-standard", flags
+    assert "detaching a disk without first unmounting it may result in incomplete I/O operations" in flat
+
+    #  the price of the snapshots, and the cost model's cell for backups
+    assert "standard snapshot storage is $0.05 per GB a month in us-central1" in flat and "[disk-pricing]" in flat
+    cost = read("docs/business/COST_MODEL.md")
+    row = [ln for ln in cost.splitlines() if ln.startswith("| Disk, and backups kept off the machine |")]
+    assert len(row) == 1 and "SOURCED: daily snapshots of the data disk at $0.05 per GB a month" in row[0], row
+
+    #  the drill: committed, LF, the startup script's own flags
+    drill = (root / "deploy" / "drill.sh").read_bytes()
+    assert b"\r" not in drill and "deploy/drill.sh text eol=lf" in read(".gitattributes").splitlines()
+    drill = drill.decode("utf-8")
+    script = read("deploy/gcp/startup.sh")
+    df = read("Dockerfile")
+    data_dir = re.search(r"\bDATA_DIR=(\S+)", df).group(1)
+    port = re.search(r"\bPORT=(\d+)", df).group(1)
+    assert f'--volume="$2":{data_dir}' in drill and f':{port} ' in drill, "the drill starts the image elsewhere"
+    for flag in ("--log-opt max-size=10m", "--log-opt max-file=3"):
+        assert flag in drill and flag in script, flag
+    assert "--memory=1g" in drill and "docker diff" in drill and "sha256sum" in drill
+
+    #  the record
+    rec = flat.split("DRILLED ON THIS MACHINE, 2026-11-20 (W1137):", 1)[1].split("HTTPS, DRILLED ON THIS MACHINE", 1)[0]
+    for said in ("the records, and everything else the platform wrote in the drill, are on the volume", "byte-identical to the original",
+                 "read the project back (HTTP 200)", "read the project (HTTP 200) and listed it", "came up in"):
+        assert said in rec, said
+    #  what the drill found written outside the volume is said, and what a release would lose is a row of its own
+    #  W1138 (FU-1287): run again on an image with the folders on the data root, nothing is written outside it
+    assert "the container had changed nothing outside the volume and `/tmp`" in rec, (
+        "the record does not say the platform writes nothing outside its volume")
+    assert "The first drill found `/app/logs/autonomy`" in rec and "(FU-1287)" in rec
+    seconds = [float(x) for x in re.findall(r"in ([\d.]+) seconds", rec)]
+    assert len(seconds) >= 5 and all(0 < s < 120 for s in seconds), seconds
+
+    #  the first real restore is the Owner's
+    rows = json.loads(read("docs/FOLLOWUPS.json"))["items"]
+    owner = [r for r in rows if r.get("title") == "OWNER: at the first deploy, restore the data disk once from its snapshot, watching"]
+    assert len(owner) == 1 and owner[0]["owner_gated"] and owner[0]["status"] == "open", owner
+    assert f"({owner[0]['id']})" in rec and f"{owner[0]['id']} (W1137):" in read("docs/FABLE_DELIVERY_PROMPT.md")
+    assert f"({owner[0]['id']})" in read("docs/RESUME_ON_MY_MACHINE.md")
+
+
+def test_w1138_fu1287_the_logs_folder_the_platform_writes_follows_the_data_root(tmp_path):
+    """FU-1287 (W1138), P4.5, found by FU-603's drill (W1137): the image, run with its records on a volume, wrote
+    /app/logs/autonomy beside the code, which a release replaces, and matplotlib's font cache under the home folder.
+    Held here:
+    - where a deployment sets the data root, the logs folder is under it; a checkout with none keeps it beside the
+      code, as before; the genome and models folders hold nothing the platform writes and stay beside the code (each
+      read in a fresh interpreter, so no import order decides it);
+    - the autonomy pipelines write under LOG_DIR, and the image keeps matplotlib's cache under /tmp;
+    - the drill's record, run again on an image with the change, says nothing was written outside the volume, and
+      the hardening brief no longer names the folders as what the deploy lacks."""
+    import os
+    import pathlib
+    import re
+    import subprocess
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")
+    code = ("from agentic_core import store_paths as p; "
+            "print(p.DATA_DIR, p.LOG_DIR, p.GENOME_DIR, p.MODELS_DIR, sep='|')")
+
+    def folders(env):
+        e = {k: v for k, v in os.environ.items() if k not in ("DATA_DIR", "WORKSTATION_DATA_DIR")}
+        e.update(env)
+        out = subprocess.run([sys.executable, "-c", code], cwd=root, env=e, capture_output=True, text=True, timeout=120)
+        assert out.returncode == 0, out.stderr[-800:]
+        return [pathlib.Path(x) for x in out.stdout.strip().split("|")]
+
+    data, logs, genome, models = folders({"DATA_DIR": str(tmp_path / "root")})
+    assert data == tmp_path / "root" and logs == data / "logs", (data, logs)
+    assert (genome, models) == (root / "genome", root / "models"), (genome, models)
+    data, logs, genome, models = folders({"WORKSTATION_DATA_DIR": str(tmp_path / "other")})
+    assert logs == tmp_path / "other" / "logs", logs
+    data, logs, genome, models = folders({})
+    assert data == root / "data" and (logs, genome, models) == (root / "logs", root / "genome", root / "models")
+
+    assert 'log_dir = str(LOG_DIR / "autonomy")' in read("agentic_core/ai/ceo/autonomy_pipelines.py")
+    assert re.search(r"^\s*MPLCONFIGDIR=/tmp/\S+ \\$", read("Dockerfile"), re.M), "matplotlib's cache is not under /tmp"
+    flat = " ".join(read("docs/DEPLOYMENT.md").split())
+    assert "the container had changed nothing outside the volume and `/tmp`" in flat, "the drill's record says otherwise"
+    assert "run again in W1138 on an image with FU-1287's change" in flat
+    brief = " ".join(read("docs/business/PRODUCTION_HARDENING_BRIEF.md").split())
+    assert "row FU-1287" not in brief and "the drill found nothing written outside the data disk and `/tmp` (W1138" in brief
+
+
+def test_w1139_fu1281_the_cockpits_latest_cycle_says_the_platform_fee_and_what_the_split_was_over(client):
+    """FU-1281 (W1139), P5.16. W1125 drew the platform's fee and what the entity's split was over on the VSB Economy
+    page. The cockpit's latest cycle named the intake, the costs, the reserve and the distributable profit, and not the
+    fee taken first, so its stages read short of the profit by the fee; its rendered tests ran no cycle that succeeded.
+    The cockpit now draws the fee and what the split was over beside the distributable profit, with the fee's own
+    sentence, and VSBCockpit.fee.test.tsx runs a cycle from the cockpit's button against the routes' own answers. Held
+    here:
+    - the fixture that rendered test reads is what the routes answer now, as the cockpit asks them: a made-up entity
+      established through Genesis, the only one on the list the cockpit opens with, runs a cycle on the 10,000 WST
+      typed into the cockpit's field; the cycle posts a quarter of its 8,000 profit and the split is over the 6,000
+      that remains; each figure the card draws, and every field of the fee, compared with a live answer;
+    - the cockpit draws the fee, what the split was over and the fee's sentence where the rendered test reads them."""
+    import json
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    page = root / "apps/workstation-superapp/src/pages/enterprise"
+    fx = json.loads((page / "VSBCockpit.fee.fixture.json").read_text(encoding="utf-8"))
+    vid0 = fx["vsb_id"]
+    assert [e["vsb_id"] for e in fx["answers"]["/api/v1/vsb"]["body"]["entities"]] == [vid0]
+    assert fx["cycle"]["request"] == {"vsb_id": vid0, "revenue": 10000} and fx["cycle"]["status"] == 200
+
+    est = client.post("/api/v1/genesis/establish", json={"problem": "w1139 a made-up repair cafe for a market town's kettles",
+                                                         "name": "W1139 Repair Cafe", "ship_output": False})
+    assert est.status_code == 200, est.text[:300]
+    vid = est.json()["vsb_id"]
+    r = client.post("/api/v1/economy/cycle", json={**fx["cycle"]["request"], "vsb_id": vid})
+    assert r.status_code == 200, r.text[:300]
+    live, cap = r.json()["cycle"], fx["cycle"]["body"]["cycle"]
+    assert live["platform_fee"] == cap["platform_fee"], (live["platform_fee"], cap["platform_fee"])
+    for k in ("intake_revenue", "operating_costs", "homeostasis_reserves", "distributable_profit", "split_base_wst"):
+        assert live[k] == cap[k], (k, live[k], cap[k])
+    assert (cap["distributable_profit"], cap["platform_fee"]["fee_wst"], cap["split_base_wst"],
+            cap["platform_fee"]["posted"]) == (8000.0, 2000.0, 6000.0, True), cap["platform_fee"]
+
+    src = (page / "VSBCockpit.tsx").read_text(encoding="utf-8")
+    for drawn in ("['Distributable profit', lastCycle.distributable_profit], ['Platform fee', lastCycle.platform_fee?.fee_wst], "
+                  "['Split over', lastCycle.split_base_wst]", 'data-testid="cockpit-platform-fee"',
+                  "Platform fee: {String(lastCycle.platform_fee.basis)}."):
+        assert drawn in src, ("the cockpit does not draw it", drawn)
+    test = (page / "VSBCockpit.fee.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './VSBCockpit.fee.fixture.json';" in test and test.count("it(") == 1
+    assert "'Revenue for this economic cycle in virtual WST'" in test and "expect(asked).toEqual([cycle.request]);" in test
+
+
+def test_w1140_fu1284_https_is_caddy_in_front_of_the_platform_and_no_one_signs_in_before_it():
+    """FU-1284 (W1140), P4.5. As W1134 wrote the deploy, the release machine served plain HTTP at its address. The
+    options were read at their own pages on 2026-11-20: Google's at Google, and Caddy's and Let's Encrypt's from the
+    source each site is built from, since this environment's network refuses both sites. A publicly trusted
+    certificate is for a domain, never an IP address, so the domain is the Owner's to buy. Step 12 makes the machine's
+    address its own, points the domain at it and tells the machine its domain; the startup script then puts Caddy's
+    one-command reverse proxy in front of the platform, which has no port of its own and believes a forwarded client
+    address only from Caddy's fixed address. A Google load balancer would need the domain too, and its forwarding rule
+    alone costs about $18.25 a month. Held here:
+    - the script's check of a domain, driven on names it must take and names it must refuse;
+    - the front's flags: Caddy pinned by its digest, on ports 80 and 443, at a fixed address outside the addresses
+      Docker hands out and the one address the platform trusts; the platform with no port of its own, at the image's
+      port; and a bad domain refused, and the front's image pulled, before anything running is stopped;
+    - the steps' commands in their pages' forms, the prices, the firewall admitting 443 as well as 80, each page
+      listed and cited, and no person signing in until step 12 is done;
+    - the drill's record of what it measured, the drill committed and LF, and the domain on the Owner's list."""
+    import ipaddress
+    import json
+    import os
+    import pathlib
+    import re
+    import shutil
+    import subprocess
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")
+    script = read("deploy/gcp/startup.sh")
+
+    #  the domain's check, driven
+    take = ["example.com", "app.example.co.uk", "workstation.localhost", "a-b.example.org", "x" * 63 + ".com"]
+    refuse = ["", "localhost", "1.2.3.4", "203.0.113.7", "-a.com", "a-.com", "a..com", ".example.com", "example.com.",
+              "example.com/x", "exa mple.com", "example.com;reboot", "$(reboot).com", "EXAMPLE.COM", "x" * 64 + ".com",
+              ("a" * 60 + ".") * 5 + "com", "example.com\nevil.com"]
+    bash = shutil.which("bash")
+    if sys.platform.startswith("linux"):
+        assert bash, "the round's own machine must drive the domain's check"
+    if os.name != "nt" and bash:
+        probe = 'source "$1"; shift; for d in "$@"; do if valid_domain "$d"; then echo take; else echo refuse; fi; done'
+        out = subprocess.run([bash, "-c", probe, "bash", str(root / "deploy" / "gcp" / "startup.sh"), *take, *refuse],
+                             capture_output=True, text=True, timeout=60, stdin=subprocess.DEVNULL,
+                             env=dict(os.environ, WORKSTATION_STARTUP_SOURCED="1"))
+        assert out.returncode == 0, out.stderr[-600:]
+        said = out.stdout.split()
+        assert said == ["take"] * len(take) + ["refuse"] * len(refuse), [p for p in zip(take + refuse, said) if
+                                                                       (p[0] in take) != (p[1] == "take")]
+
+    #  the front's own flags
+    front = script.split("start_front() {", 1)[1].split("\n}\n", 1)[0]
+    runs = " ".join(front.replace("\\\n", " ").split()).split("docker run ")[1:]
+    assert len(runs) == 2, runs
+    platform, caddy = runs
+    assert "--name=workstation" in platform and "--name=caddy" in caddy, runs
+    assert "--publish" not in platform, ("behind the front the platform has a port of its own", platform)
+    assert "--publish=80:80" in caddy and "--publish=443:443" in caddy, caddy
+    assert '--env=FORWARDED_ALLOW_IPS="$FRONT_IP"' in platform and '--ip="$FRONT_IP"' in caddy, runs
+    assert '--volume="$MNT":/app/data' in platform and "--volume=caddy-data:/data" in caddy, runs
+    ip = ipaddress.ip_address(re.search(r"^FRONT_IP=(\S+)$", script, re.M).group(1))
+    net = re.search(r"--subnet=(\S+) --ip-range=(\S+) --gateway=(\S+)", front)
+    subnet, pool, gateway = (ipaddress.ip_network(net.group(1)), ipaddress.ip_network(net.group(2)),
+                             ipaddress.ip_address(net.group(3)))
+    assert ip in subnet and pool.subnet_of(subnet) and ip not in pool and gateway not in pool and ip != gateway, (
+        "Docker could hand Caddy's address to another container", ip, net.groups())
+    assert re.search(r'^CADDY_IMAGE="caddy:[\d.]+@sha256:[0-9a-f]{64}"$', script, re.M), "the front's image is not pinned"
+    port = re.search(r"\bPORT=(\d+)", read("Dockerfile")).group(1)
+    assert f'caddy reverse-proxy --from "$3" --to workstation:{port}' in caddy, ("Caddy proxies to another port", caddy)
+    main = script.split("\nmain() {\n", 1)[1].split("\n}\n", 1)[0]     # a whole line: valid_domain() holds "main() {"
+    lower, check = main.index("tr 'A-Z' 'a-z'"), main.index('! valid_domain "$domain"')
+    pull, stop = main.index('docker pull "$CADDY_IMAGE"'), main.index("docker stop")
+    assert lower < check < stop and pull < stop, "the domain is checked, or the front's image pulled, after the stop"
+    assert 'start_front "$image" "$tag" "$domain"' in main and "--publish=80:8000 " in main, main
+
+    #  the steps, their prices and their pages
+    sec = read("docs/DEPLOYMENT.md").split("## The Google Cloud deploy, step by step (P4.5)", 1)[1].split("\n## ", 1)[0]
+    flat = " ".join(sec.split())
+    blocks = [" ".join(b.replace("\\\n", " ").split()) for b in re.findall(r"```bash\n(.*?)```", sec, re.S)]
+    promote = [b for b in blocks if "gcloud compute addresses create" in b]
+    assert promote == ["gcloud compute addresses create workstation-ip --addresses=EXTERNAL_IP --region=us-central1"], promote
+    told = [b for b in blocks if "--metadata=domain=" in b]
+    assert len(told) == 1 and told[0] == ("gcloud compute instances add-metadata workstation --zone=us-central1-a "
+                                          "--metadata=domain=DOMAIN sudo google_metadata_script_runner startup"), told
+    fw = [b for b in blocks if "gcloud compute firewall-rules create" in b]
+    assert len(fw) == 1 and "--rules=tcp:80,tcp:443" in fw[0], fw
+    assert "$0.025 an hour, about $18.25 a month [network-pricing]" in flat and round(0.025 * 730, 2) == 18.25
+    assert "attached to nothing is $0.01 an hour [network-pricing]" in flat
+    assert '"whether the instance is running or stopped"' in flat
+    step12 = flat.split("**Step 12. HTTPS, before anyone signs in", 1)[1].split("HTTPS, DRILLED ON THIS MACHINE", 1)[0]
+    for key in ("static-promote", "managed-certs", "cos-fs", "caddy-https", "caddy-proxy", "caddy-headers",
+                "caddy-image", "le-challenges"):
+        assert re.search(r"^- \[" + re.escape(key) + r"\] https://\S+ \((20\d\d-\d\d-\d\d|no date shown)\)$", sec, re.M), (
+            key, "is not listed with its address and date")
+        assert f"[{key}]" in step12, (key, "is listed and not cited")
+    for said in ('"not an IP address" [caddy-https]', '"can only be done on port 80" [le-challenges]',
+                 '"must not be treated as a cache" [caddy-image]', '"to prevent spoofing" [caddy-headers]'):
+        assert said in step12, said
+    assert "no person signs in (P4.1) until this step is done" in flat
+
+    #  the drill and its record
+    rec = flat.split("HTTPS, DRILLED ON THIS MACHINE, 2026-11-20 (W1140):", 1)[1]
+    for said in ("HTTPS answered 200", "plain HTTP was answered 308 https://workstation.localhost/health",
+                 "the platform had no port of its own", f"Caddy held its fixed address, {ip},",
+                 "X-Forwarded-For of 203.0.113.7", f"the platform gave Caddy's own address, {ip},"):
+        assert said in rec, said
+    saw = re.search(r"The platform's log gave the request's address as (\S+), the address Caddy saw it come from, and "
+                    r"gave (\S+) again", rec)
+    assert saw and saw.group(1) == saw.group(2) and ipaddress.ip_address(saw.group(1)) in subnet, rec[:600]
+    assert ipaddress.ip_address(saw.group(1)) != ip, "the record shows the platform believing Caddy's own address"
+    drill = (root / "deploy" / "https_drill.sh").read_bytes()
+    assert b"\r" not in drill and "deploy/https_drill.sh text eol=lf" in read(".gitattributes").splitlines()
+    drill = drill.decode("utf-8")
+    assert '. "$HERE/gcp/startup.sh"' in drill and 'start_front "$IMG"' in drill, "the drill starts another front"
+    assert "X-Forwarded-For: 203.0.113.7" in drill and "WITHOUT_THE_SETTING_PLATFORM_SAW" in drill
+
+    #  the domain is the Owner's, and on the Owner's list
+    rows = json.loads(read("docs/FOLLOWUPS.json"))["items"]
+    owner = [r for r in rows if r.get("title") ==
+             "OWNER: buy a domain for the release machine and point it at the machine's fixed address"]
+    assert len(owner) == 1 and owner[0]["owner_gated"] and owner[0]["status"] == "open", owner
+    oid = owner[0]["id"]
+    assert f"({oid})" in step12 and f"({oid})" in rec and f"{oid} (W1140):" in read("docs/FABLE_DELIVERY_PROMPT.md")
+    assert f"({oid})" in read("docs/RESUME_ON_MY_MACHINE.md")
+
+
+def test_w1141_fu1277_streamlit_plotly_and_pandas_are_not_declared_and_nothing_only_streamlit_brought_is_pinned():
+    """FU-1277 (W1141), P4.5, as the Owner ruled on 2026-11-19 (FU-1174). Nothing live has imported streamlit, plotly
+    or pandas since W896 moved the dashboard aside (test_w908 holds that). pyproject.toml no longer declares them, the
+    devcontainer installs only the pins, and the lock and requirements.txt were made again: 188 pins became 175, every
+    other pin at the same version. The full suite ran in a fresh venv built only from the new requirements.txt before
+    the round's own suite. Held here:
+    - none of the three is declared, and the devcontainer installs nothing the pins do not name;
+    - neither the lock nor requirements.txt holds streamlit, plotly or any of the eleven packages only streamlit
+      brought;
+    - pandas stays pinned only because packages kept here require it, as the lock says (camel-tools and mesa);
+    - the verdicts say the three were ruled and removed."""
+    import pathlib
+    import tomllib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")
+    declared = {k.lower() for k in tomllib.loads(read("pyproject.toml"))["tool"]["poetry"]["dependencies"]}
+    for dist in ("streamlit", "pandas", "plotly"):
+        assert dist not in declared, (dist, "is declared again, against the Owner's ruling of 2026-11-19 (FU-1174)")
+    dc = read(".devcontainer/devcontainer.json")
+    assert "streamlit" not in dc and "pip3 install --user -r requirements.txt;" in dc, "the devcontainer installs more"
+
+    gone = {"streamlit", "plotly", "altair", "blinker", "gitdb", "gitpython", "narwhals", "pyarrow", "pydeck", "smmap",
+            "toml", "tornado", "watchdog"}
+    lock = tomllib.loads(read("poetry.lock"))
+    locked = {p["name"].lower() for p in lock["package"]}
+    pinned = {l.split("==", 1)[0].strip().lower() for l in read("requirements.txt").splitlines() if "==" in l}
+    assert not gone & locked and not gone & pinned, ("pinned again", sorted(gone & (locked | pinned)))
+    needs = sorted(p["name"] for p in lock["package"] if "pandas" in {d.lower() for d in (p.get("dependencies") or {})})
+    assert "pandas" in locked and "pandas" in pinned and {"camel-tools", "mesa"} <= set(needs), (
+        "pandas is pinned with nothing kept here that requires it, or it is gone and they need it", needs)
+
+    dv = read("docs/DEPENDENCY_VERDICTS.md")
+    assert "## W1141 (FU-1277) — streamlit, plotly and pandas's direct declaration are removed (2026-11-20)" in dv
+    assert "188 pins became 175" in dv and "The full suite ran in a fresh venv built only from" in " ".join(dv.split())
+
+
+def test_w1142_fu399_the_matter_panel_says_each_particulars_source_each_authoritys_fate_and_the_checks_left(client, monkeypatch, tmp_path):
+    """FU-399 part 109 (W1142). The Law page's matter panel had no rendered test: test_w610 held it by a text scan, so
+    none of its elements was read as a person reads it. Held here:
+    - the answers the rendered test serves are the routes' own, for a made-up folder named by LEGAL_BUNDLE_DIR (the
+      only way a test process reads one): empty, where the particular is a BLANK and the authority is refused; then
+      holding one made-up letter, where the particular comes with its document and line and the authority resolves;
+    - the routes still answer exactly that today, for the same folder and the same asks, the draft's own id and time
+      aside, and each ask is the body the panel's three fields send;
+    - the rendered test reads each element in the routes' words."""
+    import json
+    from pathlib import Path
+    from agentic_core.legal import bundle as _b
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components"
+    fx = json.loads((src / "MatterAssemblyPanel.fixture.json").read_text(encoding="utf-8"))
+    empty, letter = fx["cases"]["empty"], fx["cases"]["letter"]
+
+    #  each ask is the panel's own body for its three fields
+    for case in (empty, letter):
+        f = case["fields"]
+        assert case["assemble"]["request"] == {
+            "template_id": "et1_claim", "authorities": [f["authority"]],
+            "particulars": [{"name": f["particular"], "words": [w.strip() for w in f["words"].split(",") if w.strip()]}]}
+    panel = (src / "MatterAssemblyPanel.tsx").read_text(encoding="utf-8")
+    assert "template_id: 'et1_claim'" in panel and "words.split(',').map(w => w.trim()).filter(Boolean)" in panel
+
+    #  the states the cases read
+    pe, pl = empty["assemble"]["body"], letter["assemble"]["body"]
+    assert (empty["bundle"]["body"]["document_count"], letter["bundle"]["body"]["document_count"]) == (0, 1)
+    assert not pe["particulars"][0]["found"] and pe["authorities_refused"] == [empty["fields"]["authority"]], pe["face"]
+    assert pl["particulars"][0]["found"] and pl["authorities"][0]["resolved"] and pl["unresolved_checks"] == [], pl["face"]
+
+    #  the routes answer exactly that today, for the same made-up folder
+    folder = tmp_path / "legal-matter"
+    folder.mkdir()
+    monkeypatch.setenv(_b.ENV_VAR, str(folder))
+    own = lambda body: {k: v for k, v in body.items() if k not in ("artefact_id", "created_at")}
+    for name, case in (("empty", empty), ("letter", letter)):
+        if name == "letter":
+            (folder / "dismissal_letter.txt").write_text(case["letter"], encoding="utf-8")
+        assert client.get("/api/v1/law/bundle").json() == case["bundle"]["body"], name
+        live = client.post("/api/v1/law/matter/assemble", json=case["assemble"]["request"])
+        assert live.status_code == case["assemble"]["status"] == 200, (name, live.text[:300])
+        assert own(live.json()) == own(case["assemble"]["body"]), (name, live.json()["face"])
+
+    spec = (src / "MatterAssemblyPanel.test.tsx").read_text(encoding="utf-8")
+    for line in ("a.particulars.map((p: any) => `${p.particular}: ${p.rendered}`)));",
+                 "[`${p.particular}: ${p.rendered} — ${p.document}:${p.line} (${p.verification.verdict})`]));",
+                 "expect(items('matter-authorities')).toEqual(a.authorities.map((x: any) => `${x.authority}: REFUSED — ${x.basis}`));",
+                 "`Unresolved: ${empty.fields.authority} (authority refused)`);",
+                 "expect(screen.getByTestId('matter-unresolved-checks').textContent).toBe('No unresolved check.');",
+                 "'The matter folder could not be read: Failed — backend unreachable.'"):
+        assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1143_no_document_a_round_wrote_gives_the_owner_a_pronoun_the_owner_has_not_stated():
+    """W1143. The rounds' own text gave the Owner a gendered pronoun in forty-odd places: the register, the plan and
+    its living copy, the dated measurement of the remaining work, the handover, four other documents, three code
+    comments, two .gitignore comments, the final audit's workflow and the spine's docstrings. The Owner has stated no
+    pronoun, so each sentence now says "the Owner", or they, them and their where the Owner is named just before.
+    W1120's notes also said the rulings of 2026-11-19 accepted recommendations they called the Owner's own; they were
+    the recommendations put to the Owner that day, and the notes now say so. Held here:
+    - no tracked text file holds he, his, him or himself, apart from six uses that are not about a person the
+      documents describe, each named with the file it is in, and each still there (an entry for a use that has gone
+      fails, so the list cannot outlive what it excuses): a verse of the Quran quoted in a register row, the horizon
+      guardrails' crisis-language patterns and the two blind files that copy them, the language code of Hebrew,
+      and (W1160) the publisher's own description of the Employment Tribunals Extension of Jurisdiction (Scotland)
+      Order 1994, in the words of 1994, which the statute reader's fixture keeps word for word;
+    - left out of the scan, as test_w1135 leaves them: the archive, the fidelity runs (never opened), the venv, the
+      Owner's .claude settings and the pinned ledger editions; and also the source texts of the knowledge folders,
+      the Owner's own inputs, and this spine, whose variables are named he, hers and his and whose crisis-language
+      tests quote the phrases they test;
+    - the W1120 rows say whose recommendations they were."""
+    import json
+    import pathlib
+    import re
+    import subprocess
+    root = pathlib.Path(__file__).resolve().parents[1]
+    word = re.compile(r"\b(?:he|his|him|himself)\b", re.I)
+    left = ("_archive/", "docs/fidelity_runs/", "venv/", ".claude/", "docs/VISION_FIDELITY_LEDGER", "knowledge/",
+            "docs/knowledge/", "inputs/", "integration_tests/test_mvp_spine.py")
+    allowed = {
+        "docs/FOLLOWUPS.json": ["Say: He is Allah, the One!"],
+        "agentic_core/gaas/v5/horizon_guardrails.py": [r"(?:my|his|her|their|ones?|his\s+or\s+her)",
+                                                       r"(?:i|he|she|they)"],
+        "scripts/blinds_p212_refute.json": [r"(?:my|his|her|their|ones?|his\\s+or\\s+her)",
+                                            r"|his\\s+|her\\s+|their\\s+)", "'took his own life'"],
+        "scripts/blinds_p212_routes.json": [r"|his\\s+|her\\s+|their\\s+)"],
+        "apps/workstation-superapp/src/lib/i18n.tsx": ["'fa', 'he']"],
+        #  W1160 - the publisher's data file for article 7 of the Scotland Order 1994, kept word for word: its
+        #  description of the Order, as the publisher gives it
+        "integration_tests/fixtures/statute_order_article_unapplied.xml": [
+            "breach of his contract of employment", "the termination of his employment",
+            "claimed against him under the Order"],
+    }
+    out = subprocess.run(["git", "ls-files", "-z"], cwd=root, capture_output=True, check=True).stdout
+    files = [f for f in out.decode("utf-8").split("\0") if f]
+    assert len(files) > 1000, ("git listed too few tracked files to mean anything", len(files))
+    found, read = [], 0
+    for rel in files:
+        if rel.startswith(left):
+            continue
+        try:
+            text = (root / rel).read_bytes().decode("utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        read += 1
+        for use in allowed.get(rel, ()):
+            assert use in text, ("an allowed use is no longer there: take it off the list", rel, use)
+            text = text.replace(use, " ")
+        found += [(rel, text.count("\n", 0, m.start()) + 1, m.group(0)) for m in word.finditer(text)]
+    assert read > 1000, ("too few files were read to mean anything", read)
+    assert set(allowed) <= set(files), sorted(set(allowed) - set(files))
+    assert found == [], ("a tracked file gives a person a pronoun: say the Owner, or they, them and their", found[:12])
+
+    #  the rulings of 2026-11-19 accepted the recommendations put to the Owner that day
+    rows = {r["id"]: r for r in json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    for fid in ("FU-1166", "FU-1174", "FU-1176", "FU-1185", "FU-1187", "FU-1191"):
+        assert rows[fid]["close_note"].startswith("OWNER RULED 2026-11-19 (the recommendation accepted): "), fid
+    for fid in ("FU-1277", "FU-1278", "FU-1279", "FU-1280"):
+        assert rows[fid]["source"] == ("W1120 (the Owner's rulings of 2026-11-19: the twenty-two recommendations of that "
+                                       "day accepted)"), fid
+    plan = " ".join((root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8").split())
+    assert "OWNER RULING 2026-11-19 (the twenty-two recommendations of that day accepted together)" in plan
+
+
+def test_w1144_fu1291_the_plan_opening_says_who_wrote_what_is_on_screen_and_the_chief_only_for_a_model(client, monkeypatch):
+    """FU-399 part 110 and FU-1291 (W1144). components/PlanOpening.tsx draws the opening on the Business Plan page and
+    the cockpit's plan tab. Rendered against what the plan routes answered, it said three things that were not so: it
+    headed an opening of the Owner's own concept and templates "Chief's Opening", over the sentence saying neither the
+    Chief nor a model had composed anything; it marked a model's text with the source's code (model_composed) and
+    gave a concept the Owner supplied at establishment no mark at all; and it hid the sentence saying who wrote the
+    opening once no field was a template. Held here:
+    - the answers the rendered test serves are the routes' own, for the same made-up entities and scopes, with the
+      owned model stood in exactly as test_w471 stands it in: each opening field's text, its source, the templated
+      list, the fields carrying an edit date and the sentence, the entity's id and the times aside;
+    - the edit the rendered test makes is the body the component's own save sends, and the refusal is the route's;
+    - the component's heading is the Chief's only for a model's field, each mark comes from the field's own source
+      and says it in words, and the sentence is shown whenever the plan records one;
+    - the rendered test reads each element."""
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.ai import gateway as gw
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components"
+    fx = json.loads((src / "PlanOpening.fixture.json").read_text(encoding="utf-8"))["cases"]
+    OPEN = ["executive_summary", "concept", "vision", "mission", "strategy"]
+    stamp = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+
+    def seen(plan):
+        prov = plan.get("provenance") or {}
+        return {"text": {k: plan.get(k) for k in OPEN}, "sources": prov.get("field_sources"),
+                "templated": prov.get("templated_fields"), "edited": sorted((plan.get("owner_edits") or {})),
+                "said": stamp.sub("<time>", prov.get("opening_written_by") or "")}
+
+    def establish(name, **extra):
+        r = client.post("/api/v1/genesis/establish", json={"problem": f"W1144 made up: {name}", "ship_output": False,
+                                                            "name": name, **extra})
+        assert r.status_code == 200, (r.status_code, r.text[:300])
+        return r.json()["vsb_id"]
+
+    #  the same made-up entities and scopes, asked the same way
+    t = establish("W1144 Kettle Cafe")
+    plan_t = client.get(f"/api/v1/business-plan?scope={t}").json()
+    assert seen(plan_t) == seen(fx["templated"]["plan"]["body"]), seen(plan_t)
+    o = establish("W1144 Bicycle Library", concept="Members borrow a bicycle for a week and bring it back mended if it broke.")
+    plan_o = client.get(f"/api/v1/business-plan?scope={o}").json()
+    assert seen(plan_o) == seen(fx["owner_concept"]["plan"]["body"]), seen(plan_o)
+    s = "w1144-composed"
+    client.post("/api/v1/business-plan/generate", json={"scope": s, "context": "W1144 made up: a seed library"})
+    client.post("/api/v1/business-plan/set", json={"scope": s, "vision": "Every street keeps its own seeds."})
+    client.post("/api/v1/business-plan/set", json={"scope": s, "concept": "A first concept, later withdrawn."})
+    client.post("/api/v1/business-plan/set", json={"scope": s, "clear": ["concept"]})
+
+    async def _model(prompt, agent="assistant", **kw):
+        return {"output": ("Drafted by the owned model.\n## Executive Summary\nA seed library lending seeds by the "
+                           "season.\n## Concept\nBorrow seeds, grow them, return seeds from the crop.\n## Vision\n"
+                           "MODEL VISION\n## Mission\nKeep local seeds growing.\n## Strategy\nStart at one market "
+                           "stall.\n"),
+                "served_by": "ollama:test", "is_external": False}
+    monkeypatch.setattr(gw.gateway, "query_meta", _model)
+    g = client.post("/api/v1/business-plan/generate", json={"scope": s, "context": "x"})
+    monkeypatch.undo()
+    assert g.status_code == 200 and set(g.json()["written"]) == {"executive_summary", "concept", "mission", "strategy"}
+    plan_s = client.get(f"/api/v1/business-plan?scope={s}").json()
+    assert seen(plan_s) == seen(fx["composed"]["plan"]["body"]), seen(plan_s)
+
+    #  the edit and the refusal, asked with the component's own body
+    e = fx["edit"]
+    ask = dict(e["set"]["request"], scope=t)
+    assert e["set"]["request"]["clear"] == ["mission"] and set(e["set"]["request"]) == {"scope", "owner", "clear", "vision"}
+    r = client.post("/api/v1/business-plan/set", json=ask)
+    assert r.status_code == e["set"]["status"] == 200, r.text[:300]
+    assert seen(client.get(f"/api/v1/business-plan?scope={t}").json()) == seen(e["plan_after"]["body"])
+    f = fx["refused"]
+    r = client.post("/api/v1/business-plan/set", json=dict(f["set"]["request"], scope=o))
+    assert (r.status_code, r.json()) == (f["set"]["status"], f["set"]["body"]) == (422, {
+        "detail": "mission: the floor's pending marker is not an owner's edit"})
+    n = "w1144-none"
+    client.post("/api/v1/business-plan/generate", json={"scope": n, "context": "W1144 made up: nothing composed"})
+    assert seen(client.get(f"/api/v1/business-plan?scope={n}").json()) == seen(fx["none"]["plan"]["body"])
+
+    #  the component: the body its save sends, the heading's rule, each mark by its source, the sentence
+    comp = (src / "PlanOpening.tsx").read_text(encoding="utf-8")
+    flat = " ".join(comp.split())
+    for line in ("const clear = OPENING.map(([k]) => k).filter(k => !edit[k].trim() && (plan as any)[k]);",
+                 "const body: Record<string, unknown> = { scope, ...(plan.owner ? { owner: plan.owner } : {}), clear };",
+                 "if (v && v !== (((plan as any)[k] as string) || '')) body[k] = v;",
+                 "const composed = written.some(([k]) => sources[k] === 'model_composed');",
+                 "const heading = composed ? 'Chief’s Opening' : allTemplated ? 'Plan opening — generated from your "
+                 "establish answers' : 'Plan opening';",
+                 "if (src === 'owner_supplied' || (!src && plan.owner_edits?.[k])) return 'owner';",
+                 "model_composed: 'composed by a model',", "cadence_derived: 'derived by the planning cadence',",
+                 "{SOURCE_SAID[sources[k]] ?? sources[k]}", "{plan.provenance?.opening_written_by && ("):
+        assert line in flat, ("the opening no longer reads", line)
+    assert "templated.size > 0" not in comp and "{sources[k]}</span>" not in flat
+
+    spec = " ".join((src / "PlanOpening.test.tsx").read_text(encoding="utf-8").split())
+    for line in ("expect(heading()).toBe('Plan opening — generated from your establish answers');",
+                 "expect(heading()).toBe('Plan opening');", "expect(heading()).toBe('Chief’s Opening');",
+                 "expect(mark('owner-supplied', 'concept')).toBe('the Owner’s words');",
+                 "toEqual(['composed by a model', 'composed by a model']);",
+                 "expect(sentence()).toBe(plan.provenance.opening_written_by);",
+                 "expect(posted).toEqual([c.set.request]);",
+                 "`The owner edit was NOT saved: Failed (HTTP ${c.set.status}): ${c.set.body.detail}`"):
+        assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1145_fu1292_fu033s_guard_passes_run_alone_in_a_fresh_process():
+    """FU-1292 (W1145). test_w505_fu033 passed only after other tests had measured organism health: run alone, the
+    health rule could not decide its change and held it for an explicit decision, by design, and the guard read the
+    hold as the change being stuck in review. It now holds FU-033's property, that the review completes and the change
+    is decided or held for a decision with its reason recorded. Held here:
+    - the guard, run alone in a fresh process on its own empty store, passes;
+    - it still asserts that the review completed and that a change left in review is a recorded hold."""
+    import os
+    import pathlib
+    import subprocess
+    import sys
+    import tempfile
+    root = pathlib.Path(__file__).resolve().parents[1]
+    spine = (root / "integration_tests" / "test_mvp_spine.py").read_text(encoding="utf-8")
+    body = spine.split("def test_w505_fu033_a_record_missing_its_review_fields_is_reviewable(", 1)[1].split("\ndef ", 1)[0]
+    for line in ('assert rec.get("reviewed_at") and rec.get("review_result"), "the review did not complete"',
+                 'held = rec.get("decision_source") == "held_awaiting_admin" and bool(rec.get("hold_reason"))',
+                 'e.get("event") == "held_awaiting_admin_decision"', 'assert rec["status"] != "under_review" or held'):
+        assert line in body, ("FU-033's guard no longer holds", line)
+    with tempfile.TemporaryDirectory(prefix="w1145_") as d:
+        env = {k: v for k, v in os.environ.items() if not k.startswith(("PYTEST_", "COV_"))}
+        env.update(DATA_DIR=d, WORKSTATION_DATA_DIR=d, WORKSTATION_UEG_PATH=os.path.join(d, "ueg.json"),
+                   PROJECTS_DIR=os.path.join(d, "projects"), AI_DISABLE_LOCAL="1")
+        r = subprocess.run([sys.executable, "-m", "pytest", "integration_tests/test_mvp_spine.py", "-q", "--no-header",
+                            "-p", "no:warnings", "-p", "no:cacheprovider", "-k", "test_w505_fu033"],
+                           cwd=root, env=env, capture_output=True, text=True, timeout=600, stdin=subprocess.DEVNULL)
+    assert r.returncode == 0 and "1 passed" in r.stdout, ("FU-033's guard fails run alone", r.stdout[-1500:])
+
+
+def test_w1146_fu1293_the_conversation_panel_says_the_avatars_own_reasons_and_the_image_reason_reads_once(client, monkeypatch):
+    """FU-399 part 111 and FU-1293 (W1146). The footer's conversation panel says, under each reply, what the server
+    could not do; the hook's rendered test read only its grounding line and send error. Rendered against what the
+    avatar route answered, it said a fixed sentence in place of two of the route's own: the measured reason an image
+    was not read (P3.5 clause 2), and the floor's note on a language it could not answer in, which says what to do.
+    The measured reason itself said the perception tier's explanation twice, run together. Held here:
+    - the answers the rendered test serves are the route's own, asked again the same way: each field a case reads is
+      compared with the live route's, except what depends on the machine (the measured reason's middle) or on records
+      other tests write (whether a reply was cleared);
+    - the measured reason says the tier's explanation once, between its fixed opening and closing;
+    - the hook carries the route's reason and note, and the panel says them, keeping its own sentence only for an
+      answer that carries none;
+    - the rendered test reads each line in the route's words."""
+    import json
+    import pathlib
+    from agentic_core.ai.native import tiers
+    from agentic_core.api import user_workspace as uw
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps" / "workstation-superapp" / "src"
+    fx = json.loads((src / "components" / "avatar" / "ConversationPanel.fixture.json").read_text(encoding="utf-8"))
+    cases = {k: v["reply"] for k, v in fx["cases"].items()}
+    #  the cases were captured on a machine with no external vision key. Where one is configured and
+    #  AI_ALLOW_EXTERNAL is off, as on the Owner's machine, the image status is rightly blocked_by_policy, so the
+    #  route is asked here under the conditions the cases were captured under (merge into local-owner, 2026-11-20)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    a = client.post("/api/v1/genesis/establish", json={"problem": "W1146 made up: a lending library for garden tools",
+                                                        "ship_output": False, "name": "W1146 Tool Library"})
+    assert a.status_code == 200, a.text[:300]
+    vid = a.json()["vsb_id"]
+
+    def chat(name):
+        r = client.post("/api/v1/avatar/chat", json=dict(cases[name]["request"], vsb_id=vid))
+        assert r.status_code == cases[name]["status"] == 200, (name, r.status_code, r.text[:300])
+        return r.json()
+
+    def keep(body, *keys):
+        return {k: body.get(k) for k in keys}
+
+    floor, want = chat("floor"), cases["floor"]["body"]
+    assert keep(floor, "grounding_used", "grounding_basis", "suggested_areas", "suggested_areas_basis") == keep(
+        want, "grounding_used", "grounding_basis", "suggested_areas", "suggested_areas_basis"), floor
+    assert want["grounding_used"] is False and want["suggested_areas"] and not want.get("cleared")
+    assert want["clearance_reason"].startswith("NOT cleared by the constitutional clearance chain"), want
+    lang = chat("language")
+    assert keep(lang, "language", "language_note") == keep(cases["language"]["body"], "language", "language_note")
+    assert lang["language"] is None and "You asked for Arabic" in lang["language_note"], lang["language_note"]
+
+    #  the measured reason: its opening and closing are fixed, its middle is this machine's, and the tier's own
+    #  explanation is said once
+    need = tiers.TIERS["perception"]["why_it_needs_that"]
+    img = chat("image")
+    for said in (img["image_refusal"], cases["image"]["body"]["image_refusal"]):
+        assert said.startswith("NO TEXT IS PRODUCED FROM AN IMAGE on this deployment. What is missing, measured "
+                               "rather than asserted: the perception tier needs about "), said[:160]
+        assert said.endswith("Nothing is described, summarised or guessed at from the image: a fabricated description "
+                             "would be worse than a refusal, because a reader cannot tell one from a reading."), said[-160:]
+        assert said.count(need) == 1, ("the tier's explanation is not said once", said)
+    assert img["image_status"] == cases["image"]["body"]["image_status"] == "no_vision_model"
+
+    #  a saved profile the floor cannot use, then that profile's file cut short (put back whole afterwards)
+    saved = client.put("/api/v1/user/profile", json={"about_you": "W1146 made up: a volunteer who runs a tool library",
+                                                      "goals": "lend more tools", "owner_id": "default"})
+    assert saved.status_code == 200, saved.text[:300]
+    prof = chat("profile")
+    assert keep(prof, "profile_state", "profile_basis") == keep(cases["profile"]["body"], "profile_state", "profile_basis")
+    path = uw._path_for("default")
+    whole = path.read_bytes()
+    try:
+        path.write_bytes(whole[: len(whole) // 2])
+        bad = chat("unreadable")
+    finally:
+        path.write_bytes(whole)
+    for b in (bad, cases["unreadable"]["body"]):
+        assert b["profile_state"] == "unreadable", b["profile_state"]
+        assert b["profile_basis"].startswith("your saved profile could not be read whole (") and b[
+            "profile_basis"].endswith("so it was NOT applied"), b["profile_basis"]
+
+    #  the hook carries the route's words, and the panel says them
+    hook = (src / "hooks" / "useAvatarSession.ts").read_text(encoding="utf-8")
+    assert "imageRefusal: typeof resp.data.image_refusal === 'string' ? resp.data.image_refusal : null," in hook
+    assert "languageNote: typeof resp.data.language_note === 'string' ? resp.data.language_note : null," in hook
+    panel = " ".join((src / "components" / "avatar" / "ConversationPanel.tsx").read_text(encoding="utf-8").split())
+    assert (": m.imageRefusal ? <>The image was received but not read, so this reply is not based on what is in it. "
+            "{' '}{m.imageRefusal}</>") in panel
+    assert "{m.languageNote || <>Answered in English: the structured floor cannot translate, so your" in panel
+
+    spec = " ".join((src / "components" / "avatar" / "ConversationPanel.test.tsx").read_text(encoding="utf-8").split())
+    for line in ("`The image was received but not read, so this reply is not based on what is in it. ${c.body.image_refusal}`",
+                 "expect(said('language-not-honoured')).toBe(c.body.language_note)",
+                 "toBe(`not cleared: ${b.clearance_reason}`)", "toBe(`${b.grounded_in}: ${b.grounding_basis}`)",
+                 "expect(said('suggested-areas-basis')).toBe(b.suggested_areas_basis);",
+                 "toBe(`profile: NOT applied — ${c.body.profile_basis}.`)", "expect(sent).toEqual([c.request]);"):
+        assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1147_fu284_the_database_packages_held_for_p44_are_gone_and_p44_is_a_dated_boundary():
+    """FU-284 (W1147), P4.4. The Owner deferred managed Postgres on 2026-10-12 and recorded it as a boundary until a
+    measured need exists: the file store with its locks is what runs, and the database dependencies nothing imports are
+    removed. FU-283 had held sqlalchemy, sqlmodel and psycopg2-binary for P4.4 because config/database.py imported
+    sqlmodel; W897 found that module imported by nothing and moved it to _archive/config/. They are removed now, with
+    greenlet, which only sqlalchemy brought: 175 pins became 171, every other pin at the same version, after the full
+    suite ran in a fresh venv built only from the new requirements.txt. Held here:
+    - none of the four is declared, locked or pinned;
+    - no live module imports or probes one, and none reads a database URL, while the plan keeps P4.4 deferred;
+    - the verdicts say ruled and removed, and no row of theirs is held for a plan item;
+    - the hardening brief, the compose file and the deploy guide offer no database and call no pre-flight open;
+    - the plan's P4.4 and the vision's section 18 record the boundary, dated."""
+    import pathlib
+    import re
+    import tomllib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")
+    flat = lambda rel: " ".join(read(rel).split())
+
+    def norm(name):
+        return re.sub(r"[-_.]+", "-", name).lower()
+
+    gone = {"sqlalchemy", "sqlmodel", "psycopg2-binary", "greenlet"}
+    declared = {norm(k) for k in tomllib.loads(read("pyproject.toml"))["tool"]["poetry"]["dependencies"]}
+    locked = {norm(p["name"]) for p in tomllib.loads(read("poetry.lock"))["package"]}
+    pinned = {norm(l.split("==", 1)[0]) for l in read("requirements.txt").splitlines() if "==" in l}
+    assert not gone & (declared | locked | pinned), ("back again", sorted(gone & (declared | locked | pinned)))
+
+    #  nothing live reaches one, by an import, a probe or a database URL
+    mods = "sqlalchemy|sqlmodel|psycopg2|greenlet"
+    imp = re.compile(r"^\s*(?:import|from)\s+(" + mods + r")(?:\.|\s|,|$)", re.M)
+    probe = re.compile(r"(?:find_spec|import_module|__import__|importorskip)\(\s*['\"](" + mods + r")['\"]")
+    url = re.compile(r"DATABASE_URL|postgres(?:ql)?(?:\+\w+)?://")
+    hits = []
+    for base in ("agentic_core", "scripts", "integration_tests", "config", "deploy"):
+        for f in (root / base).rglob("*.py"):
+            if "_archive" in f.parts:
+                continue
+            text = f.read_text(encoding="utf-8", errors="replace")
+            hits += [(str(f.relative_to(root)), m.group(1)) for m in imp.finditer(text)]
+            hits += [(str(f.relative_to(root)), m.group(1)) for m in probe.finditer(text)]
+            if base != "integration_tests":
+                hits += [(str(f.relative_to(root)), m.group(0)) for m in url.finditer(text)]
+    assert not hits, ("live code reaches a database the Owner deferred", hits[:10])
+    p44 = flat("docs/FABLE_DELIVERY_PROMPT.md")
+    p44 = p44[p44.index(" P4.4 ✅ DONE W1174 Managed Postgres"):p44.index(" P4.5 Production deploy")]   # W1174
+    assert "DEFERRED BY THE OWNER (2026-10-12) AND RECORDED AS A BOUNDARY" in p44, p44[:200]
+    assert ("W1147 (2026-11-20, FU-284): removed - sqlalchemy, sqlmodel and psycopg2-binary, and greenlet, which only "
+            "sqlalchemy brought (175 pins became 171)") in p44
+    assert "The boundary is dated in the vision's section 18." in p44
+
+    #  the verdicts
+    dv = read("docs/DEPENDENCY_VERDICTS.md")
+    for dist in ("sqlalchemy", "sqlmodel", "psycopg2-binary"):
+        row = re.search(rf"^\| {re.escape(dist)} \| ([^|]+) \|", dv, re.M)
+        assert row and row.group(1).strip() == "REMOVABLE, ruled 2026-10-12 (P4.4 deferred) and removed (W1147)", (
+            dist, row and row.group(1))
+    assert not re.search(r"^\| [^|]+ \| HELD", dv, re.M), "a verdict is still held for a plan item"
+    assert "## W1147 (FU-284) — the three database packages held for P4.4 are removed (2026-11-20)" in dv
+    assert "175 pins became 171 (the three, and greenlet)" in " ".join(dv.split())
+
+    #  no document offers a database, or calls P4.4's pre-flight an open row
+    brief = flat("docs/business/PRODUCTION_HARDENING_BRIEF.md")
+    assert "There is no database. Managed Postgres is plan item P4.4, which the Owner deferred on 2026-10-12" in brief
+    assert "FU-284" not in brief and "migration dry-run and rollback have not been started" not in brief
+    compose = read("docker-compose.yml")
+    assert "wire DATABASE_URL" not in compose and "Paid options (managed Postgres" not in compose
+    assert "NOT AN OPTION TODAY: Postgres." in compose and "reads no DATABASE_URL" in compose
+    live = [l for l in compose.splitlines() if l.strip() and not l.lstrip().startswith("#")]
+    assert not [l for l in live if "postgres" in l.lower() or l.strip() == "db:"], ("a database service runs", live)
+    guide = flat("docs/DEPLOYMENT.md")
+    assert "Optional managed Postgres is commented" not in guide
+    assert ("The app keeps its records in files and reads no database: the Owner deferred managed Postgres (plan item "
+            "P4.4) on 2026-10-12") in guide
+
+    #  the vision's section 18 dates the boundary
+    vision = read("docs/WORKSTATION_IDBO_WHOLE_VISION.md")
+    at = vision.index("## 18. Certainty & Agreement")
+    s18 = vision[at:vision.index("# Appendix A", at)]
+    assert ("**Recorded W1147 (2026-11-20) — managed Postgres is a BOUNDARY, not a switch waiting to be flipped.** "
+            "The Owner DEFERRED it on 2026-10-12") in " ".join(s18.split())
+
+
+def test_w1148_fu1077_the_legal_briefs_authorities_are_read_whole_at_their_publishers_and_what_was_refused_says_so():
+    """FU-1077 part 1 (W1148), P5.18 clause 8: every statement of what the law requires names a row read at its
+    publisher and the date, and what was not read is listed as not read. FU-1077 named four authorities never read and
+    fourteen rows that one reader had taken through a fetch that summarised each page. On 2026-11-20 the round read each
+    provision's own text at www.legislation.gov.uk and each GOV.UK page's own content record, whole. Held here:
+    - the four authorities are seven rows (the credit regime is three instruments), each read whole on 2026-11-20 at
+      its publisher's page, saying what it says, with a date of its own and what was not read;
+    - eight of the fourteen are re-read, and say by whom and how; the two statements the summary got wrong are
+      corrected (the deeds section's "if, and only if" and its second way to sign; the lease page's dates);
+    - the six whose sites this environment refused still say they rest on one reader's summary, and that the
+      re-reading was refused;
+    - FU-1077 stays open and names those six, the FCA's rules and the sites to allow;
+    - the register's own check passes."""
+    import json
+    import pathlib
+    import re
+    import subprocess
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    rows = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    day = re.compile(r"\d{4}-\d{2}-\d{2}")
+
+    new = {"companies-act-2006-s44": ("https://www.legislation.gov.uk/ukpga/2006/46/section/44",
+                                      ("by two authorised signatories", "in the presence of a witness who attests the signature",
+                                       "if, and only if, it is duly executed and delivered as a deed")),
+           "cra-2015-part-2": ("https://www.legislation.gov.uk/ukpga/2015/15/part/2",
+                               ("is not binding on the consumer", "significant imbalance", "transparent and prominent")),
+           "ucta-1977-part-1": ("https://www.legislation.gov.uk/ukpga/1977/50/part/I",
+                                ("satisfies the requirement of reasonableness", "written standard terms of business")),
+           "loler-1998": ("https://www.legislation.gov.uk/uksi/1998/2307",
+                          ("at least every 6 months", "every 12 months", "planned by a competent person")),
+           "cca-1974-credit-and-hire": ("https://www.legislation.gov.uk/ukpga/1974/39/section/8",
+                                        ("credit of any amount", "more than three months", "article 36A(1)(a) to (c)")),
+           "rao-2001-credit-broking": ("https://www.legislation.gov.uk/uksi/2001/544/article/36A",
+                                       ("effecting an introduction", "presenting or offering an agreement",
+                                        "undertaking preparatory work")),
+           "fsma-2000-s19": ("https://www.legislation.gov.uk/ukpga/2000/8/section/19", ("the general prohibition",))}
+    for rid, (page, phrases) in new.items():
+        r = rows.get(rid)
+        assert r, (rid, "an authority FU-1077 named is not a row")
+        assert r["status"] == "current" and r["page"] == page and r["read_on"] == "2026-11-20", (rid, r.get("page"))
+        assert r["read_by"].startswith("round W1148, ") and "read whole" in r["read_by"] and (
+            "not through a summary" in r["read_by"]), (rid, r["read_by"])
+        assert all(p in r["says"] for p in phrases), (rid, [p for p in phrases if p not in r["says"]])
+        assert re.search(r"(?:from|in force from|last modified) \d{1,2} [A-Z][a-z]+ \d{4}", r["says"]), (
+            rid, "a reading says no date of its own")
+        assert len(r["not_read"]) > 20, (rid, "a reading says nothing of what it did not read")
+
+    reread = ("lpmpa-1989-s1", "lsa-2007-sch2", "hmlr-practice-guide-8", "si-2026-439-av-passenger-permits",
+              "av-act-implementation-programme", "si-2026-867-machinery", "pram-act-2025",
+              "gov-ending-commercial-lease-early")
+    for rid in reread:
+        r = rows[rid]
+        assert r["read_on"] == "2026-11-20" and r["read_by"].startswith("round W1148, ") and (
+            "not through a summary" in r["read_by"]) and "first entered by a research reader of round W711" in (
+            r["read_by"]), (rid, r["read_by"])
+        assert "NOT re-read" not in r["read_by"], rid
+    #  the two the summary got wrong
+    deeds = rows["lpmpa-1989-s1"]["says"]
+    assert "if, and only if" in deeds and "two witnesses who each attest" in deeds and "on its face" in deeds, deeds
+    lease = rows["gov-ending-commercial-lease-early"]
+    assert "16 October 2012" in lease["says"] and "5 October 2022" in lease["says"] and "Undated" not in lease["says"]
+    assert "which called the page undated" in lease["read_by"]
+
+    refused = ("hse-puwer-overview", "frc-frs-102-periodic-review-2024", "ec-ai-omnibus-2026",
+               "lawcom-business-tenancies-renewal", "ico-duaa-2025", "caa-drone-requirements")
+    for rid in refused:
+        r = rows[rid]
+        assert r["read_on"] == "2026-10-13" and "NOT re-read by a second reader" in r["read_by"], (rid, r["read_by"])
+        assert ("A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network" in
+                r["not_read"] and "still rests on one reader's summary" in r["not_read"]), (rid, r["not_read"])
+
+    #  FU-1077 says what is left, and where the rows are
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    fu = reg["FU-1077"]
+    assert fu["status"] == "open" and fu["slot"] == "P5.18", (fu["status"], fu["slot"])
+    for named in refused + ("www.fca.org.uk", "handbook.fca.org.uk", "Owner's to approve"):
+        assert named in fu["why"], named
+    assert all(day.fullmatch(rows[i]["read_on"]) for i in list(new) + list(reread) + list(refused))
+
+    out = subprocess.run([sys.executable, "scripts/sources_check.py"], cwd=root, capture_output=True, text=True)
+    assert out.returncode == 0, (out.stdout[-800:], out.stderr[-400:])
+
+
+def test_w1149_fu811_the_formation_workpack_compares_four_routes_chooses_none_and_holds_no_personal_detail():
+    """FU-811 (W1149), P5.7 clause 6: "the legal routes compared and none chosen; a worksheet of placeholders holding no
+    personal detail; official sources with the date each was read; the questions for an accountant and a solicitor".
+    docs/business/FORMATION_WORKPACK.md sets them out from seven official pages read on 2026-11-20. Held here:
+    - it passes every business document's rules (a draft, every statement labelled, every money figure SOURCED with
+      its page and date, no customer, partner, endorsement, price agreed or name cleared, no personal detail);
+    - the four routes the clause names are each a section, and are compared in one table on stated criteria;
+    - no sentence says a route was chosen, or that anything was filed, registered or formed;
+    - every worksheet field is a placeholder and nothing more;
+    - there are at least four questions for an accountant and four for a solicitor;
+    - every source is an official page with its own dates, and every statement cites a source the list names;
+    - the waqf-oriented route says it is NOT CHECKED and who would advise, and what was not read is listed."""
+    import json
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _fu
+    from agentic_core.app_mvp import app as _app1149
+    root = pathlib.Path(__file__).resolve().parents[1]
+    doc = (root / "docs/business/FORMATION_WORKPACK.md").read_text(encoding="utf-8")
+    flat = " ".join(doc.split())
+    plan_slots = {i["slot"] for i in _fu.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))}
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    routes = {(m, r.path) for r in _app1149.routes for m in (getattr(r, "methods", None) or ())}
+    assert _w703_faults(doc, root, plan_slots, set(reg), routes) == [], _w703_faults(doc, root, plan_slots, set(reg), routes)
+
+    for head in ("## Route 1. Staying unincorporated while the offer is tested (a sole trader)",
+                 "## Route 2. A company limited by shares", "## Route 3. A community interest company (CIC)",
+                 "## Route 4. A charitable or waqf-oriented arrangement: a later structure needing qualified advice"):
+        assert head in doc, head
+    table = [l for l in doc.splitlines() if l.startswith("| ")]
+    assert table[0] == ("| Criterion | 1. Sole trader | 2. Company limited by shares | 3. CIC | 4. Charity, or a "
+                        "waqf-oriented arrangement |"), table[:1]
+    assert len(table) >= 7 and all(l.count("|") == 6 for l in table), "the comparison is not one table of four routes"
+
+    assert "It chooses no route, files nothing, registers nothing" in flat
+    for claim in (r"\b(?:has|have|had)\s+(?:chosen|registered|incorporated|filed|formed)\b",
+                  r"\bwill\s+(?:be\s+)?(?:incorporated|registered|formed)\s+as\b", r"\bthe chosen route\b"):
+        assert not re.search(claim, flat, re.I), ("a route is stated as chosen or a filing as made", claim)
+
+    ws = doc.split("## The worksheet: placeholders only", 1)[1].split("\n## ", 1)[0]
+    fields = [l for l in ws.splitlines() if l.startswith("- ")]
+    assert len(fields) >= 6, fields
+    for l in fields:
+        value = l[2:].split(":", 1)[1].rsplit("[owner decision]", 1)[0]
+        assert re.fullmatch(r"\s*\[[^\[\]]+\]\.\s*", value), (l, "a worksheet field holds more than a placeholder")
+
+    for part in ("## Questions for an accountant", "## Questions for a solicitor"):
+        section = doc.split(part, 1)[1].split("\n## ", 1)[0]
+        assert len(re.findall(r"^\d+\. .+\?", section, re.M)) >= 4, part
+
+    src = doc.split("## Sources, each read on 2026-11-20", 1)[1].split("\n## ", 1)[0]
+    lines = [l for l in src.splitlines() if l.startswith("- ") and "https://" in l]
+    assert len(lines) >= 7, lines
+    page = re.compile(r"https://www\.gov\.uk/\S+ \(first published \d{1,2} [A-Z][a-z]+ \d{4}, last updated "
+                      r"\d{1,2} [A-Z][a-z]+ \d{4}\)\. \[observed\]$")
+    for l in lines:
+        assert page.search(l), (l, "a source without its page or its own dates")
+    named = {re.match(r"- (.+?), https://", l).group(1) for l in lines}
+    cited = set(re.findall(r"\[observed: ([^\]]+)\]", doc)) - {"page"}
+    assert cited and cited <= named, ("a statement cites a source the list does not name", sorted(cited - named))
+
+    assert "is NOT CHECKED" in flat and "a solicitor's advice" in flat and "a qualified scholar" in flat
+    assert "## Not read, so not said" in doc
+    assert reg["FU-811"]["slot"] == "P5.7", reg["FU-811"]["slot"]
+
+
+def test_w1150_fu810_each_support_route_is_read_from_its_page_or_not_checked_and_no_draft_claims_a_relationship():
+    """FU-810 (W1150), P5.7 clause 5: "the public support routes with what each requires, read from its own page and
+    dated, or NOT CHECKED; draft messages, including one to the organisation whose short course the Owner attended,
+    implying no relationship beyond that". docs/business/SUPPORT_ROUTES.md does so. Held here:
+    - it passes every business document's rules, so no customer, partner, endorsement or price agreed is stated and no
+      contact detail (a telephone number, an e-mail address, a postcode) is copied, even an organisation's;
+    - each route the clause names is a section: the two read cite a page the sources list names, and the two that could
+      not be read say NOT CHECKED and why;
+    - there are three drafts, each marked DRAFT, NOT SENT; none claims eligibility, an entitlement or a relationship;
+      the one to the course's organisation keeps its name and course as placeholders and says only that it was attended;
+    - every source carries its page and its own date, or says the page shows none."""
+    import json
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _fu
+    from agentic_core.app_mvp import app as _app1150
+    root = pathlib.Path(__file__).resolve().parents[1]
+    doc = (root / "docs/business/SUPPORT_ROUTES.md").read_text(encoding="utf-8")
+    flat = " ".join(doc.split())
+    plan_slots = {i["slot"] for i in _fu.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))}
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    routes = {(m, r.path) for r in _app1150.routes for m in (getattr(r, "methods", None) or ())}
+    assert _w703_faults(doc, root, plan_slots, set(reg), routes) == [], _w703_faults(doc, root, plan_slots, set(reg), routes)
+    assert "@" not in doc and not re.search(r"\b0\d{3}\s?\d{3}\s?\d{3,4}\b", doc), "a contact detail is copied"
+
+    def section(title):
+        return doc.split(title, 1)[1].split("\n## ", 1)[0]
+
+    for title in ("## The Business Support Service (England) and its counterparts", "## Innovate UK\n"):
+        assert re.search(r"\[observed: [^\]]+\]", section(title)), (title, "a route read cites no page")
+    for title in ("## Innovate UK Business Growth", "## The organisation whose short course the Owner attended"):
+        assert "NOT CHECKED" in section(title), (title, "a route not read does not say so")
+    assert "Business.gov.uk itself is NOT CHECKED" in flat
+
+    drafts = re.findall(r"^- DRAFT, NOT SENT: \"(.+)\" \[owner decision\]$", doc, re.M)
+    assert len(drafts) == 3, drafts
+    for d in drafts:
+        assert not re.search(r"\b(?:eligible|qualif(?:y|ies|ied)|entitled|approved|endorse\w*|partner\w*|our client)\b",
+                             d, re.I), ("a draft claims what nothing shows", d)
+    course = drafts[2]
+    assert course.startswith("I attended your short course [course name] in [month and year].") and "[" in course, course
+    assert "it implies no relationship beyond that" in flat
+
+    src = section("## Sources, each read on 2026-11-20")
+    lines = [l for l in src.splitlines() if l.startswith("- ") and "https://" in l]
+    assert len(lines) == 3, lines
+    for l in lines:
+        assert re.search(r"\((?:first published \d{1,2} [A-Z][a-z]+ \d{4}, last updated|last updated|the page shows no "
+                         r"date of its own)", l), (l, "a source without its date or the word that it has none")
+    named = {re.match(r"- (.+?), https://", l).group(1) for l in lines}
+    cited = set(re.findall(r"\[observed: ([^\]]+)\]", doc)) - {"page"}
+    assert cited and cited <= named, sorted(cited - named)
+    assert reg["FU-810"]["slot"] == "P5.7"
+
+
+def test_w1151_fu809_each_public_draft_is_headed_and_every_claim_names_a_test_that_runs_without_an_outside_model():
+    """FU-809 (W1151), P5.7 clause 4: landing copy, a capability sheet, a deck outline, a demonstration script on invented
+    data, questions and answers and outreach templates, "each headed DRAFT - NOT APPROVED FOR PUBLICATION", each claim
+    traced to what shows it, built from the first offer. docs/business/public/FIRST_OFFER_DRAFTS.md holds them. Held:
+    - it passes every business document's rules as a public-facing draft (it opens with the heading; no price,
+      customer, partner, endorsement or personal detail; every statement labelled; every route it names is served);
+    - each of the six pieces is a section whose heading carries DRAFT - NOT APPROVED FOR PUBLICATION;
+    - every test a claim names is one this suite defines and one that runs without an outside model (not _ai_only);
+    - the drafts are built from the leading hypothesis the first-offer comparison still states (candidate C);
+    - the demonstration uses invented material only, the outreach drafts are marked NOT SENT, and no price is set."""
+    import pathlib
+    import re
+    import json
+    from agentic_core import plan_followups as _fu
+    from agentic_core.app_mvp import app as _app1151
+    root = pathlib.Path(__file__).resolve().parents[1]
+    doc = (root / "docs/business/public/FIRST_OFFER_DRAFTS.md").read_text(encoding="utf-8")
+    flat = " ".join(doc.split())
+    plan_slots = {i["slot"] for i in _fu.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))}
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    routes = {(m, r.path) for r in _app1151.routes for m in (getattr(r, "methods", None) or ())}
+    faults = _w703_faults(doc, root, plan_slots, set(reg), routes, public=True)
+    assert faults == [], faults
+
+    pieces = ("## 1. Landing copy", "## 2. Capability sheet", "## 3. Deck outline",
+              "## 4. Demonstration script on invented data", "## 5. Questions and answers", "## 6. Outreach templates")
+    heads = re.findall(r"^## .+$", doc, re.M)
+    for p in pieces:
+        h = [x for x in heads if x.startswith(p)]
+        assert len(h) == 1 and h[0].endswith("— DRAFT - NOT APPROVED FOR PUBLICATION"), (p, h)
+
+    spine = pathlib.Path(__file__).read_text(encoding="utf-8")
+    cited = sorted(set(re.findall(r"\[observed: (test_[a-z0-9_]+)\]", doc)))
+    assert len(cited) >= 5, cited
+    for t in cited:
+        m = re.search(r"((?:^@[^\n]+\n)*)^def " + re.escape(t) + r"\(", spine, re.M)
+        assert m, (t, "a claim names a test this suite does not define")
+        assert "_ai_only" not in m.group(1), (t, "a claim rests on a test that needs an outside model to run")
+
+    cand = (root / "docs/business/FIRST_OFFER_CANDIDATES.md").read_text(encoding="utf-8")
+    assert "Teachers and tutors who plan lessons against a named framework will use" in cand, (
+        "the leading hypothesis changed: rewrite the drafts from the one now leading")
+    assert "candidate C: lesson plans and feedback that a teacher or tutor checks before use" in flat
+
+    assert "Only invented material is used" in flat and "no pupil's real work is ever used" in flat
+    outreach = doc.split("## 6. Outreach templates", 1)[1].split("\n## ", 1)[0]
+    drafts = [l for l in outreach.splitlines() if l.startswith("- ")]
+    assert len(drafts) >= 2 and all("DRAFT, NOT SENT" in l for l in drafts), drafts
+    assert "No price is set" in flat
+    assert reg["FU-809"]["slot"] == "P5.7"
+
+
+def test_w1152_the_support_routes_name_the_courses_organisation_as_the_tree_records_it():
+    """A correction to W1150 (FU-810). docs/business/SUPPORT_ROUTES.md said the organisation whose short course the Owner
+    attended is not named anywhere in the repository; the assessment of the Owner's commercialisation prompt of
+    2026-10-11 names it, IN4 Group (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md section 17.1, row 12). Held here: the
+    document names it as recorded there, says the Owner confirms it before sending, keeps what it offers NOT CHECKED,
+    and no longer says the tree does not name it; FU-810's close note says what was wrong with it."""
+    import json
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    flat = " ".join((root / "docs/business/SUPPORT_ROUTES.md").read_text(encoding="utf-8").split())
+    assess = (root / "docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md").read_text(encoding="utf-8")
+    assert "| 12 | IN4 Group exists and runs founder and skills programmes |" in assess
+    assert "not named anywhere in this repository" not in flat, "the document says again that the tree does not name it"
+    assert ("names one organisation of this kind, IN4 Group, recorded in `docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md` "
+            "(section 17.1, row 12)") in flat
+    assert "the Owner confirms that before sending anything" in flat
+    assert "NOT CHECKED: its own site was refused by this environment's network on 2026-11-20" in flat
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    assert "CORRECTED in W1152: the tree does name that organisation - IN4 Group" in reg["FU-810"]["close_note"]
+
+
+def test_w1153_p57_each_name_says_what_was_searched_and_each_public_claim_is_one_row_of_the_register():
+    """P5.7 clause 3 (W1153): THE NAME AND BRAND SCREEN - each candidate name with what was searched, where and when, or
+    NOT CHECKED; an inventory of what the Owner holds; a register of each public claim with its evidence. FU-808 searched
+    the chosen name (W725) and closed without the other two parts, which no row carried. docs/business/
+    NAME_AND_BRAND_SCREEN.md gives all three. Held:
+    - it passes every business document's rules (a draft; every statement labelled; every path, plan item and row it
+      names exists; no clearance, customer or partner stated; no personal detail);
+    - every name the tree records has a row: the chosen one, searched where FU-808 says, with the US register and
+      domains NOT CHECKED as FU-808 left them, and the five suggestions of 2026-10-11, NOT CHECKED everywhere;
+    - what the tree says is not held is said as not held: no mark (the ratified plan), no legal form (the workpack
+      chooses none), no domain (FU-1289 still open), no cloud project (nothing in the deploy has been run); and the
+      rest is kept outside the repository;
+    - the register is exactly what the public drafts cite: one row for each piece of evidence a numbered section of a
+      public draft cites beside a claim, naming exactly the sections that cite it, and no numbered section makes a
+      claim that cites nothing; each test it names is defined here and runs without an outside model;
+    - with clause 3 written, P5.7 is marked done."""
+    import json
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _fu
+    from agentic_core.app_mvp import app as _app1153
+    root = pathlib.Path(__file__).resolve().parents[1]
+    doc = (root / "docs/business/NAME_AND_BRAND_SCREEN.md").read_text(encoding="utf-8")
+    flat = " ".join(doc.split())
+    items = {i["slot"]: i for i in _fu.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))}
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    routes = {(m, r.path) for r in _app1153.routes for m in (getattr(r, "methods", None) or ())}
+    faults = _w703_faults(doc, root, set(items), set(reg), routes)
+    assert faults == [], faults
+    assert "A search of a register is not legal clearance, and nothing here is one" in flat
+
+    def _table(section, width):
+        out = {}
+        for ln in section.splitlines():
+            cells = [c.strip() for c in ln.strip().strip("|").split("|")]
+            if ln.startswith("| ") and len(cells) == width and not set(cells[0]) <= set("-"):
+                out[cells[0]] = cells[1:]
+        return out
+
+    #  1. each name the tree records, with what was searched for it
+    assessment = (root / "docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md").read_text(encoding="utf-8")
+    row13 = next(ln for ln in assessment.splitlines() if ln.startswith("| 13 | Five candidate names"))
+    suggested = [n.strip() for n in re.search(r"\(([^)]+)\)", row13).group(1).split(",")]
+    assert len(suggested) == 5 and "NOT CHECKED" in row13, row13
+    screen = _table(doc.split("## 1. Each candidate name", 1)[1].split("\n## ", 1)[0], 6)
+    screen.pop("Name", None)
+    assert sorted(screen) == sorted(["Workstation IDBO"] + suggested), sorted(screen)
+    for n in suggested:
+        assert screen[n] == ["NOT CHECKED"] * 5, (n, "a suggested name is said to have been searched", screen[n])
+    chosen = screen["Workstation IDBO"]
+    note = reg["FU-808"]["close_note"]
+    assert "read on 2026-10-13 and 14" in note and "The US register was not read" in note, note
+    assert all(c != "NOT CHECKED" for c in chosen[:3]) and chosen[3:] == ["NOT CHECKED", "NOT CHECKED"], chosen
+    assert "for Workstation IDBO on 2026-10-13 and 2026-10-14" in flat
+    plan = " ".join((root / "docs/business/BUSINESS_PLAN.md").read_text(encoding="utf-8").split())
+    assert "no mark has been applied for, and no domain is held" in plan
+    assert "no mark has been applied for, and no domain is held" in flat
+
+    #  2. what the Owner holds: what the tree says is not held is said as not held
+    held = " ".join(doc.split("## 2. What the Owner holds", 1)[1].split("\n## ", 1)[0].split())
+    assert "No domain:" in held and "(row FU-1289)" in held and reg["FU-1289"]["status"] == "open", held
+    workpack = " ".join((root / "docs/business/FORMATION_WORKPACK.md").read_text(encoding="utf-8").split())
+    assert "It chooses no route" in workpack and "No company or other legal form" in held
+    deploy = " ".join((root / "docs/DEPLOYMENT.md").read_text(encoding="utf-8").split())
+    assert "Nothing here has been run against a Google account" in deploy and "No cloud project for the release yet" in held
+    assert "with no mark applied for or registered for it" in held
+    assert "not recorded in this repository, by design" in held
+
+    #  3. the register of public claims is exactly what the public drafts cite
+    cited = {}
+    for d in sorted((root / "docs/business/public").glob("*.md")):
+        for sec in re.split(r"\n(?=## )", d.read_text(encoding="utf-8")):
+            m = re.match(r"## (\d+)\. ", sec)
+            if not m:
+                continue
+            assert "[observed]" not in sec, (d.name, sec.split("\n", 1)[0], "a public claim cites no evidence")
+            for ev in re.findall(r"\[observed: ([^\]]+)\]", sec):
+                cited.setdefault(ev.strip(), set()).add(int(m.group(1)))
+    claims = _table(doc.split("## 3. Each public claim", 1)[1].split("\n## ", 1)[0], 3)
+    claims.pop("Claim", None)
+    rows = {}
+    for claim, (evidence, sections) in claims.items():
+        assert evidence not in rows, ("one piece of evidence has two rows", evidence)
+        assert len(claim) > 20, claim
+        rows[evidence] = {int(x) for x in sections.split(",")}
+    assert rows == cited, ({k: sorted(v) for k, v in rows.items() if cited.get(k) != v},
+                           {k: sorted(v) for k, v in cited.items() if rows.get(k) != v})
+    spine = pathlib.Path(__file__).read_text(encoding="utf-8")
+    for ev in rows:
+        if ev.startswith("test_"):
+            m = re.search(r"((?:^@[^\n]+\n)*)^def " + re.escape(ev) + r"\(", spine, re.M)
+            assert m and "_ai_only" not in m.group(1), (ev, "the register names a test that is missing or needs an outside model")
+        else:
+            assert re.fullmatch(r"`[A-Za-z0-9_./-]+\.md`", ev) and (root / ev.strip("`")).exists(), ev
+    assert len(rows) >= 8, sorted(rows)
+
+    #  every clause of P5.7 has its document, so the item is done
+    assert items["P5.7"]["done"] and items["P5.7"]["done_by"] == "W1153", items["P5.7"]
+    for name in ("FIRST_OFFER_CANDIDATES.md", "COST_MODEL.md", "NAME_AND_BRAND_SCREEN.md", "public/FIRST_OFFER_DRAFTS.md",
+                 "SUPPORT_ROUTES.md", "FORMATION_WORKPACK.md", "PRODUCTION_HARDENING_BRIEF.md"):
+        assert (root / "docs/business" / name).exists(), name
+
+
+def test_w1154_p56_its_five_documents_are_under_docs_business_each_a_draft_the_guard_reads():
+    """P5.6 (W1154): five documents under docs/business/ - the canvas, the business plan, the founder's guide, the
+    evidence and KPI dictionary, the living-strategy map - each saying it is a DRAFT until the Owner ratifies it (or that
+    the Owner ratified it), under a guard that checks every path, route and id each names. The dictionary, written in
+    W878 for FU-743, was docs/METRICS_MEASURED.md: outside the folder, so that guard never read it, and opening as
+    neither a draft nor ratified; read against the rules, it also named a metric "Paying customers", a customer stated
+    as a fact. Held:
+    - the dictionary is under docs/business/ and nowhere else, and no tracked file but the register's history (and
+      this guard) names its old place;
+    - each of the five passes every business document's rules (the W703 guard's), the dictionary included;
+    - the dictionary's table is still the one W878's guard reads, under the metric's new name;
+    - FU-743's close note says where the document went;
+    - every clause of P5.6 has its document, so P5.6 is marked done."""
+    import json
+    import pathlib
+    import subprocess
+    from agentic_core import plan_followups as _fu
+    from agentic_core.app_mvp import app as _app1154
+    root = pathlib.Path(__file__).resolve().parents[1]
+    biz = root / "docs" / "business"
+    assert not (root / "docs" / "METRICS_MEASURED.md").exists(), "the dictionary is outside docs/business/ again"
+    named = subprocess.run(["git", "grep", "-l", "docs/METRICS_MEASURED.md"], cwd=root, capture_output=True, text=True)
+    #  the register's close note keeps the history, and this guard names the old place to look for it
+    assert set(named.stdout.split()) <= {"docs/FOLLOWUPS.json", "integration_tests/test_mvp_spine.py"}, (
+        "a tracked file still names the old place", named.stdout.split())
+    items = {i["slot"]: i for i in _fu.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))}
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    routes = {(m, r.path) for r in _app1154.routes for m in (getattr(r, "methods", None) or ())}
+    five = ("BUSINESS_MODEL_CANVAS.md", "BUSINESS_PLAN.md", "FOUNDERS_GUIDE.md", "METRICS_MEASURED.md",
+            "LIVING_STRATEGY_MAP.md")
+    for name in five:
+        text = (biz / name).read_text(encoding="utf-8")
+        faults = _w703_faults(text, root, set(items), set(reg), routes)
+        assert faults == [], (name, faults)
+    doc = (biz / "METRICS_MEASURED.md").read_text(encoding="utf-8")
+    opening = " ".join(doc.split("\n## ", 1)[0].split())
+    assert "DRAFT until the Owner ratifies it" in opening and "moved here in W1154" in opening, opening[:200]
+    states = {}
+    for ln in doc.splitlines():
+        cells = [c.strip() for c in ln.strip().strip("|").split("|")]
+        if len(cells) == 7 and cells[1] in ("MEASURED", "PARTLY", "NOT MEASURED"):
+            states[cells[0]] = cells[1]
+    assert len(states) >= 18 and states.get("Customers who pay") == "NOT MEASURED", sorted(states)
+    assert "Paying customers" not in doc
+    note = reg["FU-743"]["close_note"]
+    assert "MOVED in W1154 to docs/business/METRICS_MEASURED.md" in note, note[-300:]
+    assert items["P5.6"]["done"] and items["P5.6"]["done_by"] == "W1154", items["P5.6"]
+
+
+def test_w1155_p53_and_p516_are_done_and_each_names_the_guards_that_hold_its_accept():
+    """P5.3 and P5.16 (W1155): neither had an open row or a DONE marker. Read against its ACCEPT, each clause of each is
+    held by a guard that drives it, its blinds seen red in its own round; each item now carries a COMPLETION RECORD
+    naming those guards, and is marked done. Held:
+    - each item is done by W1155, and no open row rides it;
+    - its record names exactly the guards it rests on, each defined in this suite and runnable without an outside model;
+    - P5.16 clause 1's Domains half, which no guard held because nothing prices a Domain: no Domain route module
+      names a price, a charge or a fee."""
+    import json
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _fu
+    root = pathlib.Path(__file__).resolve().parents[1]
+    plan = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    items = {i["slot"]: i for i in _fu.plan_items(plan)}
+    blocks = _fu._item_blocks(_fu.delivery_plan_body(plan) or plan)
+    reg = json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    spine = pathlib.Path(__file__).read_text(encoding="utf-8")
+    want = {
+        "P5.3": {"test_w941_p53_a_claim_that_an_output_is_wrong_stays_open_until_a_person_answers_it",
+                 "test_w942_p53_claims_are_on_the_support_page_and_an_answer_says_whether_it_reached_the_ledger"},
+        "P5.16": {"test_w600_p311_the_qep_vsb_has_an_economic_model_that_is_its_own",
+                  "test_w1155_p53_and_p516_are_done_and_each_names_the_guards_that_hold_its_accept",
+                  "test_w1124_fu1057_the_platform_fee_is_a_quarter_of_the_profit_taken_first_and_the_split_applies_to_what_remains",
+                  "test_w851_a_person_accepts_a_version_of_an_entitys_delivery_and_acceptance_alone_earns_nothing",
+                  "test_w676_nothing_earns_on_a_structure_pass",
+                  "test_w1125_fu1057_the_economy_page_shows_the_profit_the_platform_fee_and_what_the_split_was_over",
+                  "test_w1139_fu1281_the_cockpits_latest_cycle_says_the_platform_fee_and_what_the_split_was_over",
+                  "test_w1117_fu399_the_price_panel_says_what_generating_an_entity_costs_in_the_routes_words",
+                  "test_w933_p515_clause6_the_roster_is_on_the_entitys_page_and_a_generated_entity_is_recommended_a_specialist"},
+    }
+    for slot, tests in want.items():
+        assert items[slot]["done"] and items[slot]["done_by"] == "W1155", (slot, items[slot])
+        riding = [r["id"] for r in reg if r.get("slot") == slot and r.get("status") == "open"]
+        assert riding == [], (slot, riding)
+        flat = " ".join(blocks[slot].split())
+        assert flat.count("COMPLETION RECORD (W1155): ") == 1, (slot, "the item carries no completion record")
+        record = flat.split("COMPLETION RECORD (W1155): ", 1)[1]
+        named = set(re.findall(r"test_[a-z0-9_]+", record))
+        assert named == tests, (slot, sorted(named ^ tests))
+        for t in sorted(named):
+            m = re.search(r"((?:^@[^\n]+\n)*)^def " + re.escape(t) + r"\(", spine, re.M)
+            assert m, (slot, t, "the record names a guard this suite does not define")
+            assert "_ai_only" not in m.group(1), (slot, t, "the record rests on a guard that needs an outside model")
+    #  P5.16 clause 1: the Domains are free - no Domain route module names a price, a charge or a fee
+    for mod in ("care", "career", "education", "employment", "law", "religion", "science"):
+        src = (root / "agentic_core" / "api" / f"{mod}.py").read_text(encoding="utf-8")
+        hit = re.search(r"\b(?:price[sd]?|pricing|charge[sd]?|charging|fees?)\b", src, re.I)
+        assert hit is None, (mod, "a Domain route names a price, a charge or a fee", src[max(0, hit.start() - 80):hit.end() + 40])
+
+
+def test_w1156_fu1060_the_sources_check_reads_every_backend_module_and_page_and_each_name_it_finds_is_a_row(tmp_path):
+    """FU-1060 part 1 (W1156), P5.10. The sources check read five places (agentic_core/api, care and legal, the domain
+    pages and lib/), so a standard named anywhere else in the backend, or on any other page, needed no row. Widened to
+    every .py and .json under agentic_core/ and every .ts and .tsx under the app's src/, it reads 730 files where it
+    read 139, and finds 110 names where it found 75. Every one but one was already a row. The one was ISO/IEC
+    23053:2025, named by a class whose audit report stated a compliance status of VALIDATED as a constant, for a
+    standard no round had read; nothing called the report, and the genome registry used the class only to check that a
+    block carries four fields. The class is archived, and the registry's check says what it checks; so do the eight
+    copies of the registry the product SDKs carry, which imported the class too. Held:
+    - the check's places are the whole backend and the whole frontend source, and it reads at least 700 files;
+    - every name it finds there is a row's, by the check the suite and the sources route both run;
+    - no module under agentic_core/ or products/ names that standard, and none states a compliance status of
+      VALIDATED as a constant;
+    - the class is in the archive, and the registry appends a block that carries its ledger's four fields;
+    - the ledger's place outside the data root, found in reading the registry, is a registered row, open."""
+    import json
+    import pathlib
+    import re
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    sys.path.insert(0, str(root / "scripts"))
+    import sources_check as _sc
+    d = _sc.load()
+    assert d["scan"] == [{"dir": "agentic_core", "ext": [".py", ".json"]},
+                         {"dir": "apps/workstation-superapp/src", "ext": [".ts", ".tsx"]}], d["scan"]
+    res = _sc.check(d)
+    assert res["files_examined"] >= 700, ("the check reads too little of the tree to mean anything", res["files_examined"])
+    assert res["names_with_no_row"] == [], ("a named authority has no row", res["names_with_no_row"][:5])
+    assert res["row_problems"] == [] and res["readers_of_a_replaced_source"] == [], (res["row_problems"][:3],
+                                                                                     res["readers_of_a_replaced_source"][:3])
+    hits = []
+    #  the platform's modules and the product SDKs' copies of them: eight copies of the registry under products/
+    #  imported the class, and a scan of agentic_core/ alone did not read them
+    for f in sorted([*(root / "agentic_core").rglob("*.py"), *(root / "products").rglob("*.py")]):
+        if "__pycache__" in f.parts:
+            continue
+        text = f.read_text(encoding="utf-8", errors="replace")
+        if re.search(r"ISO(?:/IEC)? ?23053", text):
+            hits.append(("names the unread standard", f.relative_to(root).as_posix()))
+        if re.search(r"[\"']compliance_status[\"']\s*:\s*[\"']VALIDATED[\"']", text):
+            hits.append(("states VALIDATED as a constant", f.relative_to(root).as_posix()))
+    assert hits == [], hits
+    assert (root / "_archive/agentic_core/compliance/iso_23053.py").exists()
+    assert not (root / "agentic_core/compliance/iso_23053.py").exists()
+    from agentic_core.genetic_immune import genomic_registry as _gr
+    ledger = tmp_path / "genome_ledger.json"
+    reg = _gr.GenomicRegistry(persistence_path=str(ledger))
+    assert reg.commit_mutation({"w1156": 1}, "w1156-proof") is True
+    blocks = json.loads(ledger.read_text(encoding="utf-8"))
+    assert len(blocks) == 1 and set(_gr._LEDGER_FIELDS) <= set(blocks[0]), blocks
+    rows = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+            if str(r.get("source", "")).startswith("W1156 ")]
+    #  W1158 closed the row: the ledger, and the evidence graph beside it, moved under the data root
+    assert len(rows) == 1 and (rows[0]["status"], rows[0]["closed_by"]) == ("done", "W1158") and rows[0]["slot"] == "P4.5", rows
+    assert "meta/genome_ledger.json" in rows[0]["why"] and "data root" in rows[0]["title"], rows[0]["title"]
+
+
+def test_w1157_p511_the_tribunal_limits_either_side_of_1_october_2026_are_dated_rules_each_read_as_it_stood(client, monkeypatch):
+    """P5.11 clause 2 (W1157). Schedule 12 to the Employment Rights Act 2025 put six months for three in section 111(2)
+    of the Employment Rights Act 1996 and in section 123(1)(a) of the Equality Act 2010, in force on 1 October 2026 by
+    regulation 3 of S.I. 2026/954; by regulation 4 the change does not apply where the relevant date is before then. The
+    rules W875 wrote held the three-month words alone, so once the publisher wrote the change into its text the Law
+    page worked out no date for either claim. Read at www.legislation.gov.uk on 2026-11-20. Held:
+    - each rule has a period on each side of 1 October 2026, three months before and six on or after, each with the
+      provision's words as it stood in that period;
+    - the period is chosen by the relevant date, for both claims: the day before the change, the day of it, and after;
+    - the provision is read as it stood for that period: the publisher's version of 30 September 2026 for the earlier,
+      the current text for the later; the earlier words alone in the text compute nothing for a later date;
+    - the arithmetic on 29 February, and a month end six months on that does not exist;
+    - every answer says the rule it used, the change and the regulations that make it, and the limit on the other side;
+    - the statute reader asks the publisher for a dated version at its own address and refuses one that is not a date;
+    - each provision read is a row of the register of sources saying when and by whom, and the coverage row names
+      this test."""
+    import asyncio
+    import json
+    import pathlib
+    import httpx
+    import pytest
+    from agentic_core.legal import statute as _st
+    from agentic_core.legal import time_limits as _tl
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read_provision = _st.provision
+
+    #  1. the periods, as data (W1160: of the two rules this guard built; the breach of contract rules are W1160's)
+    for rid, rule in ((k, _tl.RULES[k]) for k in ("unfair_dismissal", "discrimination_at_work")):
+        ps = rule["periods"]
+        assert [p.get("until") for p in ps] == ["2026-09-30", None] and [p.get("from") for p in ps] == [None, "2026-10-01"], rid
+        assert [p["months"] for p in ps] == [3, 6] and ps[0]["version"] == "2026-09-30" and ps[1]["version"] is None, rid
+    assert [p["words"] for p in _tl.RULES["unfair_dismissal"]["periods"]] == [
+        "three months beginning with the effective date of termination",
+        "six months beginning with the effective date of termination"]
+    assert [p["words"] for p in _tl.RULES["discrimination_at_work"]["periods"]] == [
+        "3 months starting with the date of the act to which the complaint relates",
+        "6 months starting with the date of the act to which the complaint relates"]
+    assert _tl.CHANGE["on"] == "2026-10-01" and "regulation 4 of S.I. 2026/954" in _tl.CHANGE["earlier_limit_kept"]
+
+    #  2. a publisher stood in that gives each version of each provision the words it had
+    asked = []
+    texts = {"111": {"2026-09-30": _tl.RULES["unfair_dismissal"]["periods"][0]["words"],
+                     None: _tl.RULES["unfair_dismissal"]["periods"][1]["words"]},
+             "123": {"2026-09-30": _tl.RULES["discrimination_at_work"]["periods"][0]["words"],
+                     None: _tl.RULES["discrimination_at_work"]["periods"][1]["words"]}}
+
+    async def _as_it_stood(kind, year, number, section, version=None):
+        asked.append((str(section), version))
+        return {"parts": [{"level": 1, "number": "(2)",
+                           "text": "(a) before the end of the period of " + texts[str(section)][version] + ", or"}],
+                "address": (f"https://www.legislation.gov.uk/{kind}/{year}/{number}/section/{section}"
+                            + (f"/{version}" if version else ""))}
+    monkeypatch.setattr(_st, "provision", _as_it_stood)
+
+    def work(rule, date):
+        r = client.post("/api/v1/law/time-limit", json={"rule": rule, "event_date": date})
+        assert r.status_code == 200, r.text[:200]
+        return r.json()
+    for rule, sec in (("unfair_dismissal", "111"), ("discrimination_at_work", "123")):
+        before, on, after = work(rule, "2026-09-30"), work(rule, "2026-10-01"), work(rule, "2026-10-03")
+        assert (before["months"], before["last_day"]) == (3, "2026-12-29"), before
+        assert (on["months"], on["last_day"]) == (6, "2027-03-31"), on
+        assert (after["months"], after["last_day"]) == (6, "2027-04-02"), after
+        assert before["provision_address"].endswith(f"/section/{sec}/2026-09-30"), before["provision_address"]
+        assert on["provision_address"].endswith(f"/section/{sec}"), on["provision_address"]
+        for got, other_side in ((before, "For a relevant date on or after 1 October 2026 the limit is 6 months."),
+                                (on, "For a relevant date before 1 October 2026 the limit is 3 months.")):
+            assert other_side in got["basis"] and "regulation 4 of S.I. 2026/954" in got["basis"], got["basis"]
+            assert "Schedule 12 to the Employment Rights Act 2025" in got["basis"], got["basis"]
+            assert [p["months"] for p in got["either_side"]] == [3, 6] and got["change"]["on"] == "2026-10-01"
+    assert asked.count(("111", "2026-09-30")) == 1 and asked.count(("111", None)) == 2, asked
+    assert work("unfair_dismissal", "2028-02-29")["last_day"] == "2028-08-28"
+    month_end = work("unfair_dismissal", "2026-10-31")
+    #  W1162 - there is no 31 April 2027: the earlier of the two days the period could end on, said as unsettled
+    assert (month_end["computed"], month_end["settled"], month_end["last_day"]) == (True, False, "2027-04-29"), month_end
+    listed = client.get("/api/v1/law/time-limit").json()
+    assert listed["change"]["page"] == "https://www.legislation.gov.uk/uksi/2026/954/regulation/4"
+    assert [[p["months"] for p in r["periods"]] for r in listed["rules"]][:2] == [[3, 6], [3, 6]], listed["rules"]
+
+    #  3. the earlier words alone in the text, as the W875 rules met the publisher's change: nothing is computed
+    async def _three_months_everywhere(kind, year, number, section, version=None):
+        return {"parts": [{"text": "(a) before the end of the period of " + texts[str(section)]["2026-09-30"] + ", or"}],
+                "address": "https://www.legislation.gov.uk/x"}
+    monkeypatch.setattr(_st, "provision", _three_months_everywhere)
+    stale = work("unfair_dismissal", "2026-10-03")
+    assert stale["computed"] is False and "does not contain the words" in stale["basis"], stale
+
+    #  4. the statute reader asks the publisher for a dated version, at its own address
+    sample = (root / "integration_tests/fixtures/statute_sample_a.xml").read_text(encoding="utf-8")
+    seen = []
+
+    class _Resp:
+        status_code, text, url = 200, sample, httpx.URL("https://www.legislation.gov.uk/x")
+
+    class _Client:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def get(self, url):
+            seen.append(url)
+            return _Resp()
+    monkeypatch.setattr(_st.httpx, "AsyncClient", _Client)
+    got = asyncio.new_event_loop().run_until_complete(read_provision("ukpga", "2099", "1", "7", version="2099-01-02"))
+    assert seen == ["https://www.legislation.gov.uk/ukpga/2099/1/section/7/2099-01-02/data.xml"], seen
+    assert got["address"] == "https://www.legislation.gov.uk/ukpga/2099/1/section/7/2099-01-02", got["address"]
+    with pytest.raises(_st.NotAnAddress):
+        asyncio.new_event_loop().run_until_complete(read_provision("ukpga", "2099", "1", "7", version="yesterday"))
+    assert len(seen) == 1, "a version that is not a date reached the publisher"
+
+    #  5. each provision read is a row of the register of sources, and the coverage row names this test
+    rows = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    for rid, page in (("employment-rights-act-1996", "https://www.legislation.gov.uk/ukpga/1996/18/section/111"),
+                      ("equality-act-2010", "https://www.legislation.gov.uk/ukpga/2010/15/section/123"),
+                      ("employment-rights-act-2025", "https://www.legislation.gov.uk/ukpga/2025/36/schedule/12"),
+                      ("si-2026-954", "https://www.legislation.gov.uk/uksi/2026/954/made")):
+        r = rows[rid]
+        assert (r["status"], r["page"], r["read_on"]) == ("current", page, "2026-11-20") and "W1157" in r["read_by"], rid
+    cov = json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))
+    row = next(r for r in cov["rows"] if r["id"] == "law-tribunal-time-limit")
+    assert row["driven_by"] == "test_w1157_p511_the_tribunal_limits_either_side_of_1_october_2026_are_dated_rules_each_read_as_it_stood"
+    assert "1 October 2026" in row["today"], row["today"]
+
+
+def test_w1158_fu1294_the_genome_ledger_and_the_evidence_graph_live_under_the_data_root_and_are_written_whole(client, tmp_path, monkeypatch):
+    """FU-1294 (W1158), P4.5, found in W1156. GenomicRegistry() kept its ledger at meta/genome_ledger.json under the
+    working directory and made a folder named meta there, outside its try, whatever path it had. Only the spawn door's
+    stream commits to the ledger, and that door answers 410 on a release (W695), so a release writes none; the suite
+    opens the door for the kept code it guards and, its working directory the checkout, wrote its spawns into the
+    checkout's meta/ folder, outside every run's data root. The evidence graph's manager kept its graph the same way.
+    Held here:
+    - built with no path, each resolves its store under the data root, in a fresh interpreter whose working directory
+      is empty, and a mutation committed there writes the ledger under the data root and nothing in the working
+      directory; with no data root set, the ledger is under the default one, data/;
+    - the spawn stream, through the door the suite opens, commits its mutation to the ledger under the suite's data
+      root and says the genome was encoded, and the checkout's meta/genome_ledger.json is as it was before;
+    - where the ledger cannot be written, the spawn stream says so and its flag is false;
+    - the ledger is written whole or not at all: a write that fails part-way leaves the ledger as it stood and no file
+      beside it, and is said as a failure; a ledger whose folder cannot be made is a failure, not an exception;
+    - the registry keeps no layer 1 across a restart and nothing else reads its layers, and the Genesis journey says so;
+    - the release drill establishes an entity through Genesis and reads it back after the restore and the rollback,
+      and its record says nothing was written outside the volume and no ledger anywhere;
+    - FU-1294 closed by this round, and the ledger's shared genome a row of its own."""
+    import json
+    import os
+    import pathlib
+    import re
+    import subprocess
+    import sys
+    from agentic_core.api import vsb as _vsb
+    from agentic_core.config import data_path
+    from agentic_core.genetic_immune.genomic_registry import GenomicRegistry
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")
+
+    #  1. built with no path, each store is under the data root: a fresh interpreter, its working directory empty
+    def fresh(code, cwd, data_root):
+        env = {k: v for k, v in os.environ.items() if k not in ("DATA_DIR", "WORKSTATION_DATA_DIR")}
+        env["PYTHONPATH"] = str(root)
+        if data_root is not None:
+            env["DATA_DIR"] = str(data_root)
+        out = subprocess.run([sys.executable, "-c", code], cwd=cwd, env=env, capture_output=True, text=True, timeout=120)
+        assert out.returncode == 0, out.stderr[-800:]
+        return out.stdout.strip().splitlines()[-1].split("|")
+    work = tmp_path / "work"
+    work.mkdir()
+    ledger, graph, wrote = fresh(
+        "from agentic_core.genetic_immune.genomic_registry import GenomicRegistry as G; "
+        "from agentic_core.ueg.ueg_manager import UEGManager as U; "
+        "g = G(); ok = g.commit_mutation({'w1158': 1}, 'w1158-fresh'); "
+        "print(g.persistence_path, U().storage_path, ok, sep='|')", work, tmp_path / "root")
+    assert pathlib.Path(ledger) == tmp_path / "root" / "meta" / "genome_ledger.json", ledger
+    assert pathlib.Path(graph) == tmp_path / "root" / "meta" / "ueg_graph.json", graph
+    assert wrote == "True", wrote
+    blocks = json.loads((tmp_path / "root" / "meta" / "genome_ledger.json").read_text(encoding="utf-8"))
+    assert [b["zkp_proof"] for b in blocks] == ["w1158-fresh"] and blocks[0]["genotype"]["traits"] == {"w1158": 1}, blocks
+    assert sorted(os.listdir(tmp_path / "root" / "meta")) == ["genome_ledger.json"], "the write left a file beside it"
+    assert list(work.iterdir()) == [], ("written into the working directory", list(work.iterdir()))
+    bare = tmp_path / "bare"
+    bare.mkdir()
+    (unset,) = fresh("from agentic_core.genetic_immune.genomic_registry import GenomicRegistry as G; "
+                     "print(G().persistence_path)", bare, None)
+    assert pathlib.Path(unset) == pathlib.Path("data", "meta", "genome_ledger.json"), unset
+
+    #  2. the spawn stream commits its mutation under the suite's data root; the checkout's ledger is left as it was
+    reg = _vsb._genome_registry
+    assert pathlib.Path(reg.persistence_path).resolve() == pathlib.Path(data_path("meta", "genome_ledger.json")).resolve(), (
+        reg.persistence_path, str(data_path("meta", "genome_ledger.json")))
+    legacy = root / "meta" / "genome_ledger.json"
+    state = lambda p: (p.stat().st_size, p.stat().st_mtime_ns) if p.exists() else None
+    before = state(legacy)
+
+    def spawn(challenge):
+        r = client.post("/api/v1/vsb/spawn", json={"challenge": challenge, "domain": "enterprise"})
+        assert r.status_code == 200, r.text[:300]
+        vid = re.search(r'"vsb_id": "(vsb-[a-f0-9]+)"', r.text).group(1)
+        events = []
+        for line in r.text.splitlines():
+            if line.startswith("data: "):
+                try:
+                    events.append(json.loads(line[len("data: "):]))
+                except ValueError:
+                    pass
+        (genome,) = [e for e in events if e.get("stage") == "genome_complete"]
+        return vid, genome
+    vid, genome = spawn("w1158 a made-up check of where the genome ledger is written")
+    assert genome["data"]["encoded"] is True and genome["label"] == "Genome Encoded", genome
+    assert genome["content"] == "VSB genome encoded in epigenetic registry.", genome
+    written = json.loads(pathlib.Path(reg.persistence_path).read_text(encoding="utf-8"))
+    assert written[-1]["zkp_proof"] == f"spawn_{vid}", written[-1]["zkp_proof"]
+    assert state(legacy) == before, "the spawn wrote the checkout's meta/genome_ledger.json"
+
+    #  3. where the ledger cannot be written, the stream says so, and its flag is false
+    blocker = tmp_path / "a-file"
+    blocker.write_text("a file, where the ledger's folder would be", encoding="utf-8")
+    monkeypatch.setattr(reg, "persistence_path", str(blocker / "meta" / "genome_ledger.json"))
+    _, refused = spawn("w1158 a made-up check of a ledger that cannot be written")
+    monkeypatch.undo()
+    assert refused["data"]["encoded"] is False and refused["label"] == "Genome Not Written", refused
+    assert refused["content"] == "VSB genome not written: the genome ledger could not be written.", refused
+
+    #  4. written whole or not at all; a folder that cannot be made is a failure, not an exception
+    led = tmp_path / "whole" / "meta" / "genome_ledger.json"
+    g = GenomicRegistry(str(led))
+    assert g.commit_mutation({"w1158_first": 1}, "w1158-first") is True
+    kept = led.read_bytes()
+    #  a proof that cannot be written is in the new block alone, so the write fails part-way, after the blocks before it
+    assert g.commit_mutation({"w1158_second": 2}, object()) is False
+    assert led.read_bytes() == kept, "a write that failed part-way changed the ledger"
+    assert sorted(os.listdir(led.parent)) == ["genome_ledger.json"], "a failed write left a file beside the ledger"
+    assert GenomicRegistry(str(blocker / "x" / "genome_ledger.json")).commit_mutation({"w1158": 2}, "w1158-third") is False
+
+    #  5. layer 1 is not kept across a restart and nothing else reads the layers; the journey says so
+    g2 = GenomicRegistry(str(led))
+    g2.store_epigenetic_pattern("w1158-pattern", {"held": True}, layer=1)
+    assert g2.epigenetic_layers["layer_1"] == {"w1158-pattern": {"held": True}}
+    assert g2.commit_mutation({"w1158_fourth": 1}, "w1158-fourth") is True
+    assert GenomicRegistry(str(led)).epigenetic_layers["layer_1"] == {}, "layer 1 is kept across a restart after all"
+    readers = sorted(p.relative_to(root).as_posix() for p in (root / "agentic_core").rglob("*.py")
+                     if "__pycache__" not in p.parts and "epigenetic_layers" in p.read_text(encoding="utf-8", errors="replace"))
+    assert readers == ["agentic_core/genetic_immune/genomic_registry.py"], readers
+    gsrc = read("agentic_core/api/genesis.py")
+    assert "the epigenetic registry (layer 1)" not in gsrc
+    assert ('"A genome spec was written to this entity. The epigenetic registry holds it in layer 1, in "\n'
+            '                         "this process\'s memory only: a restart clears layer 1, and nothing reads it. "') in gsrc
+
+    #  6. the release drill establishes an entity through Genesis and reads it back; its record says what it found
+    drill = read("deploy/drill.sh")
+    assert '"http://127.0.0.1:$PORT/api/v1/genesis/establish"' in drill and 'echo "GENOME_LEDGER_FILES=' in drill
+    assert drill.index("/api/v1/genesis/establish") < drill.index('echo "CHANGED_OUTSIDE_THE_VOLUME=')
+    for k in ("RESTORED", "ROLLBACK", "FORWARD"):
+        line = f'echo "{k}_READS_ENTITY=$(api -o /dev/null -w \'%{{http_code}}\' "http://127.0.0.1:$PORT/api/v1/vsb/$vid")"'
+        assert line in drill and drill.index(line) > drill.index(f'echo "{k}_READS_PROJECT='), k
+    flat = " ".join(read("docs/DEPLOYMENT.md").split())
+    assert "AN ENTITY ESTABLISHED, DRILLED ON THIS MACHINE, 2026-11-20 (W1158)" in flat
+    assert ("After the writes, `docker diff` showed the container had changed nothing outside the volume and `/tmp`: "
+            "the entity's records are on the volume with the project's.") in flat
+    assert ("The restored copy read the entity back (HTTP 200), the previous release read it (HTTP 200), and the "
+            "current release read it again (HTTP 200).") in flat
+    assert "No genome ledger was written, on the volume or beside the code." in flat
+
+    #  7. FU-1294 closed by this round, and the ledger's shared genome a row of its own
+    rows = {r["id"]: r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"]}
+    assert (rows["FU-1294"]["status"], rows["FU-1294"]["closed_by"]) == ("done", "W1158"), rows["FU-1294"]
+    shared = [r for r in rows.values()
+              if r["title"].startswith("Each block of the genome ledger holds the genome as one dictionary")]
+    assert len(shared) == 1 and shared[0]["status"] == "open" and shared[0]["source"].startswith("W1158"), shared
+
+
+def test_w1159_the_suite_never_removes_the_live_repositorys_worktrees_and_cleanup_keeps_work_unless_forced(tmp_path):
+    """W1159, P5.10. test_w571 called scripts/refutation_gate.py's cleanup() on the repository the suite runs in, and
+    cleanup() removed every secondary worktree with --force: each run of the suite, on any machine, removed every
+    other worktree of that repository with whatever work each held. Found in W1158, when a dry run's worktree
+    vanished under W1156's suite. Held here, on repositories this test makes:
+    - unforced, cleanup removes a worktree that holds nothing a branch does not, and keeps, naming what each holds,
+      one with changes no commit holds and one whose commit no branch holds; their files are as they were;
+    - forced, it removes all three; neither run touches the main worktree;
+    - the repository the suite runs in has the worktrees it had before this test, and nothing in the suite calls
+      cleanup on a repository it did not make;
+    - the round rhythm names the forced form for the round's own worktrees, and the row is closed by this round."""
+    import json
+    import pathlib
+    import re
+    import subprocess
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    sys.path.insert(0, str(root / "scripts"))
+    import refutation_gate as _rg
+    live = _rg._worktrees(str(root))
+    assert live and pathlib.Path(live[0]).resolve() == root.resolve(), live
+
+    def make(name):
+        repo = tmp_path / name
+        repo.mkdir()
+
+        def git(*a, cwd=None):
+            out = subprocess.run(["git", "-c", "user.name=w1159", "-c", "user.email=w1159@example.invalid", *a],
+                                 cwd=str(cwd or repo), capture_output=True, text=True, timeout=120)
+            assert out.returncode == 0, (a, out.stderr[-400:])
+        git("init", "-q")
+        (repo / "a.txt").write_text("a\n", encoding="utf-8")
+        git("add", "a.txt")
+        git("commit", "-q", "-m", "a")
+        trees = {k: tmp_path / f"{name}-{k}" for k in ("clean", "changes", "own-commit")}
+        for w in trees.values():
+            git("worktree", "add", "-q", "--detach", str(w))
+        (trees["changes"] / "a.txt").write_text("changed, and in no commit\n", encoding="utf-8")
+        (trees["own-commit"] / "b.txt").write_text("b\n", encoding="utf-8")
+        git("add", "b.txt", cwd=trees["own-commit"])
+        git("commit", "-q", "-m", "b", cwd=trees["own-commit"])
+        return repo, trees
+    res = lambda p: str(pathlib.Path(p).resolve())
+
+    #  unforced: the clean one removed, the two that hold work kept and named
+    repo, trees = make("unforced")
+    got = _rg.cleanup(repo=str(repo))
+    assert [res(w) for w in got["removed"]] == [res(trees["clean"])] and got["failed"] == [], got
+    assert sorted((res(k["worktree"]), k["holds"]) for k in got["kept"]) == sorted([
+        (res(trees["changes"]), "changes no commit holds"),
+        (res(trees["own-commit"]), "a commit no branch holds")]), got["kept"]
+    assert (trees["changes"] / "a.txt").read_text(encoding="utf-8") == "changed, and in no commit\n"
+    assert (trees["own-commit"] / "b.txt").exists() and not trees["clean"].exists()
+    assert (repo / "a.txt").exists() and "never touched" in got["basis"] and "2 kept" in got["basis"], got["basis"]
+
+    #  forced: all three removed, the main worktree as it was
+    repo, trees = make("forced")
+    got = _rg.cleanup(repo=str(repo), force=True)
+    assert sorted(res(w) for w in got["removed"]) == sorted(res(w) for w in trees.values()), got
+    assert got["kept"] == [] and got["forced"] is True and "removed, forced" in got["basis"], got
+    assert (repo / "a.txt").read_text(encoding="utf-8") == "a\n" and not any(w.exists() for w in trees.values())
+
+    #  the repository the suite runs in kept its worktrees, and no test calls cleanup on one it did not make
+    assert _rg._worktrees(str(root)) == live, "the suite changed the live repository's worktrees"
+    spine = pathlib.Path(__file__).read_text(encoding="utf-8")
+    calls = re.findall(r"(?:_rg\w*|refutation_gate)\.cleanup\(([^)]*)\)", spine)
+    assert calls and all(c.startswith("repo=") for c in calls), ("cleanup is called on a repository no test made", calls)
+
+    #  the rhythm names the forced form for the round's own worktrees, and the row is this round's
+    flat = " ".join((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8").split())
+    assert "`cleanup --force` the rest, the round's own worktrees after a refutation (W1159)" in flat
+    rows = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+            if str(r.get("source", "")).startswith("W1159 ")]
+    assert len(rows) == 1 and (rows[0]["status"], rows[0]["closed_by"], rows[0]["slot"]) == ("done", "W1159", "P5.10"), rows
+
+
+def test_w1160_fu1296_breach_of_contract_claims_are_dated_rules_for_each_nation_the_scottish_read_with_its_listed_change(client, monkeypatch):
+    """FU-1296 (W1160), P5.11 clause 2: the employment tribunal limits either side of 1 October 2026, "with the Scottish
+    exception". A breach of contract claim to an employment tribunal is brought under an Extension of Jurisdiction
+    Order, one for England and Wales and one for Scotland, each by its article 7, and each was changed from three
+    months to six on its own date by its own instrument: S.I. 2026/759 from 1 October 2026 and S.S.I. 2026/327 from 9
+    November 2026, each applying only where the relevant date is on or after its date (each instrument's article 3).
+    The publisher has written the first into its text and lists the second as not yet written in. Read at
+    www.legislation.gov.uk on 2026-11-20. Held:
+    - each rule says its nations and its own change; the two statutory rules are Great Britain's, with W1157's change;
+    - for each nation, the day before its change, the day of it and the day after, each period's address and version,
+      and the limit on the other side said with that nation's own date; one date between the changes, two limits;
+    - the Scottish later period is worked out only from the earlier words together with the change its publisher
+      lists, and says so; with the change not listed, listed for another instrument, or the earlier words gone,
+      nothing is worked out; once the publisher writes the change in, it is read directly;
+    - a leap day, and a month end that does not exist;
+    - the statute reader addresses an article, refuses a part it does not know, reads the changes listed against an
+      article in the publisher's own data file for the Scotland Order's article 7, and asks for a dated article;
+    - the rules the route lists; the four instruments as rows of the register of sources; the coverage row; FU-1296
+      closed by this round."""
+    import asyncio
+    import json
+    import pathlib
+    import httpx
+    import pytest
+    from agentic_core.legal import statute as _st
+    from agentic_core.legal import time_limits as _tl
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read_provision = _st.provision
+
+    #  1. each rule's nations and change
+    R = _tl.RULES
+    assert list(R) == ["unfair_dismissal", "discrimination_at_work", "breach_of_contract_england_wales",
+                       "breach_of_contract_scotland"], list(R)
+    assert R["unfair_dismissal"]["nations"] == R["discrimination_at_work"]["nations"] == ["England", "Wales", "Scotland"]
+    assert R["unfair_dismissal"]["change"] is _tl.CHANGE and R["discrimination_at_work"]["change"] is _tl.CHANGE
+    ew, sc = R["breach_of_contract_england_wales"], R["breach_of_contract_scotland"]
+    assert (ew["nations"], sc["nations"]) == (["England", "Wales"], ["Scotland"])
+    assert (ew["change"]["on"], sc["change"]["on"]) == ("2026-10-01", "2026-11-09")
+    assert "S.I. 2026/759" in ew["change"]["by"] and "article 3 of S.I. 2026/759" in ew["change"]["earlier_limit_kept"]
+    assert "S.S.I. 2026/327" in sc["change"]["by"] and "article 3(1) of S.S.I. 2026/327" in sc["change"]["earlier_limit_kept"]
+    three = "three months beginning with the effective date of termination of the contract giving rise to the claim"
+    six = "six months beginning with the effective date of termination of the contract giving rise to the claim"
+    for rule, num, until, frm in ((ew, 1623, "2026-09-30", "2026-10-01"), (sc, 1624, "2026-11-08", "2026-11-09")):
+        p = rule["provision"]
+        assert (p["kind"], p["year"], p["number"], p["part"], p["section"]) == ("uksi", 1994, num, "article", "7"), p
+        ps = rule["periods"]
+        assert [x.get("until") for x in ps] == [until, None] and [x.get("from") for x in ps] == [None, frm], ps
+        assert [x["months"] for x in ps] == [3, 6] and [x["version"] for x in ps] == [until, None], ps
+        assert [x["words"] for x in ps] == [three, six], ps
+    assert "unapplied" not in ew["periods"][1]
+    assert sc["periods"][1]["unapplied"] == {"class": "ScottishStatutoryInstrument", "year": "2026", "number": "327",
+                                             "earlier_words": three}
+
+    #  2. a publisher stood in, by Order and version, listing the Scottish change against article 7 as the real one does
+    asked = []
+    listed_327 = [{"Type": "word substituted", "AffectedProvisions": "art. 7(a)",
+                   "AffectingClass": "ScottishStatutoryInstrument", "AffectingYear": "2026", "AffectingNumber": "327"}]
+    texts = {(1623, "2026-09-30"): (three, []), (1623, None): (six, []),
+             (1624, "2026-11-08"): (three, listed_327), (1624, None): (three, listed_327)}
+
+    def publisher(given):
+        async def _provision(kind, year, number, section, version=None, part="section"):
+            asked.append((int(number), part, str(section), version))
+            text, listed = given[(int(number), version)]
+            return {"parts": [{"level": 1, "number": "(7)", "text": f"(a) within the period of {text}, or"}],
+                    "changes_not_yet_applied_to_this_provision": listed,
+                    "address": (f"https://www.legislation.gov.uk/{kind}/{year}/{number}/{part}/{section}"
+                                + (f"/{version}" if version else ""))}
+        return _provision
+    monkeypatch.setattr(_st, "provision", publisher(texts))
+
+    def work(rule, date):
+        r = client.post("/api/v1/law/time-limit", json={"rule": rule, "event_date": date})
+        assert r.status_code == 200, r.text[:200]
+        return r.json()
+    on = {"breach_of_contract_england_wales": "1 October 2026", "breach_of_contract_scotland": "9 November 2026"}
+    for rule, date, months, last, num, version in (
+            ("breach_of_contract_england_wales", "2026-09-30", 3, "2026-12-29", 1623, "2026-09-30"),
+            ("breach_of_contract_england_wales", "2026-10-01", 6, "2027-03-31", 1623, None),
+            ("breach_of_contract_england_wales", "2026-10-02", 6, "2027-04-01", 1623, None),
+            ("breach_of_contract_scotland", "2026-11-08", 3, "2027-02-07", 1624, "2026-11-08"),
+            ("breach_of_contract_scotland", "2026-11-09", 6, "2027-05-08", 1624, None),
+            ("breach_of_contract_scotland", "2026-11-10", 6, "2027-05-09", 1624, None)):
+        asked.clear()
+        got = work(rule, date)
+        assert (got["months"], got["last_day"], got["computed"]) == (months, last, True), (rule, date, got)
+        assert asked == [(num, "article", "7", version)], (rule, date, asked)
+        assert got["provision_address"] == (f"https://www.legislation.gov.uk/uksi/1994/{num}/article/7"
+                                            + (f"/{version}" if version else "")), got["provision_address"]
+        assert got["nations"] == R[rule]["nations"] and got["change"]["on"] == R[rule]["change"]["on"], got
+        other = (f"For a relevant date on or after {on[rule]} the limit is 6 months." if months == 3 else
+                 f"For a relevant date before {on[rule]} the limit is 3 months.")
+        assert other in got["basis"] and R[rule]["change"]["earlier_limit_kept"] in got["basis"], got["basis"]
+        assert got["basis"].startswith("the primary limit the Order sets, "), got["basis"]
+    #  the Scottish exception: between the two changes, one date and two nations give two limits
+    mid_ew, mid_sc = work("breach_of_contract_england_wales", "2026-10-15"), work("breach_of_contract_scotland", "2026-10-15")
+    assert (mid_ew["months"], mid_ew["last_day"]) == (6, "2027-04-14"), mid_ew
+    assert (mid_sc["months"], mid_sc["last_day"]) == (3, "2027-01-14"), mid_sc
+
+    #  3. the Scottish later period: from the earlier words with the change its publisher lists, and nothing less
+    later = work("breach_of_contract_scotland", "2026-11-10")
+    assert later["read_with_unapplied_change"] is True, later
+    assert f"which still reads '{three}' and lists the change below as not yet written into it" in later["basis"]
+    assert "that change puts six for three" in later["basis"], later["basis"]
+    assert "read_with_unapplied_change" not in work("breach_of_contract_england_wales", "2026-10-02")
+    for label, given in (("the change not listed", {(1624, None): (three, [])}),
+                         ("listed for another instrument", {(1624, None): (three, [dict(listed_327[0], AffectingNumber="328")])}),
+                         ("listed as a UK instrument's", {(1624, None): (three, [dict(listed_327[0], AffectingClass="UnitedKingdomStatutoryInstrument")])}),
+                         ("the earlier words gone", {(1624, None): ("nine" + three[5:], listed_327)})):
+        monkeypatch.setattr(_st, "provision", publisher({**texts, **given}))
+        got = work("breach_of_contract_scotland", "2026-11-10")
+        assert got["computed"] is False and "does not contain the words" in got["basis"], (label, got)
+    monkeypatch.setattr(_st, "provision", publisher({**texts, (1624, None): (six, [])}))
+    direct = work("breach_of_contract_scotland", "2026-11-10")
+    assert (direct["computed"], direct["last_day"]) == (True, "2027-05-09") and "read_with_unapplied_change" not in direct
+
+    #  4. a leap day, and a month end that does not exist
+    monkeypatch.setattr(_st, "provision", publisher(texts))
+    assert work("breach_of_contract_scotland", "2028-02-29")["last_day"] == "2028-08-28"
+    gone = work("breach_of_contract_england_wales", "2026-12-31")
+    #  W1162 - there is no 31 June 2027: the earlier of the two days the period could end on, said as unsettled
+    assert (gone["computed"], gone["settled"], gone["last_day"]) == (True, False, "2027-06-29"), gone
+
+    #  5. the statute reader: an article, a part it does not know, the changes listed against an article, a dated article
+    assert _st.address("uksi", 1994, 1624, "7", "article") == "https://www.legislation.gov.uk/uksi/1994/1624/article/7"
+    assert _st.address("ukpga", 1996, 18, "111") == "https://www.legislation.gov.uk/ukpga/1996/18/section/111"
+    with pytest.raises(_st.NotAnAddress):
+        _st.address("uksi", 1994, 1624, "7", "schedule")
+    assert _st.touches("7", "art. 7(a)") and _st.touches("7", "arts. 6-8") and not _st.touches("7", "art. 70")
+    assert _st.touches("4", "reg. 4(1)") and _st.touches("111", "s. 111(2)") and not _st.touches("7", "Pt. 2")
+    xml = (root / "integration_tests/fixtures/statute_order_article_unapplied.xml").read_text(encoding="utf-8")
+    parsed = _st.parse(xml, "7")
+    assert parsed["act"] == "The Employment Tribunals Extension of Jurisdiction (Scotland) Order 1994", parsed["act"]
+    assert [(e["AffectedProvisions"], e["AffectingClass"], e["AffectingYear"], e["AffectingNumber"])
+            for e in parsed["changes_not_yet_applied_to_this_provision"]] == [
+        ("art. 7(a)", "ScottishStatutoryInstrument", "2026", "327"),
+        ("art. 7(b)", "ScottishStatutoryInstrument", "2026", "327")], parsed["changes_not_yet_applied_to_this_provision"]
+    assert "2 listed for this provision" in parsed["changes_basis"], parsed["changes_basis"]
+    real = _tl.limit("breach_of_contract_scotland", "2026-11-10", parsed)
+    assert (real["computed"], real["months"], real["last_day"], real.get("read_with_unapplied_change")) == (
+        True, 6, "2027-05-09", True), real["basis"]
+    seen = []
+
+    class _Resp:
+        status_code, text, url = 200, xml, httpx.URL("https://www.legislation.gov.uk/x")
+
+    class _Client:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def get(self, url):
+            seen.append(url)
+            return _Resp()
+    monkeypatch.setattr(_st.httpx, "AsyncClient", _Client)
+    got = asyncio.new_event_loop().run_until_complete(
+        read_provision("uksi", "1994", "1624", "7", version="2026-11-08", part="article"))
+    assert seen == ["https://www.legislation.gov.uk/uksi/1994/1624/article/7/2026-11-08/data.xml"], seen
+    assert got["changes_not_yet_applied_count"] == 2 and got["address"].endswith("/article/7/2026-11-08"), got["address"]
+
+    #  6. the rules the route lists, the register of sources, the coverage row and the row
+    by = {x["id"]: x for x in client.get("/api/v1/law/time-limit").json()["rules"]}
+    s = by["breach_of_contract_scotland"]
+    assert (s["part"], s["nations"], s["change"]["on"]) == ("article", ["Scotland"], "2026-11-09"), s
+    assert s["periods"][1]["read_from"] == ("the provision as it stands now, with the change its publisher lists as "
+                                            "not yet written into it"), s["periods"]
+    assert (by["unfair_dismissal"]["part"], by["unfair_dismissal"]["nations"]) == ("section", ["England", "Wales", "Scotland"])
+    rows = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    for rid, page in (("et-extension-of-jurisdiction-england-wales-1994", "https://www.legislation.gov.uk/uksi/1994/1623/article/7"),
+                      ("et-extension-of-jurisdiction-scotland-1994", "https://www.legislation.gov.uk/uksi/1994/1624/article/7"),
+                      ("si-2026-759", "https://www.legislation.gov.uk/uksi/2026/759/made"),
+                      ("ssi-2026-327", "https://www.legislation.gov.uk/ssi/2026/327/made")):
+        r = rows[rid]
+        assert (r["status"], r["page"], r["read_on"]) == ("current", page, "2026-11-20") and "W1160" in r["read_by"], rid
+    cov = json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))
+    row = next(r for r in cov["rows"] if r["id"] == "law-tribunal-time-limit")
+    assert "9 November 2026 (S.S.I. 2026/327)" in row["today"] and "not among the rules" not in row["today"], row["today"]
+    fu = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    assert (fu["FU-1296"]["status"], fu["FU-1296"]["closed_by"]) == ("done", "W1160"), fu["FU-1296"]
+
+
+def test_w1161_p511_with_no_rule_a_limit_may_still_apply_and_where_to_ask_today_is_said_nation_by_nation(client, monkeypatch):
+    """P5.11 clause 2 (W1161): "It never answers 'no deadline': when no rule matches it says a limit may still apply and
+    where to ask today", driven "for each nation, and with no matching rule"; and, as the Owner ruled on 2026-10-12, a
+    question from another nation is given a route and not a rule. The route refused a claim it holds no rule for (422),
+    and took no nation, so a claim in Northern Ireland was worked out from a rule for England, Wales and Scotland.
+    Held here:
+    1. the nations are the four, every rule's nations are among them, and every nation has places to ask, each named
+       with its address on GOV.UK's employment tribunals guide as its row in the register of sources says it was read;
+       Northern Ireland's is the guide's one route there, and Acas is not given for it;
+    2. each nation with each rule: worked out where the rule is for that nation, reading its provision once; otherwise
+       answered with no rule, reading nothing, with where to ask today for that nation and the rules there are for it;
+    3. a claim not listed here, for each nation and with none given: the same, and for every nation when none is given;
+    4. no answer with no rule says there is no deadline or no time limit, and each says one may still apply;
+    5. a nation that is none of the four is refused before anything is read, and a nation in another case is read;
+    6. a place is said as read on the guide's date for ninety days and as not recently checked after;
+    7. the panel asks where the claim is, offers a claim not listed, posts the nation and shows the answer with no rule;
+       its two new captured answers are the route's own today, and its rendered test reads them;
+    8. the register of sources, the coverage rows and the row."""
+    import datetime as _dt
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.legal import statute as _st
+    from agentic_core.legal import time_limits as _tl
+    root = Path(__file__).resolve().parents[1]
+
+    #  1. the nations, and where to ask in each, as the guide that names each place was read
+    assert _tl.NATIONS == ("England", "Wales", "Scotland", "Northern Ireland")
+    assert all(set(r["nations"]) <= set(_tl.NATIONS) for r in _tl.RULES.values())
+    assert set(_tl.WHERE_TO_ASK) == set(_tl.NATIONS) and all(_tl.WHERE_TO_ASK[n] for n in _tl.NATIONS)
+    reg = json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))
+    guide = {r["id"]: r for r in reg["rows"]}["gov-uk-employment-tribunals-guide"]
+    assert (guide["page"], guide["read_on"], guide["status"]) == (_tl.GUIDE["page"], _tl.GUIDE["read_on"], "current"), guide
+    assert "W1161" in guide["read_by"] and _tl.REVIEW_DAYS == reg["review_days"] == 90
+    for n, places in _tl.WHERE_TO_ASK.items():
+        for p in places:
+            assert p["link"] in guide["says"], (n, p["name"], "is not named, with this address, on the guide as read")
+            #  W1162 - two of the places were read at their own page once the Owner allowed the advice sites
+            assert p["named_on"].startswith(_tl.GUIDE["page"] + "/") and p["own_site"] in (
+                "not opened", _tl.OWN_PAGE_READ), p
+    assert [p["link"] for p in _tl.WHERE_TO_ASK["Northern Ireland"]] == ["https://www.employmenttribunalsni.co.uk/how-make-claim"]
+    for n in ("England", "Wales", "Scotland"):
+        assert _tl.WHERE_TO_ASK[n][0]["link"] == "https://www.acas.org.uk/employment-tribunal-time-limits", n
+    assert [p["name"] for p in _tl.WHERE_TO_ASK["Scotland"][1:]] == ["The Law Society of Scotland", "Citizens Advice Scotland"]
+
+    #  2. each nation with each rule; the provision stood in, holding every period's words, and each read counted
+    text = " ".join(p["words"] for r in _tl.RULES.values() for p in r["periods"])
+    asked = []
+
+    async def _provision(kind, year, number, section, version=None, part="section"):
+        asked.append((int(number), section))
+        return {"parts": [{"level": 1, "number": "(a)", "text": text}],
+                "address": f"https://www.legislation.gov.uk/{kind}/{year}/{number}/{part}/{section}"}
+    monkeypatch.setattr(_st, "provision", _provision)
+
+    def work(rule, nation, date="2026-12-01"):
+        r = client.post("/api/v1/law/time-limit", json={"rule": rule, "event_date": date, "nation": nation})
+        assert r.status_code == 200, (rule, nation, r.text[:300])
+        return r.json()
+
+    with_no_rule = []
+    for nation in _tl.NATIONS:
+        for rid, rule in _tl.RULES.items():
+            before = len(asked)
+            got = work(rid, nation)
+            if nation in rule["nations"]:
+                assert (got["matched"], got["computed"], got["nation"], got["rule"]) == (True, True, nation, rid), got
+                assert len(asked) == before + 1, (rid, nation, "the provision was not read once")
+                continue
+            with_no_rule.append(got)
+            assert (got["matched"], got["computed"], got["last_day"], got["rule"]) == (False, False, None, rid), got
+            assert len(asked) == before, (rid, nation, "a provision was read for a claim no rule here is for there")
+            assert got["where_to_ask"] == {nation: [dict(p) for p in _tl.WHERE_TO_ASK[nation]]}, got["where_to_ask"]
+            assert [x["id"] for x in got["rules_for_this_nation"]] == [
+                k for k, r in _tl.RULES.items() if nation in r["nations"]], got["rules_for_this_nation"]
+    #  Northern Ireland's four, and each breach of contract rule in the nations it is not for (one, two)
+    assert len(with_no_rule) == 4 + 1 + 2, [(g["rule"], g["nation"]) for g in with_no_rule]
+    by = {(g["rule"], g["nation"]): g for g in with_no_rule}
+    assert by[("breach_of_contract_england_wales", "Scotland")]["basis"] == (
+        "The rule here for a breach of contract claim to an employment tribunal, in England or Wales is for England and "
+        "Wales, not for Scotland, so no date is worked out. A time limit may still apply: ask today.")
+    assert [x["id"] for x in by[("breach_of_contract_england_wales", "Scotland")]["rules_for_this_nation"]] == [
+        "unfair_dismissal", "discrimination_at_work", "breach_of_contract_scotland"]
+    assert [x["id"] for x in by[("breach_of_contract_scotland", "Wales")]["rules_for_this_nation"]] == [
+        "unfair_dismissal", "discrimination_at_work", "breach_of_contract_england_wales"]
+    ni = by[("unfair_dismissal", "Northern Ireland")]
+    assert ni["basis"] == (
+        "The rule here for an unfair dismissal claim to an employment tribunal is for England, Wales and Scotland, not for "
+        "Northern Ireland, and no rule here is for a claim in Northern Ireland, so no date is worked out. A time limit may "
+        "still apply: ask today.") and ni["rules_for_this_nation"] == [], ni
+    #  ...and with no nation given, every rule is worked out, its own nations said
+    for rid, rule in _tl.RULES.items():
+        r = client.post("/api/v1/law/time-limit", json={"rule": rid, "event_date": "2026-12-01"}).json()
+        assert (r["matched"], r["computed"], r["nation"], r["nations"]) == (True, True, None, list(rule["nations"])), r
+
+    #  3. a claim not listed here, for each nation and with none given: nothing is read
+    before = len(asked)
+    for nation in _tl.NATIONS:
+        got = work(_tl.NOT_LISTED["id"], nation, "")
+        with_no_rule.append(got)
+        assert (got["matched"], got["rule"], got["nation"]) == (False, None, nation), got
+        assert got["where_to_ask"] == {nation: [dict(p) for p in _tl.WHERE_TO_ASK[nation]]}, got["where_to_ask"]
+        assert got["basis"] == ("No rule here is for that claim"
+                                + (", and no rule here is for a claim in Northern Ireland" if nation == "Northern Ireland" else "")
+                                + ", so no date is worked out. A time limit may still apply: ask today."), got["basis"]
+    unknown = client.post("/api/v1/law/time-limit", json={"rule": "a claim this platform has never heard of",
+                                                         "event_date": "2026-12-01"})
+    assert unknown.status_code == 200, unknown.text[:300]
+    got = unknown.json()
+    with_no_rule.append(got)
+    assert (got["matched"], got["rule"], got["nation"], list(got["where_to_ask"])) == (False, None, None, list(_tl.NATIONS))
+    assert len(asked) == before, "a provision was read for a claim not listed here"
+
+    #  4. never "no deadline": each answer with no rule says a limit may still apply, and nothing says there is none
+    for got in with_no_rule:
+        said = json.dumps(got, ensure_ascii=False)
+        assert not re.search(r"\bno (?:deadline|time limit)s?\b", said, re.I), said[:300]
+        assert got["basis"].endswith("A time limit may still apply: ask today.") and got["composed"] is False, got["basis"]
+        assert got["not_advice"] == "Nothing here is legal advice." and got["named_on"]["page"] == _tl.GUIDE["page"]
+
+    #  5. a nation that is none of the four is refused before anything is read; one written in another case is read
+    before = len(asked)
+    for bad in ("France", "", "Great Britain", "UK", "England and Wales"):
+        r = client.post("/api/v1/law/time-limit", json={"rule": "unfair_dismissal", "event_date": "2026-12-01", "nation": bad})
+        assert r.status_code == 422 and r.json()["detail"].startswith("That does not name a nation"), (bad, r.text[:200])
+        assert "England, Wales, Scotland, Northern Ireland" in r.json()["detail"], r.json()["detail"]
+    assert len(asked) == before, "a provision was read for a nation that is none of the four"
+    assert work("unfair_dismissal", "  SCOTLAND ")["nation"] == "Scotland"
+
+    #  6. ninety days after the guide was read, a place is still said as read that day; on the ninety-first, not recently
+    read = _dt.date.fromisoformat(_tl.GUIDE["read_on"])
+    monkeypatch.setattr(_tl, "_today", lambda: read + _dt.timedelta(days=90))
+    o = work(_tl.NOT_LISTED["id"], "England", "")["named_on"]
+    assert (o["recently_checked"], o["checked"]) == (True, "read on 20 November 2026"), o
+    monkeypatch.setattr(_tl, "_today", lambda: read + _dt.timedelta(days=91))
+    o = work(_tl.NOT_LISTED["id"], "Wales", "")["named_on"]
+    assert (o["recently_checked"], o["checked"]) == (
+        False, "NOT RECENTLY CHECKED - read on 20 November 2026, more than 90 days ago"), o
+
+    #  7. the panel, its captured answers (read as on the day the guide was read) and its rendered test
+    monkeypatch.setattr(_tl, "_today", lambda: read)
+    src = root / "apps" / "workstation-superapp" / "src" / "components"
+    panel = (src / "TimeLimitPanel.tsx").read_text(encoding="utf-8")
+    for line in ('aria-label="Where the claim is"',
+                 "{ method: 'POST', body: { rule, event_date: unlisted ? '' : date, nation } }",
+                 "<option value={listed.not_listed.id}>{listed.not_listed.name}</option>",
+                 "disabled={busy || !nation || !rule || (!unlisted && !date)}",
+                 'data-testid="law-time-limit-no-rule"',
+                 "{got.act}, {got.part} {got.section}"):
+        assert line in panel, ("the panel no longer has this", line)
+    fx = json.loads((src / "TimeLimitPanel.fixture.json").read_text(encoding="utf-8"))
+    assert fx["rules"]["body"]["nations"] == list(_tl.NATIONS) and fx["rules"]["body"]["not_listed"] == _tl.NOT_LISTED
+    assert fx["computed"]["request"] == {"rule": "unfair_dismissal", "event_date": "2026-10-03", "nation": "England"}
+    assert fx["not_listed"]["request"] == {"rule": "not_listed", "event_date": "", "nation": "Scotland"}
+    assert fx["not_this_nation"]["request"] == {"rule": "unfair_dismissal", "event_date": "2026-10-03",
+                                                "nation": "Northern Ireland"}
+    for key in ("not_listed", "not_this_nation"):
+        live = client.post(fx["rules"]["url"], json=fx[key]["request"])
+        assert (live.status_code, live.json()) == (fx[key]["status"], fx[key]["body"]), (key, live.text[:300])
+    spec = (src / "TimeLimitPanel.test.tsx").read_text(encoding="utf-8")
+    for line in ("it('a claim not listed here: a time limit may still apply, the rules there are and where to ask today, "
+                 "for that nation'",
+                 "it('a claim in a nation no rule here is for: a route and not a rule, and no rule listed for it'",
+                 "expect(posted).toEqual([n.request]);",
+                 "expect(screen.queryByTestId('law-time-limit-rules-here')).toBeNull();",
+                 "`Each place is named on ${o.publisher}'s guide ${o.name}, ${o.checked}. ${o.own_sites} ${n.body.not_advice}`"):
+        assert line in spec, ("the rendered test no longer reads this", line)
+
+    #  8. the registers: the coverage rows, and the row
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    nir = cov["law-tribunal-time-limit-northern-ireland"]
+    assert (nir["state"], nir["nation"], nir["route"], nir.get("driven_by")) == (
+        "route_only", "Northern Ireland", "gov-uk-employment-tribunals-guide", None), nir
+    assert "may still apply, with where to ask today for that nation" in cov["law-tribunal-time-limit"]["today"]
+    fu = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+          if r.get("closed_by") == "W1161"]
+    assert len(fu) == 1 and (fu[0]["status"], fu[0]["slot"], fu[0]["because"]) == ("done", "P5.11", "built"), fu
+
+
+def test_w1162_p511_each_rule_says_its_sources_and_a_month_with_no_such_day_shows_the_earlier_day(client, monkeypatch):
+    """P5.11 clause 2 (W1162): "each rule has its claim type, its nation, the period it is in force for, its source
+    page, the date that page was read and by whom"; and the Owner's ruling of 2026-10-12: "where the source does not
+    settle a date - a month with no such day - the EARLIER date is shown with the sentence that the source does not
+    settle it", and "a rule or a place is shown as not recently checked NINETY DAYS after the date it was read".
+    No answer said a rule's sources, nothing was said as not recently checked, and a month with no such day was not
+    worked out. Held here:
+    1. each rule's sources are rows of the register, read, in the rule's own order; every answer says each one's page,
+       the day it was read and who read it; ninety days on it is still read that day, on the ninety-first not recently
+       checked; with the register unreadable each source is said as not checked, and none is left out;
+    2. a month with no such day, for each rule: the earlier of the two days the period could end on, said as unsettled
+       with the sentence that the provision does not settle it, the missing date named, in a leap year too; a date that
+       has its same date months on is settled;
+    3. the rules reproduce the two worked examples Acas's page gives, as its register row records them;
+    4. Acas's page and the Northern Ireland tribunals' page are rows of the register, read in this round, and the two
+       places they are say so, as the answer with no rule says of the places it lists;
+    5. the panel says the sources and the unsettled headline, and its captured answers are the route's own;
+    6. the coverage rows and the row."""
+    import datetime as _dt
+    import json
+    from pathlib import Path
+    from agentic_core.legal import statute as _st
+    from agentic_core.legal import time_limits as _tl
+    root = Path(__file__).resolve().parents[1]
+    reg = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    read = _dt.date(2026, 11, 20)
+
+    text = " ".join(p["words"] for r in _tl.RULES.values() for p in r["periods"])
+    asked = []
+
+    async def _provision(kind, year, number, section, version=None, part="section"):
+        asked.append((int(number), section, version))
+        return {"parts": [{"level": 1, "number": "(a)", "text": text}],
+                "address": f"https://www.legislation.gov.uk/{kind}/{year}/{number}/{part}/{section}"}
+    monkeypatch.setattr(_st, "provision", _provision)
+
+    def work(rule, date, nation=None):
+        body = {"rule": rule, "event_date": date, **({"nation": nation} if nation else {})}
+        r = client.post("/api/v1/law/time-limit", json=body)
+        assert r.status_code == 200, (rule, date, r.text[:300])
+        return r.json()
+
+    #  1. each rule's sources, said in every answer, and their ninety days
+    monkeypatch.setattr(_tl, "_today", lambda: read)
+    listed = {x["id"]: x for x in client.get("/api/v1/law/time-limit").json()["rules"]}
+    for rid, rule in _tl.RULES.items():
+        assert rule["sources"] and all(s in reg and reg[s]["status"] == "current" for s in rule["sources"]), rid
+        got = work(rid, "2026-12-01")
+        for said, sid in ((listed[rid]["sources"], None), (got["sources"], None)):
+            assert [s["id"] for s in said] == list(rule["sources"]), (rid, said)
+            for s in said:
+                r = reg[s["id"]]
+                assert (s["read"], s["page"], s["read_on"], s["read_by"]) == (True, r["page"], r["read_on"], r["read_by"])
+                assert (s["recently_checked"], s["checked"]) == (True, "read on 20 November 2026"), s
+    monkeypatch.setattr(_tl, "_today", lambda: read + _dt.timedelta(days=90))
+    assert all(s["recently_checked"] for s in work("unfair_dismissal", "2026-12-01")["sources"])
+    monkeypatch.setattr(_tl, "_today", lambda: read + _dt.timedelta(days=91))
+    stale = work("unfair_dismissal", "2026-12-01")["sources"]
+    assert [s["checked"] for s in stale] == [
+        "NOT RECENTLY CHECKED - read on 20 November 2026, more than 90 days ago"] * len(stale), stale
+    monkeypatch.setattr(_tl, "_today", lambda: read)
+    monkeypatch.setattr(_tl, "REGISTER", root / "docs" / "no-such-register.json")
+    gone = work("discrimination_at_work", "2026-12-01")["sources"]
+    assert [(s["id"], s["read"], s["checked"]) for s in gone] == [
+        (sid, False, "NOT CHECKED - the register of sources could not be read")
+        for sid in _tl.RULES["discrimination_at_work"]["sources"]], gone
+    monkeypatch.undo()
+    monkeypatch.setattr(_st, "provision", _provision)
+    monkeypatch.setattr(_tl, "_today", lambda: read)
+
+    #  2. a month with no such day: the earlier of the two days, said as unsettled
+    for rid, date, nation, months, missing, earlier in (
+            ("unfair_dismissal", "2026-08-31", "England", 3, "31 November 2026", "2026-11-29"),
+            ("unfair_dismissal", "2026-10-31", "Wales", 6, "31 April 2027", "2027-04-29"),
+            ("discrimination_at_work", "2027-08-31", "Scotland", 6, "31 February 2028", "2028-02-28"),
+            ("breach_of_contract_england_wales", "2026-12-31", "England", 6, "31 June 2027", "2027-06-29"),
+            ("breach_of_contract_scotland", "2026-12-31", "Scotland", 6, "31 June 2027", "2027-06-29")):
+        got = work(rid, date, nation)
+        assert (got["computed"], got["settled"], got["last_day"], got["months"]) == (True, False, earlier, months), got
+        assert (f"would end at the end of the day before the same date {months} months later, but there is no "
+                f"{missing}. The provision does not settle how such a period ends, so the earlier of the two days it "
+                f"could end on is shown: the end of {earlier}.") in got["basis"], got["basis"]
+    assert _tl.last_day(_dt.date(2028, 2, 29), 6) == _dt.date(2028, 8, 28)
+    plain = work("unfair_dismissal", "2026-10-03", "England")
+    assert (plain["settled"], plain["last_day"]) == (True, "2027-04-02") and "does not settle" not in plain["basis"]
+
+    #  3. Acas's two worked examples, as its register row records them, are what the rules work out
+    acas = reg["acas-employment-tribunal-time-limits"]
+    for example in ("paid the wrong amount on 30 September 2026, ends at 11:59pm on 29 December 2026",
+                    "1 October 2026, ends at 11:59pm on 31 March 2027"):
+        assert example in acas["says"], acas["says"]
+    assert work("unfair_dismissal", "2026-09-30", "England")["last_day"] == "2026-12-29"
+    assert work("unfair_dismissal", "2026-10-01", "England")["last_day"] == "2027-03-31"
+
+    #  4. the two pages read, and the two places they are
+    for sid, page, nation in (("acas-employment-tribunal-time-limits",
+                               "https://www.acas.org.uk/employment-tribunal-time-limits", ["England", "Wales", "Scotland"]),
+                              ("employment-tribunals-ni-how-to-make-a-claim",
+                               "https://www.employmenttribunalsni.co.uk/how-make-claim", ["Northern Ireland"])):
+        r = reg[sid]
+        assert (r["page"], r["read_on"], r["status"], r["nation"]) == (page, "2026-11-20", "current", nation), sid
+        assert "W1162" in r["read_by"] and r["used_by"] == ["agentic_core/legal/time_limits.py"], sid
+    read_here = sorted({p["link"] for n in _tl.NATIONS for p in _tl.WHERE_TO_ASK[n] if p["own_site"] == _tl.OWN_PAGE_READ})
+    assert read_here == ["https://www.acas.org.uk/employment-tribunal-time-limits",
+                         "https://www.employmenttribunalsni.co.uk/how-make-claim"], read_here
+    ni = client.post("/api/v1/law/time-limit", json={"rule": "not_listed", "event_date": "", "nation": "Northern Ireland"})
+    assert ni.json()["named_on"]["own_sites"] == "This place's own page was read on 20 November 2026.", ni.json()
+    sc = client.post("/api/v1/law/time-limit", json={"rule": "not_listed", "event_date": "", "nation": "Scotland"})
+    assert sc.json()["named_on"]["own_sites"].startswith("Acas: its own page was read on 20 November 2026. The other "
+                                                         "places' own sites were not opened"), sc.json()["named_on"]
+
+    #  5. the panel, its captured answers and its rendered test
+    src = root / "apps" / "workstation-superapp" / "src" / "components"
+    panel = (src / "TimeLimitPanel.tsx").read_text(encoding="utf-8")
+    for line in ('data-testid="law-time-limit-sources"', "Read: {got.sources.map(sourceSaid).join('; ')}.",
+                 "{got.settled === false ? ', the earlier of the two days the provision leaves unsettled' : ''}"):
+        assert line in panel, ("the panel no longer has this", line)
+    fx = json.loads((src / "TimeLimitPanel.fixture.json").read_text(encoding="utf-8"))
+    assert fx["unsettled"]["request"] == {"rule": "unfair_dismissal", "event_date": "2026-08-31", "nation": "England"}
+    assert fx["unsettled"]["body"]["settled"] is False and fx["unsettled"]["body"]["last_day"] == "2026-11-29"
+    assert all(s["checked"].startswith("NOT RECENTLY CHECKED") for s in fx["stale"]["body"]["sources"])
+
+    def stood_in(words):
+        async def _p(kind, year, number, section, version=None):
+            return {"parts": [{"level": 1, "number": "(2)", "text": f"(a) before the end of the period of {words}, or"}],
+                    "address": (f"https://www.legislation.gov.uk/{kind}/{year}/{number}/section/{section}"
+                                + (f"/{version}" if version else ""))}
+        return _p
+    monkeypatch.setattr(_st, "provision", stood_in(_tl.period_for("unfair_dismissal", "2026-08-31")["words"]))
+    live = client.post(fx["rules"]["url"], json=fx["unsettled"]["request"])
+    assert (live.status_code, live.json()) == (fx["unsettled"]["status"], fx["unsettled"]["body"]), live.text[:300]
+    monkeypatch.setattr(_st, "provision", stood_in(_tl.period_for("unfair_dismissal", "2026-10-03")["words"]))
+    monkeypatch.setattr(_tl, "_today", lambda: read + _dt.timedelta(days=91))
+    live = client.post(fx["rules"]["url"], json=fx["stale"]["request"])
+    assert (live.status_code, live.json()) == (fx["stale"]["status"], fx["stale"]["body"]), live.text[:300]
+    spec = (src / "TimeLimitPanel.test.tsx").read_text(encoding="utf-8")
+    for line in ("it('a month with no such day: the earlier of the two days the period could end on, said as unsettled'",
+                 "it('a source read more than ninety days ago is said as not recently checked'",
+                 "`Read: ${a.sources.map(sourceSaid).join('; ')}.`,",
+                 "`The primary limit ends at the end of ${u.body.last_day}, the earlier of the two days the provision "
+                 "leaves unsettled.`));"):
+        assert line in spec, ("the rendered test no longer reads this", line)
+
+    #  6. the coverage rows, and the row
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    assert "a month with no such day worked out to the earlier of the two days" in cov["law-tribunal-time-limit"]["today"]
+    assert cov["law-tribunal-time-limit-northern-ireland"]["today"].endswith("whose own page was read on 2026-11-20 "
+                                                                           "(W1161; read in W1162)")
+    fu = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+          if r.get("closed_by") == "W1162"]
+    assert len(fu) == 1 and (fu[0]["status"], fu[0]["slot"], fu[0]["because"]) == ("done", "P5.11", "built"), fu
+
+
+def test_w1163_p511_each_place_a_person_can_go_says_its_nations_the_page_that_says_so_and_when_it_was_read(client, monkeypatch):
+    """P5.11 clause 3 (W1163): "a place a person can go is a row with its nation, what it helps with, its public route,
+    the page that says so and the date read; a row past its review date is shown as not recently checked. Nothing is
+    said about availability, acceptance or an appointment." The Owner ruled on 2026-10-12 that a place is shown as not
+    recently checked ninety days after the date it was read. The help list's eight places said one sentence for all of
+    them, that each address resolved when it was opened on 2026-10-13, and no nation. Held here:
+    1. each place is a row of the directory, from its own row in the register of sources: the nations that row gives,
+       the page that says so, the day it was read and how, in the register's own terms; read that day through the
+       ninetieth day after it, and NOT RECENTLY CHECKED from the ninety-first;
+    2. a place the register holds no reading of, and every place when the register cannot be read, is said as NOT
+       CHECKED with no nation, never as read; a page whose content was read is said so;
+    3. the one page of where help is, the Law page's help and a question about a person's own case all say each
+       place's row; the one page's basis says how a place is dated, and that nothing here says whether a place is open,
+       will take a question or has an appointment, and no place's own line says any of that;
+    4. the support page, the statute panel and the box beside a routed answer say each place's row; the captured
+       answers are the routes' own, ninety-one days on too, and the rendered tests read them;
+    5. the coverage row and the row."""
+    import datetime as _dt
+    import json
+    from pathlib import Path
+    from agentic_core.api import where_help as _wh
+    from agentic_core.legal import directory as _dir
+    from agentic_core.legal import time_limits as _tl
+    root = Path(__file__).resolve().parents[1]
+    reg = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    places = [dict(h) for h in _wh.HELP_FROM_A_PERSON]
+
+    def how(read_by):
+        return ("its address resolved when it was opened; its content was not read"
+                if "the page's content was NOT read" in read_by else "its content was read")
+
+    #  1. each place, from its own row in the register, and its ninety days
+    assert sorted(_dir.SAYS_SO) == sorted(p["link"] for p in places), "a place has no row named for it, or a row no place"
+    for p in places:
+        src = reg[_dir.SAYS_SO[p["link"]]]
+        assert src["status"] == "current" and src["page"] == p["link"], (p["name"], src["page"])
+        assert src["nation"] and set(src["nation"]) <= set(_tl.NATIONS), (p["name"], src["nation"])
+        day = _dt.date.fromisoformat(src["read_on"])
+        monkeypatch.setattr(_tl, "_today", lambda: day + _dt.timedelta(days=90))
+        got = _dir.place(dict(p))
+        assert {k: got[k] for k in ("name", "link", "for_what")} == p, got
+        assert (got["nations"], got["says_so"], got["how_read"]) == (src["nation"], src["page"], how(src["read_by"])), got
+        assert (got["recently_checked"], got["checked"]) == (True, f"read on {_tl._said(src['read_on'])}"), got
+        monkeypatch.setattr(_tl, "_today", lambda: day + _dt.timedelta(days=91))
+        got = _dir.place(dict(p))
+        assert (got["recently_checked"], got["checked"]) == (
+            False, f"NOT RECENTLY CHECKED - read on {_tl._said(src['read_on'])}, more than 90 days ago"), got
+    #  as the register stands today: every place read by one request to its address on 2026-10-13, its content not read
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2026, 11, 20))
+    today = _dir.rows(_wh.HELP_FROM_A_PERSON)
+    assert [r["link"] for r in today] == [p["link"] for p in places], "the places are not in the help list's order"
+    assert {(r["checked"], r["how_read"]) for r in today} == {
+        ("read on 13 October 2026", "its address resolved when it was opened; its content was not read")}, today
+
+    #  2. no reading, an unreadable register, and a page whose content was read
+    first = places[0]
+    none = _dir.place(dict(first), {})
+    assert (none["nations"], none["says_so"], none["how_read"], none["recently_checked"], none["checked"]) == (
+        None, None, None, False, "NOT CHECKED - the register of sources holds no reading of this place"), none
+    stranger = _dir.place({"name": "A place", "link": "https://example.org/", "for_what": "help"}, reg)
+    assert (stranger["nations"], stranger["checked"]) == (
+        None, "NOT CHECKED - the register of sources holds no reading of this place"), stranger
+    sid = _dir.SAYS_SO[first["link"]]
+    read_whole = _dir.place(dict(first), {sid: dict(reg[sid], read_on="2026-11-20", read_by="a round, the page read whole")})
+    assert (read_whole["how_read"], read_whole["checked"]) == ("its content was read", "read on 20 November 2026"), read_whole
+    monkeypatch.setattr(_tl, "REGISTER", root / "docs" / "no-such-register.json")
+    gone = _dir.rows(_wh.HELP_FROM_A_PERSON)
+    assert len(gone) == len(places) and {(g["nations"], g["how_read"], g["recently_checked"], g["checked"]) for g in gone} == {
+        (None, None, False, "NOT CHECKED - the register of sources could not be read")}, gone
+    monkeypatch.setattr(_tl, "REGISTER", root / "docs" / "SOURCES.json")
+
+    #  3. the routes say each place's row, and the one page says what nothing here says
+    page = client.get("/api/v1/support/where-help-is").json()
+    assert page["regulated_and_free_help"] == today
+    assert client.get("/api/v1/law/help").json()["regulated_and_free_help"] == today
+    routed = client.post("/api/v1/law/research", json={"question": "my employer sacked me yesterday, can I sue them?"})
+    routed = routed.json()
+    assert routed["method"] == "routed to people - not answered" and routed["routed_to_people"][0]["name"] == "Acas"
+    assert sorted(routed["routed_to_people"], key=lambda r: r["link"]) == sorted(today, key=lambda r: r["link"])
+    for phrase in ("nothing is copied from any of these sites, and none of them endorses this platform",
+                   "Each place says the nations it is for and the day the page that says so was read, and how; one "
+                   "read more than ninety days ago is said as not recently checked.",
+                   "Nothing here says whether a place is open, whether it will take your question, or whether it has an "
+                   "appointment for you.", "No scholar and no religious body is named."):
+        assert phrase in page["basis"], ("the one page's basis no longer says", phrase)
+    assert "2026-10-13" not in page["basis"], "the basis still dates every place by one sentence"
+    for p in places:
+        line = f" {p['for_what'].lower()} "
+        for said in (" open ", " opening ", " appointment", " available", " accept", " will take ", " waiting "):
+            assert said not in line, ("a place's own line says something of availability or acceptance", p["name"], said)
+
+    #  4. the pages, the captured answers and the rendered tests
+    src = root / "apps" / "workstation-superapp" / "src"
+    lib = (src / "lib" / "directory.ts").read_text(encoding="utf-8")
+    for line in ("export const placeSaid = (p: Place) => (p.nations",
+                 "? `For ${listing(p.nations)}: ${p.checked}${p.how_read ? `, ${p.how_read}` : ''}.`",
+                 ": `${p.checked}.`);"):
+        assert line in lib, ("the directory's sentence is no longer this", line)
+    for rel, testid in (("components/WhereHelpIs.tsx", "where-help-legal-checked"),
+                        ("components/StatutePanel.tsx", "law-help-checked"),
+                        ("pages/domains/LawHub.tsx", "law-routed-checked")):
+        text = (src / rel).read_text(encoding="utf-8")
+        assert f'data-testid="{testid}"' in text and "lib/directory';" in text, (rel, "says no place's row")
+        assert text.count("placeSaid(") == 1, (rel, "a place's row is said more than once, or not at all")
+    fx = json.loads((src / "components" / "WhereHelpIs.fixture.json").read_text(encoding="utf-8"))
+    assert fx["page"] == page, "the support page's captured answer is not the route's own"
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2027, 1, 12))
+    assert client.get("/api/v1/support/where-help-is").json() == fx["page_stale"], "the answer ninety-one days on"
+    assert all(not p["recently_checked"] and p["checked"].startswith("NOT RECENTLY CHECKED")
+               for p in fx["page_stale"]["regulated_and_free_help"])
+    sp = json.loads((src / "components" / "StatutePanel.fixture.json").read_text(encoding="utf-8"))
+    hub = json.loads((src / "pages" / "domains" / "LawHub.fixture.json").read_text(encoding="utf-8"))
+    assert sp["help"]["body"]["regulated_and_free_help"] == hub["help"]["regulated_and_free_help"] == today
+    spec = (src / "components" / "WhereHelpIs.test.tsx").read_text(encoding="utf-8")
+    for line in ("it('a place whose page was read more than ninety days ago is said as not recently checked'",
+                 "serve({ status: 200, body: captured.page_stale });",
+                 "        `For ${listing(e.nations)}: ${e.checked}, ${e.how_read}.`);",
+                 "      stale.map(e => `For ${listing(e.nations)}: ${e.checked}, ${e.how_read}.`)));"):
+        assert line in spec, ("the support page's rendered test no longer reads this", line)
+    spec = (src / "components" / "StatutePanel.test.tsx").read_text(encoding="utf-8")
+    assert ("getByTestId('law-help-checked').textContent).toBe(\n"
+            "        `For ${listing(p.nations)}: ${p.checked}, ${p.how_read}.`);") in spec, "the statute panel's test"
+
+    #  5. the coverage row, and the row
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    assert cov["law-directory"]["today"].endswith(
+        "; each place says the nations it is for and the day the page that says so was read, and how, and is said as "
+        "not recently checked ninety days on (W1163)"), cov["law-directory"]["today"]
+    fu = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+          if r.get("closed_by") == "W1163"]
+    assert len(fu) == 1 and (fu[0]["status"], fu[0]["slot"], fu[0]["because"]) == ("done", "P5.11", "built"), fu
+
+
+def test_w1164_the_owners_ten_decisions_of_2026_11_20_are_recorded_and_the_waterlow_address_is_said_as_read():
+    """W1164 - the Owner answered the ten decisions put on 2026-11-20 with "1-10 decisions i want to go with your
+    recommendations". Held here:
+    1. the Waterlow score (FU-1033): its owner's address was opened on 2026-11-20 with its certificate checked against
+       Let's Encrypt's Root YE, for that one site only, and served a domain-parking redirect, not the owner's pages. The
+       score stays withheld and says why; the register's row says it was not read, and how it was tried; the row is
+       closed as performed and not assessable, naming each of the three instruments;
+    2. each owner-gated row the decisions cover says what was accepted, or answered, on 2026-11-20, and the audit
+       record is named, opened on the go-ahead that named it (W1175);
+    3. the plan's list of what is with the Owner says the ten were accepted, and the cycles' new end;
+    4. the local-session notes say the cycles run into December, give no end of November for them, and step 5 names
+       only rows still open, with the two ventures as answered."""
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.care import scoring as _sc
+    root = Path(__file__).resolve().parents[1]
+
+    #  1. Waterlow: withheld, its reason what the address served; the register's row; FU-1033 closed
+    w = _sc.WITHHELD_ON_TERMS["waterlow"]
+    assert (w["terms_read"], w["page"], w["says"]) == (False, None, None), w
+    for said in ("NOT been read", "answered only with a redirect on 2026-10-12", "on 2026-11-20, opened with its "
+                 "certificate checked, it served a domain-parking redirect, not the owner's pages"):
+        assert said in w["why"], ("the withheld score no longer says", said)
+    assert _sc.compute_score("waterlow", {"age": 70})["withheld"] is True
+    src = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    row = src["waterlow-terms"]
+    assert row["status"] == "named_not_read" and not row.get("page") and not row.get("read_on"), row
+    for said in ("round W1164, on 2026-11-20", "Let's Encrypt's Root YE, whose key ISRG Root X1 vouches for through "
+                 "ISRG Root X2, for this one site only", "domain-parking redirect", "the owner's content was NOT read"):
+        assert said in row["read_by"], ("the register's row no longer says how it was tried", said)
+    assert row["says"].startswith("NOT READ.") and row["says"].endswith("and the score stays withheld."), row["says"]
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    fu = reg["FU-1033"]
+    assert (fu["status"], fu["closed_by"], fu["because"]) == ("done", "W1164", "performed_not_assessable"), fu
+    for said in ("NEWS2:", "MUST:", "Waterlow:", "its terms are NOT ASSESSABLE here and it stays withheld",
+                 "Restoring it needs its rights holder's written terms."):
+        assert said in fu["close_note"], ("FU-1033's close does not say", said)
+
+    #  2. the owner-gated rows say what was accepted or answered
+    for rid, n in (("FU-1188", 1), ("FU-1288", 1), ("FU-1289", 1), ("FU-1286", 5)):
+        r = reg[rid]
+        assert r["status"] == "open" and r["owner_gated"] is True, rid
+        assert r["why"].count("RECOMMENDED (accepted 2026-11-20):") == n and "RECOMMENDED:" not in r["why"], rid
+    assert "(ledger_v14_W639_375c5ffb.json), opened only on a go-ahead that names it. DONE W1175" \
+           in reg["FU-1286"]["why"], "the audit record is not named"   # W1175
+    assert "ACCEPTED 2026-11-20 (the Owner's ten decisions, recommendation 4)" in reg["FU-1095"]["why"]
+    assert ("ANSWERED 2026-11-20: the Owner's two are Atmospheric Harvest Solutions and Aerius Energy Harvest"
+            in reg["FU-1165"]["why"]), "FU-1165 does not carry the Owner's answer"
+
+    #  3. the plan's list of what is with the Owner
+    fp = " ".join((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8").split())
+    for said in ("Recommended, and accepted on 2026-11-20: send both as drafted.",
+                 "(Ten put to the Owner on the afternoon of 2026-11-20 were accepted the same day, each as recommended:",
+                 "the 8-hour cycles run into December, until the plan's build items are closed and the final audit has "
+                 "run, 2026-12-31 at the latest;", "opened on the go-ahead that named it the same day:"):   # W1175
+        assert said in fp, ("the plan's list no longer says", said)
+
+    #  4. the local-session notes
+    notes = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    flat = " ".join(notes.split())
+    for gone in ("until 2026-11-30", "Before 2026-12-01", "From 2026-12-01"):
+        assert gone not in flat, ("the notes still end the cycles in November", gone)
+    assert ("The cloud session works in 8-hour cycles into December, until the plan's build items are closed and the "
+            "final audit has run (2026-12-31 at the latest)") in flat
+    step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
+    steps = re.findall(r"^   - (FU-\d+):", step5, re.M)
+    assert steps == ["FU-1165", "FU-1286"], steps
+    assert all(reg[s]["status"] == "open" for s in steps), steps
+    assert "register my two ventures, Atmospheric Harvest Solutions and Aerius Energy Harvest, fresh in the new books" \
+           in " ".join(step5.split()), "step 5 does not carry the Owner's answer on the two ventures"
+
+
+def test_w1165_p511_the_urgent_routes_come_before_anything_else_and_no_screen_removes_one(client, monkeypatch):
+    """P5.11 clause 4 (W1165): "a short fixed list of situations - no safe place tonight, danger from a person, a hearing
+    or deadline within days - each shows its route before anything else; a screen may add one and may never remove
+    one", driven "with the screen made to return nothing". Nothing in the tree named an urgent situation. Held here:
+    1. the three situations in their fixed order, each step a sentence of its GOV.UK page as the register records the
+       reading, each page a current row read on 2026-11-20; each place one the page names, a GOV.UK page said as one
+       and every other site said as not opened;
+    2. ninety days on each page is still said as read that day, from the ninety-first as not recently checked, and with
+       the register unreadable each source is said as not checked and none is left out;
+    3. a screen adds and never removes: nothing, None, a number, a shorter list or a route under a fixed id leave the
+       three first and unchanged; a well-formed route is added after them and said as added;
+    4. the routes: GET /api/v1/law/urgent; first on the one page of where help is and on the Law page's help; first on
+       every research answer, routed or not, and with the screen made to return nothing;
+    5. the captured answers are the routes' own; the basis says nothing of availability; the coverage rows and the
+       two rows."""
+    import datetime as _dt
+    import json
+    from pathlib import Path
+    from urllib.parse import urlparse
+    from agentic_core.api import law as _law
+    from agentic_core.api import where_help as _wh
+    from agentic_core.legal import own_case as _oc
+    from agentic_core.legal import time_limits as _tl
+    from agentic_core.legal import urgent as _urg
+    root = Path(__file__).resolve().parents[1]
+    reg = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    read = _dt.date(2026, 11, 20)
+    monkeypatch.setattr(_tl, "_today", lambda: read)
+
+    #  1. the fixed three, each step the page's own words, each place one the page names
+    assert _urg.FIXED_IDS == ("danger_from_a_person", "no_safe_place_tonight", "hearing_or_deadline_within_days")
+    three = _urg.shown()
+    assert [s["id"] for s in three] == list(_urg.FIXED_IDS) and not any(s.get("added_by_screen") for s in three)
+    for s in three:
+        rows = [reg[sid] for sid in [x["id"] for x in s["sources"]]]
+        assert rows and all(r["status"] == "current" and r["read_on"] == "2026-11-20" and "W1165" in r["read_by"]
+                            for r in rows), s["id"]
+        said = " ".join(r["says"] for r in rows)
+        pages = {r["page"] for r in rows}
+        assert set(s["nations"]) <= {n for r in rows for n in r["nation"]}, (s["id"], s["nations"])
+        for step in s["steps"]:
+            for part in step.split(" ... "):
+                assert part.strip().rstrip(".") in said, (s["id"], "a step is not in its page's words", part)
+        assert s["places"], s["id"]
+        for p in s["places"]:
+            link = p.get("link")
+            named = ((p.get("number") and p["number"] in said) or p["name"] in said
+                     or (link and (link in pages or urlparse(link).netloc in said
+                                   or urlparse(link).path.strip("/") in said)))
+            assert named, (s["id"], "a place its page does not name", p)
+            assert p["own_site"] == (_urg.GOV_UK if link and link.startswith("https://www.gov.uk/") else _urg.NOT_OPENED), p
+        assert all((x["read"], x["recently_checked"], x["checked"]) == (True, True, "read on 20 November 2026")
+                   for x in s["sources"]), s["sources"]
+    assert three[0]["steps"][0] == "If you are in immediate danger, call 999 and ask for the police."
+    assert [p["number"] for p in three[0]["places"] if p["nation"] == "England"] == ["0808 2000 247"]
+
+    #  2. the ninety days, and an unreadable register
+    monkeypatch.setattr(_tl, "_today", lambda: read + _dt.timedelta(days=90))
+    assert all(x["recently_checked"] for s in _urg.shown() for x in s["sources"])
+    monkeypatch.setattr(_tl, "_today", lambda: read + _dt.timedelta(days=91))
+    assert {x["checked"] for s in _urg.shown() for x in s["sources"]} == {
+        "NOT RECENTLY CHECKED - read on 20 November 2026, more than 90 days ago"}
+    monkeypatch.setattr(_tl, "_today", lambda: read)
+    monkeypatch.setattr(_tl, "REGISTER", root / "docs" / "no-such-register.json")
+    gone = _urg.shown()
+    assert [len(s["sources"]) for s in gone] == [len(s["sources"]) for s in three]
+    assert {(x["read"], x["checked"]) for s in gone for x in s["sources"]} == {
+        (False, "NOT CHECKED - the register of sources could not be read")}, gone
+    monkeypatch.setattr(_tl, "REGISTER", root / "docs" / "SOURCES.json")
+
+    #  3. a screen adds and never removes
+    for nothing in (None, [], 42, ["not a route"], [{"id": "danger_from_a_person", "situation": "Something else",
+                                                    "steps": ["a step of a screen's own"]}], three[:1]):
+        assert _urg.shown(nothing) == three, ("a screen's answer changed the fixed three", nothing)
+    added = {"id": "locked_out_tonight", "situation": "Your landlord has locked you out",
+             "steps": ["you cannot get into your home, for example your landlord has locked you out"],
+             "sources": ["gov-uk-homeless-help"]}
+    more = _urg.shown([added])
+    assert more[:3] == three and more[3]["id"] == "locked_out_tonight" and more[3]["added_by_screen"] is True, more[3]
+
+    #  4. the routes: the list, the one page, the Law page's help, every research answer
+    assert client.get("/api/v1/law/urgent").json() == {"routes": three, "basis": _urg.BASIS, "composed": False}
+    page = client.get("/api/v1/support/where-help-is").json()
+    assert list(page)[0] == "urgent" and page["urgent"] == three and page["urgent_basis"] == _urg.BASIS
+    law_help = client.get("/api/v1/law/help").json()
+    assert list(law_help)[0] == "urgent" and law_help["urgent"] == three
+    routed = client.post("/api/v1/law/research", json={"question": "my employer sacked me yesterday, can I sue them?"}).json()
+    assert routed["method"] == "routed to people - not answered" and list(routed)[0] == "urgent" and routed["urgent"] == three
+
+    async def _composed(prompt, agent, **kw):
+        return "an answer composed for the test", {"served_by": "test", "composed": True}
+    monkeypatch.setattr(_law, "ai_text", _composed)
+    monkeypatch.setattr(_oc, "own_case_route", lambda *a, **k: None)          # the screen made to return nothing
+    bare = client.post("/api/v1/law/research", json={"question": "my employer sacked me yesterday, can I sue them?"}).json()
+    assert bare["method"] == "IRAC" and list(bare)[0] == "urgent" and bare["urgent"] == three, list(bare)[:3]
+    monkeypatch.undo()
+    monkeypatch.setattr(_tl, "_today", lambda: read)
+    orig = _oc.own_case_route
+
+    def _adds(question, context=""):
+        r = orig(question, context)
+        return {**r, "urgent_added": [added, {"id": "no_safe_place_tonight", "situation": "x", "steps": ["y"]}]} if r else r
+    monkeypatch.setattr(_oc, "own_case_route", _adds)
+    routed = client.post("/api/v1/law/research", json={"question": "my employer sacked me yesterday, can I sue them?"}).json()
+    assert routed["urgent"][:3] == three and [s["id"] for s in routed["urgent"][3:]] == ["locked_out_tonight"], routed["urgent"]
+
+    #  5. the captured answers, the basis, the coverage rows and the rows
+    src = root / "apps" / "workstation-superapp" / "src"
+    fx = json.loads((src / "components" / "WhereHelpIs.fixture.json").read_text(encoding="utf-8"))
+    assert fx["page"]["urgent"] == three and fx["page_stale"]["urgent"] == three
+    sp = json.loads((src / "components" / "StatutePanel.fixture.json").read_text(encoding="utf-8"))
+    hub = json.loads((src / "pages" / "domains" / "LawHub.fixture.json").read_text(encoding="utf-8"))
+    assert sp["help"]["body"]["urgent"] == hub["help"]["urgent"] == three
+    for said in ("Shown before anything else, whatever was asked", "Nothing here says whether a place is open, will "
+                 "answer or has room.", "Nothing here is legal advice."):
+        assert said in _urg.BASIS, said
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    row = cov["law-urgent-routes"]
+    assert (row["state"], row["route"]) == ("route_only", "gov-uk-domestic-abuse-help") and row["route"] in reg, row
+    assert row["today"].startswith("the three situations are served first") and "(W1165)" in row["today"], row
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    done = [r for r in rows if r.get("closed_by") == "W1165"]
+    assert len(done) == 1 and (done[0]["status"], done[0]["slot"], done[0]["because"]) == ("done", "P5.11", "built"), done
+    left = [r for r in rows if r.get("title", "").startswith("The urgent routes are served first but no page shows them")]
+    #  W1166 drew the routes on the pages and closed it
+    assert len(left) == 1 and left[0]["slot"] == "P5.11", left
+
+
+def test_w1166_fu1808_the_urgent_routes_are_drawn_before_anything_else_wherever_help_is_said(client, monkeypatch):
+    """P5.11 clause 4 (W1166, FU-1808): "each shows its route before anything else". W1165 served the three urgent
+    situations first on GET /api/v1/law/urgent, the one page of where help is and every research answer; no page drew
+    them. Held here:
+    1. one component draws them: each situation, its steps, the places its page names (whether each one's own site was
+       opened) and the page with the day it was read;
+    2. the Law page reads the list and draws it before its heading, and a failed read is said in its place with the
+       line to call 999 in immediate danger; a research answer's list is drawn before its text and before the people
+       it is routed to;
+    3. the support page and the statute panel's help draw the list their answer carries before anything else;
+    4. the Law page's captured list is the route's own, and the rendered tests read each page's order and words;
+    5. the coverage row and the row."""
+    import datetime as _dt
+    import json
+    from pathlib import Path
+    from agentic_core.legal import time_limits as _tl
+    root = Path(__file__).resolve().parents[1]
+    src = root / "apps" / "workstation-superapp" / "src"
+    read = lambda rel: (src / rel).read_text(encoding="utf-8")       # noqa: E731
+
+    #  1. the one component
+    comp = read("components/UrgentRoutes.tsx")
+    for line in ("If it is urgent", 'data-testid="urgent-route"', 'data-testid="urgent-situation"',
+                 'data-testid="urgent-step"', 'data-testid="urgent-place"', 'data-testid="urgent-read"',
+                 "Read: {r.sources.map(urgentSourceSaid).join('; ')}.",
+                 "export const urgentPlaceSaid = (p: UrgentPlace) =>\n  `${p.nation}: ${p.name}${p.number ? `, ${p.number}` : ''} (${p.own_site})`;"):
+        assert line in comp, ("the component no longer draws this", line)
+
+    #  2. the Law page: its own read, first; the failed read said with the line to call 999; a research answer's list first
+    law = read("pages/domains/LawHub.tsx")
+    assert "apiJson('/api/v1/law/urgent')" in law
+    assert law.index('data-testid="law-urgent"') < law.index("      <header ") < law.index('data-testid="law-what-runs-here"')
+    assert law.index('data-testid="law-urgent-note"') < law.index("      <header ")
+    assert "The urgent routes could not be read (${readFailure(e)}). If you are in immediate danger, call 999." in law
+    assert law.index('data-testid="law-research-urgent"') < law.index('data-testid="law-routed-to-people"')
+    tool = read("components/DomainTool.tsx")
+    assert tool.index("{renderExtra && renderExtra(result)}") < tool.index("            {displayText}\n"), \
+        "a research answer's text is drawn before what its page puts first"
+
+    #  3. the support page and the statute panel's help: the list their answer carries, first
+    page = read("components/WhereHelpIs.tsx")
+    assert page.index('<div data-testid="where-help-urgent"><UrgentRoutes routes={help.urgent} basis={help.urgent_basis} /></div>') \
+        < page.index('data-testid="where-help-scholar"')
+    panel = read("components/StatutePanel.tsx")
+    assert panel.index('<div data-testid="law-help-urgent"><UrgentRoutes routes={help.urgent} /></div>') \
+        < panel.index("help.regulated_and_free_help.map(")
+    #  each box a rendered test reads by its test id carries that id in its page's own source (test_w909's rule)
+    assert 'testid?: string' not in comp and 'data-testid="urgent-routes"' in comp
+    for rel, tid in (("components/WhereHelpIs.tsx", "where-help-urgent"), ("components/StatutePanel.tsx", "law-help-urgent"),
+                     ("pages/domains/LawHub.tsx", "law-urgent"), ("pages/domains/LawHub.tsx", "law-research-urgent")):
+        assert f'data-testid="{tid}"' in read(rel), (rel, tid)
+
+    #  4. the Law page's captured list is the route's own; the rendered tests read the order and the words
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2026, 11, 20))
+    hub = json.loads(read("pages/domains/LawHub.fixture.json"))
+    assert hub["urgent"] == client.get("/api/v1/law/urgent").json(), "the Law page's captured list is not the route's"
+    for rel, lines in (
+            ("components/WhereHelpIs.test.tsx",
+             ("it('the urgent routes come before anything else, each step in the words of its page'",
+              "expect(box.compareDocumentPosition(screen.getByTestId('where-help-scholar')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();")),
+            ("components/StatutePanel.test.tsx",
+             ("const urgent = within(help).getByTestId('law-help-urgent');",)),
+            ("pages/domains/LawHub.test.tsx",
+             ("it('the urgent routes come before anything else on the page, in the route\\'s own words'",
+              "it('a list of urgent routes that could not be read is said in its place, with the line to call 999'",
+              "'/api/v1/law/urgent': ok(captured.urgent),"))):
+        spec = read(rel)
+        for line in lines:
+            assert line in spec, (rel, "the rendered test no longer reads this", line)
+
+    #  5. the coverage row and the row
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    assert cov["law-urgent-routes"]["state"] == "route_only" and cov["law-urgent-routes"]["today"].endswith(
+        "the support page, the statute panel's help and every research answer draw them before anything else (W1166)")
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    done = [r for r in rows if r.get("title", "").startswith("The urgent routes are served first but no page shows them")]
+    assert len(done) == 1 and (done[0]["status"], done[0]["closed_by"], done[0]["because"]) == ("done", "W1166", "built"), done
+
+
+def test_w1167_p511_a_subject_that_is_regulated_advice_is_its_row_and_a_route_to_an_authorised_person(client, monkeypatch):
+    """P5.11 clause 7 (W1167): "a subject that is regulated advice - immigration, a debt solution, a claim managed for
+    someone - is information and a route to an authorised person, and the row says which regulator's page was read
+    and when." Before this round the coverage register held immigration and the choice of a debt solution as excluded
+    with nothing built, debts as nothing built, a claims company had no row, and a research question on any of them
+    went to the composer like any other. Held here:
+    1. the three rows: each says who regulates it as the pages read say, quotes only sentences its register rows
+       record, names its places for each nation, says each page read with the day, and says its regulator's own page:
+       the Immigration Advice Authority's, read on 2026-11-20; the Financial Conduct Authority's, not read, its site
+       refused here; for a claims company, no regulator's page - and NOT RECENTLY CHECKED ninety days on, by the one
+       rule, and nothing said as read when the register cannot be read;
+    2. GET /api/v1/law/boundaries serves them, composed by nothing;
+    3. a research question naming one is answered by its row and the places a person can go, after the urgent routes,
+       with no model and no floor asked; one about one's own case that names one carries the row too; one that names
+       none is composed as before and says that clears nothing;
+    4. the screen agrees with its labelled phrasings, and the one phrasing outside its coverage is its stated limit;
+    5. the Law page draws the row in a research answer after the urgent routes and before the people, its captured
+       answer is the route's own, and the rendered test reads it;
+    6. the register rows, the coverage rows and the row."""
+    import datetime as _dt
+    import importlib.util as _ilu
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.ai import gateway as _gw
+    from agentic_core.api.where_help import HELP_FROM_A_PERSON
+    from agentic_core.legal import boundaries as _bnd
+    from agentic_core.legal import time_limits as _tl
+    from agentic_core.legal import urgent as _urg
+    root = Path(__file__).resolve().parents[1]
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2026, 11, 20))
+    reg = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    norm = lambda s: re.sub(r"\s+", " ", s)       # noqa: E731
+
+    #  1. the three rows
+    rows = {r["id"]: r for r in _bnd.rows()}
+    assert list(rows) == ["immigration", "debt_solution", "claims_management"], list(rows)
+    for b in _bnd.BOUNDARIES:
+        r = rows[b["id"]]
+        recorded = " ".join(norm(reg[s]["says"]) for s in b["sources"])
+        for w in b["words"]:
+            for piece in w.split(" ... "):
+                assert norm(piece) in recorded, (b["id"], "a quoted sentence no register row of its pages records", piece)
+        assert r["sources"] and all(s["read"] and s["read_on"] == "2026-11-20" and s["checked"] == "read on 20 November 2026"
+                                    for s in r["sources"]), r["sources"]
+        assert [p["nation"] for p in r["places"]] == [p["nation"] for p in b["places"]]
+        assert r["regulated"] and not r["regulated"].endswith("."), "the page adds the full stop"
+    imm, debt, cmc = rows["immigration"], rows["debt_solution"], rows["claims_management"]
+    assert (imm["regulator"]["name"], imm["regulator"]["read"], imm["regulator"]["why"]) == (
+        "the Immigration Advice Authority", True, None), imm["regulator"]
+    assert imm["regulator"]["page"]["id"] == "iaa-information-for-advice-seekers"
+    assert imm["regulator"]["page"]["checked"] == "read on 20 November 2026"
+    assert reg["iaa-information-for-advice-seekers"]["kind"] == "regulator guidance"
+    assert (debt["regulator"]["name"], debt["regulator"]["read"], debt["regulator"]["page"]) == (
+        "the Financial Conduct Authority", False, None), debt["regulator"]
+    assert "refused by this environment's network" in debt["regulator"]["why"]
+    assert (cmc["regulator"]["name"], cmc["regulator"]["read"], cmc["regulator"]["page"]) == (None, False, None)
+    assert "were not read whole" in cmc["regulator"]["why"] and "www.fca.org.uk" in cmc["regulator"]["why"]
+    assert cmc["regulated"].startswith("No page read here says who regulates a claims company today")
+    assert "June 2014" in cmc["regulated"] and cmc["places"] == []
+    assert [p["nation"] for p in imm["places"]] == ["UK", "England and Wales", "Scotland", "Northern Ireland"]
+    assert [p["nation"] for p in debt["places"]] == ["England and Wales", "Scotland"]
+    assert all(p["own_site"] == _urg.NOT_OPENED for p in imm["places"] + debt["places"])
+    #    ninety days on, a page read is said as not recently checked, by the one rule the time limits use
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2027, 3, 1))
+    late = _bnd.row(_bnd.BOUNDARIES[0])
+    assert late["regulator"]["read"] is True and late["regulator"]["page"]["checked"].startswith("NOT RECENTLY CHECKED")
+    assert all(s["checked"].startswith("NOT RECENTLY CHECKED") for s in late["sources"])
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2026, 11, 20))
+    #    a register that cannot be read: nothing is said as read, the regulator's page least of all
+    _real_register = _tl._register
+    monkeypatch.setattr(_tl, "_register", lambda: None)
+    unread = _bnd.row(_bnd.BOUNDARIES[0])
+    monkeypatch.setattr(_tl, "_register", _real_register)
+    assert unread["regulator"]["read"] is False and unread["regulator"]["why"].startswith("NOT CHECKED")
+    assert not any(s["read"] for s in unread["sources"])
+
+    #  2. the route
+    got = client.get("/api/v1/law/boundaries")
+    assert got.status_code == 200, got.text[:200]
+    assert got.json()["boundaries"] == _bnd.rows() and got.json()["composed"] is False
+    assert got.json()["basis"] == _bnd.BASIS and "Nothing here is legal advice." in _bnd.BASIS
+
+    #  3. the research route: routed before anything composes, after the urgent routes
+    asked = []
+    _real = _gw.gateway.query_meta
+
+    async def _counting(*a, **k):
+        asked.append(k.get("agent"))
+        return await _real(*a, **k)
+    monkeypatch.setattr(_gw.gateway, "query_meta", _counting)
+    a = client.post("/api/v1/law/research", json={"question": "How do I apply for indefinite leave to remain?"}).json()
+    assert a["method"] == "routed to an authorised person - not answered" and not asked, (a.get("method"), asked)
+    assert list(a)[0] == "urgent" and a["urgent"] == _urg.shown(), list(a)[:2]
+    assert a["boundary"] == imm and a["boundary_screen"]["recognised"] is True
+    assert a["own_case_screen"]["recognised"] is False and "not a clearance" in a["own_case_screen"]["basis"]
+    assert a["analysis"] == _bnd.message(_bnd.BOUNDARIES[0]) and "so it is not answered here" in a["analysis"]
+    assert a["analysis"].endswith("Nothing here is legal advice.")
+    assert [p["name"] for p in a["routed_to_people"]] == [h["name"] for h in HELP_FROM_A_PERSON]
+    assert (a["ai_provenance"]["served_by"], a["ai_provenance"]["composed"], a["ai_provenance"]["routed_by"]) == (
+        "none", False, "boundary_screen"), a["ai_provenance"]
+    for question, bid in (("should I get an IVA or go bankrupt?", "debt_solution"),
+                          ("should I use a claims company for my flight delay?", "claims_management")):
+        x = client.post("/api/v1/law/research", json={"question": question}).json()
+        assert (x["method"], x["boundary"]["id"]) == ("routed to an authorised person - not answered", bid), question
+    #    ...the subject named in the area of law reaches the screen as well as the question
+    x = client.post("/api/v1/law/research", json={"question": "what are the steps?", "area_of_law": "immigration"}).json()
+    assert x["boundary"]["id"] == "immigration", x.get("method")
+    #    ...one about one's own case that names one: routed to people, with the row
+    own = client.post("/api/v1/law/research", json={"question": "I am being deported, should I appeal in court?"}).json()
+    assert own["method"] == "routed to people - not answered" and own["boundary"] == imm, own.get("method")
+    assert not asked, asked
+    #    ...one that names none: composed as before, and that clears nothing
+    g = client.post("/api/v1/law/research", json={"question": "explain the elements of negligence"}).json()
+    assert g["method"] == "IRAC" and asked and "boundary" not in g, (g.get("method"), asked)
+    assert g["boundary_screen"]["recognised"] is False and "not a clearance" in g["boundary_screen"]["basis"]
+
+    #  4. the screen and its labelled phrasings (the method of scripts/screen_phrasings.py)
+    spec = _ilu.spec_from_file_location("_sp1167", root / "scripts" / "screen_phrasings.py")
+    sp = _ilu.module_from_spec(spec)
+    spec.loader.exec_module(sp)
+    assert len(sp.BOUNDARY) >= 24 and sum(1 for _t, lab in sp.BOUNDARY if lab == "for") >= 16, len(sp.BOUNDARY)
+    limit = {"can I bring my parents to live with me in the UK?"}   # names no word the screen reads: its stated limit
+    wrong = [(lab, t) for t, lab in sp.BOUNDARY if (_bnd.recognises(t) is not None) != (lab == "for") and t not in limit]
+    assert not wrong, ("the screen and its labelled list disagree", wrong)
+    assert all(_bnd.recognises(t) is None for t in limit) and "however regulated its subject" in _bnd.COVERAGE
+    assert _bnd.recognises("can my wife join me on a spouse visa?")["id"] == "immigration"
+    assert _bnd.recognises("can I get a debt relief order?")["id"] == "debt_solution"
+    assert _bnd.recognises("a claims management company wants 30% of my PPI refund")["id"] == "claims_management"
+    assert _bnd.recognises("can I use my Visa card abroad without fees?") is None
+    drv = (root / "scripts" / "screen_phrasings.py").read_text(encoding="utf-8")
+    assert 'results.append(_table("legal.boundaries", BOUNDARY, lambda t: _boundaries.recognises(t) is not None))' in drv
+
+    #  5. the Law page
+    src = root / "apps" / "workstation-superapp" / "src"
+    read = lambda rel: (src / rel).read_text(encoding="utf-8")       # noqa: E731
+    comp = read("components/RegulatedBoundary.tsx")
+    for line in ('data-testid="regulated-boundary"', 'data-testid="boundary-subject"', 'data-testid="boundary-words"',
+                 'data-testid="boundary-place"', 'data-testid="boundary-read"', 'data-testid="boundary-regulator"',
+                 "{b.subject}: regulated advice, not answered here", "Read: {b.sources.map(urgentSourceSaid).join('; ')}.",
+                 "`Regulator: ${r.name}. Its own page was read: ${urgentSourceSaid(r.page)}.`",
+                 "`Regulator: ${r.name}. Its own page was not read: ${r.why}.`",
+                 "`No regulator's page was read: ${r.why}.`"):
+        assert line in comp, ("the component no longer draws this", line)
+    law = read("pages/domains/LawHub.tsx")
+    assert '<div data-testid="law-research-boundary"><RegulatedBoundary b={r.boundary} /></div>' in law
+    assert (law.index('data-testid="law-research-urgent"') < law.index('data-testid="law-research-boundary"')
+            < law.index('data-testid="law-routed-to-people"')), "a research answer draws the row out of its place"
+    hub = json.loads(read("pages/domains/LawHub.fixture.json"))
+    cap = hub["research_boundary"]
+    live = client.post("/api/v1/law/research", json={"question": cap["question"]}).json()
+    keep = lambda d: {k: v for k, v in d.items() if k not in ("research_id", "generated_at")}   # noqa: E731
+    assert keep(cap) == keep(live), "the Law page's captured answer is not the route's"
+    spec_t = read("pages/domains/LawHub.test.tsx")
+    for line in ("it('a question on a regulated subject is answered by its row and a route, after the urgent routes'",
+                 "const post = vi.spyOn(axios, 'post').mockResolvedValue({ data: a } as never);",
+                 "const box = await screen.findByTestId('law-research-boundary');",
+                 "[`Regulator: ${b.regulator.name}. Its own page was read: ${b.regulator.page.name}, ${b.regulator.page.checked}.`]",
+                 "expect(screen.getByTestId('law-research-urgent').compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();",
+                 "    vi.restoreAllMocks();\n"):
+        assert line in spec_t, ("the rendered test no longer reads this", line)
+
+    #  6. the register rows, the coverage rows and the row
+    for sid in ("gov-uk-find-immigration-adviser", "iaa-information-for-advice-seekers",
+                "gov-uk-options-for-dealing-with-debts", "gov-uk-claim-compensation-cmc"):
+        r = reg[sid]
+        assert (r["status"], r["read_on"], r["used_by"]) == ("current", "2026-11-20", ["agentic_core/legal/boundaries.py"]), sid
+        assert r["page"].startswith("https://www.gov.uk/") and "round W1167" in r["read_by"] and r["not_read"], sid
+    old = reg["gov-uk-claim-compensation-cmc"]["says"]
+    assert "first published 16 June 2014 and holds no later change" in old and "were not read whole" in old
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    for cid, route in (("law-immigration", "gov-uk-find-immigration-adviser"),
+                       ("law-debt-solutions", "gov-uk-options-for-dealing-with-debts"),
+                       ("law-debt", "gov-uk-options-for-dealing-with-debts"),
+                       ("law-claims-management", "gov-uk-claim-compensation-cmc")):
+        c = cov[cid]
+        assert (c["state"], c["route"]) == ("route_only", route) and route in reg and c["today"].endswith("(W1167)"), c
+        assert "excluded_by" not in c, c
+    for cid in ("law-immigration", "law-debt-solutions"):
+        assert cov[cid]["ruling"].startswith("Owner ruling 2026-10-12 (advice, 3)"), cov[cid]
+    fu = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+          if r.get("title", "").startswith("A question on a subject that is regulated advice")]
+    assert len(fu) == 1 and (fu[0]["status"], fu[0]["slot"], fu[0]["because"]) == ("done", "P5.11", "built"), fu
+
+
+def test_w1167b_the_urgent_box_says_an_answer_without_its_routes_and_the_support_pages_capture_is_the_routes(client, monkeypatch):
+    """W1167b: PR #463's frontend job (its whole vitest run) went red on W1166 and W1167. Support.test.tsx mounts the
+    support page against Support.fixture.json, whose help answer W995 captured before W1165 served the urgent routes on
+    the one page of where help is. W1165 refreshed the three other captured help answers, and nothing held this one to
+    the route. The box W1166 drew mapped the list it was not given and took the whole page down: four of the page's
+    rendered tests found an empty body. The rounds' own rendered checks ran chosen files, none of them this one.
+    Held here:
+    1. the box says an answer that carries no urgent routes, or an empty list of them, in the list's place with the line
+       to call 999, and maps no list it was not given;
+    2. the support page's captured help answer is the route's own, as the one page's is;
+    3. the one page's rendered test drives an answer with no list and one with an empty list, and the support page's
+       says where its help answer comes from;
+    4. the row."""
+    import datetime as _dt
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.legal import time_limits as _tl
+    root = Path(__file__).resolve().parents[1]
+    src = root / "apps" / "workstation-superapp" / "src"
+    read = lambda rel: (src / rel).read_text(encoding="utf-8")       # noqa: E731
+    said = "This answer carried no urgent routes. If you are in immediate danger, call 999."
+
+    #  1. the box
+    comp = read("components/UrgentRoutes.tsx")
+    assert f"export const URGENT_MISSING = '{said}';" in comp
+    assert "routes?: UrgentRoute[] | null" in comp, "the box still says every caller hands it a list"
+    assert "{Array.isArray(routes) && routes.length > 0 ? routes.map(r => (" in comp
+    assert ')) : <p data-testid="urgent-missing" className="text-xs font-bold text-rose-300">{URGENT_MISSING}</p>}' in comp
+    assert len(re.findall(r"\broutes\.map\(", comp)) == 1, "the list is mapped somewhere its check does not cover"
+
+    #  2. the support page's captured help answer is the route's own
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2026, 11, 20))
+    page = client.get("/api/v1/support/where-help-is").json()
+    sup = json.loads(read("pages/support/Support.fixture.json"))
+    one = json.loads(read("components/WhereHelpIs.fixture.json"))
+    assert sup["help"] == page == one["page"], "the support page's captured help answer is not the route's own"
+    assert sup["help"]["urgent"] and [r["id"] for r in sup["help"]["urgent"]] == [r["id"] for r in page["urgent"]]
+
+    #  3. the rendered tests
+    spec = read("components/WhereHelpIs.test.tsx")
+    for line in ("it('an answer that carries no urgent routes says so in their place, and the rest of the page is drawn'",
+                 "serve({ status: 200, body: { ...captured.page, urgent: undefined } });",
+                 "it('an empty list of urgent routes is said the same way, never drawn as if there were no route'",
+                 "serve({ status: 200, body: { ...captured.page, urgent: [] } });",
+                 "expect(screen.queryAllByTestId('urgent-route')).toHaveLength(0);"):
+        assert line in spec, ("the one page's rendered test no longer reads this", line)
+    assert spec.count(f"      '{said}'));") == 2, "the rendered test no longer reads the box's own sentence"
+    sup_spec = read("pages/support/Support.test.tsx")
+    assert "'/api/v1/support/where-help-is': captured.help," in sup_spec
+    assert "// Its help answer is the one page's capture (components/WhereHelpIs.fixture.json)" in sup_spec
+
+    #  4. the row
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    fu = [r for r in rows if r.get("title", "").startswith("The urgent box took the support page down")]
+    assert len(fu) == 1 and (fu[0]["status"], fu[0]["closed_by"], fu[0]["because"]) == ("done", "W1167b", "built"), fu
+
+
+def test_w1168_p511_what_to_gather_is_a_list_in_the_words_of_its_page_with_its_source(client, monkeypatch):
+    """P5.11 clause 8 (W1168): "what to gather for a subject is a list with its source, not prose." Before this round no
+    list of what to gather was held anywhere: a person asking what to bring to a tribunal claim or a court claim was
+    given prose a model or the floor composed, or nothing. Held here:
+    1. the two lists: every item, and every line that leads a group, is recorded in its page's row of the register of
+       sources, which says the page was read on 2026-11-20; each list says its nations (the tribunal list says Northern
+       Ireland has its own way to claim), and each page is said as read with the day, NOT RECENTLY CHECKED ninety days
+       on, and as not checked when the register cannot be read;
+    2. GET /api/v1/law/checklists serves them, composed by nothing, and says what a list does not say;
+    3. the Law page draws them after the time-limit tool, the panel says a failed read in its place and a list of none
+       as none, and the rendered tests read the route's own answer;
+    4. the register rows, the coverage rows and the row."""
+    import datetime as _dt
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.legal import checklists as _cl
+    from agentic_core.legal import time_limits as _tl
+    root = Path(__file__).resolve().parents[1]
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2026, 11, 20))
+    reg = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    norm = lambda s: re.sub(r"\s+", " ", s)       # noqa: E731
+
+    #  1. the lists
+    rows = {r["id"]: r for r in _cl.rows()}
+    assert list(rows) == ["employment_tribunal_claim", "court_claim_for_money"], list(rows)
+    for c in _cl.CHECKLISTS:
+        r = rows[c["id"]]
+        recorded = " ".join(norm(reg[s]["says"]) for s in c["sources"])
+        for g in c["groups"]:
+            for line in ([g["lead"]] if g["lead"] else []) + list(g["items"]):
+                assert norm(line) in recorded, (c["id"], "an item no register row of its page records", line)
+        assert r["sources"] and all(s["read"] and s["checked"] == "read on 20 November 2026" for s in r["sources"]), r["sources"]
+        assert r["groups"] and all(g["items"] and g["part"] for g in r["groups"])
+    et, money = rows["employment_tribunal_claim"], rows["court_claim_for_money"]
+    assert et["nations"] == ["England", "Wales", "Scotland"] and "Northern Ireland" in et["elsewhere"]
+    assert money["nations"] == ["England", "Wales"] and money["elsewhere"] is None
+    assert [len(g["items"]) for g in et["groups"]] == [3, 4, 1] and [len(g["items"]) for g in money["groups"]] == [1, 2]
+    assert et["groups"][0]["items"][2] == "your Acas early conciliation certificate number"
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2027, 3, 1))
+    assert all(s["checked"].startswith("NOT RECENTLY CHECKED") for s in _cl.row(_cl.CHECKLISTS[0])["sources"])
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2026, 11, 20))
+    _real_register = _tl._register
+    monkeypatch.setattr(_tl, "_register", lambda: None)
+    unread = _cl.row(_cl.CHECKLISTS[1])
+    monkeypatch.setattr(_tl, "_register", _real_register)
+    assert not any(s["read"] for s in unread["sources"]) and unread["sources"][0]["checked"].startswith("NOT CHECKED")
+
+    #  2. the route
+    got = client.get("/api/v1/law/checklists")
+    assert got.status_code == 200 and got.json()["composed"] is False, got.text[:200]
+    assert got.json()["checklists"] == _cl.rows() and got.json()["basis"] == _cl.BASIS
+    assert "says nothing about whether a claim will succeed" in _cl.BASIS and _cl.BASIS.endswith("Nothing here is legal advice.")
+
+    #  3. the Law page
+    src = root / "apps" / "workstation-superapp" / "src"
+    read = lambda rel: (src / rel).read_text(encoding="utf-8")       # noqa: E731
+    panel = read("components/ChecklistsPanel.tsx")
+    for line in ("apiJson('/api/v1/law/checklists')", "`What to gather could not be read (${readFailure(e)}).`",
+                 'data-testid="law-checklists"', 'data-testid="checklist-item"', 'data-testid="checklist-read"',
+                 "Read: {c.sources.map(urgentSourceSaid).join('; ')}.", "The server lists no subject."):
+        assert line in panel, ("the panel no longer draws this", line)
+    law = read("pages/domains/LawHub.tsx")
+    assert law.index("        <TimeLimitPanel />\n") < law.index("        <ChecklistsPanel />\n")
+    assert json.loads(read("components/ChecklistsPanel.fixture.json"))["checklists"] == got.json(), \
+        "the panel's captured answer is not the route's"
+    assert json.loads(read("pages/domains/LawHub.fixture.json"))["checklists"] == got.json(), \
+        "the Law page's captured answer is not the route's"
+    spec = read("components/ChecklistsPanel.test.tsx")
+    for line in ("import ChecklistsPanel from './ChecklistsPanel';",
+                 "it('lists that could not be read are said in their place, never as none'",
+                 "expect(texts(box, 'checklist-item')).toEqual(lists.flatMap(c => c.groups.flatMap(g => g.items)));",
+                 "expect(texts(box, 'checklist-nations')).toEqual(['For England, Wales and Scotland.', 'For England and Wales.']);"):
+        assert line in spec, ("the rendered test no longer reads this", line)
+    assert "'/api/v1/law/checklists': ok(captured.checklists),   // W1168" in read("pages/domains/LawHub.test.tsx")
+
+    #  4. the register rows, the coverage rows and the row
+    et_row, money_row = reg["gov-uk-employment-tribunals-guide"], reg["gov-uk-make-court-claim-for-money"]
+    assert "agentic_core/legal/checklists.py" in et_row["used_by"] and "Round W1168 read the record again" in et_row["says"]
+    assert (money_row["status"], money_row["read_on"], money_row["used_by"]) == (
+        "current", "2026-11-20", ["agentic_core/legal/checklists.py"]), money_row
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    for cid, route in (("law-tribunal-claim-gather", "gov-uk-employment-tribunals-guide"),
+                       ("law-money-claim-gather", "gov-uk-make-court-claim-for-money")):
+        assert (cov[cid]["state"], cov[cid]["route"]) == ("route_only", route) and cov[cid]["today"].endswith("(W1168)"), cov[cid]
+    fu = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+          if r.get("title", "").startswith("No list of what to gather was held")]
+    assert len(fu) == 1 and (fu[0]["status"], fu[0]["slot"], fu[0]["because"]) == ("done", "P5.11", "built"), fu
+
+
+def test_w1169_p511_the_law_forms_keep_nothing_typed_in_the_browser_before_sign_in():
+    """P5.11 clause 9 (W1169): "A PERSON'S OWN MATTER - saved facts, documents, dates - waits for authentication; until
+    then nothing a person types into the advice surface is stored." On the server this held since W952 (FU-1189), by
+    the Owner's rulings of 2026-10-12. In the browser it did not: every Law form saved the first 400 characters of what
+    was typed, and the answer, to My Work, signed in or not, and offered to hand both to the Genesis journey. Held here:
+    1. the form tool asks before each save and before the hand-off, and on the advice surface keeps nothing before
+       sign-in, saying so before the form;
+    2. the rendered tests drive a Law form signed out and signed in, and a form off the advice surface;
+    3. the coverage row and the rows: this round's, and the Education and Care forms' own."""
+    import json
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    src = root / "apps" / "workstation-superapp" / "src"
+    tool = (src / "components/DomainTool.tsx").read_text(encoding="utf-8")
+    hist = (src / "lib/outputHistory.ts").read_text(encoding="utf-8")
+
+    #  1. the form tool
+    assert "export const isSignedIn = (): boolean => signedIn();" in hist
+    assert "export const ADVICE_SURFACE = '/api/v1/law/';" in tool
+    #  W1171 - the rule covers the Education and Care forms too
+    assert "export const keepsNothing = (endpoint: string) =>\n  OWN_MATTER_SURFACES.some(s => endpoint.startsWith(s)) && !isSignedIn();" in tool
+    saves = [m.start() for m in re.finditer(r"saveOutput\(", tool)]
+    assert len(saves) == 2, ("the form tool saves in a place this guard does not know", len(saves))
+    for i in saves:
+        assert "keepsNothing(endpoint)" in tool[max(0, i - 400):i], ("a save that does not ask first", tool[i - 200:i + 40])
+    g = tool.index("sessionStorage.setItem(`ws_genesis_")
+    assert "!keepsNothing(endpoint) && (" in tool[max(0, g - 1500):g], "the hand-off to the Genesis journey does not ask first"
+    assert (tool.index("<ReviewOptions endpoint={endpoint} />") < tool.index('data-testid="tool-keeps-nothing"')
+            < tool.index("{fields.map(f => (")), "the sentence is not said before the form"
+    assert "a person\\'s own '\n  + 'matter is kept only for someone signed in." in tool
+
+    #  2. the rendered tests
+    spec = (src / "components/DomainTool.test.tsx").read_text(encoding="utf-8")
+    for line in ("it('a Law form, signed out: the sentence is said before the form, and nothing typed and no answer is kept'",
+                 "it('a Law form, signed in: the work is kept, as before'",
+                 "it('a form off the advice surface keeps its work, as before'",
+                 "expect(kept()).not.toContain('w1169 what the person typed');",
+                 "expect(screen.queryByRole('button', { name: /Commercialise via Genesis/ })).toBeNull();",
+                 "localStorage.setItem('workstation_token', 'w1169-a-token');"):
+        assert line in spec, ("the rendered test no longer reads this", line)
+
+    #  3. the coverage row and the rows
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    own = cov["law-own-matter"]
+    assert own["state"] == "excluded" and own["excluded_by"] and own["today"].endswith("(W1169)"), own
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    done = [r for r in rows if r.get("title", "").startswith("Every Law form kept what a person typed")]
+    assert len(done) == 1 and (done[0]["status"], done[0]["slot"], done[0]["because"]) == ("done", "P5.11", "built"), done
+    left = [r for r in rows if r.get("title", "").startswith("The Education and Care forms keep what a person typed")]
+    #  W1171 closed it
+    assert len(left) == 1 and (left[0]["status"], left[0]["closed_by"]) == ("done", "W1171"), left
+
+
+def test_w1170_p511_no_named_act_is_shown_in_a_law_answer_unless_it_resolves_against_a_held_source(client, monkeypatch):
+    """P5.11 clause 6 (W1170): "before a model is switched on no named authority is shown unless it resolves against a
+    held source." Before this round the research, analysis and drafting answers showed whatever Act their text named;
+    only the clerk resolved a name, in the drafts it assembles. Held here, with a model stood in for:
+    1. an Act the register holds as read and current is shown, with its source and the day it was read; one the
+       register holds as not read, and one nothing holds, are withheld from the text every time they appear, and the
+       answer says why and how often, and never names them - not in the text, not in the list, not anywhere in what
+       the route returns;
+    2. the analysis and the drafting routes screen their text the same way, whoever composed it;
+    3. a text that names no Act is unchanged and says so; a register that cannot be read withholds every Act the
+       corpus does not hold;
+    4. the module names no Act of its own, and the Law page draws what was shown and what was withheld;
+    5. the row."""
+    import datetime as _dt
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.api import law as _law
+    from agentic_core.legal import authorities as _au
+    from agentic_core.legal import time_limits as _tl
+    root = Path(__file__).resolve().parents[1]
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2026, 11, 20))
+    MADE_UP = "Imaginary Tenancy Remedies Act 2031"          # no register row and no corpus line names it
+    NOT_READ = "Care Act 2014"                                # the register names it and holds no reading of it
+    HELD = "Employment Rights Act 1996"                       # the register holds it, read at its publisher
+    text = (f"## Relevant Law\nThe {HELD} applies. The {MADE_UP} would also apply, and so would the {NOT_READ}.\n"
+            f"## Conclusion\nUnder the {MADE_UP} the claim may be stronger.")
+
+    async def _model(prompt, agent, **kw):                    # a model stood in for: it names three Acts
+        return text, {"served_by": "local", "is_external": False}
+    monkeypatch.setattr(_law, "ai_text", _model)
+
+    #  1. the research answer
+    a = client.post("/api/v1/law/research", json={"question": "what does the law say about a fair dismissal?"}).json()
+    assert a["method"] == "IRAC", a.get("method")
+    out, au = a["analysis"], a["authorities"]
+    assert HELD in out and MADE_UP not in out and NOT_READ not in out, out
+    assert out.count(_au.WITHHELD) == 3, out
+    assert [s["name"] for s in au["shown"]] == [HELD] and au["shown"][0]["held_as"] == HELD
+    assert au["shown"][0]["by"] == "register" and au["shown"][0]["checked"] == "read on 20 November 2026"
+    assert sorted((w["times"], w["basis"]) for w in au["withheld"]) == sorted([
+        (2, "no row of the register of sources names it, and the corpus the clerk holds does not name it"),
+        (1, "the register of sources names it and holds no reading of it at its publisher")]), au["withheld"]
+    blob = json.dumps(a)
+    assert MADE_UP not in blob and NOT_READ not in blob, "a withheld Act's name is in what the route returned"
+    assert au["basis"] == "1 of 3 Act(s) named resolve against a source this platform holds; 2 withheld from the text"
+
+    #  2. the analysis and the drafting routes
+    an = client.post("/api/v1/law/analyse", json={"document_text": "A clause on notice.", "document_type": "contract"}).json()
+    assert MADE_UP not in json.dumps(an) and HELD in an["analysis"] and an["authorities"]["withheld"], an.get("authorities")
+    dr = client.post("/api/v1/law/generate", json={"template_id": "nda", "parties": {"party_a": "Alpha Ltd"}}).json()
+    assert MADE_UP not in json.dumps(dr) and dr["authorities"]["shown"][0]["held_as"] == HELD, dr.get("authorities")
+
+    #  3. no Act; and a register that cannot be read
+    plain, none = _au.screen("Nothing here names a statute.")
+    assert plain == "Nothing here names a statute." and none == {"shown": [], "withheld": [], "basis": "no Act is named in this answer"}
+    _real = _tl._register
+    monkeypatch.setattr(_tl, "_register", lambda: None)
+    blind_out, blind = _au.screen(f"The {MADE_UP} applies.")
+    monkeypatch.setattr(_tl, "_register", _real)
+    assert MADE_UP not in blind_out and blind["withheld"][0]["basis"].startswith("the register of sources could not be read")
+
+    #  4. the module names no Act of its own; the Law page draws both lists
+    pat = re.compile(r"(?:[A-Z][A-Za-z']+ )+Act (?:19|20)\d{2}")
+    mod = (root / "agentic_core/legal/authorities.py").read_text(encoding="utf-8")
+    assert not pat.findall(mod), pat.findall(mod)
+    assert _au.ACT.pattern in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["patterns"]
+    law = (root / "apps/workstation-superapp/src/pages/domains/LawHub.tsx").read_text(encoding="utf-8")
+    for line in ('data-testid="law-research-authorities"', 'data-testid="law-research-authority"',
+                 'data-testid="law-research-authority-withheld"', "An Act withheld from the answer"):
+        assert line in law, line
+    assert law.index('data-testid="law-research-boundary"') < law.index('data-testid="law-research-authorities"') \
+        < law.index('data-testid="law-routed-to-people"')
+
+    #  5. the row
+    fu = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+          if r.get("title", "").startswith("A Law answer showed any Act its text named")]
+    assert len(fu) == 1 and (fu[0]["status"], fu[0]["slot"], fu[0]["because"]) == ("done", "P5.11", "built"), fu
+
+
+def test_w1171_p512_p513_the_education_and_care_forms_keep_nothing_typed_in_the_browser_before_sign_in():
+    """P5.12's boundary (W1171): "nothing a person types is stored before authentication"; P5.13's: "no person's care
+    record is stored before authentication." On the server both held: every Education and Care route that composes
+    names a person's own words, which W952 keeps out of the interaction log and the AI memory before sign-in. In the
+    browser they did not. W1169 made the one form tool keep nothing typed on the Law forms before sign-in and registered
+    the Education and Care forms, which still saved the first 400 characters typed, and the answer, to My Work, signed
+    in or not, and offered to hand both to the Genesis journey. Held here:
+    1. the form tool's rule covers the Law, Education and Care forms, and every save asks it first;
+    2. every form on the Education and Care pages is the form tool's on its own surface, and every composing call of
+       their routes names the person's own words;
+    3. the rendered tests drive an Education form and a Care form signed out and signed in, and a claim against an
+       answer kept nowhere;
+    4. the coverage rows and the row."""
+    import json
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    src = root / "apps" / "workstation-superapp" / "src"
+    tool = (src / "components/DomainTool.tsx").read_text(encoding="utf-8")
+
+    #  1. the form tool
+    assert "export const OWN_MATTER_SURFACES = [ADVICE_SURFACE, '/api/v1/education/', '/api/v1/care/'];" in tool
+    assert ("export const keepsNothing = (endpoint: string) =>\n  OWN_MATTER_SURFACES.some(s => endpoint.startsWith(s)) "
+            "&& !isSignedIn();") in tool
+    saves = [m.start() for m in re.finditer(r"saveOutput\(", tool)]
+    assert len(saves) == 2, ("the form tool saves in a place this guard does not know", len(saves))
+    for i in saves:
+        assert "keepsNothing(endpoint)" in tool[max(0, i - 400):i], ("a save that does not ask first", tool[i - 200:i + 40])
+
+    #  2. the pages' forms are the form tool's on their own surfaces; the routes name the person's own words
+    for rel, prefix in (("pages/domains/EducationHub.tsx", "/api/v1/education/"), ("pages/domains/CareHub.tsx", "/api/v1/care/")):
+        page = (src / rel).read_text(encoding="utf-8")
+        ends = re.findall(r'endpoint="([^"]+)"', page)
+        assert len(ends) == 4 and all(e.startswith(prefix) for e in ends), (rel, ends)
+        assert page.count("<DomainTool") == len(ends), (rel, "a form on the page that is not the form tool's")
+    for rel in ("agentic_core/api/education.py", "agentic_core/api/care.py"):
+        code = (root / rel).read_text(encoding="utf-8")
+        calls, named = code.count("await ai_text("), code.count("user_text=person_said(")
+        assert calls == named == 4, (rel, calls, named, "a composing call that names no person's words")
+
+    #  3. the rendered tests
+    spec = (src / "components/DomainTool.test.tsx").read_text(encoding="utf-8")
+    for line in ("describe('DomainTool on the Education and Care forms keeps nothing typed until a person is signed in'",
+                 "expect(OWN_MATTER_SURFACES).toEqual(['/api/v1/law/', '/api/v1/education/', '/api/v1/care/']);",
+                 "for (const endpoint of ['/api/v1/education/lesson-plan', '/api/v1/care/care-plan']) {",
+                 "expect(kept()).not.toContain('w1171 what the person typed');",
+                 "localStorage.setItem('workstation_token', 'w1171-a-token');",
+                 "it('a claim against a Care answer kept nowhere still names it by its fingerprint, never its text'",
+                 "artefact_kind: 'answer', artefact_id: EXPORTED_SHA256,"):
+        assert line in spec, ("the rendered test no longer reads this", line)
+
+    #  4. the coverage rows and the row
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    for rid in ("education-learner-record", "care-care-record"):
+        row = cov[rid]
+        assert row["state"] == "excluded" and row["excluded_by"] and row["today"].endswith("(W1171)"), row
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    done = [r for r in rows if r.get("title", "").startswith("The Education and Care forms keep what a person typed")]
+    assert len(done) == 1 and (done[0]["status"], done[0]["closed_by"], done[0]["because"]) == ("done", "W1171", "built"), done
+
+
+def test_w1172_p511_the_platform_says_what_it_is_not_and_the_law_domain_fetches_nothing_on_a_timer(client, monkeypatch):
+    """P5.11's BOUNDARY (W1172): "the platform is not a solicitor, a law firm, an advice charity, a regulator or a court
+    and says so", and "nothing fetches an outside page on a timer". Measured before this round: the one page of where
+    help is, and the Law page's help built from it, said the platform is not "a solicitor, a barrister or any regulated
+    legal services provider"; no Law answer said it is not a law firm, an advice charity, a regulator or a court. The
+    Law domain's one outside fetch, the statute reader, was asked only by two route handlers, and nothing held that.
+    Held here:
+    1. both answers say all five, and both pages draw the list their answer carries;
+    2. the four captured answers carry the route's list;
+    3. the Law modules fetch from one place, asked only by the statute and time-limit route handlers; no Law module
+       holds a timer, a loop or a task; and the heartbeat imports none of them;
+    4. the row."""
+    import ast
+    import datetime as _dt
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.api import where_help as _wh
+    from agentic_core.legal import time_limits as _tl
+    root = Path(__file__).resolve().parents[1]
+    src = root / "apps" / "workstation-superapp" / "src"
+    read = lambda rel: (src / rel).read_text(encoding="utf-8")       # noqa: E731
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2026, 11, 20))
+
+    #  1. the answers and the pages
+    one = client.get("/api/v1/support/where-help-is").json()["this_platform_is_not"]
+    law = client.get("/api/v1/law/help").json()["this_platform_is_not"]
+    assert one == law == list(_wh.THIS_PLATFORM_IS_NOT), (one, law)
+    for what in ("a solicitor", "a law firm", "an advice charity", "a regulator", "a court"):
+        assert any(re.search(rf"(?:^|\W){re.escape(what)}(?:\W|$)", s) for s in one), (what, one)
+    assert any("regulated legal services provider" in s for s in one), "test_w724's line is gone"
+    for rel in ("components/WhereHelpIs.tsx", "components/StatutePanel.tsx"):
+        assert "{help.this_platform_is_not.map(s => <li key={s}>{s}</li>)}" in read(rel), (rel, "draws no list")
+    assert ("expect(Array.from(not.querySelectorAll('li')).map(li => li.textContent)).toEqual("
+            "captured.page.this_platform_is_not);") in read("components/WhereHelpIs.test.tsx")
+    assert "for (const s of h.this_platform_is_not) expect(within(help).getByText(s)).toBeTruthy();" in read(
+        "components/StatutePanel.test.tsx")
+
+    #  2. the captured answers
+    w = json.loads(read("components/WhereHelpIs.fixture.json"))
+    sp = json.loads(read("components/StatutePanel.fixture.json"))
+    hub = json.loads(read("pages/domains/LawHub.fixture.json"))
+    sup = json.loads(read("pages/support/Support.fixture.json"))
+    for where, got in (("the one page", w["page"]), ("the one page ninety-one days on", w["page_stale"]),
+                       ("the statute panel's help", sp["help"]["body"]), ("the Law page's help", hub["help"]),
+                       ("the support page's help", sup["help"])):
+        assert got["this_platform_is_not"] == one, (where, "a captured answer carries another list")
+
+    #  3. one outside fetch, asked only by a person's request; no timer anywhere in the Law modules
+    legal = sorted((root / "agentic_core" / "legal").glob("*.py"))
+    assert len(legal) > 10, ("the Law modules were not found", len(legal))
+    fetch = re.compile(r"^\s*(?:import httpx|import urllib|from urllib|import requests|import aiohttp|from httpx)", re.M)
+    assert [p.name for p in legal if fetch.search(p.read_text(encoding="utf-8"))] == ["statute.py"]
+    for p in legal:
+        t = p.read_text(encoding="utf-8")
+        for timer in ("asyncio.sleep(", "threading.Timer", "create_task(", "call_later(", "while True"):
+            assert timer not in t, (p.name, "holds a timer, a loop or a task", timer)
+    callers = []
+    for p in (root / "agentic_core").rglob("*.py"):
+        if p == root / "agentic_core" / "legal" / "statute.py":
+            continue
+        t = p.read_text(encoding="utf-8", errors="replace")
+        if re.search(r"\b_?st(?:atute)?\.provision\(", t):
+            callers.append(p.relative_to(root).as_posix())
+    assert callers == ["agentic_core/api/law.py"], callers
+    tree = ast.parse((root / "agentic_core" / "api" / "law.py").read_text(encoding="utf-8"))
+    calls = [n for n in ast.walk(tree) if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+             and n.func.attr == "provision"]
+    routed = []
+    for f in ast.walk(tree):
+        if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef)) and any(
+                isinstance(d, ast.Call) and isinstance(d.func, ast.Attribute) and d.func.attr in ("get", "post")
+                and isinstance(d.func.value, ast.Name) and d.func.value.id == "router" for d in f.decorator_list):
+            routed += [(f.name, n.lineno) for n in ast.walk(f) if n in calls]
+    assert len(calls) == len(routed) == 2 and {r[0] for r in routed} == {"statute_provision", "time_limit"}, \
+        ("the statute reader is asked from outside its two route handlers", routed, len(calls))
+    beat = (root / "agentic_core" / "organism" / "heartbeat.py").read_text(encoding="utf-8")
+    assert "agentic_core.legal" not in beat and "from agentic_core import legal" not in beat
+
+    #  4. the row
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    fu = [r for r in rows if r.get("title", "").startswith("The Law domain never said it is not a law firm")]
+    assert len(fu) == 1 and (fu[0]["status"], fu[0]["closed_by"], fu[0]["because"]) == ("done", "W1172", "built"), fu
+
+
+def test_w1173_p511_is_done_and_its_record_names_a_guard_that_holds_each_clause():
+    """W1173: P5.11 is done. Its COMPLETION RECORD names, for each clause of the ACCEPT and each line of the BOUNDARY,
+    the guard that drives it. Held here: the record is in the item's own text, every guard it names is a test in this
+    suite, the item is marked done by W1173, and no row rides it open."""
+    import json
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    plan = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    start = plan.index(" P5.11 ✅ DONE W1173 [chartered W676 ")
+    item = plan[start:plan.index("\n P5.12 ", start)]
+    assert "      COMPLETION RECORD (W1173): each clause of the ACCEPT and each line of the BOUNDARY is held by a guard" in item
+    named = re.findall(r"\btest_[a-z0-9_]+", item.split("COMPLETION RECORD (W1173)", 1)[1])
+    assert len(set(named)) >= 22, ("the record names too few guards", len(set(named)))
+    spine = Path(__file__).read_text(encoding="utf-8")
+    missing = [n for n in sorted(set(named)) if not re.search(rf"^def {re.escape(n)}\(", spine, re.M)]
+    assert missing == [], ("the record names a guard this suite does not hold", missing)
+    for clause in ("Clause 1,", "Clause 2,", "Clause 3,", "Clause 4,", "Clauses 5 and 6,", "Clause 7:", "Clause 8:",
+                   "Clause 9,", "The BOUNDARY:"):
+        assert clause in item, ("the record says nothing of", clause)
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    riding = [r["id"] for r in rows if r.get("slot") == "P5.11" and r.get("status") == "open"]
+    assert riding == [], ("a row rides the finished item open", riding)
+
+
+def test_w1173b_the_browser_smoke_waits_for_a_routes_required_sections_before_it_judges_the_page():
+    """W1173b: PR #463's browser smoke went red on a78cbc53 on /native-ai, a page no round of the day touched. Its two
+    required sections are drawn inside the page's `{status && (` block, so they appear once its status read answers;
+    the smoke judged each page 1.2 seconds after it first painted, and under load the read answered later. Held here:
+    the smoke waits for every required section of a route, up to 20 seconds, before it reads the page, and a section
+    that never appears is still a failure; /native-ai still requires both, and the page still draws both."""
+    import json
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    smoke = (root / "scripts" / "browser_smoke.mjs").read_text(encoding="utf-8")
+    wait = smoke.index("    const needles = REQUIRED_SECTIONS[route] ?? [];\n    if (needles.length) {\n      await page.waitForFunction(")
+    read = smoke.index("    const body = await page.evaluate(() => document.body.innerText || '');\n")
+    assert wait < read, "the smoke reads the page before it has waited for its required sections"
+    assert "return ns.every((n) => t.includes(n.toLowerCase())); },\n        needles, { timeout: 20_000 }," in smoke
+    assert "        failures.push(`${route}: required section missing — ${JSON.stringify(needle)}`);" in smoke, \
+        "a required section that never appears is no longer a failure"
+    assert "  '/native-ai': ['Primitive console', 'Fabric integrity']," in smoke
+    page = (root / "apps/workstation-superapp/src/pages/developers/NativeAI.tsx").read_text(encoding="utf-8")
+    assert "Primitive console" in page and "Fabric integrity" in page and "      {status && (" in page
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    fu = [r for r in rows if r.get("title", "").startswith("The browser smoke judged each page 1.2 seconds after")]
+    assert len(fu) == 1 and (fu[0]["status"], fu[0]["closed_by"], fu[0]["because"]) == ("done", "W1173b", "built"), fu
+
+
+def test_w1174_the_owners_five_decisions_of_the_evening_of_2026_11_20_are_recorded_and_no_switch_is_on():
+    """W1174: the five recommendations the Owner accepted on the evening of 2026-11-20, recorded where the work reads
+    them (the first, seven regulator sites allowed in the environment's network, is the environment's own). Held here:
+    1. P4.3 and P4.6 are recorded as dated boundaries in the plan and in the vision's section 18, and P4.4 is marked
+       done as the boundary W1147 recorded; the three are done by W1174, and P4.1, P4.2 and P4.5 stay open with their
+       rulings: sign-in and the invited stage only on the private deployed machine, the deploy the Owner's;
+    2. no switch is on in the tree: sign-in, self-serve sign-up and outside models read off unless set, and real money
+       is False;
+    3. the solicitor's engagement and the interviews are rows for the Owner, named in the local-session notes, and the
+       plan's items name them;
+    4. the children's gate stays closed at P5.12 and P5.21."""
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.economy import owner_payments as _op
+    from agentic_core import plan_followups as pf
+    root = Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")       # noqa: E731
+    R = "OWNER RULING 2026-11-20 (evening; the recommendation accepted)"
+    plan = read("docs/FABLE_DELIVERY_PROMPT.md")
+    items = {i["slot"]: i for i in pf.plan_items(plan)}
+    blocks = pf._item_blocks(pf.delivery_plan_body(plan) or plan)
+    said = lambda slot: " ".join(blocks[slot].split())                # noqa: E731
+
+    #  1. the switches the plan completes as boundaries, and those that stay open
+    for slot in ("P4.3", "P4.4", "P4.6"):
+        assert items[slot]["done"] and items[slot]["done_by"] == "W1174", (slot, items[slot].get("done_by"))
+    for slot in ("P4.1", "P4.2", "P4.5"):
+        assert not items[slot]["done"], (slot, "a switch only the Owner's machine can take is marked done")
+    for slot in ("P4.3", "P4.6"):
+        assert f"{R}: RECORDED AS A §18 BOUNDARY, dated in the vision's section 18." in said(slot), slot
+    assert f"{R}: P4.4 is marked done as the boundary it is" in said("P4.4")
+    assert f"{R}: sign-in is switched on only on the Owner's private deployed machine" in said("P4.1")
+    assert f"{R}: the invited stage opens only on the Owner's private deployed machine" in said("P4.2")
+    assert f"{R}: the deploy is the Owner's, whenever it suits; no build waits on it." in said("P4.5")
+    vision = " ".join(read("docs/WORKSTATION_IDBO_WHOLE_VISION.md").split())
+    for what in ("outside AI models are a BOUNDARY, not a switch waiting to be flipped.",
+                 "real money is a BOUNDARY, not a switch waiting to be flipped."):
+        assert f"**Recorded W1174 (2026-11-20, the Owner's decision that evening) - {what}**" in vision, what
+
+    #  2. nothing switched on in the tree
+    auth, model = read("agentic_core/auth/core.py"), read("agentic_core/ai/native/model_resource.py")
+    assert 'os.getenv("AUTH_ENABLED", "false")' in auth and 'os.getenv("SELF_SERVE_SIGNUP_ENABLED", "false")' in auth
+    assert 'os.getenv("AI_ALLOW_EXTERNAL", "false")' in model and "AI_ALLOW_EXTERNAL=false" in read("Dockerfile")
+    assert _op.REAL_MONEY_ENABLED is False
+
+    #  3. the two rows for the Owner
+    reg = json.loads(read("docs/FOLLOWUPS.json"))["items"]
+    notes = read("docs/RESUME_ON_MY_MACHINE.md")
+    for start, slot in (("OWNER: one solicitor's engagement before anyone but you is invited", "P4.5"),
+                        ("OWNER: five to eight short interviews with teachers or tutors", "P5.7")):
+        rows = [r for r in reg if r.get("title", "").startswith(start)]
+        assert len(rows) == 1, (start, len(rows))
+        r = rows[0]
+        assert (r["status"], r["slot"], r["owner_gated"]) == ("open", "OWNER", True), r
+        assert r["source"].startswith("W1174 ") and "RECOMMENDED (accepted 2026-11-20, evening)" in r["why"], r["id"]
+        assert re.search(re.escape(r["id"]) + r"(?!\d)", notes), (r["id"], "the local notes do not name it")
+        assert f"({r['id']})" in said(slot), (r["id"], slot, "the plan's item does not name it")
+
+    #  4. the children's gate
+    assert f"{R}: the children's gate stays closed." in said("P5.12")
+    assert f"{R}: the tools are built and held, as ruled; the gate stays closed" in said("P5.21")
+
+
+def test_w1175_fu1286_the_audit_record_the_owner_named_names_no_place_on_a_machine_by_its_path():
+    """FU-1286, place 1 (W1175). Files under docs/fidelity_runs/ are opened only on a go-ahead that names them; the
+    Owner's go-ahead of 2026-11-20 named the one record W1135 left unopened ("open ledger_v14_W639_375c5ffb.json"). It
+    named the Owner's Windows home folder in 8 places and the audit's data folder on the Owner's Windows machine in 9.
+    Held here:
+    1. the record names no place on a machine by its path: no drive path is left, and no Windows home folder;
+    2. each home-folder path starts at ~ with the rest of it unchanged, each data-folder path says what kind of place it
+       was, and the record is still whole: six regions, each with its ten findings and ten verdicts;
+    3. the three records the Owner allowed to be opened (editions 14, 15 and 16) all hold to the same;
+    4. FU-1286 stays open for the places that are the Owner's machine's: its first place says it is done and each of
+       the five still carries its accepted recommendation; the plan's list of what is with the Owner and the local
+       notes say the record was edited, and neither says it still waits on a go-ahead."""
+    import json
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    runs = root / "docs" / "fidelity_runs"
+    audit = "[the audit's data folder on the Owner's Windows machine]"
+    home = re.compile(r"(?i)\b[a-z]:[\\/]+users[\\/]+[^\\/\s`'\"<>()|,;:*?]+")
+    drive = re.compile(r"\b[A-Za-z]:(?:/|\\\\)")
+
+    #  1-2. the record the Owner named
+    raw = (runs / "ledger_v14_W639_375c5ffb.json").read_text(encoding="utf-8")
+    assert not drive.search(raw) and not home.search(raw), "the record names a place on a machine by its path"
+    assert (raw.count(audit), raw.count("~/Workstation/")) == (9, 8), (raw.count(audit), raw.count("~/Workstation/"))
+    for said in ("~/Workstation/agentic_core/api/vsb.py:1376-1390, 1796, 1839",
+                 "~/Workstation/agentic_core/api/genesis.py:276-282, 885-899",
+                 "~/Workstation/agentic_core/economy/living_vsbs.py:58-75",
+                 f"{audit}/vsb_repos/vsb-1a0e91006d/README.md line 7",
+                 f"generated repo on disk {audit}/vsb_repos/vsb-7da10787dc (compliance/QUALITY.md)",
+                 f"I wrote to the audit data directory ({audit}):"):
+        assert said in raw, ("a path's rest is not as the audit wrote it", said)
+    record = json.loads(raw)
+    assert [(r["region"], len(r["findings"]), len(r["verdicts"])) for r in record] == \
+        [(f"R{i}", 10, 10) for i in range(1, 7)], "the record is not whole"
+
+    #  3. the three records the Owner allowed to be opened
+    for name in ("ledger_v14_W639_375c5ffb.json", "ledger_v15_W654_ab829862.json", "ledger_v16_W665_ca081db0.json"):
+        text = (runs / name).read_text(encoding="utf-8")
+        assert not drive.search(text) and not home.search(text), (name, "names a place on a machine by its path")
+
+    #  4. FU-1286, the plan's list and the local notes
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    row = reg["FU-1286"]
+    assert (row["status"], row["owner_gated"], row["slot"]) == ("open", True, "OWNER"), row
+    assert ("(1) One audit record under docs/fidelity_runs/ (ledger_v14_W639_375c5ffb.json), opened only on a go-ahead "
+            "that names it. DONE W1175: your go-ahead of 2026-11-20 named it;") in row["why"], "place 1 is not said done"
+    assert row["why"].count("RECOMMENDED (accepted 2026-11-20):") == 5, "a place lost its accepted recommendation"
+    plan = " ".join((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8").split())
+    notes = " ".join((root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8").split())
+    assert ("the audit record is ledger_v14_W639_375c5ffb.json, opened on the go-ahead that named it the same day: its "
+            "home-folder paths start at ~, and its paths to the audit's data folder say what kind of place it was "
+            "(W1175).") in plan, "the plan's list of what is with the Owner does not say the record was edited"
+    assert ("audit record (docs/fidelity_runs/ledger_v14_W639_375c5ffb.json) was edited in the cloud session on "
+            "2026-11-20, on your go-ahead naming it (W1175).") in notes, "the local notes do not say the record was edited"
+    for stale in ("opened once a go-ahead names it", "named no file", "not opened without your go-ahead"):
+        assert stale not in plan and stale not in notes, ("still said to wait on a go-ahead", stale)

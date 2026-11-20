@@ -9,7 +9,7 @@ import { Card, Button } from '@workstation/ui';
 import { Loader2, Sparkles, Copy, Download, Check, Rocket } from 'lucide-react';
 import { AttachDocument, appendDocBlock } from './AttachDocument';
 import { DictateButton } from './DictateButton';
-import { listOutputs, saveOutput } from '../lib/outputHistory';
+import { isSignedIn, listOutputs, saveOutput } from '../lib/outputHistory';
 import { getPrefs } from '../lib/userPrefs';
 import { ServingNow } from './ServingNow';   // W737 (FU-1020, FU-1013)
 import { ReviewOptions } from './ReviewOptions';   // W925 (P5.15 release)
@@ -123,6 +123,18 @@ const withDisclosures = (body: string, data: any): string =>
       ? `\n\n[profile: ${data.ai_provenance.profile_basis}]` : '')
   + (data?.disclaimer ? `\n\n_${data.disclaimer}_` : '');
 
+//  W1169 (P5.11 clause 9; the Owner's rulings of 2026-10-12, which W952 keeps on the server) - ON THE ADVICE SURFACE A
+//  PERSON'S OWN MATTER WAITS FOR SIGN-IN: until a person is signed in, a Law form keeps nothing they typed, and no
+//  answer composed from it, in this browser - not in My Work, and not handed to another page - and says so first
+export const ADVICE_SURFACE = '/api/v1/law/';
+//  W1171 (P5.12's and P5.13's boundaries) - the Education and Care forms are the same: nothing a person types is
+//  stored before authentication, and no person's care record is
+export const OWN_MATTER_SURFACES = [ADVICE_SURFACE, '/api/v1/education/', '/api/v1/care/'];
+export const keepsNothing = (endpoint: string) =>
+  OWN_MATTER_SURFACES.some(s => endpoint.startsWith(s)) && !isSignedIn();
+export const KEEPS_NOTHING = ('Nothing typed into this form is kept, and neither is its answer: a person\'s own '
+  + 'matter is kept only for someone signed in.');
+
 export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endpoint, fields, resultKey, submitLabel = 'Generate', renderExtra, claimable = true }) => {
   //  P3.6 clause (1) — this surface READS the translation; the fallback is the English it hardcoded
   const { t } = useT();
@@ -201,9 +213,12 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
         const text = withDisclosures(
           String(r.data?.[resultKey] ?? r.data?.deliverable ?? JSON.stringify(r.data, null, 2)),
           r.data);
-        const rec = saveOutput({ kind: 'domain-tool', title, domain: domainSeed, endpoint,
-          input: primary ? form[primary] : undefined, output: text, provenance: r.data?.ai_provenance ?? null });
-        setHistoryId(rec.id);   // W337 — refines update THIS record in place
+        //  W1169 - on the advice surface, nothing is kept before sign-in
+        if (!keepsNothing(endpoint)) {
+          const rec = saveOutput({ kind: 'domain-tool', title, domain: domainSeed, endpoint,
+            input: primary ? form[primary] : undefined, output: text, provenance: r.data?.ai_provenance ?? null });
+          setHistoryId(rec.id);   // W337 — refines update THIS record in place
+        }
       } catch { silenceIsRight('the local history of outputs is browser storage is a per-browser convenience that nothing else depends on')(); }
     } catch (e: any) {
       setError(axiosDetail(e, errorMessage(e)));   // W1042 - by what it was: the fallback guessed at a backend that was down
@@ -267,7 +282,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
       // §3A (W337) — the refined version PERSISTS: My Work previously kept only v1, so every
       // refinement evaporated on navigation despite the page's 'nothing is lost' promise.
       try {
-        if (historyId) {
+        if (historyId && !keepsNothing(endpoint)) {   // W1169 - nothing kept before sign-in on the advice surface
           const prior = listOutputs().find(x => x.id === historyId);
           saveOutput({ ...(prior ?? { kind: 'domain-tool' as const, title, domain: domainSeed, endpoint }),
             id: historyId, output: newText, provenance: r.data.ai_provenance ?? prior?.provenance ?? null,
@@ -328,6 +343,10 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
         {/* W925 (P5.15 release, the Owner's ruling of 2026-10-12) - BOTH OPTIONS, before the form: the tier of review
             this tool has reached and the option of a qualified person with when one is warranted, in the server's words */}
         <ReviewOptions endpoint={endpoint} />
+        {/* W1169 (P5.11 clause 9) - said before the form: on the advice surface nothing typed is kept before sign-in */}
+        {keepsNothing(endpoint) && (
+          <p data-testid="tool-keeps-nothing" className="text-[10px] text-slate-500 mt-1 max-w-2xl leading-relaxed">{KEEPS_NOTHING}</p>
+        )}
       </div>
 
       {fields.map(f => (
@@ -509,7 +528,8 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
           )}
 
           {/* Offering 1 -> Offering 2 (§3A): take this work end-to-end into a living VSB IDBO enterprise */}
-          {primary && (form[primary] || '').trim() && (
+          {/* W1169 - on the advice surface nothing typed is handed on before sign-in */}
+          {primary && (form[primary] || '').trim() && !keepsNothing(endpoint) && (
             <div className="pt-3 border-t border-slate-800/60 flex items-center justify-between gap-3 flex-wrap">
               <p className="text-[10px] text-slate-500 leading-relaxed max-w-sm">
                 Want to take this further? Commercialise it end-to-end into your own <span className="text-highlight font-bold">VSB IDBO enterprise</span>, run by the heartbeat levers you turn on.

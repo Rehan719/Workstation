@@ -11,6 +11,9 @@ it must be a measurement of the folder, never an Owner switch, and nothing measu
 
 Containment is decided on resolved real paths with os.path.commonpath, not on a string prefix: a sibling folder
 named `legal-matter-x` shares the prefix `legal-matter`, and a symlink inside the folder can point anywhere.
+
+W1129 (FU-1282): the folder is named ON THE MACHINE THAT HOLDS IT, by LEGAL_MATTER_FOLDER in that machine's own
+.env, and never in a committed file; no answer carries its path.
 """
 from __future__ import annotations
 
@@ -25,8 +28,13 @@ CONFIGURED_PRESENT = "configured_present"
 CONFIGURED_ABSENT = "configured_absent"
 UNSET = "unset"
 
-#  the environment wins over matter.json, so a guard can drive a scratch folder; nothing else overrides it
+#  a process names its own folder by this variable, and it wins, so a guard can drive a scratch folder: the suite,
+#  the audit backend and the sign-in check set it to a folder of no one before anything is imported
 ENV_VAR = "LEGAL_BUNDLE_DIR"
+#  W1129 (FU-1282) - THE MACHINE'S OWN FOLDER is named by this, in that machine's own .env, and never in a committed
+#  file: a committed path is a path on one person's machine, and P4.5's dry run (W1128) found it in the image and in
+#  this module's answer. It is held back from a test, audit or drive process exactly as the committed path was (W676)
+MACHINE_VAR = "LEGAL_MATTER_FOLDER"
 
 
 def _matter() -> Dict[str, Any]:
@@ -50,28 +58,31 @@ def _not_the_owners_process() -> str:
 
 
 def resolve_bundle_dir() -> Dict[str, Any]:
-    """Which folder, in which state, and why. Never creates the folder and never guesses one."""
+    """Which folder, in which state, and why. Never creates the folder and never guesses one. The path is for the
+    reader below: no basis names it, and status() does not answer with it (W1129)."""
     env = os.environ.get(ENV_VAR, "").strip()
-    #  W676 - THE FLOOR. A test, audit or drive process is never handed the folder the committed file names:
+    #  W676 - THE FLOOR. A test, audit or drive process is never handed the folder this machine names:
     #  what such a process reads ends up in a test log or an agent's transcript, and nothing about the matter
-    #  leaves this machine. Such a process reads a folder only when the variable names one.
+    #  leaves this machine. Such a process reads a folder only when ENV_VAR names one.
     held_back = not env and _not_the_owners_process()
-    named = env or ("" if held_back else str(_matter().get("bundle_dir") or "").strip())
-    source = (f"the {ENV_VAR} environment variable" if env else "agentic_core/legal/matter.json")
+    named = env or ("" if held_back else os.environ.get(MACHINE_VAR, "").strip())
+    source = (f"the {ENV_VAR} environment variable" if env else f"this machine's {MACHINE_VAR} setting")
     if held_back:
         return {"state": UNSET, "path": None, "source": None, "held_back": True,
                 "basis": (f"this is a test, audit or drive process ({_not_the_owners_process()}), so the folder "
-                          f"named by agentic_core/legal/matter.json is NOT opened; such a process reads a folder "
+                          f"this machine names in {MACHINE_VAR} is NOT opened; such a process reads a folder "
                           f"only when {ENV_VAR} names one")}
     if not named:
         return {"state": UNSET, "path": None, "source": None,
-                "basis": "no folder is named, so no document can be read - which is the safe default"}
+                "basis": (f"no folder is named, so no document can be read - which is the safe default. The folder "
+                          f"is named on the machine that holds it, by {MACHINE_VAR} in that machine's own .env, and "
+                          f"never in a committed file")}
     p = pathlib.Path(named)
     if not p.is_dir():
         return {"state": CONFIGURED_ABSENT, "path": named, "source": source,
-                "basis": (f"{named!r} is named by {source} but is not a folder on THIS machine, so nothing is "
-                          f"read from it. That is not an empty folder: an empty folder exists and holds nothing, "
-                          f"this one is not here at all. It is never created on the Owner's behalf")}
+                "basis": (f"the folder {source} names is not a folder on THIS machine, so nothing is read from it. "
+                          f"That is not an empty folder: an empty folder exists and holds nothing, this one is not "
+                          f"here at all. It is never created on the Owner's behalf")}
     return {"state": CONFIGURED_PRESENT, "path": os.path.realpath(str(p)), "source": source,
             "basis": f"the folder named by {source} exists on this machine"}
 
@@ -145,10 +156,12 @@ def open_document(path: str) -> Dict[str, Any]:
 
 
 def status() -> Dict[str, Any]:
-    """The surface's view: the folder's state, whether indexing may start, and the count. Never contents."""
+    """The surface's view: the folder's state, whether indexing may start, and the count. Never contents, and never
+    the folder's path (W1129, FU-1282): the page needs the state and which setting named it; the path is the
+    machine's own."""
     ms = may_start()
     r = resolve_bundle_dir()
-    return {"folder_state": r["state"], "folder": r["path"], "folder_source": r["source"],
+    return {"folder_state": r["state"], "folder_source": r["source"],
             "folder_basis": r["basis"], "bundle_indexing_may_start": ms["may_start"],
             "document_count": ms["count"], "bundle_indexing_basis": ms["basis"],
             "never": list(_matter().get("never") or [])}

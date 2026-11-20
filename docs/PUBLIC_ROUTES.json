@@ -4,7 +4,7 @@
  "what_this_does_not_say": "That a route which asks also checks the record belongs to the caller; that the pages send a token; behaviour with authentication on beyond what the guard drives.",
  "routes": [
   {"method": "GET", "path": "/", "decision": "public", "only_when": "the pages are built", "why": "the built front page; it holds no data"},
-  {"method": "GET", "path": "/{full_path:path}", "decision": "public", "only_when": "the pages are built", "why": "the built pages and their assets; every data call they make goes to a route that asks"},
+  {"method": "GET", "path": "/{full_path:page}", "decision": "public", "only_when": "the pages are built", "why": "the built pages and their assets; every data call they make goes to a route that asks"},
   {"method": "GET", "path": "/health", "decision": "public", "why": "a liveness check for the host; it reports that the process answers and nothing else"},
   {"method": "GET", "path": "/api/v1/health", "decision": "public", "why": "the same liveness check under the API prefix"},
   {"method": "POST", "path": "/api/v1/auth/token", "decision": "public", "why": "signing in is how a caller comes to have a token"},

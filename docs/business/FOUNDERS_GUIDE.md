@@ -86,8 +86,8 @@ Each gate is your switch, and this guide turns none of them. They come in the or
 ## 8. Where it can run, and what that costs
 
 - This machine: what the machine and its power already cost you. Nothing above sends anything to a paid service while the switches are off. [inference]
-- Docker on this machine (`docker-compose.yml`). The production image serves no pages and carries no law corpus or plan yet (row FU-1156). [observed]
+- Docker on this machine (`docker-compose.yml`). The production image serves the pages and carries the plan, the law corpus and the product catalogue; it was built and booted in a dry run under a 1 GiB memory cap (W1128). [observed]
 - Render, as `render.yaml` describes it. The price is on Render's own pricing page, which has not been read for this guide, so no figure is given. [deferred]
-- Google Cloud, plan item P4.5 (row FU-603). The price is on Google's own pages, which have not been read for this guide either. [deferred]
+- Google Cloud, plan item P4.5 (row FU-603), SOURCED from Google's own pages, read on 2026-11-20 and listed with the deploy steps in `docs/DEPLOYMENT.md`. Within the allowances those pages publish, the machine and its two disks, as the steps lay them out, are not charged. The machine's public IPv4 address is charged at $0.005 an hour after its first hour each month, about $3.65 a month, and the image's registry at most about $0.16 a month. Data sent out beyond 1 GB a month is charged at a rate not read. [observed]
 - No channel here is promised to cost nothing. [observed]
-- Reading each provider's own price page, with the date it was read, waits on your decision in row FU-1176: whether this guide may quote a provider's published price at all. [owner decision]
+- A provider's published price is stated here only as SOURCED, cited with its page and the date it was read, as the Owner ruled on 2026-11-19 in row FU-1176. [owner-defined, 2026-11-19]

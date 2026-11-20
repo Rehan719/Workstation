@@ -1,0 +1,760 @@
+{
+ "rules": {
+  "url": "/api/v1/law/time-limit",
+  "status": 200,
+  "body": {
+   "rules": [
+    {
+     "id": "unfair_dismissal",
+     "name": "an unfair dismissal claim to an employment tribunal",
+     "act": "Employment Rights Act 1996",
+     "section": "111",
+     "part": "section",
+     "nations": [
+      "England",
+      "Wales",
+      "Scotland"
+     ],
+     "change": {
+      "on": "2026-10-01",
+      "by": "Schedule 12 to the Employment Rights Act 2025, in force on 1 October 2026 by regulation 3 of S.I. 2026/954",
+      "earlier_limit_kept": "by regulation 4 of S.I. 2026/954 the change does not apply where the relevant date is before 1 October 2026",
+      "page": "https://www.legislation.gov.uk/uksi/2026/954/regulation/4"
+     },
+     "sources": [
+      {
+       "id": "employment-rights-act-1996",
+       "read": true,
+       "name": "Employment Rights Act 1996",
+       "page": "https://www.legislation.gov.uk/ukpga/1996/18/section/111",
+       "read_on": "2026-11-20",
+       "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: section 111 as it stands from 1 October 2026, and as it stood on 30 September 2026 (the publisher's version for that date)",
+       "recently_checked": true,
+       "checked": "read on 20 November 2026"
+      },
+      {
+       "id": "employment-rights-act-2025",
+       "read": true,
+       "name": "Employment Rights Act 2025",
+       "page": "https://www.legislation.gov.uk/ukpga/2025/36/schedule/12",
+       "read_on": "2026-11-20",
+       "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: Schedule 12 (increase in time limits for making claims), paragraphs 4(25) and 18",
+       "recently_checked": true,
+       "checked": "read on 20 November 2026"
+      },
+      {
+       "id": "si-2026-954",
+       "read": true,
+       "name": "S.I. 2026/954",
+       "page": "https://www.legislation.gov.uk/uksi/2026/954/made",
+       "read_on": "2026-11-20",
+       "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: regulations 3 and 4, and the Schedule's first table for the two complaints the rules work out",
+       "recently_checked": true,
+       "checked": "read on 20 November 2026"
+      }
+     ],
+     "event": "the effective date of termination",
+     "relevant_date": "the effective date of termination (S.I. 2026/954, the Schedule's first table)",
+     "periods": [
+      {
+       "applies_to": "a relevant date before 1 October 2026",
+       "months": 3,
+       "words": "three months beginning with the effective date of termination",
+       "read_from": "the provision as it stood on 2026-09-30"
+      },
+      {
+       "applies_to": "a relevant date on or after 1 October 2026",
+       "months": 6,
+       "words": "six months beginning with the effective date of termination",
+       "read_from": "the provision as it stands now"
+      }
+     ]
+    },
+    {
+     "id": "discrimination_at_work",
+     "name": "a discrimination claim about work to an employment tribunal",
+     "act": "Equality Act 2010",
+     "section": "123",
+     "part": "section",
+     "nations": [
+      "England",
+      "Wales",
+      "Scotland"
+     ],
+     "change": {
+      "on": "2026-10-01",
+      "by": "Schedule 12 to the Employment Rights Act 2025, in force on 1 October 2026 by regulation 3 of S.I. 2026/954",
+      "earlier_limit_kept": "by regulation 4 of S.I. 2026/954 the change does not apply where the relevant date is before 1 October 2026",
+      "page": "https://www.legislation.gov.uk/uksi/2026/954/regulation/4"
+     },
+     "sources": [
+      {
+       "id": "equality-act-2010",
+       "read": true,
+       "name": "Equality Act 2010",
+       "page": "https://www.legislation.gov.uk/ukpga/2010/15/section/123",
+       "read_on": "2026-11-20",
+       "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: section 123 as it stands from 1 October 2026, and as it stood on 30 September 2026 (the publisher's version for that date)",
+       "recently_checked": true,
+       "checked": "read on 20 November 2026"
+      },
+      {
+       "id": "employment-rights-act-2025",
+       "read": true,
+       "name": "Employment Rights Act 2025",
+       "page": "https://www.legislation.gov.uk/ukpga/2025/36/schedule/12",
+       "read_on": "2026-11-20",
+       "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: Schedule 12 (increase in time limits for making claims), paragraphs 4(25) and 18",
+       "recently_checked": true,
+       "checked": "read on 20 November 2026"
+      },
+      {
+       "id": "si-2026-954",
+       "read": true,
+       "name": "S.I. 2026/954",
+       "page": "https://www.legislation.gov.uk/uksi/2026/954/made",
+       "read_on": "2026-11-20",
+       "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: regulations 3 and 4, and the Schedule's first table for the two complaints the rules work out",
+       "recently_checked": true,
+       "checked": "read on 20 November 2026"
+      }
+     ],
+     "event": "the date of the act the complaint is about",
+     "relevant_date": "the date of the act, the end of conduct extending over a period, or the date a failure was decided on (S.I. 2026/954, the Schedule's first table)",
+     "periods": [
+      {
+       "applies_to": "a relevant date before 1 October 2026",
+       "months": 3,
+       "words": "3 months starting with the date of the act to which the complaint relates",
+       "read_from": "the provision as it stood on 2026-09-30"
+      },
+      {
+       "applies_to": "a relevant date on or after 1 October 2026",
+       "months": 6,
+       "words": "6 months starting with the date of the act to which the complaint relates",
+       "read_from": "the provision as it stands now"
+      }
+     ]
+    },
+    {
+     "id": "breach_of_contract_england_wales",
+     "name": "a breach of contract claim to an employment tribunal, in England or Wales",
+     "act": "Employment Tribunals Extension of Jurisdiction (England and Wales) Order 1994",
+     "section": "7",
+     "part": "article",
+     "nations": [
+      "England",
+      "Wales"
+     ],
+     "change": {
+      "on": "2026-10-01",
+      "by": "article 2 of the Employment Tribunals Extension of Jurisdiction (England and Wales) (Amendment) Order 2026 (S.I. 2026/759), in force on 1 October 2026 by its article 1(2)",
+      "earlier_limit_kept": "by article 3 of S.I. 2026/759 the change applies only where the effective date of termination, or with none the last day worked, is on or after 1 October 2026",
+      "page": "https://www.legislation.gov.uk/uksi/2026/759/article/3/made"
+     },
+     "sources": [
+      {
+       "id": "et-extension-of-jurisdiction-england-wales-1994",
+       "read": true,
+       "name": "Employment Tribunals Extension of Jurisdiction (England and Wales) Order 1994",
+       "page": "https://www.legislation.gov.uk/uksi/1994/1623/article/7",
+       "read_on": "2026-11-20",
+       "read_by": "round W1160, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: article 7 as it stands and as it stood on 30 September 2026, with the publisher's notes on it",
+       "recently_checked": true,
+       "checked": "read on 20 November 2026"
+      },
+      {
+       "id": "si-2026-759",
+       "read": true,
+       "name": "S.I. 2026/759",
+       "page": "https://www.legislation.gov.uk/uksi/2026/759/made",
+       "read_on": "2026-11-20",
+       "read_by": "round W1160, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: the Order whole, as made",
+       "recently_checked": true,
+       "checked": "read on 20 November 2026"
+      }
+     ],
+     "event": "the effective date of termination of the contract",
+     "relevant_date": "the effective date of termination of the contract giving rise to the claim, or with none the last day the employee worked (S.I. 2026/759, article 3)",
+     "periods": [
+      {
+       "applies_to": "a relevant date before 1 October 2026",
+       "months": 3,
+       "words": "three months beginning with the effective date of termination of the contract giving rise to the claim",
+       "read_from": "the provision as it stood on 2026-09-30"
+      },
+      {
+       "applies_to": "a relevant date on or after 1 October 2026",
+       "months": 6,
+       "words": "six months beginning with the effective date of termination of the contract giving rise to the claim",
+       "read_from": "the provision as it stands now"
+      }
+     ]
+    },
+    {
+     "id": "breach_of_contract_scotland",
+     "name": "a breach of contract claim to an employment tribunal, in Scotland",
+     "act": "Employment Tribunals Extension of Jurisdiction (Scotland) Order 1994",
+     "section": "7",
+     "part": "article",
+     "nations": [
+      "Scotland"
+     ],
+     "change": {
+      "on": "2026-11-09",
+      "by": "article 2(2) of the Employment Tribunals Extension of Jurisdiction (Amendment) (Scotland) Order 2026 (S.S.I. 2026/327), in force on 9 November 2026 by its article 1",
+      "earlier_limit_kept": "by article 3(1) of S.S.I. 2026/327 the change applies only where the effective date of termination, or with none the last day worked, is on or after 9 November 2026",
+      "page": "https://www.legislation.gov.uk/ssi/2026/327/article/3/made"
+     },
+     "sources": [
+      {
+       "id": "et-extension-of-jurisdiction-scotland-1994",
+       "read": true,
+       "name": "Employment Tribunals Extension of Jurisdiction (Scotland) Order 1994",
+       "page": "https://www.legislation.gov.uk/uksi/1994/1624/article/7",
+       "read_on": "2026-11-20",
+       "read_by": "round W1160, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: article 7 as it stands and as it stood on 8 November 2026, with the changes the publisher lists",
+       "recently_checked": true,
+       "checked": "read on 20 November 2026"
+      },
+      {
+       "id": "ssi-2026-327",
+       "read": true,
+       "name": "S.S.I. 2026/327",
+       "page": "https://www.legislation.gov.uk/ssi/2026/327/made",
+       "read_on": "2026-11-20",
+       "read_by": "round W1160, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: the Order whole, as made",
+       "recently_checked": true,
+       "checked": "read on 20 November 2026"
+      }
+     ],
+     "event": "the effective date of termination of the contract",
+     "relevant_date": "the effective date of termination of the contract giving rise to the claim, or with none the last day the employee worked (S.S.I. 2026/327, article 3)",
+     "periods": [
+      {
+       "applies_to": "a relevant date before 9 November 2026",
+       "months": 3,
+       "words": "three months beginning with the effective date of termination of the contract giving rise to the claim",
+       "read_from": "the provision as it stood on 2026-11-08"
+      },
+      {
+       "applies_to": "a relevant date on or after 9 November 2026",
+       "months": 6,
+       "words": "six months beginning with the effective date of termination of the contract giving rise to the claim",
+       "read_from": "the provision as it stands now, with the change its publisher lists as not yet written into it"
+      }
+     ]
+    }
+   ],
+   "nations": [
+    "England",
+    "Wales",
+    "Scotland",
+    "Northern Ireland"
+   ],
+   "not_listed": {
+    "id": "not_listed",
+    "name": "A claim not listed here"
+   },
+   "change": {
+    "on": "2026-10-01",
+    "by": "Schedule 12 to the Employment Rights Act 2025, in force on 1 October 2026 by regulation 3 of S.I. 2026/954",
+    "earlier_limit_kept": "by regulation 4 of S.I. 2026/954 the change does not apply where the relevant date is before 1 October 2026",
+    "page": "https://www.legislation.gov.uk/uksi/2026/954/regulation/4"
+   },
+   "arithmetic": "a period of N months beginning, or starting, with a day includes that day, so it ends at the end of the day before the same date N months later",
+   "composed": false
+  }
+ },
+ "computed": {
+  "request": {
+   "rule": "unfair_dismissal",
+   "event_date": "2026-10-03",
+   "nation": "England"
+  },
+  "status": 200,
+  "body": {
+   "rule": "unfair_dismissal",
+   "matched": true,
+   "nation": "England",
+   "name": "an unfair dismissal claim to an employment tribunal",
+   "act": "Employment Rights Act 1996",
+   "part": "section",
+   "section": "111",
+   "nations": [
+    "England",
+    "Wales",
+    "Scotland"
+   ],
+   "words": "six months beginning with the effective date of termination",
+   "months": 6,
+   "event": "the effective date of termination",
+   "event_date": "2026-10-03",
+   "relevant_date": "the effective date of termination (S.I. 2026/954, the Schedule's first table)",
+   "change": {
+    "on": "2026-10-01",
+    "by": "Schedule 12 to the Employment Rights Act 2025, in force on 1 October 2026 by regulation 3 of S.I. 2026/954",
+    "earlier_limit_kept": "by regulation 4 of S.I. 2026/954 the change does not apply where the relevant date is before 1 October 2026",
+    "page": "https://www.legislation.gov.uk/uksi/2026/954/regulation/4"
+   },
+   "either_side": [
+    {
+     "applies_to": "a relevant date before 1 October 2026",
+     "months": 3,
+     "words": "three months beginning with the effective date of termination",
+     "read_from": "the provision as it stood on 2026-09-30"
+    },
+    {
+     "applies_to": "a relevant date on or after 1 October 2026",
+     "months": 6,
+     "words": "six months beginning with the effective date of termination",
+     "read_from": "the provision as it stands now"
+    }
+   ],
+   "sources": [
+    {
+     "id": "employment-rights-act-1996",
+     "read": true,
+     "name": "Employment Rights Act 1996",
+     "page": "https://www.legislation.gov.uk/ukpga/1996/18/section/111",
+     "read_on": "2026-11-20",
+     "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: section 111 as it stands from 1 October 2026, and as it stood on 30 September 2026 (the publisher's version for that date)",
+     "recently_checked": true,
+     "checked": "read on 20 November 2026"
+    },
+    {
+     "id": "employment-rights-act-2025",
+     "read": true,
+     "name": "Employment Rights Act 2025",
+     "page": "https://www.legislation.gov.uk/ukpga/2025/36/schedule/12",
+     "read_on": "2026-11-20",
+     "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: Schedule 12 (increase in time limits for making claims), paragraphs 4(25) and 18",
+     "recently_checked": true,
+     "checked": "read on 20 November 2026"
+    },
+    {
+     "id": "si-2026-954",
+     "read": true,
+     "name": "S.I. 2026/954",
+     "page": "https://www.legislation.gov.uk/uksi/2026/954/made",
+     "read_on": "2026-11-20",
+     "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: regulations 3 and 4, and the Schedule's first table for the two complaints the rules work out",
+     "recently_checked": true,
+     "checked": "read on 20 November 2026"
+    }
+   ],
+   "does_not_account_for": "early conciliation through Acas, which must be started before this limit and can extend it, and the tribunal's narrow power to allow a later claim",
+   "route": {
+    "name": "Acas",
+    "link": "https://www.acas.org.uk/",
+    "for_what": "free advice on rights at work, and the early conciliation a tribunal claim must start with"
+   },
+   "provision_address": "https://www.legislation.gov.uk/ukpga/1996/18/section/111",
+   "version_dated": null,
+   "arithmetic": "a period of N months beginning, or starting, with a day includes that day, so it ends at the end of the day before the same date N months later",
+   "composed": false,
+   "not_advice": "Nothing here is legal advice.",
+   "last_day": "2027-04-02",
+   "computed": true,
+   "settled": true,
+   "basis": "the primary limit the Act sets, from its words as its publisher gives them for this date ('six months beginning with the effective date of termination'): 6 months beginning with 2026-10-03 end at the end of 2027-04-02. This is the limit for a relevant date on or after 1 October 2026, the relevant date being the effective date of termination. The change from 3 to 6 months is Schedule 12 to the Employment Rights Act 2025, in force on 1 October 2026 by regulation 3 of S.I. 2026/954, and by regulation 4 of S.I. 2026/954 the change does not apply where the relevant date is before 1 October 2026. For a relevant date before 1 October 2026 the limit is 3 months. It does not account for early conciliation through Acas, which must be started before this limit and can extend it, and the tribunal's narrow power to allow a later claim."
+  }
+ },
+ "words_gone": {
+  "request": {
+   "rule": "unfair_dismissal",
+   "event_date": "2026-10-03",
+   "nation": "England"
+  },
+  "status": 200,
+  "body": {
+   "rule": "unfair_dismissal",
+   "matched": true,
+   "nation": "England",
+   "name": "an unfair dismissal claim to an employment tribunal",
+   "act": "Employment Rights Act 1996",
+   "part": "section",
+   "section": "111",
+   "nations": [
+    "England",
+    "Wales",
+    "Scotland"
+   ],
+   "words": "six months beginning with the effective date of termination",
+   "months": 6,
+   "event": "the effective date of termination",
+   "event_date": "2026-10-03",
+   "relevant_date": "the effective date of termination (S.I. 2026/954, the Schedule's first table)",
+   "change": {
+    "on": "2026-10-01",
+    "by": "Schedule 12 to the Employment Rights Act 2025, in force on 1 October 2026 by regulation 3 of S.I. 2026/954",
+    "earlier_limit_kept": "by regulation 4 of S.I. 2026/954 the change does not apply where the relevant date is before 1 October 2026",
+    "page": "https://www.legislation.gov.uk/uksi/2026/954/regulation/4"
+   },
+   "either_side": [
+    {
+     "applies_to": "a relevant date before 1 October 2026",
+     "months": 3,
+     "words": "three months beginning with the effective date of termination",
+     "read_from": "the provision as it stood on 2026-09-30"
+    },
+    {
+     "applies_to": "a relevant date on or after 1 October 2026",
+     "months": 6,
+     "words": "six months beginning with the effective date of termination",
+     "read_from": "the provision as it stands now"
+    }
+   ],
+   "sources": [
+    {
+     "id": "employment-rights-act-1996",
+     "read": true,
+     "name": "Employment Rights Act 1996",
+     "page": "https://www.legislation.gov.uk/ukpga/1996/18/section/111",
+     "read_on": "2026-11-20",
+     "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: section 111 as it stands from 1 October 2026, and as it stood on 30 September 2026 (the publisher's version for that date)",
+     "recently_checked": true,
+     "checked": "read on 20 November 2026"
+    },
+    {
+     "id": "employment-rights-act-2025",
+     "read": true,
+     "name": "Employment Rights Act 2025",
+     "page": "https://www.legislation.gov.uk/ukpga/2025/36/schedule/12",
+     "read_on": "2026-11-20",
+     "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: Schedule 12 (increase in time limits for making claims), paragraphs 4(25) and 18",
+     "recently_checked": true,
+     "checked": "read on 20 November 2026"
+    },
+    {
+     "id": "si-2026-954",
+     "read": true,
+     "name": "S.I. 2026/954",
+     "page": "https://www.legislation.gov.uk/uksi/2026/954/made",
+     "read_on": "2026-11-20",
+     "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: regulations 3 and 4, and the Schedule's first table for the two complaints the rules work out",
+     "recently_checked": true,
+     "checked": "read on 20 November 2026"
+    }
+   ],
+   "does_not_account_for": "early conciliation through Acas, which must be started before this limit and can extend it, and the tribunal's narrow power to allow a later claim",
+   "route": {
+    "name": "Acas",
+    "link": "https://www.acas.org.uk/",
+    "for_what": "free advice on rights at work, and the early conciliation a tribunal claim must start with"
+   },
+   "provision_address": "https://www.legislation.gov.uk/ukpga/1996/18/section/111",
+   "version_dated": null,
+   "arithmetic": "a period of N months beginning, or starting, with a day includes that day, so it ends at the end of the day before the same date N months later",
+   "composed": false,
+   "not_advice": "Nothing here is legal advice.",
+   "last_day": null,
+   "computed": false,
+   "basis": "NOT COMPUTED - the provision as its publisher returned it for this date does not contain the words this rule was built from, so the rule may have changed. Read the provision, and ask Acas."
+  }
+ },
+ "refused": {
+  "request": {
+   "rule": "unfair_dismissal",
+   "event_date": "2026-10-03",
+   "nation": "England"
+  },
+  "status": 502,
+  "body": {
+   "detail": "No limit is computed: the provision that sets it could not be read from its publisher (the publisher could not be reached (ConnectError)), so the rule cannot be checked against its words. Ask Acas."
+  }
+ },
+ "not_listed": {
+  "request": {
+   "rule": "not_listed",
+   "event_date": "",
+   "nation": "Scotland"
+  },
+  "status": 200,
+  "body": {
+   "rule": null,
+   "matched": false,
+   "nation": "Scotland",
+   "computed": false,
+   "last_day": null,
+   "rules_for_this_nation": [
+    {
+     "id": "unfair_dismissal",
+     "name": "an unfair dismissal claim to an employment tribunal"
+    },
+    {
+     "id": "discrimination_at_work",
+     "name": "a discrimination claim about work to an employment tribunal"
+    },
+    {
+     "id": "breach_of_contract_scotland",
+     "name": "a breach of contract claim to an employment tribunal, in Scotland"
+    }
+   ],
+   "basis": "No rule here is for that claim, so no date is worked out. A time limit may still apply: ask today.",
+   "where_to_ask": {
+    "Scotland": [
+     {
+      "name": "Acas",
+      "link": "https://www.acas.org.uk/employment-tribunal-time-limits",
+      "for_what": "its guidance on employment tribunal time limits, which GOV.UK's guide names for finding the deadline for a claim",
+      "named_on": "https://www.gov.uk/employment-tribunals/check-you-can-claim",
+      "own_site": "read on 2026-11-20"
+     },
+     {
+      "name": "The Law Society of Scotland",
+      "link": "https://www.lawscot.org.uk/",
+      "for_what": "finding a solicitor",
+      "named_on": "https://www.gov.uk/employment-tribunals/get-support-legal-advice",
+      "own_site": "not opened"
+     },
+     {
+      "name": "Citizens Advice Scotland",
+      "link": "https://www.cas.org.uk/",
+      "for_what": "finding free or affordable legal advice",
+      "named_on": "https://www.gov.uk/employment-tribunals/get-support-legal-advice",
+      "own_site": "not opened"
+     }
+    ]
+   },
+   "named_on": {
+    "name": "Employment tribunals",
+    "publisher": "GOV.UK",
+    "page": "https://www.gov.uk/employment-tribunals",
+    "read_on": "2026-11-20",
+    "recently_checked": true,
+    "checked": "read on 20 November 2026",
+    "own_sites": "Acas: its own page was read on 20 November 2026. The other places' own sites were not opened: on that day each refused an automated visit from where this was built, and each is listed as the guide names it."
+   },
+   "composed": false,
+   "not_advice": "Nothing here is legal advice."
+  }
+ },
+ "not_this_nation": {
+  "request": {
+   "rule": "unfair_dismissal",
+   "event_date": "2026-10-03",
+   "nation": "Northern Ireland"
+  },
+  "status": 200,
+  "body": {
+   "rule": "unfair_dismissal",
+   "matched": false,
+   "nation": "Northern Ireland",
+   "computed": false,
+   "last_day": null,
+   "rules_for_this_nation": [],
+   "basis": "The rule here for an unfair dismissal claim to an employment tribunal is for England, Wales and Scotland, not for Northern Ireland, and no rule here is for a claim in Northern Ireland, so no date is worked out. A time limit may still apply: ask today.",
+   "where_to_ask": {
+    "Northern Ireland": [
+     {
+      "name": "Making a claim to an employment tribunal in Northern Ireland",
+      "link": "https://www.employmenttribunalsni.co.uk/how-make-claim",
+      "for_what": "how a claim is made there, which GOV.UK's guide says is a different way",
+      "named_on": "https://www.gov.uk/employment-tribunals/check-you-can-claim",
+      "own_site": "read on 2026-11-20"
+     }
+    ]
+   },
+   "named_on": {
+    "name": "Employment tribunals",
+    "publisher": "GOV.UK",
+    "page": "https://www.gov.uk/employment-tribunals",
+    "read_on": "2026-11-20",
+    "recently_checked": true,
+    "checked": "read on 20 November 2026",
+    "own_sites": "This place's own page was read on 20 November 2026."
+   },
+   "composed": false,
+   "not_advice": "Nothing here is legal advice."
+  }
+ },
+ "unsettled": {
+  "request": {
+   "rule": "unfair_dismissal",
+   "event_date": "2026-08-31",
+   "nation": "England"
+  },
+  "status": 200,
+  "body": {
+   "rule": "unfair_dismissal",
+   "matched": true,
+   "nation": "England",
+   "name": "an unfair dismissal claim to an employment tribunal",
+   "act": "Employment Rights Act 1996",
+   "part": "section",
+   "section": "111",
+   "nations": [
+    "England",
+    "Wales",
+    "Scotland"
+   ],
+   "words": "three months beginning with the effective date of termination",
+   "months": 3,
+   "event": "the effective date of termination",
+   "event_date": "2026-08-31",
+   "relevant_date": "the effective date of termination (S.I. 2026/954, the Schedule's first table)",
+   "change": {
+    "on": "2026-10-01",
+    "by": "Schedule 12 to the Employment Rights Act 2025, in force on 1 October 2026 by regulation 3 of S.I. 2026/954",
+    "earlier_limit_kept": "by regulation 4 of S.I. 2026/954 the change does not apply where the relevant date is before 1 October 2026",
+    "page": "https://www.legislation.gov.uk/uksi/2026/954/regulation/4"
+   },
+   "either_side": [
+    {
+     "applies_to": "a relevant date before 1 October 2026",
+     "months": 3,
+     "words": "three months beginning with the effective date of termination",
+     "read_from": "the provision as it stood on 2026-09-30"
+    },
+    {
+     "applies_to": "a relevant date on or after 1 October 2026",
+     "months": 6,
+     "words": "six months beginning with the effective date of termination",
+     "read_from": "the provision as it stands now"
+    }
+   ],
+   "sources": [
+    {
+     "id": "employment-rights-act-1996",
+     "read": true,
+     "name": "Employment Rights Act 1996",
+     "page": "https://www.legislation.gov.uk/ukpga/1996/18/section/111",
+     "read_on": "2026-11-20",
+     "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: section 111 as it stands from 1 October 2026, and as it stood on 30 September 2026 (the publisher's version for that date)",
+     "recently_checked": true,
+     "checked": "read on 20 November 2026"
+    },
+    {
+     "id": "employment-rights-act-2025",
+     "read": true,
+     "name": "Employment Rights Act 2025",
+     "page": "https://www.legislation.gov.uk/ukpga/2025/36/schedule/12",
+     "read_on": "2026-11-20",
+     "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: Schedule 12 (increase in time limits for making claims), paragraphs 4(25) and 18",
+     "recently_checked": true,
+     "checked": "read on 20 November 2026"
+    },
+    {
+     "id": "si-2026-954",
+     "read": true,
+     "name": "S.I. 2026/954",
+     "page": "https://www.legislation.gov.uk/uksi/2026/954/made",
+     "read_on": "2026-11-20",
+     "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: regulations 3 and 4, and the Schedule's first table for the two complaints the rules work out",
+     "recently_checked": true,
+     "checked": "read on 20 November 2026"
+    }
+   ],
+   "does_not_account_for": "early conciliation through Acas, which must be started before this limit and can extend it, and the tribunal's narrow power to allow a later claim",
+   "route": {
+    "name": "Acas",
+    "link": "https://www.acas.org.uk/",
+    "for_what": "free advice on rights at work, and the early conciliation a tribunal claim must start with"
+   },
+   "provision_address": "https://www.legislation.gov.uk/ukpga/1996/18/section/111/2026-09-30",
+   "version_dated": null,
+   "arithmetic": "a period of N months beginning, or starting, with a day includes that day, so it ends at the end of the day before the same date N months later",
+   "composed": false,
+   "not_advice": "Nothing here is legal advice.",
+   "last_day": "2026-11-29",
+   "computed": true,
+   "settled": false,
+   "basis": "the primary limit the Act sets, from its words as its publisher gives them for this date ('three months beginning with the effective date of termination'): 3 months beginning with 2026-08-31 would end at the end of the day before the same date 3 months later, but there is no 31 November 2026. The provision does not settle how such a period ends, so the earlier of the two days it could end on is shown: the end of 2026-11-29. This is the limit for a relevant date before 1 October 2026, the relevant date being the effective date of termination. The change from 3 to 6 months is Schedule 12 to the Employment Rights Act 2025, in force on 1 October 2026 by regulation 3 of S.I. 2026/954, and by regulation 4 of S.I. 2026/954 the change does not apply where the relevant date is before 1 October 2026. For a relevant date on or after 1 October 2026 the limit is 6 months. It does not account for early conciliation through Acas, which must be started before this limit and can extend it, and the tribunal's narrow power to allow a later claim."
+  }
+ },
+ "stale": {
+  "request": {
+   "rule": "unfair_dismissal",
+   "event_date": "2026-10-03",
+   "nation": "England"
+  },
+  "status": 200,
+  "body": {
+   "rule": "unfair_dismissal",
+   "matched": true,
+   "nation": "England",
+   "name": "an unfair dismissal claim to an employment tribunal",
+   "act": "Employment Rights Act 1996",
+   "part": "section",
+   "section": "111",
+   "nations": [
+    "England",
+    "Wales",
+    "Scotland"
+   ],
+   "words": "six months beginning with the effective date of termination",
+   "months": 6,
+   "event": "the effective date of termination",
+   "event_date": "2026-10-03",
+   "relevant_date": "the effective date of termination (S.I. 2026/954, the Schedule's first table)",
+   "change": {
+    "on": "2026-10-01",
+    "by": "Schedule 12 to the Employment Rights Act 2025, in force on 1 October 2026 by regulation 3 of S.I. 2026/954",
+    "earlier_limit_kept": "by regulation 4 of S.I. 2026/954 the change does not apply where the relevant date is before 1 October 2026",
+    "page": "https://www.legislation.gov.uk/uksi/2026/954/regulation/4"
+   },
+   "either_side": [
+    {
+     "applies_to": "a relevant date before 1 October 2026",
+     "months": 3,
+     "words": "three months beginning with the effective date of termination",
+     "read_from": "the provision as it stood on 2026-09-30"
+    },
+    {
+     "applies_to": "a relevant date on or after 1 October 2026",
+     "months": 6,
+     "words": "six months beginning with the effective date of termination",
+     "read_from": "the provision as it stands now"
+    }
+   ],
+   "sources": [
+    {
+     "id": "employment-rights-act-1996",
+     "read": true,
+     "name": "Employment Rights Act 1996",
+     "page": "https://www.legislation.gov.uk/ukpga/1996/18/section/111",
+     "read_on": "2026-11-20",
+     "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: section 111 as it stands from 1 October 2026, and as it stood on 30 September 2026 (the publisher's version for that date)",
+     "recently_checked": false,
+     "checked": "NOT RECENTLY CHECKED - read on 20 November 2026, more than 90 days ago"
+    },
+    {
+     "id": "employment-rights-act-2025",
+     "read": true,
+     "name": "Employment Rights Act 2025",
+     "page": "https://www.legislation.gov.uk/ukpga/2025/36/schedule/12",
+     "read_on": "2026-11-20",
+     "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: Schedule 12 (increase in time limits for making claims), paragraphs 4(25) and 18",
+     "recently_checked": false,
+     "checked": "NOT RECENTLY CHECKED - read on 20 November 2026, more than 90 days ago"
+    },
+    {
+     "id": "si-2026-954",
+     "read": true,
+     "name": "S.I. 2026/954",
+     "page": "https://www.legislation.gov.uk/uksi/2026/954/made",
+     "read_on": "2026-11-20",
+     "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: regulations 3 and 4, and the Schedule's first table for the two complaints the rules work out",
+     "recently_checked": false,
+     "checked": "NOT RECENTLY CHECKED - read on 20 November 2026, more than 90 days ago"
+    }
+   ],
+   "does_not_account_for": "early conciliation through Acas, which must be started before this limit and can extend it, and the tribunal's narrow power to allow a later claim",
+   "route": {
+    "name": "Acas",
+    "link": "https://www.acas.org.uk/",
+    "for_what": "free advice on rights at work, and the early conciliation a tribunal claim must start with"
+   },
+   "provision_address": "https://www.legislation.gov.uk/ukpga/1996/18/section/111",
+   "version_dated": null,
+   "arithmetic": "a period of N months beginning, or starting, with a day includes that day, so it ends at the end of the day before the same date N months later",
+   "composed": false,
+   "not_advice": "Nothing here is legal advice.",
+   "last_day": "2027-04-02",
+   "computed": true,
+   "settled": true,
+   "basis": "the primary limit the Act sets, from its words as its publisher gives them for this date ('six months beginning with the effective date of termination'): 6 months beginning with 2026-10-03 end at the end of 2027-04-02. This is the limit for a relevant date on or after 1 October 2026, the relevant date being the effective date of termination. The change from 3 to 6 months is Schedule 12 to the Employment Rights Act 2025, in force on 1 October 2026 by regulation 3 of S.I. 2026/954, and by regulation 4 of S.I. 2026/954 the change does not apply where the relevant date is before 1 October 2026. For a relevant date before 1 October 2026 the limit is 3 months. It does not account for early conciliation through Acas, which must be started before this limit and can extend it, and the tribunal's narrow power to allow a later claim."
+  }
+ }
+}

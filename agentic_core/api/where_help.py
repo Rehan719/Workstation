@@ -16,6 +16,9 @@ from typing import Any, Dict
 
 from fastapi import APIRouter
 
+from agentic_core.legal import directory as _dir      # W1163 (P5.11 clause 3)
+from agentic_core.legal import urgent as _urg          # W1165 (P5.11 clause 4)
+
 router = APIRouter(prefix="/api/v1/support", tags=["where-help-is"])
 
 #  where the page is, for a page elsewhere that points to it
@@ -61,8 +64,11 @@ HELP_FROM_A_PERSON = (
      "for_what": "free legal advice clinics run by volunteer solicitors"},
 )
 
+#  W1172 (P5.11's boundary) - the platform is not a solicitor, a law firm, an advice charity, a regulator or a court,
+#  and says so wherever this is read: the one page of where help is, and the Law page's help built from it
 THIS_PLATFORM_IS_NOT = (
-    "a solicitor, a barrister or any regulated legal services provider",
+    "a solicitor, a barrister, a law firm or any regulated legal services provider",
+    "an advice charity, a regulator or a court",
     "a source of legal advice: it shows published law word for word and labels what its own AI composes",
     "able to tell you whether a provision applies to your situation",
 )
@@ -78,14 +84,21 @@ TO_COMPLAIN = ("To complain about an answer, raise a claim. Under the answer of 
                "ombudsman or regulator handles complaints about it.")
 
 BASIS = ("Names and addresses only: nothing is copied from any of these sites, and none of them endorses this "
-         "platform. Each address resolved when it was opened on 2026-10-13. No scholar and no religious body is named.")
+         "platform. Each place says the nations it is for and the day the page that says so was read, and how; one "
+         "read more than ninety days ago is said as not recently checked. " + _dir.NOTHING_SAID + " No scholar and no "
+         "religious body is named.")
 
 
 def page() -> Dict[str, Any]:
     """The one page, the same wherever it is read. Nothing is composed and nothing about the reader is used."""
     return {
+        #  W1165 (P5.11 clause 4) - the urgent routes, before anything else, whatever else the page says
+        "urgent": _urg.shown(),
+        "urgent_basis": _urg.BASIS,
         "a_qualified_scholar": {**A_QUALIFIED_SCHOLAR, "steps": list(A_QUALIFIED_SCHOLAR["steps"])},
-        "regulated_and_free_help": [dict(h) for h in HELP_FROM_A_PERSON],
+        #  W1163 (P5.11 clause 3) - each place a row of the directory: its nations, the page that says so, the day that
+        #  page was read and how, and NOT RECENTLY CHECKED ninety days on
+        "regulated_and_free_help": _dir.rows(HELP_FROM_A_PERSON),
         "this_platform_is_not": list(THIS_PLATFORM_IS_NOT),
         "to_complain": TO_COMPLAIN,
         "basis": BASIS,

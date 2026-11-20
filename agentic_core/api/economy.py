@@ -2291,6 +2291,12 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str | None =
             "reserve_fund_live_wst_basis": ("the live double-entry reserve_fund balance — what the fund "
                                             "actually holds now"),
             "total_costs_wst": round(bal.get("costs", 0.0), 2),     # W475 (ledger v4 R6.1) — an expense of its own
+            #  W1124 (FU-1057) - P5.16 clause 3: the platform's fee, taken first, as one line of the entity's books
+            "total_platform_fee_wst": round(bal.get("platform_fee", 0.0), 2),
+            "total_platform_fee_wst_basis": ("the platform's fee (P5.16 clause 3): a quarter of each profitable "
+                                             "cycle's profit, taken first and posted as one line. The apex and a "
+                                             "non-distributing entity pay none, and a simulation's fee is shown on "
+                                             "its cycle and never posted, so it is in no book"),
             "total_distributed_wst": distributed,
             "distribution_by_stage": {s: round(bal.get(s, 0.0), 2) for s in stages},
         },

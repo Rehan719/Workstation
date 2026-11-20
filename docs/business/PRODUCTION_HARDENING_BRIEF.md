@@ -21,7 +21,7 @@ anything. The deploy itself is plan item P4.5, and the switch is the Owner's.
 ## 2. Reproducible deployment
 
 - `requirements.txt` is exported from the lock, and the lock is made from `pyproject.toml`, so CI and a deploy install the same versions (W906). A fresh environment built only from it ran the whole suite (W907). [observed]
-- The production image does not yet serve the pages, nor carry the law corpus or the plan: row FU-1156. The Google Cloud path has no pre-flight: row FU-603. [observed]
+- The production image serves the pages and carries the plan, the law corpus and the product catalogue. It was built from this tree and booted in a dry run under a 1 GiB memory cap (W1128, 2026-11-20; recorded in `docs/DEPLOYMENT.md`). The Google Cloud deploy is written step by step with no stored key, and its backup, restore and rollback were drilled on this machine (W1134, W1137, 2026-11-20; recorded in `docs/DEPLOYMENT.md`). Run again on an image with the logs folder on the data root, the drill found nothing written outside the data disk and `/tmp` (W1138, recorded in `docs/DEPLOYMENT.md`). HTTPS is the deploy's step 12, Caddy in front of the platform, drilled on this machine (W1140); it needs a domain, which is the Owner's to buy (row FU-1289), and the deploy itself is the Owner's. [observed]
 - Done looks like this: an image built from a clean checkout of one commit serves `GET /health` and the pages, a dry run of the deploy steps in `docs/DEPLOYMENT.md` is recorded with its output, and a second person repeats it from the document alone. [inference]
 
 ## 3. Secrets and access
@@ -32,15 +32,15 @@ anything. The deploy itself is plan item P4.5, and the switch is the Owner's.
 
 ## 4. Dependencies
 
-- Every dependency is declared once, in `pyproject.toml`, and the nineteen the Owner approved for removal are gone (W907, see `docs/DEPENDENCY_VERDICTS.md`). Three more are reached by nothing live and wait on the Owner: row FU-1174. [observed]
+- Every dependency is declared once, in `pyproject.toml`. The nineteen the Owner approved for removal are gone (W907), and so are the three more that nothing live reached, which the Owner ruled on 2026-11-19 should go (W1141), and the three database packages held for P4.4, which the Owner deferred on 2026-10-12 (W1147); `docs/DEPENDENCY_VERDICTS.md` gives each its verdict. [observed]
 - No vulnerability scan has been run on the lock. [observed]
 - Done looks like this: a scan of the lock with every finding triaged in writing (fixed, not reachable, or accepted by the Owner), repeated on each dependency change. [inference]
 
 ## 5. Backup and restore, demonstrated
 
 - Every store is a file under one data root (`agentic_core/store_paths.py`). `scripts/backup_stores.py` writes one archive of the data root with a SHA-256 manifest, checks an archive against it, and restores into an empty folder, checking every file it wrote. Its guard runs that round trip in the suite on Linux and on the Windows CI job. [observed]
-- No backup is taken on a schedule, no copy leaves the machine, and no restore onto a clean machine has been timed. [observed]
-- A database is plan item P4.4, and its migration dry-run and rollback have not been started: row FU-284. [observed]
+- The deploy takes a daily snapshot of the data disk, kept 14 days, and its restore is a step of its own (steps 5 and 9 of the Google Cloud deploy in `docs/DEPLOYMENT.md`, W1137, 2026-11-20). The restore was drilled on this machine with Docker: the records were copied whole onto a fresh volume in a timed run, every file byte-identical, and the release started on the copy read them back. No snapshot has been taken, since nothing is deployed, and the first restore from a real snapshot is the Owner's, at the deploy (row FU-1288). [observed]
+- There is no database. Managed Postgres is plan item P4.4, which the Owner deferred on 2026-10-12 and recorded as a boundary until a measured need exists: the file store with its locks is what runs, and the packages held for it were removed (W1147). No migration or rollback is built, since no switch to a database is to be taken. [observed]
 - Done looks like this: a backup taken on a schedule, a restore onto a clean machine timed and recorded, and the suite run against the restored data. A backup that has never been restored is not counted. [inference]
 
 ## 6. Monitoring and incident response
@@ -51,7 +51,7 @@ anything. The deploy itself is plan item P4.5, and the switch is the Owner's.
 ## 7. Limits
 
 - The app limits itself in four places: calls through the AI gateway (a governed rate), sign-in attempts per name and per address, external AI calls per hour, and the work budget. [observed]
-- Nothing has measured the app's memory or response times on the machine it would run on: row FU-603 asks for the peak-memory measurement. [observed]
+- The app's memory has been measured only on a round's machine, under the release machine's 1 GiB cap: 225 MiB at idle and 253 MiB after the dry run's probes (W1128, recorded in `docs/DEPLOYMENT.md`). Nothing has measured its response times, or its memory on the machine it would run on. [observed]
 - Done looks like this: a load test of stated shape against the target machine, with its peak memory, its slowest routes and the point where it refuses work, recorded with the commit it ran on. [inference]
 
 ## 8. Privacy and retention
@@ -62,7 +62,7 @@ anything. The deploy itself is plan item P4.5, and the switch is the Owner's.
 
 ## 9. Rollback and shutdown
 
-- `docs/DEPLOYMENT.md` has no rollback step and no shutdown step. [observed]
+- `docs/DEPLOYMENT.md` has a rollback step: step 8 gives the machine the previous release's tag and runs its startup script again (W1134). The rollback was drilled on this machine with Docker: the previous release, started on the current release's records, read them, and the current release, started again, read them too (W1137, 2026-11-20). No rollback has been carried out on a running deployment, since nothing is deployed, and no shutdown step is written. [observed]
 - Done looks like this: a return to the previous release carried out once on a running deployment, and a shutdown that keeps the data root carried out once, each recorded with the time it took. [inference]
 
 ## 10. Handover

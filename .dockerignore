@@ -1,17 +1,35 @@
-# Keep the production image lean + correct — ship only the live, integrated backend.
+# Keep the production image lean + correct — ship the live backend, the pages it serves and what its routes read.
+# W1128 - a comment is a line of its own: Docker reads "#" as a comment only at the start of a line, so a pattern
+# with a comment after it matched nothing (apps/, data/ and integration_tests/ were never left out).
 .git
 .github
 _archive/
-apps/                      # frontend is built + hosted separately (Vercel/Netlify/static)
-node_modules/
+# the pages are built inside the image (its pages stage), so their sources are in the build context; what a local
+# install or build left behind is not
+**/node_modules/
+apps/workstation-superapp/dist/
 **/__pycache__/
 **/*.pyc
 .venv/
 venv/
-data/                      # runtime data — mounted as a volume / DATA_DIR in production
+# runtime data — mounted as a volume / DATA_DIR in production
+data/
 *.log
 .env
 .env.*
-docs/
-integration_tests/         # tests run in CI, not shipped in the runtime image
+# tests run in CI, not shipped in the runtime image
+integration_tests/
 .claude/
+# audit records; no route reads them
+docs/fidelity_runs/
+# W1128 (FU-1156) - every private folder (agentic_core/privacy_exposure.py PRIVATE_FOLDERS, W731) stays out of the
+# build context, whatever a working copy holds
+inputs/Law/
+inputs/Employment/
+knowledge/Employment/
+knowledge/Science/RM_CV_Science_Versions/
+knowledge/Law/EmploymentTribunal/evidence/
+products/Law/VSB-SIG-LAW-OMNIOCTO-19.0/
+products/Employment/VSB-SIG-EMP-PENTA-3.0/
+products/Science/VSB-SIG-SCI-OMNIA-18.0/
+outputs/education/sats_2026/

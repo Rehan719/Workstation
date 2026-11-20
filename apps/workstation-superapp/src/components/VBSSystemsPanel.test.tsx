@@ -119,6 +119,33 @@ describe('VBSSystemsPanel, rendered against the VBS routes\' own answers', () =>
     expect(screen.queryByTestId('defect-closure')).toBeNull();
   });
 
+  //  W1133m (FU-1038; ruled 2026-11-20) - the third way out, on the answers the route gave on a fresh store
+  //  (captured.dev_open, captured.development_run, captured.dev_after: one defect opened under a live label, taken out
+  //  of the loop as opened by a development run)
+  it('a defect a development run opened leaves the loop saying so, with the evidence, in the route\'s own words', async () => {
+    const DEV = captured.dev_open.defects.find(d => d.status === 'open');
+    let state = 0;
+    const posts = serve({
+      'GET /api/v1/vbs/qms/defects': () => ok(state === 0 ? captured.dev_open : captured.dev_after),
+      [`POST /api/v1/vbs/qms/defects/${DEV?.id}/development-run`]: () => { state = 1; return ok(captured.development_run); },
+    });
+    render(<VBSSystemsPanel />);
+    fireEvent.click(await waitFor(() => rowButton(String(DEV?.id))));
+    const dev = screen.getByTestId('defect-development-run') as HTMLButtonElement;
+    fireEvent.change(screen.getByTestId('defect-dispose-reason'), { target: { value: 'too short' } });
+    expect(dev.disabled).toBe(true);
+    const EVIDENCE = captured.development_run.defect.closure.reason;
+    fireEvent.change(screen.getByTestId('defect-dispose-reason'), { target: { value: EVIDENCE } });
+    fireEvent.click(dev);
+    const c = captured.development_run.defect.closure;
+    await waitFor(() => expect(screen.getByTestId('defect-closure').textContent).toBe(
+      `closed — a development run opened it, not a delivery by ${c.by} (typed, sign-in off) at ${c.at} (it was ${c.status_before}): ${c.reason}`));
+    expect(posts[0]).toEqual({ url: `/api/v1/vbs/qms/defects/${DEV?.id}/development-run`, body: { evidence: EVIDENCE } });
+    const s = captured.dev_after.summary;
+    expect(screen.getByText(
+      `${s.closed_source_retired} closed: source retired · ${s.development_run} closed: a development run opened it · ${s.not_reproducible} not reproducible (none re-verified)`)).toBeTruthy();
+  });
+
   it('each section that could not be read is named, with the server\'s reason', async () => {
     serve({
       'GET /api/v1/vbs/systems': refused(503, 'the catalogue could not be read'),

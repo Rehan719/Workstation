@@ -308,6 +308,7 @@ CHART: Dict[str, str] = {
     "distribution_charity":          "expense",
     "transfer_out":                  "expense",   # inter-VSB transfers (federation seed, W262)
     "operating_costs":               "expense",   # W475 (ledger v4 R6.1) — a cycle's declared costs
+    "platform_fee":                  "expense",   # W1124 (FU-1057) - P5.16 clause 3: the platform's 25% of a cycle's profit
     "retained_earnings":             "equity",
 }
 _DEBIT_NORMAL = ("asset", "expense")
@@ -317,6 +318,7 @@ _COMPAT_POSTING: Dict[str, tuple] = {
     "revenue":         ("cash", "revenue"),                        # intake: Dr Cash / Cr Revenue
     "reserves":        ("reserve_fund", "cash"),                   # homeostasis: Dr Reserve Fund / Cr Cash
     "costs":           ("operating_costs", "cash"),                # W475: declared costs: Dr Operating Costs / Cr Cash
+    "platform_fee":    ("platform_fee", "cash"),                   # W1124: the platform fee: Dr Platform Fee / Cr Cash
     "owner":           ("distribution_owner", "cash"),             # circulation: Dr Distribution / Cr Cash
     "self_investment": ("distribution_self_investment", "cash"),
     "capital_fund":    ("distribution_capital_fund", "cash"),
@@ -540,7 +542,8 @@ class VirtualLedger:
     #  Sponsor-a-Student). Declared here because `/api/v1/qep/contribute/*` EMITS them: a tag the routes
     #  post without declaring reads to a donor as a source nobody recognises, and a tag declared without a
     #  producer tells a reader a source exists that cannot appear (which is why transfer_repair was removed).
-    POSTING_SOURCES = ("cycle_intake", "cycle_costs", "cycle_reserve", "cycle_distribution",
+    #  W1124 (FU-1057) - cycle_platform_fee: the platform's fee, a quarter of a cycle's profit, taken first (P5.16)
+    POSTING_SOURCES = ("cycle_intake", "cycle_costs", "cycle_reserve", "cycle_distribution", "cycle_platform_fee",
                        "inter_vsb_transfer", "self_investment", "period_close",
                        "qep_zakat", "qep_sponsor_a_student")
 

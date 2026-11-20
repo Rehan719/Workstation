@@ -5,6 +5,8 @@
 // This mounts the real page against the answers its routes gave on a fresh store (Support.fixture.json, captured by
 // w995_capture.py: one made-up question confirmed resolved, one rating), and has the server refuse each read and each
 // action. A refusal is said with the server's reason, and a refused confirmation is never silent.
+// Its help answer is the one page's capture (components/WhereHelpIs.fixture.json), which the suite holds equal to
+// GET /api/v1/support/where-help-is: W995's own capture predated the urgent routes, and the page went down (W1167b).
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import axios from 'axios';
 import React from 'react';

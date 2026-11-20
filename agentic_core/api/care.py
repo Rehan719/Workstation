@@ -65,7 +65,7 @@ _TOOLS = [
     {"id": "falls_risk", "name": "Falls count (retired)", "type": "retired", "does": "nothing - retired",
      "standard": "NICE CG161, replaced by NICE NG249 on 29 April 2025"},
     {"id": "dementia_care", "name": "Dementia Care Planning", "type": "care_plan", "does": "frame",
-     "standard": "NICE NG97 (named only: not read at its publisher's page)"},
+     "standard": "NICE NG97, Dementia: assessment, management and support for people living with dementia and their carers (read at its publisher's page, 2026-11-19)"},
     {"id": "mental_health", "name": "Mental Health Care Plan", "type": "care_plan", "does": "frame",
      "standard": "no source has been read for this entry"},
     {"id": "discharge", "name": "Discharge Planning Checklist", "type": "checklist", "does": "frame",

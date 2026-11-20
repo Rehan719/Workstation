@@ -1,0 +1,103 @@
+{
+ "checklists": {
+  "checklists": [
+   {
+    "id": "employment_tribunal_claim",
+    "subject": "Making an employment tribunal claim",
+    "nations": [
+     "England",
+     "Wales",
+     "Scotland"
+    ],
+    "elsewhere": "There’s a different way to make a claim to an employment tribunal in Northern Ireland.",
+    "groups": [
+     {
+      "heading": "To make the claim",
+      "part": "Make a claim",
+      "lead": "To use this service, you’ll need:",
+      "items": [
+       "the names and addresses of all the people making the claim (the ‘claimants’)",
+       "the names and addresses of the employer or organisation you’re claiming against (the ‘respondents’)",
+       "your Acas early conciliation certificate number"
+      ]
+     },
+     {
+      "heading": "Documents to share",
+      "part": "After you make a claim",
+      "lead": "Examples of relevant documents could include:",
+      "items": [
+       "a contract of employment",
+       "pay slips",
+       "details of your pension scheme",
+       "notes from relevant meetings you attended at work"
+      ]
+     },
+     {
+      "heading": "At the hearing",
+      "part": "Going to a tribunal hearing",
+      "lead": null,
+      "items": [
+       "You must have all the documents you’re using to support your case with you."
+      ]
+     }
+    ],
+    "here": "For the time limit, the time-limit tool on this page works out the date from a dated rule, or says that a limit may still apply and where to ask today.",
+    "sources": [
+     {
+      "id": "gov-uk-employment-tribunals-guide",
+      "read": true,
+      "name": "Employment tribunals (GOV.UK guide)",
+      "page": "https://www.gov.uk/employment-tribunals",
+      "read_on": "2026-11-20",
+      "read_by": "round W1161, the guide's nine parts read whole (GOV.UK's content record of the page, www.gov.uk/api/content/employment-tribunals), not through a summary",
+      "recently_checked": true,
+      "checked": "read on 20 November 2026"
+     }
+    ]
+   },
+   {
+    "id": "court_claim_for_money",
+    "subject": "Making a court claim for money",
+    "nations": [
+     "England",
+     "Wales"
+    ],
+    "elsewhere": null,
+    "groups": [
+     {
+      "heading": "To claim online",
+      "part": "Make a claim",
+      "lead": null,
+      "items": [
+       "You’ll be asked for the name, address and email address of the person you’re claiming against."
+      ]
+     },
+     {
+      "heading": "To pay the court fee",
+      "part": "Make a claim",
+      "lead": "You’ll also need either:",
+      "items": [
+       "a debit or credit card to pay the court fee",
+       "your ‘help with fees’ reference number if you’ve already applied for help with fees online"
+      ]
+     }
+    ],
+    "here": null,
+    "sources": [
+     {
+      "id": "gov-uk-make-court-claim-for-money",
+      "read": true,
+      "name": "Make a court claim for money (GOV.UK)",
+      "page": "https://www.gov.uk/make-court-claim-for-money",
+      "read_on": "2026-11-20",
+      "read_by": "round W1168, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/make-court-claim-for-money) on 2026-11-20, not through a summary",
+      "recently_checked": true,
+      "checked": "read on 20 November 2026"
+     }
+    ]
+   }
+  ],
+  "basis": "Each list is in the words of the page it names, with the part of the page each item is in and the day the page was read, and is said as not recently checked ninety days on. A list says nothing about whether a claim will succeed, what it is worth, or whether a time limit has passed. Nothing here is legal advice.",
+  "composed": false
+ }
+}

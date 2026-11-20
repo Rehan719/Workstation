@@ -2,7 +2,7 @@ import json
 import os
 import logging
 import time
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +11,12 @@ class UEGManager:
     v60 Mastery: Unified Evidence Graph Manager.
     Manages the semantic relationships and provenance of all scientific claims.
     """
-    def __init__(self, storage_path: str = "meta/ueg_graph.json"):
+    def __init__(self, storage_path: Optional[str] = None):
+        #  W1158 (FU-1294) - under the data root, as the genome ledger is (W1138's rule): it was meta/ueg_graph.json
+        #  under the working directory. No live route writes this graph; the QEP analytics route builds one at import.
+        if storage_path is None:
+            from agentic_core.config import data_path
+            storage_path = str(data_path("meta", "ueg_graph.json"))
         self.storage_path = storage_path
         self.graph = self._load_graph()
 

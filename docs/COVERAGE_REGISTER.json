@@ -22,8 +22,9 @@
    "domain": "Law",
    "subject": "Debt and money difficulties",
    "nation": "England",
-   "state": "nothing_built",
-   "today": "nothing here serves this subject"
+   "state": "route_only",
+   "today": "a question naming a person's own debts is routed as a debt solution is, to the row and the places a person can go; nothing here works out what is owed or what to pay (W1167)",
+   "route": "gov-uk-options-for-dealing-with-debts"
   },
   {
    "id": "law-consumer",
@@ -71,16 +72,44 @@
    "subject": "How long a person has to bring an employment tribunal claim",
    "nation": "England, Wales, Scotland",
    "state": "arithmetic",
-   "today": "the primary limit is worked out from the date it runs from, using the words of the provision that sets it, read from its publisher when asked, with who to ask; early conciliation and extensions are not accounted for (built in W875; this row was left as nothing built until W953)",
-   "driven_by": "test_w875_how_long_a_time_limit_runs_is_arithmetic_on_the_rules_own_words_with_a_route"
+   "today": "the primary limit is worked out from the date it runs from: for a relevant date before 1 October 2026 three months, on or after it six (Schedule 12 to the Employment Rights Act 2025, with regulation 4 of S.I. 2026/954), each from the words of the provision as it stood for that date, read from its publisher when asked, with who to ask; early conciliation and extensions are not accounted for, and breach of contract claims are worked out for England and Wales and for Scotland, each either side of its own change: six months from 1 October 2026 (S.I. 2026/759) and from 9 November 2026 (S.S.I. 2026/327), the Scottish one read with the change its publisher lists as not yet written into its text; and a claim no rule here is for, or one whose rule is not for the nation asked about, is answered that a time limit may still apply, with where to ask today for that nation (built in W875; dated either side of the change in W1157; breach of contract added in W1160; the answer with no rule, nation by nation, in W1161; each rule's sources, read when and by whom and said as not recently checked ninety days on, and a month with no such day worked out to the earlier of the two days it could end on with the sentence that the provision does not settle it, in W1162)",
+   "driven_by": "test_w1157_p511_the_tribunal_limits_either_side_of_1_october_2026_are_dated_rules_each_read_as_it_stood"
+  },
+  {
+   "id": "law-tribunal-time-limit-northern-ireland",
+   "domain": "Law",
+   "subject": "How long a person has to bring an employment tribunal claim in Northern Ireland",
+   "nation": "Northern Ireland",
+   "state": "route_only",
+   "today": "no rule here is for Northern Ireland, so no date is worked out for a claim there: the answer says a time limit may still apply and gives the route GOV.UK's employment tribunals guide names for making a claim in Northern Ireland, whose own page was read on 2026-11-20 (W1161; read in W1162)",
+   "route": "gov-uk-employment-tribunals-guide"
+  },
+  {
+   "id": "law-tribunal-claim-gather",
+   "domain": "Law",
+   "subject": "What to gather to make an employment tribunal claim",
+   "nation": "England",
+   "state": "route_only",
+   "route": "gov-uk-employment-tribunals-guide",
+   "today": "the Law page lists what GOV.UK's employment tribunals guide says the claim service needs, the documents it gives as examples to share, and what to have at the hearing, each in the guide's own words with the part of the page it is in and the day it was read, not recently checked ninety days on; for England, Wales and Scotland, saying Northern Ireland has a different way to claim (W1168)"
+  },
+  {
+   "id": "law-money-claim-gather",
+   "domain": "Law",
+   "subject": "What to gather to make a court claim for money",
+   "nation": "England",
+   "state": "route_only",
+   "route": "gov-uk-make-court-claim-for-money",
+   "today": "the Law page lists what GOV.UK's guide to making a court claim for money says a claim online asks for and how the fee is paid, in the guide's own words with the day it was read, not recently checked ninety days on; for England and Wales (W1168)"
   },
   {
    "id": "law-urgent-routes",
    "domain": "Law",
    "subject": "Somewhere safe tonight, danger from a person, a hearing within days",
    "nation": "England",
-   "state": "nothing_built",
-   "today": "no route is shown first"
+   "state": "route_only",
+   "today": "the three situations are served first, whatever was asked, on the one page of where help is, the Law page's help and every research answer, each in the words of the GOV.UK page that gives it (domestic abuse: how to get help; help if you're homeless; find a court or tribunal, with represent yourself in court), with the day it was read and not recently checked ninety days on (W1165); the Law page draws them before its heading, and the support page, the statute panel's help and every research answer draw them before anything else (W1166)",
+   "route": "gov-uk-domestic-abuse-help"
   },
   {
    "id": "law-directory",
@@ -88,7 +117,7 @@
    "subject": "Where to go for help from a person",
    "nation": "England",
    "state": "journey",
-   "today": "one page, on the support page, lists regulated and free legal help by name and address with one line of this platform's own for each, says how to find a qualified scholar without naming one, and says how to complain; the Law page's help is built from the same source, and nothing is copied from any site",
+   "today": "one page, on the support page, lists regulated and free legal help by name and address with one line of this platform's own for each, says how to find a qualified scholar without naming one, and says how to complain; the Law page's help is built from the same source, and nothing is copied from any site; each place says the nations it is for and the day the page that says so was read, and how, and is said as not recently checked ninety days on (W1163)",
    "driven_by": "test_w953_the_one_page_of_where_help_is_says_how_to_find_a_scholar_and_is_off_the_law_route"
   },
   {
@@ -129,18 +158,29 @@
    "domain": "Law",
    "subject": "Immigration and nationality",
    "nation": "England",
-   "state": "excluded",
-   "today": "not built",
-   "excluded_by": "Owner ruling 2026-10-12 (advice, 3): information and a route to an authorised person, never advice"
+   "state": "route_only",
+   "today": "a question naming immigration or nationality is not answered: it is answered with the row - who regulates it, the words of GOV.UK's guide and of the Immigration Advice Authority's own page, each read on 2026-11-20 and not recently checked ninety days on, the Adviser Finder and the Law Societies by nation - and the places a person can go, after the urgent routes (W1167)",
+   "ruling": "Owner ruling 2026-10-12 (advice, 3): information and a route to an authorised person, never advice",
+   "route": "gov-uk-find-immigration-adviser"
   },
   {
    "id": "law-debt-solutions",
    "domain": "Law",
    "subject": "Which debt solution to take",
    "nation": "England",
-   "state": "excluded",
-   "today": "not built",
-   "excluded_by": "Owner ruling 2026-10-12 (advice, 3): information and a route to an authorised person, never advice"
+   "state": "route_only",
+   "today": "a question naming a way of dealing with debts is not answered: it is answered with the row - a Debt Management Plan is set up with a company the Financial Conduct Authority authorises and a debt adviser helps choose, in the words of GOV.UK's guide read on 2026-11-20; the Financial Conduct Authority's own site is refused by this environment's network, and the row says so - with MoneyHelper's free debt advice and Scotland's Debt Arrangement Scheme, after the urgent routes (W1167)",
+   "ruling": "Owner ruling 2026-10-12 (advice, 3): information and a route to an authorised person, never advice",
+   "route": "gov-uk-options-for-dealing-with-debts"
+  },
+  {
+   "id": "law-claims-management",
+   "domain": "Law",
+   "subject": "A claim managed for someone by a claims company",
+   "nation": "England",
+   "state": "route_only",
+   "route": "gov-uk-claim-compensation-cmc",
+   "today": "a question naming a claims management company is not answered: its row says that no page read here establishes who regulates one today (GOV.UK's guide for a person on it was published in June 2014 and not updated since, and the Financial Conduct Authority's site is refused by this environment's network), quotes that a claim made without one keeps all the compensation, and routes to the places a person can go, after the urgent routes (W1167)"
   },
   {
    "id": "law-family-safety",
@@ -166,7 +206,7 @@
    "subject": "A person's own saved matter: facts, documents, dates",
    "nation": "England",
    "state": "excluded",
-   "today": "not built",
+   "today": "not built: a person's own matter waits for sign-in, and until then nothing typed into the Law forms is kept - on the server, by W952, and in the browser, where no Law form saves what was typed or its answer to My Work or hands them to another page, and each form says so before it is filled (W1169)",
    "excluded_by": "Owner ruling 2026-10-12 (advice, 2): a person's own matter waits for authentication"
   },
   {
@@ -328,7 +368,7 @@
    "subject": "A learner's goals, work, progress and mastery",
    "nation": "England",
    "state": "excluded",
-   "today": "not built",
+   "today": "not built: a learner's own record waits for authentication, and until then nothing typed into the Education forms is kept - on the server, by W952, and in the browser, where no Education form saves what was typed or its answer to My Work or hands them to another page, and each form says so before it is filled (W1171)",
    "excluded_by": "Owner ruling 2026-10-12 (education, 5): no learner record before authentication, never a measure of a person"
   },
   {
@@ -530,7 +570,7 @@
    "subject": "A person's care record",
    "nation": "England",
    "state": "excluded",
-   "today": "not built",
+   "today": "not built: no person's care record is kept before authentication - on the server, by W952, and in the browser, where no Care form saves what was typed or its answer to My Work or hands them to another page, and each form says so before it is filled (W1171)",
    "excluded_by": "Owner ruling 2026-10-12 (care, 9): no care record of any person before authentication"
   },
   {

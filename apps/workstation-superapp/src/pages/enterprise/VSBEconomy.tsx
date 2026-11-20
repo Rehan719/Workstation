@@ -33,6 +33,10 @@ interface Cycle {
   biogeochemical_model: string;
   // W465 (FU-016) — whether this cycle's owner share was recorded in Owner Payments
   owner_accrual?: { accrued: boolean; amount_wst: number; error?: string; note?: string; ueg_logged?: boolean };
+  // W1125 (FU-1057) - P5.16 clauses 3 and 4: the platform's fee, taken first, and the base the split used
+  platform_fee?: { rate: number; profit_wst: number; fee_wst: number; split_base_wst: number; posted: boolean;
+    exempt: string | null; simulated?: boolean; basis: string; ruling: string; credit?: { applied_wst: number; basis: string } };
+  split_base_wst?: number;
 }
 
 interface WaterfallState {
@@ -632,7 +636,7 @@ export const VSBEconomy: React.FC = () => {
       {cycle && (
         <div className="space-y-6">
           <Card className="p-6">
-            <div className="grid grid-cols-2 @[560px]:grid-cols-5 gap-3 text-center">
+            <div className="grid grid-cols-2 @[560px]:grid-cols-4 @[900px]:grid-cols-7 gap-3 text-center">
               <Metric label="Intake (revenue)" value={cycle.intake_revenue} />
               {/* W475 (ledger v4 R6.1) — costs are an expense posted on their own; the reserve is revenue x rate only
                   (W377 labelled one figure 'Costs + reserves' when both were posted to the reserve fund). */}
@@ -640,12 +644,20 @@ export const VSBEconomy: React.FC = () => {
               <Metric label="Reserve" value={cycle.homeostasis_reserves} />
               {/* W672 (ledger v16 R6.8) - a zero left by a loss was drawn in the green tone */}
               <Metric label="Distributable" value={cycle.distributable_profit} tone={cycle.distributable_profit > 0 ? 'good' : undefined} />
+              {/* W1125 (FU-1057) - P5.16: the platform's fee, taken first, and what the entity's split was over */}
+              {cycle.platform_fee && <Metric label="Platform fee" value={cycle.platform_fee.fee_wst} />}
+              {cycle.split_base_wst != null && <Metric label="Split over" value={cycle.split_base_wst} />}
               {/* W617 (FU-507, M2 v8 R6.3) — an UNMEASURED energy term is not shown in the green 'good' tone:
                   with no basis the figure is the simulator's default, and the cycle did not adjust on it. */}
               <Metric label={cycle.metabolic_energy_basis ? 'Metabolic Energy' : 'Metabolic Energy (simulated, not measured)'}
                 value={cycle.metabolic_energy != null ? `${Math.round(cycle.metabolic_energy * 100)}%` : '—'}
                 tone={cycle.metabolic_energy_basis ? 'good' : undefined} />
             </div>
+            {cycle.platform_fee && (
+              <p className="text-[9px] text-slate-400 mt-2" data-testid="cycle-platform-fee">
+                Platform fee: {cycle.platform_fee.basis}.
+              </p>
+            )}
             {(cycle.cycle_result_wst ?? 0) < 0 && (
               <p className="text-[10px] font-bold text-vital mt-2" data-testid="cycle-shortfall">
                 Cycle result {cycle.cycle_result_wst?.toLocaleString()} WST — {cycle.cycle_result_basis}
@@ -746,15 +758,24 @@ export const VSBEconomy: React.FC = () => {
               {bpLoading ? <Loader2 size={11} className="animate-spin" /> : <Recycle size={11} />} refresh
             </button>
           </div>
-          <div className="grid grid-cols-2 @[560px]:grid-cols-4 gap-3 text-center">
+          <div className="grid grid-cols-2 @[560px]:grid-cols-5 gap-3 text-center">
             <Metric label="Revenue (cumulative)" value={`${(bp.profit_and_loss?.total_revenue_wst ?? 0).toLocaleString()} WST`} />
             {/* W503 (FU-169, S1.19 C5) — the cumulative figure and the live fund are different numbers
                 and were shown as one. When they disagree the live balance is named beside it with its
                 reason, because "Reserves" next to a smaller balance sheet reads as an error otherwise. */}
             <Metric label="Reserves (cumulative)" value={`${(bp.profit_and_loss?.total_reserves_wst ?? 0).toLocaleString()} WST`} />
             <Metric label="Distributed" value={`${(bp.profit_and_loss?.total_distributed_wst ?? 0).toLocaleString()} WST`} tone="good" />
+            {/* W1125 (FU-1057) - the platform's fee this entity's books carry, taken first from each profitable cycle */}
+            {bp.profit_and_loss?.total_platform_fee_wst != null && (
+              <Metric label="Platform fee (cumulative)" value={`${Number(bp.profit_and_loss.total_platform_fee_wst).toLocaleString()} WST`} />
+            )}
             <Metric label="Owner balance" value={bp.owner_payments?.available === false ? 'unavailable' : `${(bp.owner_payments?.balance_wst ?? 0).toLocaleString()} WST`} tone={bp.owner_payments?.available === false ? undefined : 'good'} />
           </div>
+          {bp.profit_and_loss?.total_platform_fee_wst_basis && (
+            <p className="text-[9px] text-slate-500 mt-2" data-testid="pack-platform-fee">
+              Platform fee: {String(bp.profit_and_loss.total_platform_fee_wst_basis)}.
+            </p>
+          )}
           {bp.profit_and_loss?.reserve_fund_live_wst != null
             && bp.profit_and_loss.reserve_fund_live_wst !== bp.profit_and_loss.total_reserves_wst && (
             <p className="text-[9px] text-amber-400/90 mt-2" data-testid="pack-reserve-split">

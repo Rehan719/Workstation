@@ -7,6 +7,7 @@ import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 import MatterAssemblyPanel from '../../components/MatterAssemblyPanel';
 import StatutePanel from '../../components/StatutePanel';
 import TimeLimitPanel from '../../components/TimeLimitPanel';   // W875 (FU-1012)
+import ChecklistsPanel from '../../components/ChecklistsPanel';   // W1168 (P5.11 clause 8)
 import AgreementsPanel from '../../components/AgreementsPanel';   // W1081 (P5.18)
 import AssetsPanel from '../../components/AssetsPanel';   // W1083 (P5.19)
 import WaitingPanel from '../../components/WaitingPanel';   // W1086 (P5.18 clause 3)
@@ -15,6 +16,9 @@ import { toolsFor } from '../../lib/toolRegistry';
 import { useTab } from '../../lib/useTab';   // W1027 - the tab is in the address
 import { useServingStatus, servingIsFloor } from '../../components/ServingNow';   // W866 (FU-1013)
 import { apiJson, ApiError, errorMessage } from '../../lib/api';   // W996
+import { placeSaid } from '../../lib/directory';   // W1163 (P5.11 clause 3)
+import UrgentRoutes, { UrgentRoute } from '../../components/UrgentRoutes';   // W1166 (P5.11 clause 4)
+import RegulatedBoundary from '../../components/RegulatedBoundary';   // W1167 (P5.11 clause 7)
 
 //  W996 (FU-399 part 28) - a refusal says the server's status and reason, an unreachable server says that, and a
 //  sentence of this page's own (an empty list) stands as written
@@ -64,6 +68,18 @@ export const LawHub: React.FC = () => {
       .catch(e => { if (alive) { setLawTools(null); setLawToolsNote(`What each Law tool does could not be read (${readFailure(e)}), so nothing is said about it here. Each answer still says what composed it.`); } });
     return () => { alive = false; };
   }, []);
+  //  W1166 (P5.11 clause 4) - THE URGENT ROUTES, before anything else on this page: the server's fixed list, each
+  //  step in the words of the GOV.UK page that gives it. A failed read is said in their place, with the one line that
+  //  needs no page: in immediate danger, call 999.
+  const [urgent, setUrgent] = useState<{ routes: UrgentRoute[]; basis: string } | null>(null);
+  const [urgentNote, setUrgentNote] = useState('');
+  useEffect(() => {
+    let alive = true;
+    apiJson('/api/v1/law/urgent')
+      .then(d => { if (alive) { setUrgent(d); setUrgentNote(''); } })
+      .catch(e => { if (alive) { setUrgent(null); setUrgentNote(`The urgent routes could not be read (${readFailure(e)}). If you are in immediate danger, call 999.`); } });
+    return () => { alive = false; };
+  }, []);
   const floorNow = serving ? servingIsFloor(serving) : null;
   const formsNow = serving === undefined ? ''
     : serving === null ? 'Whether one is serving could not be read just now, so what each returns without one is said here.'
@@ -79,6 +95,9 @@ export const LawHub: React.FC = () => {
   });
   return (
     <div className="space-y-12 pb-24">
+      {/* W1166 (P5.11 clause 4) - the urgent routes, before anything else, or why they could not be read */}
+      {urgent ? <div data-testid="law-urgent"><UrgentRoutes routes={urgent.routes} basis={urgent.basis} /></div>
+        : urgentNote ? <p data-testid="law-urgent-note" className="text-[11px] font-bold text-rose-300">{urgentNote}</p> : null}
       <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
           <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black mb-1 text-white tracking-tighter uppercase break-words">Bastion of Order</h1>
@@ -139,6 +158,8 @@ export const LawHub: React.FC = () => {
       {/* W875 (FU-1012) - how long a time limit runs: arithmetic on the rule's own words, and who to ask */}
       <Card className="p-6">
         <TimeLimitPanel />
+        {/* W1168 (P5.11 clause 8) - what to gather, each list in the words of the page that gives it */}
+        <ChecklistsPanel />
       </Card>
       {/* P3.23 — the matter specialist: provenance per particular, refused authorities, unresolved checks */}
       <Card className="p-6">
@@ -166,17 +187,39 @@ export const LawHub: React.FC = () => {
                 endpoint="/api/v1/law/research"
                 resultKey="analysis"
                 submitLabel="Research question"
-                renderExtra={(r: any) => Array.isArray(r?.routed_to_people) && r.routed_to_people.length > 0 ? (
-                  /* W874 (FU-1082) - a question about the person's own case is routed to people: who they are */
+                renderExtra={(r: any) => <>
+                  {/* W1166 (P5.11 clause 4) - every answer's urgent routes first, whatever the screen recognised */}
+                  {Array.isArray(r?.urgent) && r.urgent.length > 0 && <div data-testid="law-research-urgent"><UrgentRoutes routes={r.urgent} /></div>}
+                  {/* W1167 (P5.11 clause 7) - a subject that is regulated advice: its row, who regulates it, the pages read */}
+                  {r?.boundary ? <div data-testid="law-research-boundary"><RegulatedBoundary b={r.boundary} /></div> : null}
+                  {/* W1170 (P5.11 clause 6) - each Act the answer shows, with the source it resolves against; one
+                      that resolves against none is withheld from the text, and said here only by why */}
+                  {(r?.authorities?.shown?.length || r?.authorities?.withheld?.length) ? (
+                    <div data-testid="law-research-authorities" className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                      <p className="text-[10px] font-bold text-slate-300">Acts named in this answer</p>
+                      <ul className="space-y-0.5">
+                        {(r.authorities.shown ?? []).map((a: any) => (
+                          <li key={a.name} data-testid="law-research-authority" className="text-[10px] text-slate-300">
+                            {a.name}: {a.basis}{a.checked ? `, ${a.checked}` : ''}.</li>))}
+                        {(r.authorities.withheld ?? []).map((w: any) => (
+                          <li key={w.basis} data-testid="law-research-authority-withheld" className="text-[10px] text-amber-300">
+                            An Act withheld from the answer{w.times > 1 ? ` (named ${w.times} times)` : ''}: {w.basis}.</li>))}
+                      </ul>
+                    </div>) : null}
+                  {Array.isArray(r?.routed_to_people) && r.routed_to_people.length > 0 ? (
+                  /* W874 (FU-1082), W1167 - a question about the person's own case, or on a subject that is
+                     regulated advice, is routed to people: who they are */
                   <div data-testid="law-routed-to-people" className="p-3 rounded-xl bg-slate-950 border border-amber-500/30 space-y-1">
                     <p className="text-[10px] font-bold text-amber-300">Help from a person</p>
                     <ul className="space-y-1">
                       {r.routed_to_people.map((h: any) => (
-                        <li key={h.link} className="text-[10px] text-slate-300"><a href={h.link} target="_blank" rel="noreferrer" className="underline text-sky-400">{h.name}</a> - {h.for_what}</li>
+                        <li key={h.link} className="text-[10px] text-slate-300"><a href={h.link} target="_blank" rel="noreferrer" className="underline text-sky-400">{h.name}</a> - {h.for_what}
+                          {/* W1163 (P5.11 clause 3) - for whom, and when the page that says so was read */}
+                          <span data-testid="law-routed-checked" className="block text-[9px] text-slate-500">{placeSaid(h)}</span></li>
                       ))}
                     </ul>
                   </div>
-                ) : null}
+                ) : null}</>}
                 fields={[
                   { name: 'question', label: 'Legal question', type: 'textarea', placeholder: 'e.g. Can an employer enforce a 12-month non-compete clause against a junior employee?' },
                   { name: 'area_of_law', label: 'Area of law', type: 'select', options: ['general', 'contract', 'employment', 'intellectual property', 'data protection', 'dispute resolution', 'company', 'property', 'consumer'], default: 'general' },

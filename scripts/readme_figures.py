@@ -65,7 +65,7 @@ def _count_api_operations() -> dict:
     ops, paths = set(), set()
     for r in app.routes:
         p = getattr(r, "path", None)
-        # ONLY /api/, and this is not cosmetic. `GET /` and `GET /{full_path:path}` are mounted
+        # ONLY /api/, and this is not cosmetic. `GET /` and `GET /{full_path:page}` are mounted
         # only when the built frontend is present, so a TOTAL differs between a developer tree
         # (471) and CI (469), where the backend job runs before any dist/ exists - CI caught
         # exactly that. The README claims API operations, and the SPA catch-all, /docs, /redoc,

@@ -1826,8 +1826,10 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
         try:
             vsb_mod._genome_registry.store_epigenetic_pattern(pattern_id=vsb_id, data=genome_spec, layer=1)
             #  W638 (FU-595) — names WHICH record: the Anatomy genome lab lists a different one.
+            #  W1158 - the registry holds layer 1 in this process's memory only, and nothing reads it
             yield _event("genome", "Genome Encoded",
-                         "A genome spec was written to this entity and the epigenetic registry (layer 1). "
+                         "A genome spec was written to this entity. The epigenetic registry holds it in layer 1, in "
+                         "this process's memory only: a restart clears layer 1, and nothing reads it. "
                          "It is a separate record from the trait-vector genomes in the organism's Genome lab.")
         except Exception as e:
             yield _event("genome", "Genome Encoding Skipped", f"registry unavailable: {str(e)[:80]}")

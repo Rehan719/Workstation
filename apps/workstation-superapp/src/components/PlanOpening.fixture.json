@@ -1,0 +1,649 @@
+{
+ "cases": {
+  "templated": {
+   "plan": {
+    "status": 200,
+    "body": {
+     "scope": "vsb-98b42a2cbe",
+     "owner": "owner",
+     "executive_summary": "W1144 Kettle Cafe is a VSB IDBO established to solve: W1144 made up: W1144 Kettle Cafe.",
+     "concept": "Optimal solution concept for: W1144 made up: W1144 Kettle Cafe",
+     "vision": "A waqf_ltd_hybrid VSB IDBO to commercialise this solution beneficently.",
+     "mission": "Deliver: W1144 made up: W1144 Kettle Cafe",
+     "strategy": "Concept → Design → Commercialisation, governed by the Board (Chief — the Owner's standing charter; no twin model is trained) → AI CEO → C-Suite → CoE → BTO.",
+     "aims": [],
+     "objectives": [
+      {
+       "id": "obj-a443076c",
+       "title": "Validate the concept",
+       "kpi": "",
+       "timeline": "",
+       "owner_role": "AI CEO",
+       "progress_pct": 0,
+       "status": "planned",
+       "reviews": [],
+       "draft": true,
+       "source": "establish_seed",
+       "created_at": "2026-11-20T07:34:48Z"
+      },
+      {
+       "id": "obj-9cac932d",
+       "title": "Deliver the design",
+       "kpi": "",
+       "timeline": "",
+       "owner_role": "AI CEO",
+       "progress_pct": 0,
+       "status": "planned",
+       "reviews": [],
+       "draft": true,
+       "source": "establish_seed",
+       "created_at": "2026-11-20T07:34:48Z"
+      },
+      {
+       "id": "obj-518d5367",
+       "title": "Launch to market",
+       "kpi": "",
+       "timeline": "",
+       "owner_role": "AI CEO",
+       "progress_pct": 0,
+       "status": "planned",
+       "reviews": [],
+       "draft": true,
+       "source": "establish_seed",
+       "created_at": "2026-11-20T07:34:48Z"
+      }
+     ],
+     "updated_at": "2026-11-20T07:34:48Z",
+     "provenance": {
+      "evidence_level": "behaviour",
+      "evidence_level_number": 1,
+      "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+      "served_by": null,
+      "body_pending": [],
+      "name_source": "founder",
+      "field_sources": {
+       "executive_summary": "establish_template",
+       "concept": "establish_template",
+       "vision": "establish_template",
+       "mission": "establish_template",
+       "strategy": "establish_template"
+      },
+      "templated_fields": [
+       "executive_summary",
+       "vision",
+       "mission",
+       "strategy",
+       "concept"
+      ],
+      "opening_written_by": "code templates filled from the establish request — not the Chief, and not a model. Edit any field to replace it with your own; a model or the Chief has composed nothing here."
+     },
+     "roadmap": {
+      "living": true,
+      "phases": [
+       {
+        "timeline": "Unscheduled",
+        "progress_pct": 0,
+        "complete": false,
+        "count": 3,
+        "objectives": [
+         {
+          "id": "obj-a443076c",
+          "title": "Validate the concept",
+          "progress_pct": 0,
+          "status": "planned",
+          "kpi": "",
+          "owner_role": "AI CEO"
+         },
+         {
+          "id": "obj-9cac932d",
+          "title": "Deliver the design",
+          "progress_pct": 0,
+          "status": "planned",
+          "kpi": "",
+          "owner_role": "AI CEO"
+         },
+         {
+          "id": "obj-518d5367",
+          "title": "Launch to market",
+          "progress_pct": 0,
+          "status": "planned",
+          "kpi": "",
+          "owner_role": "AI CEO"
+         }
+        ]
+       }
+      ],
+      "phase_count": 1,
+      "objective_count": 3,
+      "overall_progress_pct": 0,
+      "current_phase": null,
+      "next_milestone": null,
+      "unscheduled_count": 3,
+      "unparsed_timelines": [],
+      "note": "Living roadmap derived from the plan's objectives — it updates as objectives progress. PHASES ARE IN TIME ORDER, parsed from each objective's timeline (Q1 2026 / 2026 Q1, a month and year, 2026-01, or a bare year). A timeline that does not parse is NOT a phase: those objectives are listed under Unscheduled, which is excluded from current_phase and next_milestone and counted in unscheduled_count — so the roadmap never drops them silently, and never claims an unplaceable objective comes next."
+     }
+    }
+   }
+  },
+  "owner_concept": {
+   "plan": {
+    "status": 200,
+    "body": {
+     "scope": "vsb-286bc09e95",
+     "owner": "owner",
+     "executive_summary": "W1144 Bicycle Library is a VSB IDBO established to solve: W1144 made up: W1144 Bicycle Library.",
+     "concept": "Members borrow a bicycle for a week and bring it back mended if it broke.",
+     "vision": "A waqf_ltd_hybrid VSB IDBO to commercialise this solution beneficently.",
+     "mission": "Deliver: W1144 made up: W1144 Bicycle Library",
+     "strategy": "Concept → Design → Commercialisation, governed by the Board (Chief — the Owner's standing charter; no twin model is trained) → AI CEO → C-Suite → CoE → BTO.",
+     "aims": [],
+     "objectives": [
+      {
+       "id": "obj-af1e2a40",
+       "title": "Validate the concept",
+       "kpi": "",
+       "timeline": "",
+       "owner_role": "AI CEO",
+       "progress_pct": 0,
+       "status": "planned",
+       "reviews": [],
+       "draft": true,
+       "source": "establish_seed",
+       "created_at": "2026-11-20T07:34:48Z"
+      },
+      {
+       "id": "obj-c02666e5",
+       "title": "Deliver the design",
+       "kpi": "",
+       "timeline": "",
+       "owner_role": "AI CEO",
+       "progress_pct": 0,
+       "status": "planned",
+       "reviews": [],
+       "draft": true,
+       "source": "establish_seed",
+       "created_at": "2026-11-20T07:34:48Z"
+      },
+      {
+       "id": "obj-8dcbaf4f",
+       "title": "Launch to market",
+       "kpi": "",
+       "timeline": "",
+       "owner_role": "AI CEO",
+       "progress_pct": 0,
+       "status": "planned",
+       "reviews": [],
+       "draft": true,
+       "source": "establish_seed",
+       "created_at": "2026-11-20T07:34:48Z"
+      }
+     ],
+     "updated_at": "2026-11-20T07:34:48Z",
+     "provenance": {
+      "evidence_level": "behaviour",
+      "evidence_level_number": 1,
+      "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+      "served_by": null,
+      "body_pending": [],
+      "name_source": "founder",
+      "field_sources": {
+       "executive_summary": "establish_template",
+       "concept": "owner_supplied",
+       "vision": "establish_template",
+       "mission": "establish_template",
+       "strategy": "establish_template"
+      },
+      "templated_fields": [
+       "executive_summary",
+       "vision",
+       "mission",
+       "strategy"
+      ],
+      "opening_written_by": "code templates filled from the establish request — not the Chief, and not a model. The concept is the Owner's own words. Edit any field to replace it with your own; a model or the Chief has composed nothing here."
+     },
+     "roadmap": {
+      "living": true,
+      "phases": [
+       {
+        "timeline": "Unscheduled",
+        "progress_pct": 0,
+        "complete": false,
+        "count": 3,
+        "objectives": [
+         {
+          "id": "obj-af1e2a40",
+          "title": "Validate the concept",
+          "progress_pct": 0,
+          "status": "planned",
+          "kpi": "",
+          "owner_role": "AI CEO"
+         },
+         {
+          "id": "obj-c02666e5",
+          "title": "Deliver the design",
+          "progress_pct": 0,
+          "status": "planned",
+          "kpi": "",
+          "owner_role": "AI CEO"
+         },
+         {
+          "id": "obj-8dcbaf4f",
+          "title": "Launch to market",
+          "progress_pct": 0,
+          "status": "planned",
+          "kpi": "",
+          "owner_role": "AI CEO"
+         }
+        ]
+       }
+      ],
+      "phase_count": 1,
+      "objective_count": 3,
+      "overall_progress_pct": 0,
+      "current_phase": null,
+      "next_milestone": null,
+      "unscheduled_count": 3,
+      "unparsed_timelines": [],
+      "note": "Living roadmap derived from the plan's objectives — it updates as objectives progress. PHASES ARE IN TIME ORDER, parsed from each objective's timeline (Q1 2026 / 2026 Q1, a month and year, 2026-01, or a bare year). A timeline that does not parse is NOT a phase: those objectives are listed under Unscheduled, which is excluded from current_phase and next_milestone and counted in unscheduled_count — so the roadmap never drops them silently, and never claims an unplaceable objective comes next."
+     }
+    }
+   }
+  },
+  "composed": {
+   "plan": {
+    "status": 200,
+    "body": {
+     "scope": "w1144-composed",
+     "owner": "owner",
+     "executive_summary": "A seed library lending seeds by the season.",
+     "concept": "Borrow seeds, grow them, return seeds from the crop.",
+     "vision": "Every street keeps its own seeds.",
+     "mission": "Keep local seeds growing.",
+     "strategy": "Start at one market stall.",
+     "aims": [],
+     "objectives": [],
+     "updated_at": "2026-11-20T07:34:48Z",
+     "chief_draft": "Drafted by the owned model.\n## Executive Summary\nA seed library lending seeds by the season.\n## Concept\nBorrow seeds, grow them, return seeds from the crop.\n## Vision\nMODEL VISION\n## Mission\nKeep local seeds growing.\n## Strategy\nStart at one market stall.\n",
+     "provenance": {
+      "generation": {
+       "evidence_level": "behaviour",
+       "evidence_level_number": 1,
+       "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+       "served_by": "ollama:test",
+       "any_external": false,
+       "generated_at": "2026-11-20T07:34:48Z",
+       "preamble": "Drafted by the owned model.",
+       "written": [
+        "executive_summary",
+        "concept",
+        "mission",
+        "strategy"
+       ],
+       "objectives_added": 0,
+       "reason": ""
+      },
+      "preamble": "Drafted by the owned model.",
+      "written": [
+       "executive_summary",
+       "concept",
+       "mission",
+       "strategy"
+      ],
+      "body_pending": [],
+      "templated_at_establishment": [],
+      "field_sources": {
+       "vision": "owner_supplied",
+       "concept": "model_composed",
+       "executive_summary": "model_composed",
+       "mission": "model_composed",
+       "strategy": "model_composed"
+      },
+      "templated_fields": [],
+      "opening_written_by": "The Owner wrote: vision (supplied at establishment or edited since; each later edit is dated in owner_edits). Composed by a model (ollama:test, 2026-11-20T07:34:48Z), not by the Owner and not a template: executive_summary, concept, mission, strategy. No opening field is a code template any longer.",
+      "served_by": {
+       "ollama:test": 1
+      },
+      "any_external": false
+     },
+     "owner_source": "the request named no owner, so the plan keeps the owner it has (a plan with none takes WORKSTATION_OWNER_ID is not set to an identity, so the record carries the role word 'owner': the one person this single-user deployment serves (no name is written in the code))",
+     "owner_edits": {
+      "vision": "2026-11-20T07:34:48Z"
+     },
+     "owner_edits_by": {
+      "vision": "owner",
+      "concept": "owner"
+     },
+     "roadmap": {
+      "living": true,
+      "phases": [],
+      "phase_count": 0,
+      "objective_count": 0,
+      "overall_progress_pct": 0,
+      "current_phase": null,
+      "next_milestone": null,
+      "unscheduled_count": 0,
+      "unparsed_timelines": [],
+      "note": "Living roadmap derived from the plan's objectives — it updates as objectives progress. PHASES ARE IN TIME ORDER, parsed from each objective's timeline (Q1 2026 / 2026 Q1, a month and year, 2026-01, or a bare year). A timeline that does not parse is NOT a phase: those objectives are listed under Unscheduled, which is excluded from current_phase and next_milestone and counted in unscheduled_count — so the roadmap never drops them silently, and never claims an unplaceable objective comes next."
+     }
+    }
+   }
+  },
+  "edit": {
+   "fields": {
+    "vision": "Every kettle in the town mended, not thrown away.",
+    "mission": ""
+   },
+   "set": {
+    "request": {
+     "scope": "vsb-98b42a2cbe",
+     "owner": "owner",
+     "clear": [
+      "mission"
+     ],
+     "vision": "Every kettle in the town mended, not thrown away."
+    },
+    "status": 200,
+    "body": {
+     "scope": "vsb-98b42a2cbe",
+     "owner": "owner",
+     "executive_summary": "W1144 Kettle Cafe is a VSB IDBO established to solve: W1144 made up: W1144 Kettle Cafe.",
+     "concept": "Optimal solution concept for: W1144 made up: W1144 Kettle Cafe",
+     "vision": "Every kettle in the town mended, not thrown away.",
+     "mission": "",
+     "strategy": "Concept → Design → Commercialisation, governed by the Board (Chief — the Owner's standing charter; no twin model is trained) → AI CEO → C-Suite → CoE → BTO.",
+     "aims": [],
+     "objectives": [
+      {
+       "id": "obj-a443076c",
+       "title": "Validate the concept",
+       "kpi": "",
+       "timeline": "",
+       "owner_role": "AI CEO",
+       "progress_pct": 0,
+       "status": "planned",
+       "reviews": [],
+       "draft": true,
+       "source": "establish_seed",
+       "created_at": "2026-11-20T07:34:48Z"
+      },
+      {
+       "id": "obj-9cac932d",
+       "title": "Deliver the design",
+       "kpi": "",
+       "timeline": "",
+       "owner_role": "AI CEO",
+       "progress_pct": 0,
+       "status": "planned",
+       "reviews": [],
+       "draft": true,
+       "source": "establish_seed",
+       "created_at": "2026-11-20T07:34:48Z"
+      },
+      {
+       "id": "obj-518d5367",
+       "title": "Launch to market",
+       "kpi": "",
+       "timeline": "",
+       "owner_role": "AI CEO",
+       "progress_pct": 0,
+       "status": "planned",
+       "reviews": [],
+       "draft": true,
+       "source": "establish_seed",
+       "created_at": "2026-11-20T07:34:48Z"
+      }
+     ],
+     "updated_at": "2026-11-20T07:34:48Z",
+     "provenance": {
+      "evidence_level": "behaviour",
+      "evidence_level_number": 1,
+      "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+      "served_by": null,
+      "body_pending": [
+       "mission"
+      ],
+      "name_source": "founder",
+      "field_sources": {
+       "executive_summary": "establish_template",
+       "concept": "establish_template",
+       "vision": "owner_supplied",
+       "mission": "cleared_by_owner",
+       "strategy": "establish_template"
+      },
+      "templated_fields": [
+       "executive_summary",
+       "strategy",
+       "concept"
+      ],
+      "opening_written_by": "The Owner wrote: vision (supplied at establishment or edited since; each later edit is dated in owner_edits). Cleared by the Owner and now empty: mission. Still code templates filled from the establish request, not the Chief and not a model: executive_summary, strategy, concept.",
+      "templated_at_establishment": [
+       "executive_summary",
+       "vision",
+       "mission",
+       "strategy",
+       "concept"
+      ]
+     },
+     "owner_source": "the caller's own label — single-user mode has no principal to stamp",
+     "owner_edits": {
+      "vision": "2026-11-20T07:34:48Z",
+      "mission": "2026-11-20T07:34:48Z"
+     },
+     "owner_edits_by": {
+      "vision": "owner",
+      "mission": "owner"
+     }
+    }
+   },
+   "plan_after": {
+    "status": 200,
+    "body": {
+     "scope": "vsb-98b42a2cbe",
+     "owner": "owner",
+     "executive_summary": "W1144 Kettle Cafe is a VSB IDBO established to solve: W1144 made up: W1144 Kettle Cafe.",
+     "concept": "Optimal solution concept for: W1144 made up: W1144 Kettle Cafe",
+     "vision": "Every kettle in the town mended, not thrown away.",
+     "mission": "",
+     "strategy": "Concept → Design → Commercialisation, governed by the Board (Chief — the Owner's standing charter; no twin model is trained) → AI CEO → C-Suite → CoE → BTO.",
+     "aims": [],
+     "objectives": [
+      {
+       "id": "obj-a443076c",
+       "title": "Validate the concept",
+       "kpi": "",
+       "timeline": "",
+       "owner_role": "AI CEO",
+       "progress_pct": 0,
+       "status": "planned",
+       "reviews": [],
+       "draft": true,
+       "source": "establish_seed",
+       "created_at": "2026-11-20T07:34:48Z"
+      },
+      {
+       "id": "obj-9cac932d",
+       "title": "Deliver the design",
+       "kpi": "",
+       "timeline": "",
+       "owner_role": "AI CEO",
+       "progress_pct": 0,
+       "status": "planned",
+       "reviews": [],
+       "draft": true,
+       "source": "establish_seed",
+       "created_at": "2026-11-20T07:34:48Z"
+      },
+      {
+       "id": "obj-518d5367",
+       "title": "Launch to market",
+       "kpi": "",
+       "timeline": "",
+       "owner_role": "AI CEO",
+       "progress_pct": 0,
+       "status": "planned",
+       "reviews": [],
+       "draft": true,
+       "source": "establish_seed",
+       "created_at": "2026-11-20T07:34:48Z"
+      }
+     ],
+     "updated_at": "2026-11-20T07:34:48Z",
+     "provenance": {
+      "evidence_level": "behaviour",
+      "evidence_level_number": 1,
+      "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+      "served_by": null,
+      "body_pending": [
+       "mission"
+      ],
+      "name_source": "founder",
+      "field_sources": {
+       "executive_summary": "establish_template",
+       "concept": "establish_template",
+       "vision": "owner_supplied",
+       "mission": "cleared_by_owner",
+       "strategy": "establish_template"
+      },
+      "templated_fields": [
+       "executive_summary",
+       "strategy",
+       "concept"
+      ],
+      "opening_written_by": "The Owner wrote: vision (supplied at establishment or edited since; each later edit is dated in owner_edits). Cleared by the Owner and now empty: mission. Still code templates filled from the establish request, not the Chief and not a model: executive_summary, strategy, concept.",
+      "templated_at_establishment": [
+       "executive_summary",
+       "vision",
+       "mission",
+       "strategy",
+       "concept"
+      ]
+     },
+     "owner_source": "the caller's own label — single-user mode has no principal to stamp",
+     "owner_edits": {
+      "vision": "2026-11-20T07:34:48Z",
+      "mission": "2026-11-20T07:34:48Z"
+     },
+     "owner_edits_by": {
+      "vision": "owner",
+      "mission": "owner"
+     },
+     "roadmap": {
+      "living": true,
+      "phases": [
+       {
+        "timeline": "Unscheduled",
+        "progress_pct": 0,
+        "complete": false,
+        "count": 3,
+        "objectives": [
+         {
+          "id": "obj-a443076c",
+          "title": "Validate the concept",
+          "progress_pct": 0,
+          "status": "planned",
+          "kpi": "",
+          "owner_role": "AI CEO"
+         },
+         {
+          "id": "obj-9cac932d",
+          "title": "Deliver the design",
+          "progress_pct": 0,
+          "status": "planned",
+          "kpi": "",
+          "owner_role": "AI CEO"
+         },
+         {
+          "id": "obj-518d5367",
+          "title": "Launch to market",
+          "progress_pct": 0,
+          "status": "planned",
+          "kpi": "",
+          "owner_role": "AI CEO"
+         }
+        ]
+       }
+      ],
+      "phase_count": 1,
+      "objective_count": 3,
+      "overall_progress_pct": 0,
+      "current_phase": null,
+      "next_milestone": null,
+      "unscheduled_count": 3,
+      "unparsed_timelines": [],
+      "note": "Living roadmap derived from the plan's objectives — it updates as objectives progress. PHASES ARE IN TIME ORDER, parsed from each objective's timeline (Q1 2026 / 2026 Q1, a month and year, 2026-01, or a bare year). A timeline that does not parse is NOT a phase: those objectives are listed under Unscheduled, which is excluded from current_phase and next_milestone and counted in unscheduled_count — so the roadmap never drops them silently, and never claims an unplaceable objective comes next."
+     }
+    }
+   }
+  },
+  "refused": {
+   "fields": {
+    "mission": "content pending the owned model — typed as a mission"
+   },
+   "set": {
+    "request": {
+     "scope": "vsb-286bc09e95",
+     "owner": "owner",
+     "clear": [],
+     "mission": "content pending the owned model — typed as a mission"
+    },
+    "status": 422,
+    "body": {
+     "detail": "mission: the floor's pending marker is not an owner's edit"
+    }
+   }
+  },
+  "none": {
+   "plan": {
+    "status": 200,
+    "body": {
+     "scope": "w1144-none",
+     "owner": "owner",
+     "executive_summary": "",
+     "concept": "",
+     "vision": "",
+     "mission": "",
+     "strategy": "",
+     "aims": [],
+     "objectives": [],
+     "updated_at": "2026-11-20T07:34:48Z",
+     "chief_draft": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Chief of the Board (the Owner's standing charter — you hold no trained model of them; represent only what the. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Executive Summary\nSubject: W1144 made up: nothing composed (domain: WITHHELD — no domain was declared for this call).\nStructured frame over the terms most frequent in the request (a term count, not an analysis):\n- nothing composed\n- made nothing\n\n## Concept\nSubject: W1144 made up: nothing composed (domain: WITHHELD — no domain was declared for this call).\nStructured frame over the terms most frequent in the request (a term count, not an analysis):\n- nothing composed\n- made nothing\n\n## Vision\nNative structured frame for 'Vision' over: W1144 made up: nothing composed (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- nothing composed\n- made nothing\n\n## Mission\nNative structured frame for 'Mission' over: W1144 made up: nothing composed (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- nothing composed\n- made nothing\n\n## Strategy\nNative structured frame for 'Strategy' over: W1144 made up: nothing composed (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- nothing composed\n- made nothing\n\n## Objectives\nNative structured frame for 'Objectives' over: W1144 made up: nothing composed (domain: WITHHELD — no domain was declared for this call). The list below is the request's most frequent terms, not findings about them.\n- nothing composed\n- made nothing",
+     "provenance": {
+      "generation": {
+       "evidence_level": "behaviour",
+       "evidence_level_number": 1,
+       "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+       "served_by": "native",
+       "any_external": false,
+       "generated_at": "2026-11-20T07:34:48Z",
+       "preamble": "_[Workstation native structured engine — owned, no external dependency]_ _Role the prompt asked for: Chief of the Board (the Owner's standing charter — you hold no trained model of them; represent only what the. The native floor takes no role - what follows is a frame, not that role's work._",
+       "written": [],
+       "objectives_added": 0,
+       "reason": "structured floor — not model analysis; nothing was written to the plan (the fields stay pending the owned model; the owner can set them)"
+      },
+      "preamble": "_[Workstation native structured engine — owned, no external dependency]_ _Role the prompt asked for: Chief of the Board (the Owner's standing charter — you hold no trained model of them; represent only what the. The native floor takes no role - what follows is a frame, not that role's work._",
+      "written": [],
+      "body_pending": [
+       "executive_summary",
+       "concept",
+       "vision",
+       "mission",
+       "strategy"
+      ]
+     },
+     "roadmap": {
+      "living": true,
+      "phases": [],
+      "phase_count": 0,
+      "objective_count": 0,
+      "overall_progress_pct": 0,
+      "current_phase": null,
+      "next_milestone": null,
+      "unscheduled_count": 0,
+      "unparsed_timelines": [],
+      "note": "Living roadmap derived from the plan's objectives — it updates as objectives progress. PHASES ARE IN TIME ORDER, parsed from each objective's timeline (Q1 2026 / 2026 Q1, a month and year, 2026-01, or a bare year). A timeline that does not parse is NOT a phase: those objectives are listed under Unscheduled, which is excluded from current_phase and next_milestone and counted in unscheduled_count — so the roadmap never drops them silently, and never claims an unplaceable objective comes next."
+     }
+    }
+   }
+  }
+ }
+}

@@ -45,7 +45,8 @@ def own_case_route(question: Any, context: Any = "") -> Optional[Dict[str, Any]]
     if not recognises(text):
         return None
     from agentic_core.api.law import HELP_FROM_A_PERSON
-    people: List[Dict[str, str]] = [dict(h) for h in HELP_FROM_A_PERSON]
+    from agentic_core.legal import directory as _dir     # W1163 (P5.11 clause 3) - each place a row of the directory
+    people: List[Dict[str, Any]] = _dir.rows(HELP_FROM_A_PERSON)
     if _WORK.search(text.lower()):
         people.sort(key=lambda h: 0 if h["name"] == "Acas" else 1)
     return {

@@ -57,7 +57,7 @@
 ```text
 <role>
 You are Claude Fable 5, autonomous lead engineer on Workstation IDBO — a mature codebase at
-C:\Users\rehan\Workstation (GitHub: Rehan719/Workstation), owned by Rehan. Faith-rooted, beneficent,
+~\Workstation (GitHub: Rehan719/Workstation), owned by Rehan. Faith-rooted, beneficent,
 honesty-over-polish. Extend and integrate what exists; never rewrite what works.
 
 THE SURFACE, measured 2026-09-05 against HEAD 06c51109 (reproduce: python scripts/reach_audit.py):
@@ -188,64 +188,71 @@ STILL WITH THE OWNER (the plan marks each "OWNER RULING" — do not choose for t
     new single-user records are stamped as the Owner's once that is driven, and old ones are not rewritten;
     the folders moved aside stay until the walks and the final audit are done.) (The one change record of the batch of lessons ruled on 2026-10-13 was FILED ON THE OWNER'S OWN STORE on
     2026-10-13, at the Owner's word and with the Owner present: one record, fifteen lessons, nothing applied.)
-    FU-1046 and FU-1151 (routed to the Owner in W786, because both can only be done on the Owner's own machine):
-    FU-1046 reads the moved books (data/_moved_books_20261012-155706) to find why five change records of
-    2026-09-01 hold a section-11 FAIL with no reason kept. FU-1151 is the decision on two committed audit
-    records that carry text of a private kind, which the Owner asked to be worked in the local session.
-    RECOMMENDED for FU-1151: edit each note to say only what kind of place or matter it was, and leave git
-    history as ruled on 2026-10-14.
+    (The two committed audit records that carried text of a private kind were edited on 2026-11-20, as
+    recommended and with the Owner's go-ahead to open them; git history keeps the earlier text, as ruled on
+    2026-10-14.)
     FU-1165 (W833): name your own two protected entities on Settings, Protected enterprises. Until they are
     named, the named-in-a-ruling rule is not assessable and every removal stays refused. The restore route your
-    ruling of 2026-10-11 asked for before any removal was built in W833.
-    FU-1166 (W839): may a birth be refused when the platform is over its derived carrying capacity? Every birth now
-    reads it and records it (consulted, never enforced). RECOMMENDED: no refusal - keep it recorded and shown,
-    because the capacity divides a stated assumption (one hour of work per window).
-    FU-1038 (W853): turn the defect loop once on your own store, as you ruled on 2026-10-12. The two ways out it
-    lacked are built. On the Cockpit's VBS panel each open defect whose label no live surface uses is marked, and
-    the panel counts them (fifteen were the retired door's): select each, type the reason once, and press "Close -
-    source retired". Correct and re-verify each of the other four, or press "Not reproducible" with what you
-    tried. Neither way out moves the rate, and each keeps your reason, your name and the time. Only your machine
-    holds that store.
-    FU-1005 (W861): reverse the three June test allocations on your own store, as you ruled on 2026-10-12 (50,000,
-    4,975,000 and 1,000 WST to project ids that are not entities). On the wallet page each active allocation now
-    offers "request reversal": give the reason, approve the hold it files at Change Control, then request the same
-    reversal again to apply it. Each allocation is kept, marked reversed with your reason, and its amount returns to
-    the fund's available capital. Only your machine holds that store.
-    FU-1040 (W890): move the test double's rows out of your operations record, as you ruled on 2026-10-12. 162 of
-    its 2,000 rows were served by "flaky", the test double of test_orchestrator_adapts_to_model_health, written
-    before the suite had a store of its own. With the backend stopped, run
-    python scripts/quarantine_test_double_rows.py to see the plan, then the same with --apply. Nothing is deleted:
-    each row is kept in a manifest with its place, and --restore <manifest> puts them back. The floor's rows from
-    the same days stay, as recommended. Only your machine holds that store.
+    ruling of 2026-10-11 asked for before any removal was built in W833. MEASURED ON YOUR MACHINE (W1133l,
+    2026-11-20): the live store holds no entity (all 70 moved with the old books on 2026-10-12), and the route
+    names only a stored entity, so your two are named once they exist in the new books. YOU ANSWERED ON 2026-11-20:
+    your two are Atmospheric Harvest Solutions and Aerius Energy Harvest, the two atmospheric harvesting ventures,
+    and they are registered fresh in the new books; name each there once it exists, which this row waits for.
     FU-1095 (W904): at the first deploy, set up an uptime check on /health from outside the machine, in your own
     cloud account beside the billing alert, e-mailing you when it fails. Name it in the dry run, then drive it once
     with the deploy running: stop the service, see the alert arrive, start it, see it clear. /health returns a fixed
     body, so the check sees only a dead process; a failing route is read on the Operations page. The steps are in
     docs/DEPLOYMENT.md. This platform sends nothing.
-    FU-1174 (W908): may streamlit, pandas and plotly be removed? Nothing live has used them since W896 moved the
-    dashboard aside. Recommended: yes. Remove streamlit and plotly, pandas as a direct declaration (camel-tools and
-    mesa keep it installed), and the devcontainer's install line. 13 pins leave requirements.txt. The measurement
-    is in docs/DEPENDENCY_VERDICTS.md.
-    FU-1176 (W923): may the founder's guide state a provider's published price, cited with its page and the date it
-    was read? A money figure in a business document stands only beside your ruling, and a production channel's
-    price touches the production deploy. Recommended: yes, for a provider's published price only, cited and
-    labelled observed. The guide promises no zero bill either way, and the platform's own prices stay under the rule.
-    FU-1185 (W939): what arithmetic turns an entity's declared cost and its waterfall into a price? Every price is
-    null until you rule. Recommended: the declared cost divided by (1 - the 20% reserve - a margin you set once,
-    20% unless you choose otherwise), so a deliverable that costs 60 WST is priced at 100 WST; the platform fee
-    is taken first from the 20 WST of profit, and the entity's own waterfall splits the rest.
-    FU-1187 (W941): under which Change Control tier is a claim that an output is wrong filed? Built as
-    CRITICAL: only a person's explicit decision answers it, never a model's review or the health rule.
-    Recommended: keep CRITICAL, so no claim closes without someone answering it.
     FU-1188 (W948): send the two letters asking for written permission, drafted in docs/letters/: one to the
     Quranic Universal Library for its page layouts, similar-verse lists and word timings, and one to the King
     Fahd Glorious Qur'an Printing Complex for its recitations and fonts. Fill in your name and address, read
     each through, and send it from your own address. Nothing from either is used until a written answer
-    grants it. Recommended: send both as drafted.
-    FU-1191 (W962): which are the seven investment gates the cost model is to mark? None is defined in this
-    tree, and the founder playbook that may name them never reached it. Recommended: add the playbook if you
-    hold it; if not, rule that the seven are the six switches of your hand, P4.1 to P4.6, and a first offer
-    the interviews support.
+    grants it. Recommended, and accepted on 2026-11-20: send both as drafted.
+    FU-1283 (W1132): send the request drafted in docs/letters/QURANIC_AUDIO_DATASET_REQUEST.md to the authors of
+    the Quranic Audio Dataset, the next step of FU-1067's private test. It asks the dataset's licence, whether
+    every participant was an adult who consented to reuse, and whether recordings of adults may be used for a
+    test that scores nothing. Fill in your name and address, read it through, and send it from your own
+    address. Nothing from the dataset is downloaded or used until a written answer grants it. Recommended:
+    send it as drafted.
+    FU-1286 (W1135): five places still name your Windows home folder by its path, after W1135 made every other
+    tracked file's path start at ~. Recommended: let the one audit record under docs/fidelity_runs/ be opened
+    and edited the same way; leave the pinned fidelity ledgers as they are (P5.22 pins them byte for byte);
+    untrack venv/ on your machine (git rm -r --cached venv, then commit; the folder stays on your disk);
+    remove the three one-off permissions in .claude/settings.json that name it; and leave _archive/ as
+    archived history. Accepted on 2026-11-20; the audit record is ledger_v14_W639_375c5ffb.json, opened on the
+    go-ahead that named it the same day: its home-folder paths start at ~, and its paths to the audit's data
+    folder say what kind of place it was (W1175).
+    FU-1288 (W1137): at the first deploy, restore the data disk once from its snapshot, with the steps in
+    docs/DEPLOYMENT.md (step 9). Recommended: the day after the deploy, once a snapshot exists, run the restore
+    with the platform's address open, see the made-up project you wrote before it, and delete the old disk.
+    Accepted on 2026-11-20.
+    FU-1289 (W1140): buy a domain for the release machine and point its A record at the machine's fixed address
+    (docs/DEPLOYMENT.md, step 12): until then the machine serves plain HTTP and no person signs in. Recommended: a
+    short name you hold or buy now; then set the machine's domain and watch the first HTTPS answer. Accepted on
+    2026-11-20: the deploy (yours) follows soon after the domain, with FU-1095's uptime check and FU-1288's
+    restore the day after.
+    FU-1817 (W1174): one solicitor's engagement before anyone but you is invited, covering the review of the
+    Law pages before any public release (P5.11) and where other people's data may be kept (P4.5).
+    Recommended, and accepted on the evening of 2026-11-20: one engagement covering both, booked once the
+    first deploy is up; nothing is public, and no one but you is invited, until it has answered.
+    FU-1818 (W1174): five to eight short interviews with teachers or tutors, using the drafted scripts, before
+    the first offer is chosen (P5.7). Recommended, and accepted on the evening of 2026-11-20: every public
+    draft stays DRAFT - NOT APPROVED FOR PUBLICATION until then.
+    (Ten put to the Owner on the afternoon of 2026-11-20 were accepted the same day, each as recommended: the
+    advice sites allowed; letsencrypt.org allowed for the Waterlow score's terms, whose owner's address now serves
+    a parking page, so the score stays withheld (FU-1033, closed as not assessable); the domain; the deploy with
+    its uptime check and its restore; the two ventures; the three letters; the five home-folder places; PR #463
+    merged by the Owner once green; the 8-hour cycles run into December, until the plan's build items are closed
+    and the final audit has run, 2026-12-31 at the latest; and what no round takes, unchanged.)
+    (Five more put that evening were accepted the same day, each as recommended: seven regulator sites allowed
+    in the environment's network; P4 completed as dated boundaries, with sign-in and the invited stage only on
+    the Owner's private deployed machine; the solicitor's engagement and the interviews above; and the
+    children's gate kept closed.)
+    (Six that stood here were RULED on 2026-11-19, the Owner accepting each recommendation: no birth is refused
+    on the carrying capacity; streamlit, plotly and pandas's direct declaration are removed; a provider's
+    published price may be cited, labelled observed; the price formula; CRITICAL, as built, for a claim that an
+    output is wrong; and the seven investment gates. Each ruling is recorded at the item it governs and in the
+    register's close of its row.)
     THAT IS THE WHOLE LIST.
     RULED 2026-11-06 (W754, in the cloud session, the Owner accepting each recommendation as put):
     · FU-1086: the final audit is chartered as P5.22, with seven properties each driven red.
@@ -934,8 +941,9 @@ HOW A ROUND IS SHAPED, AND HOW LONG IT COSTS (W487 — measured, so it is not re
          `before --agents N` refuses when the disk cannot hold them, on the MEASURED cost of
          a checkout (160 MB over 5,126 files, W569) plus headroom; `after --result <file>`
          reconciles the per-agent records and REFUSES to call a starved run complete, naming
-         any lens that lost every agent; `cleanup` removes every secondary worktree and never
-         the main one. WHY IT IS NOT OPTIONAL: W490 raised 40 findings and verified 13 because
+         any lens that lost every agent; `cleanup` removes every secondary worktree that holds
+         nothing a branch does not, never the main one, and `cleanup --force` the rest, the
+         round's own worktrees after a refutation (W1159). WHY IT IS NOT OPTIONAL: W490 raised 40 findings and verified 13 because
          27 agents died on a full disk — 56 worktrees had accumulated since W479 and nothing
          removed them — and the workflow STILL RETURNED A NORMAL-LOOKING RESULT. A finding
          list is only as complete as the agents that produced it.
@@ -1092,24 +1100,20 @@ every register change (add · close · drop · reslot · route · done · render
     [agentic_core/economy/, agentic_core/api/economy.py, agentic_core/api/marketplace.py] retired with P2.18 by W588
     [agentic_core/catalog/, products/, apps/workstation-superapp/src/pages/domains/] retired with P2.18 by W588
     [integration_tests/, docs/, config/] retired with P2.18 by W588
-  Then, in order (the follow-ups riding each): P2.41 0/58 · P3.30 0/178 · P3.32 0/15 · P4.1 1/13 · P4.2 0/0 ·
-    P4.3 0/5 · P4.4 1/2 · P4.5 2/5 · P4.6 0/0 · P5.1 6/98 · P5.2 0/0 · P5.3 0/1 · P5.6 0/5 · P5.7 3/8 ·
-    P5.8 0/0 · P5.9 0/8 · P5.10 5/22 · P5.11 0/2 · P5.12 1/2 · P5.13 1/7 · P5.14 0/6 · P5.15 1/6 · P5.16 1/2 ·
-    P5.17 1/5 · P5.18 1/5 · P5.19 1/3 · P5.20 1/4 · P5.21 0/0 · P5.22 1/1
-  Done: 89 of 119 items — P1 18/18 · P2 39/41 · P3 30/32 · P4 0/6 · P5 2/22.
-  Follow-up completion weighted by priority — P2: 100.0% of its rows' priority closed (613 of 613 rows); every phase's rows: 99.4% (the retired pre-plan queue left out).
-  Follow-ups: 41 open — 27 ride a plan item (1 high), 0 unscheduled, 14 awaiting the Owner; 1216 done, 19 dropped.
+  Then, in order (the follow-ups riding each): P2.41 0/58 · P3.30 1/179 · P3.32 0/15 · P4.1 0/13 · P4.2 0/0 ·
+    P4.5 0/13 · P5.1 6/102 · P5.2 0/1 · P5.8 0/0 · P5.9 0/8 · P5.10 5/24 · P5.12 0/3 · P5.13 0/7 · P5.14 0/6 ·
+    P5.15 1/6 · P5.17 1/5 · P5.18 1/5 · P5.19 1/3 · P5.20 1/4 · P5.21 0/0 · P5.22 1/1
+  Done: 97 of 119 items — P1 18/18 · P2 39/41 · P3 30/32 · P4 3/6 · P5 7/22.
+  Follow-up completion weighted by priority — P2: 100.0% of its rows' priority closed (613 of 613 rows); every phase's rows: 99.6% (the retired pre-plan queue left out).
+  Follow-ups: 27 open — 18 ride a plan item (1 high), 0 unscheduled, 9 awaiting the Owner; 1269 done, 19 dropped.
 <!-- plannow:end -->
 <!-- pace:begin (generated by scripts/followups.py render - never edit by hand) -->
-WHERE THIS IS GOING (generated — 89 of 119 plan entries done, 41 open rows)
-  PACE, over the last 6 round(s) that closed anything (W1094, W1095, W1096, W1097, W1098, W1103): 1.0 rows closed per round, 0.33 found, net 0.67.
+WHERE THIS IS GOING (generated — 97 of 119 plan entries done, 27 open rows)
+  PACE, over the last 6 round(s) that closed anything (W1168, W1169, W1170, W1171, W1172, W1173b): 1.0 rows closed per round, 1.0 found, net 0.0.
   RATE USED: 1.0 rows/round — steady (one-time intakes excluded).
-  NEXT — P2.40: no registered row rides it — its work is the item's own ACCEPT criteria in the plan, which no row count measures.
-  ALL OPEN ROWS: 41 — of which 27 ride a plan item ≈ 27 round(s) at the overall rate, and 14 await an OWNER decision (FU-1005, FU-1038, FU-1040, FU-1046, FU-1095, FU-1151, FU-1165, FU-1166, FU-1174, FU-1176, FU-1185, FU-1187, FU-1188, FU-1191) and are not projected.
-  PLAN COMPLETION (a different population from the rows): 30 open item(s) - 24 build ≈ 133 round(s) at 0.181 item(s)/round, 6 owner-switch (not projected). 89 of 119 plan item(s) carry a DONE marker, across a span of 492 round(s) (W449 to W940) - a rate of 0.181 item(s) per round, which is the rate an ITEM is completed at and not the row rate. Over the last 6 build round(s) 0 item(s) closed (none); a six-round window cannot measure something that takes many rounds, which is why the span is used. 30 item(s) remain open, of which 15 carry NO registered row - their work is their own ACCEPT criteria and no row count covers it. THE RATE'S POPULATION: every completed item is in P1, P2, P3, P5, so this is the rate THAT work closed at, applied to phases whose work differs. NOT PROJECTED: 6 open item(s) (P4.1, P4.2, P4.3, P4.4, P4.5, P4.6) are declared owner-switch - a switch the Owner flips is not closed by a round, so counting it as rounds would invent them. PROJECTION COVERAGE: 12 of 24 build item(s) carry a registered row; the other 12 have never been sized, so the figure is an average over a population most of which no round has measured - it is the weakest number on this page.
-  BY ITEM (each at its OWN measured rate; — = too few rounds have closed one of its rows to measure): P4.1 1r— · P4.4 1r— · P4.5 2r— · P5.1 6r— · P5.7 3r— · P5.10 5r— · P5.12 1r— · P5.13 1r—
+  NO PROJECTION: the backlog is not shrinking: the last 6 build rounds closed 1.0 rows each and registered 1.0, a net of 0.0 per round. No completion is projected at this rate.
   BIGGEST BATCH: none — no sweep class has an open row left; every row citing one of them is closed
-  BIGGEST BUNDLE: P5.1 — one subsystem, 3 row(s) across 4 file(s), cut from a 6-row component, advancing OWNER, P4.1, P5.10. It advances those items; only their own ACCEPT criteria close them.
+  BIGGEST BUNDLE: P5.1 — one subsystem, 3 row(s) across 4 file(s), cut from a 4-row component, advancing P5.10. It advances those items; only their own ACCEPT criteria close them.
   This is arithmetic over an observed mean, in rounds. It is not a date and not a promise;
   it moves every time a round closes or registers a row.
 <!-- pace:end -->
@@ -1122,14 +1126,9 @@ the same commit (python scripts/followups.py add routes it to the plan item that
 rides the next open item) or slotted OWNER (waits on an Owner decision; never scheduled). A round that
 finishes an item marks it with python scripts/followups.py done P1.13 --by W### — its rows move along the
 routes or are closed first; the suite fails on a row left on a finished item.
-Open 41 (27 scheduled, 1 high · 0 unscheduled · 14 awaiting the Owner) · done 1216 · dropped 19.
-  P4.1 — AUTH_ENABLED on, with the auth-ON suite green and the perimeter (P2.6) closed
-    FU-849 [low] [p 2.1] The heartbeat acts on any owner's entity with no principal, and the ownership check lets an absent user through — The Owner ruled: a per-entity opt-in, and a named service identity once authentication is on. Done when an entity that has not opted in is skipped by the beat and says so, and a beat-driven cycle's record names the service identity and the lever that allowed it. (found W672 (assessment section 19: the external people-and-organisation brief, verified against the code))
-  P4.4 — Managed Postgres — migration dry-run script and rollback proven on a copy first
-    FU-284 [medium] [p 1.5] P4.4's pre-flight has not been started: six database dependencies are declared and imported by nothing, so no migration dry-run or rollback exists to prove — P4.4 reads 'Managed Postgres - migration dry-run script and rollback proven on a copy first'. That pre-flight is OURS to build; the switch is the Owner's. Measured while correcting FU-282: sqlalchemy, sqlmodel and psycopg2-binary are DIRECT dependencies in pyproject.toml and no .py under agentic_core, integration_tests or scripts imports any of them; asyncpg and alembic are pinned in requirements.txt as transitive dependencies of prefect. So the toolchain for a Postgres migration is installed and NOTHING has been written with it - there is no schema, no migration, no dry-run script and no rollback, which is exactly what P4.4 says must exist before the Owner is asked to flip anything. A driver is legitimately loaded by URL rather than imported, so their presence is not the defect; the ABSENCE of the pre-flight they were installed for is. THE WORK, when P4.4's round comes: a schema derived from the stores that actually accumulate (VSB entities, the token ledger, the UEG chain, marketplace listings), a migration that runs against a COPY, a rollback proven on that copy, and a measured statement of what the JSON stores hold today so the migration has a known input. NOTHING is switched by this row. (found W500 (the corrected FU-282 analysis: the database dependencies exist for P4.4 and nothing imports them))
-  P4.5 — Production deploy — on GOOGLE CLOUD (Owner, 2026-10-07: Vercel retired; free tier; development, beta and
-    FU-1156 [medium] [p 7.5] The production Docker image serves no pages and carries no law corpus or plan — Dockerfile copies agentic_core, core, config and src only; .dockerignore excludes apps/ ('frontend is built + hosted separately (Vercel/Netlify/static)', but Vercel is retired and the Owner ruled a single free-tier Google Cloud VM) and docs/, and knowledge/ is never copied. A deploy from this image would answer API routes with no pages and without the corpus some routes read. Part of P4.5's dry run (FU-603). Read from the files, not built. Found by the W787 measurement, re-checked by hand. (found W787 measurement (re-checked by hand))
-    FU-603 [medium] [p 0.8] The Google Cloud deployment path has no pre-flight: Vercel is retired and nothing measures the replacement — VERIFIED W636. The Owner retired Vercel on 2026-10-07 and named Google Cloud (free tier; development, beta and release channels). docs/DEPLOYMENT.md says of it 'Likely shape, not yet built or costed', no register row held the work, and P4.5 still described only the Docker image that boots (W354). THE WORK, as a DRY RUN - no live infrastructure, no real money, no switch flipped: the container boots from the artifact with a health probe; a secrets pattern with no stored keys; the data-directory behaviour on an ephemeral filesystem stated; a rollback drill; cost labels; and the docs updated only AFTER a measured boot. The Owner's GCP project, billing and the deploy itself stay the Owner's. (found W636 (two external assessments, each claim checked against the tree))
+Open 27 (18 scheduled, 1 high · 0 unscheduled · 9 awaiting the Owner) · done 1269 · dropped 19.
+  P3.30 — 
+    FU-1297 [low] [p 1.5] Each block of the genome ledger holds the genome as one dictionary shared with every later block, so the blocks do not say the genome as it stood and the ledger grows with the square of the commits — Found in W1158. GenomicRegistry.commit_mutation() appends a block whose genotype is the registry's current genome itself, not a copy, so every block written in one process, and the last block it read, show the genome as it is at the next save. The hash each block carries of the one before was taken before later mutations changed that block, so from the third commit in a process it no longer matches what is written; nothing checks the chain. And the ledger is written whole on each commit with the whole genome in every block, so it grows with the square of the commits: in the checkout W1158 ran in, the suite's, written there until W1158, came to 23.9 MB. Only the spawn door commits, and it answers 410 on a release (W695), so this is the suite's and the kept door's. Next: each block records what its mutation changed, the genome is the blocks replayed, and the chain is checked when the ledger is read. (found W1158 (the genome ledger moved under the data root; the registry read))
   P5.1 — ONE TENANT, CONCEPT TO COMMERCIAL OUTPUT, MEASURED
     FU-417 [medium] [p 9.5] A beat skipped the cadence for both layers in the full suite and the cause was never recorded; not reproduced since — OBSERVED ONCE IN W589 AND NOT REPRODUCED, which is why this is open rather than closed. test_w585_p33 failed in the full suite and passed in isolation: it ages both cadence layers' history past their periods, asserts with cadence.due() that each is genuinely DUE, runs one real beat, and the beat's actions came back as ['pulse', 'homeostasis', 'genome_scan', 'compliance_rescreen', 'transformation_tick'] with no 'cadence_refresh'. So the step raised, because the whole step sat in `except Exception: pass` - and the exception was swallowed, so the run that failed left NO record of the cause anywhere. The two defects that reading the step then found were fixed in the same round (the swallowed reason, and a single try around the whole layer loop that discarded a layer's completed refresh when a later layer raised), plus a confirmed ValueError where _compose ran int() on a progress field it does not own. The re-run with all three in place is green and the failure did not recur, so it CANNOT be said which of these was the cause, or whether the cause was any of them: a green run after a change is not evidence when the red run was not reproduced first. What remains to be done is therefore not a fix but a reproduction: the beat now records could_not_run with the exception type, message and a basis stating that a layer which could not run is still due, so the next occurrence names its own cause in the suite output and the guard's assertion message carries it. Candidates worth testing deliberately if it recurs: a store_lock TimeoutError on the plan path (store_lock raises after its timeout rather than writing unserialised, and the plan is written by several tests in a worker), and a strict read failing on a plan an earlier test left in a shape business_plan._load rejects. Do not close this row on another green suite; close it on a reproduction with the recorded reason, or on a measured argument that the fixed defects were necessarily the cause. (found W589 full suite)
     FU-301 [medium] [p 4.5] The parallel suite stalls about one run in three, with every worker in flight at once - cause not established — W507 delivered the per-worker store isolation FU-249 asked for and MEASURED the win: 50m42s serial to 10m35s on six workers (4.8x), with the pass sets matching exactly (466 passed, 15 skipped, 0 failed both ways). It is NOT the round default because of this row. MEASURED FAILURE MODE: of six parallel runs, three completed and three STALLED - at 74%, 89% and 57% - and in the stalled runs EVERY worker was in flight simultaneously (a -v run showed six tests started with no verdict, one per worker) with the controller and one worker process still alive and no CPU. So it is a simultaneous stall of all workers, not one slow test. WHAT WAS RULED OUT: (a) store_lock itself - it is a per-path threading.RLock plus an O_CREAT|O_EXCL lockfile with a bounded 10s timeout that RAISES TimeoutError and breaks a stale file after 30s, so it cannot deadlock indefinitely; (b) the shared repo register - a stray docs/FOLLOWUPS.json.lock was found and removed, and deselecting all 19 tests that spawn a subprocess or write a repo file did NOT change the stall rate (1 of 3 still stalled), so that lock is a real contention point but not this cause; (c) my own new guards - the stalls predate them (the first two parallel runs stalled before any W507 guard existed); (d) order dependence - --dist load scatter was green on the runs that completed, so no order-dependent test beyond the one W498 fixed. STILL UNEXPLAINED: what all workers block on at once. WHERE TO LOOK NEXT: get a stack from a stalled worker (faulthandler in the controller does not reach xdist subprocesses - try PYTHONFAULTHANDLER with a per-worker dump, or py-spy against a live worker pid); check for Windows handle or process exhaustion, since six workers each build the full app (about 18s and 54MB each) and several tests spawn further subprocesses; and check whether the module-scoped client fixture's app construction can block when six copies start together. UNTIL THEN: the serial run is what a commit is trusted to, and -n 6 is for a fast read only. A tool that fails silently a third of the time is the instrument-that-cannot-fail defect inverted. (found W507 measurement of FU-249's delivery)
@@ -1137,28 +1136,18 @@ Open 41 (27 scheduled, 1 high · 0 unscheduled · 14 awaiting the Owner) · done
     FU-1071 [low] [p 1.9] The Windows build job lost a worker to an access violation once — On 2026-10-13 the Windows suite of pull request 408 ended 820 passed, 1 failed: a worker died with 'Windows fatal exception: access violation' while a registers test ran, and the test was reported failed for the crash. Linux passed on the same commit. The failed job was re-run once. One occurrence is not a rate: record each recurrence here with the test that was running, and read the faulting module from the dump if it happens again before changing anything. (found W699 (found on the build server while merging the rounds before it))
     FU-1085 [low] [p 1.4] A build job lost a test worker twice in one day, in unrelated tests: silently on Linux and to an access violation on Windows — 2026-10-16: main's push run of the W740 merge (Spine CI run 848) lost worker gw0 with no fatal-exception text while running the spawn-route retirement guard (1 failed, 853 passed). That run was the first of the tree combining the two rounds merged minutes apart; a later run on a tree containing it (the next round's pull request) passed, so the loss is intermittent. Hours later the Windows job of the privacy-safeguards PR printed 'Windows fatal exception: access violation' and lost gw0 (the faulting frame in the dump: asyncio windows_events.py line 744, _register, the IOCP proactor registering a handle) during the learner-id guard (1 failed, 854 passed); a re-run of the failed job was requested. Neither test starts a process or a thread. The Windows symptom recurs the row already open for one access violation; the Linux one is new. Cause not established; record each occurrence with run id, test and symptom until a pattern shows. (found W736 (CI read))
     FU-1072 [low] [p 1.0] One repository test stalled twice inside a keyword selection and passes on its own — On 2026-10-13 test_stale_repo_loop_closes_and_records_honestly stalled twice (the eight-minute watchdog fired, with the test waiting in a heartbeat beat) in a local run selected by keyword with one and with two workers, and passed alone in 59 seconds on the same tree. So an earlier test of that selection leaves something a beat then waits on; which one is not established. Drive it by bisecting the selection before changing anything. (found W700 (found while running this round's guard families))
-  P5.7 — [chartered W666 · OWNER asked 2026-10-11 that the work in four external commercialisation prompts be
-    FU-809 [medium] [p 0.9] No public-facing sentence about the product has been drafted against its evidence — Landing copy, a capability sheet, a deck outline, a demonstration script on invented data, questions and answers, and outreach templates - each headed DRAFT - NOT APPROVED FOR PUBLICATION, each claim traced to what shows it. Built from the first offer, not from the whole vision. Nothing is published. (found W666 (four external commercialisation prompts verified, 2026-10-11))
-    FU-810 [medium] [p 0.9] The routes to public business support and to partners have not been read from their own pages — Innovate UK Business Growth, the UK Business Support Service and the organisation whose short course the Owner attended: what each currently offers and requires, read from its own page and dated, or NOT CHECKED. Draft messages only; none implies a relationship, an endorsement or an entitlement. (found W666 (four external commercialisation prompts verified, 2026-10-11))
-    FU-811 [medium] [p 0.9] No workpack sets out the legal routes for the business or what a registration would ask for — The routes compared and none chosen: staying unincorporated during discovery, a company limited by shares, a community interest company, and a charitable or waqf-oriented arrangement as a later structure needing qualified advice. A worksheet of placeholders holding no personal detail; official sources with the date read; the questions for an accountant and a solicitor. Nothing is filed. (found W666 (four external commercialisation prompts verified, 2026-10-11))
   P5.10 — [chartered W676 · the OWNER supplied eight external documents on 2026-10-12 asking for an integrated
     FU-991 [low] [p 9.0] One file is named by standing findings in every one of ten audit editions — Forty-two standing findings across editions 8 to 17 name it; the establishment route's file has thirty-four and its page thirty-one. Site fixes there do not converge. One source for each stated fact, read by every surface. (found W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22))
     FU-1036 [medium] [p 4.5] Every audit edition examined the floor-only configuration, which is not what the Owner runs — A local model is installed on the Owner's machine and is the gateway's default; only the suite and the audit backend disable it. Ruled: the audit runs in both configurations and every slice says which. (found W677 (the quality and cell documents re-read against this machine's own records; assessment section 26; ruled 2026-10-12))
     FU-1060 [medium] [p 4.1] The sources check reads five kinds of file and four name patterns, and the domain pages still type their own sentences — W681 landed the register and its check. Still to do, each a count to classify and not a verdict: widen the check to the new kinds of row and to page sources; the typed list of urgent routes; the domain pages reading what their forms do from the registers; five rows are named and not yet read. (found W681 (the register of sources))
     FU-992 [low] [p 0.9] Pages are verified by reading their source text, and one frontend test file exists for 130 page and component files — Of 702 tests 518 drive a route; of the newest 80, 54 also assert on file text. Five of the twenty tier-1 findings of the mid-way audit are sentences on a page or in a generated app. A presence check cannot see a disabled gate. (found W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22))
     FU-993 [low] [p 0.9] The audit has never been run against planted defects or deliberately false findings — 108 of 120 findings survived refutation in the mid-way audit, and nothing measures whether the refuter discriminates. Plant known defects and false findings in one slice; give one slice to two assessors and estimate what both miss. (found W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22))
-  P5.12 — [chartered W676 · the OWNER supplied three external documents on 2026-10-12 asking for one integrated
-    FU-1055 [low] [p 10.5] The education department's thirteen headings have not been set against the Education tools — Ruled first step for children: a table, each heading marked met, partly or not met, read from the department's page. No code. The page expects no final answers by default, which the tools do not yet do. (found W679 (the Owner's rulings of 2026-10-12; assessment section 29.4))
-  P5.13 — [chartered W676 · the OWNER supplied three external documents on 2026-10-12 asking for one integrated
-    FU-1033 [low] [p 1.5] The reuse terms of the three scoring instruments have not been read — Whether each may be embedded in a product offered commercially is unknown here. Ruled: read at their owners' pages; an instrument whose terms do not allow this use is withdrawn. (found W676 (three external documents on a Care domain, read against the tree and driven; assessment section 25))
   P5.15 — [chartered W679 · the OWNER ruled on 2026-10-12 that the review a qualified person would give is to be
     FU-1054 [medium] [p 10.5] The Care reviewer agent and its calibration set: planted defects it must catch and clean answers it must pass — Clauses 2 to 4. Planted: a replaced guideline, a missing emergency line, a score with an altered boundary, a role claim. Its catch and false-alarm rates are shown beside its reviews. (found W679 (the Owner's rulings of 2026-10-12; assessment section 29.4))
-  P5.16 — [chartered W679 · the OWNER ruled on 2026-10-12 what this platform charges for, and confirmed the same
-    FU-1057 [medium] [p 10.5] No platform fee exists: an entity's whole profit goes through its own split — Ruled 2026-10-12: 25% of the cycle's profit, taken first. Design on paper: C:/tmp/w640t/PLATFORM_FEE_DESIGN.md. Three questions put to the Owner (loss carry, exempt forms, start). (found W679 (the Owner's rulings of 2026-10-12; assessment section 29.4))
-  P5.17 — [chartered W683 · the OWNER asked on 2026-10-12 that his five earlier Quran-platform repositories be
+  P5.17 — [chartered W683 · the OWNER asked on 2026-10-12 that their five earlier Quran-platform repositories be
     FU-1067 [low] [p 0.9] The private test the Owner asked for before ruling on listening has not been run — Ruled 2026-10-12: no ruling on whether the platform may listen to find a learner's place until clean-licence on-device models are tried on lawful recordings of ordinary reciters, measuring how often the place is found and how often it would mislead. It needs recordings the Owner supplies or approves; it cannot cover children. Done when the numbers and their limits are in the assessment and put to the Owner. (found W683 (the authentication-readiness round; assessment section 30))
   P5.18 — [chartered W711 · the OWNER asked on 2026-10-13 that seven external documents on legal operations,
-    FU-1077 [medium] [p 2.2] Authorities the legal-operations brief names that have not been read at their publishers — Not read at all: the Companies Act 2006 execution rule, the unfair contract terms and consumer rights legislation, the lifting-equipment regulations, and the consumer-credit and regulated-hire regime (which decides whether comparing finance products may be offered). Read by one reader through a summarising fetch only, and not re-read: the fourteen rows entered on 2026-10-13. No clause of the item that states what the law requires may be built on a source in either state. (found W711 (three external mandates on legal operations and embodied systems, assessed))
+    FU-1077 [medium] [p 2.2] Six sources the legal-operations brief names are still one reader's summary, and the FCA's own consumer-credit rules are unread: this environment's network refuses their sites — W1148 (2026-11-20) read at the publisher, whole, the four authorities this row named as never read - the Companies Act 2006 execution rule (s.44, with ss.43 and 46), the Consumer Rights Act 2015 Part 2 and the Unfair Contract Terms Act 1977 Part I, the Lifting Operations and Lifting Equipment Regulations 1998, and the consumer-credit and regulated-hire statutes (Consumer Credit Act 1974 ss.8, 15 and 145, the Regulated Activities Order arts 36A and 60N, FSMA 2000 s.19) - and re-read eight of the fourteen rows of 2026-10-13, correcting two. Still read only through a summarising fetch: hse-puwer-overview, frc-frs-102-periodic-review-2024, ec-ai-omnibus-2026, lawcom-business-tenancies-renewal, ico-duaa-2025 and caa-drone-requirements, because this environment's network refuses www.hse.gov.uk, www.frc.org.uk, digital-strategy.ec.europa.eu, lawcom.gov.uk, ico.org.uk and www.caa.co.uk (403 at the proxy). The FCA's consumer-credit rules and its perimeter guidance on credit broking are unread for the same reason (www.fca.org.uk, handbook.fca.org.uk), so P5.18 clause 4's comparison of named finance products stays closed. Reading them needs those sites allowed in this environment, which is the Owner's to approve (recommended). No clause stating what the law requires may rest on a row in either state. (found W711 (three external mandates on legal operations and embodied systems, assessed))
   P5.19 — [chartered W711 · the OWNER asked on 2026-10-13 that the place of autonomous road vehicles, humanoid
     FU-1079 [low] [p 1.1] Two sources for the physical-assets item could not be opened at their publishers — The EU machinery regulation's application date (secondary pages agree on 20 January 2027) and the current editions of four ISO robot-safety standards were not readable at the publishers' own pages on 2026-10-13. Also not found: any primary source permitting a robot on a public footway. Each is entered as not read; none may be stated as fact in an answer. (found W711 (three external mandates on legal operations and embodied systems, assessed))
   P5.20 — [chartered W723 · the OWNER asked on 2026-10-13 for the best options, researched widely, for a scholar's
@@ -1166,20 +1155,15 @@ Open 41 (27 scheduled, 1 high · 0 unscheduled · 14 awaiting the Owner) · done
   P5.22 — THE FINAL AUDIT — UNCAPPED,
     FU-1086 [high] [p 4.5] OWNER DECISION: the uncapped, census-partitioned final audit has no item that builds or runs it — The Owner ruled on 2026-10-12 that the final audit is uncapped and census-partitioned, its instrument built and guarded in its own round and calibrated first, and run after Phase 5 and the authentication-readiness round. The ruling lives only as a sentence in P2.40's order, and P5.10's calibration clause is the only other trace; no item, acceptance clause or open row owns building or running it, and once P2.40 closes the sentence sits on a closed item. Recommended: charter it as its own item, run in both the floor and the local-model configuration, with seven properties each driven red by a planted fault: every census surface in exactly one slice or a stated overlap, the union equals the census, no region capped, a failed or empty region blocks completeness, the measured commit reported, earlier ledgers byte-identical. (found W747)
   AWAITING THE OWNER — recorded, never scheduled into a round without the Owner's instruction:
-    FU-1005 [medium] Half the capital fund is held by three test allocations made in June that nothing can release — Three allocations of 50,000, 4,975,000 and 1,000 to project ids that are not entities, still marked active; the fund page shows half deployed. Ruled 2026-10-12: reversed by a recorded reversal. The fund's reversal does not exist yet. (found W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22))
-    FU-1038 [medium] The durable defect loop has never completed a cycle: nineteen defects opened, none corrected, none re-verified — Read from the Owner's store: 73 gates run, 19 defects, all open; fifteen belong to a door since retired. Ruled: the loop is turned once for real - those fifteen closed with that reason, the other four corrected and re-verified or reported as not reproducible. (found W677 (the quality and cell documents re-read against this machine's own records; assessment section 26; ruled 2026-10-12))
-    FU-1046 [medium] A compliance finding on an entity's deliveries waited six weeks unread and the store kept no reason for it — Five change records of 2026-09-01 recorded a section-11 FAIL (an ACAS-code breach) on the deliveries of Atmospheric Harvest Solutions - a water-harvesting venture - and the compliance history holds only 'fail'. Drive the screen on that entity's text (kept in data/_moved_books_20261012-155706) and find why it failed; a finding must keep its reason. (found W678 (the store's commercial record read against the strategy documents; assessment section 28))
-    FU-1095 [medium] A failure on the first deployment reaches no person: failures are recorded and shown only on a page someone must open — P3.25 records every route failure in the outcome ledger and the event chain and shows them on one page; nothing sends a failure to anyone, and README.md still lists error monitoring as not built, which is half true. The first deploy is private to the Owner, so the cost is an outage nobody sees. Smallest addition, in the deploy pre-flight: an uptime check on /health from OUTSIDE the machine (a boot failure cannot report itself), e-mailing the Owner from his own cloud account beside the billing alert; it is named in the dry run and driven once at the deploy with him watching; /health returns a fixed body, so the check sees only a dead process, and the runbook says so. The README line becomes: failures recorded, not alerted. (found W747)
-    FU-1151 [medium] OWNER DECISION: two committed audit run records carry text of a private kind in the public tree — Read by path and kind only: docs/fidelity_runs/ledger_v15_W654_ab829862.json carries home-directory paths in four findings, and docs/fidelity_runs/ledger_v16_W665_ca081db0.json carries references to a personal matter in one. The privacy scanner has no kind for either shape, and docs/VISION_FIDELITY_LEDGER.md holds none of it. Recommended: edit the notes now to say what kind of place each was, leaving git history as ruled on 2026-10-14; from edition 18 the renderer refuses a home-directory path in a residue line. (found W749 (G1))
-    FU-1185 [medium] OWNER DECISION: what arithmetic turns an entity's declared cost and its waterfall into a price? — P5.2 asks for a price in WST derived from the waterfall and the entity's own costs, never typed. W939 built its inputs: the entity's effective waterfall, read the way the waterfall page reads it, and a cost a person declares for each deliverable, with what it is made of. Every price is recomputed on read and is null, with the reason, while an input is missing. The waterfall splits a profit; it does not set one, so the arithmetic needs a margin or a target that no ruling states. RECOMMENDED: price = the declared cost / (1 - the prudential reserve rate, 20% as a cycle applies by default - a margin you set once for the platform, 20% unless you choose otherwise). A deliverable that costs 60 WST is then priced at 100 WST: 20 WST goes to the reserve and 20 WST is distributable profit, from which the platform fee is taken first (25%, P5.16 clause 3) and the entity's own waterfall splits the rest. Virtual WST throughout; a sale is recorded as a revenue event only in a later round. (found W939 (P5.2's first round: the arithmetic no ruling states))
-    FU-1187 [medium] OWNER DECISION: under which Change Control tier is a claim that an output is wrong filed? — P5.3: a claim that an output is wrong routes to Change Control like every other change, and a claim nobody has answered stays OPEN, never closed by a timer. W941 files a claim as a support_claim. Change Control decides a MEDIUM change by a model's marker, and a HIGH one by a marker or the health rule; only a CRITICAL change is never decided by a review and waits for a person's explicit decision. RECOMMENDED: CRITICAL, as built, so every claim is answered by a person and no claim closes because a model or a health reading decided it. With sign-in off the Owner is that person; after sign-in, the entity's owner or an administrator. A lower tier would let claims close without anyone answering them. (found W941 (P5.3's first round: the tier REMAINING_WORK_MEASURED leaves to the Owner))
-    FU-1040 [low] A test double's rows are in the Owner's real store — 162 of the 2,000 operation rows were served by a provider named for a test double. Some run did not isolate its data. Ruled: find the writer, and move those rows aside reversibly under the rule already ruled for test entities. (found W677 (the quality and cell documents re-read against this machine's own records; assessment section 26; ruled 2026-10-12))
-    FU-1165 [low] OWNER: name your own two protected entities (Settings, Protected enterprises) — Your ruling of 2026-10-11 protects your own two entities and the apex. The shipped rule names the apex; it cannot name your two, because their ids are not in the repository and these rounds do not read the data directory. Until you name them (the Settings page's Protected enterprises, which calls PUT /api/v1/economy/protected-entities), the named-in-a-ruling rule stays not assessable and every removal stays refused. The restore route your ruling asked for before any removal was built in W833. (found W833 (the other half of FU-869))
-    FU-1166 [low] OWNER: may a birth be refused when the platform is over its derived carrying capacity? — S18.6 rules the carrying capacity derived (W743). Since W839 every establishment and every division reads it and records the reading on the birth (capacity_at_birth: consulted true, enforced false), and nothing refuses. Whether a birth - a Genesis establishment, or a mature entity's division - may be REFUSED, or held for approval, when the platform is over that capacity is yours to decide; and if it may, whether that rides the S18.1 switch (WORKSTATION_WORK_BUDGET) as the throttle does. Recommendation: no refusal; keep it recorded and shown, because the capacity divides a stated assumption (one hour per window) and refusing a founder on an assumption would be a false statement about what the platform can carry. (found W839 (the decision half of FU-1116))
-    FU-1174 [low] OWNER DECISION: may streamlit, pandas and plotly be removed? Nothing live has used them since W896 moved the dashboard aside — W908 measured FU-283's three REACHED verdicts again after W896 moved the dashboard aside. Nothing live imports or probes streamlit, pandas or plotly, or any of the eleven packages only streamlit brings. In the lock nothing requires streamlit or plotly, and camel-tools and mesa require pandas. The 2026-10-07b ruling covered the rows that were REMOVABLE then, and these three were REACHED then. RECOMMENDED: remove streamlit and plotly, pandas as a direct declaration, and the devcontainer's `pip3 install --user streamlit`, with W906's two commands after a fresh-venv full suite, as W907 did: 13 pins leave requirements.txt (188 to 175). docs/DEPENDENCY_VERDICTS.md has the measurement. (found W908 (FU-283's verdicts measured again after W896))
-    FU-1176 [low] OWNER DECISION: may the founder's guide state a provider's published price, cited with its page and the date it was read? — FU-742 asks the founder's guide (docs/business/FOUNDERS_GUIDE.md, W920) to state what each deployment channel costs to run, citing provider facts from the provider's own pages with the date read, and promising no zero bill. Two rules stand in the way of doing it unasked. A money figure in a business document stands only beside an Owner ruling (plan item P5.6's ACCEPT, held by the business documents' guard). And a production channel's price touches the production deploy, which is the Owner's. RECOMMENDED: yes, for a provider's published price only. A statement that quotes one cites the provider's page and the date it was read, and is labelled observed. The guide still promises no zero bill, and the platform's own prices stay under the rule. The prices are read at the providers' own pages (Render and Google Cloud) in the round that writes them. (found W923 (FU-742's price section, put to the Owner))
-    FU-1188 [low] OWNER: send the two letters asking written permission for the Quranic Universal Library's data and the King Fahd Complex's recitations and fonts — FU-1066 (W948) drafted both letters in docs/letters/: QUL_DATA_PERMISSION_REQUEST.md asks the Quranic Universal Library for its page layouts, similar-verse lists and word timings, whose data carries no licence on any page read; KFGQPC_PERMISSION_REQUEST.md asks the King Fahd Glorious Qur'an Printing Complex for its recitations and fonts, whose site could not be opened from this machine. Sending is outward-facing and in your name. RECOMMENDED: fill in your name and address, read each through, and send both as drafted. Nothing from either source is used until a written answer grants it, and the source check fails if any code reaches them. (found W948 (FU-1066: the letters are drafted by a round and sent by the Owner))
-    FU-1191 [low] OWNER DECISION: which are the seven investment gates the cost model is to mark? — Plan item P5.7 clause 2 asks the cost model for 'the seven investment gates and which one is evidenced today'. No gate is defined anywhere in this tree: the four commercialisation prompts the clause was chartered from are not kept here, and the founder playbook they referred to was never received (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md, section 17.1, row 7). W962 wrote docs/business/COST_MODEL.md and invented none. RECOMMENDED: if you hold the playbook, add it to the tree and the next round marks each gate from it; if not, rule that the seven are the six switches of your hand, P4.1 to P4.6, and a first offer the interviews support, so that each can be marked evidenced or not from what this tree shows. (found W962 (FU-807: the cost model's gates are not defined in the tree))
+    FU-1095 [medium] A failure on the first deployment reaches no person: failures are recorded and shown only on a page someone must open — P3.25 records every route failure in the outcome ledger and the event chain and shows them on one page; nothing sends a failure to anyone, and README.md still lists error monitoring as not built, which is half true. The first deploy is private to the Owner, so the cost is an outage nobody sees. Smallest addition, in the deploy pre-flight: an uptime check on /health from OUTSIDE the machine (a boot failure cannot report itself), e-mailing the Owner from their own cloud account beside the billing alert; it is named in the dry run and driven once at the deploy with the Owner watching; /health returns a fixed body, so the check sees only a dead process, and the runbook says so. The README line becomes: failures recorded, not alerted. ACCEPTED 2026-11-20 (the Owner's ten decisions, recommendation 4): set up at the first deploy, soon after the domain (FU-1289), with the restore of FU-1288 the day after. (found W747)
+    FU-1289 [medium] OWNER: buy a domain for the release machine and point it at the machine's fixed address — W1140 wrote HTTPS into the deploy (docs/DEPLOYMENT.md, step 12): Caddy obtains a publicly trusted certificate only for a domain, never for an IP address, so the release machine serves plain HTTP until it has one, and no person signs in until then. The domain is yours to buy, at any registrar, with its A record naming the machine's fixed address (step 12's first command). RECOMMENDED (accepted 2026-11-20): a short name you already hold or buy now; once its A record points at the machine, set the machine's domain (step 12) and watch the first HTTPS answer, with the uptime check of step 10 moved to HTTPS. (found W1140 (FU-1284: HTTPS in front of the release machine))
+    FU-1817 [medium] OWNER: one solicitor's engagement before anyone but you is invited - the Law pages before any public release, and where other people's data may be kept — Two questions the plan leaves to you: P5.11 rules that a qualified person's view of the Law pages comes before any public release, and P4.5 that where another person's data may be kept - the free Google Cloud regions are in the United States - is a solicitor's question, answered before anyone else's data is stored there. RECOMMENDED (accepted 2026-11-20, evening): one engagement covering both, booked once the first deploy is up; nothing is public, and no one but you is invited, until it has answered. (found W1174 (the Owner's decisions of the evening of 2026-11-20, recommendation 3))
+    FU-1165 [low] OWNER: name your own two protected entities (Settings, Protected enterprises) — Your ruling of 2026-10-11 protects your own two entities and the apex. The shipped rule names the apex; it cannot name your two, because their ids are not in the repository and these rounds do not read the data directory. Until you name them (the Settings page's Protected enterprises, which calls PUT /api/v1/economy/protected-entities), the named-in-a-ruling rule stays not assessable and every removal stays refused. The restore route your ruling asked for before any removal was built in W833. ANSWERED 2026-11-20: the Owner's two are Atmospheric Harvest Solutions and Aerius Energy Harvest, the two atmospheric harvesting ventures, registered fresh in the new books on the Owner's machine and named there once each exists. (found W833 (the other half of FU-869))
+    FU-1188 [low] OWNER: send the two letters asking written permission for the Quranic Universal Library's data and the King Fahd Complex's recitations and fonts — FU-1066 (W948) drafted both letters in docs/letters/: QUL_DATA_PERMISSION_REQUEST.md asks the Quranic Universal Library for its page layouts, similar-verse lists and word timings, whose data carries no licence on any page read; KFGQPC_PERMISSION_REQUEST.md asks the King Fahd Glorious Qur'an Printing Complex for its recitations and fonts, whose site could not be opened from this machine. Sending is outward-facing and in your name. RECOMMENDED (accepted 2026-11-20): fill in your name and address, read each through, and send both as drafted. Nothing from either source is used until a written answer grants it, and the source check fails if any code reaches them. (found W948 (FU-1066: the letters are drafted by a round and sent by the Owner))
+    FU-1283 [low] OWNER: send the request to the Quranic Audio Dataset's authors, drafted in docs/letters/ — FU-1067's private test needs lawful recordings of ordinary adult reciters. Of the three datasets read at their own pages on 2026-11-19, the Quranic Audio Dataset is the closest fit; its card states no licence for the recordings and cannot rule children out. W1132 drafted docs/letters/QURANIC_AUDIO_DATASET_REQUEST.md, asking its licence, whether every participant was an adult who consented to reuse, and whether recordings of adults may be used for a private test that scores nothing. Sending is outward-facing and in your name. RECOMMENDED (accepted 2026-11-20): fill in your name and address, read it through, and send it as drafted. Nothing from the dataset is used until a written answer grants it, and the source check fails if any code reaches its address. (found W1132 (FU-1067's next step; the Owner accepted the recommendation on 2026-11-20))
+    FU-1286 [low] OWNER: five places still name your Windows home folder by its path — W1135 made every other tracked file's path start at ~. These five are yours to decide. (1) One audit record under docs/fidelity_runs/ (ledger_v14_W639_375c5ffb.json), opened only on a go-ahead that names it. DONE W1175: your go-ahead of 2026-11-20 named it; its 8 home-folder paths now start at ~, and its 9 paths to the audit's data folder say what kind of place it was. RECOMMENDED (accepted 2026-11-20): let it be opened and its paths start at ~, as FU-1151 did for two others. (2) The pinned fidelity ledgers, docs/VISION_FIDELITY_LEDGER and its numbered editions: docs/LEDGER_BLOBS.json pins each byte for byte (P5.22, W972) so no edition changes after it is written. RECOMMENDED (accepted 2026-11-20): leave them as they are; no route reads them, and git history keeps every earlier text anyway. (3) venv/: a Windows virtual environment committed before .gitignore left venv/ out. Its files name your folder. RECOMMENDED (accepted 2026-11-20): on your machine, run git rm -r --cached venv and commit; the folder stays on your disk. Removing it here instead would delete those files from your copy when you pull. (4) .claude/settings.json: three one-off command permissions name your folder. RECOMMENDED (accepted 2026-11-20): remove those three entries on your machine; nothing else uses them. (5) _archive/: archived documents that name it. RECOMMENDED (accepted 2026-11-20): leave them as archived history; nothing reads them. (found W1135 (the four places that are the Owner's, each with a recommendation))
+    FU-1288 [low] OWNER: at the first deploy, restore the data disk once from its snapshot, watching — W1137 drilled the restore and the rollback on this machine with Docker, and wrote the Google Cloud restore into docs/DEPLOYMENT.md (step 9) from Google's own references. A restore from a real snapshot can only be driven in your project. RECOMMENDED (accepted 2026-11-20): the day after the first deploy, once the schedule has taken a snapshot, run step 9 with the platform's address open, see the made-up project you wrote before it still there, and delete the old disk. It is the restore FU-1095's uptime drill pairs with. (found W1137 (FU-603 part 3: the restore and rollback drilled on this machine))
+    FU-1818 [low] OWNER: five to eight short interviews with teachers or tutors, using the drafted scripts, before the first offer is chosen — P5.7's working papers lead with one hypothesis - lesson plans and feedback that a teacher or tutor checks before use - and which offer comes first is yours, after the interviews; the seventh investment gate is a first offer the interviews support, and no interview is recorded in the tree. RECOMMENDED (accepted 2026-11-20, evening): five to eight short interviews with the drafted scripts, then choose; every public draft stays DRAFT - NOT APPROVED FOR PUBLICATION until then. (found W1174 (the Owner's decisions of the evening of 2026-11-20, recommendation 5))
 <!-- followups:end -->
 
 PHASE P1 — TRUTH FIRST (Tier 1; delivered_by: build; ESTIMATED ~14 rounds, ACTUAL 48 (W449—W496, 18 items); plus P1.15 and P1.16 added W469; no P2–P4 item ships until these do)
@@ -1492,7 +1476,7 @@ PHASE P1 — TRUTH FIRST (Tier 1; delivered_by: build; ESTIMATED ~14 rounds, ACT
       the data store in the repository (BASE_DIR = the repo; a legacy store above it is named by what it
       HOLDS, never switched away from silently; scripts/relocate_data_store.py copies, verifies, merges
       disjoint maps, never deletes, and calls two non-empty lists a CONFLICT — the Owner's memory.json
-      1,977,250 B and interactions.db 19,036 rows were copied and verified; chroma_db is his to move,
+      1,977,250 B and interactions.db 19,036 rows were copied and verified; chroma_db is theirs to move,
       FU-079); the genome validator resolves its constitution under the repository and the self-healing
       cycle refuses to ratify its fixed template (Change Control); the Command Center prints nothing it
       does not measure; importing config.paths makes only the data root, and no reader creates the
@@ -2516,7 +2500,8 @@ PHASE P2 — REACH AND DISCLOSURE (Tier 2; delivered_by: build; ESTIMATED ~9 rou
         nothing built on the tribunal or the Code is wasted either way. IT NOW HAS ONE HOME WITH ITS
         BASIS (`agentic_core/legal/matter.json`), because it was a typed literal in ten places plus the
         request default with no source anywhere — the same class W565 removed from the suite constant.
-      · THE BUNDLE FOLDER IS NAMED, CREATED, AND EMPTY — ruled. `C:\Users\rehan\data\legal-matter`,
+      · THE BUNDLE FOLDER IS NAMED, CREATED, AND EMPTY — ruled. A folder named `legal-matter` in the Owner's
+        home folder on Windows (named since W1129 on that machine only, never in a committed file: FU-1282),
         created empty at the Owner's instruction. This implements 2026-10-03c's "one named folder" with
         the SAFETY of the narrower option that ruling declined: THE ACT OF COPYING A FILE IN IS THE
         CONSENT FOR THAT FILE, so no path is guessed, no desktop location is inferred, and no document is
@@ -3582,7 +3567,10 @@ PHASE P2 — REACH AND DISCLOSURE (Tier 2; delivered_by: build; ESTIMATED ~9 rou
           headroom, and says what it is preventing rather than only that space is short — a refusal a
           reader cannot evaluate is one they route around. `cleanup` removes every secondary worktree and
           NEVER the main one, which is the most dangerous mutation available in that file: the disk costs
-          a round, the working tree costs the round that is holding it.
+          a round, the working tree costs the round that is holding it. W1159: it removed the others
+          forced, and the suite called it on the repository it ran in, so each run of the suite removed
+          every other worktree there with whatever work each held; unless told to force, it now keeps a
+          worktree that holds work, and names it.
       AND THE ROW'S PREMISE WAS BETTER THAN IT KNEW. It said the errored count "is in the tool result".
           MEASURED: the task NOTIFICATION carries aggregate counts, and the RESULT FILE carries something
           stronger — one `workflow_agent` record per agent with its own `state` and a `label` naming its
@@ -6688,6 +6676,13 @@ PHASE P4 — THE OWNER'S HAND (Tier 4; delivered_by: owner-switch; pre-flights b
       authentication on, on the Owner's own machine -> a deploy dry-run, then a deploy private to the Owner ->
       people the Owner invites by name -> self-serve signup -> external models, rung by rung -> real money last.
       Each step is the Owner's to take; a round builds and measures what comes before it and takes none of them.
+      OWNER RULING 2026-11-19 (the twenty-two recommendations of that day accepted together): the six steps now proceed
+      WITHOUT waiting on the Owner for each one, a round taking each step in the order above once what comes
+      before it is built and measured; the invited stage is run with AI agents standing in for the people
+      invited, on made-up accounts that hold nothing about a real person. What a round cannot take stays the
+      Owner's: the deploy itself needs their Google Cloud project and billing (P4.5), external models need their
+      key (P4.3), and real money stays off until a compliance and KYC review by qualified people (P4.6), which
+      no agent stands in for.
  P4.1 AUTH_ENABLED on, with the auth-ON suite green and the perimeter (P2.6) closed. BEFORE THE SWITCH, ONE
       AUTHENTICATION-READINESS ROUND (OWNER RULING 2026-10-11, AMENDED 2026-10-12: it is BROUGHT FORWARD, to run
       straight after the round that registered the domain forms and before more of the fifth phase is built,
@@ -6698,16 +6693,32 @@ PHASE P4 — THE OWNER'S HAND (Tier 4; delivered_by: owner-switch; pre-flights b
       entity that has opted in, under a named service identity; and for a high or critical change the decider
       must differ from the submitter once a second administrator exists. Each is a register row on this item,
       found by reading with authentication off and to be DRIVEN with it on, in a test process only.
+      OWNER RULING 2026-11-19 (FU-849): an entity registered before the opt-in flag existed is read as opted in, and every
+      new establishment records the flag explicitly, so each new entity has opted in or out.
+      OWNER RULING 2026-11-20 (evening; the recommendation accepted): sign-in is switched on only on the Owner's private deployed machine, once its domain and HTTPS
+      are live (FU-1289, step 12 of docs/DEPLOYMENT.md); until then the rehearsal with AI agents of 2026-11-19
+      stands in. No round switches it on in the tree.
  P4.2 SELF_SERVE_SIGNUP per the Owner; the 162 test-owned entities pruned only on instruction. BEFORE IT, AN
       INVITED STAGE (OWNER RULING 2026-10-12): accounts only for people the Owner names. Self-serve opens only
       after every domain tool states the tier of review it has reached and the four exceptions to release on
       the platform's own review are enforced (religious content, a clinical score in direct care, regulated
       advice, real money).
- P4.3 AI_ALLOW_EXTERNAL + a key, as accelerants only — the in-house-first order proven by test.
- P4.4 Managed Postgres — migration dry-run script and rollback proven on a copy first. DEFERRED BY THE OWNER
+      OWNER RULING 2026-11-20 (evening; the recommendation accepted): the invited stage opens only on the Owner's private deployed machine, once sign-in is on there,
+      and only after the one solicitor's engagement (FU-1817) has answered.
+ P4.3 ✅ DONE W1174 AI_ALLOW_EXTERNAL + a key, as accelerants only — the in-house-first order proven by test.
+      OWNER RULING 2026-11-20 (evening; the recommendation accepted): RECORDED AS A §18 BOUNDARY, dated in the vision's section 18. Outside models stay off. Their
+      condition is the Owner's own key and the accelerants-only order proven by test; until the Owner rules
+      again, no round switches them on and the native floor and the owned model are what serve.
+ P4.4 ✅ DONE W1174 Managed Postgres — migration dry-run script and rollback proven on a copy first. DEFERRED BY THE OWNER
       (2026-10-12) AND RECORDED AS A BOUNDARY until a measured need exists: the file store with its locks is
       what runs, and nothing measured calls for more. The database dependencies that nothing imports are
       removed (in halves, on a fresh install, as the earlier removal's retry plan says).
+      W1147 (2026-11-20, FU-284): removed - sqlalchemy, sqlmodel and psycopg2-binary, and greenlet, which only
+      sqlalchemy brought (175 pins became 171), after the full suite ran in a fresh venv built only from the
+      new requirements.txt; nothing live imported them or read a database URL. The pre-flight is not built:
+      the switch it would come before is deferred, and a measured need would come first. The boundary is
+      dated in the vision's section 18.
+      OWNER RULING 2026-11-20 (evening; the recommendation accepted): P4.4 is marked done as the boundary it is; a measured need reopens it as a ruling of its own.
  P4.5 Production deploy — on GOOGLE CLOUD (Owner, 2026-10-07: Vercel retired; free tier; development, beta and
       release channels), from the Docker image that boots (W354), behind the Owner's account. The pre-flight is a
       DRY RUN a round builds and measures first; the project, billing and the deploy itself are the Owner's.
@@ -6715,8 +6726,17 @@ PHASE P4 — THE OWNER'S HAND (Tier 4; delivered_by: owner-switch; pre-flights b
       OWNER, running the floor only, and only after the dry run has measured that the platform fits its memory.
       The free regions are in the United States: where another person's data may be kept is a solicitor's
       question, to be answered before anyone else's data is stored there.
- P4.6 REAL_MONEY_ENABLED only after compliance/KYC review. (Its other half is done: the Owner rotated the
+      OWNER RULING 2026-11-19: the dry run is taken now - the image carries the pages, the law corpus and the plan, and
+      boots on a round's machine with a health probe; nothing is deployed and no account is touched.
+      OWNER RULING 2026-11-20 (evening; the recommendation accepted): the deploy is the Owner's, whenever it suits; no build waits on it. Where other people's data
+      may be kept is answered by one solicitor's engagement (FU-1817), with P5.11's review of the Law pages,
+      before anyone but the Owner is invited.
+ P4.6 ✅ DONE W1174 REAL_MONEY_ENABLED only after compliance/KYC review. (Its other half is done: the Owner rotated the
       Stripe keys and expired the old ones on 2026-10-09. The switch itself is untouched and stays the Owner's.)
+      OWNER RULING 2026-11-19: the switch stays off. Its condition is a compliance and KYC review by qualified people,
+      which no agent stands in for; a round re-drives the payments mode matrix before it.
+      OWNER RULING 2026-11-20 (evening; the recommendation accepted): RECORDED AS A §18 BOUNDARY, dated in the vision's section 18. Real money stays off; its
+      condition is that review, by qualified people, and no round switches it on.
  COMPLETE when M3 holds AND every P4 switch is either flipped or recorded as a §18 boundary.
 
 PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST (Tier 5; delivered_by: build; ratified by the
@@ -6746,7 +6766,9 @@ PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST (Tier 5; delivered_by: 
       each price is recomputed from the waterfall on read, with a basis naming its inputs; changing a
       VSB's waterfall changes its prices; an absent input yields null and a reason, never a figure;
       and the ledger entry for a sale is a revenue event that the books already know how to consume.
- P5.3 [OWNER ruling 2026-09-27] SUPPORT OPERATIONS: WHO ANSWERS WHEN AN AUTONOMOUS ENTITY IS WRONG.
+      OWNER RULING 2026-11-19 (FU-1185): price = the declared cost / (1 - the prudential reserve rate, 20% - a platform
+      margin set once, 20%). A deliverable that costs 60 WST is priced at 100 WST, in virtual WST.
+ P5.3 ✅ DONE W1155 [OWNER ruling 2026-09-27] SUPPORT OPERATIONS: WHO ANSWERS WHEN AN AUTONOMOUS ENTITY IS WRONG.
       An autonomous entity that produces work for a paying tenant will be wrong sometimes, and today
       nothing in the platform says who answers or what is recorded. Build the path: a tenant raises
       that an output is wrong; the claim is recorded against the artefact with its provenance; it
@@ -6756,6 +6778,13 @@ PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST (Tier 5; delivered_by: 
       executing path (not a comment); the artefact's provenance is part of the record; the UEG entry
       is hash-chained like the rest; and a claim nobody has answered is visible as OPEN, never closed
       by a timer.
+      COMPLETION RECORD (W1155): each clause of the ACCEPT is held by a guard that drives it, its blinds seen red in
+      its round. A raised claim reaches a named owner through Change Control, not a comment; it keeps the artefact's
+      provenance (what served it, its gate, the sha256 of its text); support.claim_raised is in the UEG and the chain
+      verifies; and a claim nobody answered is still OPEN with the clock a thousand days on:
+      test_w941_p53_a_claim_that_an_output_is_wrong_stays_open_until_a_person_answers_it (W941). The claims are on the
+      Support page, and an answered claim says whether its decision reached the ledger:
+      test_w942_p53_claims_are_on_the_support_page_and_an_answer_says_whether_it_reached_the_ledger (W942).
  P5.4 ✅ DONE W938 [OWNER ruling 2026-09-27] THE ENTITY REPOSITORY, HANDED OVER — IT MUST LIVE WITHOUT THIS REPO.
       generate_vsb_repo (agentic_core/api/vsb.py) already git-inits a version-controlled entity
       repository with a manifest, docs, site, app and board pack. What is missing is the handover:
@@ -6773,7 +6802,7 @@ PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST (Tier 5; delivered_by: 
       real-money rail while §18 stands. ACCEPT: the exclusions are served from one place the pricing
       surface reads, so a priced deliverable cannot name an excluded capability; a guard proves an
       attempt to price one is refused with a reason; and the refusal names the ruling it rests on.
- P5.6 [chartered W658 · OWNER asked 2026-10-10 that the business strategy work in three external prompts be
+ P5.6 ✅ DONE W1154 [chartered W658 · OWNER asked 2026-10-10 that the business strategy work in three external prompts be
       verified and added to the plan; they are assessed in docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md section 13]
       WORKSTATION'S OWN BUSINESS CASE, WRITTEN DOWN, EVERY STATEMENT LABELLED. MEASURED FIRST: nothing in the
       tree is a business model canvas, a business plan for Workstation as a business, a founder's operating
@@ -6800,7 +6829,9 @@ PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST (Tier 5; delivered_by: 
       Owner enters what they agree with through the plan's own edit page); the guard is driven RED.
       BOUNDARY: no telemetry is built by this item (what would measure each metric is stated, and building
       it is a later item for the Owner to schedule); no legal form is decided; no switch is touched.
- P5.7 [chartered W666 · OWNER asked 2026-10-11 that the work in four external commercialisation prompts be
+      OWNER RULING 2026-11-19 (FU-1176): the founder's guide may state a provider's published price, cited with its page
+      and the date it was read and labelled observed; it promises no zero bill.
+ P5.7 ✅ DONE W1153 [chartered W666 · OWNER asked 2026-10-11 that the work in four external commercialisation prompts be
       verified and added to the plan; they are assessed in docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md section 17]
       THE WORKING PAPERS OF A FIRST SALE, EVERY ONE A DRAFT, NOTHING SENT. MEASURED FIRST: the business is
       described by the documents of the item before this one; nothing in the tree compares candidate first
@@ -6831,6 +6862,10 @@ PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST (Tier 5; delivered_by: 
       filed, bought, registered or signed by this item, and no legal form is chosen; the offer comparison is
       written only after one tenant's journey has been driven and read back, because a first offer is
       chosen from what the product did and not from what it lists.
+      OWNER RULING 2026-11-19 (FU-1191): with no founder playbook in the tree, the seven investment gates are the six
+      switches of the Owner's hand, P4.1 to P4.6, and a first offer the interviews support.
+      OWNER RULING 2026-11-20 (evening; the recommendation accepted): the first offer is chosen after five to eight short interviews with teachers or tutors,
+      using the drafted scripts (FU-1818); nothing is published until then.
  P5.8 [chartered W672 · OWNER RULING 2026-10-11, amending the ruling of 2026-10-09 (evening) against a registry
       of real people: staff records, payroll and wellbeing are wanted within and for Workstation and its
       entities; the external brief that prompted it is assessed in docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md
@@ -6907,7 +6942,7 @@ PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST (Tier 5; delivered_by: 
       ASKED FOR: a funding record moves through need identified, eligibility screened, source verified,
       application prepared, Owner review, submitted, acknowledged, due diligence, decision, accepted or
       declined, received, accounted for and reporting; each source carries its address and the date it was
-      read; "submitted" and every later state is the Owner recording what HE did, with its date; and
+      read; "submitted" and every later state is the Owner recording what THEY did, with its date; and
       "received" is refused while money is virtual, with that reason, because nothing counts as received
       until a ledger entry exists and no ledger here holds real currency. (6) ONE READ-ONLY VIEW for each
       entity that labels every figure virtual (read from the ledger now), declared (entered by the Owner)
@@ -6960,7 +6995,7 @@ PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST (Tier 5; delivered_by: 
       by every entity until authentication is on, and says so. SEQUENCE (ruled): clauses 1, 2 and 7 with
       the tier-1 rounds; 3, 4 and 8 before the fifth phase's selling items; 5 before the final audit; 6
       with the fifth phase's first item; 9 before any local model is installed.
- P5.11 [chartered W676 · the OWNER supplied three external documents on 2026-10-12 asking for a public-advice
+ P5.11 ✅ DONE W1173 [chartered W676 · the OWNER supplied three external documents on 2026-10-12 asking for a public-advice
       capability in the Law domain; assessed in docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md section 23; CHARTERED
       on the Owner's ten rulings of the same day, recorded in section 23.6; the charity the documents name is
       a place a person can be sent and never an identity or a measure]
@@ -7007,6 +7042,45 @@ PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST (Tier 5; delivered_by: 
       source does not settle a date - a month with no such day - the EARLIER date is shown with the sentence
       that the source does not settle it; and a qualified person's view before any public release is the
       Owner's to arrange. SEQUENCE: clauses 5 and 6 with the tier-2 round; 2, then 3, 4 and 1; then 7 and 8.
+      COMPLETION RECORD (W1173): each clause of the ACCEPT and each line of the BOUNDARY is held by a guard that
+      drives it, its blinds seen red in its round. Clause 1, a row that claims a journey nothing drives fails the
+      check: test_registers_a_named_source_has_a_row_and_a_claimed_journey_names_its_test. Clause 2, each rule
+      dated, driven on the day before, the day of and the day after each change, at a month end, in a leap year,
+      for each nation and with no matching rule:
+      test_w875_how_long_a_time_limit_runs_is_arithmetic_on_the_rules_own_words_with_a_route,
+      test_w1157_p511_the_tribunal_limits_either_side_of_1_october_2026_are_dated_rules_each_read_as_it_stood,
+      test_w1160_fu1296_breach_of_contract_claims_are_dated_rules_for_each_nation_the_scottish_read_with_its_listed_change,
+      test_w1161_p511_with_no_rule_a_limit_may_still_apply_and_where_to_ask_today_is_said_nation_by_nation and
+      test_w1162_p511_each_rule_says_its_sources_and_a_month_with_no_such_day_shows_the_earlier_day. Clause 3, the
+      stale label driven by date:
+      test_w1163_p511_each_place_a_person_can_go_says_its_nations_the_page_that_says_so_and_when_it_was_read.
+      Clause 4, with the screen made to return nothing:
+      test_w1165_p511_the_urgent_routes_come_before_anything_else_and_no_screen_removes_one; drawn before
+      anything else wherever help is said:
+      test_w1166_fu1808_the_urgent_routes_are_drawn_before_anything_else_wherever_help_is_said; an answer that
+      carries none said in their place:
+      test_w1167b_the_urgent_box_says_an_answer_without_its_routes_and_the_support_pages_capture_is_the_routes.
+      Clauses 5 and 6, both ways:
+      test_law_a_filing_shaped_document_has_one_door_and_no_prompt_claims_a_role_or_a_forecast and
+      test_no_prompt_claims_a_professionals_role; no named Act shown unless it resolves against a held source:
+      test_w1170_p511_no_named_act_is_shown_in_a_law_answer_unless_it_resolves_against_a_held_source. Clause 7:
+      test_w1167_p511_a_subject_that_is_regulated_advice_is_its_row_and_a_route_to_an_authorised_person.
+      Clause 8: test_w1168_p511_what_to_gather_is_a_list_in_the_words_of_its_page_with_its_source. Clause 9, on
+      the server: test_w952_fu1189_nothing_a_person_types_into_a_domain_tool_is_stored_before_sign_in; in the
+      browser: test_w1169_p511_the_law_forms_keep_nothing_typed_in_the_browser_before_sign_in. The BOUNDARY:
+      every answer a person reads says it is not legal advice - the research answer, test_law_research_contract;
+      the drafts and the clerk's, test_w610_p323_the_legal_specialist_assembles_with_provenance_and_never_invents_a_particular;
+      a floor's answer, test_w642_a_floor_served_tool_does_not_disclaim_as_if_a_model_wrote_it; the time limit,
+      the urgent routes, the boundaries and the lists, in the guards of clauses 2, 4, 7 and 8 above. What the
+      platform is not, and nothing fetched on a timer:
+      test_w724_a_statute_provision_is_shown_word_for_word_and_help_is_a_list_of_links and
+      test_w1172_p511_the_platform_says_what_it_is_not_and_the_law_domain_fetches_nothing_on_a_timer. No outcome
+      forecast, and arithmetic labelled as arithmetic: the guards of clauses 2 and 6 above. The Owner's own matter
+      never read: test_w676_no_test_or_audit_process_opens_the_owners_matter_folder and
+      test_w1129_fu1282_the_matter_folder_is_named_on_the_machine_that_holds_it_and_no_answer_carries_its_path.
+      The two lists that only fill a form's choices - the templates and the rules - are read through the answer
+      each produces, which says so. A qualified person's view before any public release stays the Owner's to
+      arrange, as ruled.
  P5.12 [chartered W676 · the OWNER supplied three external documents on 2026-10-12 asking for one integrated
       Education domain; assessed in docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md section 24; CHARTERED on the Owner's eleven rulings of the same day, recorded there; their six service
       families are used to sort a register and are not built as six engines]
@@ -7053,6 +7127,10 @@ PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST (Tier 5; delivered_by: 
       recorded as excluded by ruling; the needs field says not to name a pupil, and nothing pretends to
       detect a name. SEQUENCE: clauses 2, 3, 4 and 6 with the tier-2 round; clause 1 as the mechanism round;
       then 5, 7 and 8.
+      OWNER RULING 2026-11-20 (evening; the recommendation accepted): the children's gate stays closed. Read against the department's product safety standards
+      (W1133), none of the thirteen headings is met, nine partly and four not at all, the four all
+      learner-facing; the gate is reconsidered only after those four are built and an independent
+      safeguarding review, and P5.21 builds the children's tools and holds them unreleased.
  P5.13 [chartered W676 · the OWNER supplied three external documents on 2026-10-12 asking for one integrated
       Care domain; assessed in docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md section 25; CHARTERED on the Owner's eleven rulings of the same day, recorded there; their service families
       sort a register and are not built as engines]
@@ -7172,7 +7250,7 @@ PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST (Tier 5; delivered_by: 
       remains the Owner's switch.
       SEQUENCE: after the register of sources lands (it is this item's foundation); the tier label first
       (clause 1, every tool honestly UNREVIEWED), then Care's reviewer agent and its calibration.
- P5.16 [chartered W679 · the OWNER ruled on 2026-10-12 what this platform charges for, and confirmed the same
+ P5.16 ✅ DONE W1155 [chartered W679 · the OWNER ruled on 2026-10-12 what this platform charges for, and confirmed the same
       night that the Quran platform's only income is donations and the waqf; assessment section 29;] WHAT IS
       CHARGED. Virtual units throughout; no round touches the real-money switch.
       CLAUSES: (1) the Quran platform and every Domain are FREE for individuals and for institutions; the
@@ -7199,7 +7277,23 @@ PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST (Tier 5; delivered_by: 
       fee sum to the profit to the cent.
       SEQUENCE: clause 1 with the round that charters this; clause 3 after the first walk shows a real
       entity's books; clause 2 when the Owner has set the price.
- P5.17 [chartered W683 · the OWNER asked on 2026-10-12 that his five earlier Quran-platform repositories be
+      OWNER RULING 2026-11-19 (FU-1057): clause 3 is released for a made-up entity now, ahead of the first walk.
+      COMPLETION RECORD (W1155): each clause the ACCEPT names is held by a guard that drives it, its blinds seen red
+      in its round. Clause 1, the Quran platform: an institutional price above zero is refused by name, and the canon
+      keeps the earlier words beside the ruling, test_w600_p311_the_qep_vsb_has_an_economic_model_that_is_its_own
+      (amended in W679); the Domains: no Domain route names a price, a charge or a fee,
+      test_w1155_p53_and_p516_are_done_and_each_names_the_guards_that_hold_its_accept. Clauses 3 and 4, and the stages
+      and the fee summing to the profit to the cent:
+      test_w1124_fu1057_the_platform_fee_is_a_quarter_of_the_profit_taken_first_and_the_split_applies_to_what_remains.
+      Clause 5: test_w851_a_person_accepts_a_version_of_an_entitys_delivery_and_acceptance_alone_earns_nothing and
+      test_w676_nothing_earns_on_a_structure_pass. The cycle's answer and the entity's page show profit, fee and the
+      split's base: test_w1125_fu1057_the_economy_page_shows_the_profit_the_platform_fee_and_what_the_split_was_over and
+      test_w1139_fu1281_the_cockpits_latest_cycle_says_the_platform_fee_and_what_the_split_was_over. Clause 2's price
+      is shown as set and not yet charged,
+      test_w1117_fu399_the_price_panel_says_what_generating_an_entity_costs_in_the_routes_words, and clause 6's
+      specialists are a declared cost, test_w933_p515_clause6_the_roster_is_on_the_entitys_page_and_a_generated_entity_is_recommended_a_specialist.
+      Clause 2's three conditions and clause 7's three views wait on the Owner, before anything is charged.
+ P5.17 [chartered W683 · the OWNER asked on 2026-10-12 that their five earlier Quran-platform repositories be
       read for lessons and salvage, said that recitation, memorisation and competitions are wanted beside
       learning and teaching, and ruled twice that night on their shapes; assessment section 30;] THE QURAN
       PLATFORM'S FOUR AREAS, EACH TAKEN TO A DRIVEN SLICE BEFORE THE NEXT IS OPENED. The canon's own rulings
@@ -7376,6 +7470,8 @@ PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST (Tier 5; delivered_by: 
       ACCEPT: the pack assembles from the tree and the store; a decision on a changed pack is refused; the gate holds
       with sign-in off or the pack unapproved and opens only with both; every children's tool route is described in
       the pack; each clause driven red.
+      OWNER RULING 2026-11-20 (evening; the recommendation accepted): the tools are built and held, as ruled; the gate stays closed until P5.12's four learner-facing
+      headings are built and an independent safeguarding review.
  P5.22 [chartered W754 · OWNER RULING 2026-11-06, accepting FU-1086's recommendation] THE FINAL AUDIT — UNCAPPED,
       CENSUS-PARTITIONED. The Owner's ruling of 2026-10-12 (the final audit is uncapped and census-partitioned; its
       instrument is built, guarded and calibrated in its own round; it runs after Phase 5 and the sign-in readiness

@@ -1,36 +1,19 @@
 {
- "about": "Every authority this platform NAMES, as a row: the publisher's page, the date it was read, who read it, its status and what replaced it. A row is entered by whoever read the page, in a round. Nothing fetches a page on a timer; a row is current for `review_days` after it was read and is shown as not recently checked after that. A name the code uses with no row here fails scripts/sources_check.py. W948 (FU-1066): a row that names `hosts` says what its terms, as read, `permits` this platform to do; an empty `permits` means NOT TO BE USED, and the check fails if any of its hosts appears in the code.",
+ "about": "Every authority this platform NAMES, as a row: the publisher's page, the date it was read, who read it, its status and what replaced it. A row is entered by whoever read the page, in a round. Nothing fetches a page on a timer; a row is current for `review_days` after it was read and is shown as not recently checked after that. A name the code uses with no row here fails scripts/sources_check.py. W948 (FU-1066): a row that names `hosts` says what its terms, as read, `permits` this platform to do; an empty `permits` means NOT TO BE USED, and the check fails if any of its hosts appears in the code. W1156 (FU-1060): the check reads every .py and .json file under agentic_core/ and every .ts and .tsx file under the app's src/, so a name anywhere in the backend or on any page needs its row.",
  "review_days": 90,
  "scan": [
   {
-   "dir": "agentic_core/api",
-   "ext": [
-    ".py"
-   ]
-  },
-  {
-   "dir": "agentic_core/care",
-   "ext": [
-    ".py"
-   ]
-  },
-  {
-   "dir": "agentic_core/legal",
+   "dir": "agentic_core",
    "ext": [
     ".py",
     ".json"
    ]
   },
   {
-   "dir": "apps/workstation-superapp/src/pages/domains",
+   "dir": "apps/workstation-superapp/src",
    "ext": [
+    ".ts",
     ".tsx"
-   ]
-  },
-  {
-   "dir": "apps/workstation-superapp/src/lib",
-   "ext": [
-    ".ts"
    ]
   }
  ],
@@ -87,9 +70,9 @@
    ],
    "status": "current",
    "page": "https://www.rcp.ac.uk/resources/national-early-warning-score-news-2/",
-   "read_on": "2026-10-12",
-   "read_by": "rounds W676 and W678, in a browser",
-   "says": "Active, dated 19 December 2017: six physiological parameters, aggregated, with 2 added for supplemental oxygen. NOT READ: the chart itself. REUSE TERMS READ 2026-10-12: no copyright restriction on NEWS2 provided the stated acknowledgement is given, the material is not modified or amended in any way, and the charts are reproduced in colour."
+   "read_on": "2026-11-19",
+   "read_by": "rounds W676 and W678, in a browser; the charts by round W1122, fetched as PDFs at the college's page",
+   "says": "Active, dated 19 December 2017: six physiological parameters, aggregated, with 2 added for supplemental oxygen. THE CHARTS READ 2026-11-19 (W1122): Chart 1 (the scoring system), Chart 2 (thresholds and triggers) and Chart 4 (clinical response to the trigger thresholds), as the college publishes them; every band and threshold agentic_core/care/scoring.py applies matches them. REUSE TERMS READ 2026-10-12: no copyright restriction on NEWS2 provided the stated acknowledgement is given, the material is not modified or amended in any way, and the charts are reproduced in colour."
   },
   {
    "id": "gov-national-curriculum",
@@ -162,7 +145,12 @@
     "Wales",
     "Scotland"
    ],
-   "status": "named_not_read"
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/ukpga/2010/15/section/123",
+   "read_on": "2026-11-20",
+   "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: section 123 as it stands from 1 October 2026, and as it stood on 30 September 2026 (the publisher's version for that date)",
+   "says": "Section 123(1): subject to section 140B, proceedings on a complaint within section 120 may not be brought after the end of (a) the period of 6 months starting with the date of the act to which the complaint relates, or (b) such other period as the employment tribunal thinks just and equitable; as it stood on 30 September 2026 it said 3 months. Conduct extending over a period is treated as done at its end, and a failure to do something as occurring when the person decided on it (s.123(3)). The figure was changed by paragraph 18 of Schedule 12 to the Employment Rights Act 2025, in force on 1 October 2026 by S.I. 2026/954, regulation 3, with regulation 4. The publisher lists no change not yet written into section 123.",
+   "not_read": "the rest of the Act"
   },
   {
    "id": "employment-rights-act-1996",
@@ -175,7 +163,12 @@
     "Wales",
     "Scotland"
    ],
-   "status": "named_not_read"
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/ukpga/1996/18/section/111",
+   "read_on": "2026-11-20",
+   "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: section 111 as it stands from 1 October 2026, and as it stood on 30 September 2026 (the publisher's version for that date)",
+   "says": "Section 111(2): an employment tribunal shall not consider an unfair dismissal complaint unless it is presented (a) before the end of the period of six months beginning with the effective date of termination, or (b) within such further period as it considers reasonable where it is satisfied it was not reasonably practicable to present it within six months; as it stood on 30 September 2026 (in this form from 31 December 2020) both said three months. Section 207B (extension of time limits to facilitate conciliation) applies for subsection (2)(a) (s.111(2A)). The word was changed by paragraph 4(25) of Schedule 12 to the Employment Rights Act 2025, in force on 1 October 2026 by S.I. 2026/954, regulation 3, with regulation 4. The publisher lists no change not yet written into section 111.",
+   "not_read": "the rest of the Act"
   },
   {
    "id": "nice-ng97",
@@ -186,7 +179,11 @@
    "nation": [
     "England"
    ],
-   "status": "named_not_read"
+   "status": "current",
+   "page": "https://www.nice.org.uk/guidance/ng97",
+   "read_on": "2026-11-19",
+   "read_by": "round W1122, fetched at the institute's page",
+   "says": "Dementia: assessment, management and support for people living with dementia and their carers. Published 20 June 2018. Last reviewed 24 October 2025: NICE reviewed it and will not update the recommendations. It covers diagnosing and managing dementia, including Alzheimer's disease, with recommendations on training staff and helping carers to support people living with dementia."
   },
   {
    "id": "bapen-must-toolkit",
@@ -216,8 +213,8 @@
    "status": "named_not_read",
    "page": null,
    "read_on": null,
-   "read_by": "round W678: the owner's site answered only with a redirect, twice",
-   "says": "NOT READ. Nothing is known here of its reuse terms."
+   "read_by": "round W678: the owner's site answered only with a redirect, twice; round W1164, on 2026-11-20: one request to https://www.judy-waterlow.co.uk/ with its certificate checked against Let's Encrypt's Root YE, whose key ISRG Root X1 vouches for through ISRG Root X2, for this one site only. The certificate is valid; the address served a domain-parking redirect to a parking network, not the owner's pages, so the owner's content was NOT read",
+   "says": "NOT READ. The address the Waterlow score's owner published serves a domain-parking redirect, not the owner's pages (2026-11-20), so nothing is known here of its reuse terms, and the score stays withheld."
   },
   {
    "id": "gov-report-child-abuse",
@@ -312,9 +309,10 @@
    ],
    "status": "current",
    "page": "https://www.gov.uk/government/publications/generative-ai-product-safety-standards/generative-ai-product-safety-standards",
-   "read_on": "2026-10-12",
-   "read_by": "round W678, in a browser",
-   "says": "Updated 19 January 2026; applies to England. Thirteen headings from stated purpose to manipulation. Products are expected not to provide final answers, full solutions or complete worked examples by default. NOT READ: the text under twelve of the thirteen headings; whether the page calls itself non-statutory."
+   "read_on": "2026-11-20",
+   "read_by": "the cloud session (W1133), the whole page",
+   "says": "Updated 19 January 2026; applies to England. Thirteen headings: Stated purpose, Educational use cases, Filtering, Monitoring and reporting, Security, Privacy and data protection, Intellectual property, Design and testing, Governance, Cognitive development, Emotional and social development, Mental health, Manipulation. Products are expected not to provide final answers, full solutions or complete worked examples by default. The page does not say whether it is statutory. Set against the Education tools in docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md section 34.",
+   "not_read": "the regulations and codes the page links to: Keeping children safe in education, the filtering and monitoring standards, the ICO's Children's code, the Online Safety Act and Ofcom's codes"
   },
   {
    "id": "dfe-genai-in-education",
@@ -760,10 +758,10 @@
    ],
    "status": "current",
    "page": "https://www.gov.uk/government/publications/execution-of-deeds/practice-guide-8-execution-of-deeds",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "Shown as updated 14 September 2026. Section 2.1 is headed for the three elements of a deed: signature, attestation and delivery.",
-   "not_read": "the guide beyond its section headings; the companion guide on electronic signatures"
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, sections 1 to 3 of the guide's own text read whole (GOV.UK's content record of the page), not through a summary, and sections 4 to 16 by their headings only; first entered by a research reader of round W711 through a fetch that summarised the page",
+   "says": "GOV.UK records it as first published 7 October 2016 and last updated 14 September 2026; it is aimed primarily at solicitors and other conveyancers. A legal interest in land cannot be conveyed or created without a deed, with exceptions such as assents and short leases (Law of Property Act 1925 ss.52 and 54(2)); electronic dispositions under the Land Registration Act 2002 s.91 are not covered. A deed must be in writing, make clear on its face that it is intended to be a deed, and be validly executed as one (section 1.2). An individual signs (a mark counts) in the presence of a witness who attests and who is not a party to the deed, and delivers it (section 2.1); the guide cites the Law Commission's 2019 conclusion that 'in the presence of a witness' requires the witness's physical presence. A company executes under its common seal, or by two authorised signatories, or by one director whose signature is witnessed and attested, and a deed is presumed delivered on execution (section 3, citing the Companies Act 2006 ss.44 and 46). Prescribed attestation clauses are given for registered land.",
+   "not_read": "sections 4 to 16 (unregistered companies, other corporations, overseas companies, local authorities, office-holders in insolvency, charity trustees, powers of attorney and the rest) beyond their headings; practice guide 82 on electronic signatures; the update history"
   },
   {
    "id": "lpmpa-1989-s1",
@@ -777,10 +775,10 @@
    ],
    "status": "current",
    "page": "https://www.legislation.gov.uk/ukpga/1989/34/section/1",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "Section 1(3): an instrument is validly executed as a deed by an individual if signed in the presence of a witness who attests, and delivered.",
-   "not_read": "section 2 (contracts for the sale of land); any later amendment not shown on that page"
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary; first entered by a research reader of round W711 through a fetch that summarised the page, whose statement was incomplete",
+   "says": "In this form from 1 January 2010; no outstanding change is listed on the publisher's record (the file was last modified 31 August 2015). An instrument is not a deed unless it makes clear on its face that it is intended to be one (by describing itself as a deed, being expressed to be executed or signed as one, or otherwise) and is validly executed as a deed; being under seal does not by itself make that clear (s.1(2), (2A)). An individual validly executes an instrument as a deed if, and only if, it is signed by the individual in the presence of a witness who attests the signature, or at the individual's direction and in their presence and the presence of two witnesses who each attest it, and it is delivered as a deed (s.1(3)); making one's mark counts as signing (s.1(4)). Where a relevant lawyer delivers an instrument as a deed for a party, it is conclusively presumed in favour of a purchaser that the lawyer was authorised to (s.1(5)).",
+   "not_read": "section 2 (contracts for the sale of land); Schedule 1"
   },
   {
    "id": "lsa-2007-sch2",
@@ -795,10 +793,10 @@
    ],
    "status": "current",
    "page": "https://www.legislation.gov.uk/ukpga/2007/29/schedule/2",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "Reserved instrument activities cover preparing an instrument of transfer or charge for land registration, an application for registration, and any other instrument relating to real or personal estate; paragraph 5 excludes an agreement not intended to be executed as a deed, and short leases are excepted from the contracts for disposition of land. Section 14 makes carrying on a reserved activity when not entitled an offence.",
-   "not_read": "the Schedule's full text was read by one reader only; the exemptions in Schedule 3"
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary, with section 14; first entered by a research reader of round W711 through a fetch that summarised the page",
+   "says": "No outstanding change touches the Schedule on the publisher's record (the file was last modified 8 January 2025). It defines the six reserved legal activities: rights of audience, the conduct of litigation, reserved instrument activities, probate activities, notarial activities and the administration of oaths. Reserved instrument activities are preparing an instrument of transfer or charge for the purposes of the Land Registration Act 2002, making an application or lodging a document for registration under it, and preparing any other instrument relating to real or personal estate for the purposes of the law of England and Wales, or relating to court proceedings there (para.5(1)). An instrument includes a contract for the sale or other disposition of land, except a contract to grant a short lease (Law of Property Act 1925 s.54(2)), and excludes a will, an agreement not intended to be executed as a deed, a letter or power of attorney, and a transfer of stock with no trust or limitation (para.5(3), (4)). Section 14 (in this form from 7 February 2023) makes carrying on a reserved legal activity when not entitled an offence, with a defence of not knowing and not reasonably being expected to know.",
+   "not_read": "Schedule 3 (exempt persons); who is entitled, under section 13"
   },
   {
    "id": "hse-puwer-overview",
@@ -815,7 +813,7 @@
    "read_on": "2026-10-13",
    "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
    "says": "Shown as updated 21 November 2024. Duties fall on those who own, operate or have control over work equipment, whether owned by them or not; those who provide equipment for others are covered.",
-   "not_read": "the Regulations themselves; the approved code of practice; the lifting regulations"
+   "not_read": "the Regulations themselves; the approved code of practice; the lifting regulations. A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network (403 at the proxy), so this row still rests on one reader's summary."
   },
   {
    "id": "frc-frs-102-periodic-review-2024",
@@ -832,7 +830,7 @@
    "read_on": "2026-10-13",
    "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
    "says": "The Periodic Review 2024 amendments have a principal effective date of 1 January 2026. The lessee change is described in the regulator's factsheet on lease accounting for lessees, published 27 November 2024.",
-   "not_read": "the standard's text; the factsheet itself; which entities may still use another regime"
+   "not_read": "the standard's text; the factsheet itself; which entities may still use another regime. A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network (403 at the proxy), so this row still rests on one reader's summary."
   },
   {
    "id": "si-2026-439-av-passenger-permits",
@@ -846,10 +844,10 @@
    ],
    "status": "current",
    "page": "https://www.legislation.gov.uk/uksi/2026/439/made",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "Made 20 April 2026, in force 15 May 2026. Procedural: the validity, renewal, variation and review of a permit for an automated passenger service, and the information to be given.",
-   "not_read": "the Automated Vehicles Act 2024 itself; the commencement regulations; whether any permit has been granted; any rule for a robot on a footway (no primary source permitting one was found)"
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: regulations 1 to 8; first entered by a research reader of round W711 through a fetch that summarised the page",
+   "says": "Made 20 April 2026, laid 23 April 2026, in force 15 May 2026; it extends to England and Wales and Scotland, and applies to an automated passenger service in a vehicle that would count as a public service vehicle, and to any other such service in England (reg.1). A permit is valid for at most five years (reg.3); renewal is applied for from six months to two months before expiry, and the permit stays valid until the application is decided (reg.4). The Secretary of State may vary, suspend or withdraw a permit with the holder's consent, or without it on listed grounds, among them a breached condition, serious or repeated traffic infractions, a false material statement, serious safety concerns, serious or repeated disruption to traffic, an unacceptable delay to an emergency worker, or an unroadworthy vehicle (reg.5), by the procedures of regs 6 to 8. The instrument does not mention robots.",
+   "not_read": "regulations 9 onward; the Automated Vehicles Act 2024 itself; the commencement regulations; whether any permit has been granted; any rule for a robot on a footway (no primary source permitting one was found)"
   },
   {
    "id": "av-act-implementation-programme",
@@ -862,10 +860,10 @@
    ],
    "status": "current",
    "page": "https://www.gov.uk/guidance/automated-vehicles-act-implementation-programme",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "Published 26 February 2025. States implementation of the Act's regime in 2027; it does not state which provisions are in force.",
-   "not_read": "any later statement of the timetable; the statement of safety principles"
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the page's own text read whole (GOV.UK's content record of the page), not through a summary; first entered by a research reader of round W711 through a fetch that summarised the page",
+   "says": "GOV.UK records it as first published 26 February 2025 and not changed since. The programme, launched in 2024, carries out the policy, legislative and operational work to implement the Automated Vehicles Act 2024 in 2027, with objectives for deployment, in-use regulation, and international work and capability; it is delivered jointly by the Centre for Connected and Autonomous Vehicles, the Department for Transport, the Department for Business and Trade, the Driver and Vehicle Standards Agency, the Driver and Vehicle Licensing Agency, the Vehicle Certification Agency and National Highways. It does not state which provisions of the Act are in force.",
+   "not_read": "any later statement of the timetable; the statement of safety principles; the code of practice on automated vehicle trialling; the Law Commissions' regulations review"
   },
   {
    "id": "ec-ai-omnibus-2026",
@@ -882,7 +880,7 @@
    "read_on": "2026-10-13",
    "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
    "says": "Published 27 July 2026 and last updated 31 July 2026: the amending act entered into force on 27 July 2026; the rules for the listed high-risk uses apply from 2 December 2027 and those for systems embedded in regulated products from 2 August 2028.",
-   "not_read": "the legal text in the Official Journal; this is a news page"
+   "not_read": "the legal text in the Official Journal; this is a news page. A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network (403 at the proxy), so this row still rests on one reader's summary."
   },
   {
    "id": "si-2026-867-machinery",
@@ -897,10 +895,10 @@
    ],
    "status": "current",
    "page": "https://www.legislation.gov.uk/uksi/2026/867/introduction/made",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "Made 22 July 2026, in force 20 January 2027; Part 2 applies to Great Britain and Part 3 to Northern Ireland. It amends the supply-side rules for machinery.",
-   "not_read": "what it changes for a robot; the 2008 Regulations; the EU machinery regulation's own text and date (the publisher's page could not be opened)"
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: Part 1, and regulation 2 to the new regulation 12A(3); first entered by a research reader of round W711 through a fetch that summarised the page",
+   "says": "Made 22 July 2026, in force 20 January 2027; Part 2 applies to Great Britain and Part 3 to Northern Ireland. It amends the supply-side rules for machinery. In Great Britain it amends the Supply of Machinery (Safety) Regulations 2008 so that a responsible person who meets the obligations of the EU Machinery Regulation, Regulation (EU) 2023/1230 (its essential health and safety requirements, technical documentation in English kept for ten years, its conformity assessment, an EU declaration of conformity, the information and instructions it requires in English, and CE marking), is treated as meeting the requirements of regulation 7(2) of the 2008 Regulations (new reg.12A). The instrument does not mention robots.",
+   "not_read": "the rest of the new regulation 12A, and Part 3; the 2008 Regulations themselves; the EU machinery regulation's own text and date (the publisher's page could not be opened)"
   },
   {
    "id": "pram-act-2025",
@@ -913,10 +911,10 @@
    ],
    "status": "current",
    "page": "https://www.legislation.gov.uk/ukpga/2025/20/contents",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "2025 c.20. Its title is as given here; 'product safety and metrology' is the title of guidance about it, not of the Act.",
-   "not_read": "its provisions; any regulations made under it"
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: sections 1, 2, 12, 14 and 15 and the Schedule; first entered by a research reader of round W711 through a fetch that summarised the page",
+   "says": "2025 c.20, the Product Regulation and Metrology Act 2025. It extends to the whole United Kingdom (s.14) and came into force on the day it was passed, 21 July 2025, except s.11(1) and (3) (s.15). It confers powers: the Secretary of State may make product regulations about the marketing or use of products in the United Kingdom to reduce or mitigate the risks products present, to make products operate efficiently or effectively, and to make weighing and measuring products accurate (s.1(1)); a product is a tangible item that results from a method of production (s.1(7)); product requirements may concern components, tangible or intangible, an intangible component including software (s.2(2), (9)), and may fall on manufacturers, sellers, importers, installers, online marketplaces and others (s.2(3)); a requirement may be treated as met by meeting a specified requirement of EU law (s.2(7)). The Schedule excludes food, feed and fertiliser, plants, plant protection products, animal by-products and products of animal origin, aircraft (save toy drones for children under 14, and drone radio equipment), products for operating aircraft, military equipment, and medicines and medical devices.",
+   "not_read": "sections 3 to 11, 13, 16 and 17 (enforcement, emergencies, metrology, information sharing, cost recovery and the rest); any regulations made under it"
   },
   {
    "id": "lawcom-business-tenancies-renewal",
@@ -934,7 +932,7 @@
    "read_on": "2026-10-13",
    "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
    "says": "First consultation 19 November 2024; second consultation opened 16 June 2026 and closed 16 September 2026; no final report. The law is unchanged while the review runs.",
-   "not_read": "the 1954 Act itself; the consultation papers"
+   "not_read": "the 1954 Act itself; the consultation papers. A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network (403 at the proxy), so this row still rests on one reader's summary."
   },
   {
    "id": "gov-ending-commercial-lease-early",
@@ -948,9 +946,9 @@
    ],
    "status": "current",
    "page": "https://www.gov.uk/terminating-a-commercial-property-lease-early",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "Undated page covering break clauses, surrender and assignment, and naming the 1954 Act.",
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the page's own text read whole (GOV.UK's content record of the page), not through a summary; first entered by a research reader of round W711 through a fetch that summarised the page, which called the page undated",
+   "says": "GOV.UK's content record gives it as first published 16 October 2012 and last updated 5 October 2022. It covers ending a commercial lease early with a break clause (notice as the clause says, and any other conditions), with the landlord's agreement (surrender) or by passing the lease on (assignment, with the landlord's permission), subletting, and a landlord ending a lease early only where the tenant fails to pay rent or meet other obligations, under a forfeiture clause. After a fixed term ends a tenant must usually give three months' notice and a landlord six, as the lease states. It names the Landlord and Tenant Act 1954 and the grounds on which a landlord may refuse to extend a protected lease.",
    "not_read": "anything a particular lease provides; Scotland and Northern Ireland"
   },
   {
@@ -967,7 +965,7 @@
    "read_on": "2026-10-13",
    "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
    "says": "The regulator's page says the provisions of the 2025 Act affecting data protection law and the electronic communications rules are now in force. Its separate toolkit on AI and data protection risk says it is under review because of that Act.",
-   "not_read": "the Act; the date the page was last changed (none is shown)"
+   "not_read": "the Act; the date the page was last changed (none is shown). A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network (403 at the proxy), so this row still rests on one reader's summary."
   },
   {
    "id": "caa-drone-requirements",
@@ -984,7 +982,128 @@
    "read_on": "2026-10-13",
    "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
    "says": "Undated page: a flyer ID from 100 g, an operator ID from 250 g or from 100 g with a camera, and UK class marks for models placed on the market from 1 January 2026.",
-   "not_read": "the March 2026 code itself (its text could not be read); remote identification, which this page does not mention; the specific category for commercial operations"
+   "not_read": "the March 2026 code itself (its text could not be read); remote identification, which this page does not mention; the specific category for commercial operations. A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network (403 at the proxy), so this row still rests on one reader's summary."
+  },
+  {
+   "id": "companies-act-2006-s44",
+   "names": [
+    "Companies Act 2006 s.44",
+    "execution of documents by a company"
+   ],
+   "kind": "statute",
+   "nation": [
+    "England",
+    "Wales",
+    "Northern Ireland"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/ukpga/2006/46/section/44",
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary, with sections 43 and 46",
+   "says": "In this form from 6 April 2008; no outstanding change touches it on the publisher's record (the Act's file was last modified 24 July 2026). Under the law of England and Wales or Northern Ireland a company executes a document by affixing its common seal, or by signature: by two authorised signatories (every director, and the secretary of a private company that has one or of a public company), or by a director in the presence of a witness who attests the signature (s.44(1) to (3)). Signed so and expressed to be executed by the company, it has the same effect as under seal (s.44(4)); in favour of a purchaser in good faith for valuable consideration it is deemed duly executed if it purports to be signed so (s.44(5)); one person signing for more than one company signs separately in each capacity (s.44(6)). Read with it: a contract is made by the company under its seal, or on its behalf by a person acting under its authority, express or implied (s.43); a document is validly executed by a company as a deed if, and only if, it is duly executed and delivered as a deed, delivery being presumed on execution unless a contrary intention is proved (s.46).",
+   "not_read": "the Scottish rule (s.48) and the rest of Part 4; any company's own articles, which may say more about who signs"
+  },
+  {
+   "id": "cra-2015-part-2",
+   "names": [
+    "Consumer Rights Act 2015 Part 2",
+    "unfair terms in consumer contracts"
+   ],
+   "kind": "statute",
+   "nation": [
+    "UK"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/ukpga/2015/15/part/2",
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: sections 61 to 76 and Schedule 2",
+   "says": "In force from 1 October 2015 (s.73 in this form from 31 December 2020, s.74 from 1 January 2024); no outstanding change touches Part 2 on the publisher's record. It applies to a contract between a trader and a consumer, and to a consumer notice (s.61). An unfair term or notice is not binding on the consumer, who may still rely on it; a term is unfair if, contrary to the requirement of good faith, it causes a significant imbalance in the parties' rights and obligations to the detriment of the consumer, judged by its subject matter and all the circumstances when it was agreed (s.62). Schedule 2 Part 1 is an indicative and non-exhaustive list of twenty kinds of term that may be unfair (s.63). The main subject matter and the appropriateness of the price are excluded from the assessment only if the term is transparent and prominent (s.64). A trader cannot exclude or restrict liability for death or personal injury resulting from negligence (s.65). A written term must be transparent (s.68); a term that could have different meanings takes the one most favourable to the consumer (s.69); a court must consider fairness of its own motion where it has the material (s.71).",
+   "not_read": "Part 1 (goods, digital content and services) and its exclusion rules in ss.31, 47 and 57; Schedules 3 and 5 (enforcement); the CMA's guidance on unfair terms"
+  },
+  {
+   "id": "ucta-1977-part-1",
+   "names": [
+    "Unfair Contract Terms Act 1977"
+   ],
+   "kind": "statute",
+   "nation": [
+    "England",
+    "Wales",
+    "Northern Ireland"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/ukpga/1977/50/part/I",
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: Part I, sections 1 to 14, and Schedule 2",
+   "says": "No outstanding change is listed on the publisher's record (the file was last modified 17 May 2024); since 1 October 2016 Part I no longer covers consumer contracts, which the Consumer Rights Act 2015 covers. Sections 2 to 7 apply only to business liability. Liability for death or personal injury resulting from negligence cannot be excluded or restricted, and other loss from negligence only so far as the term or notice satisfies the requirement of reasonableness (s.2). Where one party deals on the other's written standard terms of business, the other cannot exclude liability for its own breach, or claim to render a substantially different performance or none, except so far as reasonable (s.3). The seller's obligations as to title cannot be excluded, and those as to description, quality and fitness only so far as reasonable (s.6; s.7 for other contracts under which goods pass). The requirement of reasonableness is that the term was a fair and reasonable one to include, given what the parties knew or ought reasonably to have known when the contract was made, and it is for the party relying on it to show that it was (s.11); Schedule 2 lists guidelines, among them the parties' relative bargaining strength and whether the customer knew or ought reasonably to have known of the term.",
+   "not_read": "Part II (Scotland), Part III and Schedule 1 (contracts the Act does not cover)"
+  },
+  {
+   "id": "loler-1998",
+   "names": [
+    "Lifting Operations and Lifting Equipment Regulations 1998",
+    "LOLER"
+   ],
+   "kind": "statutory instrument",
+   "nation": [
+    "Great Britain"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/uksi/1998/2307",
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: regulations 1 to 12",
+   "says": "In force from 5 December 1998 (regs 2, 9 and 11 in their present form from 31 December 2020); no outstanding change is listed on the publisher's record (the file was last modified 16 May 2024). The duties fall on an employer for lifting equipment provided for or used by its employees at work, on a self-employed person, and on a person who has control, to the extent of that control, of lifting equipment, of a person at work who uses it, or of the way it is used, in connection with a business or other undertaking; not on a person who supplies it by sale or hire-purchase (reg.3). Lifting equipment must be of adequate strength and stability (reg.4), safe for lifting persons (reg.5), positioned to reduce risk as low as is reasonably practicable (reg.6) and marked with its safe working loads (reg.7); every lifting operation is planned by a competent person, supervised and carried out safely (reg.8). It is thoroughly examined before first use, after installation, and, where exposed to deterioration, at least every 6 months (equipment for lifting persons, and accessories) or every 12 months (other equipment), or under an examination scheme, and after exceptional circumstances (reg.9). A defect is notified forthwith and reported in writing, and the equipment is not used until it is rectified (reg.10); reports and records are kept for set periods (reg.11).",
+   "not_read": "Schedule 1 (what a report of a thorough examination contains); HSE's approved code of practice and guidance, whose site this environment's network refused on 2026-11-20"
+  },
+  {
+   "id": "cca-1974-credit-and-hire",
+   "names": [
+    "Consumer Credit Act 1974"
+   ],
+   "kind": "statute",
+   "nation": [
+    "UK"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/ukpga/1974/39/section/8",
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: sections 8, 15 and 145, each at its own page",
+   "says": "The Act's file was last modified 30 September 2026, and no outstanding change touches these sections. A consumer credit agreement is an agreement between an individual (the debtor) and any other person (the creditor) by which the creditor provides the debtor with credit of any amount; it is a regulated credit agreement if it is one for the purposes of Chapter 14A of Part 2 of the Regulated Activities Order (s.8, in this form from 31 December 2020). A consumer hire agreement is an agreement with an individual (the hirer) for the bailment or hiring of goods, not a hire-purchase agreement, capable of subsisting for more than three months; it is regulated if it is one for the purposes of Chapter 14B of that Order (s.15, from 1 April 2014). Credit brokerage, an ancillary credit business, means carrying on an activity of the kind specified by article 36A(1)(a) to (c) of that Order (s.145, from 1 April 2014).",
+   "not_read": "the rest of the Act, including ss.189 and 189B; the FCA's rules on consumer credit and its perimeter guidance on credit broking, whose site this environment's network refused on 2026-11-20"
+  },
+  {
+   "id": "rao-2001-credit-broking",
+   "names": [
+    "Regulated Activities Order 2001 art.36A",
+    "credit broking"
+   ],
+   "kind": "statutory instrument",
+   "nation": [
+    "UK"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/uksi/2001/544/article/36A",
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: articles 36A and 60N, each at its own page",
+   "says": "Article 36A (credit broking) is in this form from 27 June 2014 and article 60N (regulated consumer hire agreements) from 20 March 2016; the Order's file was last modified 7 August 2026, and no outstanding change touches either. Credit broking includes effecting an introduction of an individual or relevant recipient of credit who wishes to enter into a credit agreement or a consumer hire agreement to a lender or owner, or to a broker, with a view to a regulated agreement; presenting or offering an agreement which would be a regulated credit agreement; assisting by undertaking preparatory work with a view to one; and entering into one on behalf of a lender (art.36A(1)); not where the activity is operating an electronic system in relation to lending (art.36A(2), art.36H). Entering into a regulated consumer hire agreement as owner, and exercising the owner's rights and duties under one, are specified kinds of activity (art.60N).",
+   "not_read": "articles 36H, 60B to 60M and 60O to 60Q (the exempt agreements); the FCA's perimeter guidance on credit broking, whose site this environment's network refused on 2026-11-20"
+  },
+  {
+   "id": "fsma-2000-s19",
+   "names": [
+    "Financial Services and Markets Act 2000 s.19",
+    "the general prohibition"
+   ],
+   "kind": "statute",
+   "nation": [
+    "UK"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/ukpga/2000/8/section/19",
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary",
+   "says": "In this form from 1 March 2019; the Act's file was last modified 9 September 2026, and no outstanding change touches s.19. No person may carry on a regulated activity in the United Kingdom, or purport to do so, unless that person is an authorised person or an exempt person; this is the general prohibition.",
+   "not_read": "the rest of the Act, including what follows a breach (ss.23 to 26) and who is exempt"
   },
   {
    "id": "dar-al-ifta-egypt-ai-fatwa-2025",
@@ -1256,6 +1375,375 @@
    "status": "named_not_read",
    "says": "NOT READ. No competition's marking scheme has been opened, so nothing here judges or marks a recitation, and a judged event waits for a real scheme read by a person.",
    "not_read": "every marking scheme; a judged event is not built until one is read and entered"
+  },
+  {
+   "id": "quranic-audio-dataset",
+   "names": [
+    "Quranic Audio Dataset"
+   ],
+   "kind": "data licence",
+   "nation": [
+    "any"
+   ],
+   "status": "current",
+   "page": "https://huggingface.co/datasets/RetaSy/quranic_audio_dataset",
+   "read_on": "2026-11-19",
+   "read_by": "the cloud session, at the dataset's card and the paper's page (arXiv 2405.02675); NOT re-read",
+   "says": "Recordings by 1,287 volunteer participants, beginner learners from more than 11 non-Arabic countries, in 6,828 examples. Each example has a reciter_age field, which reads 'Unknown' in the card's own example, and a correct/incorrect label. The card states no licence for the data; the paper's page shows CC BY 4.0, the paper's own licence.",
+   "not_read": "any licence for the recordings, and whether every participant was an adult who consented to reuse. NOT TO BE USED until a written answer grants it (a letter is drafted for the Owner to send, docs/letters/QURANIC_AUDIO_DATASET_REQUEST.md)",
+   "hosts": [
+    "huggingface.co/datasets/RetaSy"
+   ],
+   "permits": [],
+   "permits_basis": "nothing: no terms permitting a use were read, so it is not to be used until written permission is held or its terms are read and entered. The host named is the dataset's own address, not the whole site, so models may still be fetched from that site under their own licences"
+  },
+  {
+   "id": "employment-rights-act-2025",
+   "names": [
+    "Employment Rights Act 2025"
+   ],
+   "kind": "statute",
+   "nation": [
+    "England",
+    "Wales",
+    "Scotland"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/ukpga/2025/36/schedule/12",
+   "read_on": "2026-11-20",
+   "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: Schedule 12 (increase in time limits for making claims), paragraphs 4(25) and 18",
+   "says": "Paragraph 4(25) of Schedule 12: in section 111(2) of the Employment Rights Act 1996, in paragraphs (a) and (b), for \"three\" substitute \"six\". Paragraph 18: in section 123(1)(a) of the Equality Act 2010, for \"3\" substitute \"6\". In force on 1 October 2026 (S.I. 2026/954, regulation 3).",
+   "not_read": "the rest of the Act, and the rest of Schedule 12"
+  },
+  {
+   "id": "si-2026-954",
+   "names": [
+    "S.I. 2026/954"
+   ],
+   "kind": "statutory instrument",
+   "nation": [
+    "England",
+    "Wales",
+    "Scotland"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/uksi/2026/954/made",
+   "read_on": "2026-11-20",
+   "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: regulations 3 and 4, and the Schedule's first table for the two complaints the rules work out",
+   "says": "The Employment Rights Act 2025 (Commencement No. 5 and Transitional Provisions) (Amendment) Regulations 2026. Regulation 3: section 152 of and Schedule 12 to the 2025 Act (increase in time limits for making claims) come into force on 1 October 2026, subject to regulation 4. Regulation 4(1): the amendments made by Schedule 12 do not apply in any case where the relevant date occurs before 1 October 2026. The Schedule's first table: for a complaint under section 111(1) of the Employment Rights Act 1996, the effective date of termination; for a complaint under section 120 of the Equality Act 2010, the date of the act, or for conduct extending over a period the end of the period, or for a failure the date it was decided on.",
+   "not_read": "regulations 1, 2 and 5, and the Schedule's other rows"
+  },
+  {
+   "id": "et-extension-of-jurisdiction-england-wales-1994",
+   "names": [
+    "Employment Tribunals Extension of Jurisdiction (England and Wales) Order 1994"
+   ],
+   "kind": "statutory instrument",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/uksi/1994/1623/article/7",
+   "read_on": "2026-11-20",
+   "read_by": "round W1160, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: article 7 as it stands and as it stood on 30 September 2026, with the publisher's notes on it",
+   "says": "S.I. 1994/1623. Article 7(a): within the period of six months beginning with the effective date of termination of the contract giving rise to the claim; (b) where there is no effective date of termination, six months beginning with the last day upon which the employee worked. As it stood on 30 September 2026, three months in each. The publisher's note: the word substituted (1.10.2026) by S.I. 2026/759, arts. 1(2), 2 (with art. 3). The publisher lists no change not yet written into it.",
+   "not_read": "the rest of the Order"
+  },
+  {
+   "id": "et-extension-of-jurisdiction-scotland-1994",
+   "names": [
+    "Employment Tribunals Extension of Jurisdiction (Scotland) Order 1994"
+   ],
+   "kind": "statutory instrument",
+   "nation": [
+    "Scotland"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/uksi/1994/1624/article/7",
+   "read_on": "2026-11-20",
+   "read_by": "round W1160, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: article 7 as it stands and as it stood on 8 November 2026, with the changes the publisher lists",
+   "says": "S.I. 1994/1624. Article 7(a) and (b), as the publisher's text stands: three months beginning with the effective date of termination of the contract giving rise to the claim, or with none the last day worked. The publisher lists two changes not yet written into its text: words substituted in article 7(a) and in article 7(b) by S.S.I. 2026/327, article 2(2), in force 9 November 2026.",
+   "not_read": "the rest of the Order"
+  },
+  {
+   "id": "si-2026-759",
+   "names": [
+    "S.I. 2026/759"
+   ],
+   "kind": "statutory instrument",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/uksi/2026/759/made",
+   "read_on": "2026-11-20",
+   "read_by": "round W1160, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: the Order whole, as made",
+   "says": "The Employment Tribunals Extension of Jurisdiction (England and Wales) (Amendment) Order 2026. Article 1(2): it comes into force on 1 October 2026. Article 2: in article 7 of the 1994 Order, in paragraphs (a) and (b), for \"three\" substitute \"six\". Article 3(2): the amendments apply where the effective date of termination of the contract giving rise to the claim, or with none the last day upon which the employee worked, occurs on or after 1 October 2026; article 3(1) says what the effective date of termination is.",
+   "not_read": "nothing: the Order was read whole"
+  },
+  {
+   "id": "ssi-2026-327",
+   "names": [
+    "S.S.I. 2026/327"
+   ],
+   "kind": "statutory instrument",
+   "nation": [
+    "Scotland"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/ssi/2026/327/made",
+   "read_on": "2026-11-20",
+   "read_by": "round W1160, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: the Order whole, as made",
+   "says": "The Employment Tribunals Extension of Jurisdiction (Amendment) (Scotland) Order 2026. Article 1: it comes into force on 9 November 2026. Article 2(2): in article 7(a) and (b) of the 1994 Order, for \"three\" substitute \"six\". Article 3(1): the amendments apply where the effective date of termination of the contract giving rise to the claim, or with none the last day on which the employee worked, occurs on or after 9 November 2026; article 3(2) says what the effective date of termination is.",
+   "not_read": "nothing: the Order was read whole"
+  },
+  {
+   "id": "gov-uk-employment-tribunals-guide",
+   "names": [
+    "Employment tribunals (GOV.UK guide)"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "England",
+    "Wales",
+    "Scotland"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/employment-tribunals",
+   "read_on": "2026-11-20",
+   "read_by": "round W1161, the guide's nine parts read whole (GOV.UK's content record of the page, www.gov.uk/api/content/employment-tribunals), not through a summary",
+   "says": "GOV.UK's content record gives it as first published 3 January 2012, last publicly updated 9 December 2024 and changed on 20 November 2026. 'Check if you can make a claim': there is a different way to make a claim to an employment tribunal in Northern Ireland, linked at https://www.employmenttribunalsni.co.uk/how-make-claim; a person usually has 6 months if the problem happened on or after 1 October 2026, and 3 months if before; to find the deadline for a claim, check the employment tribunal time limits guidance on the Acas website, linked at https://www.acas.org.uk/employment-tribunal-time-limits; a person may not be able to claim if the deadline is missed, even while trying to resolve the dispute directly; interim relief is applied for within 7 days of dismissal. 'Make a claim': a person must tell Acas that they are planning to make a claim. 'Get support and legal advice': in England or Wales, legal advice from The Law Society (https://solicitors.lawsociety.org.uk/), Citizens Advice (https://www.citizensadvice.org.uk/law-and-courts/legal-system/finding-free-or-affordable-legal-help/), Law Centres Network (https://www.lawcentres.org.uk/) and Law Works (https://www.lawworks.org.uk/); in Scotland, The Law Society of Scotland (https://www.lawscot.org.uk/) and Citizens Advice Scotland (https://www.cas.org.uk/); no place is named for Northern Ireland. Round W1168 read the record again on 2026-11-20 for what to gather. 'Make a claim', under 'What you’ll need': 'To use this service, you’ll need:' 'the names and addresses of all the people making the claim (the ‘claimants’)', 'the names and addresses of the employer or organisation you’re claiming against (the ‘respondents’)' and 'your Acas early conciliation certificate number'. 'After you make a claim', under 'Share documents': 'You’ll have to share any relevant documents with the respondent and the tribunal, even if they do not help your case.' 'Examples of relevant documents could include:' 'a contract of employment', 'pay slips', 'details of your pension scheme' and 'notes from relevant meetings you attended at work'. 'Going to a tribunal hearing': 'You must have all the documents you’re using to support your case with you.'",
+   "not_read": "the pages it links to: each of their sites refused an automated visit from where the guide was read, so none was opened; the Welsh version of the guide; the claim form and its guidance",
+   "used_by": [
+    "agentic_core/legal/checklists.py"
+   ]
+  },
+  {
+   "id": "acas-employment-tribunal-time-limits",
+   "names": [
+    "Employment tribunal time limits (Acas)"
+   ],
+   "kind": "public guidance",
+   "nation": [
+    "England",
+    "Wales",
+    "Scotland"
+   ],
+   "status": "current",
+   "page": "https://www.acas.org.uk/employment-tribunal-time-limits",
+   "read_on": "2026-11-20",
+   "read_by": "round W1162, the page's own text read whole at its site, not through a summary",
+   "says": "Shown as last updated 16 November 2026. The law on time limits changed on 1 October 2026. Before it, 3 months minus 1 day for most claims and 6 months minus 1 day for a few (statutory redundancy pay, equal pay, certain claims against a trade union, certain armed forces claims): its worked example, paid the wrong amount on 30 September 2026, ends at 11:59pm on 29 December 2026. On or after it, 6 months minus 1 day for most claims: its worked example, 1 October 2026, ends at 11:59pm on 31 March 2027. In Scotland the limit for breach of contract claims changed on 9 November 2026. The first step is to notify Acas, within the limit; early conciliation pauses the limit only if Acas is notified within it; grievance and appeal procedures do not change it; interim relief has a 7-day limit; a claim out of time may still be made, and the judge decides whether to accept it, though limits are in most cases strictly enforced.",
+   "not_read": "the pages it links to (early conciliation, interim relief, the helpline); the Welsh version",
+   "used_by": [
+    "agentic_core/legal/time_limits.py"
+   ]
+  },
+  {
+   "id": "employment-tribunals-ni-how-to-make-a-claim",
+   "names": [
+    "How to make a claim (the Industrial Tribunals and the Fair Employment Tribunal, Northern Ireland)"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "Northern Ireland"
+   ],
+   "status": "current",
+   "page": "https://www.employmenttribunalsni.co.uk/how-make-claim",
+   "read_on": "2026-11-20",
+   "read_by": "round W1162, the page's own text read whole at its site, not through a summary",
+   "says": "Most tribunal claims must be made within three months of the incident, though this varies, is subject to early conciliation, and claims usually have to be presented within three or six months depending on the type of claim; the tribunals extend a limit only in exceptional circumstances, and a claim made out of time may not be heard. The tribunals give no advice. From 27 January 2020 most claimants must first notify the Labour Relations Agency and consider early conciliation, which allows up to a calendar month, and two weeks more if needed, without affecting the deadline. It names, for help: the Labour Relations Agency, the Equality Commission, Law Centre NI, Advice NI, Protect, the Ulster University Law Clinic, the Bar of Northern Ireland and the Department of Justice on legal aid.",
+   "not_read": "the forms and guidance documents it links to; the sites of the bodies it names, of which only the Labour Relations Agency's is reachable from where this was read, and that was not opened",
+   "used_by": [
+    "agentic_core/legal/time_limits.py"
+   ]
+  },
+  {
+   "id": "gov-uk-domestic-abuse-help",
+   "names": [
+    "Domestic abuse: how to get help (GOV.UK)"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "England",
+    "Wales",
+    "Scotland",
+    "Northern Ireland"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/guidance/domestic-abuse-how-to-get-help",
+   "read_on": "2026-11-20",
+   "read_by": "round W1165, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/guidance/domestic-abuse-how-to-get-help) on 2026-11-20, not through a summary",
+   "says": "GOV.UK's content record gives it as first published 5 October 2018 and last publicly updated 29 April 2025. 'If you are in immediate danger, call 999 and ask for the police. If you can’t speak and are calling on a mobile press 55 to have your call transferred to the police.' 'For free, confidential advice, 24 hours a day contact a domestic abuse helpline.' 'If you believe there is an immediate risk of harm to someone, or it is an emergency, you should always call 999.' Its table of helplines by nation: England, Refuge’s National Domestic Abuse Helpline, 0808 2000 247; Northern Ireland, Domestic and Sexual Abuse Helpline, 0808 802 1414; Scotland, Domestic Abuse and Forced Marriage Helpline, 0800 027 1234; Wales, Live Fear Free, 0808 80 10 100; UK-wide, The Men’s Advice Line run by Respect, 0808 801 0327, and the Bright Sky app.",
+   "not_read": "the helplines' own sites, which this environment's network does not reach, and the page's translated and easy read versions",
+   "used_by": [
+    "agentic_core/legal/urgent.py"
+   ]
+  },
+  {
+   "id": "gov-uk-homeless-help",
+   "names": [
+    "Help if you're homeless or about to become homeless (GOV.UK)"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "England"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/if-youre-homeless-at-risk-of-homelessness",
+   "read_on": "2026-11-20",
+   "read_by": "round W1165, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/if-youre-homeless-at-risk-of-homelessness) on 2026-11-20, not through a summary",
+   "says": "GOV.UK's content record gives it as first published 26 January 2012 and last publicly updated 17 October 2024. 'In England, your council must help if you’re legally homeless or will become homeless within the next 8 weeks.' It links help if you’re homeless in Scotland (www.mygov.scot), in Wales (gov.wales) and in Northern Ireland (www.nihe.gov.uk). 'You may be legally homeless if:' among others 'you cannot get into your home, for example your landlord has locked you out' and 'it’s not reasonable to stay in your home, for example you’re at risk of violence or abuse'. 'Find your council to get help and advice.' (www.gov.uk/homelessness-help-from-council). The council 'may offer you advice, emergency housing, support to find longer-term housing or help so you can stay in your home'.",
+   "not_read": "the other nations' pages it links, and Shelter's guides, which this environment's network does not reach",
+   "used_by": [
+    "agentic_core/legal/urgent.py"
+   ]
+  },
+  {
+   "id": "gov-uk-find-court-tribunal",
+   "names": [
+    "Find a court or tribunal (GOV.UK)"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/find-court-tribunal",
+   "read_on": "2026-11-20",
+   "read_by": "round W1165, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/find-court-tribunal) on 2026-11-20, not through a summary",
+   "says": "GOV.UK's content record (a service's start page) gives it as first published 15 August 2013 and last publicly updated 13 September 2019. 'Find contact details and information on courts and tribunals in England and Wales, and some non-devolved tribunals in Scotland.' It gives a court's address, contact details, opening times, how to get there, the areas of law it covers and disabled access. For Scotland and Northern Ireland it names the Scottish Courts website and the Northern Ireland Courts and Tribunals Service.",
+   "not_read": "the service itself (www.find-court-tribunal.service.gov.uk) and the Scottish and Northern Ireland courts' sites",
+   "used_by": [
+    "agentic_core/legal/urgent.py"
+   ]
+  },
+  {
+   "id": "gov-uk-represent-yourself",
+   "names": [
+    "Represent yourself in court (GOV.UK)"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/represent-yourself-in-court",
+   "read_on": "2026-11-20",
+   "read_by": "round W1165, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/represent-yourself-in-court) on 2026-11-20, not through a summary",
+   "says": "GOV.UK's content record gives it as first published 28 November 2011 and last publicly updated 16 January 2025; it is for England and Wales ('There are different courts and rules in Scotland'). A McKenzie friend may help by taking notes and giving advice, if the judge allows. 'If you need help understanding or taking part in your hearing, you can ask for support from a communication specialist (known as an ‘intermediary’).' It names Advicenow's guides to going to court, and legal aid.",
+   "not_read": "the guides it links (Advicenow's and the McKenzie friend guidance)",
+   "used_by": [
+    "agentic_core/legal/urgent.py"
+   ]
+  },
+  {
+   "id": "gov-uk-find-immigration-adviser",
+   "names": [
+    "Find an immigration adviser (GOV.UK)"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "England",
+    "Wales",
+    "Scotland",
+    "Northern Ireland"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/find-an-immigration-adviser",
+   "read_on": "2026-11-20",
+   "read_by": "round W1167, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/find-an-immigration-adviser) on 2026-11-20, not through a summary",
+   "says": "GOV.UK's content record gives it as first published 15 September 2014 and last publicly updated 18 October 2024, in four parts: search for an adviser, what advisers can do, hiring an adviser, and complain about an adviser. 'Immigration advisers can help you with most things to do with immigration, including helping you to fill in the right forms and representing you at a tribunal. They do not make immigration decisions.' 'Check if the adviser is registered and if they charge a fee before you use them.' 'Use the Immigration Advice Authority (IAA) Adviser Finder to find a registered adviser near you.' 'All immigration advisers must be registered with IAA or be a member of an approved professional body.' Solicitors who give immigration advice are found through 'The Law Society if you live in England or Wales', the Law Society of Scotland and the Law Society of Northern Ireland, and barristers through the Bar Council's Direct Access scheme, the Faculty of Advocates and the Bar of Northern Ireland. 'You cannot get your money back if an adviser is not regulated.'",
+   "not_read": "the Adviser Finder itself, and the Law Societies' and the Bar bodies' own sites",
+   "used_by": [
+    "agentic_core/legal/boundaries.py"
+   ]
+  },
+  {
+   "id": "iaa-information-for-advice-seekers",
+   "names": [
+    "Information for advice seekers (Immigration Advice Authority)"
+   ],
+   "kind": "regulator guidance",
+   "nation": [
+    "England",
+    "Wales",
+    "Scotland",
+    "Northern Ireland"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/guidance/information-for-advice-seekers",
+   "read_on": "2026-11-20",
+   "read_by": "round W1167, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/guidance/information-for-advice-seekers) on 2026-11-20, not through a summary; with the regulator's organisation record (/government/organisations/immigration-advice-authority), read the same way",
+   "says": "Published on GOV.UK by the Immigration Advice Authority, an executive non-departmental public body sponsored by the Home Office; the content record gives it as first published 16 January 2025 and last publicly updated 22 July 2025. 'The Immigration Advice Authority (IAA) helps people seeking immigration advice by regulating advisers to ensure they are qualified, competent, and act in your best interests.' 'While the IAA doesn’t provide immigration advice directly, it offers an online database to help you find registered and qualified immigration advisers.' The Adviser Finder lists organisations by distance, and its results 'will only include organisations who have opted in'; the Adviser Register lets the public check whether an organisation or individual is registered. A complaint may be made about poor service from a registered adviser, advice from an unregulated adviser, or the IAA itself. Advisers are registered at three levels: advice and assistance, casework, and advocacy and representation. The organisation record names the Adviser Finder at portal.immigrationadviceauthority.gov.uk.",
+   "not_read": "the Adviser Finder and the Adviser Register themselves, and the pages it links on choosing an adviser",
+   "used_by": [
+    "agentic_core/legal/boundaries.py"
+   ]
+  },
+  {
+   "id": "gov-uk-options-for-dealing-with-debts",
+   "names": [
+    "Options for dealing with your debts (GOV.UK)"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/options-for-dealing-with-your-debts",
+   "read_on": "2026-11-20",
+   "read_by": "round W1167, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/options-for-dealing-with-your-debts) on 2026-11-20, not through a summary; the older address /options-for-paying-off-your-debts redirects to it",
+   "says": "GOV.UK's content record gives it as first published 26 January 2012 and last publicly updated 8 November 2024, in six parts: overview, Breathing Space, Debt Management Plans, administration orders, Individual Voluntary Arrangements and Debt Relief Orders. 'Speak to a debt adviser to get help choosing the best way to deal with your debt.' 'MoneyHelper has information about debt management and free debt advisory services.' For a Debt Management Plan: 'Set up a plan with a debt management company authorised by the Financial Conduct Authority (FCA). Search the Financial Services Register for an authorised company.' Breathing Space is for a person who lives in England or Wales, for 'up to 60 days': 'To apply for the ‘Breathing Space’ scheme, you need to talk to a debt adviser.' 'In Scotland you can arrange a Debt Payment Programme from the Debt Arrangement Scheme.'",
+   "not_read": "the Financial Conduct Authority's own site (www.fca.org.uk), which this environment's network refuses; MoneyHelper's pages, the Financial Services Register and the Debt Arrangement Scheme's page were not opened",
+   "used_by": [
+    "agentic_core/legal/boundaries.py"
+   ]
+  },
+  {
+   "id": "gov-uk-claim-compensation-cmc",
+   "names": [
+    "Claim compensation for injury or financial loss (GOV.UK)"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/guidance/claim-compensation-for-injury-or-financial-loss",
+   "read_on": "2026-11-20",
+   "read_by": "round W1167, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/guidance/claim-compensation-for-injury-or-financial-loss) on 2026-11-20, not through a summary",
+   "says": "Published on GOV.UK by the Ministry of Justice; the content record gives it as first published 16 June 2014 and holds no later change. 'Any business in England and Wales that manages claims must be authorised by the Ministry of Justice’s Claims Management Regulator.' 'Many organisations offer impartial advice with no fee or obligation. If you make a successful claim without using a CMC, you’ll keep all the compensation yourself.' It gives 29 August 2019 as the deadline to complain about the sale of PPI. Two later GOV.UK records, opinions of the Regulatory Policy Committee of 2019 and 2020, are titled 'How we will regulate claims management companies: RPC Opinion' and 'How FCA will regulate claims management companies: RPC Opinion'; they were found by GOV.UK's search on 2026-11-20 and were not read whole, so who regulates a claims company today is not taken from this page or from them.",
+   "not_read": "the two Regulatory Policy Committee opinions (their titles only, from GOV.UK's search), the authorised business register it links, and the Financial Conduct Authority's own site (www.fca.org.uk), which this environment's network refuses",
+   "used_by": [
+    "agentic_core/legal/boundaries.py"
+   ]
+  },
+  {
+   "id": "gov-uk-make-court-claim-for-money",
+   "names": [
+    "Make a court claim for money (GOV.UK)"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/make-court-claim-for-money",
+   "read_on": "2026-11-20",
+   "read_by": "round W1168, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/make-court-claim-for-money) on 2026-11-20, not through a summary",
+   "says": "GOV.UK's content record gives it as first published 19 January 2012 and last publicly updated 5 November 2024. A claim can be made online unless, among other things, 'you or the people or organisations you’re claiming against do not have an address in England or Wales'. 'You’ll be asked for the name, address and email address of the person you’re claiming against.' 'You’ll also need either:' 'a debit or credit card to pay the court fee' or 'your ‘help with fees’ reference number if you’ve already applied for help with fees online'. By post, 'download and fill in paper claim form N1'. 'You may need to get legal advice if your claim is complex.' It names Advicenow and Citizens Advice for help and advice about making a claim.",
+   "not_read": "the online services, form N1 and its notes, and the pages it links on fees and help with fees",
+   "used_by": [
+    "agentic_core/legal/checklists.py"
+   ]
   }
  ]
 }

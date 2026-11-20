@@ -2023,7 +2023,7 @@ named. Behind, honestly: raw speech recognition, and no automatic mistake detect
 4. A Quran Foundation developer account (free; the Owner registers; production use needs their approval).
 5. Similar verses computed from the text by exact shared wording, rather than waiting for a licensed list.
 6. The teacher's attestation record: wording to be reviewed by a scholar before it is shown.
-7. Competition detail waits on real marking schemes: does the Owner have one from an event he knows?
+7. Competition detail waits on real marking schemes: does the Owner have one from an event they know?
 
 #### What the Owner ruled on this (2026-10-12)
 No ruling yet on the platform listening: a private test first. The pause-and-tap prompt is within "teach, never
@@ -2318,3 +2318,42 @@ person, including any "founder alignment" figure.
 - **The final audit has no owner.** Recommended: charter it as its own item (instrument built and guarded in its
   own round, calibrated first, run after Phase 5 and P4.1, uncapped and census-partitioned, in both the floor and
   the local-model configuration). Until ruled, a register row on OWNER holds it.
+
+## 34. Addendum (W1133) - the education department's thirteen headings, set against the Education tools
+
+The Owner's ruling of 2026-10-12 (section 29.4, item 4) closed the children's gate for now, and named its first step:
+the education department's thirteen headings against the tools, one table, each heading marked met, partly met or not
+met, read from the department's page. No code (FU-1055).
+
+READ AT ITS PAGE on 2026-11-20, the whole of it: "Generative AI: product safety standards", Department for Education,
+https://www.gov.uk/government/publications/generative-ai-product-safety-standards/generative-ai-product-safety-standards,
+updated 19 January 2026, applies to England. The page does not say whether it is statutory. The regulations and
+codes it links to (Keeping children safe in education, the filtering and monitoring standards, the ICO's Children's
+code, the Online Safety Act and Ofcom's codes) were not read, and nothing below relies on them.
+
+WHAT WAS SET AGAINST IT: the four Education forms in `agentic_core/api/education.py` - a curriculum, a lesson plan,
+feedback on a student's work, and an assessment - each of whose answers says "For a teacher or an adult learner."
+Since the Owner's ruling of 2026-10-13 children may not use the Education and Quran tools. The page marks five of its
+headings as for learner-facing products (filtering, monitoring and reporting, cognitive development, emotional and
+social development, mental health); a tool a child used would be one, so each is read as if it were.
+
+| # | The department's heading | For | Verdict | What the tree has | What meeting it would take |
+|---|---|---|---|---|---|
+| 1 | Stated purpose | every product | partly met | Every answer says who it is for, and `GET /api/v1/education/tools` lists each form, what it does and the sentence its answer carries. No impact is claimed and no evidence of one is held. | The target learners stated with their age and SEND status, and evidence behind any claim. |
+| 2 | Educational use cases | every product | partly met | Each form says what it makes: content creation (curriculum, lesson plan, assessment) and feedback for a teacher. | Each form labelled with its use case from the department's eight, with evidence that it does what it says. |
+| 3 | Filtering | learner-facing | not met | The subject screen flags religious teaching content and certifies nothing as secular. Nothing filters harmful or inappropriate content across a conversation, by age or need, or in images, other languages or misspellings. | Filtering of harmful content built into the product and kept through an interaction, adjusted by age and need, and updated as harms change. |
+| 4 | Monitoring and reporting | learner-facing | not met | Before sign-in the interaction log keeps each call's agent and the length of its text, not the text (W952); route failures are recorded on the Operations page. There is no alert to a supervisor or a safeguarding lead, no notice to the user when content is blocked, and no report of attempted access, offloading or time used. | An institution's safeguarding lead recorded at set-up and alerted within an agreed time, notices to the learner in age-appropriate words, and reports a non-expert can read. |
+| 5 | Security | learner and teacher | partly met | Sign-in is built and off until its switch (P4.1); administrator routes sit behind an administrator perimeter (W505); an account is an admin, a user or a viewer (`agentic_core/auth/core.py`); the whole suite runs on every push. There is no multi-factor authentication, and resistance to jailbreaking has not been tested. | Multi-factor authentication for accounts with personal data, jailbreak testing before each release, and the Cyber Security Standards for Schools and Colleges. |
+| 6 | Privacy and data protection | learner and teacher | partly met | What a person types is not stored before sign-in (W952), and by the Owner's ruling of 2026-10-12 nothing personal leaves a free tool and a child's information never does. There is no privacy notice for the Education tools and no Data Protection Impact Assessment. | A privacy notice in age-appropriate language at regular intervals, a DPIA kept for the tool's life, and the ICO's Children's code met. |
+| 7 | Intellectual property | learner and teacher | partly met | Nothing typed is stored before sign-in (W952) and no external model is reached by default. Whether a signed-in person's kept text can reach the platform's own learning or evolution loops has not been traced. | It traced and shown that no input is used for training, product improvement or development without the copyright owner's permission, a parent's or guardian's for a minor. |
+| 8 | Design and testing | learner and teacher | partly met | The integration suite runs on Linux and Windows on every push, and each change is tested before it lands. Nothing has been tested with real users, with children, or with a diverse range of users. | Testing with a diverse and realistic range of users, children included where they would use it, before each release. |
+| 9 | Governance | learner and teacher | partly met | How to complain about an answer is on the page of where help is (`GET /api/v1/support/where-help-is`); the constitution, the plan and this assessment are published with the code. No risk assessment for educational use has been made. | A risk assessment for educational use, a complaints route that says how a safety issue is escalated and resolved, and the AI safety policies published. |
+| 10 | Cognitive development | learner-facing | not met | The forms give a teacher complete curricula, lesson plans, answer keys and feedback by design. Nothing discloses an answer step by step, asks a learner to try first, or tracks offloading. | Hints before solutions, a full solution only after a genuine attempt, friction or a teacher's approval between modes, and offloading tracked and reported. |
+| 11 | Emotional and social development | learner-facing | partly met | The Education forms carry no persona, name or avatar, and each answer says it is a draft. There is no default time limit, no prompt to take a break, and no reminder that a classmate or teacher can help. | Default time limits with advisory and hard limits a teacher can override, healthy-use reminders, and nothing that extends engagement artificially. |
+| 12 | Mental health | learner-facing | not met | The Education tools do not look for signs of distress and do not signpost support. No crisis protocol is published for them. | Distress detected and met with tiered responses, from signposting to a flag to the safeguarding lead, in safe language, with a published crisis protocol and child mental-health expertise. |
+| 13 | Manipulation | learner and teacher | partly met | The Domains are free by the Owner's ruling of 2026-10-12, and the tools carry no advertising, rewards, streaks or upsell; each answer says it was checked by nobody, so none claims unjustified confidence. Nothing tests composed text for sycophancy or flattery. | Composed text tested for sycophancy, pressure and unjustified confidence, and the absence of dark patterns kept by a guard. |
+
+THE COUNT: none met, nine partly met, four not met. The four not met are all learner-facing: filtering, monitoring and
+reporting, cognitive development and mental health. Each would have to be built, and tested with the people the page
+names, before any child used a tool, so the children's gate stays closed. Nothing here changes the tools, as the
+ruling asked; opening the gate remains the Owner's decision, and this table is what that decision would start from.

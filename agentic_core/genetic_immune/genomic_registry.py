@@ -4,9 +4,23 @@ import json
 import hashlib
 import time
 import os
-from agentic_core.compliance.iso_23053 import ISO23053Compliance
+
+#  W1156 - a block is appended when it carries the four fields this ledger writes into it. That is a check of
+#  the ledger's own shape and of nothing else: no standard is read or met here. A 'compliance' class stood
+#  here, whose report stated VALIDATED as a constant for a standard nobody read; it is archived.
+_LEDGER_FIELDS = ("timestamp", "genotype", "previous_hash", "zkp_proof")
 
 logger = logging.getLogger(__name__)
+
+
+def _default_ledger_path() -> str:
+    """W1158 (FU-1294) - the ledger lives under the data root, as everything else the platform writes does (W1138's
+    rule). It lived at meta/genome_ledger.json under the working directory: in the release image that is the
+    application's folder, which a release replaces; the suite, whose working directory is the checkout, wrote its
+    spawns there, and each process that imports the VSB routes read the whole of it back. A ledger left under a
+    working directory is not read."""
+    from agentic_core.config import data_path
+    return str(data_path("meta", "genome_ledger.json"))
 
 class GenomicRegistry:
     """
@@ -14,11 +28,10 @@ class GenomicRegistry:
     Persistent trait memory for the digital organism.
     v129.1: Implements Multi-layered Epigenetic Memory (Layer 0-2).
     """
-    def __init__(self, persistence_path: str = "meta/genome_ledger.json"):
-        self.persistence_path = persistence_path
+    def __init__(self, persistence_path: Optional[str] = None):
+        self.persistence_path = persistence_path or _default_ledger_path()
         self.blocks = []
         self.current_genome = {"traits": {}}
-        self.compliance = ISO23053Compliance()
 
         # v129.1 Epigenetic Layers
         self.epigenetic_layers = {
@@ -78,23 +91,36 @@ class GenomicRegistry:
             "zkp_proof": zkp_proof
         }
 
-        if self.compliance.verify_block_integrity(block):
+        if all(field in block for field in _LEDGER_FIELDS):
             self.blocks.append(block)
-            self._save()
-            return True
+            #  W1158 - True only when the ledger was written: it said True whatever the write did, and the spawn
+            #  stream said the genome was encoded on that answer
+            return self._save()
         return False
 
     def _hash_block(self, block: Dict[str, Any]) -> str:
         s = json.dumps(block, sort_keys=True).encode()
         return hashlib.sha256(s).hexdigest()
 
-    def _save(self):
-        os.makedirs("meta", exist_ok=True)
+    def _save(self) -> bool:
+        """The ledger written whole, in its own folder; True when it was written. W1158 - it made a folder named meta
+        in the working directory, outside the try, whatever path the ledger had, and wrote over the ledger in place,
+        so a write that failed part-way left a ledger that could not be read. It writes a file beside the ledger and
+        puts that in the ledger's place whole, so a failed write leaves the ledger as it stood."""
+        writing = f"{self.persistence_path}.{os.getpid()}.writing"
         try:
-            with open(self.persistence_path, 'w') as f:
+            os.makedirs(os.path.dirname(os.path.abspath(self.persistence_path)), exist_ok=True)
+            with open(writing, 'w') as f:
                 json.dump(self.blocks, f, indent=2)
+            os.replace(writing, self.persistence_path)
+            return True
         except Exception as e:
             logger.error(f"GENOME: Failed to save ledger: {e}")
+            try:
+                os.remove(writing)
+            except OSError:
+                pass
+            return False
 
     def get_genome_depth(self) -> int:
         return len(self.blocks)

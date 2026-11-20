@@ -41,6 +41,15 @@ DISPOSITIONS = {
     "not_reproducible": (
         "reported as not reproducible by the person recorded here, with what they tried. It was not re-verified: it "
         "is not a gate pass and moves no count in the non-conformance rate"),
+    #  W1133m (FU-1038; OWNER RULING 2026-11-20) - THE THIRD WAY OUT. Read on the Owner's store, all nineteen open
+    #  defects had been opened by development runs that wrote into it (a page sweep, a reproduction and its guard, a
+    #  probe), and the door fifteen of them carry is live, so 'source retired' would have been false. A defect a
+    #  development run opened is not a nonconformance of a delivery a person made; it leaves the loop saying so, with
+    #  the evidence. Its gate failure was counted when it was recorded and stays counted: the rate is never recomputed.
+    "development_run": (
+        "closed because a development or test run opened it, not a delivery a person made, on the evidence given by the "
+        "person recorded here. It was not re-verified: it is not a gate pass and moves no count in the non-conformance "
+        "rate, and the gate failure that opened it stays counted there as it was recorded"),
 }
 
 
@@ -291,7 +300,8 @@ class QualityManagementSystem:
 
     def defect_summary(self) -> Dict[str, Any]:
         st = self._load_state()
-        by = {"open": 0, "corrected": 0, "closed": 0, "closed_source_retired": 0, "not_reproducible": 0}
+        by = {"open": 0, "corrected": 0, "closed": 0, "closed_source_retired": 0, "not_reproducible": 0,
+              "development_run": 0}
         for d in st["defects"]:
             by[d.get("status", "open")] = by.get(d.get("status", "open"), 0) + 1
         #  P3.30 (R1.12; OWNER RULING 2026-10-11) - how much of the rate rests on typed figures. Two counts
@@ -324,13 +334,16 @@ class QualityManagementSystem:
                                                 if d.get("status") in ("open", "corrected")
                                                 and label_is_live(d.get("label")) is False),
                 "closed_basis": ("'closed' counts defects re-verified and passed. A defect closed because its source "
-                                 "was retired, or reported not reproducible, was not re-verified: each is counted "
-                                 "apart and moves nothing in the rate"),
+                                 "was retired or because a development run opened it, or reported not reproducible, was "
+                                 "not re-verified: each is counted apart and moves nothing in the rate"),
                 "dispositions_basis": (
                     f"{by['closed_source_retired']} defect(s) closed because the surface that opened them was "
                     f"retired and {by['not_reproducible']} reported not reproducible, each with the reason, name "
                     f"and time its person gave; neither is a re-verification, so neither is counted as closed above, "
-                    f"as a gate pass or in the rate. Open now under a label no live surface opens a defect under: "
+                    f"as a gate pass or in the rate. {by['development_run']} defect(s) closed because a development "
+                    f"run opened them, not a delivery, with the evidence its person gave: not a re-verification "
+                    f"either, and the gate failures that opened them stay counted in the rate as they were recorded, "
+                    f"because the rate is never recomputed. Open now under a label no live surface opens a defect under: "
                     f"{sum(1 for d in st['defects'] if d.get('status') in ('open', 'corrected') and label_is_live(d.get('label')) is False)}"),
                 "attested_reverifications": _att,
                 "attested_counted_since": _att_since,

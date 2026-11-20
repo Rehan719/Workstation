@@ -6510,7 +6510,7 @@ to the first route's position.
   (entries, not bytes); `ensure_dirs()` makes only the data root at import. `scripts/relocate_data_store.py`: copy,
   verify by hash, merge disjoint maps, skip empties, CONFLICT for two non-empty lists or a populated directory, never
   delete. Applied to the Owner's store: memory.json and interactions.db copied and verified, l7_registry merged,
-  chroma_db left for him (FU-079). The ten tracked data files are untracked (`git rm --cached`); genome/, models/
+  chroma_db left for the Owner (FU-079). The ten tracked data files are untracked (`git rm --cached`); genome/, models/
   are ignored.
 - The validator resolves `GENOME_DIR / constitution.work`; `run_self_healing_cycle` returns False with the reason on
   `last_error` — a fixed template is not a model output and a constitutional change goes through Change Control.

@@ -349,5 +349,133 @@
   "body": {
    "detail": "No OPEN or CORRECTED defect 'w983-no-such-defect'."
   }
+ },
+ "dev_open": {
+  "summary": {
+   "gates_run": 0,
+   "defects_total": 1,
+   "gate_failures": 0,
+   "open": 1,
+   "corrected": 0,
+   "closed": 0,
+   "closed_source_retired": 0,
+   "not_reproducible": 0,
+   "development_run": 0,
+   "non_conformance_rate": null,
+   "what_if_gates": 1,
+   "reported_total": 0,
+   "person_reported_open": 0,
+   "what_if_failures": 1,
+   "open_from_retired_labels": 0,
+   "closed_basis": "'closed' counts defects re-verified and passed. A defect closed because its source was retired or because a development run opened it, or reported not reproducible, was not re-verified: each is counted apart and moves nothing in the rate",
+   "dispositions_basis": "0 defect(s) closed because the surface that opened them was retired and 0 reported not reproducible, each with the reason, name and time its person gave; neither is a re-verification, so neither is counted as closed above, as a gate pass or in the rate. 0 defect(s) closed because a development run opened them, not a delivery, with the evidence its person gave: not a re-verification either, and the gate failures that opened them stay counted in the rate as they were recorded, because the rate is never recomputed. Open now under a label no live surface opens a defect under: 0",
+   "attested_reverifications": 0,
+   "attested_counted_since": null,
+   "defects_closed_on_attestation": 0,
+   "attested_basis": "No caller-attested re-verification has been counted: the counter starts at the first one after it was added, and any run before that is in the rate and not in this count. 0 defect(s) closed now were last re-verified on typed figures. By ruling (OWNER 2026-10-11) attested re-verifications STAY in the rate: these counts stand beside it and change it by nothing.",
+   "rate_basis": "gate failures / gates run across ALL deliveries on this platform (every entity and tenant share one QMS store) — not one entity's record. What-if gates run on typed metrics, and re-verifications of the defects they open, are counted separately and excluded. A re-verification of a DELIVERY defect does count, including one attested by its caller (W316: a correction that does not hold must raise the rate)."
+  },
+  "defects": [
+   {
+    "id": "DEF-2eabf3ad",
+    "label": "cockpit-what-if",
+    "owner_id": null,
+    "delivery_ref": null,
+    "meta": {
+     "coverage": 0.5,
+     "stubs_found": true
+    },
+    "what_if": true,
+    "status": "open",
+    "opened_at": "2026-11-20T05:47:56Z",
+    "correction": null,
+    "reverified": false,
+    "label_live": true
+   }
+  ],
+  "real": true
+ },
+ "development_run": {
+  "defect": {
+   "id": "DEF-2eabf3ad",
+   "label": "cockpit-what-if",
+   "owner_id": null,
+   "delivery_ref": null,
+   "meta": {
+    "coverage": 0.5,
+    "stubs_found": true
+   },
+   "what_if": true,
+   "status": "development_run",
+   "opened_at": "2026-11-20T05:47:56Z",
+   "correction": null,
+   "reverified": false,
+   "closure": {
+    "how": "development_run",
+    "reason": "w1133m a development run opened this defect, for the capture",
+    "by": "owner",
+    "by_verified": false,
+    "at": "2026-11-20T05:47:56Z",
+    "status_before": "open",
+    "basis": "closed because a development or test run opened it, not a delivery a person made, on the evidence given by the person recorded here. It was not re-verified: it is not a gate pass and moves no count in the non-conformance rate, and the gate failure that opened it stays counted there as it was recorded"
+   }
+  },
+  "measured": false,
+  "counted_in_rate": false,
+  "basis": "closed because a development or test run opened it, not a delivery a person made, on the evidence given by the person recorded here. It was not re-verified: it is not a gate pass and moves no count in the non-conformance rate, and the gate failure that opened it stays counted there as it was recorded"
+ },
+ "dev_after": {
+  "summary": {
+   "gates_run": 0,
+   "defects_total": 1,
+   "gate_failures": 0,
+   "open": 0,
+   "corrected": 0,
+   "closed": 0,
+   "closed_source_retired": 0,
+   "not_reproducible": 0,
+   "development_run": 1,
+   "non_conformance_rate": null,
+   "what_if_gates": 1,
+   "reported_total": 0,
+   "person_reported_open": 0,
+   "what_if_failures": 1,
+   "open_from_retired_labels": 0,
+   "closed_basis": "'closed' counts defects re-verified and passed. A defect closed because its source was retired or because a development run opened it, or reported not reproducible, was not re-verified: each is counted apart and moves nothing in the rate",
+   "dispositions_basis": "0 defect(s) closed because the surface that opened them was retired and 0 reported not reproducible, each with the reason, name and time its person gave; neither is a re-verification, so neither is counted as closed above, as a gate pass or in the rate. 1 defect(s) closed because a development run opened them, not a delivery, with the evidence its person gave: not a re-verification either, and the gate failures that opened them stay counted in the rate as they were recorded, because the rate is never recomputed. Open now under a label no live surface opens a defect under: 0",
+   "attested_reverifications": 0,
+   "attested_counted_since": null,
+   "defects_closed_on_attestation": 0,
+   "attested_basis": "No caller-attested re-verification has been counted: the counter starts at the first one after it was added, and any run before that is in the rate and not in this count. 0 defect(s) closed now were last re-verified on typed figures. By ruling (OWNER 2026-10-11) attested re-verifications STAY in the rate: these counts stand beside it and change it by nothing.",
+   "rate_basis": "gate failures / gates run across ALL deliveries on this platform (every entity and tenant share one QMS store) — not one entity's record. What-if gates run on typed metrics, and re-verifications of the defects they open, are counted separately and excluded. A re-verification of a DELIVERY defect does count, including one attested by its caller (W316: a correction that does not hold must raise the rate)."
+  },
+  "defects": [
+   {
+    "id": "DEF-2eabf3ad",
+    "label": "cockpit-what-if",
+    "owner_id": null,
+    "delivery_ref": null,
+    "meta": {
+     "coverage": 0.5,
+     "stubs_found": true
+    },
+    "what_if": true,
+    "status": "development_run",
+    "opened_at": "2026-11-20T05:47:56Z",
+    "correction": null,
+    "reverified": false,
+    "closure": {
+     "how": "development_run",
+     "reason": "w1133m a development run opened this defect, for the capture",
+     "by": "owner",
+     "by_verified": false,
+     "at": "2026-11-20T05:47:56Z",
+     "status_before": "open",
+     "basis": "closed because a development or test run opened it, not a delivery a person made, on the evidence given by the person recorded here. It was not re-verified: it is not a gate pass and moves no count in the non-conformance rate, and the gate failure that opened it stays counted there as it was recorded"
+    },
+    "label_live": true
+   }
+  ],
+  "real": true
  }
 }

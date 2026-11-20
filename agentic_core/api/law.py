@@ -213,6 +213,9 @@ async def analyse_document(req: AnalyseRequest):
     analysis, provenance = await ai_text(prompt, "law_analyst", realm=req.realm,
         user_text=person_said(req.analysis_focus),
         material=req.document_text, material_label="DOCUMENT", material_limit=DOCUMENT_LIMIT)
+    #  W1170 (P5.11 clause 6) - each Act the text names is resolved against a held source; one that is not is withheld
+    from agentic_core.legal import authorities as _au1170
+    analysis, _named1170 = _au1170.screen(analysis)
     _mat = (provenance or {}).get("material") or {}
     if _mat and not _mat.get("read_whole"):
         #  said in the TEXT, so it travels with a copy, a download and a saved version
@@ -227,6 +230,7 @@ async def analyse_document(req: AnalyseRequest):
         "jurisdiction": req.jurisdiction,
         "analysis_focus": req.analysis_focus,
         "analysis": analysis,
+        "authorities": _named1170,                       # W1170
         "document_read": {k: _mat.get(k) for k in ("chars", "read_chars", "read_whole", "basis")} if _mat else None,
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -255,9 +259,14 @@ async def legal_research(req: ResearchRequest):
     #  anything composes: no model and no floor is asked. The screen may route; recognising nothing is not a clearance.
     from agentic_core.legal.own_case import COVERAGE as _cov874, own_case_route as _own874
     from agentic_core.api._ai_provenance import no_reply_evidence as _no_reply_evidence874
+    from agentic_core.legal import urgent as _urg1165      # W1165 (P5.11 clause 4) - before anything else
+    from agentic_core.legal import boundaries as _bnd1167  # W1167 (P5.11 clause 7) - regulated advice is a route
     _routed874 = _own874(req.question, req.context)
+    _bound1167 = _bnd1167.route(req.question, f"{req.context} {req.area_of_law}")
     if _routed874:
         return {
+            #  W1165 - the urgent routes first; the screen may add one (its "urgent_added") and never remove one
+            "urgent": _urg1165.shown(_routed874.get("urgent_added")),
             "research_id": uuid.uuid4().hex[:10],
             "question": req.question,
             "jurisdiction": req.jurisdiction,
@@ -267,12 +276,39 @@ async def legal_research(req: ResearchRequest):
             "routed_to_people": _routed874["people"],
             "published_material": _routed874["published_material"],
             "own_case_screen": {"recognised": True, "coverage": _cov874},
+            #  W1167 (P5.11 clause 7) - a regulated subject's row too, when the question names one
+            **({"boundary": _bound1167["boundary"]} if _bound1167 else {}),
             "ai_provenance": {"served_by": "none", "is_external": False, "routed_by": "own_case_screen",
                               "composed": False, **_no_reply_evidence874(),
                               "basis": "no model and no floor composed this: the question was routed before anything ran"},
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "disclaimer": ("Not answered: a question about a person's own case is routed to people. Nothing here is "
                            "legal advice."),
+        }
+    #  W1167 (P5.11 clause 7) - A QUESTION ON A SUBJECT THAT IS REGULATED ADVICE is information and a route to an
+    #  authorised person: its row and the places a person can go, before anything composes. No model and no floor is
+    #  asked. The screen may route; recognising nothing is not a clearance.
+    if _bound1167:
+        return {
+            "urgent": _urg1165.shown(),
+            "research_id": uuid.uuid4().hex[:10],
+            "question": req.question,
+            "jurisdiction": req.jurisdiction,
+            "area_of_law": req.area_of_law,
+            "analysis": _bound1167["message"],
+            "method": "routed to an authorised person - not answered",
+            "boundary": _bound1167["boundary"],
+            "routed_to_people": _bound1167["people"],
+            "own_case_screen": {"recognised": False, "coverage": _cov874,
+                                "basis": "not recognised as a question about the person's own case, which is not a clearance"},
+            "boundary_screen": {"recognised": True, "coverage": _bnd1167.COVERAGE},
+            "ai_provenance": {"served_by": "none", "is_external": False, "routed_by": "boundary_screen",
+                              "composed": False, **_no_reply_evidence874(),
+                              "basis": ("no model and no floor composed this: the question names a subject that is "
+                                        "regulated advice, and was routed before anything ran")},
+            "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "disclaimer": ("Not answered: a question on a subject that is regulated advice is routed to an "
+                           "authorised person. Nothing here is legal advice."),
         }
     prompt = (
         f"Set out the following {req.area_of_law} question under {req.jurisdiction} law using the IRAC "
@@ -296,17 +332,26 @@ async def legal_research(req: ResearchRequest):
 
     analysis, provenance = await ai_text(prompt, "law_researcher", realm=req.realm,
         user_text=person_said(req.question))
+    #  W1170 (P5.11 clause 6) - each Act the text names is resolved against a held source; one that is not is withheld
+    from agentic_core.legal import authorities as _au1170
+    analysis, _named1170 = _au1170.screen(analysis)
 
     return {
+        #  W1165 - the urgent routes first, though the screen recognised nothing: nothing recognised clears nothing
+        "urgent": _urg1165.shown(),
         "research_id": uuid.uuid4().hex[:10],
         "question": req.question,
         "jurisdiction": req.jurisdiction,
         "area_of_law": req.area_of_law,
         "analysis": analysis,
         "method": "IRAC",
+        "authorities": _named1170,                       # W1170 - what the text names, and what was withheld
         #  W874 (FU-1082) - the screen did not recognise a question about the person's own case; that clears nothing
         "own_case_screen": {"recognised": False, "coverage": _cov874,
                             "basis": "not recognised as a question about the person's own case, which is not a clearance"},
+        #  W1167 (P5.11 clause 7) - the screen named no subject that is regulated advice; that clears nothing
+        "boundary_screen": {"recognised": False, "coverage": _bnd1167.COVERAGE,
+                            "basis": "not recognised as a subject that is regulated advice, which is not a clearance"},
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": (_FLOOR_LAW if provenance.get("floor_note") else
@@ -379,6 +424,9 @@ async def generate_document(req: GenerateRequest):
     #  object is never stringified into words nobody wrote. The keys are form labels and are not passed.
     document, provenance = await ai_text(prompt, "law_generator", realm=req.realm,
         user_text=person_said(req.custom_instructions, list((req.parties or {}).values())))
+    #  W1170 (P5.11 clause 6) - each Act the text names is resolved against a held source; one that is not is withheld
+    from agentic_core.legal import authorities as _au1170
+    document, _named1170 = _au1170.screen(document)
 
     template_name = next(
         (t["name"] for t in _TEMPLATES if t["id"] == req.template_id),
@@ -391,6 +439,7 @@ async def generate_document(req: GenerateRequest):
         "template_name": template_name,
         "jurisdiction": req.jurisdiction,
         "document": document,
+        "authorities": _named1170,                       # W1170
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": disclaimer_for(provenance, _DRAFT_CLAIM, _DRAFT_SAFETY),
@@ -460,34 +509,61 @@ NO_MODEL_TOOLS = (
 class TimeLimitRequest(BaseModel):
     rule: str
     event_date: str
+    #  W1161 - the nation the claim is in: England, Wales, Scotland or Northern Ireland; none given, none assumed
+    nation: Optional[str] = None
 
 
 @router.get("/time-limit")
 def time_limit_rules():
-    """The time-limit rules this platform can work out, each with the provision and the words it is built from."""
+    """The time-limit rules this platform can work out, each with the provision, the words of each of its periods,
+    and the change between them (W1157)."""
     from agentic_core.legal import time_limits as _tl
     return {"rules": [{"id": k, "name": r["name"], "act": r["provision"]["act"], "section": r["provision"]["section"],
-                       "words": r["words"], "event": r["event"]} for k, r in _tl.RULES.items()],
-            "arithmetic": _tl.ARITHMETIC, "composed": False}
+                       "part": r["provision"].get("part", "section"), "nations": list(r["nations"]),   # W1160
+                       "change": dict(r["change"]),
+                       "sources": _tl.sources(k),                                # W1162 - read when, by whom
+                       "event": r["event"], "relevant_date": r["relevant_date"], "periods": _tl.periods(k)}
+                      for k, r in _tl.RULES.items()],
+            "nations": list(_tl.NATIONS), "not_listed": dict(_tl.NOT_LISTED),          # W1161
+            "change": dict(_tl.CHANGE), "arithmetic": _tl.ARITHMETIC, "composed": False}
 
 
 @router.post("/time-limit")
 async def time_limit(req: TimeLimitRequest):
-    """The primary limit a rule sets from a date, checked against the provision as its publisher returns it now, with
-    what it does not account for and who to ask. Nothing is composed, and nothing here is legal advice."""
+    """The primary limit a rule sets from a date, checked against the provision as its publisher gives it for that
+    date (W1157: the publisher's version of the date's period), with the limit on the other side of a change, with
+    what it does not account for and who to ask. Nothing is composed, and nothing here is legal advice. W1161: a claim
+    with no rule here, or a rule not for the nation asked about, is answered that a time limit may still apply, with
+    where to ask today for that nation - never refused, and never answered "no deadline"."""
     from agentic_core.legal import statute as _st, time_limits as _tl
+    #  W1161 - a nation asked about is one of the four, or nothing is read and nothing is worked out
+    nation = None
+    if req.nation is not None:
+        nation = _tl.nation_named(req.nation)
+        if nation is None:
+            raise HTTPException(status_code=422, detail=(
+                f"That does not name a nation a rule here can be for. The nations are: {', '.join(_tl.NATIONS)}. "
+                f"Nothing was computed."))
     rule = _tl.RULES.get(req.rule)
-    if rule is None:
-        raise HTTPException(status_code=422, detail=(f"No such rule: {req.rule!r}. The rules are: {', '.join(_tl.RULES)}. "
-                                                     f"Nothing was computed."))
+    #  W1161 - no rule here for the claim, or none for it in that nation: a time limit may still apply, and where to ask
+    #  today is said. No provision is read for it.
+    if rule is None or (nation is not None and nation not in rule["nations"]):
+        return _tl.no_rule(nation, req.rule)
+    period = _tl.period_for(req.rule, req.event_date)
+    if period is None:                  # W1157 - not a date, so there is no period to read the provision for
+        return _tl.limit(req.rule, req.event_date, {}, nation)
     p = rule["provision"]
     try:
-        provision = await _st.provision(p["kind"], p["year"], p["number"], p["section"])
+        #  W1157 - the provision as it stood for the date's period: the publisher's dated version for an earlier one
+        provision = await _st.provision(p["kind"], p["year"], p["number"], p["section"],
+                                        **({"version": period["version"]} if period.get("version") else {}),
+                                        #  W1160 - an Order's article is asked for as an article
+                                        **({"part": p["part"]} if p.get("part", "section") != "section" else {}))
     except _st.PublisherRefused as exc:
         raise HTTPException(status_code=502, detail=(
             f"No limit is computed: the provision that sets it could not be read from its publisher ({exc}), so the "
             f"rule cannot be checked against its words. Ask {rule['route']['name']}.")) from None
-    return _tl.limit(req.rule, req.event_date, provision)
+    return _tl.limit(req.rule, req.event_date, provision, nation)
 
 
 @router.get("/tools")
@@ -508,6 +584,32 @@ def law_tools():
                   "now is the native status's reading, not this list's."),
         "composed": False,
     }
+
+
+@router.get("/urgent")
+def urgent_routes():
+    """W1165 (P5.11 clause 4) - the short fixed list of urgent situations, each with its route in the words of the
+    GOV.UK page that gives it, the day that page was read, and NOT RECENTLY CHECKED ninety days on."""
+    from agentic_core.legal import urgent as _urg1165
+    return {"routes": _urg1165.shown(), "basis": _urg1165.BASIS, "composed": False}
+
+
+@router.get("/boundaries")
+def regulated_boundaries():
+    """W1167 (P5.11 clause 7) - each subject that is regulated advice as a row: who regulates it as the pages read say,
+    the pages' own words, the places they name for each nation, the pages read with the day each was read, and its
+    regulator's own page, read or not and why. Nothing is composed."""
+    from agentic_core.legal import boundaries as _bnd1167
+    return {"boundaries": _bnd1167.rows(), "basis": _bnd1167.BASIS, "coverage": _bnd1167.COVERAGE, "composed": False}
+
+
+@router.get("/checklists")
+def what_to_gather():
+    """W1168 (P5.11 clause 8) - what to gather for a subject, as lists: each item in the words of the page that gives
+    it, with the part of the page it is in, the nations the page is for, and the day the page was read. Nothing is
+    composed."""
+    from agentic_core.legal import checklists as _cl1168
+    return {"checklists": _cl1168.rows(), "basis": _cl1168.BASIS, "composed": False}
 
 
 @router.get("/help")

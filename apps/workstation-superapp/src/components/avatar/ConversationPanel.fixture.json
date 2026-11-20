@@ -1,0 +1,288 @@
+{
+ "cases": {
+  "floor": {
+   "reply": {
+    "request": {
+     "session_id": null,
+     "message": "W1146 made up: where do I write my business plan?",
+     "context": "general",
+     "vsb_id": "vsb-cd548cbdd7"
+    },
+    "status": 200,
+    "body": {
+     "session_id": "63e671ac-d260-4049-9cc0-634455cb48da",
+     "response": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Workstation Sovereign Mesh avatar — a helpful, concise assistant across the whole platform. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: W1146 made up: where do I write my business plan? (domain: cross-domain (the avatar is a conversation across every domain, not a domain tool)).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- write business\n- business plan\n- where write\n- made where\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'avatar:general', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for cross-domain (the avatar is a conversation across every domain, not a domain tool); record outcomes to memory/UEG.",
+     "cleared": null,
+     "clearance_reason": "NOT cleared by the constitutional clearance chain: no approval is recorded for this learner in mode 'instructor', so the chain was not run and this is the avatar's ordinary answer. Record what you want the avatar for to have replies cleared",
+     "clearance_gates": null,
+     "image_understood": false,
+     "image_served_by": null,
+     "image_is_external": false,
+     "image_status": "none",
+     "image_refusal": null,
+     "image_accepts": [],
+     "context": "general",
+     "served_by": "native",
+     "is_external": false,
+     "grounded_in": "vsb-cd548cbdd7",
+     "grounding_used": false,
+     "grounding_basis": "your enterprise's record reached the prompt, but the native floor does not read it: this reply used none of it",
+     "language": null,
+     "language_note": null,
+     "profile_applied": false,
+     "profile_state": "none_written",
+     "profile_basis": "you have not written a profile",
+     "suggested_areas": [
+      {
+       "route": "/vsb-cockpit",
+       "label": "VSB Cockpit",
+       "because": "matched: my business"
+      },
+      {
+       "route": "/business-plan",
+       "label": "Living Business Plan",
+       "because": "matched: business plan"
+      }
+     ],
+     "suggested_areas_basis": "2 platform area(s) suggested by a keyword match: a word or phrase in your message is on a fixed list for one of 14 areas. The match reads words, not meaning."
+    }
+   }
+  },
+  "language": {
+   "reply": {
+    "request": {
+     "session_id": null,
+     "message": "W1146 made up: where do I write my business plan?",
+     "context": "general",
+     "vsb_id": "vsb-cd548cbdd7",
+     "language": "Arabic"
+    },
+    "status": 200,
+    "body": {
+     "session_id": "18b410d2-a703-409d-9ce4-b6c9485e8e77",
+     "response": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Workstation Sovereign Mesh avatar — a helpful, concise assistant across the whole platform. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: W1146 made up: where do I write my business plan? (domain: cross-domain (the avatar is a conversation across every domain, not a domain tool)).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- write business\n- business plan\n- where write\n- made where\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'avatar:general', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for cross-domain (the avatar is a conversation across every domain, not a domain tool); record outcomes to memory/UEG.",
+     "cleared": null,
+     "clearance_reason": "NOT cleared by the constitutional clearance chain: no approval is recorded for this learner in mode 'instructor', so the chain was not run and this is the avatar's ordinary answer. Record what you want the avatar for to have replies cleared",
+     "clearance_gates": null,
+     "image_understood": false,
+     "image_served_by": null,
+     "image_is_external": false,
+     "image_status": "none",
+     "image_refusal": null,
+     "image_accepts": [],
+     "context": "general",
+     "served_by": "native",
+     "is_external": false,
+     "grounded_in": "vsb-cd548cbdd7",
+     "grounding_used": false,
+     "grounding_basis": "your enterprise's record reached the prompt, but the native floor does not read it: this reply used none of it",
+     "language": null,
+     "language_note": "Answered in English — your language needs the owned model. You asked for Arabic, and the deterministic floor served this answer; it cannot translate. Set up the owned local model and ask again.",
+     "profile_applied": false,
+     "profile_state": "none_written",
+     "profile_basis": "you have not written a profile",
+     "suggested_areas": [
+      {
+       "route": "/vsb-cockpit",
+       "label": "VSB Cockpit",
+       "because": "matched: my business"
+      },
+      {
+       "route": "/business-plan",
+       "label": "Living Business Plan",
+       "because": "matched: business plan"
+      }
+     ],
+     "suggested_areas_basis": "2 platform area(s) suggested by a keyword match: a word or phrase in your message is on a fixed list for one of 14 areas. The match reads words, not meaning."
+    }
+   }
+  },
+  "image": {
+   "reply": {
+    "request": {
+     "session_id": null,
+     "message": "W1146 made up: where do I write my business plan?",
+     "context": "general",
+     "vsb_id": "vsb-cd548cbdd7",
+     "image_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgAAACAAFUok9fAAAAAElFTkSuQmCC"
+    },
+    "status": 200,
+    "body": {
+     "session_id": "5b0356eb-b829-4538-999c-509dfbbaf779",
+     "response": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Workstation Sovereign Mesh avatar — a helpful, concise assistant across the whole platform. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: W1146 made up: where do I write my business plan? (domain: cross-domain (the avatar is a conversation across every domain, not a domain tool)).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- write business\n- business plan\n- where write\n- made where\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'avatar:general', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for cross-domain (the avatar is a conversation across every domain, not a domain tool); record outcomes to memory/UEG.",
+     "cleared": null,
+     "clearance_reason": "NOT cleared by the constitutional clearance chain: no approval is recorded for this learner in mode 'instructor', so the chain was not run and this is the avatar's ordinary answer. Record what you want the avatar for to have replies cleared",
+     "clearance_gates": null,
+     "image_understood": false,
+     "image_served_by": null,
+     "image_is_external": false,
+     "image_status": "no_vision_model",
+     "image_refusal": "NO TEXT IS PRODUCED FROM AN IMAGE on this deployment. What is missing, measured rather than asserted: the perception tier needs about 16.0 GB and a CUDA device, and this tier needs a CUDA device and none is visible. torch.cuda.is_available(), consulted because torch happened to be importable; nvidia-smi is not on PATH. a vision-language model carries an image encoder beside the language weights and is not practical on integrated graphics. Nothing is described, summarised or guessed at from the image: a fabricated description would be worse than a refusal, because a reader cannot tell one from a reading.",
+     "image_accepts": [],
+     "context": "general",
+     "served_by": "native",
+     "is_external": false,
+     "grounded_in": "vsb-cd548cbdd7",
+     "grounding_used": false,
+     "grounding_basis": "your enterprise's record reached the prompt, but the native floor does not read it: this reply used none of it",
+     "language": null,
+     "language_note": null,
+     "profile_applied": false,
+     "profile_state": "none_written",
+     "profile_basis": "you have not written a profile",
+     "suggested_areas": [
+      {
+       "route": "/vsb-cockpit",
+       "label": "VSB Cockpit",
+       "because": "matched: my business"
+      },
+      {
+       "route": "/business-plan",
+       "label": "Living Business Plan",
+       "because": "matched: business plan"
+      }
+     ],
+     "suggested_areas_basis": "2 platform area(s) suggested by a keyword match: a word or phrase in your message is on a fixed list for one of 14 areas. The match reads words, not meaning."
+    }
+   }
+  },
+  "profile": {
+   "reply": {
+    "request": {
+     "session_id": null,
+     "message": "W1146 made up: where do I write my business plan?",
+     "context": "general",
+     "vsb_id": "vsb-cd548cbdd7"
+    },
+    "status": 200,
+    "body": {
+     "session_id": "3b182826-0485-44c4-92b8-9bdcb7446846",
+     "response": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Workstation Sovereign Mesh avatar — a helpful, concise assistant across the whole platform. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: W1146 made up: where do I write my business plan? (domain: cross-domain (the avatar is a conversation across every domain, not a domain tool)).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- write business\n- business plan\n- where write\n- made where\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'avatar:general', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for cross-domain (the avatar is a conversation across every domain, not a domain tool); record outcomes to memory/UEG.",
+     "cleared": null,
+     "clearance_reason": "NOT cleared by the constitutional clearance chain: no approval is recorded for this learner in mode 'instructor', so the chain was not run and this is the avatar's ordinary answer. Record what you want the avatar for to have replies cleared",
+     "clearance_gates": null,
+     "image_understood": false,
+     "image_served_by": null,
+     "image_is_external": false,
+     "image_status": "none",
+     "image_refusal": null,
+     "image_accepts": [],
+     "context": "general",
+     "served_by": "native",
+     "is_external": false,
+     "grounded_in": "vsb-cd548cbdd7",
+     "grounding_used": false,
+     "grounding_basis": "your enterprise's record reached the prompt, but the native floor does not read it: this reply used none of it",
+     "language": null,
+     "language_note": null,
+     "profile_applied": false,
+     "profile_state": "not_usable_by_floor",
+     "profile_basis": "your saved profile reached the prompt, but the deterministic floor served this and it does not read a profile, so the profile did NOT shape this answer",
+     "suggested_areas": [
+      {
+       "route": "/vsb-cockpit",
+       "label": "VSB Cockpit",
+       "because": "matched: my business"
+      },
+      {
+       "route": "/business-plan",
+       "label": "Living Business Plan",
+       "because": "matched: business plan"
+      }
+     ],
+     "suggested_areas_basis": "2 platform area(s) suggested by a keyword match: a word or phrase in your message is on a fixed list for one of 14 areas. The match reads words, not meaning."
+    }
+   }
+  },
+  "unreadable": {
+   "reply": {
+    "request": {
+     "session_id": null,
+     "message": "W1146 made up: where do I write my business plan?",
+     "context": "general",
+     "vsb_id": "vsb-cd548cbdd7"
+    },
+    "status": 200,
+    "body": {
+     "session_id": "e5bd3a09-2503-47b0-a774-3fdac21f70be",
+     "response": "_[Workstation native structured engine — owned, no external dependency]_\n\n_Role the prompt asked for: Workstation Sovereign Mesh avatar — a helpful, concise assistant across the whole platform. The native floor takes no role - what follows is a frame, not that role's work._\n\n## Understanding\nThe request concerns: W1146 made up: where do I write my business plan? (domain: cross-domain (the avatar is a conversation across every domain, not a domain tool)).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- write business\n- business plan\n- where write\n- made where\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'avatar:general', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for cross-domain (the avatar is a conversation across every domain, not a domain tool); record outcomes to memory/UEG.",
+     "cleared": null,
+     "clearance_reason": "NOT cleared by the constitutional clearance chain: no approval is recorded for this learner in mode 'instructor', so the chain was not run and this is the avatar's ordinary answer. Record what you want the avatar for to have replies cleared",
+     "clearance_gates": null,
+     "image_understood": false,
+     "image_served_by": null,
+     "image_is_external": false,
+     "image_status": "none",
+     "image_refusal": null,
+     "image_accepts": [],
+     "context": "general",
+     "served_by": "native",
+     "is_external": false,
+     "grounded_in": "vsb-cd548cbdd7",
+     "grounding_used": false,
+     "grounding_basis": "your enterprise's record reached the prompt, but the native floor does not read it: this reply used none of it",
+     "language": null,
+     "language_note": null,
+     "profile_applied": false,
+     "profile_state": "unreadable",
+     "profile_basis": "your saved profile could not be read whole (the store is not valid JSON (Expecting property name enclosed in double quotes at line 7) and no prefix could be recovered, so this result is the caller's default and holds none of the stored data), so it was NOT applied",
+     "suggested_areas": [
+      {
+       "route": "/vsb-cockpit",
+       "label": "VSB Cockpit",
+       "because": "matched: my business"
+      },
+      {
+       "route": "/business-plan",
+       "label": "Living Business Plan",
+       "because": "matched: business plan"
+      }
+     ],
+     "suggested_areas_basis": "2 platform area(s) suggested by a keyword match: a word or phrase in your message is on a fixed list for one of 14 areas. The match reads words, not meaning."
+    }
+   }
+  }
+ },
+ "vsb": {
+  "status": 200,
+  "body": {
+   "entities": [
+    {
+     "vsb_id": "vsb-cd548cbdd7",
+     "name": "W1146 Tool Library"
+    }
+   ]
+  }
+ },
+ "status": {
+  "status": 200,
+  "body": {
+   "online": true,
+   "posture": "in-house-first",
+   "native": true,
+   "effective_serving_mode": "deterministic floor",
+   "effective_serving_mode_basis": "no owned local model is reachable; the floor always answers, and it cannot translate or reason like a model",
+   "local_serving_disabled": true,
+   "external_use_permitted": false,
+   "ollama_online": false,
+   "openai_key_present": false,
+   "anthropic_key_present": false,
+   "key_note": "presence of the env var only — validity is only known at call time"
+  }
+ },
+ "profile_saved": {
+  "status": 200,
+  "body": {
+   "owner_id": "default",
+   "profile": {
+    "about_you": "W1146 made up: a volunteer who runs a tool library",
+    "context": "",
+    "goals": "lend more tools",
+    "constraints": "",
+    "success_criteria": ""
+   },
+   "preamble_preview": "Take the following into account; it was written by the person you are answering.\nAbout the person: W1146 made up - a volunteer who runs a tool library\nWhat they are trying to achieve: lend more tools\n\n",
+   "updated_at": "2026-11-20T08:04:46Z"
+  }
+ }
+}

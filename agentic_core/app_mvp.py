@@ -934,27 +934,61 @@ from fastapi import HTTPException as _HTTPException  # noqa: E402
 from fastapi.responses import FileResponse as _FileResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles as _StaticFiles  # noqa: E402
 
+import re as _re  # noqa: E402
+from starlette.convertors import Convertor as _Convertor, register_url_convertor as _register_url_convertor  # noqa: E402
+
 _FRONTEND_DIST = _Path(__file__).resolve().parent.parent / "apps" / "workstation-superapp" / "dist"
-if (_FRONTEND_DIST / "index.html").is_file():
-    _spa_assets = _FRONTEND_DIST / "assets"
-    if _spa_assets.is_dir():
-        app.mount("/assets", _StaticFiles(directory=str(_spa_assets)), name="spa-assets")
+# What the page fallback never shadows: the API, health, the docs and the socket. Matched as a prefix of the path.
+_API_PREFIXES = ("api/", "api", "health", "docs", "openapi", "redoc", "ws/", "ws")
 
-    _API_PREFIXES = ("api/", "api", "health", "docs", "openapi", "redoc", "ws/", "ws")
 
-    @app.get("/", include_in_schema=False)
+#  FU-1801 (W1133n) - THE PAGE FALLBACK NEVER MATCHES AN API PATH. It was GET /{full_path:path}, whose path matches
+#  every path. A GET to an unserved /api path reached it and was refused with 404, but any other method never
+#  reached the handler: the router found the fallback's path matching and its method not, and answered
+#  405 Method Not Allowed with "Allow: GET". So, wherever the pages are built (the image included), a POST to an API
+#  path no route serves said that the path exists and only the method is wrong. The fallback's path is now a
+#  convertor that refuses those prefixes, computed from the same tuple, so such a request matches no route and is a
+#  404. A real 405 (a wrong method on a route that exists, or on a page) is unchanged.
+class _PagePath(_Convertor):
+    regex = "(?!(?:" + "|".join(_re.escape(p) for p in _API_PREFIXES) + ")).*"
+
+    def convert(self, value: str) -> str:
+        return value
+
+    def to_string(self, value: str) -> str:
+        return value
+
+
+_register_url_convertor("page", _PagePath())
+
+
+def _mount_pages(target, dist) -> bool:
+    """Serve the built pages from `dist` on `target` when it holds a build: the assets, the shell at /, and the
+    fallback for client routes. Registered after every router, so the API always wins. False, and nothing mounted,
+    when there is no build. A function so a guard can drive it on a fresh app with a planted build."""
+    if not (dist / "index.html").is_file():
+        return False
+    assets = dist / "assets"
+    if assets.is_dir():
+        target.mount("/assets", _StaticFiles(directory=str(assets)), name="spa-assets")
+
+    @target.get("/", include_in_schema=False)
     async def _spa_root():
-        return _FileResponse(str(_FRONTEND_DIST / "index.html"))
+        return _FileResponse(str(dist / "index.html"))
 
-    @app.get("/{full_path:path}", include_in_schema=False)
+    @target.get("/{full_path:page}", include_in_schema=False)
     async def _spa_fallback(full_path: str):
-        # Never shadow the API/health/docs surface — let those resolve (or 404 as JSON) normally.
+        # the convertor already refuses these prefixes; this is the second wall, kept
         if full_path.startswith(_API_PREFIXES):
             raise _HTTPException(status_code=404)
-        candidate = (_FRONTEND_DIST / full_path).resolve()
+        candidate = (dist / full_path).resolve()
         # stay inside dist (no path traversal); serve a real asset if present, else the SPA shell
-        if str(candidate).startswith(str(_FRONTEND_DIST.resolve())) and candidate.is_file():
+        if str(candidate).startswith(str(dist.resolve())) and candidate.is_file():
             return _FileResponse(str(candidate))
-        return _FileResponse(str(_FRONTEND_DIST / "index.html"))
+        return _FileResponse(str(dist / "index.html"))
 
+    return True
+
+
+if _mount_pages(app, _FRONTEND_DIST):
     logger.info("SPA serving enabled — backend serves the built UI from %s", _FRONTEND_DIST)

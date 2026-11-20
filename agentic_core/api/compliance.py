@@ -165,6 +165,29 @@ def _legal_engine():
     return _LEGAL_ENGINE
 
 
+#  FU-1046 (W1133l) - A STATUTE TERM IS A WORD, NOT A RUN OF LETTERS. The legal engine's vocabulary was matched
+#  as a substring, so 'disciplinary' (the ACAS Code's term) was found inside 'multi-disciplinary'. Five change
+#  records of 2026-09-01 failed a water-harvesting venture's board pack, repository, website, web app and mobile
+#  app on 'STATUTORY_BREACH: ACASCode' for that alone: its text says 'multi-disciplinary' 19 times and has no
+#  whole-word statute term anywhere. A term now matches as a word, with a plural ending allowed. Joined to letters
+#  before it ('interdisciplinary') it is part of another word. Joined by a hyphen it is part of a compound that
+#  means something else ('multi-disciplinary', 'cross-disciplinary'), unless the prefix only turns the topic
+#  around ('non-discrimination', 'anti-harassment'), which is still the statute's subject.
+_STATUTE_TOPIC_PREFIXES = ("non", "anti")
+
+
+def _statute_term_named(term: str, low: str) -> bool:
+    """True when the engine's statute `term` occurs in the lower-cased text `low` as a word of its own."""
+    for form in {term, term.replace("_", " ")}:
+        for m in re.finditer(r"(?<![a-z])" + re.escape(form) + r"(?:s|es)?(?![a-z])", low):
+            if m.start() > 0 and low[m.start() - 1] == "-":
+                prefix = re.search(r"([a-z]+)-$", low[:m.start()])
+                if not prefix or prefix.group(1) not in _STATUTE_TOPIC_PREFIXES:
+                    continue
+            return True
+    return False
+
+
 @router.get("/frameworks")
 async def frameworks():
     return {"frameworks": _FRAMEWORKS, "jurisdiction_default": "UK / London"}
@@ -513,7 +536,7 @@ def screen_compliance(text: str, jurisdiction: str = "UK / London",
     try:
         _eng = _legal_engine()
         _flags = sorted({f for terms in _eng.statutes.values() for f in terms
-                         if f.replace("_", " ") in _low or f in _low})
+                         if _statute_term_named(f, _low)})
     except Exception:
         _eng, _flags = None, []
     _audit = _hl.sha3_512(json.dumps({"subject": text, "flags": _flags, "status": legal_status},

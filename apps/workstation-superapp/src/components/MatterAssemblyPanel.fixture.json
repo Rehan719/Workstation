@@ -1,0 +1,211 @@
+{
+ "fields": {},
+ "cases": {
+  "empty": {
+   "fields": {
+    "particular": "employer's name",
+    "words": "employer, ltd",
+    "authority": "Smith v Imaginary Holdings [2031] UKEAT 9"
+   },
+   "bundle": {
+    "status": 200,
+    "body": {
+     "folder_state": "configured_present",
+     "folder_source": "the LEGAL_BUNDLE_DIR environment variable",
+     "folder_basis": "the folder named by the LEGAL_BUNDLE_DIR environment variable exists on this machine",
+     "bundle_indexing_may_start": false,
+     "document_count": 0,
+     "bundle_indexing_basis": "false: the named folder holds 0 document(s), measured just now. This is NOT an Owner switch; copying a file in is the consent for that file",
+     "never": [
+      "no document outside bundle_dir is opened",
+      "nothing about this matter leaves this machine",
+      "no outcome, probability or settlement range is produced, however labelled",
+      "no filing-shaped artefact is produced without a human-approval gate"
+     ]
+    }
+   },
+   "assemble": {
+    "request": {
+     "template_id": "et1_claim",
+     "particulars": [
+      {
+       "name": "employer's name",
+       "words": [
+        "employer",
+        "ltd"
+       ]
+      }
+     ],
+     "authorities": [
+      "Smith v Imaginary Holdings [2031] UKEAT 9"
+     ]
+    },
+    "status": 200,
+    "body": {
+     "artefact_id": "lgl-d387a12174",
+     "template_id": "et1_claim",
+     "status": "draft_awaiting_owner_approval",
+     "filing_shaped": true,
+     "particulars": [
+      {
+       "particular": "employer's name",
+       "found": false,
+       "document": null,
+       "line": null,
+       "text": null,
+       "basis": "no line in the 0 document(s) of the named folder states this",
+       "verification": {
+        "verdict": "NOT_ASSESSABLE",
+        "basis": "a blank cites nothing, so there is nothing to verify"
+       },
+       "rendered": "[BLANK: employer's name - no document in the bundle states this; fill it in yourself]"
+      }
+     ],
+     "authorities": [
+      {
+       "authority": "Smith v Imaginary Holdings [2031] UKEAT 9",
+       "resolved": false,
+       "basis": "REFUSED: the corpus this platform holds does not name it, so it is not cited - an authority is resolved against a real source or not emitted at all"
+      }
+     ],
+     "sourced": [],
+     "blanks": [
+      "employer's name"
+     ],
+     "unresolved_checks": [],
+     "authorities_refused": [
+      "Smith v Imaginary Holdings [2031] UKEAT 9"
+     ],
+     "authorities_held": {
+      "provisions": 4,
+      "statutes": [
+       "Equality Act 2010"
+      ],
+      "basis": "an authority is resolved only against the 4 provision(s) the employment-law corpus's ontology lists by name (Equality Act 2010); the ontology's other concepts are not read, and anything else named is refused"
+     },
+     "is_template": true,
+     "bundle": {
+      "folder_state": "configured_present",
+      "folder_source": "the LEGAL_BUNDLE_DIR environment variable",
+      "folder_basis": "the folder named by the LEGAL_BUNDLE_DIR environment variable exists on this machine",
+      "bundle_indexing_may_start": false,
+      "document_count": 0,
+      "bundle_indexing_basis": "false: the named folder holds 0 document(s), measured just now. This is NOT an Owner switch; copying a file in is the consent for that file",
+      "never": [
+       "no document outside bundle_dir is opened",
+       "nothing about this matter leaves this machine",
+       "no outcome, probability or settlement range is produced, however labelled",
+       "no filing-shaped artefact is produced without a human-approval gate"
+      ]
+     },
+     "not_legal_advice": "Nothing here is legal advice. This platform assembles and cites as a clerk would; it is never counsel, and it never forecasts an outcome.",
+     "face": "0 particular(s) from a document, 1 BLANK for you to fill; this is a TEMPLATE - the bundle stated none of its particulars",
+     "created_at": "2026-11-20T06:47:58Z"
+    }
+   }
+  },
+  "letter": {
+   "fields": {
+    "particular": "date of dismissal",
+    "words": "dismissed, on",
+    "authority": "Equality Act 2010"
+   },
+   "letter": "Dear Ms Example,\nYou were dismissed on 3 March with immediate effect.\nRegards\n",
+   "bundle": {
+    "status": 200,
+    "body": {
+     "folder_state": "configured_present",
+     "folder_source": "the LEGAL_BUNDLE_DIR environment variable",
+     "folder_basis": "the folder named by the LEGAL_BUNDLE_DIR environment variable exists on this machine",
+     "bundle_indexing_may_start": true,
+     "document_count": 1,
+     "bundle_indexing_basis": "true: the named folder holds 1 document(s), measured just now. This is NOT an Owner switch; copying a file in is the consent for that file",
+     "never": [
+      "no document outside bundle_dir is opened",
+      "nothing about this matter leaves this machine",
+      "no outcome, probability or settlement range is produced, however labelled",
+      "no filing-shaped artefact is produced without a human-approval gate"
+     ]
+    }
+   },
+   "assemble": {
+    "request": {
+     "template_id": "et1_claim",
+     "particulars": [
+      {
+       "name": "date of dismissal",
+       "words": [
+        "dismissed",
+        "on"
+       ]
+      }
+     ],
+     "authorities": [
+      "Equality Act 2010"
+     ]
+    },
+    "status": 200,
+    "body": {
+     "artefact_id": "lgl-3b22f18ffa",
+     "template_id": "et1_claim",
+     "status": "draft_awaiting_owner_approval",
+     "filing_shaped": true,
+     "particulars": [
+      {
+       "particular": "date of dismissal",
+       "found": true,
+       "document": "dismissal_letter.txt",
+       "line": 2,
+       "text": "You were dismissed on 3 March with immediate effect.",
+       "basis": "located at dismissal_letter.txt:2",
+       "verification": {
+        "verdict": "MET",
+        "basis": "the quoted text is present at dismissal_letter.txt:2"
+       },
+       "rendered": "You were dismissed on 3 March with immediate effect."
+      }
+     ],
+     "authorities": [
+      {
+       "authority": "Equality Act 2010",
+       "resolved": true,
+       "matched": "statute",
+       "basis": "named in the employment-law corpus this platform holds (knowledge/Law/EmploymentTribunal): the ontology lists 4 provision(s) of this statute and no others - Equality Act 2010 Section 13; Equality Act 2010 Section 19; Equality Act 2010 Section 26; Equality Act 2010 Section 27"
+      }
+     ],
+     "sourced": [
+      "date of dismissal"
+     ],
+     "blanks": [],
+     "unresolved_checks": [],
+     "authorities_refused": [],
+     "authorities_held": {
+      "provisions": 4,
+      "statutes": [
+       "Equality Act 2010"
+      ],
+      "basis": "an authority is resolved only against the 4 provision(s) the employment-law corpus's ontology lists by name (Equality Act 2010); the ontology's other concepts are not read, and anything else named is refused"
+     },
+     "is_template": false,
+     "bundle": {
+      "folder_state": "configured_present",
+      "folder_source": "the LEGAL_BUNDLE_DIR environment variable",
+      "folder_basis": "the folder named by the LEGAL_BUNDLE_DIR environment variable exists on this machine",
+      "bundle_indexing_may_start": true,
+      "document_count": 1,
+      "bundle_indexing_basis": "true: the named folder holds 1 document(s), measured just now. This is NOT an Owner switch; copying a file in is the consent for that file",
+      "never": [
+       "no document outside bundle_dir is opened",
+       "nothing about this matter leaves this machine",
+       "no outcome, probability or settlement range is produced, however labelled",
+       "no filing-shaped artefact is produced without a human-approval gate"
+      ]
+     },
+     "not_legal_advice": "Nothing here is legal advice. This platform assembles and cites as a clerk would; it is never counsel, and it never forecasts an outcome.",
+     "face": "1 particular(s) from a document, 0 BLANK for you to fill",
+     "created_at": "2026-11-20T06:47:58Z"
+    }
+   }
+  }
+ }
+}

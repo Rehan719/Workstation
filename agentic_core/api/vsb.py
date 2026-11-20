@@ -2544,7 +2544,7 @@ def _operating_means(vsb: dict):
             "satisfaction reading is part of a beat.")
 
 
-#  W753 (FU-1048) - the Owner's own words for a record made before new records were stamped with his identity
+#  W753 (FU-1048) - the Owner's own words for a record made before new records were stamped with their identity
 OWNER_STAMP_PREDATES = "made before owner stamping"
 
 
@@ -3597,17 +3597,21 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
                 data=genome_spec,
                 layer=1  # long-term layer
             )
-            _genome_registry.commit_mutation(
+            _written = _genome_registry.commit_mutation(
                 acquired_traits={
                     f"vsb_{vsb_id}_domain": req.domain,
                     f"vsb_{vsb_id}_spawned": time.time(),
                 },
                 zkp_proof=f"spawn_{vsb_id}"
             )
-            genome_encoded = True
+            #  W1158 - encoded only when the ledger was written: the stream said encoded whatever the write did, and
+            #  "stored locally" when it raised, which stored nothing
+            genome_encoded = _written is True
         except Exception as e:
             genome_encoded = False
-        yield _event("genome_complete", "Genome Encoded", f"VSB genome {'encoded in epigenetic registry' if genome_encoded else 'stored locally'}.",
+        yield _event("genome_complete", "Genome Encoded" if genome_encoded else "Genome Not Written",
+                     ("VSB genome encoded in epigenetic registry." if genome_encoded else
+                      "VSB genome not written: the genome ledger could not be written."),
                      {"encoded": genome_encoded})          # W670 (R2.7) - the page ticks this row from the flag
 
         # ── Stage 6: Agent Swarm Config ───────────────────────────────────────

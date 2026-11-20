@@ -138,6 +138,17 @@ for (const [route, landmarks] of ROUTES) {
       { timeout: 30_000 },
     );
     await page.waitForTimeout(1200);           // let deferred renders settle
+    //  W1173b - a required section its page draws only once the page's own read has answered is waited for, up
+    //  to 20 seconds, before the page is judged. Under load in CI, /native-ai's status read answered after the
+    //  settle above, and its two required sections were reported missing from a page that draws them once that
+    //  read is in. The check is no weaker: each section must still appear, and one that never does is reported.
+    const needles = REQUIRED_SECTIONS[route] ?? [];
+    if (needles.length) {
+      await page.waitForFunction(
+        (ns) => { const t = (document.body.innerText || '').toLowerCase(); return ns.every((n) => t.includes(n.toLowerCase())); },
+        needles, { timeout: 20_000 },
+      ).catch(() => {});
+    }
     const body = await page.evaluate(() => document.body.innerText || '');
 
     // 1. the page rendered its own content (not a blank shell / crashed boundary)

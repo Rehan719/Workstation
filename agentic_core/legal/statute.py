@@ -24,6 +24,9 @@ WHAT_THIS_IS = ("the publisher's text of one provision, word for word. It is not
                 "and not a statement that it applies to anyone's situation")
 #  an address is built from parts that are each checked; nothing a caller types reaches the URL unchecked
 KINDS = ("ukpga", "uksi", "asp", "anaw", "asc", "nia", "ukla")
+#  W1160 - the publisher addresses an Act's provision as a section, an Order's as an article and regulations' as a
+#  regulation; every address was built as a section, so an Order's article could not be read at all
+PARTS = ("section", "article", "regulation")
 _L = "{http://www.legislation.gov.uk/namespaces/legislation}"
 _M = "{http://www.legislation.gov.uk/namespaces/metadata}"
 _DC = "{http://purl.org/dc/elements/1.1/}"
@@ -39,16 +42,18 @@ class PublisherRefused(RuntimeError):
         self.status = status
 
 
-def address(kind: str, year: Any, number: Any, section: Any) -> str:
+def address(kind: str, year: Any, number: Any, section: Any, part: str = "section") -> str:
     if kind not in KINDS:
         raise NotAnAddress(f"the kind of legislation must be one of {list(KINDS)}")
+    if part not in PARTS:
+        raise NotAnAddress(f"the part must be one of {list(PARTS)}")
     if not re.fullmatch(r"\d{4}", str(year)) or not (1800 <= int(year) <= 2100):
         raise NotAnAddress("the year must be four digits between 1800 and 2100")
     if not re.fullmatch(r"\d{1,5}", str(number)) or int(number) < 1:
         raise NotAnAddress("the number must be a whole number from 1")
     if not re.fullmatch(r"[0-9]{1,4}[A-Z]{0,3}", str(section)):
         raise NotAnAddress("the section must be a number, optionally followed by capital letters (111, 27A, 207B)")
-    return f"{BASE}/{kind}/{int(year)}/{int(number)}/section/{section}"
+    return f"{BASE}/{kind}/{int(year)}/{int(number)}/{part}/{section}"
 
 
 def _lines(group: ET.Element) -> List[Dict[str, Any]]:
@@ -86,10 +91,13 @@ def fidelity(parts: List[Dict[str, Any]], sha256: str) -> Dict[str, Any]:
 def touches(section: str, provisions: str) -> bool:
     """Does the publisher's description of what an amendment touches include this section? A single section
     is matched exactly (7 is not 70 and not 7A). A range is read by its whole-number ends, and a lettered
-    section inside a numeric range counts as inside, which errs toward warning the reader."""
+    section inside a numeric range counts as inside, which errs toward warning the reader. W1160: an Order's
+    articles (art.) and regulations' own regulations (reg.) are read the same way; the list was read for "s." alone,
+    so for an Order's article it said NONE was listed where the publisher lists changes."""
     sec = str(section)
     lead = int(re.match(r"\d+", sec).group(0))
-    for m in re.finditer(r"ss?\.\s*(\d+[A-Z]*)(?:\([^)]*\))*(?:\s*[-–]\s*(\d+[A-Z]*))?", str(provisions or "")):
+    for m in re.finditer(r"(?:ss?|\barts?|\bregs?)\.\s*(\d+[A-Z]*)(?:\([^)]*\))*(?:\s*[-–]\s*(\d+[A-Z]*))?",
+                         str(provisions or "")):
         first, last = m.group(1), m.group(2)
         if last is None:
             if first == sec:
@@ -114,7 +122,8 @@ def parse(xml_text: str, section: str) -> Dict[str, Any]:
     if not any(p["text"] for p in parts):
         raise PublisherRefused("the publisher returned a provision with no words in it", 200)
     whole = shown_text(parts)
-    listed = [{k: e.attrib.get(k) for k in ("Type", "AffectedProvisions", "AffectingYear", "AffectingNumber")}
+    listed = [{k: e.attrib.get(k) for k in ("Type", "AffectedProvisions", "AffectingClass", "AffectingYear",
+                                           "AffectingNumber")}
               for e in root.iter(_M + "UnappliedEffect")
               if touches(section, e.attrib.get("AffectedProvisions") or "")]
     across = sum(1 for _ in root.iter(_M + "UnappliedEffect"))
@@ -138,9 +147,15 @@ def parse(xml_text: str, section: str) -> Dict[str, Any]:
     }
 
 
-async def provision(kind: str, year: Any, number: Any, section: Any) -> Dict[str, Any]:
-    """Fetch one provision now. One request, to the publisher's own host, on a person's action."""
-    url = address(kind, year, number, section)
+async def provision(kind: str, year: Any, number: Any, section: Any, version: Any = None,
+                    part: str = "section") -> Dict[str, Any]:
+    """Fetch one provision now. One request, to the publisher's own host, on a person's action. W1157: `version`, a
+    date written YYYY-MM-DD, asks for the provision as it stood on that date - the publisher's own version for it."""
+    url = address(kind, year, number, section, part)            # W1160 - a section, an article or a regulation
+    if version is not None:
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(version)):
+            raise NotAnAddress("a version is a date, written YYYY-MM-DD")
+        url = f"{url}/{version}"
     try:
         async with httpx.AsyncClient(timeout=20.0, follow_redirects=True,
                                      headers={"User-Agent": "Workstation (one provision on a person's request)"}) as c:

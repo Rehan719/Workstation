@@ -1168,6 +1168,18 @@ precondition that reports what is missing · Mode 2 — RULED 2026-10-05b (R6): 
 the Stripe keys — rotated and the old ones expired by the Owner · the 162 test-owned entities — nothing
 deleted: a scan and a reversible move only, and the quarantine folder is the Owner's to empty (rulings of
 2026-10-09). STILL with the Owner: each switch in §14.
+**Recorded W1147 (2026-11-20) — managed Postgres is a BOUNDARY, not a switch waiting to be flipped.** The Owner
+DEFERRED it on 2026-10-12 until a measured need exists (delivery-plan P4.4): the file store with its locks is
+what runs, and nothing measured calls for more. The three database packages held for it were removed (W1147),
+so no store, route or deploy step offers a database. A need that is measured later reopens it as a ruling of
+its own.
+**Recorded W1174 (2026-11-20, the Owner's decision that evening) - outside AI models are a BOUNDARY, not a switch
+waiting to be flipped.** AI_ALLOW_EXTERNAL stays off (delivery-plan P4.3). Its condition is the Owner's own key and
+the in-house-first order proven by test, with outside models as accelerants only; until the Owner rules again, the
+native floor and the owned model are what serve, and no round switches it on.
+**Recorded W1174 (2026-11-20, the Owner's decision that evening) - real money is a BOUNDARY, not a switch waiting
+to be flipped.** REAL_MONEY_ENABLED stays off (delivery-plan P4.6). Its condition is a compliance and KYC review by
+qualified people, which no agent stands in for; every economy figure stays virtual WST until then.
 
 *(The progress addenda formerly numbered §16.3 and §16.4 — the Rounds 11–12 reconciliation and the
 §6 architecture-vs-practice correction, W363–W380 — are preserved verbatim in git history and in
@@ -1331,7 +1343,7 @@ platform holds.
 ## A.6 The fifteen core features · **[DERIVED-FAITHFUL]**
 
 The Jules-era synthesis grouped the Owner's feature lists into exactly fifteen features plus a shared area.
-The *grouping* is agent work; the *features* are the Owner's, and each is traceable back to his own lists.
+The *grouping* is agent work; the *features* are the Owner's, and each is traceable back to the Owner's own lists.
 Adopted here as the Religion domain's feature register, with **measured status** in Workstation today.
 
 **1 · User Authentication & Profile Management.** Identity, MFA, OAuth, RBAC across four roles —

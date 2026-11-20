@@ -151,6 +151,39 @@ OWN_CASE = [
     ('my employer asked me to summarise how an employment tribunal works'                , 'not-for'),
 ]
 
+#  ── SCREEN 6: legal.boundaries — a question on a subject that is REGULATED ADVICE (W1167, P5.11 clause 7) ────────
+#  Purpose, from the module: recognise a question that names immigration or nationality, a way of dealing with debts
+#  or a person's own debts, or a claims company, and answer it with the subject's row and a route to an authorised
+#  person. It may route and never clears. Labelled before the screen was run; the law of debt in general, a payment
+#  card and the questions the other screens are for are NOT what it is for. One phrasing it is for names none of the
+#  words it reads: that is its stated limit (its COVERAGE), held by test_w1167.
+BOUNDARY = [
+    ('how do I apply for indefinite leave to remain?'                                 , 'for'),
+    ('can my wife join me on a spouse visa?'                                          , 'for'),
+    ('I want to claim asylum in the UK'                                               , 'for'),
+    ('my eVisa shows the wrong expiry date'                                           , 'for'),
+    ('how long does naturalisation as a British citizen take?'                        , 'for'),
+    ("I'm facing deportation after my conviction"                                     , 'for'),
+    ('does my EU settled status let me work?'                                         , 'for'),
+    ('can I bring my parents to live with me in the UK?'                              , 'for'),
+    ('should I get an IVA or go bankrupt?'                                            , 'for'),
+    ('can I get a debt relief order?'                                                 , 'for'),
+    ("I'm in debt and creditors are chasing me"                                       , 'for'),
+    ('how do I set up a debt management plan?'                                        , 'for'),
+    ('how do I apply for breathing space?'                                            , 'for'),
+    ('what is the best way to pay off my debts?'                                      , 'for'),
+    ('a claims management company wants 30% of my PPI refund'                         , 'for'),
+    ('should I use a claims company for my flight delay?'                             , 'for'),
+    ('can I use my Visa card abroad without fees?'                                    , 'not-for'),
+    ("is a guarantee of a company's debt enforceable against the director?"           , 'not-for'),
+    ('what is the time limit for an unfair dismissal claim in England?'               , 'not-for'),
+    ('explain the elements of negligence'                                             , 'not-for'),
+    ('draft a privacy policy for my website'                                          , 'not-for'),
+    ('what does section 111 of the Employment Rights Act say?'                        , 'not-for'),
+    ('my company needs a standard NDA'                                                , 'not-for'),
+    ('what rights do tenants have when a landlord wants to evict?'                    , 'not-for'),
+]
+
 
 def _table(name, rows, fn):
     #  W809 (FU-1154) - a table of no phrasing measures no screen; "0/0 as intended" would read as a pass
@@ -198,6 +231,8 @@ def main():
                           lambda t: not gate.validate_output(t).get("compliant", True)))
     from agentic_core.legal import own_case as _own_case      # W874 (FU-1082) - the fifth screen
     results.append(_table("legal.own_case", OWN_CASE, _own_case.recognises))
+    from agentic_core.legal import boundaries as _boundaries  # W1167 (P5.11 clause 7) - the sixth screen
+    results.append(_table("legal.boundaries", BOUNDARY, lambda t: _boundaries.recognises(t) is not None))
 
     print()
     print("=" * 84)
@@ -213,7 +248,7 @@ def main():
             print(f"     FLAGGED SOMETHING IT IS NOT FOR: {x}")
         total_missed += len(missed)
     print()
-    print(f"  TOTAL MISSED ACROSS THE FIVE SCREENS: {total_missed}")
+    print(f"  TOTAL MISSED ACROSS THE SIX SCREENS: {total_missed}")
     return 0
 
 

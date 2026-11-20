@@ -106,6 +106,90 @@ def waterfall_bound_violations(waterfall: Dict[str, Any], template: Dict[str, An
                    f"template's charity share.")
     return out
 
+#  W1124 (FU-1057) - P5.16 CLAUSES 3 AND 4. OWNER RULING 2026-10-12: each generated entity pays 25% OF ITS PROFIT
+#  for updates and maintenance, TAKEN FIRST. The profit is the cycle's own figure - revenue less declared costs less
+#  the prudential reserve, never below zero - the fee is one ledger line the entity's owner can see, and the entity's
+#  own split applies to what remains. No profit, no fee; the apex and a non-distributing entity pay none; an
+#  unregistered simulation's fee is shown and never posted, as its owner share is (W658). No loss is carried from
+#  one cycle to the next (ruling 29.4 item 7), so the fee starts with the first profitable cycle. OWNER RULING
+#  2026-11-19 (FU-1057): released for a made-up entity now, ahead of the first walk.
+PLATFORM_FEE_RATE = 0.25
+PLATFORM_FEE_RULING = ("OWNER RULING 2026-10-12 (P5.16 clause 3): each generated entity pays 25% of its profit for "
+                       "updates and maintenance, taken first; released for a made-up entity on 2026-11-19 (FU-1057)")
+PLATFORM_FEE_MEMO = "platform fee (P5.16 clause 3): 25% of the cycle's profit, taken first"
+
+
+def _generation_credit() -> Dict[str, Any]:
+    """P5.16 clause 2: the price of generating an entity is credited against the first share of profit the platform
+    receives, once it has been charged. Nothing is charged for generating an entity, so nothing is credited."""
+    try:
+        from .generation_price import PRICE_GBP, conditions_met
+        conds = conditions_met()
+    except Exception as e:                       # noqa: BLE001 - said, never assumed
+        return {"applied_wst": 0.0, "basis": (f"whether the price of generating this entity was charged could not "
+                                               f"be read ({type(e).__name__}), so nothing is credited")}
+    held = sum(1 for c in conds if c.get("met"))
+    return {"applied_wst": 0.0, "basis": (
+        f"the price of generating an entity ({PRICE_GBP} pounds, P5.16 clause 2) is credited against the first fee "
+        f"once it has been charged. It has not been: nothing is charged for generating an entity until "
+        f"{len(conds)} things exist, and {held} of them exist today. Nothing is credited")}
+
+
+def platform_fee_of(vsb_id: str, template: Dict[str, Any], profit: float) -> Dict[str, Any]:
+    """The platform's fee on one cycle's profit, the base the entity's split uses, and whether the fee is posted.
+    Never raises: a fact it cannot read is said, and the fee is then shown and NOT posted, so nothing is taken on
+    a guess. A fee shown and not posted still comes off the split base, so the split is what it would be."""
+    profit = round(max(0.0, float(profit)), 2)
+    out: Dict[str, Any] = {"rate": PLATFORM_FEE_RATE, "profit_wst": profit, "fee_wst": 0.0,
+                           "split_base_wst": profit, "posted": False, "exempt": None, "simulated": False,
+                           "ruling": PLATFORM_FEE_RULING, "credit": _generation_credit()}
+    if profit < 0.005:
+        out["basis"] = ("no profit this cycle, so no fee (P5.16 clause 4). No loss is carried to the next cycle: "
+                        "each cycle's fee is a quarter of that cycle's own profit")
+        return out
+    if not template.get("distributes_profit", True):
+        out["exempt"] = "non_distributing"
+        out["basis"] = (f"this entity's form ({template.get('name')}) distributes no profit, and a non-distributing "
+                        f"entity pays no fee (P5.16 clause 4); its split applies to the whole profit")
+        return out
+    try:
+        from .turnover import _apex_ids, protected_rule
+        apex, apex_err = str(vsb_id) in _apex_ids(protected_rule()), None
+    except Exception as e:                       # noqa: BLE001 - said below; the fee is then not posted
+        apex, apex_err = None, e
+    if apex:
+        out["exempt"] = "apex"
+        out["basis"] = ("this is the apex, which pays no fee (P5.16 clause 4); its split applies to the whole "
+                        "profit")
+        return out
+    fee = round(profit * PLATFORM_FEE_RATE, 2)
+    out["fee_wst"], out["split_base_wst"] = fee, round(profit - fee, 2)
+    if apex is None:
+        out["basis"] = (f"the Owner's protected-entities rule could not be read ({type(apex_err).__name__}), so "
+                        f"whether this is the apex, which pays none, is not known: the fee of {fee:,.2f} WST is shown and NOT "
+                        f"posted, and the split applies to the {out['split_base_wst']:,.2f} WST that remains")
+        return out
+    try:
+        from .living_vsbs import is_registered
+        registered = is_registered(vsb_id)
+    except Exception as e:                       # noqa: BLE001 - said; the fee is then not posted
+        out["basis"] = (f"whether this is a registered entity could not be read ({type(e).__name__}), so the fee "
+                        f"of {fee:,.2f} WST is shown and NOT posted, and the split applies to the {out['split_base_wst']:,.2f} WST "
+                        f"that remains")
+        return out
+    if not registered:
+        out["simulated"] = True
+        out["basis"] = (f"this scope is not a registered entity, so this cycle is a simulation: its fee of {fee:,.2f} WST "
+                        f"is shown and never posted (P5.16 clause 4), and the split applies to the "
+                        f"{out['split_base_wst']:,.2f} WST that remains, as it would for a registered entity")
+        return out
+    out["posted"] = True
+    out["basis"] = (f"a quarter of this cycle's profit ({profit:,.2f} WST) is {fee:,.2f} WST, taken first and posted as one line in "
+                    f"this entity's books; the entity's own split applies to the {out['split_base_wst']:,.2f} WST that "
+                    f"remains; virtual WST")
+    return out
+
+
 _CYCLE_ROLE = {
     "owner": "nourishing the sovereign (host)",
     "self_investment": "growth & tissue repair (anabolism)",
@@ -323,11 +407,25 @@ class EconomicMetabolism:
         # 3. Distributable profit — what remains after costs and the reserve (the same total as before)
         distributable = round(max(0.0, revenue - costs - reserves), 2)
 
-        # 4. Circulation — the waterfall
+        # 3b. W1124 (FU-1057) - P5.16 clauses 3 and 4: the platform's fee, a quarter of the profit, TAKEN FIRST, as
+        #     one line in the entity's books; the entity's own split applies to what remains (platform_fee_of)
+        platform_fee = platform_fee_of(self.vsb_id, self.template, distributable)
+        if platform_fee["posted"]:
+            self.ledger.record("platform_fee", platform_fee["fee_wst"], memo=PLATFORM_FEE_MEMO,
+                               source="cycle_platform_fee")
+        split_base = platform_fee["split_base_wst"]
+
+        # 4. Circulation — the waterfall, over what the fee leaves
         splits: Dict[str, float] = {}
         for stage, frac in self.waterfall.items():
-            amount = round(distributable * frac, 2)
-            splits[stage] = amount
+            splits[stage] = round(split_base * frac, 2)
+        #  W1124 - the stages and the fee sum to the profit TO THE CENT: the waterfall is normalised to one, so what
+        #  is left is rounding, and it goes to the largest stage (the first of equals)
+        _rem1124 = round(split_base - sum(splits.values()), 2)
+        if splits and abs(_rem1124) >= 0.005 and abs(sum(self.waterfall.values()) - 1.0) <= 0.001:
+            _big1124 = max(splits, key=lambda s: float(self.waterfall.get(s) or 0.0))
+            splits[_big1124] = round(splits[_big1124] + _rem1124, 2)
+        for stage, amount in splits.items():
             if amount > 0:
                 self.ledger.record(stage, amount, memo=f"circulation → {_CYCLE_ROLE.get(stage, stage)}",
                                    source="cycle_distribution")
@@ -478,6 +576,9 @@ class EconomicMetabolism:
             "reserve_rate_applied": effective_reserve,   # §8→§12: energy-adjusted (conserves more when low)
             "energy_state": energy_state,
             "distributable_profit": distributable,
+            #  W1124 (FU-1057) - P5.16 clauses 3 and 4: the platform's fee, taken first, and the base the split used
+            "platform_fee": platform_fee,
+            "split_base_wst": split_base,
             #  W672 (ledger v16 R6.8) - `distributable_profit` is floored at zero, so a cycle that spent more
             #  than it took in read the same as one that broke even. The signed result and the two shortfalls
             #  are added beside it; the reserve rule itself is unchanged (whether a reserve should be set

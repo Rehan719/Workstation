@@ -12,7 +12,7 @@
   "an instrument's reuse terms were read at its owner's page, and the catalogue says what they are",
   "what the answer could not check is said, and nothing unread is described as read"
  ],
- "version": "2-written",
+ "version": "3-written",
  "runnable_rule": "Computed, never set: the set can be run on a date only when every case is written out (`shown`), every planted case says where this repository had its defect (`from`), and every row of the register of sources a case relies on is in the status the case names - a current row read within the register's review period of that date, and no part the case relies on said in the row to be NOT READ. Each case's `from` names the answer, prompt or entry it was taken from, and the one fix undone for a planted case.",
  "cases": [
   {
@@ -446,15 +446,36 @@
    "id": "K06",
    "described": "dementia care frame citing NICE NG97 with the date it was read",
    "planted": null,
-   "from": null,
+   "shown": {
+    "id": "dementia_care",
+    "name": "Dementia Care Planning",
+    "type": "care_plan",
+    "does": "frame",
+    "standard": "NICE NG97, Dementia: assessment, management and support for people living with dementia and their carers (read at its publisher's page, 2026-11-19)",
+    "sources": [
+     {
+      "id": "nice-ng97",
+      "names": [
+       "NICE NG97"
+      ],
+      "status": "current",
+      "page": "https://www.nice.org.uk/guidance/ng97",
+      "read_on": "2026-11-19",
+      "read": true,
+      "recently_checked": true,
+      "replaced_by": null,
+      "status_said": "current; its publisher's page was read on 2026-11-19, within the 90-day review period"
+     }
+    ]
+   },
+   "from": "the dementia entry as GET /api/v1/care/tools gives it at W1122, after NICE NG97 was read at its publisher's page on 2026-11-19",
    "relies_on": [
     {
      "row": "nice-ng97",
      "status": "current"
     }
    ],
-   "note": "clean ONLY if NG97 is current on the day the set is run - the set itself must be re-read against the publisher before each calibration",
-   "not_written": "the dementia frame can cite NICE NG97 with the date it was read only once NG97 has been read at its publisher's page; the register holds it as named, not read"
+   "note": "clean ONLY if NG97 is current on the day the set is run - the set itself must be re-read against the publisher before each calibration"
   }
  ]
 }
