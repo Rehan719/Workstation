@@ -298,7 +298,8 @@
       }
     ],
     "this_platform_is_not": [
-      "a solicitor, a barrister or any regulated legal services provider",
+      "a solicitor, a barrister, a law firm or any regulated legal services provider",
+      "an advice charity, a regulator or a court",
       "a source of legal advice: it shows published law word for word and labels what its own AI composes",
       "able to tell you whether a provision applies to your situation"
     ],
@@ -607,7 +608,8 @@
       }
     ],
     "this_platform_is_not": [
-      "a solicitor, a barrister or any regulated legal services provider",
+      "a solicitor, a barrister, a law firm or any regulated legal services provider",
+      "an advice charity, a regulator or a court",
       "a source of legal advice: it shows published law word for word and labels what its own AI composes",
       "able to tell you whether a provision applies to your situation"
     ],

@@ -26692,6 +26692,29 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Done in W1170: agentic_core/legal/authorities.py resolves every Act a text names - by the register of sources' own pattern for a statute's name - against the register (a row naming it, read at its publisher and current, said with the day it was read) or the employment-law corpus the clerk holds. One that resolves against neither, or that the register holds as replaced, withdrawn or not read, is withheld from the text every time it appears; the answer says why and how often, and never its name. The research, analysis and drafting routes screen their text before they return it, whoever composed it. The Law page's research answer lists the Acts shown with their sources and those withheld by why. A model is stood in for in test_w1170, which drives it."
+    },
+    {
+      "id": "FU-1815",
+      "title": "The Law domain never said it is not a law firm, an advice charity, a regulator or a court, and nothing held that it fetches no outside page on a timer",
+      "why": "Measured in W1172 against P5.11's boundary: the platform is not a solicitor, a law firm, an advice charity, a regulator or a court and says so; and nothing fetches an outside page on a timer. The one page of where help is, and the Law page's help, said only that it is not a solicitor, a barrister or any regulated legal services provider. The statute reader, the domain's one outside fetch, was asked only by two route handlers, and no guard held it.",
+      "source": "W1172 (P5.11's boundary read against the Law routes' answers)",
+      "found": "2026-11-20",
+      "files": [
+        "agentic_core/api/where_help.py",
+        "apps/workstation-superapp/src/components/WhereHelpIs.fixture.json",
+        "apps/workstation-superapp/src/components/StatutePanel.fixture.json"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.11",
+      "status": "done",
+      "closed_by": "W1172",
+      "note": "",
+      "slot_source": "P5.11's boundary: what the platform is not, and no fetch on a timer",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1172: the one page of where help is and the Law page's help say the platform is not a solicitor, a barrister, a law firm or any regulated legal services provider, and not an advice charity, a regulator or a court. The four captured answers carry the list as the route gives it, and the two pages' rendered tests read it. A guard holds the Law domain's one outside fetch, the statute reader, to the statute and time-limit route handlers, with no timer, loop or task in any Law module and nothing the heartbeat runs importing them."
     }
   ],
   "routes": [

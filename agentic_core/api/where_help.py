@@ -64,8 +64,11 @@ HELP_FROM_A_PERSON = (
      "for_what": "free legal advice clinics run by volunteer solicitors"},
 )
 
+#  W1172 (P5.11's boundary) - the platform is not a solicitor, a law firm, an advice charity, a regulator or a court,
+#  and says so wherever this is read: the one page of where help is, and the Law page's help built from it
 THIS_PLATFORM_IS_NOT = (
-    "a solicitor, a barrister or any regulated legal services provider",
+    "a solicitor, a barrister, a law firm or any regulated legal services provider",
+    "an advice charity, a regulator or a court",
     "a source of legal advice: it shows published law word for word and labels what its own AI composes",
     "able to tell you whether a provision applies to your situation",
 )

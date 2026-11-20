@@ -96121,3 +96121,88 @@ def test_w1171_p512_p513_the_education_and_care_forms_keep_nothing_typed_in_the_
     rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
     done = [r for r in rows if r.get("title", "").startswith("The Education and Care forms keep what a person typed")]
     assert len(done) == 1 and (done[0]["status"], done[0]["closed_by"], done[0]["because"]) == ("done", "W1171", "built"), done
+
+
+def test_w1172_p511_the_platform_says_what_it_is_not_and_the_law_domain_fetches_nothing_on_a_timer(client, monkeypatch):
+    """P5.11's BOUNDARY (W1172): "the platform is not a solicitor, a law firm, an advice charity, a regulator or a court
+    and says so", and "nothing fetches an outside page on a timer". Measured before this round: the one page of where
+    help is, and the Law page's help built from it, said the platform is not "a solicitor, a barrister or any regulated
+    legal services provider"; no Law answer said it is not a law firm, an advice charity, a regulator or a court. The
+    Law domain's one outside fetch, the statute reader, was asked only by two route handlers, and nothing held that.
+    Held here:
+    1. both answers say all five, and both pages draw the list their answer carries;
+    2. the four captured answers carry the route's list;
+    3. the Law modules fetch from one place, asked only by the statute and time-limit route handlers; no Law module
+       holds a timer, a loop or a task; and the heartbeat imports none of them;
+    4. the row."""
+    import ast
+    import datetime as _dt
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.api import where_help as _wh
+    from agentic_core.legal import time_limits as _tl
+    root = Path(__file__).resolve().parents[1]
+    src = root / "apps" / "workstation-superapp" / "src"
+    read = lambda rel: (src / rel).read_text(encoding="utf-8")       # noqa: E731
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2026, 11, 20))
+
+    #  1. the answers and the pages
+    one = client.get("/api/v1/support/where-help-is").json()["this_platform_is_not"]
+    law = client.get("/api/v1/law/help").json()["this_platform_is_not"]
+    assert one == law == list(_wh.THIS_PLATFORM_IS_NOT), (one, law)
+    for what in ("a solicitor", "a law firm", "an advice charity", "a regulator", "a court"):
+        assert any(re.search(rf"(?:^|\W){re.escape(what)}(?:\W|$)", s) for s in one), (what, one)
+    assert any("regulated legal services provider" in s for s in one), "test_w724's line is gone"
+    for rel in ("components/WhereHelpIs.tsx", "components/StatutePanel.tsx"):
+        assert "{help.this_platform_is_not.map(s => <li key={s}>{s}</li>)}" in read(rel), (rel, "draws no list")
+    assert ("expect(Array.from(not.querySelectorAll('li')).map(li => li.textContent)).toEqual("
+            "captured.page.this_platform_is_not);") in read("components/WhereHelpIs.test.tsx")
+    assert "for (const s of h.this_platform_is_not) expect(within(help).getByText(s)).toBeTruthy();" in read(
+        "components/StatutePanel.test.tsx")
+
+    #  2. the captured answers
+    w = json.loads(read("components/WhereHelpIs.fixture.json"))
+    sp = json.loads(read("components/StatutePanel.fixture.json"))
+    hub = json.loads(read("pages/domains/LawHub.fixture.json"))
+    sup = json.loads(read("pages/support/Support.fixture.json"))
+    for where, got in (("the one page", w["page"]), ("the one page ninety-one days on", w["page_stale"]),
+                       ("the statute panel's help", sp["help"]["body"]), ("the Law page's help", hub["help"]),
+                       ("the support page's help", sup["help"])):
+        assert got["this_platform_is_not"] == one, (where, "a captured answer carries another list")
+
+    #  3. one outside fetch, asked only by a person's request; no timer anywhere in the Law modules
+    legal = sorted((root / "agentic_core" / "legal").glob("*.py"))
+    assert len(legal) > 10, ("the Law modules were not found", len(legal))
+    fetch = re.compile(r"^\s*(?:import httpx|import urllib|from urllib|import requests|import aiohttp|from httpx)", re.M)
+    assert [p.name for p in legal if fetch.search(p.read_text(encoding="utf-8"))] == ["statute.py"]
+    for p in legal:
+        t = p.read_text(encoding="utf-8")
+        for timer in ("asyncio.sleep(", "threading.Timer", "create_task(", "call_later(", "while True"):
+            assert timer not in t, (p.name, "holds a timer, a loop or a task", timer)
+    callers = []
+    for p in (root / "agentic_core").rglob("*.py"):
+        if p == root / "agentic_core" / "legal" / "statute.py":
+            continue
+        t = p.read_text(encoding="utf-8", errors="replace")
+        if re.search(r"\b_?st(?:atute)?\.provision\(", t):
+            callers.append(p.relative_to(root).as_posix())
+    assert callers == ["agentic_core/api/law.py"], callers
+    tree = ast.parse((root / "agentic_core" / "api" / "law.py").read_text(encoding="utf-8"))
+    calls = [n for n in ast.walk(tree) if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+             and n.func.attr == "provision"]
+    routed = []
+    for f in ast.walk(tree):
+        if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef)) and any(
+                isinstance(d, ast.Call) and isinstance(d.func, ast.Attribute) and d.func.attr in ("get", "post")
+                and isinstance(d.func.value, ast.Name) and d.func.value.id == "router" for d in f.decorator_list):
+            routed += [(f.name, n.lineno) for n in ast.walk(f) if n in calls]
+    assert len(calls) == len(routed) == 2 and {r[0] for r in routed} == {"statute_provision", "time_limit"}, \
+        ("the statute reader is asked from outside its two route handlers", routed, len(calls))
+    beat = (root / "agentic_core" / "organism" / "heartbeat.py").read_text(encoding="utf-8")
+    assert "agentic_core.legal" not in beat and "from agentic_core import legal" not in beat
+
+    #  4. the row
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    fu = [r for r in rows if r.get("title", "").startswith("The Law domain never said it is not a law firm")]
+    assert len(fu) == 1 and (fu[0]["status"], fu[0]["closed_by"], fu[0]["because"]) == ("done", "W1172", "built"), fu
