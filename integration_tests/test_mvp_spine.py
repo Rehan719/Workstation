@@ -65444,16 +65444,16 @@ def test_w711_the_two_chartered_items_keep_their_boundaries_and_every_source_say
         assert r["page"].startswith("https://") and re.fullmatch(r"\d{4}-\d{2}-\d{2}", r["read_on"]), rid
         assert len(r["says"]) > 40 and len(r["not_read"]) > 10, (rid, "a row must say what was read and what was not")
         #  W1148 (FU-1077): eight were re-read whole at their publishers and say so; the six whose sites this
-        #  environment refused still say they rest on one reader's summary, and that the re-reading was refused
+        #  environment refused then were read whole at their publishers by W1177, once the sites were allowed
         if rid in ("hse-puwer-overview", "frc-frs-102-periodic-review-2024", "ec-ai-omnibus-2026",
                    "lawcom-business-tenancies-renewal", "ico-duaa-2025", "caa-drone-requirements"):
-            assert "NOT re-read by a second reader" in r["read_by"] and "refused by this environment's network" in (
-                r["not_read"]), (rid, "one reader's summary is presented as more than that")
+            assert r["read_on"] == "2026-11-20" and r["read_by"].startswith("round W1177, ") and (
+                "not through a summary" in r["read_by"]), (rid, "one reader's summary is presented as more than that")
         else:
             assert r["read_on"] == "2026-11-20" and r["read_by"].startswith("round W1148, ") and "read whole" in (
                 r["read_by"]) and "not through a summary" in r["read_by"], (rid, r["read_by"])
     #  the date the external documents got wrong is recorded as the publisher gives it
-    assert "entered into force on 27 July 2026" in rows["ec-ai-omnibus-2026"]["says"]
+    assert "on 27 July 2026 the AI Omnibus enters into force" in rows["ec-ai-omnibus-2026"]["says"]   # W1177: as the page says
 
 
 # ══════════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -93843,17 +93843,17 @@ def test_w1148_fu1077_the_legal_briefs_authorities_are_read_whole_at_their_publi
 
     refused = ("hse-puwer-overview", "frc-frs-102-periodic-review-2024", "ec-ai-omnibus-2026",
                "lawcom-business-tenancies-renewal", "ico-duaa-2025", "caa-drone-requirements")
-    for rid in refused:
+    for rid in refused:   # refused to W1148; read whole at their publishers by W1177, once their sites were allowed
         r = rows[rid]
-        assert r["read_on"] == "2026-10-13" and "NOT re-read by a second reader" in r["read_by"], (rid, r["read_by"])
-        assert ("A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network" in
-                r["not_read"] and "still rests on one reader's summary" in r["not_read"]), (rid, r["not_read"])
+        assert r["read_on"] == "2026-11-20" and r["read_by"].startswith("round W1177, ") and (
+            "not through a summary" in r["read_by"]), (rid, r["read_by"])
+        assert "refused by this environment's network" not in r["not_read"], (rid, r["not_read"])
 
     #  FU-1077 says what is left, and where the rows are
     reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
     fu = reg["FU-1077"]
     assert fu["status"] == "open" and fu["slot"] == "P5.18", (fu["status"], fu["slot"])
-    for named in refused + ("www.fca.org.uk", "handbook.fca.org.uk", "Owner's to approve"):
+    for named in refused + ("www.handbook.fca.org.uk", "Owner's to approve"):   # W1177
         assert named in fu["why"], named
     assert all(day.fullmatch(rows[i]["read_on"]) for i in list(new) + list(reread) + list(refused))
 
@@ -96431,3 +96431,61 @@ def test_w1176_fu1286_the_project_settings_name_no_windows_home_folder_and_the_g
     assert "remove the three" not in mine and "were removed in the cloud session on 2026-11-20, W1176" in mine, mine
     flat = " ".join(notes.split())
     assert "the three permissions in `.claude/settings.json` were removed in the cloud session (W1176)" in flat
+
+
+def test_w1177_fu1077_the_six_rows_refused_to_w1148_are_read_whole_at_their_publishers():
+    """FU-1077 part 2 (W1177), P5.18 clause 8: every statement of what the law requires names a row read at its
+    publisher and the date, and what was not read is listed as not read. Six rows rested on one reader's summary of
+    2026-10-13 because this environment's network refused their sites; the Owner allowed the sites on the evening of
+    2026-11-20 and each page was read whole that evening. Held here:
+    1. each of the six says it was read whole at its publisher's own page on 2026-11-20 by W1177, not through a summary,
+       and no longer says it was refused or rests on one reader's summary;
+    2. each says what its page says, with the page's own dates;
+    3. the two sentences that came from a different page are out of what the row says and listed as not read: the
+       ICO's toolkit on AI and data protection, and the FRC's factsheet on lease accounting for lessees;
+    4. FU-1077 stays open, on P5.18, for the FCA Handbook alone, naming its site and that allowing it is the Owner's."""
+    import json
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    rows = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    said = {
+        "ico-duaa-2025": ("the ICO's", ("Royal Assent on 19 June 2025", "are now in force", "no date of its own", "12 February 2026")),
+        "hse-puwer-overview": ("the HSE's", ("Shown as updated 21 November 2024",
+                                             "own, operate or have control over work equipment",
+                                             "whether owned by them or not", "a business or organisation that uses work equipment",
+                                             "for others to use")),
+        "lawcom-business-tenancies-renewal": ("the Law Commission's", ("19 November 2024", "19 February 2025",
+                                                                       "June 2025", "16 June 2026", "16 September 2026",
+                                                                       "'in due course'", "the review has changed the law",
+                                                                       "'has been updated in the past'")),
+        "frc-frs-102-periodic-review-2024": ("the FRC's", ("completed in March 2024",
+                                                           "principal effective date of 1 January 2026",
+                                                           "27 March 2024", "1 January 2025", "1 January 2027")),
+        "caa-drone-requirements": ("the CAA's", ("Undated page", "100g or above", "250g or above", "18 or over",
+                                                 "from 1 January 2026", "UK0 to UK6", "31 December 2027")),
+        "ec-ai-omnibus-2026": ("the European Commission's", ("Published 27 July 2026", "last updated 31 July 2026",
+                                                              "2 December 2027", "2 August 2028",
+                                                              "19 November 2025")),
+    }
+    for rid, (whose, phrases) in said.items():
+        r = rows[rid]
+        assert r["status"] == "current" and r["read_on"] == "2026-11-20", (rid, r["read_on"])
+        assert r["read_by"].startswith(f"round W1177, {whose} own page read whole on 2026-11-20, not through a summary;"), (
+            rid, r["read_by"])
+        assert "first entered by a research reader of round W711" in r["read_by"] and "NOT re-read" not in r["read_by"]
+        for stale in ("refused by this environment's network", "one reader's summary"):
+            assert stale not in r["not_read"] and stale not in r["says"], (rid, stale)
+        missing = [p for p in phrases if p not in r["says"]]
+        assert missing == [], (rid, "the row does not say what its page says", missing)
+
+    ico, frc = rows["ico-duaa-2025"], rows["frc-frs-102-periodic-review-2024"]
+    assert "toolkit" not in ico["says"] and "toolkit on AI and data protection" in ico["not_read"], ico
+    assert "factsheet" not in frc["says"] and "factsheet on lease accounting for lessees" in frc["not_read"], frc
+
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    fu = reg["FU-1077"]
+    assert (fu["status"], fu["slot"]) == ("open", "P5.18"), fu
+    assert fu["title"].startswith("The FCA's own consumer-credit rules and its perimeter guidance on credit broking"), fu
+    for named in ("www.handbook.fca.org.uk", "Owner's to approve", "W1177", "403 at the proxy on 2026-11-20"):
+        assert named in fu["why"], (named, "FU-1077 does not say it")
+    assert "still read only through a summarising fetch" not in fu["why"].lower(), fu["why"]

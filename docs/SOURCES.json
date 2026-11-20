@@ -810,10 +810,10 @@
    ],
    "status": "current",
    "page": "https://www.hse.gov.uk/work-equipment-machinery/puwer-overview.htm",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "Shown as updated 21 November 2024. Duties fall on those who own, operate or have control over work equipment, whether owned by them or not; those who provide equipment for others are covered.",
-   "not_read": "the Regulations themselves; the approved code of practice; the lifting regulations. A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network (403 at the proxy), so this row still rests on one reader's summary."
+   "read_on": "2026-11-20",
+   "read_by": "round W1177, the HSE's own page read whole on 2026-11-20, not through a summary; first entered by a research reader of round W711 through a fetch that summarised the page",
+   "says": "Shown as updated 21 November 2024. The HSE's overview says PUWER places duties on people and companies who own, operate or have control over work equipment, and responsibilities on businesses and organisations whose employees use work equipment, whether owned by them or not; a business or organisation that uses work equipment, or is involved in providing it for others to use (for hire, for example), must manage the risks from that equipment. Lifting equipment must also meet LOLER.",
+   "not_read": "the Regulations themselves; the approved code of practice; the lifting regulations (LOLER), which the page names only."
   },
   {
    "id": "frc-frs-102-periodic-review-2024",
@@ -827,10 +827,10 @@
    ],
    "status": "current",
    "page": "https://www.frc.org.uk/library/standards-codes-policy/accounting-and-reporting/uk-accounting-standards/frs-102/",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "The Periodic Review 2024 amendments have a principal effective date of 1 January 2026. The lessee change is described in the regulator's factsheet on lease accounting for lessees, published 27 November 2024.",
-   "not_read": "the standard's text; the factsheet itself; which entities may still use another regime. A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network (403 at the proxy), so this row still rests on one reader's summary."
+   "read_on": "2026-11-20",
+   "read_by": "round W1177, the FRC's own page read whole on 2026-11-20, not through a summary; first entered by a research reader of round W711 through a fetch that summarised the page",
+   "says": "The FRC's page says the second periodic review of FRS 102, the Periodic Review 2024, was completed in March 2024, with a principal effective date of 1 January 2026. Its amendments, published 27 March 2024, are listed as effective from 1 January 2026 with early application permitted, and the new disclosures about supplier finance arrangements from 1 January 2025. The current edition is that of September 2024 (published 10 September 2024); amendments on adapted formats, published 18 February 2026, are effective from 1 January 2027.",
+   "not_read": "the standard's text and the amendments' text; which entities may still use another regime; the FRC's factsheet on lease accounting for lessees (27 November 2024), which the first reader cited for the lessee change - that is a different page, not opened here, so the row no longer says it."
   },
   {
    "id": "si-2026-439-av-passenger-permits",
@@ -877,10 +877,10 @@
    ],
    "status": "current",
    "page": "https://digital-strategy.ec.europa.eu/en/news/ai-omnibus-enters-force",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "Published 27 July 2026 and last updated 31 July 2026: the amending act entered into force on 27 July 2026; the rules for the listed high-risk uses apply from 2 December 2027 and those for systems embedded in regulated products from 2 August 2028.",
-   "not_read": "the legal text in the Official Journal; this is a news page. A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network (403 at the proxy), so this row still rests on one reader's summary."
+   "read_on": "2026-11-20",
+   "read_by": "round W1177, the European Commission's own page read whole on 2026-11-20, not through a summary; first entered by a research reader of round W711 through a fetch that summarised the page",
+   "says": "Published 27 July 2026 and last updated 31 July 2026. The Commission's news page says that on 27 July 2026 the AI Omnibus enters into force across the EU; the rules for the high-risk AI systems in Annex III apply starting 2 December 2027, and those for high-risk AI embedded in physical products in Annex I (machinery, toys, lifts, etc.) starting 2 August 2028. It was proposed as part of the digital omnibus package on 19 November 2025.",
+   "not_read": "the legal text in the Official Journal; this is a news page."
   },
   {
    "id": "si-2026-867-machinery",
@@ -929,10 +929,10 @@
    ],
    "status": "current",
    "page": "https://lawcom.gov.uk/project/business-tenancies-the-right-to-renew/",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "First consultation 19 November 2024; second consultation opened 16 June 2026 and closed 16 September 2026; no final report. The law is unchanged while the review runs.",
-   "not_read": "the 1954 Act itself; the consultation papers. A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network (403 at the proxy), so this row still rests on one reader's summary."
+   "read_on": "2026-11-20",
+   "read_by": "round W1177, the Law Commission's own page read whole on 2026-11-20, not through a summary; first entered by a research reader of round W711 through a fetch that summarised the page",
+   "says": "The Law Commission's project page on Part 2 of the Landlord and Tenant Act 1954: the first consultation paper was published on 19 November 2024 and its consultation ended on 19 February 2025; an interim statement of provisional conclusions followed in June 2025; the second consultation paper was published on 16 June 2026 and its consultation closed on 16 September 2026. The Commission is analysing the responses and will publish a final report 'in due course'; no final report is on the page, and nothing on it says the review has changed the law. It says the Act 'has been updated in the past' and that 'it is now around 20 years since the last significant updates were made'.",
+   "not_read": "the 1954 Act itself; the consultation papers, the interim statement and the responses it links."
   },
   {
    "id": "gov-ending-commercial-lease-early",
@@ -962,10 +962,10 @@
    ],
    "status": "current",
    "page": "https://ico.org.uk/about-the-ico/what-we-do/legislation-we-cover/data-use-and-access-act-2025/",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "The regulator's page says the provisions of the 2025 Act affecting data protection law and the electronic communications rules are now in force. Its separate toolkit on AI and data protection risk says it is under review because of that Act.",
-   "not_read": "the Act; the date the page was last changed (none is shown). A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network (403 at the proxy), so this row still rests on one reader's summary."
+   "read_on": "2026-11-20",
+   "read_by": "round W1177, the ICO's own page read whole on 2026-11-20, not through a summary; first entered by a research reader of round W711 through a fetch that summarised the page",
+   "says": "The ICO's page says the Data (Use and Access) Act 2025 got Royal Assent on 19 June 2025, and that 'All the provisions affecting data protection law and the Privacy and Electronic Regulations Communications are now in force' (the page's words), and that the department it names as DSIT has set out the commencement plans, with more details on GOV.UK. The page shows no date of its own; its metadata (DC.Date) gives 12 February 2026.",
+   "not_read": "the Act; the commencement plans on GOV.UK; the guidance pages the page links; the ICO's toolkit on AI and data protection, which the first reader said is under review because of the Act - that is a different page, not opened here, so the row no longer says it."
   },
   {
    "id": "caa-drone-requirements",
@@ -979,10 +979,10 @@
    ],
    "status": "current",
    "page": "https://www.caa.co.uk/drones/open-category/drone-code/getting-what-you-need-to-fly-legally/",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "Undated page: a flyer ID from 100 g, an operator ID from 250 g or from 100 g with a camera, and UK class marks for models placed on the market from 1 January 2026.",
-   "not_read": "the March 2026 code itself (its text could not be read); remote identification, which this page does not mention; the specific category for commercial operations. A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network (403 at the proxy), so this row still rests on one reader's summary."
+   "read_on": "2026-11-20",
+   "read_by": "round W1177, the CAA's own page read whole on 2026-11-20, not through a summary; first entered by a research reader of round W711 through a fetch that summarised the page",
+   "says": "Undated page. A Flyer ID is needed to fly a drone or model aircraft that weighs 100g or above, and an Operator ID by whoever owns or is responsible for one that weighs 250g or above, or 100g or above with a camera; neither is needed below 100g, and an Operator ID needs its holder to be 18 or over. Any new model placed on the market from 1 January 2026 must have a UK class mark, from UK0 to UK6; a C class drone may be flown as the corresponding UK class until 31 December 2027.",
+   "not_read": "the regulations behind the code; remote identification, which this page does not mention; the specific and certified categories, which the page names (moderate-risk and high-risk, complex flying) without setting them out."
   },
   {
    "id": "companies-act-2006-s44",
