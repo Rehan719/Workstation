@@ -468,6 +468,8 @@ def time_limit_rules():
     and the change between them (W1157)."""
     from agentic_core.legal import time_limits as _tl
     return {"rules": [{"id": k, "name": r["name"], "act": r["provision"]["act"], "section": r["provision"]["section"],
+                       "part": r["provision"].get("part", "section"), "nations": list(r["nations"]),   # W1160
+                       "change": dict(r["change"]),
                        "event": r["event"], "relevant_date": r["relevant_date"], "periods": _tl.periods(k)}
                       for k, r in _tl.RULES.items()],
             "change": dict(_tl.CHANGE), "arithmetic": _tl.ARITHMETIC, "composed": False}
@@ -490,7 +492,9 @@ async def time_limit(req: TimeLimitRequest):
     try:
         #  W1157 - the provision as it stood for the date's period: the publisher's dated version for an earlier one
         provision = await _st.provision(p["kind"], p["year"], p["number"], p["section"],
-                                        **({"version": period["version"]} if period.get("version") else {}))
+                                        **({"version": period["version"]} if period.get("version") else {}),
+                                        #  W1160 - an Order's article is asked for as an article
+                                        **({"part": p["part"]} if p.get("part", "section") != "section" else {}))
     except _st.PublisherRefused as exc:
         raise HTTPException(status_code=502, detail=(
             f"No limit is computed: the provision that sets it could not be read from its publisher ({exc}), so the "

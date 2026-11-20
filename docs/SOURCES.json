@@ -1432,6 +1432,72 @@
    "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: regulations 3 and 4, and the Schedule's first table for the two complaints the rules work out",
    "says": "The Employment Rights Act 2025 (Commencement No. 5 and Transitional Provisions) (Amendment) Regulations 2026. Regulation 3: section 152 of and Schedule 12 to the 2025 Act (increase in time limits for making claims) come into force on 1 October 2026, subject to regulation 4. Regulation 4(1): the amendments made by Schedule 12 do not apply in any case where the relevant date occurs before 1 October 2026. The Schedule's first table: for a complaint under section 111(1) of the Employment Rights Act 1996, the effective date of termination; for a complaint under section 120 of the Equality Act 2010, the date of the act, or for conduct extending over a period the end of the period, or for a failure the date it was decided on.",
    "not_read": "regulations 1, 2 and 5, and the Schedule's other rows"
+  },
+  {
+   "id": "et-extension-of-jurisdiction-england-wales-1994",
+   "names": [
+    "Employment Tribunals Extension of Jurisdiction (England and Wales) Order 1994"
+   ],
+   "kind": "statutory instrument",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/uksi/1994/1623/article/7",
+   "read_on": "2026-11-20",
+   "read_by": "round W1160, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: article 7 as it stands and as it stood on 30 September 2026, with the publisher's notes on it",
+   "says": "S.I. 1994/1623. Article 7(a): within the period of six months beginning with the effective date of termination of the contract giving rise to the claim; (b) where there is no effective date of termination, six months beginning with the last day upon which the employee worked. As it stood on 30 September 2026, three months in each. The publisher's note: the word substituted (1.10.2026) by S.I. 2026/759, arts. 1(2), 2 (with art. 3). The publisher lists no change not yet written into it.",
+   "not_read": "the rest of the Order"
+  },
+  {
+   "id": "et-extension-of-jurisdiction-scotland-1994",
+   "names": [
+    "Employment Tribunals Extension of Jurisdiction (Scotland) Order 1994"
+   ],
+   "kind": "statutory instrument",
+   "nation": [
+    "Scotland"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/uksi/1994/1624/article/7",
+   "read_on": "2026-11-20",
+   "read_by": "round W1160, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: article 7 as it stands and as it stood on 8 November 2026, with the changes the publisher lists",
+   "says": "S.I. 1994/1624. Article 7(a) and (b), as the publisher's text stands: three months beginning with the effective date of termination of the contract giving rise to the claim, or with none the last day worked. The publisher lists two changes not yet written into its text: words substituted in article 7(a) and in article 7(b) by S.S.I. 2026/327, article 2(2), in force 9 November 2026.",
+   "not_read": "the rest of the Order"
+  },
+  {
+   "id": "si-2026-759",
+   "names": [
+    "S.I. 2026/759"
+   ],
+   "kind": "statutory instrument",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/uksi/2026/759/made",
+   "read_on": "2026-11-20",
+   "read_by": "round W1160, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: the Order whole, as made",
+   "says": "The Employment Tribunals Extension of Jurisdiction (England and Wales) (Amendment) Order 2026. Article 1(2): it comes into force on 1 October 2026. Article 2: in article 7 of the 1994 Order, in paragraphs (a) and (b), for \"three\" substitute \"six\". Article 3(2): the amendments apply where the effective date of termination of the contract giving rise to the claim, or with none the last day upon which the employee worked, occurs on or after 1 October 2026; article 3(1) says what the effective date of termination is.",
+   "not_read": "nothing: the Order was read whole"
+  },
+  {
+   "id": "ssi-2026-327",
+   "names": [
+    "S.S.I. 2026/327"
+   ],
+   "kind": "statutory instrument",
+   "nation": [
+    "Scotland"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/ssi/2026/327/made",
+   "read_on": "2026-11-20",
+   "read_by": "round W1160, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: the Order whole, as made",
+   "says": "The Employment Tribunals Extension of Jurisdiction (Amendment) (Scotland) Order 2026. Article 1: it comes into force on 9 November 2026. Article 2(2): in article 7(a) and (b) of the 1994 Order, for \"three\" substitute \"six\". Article 3(1): the amendments apply where the effective date of termination of the contract giving rise to the claim, or with none the last day on which the employee worked, occurs on or after 9 November 2026; article 3(2) says what the effective date of termination is.",
+   "not_read": "nothing: the Order was read whole"
   }
  ]
 }

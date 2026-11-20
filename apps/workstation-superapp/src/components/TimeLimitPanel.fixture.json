@@ -9,6 +9,18 @@
      "name": "an unfair dismissal claim to an employment tribunal",
      "act": "Employment Rights Act 1996",
      "section": "111",
+     "part": "section",
+     "nations": [
+      "England",
+      "Wales",
+      "Scotland"
+     ],
+     "change": {
+      "on": "2026-10-01",
+      "by": "Schedule 12 to the Employment Rights Act 2025, in force on 1 October 2026 by regulation 3 of S.I. 2026/954",
+      "earlier_limit_kept": "by regulation 4 of S.I. 2026/954 the change does not apply where the relevant date is before 1 October 2026",
+      "page": "https://www.legislation.gov.uk/uksi/2026/954/regulation/4"
+     },
      "event": "the effective date of termination",
      "relevant_date": "the effective date of termination (S.I. 2026/954, the Schedule's first table)",
      "periods": [
@@ -31,6 +43,18 @@
      "name": "a discrimination claim about work to an employment tribunal",
      "act": "Equality Act 2010",
      "section": "123",
+     "part": "section",
+     "nations": [
+      "England",
+      "Wales",
+      "Scotland"
+     ],
+     "change": {
+      "on": "2026-10-01",
+      "by": "Schedule 12 to the Employment Rights Act 2025, in force on 1 October 2026 by regulation 3 of S.I. 2026/954",
+      "earlier_limit_kept": "by regulation 4 of S.I. 2026/954 the change does not apply where the relevant date is before 1 October 2026",
+      "page": "https://www.legislation.gov.uk/uksi/2026/954/regulation/4"
+     },
      "event": "the date of the act the complaint is about",
      "relevant_date": "the date of the act, the end of conduct extending over a period, or the date a failure was decided on (S.I. 2026/954, the Schedule's first table)",
      "periods": [
@@ -45,6 +69,71 @@
        "months": 6,
        "words": "6 months starting with the date of the act to which the complaint relates",
        "read_from": "the provision as it stands now"
+      }
+     ]
+    },
+    {
+     "id": "breach_of_contract_england_wales",
+     "name": "a breach of contract claim to an employment tribunal, in England or Wales",
+     "act": "Employment Tribunals Extension of Jurisdiction (England and Wales) Order 1994",
+     "section": "7",
+     "part": "article",
+     "nations": [
+      "England",
+      "Wales"
+     ],
+     "change": {
+      "on": "2026-10-01",
+      "by": "article 2 of the Employment Tribunals Extension of Jurisdiction (England and Wales) (Amendment) Order 2026 (S.I. 2026/759), in force on 1 October 2026 by its article 1(2)",
+      "earlier_limit_kept": "by article 3 of S.I. 2026/759 the change applies only where the effective date of termination, or with none the last day worked, is on or after 1 October 2026",
+      "page": "https://www.legislation.gov.uk/uksi/2026/759/article/3/made"
+     },
+     "event": "the effective date of termination of the contract",
+     "relevant_date": "the effective date of termination of the contract giving rise to the claim, or with none the last day the employee worked (S.I. 2026/759, article 3)",
+     "periods": [
+      {
+       "applies_to": "a relevant date before 1 October 2026",
+       "months": 3,
+       "words": "three months beginning with the effective date of termination of the contract giving rise to the claim",
+       "read_from": "the provision as it stood on 2026-09-30"
+      },
+      {
+       "applies_to": "a relevant date on or after 1 October 2026",
+       "months": 6,
+       "words": "six months beginning with the effective date of termination of the contract giving rise to the claim",
+       "read_from": "the provision as it stands now"
+      }
+     ]
+    },
+    {
+     "id": "breach_of_contract_scotland",
+     "name": "a breach of contract claim to an employment tribunal, in Scotland",
+     "act": "Employment Tribunals Extension of Jurisdiction (Scotland) Order 1994",
+     "section": "7",
+     "part": "article",
+     "nations": [
+      "Scotland"
+     ],
+     "change": {
+      "on": "2026-11-09",
+      "by": "article 2(2) of the Employment Tribunals Extension of Jurisdiction (Amendment) (Scotland) Order 2026 (S.S.I. 2026/327), in force on 9 November 2026 by its article 1",
+      "earlier_limit_kept": "by article 3(1) of S.S.I. 2026/327 the change applies only where the effective date of termination, or with none the last day worked, is on or after 9 November 2026",
+      "page": "https://www.legislation.gov.uk/ssi/2026/327/article/3/made"
+     },
+     "event": "the effective date of termination of the contract",
+     "relevant_date": "the effective date of termination of the contract giving rise to the claim, or with none the last day the employee worked (S.S.I. 2026/327, article 3)",
+     "periods": [
+      {
+       "applies_to": "a relevant date before 9 November 2026",
+       "months": 3,
+       "words": "three months beginning with the effective date of termination of the contract giving rise to the claim",
+       "read_from": "the provision as it stood on 2026-11-08"
+      },
+      {
+       "applies_to": "a relevant date on or after 9 November 2026",
+       "months": 6,
+       "words": "six months beginning with the effective date of termination of the contract giving rise to the claim",
+       "read_from": "the provision as it stands now, with the change its publisher lists as not yet written into it"
       }
      ]
     }
@@ -69,7 +158,13 @@
    "rule": "unfair_dismissal",
    "name": "an unfair dismissal claim to an employment tribunal",
    "act": "Employment Rights Act 1996",
+   "part": "section",
    "section": "111",
+   "nations": [
+    "England",
+    "Wales",
+    "Scotland"
+   ],
    "words": "six months beginning with the effective date of termination",
    "months": 6,
    "event": "the effective date of termination",
@@ -121,7 +216,13 @@
    "rule": "unfair_dismissal",
    "name": "an unfair dismissal claim to an employment tribunal",
    "act": "Employment Rights Act 1996",
+   "part": "section",
    "section": "111",
+   "nations": [
+    "England",
+    "Wales",
+    "Scotland"
+   ],
    "words": "six months beginning with the effective date of termination",
    "months": 6,
    "event": "the effective date of termination",

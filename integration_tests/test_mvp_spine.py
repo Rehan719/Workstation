@@ -93373,10 +93373,12 @@ def test_w1143_no_document_a_round_wrote_gives_the_owner_a_pronoun_the_owner_has
     pronoun, so each sentence now says "the Owner", or they, them and their where the Owner is named just before.
     W1120's notes also said the rulings of 2026-11-19 accepted recommendations they called the Owner's own; they were
     the recommendations put to the Owner that day, and the notes now say so. Held here:
-    - no tracked text file holds he, his, him or himself, apart from five uses that are not about a person the
+    - no tracked text file holds he, his, him or himself, apart from six uses that are not about a person the
       documents describe, each named with the file it is in, and each still there (an entry for a use that has gone
       fails, so the list cannot outlive what it excuses): a verse of the Quran quoted in a register row, the horizon
-      guardrails' crisis-language patterns and the two blind files that copy them, and the language code of Hebrew;
+      guardrails' crisis-language patterns and the two blind files that copy them, the language code of Hebrew,
+      and (W1160) the publisher's own description of the Employment Tribunals Extension of Jurisdiction (Scotland)
+      Order 1994, in the words of 1994, which the statute reader's fixture keeps word for word;
     - left out of the scan, as test_w1135 leaves them: the archive, the fidelity runs (never opened), the venv, the
       Owner's .claude settings and the pinned ledger editions; and also the source texts of the knowledge folders,
       the Owner's own inputs, and this spine, whose variables are named he, hers and his and whose crisis-language
@@ -93398,6 +93400,11 @@ def test_w1143_no_document_a_round_wrote_gives_the_owner_a_pronoun_the_owner_has
                                             r"|his\\s+|her\\s+|their\\s+)", "'took his own life'"],
         "scripts/blinds_p212_routes.json": [r"|his\\s+|her\\s+|their\\s+)"],
         "apps/workstation-superapp/src/lib/i18n.tsx": ["'fa', 'he']"],
+        #  W1160 - the publisher's data file for article 7 of the Scotland Order 1994, kept word for word: its
+        #  description of the Order, as the publisher gives it
+        "integration_tests/fixtures/statute_order_article_unapplied.xml": [
+            "breach of his contract of employment", "the termination of his employment",
+            "claimed against him under the Order"],
     }
     out = subprocess.run(["git", "ls-files", "-z"], cwd=root, capture_output=True, check=True).stdout
     files = [f for f in out.decode("utf-8").split("\0") if f]
@@ -94304,8 +94311,8 @@ def test_w1157_p511_the_tribunal_limits_either_side_of_1_october_2026_are_dated_
     root = pathlib.Path(__file__).resolve().parents[1]
     read_provision = _st.provision
 
-    #  1. the periods, as data
-    for rid, rule in _tl.RULES.items():
+    #  1. the periods, as data (W1160: of the two rules this guard built; the breach of contract rules are W1160's)
+    for rid, rule in ((k, _tl.RULES[k]) for k in ("unfair_dismissal", "discrimination_at_work")):
         ps = rule["periods"]
         assert [p.get("until") for p in ps] == ["2026-09-30", None] and [p.get("from") for p in ps] == [None, "2026-10-01"], rid
         assert [p["months"] for p in ps] == [3, 6] and ps[0]["version"] == "2026-09-30" and ps[1]["version"] is None, rid
@@ -94354,7 +94361,7 @@ def test_w1157_p511_the_tribunal_limits_either_side_of_1_october_2026_are_dated_
     assert month_end["computed"] is False and "6 months later does not exist" in month_end["basis"], month_end
     listed = client.get("/api/v1/law/time-limit").json()
     assert listed["change"]["page"] == "https://www.legislation.gov.uk/uksi/2026/954/regulation/4"
-    assert [[p["months"] for p in r["periods"]] for r in listed["rules"]] == [[3, 6], [3, 6]], listed["rules"]
+    assert [[p["months"] for p in r["periods"]] for r in listed["rules"]][:2] == [[3, 6], [3, 6]], listed["rules"]
 
     #  3. the earlier words alone in the text, as the W875 rules met the publisher's change: nothing is computed
     async def _three_months_everywhere(kind, year, number, section, version=None):
@@ -94625,3 +94632,188 @@ def test_w1159_the_suite_never_removes_the_live_repositorys_worktrees_and_cleanu
     rows = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
             if str(r.get("source", "")).startswith("W1159 ")]
     assert len(rows) == 1 and (rows[0]["status"], rows[0]["closed_by"], rows[0]["slot"]) == ("done", "W1159", "P5.10"), rows
+
+
+def test_w1160_fu1296_breach_of_contract_claims_are_dated_rules_for_each_nation_the_scottish_read_with_its_listed_change(client, monkeypatch):
+    """FU-1296 (W1160), P5.11 clause 2: the employment tribunal limits either side of 1 October 2026, "with the Scottish
+    exception". A breach of contract claim to an employment tribunal is brought under an Extension of Jurisdiction
+    Order, one for England and Wales and one for Scotland, each by its article 7, and each was changed from three
+    months to six on its own date by its own instrument: S.I. 2026/759 from 1 October 2026 and S.S.I. 2026/327 from 9
+    November 2026, each applying only where the relevant date is on or after its date (each instrument's article 3).
+    The publisher has written the first into its text and lists the second as not yet written in. Read at
+    www.legislation.gov.uk on 2026-11-20. Held:
+    - each rule says its nations and its own change; the two statutory rules are Great Britain's, with W1157's change;
+    - for each nation, the day before its change, the day of it and the day after, each period's address and version,
+      and the limit on the other side said with that nation's own date; one date between the changes, two limits;
+    - the Scottish later period is worked out only from the earlier words together with the change its publisher
+      lists, and says so; with the change not listed, listed for another instrument, or the earlier words gone,
+      nothing is worked out; once the publisher writes the change in, it is read directly;
+    - a leap day, and a month end that does not exist;
+    - the statute reader addresses an article, refuses a part it does not know, reads the changes listed against an
+      article in the publisher's own data file for the Scotland Order's article 7, and asks for a dated article;
+    - the rules the route lists; the four instruments as rows of the register of sources; the coverage row; FU-1296
+      closed by this round."""
+    import asyncio
+    import json
+    import pathlib
+    import httpx
+    import pytest
+    from agentic_core.legal import statute as _st
+    from agentic_core.legal import time_limits as _tl
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read_provision = _st.provision
+
+    #  1. each rule's nations and change
+    R = _tl.RULES
+    assert list(R) == ["unfair_dismissal", "discrimination_at_work", "breach_of_contract_england_wales",
+                       "breach_of_contract_scotland"], list(R)
+    assert R["unfair_dismissal"]["nations"] == R["discrimination_at_work"]["nations"] == ["England", "Wales", "Scotland"]
+    assert R["unfair_dismissal"]["change"] is _tl.CHANGE and R["discrimination_at_work"]["change"] is _tl.CHANGE
+    ew, sc = R["breach_of_contract_england_wales"], R["breach_of_contract_scotland"]
+    assert (ew["nations"], sc["nations"]) == (["England", "Wales"], ["Scotland"])
+    assert (ew["change"]["on"], sc["change"]["on"]) == ("2026-10-01", "2026-11-09")
+    assert "S.I. 2026/759" in ew["change"]["by"] and "article 3 of S.I. 2026/759" in ew["change"]["earlier_limit_kept"]
+    assert "S.S.I. 2026/327" in sc["change"]["by"] and "article 3(1) of S.S.I. 2026/327" in sc["change"]["earlier_limit_kept"]
+    three = "three months beginning with the effective date of termination of the contract giving rise to the claim"
+    six = "six months beginning with the effective date of termination of the contract giving rise to the claim"
+    for rule, num, until, frm in ((ew, 1623, "2026-09-30", "2026-10-01"), (sc, 1624, "2026-11-08", "2026-11-09")):
+        p = rule["provision"]
+        assert (p["kind"], p["year"], p["number"], p["part"], p["section"]) == ("uksi", 1994, num, "article", "7"), p
+        ps = rule["periods"]
+        assert [x.get("until") for x in ps] == [until, None] and [x.get("from") for x in ps] == [None, frm], ps
+        assert [x["months"] for x in ps] == [3, 6] and [x["version"] for x in ps] == [until, None], ps
+        assert [x["words"] for x in ps] == [three, six], ps
+    assert "unapplied" not in ew["periods"][1]
+    assert sc["periods"][1]["unapplied"] == {"class": "ScottishStatutoryInstrument", "year": "2026", "number": "327",
+                                             "earlier_words": three}
+
+    #  2. a publisher stood in, by Order and version, listing the Scottish change against article 7 as the real one does
+    asked = []
+    listed_327 = [{"Type": "word substituted", "AffectedProvisions": "art. 7(a)",
+                   "AffectingClass": "ScottishStatutoryInstrument", "AffectingYear": "2026", "AffectingNumber": "327"}]
+    texts = {(1623, "2026-09-30"): (three, []), (1623, None): (six, []),
+             (1624, "2026-11-08"): (three, listed_327), (1624, None): (three, listed_327)}
+
+    def publisher(given):
+        async def _provision(kind, year, number, section, version=None, part="section"):
+            asked.append((int(number), part, str(section), version))
+            text, listed = given[(int(number), version)]
+            return {"parts": [{"level": 1, "number": "(7)", "text": f"(a) within the period of {text}, or"}],
+                    "changes_not_yet_applied_to_this_provision": listed,
+                    "address": (f"https://www.legislation.gov.uk/{kind}/{year}/{number}/{part}/{section}"
+                                + (f"/{version}" if version else ""))}
+        return _provision
+    monkeypatch.setattr(_st, "provision", publisher(texts))
+
+    def work(rule, date):
+        r = client.post("/api/v1/law/time-limit", json={"rule": rule, "event_date": date})
+        assert r.status_code == 200, r.text[:200]
+        return r.json()
+    on = {"breach_of_contract_england_wales": "1 October 2026", "breach_of_contract_scotland": "9 November 2026"}
+    for rule, date, months, last, num, version in (
+            ("breach_of_contract_england_wales", "2026-09-30", 3, "2026-12-29", 1623, "2026-09-30"),
+            ("breach_of_contract_england_wales", "2026-10-01", 6, "2027-03-31", 1623, None),
+            ("breach_of_contract_england_wales", "2026-10-02", 6, "2027-04-01", 1623, None),
+            ("breach_of_contract_scotland", "2026-11-08", 3, "2027-02-07", 1624, "2026-11-08"),
+            ("breach_of_contract_scotland", "2026-11-09", 6, "2027-05-08", 1624, None),
+            ("breach_of_contract_scotland", "2026-11-10", 6, "2027-05-09", 1624, None)):
+        asked.clear()
+        got = work(rule, date)
+        assert (got["months"], got["last_day"], got["computed"]) == (months, last, True), (rule, date, got)
+        assert asked == [(num, "article", "7", version)], (rule, date, asked)
+        assert got["provision_address"] == (f"https://www.legislation.gov.uk/uksi/1994/{num}/article/7"
+                                            + (f"/{version}" if version else "")), got["provision_address"]
+        assert got["nations"] == R[rule]["nations"] and got["change"]["on"] == R[rule]["change"]["on"], got
+        other = (f"For a relevant date on or after {on[rule]} the limit is 6 months." if months == 3 else
+                 f"For a relevant date before {on[rule]} the limit is 3 months.")
+        assert other in got["basis"] and R[rule]["change"]["earlier_limit_kept"] in got["basis"], got["basis"]
+        assert got["basis"].startswith("the primary limit the Order sets, "), got["basis"]
+    #  the Scottish exception: between the two changes, one date and two nations give two limits
+    mid_ew, mid_sc = work("breach_of_contract_england_wales", "2026-10-15"), work("breach_of_contract_scotland", "2026-10-15")
+    assert (mid_ew["months"], mid_ew["last_day"]) == (6, "2027-04-14"), mid_ew
+    assert (mid_sc["months"], mid_sc["last_day"]) == (3, "2027-01-14"), mid_sc
+
+    #  3. the Scottish later period: from the earlier words with the change its publisher lists, and nothing less
+    later = work("breach_of_contract_scotland", "2026-11-10")
+    assert later["read_with_unapplied_change"] is True, later
+    assert f"which still reads '{three}' and lists the change below as not yet written into it" in later["basis"]
+    assert "that change puts six for three" in later["basis"], later["basis"]
+    assert "read_with_unapplied_change" not in work("breach_of_contract_england_wales", "2026-10-02")
+    for label, given in (("the change not listed", {(1624, None): (three, [])}),
+                         ("listed for another instrument", {(1624, None): (three, [dict(listed_327[0], AffectingNumber="328")])}),
+                         ("listed as a UK instrument's", {(1624, None): (three, [dict(listed_327[0], AffectingClass="UnitedKingdomStatutoryInstrument")])}),
+                         ("the earlier words gone", {(1624, None): ("nine" + three[5:], listed_327)})):
+        monkeypatch.setattr(_st, "provision", publisher({**texts, **given}))
+        got = work("breach_of_contract_scotland", "2026-11-10")
+        assert got["computed"] is False and "does not contain the words" in got["basis"], (label, got)
+    monkeypatch.setattr(_st, "provision", publisher({**texts, (1624, None): (six, [])}))
+    direct = work("breach_of_contract_scotland", "2026-11-10")
+    assert (direct["computed"], direct["last_day"]) == (True, "2027-05-09") and "read_with_unapplied_change" not in direct
+
+    #  4. a leap day, and a month end that does not exist
+    monkeypatch.setattr(_st, "provision", publisher(texts))
+    assert work("breach_of_contract_scotland", "2028-02-29")["last_day"] == "2028-08-28"
+    gone = work("breach_of_contract_england_wales", "2026-12-31")
+    assert gone["computed"] is False and "6 months later does not exist" in gone["basis"], gone
+
+    #  5. the statute reader: an article, a part it does not know, the changes listed against an article, a dated article
+    assert _st.address("uksi", 1994, 1624, "7", "article") == "https://www.legislation.gov.uk/uksi/1994/1624/article/7"
+    assert _st.address("ukpga", 1996, 18, "111") == "https://www.legislation.gov.uk/ukpga/1996/18/section/111"
+    with pytest.raises(_st.NotAnAddress):
+        _st.address("uksi", 1994, 1624, "7", "schedule")
+    assert _st.touches("7", "art. 7(a)") and _st.touches("7", "arts. 6-8") and not _st.touches("7", "art. 70")
+    assert _st.touches("4", "reg. 4(1)") and _st.touches("111", "s. 111(2)") and not _st.touches("7", "Pt. 2")
+    xml = (root / "integration_tests/fixtures/statute_order_article_unapplied.xml").read_text(encoding="utf-8")
+    parsed = _st.parse(xml, "7")
+    assert parsed["act"] == "The Employment Tribunals Extension of Jurisdiction (Scotland) Order 1994", parsed["act"]
+    assert [(e["AffectedProvisions"], e["AffectingClass"], e["AffectingYear"], e["AffectingNumber"])
+            for e in parsed["changes_not_yet_applied_to_this_provision"]] == [
+        ("art. 7(a)", "ScottishStatutoryInstrument", "2026", "327"),
+        ("art. 7(b)", "ScottishStatutoryInstrument", "2026", "327")], parsed["changes_not_yet_applied_to_this_provision"]
+    assert "2 listed for this provision" in parsed["changes_basis"], parsed["changes_basis"]
+    real = _tl.limit("breach_of_contract_scotland", "2026-11-10", parsed)
+    assert (real["computed"], real["months"], real["last_day"], real.get("read_with_unapplied_change")) == (
+        True, 6, "2027-05-09", True), real["basis"]
+    seen = []
+
+    class _Resp:
+        status_code, text, url = 200, xml, httpx.URL("https://www.legislation.gov.uk/x")
+
+    class _Client:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def get(self, url):
+            seen.append(url)
+            return _Resp()
+    monkeypatch.setattr(_st.httpx, "AsyncClient", _Client)
+    got = asyncio.new_event_loop().run_until_complete(
+        read_provision("uksi", "1994", "1624", "7", version="2026-11-08", part="article"))
+    assert seen == ["https://www.legislation.gov.uk/uksi/1994/1624/article/7/2026-11-08/data.xml"], seen
+    assert got["changes_not_yet_applied_count"] == 2 and got["address"].endswith("/article/7/2026-11-08"), got["address"]
+
+    #  6. the rules the route lists, the register of sources, the coverage row and the row
+    by = {x["id"]: x for x in client.get("/api/v1/law/time-limit").json()["rules"]}
+    s = by["breach_of_contract_scotland"]
+    assert (s["part"], s["nations"], s["change"]["on"]) == ("article", ["Scotland"], "2026-11-09"), s
+    assert s["periods"][1]["read_from"] == ("the provision as it stands now, with the change its publisher lists as "
+                                            "not yet written into it"), s["periods"]
+    assert (by["unfair_dismissal"]["part"], by["unfair_dismissal"]["nations"]) == ("section", ["England", "Wales", "Scotland"])
+    rows = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    for rid, page in (("et-extension-of-jurisdiction-england-wales-1994", "https://www.legislation.gov.uk/uksi/1994/1623/article/7"),
+                      ("et-extension-of-jurisdiction-scotland-1994", "https://www.legislation.gov.uk/uksi/1994/1624/article/7"),
+                      ("si-2026-759", "https://www.legislation.gov.uk/uksi/2026/759/made"),
+                      ("ssi-2026-327", "https://www.legislation.gov.uk/ssi/2026/327/made")):
+        r = rows[rid]
+        assert (r["status"], r["page"], r["read_on"]) == ("current", page, "2026-11-20") and "W1160" in r["read_by"], rid
+    cov = json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))
+    row = next(r for r in cov["rows"] if r["id"] == "law-tribunal-time-limit")
+    assert "9 November 2026 (S.S.I. 2026/327)" in row["today"] and "not among the rules" not in row["today"], row["today"]
+    fu = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    assert (fu["FU-1296"]["status"], fu["FU-1296"]["closed_by"]) == ("done", "W1160"), fu["FU-1296"]

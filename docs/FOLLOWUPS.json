@@ -26345,11 +26345,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.11",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1160",
       "note": "",
       "slot_source": "P5.11 clause 2 names the Scottish exception beside the limits either side of 1 October 2026, and this row is that exception",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1160: breach of contract claims are two rules, for England and Wales and for Scotland, each either side of its own change from three months to six, chosen by the effective date of termination: 1 October 2026 by S.I. 2026/759 and 9 November 2026 by S.S.I. 2026/327, each with its article 3. The publisher has not yet written the Scottish change into its text, which it lists as not yet applied; that rule's later period is read from the earlier words together with the change the publisher lists, and from nothing less. The statute reader reads an Order's article and the changes listed against it. The four instruments are rows of docs/SOURCES.json, read 2026-11-20. test_w1160, with blinds."
     },
     {
       "id": "FU-1297",
