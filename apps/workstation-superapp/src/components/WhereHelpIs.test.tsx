@@ -1,7 +1,7 @@
 // W953 (P5.20 clause 6) — the one page of where help is, rendered against the route's own answer
 // (WhereHelpIs.fixture.json is written from agentic_core/api/where_help.page() by the round that built it, and the
 // suite holds it equal to what GET /api/v1/support/where-help-is returns).
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -63,6 +63,24 @@ describe("WhereHelpIs, rendered against the route's own answer", () => {
     const not = screen.getByTestId('where-help-not');
     expect(Array.from(not.querySelectorAll('li')).map(li => li.textContent)).toEqual(captured.page.this_platform_is_not);
     expect(screen.getByTestId('where-help-basis').textContent).toBe(captured.page.basis);
+  });
+
+  it('the urgent routes come before anything else, each step in the words of its page', async () => {
+    serve({ status: 200, body: captured.page });
+    render(<WhereHelpIs />);
+    const box = await screen.findByTestId('where-help-urgent');
+    expect(box.compareDocumentPosition(screen.getByTestId('where-help-scholar')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const u = captured.page.urgent;
+    const texts = (id: string) => Array.from(box.querySelectorAll(`[data-testid="${id}"]`)).map(e => e.textContent);
+    expect(texts('urgent-situation')).toEqual(u.map(r => r.situation));
+    expect(texts('urgent-step')).toEqual(u.flatMap(r => r.steps));
+    expect(texts('urgent-place')).toEqual(u.flatMap(r => r.places.map(p =>
+      `${p.nation}: ${p.name}${p.number ? `, ${p.number}` : ''} (${p.own_site})`)));
+    expect(texts('urgent-read')).toEqual(u.map(r =>
+      `Read: ${r.sources.map(s => (s.read ? `${s.name}, ${s.checked}` : s.checked)).join('; ')}.`));
+    expect(within(box).getByTestId('urgent-basis').textContent).toBe(captured.page.urgent_basis);
+    expect(within(box).getByRole('link', { name: /^England: Refuge’s National Domestic Abuse Helpline, 0808 2000 247/ })
+      .getAttribute('href')).toBe('https://www.nationaldahelpline.org.uk/');
   });
 
   it('a place whose page was read more than ninety days ago is said as not recently checked', async () => {

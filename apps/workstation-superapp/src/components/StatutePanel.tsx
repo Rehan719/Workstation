@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { apiJson, errorMessage } from '../lib/api';
 import { Place, placeSaid } from '../lib/directory';
+import UrgentRoutes, { UrgentRoute } from './UrgentRoutes';   // W1166 (P5.11 clause 4)
 
 //  W724 (P5.20 clauses 1, 3 and 6) - ONE PROVISION OF AN ACT, WORD FOR WORD, FROM ITS PUBLISHER, and where
 //  regulated and free help is. Nothing here is composed by a model and nothing is fetched until asked for.
@@ -12,7 +13,7 @@ type Provision = {
   publisher: string; address: string; licence: string; fetched_at: string; what_this_is: string;
   fidelity: { checked: boolean; matches: boolean; basis: string };
 };
-type Help = { regulated_and_free_help: Place[]; this_platform_is_not: string[]; to_complain: string; basis: string;
+type Help = { urgent: UrgentRoute[]; regulated_and_free_help: Place[]; this_platform_is_not: string[]; to_complain: string; basis: string;
   //  W874 (FU-1082, P5.20 clause 7) - the five expectations, as the server assesses them
   expectations?: { rows: { id: string; expectation: string; state: string; how: string }[]; basis: string; source_basis: string } };
 
@@ -95,6 +96,8 @@ const StatutePanel: React.FC = () => {
       {helpRefusal && <p className="text-[11px] text-amber-300/90">{helpRefusal}</p>}
       {help && (
         <div data-testid="law-help" className="p-3 rounded-xl bg-slate-950 border border-slate-900 text-[11px] text-slate-300 space-y-2">
+          {/* W1166 (P5.11 clause 4) - the urgent routes, before anything else */}
+          <div data-testid="law-help-urgent"><UrgentRoutes routes={help.urgent} /></div>
           <ul className="space-y-1">
             {help.regulated_and_free_help.map(h => (
               <li key={h.link}><span><a href={h.link} target="_blank" rel="noreferrer" className="underline text-sky-400">{h.name}</a> — {h.for_what}</span>

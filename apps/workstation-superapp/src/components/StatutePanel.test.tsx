@@ -79,6 +79,11 @@ describe('StatutePanel, the Act itself and where help from a person is, rendered
     expect(screen.getAllByTestId('law-expectation').map(e => e.textContent)).toEqual(
       h.expectations.rows.map(e => `${e.expectation}: ${e.state}. ${e.how}`));
     const help = screen.getByTestId('law-help');
+    //  W1166 - the urgent routes come first in the help, one for each the answer carries
+    const urgent = within(help).getByTestId('law-help-urgent');
+    expect(urgent.querySelectorAll('[data-testid="urgent-route"]').length).toBe(h.urgent.length);
+    expect(urgent.compareDocumentPosition(within(help).getByRole('link', { name: h.regulated_and_free_help[0].name }))
+      & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     for (const p of h.regulated_and_free_help) {
       const link = within(help).getByRole('link', { name: p.name });
       expect(link.getAttribute('href')).toBe(p.link);

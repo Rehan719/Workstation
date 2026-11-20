@@ -26547,11 +26547,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.11",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1166",
       "note": "",
       "slot_source": "P5.11 clause 4 is the urgent routes, each shown before anything else",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1166: one component (components/UrgentRoutes.tsx) draws the urgent routes: each situation, its steps in the words of its GOV.UK page, the places that page names for each nation with whether each one's own site was opened, and the page with the day it was read. The Law page reads GET /api/v1/law/urgent and draws it before its heading, a failed read said in its place with the line to call 999 in immediate danger; the support page, the statute panel's help and every research answer draw the list their answer carries before anything else. Rendered tests read each; test_w1166 holds the order."
     }
   ],
   "routes": [

@@ -83581,7 +83581,8 @@ def test_w996_fu399_the_law_hub_says_each_refusals_reason_and_counts_the_forms_f
     #  both reads through apiJson, each failure said with the server's reason
     assert "apiJson('/api/v1/law/templates')" in code and "apiJson('/api/v1/law/tools')" in code
     assert "fetch('/api/v1/law/" not in code and "throw new Error(`HTTP ${r.status}`)" not in code
-    assert code.count("could not be read (${readFailure(e)})") == 2
+    #  W1166 - the urgent routes are the third read whose failure the page says
+    assert code.count("could not be read (${readFailure(e)})") == 3
     assert "const readFailure = (e: unknown) => (e instanceof ApiError || e instanceof TypeError ? errorMessage(e)" in code
     #  the count is the server's list's
     assert "The three forms further down need a model." not in code
@@ -95506,9 +95507,89 @@ def test_w1165_p511_the_urgent_routes_come_before_anything_else_and_no_screen_re
     cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
     row = cov["law-urgent-routes"]
     assert (row["state"], row["route"]) == ("route_only", "gov-uk-domestic-abuse-help") and row["route"] in reg, row
-    assert row["today"].startswith("the three situations are served first") and row["today"].endswith("(W1165)"), row
+    assert row["today"].startswith("the three situations are served first") and "(W1165)" in row["today"], row
     rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
     done = [r for r in rows if r.get("closed_by") == "W1165"]
     assert len(done) == 1 and (done[0]["status"], done[0]["slot"], done[0]["because"]) == ("done", "P5.11", "built"), done
     left = [r for r in rows if r.get("title", "").startswith("The urgent routes are served first but no page shows them")]
-    assert len(left) == 1 and (left[0]["status"], left[0]["slot"]) == ("open", "P5.11"), left
+    #  W1166 drew the routes on the pages and closed it
+    assert len(left) == 1 and left[0]["slot"] == "P5.11", left
+
+
+def test_w1166_fu1808_the_urgent_routes_are_drawn_before_anything_else_wherever_help_is_said(client, monkeypatch):
+    """P5.11 clause 4 (W1166, FU-1808): "each shows its route before anything else". W1165 served the three urgent
+    situations first on GET /api/v1/law/urgent, the one page of where help is and every research answer; no page drew
+    them. Held here:
+    1. one component draws them: each situation, its steps, the places its page names (whether each one's own site was
+       opened) and the page with the day it was read;
+    2. the Law page reads the list and draws it before its heading, and a failed read is said in its place with the
+       line to call 999 in immediate danger; a research answer's list is drawn before its text and before the people
+       it is routed to;
+    3. the support page and the statute panel's help draw the list their answer carries before anything else;
+    4. the Law page's captured list is the route's own, and the rendered tests read each page's order and words;
+    5. the coverage row and the row."""
+    import datetime as _dt
+    import json
+    from pathlib import Path
+    from agentic_core.legal import time_limits as _tl
+    root = Path(__file__).resolve().parents[1]
+    src = root / "apps" / "workstation-superapp" / "src"
+    read = lambda rel: (src / rel).read_text(encoding="utf-8")       # noqa: E731
+
+    #  1. the one component
+    comp = read("components/UrgentRoutes.tsx")
+    for line in ("If it is urgent", 'data-testid="urgent-route"', 'data-testid="urgent-situation"',
+                 'data-testid="urgent-step"', 'data-testid="urgent-place"', 'data-testid="urgent-read"',
+                 "Read: {r.sources.map(urgentSourceSaid).join('; ')}.",
+                 "export const urgentPlaceSaid = (p: UrgentPlace) =>\n  `${p.nation}: ${p.name}${p.number ? `, ${p.number}` : ''} (${p.own_site})`;"):
+        assert line in comp, ("the component no longer draws this", line)
+
+    #  2. the Law page: its own read, first; the failed read said with the line to call 999; a research answer's list first
+    law = read("pages/domains/LawHub.tsx")
+    assert "apiJson('/api/v1/law/urgent')" in law
+    assert law.index('data-testid="law-urgent"') < law.index("      <header ") < law.index('data-testid="law-what-runs-here"')
+    assert law.index('data-testid="law-urgent-note"') < law.index("      <header ")
+    assert "The urgent routes could not be read (${readFailure(e)}). If you are in immediate danger, call 999." in law
+    assert law.index('data-testid="law-research-urgent"') < law.index('data-testid="law-routed-to-people"')
+    tool = read("components/DomainTool.tsx")
+    assert tool.index("{renderExtra && renderExtra(result)}") < tool.index("            {displayText}\n"), \
+        "a research answer's text is drawn before what its page puts first"
+
+    #  3. the support page and the statute panel's help: the list their answer carries, first
+    page = read("components/WhereHelpIs.tsx")
+    assert page.index('<div data-testid="where-help-urgent"><UrgentRoutes routes={help.urgent} basis={help.urgent_basis} /></div>') \
+        < page.index('data-testid="where-help-scholar"')
+    panel = read("components/StatutePanel.tsx")
+    assert panel.index('<div data-testid="law-help-urgent"><UrgentRoutes routes={help.urgent} /></div>') \
+        < panel.index("help.regulated_and_free_help.map(")
+    #  each box a rendered test reads by its test id carries that id in its page's own source (test_w909's rule)
+    assert 'testid?: string' not in comp and 'data-testid="urgent-routes"' in comp
+    for rel, tid in (("components/WhereHelpIs.tsx", "where-help-urgent"), ("components/StatutePanel.tsx", "law-help-urgent"),
+                     ("pages/domains/LawHub.tsx", "law-urgent"), ("pages/domains/LawHub.tsx", "law-research-urgent")):
+        assert f'data-testid="{tid}"' in read(rel), (rel, tid)
+
+    #  4. the Law page's captured list is the route's own; the rendered tests read the order and the words
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2026, 11, 20))
+    hub = json.loads(read("pages/domains/LawHub.fixture.json"))
+    assert hub["urgent"] == client.get("/api/v1/law/urgent").json(), "the Law page's captured list is not the route's"
+    for rel, lines in (
+            ("components/WhereHelpIs.test.tsx",
+             ("it('the urgent routes come before anything else, each step in the words of its page'",
+              "expect(box.compareDocumentPosition(screen.getByTestId('where-help-scholar')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();")),
+            ("components/StatutePanel.test.tsx",
+             ("const urgent = within(help).getByTestId('law-help-urgent');",)),
+            ("pages/domains/LawHub.test.tsx",
+             ("it('the urgent routes come before anything else on the page, in the route\\'s own words'",
+              "it('a list of urgent routes that could not be read is said in its place, with the line to call 999'",
+              "'/api/v1/law/urgent': ok(captured.urgent),"))):
+        spec = read(rel)
+        for line in lines:
+            assert line in spec, (rel, "the rendered test no longer reads this", line)
+
+    #  5. the coverage row and the row
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    assert cov["law-urgent-routes"]["state"] == "route_only" and cov["law-urgent-routes"]["today"].endswith(
+        "the support page, the statute panel's help and every research answer draw them before anything else (W1166)")
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    done = [r for r in rows if r.get("title", "").startswith("The urgent routes are served first but no page shows them")]
+    assert len(done) == 1 and (done[0]["status"], done[0]["closed_by"], done[0]["because"]) == ("done", "W1166", "built"), done

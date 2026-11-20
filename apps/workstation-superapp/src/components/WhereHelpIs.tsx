@@ -5,8 +5,11 @@
 import React, { useEffect, useState } from 'react';
 import { apiJson, errorMessage } from '../lib/api';
 import { Place, placeSaid } from '../lib/directory';
+import UrgentRoutes, { UrgentRoute } from './UrgentRoutes';   // W1166 (P5.11 clause 4)
 
 export interface WhereHelp {
+  urgent: UrgentRoute[];
+  urgent_basis: string;
   a_qualified_scholar: { heading: string; steps: string[]; names_none_because: string; this_platform: string };
   regulated_and_free_help: Place[];
   this_platform_is_not: string[];
@@ -45,6 +48,8 @@ export const WhereHelpIs: React.FC = () => {
       {!readError && !help && <p className="text-slate-500 font-bold animate-pulse">Reading…</p>}
       {help && (
         <>
+          {/* W1166 (P5.11 clause 4) - the urgent routes, before anything else */}
+          <div data-testid="where-help-urgent"><UrgentRoutes routes={help.urgent} basis={help.urgent_basis} /></div>
           <div data-testid="where-help-scholar" className="space-y-2">
             <h3 className={h3}>{help.a_qualified_scholar.heading}</h3>
             <ol className="list-decimal ml-5 space-y-1 text-sm text-slate-300">

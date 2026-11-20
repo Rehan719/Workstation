@@ -25,6 +25,7 @@ function serve(over: Record<string, Reply> = {}) {
   const base: Record<string, Reply> = {
     [TEMPLATES]: ok(captured.templates), [TOOLS]: ok(captured.tools),
     '/api/v1/native-ai/status': ok(captured.serving), '/api/v1/law/help': ok(captured.help),
+    '/api/v1/law/urgent': ok(captured.urgent),   // W1166
   };
   vi.stubGlobal('fetch', vi.fn(async (url: string) => {
     const r = (url in over ? over[url] : base[url]) ?? refused(404, `not served in this test: ${url}`);
@@ -48,6 +49,29 @@ function mount() {
 describe('LawHub, rendered against the Law routes\' own answers', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it('the urgent routes come before anything else on the page, in the route\'s own words', async () => {
+    serve();
+    mount();
+    const box = await screen.findByTestId('law-urgent');
+    expect(box.compareDocumentPosition(screen.getByRole('heading', { level: 1 })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(Array.from(box.querySelectorAll('[data-testid="urgent-situation"]')).map(e => e.textContent))
+      .toEqual(captured.urgent.routes.map(r => r.situation));
+    expect(Array.from(box.querySelectorAll('[data-testid="urgent-step"]')).map(e => e.textContent))
+      .toEqual(captured.urgent.routes.flatMap(r => r.steps));
+    expect(box.querySelector('[data-testid="urgent-basis"]')!.textContent).toBe(captured.urgent.basis);
+  });
+
+  it('a list of urgent routes that could not be read is said in its place, with the line to call 999', async () => {
+    serve({ '/api/v1/law/urgent': refused(503, 'the register of sources could not be read') });
+    mount();
+    const note = await screen.findByTestId('law-urgent-note');
+    expect(note.textContent).toBe('The urgent routes could not be read (Failed (HTTP 503): the register of sources '
+      + 'could not be read). '
+      + 'If you are in immediate danger, call 999.');
+    expect(screen.queryByTestId('law-urgent')).toBeNull();
+    expect(note.compareDocumentPosition(screen.getByRole('heading', { level: 1 })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('what runs here is the server\'s, and the count of forms that need a model is its list\'s', async () => {
