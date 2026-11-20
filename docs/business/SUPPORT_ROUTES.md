@@ -33,7 +33,8 @@ business is known to qualify for.
 
 ## The organisation whose short course the Owner attended
 
-- NOT CHECKED: the organisation is not named anywhere in this repository, which keeps the Owner's own details out of it, so its page was not read. The Owner names it when sending the message below. [observed]
+- The Owner's commercialisation prompt of 2026-10-11 names one organisation of this kind, IN4 Group, recorded in `docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md` (section 17.1, row 12) as running founder and skills programmes, from press coverage only. This document takes it to be the organisation whose short course the Owner attended; the Owner confirms that before sending anything. [observed]
+- NOT CHECKED: its own site was refused by this environment's network on 2026-11-20 (403 at the proxy), so what it offers now is not read here. [observed]
 
 ## Draft messages
 

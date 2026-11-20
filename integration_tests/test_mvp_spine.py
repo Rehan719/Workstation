@@ -93695,3 +93695,24 @@ def test_w1151_fu809_each_public_draft_is_headed_and_every_claim_names_a_test_th
     assert len(drafts) >= 2 and all("DRAFT, NOT SENT" in l for l in drafts), drafts
     assert "No price is set" in flat
     assert reg["FU-809"]["slot"] == "P5.7"
+
+
+def test_w1152_the_support_routes_name_the_courses_organisation_as_the_tree_records_it():
+    """A correction to W1150 (FU-810). docs/business/SUPPORT_ROUTES.md said the organisation whose short course the Owner
+    attended is not named anywhere in the repository; the assessment of the Owner's commercialisation prompt of
+    2026-10-11 names it, IN4 Group (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md section 17.1, row 12). Held here: the
+    document names it as recorded there, says the Owner confirms it before sending, keeps what it offers NOT CHECKED,
+    and no longer says the tree does not name it; FU-810's close note says what was wrong with it."""
+    import json
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    flat = " ".join((root / "docs/business/SUPPORT_ROUTES.md").read_text(encoding="utf-8").split())
+    assess = (root / "docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md").read_text(encoding="utf-8")
+    assert "| 12 | IN4 Group exists and runs founder and skills programmes |" in assess
+    assert "not named anywhere in this repository" not in flat, "the document says again that the tree does not name it"
+    assert ("names one organisation of this kind, IN4 Group, recorded in `docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md` "
+            "(section 17.1, row 12)") in flat
+    assert "the Owner confirms that before sending anything" in flat
+    assert "NOT CHECKED: its own site was refused by this environment's network on 2026-11-20" in flat
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    assert "CORRECTED in W1152: the tree does name that organisation - IN4 Group" in reg["FU-810"]["close_note"]
