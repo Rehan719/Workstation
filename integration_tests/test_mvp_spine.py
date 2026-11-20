@@ -92927,7 +92927,7 @@ def test_w1135_no_tracked_document_names_the_owners_windows_home_folder_by_its_p
     import subprocess
     root = pathlib.Path(__file__).resolve().parents[1]
     home = re.compile(r"(?i)\b[a-z]:[\\/]+users[\\/]+[^\\/\s`'\"<>()|,;:*?]+")
-    left = ("_archive/", "docs/fidelity_runs/", "venv/", ".claude/", "docs/VISION_FIDELITY_LEDGER")
+    left = ("_archive/", "docs/fidelity_runs/", "venv/", "docs/VISION_FIDELITY_LEDGER")   # .claude/ read from W1176
     out = subprocess.run(["git", "ls-files", "-z"], cwd=root, capture_output=True, check=True).stdout
     files = [f for f in out.decode("utf-8").split("\0") if f]
     assert len(files) > 1000, ("git listed too few tracked files to mean anything", len(files))
@@ -96379,3 +96379,55 @@ def test_w1175_fu1286_the_audit_record_the_owner_named_names_no_place_on_a_machi
             "2026-11-20, on your go-ahead naming it (W1175).") in notes, "the local notes do not say the record was edited"
     for stale in ("opened once a go-ahead names it", "named no file", "not opened without your go-ahead"):
         assert stale not in plan and stale not in notes, ("still said to wait on a go-ahead", stale)
+
+
+def test_w1176_fu1286_the_project_settings_name_no_windows_home_folder_and_the_guard_reads_them():
+    """FU-1286, place 4 (W1176). Three one-off command permissions in .claude/settings.json named the Owner's Windows
+    home folder by its path; the Owner accepted their removal on 2026-11-20 and asked that evening whether the cloud
+    session could do it. Held here:
+    1. no file under .claude/ names a Windows home folder by its path, and the settings still parse with their
+       permissions in place;
+    2. W1135's guard no longer leaves .claude/ out, so an entry naming the folder fails it again;
+    3. FU-1286 stays open for venv/, which only the Owner's machine can untrack without a pull deleting its files; its
+       fourth place says it is done, each of the five still carries its accepted recommendation, and the plan's list
+       of what is with the Owner and the local notes say the permissions were removed, while step 5 still asks for
+       venv/."""
+    import json
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    home = re.compile(r"(?i)\b[a-z]:[\\/]+users[\\/]+[^\\/\s`'\"<>()|,;:*?]+")
+
+    #  1. the settings
+    for f in sorted((root / ".claude").glob("*.json")):
+        text = f.read_text(encoding="utf-8")
+        assert not home.search(text), (f.name, "names a Windows home folder by its path")
+    cfg = json.loads((root / ".claude/settings.json").read_text(encoding="utf-8"))
+    allow = cfg["permissions"]["allow"]
+    assert isinstance(allow, list) and allow and all(isinstance(e, str) for e in allow), "the permissions are not whole"
+    assert not [e for e in allow if "WindowsApps" in e or "venv/Scripts/python.exe" in e], \
+        "a one-off permission for a Windows Python is back"
+
+    #  2. W1135's guard reads .claude/
+    spine = Path(__file__).read_text(encoding="utf-8")
+    body = spine.split("def test_w1135_no_tracked_document_names_the_owners_windows_home_folder_by_its_path", 1)[1]
+    body = body.split("\ndef test_", 1)[0]
+    left = re.search(r"^    left = \(([^)]*)\)", body, re.M)
+    assert left and '".claude/"' not in left.group(1), "W1135's guard still leaves .claude/ out"
+
+    #  3. FU-1286, the plan's list and the local notes
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    row = reg["FU-1286"]
+    assert (row["status"], row["owner_gated"], row["slot"]) == ("open", True, "OWNER"), row
+    assert "(4) .claude/settings.json: three one-off command permissions named your folder. DONE W1176:" in row["why"]
+    assert row["why"].count("RECOMMENDED (accepted 2026-11-20):") == 5, "a place lost its accepted recommendation"
+    plan = " ".join((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8").split())
+    assert ("The three permissions in .claude/settings.json were removed in the cloud session that evening (W1176); "
+            "untracking venv/ stays yours, on your machine.") in plan, "the plan's list does not say they were removed"
+    notes = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
+    mine = " ".join(step5.split("   - FU-1286:", 1)[1].split("\n   - ", 1)[0].split())
+    assert mine.startswith("run git rm -r --cached venv and commit (the folder stays on this disk)"), mine
+    assert "remove the three" not in mine and "were removed in the cloud session on 2026-11-20, W1176" in mine, mine
+    flat = " ".join(notes.split())
+    assert "the three permissions in `.claude/settings.json` were removed in the cloud session (W1176)" in flat

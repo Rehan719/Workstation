@@ -37,8 +37,9 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
    FU-1005 were done here on 2026-11-20 (W1133l, W1133m), and are closed:
    - FU-1165: as I answered on 2026-11-20, register my two ventures, Atmospheric Harvest Solutions and Aerius
      Energy Harvest, fresh in the new books, then name each in Settings, Protected enterprises, once it exists.
-   - FU-1286: run git rm -r --cached venv and commit (the folder stays on this disk), and remove the three
-     one-off command permissions in .claude/settings.json that name my home folder, as I accepted on 2026-11-20.
+   - FU-1286: run git rm -r --cached venv and commit (the folder stays on this disk), as I accepted on
+     2026-11-20. (The three one-off command permissions in .claude/settings.json that named my home folder
+     were removed in the cloud session on 2026-11-20, W1176.)
    (The two committed audit records under docs/fidelity_runs/ that carried text of a private kind were edited
    in the cloud session on 2026-11-20, as recommended and with your go-ahead; git history keeps the earlier
    text, as ruled on 2026-10-14.)
@@ -75,7 +76,8 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
   - Sending the two permission letters in `docs/letters/` (FU-1188).
   - Sending the request to the Quranic Audio Dataset's authors, also in `docs/letters/` (FU-1283).
   - Five places that named your Windows home folder (FU-1286), each as you accepted on 2026-11-20: `venv/`
-    and `.claude/settings.json` are step 5; the pinned fidelity ledgers and `_archive/` stay as they are; the
+    is step 5; the three permissions in `.claude/settings.json` were removed in the cloud session (W1176);
+    the pinned fidelity ledgers and `_archive/` stay as they are; the
     audit record (docs/fidelity_runs/ledger_v14_W639_375c5ffb.json) was edited in the cloud session on
     2026-11-20, on your go-ahead naming it (W1175).
   - At the first deploy, restoring the data disk once from its snapshot, watching (FU-1288).
