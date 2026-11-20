@@ -93643,3 +93643,55 @@ def test_w1150_fu810_each_support_route_is_read_from_its_page_or_not_checked_and
     cited = set(re.findall(r"\[observed: ([^\]]+)\]", doc)) - {"page"}
     assert cited and cited <= named, sorted(cited - named)
     assert reg["FU-810"]["slot"] == "P5.7"
+
+
+def test_w1151_fu809_each_public_draft_is_headed_and_every_claim_names_a_test_that_runs_without_an_outside_model():
+    """FU-809 (W1151), P5.7 clause 4: landing copy, a capability sheet, a deck outline, a demonstration script on invented
+    data, questions and answers and outreach templates, "each headed DRAFT - NOT APPROVED FOR PUBLICATION", each claim
+    traced to what shows it, built from the first offer. docs/business/public/FIRST_OFFER_DRAFTS.md holds them. Held:
+    - it passes every business document's rules as a public-facing draft (it opens with the heading; no price,
+      customer, partner, endorsement or personal detail; every statement labelled; every route it names is served);
+    - each of the six pieces is a section whose heading carries DRAFT - NOT APPROVED FOR PUBLICATION;
+    - every test a claim names is one this suite defines and one that runs without an outside model (not _ai_only);
+    - the drafts are built from the leading hypothesis the first-offer comparison still states (candidate C);
+    - the demonstration uses invented material only, the outreach drafts are marked NOT SENT, and no price is set."""
+    import pathlib
+    import re
+    import json
+    from agentic_core import plan_followups as _fu
+    from agentic_core.app_mvp import app as _app1151
+    root = pathlib.Path(__file__).resolve().parents[1]
+    doc = (root / "docs/business/public/FIRST_OFFER_DRAFTS.md").read_text(encoding="utf-8")
+    flat = " ".join(doc.split())
+    plan_slots = {i["slot"] for i in _fu.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))}
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    routes = {(m, r.path) for r in _app1151.routes for m in (getattr(r, "methods", None) or ())}
+    faults = _w703_faults(doc, root, plan_slots, set(reg), routes, public=True)
+    assert faults == [], faults
+
+    pieces = ("## 1. Landing copy", "## 2. Capability sheet", "## 3. Deck outline",
+              "## 4. Demonstration script on invented data", "## 5. Questions and answers", "## 6. Outreach templates")
+    heads = re.findall(r"^## .+$", doc, re.M)
+    for p in pieces:
+        h = [x for x in heads if x.startswith(p)]
+        assert len(h) == 1 and h[0].endswith("— DRAFT - NOT APPROVED FOR PUBLICATION"), (p, h)
+
+    spine = pathlib.Path(__file__).read_text(encoding="utf-8")
+    cited = sorted(set(re.findall(r"\[observed: (test_[a-z0-9_]+)\]", doc)))
+    assert len(cited) >= 5, cited
+    for t in cited:
+        m = re.search(r"((?:^@[^\n]+\n)*)^def " + re.escape(t) + r"\(", spine, re.M)
+        assert m, (t, "a claim names a test this suite does not define")
+        assert "_ai_only" not in m.group(1), (t, "a claim rests on a test that needs an outside model to run")
+
+    cand = (root / "docs/business/FIRST_OFFER_CANDIDATES.md").read_text(encoding="utf-8")
+    assert "Teachers and tutors who plan lessons against a named framework will use" in cand, (
+        "the leading hypothesis changed: rewrite the drafts from the one now leading")
+    assert "candidate C: lesson plans and feedback that a teacher or tutor checks before use" in flat
+
+    assert "Only invented material is used" in flat and "no pupil's real work is ever used" in flat
+    outreach = doc.split("## 6. Outreach templates", 1)[1].split("\n## ", 1)[0]
+    drafts = [l for l in outreach.splitlines() if l.startswith("- ")]
+    assert len(drafts) >= 2 and all("DRAFT, NOT SENT" in l for l in drafts), drafts
+    assert "No price is set" in flat
+    assert reg["FU-809"]["slot"] == "P5.7"

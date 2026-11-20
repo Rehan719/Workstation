@@ -15881,11 +15881,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.7",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1151",
       "note": "",
       "slot_source": "the Owner asked on 2026-10-11 that this work be added to the plan; it is the item chartered for it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1151: docs/business/public/FIRST_OFFER_DRAFTS.md holds the six public drafts the clause names - landing copy, a capability sheet, a deck outline, a demonstration script on invented data, questions and answers, and outreach templates - each headed DRAFT - NOT APPROVED FOR PUBLICATION. They are built from the leading hypothesis of the first-offer comparison (candidate C, lesson plans and feedback a teacher checks), and every claim names a test of the suite that runs on the platform's own engine. No price is set, no customer, partner or endorsement is named, the demonstration uses invented material only and the outreach templates are not sent. Nothing is published."
     },
     {
       "id": "FU-810",
