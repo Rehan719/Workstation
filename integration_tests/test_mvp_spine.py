@@ -92400,11 +92400,12 @@ def test_w1134_fu603_the_google_cloud_deploy_is_written_from_googles_pages_and_n
     flat = " ".join(sec.split())
 
     # == THE PAGES: listed with their dates, and each step cites listed pages only, every one of them somewhere ==
-    listed = re.findall(r"^- \[([a-z-]+)\] (https://(?:docs\.)?cloud\.google\.com/\S+) \(([^)]+)\)$", sec, re.M)
+    listed = re.findall(r"^- \[([a-z-]+)\] (https://\S+) \(([^)]+)\)$", sec, re.M)    # W1140: beyond Google's too
     pages = {k: (url, when) for k, url, when in listed}
     assert len(pages) == len(listed) >= 15, ("a page is listed twice, or too few are listed", listed)
     for k, (url, when) in pages.items():
-        assert re.fullmatch(r"20\d\d-\d\d-\d\d", when) or (when == "no date shown" and "pricing" in url), (k, when)
+        assert re.fullmatch(r"20\d\d-\d\d-\d\d", when) or (when == "no date shown" and (
+            "pricing" in url or url.startswith("https://raw.githubusercontent.com/"))), (k, when)
     steps = re.split(r"^\*\*Step (\d+)\. [^*]+\*\*", sec, flags=re.M)
     numbers = [int(n) for n in steps[1::2]]
     assert numbers == list(range(1, len(numbers) + 1)) and len(numbers) >= 10, numbers
@@ -92446,7 +92447,8 @@ def test_w1134_fu603_the_google_cloud_deploy_is_written_from_googles_pages_and_n
     assert vm["metadata-from-file"] == "startup-script=deploy/gcp/startup.sh", vm["metadata-from-file"]
     assert vm["metadata"].startswith("image-tag="), vm["metadata"]
     fw = flags(block("gcloud compute firewall-rules create"))
-    assert fw["target-tags"] == vm["tags"] == "workstation" and fw["rules"] == "tcp:80", fw
+    #  W1140 (FU-1284): 443 as well, for the HTTPS front of step 12
+    assert fw["target-tags"] == vm["tags"] == "workstation" and fw["rules"] == "tcp:80,tcp:443", fw
     reg = flags(block("gcloud artifacts repositories create workstation"))
     assert reg["location"] == "us-central1" and reg["repository-format"] == "docker", reg
     #  W1137: the backup is a daily snapshot of the data disk, beside it in us-central1, kept if the disk goes
@@ -92551,7 +92553,8 @@ def test_w1134_fu603_the_google_cloud_deploy_is_written_from_googles_pages_and_n
     rows = json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
     https = [r for r in rows if r.get("title") == "The release machine would serve plain HTTP: no certificate fronts it"]
     assert len(https) == 1 and https[0]["slot"] == "P4.5" and https[0]["source"].startswith("W1134 "), https
-    assert f"HTTPS is its own row ({https[0]['id']})" in flat and "no person signs in (P4.1)" in flat
+    #  W1140 (FU-1284): HTTPS is step 12, and no person signs in until it is done
+    assert "Step 12. HTTPS, before anyone signs in" in flat and "no person signs in (P4.1) until this step is done" in flat
     fu603 = [r for r in rows if r.get("id") == "FU-603"]
     assert len(fu603) == 1, fu603
     assert "Done since (FU-603): W1134 wrote the next section" in " ".join(dep.split())
@@ -92722,7 +92725,7 @@ def test_w1137_fu603_the_backup_is_a_snapshot_and_the_restore_and_rollback_are_d
     assert "--memory=1g" in drill and "docker diff" in drill and "sha256sum" in drill
 
     #  the record
-    rec = flat.split("DRILLED ON THIS MACHINE, 2026-11-20 (W1137):", 1)[1].split("HTTPS is its own row", 1)[0]
+    rec = flat.split("DRILLED ON THIS MACHINE, 2026-11-20 (W1137):", 1)[1].split("HTTPS, DRILLED ON THIS MACHINE", 1)[0]
     for said in ("the records, and everything else the platform wrote in the drill, are on the volume", "byte-identical to the original",
                  "read the project back (HTTP 200)", "read the project (HTTP 200) and listed it", "came up in"):
         assert said in rec, said
@@ -92828,3 +92831,125 @@ def test_w1139_fu1281_the_cockpits_latest_cycle_says_the_platform_fee_and_what_t
     test = (page / "VSBCockpit.fee.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './VSBCockpit.fee.fixture.json';" in test and test.count("it(") == 1
     assert "'Revenue for this economic cycle in virtual WST'" in test and "expect(asked).toEqual([cycle.request]);" in test
+
+
+def test_w1140_fu1284_https_is_caddy_in_front_of_the_platform_and_no_one_signs_in_before_it():
+    """FU-1284 (W1140), P4.5. As W1134 wrote the deploy, the release machine served plain HTTP at its address. The
+    options were read at their own pages on 2026-11-20: Google's at Google, and Caddy's and Let's Encrypt's from the
+    source each site is built from, since this environment's network refuses both sites. A publicly trusted
+    certificate is for a domain, never an IP address, so the domain is the Owner's to buy. Step 12 makes the machine's
+    address its own, points the domain at it and tells the machine its domain; the startup script then puts Caddy's
+    one-command reverse proxy in front of the platform, which has no port of its own and believes a forwarded client
+    address only from Caddy's fixed address. A Google load balancer would need the domain too, and its forwarding rule
+    alone costs about $18.25 a month. Held here:
+    - the script's check of a domain, driven on names it must take and names it must refuse;
+    - the front's flags: Caddy pinned by its digest, on ports 80 and 443, at a fixed address outside the addresses
+      Docker hands out and the one address the platform trusts; the platform with no port of its own, at the image's
+      port; and a bad domain refused, and the front's image pulled, before anything running is stopped;
+    - the steps' commands in their pages' forms, the prices, the firewall admitting 443 as well as 80, each page
+      listed and cited, and no person signing in until step 12 is done;
+    - the drill's record of what it measured, the drill committed and LF, and the domain on the Owner's list."""
+    import ipaddress
+    import json
+    import os
+    import pathlib
+    import re
+    import shutil
+    import subprocess
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")
+    script = read("deploy/gcp/startup.sh")
+
+    #  the domain's check, driven
+    take = ["example.com", "app.example.co.uk", "workstation.localhost", "a-b.example.org", "x" * 63 + ".com"]
+    refuse = ["", "localhost", "1.2.3.4", "203.0.113.7", "-a.com", "a-.com", "a..com", ".example.com", "example.com.",
+              "example.com/x", "exa mple.com", "example.com;reboot", "$(reboot).com", "EXAMPLE.COM", "x" * 64 + ".com",
+              ("a" * 60 + ".") * 5 + "com", "example.com\nevil.com"]
+    bash = shutil.which("bash")
+    if sys.platform.startswith("linux"):
+        assert bash, "the round's own machine must drive the domain's check"
+    if os.name != "nt" and bash:
+        probe = 'source "$1"; shift; for d in "$@"; do if valid_domain "$d"; then echo take; else echo refuse; fi; done'
+        out = subprocess.run([bash, "-c", probe, "bash", str(root / "deploy" / "gcp" / "startup.sh"), *take, *refuse],
+                             capture_output=True, text=True, timeout=60, stdin=subprocess.DEVNULL,
+                             env=dict(os.environ, WORKSTATION_STARTUP_SOURCED="1"))
+        assert out.returncode == 0, out.stderr[-600:]
+        said = out.stdout.split()
+        assert said == ["take"] * len(take) + ["refuse"] * len(refuse), [p for p in zip(take + refuse, said) if
+                                                                       (p[0] in take) != (p[1] == "take")]
+
+    #  the front's own flags
+    front = script.split("start_front() {", 1)[1].split("\n}\n", 1)[0]
+    runs = " ".join(front.replace("\\\n", " ").split()).split("docker run ")[1:]
+    assert len(runs) == 2, runs
+    platform, caddy = runs
+    assert "--name=workstation" in platform and "--name=caddy" in caddy, runs
+    assert "--publish" not in platform, ("behind the front the platform has a port of its own", platform)
+    assert "--publish=80:80" in caddy and "--publish=443:443" in caddy, caddy
+    assert '--env=FORWARDED_ALLOW_IPS="$FRONT_IP"' in platform and '--ip="$FRONT_IP"' in caddy, runs
+    assert '--volume="$MNT":/app/data' in platform and "--volume=caddy-data:/data" in caddy, runs
+    ip = ipaddress.ip_address(re.search(r"^FRONT_IP=(\S+)$", script, re.M).group(1))
+    net = re.search(r"--subnet=(\S+) --ip-range=(\S+) --gateway=(\S+)", front)
+    subnet, pool, gateway = (ipaddress.ip_network(net.group(1)), ipaddress.ip_network(net.group(2)),
+                             ipaddress.ip_address(net.group(3)))
+    assert ip in subnet and pool.subnet_of(subnet) and ip not in pool and gateway not in pool and ip != gateway, (
+        "Docker could hand Caddy's address to another container", ip, net.groups())
+    assert re.search(r'^CADDY_IMAGE="caddy:[\d.]+@sha256:[0-9a-f]{64}"$', script, re.M), "the front's image is not pinned"
+    port = re.search(r"\bPORT=(\d+)", read("Dockerfile")).group(1)
+    assert f'caddy reverse-proxy --from "$3" --to workstation:{port}' in caddy, ("Caddy proxies to another port", caddy)
+    main = script.split("\nmain() {\n", 1)[1].split("\n}\n", 1)[0]     # a whole line: valid_domain() holds "main() {"
+    lower, check = main.index("tr 'A-Z' 'a-z'"), main.index('! valid_domain "$domain"')
+    pull, stop = main.index('docker pull "$CADDY_IMAGE"'), main.index("docker stop")
+    assert lower < check < stop and pull < stop, "the domain is checked, or the front's image pulled, after the stop"
+    assert 'start_front "$image" "$tag" "$domain"' in main and "--publish=80:8000 " in main, main
+
+    #  the steps, their prices and their pages
+    sec = read("docs/DEPLOYMENT.md").split("## The Google Cloud deploy, step by step (P4.5)", 1)[1].split("\n## ", 1)[0]
+    flat = " ".join(sec.split())
+    blocks = [" ".join(b.replace("\\\n", " ").split()) for b in re.findall(r"```bash\n(.*?)```", sec, re.S)]
+    promote = [b for b in blocks if "gcloud compute addresses create" in b]
+    assert promote == ["gcloud compute addresses create workstation-ip --addresses=EXTERNAL_IP --region=us-central1"], promote
+    told = [b for b in blocks if "--metadata=domain=" in b]
+    assert len(told) == 1 and told[0] == ("gcloud compute instances add-metadata workstation --zone=us-central1-a "
+                                          "--metadata=domain=DOMAIN sudo google_metadata_script_runner startup"), told
+    fw = [b for b in blocks if "gcloud compute firewall-rules create" in b]
+    assert len(fw) == 1 and "--rules=tcp:80,tcp:443" in fw[0], fw
+    assert "$0.025 an hour, about $18.25 a month [network-pricing]" in flat and round(0.025 * 730, 2) == 18.25
+    assert "attached to nothing is $0.01 an hour [network-pricing]" in flat
+    assert '"whether the instance is running or stopped"' in flat
+    step12 = flat.split("**Step 12. HTTPS, before anyone signs in", 1)[1].split("HTTPS, DRILLED ON THIS MACHINE", 1)[0]
+    for key in ("static-promote", "managed-certs", "cos-fs", "caddy-https", "caddy-proxy", "caddy-headers",
+                "caddy-image", "le-challenges"):
+        assert re.search(r"^- \[" + re.escape(key) + r"\] https://\S+ \((20\d\d-\d\d-\d\d|no date shown)\)$", sec, re.M), (
+            key, "is not listed with its address and date")
+        assert f"[{key}]" in step12, (key, "is listed and not cited")
+    for said in ('"not an IP address" [caddy-https]', '"can only be done on port 80" [le-challenges]',
+                 '"must not be treated as a cache" [caddy-image]', '"to prevent spoofing" [caddy-headers]'):
+        assert said in step12, said
+    assert "no person signs in (P4.1) until this step is done" in flat
+
+    #  the drill and its record
+    rec = flat.split("HTTPS, DRILLED ON THIS MACHINE, 2026-11-20 (W1140):", 1)[1]
+    for said in ("HTTPS answered 200", "plain HTTP was answered 308 https://workstation.localhost/health",
+                 "the platform had no port of its own", f"Caddy held its fixed address, {ip},",
+                 "X-Forwarded-For of 203.0.113.7", f"the platform gave Caddy's own address, {ip},"):
+        assert said in rec, said
+    saw = re.search(r"The platform's log gave the request's address as (\S+), the address Caddy saw it come from, and "
+                    r"gave (\S+) again", rec)
+    assert saw and saw.group(1) == saw.group(2) and ipaddress.ip_address(saw.group(1)) in subnet, rec[:600]
+    assert ipaddress.ip_address(saw.group(1)) != ip, "the record shows the platform believing Caddy's own address"
+    drill = (root / "deploy" / "https_drill.sh").read_bytes()
+    assert b"\r" not in drill and "deploy/https_drill.sh text eol=lf" in read(".gitattributes").splitlines()
+    drill = drill.decode("utf-8")
+    assert '. "$HERE/gcp/startup.sh"' in drill and 'start_front "$IMG"' in drill, "the drill starts another front"
+    assert "X-Forwarded-For: 203.0.113.7" in drill and "WITHOUT_THE_SETTING_PLATFORM_SAW" in drill
+
+    #  the domain is the Owner's, and on the Owner's list
+    rows = json.loads(read("docs/FOLLOWUPS.json"))["items"]
+    owner = [r for r in rows if r.get("title") ==
+             "OWNER: buy a domain for the release machine and point it at the machine's fixed address"]
+    assert len(owner) == 1 and owner[0]["owner_gated"] and owner[0]["status"] == "open", owner
+    oid = owner[0]["id"]
+    assert f"({oid})" in step12 and f"({oid})" in rec and f"{oid} (W1140):" in read("docs/FABLE_DELIVERY_PROMPT.md")
+    assert f"({oid})" in read("docs/RESUME_ON_MY_MACHINE.md")

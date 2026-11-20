@@ -132,7 +132,7 @@ Google page its step names, in the form that page gives it. A value in capitals 
 BILLING_ACCOUNT, BUCKET_NAME, TAG and the like) is the Owner's to fill in. Where no page read here settles a point,
 the step says so.
 
-THE PAGES, each read on 2026-11-20 (in brackets, the date the page gives as last updated; the two pricing pages give
+THE PAGES, each read on 2026-11-20 (in brackets, the date the page gives as last updated, or that it shows
 none):
 - [free] https://docs.cloud.google.com/free/docs/free-cloud-features (2026-11-13)
 - [vm] https://docs.cloud.google.com/sdk/gcloud/reference/compute/instances/create (2026-11-10)
@@ -159,6 +159,17 @@ none):
 - [budgets] https://docs.cloud.google.com/billing/docs/how-to/budgets (2026-11-10)
 - [uptime] https://docs.cloud.google.com/monitoring/uptime-checks (2026-11-20)
 - [wif] https://docs.cloud.google.com/iam/docs/workload-identity-federation-with-deployment-pipelines (2026-11-17)
+- [static-promote] https://docs.cloud.google.com/vpc/docs/reserve-static-external-ip-address (2026-11-12)
+- [managed-certs] https://docs.cloud.google.com/load-balancing/docs/ssl-certificates/google-managed-certs (2026-11-10)
+- [cos-fs] https://docs.cloud.google.com/container-optimized-os/docs/concepts/disks-and-filesystem (2026-11-10)
+- [caddy-image] https://hub.docker.com/_/caddy (2026-11-16)
+- [caddy-https] https://raw.githubusercontent.com/caddyserver/website/master/src/docs/markdown/automatic-https.md (no date shown)
+- [caddy-proxy] https://raw.githubusercontent.com/caddyserver/website/master/src/docs/markdown/quick-starts/reverse-proxy.md (no date shown)
+- [caddy-headers] https://raw.githubusercontent.com/caddyserver/website/master/src/docs/markdown/caddyfile/directives/reverse_proxy.md (no date shown)
+- [le-challenges] https://raw.githubusercontent.com/letsencrypt/website/main/content/en/docs/challenge-types.md (2026-02-12)
+
+The last four, for step 12 (W1140), are the sources caddyserver.com and letsencrypt.org are built from, read there
+because this environment's network refuses both sites; the image's page is Docker Hub's.
 
 THE SHAPE, AND WHY
 - One e2-micro machine in us-central1 runs the release channel. The free tier gives one non-preemptible e2-micro a
@@ -250,16 +261,16 @@ the rate the pricing page gives for it [disk-pricing]. The schedule is attached 
 made it. Each snapshot is taken while the platform runs; an application-consistent snapshot is on a page not read
 here.
 
-**Step 6. The firewall rule: port 80, to the machine tagged workstation** [firewall] [migrate]
+**Step 6. The firewall rule: ports 80 and 443, to the machine tagged workstation** [firewall] [migrate]
 
 ```bash
 gcloud compute firewall-rules create workstation-http --network=default --direction=ingress --action=allow \
-    --target-tags=workstation --source-ranges=0.0.0.0/0 --rules=tcp:80
+    --target-tags=workstation --source-ranges=0.0.0.0/0 --rules=tcp:80,tcp:443
 ```
 
 Container-Optimized OS denies incoming traffic by default, so the startup script opens the machine's own firewall
-with the migration page's two rules [migrate]; this rule is what lets port 80 in from outside, and the network's
-other rules are unchanged.
+with the migration page's two rules [migrate]; this rule is what lets ports 80 and 443 in from outside, and the
+network's other rules are unchanged. Port 443 is answered once step 12 has given the machine its domain.
 
 **Step 7. The machine, its kept data disk and its startup script** [vm] [cos] [startup] [mount] [metadata] [cos-run]
 
@@ -326,7 +337,8 @@ together are past the free 30 GB-months [disk-pricing]. Drilled on this machine 
 **Step 10. The uptime check and its alert, from outside the machine (FU-1095)** [uptime]
 
 In the console: Monitoring, Uptime checks, Create uptime check; protocol HTTP, resource type URL, the machine's
-address as the host and /health as the path. Then, in the page's words: "To be notified when an uptime check fails,
+address as the host and /health as the path; once step 12 has given the machine its domain, protocol HTTPS and the
+domain as the host, since Caddy answers plain HTTP with a redirect. Then, in the page's words: "To be notified when an uptime check fails,
 create an alerting policy and configure notification channels for that policy"; the channel is the Owner's e-mail.
 By default a notification is sent when at least two regions report the check failing for at least a minute [uptime].
 Then the drill FU-1095 asks for, with the Owner watching: on the machine, `docker stop workstation`; see the e-mail
@@ -355,6 +367,54 @@ can't be reused" [wif]. Only main, the release channel, may deploy. The workflow
 `workload_identity_provider` and `service_account` [wif]. NOT READ HERE: the roles the deploying service account
 needs, and whether a later version of that action is current.
 
+**Step 12. HTTPS, before anyone signs in: a fixed address, the Owner's domain, and Caddy in front (FU-1284)**
+[static-promote] [network-pricing] [caddy-https] [caddy-proxy] [caddy-headers] [caddy-image] [le-challenges]
+[cos-fs] [managed-certs]
+
+As steps 1 to 11 leave it, the machine serves plain HTTP at its address, so what a person types would cross the
+internet unencrypted: no person signs in (P4.1) until this step is done and the domain answers over HTTPS. A
+publicly trusted certificate is for a domain: a host name qualifies only if it is "not an IP address"
+[caddy-https]. The domain is the Owner's to buy (FU-1289).
+
+First the machine's address is made its own. The address step 7 gave the machine is ephemeral, and the domain must
+keep pointing at it. Promoting it keeps it, and "does not cause Google Cloud to drop packets sent to the VM"
+[static-promote]:
+
+```bash
+gcloud compute addresses create workstation-ip --addresses=EXTERNAL_IP --region=us-central1
+```
+
+EXTERNAL_IP is the machine's address, as the console's IP addresses page lists it, where the same promotion is a
+menu item [static-promote]. The price does not change: a static or ephemeral address in use on a standard machine
+is $0.005 an hour, and a static one is in use "whether the instance is running or stopped"; one reserved and
+attached to nothing is $0.01 an hour [network-pricing].
+
+Then, at the domain's DNS provider, an A record for the domain naming EXTERNAL_IP. Caddy obtains a certificate when
+"your domain's A/AAAA records point to your server", "ports `80` and `443` are open externally" and its data
+directory "is writeable and persistent" [caddy-https]. Then the machine is told its domain, and its startup script
+is run again as in step 8:
+
+```bash
+gcloud compute instances add-metadata workstation --zone=us-central1-a --metadata=domain=DOMAIN
+sudo google_metadata_script_runner startup
+```
+
+The script refuses a domain that is not a host name, an IP address included, and leaves the running platform as it
+was. Otherwise it starts the platform on a private Docker network with no port of its own, believing a forwarded
+client address only from Caddy's fixed address, and starts Caddy, the official image pinned by its digest
+[caddy-image], on ports 80 and 443 in front of it with Caddy's own one-command reverse proxy, `caddy reverse-proxy
+--from DOMAIN --to workstation:8000` [caddy-proxy]. Caddy obtains the domain's certificate from a public
+certificate authority, keeps it renewed and redirects HTTP to HTTPS itself [caddy-https]. Let's Encrypt's HTTP-01
+challenge "can only be done on port 80" [le-challenges], which is why step 6 admits port 80 as well as 443. The
+reverse proxy "sets or augments the `X-Forwarded-For` header field" and by default ignores the values a request
+brings for it, "to prevent spoofing" [caddy-headers]. Caddy keeps its certificates in a Docker volume on the boot
+disk: its data directory "must not be treated as a cache" [caddy-image], and on this OS /var/lib/docker is
+stateful, for the lifetime of the boot disk [cos-fs]. A new machine obtains a new certificate.
+
+THE OTHER WAY, NOT TAKEN: a global external Application Load Balancer with a Google-managed certificate
+[managed-certs] needs a domain too, and its forwarding rule alone is $0.025 an hour, about $18.25 a month
+[network-pricing], against nothing more on the machine.
+
 DRILLED ON THIS MACHINE, 2026-11-20 (W1137): run again in W1138 on an image with FU-1287's change. The image
 built from the current tree (workstation:w1138) and the one built from W1128's tree (workstation:9dfc0f37), each
 started with the flags `deploy/gcp/startup.sh` gives the release machine and the free tier's 1 GiB of memory, on
@@ -374,8 +434,22 @@ Docker volumes standing in for the data disk.
 - On Google Cloud the copy is the snapshot of step 5 and the fresh volume is step 9's restored disk; the first
   restore from a real snapshot is driven at the deploy, with the Owner watching (FU-1288).
 
-HTTPS is its own row (FU-1284): as written the machine serves plain HTTP at its address, so no person signs in
-(P4.1) until a certificate fronts it.
+HTTPS, DRILLED ON THIS MACHINE, 2026-11-20 (W1140): the startup script's own front (`start_front`, sourced from
+`deploy/gcp/startup.sh` by `deploy/https_drill.sh`), started for workstation.localhost, a name Caddy certifies from
+its own local authority: a public authority certifies only a domain, which is the Owner's. Ports 80 and 443 of this
+machine were used, as the release machine uses them, with the image built in W1138 (workstation:w1138).
+- The front came up healthy in 8.0 seconds. HTTPS answered 200, with a
+  certificate issued by Caddy Local Authority - ECC Intermediate; plain HTTP was answered 308 https://workstation.localhost/health; and
+  the platform had no port of its own.
+- Caddy held its fixed address, 172.30.0.2, and Docker gave the platform 172.30.0.128, from the
+  network's top half. The platform's log gave the request's address as 172.30.0.1, the address Caddy saw
+  it come from, and gave 172.30.0.1 again for a request that wrote its own
+  X-Forwarded-For of 203.0.113.7.
+- Started on the same network without the setting, the platform gave Caddy's own address,
+  172.30.0.2, for the same request: without it, the sign-in limits, which count failed
+  attempts by the address they come from, would count every person as one address.
+- On Google Cloud the name is the Owner's domain and the authority a public one; the first certificate is obtained
+  at the deploy, with the Owner watching (FU-1289).
 
 ## Payments & money safety (READ BEFORE LAUNCH)
 

@@ -26083,10 +26083,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.5",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1140",
       "note": "",
-      "slot_source": "P4.5 is the production deploy on Google Cloud: the machine its steps describe must not open sign-in (P4.1) over plain HTTP, so the certificate is part of that deploy's pre-flight"
+      "slot_source": "P4.5 is the production deploy on Google Cloud: the machine its steps describe must not open sign-in (P4.1) over plain HTTP, so the certificate is part of that deploy's pre-flight",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1140: the options were read at their own pages on 2026-11-20 (Google's at Google; Caddy's and Let's Encrypt's from the source their sites are built from, since this environment's network refuses both sites) and priced. Step 12 of docs/DEPLOYMENT.md makes the machine's address static, points the Owner's domain at it and tells the machine its domain; the startup script then puts Caddy's reverse proxy in front of the platform, which has no port of its own and believes a forwarded client address only from Caddy. A Google load balancer would cost about $18.25 a month more. The front was drilled on this machine for a .localhost name. No person signs in until step 12 is done; the domain is the Owner's to buy (an owner-gated row)."
     },
     {
       "id": "FU-1285",
@@ -26152,6 +26155,20 @@
       "found": "2026-11-20",
       "files": [],
       "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-1289",
+      "title": "OWNER: buy a domain for the release machine and point it at the machine's fixed address",
+      "why": "W1140 wrote HTTPS into the deploy (docs/DEPLOYMENT.md, step 12): Caddy obtains a publicly trusted certificate only for a domain, never for an IP address, so the release machine serves plain HTTP until it has one, and no person signs in until then. The domain is yours to buy, at any registrar, with its A record naming the machine's fixed address (step 12's first command). RECOMMENDED: a short name you already hold or buy now; once its A record points at the machine, set the machine's domain (step 12) and watch the first HTTPS answer, with the uptime check of step 10 moved to HTTPS.",
+      "source": "W1140 (FU-1284: HTTPS in front of the release machine)",
+      "found": "2026-11-20",
+      "files": [],
+      "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
       "status": "open",

@@ -78,6 +78,7 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
   - Sending the request to the Quranic Audio Dataset's authors, also in `docs/letters/` (FU-1283).
   - Five places that still name your Windows home folder: one audit record, the pinned fidelity ledgers, `venv/`, `.claude/settings.json` and `_archive/` (FU-1286).
   - At the first deploy, restoring the data disk once from its snapshot, watching (FU-1288).
+  - Buying a domain for the release machine and pointing it at the machine's fixed address (FU-1289).
   - At the first deploy, an uptime check on `/health` from your own cloud account, beside the billing alert
     (FU-1095).
   - What no round takes (ruling of 2026-11-19): the deploy on your Google Cloud project, the external-model key,

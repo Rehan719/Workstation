@@ -2,3 +2,4 @@
 # checkout, Windows included: the copy gcloud sends from the Owner's machine runs as written
 deploy/gcp/startup.sh text eol=lf
 deploy/drill.sh text eol=lf
+deploy/https_drill.sh text eol=lf
