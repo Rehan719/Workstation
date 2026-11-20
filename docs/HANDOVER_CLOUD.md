@@ -48,7 +48,7 @@ after 48m03s (2 failed / 498 passed) with `ModuleNotFoundError: No module named 
 fresh-backend probes, while the same tree was green locally at 501. The probe writes its script into
 `tmp_path`, so the child's `sys.path[0]` is tmp_path and the repo root is on no path at all; in-process pytest
 inserts the rootdir, the child gets nothing. **It passed locally only because this machine carries a stray
-`jules_ai.pth` containing `C:/Users/rehan/Workstation`, which puts the repo root on `sys.path` for EVERY
+`jules_ai.pth` containing `~/Workstation`, which puts the repo root on `sys.path` for EVERY
 python process on the box.** Worse: with that path removed, `import agentic_core` does not raise — it resolves
 to an empty NAMESPACE package with `__file__ = None`, so a probe that only checks the import did not throw can
 pass having executed nothing. The fix pins the mechanism: the child does

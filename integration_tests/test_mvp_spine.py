@@ -92531,3 +92531,54 @@ def test_w1134_fu603_the_google_cloud_deploy_is_written_from_googles_pages_and_n
     fu603 = [r for r in rows if r.get("id") == "FU-603"]
     assert len(fu603) == 1 and fu603[0]["status"] == "open", "FU-603 has parts left and must stay open"
     assert "Not yet done (FU-603): a backup, a restore drill and a rollback drill." in " ".join(dep.split())
+
+
+def test_w1135_no_tracked_document_names_the_owners_windows_home_folder_by_its_path():
+    """W1135 (found 2026-11-20 while walking the Owner through the local session). The local-session notes' header,
+    and more tracked files, named the Owner's Windows home folder by its full path, the user name in it.
+    Held here:
+    - no tracked text file outside the five places the Owner decides names a Windows home folder by its path: a path
+      starts at ~ instead, the rest of it unchanged (the folder is found by its shape; no name is written here). The
+      pinned fidelity ledgers are among the five: P5.22 pins each byte for byte, so no round edits one;
+    - the five places are each named, with a recommendation, in one open owner-gated row, which the plan's list of
+      what is with the Owner and the local-session notes both name;
+    - the local-session notes still say which folder to open: ~\\Workstation."""
+    import json
+    import pathlib
+    import re
+    import subprocess
+    root = pathlib.Path(__file__).resolve().parents[1]
+    home = re.compile(r"(?i)\b[a-z]:[\\/]+users[\\/]+[^\\/\s`'\"<>()|,;:*?]+")
+    left = ("_archive/", "docs/fidelity_runs/", "venv/", ".claude/", "docs/VISION_FIDELITY_LEDGER")
+    out = subprocess.run(["git", "ls-files", "-z"], cwd=root, capture_output=True, check=True).stdout
+    files = [f for f in out.decode("utf-8").split("\0") if f]
+    assert len(files) > 1000, ("git listed too few tracked files to mean anything", len(files))
+    named = []
+    for rel in files:
+        if rel.startswith(left):
+            continue
+        try:
+            text = (root / rel).read_bytes().decode("utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if home.search(text):
+            named.append(rel)
+    assert named == [], ("a tracked file names a Windows home folder by its path; start it at ~", named)
+
+    rows = json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    owner = [r for r in rows if r.get("title") == "OWNER: five places still name your Windows home folder by its path"]
+    assert len(owner) == 1, owner
+    row = owner[0]
+    assert row["status"] == "open" and row["owner_gated"] is True and row["slot"] == "OWNER", row
+    for place in ("docs/fidelity_runs/", "docs/VISION_FIDELITY_LEDGER", "docs/LEDGER_BLOBS.json", "venv/",
+                  ".claude/settings.json", "_archive/"):
+        assert place in row["why"], ("the Owner's row does not name a place this guard leaves out", place)
+    assert row["why"].count("RECOMMENDED") == 5, "each of the five places carries a recommendation"
+    fable = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    resume = (root / "docs" / "RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    assert f"{row['id']} (W1135):" in fable, "the plan's list of what is with the Owner does not name the row"
+    assert f"({row['id']})" in resume, "the local-session notes do not name the row"
+    assert "in your local clone** (`~\\Workstation`)" in resume, "the notes no longer say which folder to open"
+    fixed = [r for r in rows if r.get("title") == ("Tracked documents name the Owner's Windows home folder by its "
+                                                   "full path, the user name in it")]
+    assert len(fixed) == 1 and fixed[0]["source"].startswith("W1135 "), fixed

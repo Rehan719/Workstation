@@ -90,7 +90,7 @@ Notably, the engine itself is NOT the bug. agentic_core/ai/native/orchestrator.p
 ## `POST /api/v1/native-ai/entailment`
 
 - **status:** FIXED W431 (overlap ratio + limits travel with the verdict; asymmetric negation → CONTRADICTION). WIRED W437 (Primitive console)
-- **implementation:** C:\Users\rehan\Workstation\agentic_core\api\native_ai.py:477-484 (EntailmentRequest at :472, fields premise/hypothesis) dispatches to NLIEngine().verify_premise_entailment at C:\Users\rehan\Workstation\agentic_core\nlp\nli_engine.py:62-82. What it really computes, in full — there is nothing else in the method: premise_words = set(premise.lower().split()); hypothesis_words = set(hypothesis.lower().
+- **implementation:** ~\Workstation\agentic_core\api\native_ai.py:477-484 (EntailmentRequest at :472, fields premise/hypothesis) dispatches to NLIEngine().verify_premise_entailment at ~\Workstation\agentic_core\nlp\nli_engine.py:62-82. What it really computes, in full — there is nothing else in the method: premise_words = set(premise.lower().split()); hypothesis_words = set(hypothesis.lower().
 - **sample output:** `Valid call (premise/hypothesis, 422 correctly on a missing field): $ curl -X POST /api/v1/native-ai/entailment -d '{"premise":"The quarterly revenue grew by 12 percent in Q3","hypothesis":"revenue grew in Q3"}' {"premise":"...","hypothesis":"revenue grew in Q3`
 - **only one possible value in this deployment:** False
 
@@ -113,7 +113,7 @@ Aggravating: infer_intent, thirty lines above in the SAME class, was already rep
 ## `POST /api/v1/native-ai/entropy`
 
 - **status:** FIXED W437 (bits_harvested → mixing_rounds — a count of mixing operations, which is all it measured; pool_digest is now a DISJOINT slice of the pool hash, no longer a re-encoding of the seed; the response states plainly: no system entropy, never for keys/nonces/tokens, and the empty call is the fixed genesis constant). WIRED W437 (Primitive console)
-- **implementation:** Route: C:\Users\rehan\Workstation\agentic_core\api\native_ai.py:425-437 (`native_entropy`, request model `EntropyRequest` at :421 — one field, `sources: List[Dict[str, Any]] = []`). Dispatches to: C:\Users\rehan\Workstation\agentic_core\crypto\entropy_pool.py:6-34 (`EntropyPool`). What it really computes: - `__init__` seeds the pool with the literal `b"v-infinity-genesis-seed"` (:8). - `add_entrop
+- **implementation:** Route: ~\Workstation\agentic_core\api\native_ai.py:425-437 (`native_entropy`, request model `EntropyRequest` at :421 — one field, `sources: List[Dict[str, Any]] = []`). Dispatches to: ~\Workstation\agentic_core\crypto\entropy_pool.py:6-34 (`EntropyPool`). What it really computes: - `__init__` seeds the pool with the literal `b"v-infinity-genesis-seed"` (:8). - `add_entrop
 - **sample output:** `Live calls against 127.0.0.1:8010 (HTTP 200, real payload every time): A. `{"sources":[]}` — repeated 3x, and `{}` with no field at all: {"seed":9392136076795838001,"bits_harvested":0,"pool_integrity":"31fe8b0b00925782","sources_mixed":0,"algo":"sha3_512 + XOR`
 - **only one possible value in this deployment:** False
 
@@ -132,7 +132,7 @@ What is NOT a defect, to be fair: the `algo` field ("sha3_512 + XOR mixing") is 
 ## `POST /api/v1/native-ai/quorum`
 
 - **status:** FIXED W437 (population defaults to the LIVE swarm roster with population_source disclosed; caller override echoed as caller_supplied; secretion ≥ 0 and threshold > 0 enforced; the reported concentration is the exact value the verdict derives from — the round-vs-compare mismatch is gone; no wording claims sensing/kinetics/shared-field). WIRED W437 (Primitive console)
-- **implementation:** C:\Users\rehan\Workstation\agentic_core\api\native_ai.py:445-457 (handler native_quorum, request model QuorumRequest at :439) dispatches to C:\Users\rehan\Workstation\agentic_core\quorum\sensing.py:6 (class QuorumSensing). What it really computes: concentration = agents x secretion (a loop calling secrete_ai2 which does `self.ai2_concentration += amount`), then get_behavior_mode() returns "COOPERA
+- **implementation:** ~\Workstation\agentic_core\api\native_ai.py:445-457 (handler native_quorum, request model QuorumRequest at :439) dispatches to ~\Workstation\agentic_core\quorum\sensing.py:6 (class QuorumSensing). What it really computes: concentration = agents x secretion (a loop calling secrete_ai2 which does `self.ai2_concentration += amount`), then get_behavior_mode() returns "COOPERA
 - **sample output:** `Default body {} -> {"agents":1,"concentration":10.0,"threshold":50.0,"behavior_mode":"INDEPENDENT","cooperative":false,"method":"quorum sensing (owned biomimetic swarm)"} {"agents":6,"secretion":10.0,"threshold":50.0} -> {"agents":6,"concentration":60.0,"thres`
 - **only one possible value in this deployment:** False
 
@@ -189,7 +189,7 @@ Secondary: code comment at line 27 and the `_compute_ci` docstring both say "Boo
 ## `POST /api/v1/native-ai/transduce`
 
 - **status:** FIXED W437 (`latency_s` and `frequency` DELETED, not renamed — nothing was timed and the sine never entered the result; activation + supra_threshold (= input ≥ K50, stated as such) + K50 exposed + honest dose-response curve; negative input 422s instead of silently taking the real part of a complex power; the orchestrator's /tree signal_response — the defect's second, LIVE surface — fixed in the same change; the false certification in AGENTIC_CORE_INTEGRATION_AUDIT.md corrected). WIRED W437 (Primitive console)
-- **implementation:** Handler: C:\Users\rehan\Workstation\agentic_core\api\native_ai.py:388-401. Line 394 dispatches to EmpiricalSignalTransduction(frequency, hill).simulate_cascade(input_signal); lines 395-398 build the response. Impl: C:\Users\rehan\Workstation\agentic_core\signaling\empirical_transduction.py:17-33. The whole "ODE-inspired phosphorylation kinetics" is four lines: line 15: self.base_latency = 45.0 # S
+- **implementation:** Handler: ~\Workstation\agentic_core\api\native_ai.py:388-401. Line 394 dispatches to EmpiricalSignalTransduction(frequency, hill).simulate_cascade(input_signal); lines 395-398 build the response. Impl: ~\Workstation\agentic_core\signaling\empirical_transduction.py:17-33. The whole "ODE-inspired phosphorylation kinetics" is four lines: line 15: self.base_latency = 45.0 # S
 - **sample output:** `POST {"input_signal": 0.55, "frequency": 0.5} -> {"input_signal":0.55,"peak_intensity":0.6055337375087939,"latency_s":29.032258064516128,"hill":4.5,"frequency":0.5,"propagated":true,"trajectory_points":100,"method":"Hill-equation pulsatile cascade (owned signa`
 - **only one possible value in this deployment:** False
 

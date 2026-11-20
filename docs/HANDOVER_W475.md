@@ -133,9 +133,9 @@ Tier-1 count. If it is 0, P1 closes and P2.1 begins; if not, P1.18.
 
 ## 5. Paths, ports, lessons
 
-- Fable session scratchpad: `C:\Users\rehan\AppData\Local\Temp\claude\C--Users-rehan-Workstation\12e2760e-c675-46a5-bebf-674b90d8d076\scratchpad\` (`w473/`, `w474/`, `w475/`); `putil.py` lives in
+- Fable session scratchpad: `~\AppData\Local\Temp\claude\C--Users-rehan-Workstation\12e2760e-c675-46a5-bebf-674b90d8d076\scratchpad\` (`w473/`, `w474/`, `w475/`); `putil.py` lives in
   `…\3c6f55f6-3470-41fd-85ce-49dddc8a0486\scratchpad\w464\putil.py` (asserted replacements, CRLF-aware).
-- Workflow scripts/journals: `C:\Users\rehan\.claude\projects\C--Users-rehan-Workstation\12e2760e-…\workflows\scripts\` and
+- Workflow scripts/journals: `~\.claude\projects\C--Users-rehan-Workstation\12e2760e-…\workflows\scripts\` and
   `…\subagents\workflows\wf_73d530a4-c0b\journal.jsonl` (the v4 audit).
 - Ports used: :8083 (W474 audit, stopped). Next free: **:8084** (W475 probe), :8085 (M1 re-run).
 - Lessons this stretch: a `git add -u .` snapshot re-stages `git rm --cached` files and drops intent-to-adds —
@@ -149,6 +149,6 @@ Tier-1 count. If it is 0, P1 closes and P2.1 begins; if not, P1.18.
 ## 6. Open with the Owner
 
 None. FU-079 (chroma_db) was ruled by the Owner on 2026-09-19 and closed W477: read at W477, the two "populated" copies
-held 0 entries (the legacy `C:\Users\rehan\data\chroma_db`) and 1 (the repo's — a 30 March test exchange); the repo
+held 0 entries (the legacy `~\data\chroma_db`) and 1 (the repo's — a 30 March test exchange); the repo
 copy is the live store (`config/paths.py` CHROMA_DB_PATH), the legacy copy is retired and left on disk untouched. The
 relocation script's file-presence test that mislabelled them is FU-220 (P2.4).

@@ -1,7 +1,7 @@
 # HANDOVER W626 — CLOUD SESSION → LOCAL CLAUDE OPUS 5.5
 
 **Written** 2026-10-07 by the cloud session (claude.ai/code) that ran W602–W626. **For** a Claude Opus 5.5 session
-on the Owner's own machine (`C:\Users\rehan\Workstation`). Read this first, then `docs/FABLE_DELIVERY_PROMPT.md`.
+on the Owner's own machine (`~\Workstation`). Read this first, then `docs/FABLE_DELIVERY_PROMPT.md`.
 
 Everything is in git. Nothing of the work lives only in the cloud session — the two things that did (the edit
 and blind helpers, and the raw audit results) are committed with this document.
