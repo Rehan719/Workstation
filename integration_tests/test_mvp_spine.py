@@ -63561,16 +63561,18 @@ def test_w691_a_reviewer_agent_is_calibrated_by_its_recorded_run_and_never_by_a_
 
     #  THE SET IN THE TREE says it cannot be run yet, so NO agent is calibrated - and a run on it is refused
     the_set = cal.load_set("care")
-    assert the_set and cal.runnable(the_set)["runnable"] is False and len(the_set["cases"]) == 16   # W1099: computed
+    assert the_set and len(the_set["cases"]) == 16   # W1099: computed
+    #  W1122: its last two sources were read on 2026-11-19, so it can be run from that day and could not before
+    assert cal.runnable(the_set, on="2026-11-15")["runnable"] is False and cal.runnable(the_set, on="2026-11-19")["runnable"] is True
     assert sum(1 for c in the_set["cases"] if c.get("planted")) == 10
     runs = tmp_path / "review_calibration_runs.json"
     monkeypatch.setattr(cal, "_runs_path", lambda: runs)
     now = cal.calibration_of("care-reviewer")
-    assert now["calibrated"] is False and "cannot be run yet" in now["why_not"]
+    assert now["calibrated"] is False, now          # no run of it is recorded here, whatever the date
     today = _dt.date.today().isoformat()
     refused = client.post("/api/v1/review/calibration/run", json={"agent": "care-reviewer", "model": "m", "configuration": "model",
-                                                                 "date": today, "flags": {}})
-    assert refused.status_code == 409 and "cannot be run on" in refused.json()["detail"] and not runs.exists()
+                                                                 "date": "2026-11-15", "flags": {}})
+    assert refused.status_code == 409 and "cannot be run on 2026-11-15" in refused.json()["detail"] and not runs.exists()
 
     #  WHEN A SET CAN BE RUN (made to happen here), the run is recorded and the RATES ARE COMPUTED BY THE SERVER
     #  W1099 - a set can be run when it is written out, never because it says so
@@ -80824,7 +80826,8 @@ def test_w955_p513_each_care_tool_points_at_its_rows_of_the_register_read_now(cl
             assert re.search(r"not (?:been )?read", t["standard"]), (t["id"], t["standard"])
         if not t["sources"]:
             assert re.search(r"no source|no single published standard", t["standard"]), (t["id"], t["standard"])
-    assert rows["nice-ng97"]["status"] == "named_not_read" and rows["care-act-2014"]["status"] == "named_not_read"
+    #  W1122: NG97 was read at its publisher's page on 2026-11-19; the Care Act 2014 is still named and not read
+    assert rows["nice-ng97"]["status"] == "current" and rows["care-act-2014"]["status"] == "named_not_read"
 
     #  2. the answer reads each row now and says it in one sentence
     r = client.get("/api/v1/care/tools")
@@ -80839,7 +80842,9 @@ def test_w955_p513_each_care_tool_points_at_its_rows_of_the_register_read_now(cl
     if n2["recently_checked"]:
         assert f"within the {body['review_days']}-day review period" in n2["status_said"], n2
     ng97 = cat["dementia_care"]["sources"][0]
-    assert ng97["read"] is False and ng97["status_said"] == "named only: not read at its publisher's page", ng97
+    assert ng97["read"] is True and ng97["read_on"] == rows["nice-ng97"]["read_on"] == "2026-11-19", ng97
+    act = cat["safeguarding"]["sources"][0]
+    assert act["read"] is False and act["status_said"] == "named only: not read at its publisher's page", act
     falls = {s["id"]: s for s in cat["falls_risk"]["sources"]}
     assert falls["nice-cg161"]["status"] == "replaced" and "replaced by nice-ng249" in falls["nice-cg161"]["status_said"]
     assert cat["mental_health"]["sources"] == [] and cat["discharge"]["sources"] == []
@@ -90520,22 +90525,25 @@ def test_w1099_fu1054_the_care_calibration_set_is_written_out_and_run_only_when_
     raw = json.loads((root / "docs" / "CARE_REVIEW_CALIBRATION.json").read_text(encoding="utf-8"))
 
     #  1. THE SET IN THE TREE
-    assert "runnable" not in raw and "runnable_basis" not in raw and raw["version"] == "2-written", (
+    assert "runnable" not in raw and "runnable_basis" not in raw and raw["version"] == "3-written", (
         "a flag stands in the file where the computation was ruled")
     cases = {c["id"]: c for c in raw["cases"]}
     assert len(cases) == 16 and sum(1 for c in cases.values() if c.get("planted")) == 10
     for cid, c in cases.items():
-        assert bool(c.get("shown")) is (cid != "K06"), (cid, "written out" if c.get("shown") else "not written out")
+        #  W1122: the sixteenth, K06, is written out too, once NICE NG97 was read at its publisher's page
+        assert c.get("shown") and "not_written" not in c, (cid, "not written out")
         if c.get("planted"):
             assert c.get("must_flag") and len(str(c.get("from") or "")) > 40, (cid, c.get("from"))
         assert isinstance(c.get("relies_on"), list), cid
-    assert "NG97" in cases["K06"]["not_written"] and "verified against clinical guidance" in cases["C08"]["described_before"]
+    assert "NICE NG97" in cases["K06"]["shown"]["standard"] and "verified against clinical guidance" in cases["C08"]["described_before"]
+    #  W1122: the two causes outside this machine were read on 2026-11-19, so on that day the set can be run, and
+    #  on 2026-11-15 it could not: its four cases that rely on them rely on reads made after that date
+    assert cal.runnable(raw, on="2026-11-19") == {"runnable": True, "on": "2026-11-19", "why_not": []}
     on = cal.runnable(raw, on="2026-11-15")
-    chart = "relies on the chart itself (rcp-news2), which the register says was NOT READ"
+    late = "which was not read within the register's 90-day review period before 2026-11-15"
     assert on["runnable"] is False and sorted(on["why_not"]) == sorted([
-        f"C03 {chart}", f"C10 {chart}", f"K02 {chart}",
-        "K06 is described, not written out in full: " + cases["K06"]["not_written"],
-        "K06 relies on nice-ng97 being current, and the register holds it as named_not_read"]), on["why_not"]
+        f"C03 relies on rcp-news2, {late}", f"C10 relies on rcp-news2, {late}", f"K02 relies on rcp-news2, {late}",
+        f"K06 relies on nice-ng97, {late}"]), on["why_not"]
 
     #  ...and the route refuses a run on it with those reasons, writing nothing; no agent is calibrated on it
     runs = tmp_path / "review_calibration_runs.json"
@@ -90547,7 +90555,9 @@ def test_w1099_fu1054_the_care_calibration_set_is_written_out_and_run_only_when_
         "Not recorded: the calibration set cannot be run on 2026-11-15: " + "; ".join(on["why_not"]) + "."), refused.text[:400]
     assert not runs.exists(), "a refused run wrote the store"
     now = cal.calibration_of("w1099-reviewer")
-    assert now["calibrated"] is False and "cannot be run yet" in now["why_not"] and now["set_cannot_run"], now
+    #  W1122: read on today's date - the set can be run from 2026-11-19 until a source passes its review period
+    assert now["calibrated"] is False and ("cannot be run yet" in now["why_not"] if cal.runnable(raw)["runnable"] is False
+                                           else now["why_not"] == "this agent has never been run on the calibration set"), now
 
     #  2. COMPUTED FROM THE CASES AND THE REGISTER, each rule driven
     register = {"r-now": {"id": "r-now", "status": "current", "read_on": "2026-11-01",
@@ -91604,3 +91614,60 @@ def test_w1121_fu1151_the_two_audit_run_records_say_what_kind_of_place_each_was_
         assert not re.search(r"\b[A-Za-z]:(?:/|\\\\)", raw), (name, "a record names a place on a machine by its path")
         assert {k: raw.count(k) for k in want} == want, (name, {k: raw.count(k) for k in want})
         assert json.loads(raw), name
+
+
+def test_w1122_fu1054_the_calibration_sets_last_two_sources_are_read_and_its_sixteenth_case_is_written(client):
+    """FU-1054 part 4 (W1122). The Care calibration set could not be run for two causes outside this machine: the
+    NEWS2 chart itself had not been read at the college's page, and NICE NG97 had not been read at all, so the
+    sixteenth case waited on it. Both were read at their publishers on 2026-11-19. Held here:
+    - the register records both reads: the charts, with no part of the NEWS2 row said to be NOT READ, and NG97 as a
+      current row with its page, its two dates and what it covers;
+    - every band of Chart 1 and every threshold of Chart 2 is the one the tree's NEWS2 scoring applies, at each
+      boundary the chart draws;
+    - the sixteenth case is the dementia entry as the tools route gives it now, citing NG97 with the date it was
+      read; the set can be run on 2026-11-19 and could not be on 2026-11-15, before the reads."""
+    import json
+    from pathlib import Path
+    from agentic_core.api import _review_calibration as cal
+    from agentic_core.care.scoring import score_news2
+    root = Path(__file__).resolve().parents[1]
+    rows = {r["id"]: r for r in json.loads((root / "docs" / "SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    n2, ng = rows["rcp-news2"], rows["nice-ng97"]
+    assert n2["read_on"] == "2026-11-19" and "NOT READ" not in n2["says"] and "THE CHARTS READ 2026-11-19" in n2["says"], n2
+    assert (ng["status"], ng["page"], ng["read_on"]) == ("current", "https://www.nice.org.uk/guidance/ng97", "2026-11-19"), ng
+    assert "Published 20 June 2018" in ng["says"] and "Last reviewed 24 October 2025" in ng["says"], ng["says"]
+
+    #  Chart 1, at each boundary it draws, against a set of observations that otherwise scores nothing
+    base = {"resp_rate": 16, "spo2": 97, "oxygen": "air", "systolic_bp": 120, "pulse": 70, "consciousness": "alert", "temp": 37.0}
+
+    def pts(key, value, comp, **extra):
+        return score_news2({**base, key: value, **extra})["components"][comp]["points"]
+    for key, comp, table in (
+            ("resp_rate", "respiratory_rate", ((8, 3), (9, 1), (11, 1), (12, 0), (20, 0), (21, 2), (24, 2), (25, 3))),
+            ("spo2", "spo2_scale_1", ((91, 3), (92, 2), (93, 2), (94, 1), (95, 1), (96, 0))),
+            ("systolic_bp", "systolic_bp", ((90, 3), (91, 2), (100, 2), (101, 1), (110, 1), (111, 0), (219, 0), (220, 3))),
+            ("pulse", "pulse", ((40, 3), (41, 1), (50, 1), (51, 0), (90, 0), (91, 1), (110, 1), (111, 2), (130, 2), (131, 3))),
+            ("temp", "temperature", ((35.0, 3), (35.1, 1), (36.0, 1), (36.1, 0), (38.0, 0), (38.1, 1), (39.0, 1), (39.1, 2)))):
+        for value, want in table:
+            assert pts(key, value, comp) == want, (comp, value)
+    assert pts("consciousness", "voice", "consciousness") == 3 and pts("oxygen", "yes", "air_or_oxygen") == 2
+    for value, o2, want in ((83, "yes", 3), (84, "yes", 2), (85, "yes", 2), (86, "yes", 1), (87, "yes", 1), (88, "yes", 0),
+                            (92, "yes", 0), (93, "yes", 1), (94, "yes", 1), (95, "yes", 2), (96, "yes", 2), (97, "yes", 3),
+                            (93, "no", 0), (97, "no", 0)):
+        assert pts("spo2", value, "spo2_scale_2", spo2_scale=2, oxygen=o2) == want, ("SpO2 scale 2", value, o2)
+    #  Chart 2: 0 to 4 low, a 3 in any one parameter low-medium, 5 or 6 medium, 7 or more high
+    for obs, total, band in (({}, 0, "low"), ({"resp_rate": 21, "pulse": 91}, 3, "low"),
+                             ({"resp_rate": 25}, 3, "low-medium"), ({"resp_rate": 21, "systolic_bp": 100, "pulse": 91}, 5, "medium"),
+                             ({"resp_rate": 25, "systolic_bp": 100, "pulse": 111}, 7, "high")):
+        r = score_news2({**base, **obs})
+        assert (r["total"], r["band"]) == (total, band), (obs, r["total"], r["band"])
+
+    #  the sixteenth case is the dementia entry as the tools route gives it now, and the set runs from the reads' day
+    the_set = json.loads((root / "docs" / "CARE_REVIEW_CALIBRATION.json").read_text(encoding="utf-8"))
+    k06 = next(c for c in the_set["cases"] if c["id"] == "K06")
+    live = next(t for t in client.get("/api/v1/care/tools").json()["tools"] if t["id"] == "dementia_care")
+    keep = lambda e: {k: e[k] for k in ("id", "name", "type", "does", "standard")} | {
+        "sources": [{k: s[k] for k in ("id", "status", "page", "read_on", "read")} for s in e["sources"]]}
+    assert keep(k06["shown"]) == keep(live), (keep(k06["shown"]), keep(live))
+    assert "NICE NG97" in live["standard"] and "2026-11-19" in live["standard"] and live["sources"][0]["read"] is True
+    assert cal.runnable(the_set, on="2026-11-19")["runnable"] is True and cal.runnable(the_set, on="2026-11-15")["runnable"] is False

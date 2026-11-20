@@ -87,9 +87,9 @@
    ],
    "status": "current",
    "page": "https://www.rcp.ac.uk/resources/national-early-warning-score-news-2/",
-   "read_on": "2026-10-12",
-   "read_by": "rounds W676 and W678, in a browser",
-   "says": "Active, dated 19 December 2017: six physiological parameters, aggregated, with 2 added for supplemental oxygen. NOT READ: the chart itself. REUSE TERMS READ 2026-10-12: no copyright restriction on NEWS2 provided the stated acknowledgement is given, the material is not modified or amended in any way, and the charts are reproduced in colour."
+   "read_on": "2026-11-19",
+   "read_by": "rounds W676 and W678, in a browser; the charts by round W1122, fetched as PDFs at the college's page",
+   "says": "Active, dated 19 December 2017: six physiological parameters, aggregated, with 2 added for supplemental oxygen. THE CHARTS READ 2026-11-19 (W1122): Chart 1 (the scoring system), Chart 2 (thresholds and triggers) and Chart 4 (clinical response to the trigger thresholds), as the college publishes them; every band and threshold agentic_core/care/scoring.py applies matches them. REUSE TERMS READ 2026-10-12: no copyright restriction on NEWS2 provided the stated acknowledgement is given, the material is not modified or amended in any way, and the charts are reproduced in colour."
   },
   {
    "id": "gov-national-curriculum",
@@ -186,7 +186,11 @@
    "nation": [
     "England"
    ],
-   "status": "named_not_read"
+   "status": "current",
+   "page": "https://www.nice.org.uk/guidance/ng97",
+   "read_on": "2026-11-19",
+   "read_by": "round W1122, fetched at the institute's page",
+   "says": "Dementia: assessment, management and support for people living with dementia and their carers. Published 20 June 2018. Last reviewed 24 October 2025: NICE reviewed it and will not update the recommendations. It covers diagnosing and managing dementia, including Alzheimer's disease, with recommendations on training staff and helping carers to support people living with dementia."
   },
   {
    "id": "bapen-must-toolkit",
