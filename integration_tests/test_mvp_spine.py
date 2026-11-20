@@ -64836,8 +64836,12 @@ def _w703_faults(text, root, plan_slots, row_ids, routes=None, public=False):
             faults.append(f"a statement carries no label: {first[:70]}")
     #  a money figure stands only inside a statement the Owner ruled. The WHOLE STATEMENT is read - the first
     #  version looked 400 characters ahead of the line and so passed on whatever happened to follow it
+    #  W1136 (FU-1278) - or, by the Owner's ruling of 2026-11-19 (FU-1176), a provider's published price marked
+    #  SOURCED, in the same statement as the date it was read and its page or the record that lists the pages
     for block in re.split(r"\n(?=- |\d+\. |\n)", text):
-        if re.search(r"\b(GBP|USD|EUR)\s*\d|[£$€]\s*\d", block) and "[owner-defined" not in block:
+        _sourced = ("SOURCED" in block and re.search(r"\b20\d\d-\d\d-\d\d\b", block)
+                    and ("https://" in block or "`docs/DEPLOYMENT.md`" in block))
+        if re.search(r"\b(GBP|USD|EUR)\s*\d|[£$€]\s*\d", block) and "[owner-defined" not in block and not _sourced:
             faults.append(f"a money figure is stated with no ruling behind it: {block.strip()[:70]}")
     for line in text.splitlines():
         if re.search(r"\b\d[\d,]*\s+(users|customers|subscribers|learners)\b", line):
@@ -78289,8 +78293,9 @@ def test_w920_fu742_the_founders_guide_gives_only_commands_a_guard_runs_on_the_t
     #  the gates in the plan's order; no channel called free or priced; the mandates row names the guide
     assert re.findall(r"\[plan item (P4\.\d)\]", guide) == ["P4.1", "P4.2", "P4.3", "P4.4", "P4.5", "P4.6"]
     assert not re.search(r"\bfree\b", guide, re.I) and "No channel here is promised to cost nothing." in guide
-    #  W923 - the price section waits on the Owner's decision row, named where the guide stops
-    assert re.search(r"waits on your decision in row FU-\d+: whether this guide may quote", guide)
+    #  W923 - the price section waited on the Owner's decision row; W1136 (FU-1278) applies the ruling of
+    #  2026-11-19: the guide states the price as SOURCED, and still calls no channel free
+    assert "as the Owner ruled on 2026-11-19 in row FU-1176" in guide and "waits on your decision" not in guide
     mandates = (root / "docs/compliance/MANDATES.md").read_text(encoding="utf-8")
     assert "`docs/business/FOUNDERS_GUIDE.md`" in mandates and "the setup document does not" not in mandates
 
@@ -78441,9 +78446,13 @@ def test_w923_fu742_the_guides_price_section_is_put_to_the_owner_with_the_recomm
     assert f"{row['id']} (W923):" not in still, "a ruled question is still put to the Owner"
 
     guide = (root / "docs/business/FOUNDERS_GUIDE.md").read_text(encoding="utf-8")
-    assert f"waits on your decision in row {row['id']}: whether this guide may quote" in guide
-    assert "[owner decision]" in guide and "stays open for it" not in guide
-    assert not re.search(r"[£$€]\s*\d|\b(GBP|USD|EUR)\s*\d", guide), "the guide quotes a price before the ruling"
+    #  W1136 (FU-1278): the ruling is applied - the guide states the deploy channel's published price as SOURCED,
+    #  with its pages and the date they were read, and no longer says the question waits on the Owner
+    assert f"waits on your decision in row {row['id']}" not in guide and "stays open for it" not in guide
+    assert f"as the Owner ruled on 2026-11-19 in row {row['id']}. [owner-defined, 2026-11-19]" in guide
+    for _blk in re.split(r"\n(?=- |\d+\. |\n)", guide):
+        if re.search(r"[£$€]\s*\d|\b(GBP|USD|EUR)\s*\d", _blk):
+            assert "SOURCED" in _blk and "2026-11-20" in _blk and "`docs/DEPLOYMENT.md`" in _blk, _blk[:120]
 
 
 def test_w924_fu399_a_genesis_journeys_stage_rail_and_rank_stage_are_guarded_by_a_render(client):
@@ -81313,7 +81322,10 @@ def test_w962_fu807_the_cost_model_marks_every_cost_by_where_it_came_from_and_fi
     assert len(table) == 8, len(table)
     for row in table:
         for cell in [c.strip() for c in row.strip("|").split("|")[1:4]]:
-            assert re.fullmatch(r"(free tier, )?NOT MEASURED|none|none kept off it|kept apart below", cell), (row, cell)
+            #  W1136 (FU-1278): a cell may be SOURCED, under the Owner's ruling of 2026-11-19; an amount only so
+            assert re.fullmatch(r"(free tier, )?NOT MEASURED|none|none kept off it|kept apart below|SOURCED[:,] [^|]+",
+                                cell), (row, cell)
+            assert not re.search(r"[£$€]\s*\d", cell) or cell.startswith("SOURCED"), (row, cell)
     assert "| The founder's time | kept apart below | kept apart below | kept apart below |" in text
     for scen in ("LEAN is the first deploy the Owner ruled", "BASE adds what opening to a first person other than the Owner would need",
                  "HIGHER ASSURANCE adds the outside help scoped in"):
@@ -92582,3 +92594,58 @@ def test_w1135_no_tracked_document_names_the_owners_windows_home_folder_by_its_p
     fixed = [r for r in rows if r.get("title") == ("Tracked documents name the Owner's Windows home folder by its "
                                                    "full path, the user name in it")]
     assert len(fixed) == 1 and fixed[0]["source"].startswith("W1135 "), fixed
+
+
+def test_w1136_fu1278_the_deploy_channels_published_price_is_stated_as_sourced_with_its_pages_and_date():
+    """FU-1278 (W1136), P5.6; the Owner's ruling of 2026-11-19 (FU-1176): a provider's published price may be stated,
+    cited with its page and the date it was read, labelled observed; the guide promises no zero bill. Held here:
+    - the founder's guide and the cost model state Google's price as SOURCED, read on 2026-11-20, pointing at the
+      deploy section that lists the pages, and every figure either states is one that section states;
+    - neither says the question still waits on the Owner, and the guide still promises no channel costs nothing;
+    - P5.6's guard passes both, refuses a price with a date and a page but no SOURCED mark, and refuses one marked
+      SOURCED with no date read; the cost table holds an amount only in a SOURCED cell."""
+    import json
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _fu
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")
+    dep = read("docs/DEPLOYMENT.md").split("## The Google Cloud deploy, step by step (P4.5), read at Google's pages "
+                                           "on 2026-11-20 (W1134)", 1)[1].split("\n## ", 1)[0]
+    stated = set(re.findall(r"\$\d+(?:\.\d+)?", dep))
+    assert {"$0.005", "$3.65", "$0.16"} <= stated, stated
+    guide, cost = read("docs/business/FOUNDERS_GUIDE.md"), read("docs/business/COST_MODEL.md")
+
+    google = [b for b in re.split(r"\n(?=- )", guide) if b.startswith("- Google Cloud, plan item P4.5")]
+    assert len(google) == 1, "the guide has no single line for the Google Cloud channel"
+    line = " ".join(google[0].split())
+    for said in ("SOURCED from Google's own pages, read on 2026-11-20", "`docs/DEPLOYMENT.md`", "$0.005 an hour",
+                 "about $3.65 a month", "at most about $0.16 a month", "charged at a rate not read", "[observed]"):
+        assert said in line, said
+    for doc, name in ((guide, "guide"), (cost, "cost model")):
+        for amount in re.findall(r"\$\d+(?:\.\d+)?", doc):
+            assert amount in stated, (name, amount, "a figure the deploy section does not state")
+        flat = " ".join(doc.split())
+        for waits in ("waits on your decision in row FU-1176", "once row FU-1176 is decided",
+                      "the Owner's question (row FU-1176)"):
+            assert waits not in flat, (name, "still says the question waits on the Owner", waits)
+        assert "as the Owner ruled on 2026-11-19 in row FU-1176" in flat and "[owner-defined, 2026-11-19]" in flat, name
+    assert "- No channel here is promised to cost nothing. [observed]" in guide
+    assert "the bill is not promised to be zero" in " ".join(cost.split())
+
+    plan_slots = {i["slot"] for i in _fu.plan_items(read("docs/FABLE_DELIVERY_PROMPT.md"))}
+    rows = {r["id"] for r in json.loads(read("docs/FOLLOWUPS.json"))["items"]}
+    faults = _w703_faults
+    assert faults(guide, root, plan_slots, rows) == [] and faults(cost, root, plan_slots, rows) == []
+    opening = "# A\n\nDRAFT until the Owner ratifies it.\n\n## B\n\n"
+    unmarked = opening + "- The machine costs $4 a month, read on 2026-11-20 at `docs/DEPLOYMENT.md`. [observed]\n"
+    undated = opening + "- SOURCED: the machine costs $4 a month, at `docs/DEPLOYMENT.md`. [observed]\n"
+    marked = opening + "- SOURCED: the machine costs $4 a month, read on 2026-11-20 at `docs/DEPLOYMENT.md`. [observed]\n"
+    assert any("a money figure is stated with no ruling behind it" in f for f in faults(unmarked, root, plan_slots, rows))
+    assert any("a money figure is stated with no ruling behind it" in f for f in faults(undated, root, plan_slots, rows))
+    assert faults(marked, root, plan_slots, rows) == []
+    table = cost.split("## The cost lines", 1)[1].split("\n## ", 1)[0]
+    cells = [c.strip() for ln in table.splitlines() if ln.startswith("| ") and "---" not in ln
+             and not ln.startswith("| Line") for c in ln.strip("|").split("|")[1:4]]
+    priced = [c for c in cells if "$" in c]
+    assert priced and all(c.startswith("SOURCED") for c in priced), priced

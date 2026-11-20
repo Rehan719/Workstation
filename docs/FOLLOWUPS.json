@@ -25959,11 +25959,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.6",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1136",
       "note": "",
       "slot_source": "the founder's guide is P5.6's (W920); ruled 2026-11-19 on FU-1176",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1136: the founder's guide and the cost model state Google Cloud's published price as SOURCED, from Google's pages read on 2026-11-20 and listed in docs/DEPLOYMENT.md, as the Owner ruled on 2026-11-19 (FU-1176): about $3.65 a month for the machine's public address, at most about $0.16 for the registry, the machine and its disks not charged within the published allowances. P5.6's guard lets a money figure stand only as ruled or as SOURCED with its page and date; neither document still says the question waits, and no zero bill is promised."
     },
     {
       "id": "FU-1279",
