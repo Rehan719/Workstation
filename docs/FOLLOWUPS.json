@@ -21090,11 +21090,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1125",
       "note": "",
       "slot_source": "the Owner's rulings of 2026-10-12 chartered this item",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1124 and W1125 (OWNER RULING 2026-10-12, P5.16 clauses 3 and 4; released for a made-up entity on 2026-11-19). Each cycle takes the platform's fee first: a quarter of the profit, posted as one line for a registered profit-distributing entity; none for the apex or a non-distributing form; a simulation's fee shown and never posted. The split is over what remains, and the stages and the fee sum to the profit to the cent (test_w1124, four blinds). The VSB Economy page shows the profit, the fee, what the split was over and the fee the books carry, rendered against the routes' answers (VSBEconomy.fee.test.tsx and test_w1125, seven blinds). The cockpit's latest cycle is its own row (W1125)."
     },
     {
       "id": "FU-1058",
@@ -25991,6 +25994,24 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P5.7 clause 2 asks the cost model for the gates; ruled 2026-11-19 on FU-1191",
+      "tier": 2
+    },
+    {
+      "id": "FU-1281",
+      "title": "The cockpit's latest cycle says the platform fee it took and what the split was over",
+      "why": "P5.16's ACCEPT: the entity's page shows profit, fee and the base the split used. W1125 drew them on the VSB Economy page, held by a render. The cockpit's economy tab shows its latest cycle's intake, costs, reserve and distributable profit, and not the fee taken first nor what the split was over, so its stages read short of the profit by the fee. Its rendered tests run no cycle that succeeds; the change is made with one that does.",
+      "source": "W1125 (FU-1057 part 2, the fee on the entity's page)",
+      "found": "2026-11-20",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.16",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.16 clause 3 (FU-1057): the fee on the entity's page",
       "tier": 2
     }
   ],

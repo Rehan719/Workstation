@@ -91825,3 +91825,57 @@ def test_w1124_fu1057_the_platform_fee_is_a_quarter_of_the_profit_taken_first_an
     assert "never posted" in sf["basis"]
     to_the_cent(sim)
     assert fee_lines("w1124-unregistered-scope") == []
+
+
+def test_w1125_fu1057_the_economy_page_shows_the_profit_the_platform_fee_and_what_the_split_was_over(client):
+    """FU-1057 part 2 (W1125), P5.16. The ACCEPT asks that the cycle's answer AND the entity's page show profit, fee and
+    the base the split used. W1124 put them in the cycle's answer and the board pack; no page drew them. The VSB Economy
+    page now draws the fee and what the split was over beside the distributable profit, with the fee's own sentence,
+    and its board pack draws the fee the books carry, with its basis; VSBEconomy.fee.test.tsx renders them against the
+    routes' own answers. Held here:
+    - the fixture that rendered test reads is what the routes answer now, as the page asks them (10,000 WST in, 1,000
+      of costs): the apex's cycle pays no fee and its split is over the whole profit; a made-up registered entity's
+      cycle posts a quarter of its 7,000 profit and its split is over the 5,250 that remains; the pack after it
+      carries the 1,750; each compared with a live answer on every field of the fee;
+    - the page draws each of them where the rendered test reads them;
+    - the cockpit's latest cycle, which its rendered tests do not run, is its own row."""
+    import json
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    page = root / "apps/workstation-superapp/src/pages/enterprise"
+    fx = json.loads((page / "VSBEconomy.fee.fixture.json").read_text(encoding="utf-8"))
+
+    def cycle(case, vid):
+        ask = {**fx[case]["cycle"]["request"], "vsb_id": vid}
+        r = client.post("/api/v1/economy/cycle", json=ask)
+        assert r.status_code == 200, r.text[:300]
+        return r.json()["cycle"]
+
+    a, af = cycle("apex", "workstation-idbo"), fx["apex"]["cycle"]["body"]["cycle"]
+    assert a["platform_fee"] == af["platform_fee"] and a["split_base_wst"] == af["split_base_wst"] == a["distributable_profit"], (a["platform_fee"], af["platform_fee"])
+    assert (af["platform_fee"]["fee_wst"], af["platform_fee"]["exempt"]) == (0.0, "apex")
+
+    est = client.post("/api/v1/genesis/establish", json={"problem": "w1125 a made-up bakery for a village school",
+                                                         "name": "W1125 Village Bakery", "ship_output": False})
+    assert est.status_code == 200, est.text[:300]
+    vid = est.json()["vsb_id"]
+    e, ef = cycle("entity", vid), fx["entity"]["cycle"]["body"]["cycle"]
+    assert e["platform_fee"] == ef["platform_fee"], (e["platform_fee"], ef["platform_fee"])
+    assert (ef["distributable_profit"], ef["platform_fee"]["fee_wst"], ef["split_base_wst"], ef["platform_fee"]["posted"]) == (7000.0, 1750.0, 5250.0, True), ef["platform_fee"]
+    assert e["split_base_wst"] == ef["split_base_wst"] and e["distributable_profit"] == ef["distributable_profit"]
+    key = f"/api/v1/economy/board-pack?vsb_id={fx['entity']['vsb_id']}&entity_type=waqf_ltd_hybrid"
+    pf = fx["entity"]["after"][key]["body"]["profit_and_loss"]
+    pl = client.get("/api/v1/economy/board-pack", params={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid"}).json()["profit_and_loss"]
+    assert (pl["total_platform_fee_wst"], pl["total_platform_fee_wst_basis"]) == (pf["total_platform_fee_wst"], pf["total_platform_fee_wst_basis"]) == (1750.0, pf["total_platform_fee_wst_basis"]), pl
+
+    src = (page / "VSBEconomy.tsx").read_text(encoding="utf-8")
+    for drawn in ('<Metric label="Platform fee" value={cycle.platform_fee.fee_wst} />',
+                  '<Metric label="Split over" value={cycle.split_base_wst} />', 'data-testid="cycle-platform-fee"',
+                  '<Metric label="Platform fee (cumulative)"', 'data-testid="pack-platform-fee"'):
+        assert drawn in src, ("the page does not draw it", drawn)
+    test = (page / "VSBEconomy.fee.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './VSBEconomy.fee.fixture.json';" in test and test.count("it(") == 2
+
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    rows = [r for r in reg if r.get("title") == "The cockpit's latest cycle says the platform fee it took and what the split was over"]
+    assert len(rows) == 1 and rows[0]["slot"] == "P5.16" and rows[0]["source"].startswith("W1125 "), rows

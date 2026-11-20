@@ -1,0 +1,2752 @@
+{
+ "apex": {
+  "vsb_id": "workstation-idbo",
+  "opening": {
+   "/api/v1/economy/entity-types": {
+    "status": 200,
+    "body": {
+     "default": "waqf_ltd_hybrid",
+     "types": [
+      {
+       "id": "sole",
+       "name": "Sole Holder",
+       "description": "Individual-owned; owner-centric distribution.",
+       "distributes_profit": true,
+       "capital_preserved": false,
+       "waterfall": {
+        "owner": 0.55,
+        "self_investment": 0.25,
+        "capital_fund": 0.1,
+        "user_projects": 0.05,
+        "charity": 0.05
+       }
+      },
+      {
+       "id": "ltd",
+       "name": "Private Limited (Ltd)",
+       "description": "Default commercial company, limited liability.",
+       "distributes_profit": true,
+       "capital_preserved": false,
+       "waterfall": {
+        "owner": 0.2,
+        "self_investment": 0.3,
+        "capital_fund": 0.2,
+        "user_projects": 0.15,
+        "charity": 0.15
+       }
+      },
+      {
+       "id": "plc",
+       "name": "Public Limited (PLC)",
+       "description": "Public company; shareholder distributions; built for scale.",
+       "distributes_profit": true,
+       "capital_preserved": false,
+       "waterfall": {
+        "owner": 0.3,
+        "self_investment": 0.3,
+        "capital_fund": 0.25,
+        "user_projects": 0.08,
+        "charity": 0.07
+       }
+      },
+      {
+       "id": "trust",
+       "name": "Trust",
+       "description": "Assets held by trustee for beneficiaries under a deed.",
+       "distributes_profit": true,
+       "capital_preserved": true,
+       "waterfall": {
+        "owner": 0.2,
+        "self_investment": 0.2,
+        "capital_fund": 0.3,
+        "user_projects": 0.15,
+        "charity": 0.15
+       }
+      },
+      {
+       "id": "waqf",
+       "name": "Waqf (Endowment)",
+       "description": "Perpetual endowment; capital preserved; usufruct to causes.",
+       "distributes_profit": true,
+       "capital_preserved": true,
+       "waterfall": {
+        "owner": 0.05,
+        "self_investment": 0.2,
+        "capital_fund": 0.3,
+        "user_projects": 0.15,
+        "charity": 0.3
+       }
+      },
+      {
+       "id": "multinational",
+       "name": "Multinational Group",
+       "description": "Cross-jurisdiction group; multi-entity distribution.",
+       "distributes_profit": true,
+       "capital_preserved": false,
+       "waterfall": {
+        "owner": 0.25,
+        "self_investment": 0.35,
+        "capital_fund": 0.2,
+        "user_projects": 0.1,
+        "charity": 0.1
+       }
+      },
+      {
+       "id": "nonprofit",
+       "name": "Non-profit",
+       "description": "Mission-first; surplus reinvested or donated, no owner profit.",
+       "distributes_profit": false,
+       "capital_preserved": true,
+       "waterfall": {
+        "owner": 0.0,
+        "self_investment": 0.45,
+        "capital_fund": 0.2,
+        "user_projects": 0.15,
+        "charity": 0.2
+       }
+      },
+      {
+       "id": "charity",
+       "name": "Charity",
+       "description": "Registered charitable purpose; maximal charitable allocation.",
+       "distributes_profit": false,
+       "capital_preserved": true,
+       "waterfall": {
+        "owner": 0.0,
+        "self_investment": 0.15,
+        "capital_fund": 0.1,
+        "user_projects": 0.1,
+        "charity": 0.65
+       }
+      },
+      {
+       "id": "qep_waqf_trust",
+       "name": "QEP Waqf Endowment + Not-for-Profit Trust (A.8)",
+       "description": "The Quran Education Platform's own economic model (vision A.8): a Waqf Endowment Board stewarding gifts alongside a Not-for-Profit Trust running the platform. FROM A.8 AND NOT ADJUSTABLE BY A ROUND: no owner profit (100% donation and waqf-backed) and a surplus cap of 5% with reinvestment. THE REMAINING THREE PROPORTIONS ARE A DEFAULT INSIDE THOSE CONSTRAINTS, not the Owner's stated figures: the endowment takes the largest retained share because A.8 charges it with perpetual funding, learners are the beneficiaries because the platform is free at the point of use, and the charity share is Zakat-eligible. Virtual WST only.",
+       "distributes_profit": false,
+       "capital_preserved": true,
+       "waterfall": {
+        "owner": 0.0,
+        "self_investment": 0.05,
+        "capital_fund": 0.35,
+        "user_projects": 0.4,
+        "charity": 0.2
+       }
+      },
+      {
+       "id": "waqf_ltd_hybrid",
+       "name": "Waqf-Ltd Hybrid (recommended)",
+       "description": "Commercial earnings (Ltd) under endowment governance (Waqf) with a charitable waterfall — the recommended default for the Owner's vision.",
+       "distributes_profit": true,
+       "capital_preserved": true,
+       "waterfall": {
+        "owner": 0.2,
+        "self_investment": 0.3,
+        "capital_fund": 0.2,
+        "user_projects": 0.15,
+        "charity": 0.15
+       }
+      }
+     ],
+     "note": "Selectable at VSB generation. All flows are virtual/simulated WST."
+    }
+   },
+   "/api/v1/economy/living-vsbs": {
+    "status": 200,
+    "body": {
+     "living_vsbs": [],
+     "total": 0,
+     "history_unavailable": null,
+     "cycle_counts_basis": "`operating_cycles` is this roster's own tally; `ledger_cycles` is what the entity's books record. They differ whenever a cycle ran outside the roster.",
+     "note": "Established VSB enterprises the organism autonomously tends (paced virtual economy cycles on the circadian heartbeat). Virtual/simulated — no real funds.",
+     "autonomous_cycles": false,
+     "autonomous_cycles_note": "OFF — the heartbeat's Self-run lever is off: no roster cycle runs until both are on (the Heartbeat page)"
+    }
+   },
+   "/api/v1/economy/owner-payments?vsb_id=workstation-idbo": {
+    "status": 200,
+    "body": {
+     "vsb_id": "workstation-idbo",
+     "owner": null,
+     "currency": "WST",
+     "account_exists": false,
+     "owner_recorded": false,
+     "owner_basis": "no account exists for this id - nothing has accrued to it, so there is nothing to pay",
+     "account_name": null,
+     "registry_owner": null,
+     "owner_matches_registry": null,
+     "owner_registry_basis": "no account exists for this id, so there is no recorded owner to check",
+     "accrued_total_wst": 0.0,
+     "paid_out_total_wst": 0.0,
+     "balance_wst": 0.0,
+     "entries": [],
+     "entries_stored": 0,
+     "entries_shown": 0,
+     "entries_dropped": 0,
+     "entries_kept_from": null,
+     "entries_truncated": false,
+     "entries_history_basis": "complete: all 0 entries recorded for this account are stored (an account keeps at most 200)",
+     "pending_from_failed_accruals": {
+      "rows": [],
+      "total_wst": 0,
+      "unreadable": null
+     },
+     "simulated": false,
+     "simulated_basis": null,
+     "real_money_rails": "DISABLED",
+     "real_money_enabled": false,
+     "note": "Virtual/simulated WST only. Real-money payouts are gated until the Owner explicitly authorises real rails AND a compliance/KYC review passes — no real funds move.",
+     "payout_requests": [],
+     "payout_requests_basis": "every Change Control record the payout gate filed for this account; each state is computed from that record when this is read",
+     "owner_share_reconciliation": {
+      "vsb_id": "workstation-idbo",
+      "owner_share_is": "The owner's share is what the book of record distributed to the owner: the double-entry owner postings (the Owner's ruling of 2026-10-12). The owner account is the record a payout draws on; where it differs from the book of record, the difference is said here and nothing is corrected. The pot is a derived view and holds books older than double entry.",
+      "known": true,
+      "ledger_exists": false,
+      "account_exists": false,
+      "accrued_wst": 0.0,
+      "paid_out_wst": 0.0,
+      "pending_claims_wst": 0.0,
+      "simulated": false,
+      "not_accrued_wst": null,
+      "accrued_beyond_book_wst": null,
+      "basis": "There is no ledger for workstation-idbo, so what its owner account accrued (0.00 WST) has no book of record to be checked against. Read only: nothing was accrued or posted to close a difference."
+     }
+    }
+   },
+   "/api/v1/economy/board-pack?vsb_id=workstation-idbo&entity_type=waqf_ltd_hybrid": {
+    "status": 200,
+    "body": {
+     "vsb_id": "workstation-idbo",
+     "entity_type": "waqf_ltd_hybrid",
+     "entity_name": "Waqf-Ltd Hybrid (recommended)",
+     "attribution": {
+      "entity_type_source": "caller_claimed",
+      "owner_source": "role_word",
+      "entity_type": "waqf_ltd_hybrid",
+      "claimed_entity_type": null,
+      "claim_ignored": false,
+      "form_note": "form 'waqf_ltd_hybrid' from caller_claimed"
+     },
+     "currency": "WST (virtual)",
+     "generated_at": "2026-11-20T00:47:44Z",
+     "profit_and_loss": {
+      "total_revenue_wst": 0.0,
+      "total_reserves_wst": 0.0,
+      "reserve_fund_live_wst": 0.0,
+      "total_reserves_wst_basis": "cumulative reserve allocations recorded by cycles; excludes transfers out of the fund and period closes",
+      "reserve_fund_live_wst_basis": "the live double-entry reserve_fund balance — what the fund actually holds now",
+      "total_costs_wst": 0.0,
+      "total_platform_fee_wst": 0.0,
+      "total_platform_fee_wst_basis": "the platform's fee (P5.16 clause 3): a quarter of each profitable cycle's profit, taken first and posted as one line. The apex and a non-distributing entity pay none, and a simulation's fee is shown on its cycle and never posted, so it is in no book",
+      "total_distributed_wst": 0.0,
+      "distribution_by_stage": {
+       "owner": 0.0,
+       "self_investment": 0.0,
+       "capital_fund": 0.0,
+       "user_projects": 0.0,
+       "charity": 0.0
+      }
+     },
+     "waterfall": {
+      "effective": {
+       "owner": 0.2,
+       "self_investment": 0.3,
+       "capital_fund": 0.2,
+       "user_projects": 0.15,
+       "charity": 0.15
+      },
+      "source": "entity_template"
+     },
+     "owner_payments": {
+      "accrued_wst": 0.0,
+      "paid_out_wst": 0.0,
+      "balance_wst": 0.0,
+      "real_money_rails": "DISABLED",
+      "available": true
+     },
+     "venture_portfolio": {
+      "invested_total_wst": 0.0,
+      "positions": 0,
+      "funding_state": "recorded_unfunded",
+      "funding_basis": "recorded, unfunded — the investee is NOT credited. The position is the investor's own record of an allocation; no intake is queued for the named entity and its waterfall never receives this amount. Virtual WST throughout.",
+      "holdings": []
+     },
+     "charitable_giving": {
+      "total_given_wst": 0.0,
+      "label": "allocated (virtual, every grant unassessed)",
+      "basis": "the charity pot's balance in virtual WST: allocated, not given - no real money moves here - and each grant carries the compliance screen's verdict, which can refuse a grant and cannot clear one ('review' means unassessed)"
+     },
+     "organism_posture": {
+      "mode": "NOMINAL",
+      "composite_health": 0.872,
+      "composite_health_measured_only": null,
+      "composite_health_measured_weight": 0.0,
+      "composite_health_basis": "0% of this figure's weight is measured (nothing); the rest is an immune term with NO call observed in its window (the absence of failures, not a reading), a self-healing term defaulted to 1.0 and a simulated metabolic term. The measured-only score is None, and that is what decides the mode and every gate.",
+      "atp_ratio": 0.358,
+      "energy_ratio": 1.0,
+      "energy_acts": false,
+      "energy_basis": "1 - 0.0s spent / 3600s stated capacity this window (the capacity is a stated assumption); the work budget is switched off (WORKSTATION_WORK_BUDGET), so nothing reads this figure: the energy thresholds read the ATP simulator, which cannot fall, and stay inert as ruled"
+     },
+     "statements": {
+      "period": {
+       "from_posting": 0,
+       "postings": 0,
+       "opened_after_close": 0
+      },
+      "profit_and_loss": {
+       "income": {
+        "revenue": 0.0
+       },
+       "expenses": {
+        "distribution_owner": 0.0,
+        "distribution_self_investment": 0.0,
+        "development_spend": 0.0,
+        "distribution_capital_fund": 0.0,
+        "distribution_user_projects": 0.0,
+        "distribution_charity": 0.0,
+        "transfer_out": 0.0,
+        "operating_costs": 0.0,
+        "platform_fee": 0.0
+       },
+       "total_income_wst": 0.0,
+       "total_expenses_wst": 0.0,
+       "net_profit_wst": 0.0,
+       "distributions_wst": 0.0,
+       "operating_result_before_distributions_wst": 0.0,
+       "net_profit_basis": "SURPLUS AFTER WATERFALL DISTRIBUTIONS, not a profit: this chart types every distribution pot (owner, self-investment, capital fund, user projects, charity) as an expense and has no liability account, so retained funds and the Owner's share are counted as spent, and an owner share accrued but unpaid is booked as paid (the payable is in owner payments). operating_result_before_distributions_wst is the figure before the waterfall."
+      },
+      "balance_sheet": {
+       "assets": {},
+       "liabilities": {},
+       "equity": {
+        "current_period_net_profit": 0.0
+       },
+       "assets_total_wst": 0,
+       "liabilities_and_equity_total_wst": 0.0,
+       "balanced": true
+      },
+      "cash_flow": {
+       "operating_receipts_wst": 0,
+       "operating_payments_wst": 0,
+       "net_cash_movement_wst": 0,
+       "scope": "postings that touch the `cash` account only",
+       "basis": "receipts are postings DEBITING `cash` and payments are postings CREDITING it, so this is movement through one account and not a statement about the enterprise's whole cash position. The cycle's compat postings route their amounts through `cash` in equal and opposite totals, so net_cash_movement_wst is ZERO BY CONSTRUCTION on any period built from them — a zero here is not a finding that cash in matched cash out. Inter-VSB transfers and reserve movements post against `reserve_fund` and are NOT counted here"
+      },
+      "trial_balance": {
+       "debit_side_total": 0,
+       "credit_side_total": 0,
+       "balanced": true,
+       "postings": 0,
+       "scope": "the double-entry CHART OF ACCOUNTS, summed by normal balance. These totals are not comparable with balances(), which is the seven waterfall pots: an asset-to-asset movement nets to zero here and still shows in a pot, and that is agreement, not divergence"
+      },
+      "prepared_by": "the ledger's own close routine - deterministic arithmetic over the double-entry postings. No C-Suite resource was consulted and no agent reviewed these figures",
+      "disclaimer": "Virtual/simulated WST units — not real money."
+     },
+     "ledger": {
+      "entry_count": 0,
+      "recent": [],
+      "by_source": {
+       "by_source": [],
+       "not_stated": {
+        "source": null,
+        "count": 0,
+        "total_wst": 0.0,
+        "basis": "written before postings carried a source, or by a caller that states none - these are NOT attributed to any source"
+       },
+       "unknown_sources": [],
+       "total_wst": 0.0,
+       "tagged_share": null,
+       "basis": "split from each posting's own `source` tag, which names what moved the money. A posting with no tag is counted under `not_stated` and attributed to nothing - the books held no source before this, so an untagged posting is not evidence of any."
+      }
+     },
+     "registration": "UNREGISTERED",
+     "registration_basis": "'workstation-idbo' is not a registered living entity: these books and any Owner accrual were written by SIMULATION cycles run on request values and belong to no entity that exists. Virtual WST only.",
+     "governance": "gaas.v5-gated cycles · UEG append-only audit · arms-length distribution policy",
+     "disclaimer": "Virtual/simulated WST only — no real funds. Real-money rails are gated until the Owner authorises them AND a compliance review passes."
+    }
+   },
+   "/api/v1/economy/waterfall?vsb_id=workstation-idbo&entity_type=waqf_ltd_hybrid": {
+    "status": 200,
+    "body": {
+     "vsb_id": "workstation-idbo",
+     "entity_type": "waqf_ltd_hybrid",
+     "entity_type_source": "caller_claimed",
+     "claimed_entity_type": null,
+     "claim_ignored": false,
+     "form_note": "form 'waqf_ltd_hybrid' from caller_claimed",
+     "entity_name": "Waqf-Ltd Hybrid (recommended)",
+     "waterfall": {
+      "owner": 0.2,
+      "self_investment": 0.3,
+      "capital_fund": 0.2,
+      "user_projects": 0.15,
+      "charity": 0.15
+     },
+     "source": "entity_template",
+     "template_default": {
+      "owner": 0.2,
+      "self_investment": 0.3,
+      "capital_fund": 0.2,
+      "user_projects": 0.15,
+      "charity": 0.15
+     },
+     "stages": [
+      "owner",
+      "self_investment",
+      "capital_fund",
+      "user_projects",
+      "charity"
+     ],
+     "bound_rule": "a stage the entity's template funds cannot be set to zero, and a waqf-form entity keeps at least its template's charity share (Owner ruling 2026-10-11)",
+     "out_of_bound": [],
+     "out_of_bound_basis": null,
+     "constraints": {
+      "distributes_profit": true,
+      "capital_preserved": true
+     },
+     "note": "Proportions of distributable profit (after reserves), summing to 1.0. Virtual/simulated WST."
+    }
+   },
+   "/api/v1/economy/ventures/portfolio?vsb_id=workstation-idbo": {
+    "status": 200,
+    "body": {
+     "vsb_id": "workstation-idbo",
+     "currency": "WST",
+     "invested_total": 0.0,
+     "positions_count": 0,
+     "holdings": [],
+     "pending_returns_wst": 0.0,
+     "returns_total": 0.0,
+     "recycled_total_wst": 0.0,
+     "funding_state": "recorded_unfunded",
+     "funding_basis": "recorded, unfunded — the investee is NOT credited. The position is the investor's own record of an allocation; no intake is queued for the named entity and its waterfall never receives this amount. Virtual WST throughout.",
+     "funding_share": null,
+     "funding_share_source": null,
+     "funded_total_wst": 0.0,
+     "last_funding": null,
+     "note": "No venture investments yet (virtual)."
+    }
+   },
+   "/api/v1/economy/ventures/candidates?vsb_id=workstation-idbo&top=5": {
+    "status": 200,
+    "body": {
+     "candidates": [
+      {
+       "id": "v_health_triage",
+       "name": "Community health-triage assistant",
+       "domain": "care",
+       "outcome": 0.85,
+       "value": 0.8,
+       "benefit": 0.9,
+       "feasibility": 0.78,
+       "strategic_fit": 0.82,
+       "score": 0.834,
+       "score_basis": "policy constants (stage/operating/governance/domain) — not a measurement",
+       "tied_with": 0
+      },
+      {
+       "id": "v_edu_tutor",
+       "name": "Adaptive tutor for under-resourced schools",
+       "domain": "education",
+       "outcome": 0.82,
+       "value": 0.78,
+       "benefit": 0.92,
+       "feasibility": 0.75,
+       "strategic_fit": 0.85,
+       "score": 0.8225,
+       "score_basis": "policy constants (stage/operating/governance/domain) — not a measurement",
+       "tied_with": 0
+      },
+      {
+       "id": "v_legal_aid",
+       "name": "Free legal-aid document drafter",
+       "domain": "law",
+       "outcome": 0.8,
+       "value": 0.75,
+       "benefit": 0.88,
+       "feasibility": 0.82,
+       "strategic_fit": 0.8,
+       "score": 0.8065,
+       "score_basis": "policy constants (stage/operating/governance/domain) — not a measurement",
+       "tied_with": 0
+      },
+      {
+       "id": "v_halal_supply",
+       "name": "Halal supply-chain verification",
+       "domain": "religion",
+       "outcome": 0.78,
+       "value": 0.85,
+       "benefit": 0.75,
+       "feasibility": 0.8,
+       "strategic_fit": 0.83,
+       "score": 0.7995,
+       "score_basis": "policy constants (stage/operating/governance/domain) — not a measurement",
+       "tied_with": 0
+      },
+      {
+       "id": "v_green_logistics",
+       "name": "Zero-waste last-mile logistics",
+       "domain": "enterprise",
+       "outcome": 0.76,
+       "value": 0.82,
+       "benefit": 0.8,
+       "feasibility": 0.72,
+       "strategic_fit": 0.78,
+       "score": 0.779,
+       "score_basis": "policy constants (stage/operating/governance/domain) — not a measurement",
+       "tied_with": 0
+      }
+     ],
+     "method": "policy score: weighted sum of eligibility constants (outcome .30 + value .25 + benefit .20 + feasibility .15 + strategic_fit .10)",
+     "method_basis": "nothing here is measured: the five inputs are constants keyed on stage, operating history, governance and domain, so candidates in the same bucket share a score and their order between each other is arbitrary",
+     "using_demo_candidates": true,
+     "disclaimer": "Virtual/simulated WST. Candidates are the platform's REAL projects/VSBs with deterministically-derived metrics — the demo set only when the platform is empty."
+    }
+   },
+   "/api/v1/economy/transfers/open?from_vsb=workstation-idbo": {
+    "status": 200,
+    "body": {
+     "from_vsb": "workstation-idbo",
+     "open": [],
+     "credited_unclosed": [],
+     "settling": [],
+     "ledger_unreadable": false,
+     "receiver_queue_unreadable": false,
+     "disclaimer": "Virtual/simulated WST — no real funds moved."
+    }
+   },
+   "/api/v1/economy/transfers/intake-sources?vsb_id=workstation-idbo": {
+    "status": 200,
+    "body": {
+     "vsb_id": "workstation-idbo",
+     "readable": true,
+     "credits": [],
+     "recorded_credits": 0,
+     "from_unregistered_now": 0,
+     "sender_not_known": 0,
+     "credited_ids_on_record": null,
+     "basis": "FLAGGED, NOT REVERSED (Owner ruling 2026-10-10): 0 of 0 recorded credit(s) name a sender that is not a registered living entity on the roster as it is read NOW - which is not a statement about the roster when the credit was made. 0 name no sender or could not be checked. This record keeps no list of credited ids, so whether older credits exist is not known from it. Nothing here was moved, reversed or written.",
+     "disclaimer": "Virtual/simulated WST — no real funds moved."
+    }
+   },
+   "/api/v1/economy/charity/directives": {
+    "status": 200,
+    "body": {
+     "priorities": [
+      "clean_water",
+      "orphan_sponsorship",
+      "conflict_relief",
+      "dawah"
+     ],
+     "priorities_owner_named": [],
+     "priorities_source": "never_set",
+     "priorities_note": "no directives have ever been saved, so allocation uses this platform's editorial defaults",
+     "exclusions": [],
+     "require_100pct": true,
+     "source": "defaults (2026-06-21 Owner directive)",
+     "directives_readable": true,
+     "priorities_unknown": [],
+     "exclusions_unknown": [],
+     "directives_match_note": "the record names no cause id",
+     "updated_at": null,
+     "live_signals": {
+      "enabled": false,
+      "approved_signal_count": 0,
+      "note": "Owner-gated — no fabricated feeds; sources must be Owner-approved."
+     }
+    }
+   },
+   "/api/v1/economy/charity/candidates?top=12": {
+    "status": 200,
+    "body": {
+     "candidates": [
+      {
+       "id": "clean_water",
+       "cause": "Clean water & wells (WATER)",
+       "region": "global",
+       "urgency": 0.85,
+       "gravity": 0.9,
+       "reach": 0.92,
+       "trust": 0.92,
+       "donation_100pct": true,
+       "weights_source": "curated",
+       "score": 1.0,
+       "marginal_impact": 0.875,
+       "donation_100pct_verified": "not_checked"
+      },
+      {
+       "id": "conflict_relief",
+       "cause": "Conflict & natural-disaster relief",
+       "region": "global",
+       "urgency": 0.97,
+       "gravity": 0.97,
+       "reach": 0.85,
+       "trust": 0.88,
+       "donation_100pct": true,
+       "weights_source": "curated",
+       "score": 1.0,
+       "marginal_impact": 0.97,
+       "donation_100pct_verified": "not_checked"
+      },
+      {
+       "id": "orphan_sponsorship",
+       "cause": "Orphan sponsorship & welfare",
+       "region": "global",
+       "urgency": 0.8,
+       "gravity": 0.92,
+       "reach": 0.85,
+       "trust": 0.92,
+       "donation_100pct": true,
+       "weights_source": "curated",
+       "score": 0.9845,
+       "marginal_impact": 0.86,
+       "donation_100pct_verified": "not_checked"
+      },
+      {
+       "id": "famine_food",
+       "cause": "Famine & food security",
+       "region": "global",
+       "urgency": 0.9,
+       "gravity": 0.95,
+       "reach": 0.8,
+       "trust": 0.85,
+       "donation_100pct": true,
+       "weights_source": "curated",
+       "score": 0.8987,
+       "marginal_impact": 0.925,
+       "donation_100pct_verified": "not_checked"
+      },
+      {
+       "id": "emergency_health",
+       "cause": "Emergency healthcare",
+       "region": "global",
+       "urgency": 0.85,
+       "gravity": 0.9,
+       "reach": 0.8,
+       "trust": 0.88,
+       "donation_100pct": true,
+       "weights_source": "curated",
+       "score": 0.8642,
+       "marginal_impact": 0.875,
+       "donation_100pct_verified": "not_checked"
+      },
+      {
+       "id": "refugee_support",
+       "cause": "Refugee & displacement support",
+       "region": "global",
+       "urgency": 0.85,
+       "gravity": 0.9,
+       "reach": 0.75,
+       "trust": 0.8,
+       "donation_100pct": true,
+       "weights_source": "curated",
+       "score": 0.8487,
+       "marginal_impact": 0.875,
+       "donation_100pct_verified": "not_checked"
+      },
+      {
+       "id": "dawah",
+       "cause": "Dawah & Islamic education",
+       "region": "global",
+       "urgency": 0.55,
+       "gravity": 0.8,
+       "reach": 0.88,
+       "trust": 0.9,
+       "donation_100pct": true,
+       "weights_source": "curated",
+       "score": 0.8482,
+       "marginal_impact": 0.675,
+       "donation_100pct_verified": "not_checked"
+      }
+     ],
+     "all_cause_ids": [
+      "clean_water",
+      "conflict_relief",
+      "dawah",
+      "emergency_health",
+      "famine_food",
+      "orphan_sponsorship",
+      "refugee_support"
+     ],
+     "method": "weighted rank over CURATED priority weights (urgency · gravity · reach · marginal-impact · trust) — editorial values, not measurements",
+     "pool": {
+      "curated": 7,
+      "ingested_signals": 0
+     },
+     "disclaimer": "Virtual/simulated. Sources curated; live feeds pending Owner approval."
+    }
+   },
+   "/api/v1/economy/contracts": {
+    "status": 200,
+    "body": {
+     "contracts": [],
+     "total": 0
+    }
+   }
+  },
+  "cycle": {
+   "request": {
+    "vsb_id": "workstation-idbo",
+    "entity_type": "waqf_ltd_hybrid",
+    "revenue": 10000,
+    "costs": 1000
+   },
+   "status": 200,
+   "body": {
+    "cycle": {
+     "vsb_id": "workstation-idbo",
+     "entity_type": "waqf_ltd_hybrid",
+     "entity_name": "Waqf-Ltd Hybrid (recommended)",
+     "cycle_at": "2026-11-20T00:47:44Z",
+     "intake_revenue": 10000.0,
+     "venture_returns_recycled_wst": 0.0,
+     "inter_vsb_received_wst": 0.0,
+     "revenue_entered_as": {
+      "typed_at_cycle": 10000.0
+     },
+     "homeostasis_reserves": 2000.0,
+     "operating_costs": 1000.0,
+     "reserve_rate_applied": 0.2,
+     "energy_state": "not_adjusted_term_unmeasured — the reserve was NOT adjusted: the metabolic term is a simulator, so it carries no evidence about this entity's energy. consumption is at most 0.10 per tick (0.1 x a load clamped to 1.0) and production at least 0.40 (0.5 x the lowest efficiency this code passes, 0.8), so production exceeds consumption at every reachable combination and the ratio only RISES to its ceiling. It does not deplete - and NOT because of the 0.5 floor, which never binds.",
+     "distributable_profit": 7000.0,
+     "platform_fee": {
+      "rate": 0.25,
+      "profit_wst": 7000.0,
+      "fee_wst": 0.0,
+      "split_base_wst": 7000.0,
+      "posted": false,
+      "exempt": "apex",
+      "simulated": false,
+      "ruling": "OWNER RULING 2026-10-12 (P5.16 clause 3): each generated entity pays 25% of its profit for updates and maintenance, taken first; released for a made-up entity on 2026-11-19 (FU-1057)",
+      "credit": {
+       "applied_wst": 0.0,
+       "basis": "the price of generating an entity (99 pounds, P5.16 clause 2) is credited against the first fee once it has been charged. It has not been: nothing is charged for generating an entity until 3 things exist, and 0 of them exist today. Nothing is credited"
+      },
+      "basis": "this is the apex, which pays no fee (P5.16 clause 4); its split applies to the whole profit"
+     },
+     "split_base_wst": 7000.0,
+     "cycle_result_wst": 7000.0,
+     "operating_loss_wst": 0.0,
+     "shortfall_after_reserve_wst": 0.0,
+     "cycle_result_basis": "intake 10000.0 less costs 1000.0 less reserve 2000.0 = 7000.0 distributable",
+     "circulation": {
+      "owner": {
+       "amount_wst": 1400.0,
+       "role": "nourishing the sovereign (host)"
+      },
+      "self_investment": {
+       "amount_wst": 2100.0,
+       "role": "growth & tissue repair (anabolism)"
+      },
+      "capital_fund": {
+       "amount_wst": 1400.0,
+       "role": "energy storage (fat/glycogen)"
+      },
+      "user_projects": {
+       "amount_wst": 1050.0,
+       "role": "symbiosis — seeding offspring ventures"
+      },
+      "charity": {
+       "amount_wst": 1050.0,
+       "role": "nutrient-return loop — giving back to the shared ecosystem"
+      }
+     },
+     "capital_fund_contribution": {
+      "vsb_id": "workstation-idbo",
+      "amount_wst": 1400.0,
+      "contributed": false,
+      "reason": "'workstation-idbo' is not a registered living entity: its cycle is a simulation, and a simulation's share is not paid into the shared capital fund"
+     },
+     "owner_accrual": {
+      "accrued": true,
+      "amount_wst": 1400.0,
+      "simulated": true
+     },
+     "giving_back": {
+      "budget_wst": 1050.0,
+      "method": "weighted rank over CURATED priority weights (urgency · gravity · reach · marginal-impact · trust), budget split pro-rata by score; only causes carrying the curated 100%-donation ELIGIBILITY FLAG are considered - a typed constant per cause; whether all of a grant reaches its cause was not checked for 6 of the 6 grant(s) here; each of the 6 grant(s) went through the compliance screen and carries its own verdict: 6 'review' (raised or not assessed - not a clearance), 0 other; 0 cause(s) were refused or unscreened and received nothing",
+      "weights_provenance": "curated — the 0..1 cause weights are editorial values encoding the Owner's 2026-06-21 directive; no needs, impact or trust data is measured or sourced. Live feeds pending Owner approval.",
+      "priorities": [
+       "clean_water",
+       "conflict_relief",
+       "dawah",
+       "orphan_sponsorship"
+      ],
+      "grants": [
+       {
+        "id": "clean_water",
+        "cause": "Clean water & wells (WATER)",
+        "region": "global",
+        "score": 1.0,
+        "amount_wst": 217.59,
+        "guaranteed_share": 0.1,
+        "donation_100pct_required_by_directive": true,
+        "donation_100pct_verified": "not_checked",
+        "weights_source": "curated",
+        "compliance": "review"
+       },
+       {
+        "id": "conflict_relief",
+        "cause": "Conflict & natural-disaster relief",
+        "region": "global",
+        "score": 1.0,
+        "amount_wst": 217.59,
+        "guaranteed_share": 0.1,
+        "donation_100pct_required_by_directive": true,
+        "donation_100pct_verified": "not_checked",
+        "weights_source": "curated",
+        "compliance": "review"
+       },
+       {
+        "id": "orphan_sponsorship",
+        "cause": "Orphan sponsorship & welfare",
+        "region": "global",
+        "score": 0.9845,
+        "amount_wst": 215.84,
+        "guaranteed_share": 0.1,
+        "donation_100pct_required_by_directive": true,
+        "donation_100pct_verified": "not_checked",
+        "weights_source": "curated",
+        "compliance": "review"
+       },
+       {
+        "id": "famine_food",
+        "cause": "Famine & food security",
+        "region": "global",
+        "score": 0.8987,
+        "amount_wst": 101.18,
+        "guaranteed_share": 0.0,
+        "donation_100pct_required_by_directive": true,
+        "donation_100pct_verified": "not_checked",
+        "weights_source": "curated",
+        "compliance": "review"
+       },
+       {
+        "id": "emergency_health",
+        "cause": "Emergency healthcare",
+        "region": "global",
+        "score": 0.8642,
+        "amount_wst": 97.3,
+        "guaranteed_share": 0.0,
+        "donation_100pct_required_by_directive": true,
+        "donation_100pct_verified": "not_checked",
+        "weights_source": "curated",
+        "compliance": "review"
+       },
+       {
+        "id": "dawah",
+        "cause": "Dawah & Islamic education",
+        "region": "global",
+        "score": 0.8482,
+        "amount_wst": 200.5,
+        "guaranteed_share": 0.1,
+        "donation_100pct_required_by_directive": true,
+        "donation_100pct_verified": "not_checked",
+        "weights_source": "curated",
+        "compliance": "review"
+       }
+      ],
+      "excluded_by_compliance": [],
+      "priorities_unfunded": [],
+      "priority_min_share": 0.1,
+      "considered_top": 5,
+      "not_funded_below_cut": [
+       {
+        "id": "refugee_support",
+        "cause": "Refugee & displacement support",
+        "rank": 6,
+        "score": 0.8487,
+        "why": "ranked 6 by score; only the top 5 are considered for the pro-rata split"
+       }
+      ],
+      "allocation_rule": "OWNER RULING 2026-10-07: each editorial-default (the Owner named none) priority that is NOT REFUSED by the compliance screen (a 'review' verdict means unassessed, not cleared - each grant carries its verdict) and is not excluded receives 10.0% of the budget first; the remaining 60.0% is split pro-rata by score across every cleared cause AMONG THE TOP 5 BY SCORE (the causes ranked below that cut that received nothing are named in not_funded_below_cut)",
+      "disclaimer": "Virtual/simulated allocation — no real funds moved."
+     },
+     "venture_investment": {
+      "budget_wst": 1050.0,
+      "method": "policy score: weighted sum of eligibility constants (outcome .30 + value .25 + benefit .20 + feasibility .15 + strategic_fit .10)",
+      "method_basis": "the five inputs are constants keyed on stage, whether a cycle has run, whether the entity is governed, and its domain bucket — nothing is measured; entities in the same bucket tie, and tied positions split the budget evenly",
+      "using_demo_candidates": true,
+      "positions": [
+       {
+        "id": "v_health_triage",
+        "name": "Community health-triage assistant",
+        "domain": "care",
+        "score": 0.834,
+        "amount_wst": 216.68,
+        "funding_state": "recorded_unfunded",
+        "funding_basis": "the investor 'workstation-idbo' is not a registered living entity: this allocation is a simulation's, and a simulation's funds are not credited to a registered entity"
+       },
+       {
+        "id": "v_edu_tutor",
+        "name": "Adaptive tutor for under-resourced schools",
+        "domain": "education",
+        "score": 0.8225,
+        "amount_wst": 213.69,
+        "funding_state": "recorded_unfunded",
+        "funding_basis": "the investor 'workstation-idbo' is not a registered living entity: this allocation is a simulation's, and a simulation's funds are not credited to a registered entity"
+       },
+       {
+        "id": "v_legal_aid",
+        "name": "Free legal-aid document drafter",
+        "domain": "law",
+        "score": 0.8065,
+        "amount_wst": 209.53,
+        "funding_state": "recorded_unfunded",
+        "funding_basis": "the investor 'workstation-idbo' is not a registered living entity: this allocation is a simulation's, and a simulation's funds are not credited to a registered entity"
+       },
+       {
+        "id": "v_halal_supply",
+        "name": "Halal supply-chain verification",
+        "domain": "religion",
+        "score": 0.7995,
+        "amount_wst": 207.71,
+        "funding_state": "recorded_unfunded",
+        "funding_basis": "the investor 'workstation-idbo' is not a registered living entity: this allocation is a simulation's, and a simulation's funds are not credited to a registered entity"
+       },
+       {
+        "id": "v_green_logistics",
+        "name": "Zero-waste last-mile logistics",
+        "domain": "enterprise",
+        "score": 0.779,
+        "amount_wst": 202.39,
+        "funding_state": "recorded_unfunded",
+        "funding_basis": "the investor 'workstation-idbo' is not a registered living entity: this allocation is a simulation's, and a simulation's funds are not credited to a registered entity"
+       }
+      ],
+      "disclaimer": "Virtual/simulated investment — no real funds moved.",
+      "funding_state": "recorded_unfunded",
+      "funding_basis": "0 of 5 position(s) were credited to their investee this cycle; each position states its own reason"
+     },
+     "venture_store_note": null,
+     "metabolic_energy": 0.358,
+     "metabolic_energy_basis": null,
+     "capital_preserved": true,
+     "capital_preserved_basis": "an entity-FORM flag: this form's waterfall must keep a capital_fund share above zero. It is a rule on the proportions. It is not a statement about what this cycle did to capital - see cycle_result_wst.",
+     "biogeochemical_model": "nutrient cycle: intake → homeostasis → circulation → return → storage → growth",
+     "disclaimer": "Virtual/simulated WST — no real funds moved."
+    },
+    "governance": {
+     "status": "allowed",
+     "checkpoint": "CHK-1795135664555"
+    },
+    "attribution": {
+     "owner": "",
+     "entity_type": "waqf_ltd_hybrid",
+     "basis": "request_values",
+     "entity_type_source": "caller_claimed",
+     "claimed_entity_type": null,
+     "claim_ignored": false,
+     "form_note": "form 'waqf_ltd_hybrid' from caller_claimed"
+    },
+    "registration": "UNREGISTERED",
+    "registration_basis": "'workstation-idbo' is not a registered living entity: this cycle is a SIMULATION run on request values, and the ledger entries and any Owner accrual it wrote belong to no entity that exists. Virtual WST only."
+   }
+  },
+  "after": {
+   "/api/v1/economy/owner-payments?vsb_id=workstation-idbo": {
+    "status": 200,
+    "body": {
+     "vsb_id": "workstation-idbo",
+     "owner": null,
+     "currency": "WST",
+     "account_exists": true,
+     "owner_recorded": false,
+     "owner_basis": "this entity has no owner record in the living registry, so the account has no payee and none is invented (Owner ruling 2026-10-12, amended); the account's own name, 'owner' (opened under WORKSTATION_OWNER_ID is not set to an identity, so the record carries the role word 'owner': the one person this single-user deployment serves (no name is written in the code); its first accrual named no owner and this scope is not a registered entity), is kept as history and is not the payee",
+     "account_name": "owner",
+     "registry_owner": null,
+     "owner_matches_registry": null,
+     "owner_registry_basis": "this id is not a registered entity with an owner, so there is nothing to check the recorded owner against",
+     "accrued_total_wst": 1400.0,
+     "paid_out_total_wst": 0.0,
+     "balance_wst": 1400.0,
+     "entries": [
+      {
+       "id": "6e562391",
+       "type": "accrual",
+       "simulated": true,
+       "amount_wst": 1400.0,
+       "memo": "cycle owner share (§4 waterfall)",
+       "at": "2026-11-20T00:47:44Z"
+      }
+     ],
+     "entries_stored": 1,
+     "entries_shown": 1,
+     "entries_dropped": 0,
+     "entries_kept_from": null,
+     "entries_truncated": false,
+     "entries_history_basis": "complete: all 1 entry recorded for this account is stored (an account keeps at most 200)",
+     "pending_from_failed_accruals": {
+      "rows": [],
+      "total_wst": 0,
+      "unreadable": null
+     },
+     "simulated": true,
+     "simulated_basis": "this account belongs to a scope that is not a registered living entity; its accruals come from simulated cycles",
+     "real_money_rails": "DISABLED",
+     "real_money_enabled": false,
+     "note": "Virtual/simulated WST only. Real-money payouts are gated until the Owner explicitly authorises real rails AND a compliance/KYC review passes — no real funds move.",
+     "payout_requests": [],
+     "payout_requests_basis": "every Change Control record the payout gate filed for this account; each state is computed from that record when this is read",
+     "owner_share_reconciliation": {
+      "vsb_id": "workstation-idbo",
+      "owner_share_is": "The owner's share is what the book of record distributed to the owner: the double-entry owner postings (the Owner's ruling of 2026-10-12). The owner account is the record a payout draws on; where it differs from the book of record, the difference is said here and nothing is corrected. The pot is a derived view and holds books older than double entry.",
+      "known": true,
+      "ledger_exists": true,
+      "account_exists": true,
+      "accrued_wst": 1400.0,
+      "paid_out_wst": 0.0,
+      "pending_claims_wst": 0.0,
+      "simulated": true,
+      "book_of_record_wst": 1400.0,
+      "pot_wst": 1400.0,
+      "double_entry_began": "2026-11-20T00:47:44Z",
+      "pot_before_double_entry_wst": 0,
+      "not_accrued_wst": 0.0,
+      "accrued_beyond_book_wst": 0.0,
+      "basis": "The book of record distributed 1,400.00 WST to the owner (the double-entry owner postings); the pot, a derived view, says 1,400.00, 0.00 of it from before double entry began (2026-11-20T00:47:44Z). The owner account accrued 1,400.00 and paid out 0.00. The account and the book of record agree. This is a simulation's account: its share is shown and never paid (the Owner's ruling of 2026-10-13). Read only: nothing was accrued or posted to close a difference."
+     }
+    }
+   },
+   "/api/v1/economy/board-pack?vsb_id=workstation-idbo&entity_type=waqf_ltd_hybrid": {
+    "status": 200,
+    "body": {
+     "vsb_id": "workstation-idbo",
+     "entity_type": "waqf_ltd_hybrid",
+     "entity_name": "Waqf-Ltd Hybrid (recommended)",
+     "attribution": {
+      "entity_type_source": "caller_claimed",
+      "owner_source": "role_word",
+      "entity_type": "waqf_ltd_hybrid",
+      "claimed_entity_type": null,
+      "claim_ignored": false,
+      "form_note": "form 'waqf_ltd_hybrid' from caller_claimed"
+     },
+     "currency": "WST (virtual)",
+     "generated_at": "2026-11-20T00:47:44Z",
+     "profit_and_loss": {
+      "total_revenue_wst": 10000.0,
+      "total_reserves_wst": 2000.0,
+      "reserve_fund_live_wst": 2000.0,
+      "total_reserves_wst_basis": "cumulative reserve allocations recorded by cycles; excludes transfers out of the fund and period closes",
+      "reserve_fund_live_wst_basis": "the live double-entry reserve_fund balance — what the fund actually holds now",
+      "total_costs_wst": 1000.0,
+      "total_platform_fee_wst": 0.0,
+      "total_platform_fee_wst_basis": "the platform's fee (P5.16 clause 3): a quarter of each profitable cycle's profit, taken first and posted as one line. The apex and a non-distributing entity pay none, and a simulation's fee is shown on its cycle and never posted, so it is in no book",
+      "total_distributed_wst": 7000.0,
+      "distribution_by_stage": {
+       "owner": 1400.0,
+       "self_investment": 2100.0,
+       "capital_fund": 1400.0,
+       "user_projects": 1050.0,
+       "charity": 1050.0
+      }
+     },
+     "waterfall": {
+      "effective": {
+       "owner": 0.2,
+       "self_investment": 0.3,
+       "capital_fund": 0.2,
+       "user_projects": 0.15,
+       "charity": 0.15
+      },
+      "source": "entity_template"
+     },
+     "owner_payments": {
+      "accrued_wst": 1400.0,
+      "paid_out_wst": 0.0,
+      "balance_wst": 1400.0,
+      "real_money_rails": "DISABLED",
+      "available": true
+     },
+     "venture_portfolio": {
+      "invested_total_wst": 1050.0,
+      "positions": 5,
+      "funding_state": "recorded_unfunded",
+      "funding_basis": "recorded, unfunded - the share is above zero and nothing was credited; see last_funding.unfunded for the reason against each position",
+      "holdings": [
+       {
+        "id": "v_health_triage",
+        "name": "Community health-triage assistant",
+        "domain": "care",
+        "invested_wst": 216.68,
+        "rounds": 1,
+        "last_round_at": "2026-11-20T00:47:44Z",
+        "last_score": 0.834
+       },
+       {
+        "id": "v_edu_tutor",
+        "name": "Adaptive tutor for under-resourced schools",
+        "domain": "education",
+        "invested_wst": 213.69,
+        "rounds": 1,
+        "last_round_at": "2026-11-20T00:47:44Z",
+        "last_score": 0.8225
+       },
+       {
+        "id": "v_legal_aid",
+        "name": "Free legal-aid document drafter",
+        "domain": "law",
+        "invested_wst": 209.53,
+        "rounds": 1,
+        "last_round_at": "2026-11-20T00:47:44Z",
+        "last_score": 0.8065
+       },
+       {
+        "id": "v_halal_supply",
+        "name": "Halal supply-chain verification",
+        "domain": "religion",
+        "invested_wst": 207.71,
+        "rounds": 1,
+        "last_round_at": "2026-11-20T00:47:44Z",
+        "last_score": 0.7995
+       },
+       {
+        "id": "v_green_logistics",
+        "name": "Zero-waste last-mile logistics",
+        "domain": "enterprise",
+        "invested_wst": 202.39,
+        "rounds": 1,
+        "last_round_at": "2026-11-20T00:47:44Z",
+        "last_score": 0.779
+       }
+      ]
+     },
+     "charitable_giving": {
+      "total_given_wst": 1050.0,
+      "label": "allocated (virtual, every grant unassessed)",
+      "basis": "the charity pot's balance in virtual WST: allocated, not given - no real money moves here - and each grant carries the compliance screen's verdict, which can refuse a grant and cannot clear one ('review' means unassessed)"
+     },
+     "organism_posture": {
+      "mode": "NOMINAL",
+      "composite_health": 0.872,
+      "composite_health_measured_only": null,
+      "composite_health_measured_weight": 0.0,
+      "composite_health_basis": "0% of this figure's weight is measured (nothing); the rest is an immune term with NO call observed in its window (the absence of failures, not a reading), a self-healing term defaulted to 1.0 and a simulated metabolic term. The measured-only score is None, and that is what decides the mode and every gate.",
+      "atp_ratio": 0.358,
+      "energy_ratio": 1.0,
+      "energy_acts": false,
+      "energy_basis": "1 - 0.0s spent / 3600s stated capacity this window (the capacity is a stated assumption); the work budget is switched off (WORKSTATION_WORK_BUDGET), so nothing reads this figure: the energy thresholds read the ATP simulator, which cannot fall, and stay inert as ruled"
+     },
+     "statements": {
+      "period": {
+       "from_posting": 0,
+       "postings": 8,
+       "opened_after_close": 0
+      },
+      "profit_and_loss": {
+       "income": {
+        "revenue": 10000.0
+       },
+       "expenses": {
+        "distribution_owner": 1400.0,
+        "distribution_self_investment": 2100.0,
+        "development_spend": 0.0,
+        "distribution_capital_fund": 1400.0,
+        "distribution_user_projects": 1050.0,
+        "distribution_charity": 1050.0,
+        "transfer_out": 0.0,
+        "operating_costs": 1000.0,
+        "platform_fee": 0.0
+       },
+       "total_income_wst": 10000.0,
+       "total_expenses_wst": 8000.0,
+       "net_profit_wst": 2000.0,
+       "distributions_wst": 7000.0,
+       "operating_result_before_distributions_wst": 9000.0,
+       "net_profit_basis": "SURPLUS AFTER WATERFALL DISTRIBUTIONS, not a profit: this chart types every distribution pot (owner, self-investment, capital fund, user projects, charity) as an expense and has no liability account, so retained funds and the Owner's share are counted as spent, and an owner share accrued but unpaid is booked as paid (the payable is in owner payments). operating_result_before_distributions_wst is the figure before the waterfall."
+      },
+      "balance_sheet": {
+       "assets": {
+        "reserve_fund": 2000.0
+       },
+       "liabilities": {},
+       "equity": {
+        "current_period_net_profit": 2000.0
+       },
+       "assets_total_wst": 2000.0,
+       "liabilities_and_equity_total_wst": 2000.0,
+       "balanced": true
+      },
+      "cash_flow": {
+       "operating_receipts_wst": 10000.0,
+       "operating_payments_wst": 10000.0,
+       "net_cash_movement_wst": 0.0,
+       "scope": "postings that touch the `cash` account only",
+       "basis": "receipts are postings DEBITING `cash` and payments are postings CREDITING it, so this is movement through one account and not a statement about the enterprise's whole cash position. The cycle's compat postings route their amounts through `cash` in equal and opposite totals, so net_cash_movement_wst is ZERO BY CONSTRUCTION on any period built from them — a zero here is not a finding that cash in matched cash out. Inter-VSB transfers and reserve movements post against `reserve_fund` and are NOT counted here"
+      },
+      "trial_balance": {
+       "debit_side_total": 10000.0,
+       "credit_side_total": 10000.0,
+       "balanced": true,
+       "postings": 8,
+       "scope": "the double-entry CHART OF ACCOUNTS, summed by normal balance. These totals are not comparable with balances(), which is the seven waterfall pots: an asset-to-asset movement nets to zero here and still shows in a pot, and that is agreement, not divergence"
+      },
+      "prepared_by": "the ledger's own close routine - deterministic arithmetic over the double-entry postings. No C-Suite resource was consulted and no agent reviewed these figures",
+      "disclaimer": "Virtual/simulated WST units — not real money."
+     },
+     "ledger": {
+      "entry_count": 8,
+      "recent": [
+       {
+        "ts": "2026-11-20T00:47:44Z",
+        "account": "revenue",
+        "kind": "credit",
+        "amount": 10000.0,
+        "memo": "cycle intake (revenue)",
+        "balance_after": 10000.0,
+        "entered_as": {
+         "typed_at_cycle": 10000.0
+        }
+       },
+       {
+        "ts": "2026-11-20T00:47:44Z",
+        "account": "costs",
+        "kind": "credit",
+        "amount": 1000.0,
+        "memo": "declared operating costs",
+        "balance_after": 1000.0
+       },
+       {
+        "ts": "2026-11-20T00:47:44Z",
+        "account": "reserves",
+        "kind": "credit",
+        "amount": 2000.0,
+        "memo": "homeostasis (prudential reserve)",
+        "balance_after": 2000.0
+       },
+       {
+        "ts": "2026-11-20T00:47:44Z",
+        "account": "owner",
+        "kind": "credit",
+        "amount": 1400.0,
+        "memo": "circulation → nourishing the sovereign (host)",
+        "balance_after": 1400.0
+       },
+       {
+        "ts": "2026-11-20T00:47:44Z",
+        "account": "self_investment",
+        "kind": "credit",
+        "amount": 2100.0,
+        "memo": "circulation → growth & tissue repair (anabolism)",
+        "balance_after": 2100.0
+       },
+       {
+        "ts": "2026-11-20T00:47:44Z",
+        "account": "capital_fund",
+        "kind": "credit",
+        "amount": 1400.0,
+        "memo": "circulation → energy storage (fat/glycogen)",
+        "balance_after": 1400.0
+       },
+       {
+        "ts": "2026-11-20T00:47:44Z",
+        "account": "user_projects",
+        "kind": "credit",
+        "amount": 1050.0,
+        "memo": "circulation → symbiosis — seeding offspring ventures",
+        "balance_after": 1050.0
+       },
+       {
+        "ts": "2026-11-20T00:47:44Z",
+        "account": "charity",
+        "kind": "credit",
+        "amount": 1050.0,
+        "memo": "circulation → nutrient-return loop — giving back to the shared ecosystem",
+        "balance_after": 1050.0
+       }
+      ],
+      "by_source": {
+       "by_source": [
+        {
+         "source": "cycle_intake",
+         "count": 1,
+         "total_wst": 10000.0,
+         "declared": true
+        },
+        {
+         "source": "cycle_distribution",
+         "count": 5,
+         "total_wst": 7000.0,
+         "declared": true
+        },
+        {
+         "source": "cycle_reserve",
+         "count": 1,
+         "total_wst": 2000.0,
+         "declared": true
+        },
+        {
+         "source": "cycle_costs",
+         "count": 1,
+         "total_wst": 1000.0,
+         "declared": true
+        }
+       ],
+       "not_stated": {
+        "source": null,
+        "count": 0,
+        "total_wst": 0.0,
+        "basis": "written before postings carried a source, or by a caller that states none - these are NOT attributed to any source"
+       },
+       "unknown_sources": [],
+       "total_wst": 20000.0,
+       "tagged_share": 1.0,
+       "basis": "split from each posting's own `source` tag, which names what moved the money. A posting with no tag is counted under `not_stated` and attributed to nothing - the books held no source before this, so an untagged posting is not evidence of any."
+      }
+     },
+     "registration": "UNREGISTERED",
+     "registration_basis": "'workstation-idbo' is not a registered living entity: these books and any Owner accrual were written by SIMULATION cycles run on request values and belong to no entity that exists. Virtual WST only.",
+     "governance": "gaas.v5-gated cycles · UEG append-only audit · arms-length distribution policy",
+     "disclaimer": "Virtual/simulated WST only — no real funds. Real-money rails are gated until the Owner authorises them AND a compliance review passes."
+    }
+   }
+  }
+ },
+ "entity": {
+  "vsb_id": "vsb-b3577d4b5b",
+  "opening": {
+   "/api/v1/economy/entity-types": {
+    "status": 200,
+    "body": {
+     "default": "waqf_ltd_hybrid",
+     "types": [
+      {
+       "id": "sole",
+       "name": "Sole Holder",
+       "description": "Individual-owned; owner-centric distribution.",
+       "distributes_profit": true,
+       "capital_preserved": false,
+       "waterfall": {
+        "owner": 0.55,
+        "self_investment": 0.25,
+        "capital_fund": 0.1,
+        "user_projects": 0.05,
+        "charity": 0.05
+       }
+      },
+      {
+       "id": "ltd",
+       "name": "Private Limited (Ltd)",
+       "description": "Default commercial company, limited liability.",
+       "distributes_profit": true,
+       "capital_preserved": false,
+       "waterfall": {
+        "owner": 0.2,
+        "self_investment": 0.3,
+        "capital_fund": 0.2,
+        "user_projects": 0.15,
+        "charity": 0.15
+       }
+      },
+      {
+       "id": "plc",
+       "name": "Public Limited (PLC)",
+       "description": "Public company; shareholder distributions; built for scale.",
+       "distributes_profit": true,
+       "capital_preserved": false,
+       "waterfall": {
+        "owner": 0.3,
+        "self_investment": 0.3,
+        "capital_fund": 0.25,
+        "user_projects": 0.08,
+        "charity": 0.07
+       }
+      },
+      {
+       "id": "trust",
+       "name": "Trust",
+       "description": "Assets held by trustee for beneficiaries under a deed.",
+       "distributes_profit": true,
+       "capital_preserved": true,
+       "waterfall": {
+        "owner": 0.2,
+        "self_investment": 0.2,
+        "capital_fund": 0.3,
+        "user_projects": 0.15,
+        "charity": 0.15
+       }
+      },
+      {
+       "id": "waqf",
+       "name": "Waqf (Endowment)",
+       "description": "Perpetual endowment; capital preserved; usufruct to causes.",
+       "distributes_profit": true,
+       "capital_preserved": true,
+       "waterfall": {
+        "owner": 0.05,
+        "self_investment": 0.2,
+        "capital_fund": 0.3,
+        "user_projects": 0.15,
+        "charity": 0.3
+       }
+      },
+      {
+       "id": "multinational",
+       "name": "Multinational Group",
+       "description": "Cross-jurisdiction group; multi-entity distribution.",
+       "distributes_profit": true,
+       "capital_preserved": false,
+       "waterfall": {
+        "owner": 0.25,
+        "self_investment": 0.35,
+        "capital_fund": 0.2,
+        "user_projects": 0.1,
+        "charity": 0.1
+       }
+      },
+      {
+       "id": "nonprofit",
+       "name": "Non-profit",
+       "description": "Mission-first; surplus reinvested or donated, no owner profit.",
+       "distributes_profit": false,
+       "capital_preserved": true,
+       "waterfall": {
+        "owner": 0.0,
+        "self_investment": 0.45,
+        "capital_fund": 0.2,
+        "user_projects": 0.15,
+        "charity": 0.2
+       }
+      },
+      {
+       "id": "charity",
+       "name": "Charity",
+       "description": "Registered charitable purpose; maximal charitable allocation.",
+       "distributes_profit": false,
+       "capital_preserved": true,
+       "waterfall": {
+        "owner": 0.0,
+        "self_investment": 0.15,
+        "capital_fund": 0.1,
+        "user_projects": 0.1,
+        "charity": 0.65
+       }
+      },
+      {
+       "id": "qep_waqf_trust",
+       "name": "QEP Waqf Endowment + Not-for-Profit Trust (A.8)",
+       "description": "The Quran Education Platform's own economic model (vision A.8): a Waqf Endowment Board stewarding gifts alongside a Not-for-Profit Trust running the platform. FROM A.8 AND NOT ADJUSTABLE BY A ROUND: no owner profit (100% donation and waqf-backed) and a surplus cap of 5% with reinvestment. THE REMAINING THREE PROPORTIONS ARE A DEFAULT INSIDE THOSE CONSTRAINTS, not the Owner's stated figures: the endowment takes the largest retained share because A.8 charges it with perpetual funding, learners are the beneficiaries because the platform is free at the point of use, and the charity share is Zakat-eligible. Virtual WST only.",
+       "distributes_profit": false,
+       "capital_preserved": true,
+       "waterfall": {
+        "owner": 0.0,
+        "self_investment": 0.05,
+        "capital_fund": 0.35,
+        "user_projects": 0.4,
+        "charity": 0.2
+       }
+      },
+      {
+       "id": "waqf_ltd_hybrid",
+       "name": "Waqf-Ltd Hybrid (recommended)",
+       "description": "Commercial earnings (Ltd) under endowment governance (Waqf) with a charitable waterfall — the recommended default for the Owner's vision.",
+       "distributes_profit": true,
+       "capital_preserved": true,
+       "waterfall": {
+        "owner": 0.2,
+        "self_investment": 0.3,
+        "capital_fund": 0.2,
+        "user_projects": 0.15,
+        "charity": 0.15
+       }
+      }
+     ],
+     "note": "Selectable at VSB generation. All flows are virtual/simulated WST."
+    }
+   },
+   "/api/v1/economy/living-vsbs": {
+    "status": 200,
+    "body": {
+     "living_vsbs": [
+      {
+       "vsb_id": "vsb-b3577d4b5b",
+       "name": "W1125 Village Bakery",
+       "entity_type": "waqf_ltd_hybrid",
+       "domain": "enterprise",
+       "owner": "owner",
+       "registered_at": "2026-11-20T00:47:44Z",
+       "operating_cycles": 1,
+       "last_operated": "2026-11-20T00:47:44Z",
+       "status": "living",
+       "parent_vsb": null,
+       "lineage_state": "no_parent",
+       "lineage_generation": 0,
+       "lineage_basis": "no parent was stated, so this entity has NONE - which is a fact about it and not a field somebody forgot. An entity established directly by its founder is the root of its own lineage, which makes it generation 0.",
+       "auto_economy": true,
+       "auto_compliance": true,
+       "lifecycle_state": "juvenile",
+       "lifecycle_basis": "juvenile: operable, but NOT operated: the heartbeat's Self-run lever is off, so nothing runs its cycles",
+       "last_governance": {
+        "status": "passed",
+        "gate": "policy_pre_gate(sync)",
+        "screened": "intent_label",
+        "coverage_limit": "matches tokens inside an intent LABEL after normalising separators and case. A free-prose sentence of intent is NOT reliably screened here: `allowed: True` from this gate means no prohibited token was found in the label, never that the action was understood and cleared.",
+        "label_screened": "economy_distribution",
+        "at": "2026-11-20T00:47:44Z"
+       },
+       "establishment_cycles": 1,
+       "last_operated_by": "establishment",
+       "last_distributable": 0.0,
+       "last_visit_id": "18808ad74365",
+       "entity_status": "registered - not operating",
+       "entity_status_basis": "registered on the living roster — autonomous economy cycles are OFF (the heartbeat's Self-run lever is off); enable Self-run and start the heartbeat on the Heartbeat page for the organism to tend this VSB. None of its body was ever provided (concept, design, operations, commercialisation); this status is read from the review gates, the pending map and the heartbeat, and does not read whether a section was provided",
+       "status_basis": "'living' is this roster's word for 'registered here'. It does not say the entity is operating: `entity_status` is the entity's own derived status",
+       "compliance": {
+        "verdict": "review",
+        "screened_at": "2026-11-20T00:47:44Z",
+        "verdicts": [
+         {
+          "framework": "sharia_halal",
+          "status": "review",
+          "reason": "no engine covers this area — the haram-term screen matched nothing and no halal vocabulary is present; not a certification (engine ran and produced no finding here, so it backs no verdict)",
+          "coverage": "none"
+         },
+         {
+          "framework": "uk_legal",
+          "status": "review",
+          "reason": "no engine covers this area — keyword screen + employment-statute vocabulary matched nothing (jurisdiction UK / London); not legal advice (UK engine ran and produced no finding here, so it backs no verdict · audit 0ebdc5e050b55119… over the subject)",
+          "coverage": "none"
+         },
+         {
+          "framework": "regulatory",
+          "status": "not_assessed",
+          "reason": "keyword screen found no regulated-activity trigger — the absence of a trigger word is not a regulatory clearance; nothing here assessed this subject",
+          "coverage": "screen"
+         },
+         {
+          "framework": "ehs",
+          "status": "not_assessed",
+          "reason": "keyword screen found no hazard term — the absence of a hazard word is not an EHS clearance; nothing here assessed this subject",
+          "coverage": "screen"
+         },
+         {
+          "framework": "ethical",
+          "status": "not_assessed",
+          "reason": "human: not_assessed; environment: not_assessed; quality: not_assessed; value: not_assessed (engine ran and produced no finding here, so it backs no verdict)",
+          "coverage": "none",
+          "dimensions_not_assessed": [
+           "human",
+           "environment",
+           "quality",
+           "value"
+          ]
+         }
+        ],
+        "coverage_gaps": [
+         "ehs",
+         "ethical",
+         "regulatory",
+         "sharia_halal",
+         "uk_legal"
+        ],
+        "assessed_by": [],
+        "never_screened": false,
+        "history_unavailable": null
+       },
+       "economy_held": {
+        "held": false,
+        "reason": null,
+        "consequence": null,
+        "consequence_basis": null,
+        "outcome": null,
+        "last_visit_error": null,
+        "standing_decision": null
+       },
+       "operating_cycles_basis": "cycles this roster's operate step ran and booked, of which 1 was run by establishment as the entity's first cycle and not by the autonomous beat; a cycle run through any other path is posted to the books but not counted here",
+       "ledger_cycles": 1,
+       "ledger_cycles_basis": "counted on these books: one intake entry per metabolic cycle (1 carrying a distinct cycle token, 0 without one). Cycles run before intake entries carried a token are not distinguishable and are counted once each."
+      }
+     ],
+     "total": 1,
+     "history_unavailable": null,
+     "cycle_counts_basis": "`operating_cycles` is this roster's own tally; `ledger_cycles` is what the entity's books record. They differ whenever a cycle ran outside the roster.",
+     "note": "Established VSB enterprises the organism autonomously tends (paced virtual economy cycles on the circadian heartbeat). Virtual/simulated — no real funds.",
+     "autonomous_cycles": false,
+     "autonomous_cycles_note": "OFF — the heartbeat's Self-run lever is off: no roster cycle runs until both are on (the Heartbeat page)"
+    }
+   },
+   "/api/v1/economy/owner-payments?vsb_id=vsb-b3577d4b5b": {
+    "status": 200,
+    "body": {
+     "vsb_id": "vsb-b3577d4b5b",
+     "owner": null,
+     "currency": "WST",
+     "account_exists": false,
+     "owner_recorded": false,
+     "owner_basis": "no account exists for this id - nothing has accrued to it, so there is nothing to pay",
+     "account_name": null,
+     "registry_owner": null,
+     "owner_matches_registry": null,
+     "owner_registry_basis": "no account exists for this id, so there is no recorded owner to check",
+     "accrued_total_wst": 0.0,
+     "paid_out_total_wst": 0.0,
+     "balance_wst": 0.0,
+     "entries": [],
+     "entries_stored": 0,
+     "entries_shown": 0,
+     "entries_dropped": 0,
+     "entries_kept_from": null,
+     "entries_truncated": false,
+     "entries_history_basis": "complete: all 0 entries recorded for this account are stored (an account keeps at most 200)",
+     "pending_from_failed_accruals": {
+      "rows": [],
+      "total_wst": 0,
+      "unreadable": null
+     },
+     "simulated": false,
+     "simulated_basis": null,
+     "real_money_rails": "DISABLED",
+     "real_money_enabled": false,
+     "note": "Virtual/simulated WST only. Real-money payouts are gated until the Owner explicitly authorises real rails AND a compliance/KYC review passes — no real funds move.",
+     "payout_requests": [],
+     "payout_requests_basis": "every Change Control record the payout gate filed for this account; each state is computed from that record when this is read",
+     "owner_share_reconciliation": {
+      "vsb_id": "vsb-b3577d4b5b",
+      "owner_share_is": "The owner's share is what the book of record distributed to the owner: the double-entry owner postings (the Owner's ruling of 2026-10-12). The owner account is the record a payout draws on; where it differs from the book of record, the difference is said here and nothing is corrected. The pot is a derived view and holds books older than double entry.",
+      "known": true,
+      "ledger_exists": true,
+      "account_exists": false,
+      "accrued_wst": 0.0,
+      "paid_out_wst": 0.0,
+      "pending_claims_wst": 0.0,
+      "simulated": false,
+      "book_of_record_wst": 0.0,
+      "pot_wst": 0.0,
+      "double_entry_began": null,
+      "pot_before_double_entry_wst": 0,
+      "not_accrued_wst": 0.0,
+      "accrued_beyond_book_wst": 0.0,
+      "basis": "The book of record distributed 0.00 WST to the owner (the double-entry owner postings); the pot, a derived view, says 0.00, and these books hold no double-entry posting at all. There is no owner account for it. The account and the book of record agree. Read only: nothing was accrued or posted to close a difference."
+     }
+    }
+   },
+   "/api/v1/economy/board-pack?vsb_id=vsb-b3577d4b5b&entity_type=waqf_ltd_hybrid": {
+    "status": 200,
+    "body": {
+     "vsb_id": "vsb-b3577d4b5b",
+     "entity_type": "waqf_ltd_hybrid",
+     "entity_name": "Waqf-Ltd Hybrid (recommended)",
+     "attribution": {
+      "entity_type_source": "living_registry",
+      "owner_source": "living_registry",
+      "entity_type": "waqf_ltd_hybrid",
+      "claimed_entity_type": null,
+      "claim_ignored": false,
+      "form_note": "form 'waqf_ltd_hybrid' from living_registry"
+     },
+     "currency": "WST (virtual)",
+     "generated_at": "2026-11-20T00:47:44Z",
+     "profit_and_loss": {
+      "total_revenue_wst": 0.0,
+      "total_reserves_wst": 0.0,
+      "reserve_fund_live_wst": 0.0,
+      "total_reserves_wst_basis": "cumulative reserve allocations recorded by cycles; excludes transfers out of the fund and period closes",
+      "reserve_fund_live_wst_basis": "the live double-entry reserve_fund balance — what the fund actually holds now",
+      "total_costs_wst": 0.0,
+      "total_platform_fee_wst": 0.0,
+      "total_platform_fee_wst_basis": "the platform's fee (P5.16 clause 3): a quarter of each profitable cycle's profit, taken first and posted as one line. The apex and a non-distributing entity pay none, and a simulation's fee is shown on its cycle and never posted, so it is in no book",
+      "total_distributed_wst": 0.0,
+      "distribution_by_stage": {
+       "owner": 0.0,
+       "self_investment": 0.0,
+       "capital_fund": 0.0,
+       "user_projects": 0.0,
+       "charity": 0.0
+      }
+     },
+     "waterfall": {
+      "effective": {
+       "owner": 0.2,
+       "self_investment": 0.3,
+       "capital_fund": 0.2,
+       "user_projects": 0.15,
+       "charity": 0.15
+      },
+      "source": "entity_template"
+     },
+     "owner_payments": {
+      "accrued_wst": 0.0,
+      "paid_out_wst": 0.0,
+      "balance_wst": 0.0,
+      "real_money_rails": "DISABLED",
+      "available": true
+     },
+     "venture_portfolio": {
+      "invested_total_wst": 0.0,
+      "positions": 0,
+      "funding_state": "recorded_unfunded",
+      "funding_basis": "recorded, unfunded — the investee is NOT credited. The position is the investor's own record of an allocation; no intake is queued for the named entity and its waterfall never receives this amount. Virtual WST throughout.",
+      "holdings": []
+     },
+     "charitable_giving": {
+      "total_given_wst": 0.0,
+      "label": "allocated (virtual, every grant unassessed)",
+      "basis": "the charity pot's balance in virtual WST: allocated, not given - no real money moves here - and each grant carries the compliance screen's verdict, which can refuse a grant and cannot clear one ('review' means unassessed)"
+     },
+     "organism_posture": {
+      "mode": "NOMINAL",
+      "composite_health": 0.872,
+      "composite_health_measured_only": null,
+      "composite_health_measured_weight": 0.0,
+      "composite_health_basis": "0% of this figure's weight is measured (nothing); the rest is an immune term with NO call observed in its window (the absence of failures, not a reading), a self-healing term defaulted to 1.0 and a simulated metabolic term. The measured-only score is None, and that is what decides the mode and every gate.",
+      "atp_ratio": 0.358,
+      "energy_ratio": 1.0,
+      "energy_acts": false,
+      "energy_basis": "1 - 0.0s spent / 3600s stated capacity this window (the capacity is a stated assumption); the work budget is switched off (WORKSTATION_WORK_BUDGET), so nothing reads this figure: the energy thresholds read the ATP simulator, which cannot fall, and stay inert as ruled"
+     },
+     "statements": {
+      "period": {
+       "from_posting": 0,
+       "postings": 0,
+       "opened_after_close": 0
+      },
+      "profit_and_loss": {
+       "income": {
+        "revenue": 0.0
+       },
+       "expenses": {
+        "distribution_owner": 0.0,
+        "distribution_self_investment": 0.0,
+        "development_spend": 0.0,
+        "distribution_capital_fund": 0.0,
+        "distribution_user_projects": 0.0,
+        "distribution_charity": 0.0,
+        "transfer_out": 0.0,
+        "operating_costs": 0.0,
+        "platform_fee": 0.0
+       },
+       "total_income_wst": 0.0,
+       "total_expenses_wst": 0.0,
+       "net_profit_wst": 0.0,
+       "distributions_wst": 0.0,
+       "operating_result_before_distributions_wst": 0.0,
+       "net_profit_basis": "SURPLUS AFTER WATERFALL DISTRIBUTIONS, not a profit: this chart types every distribution pot (owner, self-investment, capital fund, user projects, charity) as an expense and has no liability account, so retained funds and the Owner's share are counted as spent, and an owner share accrued but unpaid is booked as paid (the payable is in owner payments). operating_result_before_distributions_wst is the figure before the waterfall."
+      },
+      "balance_sheet": {
+       "assets": {},
+       "liabilities": {},
+       "equity": {
+        "current_period_net_profit": 0.0
+       },
+       "assets_total_wst": 0,
+       "liabilities_and_equity_total_wst": 0.0,
+       "balanced": true
+      },
+      "cash_flow": {
+       "operating_receipts_wst": 0,
+       "operating_payments_wst": 0,
+       "net_cash_movement_wst": 0,
+       "scope": "postings that touch the `cash` account only",
+       "basis": "receipts are postings DEBITING `cash` and payments are postings CREDITING it, so this is movement through one account and not a statement about the enterprise's whole cash position. The cycle's compat postings route their amounts through `cash` in equal and opposite totals, so net_cash_movement_wst is ZERO BY CONSTRUCTION on any period built from them — a zero here is not a finding that cash in matched cash out. Inter-VSB transfers and reserve movements post against `reserve_fund` and are NOT counted here"
+      },
+      "trial_balance": {
+       "debit_side_total": 0,
+       "credit_side_total": 0,
+       "balanced": true,
+       "postings": 0,
+       "scope": "the double-entry CHART OF ACCOUNTS, summed by normal balance. These totals are not comparable with balances(), which is the seven waterfall pots: an asset-to-asset movement nets to zero here and still shows in a pot, and that is agreement, not divergence"
+      },
+      "prepared_by": "the ledger's own close routine - deterministic arithmetic over the double-entry postings. No C-Suite resource was consulted and no agent reviewed these figures",
+      "disclaimer": "Virtual/simulated WST units — not real money."
+     },
+     "ledger": {
+      "entry_count": 2,
+      "recent": [
+       {
+        "ts": "2026-11-20T00:47:44Z",
+        "account": "revenue",
+        "kind": "credit",
+        "amount": 0.0,
+        "memo": "cycle intake (revenue)",
+        "balance_after": 0.0,
+        "ref": "cyc-f1d6d422d81d",
+        "entered_as": {}
+       },
+       {
+        "ts": "2026-11-20T00:47:44Z",
+        "account": "reserves",
+        "kind": "credit",
+        "amount": 0.0,
+        "memo": "homeostasis (prudential reserve)",
+        "balance_after": 0.0
+       }
+      ],
+      "by_source": {
+       "by_source": [],
+       "not_stated": {
+        "source": null,
+        "count": 0,
+        "total_wst": 0.0,
+        "basis": "written before postings carried a source, or by a caller that states none - these are NOT attributed to any source"
+       },
+       "unknown_sources": [],
+       "total_wst": 0.0,
+       "tagged_share": null,
+       "basis": "split from each posting's own `source` tag, which names what moved the money. A posting with no tag is counted under `not_stated` and attributed to nothing - the books held no source before this, so an untagged posting is not evidence of any."
+      }
+     },
+     "registration": "REGISTERED",
+     "registration_basis": "'vsb-b3577d4b5b' is on the roster of living entities. Virtual WST only.",
+     "governance": "gaas.v5-gated cycles · UEG append-only audit · arms-length distribution policy",
+     "disclaimer": "Virtual/simulated WST only — no real funds. Real-money rails are gated until the Owner authorises them AND a compliance review passes."
+    }
+   },
+   "/api/v1/economy/waterfall?vsb_id=vsb-b3577d4b5b&entity_type=waqf_ltd_hybrid": {
+    "status": 200,
+    "body": {
+     "vsb_id": "vsb-b3577d4b5b",
+     "entity_type": "waqf_ltd_hybrid",
+     "entity_type_source": "living_registry",
+     "claimed_entity_type": null,
+     "claim_ignored": false,
+     "form_note": "form 'waqf_ltd_hybrid' from living_registry",
+     "entity_name": "Waqf-Ltd Hybrid (recommended)",
+     "waterfall": {
+      "owner": 0.2,
+      "self_investment": 0.3,
+      "capital_fund": 0.2,
+      "user_projects": 0.15,
+      "charity": 0.15
+     },
+     "source": "entity_template",
+     "template_default": {
+      "owner": 0.2,
+      "self_investment": 0.3,
+      "capital_fund": 0.2,
+      "user_projects": 0.15,
+      "charity": 0.15
+     },
+     "stages": [
+      "owner",
+      "self_investment",
+      "capital_fund",
+      "user_projects",
+      "charity"
+     ],
+     "bound_rule": "a stage the entity's template funds cannot be set to zero, and a waqf-form entity keeps at least its template's charity share (Owner ruling 2026-10-11)",
+     "out_of_bound": [],
+     "out_of_bound_basis": null,
+     "constraints": {
+      "distributes_profit": true,
+      "capital_preserved": true
+     },
+     "note": "Proportions of distributable profit (after reserves), summing to 1.0. Virtual/simulated WST."
+    }
+   },
+   "/api/v1/economy/ventures/portfolio?vsb_id=vsb-b3577d4b5b": {
+    "status": 200,
+    "body": {
+     "vsb_id": "vsb-b3577d4b5b",
+     "currency": "WST",
+     "invested_total": 0.0,
+     "positions_count": 0,
+     "holdings": [],
+     "pending_returns_wst": 0.0,
+     "returns_total": 0.0,
+     "recycled_total_wst": 0.0,
+     "funding_state": "recorded_unfunded",
+     "funding_basis": "recorded, unfunded — the investee is NOT credited. The position is the investor's own record of an allocation; no intake is queued for the named entity and its waterfall never receives this amount. Virtual WST throughout.",
+     "funding_share": null,
+     "funding_share_source": null,
+     "funded_total_wst": 0.0,
+     "last_funding": null,
+     "note": "No venture investments yet (virtual)."
+    }
+   },
+   "/api/v1/economy/ventures/candidates?vsb_id=vsb-b3577d4b5b&top=5": {
+    "status": 200,
+    "body": {
+     "candidates": [
+      {
+       "id": "v_health_triage",
+       "name": "Community health-triage assistant",
+       "domain": "care",
+       "outcome": 0.85,
+       "value": 0.8,
+       "benefit": 0.9,
+       "feasibility": 0.78,
+       "strategic_fit": 0.82,
+       "score": 0.834,
+       "score_basis": "policy constants (stage/operating/governance/domain) — not a measurement",
+       "tied_with": 0
+      },
+      {
+       "id": "v_edu_tutor",
+       "name": "Adaptive tutor for under-resourced schools",
+       "domain": "education",
+       "outcome": 0.82,
+       "value": 0.78,
+       "benefit": 0.92,
+       "feasibility": 0.75,
+       "strategic_fit": 0.85,
+       "score": 0.8225,
+       "score_basis": "policy constants (stage/operating/governance/domain) — not a measurement",
+       "tied_with": 0
+      },
+      {
+       "id": "v_legal_aid",
+       "name": "Free legal-aid document drafter",
+       "domain": "law",
+       "outcome": 0.8,
+       "value": 0.75,
+       "benefit": 0.88,
+       "feasibility": 0.82,
+       "strategic_fit": 0.8,
+       "score": 0.8065,
+       "score_basis": "policy constants (stage/operating/governance/domain) — not a measurement",
+       "tied_with": 0
+      },
+      {
+       "id": "v_halal_supply",
+       "name": "Halal supply-chain verification",
+       "domain": "religion",
+       "outcome": 0.78,
+       "value": 0.85,
+       "benefit": 0.75,
+       "feasibility": 0.8,
+       "strategic_fit": 0.83,
+       "score": 0.7995,
+       "score_basis": "policy constants (stage/operating/governance/domain) — not a measurement",
+       "tied_with": 0
+      },
+      {
+       "id": "v_green_logistics",
+       "name": "Zero-waste last-mile logistics",
+       "domain": "enterprise",
+       "outcome": 0.76,
+       "value": 0.82,
+       "benefit": 0.8,
+       "feasibility": 0.72,
+       "strategic_fit": 0.78,
+       "score": 0.779,
+       "score_basis": "policy constants (stage/operating/governance/domain) — not a measurement",
+       "tied_with": 0
+      }
+     ],
+     "method": "policy score: weighted sum of eligibility constants (outcome .30 + value .25 + benefit .20 + feasibility .15 + strategic_fit .10)",
+     "method_basis": "nothing here is measured: the five inputs are constants keyed on stage, operating history, governance and domain, so candidates in the same bucket share a score and their order between each other is arbitrary",
+     "using_demo_candidates": true,
+     "disclaimer": "Virtual/simulated WST. Candidates are the platform's REAL projects/VSBs with deterministically-derived metrics — the demo set only when the platform is empty."
+    }
+   },
+   "/api/v1/economy/transfers/open?from_vsb=vsb-b3577d4b5b": {
+    "status": 200,
+    "body": {
+     "from_vsb": "vsb-b3577d4b5b",
+     "open": [],
+     "credited_unclosed": [],
+     "settling": [],
+     "ledger_unreadable": false,
+     "receiver_queue_unreadable": false,
+     "disclaimer": "Virtual/simulated WST — no real funds moved."
+    }
+   },
+   "/api/v1/economy/transfers/intake-sources?vsb_id=vsb-b3577d4b5b": {
+    "status": 200,
+    "body": {
+     "vsb_id": "vsb-b3577d4b5b",
+     "readable": true,
+     "credits": [],
+     "recorded_credits": 0,
+     "from_unregistered_now": 0,
+     "sender_not_known": 0,
+     "credited_ids_on_record": null,
+     "basis": "FLAGGED, NOT REVERSED (Owner ruling 2026-10-10): 0 of 0 recorded credit(s) name a sender that is not a registered living entity on the roster as it is read NOW - which is not a statement about the roster when the credit was made. 0 name no sender or could not be checked. This record keeps no list of credited ids, so whether older credits exist is not known from it. Nothing here was moved, reversed or written.",
+     "disclaimer": "Virtual/simulated WST — no real funds moved."
+    }
+   },
+   "/api/v1/economy/charity/directives": {
+    "status": 200,
+    "body": {
+     "priorities": [
+      "clean_water",
+      "orphan_sponsorship",
+      "conflict_relief",
+      "dawah"
+     ],
+     "priorities_owner_named": [],
+     "priorities_source": "never_set",
+     "priorities_note": "no directives have ever been saved, so allocation uses this platform's editorial defaults",
+     "exclusions": [],
+     "require_100pct": true,
+     "source": "defaults (2026-06-21 Owner directive)",
+     "directives_readable": true,
+     "priorities_unknown": [],
+     "exclusions_unknown": [],
+     "directives_match_note": "the record names no cause id",
+     "updated_at": null,
+     "live_signals": {
+      "enabled": false,
+      "approved_signal_count": 0,
+      "note": "Owner-gated — no fabricated feeds; sources must be Owner-approved."
+     }
+    }
+   },
+   "/api/v1/economy/charity/candidates?top=12": {
+    "status": 200,
+    "body": {
+     "candidates": [
+      {
+       "id": "clean_water",
+       "cause": "Clean water & wells (WATER)",
+       "region": "global",
+       "urgency": 0.85,
+       "gravity": 0.9,
+       "reach": 0.92,
+       "trust": 0.92,
+       "donation_100pct": true,
+       "weights_source": "curated",
+       "score": 1.0,
+       "marginal_impact": 0.875,
+       "donation_100pct_verified": "not_checked"
+      },
+      {
+       "id": "conflict_relief",
+       "cause": "Conflict & natural-disaster relief",
+       "region": "global",
+       "urgency": 0.97,
+       "gravity": 0.97,
+       "reach": 0.85,
+       "trust": 0.88,
+       "donation_100pct": true,
+       "weights_source": "curated",
+       "score": 1.0,
+       "marginal_impact": 0.97,
+       "donation_100pct_verified": "not_checked"
+      },
+      {
+       "id": "orphan_sponsorship",
+       "cause": "Orphan sponsorship & welfare",
+       "region": "global",
+       "urgency": 0.8,
+       "gravity": 0.92,
+       "reach": 0.85,
+       "trust": 0.92,
+       "donation_100pct": true,
+       "weights_source": "curated",
+       "score": 0.9845,
+       "marginal_impact": 0.86,
+       "donation_100pct_verified": "not_checked"
+      },
+      {
+       "id": "famine_food",
+       "cause": "Famine & food security",
+       "region": "global",
+       "urgency": 0.9,
+       "gravity": 0.95,
+       "reach": 0.8,
+       "trust": 0.85,
+       "donation_100pct": true,
+       "weights_source": "curated",
+       "score": 0.8987,
+       "marginal_impact": 0.925,
+       "donation_100pct_verified": "not_checked"
+      },
+      {
+       "id": "emergency_health",
+       "cause": "Emergency healthcare",
+       "region": "global",
+       "urgency": 0.85,
+       "gravity": 0.9,
+       "reach": 0.8,
+       "trust": 0.88,
+       "donation_100pct": true,
+       "weights_source": "curated",
+       "score": 0.8642,
+       "marginal_impact": 0.875,
+       "donation_100pct_verified": "not_checked"
+      },
+      {
+       "id": "refugee_support",
+       "cause": "Refugee & displacement support",
+       "region": "global",
+       "urgency": 0.85,
+       "gravity": 0.9,
+       "reach": 0.75,
+       "trust": 0.8,
+       "donation_100pct": true,
+       "weights_source": "curated",
+       "score": 0.8487,
+       "marginal_impact": 0.875,
+       "donation_100pct_verified": "not_checked"
+      },
+      {
+       "id": "dawah",
+       "cause": "Dawah & Islamic education",
+       "region": "global",
+       "urgency": 0.55,
+       "gravity": 0.8,
+       "reach": 0.88,
+       "trust": 0.9,
+       "donation_100pct": true,
+       "weights_source": "curated",
+       "score": 0.8482,
+       "marginal_impact": 0.675,
+       "donation_100pct_verified": "not_checked"
+      }
+     ],
+     "all_cause_ids": [
+      "clean_water",
+      "conflict_relief",
+      "dawah",
+      "emergency_health",
+      "famine_food",
+      "orphan_sponsorship",
+      "refugee_support"
+     ],
+     "method": "weighted rank over CURATED priority weights (urgency · gravity · reach · marginal-impact · trust) — editorial values, not measurements",
+     "pool": {
+      "curated": 7,
+      "ingested_signals": 0
+     },
+     "disclaimer": "Virtual/simulated. Sources curated; live feeds pending Owner approval."
+    }
+   },
+   "/api/v1/economy/contracts": {
+    "status": 200,
+    "body": {
+     "contracts": [],
+     "total": 0
+    }
+   }
+  },
+  "cycle": {
+   "request": {
+    "vsb_id": "vsb-b3577d4b5b",
+    "entity_type": "waqf_ltd_hybrid",
+    "revenue": 10000,
+    "costs": 1000
+   },
+   "status": 200,
+   "body": {
+    "cycle": {
+     "vsb_id": "vsb-b3577d4b5b",
+     "entity_type": "waqf_ltd_hybrid",
+     "entity_name": "Waqf-Ltd Hybrid (recommended)",
+     "cycle_at": "2026-11-20T00:47:44Z",
+     "intake_revenue": 10000.0,
+     "venture_returns_recycled_wst": 0.0,
+     "inter_vsb_received_wst": 0.0,
+     "revenue_entered_as": {
+      "typed_at_cycle": 10000.0
+     },
+     "homeostasis_reserves": 2000.0,
+     "operating_costs": 1000.0,
+     "reserve_rate_applied": 0.2,
+     "energy_state": "not_adjusted_term_unmeasured — the reserve was NOT adjusted: the metabolic term is a simulator, so it carries no evidence about this entity's energy. consumption is at most 0.10 per tick (0.1 x a load clamped to 1.0) and production at least 0.40 (0.5 x the lowest efficiency this code passes, 0.8), so production exceeds consumption at every reachable combination and the ratio only RISES to its ceiling. It does not deplete - and NOT because of the 0.5 floor, which never binds.",
+     "distributable_profit": 7000.0,
+     "platform_fee": {
+      "rate": 0.25,
+      "profit_wst": 7000.0,
+      "fee_wst": 1750.0,
+      "split_base_wst": 5250.0,
+      "posted": true,
+      "exempt": null,
+      "simulated": false,
+      "ruling": "OWNER RULING 2026-10-12 (P5.16 clause 3): each generated entity pays 25% of its profit for updates and maintenance, taken first; released for a made-up entity on 2026-11-19 (FU-1057)",
+      "credit": {
+       "applied_wst": 0.0,
+       "basis": "the price of generating an entity (99 pounds, P5.16 clause 2) is credited against the first fee once it has been charged. It has not been: nothing is charged for generating an entity until 3 things exist, and 0 of them exist today. Nothing is credited"
+      },
+      "basis": "a quarter of this cycle's profit (7,000.00 WST) is 1,750.00 WST, taken first and posted as one line in this entity's books; the entity's own split applies to the 5,250.00 WST that remains; virtual WST"
+     },
+     "split_base_wst": 5250.0,
+     "cycle_result_wst": 7000.0,
+     "operating_loss_wst": 0.0,
+     "shortfall_after_reserve_wst": 0.0,
+     "cycle_result_basis": "intake 10000.0 less costs 1000.0 less reserve 2000.0 = 7000.0 distributable",
+     "circulation": {
+      "owner": {
+       "amount_wst": 1050.0,
+       "role": "nourishing the sovereign (host)"
+      },
+      "self_investment": {
+       "amount_wst": 1575.0,
+       "role": "growth & tissue repair (anabolism)"
+      },
+      "capital_fund": {
+       "amount_wst": 1050.0,
+       "role": "energy storage (fat/glycogen)"
+      },
+      "user_projects": {
+       "amount_wst": 787.5,
+       "role": "symbiosis — seeding offspring ventures"
+      },
+      "charity": {
+       "amount_wst": 787.5,
+       "role": "nutrient-return loop — giving back to the shared ecosystem"
+      }
+     },
+     "capital_fund_contribution": {
+      "vsb_id": "vsb-b3577d4b5b",
+      "amount_wst": 1050.0,
+      "at": "2026-11-20T00:47:44Z"
+     },
+     "owner_accrual": {
+      "accrued": true,
+      "amount_wst": 1050.0
+     },
+     "giving_back": {
+      "budget_wst": 787.5,
+      "method": "weighted rank over CURATED priority weights (urgency · gravity · reach · marginal-impact · trust), budget split pro-rata by score; only causes carrying the curated 100%-donation ELIGIBILITY FLAG are considered - a typed constant per cause; whether all of a grant reaches its cause was not checked for 6 of the 6 grant(s) here; each of the 6 grant(s) went through the compliance screen and carries its own verdict: 6 'review' (raised or not assessed - not a clearance), 0 other; 0 cause(s) were refused or unscreened and received nothing",
+      "weights_provenance": "curated — the 0..1 cause weights are editorial values encoding the Owner's 2026-06-21 directive; no needs, impact or trust data is measured or sourced. Live feeds pending Owner approval.",
+      "priorities": [
+       "clean_water",
+       "conflict_relief",
+       "dawah",
+       "orphan_sponsorship"
+      ],
+      "grants": [
+       {
+        "id": "clean_water",
+        "cause": "Clean water & wells (WATER)",
+        "region": "global",
+        "score": 1.0,
+        "amount_wst": 163.19,
+        "guaranteed_share": 0.1,
+        "donation_100pct_required_by_directive": true,
+        "donation_100pct_verified": "not_checked",
+        "weights_source": "curated",
+        "compliance": "review"
+       },
+       {
+        "id": "conflict_relief",
+        "cause": "Conflict & natural-disaster relief",
+        "region": "global",
+        "score": 1.0,
+        "amount_wst": 163.19,
+        "guaranteed_share": 0.1,
+        "donation_100pct_required_by_directive": true,
+        "donation_100pct_verified": "not_checked",
+        "weights_source": "curated",
+        "compliance": "review"
+       },
+       {
+        "id": "orphan_sponsorship",
+        "cause": "Orphan sponsorship & welfare",
+        "region": "global",
+        "score": 0.9845,
+        "amount_wst": 161.88,
+        "guaranteed_share": 0.1,
+        "donation_100pct_required_by_directive": true,
+        "donation_100pct_verified": "not_checked",
+        "weights_source": "curated",
+        "compliance": "review"
+       },
+       {
+        "id": "famine_food",
+        "cause": "Famine & food security",
+        "region": "global",
+        "score": 0.8987,
+        "amount_wst": 75.89,
+        "guaranteed_share": 0.0,
+        "donation_100pct_required_by_directive": true,
+        "donation_100pct_verified": "not_checked",
+        "weights_source": "curated",
+        "compliance": "review"
+       },
+       {
+        "id": "emergency_health",
+        "cause": "Emergency healthcare",
+        "region": "global",
+        "score": 0.8642,
+        "amount_wst": 72.97,
+        "guaranteed_share": 0.0,
+        "donation_100pct_required_by_directive": true,
+        "donation_100pct_verified": "not_checked",
+        "weights_source": "curated",
+        "compliance": "review"
+       },
+       {
+        "id": "dawah",
+        "cause": "Dawah & Islamic education",
+        "region": "global",
+        "score": 0.8482,
+        "amount_wst": 150.37,
+        "guaranteed_share": 0.1,
+        "donation_100pct_required_by_directive": true,
+        "donation_100pct_verified": "not_checked",
+        "weights_source": "curated",
+        "compliance": "review"
+       }
+      ],
+      "excluded_by_compliance": [],
+      "priorities_unfunded": [],
+      "priority_min_share": 0.1,
+      "considered_top": 5,
+      "not_funded_below_cut": [
+       {
+        "id": "refugee_support",
+        "cause": "Refugee & displacement support",
+        "rank": 6,
+        "score": 0.8487,
+        "why": "ranked 6 by score; only the top 5 are considered for the pro-rata split"
+       }
+      ],
+      "allocation_rule": "OWNER RULING 2026-10-07: each editorial-default (the Owner named none) priority that is NOT REFUSED by the compliance screen (a 'review' verdict means unassessed, not cleared - each grant carries its verdict) and is not excluded receives 10.0% of the budget first; the remaining 60.0% is split pro-rata by score across every cleared cause AMONG THE TOP 5 BY SCORE (the causes ranked below that cut that received nothing are named in not_funded_below_cut)",
+      "disclaimer": "Virtual/simulated allocation — no real funds moved."
+     },
+     "venture_investment": {
+      "budget_wst": 787.5,
+      "method": "policy score: weighted sum of eligibility constants (outcome .30 + value .25 + benefit .20 + feasibility .15 + strategic_fit .10)",
+      "method_basis": "the five inputs are constants keyed on stage, whether a cycle has run, whether the entity is governed, and its domain bucket — nothing is measured; entities in the same bucket tie, and tied positions split the budget evenly",
+      "using_demo_candidates": true,
+      "positions": [
+       {
+        "id": "v_health_triage",
+        "name": "Community health-triage assistant",
+        "domain": "care",
+        "score": 0.834,
+        "amount_wst": 162.5,
+        "funding_state": "recorded_unfunded",
+        "funding_basis": "this position does not name a live entity (a demo candidate is not an entity, and crediting one would put WST where nothing tends it)",
+        "absorbed_rounding_wst": -0.01
+       },
+       {
+        "id": "v_edu_tutor",
+        "name": "Adaptive tutor for under-resourced schools",
+        "domain": "education",
+        "score": 0.8225,
+        "amount_wst": 160.27,
+        "funding_state": "recorded_unfunded",
+        "funding_basis": "this position does not name a live entity (a demo candidate is not an entity, and crediting one would put WST where nothing tends it)"
+       },
+       {
+        "id": "v_legal_aid",
+        "name": "Free legal-aid document drafter",
+        "domain": "law",
+        "score": 0.8065,
+        "amount_wst": 157.15,
+        "funding_state": "recorded_unfunded",
+        "funding_basis": "this position does not name a live entity (a demo candidate is not an entity, and crediting one would put WST where nothing tends it)"
+       },
+       {
+        "id": "v_halal_supply",
+        "name": "Halal supply-chain verification",
+        "domain": "religion",
+        "score": 0.7995,
+        "amount_wst": 155.79,
+        "funding_state": "recorded_unfunded",
+        "funding_basis": "this position does not name a live entity (a demo candidate is not an entity, and crediting one would put WST where nothing tends it)"
+       },
+       {
+        "id": "v_green_logistics",
+        "name": "Zero-waste last-mile logistics",
+        "domain": "enterprise",
+        "score": 0.779,
+        "amount_wst": 151.79,
+        "funding_state": "recorded_unfunded",
+        "funding_basis": "this position does not name a live entity (a demo candidate is not an entity, and crediting one would put WST where nothing tends it)"
+       }
+      ],
+      "disclaimer": "Virtual/simulated investment — no real funds moved.",
+      "funding_state": "recorded_unfunded",
+      "funding_basis": "0 of 5 position(s) were credited to their investee this cycle; each position states its own reason"
+     },
+     "venture_store_note": null,
+     "metabolic_energy": 0.358,
+     "metabolic_energy_basis": null,
+     "capital_preserved": true,
+     "capital_preserved_basis": "an entity-FORM flag: this form's waterfall must keep a capital_fund share above zero. It is a rule on the proportions. It is not a statement about what this cycle did to capital - see cycle_result_wst.",
+     "biogeochemical_model": "nutrient cycle: intake → homeostasis → circulation → return → storage → growth",
+     "disclaimer": "Virtual/simulated WST — no real funds moved."
+    },
+    "governance": {
+     "status": "allowed",
+     "checkpoint": "CHK-1795135664641"
+    },
+    "attribution": {
+     "owner": "owner",
+     "entity_type": "waqf_ltd_hybrid",
+     "basis": "living_registration",
+     "entity_type_source": "living_registry",
+     "claimed_entity_type": null,
+     "claim_ignored": false,
+     "form_note": "form 'waqf_ltd_hybrid' from living_registry"
+    }
+   }
+  },
+  "after": {
+   "/api/v1/economy/owner-payments?vsb_id=vsb-b3577d4b5b": {
+    "status": 200,
+    "body": {
+     "vsb_id": "vsb-b3577d4b5b",
+     "owner": "owner",
+     "currency": "WST",
+     "account_exists": true,
+     "owner_recorded": true,
+     "owner_basis": "the entity's owner record in the living registry (Owner ruling 2026-10-12, amended), not a name this request supplied",
+     "account_name": "owner",
+     "registry_owner": "owner",
+     "owner_matches_registry": true,
+     "owner_registry_basis": "the recorded owner is the one the living registry records",
+     "accrued_total_wst": 1050.0,
+     "paid_out_total_wst": 0.0,
+     "balance_wst": 1050.0,
+     "entries": [
+      {
+       "id": "b3d11877",
+       "type": "accrual",
+       "amount_wst": 1050.0,
+       "memo": "cycle owner share (§4 waterfall)",
+       "at": "2026-11-20T00:47:44Z"
+      }
+     ],
+     "entries_stored": 1,
+     "entries_shown": 1,
+     "entries_dropped": 0,
+     "entries_kept_from": null,
+     "entries_truncated": false,
+     "entries_history_basis": "complete: all 1 entry recorded for this account is stored (an account keeps at most 200)",
+     "pending_from_failed_accruals": {
+      "rows": [],
+      "total_wst": 0,
+      "unreadable": null
+     },
+     "simulated": false,
+     "simulated_basis": null,
+     "real_money_rails": "DISABLED",
+     "real_money_enabled": false,
+     "note": "Virtual/simulated WST only. Real-money payouts are gated until the Owner explicitly authorises real rails AND a compliance/KYC review passes — no real funds move.",
+     "payout_requests": [],
+     "payout_requests_basis": "every Change Control record the payout gate filed for this account; each state is computed from that record when this is read",
+     "owner_share_reconciliation": {
+      "vsb_id": "vsb-b3577d4b5b",
+      "owner_share_is": "The owner's share is what the book of record distributed to the owner: the double-entry owner postings (the Owner's ruling of 2026-10-12). The owner account is the record a payout draws on; where it differs from the book of record, the difference is said here and nothing is corrected. The pot is a derived view and holds books older than double entry.",
+      "known": true,
+      "ledger_exists": true,
+      "account_exists": true,
+      "accrued_wst": 1050.0,
+      "paid_out_wst": 0.0,
+      "pending_claims_wst": 0.0,
+      "simulated": false,
+      "book_of_record_wst": 1050.0,
+      "pot_wst": 1050.0,
+      "double_entry_began": "2026-11-20T00:47:44Z",
+      "pot_before_double_entry_wst": 0,
+      "not_accrued_wst": 0.0,
+      "accrued_beyond_book_wst": 0.0,
+      "basis": "The book of record distributed 1,050.00 WST to the owner (the double-entry owner postings); the pot, a derived view, says 1,050.00, 0.00 of it from before double entry began (2026-11-20T00:47:44Z). The owner account accrued 1,050.00 and paid out 0.00. The account and the book of record agree. Read only: nothing was accrued or posted to close a difference."
+     }
+    }
+   },
+   "/api/v1/economy/board-pack?vsb_id=vsb-b3577d4b5b&entity_type=waqf_ltd_hybrid": {
+    "status": 200,
+    "body": {
+     "vsb_id": "vsb-b3577d4b5b",
+     "entity_type": "waqf_ltd_hybrid",
+     "entity_name": "Waqf-Ltd Hybrid (recommended)",
+     "attribution": {
+      "entity_type_source": "living_registry",
+      "owner_source": "living_registry",
+      "entity_type": "waqf_ltd_hybrid",
+      "claimed_entity_type": null,
+      "claim_ignored": false,
+      "form_note": "form 'waqf_ltd_hybrid' from living_registry"
+     },
+     "currency": "WST (virtual)",
+     "generated_at": "2026-11-20T00:47:44Z",
+     "profit_and_loss": {
+      "total_revenue_wst": 10000.0,
+      "total_reserves_wst": 2000.0,
+      "reserve_fund_live_wst": 2000.0,
+      "total_reserves_wst_basis": "cumulative reserve allocations recorded by cycles; excludes transfers out of the fund and period closes",
+      "reserve_fund_live_wst_basis": "the live double-entry reserve_fund balance — what the fund actually holds now",
+      "total_costs_wst": 1000.0,
+      "total_platform_fee_wst": 1750.0,
+      "total_platform_fee_wst_basis": "the platform's fee (P5.16 clause 3): a quarter of each profitable cycle's profit, taken first and posted as one line. The apex and a non-distributing entity pay none, and a simulation's fee is shown on its cycle and never posted, so it is in no book",
+      "total_distributed_wst": 5250.0,
+      "distribution_by_stage": {
+       "owner": 1050.0,
+       "self_investment": 1575.0,
+       "capital_fund": 1050.0,
+       "user_projects": 787.5,
+       "charity": 787.5
+      }
+     },
+     "waterfall": {
+      "effective": {
+       "owner": 0.2,
+       "self_investment": 0.3,
+       "capital_fund": 0.2,
+       "user_projects": 0.15,
+       "charity": 0.15
+      },
+      "source": "entity_template"
+     },
+     "owner_payments": {
+      "accrued_wst": 1050.0,
+      "paid_out_wst": 0.0,
+      "balance_wst": 1050.0,
+      "real_money_rails": "DISABLED",
+      "available": true
+     },
+     "venture_portfolio": {
+      "invested_total_wst": 787.5,
+      "positions": 5,
+      "funding_state": "recorded_unfunded",
+      "funding_basis": "recorded, unfunded - the share is above zero and nothing was credited; see last_funding.unfunded for the reason against each position",
+      "holdings": [
+       {
+        "id": "v_health_triage",
+        "name": "Community health-triage assistant",
+        "domain": "care",
+        "invested_wst": 162.5,
+        "rounds": 1,
+        "last_round_at": "2026-11-20T00:47:44Z",
+        "last_score": 0.834
+       },
+       {
+        "id": "v_edu_tutor",
+        "name": "Adaptive tutor for under-resourced schools",
+        "domain": "education",
+        "invested_wst": 160.27,
+        "rounds": 1,
+        "last_round_at": "2026-11-20T00:47:44Z",
+        "last_score": 0.8225
+       },
+       {
+        "id": "v_legal_aid",
+        "name": "Free legal-aid document drafter",
+        "domain": "law",
+        "invested_wst": 157.15,
+        "rounds": 1,
+        "last_round_at": "2026-11-20T00:47:44Z",
+        "last_score": 0.8065
+       },
+       {
+        "id": "v_halal_supply",
+        "name": "Halal supply-chain verification",
+        "domain": "religion",
+        "invested_wst": 155.79,
+        "rounds": 1,
+        "last_round_at": "2026-11-20T00:47:44Z",
+        "last_score": 0.7995
+       },
+       {
+        "id": "v_green_logistics",
+        "name": "Zero-waste last-mile logistics",
+        "domain": "enterprise",
+        "invested_wst": 151.79,
+        "rounds": 1,
+        "last_round_at": "2026-11-20T00:47:44Z",
+        "last_score": 0.779
+       }
+      ]
+     },
+     "charitable_giving": {
+      "total_given_wst": 787.5,
+      "label": "allocated (virtual, every grant unassessed)",
+      "basis": "the charity pot's balance in virtual WST: allocated, not given - no real money moves here - and each grant carries the compliance screen's verdict, which can refuse a grant and cannot clear one ('review' means unassessed)"
+     },
+     "organism_posture": {
+      "mode": "NOMINAL",
+      "composite_health": 0.872,
+      "composite_health_measured_only": null,
+      "composite_health_measured_weight": 0.0,
+      "composite_health_basis": "0% of this figure's weight is measured (nothing); the rest is an immune term with NO call observed in its window (the absence of failures, not a reading), a self-healing term defaulted to 1.0 and a simulated metabolic term. The measured-only score is None, and that is what decides the mode and every gate.",
+      "atp_ratio": 0.358,
+      "energy_ratio": 1.0,
+      "energy_acts": false,
+      "energy_basis": "1 - 0.0s spent / 3600s stated capacity this window (the capacity is a stated assumption); the work budget is switched off (WORKSTATION_WORK_BUDGET), so nothing reads this figure: the energy thresholds read the ATP simulator, which cannot fall, and stay inert as ruled"
+     },
+     "statements": {
+      "period": {
+       "from_posting": 0,
+       "postings": 9,
+       "opened_after_close": 0
+      },
+      "profit_and_loss": {
+       "income": {
+        "revenue": 10000.0
+       },
+       "expenses": {
+        "distribution_owner": 1050.0,
+        "distribution_self_investment": 1575.0,
+        "development_spend": 0.0,
+        "distribution_capital_fund": 1050.0,
+        "distribution_user_projects": 787.5,
+        "distribution_charity": 787.5,
+        "transfer_out": 0.0,
+        "operating_costs": 1000.0,
+        "platform_fee": 1750.0
+       },
+       "total_income_wst": 10000.0,
+       "total_expenses_wst": 8000.0,
+       "net_profit_wst": 2000.0,
+       "distributions_wst": 5250.0,
+       "operating_result_before_distributions_wst": 7250.0,
+       "net_profit_basis": "SURPLUS AFTER WATERFALL DISTRIBUTIONS, not a profit: this chart types every distribution pot (owner, self-investment, capital fund, user projects, charity) as an expense and has no liability account, so retained funds and the Owner's share are counted as spent, and an owner share accrued but unpaid is booked as paid (the payable is in owner payments). operating_result_before_distributions_wst is the figure before the waterfall."
+      },
+      "balance_sheet": {
+       "assets": {
+        "reserve_fund": 2000.0
+       },
+       "liabilities": {},
+       "equity": {
+        "current_period_net_profit": 2000.0
+       },
+       "assets_total_wst": 2000.0,
+       "liabilities_and_equity_total_wst": 2000.0,
+       "balanced": true
+      },
+      "cash_flow": {
+       "operating_receipts_wst": 10000.0,
+       "operating_payments_wst": 10000.0,
+       "net_cash_movement_wst": 0.0,
+       "scope": "postings that touch the `cash` account only",
+       "basis": "receipts are postings DEBITING `cash` and payments are postings CREDITING it, so this is movement through one account and not a statement about the enterprise's whole cash position. The cycle's compat postings route their amounts through `cash` in equal and opposite totals, so net_cash_movement_wst is ZERO BY CONSTRUCTION on any period built from them — a zero here is not a finding that cash in matched cash out. Inter-VSB transfers and reserve movements post against `reserve_fund` and are NOT counted here"
+      },
+      "trial_balance": {
+       "debit_side_total": 10000.0,
+       "credit_side_total": 10000.0,
+       "balanced": true,
+       "postings": 9,
+       "scope": "the double-entry CHART OF ACCOUNTS, summed by normal balance. These totals are not comparable with balances(), which is the seven waterfall pots: an asset-to-asset movement nets to zero here and still shows in a pot, and that is agreement, not divergence"
+      },
+      "prepared_by": "the ledger's own close routine - deterministic arithmetic over the double-entry postings. No C-Suite resource was consulted and no agent reviewed these figures",
+      "disclaimer": "Virtual/simulated WST units — not real money."
+     },
+     "ledger": {
+      "entry_count": 11,
+      "recent": [
+       {
+        "ts": "2026-11-20T00:47:44Z",
+        "account": "reserves",
+        "kind": "credit",
+        "amount": 0.0,
+        "memo": "homeostasis (prudential reserve)",
+        "balance_after": 0.0
+       },
+       {
+        "ts": "2026-11-20T00:47:44Z",
+        "account": "revenue",
+        "kind": "credit",
+        "amount": 10000.0,
+        "memo": "cycle intake (revenue)",
+        "balance_after": 10000.0,
+        "entered_as": {
+         "typed_at_cycle": 10000.0
+        }
+       },
+       {
+        "ts": "2026-11-20T00:47:44Z",
+        "account": "costs",
+        "kind": "credit",
+        "amount": 1000.0,
+        "memo": "declared operating costs",
+        "balance_after": 1000.0
+       },
+       {
+        "ts": "2026-11-20T00:47:44Z",
+        "account": "reserves",
+        "kind": "credit",
+        "amount": 2000.0,
+        "memo": "homeostasis (prudential reserve)",
+        "balance_after": 2000.0
+       },
+       {
+        "ts": "2026-11-20T00:47:44Z",
+        "account": "platform_fee",
+        "kind": "credit",
+        "amount": 1750.0,
+        "memo": "platform fee (P5.16 clause 3): 25% of the cycle's profit, taken first",
+        "balance_after": 1750.0
+       },
+       {
+        "ts": "2026-11-20T00:47:44Z",
+        "account": "owner",
+        "kind": "credit",
+        "amount": 1050.0,
+        "memo": "circulation → nourishing the sovereign (host)",
+        "balance_after": 1050.0
+       },
+       {
+        "ts": "2026-11-20T00:47:44Z",
+        "account": "self_investment",
+        "kind": "credit",
+        "amount": 1575.0,
+        "memo": "circulation → growth & tissue repair (anabolism)",
+        "balance_after": 1575.0
+       },
+       {
+        "ts": "2026-11-20T00:47:44Z",
+        "account": "capital_fund",
+        "kind": "credit",
+        "amount": 1050.0,
+        "memo": "circulation → energy storage (fat/glycogen)",
+        "balance_after": 1050.0
+       },
+       {
+        "ts": "2026-11-20T00:47:44Z",
+        "account": "user_projects",
+        "kind": "credit",
+        "amount": 787.5,
+        "memo": "circulation → symbiosis — seeding offspring ventures",
+        "balance_after": 787.5
+       },
+       {
+        "ts": "2026-11-20T00:47:44Z",
+        "account": "charity",
+        "kind": "credit",
+        "amount": 787.5,
+        "memo": "circulation → nutrient-return loop — giving back to the shared ecosystem",
+        "balance_after": 787.5
+       }
+      ],
+      "by_source": {
+       "by_source": [
+        {
+         "source": "cycle_intake",
+         "count": 1,
+         "total_wst": 10000.0,
+         "declared": true
+        },
+        {
+         "source": "cycle_distribution",
+         "count": 5,
+         "total_wst": 5250.0,
+         "declared": true
+        },
+        {
+         "source": "cycle_reserve",
+         "count": 1,
+         "total_wst": 2000.0,
+         "declared": true
+        },
+        {
+         "source": "cycle_platform_fee",
+         "count": 1,
+         "total_wst": 1750.0,
+         "declared": true
+        },
+        {
+         "source": "cycle_costs",
+         "count": 1,
+         "total_wst": 1000.0,
+         "declared": true
+        }
+       ],
+       "not_stated": {
+        "source": null,
+        "count": 0,
+        "total_wst": 0.0,
+        "basis": "written before postings carried a source, or by a caller that states none - these are NOT attributed to any source"
+       },
+       "unknown_sources": [],
+       "total_wst": 20000.0,
+       "tagged_share": 1.0,
+       "basis": "split from each posting's own `source` tag, which names what moved the money. A posting with no tag is counted under `not_stated` and attributed to nothing - the books held no source before this, so an untagged posting is not evidence of any."
+      }
+     },
+     "registration": "REGISTERED",
+     "registration_basis": "'vsb-b3577d4b5b' is on the roster of living entities. Virtual WST only.",
+     "governance": "gaas.v5-gated cycles · UEG append-only audit · arms-length distribution policy",
+     "disclaimer": "Virtual/simulated WST only — no real funds. Real-money rails are gated until the Owner authorises them AND a compliance review passes."
+    }
+   }
+  }
+ }
+}
