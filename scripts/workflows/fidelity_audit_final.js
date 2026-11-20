@@ -2,7 +2,7 @@
 // A Claude Code *Workflow* script (see the Workflow tool / workflow-authoring reference), not a Node program.
 //
 // WHAT IT IS. The Owner ruled on 2026-10-12 that the final audit is UNCAPPED and CENSUS-PARTITIONED, built and guarded
-// in its own round, calibrated first, and run after Phase 5 and the sign-in readiness round; on 2026-11-06 he chartered
+// in its own round, calibrated first, and run after Phase 5 and the sign-in readiness round; on 2026-11-06 the Owner chartered
 // it as P5.22, run in BOTH configurations, the native floor and the local model. fidelity_audit_v7.js assessed six
 // hand-drawn regions with a cap on findings. This assesses every slice of the census (docs/AUDIT_SLICES.json, held to
 // the census by scripts/audit_census_partition.py), one assessor and one refuter per slice, and sets NO CAP: an

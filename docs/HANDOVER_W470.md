@@ -17,7 +17,7 @@
 > The next free probe port is :8082.
 > **W473 shipped** (2026-09-19): P1.16 ✅ DONE — PHASE P1 COMPLETE. The mandate pages are honest inventories, the data
 > store is rooted in the repository (`scripts/relocate_data_store.py`; the Owner's memory and interactions stores were
-> copied and verified; chroma_db is his to move, FU-079), the validator and self-healing ratify nothing, the Command
+> copied and verified; chroma_db is theirs to move, FU-079), the validator and self-healing ratify nothing, the Command
 > Center prints only what it measures, the ten tracked data files are untracked, and the register's tooling refuses to
 > rewrite history (hand-offs keep every handed route in place with `handed_from`). PLAN NOW now says **Next:
 > MILESTONE M1** — the fidelity workflow re-run (Tier-1 count 0; ledger v4), then P2.1. Lessons: a snapshot made with
@@ -105,7 +105,7 @@ probe → full suite on the FINAL tree → docs → register → commit → push
 - Preserve per-file CRLF/LF (`git ls-files --eol`). The living plan and WHOLE_VISION are CRLF; the
   prompt, the register and the progress log are LF.
 - Do not flip AUTH_ENABLED / SELF_SERVE_SIGNUP / AI_ALLOW_EXTERNAL / REAL_MONEY_ENABLED.
-- OWNER-GATED, never without his explicit instruction: real-money rails, live Stripe (the Owner must
+- OWNER-GATED, never without their explicit instruction: real-money rails, live Stripe (the Owner must
   roll the exposed key), managed Postgres, production deploy, a live external AI key. Money is
   VIRTUAL WST.
 - Never fabricate. Never "fix" missing user context by enabling gateway recall (augment=False is
@@ -156,9 +156,9 @@ probe → full suite on the FINAL tree → docs → register → commit → push
 - **Port :8000:** a stale orphan may hold it; use another port.
 - **CI flake:** the Spine CI can fail on the onnxruntime-node download ("socket hang up"). That is
   infra, not code; re-run it.
-- **Open with the Owner:** no register row. The plan rulings still with him are listed in the prompt's
+- **Open with the Owner:** no register row. The plan rulings still with the Owner are listed in the prompt's
   answers.
 
 ## 7. Then pause?
 
-The Owner decides the cadence. Ask him before running several rounds unattended, unless he says to.
+The Owner decides the cadence. Ask them before running several rounds unattended, unless they say to.

@@ -38405,7 +38405,7 @@ def test_w575_p24_the_scatter_closes_on_each_row_it_reproduced(client):
         "the Law asset changed shape; it is kept as a VOCABULARY precisely because it has no "
         "relations, and if it gained some the ruling would need revisiting", sorted(_law))
     #  W731 - the second file was a list of FILE PATHS over the Owner's own papers (293 entries, no edges), never
-    #  an ontology. It was moved out of this public repository to his private store, so the strongest form of
+    #  an ontology. It was moved out of this public repository to the Owner's private store, so the strongest form of
     #  "never served as a graph" now holds: it is not in the tree.
     assert not (_root / "knowledge/Law/EmploymentTribunal/ontology/unified_assimilated_graph.json").exists(), (
         "the file-path list over the Owner's own papers is back in the public tree")
@@ -66242,8 +66242,8 @@ def test_w727_every_block_naming_a_resource_states_its_level_or_is_declared_not_
 
 
 # ══════════════════════════════════════════════════════════════════════════════════════════════════════════
-#  W731 - THE OWNER'S OWN PAPERS ARE NOT IN THE PUBLIC TREE. His legal matter and his career papers were moved
-#  to his private store on his word (2026-10-14). This holds the move: none of the folders is in the tree, and
+#  W731 - THE OWNER'S OWN PAPERS ARE NOT IN THE PUBLIC TREE. Their legal matter and their career papers were moved
+#  to their private store on their word (2026-10-14). This holds the move: none of the folders is in the tree, and
 #  each is ignored so a later `git add` cannot bring it back. No party, person or case is named here.
 # ══════════════════════════════════════════════════════════════════════════════════════════════════════════
 def test_w731_the_owners_own_papers_are_not_in_the_public_tree():
@@ -66573,7 +66573,7 @@ def test_w730_no_engine_returns_a_figure_nothing_computes(client, monkeypatch):
 
 # ══════════════════════════════════════════════════════════════════════════════════════════════════════════
 #  W740 - THE OWNER'S CHILD'S SCHOOL MATERIAL IS NOT IN THE PUBLIC TREE. A personalised exam-preparation pack and
-#  a learner profile were moved to his private store on his word (2026-10-14), as his career papers were; four
+#  a learner profile were moved to the Owner's private store on their word (2026-10-14), as their career papers were; four
 #  archived generator lines that named the school were made generic. No child or school is named here.
 # ══════════════════════════════════════════════════════════════════════════════════════════════════════════
 def test_w740_the_owners_childs_school_material_is_not_in_the_public_tree():
@@ -69642,7 +69642,7 @@ def test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_name
 
 
 # ══════════════════════════════════════════════════════════════════════════════════════════════════════════
-#  W753 (FU-1048, P2.41; the Owner's ruling of 2026-10-14) - THE OWNER'S ENTITIES ARE RECORDED UNDER HIS NAME.
+#  W753 (FU-1048, P2.41; the Owner's ruling of 2026-10-14) - THE OWNER'S ENTITIES ARE RECORDED UNDER THE OWNER'S OWN NAME.
 #  While sign-in was off, every door that made an entity recorded the single-user label, and an owner-name read then
 #  sorted the Owner's own entities with the test-era ones. A NEW entity now carries the configured single-user owner
 #  (read from the environment at the call, never a name in the code) and says how its owner was decided; a record
@@ -78444,7 +78444,7 @@ def test_w923_fu742_the_guides_price_section_is_put_to_the_owner_with_the_recomm
     assert row, "the price question was not put to the Owner"
     #  W1120: RULED on 2026-11-19 (yes, as recommended): the row is closed with the ruling, and stating the price
     #  is the row it names; until that round the guide still quotes no price
-    assert (row["status"], row.get("closed_by")) == ("done", "W1120") and row["close_note"].startswith("OWNER RULED 2026-11-19 (his recommendation accepted): "), row
+    assert (row["status"], row.get("closed_by")) == ("done", "W1120") and row["close_note"].startswith("OWNER RULED 2026-11-19 (the recommendation accepted): "), row
     assert "RECOMMENDED: yes, for a provider's published price only" in row["why"]
     assert "docs/business/FOUNDERS_GUIDE.md" in (row.get("files") or [])
 
@@ -79643,7 +79643,7 @@ def test_w939_p52_a_price_is_recomputed_on_read_and_is_null_while_an_input_is_ab
         "OWNER DECISION: what arithmetic turns an entity's declared cost and its waterfall into a price?")), None)
     #  W1120: RULED on 2026-11-19 (the formula, as recommended): the row is closed with the ruling, and the price
     #  module is the row it names (FU-1279), which W1123 built, as above
-    assert row and (row["status"], row.get("closed_by")) == ("done", "W1120") and row["close_note"].startswith("OWNER RULED 2026-11-19 (his recommendation accepted): "), row
+    assert row and (row["status"], row.get("closed_by")) == ("done", "W1120") and row["close_note"].startswith("OWNER RULED 2026-11-19 (the recommendation accepted): "), row
     assert "RECOMMENDED: price = the declared cost / (1 - the prudential reserve rate" in row["why"]
     prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
     still = prompt.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
@@ -79787,7 +79787,7 @@ def test_w941_p53_a_claim_that_an_output_is_wrong_stays_open_until_a_person_answ
     row = next((x for x in reg if x.get("title") == (
         "OWNER DECISION: under which Change Control tier is a claim that an output is wrong filed?")), None)
     #  W1120: RULED on 2026-11-19 (CRITICAL, as built): the row is closed with the ruling, and nothing changes
-    assert row and (row["status"], row.get("closed_by")) == ("done", "W1120") and row["close_note"].startswith("OWNER RULED 2026-11-19 (his recommendation accepted): ") and row.get("because") == "already_satisfied", row
+    assert row and (row["status"], row.get("closed_by")) == ("done", "W1120") and row["close_note"].startswith("OWNER RULED 2026-11-19 (the recommendation accepted): ") and row.get("because") == "already_satisfied", row
     assert "RECOMMENDED: CRITICAL, as built" in row["why"]
     prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
     still = prompt.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
@@ -81357,7 +81357,7 @@ def test_w962_fu807_the_cost_model_marks_every_cost_by_where_it_came_from_and_fi
     prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
     #  W1120: RULED on 2026-11-19 (P4.1 to P4.6 and a first offer, as recommended): the row is closed with the
     #  ruling and has left the open-decisions list; marking the gates is the row it names
-    assert (row["status"], row.get("closed_by")) == ("done", "W1120") and row["close_note"].startswith("OWNER RULED 2026-11-19 (his recommendation accepted): "), row
+    assert (row["status"], row.get("closed_by")) == ("done", "W1120") and row["close_note"].startswith("OWNER RULED 2026-11-19 (the recommendation accepted): "), row
     still = prompt.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
     assert f"{row['id']} (W962):" not in still, "a ruled question is still put to the Owner"
 
@@ -91606,15 +91606,15 @@ def test_w1119_fu399_the_time_limit_panel_says_the_limit_what_it_omits_and_who_t
 
 
 def test_w1120_the_owners_rulings_of_2026_11_19_are_recorded_where_the_work_reads_them():
-    """The Owner's rulings of 2026-11-19 (W1120). He accepted the twenty-two recommendations put to him that evening
-    and delegated the six switches of his hand, with AI agents standing in for the people the invited stage would
+    """The Owner's rulings of 2026-11-19 (W1120). The Owner accepted the twenty-two recommendations put to them that
+    evening and delegated the six switches of their hand, with AI agents standing in for the people the invited stage would
     invite. Held here:
-    - each ruling is in the plan where the work reads it: the switches proceeding in the ruled order without him and
-      what stays his (the P4 heading), the opt-in rule (P4.1), the dry run (P4.5), real money staying off (P4.6),
+    - each ruling is in the plan where the work reads it: the switches proceeding in the ruled order without the Owner and
+      what stays theirs (the P4 heading), the opt-in rule (P4.1), the dry run (P4.5), real money staying off (P4.6),
       the price (P5.2), a provider's price in the guide (P5.6), the seven gates (P5.7) and the fee's release (P5.16);
     - the two rows whose ruling is what the code does are closed as satisfied, the four whose ruling sets work are
       closed as answered, each close says who ruled and when, and each of the four names one row from this round,
-      on the item that builds it and not waiting on him, that carries the work;
+      on the item that builds it and not waiting on the Owner, that carries the work;
     - the real-money switch is still off in the tree."""
     import json
     import re
@@ -91626,7 +91626,7 @@ def test_w1120_the_owners_rulings_of_2026_11_19_are_recorded_where_the_work_read
     flat = " ".join(plan.split())
     R = "OWNER RULING 2026-11-19"
     head = flat[flat.index("PHASE P4 — THE OWNER'S HAND"):flat.index(" P4.1 AUTH_ENABLED on")]
-    for words in (f"{R} (his twenty-two recommendations of that day accepted together): the six steps now proceed "
+    for words in (f"{R} (the twenty-two recommendations of that day accepted together): the six steps now proceed "
                   "WITHOUT waiting on the Owner for each one",
                   "the invited stage is run with AI agents standing in for the people invited, on made-up accounts that "
                   "hold nothing about a real person",
@@ -91641,7 +91641,7 @@ def test_w1120_the_owners_rulings_of_2026_11_19_are_recorded_where_the_work_read
                                  "platform margin set once, 20%)"),
                         ("P5.6", " (FU-1176): the founder's guide may state a provider's published price"),
                         ("P5.7", " (FU-1191): with no founder playbook in the tree, the seven investment gates are the six "
-                                 "switches of his hand, P4.1 to P4.6"),
+                                 "switches of the Owner's hand, P4.1 to P4.6"),
                         ("P5.16", " (FU-1057): clause 3 is released for a made-up entity now")):
         assert f"{R}{words}" in " ".join(blocks[slot].split()), ("the item does not carry its ruling", slot)
 
@@ -91650,7 +91650,7 @@ def test_w1120_the_owners_rulings_of_2026_11_19_are_recorded_where_the_work_read
                          ("FU-1176", "built"), ("FU-1185", "built"), ("FU-1191", "built")):
         r = reg[fid]
         assert (r["status"], r.get("closed_by"), r.get("because")) == ("done", "W1120", because), (fid, r["status"])
-        assert r["close_note"].startswith("OWNER RULED 2026-11-19 (his recommendation accepted): "), (fid, r["close_note"][:60])
+        assert r["close_note"].startswith("OWNER RULED 2026-11-19 (the recommendation accepted): "), (fid, r["close_note"][:60])
     for fid, slot in (("FU-1174", "P4.5"), ("FU-1176", "P5.6"), ("FU-1185", "P5.2"), ("FU-1191", "P5.7")):
         carried = [reg[n] for n in re.findall(r"FU-\d+", reg[fid]["close_note"]) if n != fid]
         assert len(carried) == 1, (fid, "names no single row that carries the work")
@@ -91662,7 +91662,7 @@ def test_w1120_the_owners_rulings_of_2026_11_19_are_recorded_where_the_work_read
 
 def test_w1121_fu1151_the_two_audit_run_records_say_what_kind_of_place_each_was_and_name_none():
     """FU-1151 (W1121). Two committed audit run records carried text of a private kind: edition 15's named a folder on
-    the Owner's Windows machine in five places, and edition 16's named that folder once and a folder in his home folder
+    the Owner's Windows machine in five places, and edition 16's named that folder once and a folder in the Owner's home folder
     once. The Owner allowed the two files to be opened on 2026-11-19. Held here:
     - neither record names a place on a machine by its path: no drive path is left in either;
     - each says what kind of place it was instead, as many times as it named one;
@@ -93046,3 +93046,67 @@ def test_w1142_fu399_the_matter_panel_says_each_particulars_source_each_authorit
                  "expect(screen.getByTestId('matter-unresolved-checks').textContent).toBe('No unresolved check.');",
                  "'The matter folder could not be read: Failed — backend unreachable.'"):
         assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1143_no_document_a_round_wrote_gives_the_owner_a_pronoun_the_owner_has_not_stated():
+    """W1143. The rounds' own text gave the Owner a gendered pronoun in forty-odd places: the register, the plan and
+    its living copy, the dated measurement of the remaining work, the handover, four other documents, three code
+    comments, two .gitignore comments, the final audit's workflow and the spine's docstrings. The Owner has stated no
+    pronoun, so each sentence now says "the Owner", or they, them and their where the Owner is named just before.
+    W1120's notes also said the rulings of 2026-11-19 accepted recommendations they called the Owner's own; they were
+    the recommendations put to the Owner that day, and the notes now say so. Held here:
+    - no tracked text file holds he, his, him or himself, apart from five uses that are not about a person the
+      documents describe, each named with the file it is in, and each still there (an entry for a use that has gone
+      fails, so the list cannot outlive what it excuses): a verse of the Quran quoted in a register row, the horizon
+      guardrails' crisis-language patterns and the two blind files that copy them, and the language code of Hebrew;
+    - left out of the scan, as test_w1135 leaves them: the archive, the fidelity runs (never opened), the venv, the
+      Owner's .claude settings and the pinned ledger editions; and also the source texts of the knowledge folders,
+      the Owner's own inputs, and this spine, whose variables are named he, hers and his and whose crisis-language
+      tests quote the phrases they test;
+    - the W1120 rows say whose recommendations they were."""
+    import json
+    import pathlib
+    import re
+    import subprocess
+    root = pathlib.Path(__file__).resolve().parents[1]
+    word = re.compile(r"\b(?:he|his|him|himself)\b", re.I)
+    left = ("_archive/", "docs/fidelity_runs/", "venv/", ".claude/", "docs/VISION_FIDELITY_LEDGER", "knowledge/",
+            "docs/knowledge/", "inputs/", "integration_tests/test_mvp_spine.py")
+    allowed = {
+        "docs/FOLLOWUPS.json": ["Say: He is Allah, the One!"],
+        "agentic_core/gaas/v5/horizon_guardrails.py": [r"(?:my|his|her|their|ones?|his\s+or\s+her)",
+                                                       r"(?:i|he|she|they)"],
+        "scripts/blinds_p212_refute.json": [r"(?:my|his|her|their|ones?|his\\s+or\\s+her)",
+                                            r"|his\\s+|her\\s+|their\\s+)", "'took his own life'"],
+        "scripts/blinds_p212_routes.json": [r"|his\\s+|her\\s+|their\\s+)"],
+        "apps/workstation-superapp/src/lib/i18n.tsx": ["'fa', 'he']"],
+    }
+    out = subprocess.run(["git", "ls-files", "-z"], cwd=root, capture_output=True, check=True).stdout
+    files = [f for f in out.decode("utf-8").split("\0") if f]
+    assert len(files) > 1000, ("git listed too few tracked files to mean anything", len(files))
+    found, read = [], 0
+    for rel in files:
+        if rel.startswith(left):
+            continue
+        try:
+            text = (root / rel).read_bytes().decode("utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        read += 1
+        for use in allowed.get(rel, ()):
+            assert use in text, ("an allowed use is no longer there: take it off the list", rel, use)
+            text = text.replace(use, " ")
+        found += [(rel, text.count("\n", 0, m.start()) + 1, m.group(0)) for m in word.finditer(text)]
+    assert read > 1000, ("too few files were read to mean anything", read)
+    assert set(allowed) <= set(files), sorted(set(allowed) - set(files))
+    assert found == [], ("a tracked file gives a person a pronoun: say the Owner, or they, them and their", found[:12])
+
+    #  the rulings of 2026-11-19 accepted the recommendations put to the Owner that day
+    rows = {r["id"]: r for r in json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    for fid in ("FU-1166", "FU-1174", "FU-1176", "FU-1185", "FU-1187", "FU-1191"):
+        assert rows[fid]["close_note"].startswith("OWNER RULED 2026-11-19 (the recommendation accepted): "), fid
+    for fid in ("FU-1277", "FU-1278", "FU-1279", "FU-1280"):
+        assert rows[fid]["source"] == ("W1120 (the Owner's rulings of 2026-11-19: the twenty-two recommendations of that "
+                                       "day accepted)"), fid
+    plan = " ".join((root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8").split())
+    assert "OWNER RULING 2026-11-19 (the twenty-two recommendations of that day accepted together)" in plan

@@ -1331,7 +1331,7 @@ platform holds.
 ## A.6 The fifteen core features · **[DERIVED-FAITHFUL]**
 
 The Jules-era synthesis grouped the Owner's feature lists into exactly fifteen features plus a shared area.
-The *grouping* is agent work; the *features* are the Owner's, and each is traceable back to his own lists.
+The *grouping* is agent work; the *features* are the Owner's, and each is traceable back to the Owner's own lists.
 Adopted here as the Religion domain's feature register, with **measured status** in Workstation today.
 
 **1 · User Authentication & Profile Management.** Identity, MFA, OAuth, RBAC across four roles —

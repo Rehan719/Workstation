@@ -21876,7 +21876,7 @@
     {
       "id": "FU-1095",
       "title": "A failure on the first deployment reaches no person: failures are recorded and shown only on a page someone must open",
-      "why": "P3.25 records every route failure in the outcome ledger and the event chain and shows them on one page; nothing sends a failure to anyone, and README.md still lists error monitoring as not built, which is half true. The first deploy is private to the Owner, so the cost is an outage nobody sees. Smallest addition, in the deploy pre-flight: an uptime check on /health from OUTSIDE the machine (a boot failure cannot report itself), e-mailing the Owner from his own cloud account beside the billing alert; it is named in the dry run and driven once at the deploy with him watching; /health returns a fixed body, so the check sees only a dead process, and the runbook says so. The README line becomes: failures recorded, not alerted.",
+      "why": "P3.25 records every route failure in the outcome ledger and the event chain and shows them on one page; nothing sends a failure to anyone, and README.md still lists error monitoring as not built, which is half true. The first deploy is private to the Owner, so the cost is an outage nobody sees. Smallest addition, in the deploy pre-flight: an uptime check on /health from OUTSIDE the machine (a boot failure cannot report itself), e-mailing the Owner from their own cloud account beside the billing alert; it is named in the dry run and driven once at the deploy with the Owner watching; /health returns a fixed body, so the check sees only a dead process, and the runbook says so. The README line becomes: failures recorded, not alerted.",
       "source": "W747",
       "found": "2026-10-16",
       "files": [
@@ -23131,12 +23131,12 @@
       "slot_source": "Owner ruling 2026-11-06 (W754): accepted as recommended: v15's paths replaced in W754; the v16 note remains, for the session that located it",
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
-      "close_note": "Built in W1121, on the Owner's go-ahead of 2026-11-19 to open these two files and only these: the five paths into the audit's data folder on the Owner's Windows machine in edition 15's record, and that folder and a folder in his home folder in edition 16's, now say what kind of place each was. Every finding, verdict and count is unchanged, and git history keeps the earlier text, as ruled on 2026-10-14. test_w1121 holds that neither record has a drive path left, with two blinds."
+      "close_note": "Built in W1121, on the Owner's go-ahead of 2026-11-19 to open these two files and only these: the five paths into the audit's data folder on the Owner's Windows machine in edition 15's record, and that folder and a folder in the Owner's home folder in edition 16's, now say what kind of place each was. Every finding, verdict and count is unchanged, and git history keeps the earlier text, as ruled on 2026-10-14. test_w1121 holds that neither record has a drive path left, with two blinds."
     },
     {
       "id": "FU-1152",
       "title": "A person whose username is the single-user label, or the configured single-user owner, would be shown every record made while sign-in was off",
-      "why": "Driven at the function on a copy with sign-in on: the ownership check admits a person named 'default' to every record carrying that label, because it compares the record's owner with the username. W753 adds a second such name, the configured single-user owner (the role word 'owner' when nothing is configured). The admin register route refuses neither name, and self-serve signup, once the Owner enables it, would not either. Smallest addition, beside the reserved-name refusal the sign-in readiness round adds for service names: refuse the label at register and signup, and the configured owner's name everywhere except the admin register route, where the Owner creates his own account.",
+      "why": "Driven at the function on a copy with sign-in on: the ownership check admits a person named 'default' to every record carrying that label, because it compares the record's owner with the username. W753 adds a second such name, the configured single-user owner (the role word 'owner' when nothing is configured). The admin register route refuses neither name, and self-serve signup, once the Owner enables it, would not either. Smallest addition, beside the reserved-name refusal the sign-in readiness round adds for service names: refuse the label at register and signup, and the configured owner's name everywhere except the admin register route, where the Owner creates their own account.",
       "source": "W753",
       "found": "2026-10-17",
       "files": [
@@ -23443,7 +23443,7 @@
       "tier": 3,
       "because": "already_satisfied",
       "because_means": "measured as satisfied by an earlier round; nothing was built for it here",
-      "close_note": "OWNER RULED 2026-11-19 (his recommendation accepted): no. A birth is never refused or held for approval on the platform's derived carrying capacity; the reading is recorded on every birth and nothing is refused on it, which is what every establishment and division has done since W839."
+      "close_note": "OWNER RULED 2026-11-19 (the recommendation accepted): no. A birth is never refused or held for approval on the platform's derived carrying capacity; the reading is recorded on every birth and nothing is refused on it, which is what every establishment and division has done since W839."
     },
     {
       "id": "FU-1167",
@@ -23614,7 +23614,7 @@
       "tier": 3,
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
-      "close_note": "OWNER RULED 2026-11-19 (his recommendation accepted): yes. streamlit and plotly are removed, and pandas as a direct declaration (camel-tools and mesa keep it installed), with the devcontainer's install line. The removal is FU-1277."
+      "close_note": "OWNER RULED 2026-11-19 (the recommendation accepted): yes. streamlit and plotly are removed, and pandas as a direct declaration (camel-tools and mesa keep it installed), with the devcontainer's install line. The removal is FU-1277."
     },
     {
       "id": "FU-1175",
@@ -23658,7 +23658,7 @@
       "tier": 3,
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
-      "close_note": "OWNER RULED 2026-11-19 (his recommendation accepted): yes, for a provider's published price only, cited with its page and the date read and labelled observed; the guide promises no zero bill and the platform's own prices stay under the rule. Stating it is FU-1278."
+      "close_note": "OWNER RULED 2026-11-19 (the recommendation accepted): yes, for a provider's published price only, cited with its page and the date read and labelled observed; the guide promises no zero bill and the platform's own prices stay under the rule. Stating it is FU-1278."
     },
     {
       "id": "FU-1177",
@@ -23856,7 +23856,7 @@
       "tier": 2,
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
-      "close_note": "OWNER RULED 2026-11-19 (his recommendation accepted): price = the declared cost / (1 - the prudential reserve rate, 20% - a platform margin set once, 20%). Recorded in the plan at P5.2; the price is FU-1279."
+      "close_note": "OWNER RULED 2026-11-19 (the recommendation accepted): price = the declared cost / (1 - the prudential reserve rate, 20% - a platform margin set once, 20%). Recorded in the plan at P5.2; the price is FU-1279."
     },
     {
       "id": "FU-1186",
@@ -23898,7 +23898,7 @@
       "tier": 2,
       "because": "already_satisfied",
       "because_means": "measured as satisfied by an earlier round; nothing was built for it here",
-      "close_note": "OWNER RULED 2026-11-19 (his recommendation accepted): CRITICAL, as built in W941. A claim that an output is wrong is answered only by a person's explicit decision; no model's review, health reading or timer closes one."
+      "close_note": "OWNER RULED 2026-11-19 (the recommendation accepted): CRITICAL, as built in W941. A claim that an output is wrong is answered only by a person's explicit decision; no model's review, health reading or timer closes one."
     },
     {
       "id": "FU-1188",
@@ -23979,7 +23979,7 @@
       "tier": 2,
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
-      "close_note": "OWNER RULED 2026-11-19 (his recommendation accepted): with no founder playbook in the tree, the seven investment gates are P4.1 to P4.6 and a first offer the interviews support. Recorded in the plan at P5.7; marking them is FU-1280."
+      "close_note": "OWNER RULED 2026-11-19 (the recommendation accepted): with no founder playbook in the tree, the seven investment gates are P4.1 to P4.6 and a first offer the interviews support. Recorded in the plan at P5.7; marking them is FU-1280."
     },
     {
       "id": "FU-1192",
@@ -25933,7 +25933,7 @@
       "id": "FU-1277",
       "title": "streamlit, plotly and pandas's direct declaration are removed, as the Owner ruled on 2026-11-19",
       "why": "FU-1174's ruling: nothing live has used streamlit, pandas or plotly since W896 moved the dashboard aside, and camel-tools and mesa keep pandas installed. Remove streamlit and plotly, pandas as a direct declaration, and the devcontainer's install line, on a fresh install with the full suite, as the earlier removal of the nineteen did (W907); 13 pins leave requirements.txt.",
-      "source": "W1120 (the Owner's rulings of 2026-11-19: his twenty-two recommendations of that day accepted)",
+      "source": "W1120 (the Owner's rulings of 2026-11-19: the twenty-two recommendations of that day accepted)",
       "found": "2026-11-19",
       "files": [
         "pyproject.toml",
@@ -25956,8 +25956,8 @@
     {
       "id": "FU-1278",
       "title": "The founder's guide states the deployment channel's published price, cited with its page and the date read",
-      "why": "FU-1176's ruling (2026-11-19): a provider's published price may be stated, cited with its page and the date it was read and labelled observed, as FU-742 asked; the guide promises no zero bill and the platform's own prices stay under the rule. The provider's pages (cloud.google.com) are not among this environment's allowed hosts yet, so nothing is stated until they are read there; nothing is written from memory. The guide's line and the cost model's that still say the question waits on him are rewritten in that round.",
-      "source": "W1120 (the Owner's rulings of 2026-11-19: his twenty-two recommendations of that day accepted)",
+      "why": "FU-1176's ruling (2026-11-19): a provider's published price may be stated, cited with its page and the date it was read and labelled observed, as FU-742 asked; the guide promises no zero bill and the platform's own prices stay under the rule. The provider's pages (cloud.google.com) are not among this environment's allowed hosts yet, so nothing is stated until they are read there; nothing is written from memory. The guide's line and the cost model's that still say the question waits on the Owner are rewritten in that round.",
+      "source": "W1120 (the Owner's rulings of 2026-11-19: the twenty-two recommendations of that day accepted)",
       "found": "2026-11-19",
       "files": [
         "docs/business/FOUNDERS_GUIDE.md"
@@ -25978,7 +25978,7 @@
       "id": "FU-1279",
       "title": "A price in WST is computed from the declared cost by the ruled formula, and never typed",
       "why": "FU-1185's ruling (2026-11-19): price = the declared cost / (1 - the prudential reserve rate, 20% - a platform margin set once, 20%), on W939's inputs (the effective waterfall and each deliverable's declared cost). A price whose input is missing is null with the input named, never a default; the platform fee (P5.16 clause 3) is taken from the distributable profit the price leaves.",
-      "source": "W1120 (the Owner's rulings of 2026-11-19: his twenty-two recommendations of that day accepted)",
+      "source": "W1120 (the Owner's rulings of 2026-11-19: the twenty-two recommendations of that day accepted)",
       "found": "2026-11-19",
       "files": [
         "agentic_core/api/economy.py",
@@ -25999,8 +25999,8 @@
     {
       "id": "FU-1280",
       "title": "The cost model marks each of the seven investment gates evidenced or not, from what the tree shows",
-      "why": "FU-1191's ruling (2026-11-19): with no founder playbook in the tree, the seven gates are P4.1 to P4.6 and a first offer the interviews support. docs/business/COST_MODEL.md marks each one evidenced or not from the tree - a switch's pre-flight measured and the switch's state read, a first offer backed by recorded interviews - and invents none. Its gates section still puts the question to him; that round marks the gates instead.",
-      "source": "W1120 (the Owner's rulings of 2026-11-19: his twenty-two recommendations of that day accepted)",
+      "why": "FU-1191's ruling (2026-11-19): with no founder playbook in the tree, the seven gates are P4.1 to P4.6 and a first offer the interviews support. docs/business/COST_MODEL.md marks each one evidenced or not from the tree - a switch's pre-flight measured and the switch's state read, a first offer backed by recorded interviews - and invents none. Its gates section still puts the question to the Owner; that round marks the gates instead.",
+      "source": "W1120 (the Owner's rulings of 2026-11-19: the twenty-two recommendations of that day accepted)",
       "found": "2026-11-19",
       "files": [
         "docs/business/COST_MODEL.md"
@@ -26177,6 +26177,28 @@
       "status": "open",
       "closed_by": null,
       "note": ""
+    },
+    {
+      "id": "FU-1290",
+      "title": "Round-written documents gave the Owner a gendered pronoun the Owner has not stated",
+      "why": "Found 2026-11-20 (W1143) while closing FU-1277: the register, the plan and its living copy, the dated measurement of the remaining work, the handover, four other documents, three code comments, two .gitignore comments, the final audit's workflow and the spine's docstrings gave the Owner a gendered pronoun in forty-odd places, and seven of W1120's notes said the rulings of 2026-11-19 accepted recommendations they called the Owner's own, when they were the recommendations put to the Owner that day. THE WORK: each sentence says the Owner, or they, them and their where the Owner is named just before; the notes say whose recommendations they were; and a guard keeps every tracked text file, outside the places test_w1135 leaves out and the knowledge folders and the Owner's inputs, from giving a person such a pronoun again, apart from five named uses that are about no person the documents describe. git history keeps the earlier text, as ruled on 2026-10-14.",
+      "source": "W1143 (found while closing FU-1277, 2026-11-20)",
+      "found": "2026-11-20",
+      "files": [
+        "docs/FOLLOWUPS.json",
+        "docs/FABLE_DELIVERY_PROMPT.md",
+        "docs/REMAINING_WORK_MEASURED.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.5",
+      "status": "done",
+      "closed_by": "W1143",
+      "note": "",
+      "slot_source": "the production image carries docs/ (W1128), so a sentence in a document ships with every deploy, as FU-1285's paths did",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1143: every gendered pronoun the rounds gave the Owner now reads the Owner, or they, them and their where the Owner is named just before: 15 lines of the register, 8 of the plan and 4 of its living copy, 32 of the dated measurement of the remaining work, 4 of the handover, one in each of four other documents, three code comments, two .gitignore comments, the final audit's workflow and the spine's docstrings and pinned phrases. W1120's notes say the recommendations of 2026-11-19 were the ones put to the Owner. The four files kept with CRLF line endings keep them. test_w1143 reads every tracked text file outside the places it names and allows five uses that are about no person the documents describe, each still present; four blinds turn it red."
     }
   ],
   "routes": [

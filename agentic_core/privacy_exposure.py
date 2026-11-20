@@ -76,7 +76,7 @@ PRIVATE_FOLDERS = (
     "_archive/outputs/interview_prep/", "_archive/scripts/Law/", "_archive/scripts/Employment/",
     "_archive/scripts/Science/PatientSafety/", "_archive/docs/Law/", "_archive/ingest/Employment/",
     "_archive/legacy-archive/Employment/", "_archive/agentic_core/domains/law/", "_archive/legacy-archive/law-grand-operation",
-    # W740 - the Owner's child's school material, moved to his private Education folder
+    # W740 - the Owner's child's school material, moved to the Owner's private Education folder
     "_archive/outputs/education/sats_2026/", "outputs/education/sats_2026/",
     "_archive/agentic_core/identity/sats_persona.py")
 KINDS = ("credential", "case_number", "personal_document", "private_folder", "private_marker")

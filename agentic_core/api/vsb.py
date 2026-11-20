@@ -2544,7 +2544,7 @@ def _operating_means(vsb: dict):
             "satisfaction reading is part of a beat.")
 
 
-#  W753 (FU-1048) - the Owner's own words for a record made before new records were stamped with his identity
+#  W753 (FU-1048) - the Owner's own words for a record made before new records were stamped with their identity
 OWNER_STAMP_PREDATES = "made before owner stamping"
 
 
