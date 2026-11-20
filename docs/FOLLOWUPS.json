@@ -16715,11 +16715,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P4.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1127",
       "note": "",
       "slot_source": "ruled by the Owner on 2026-10-11: fixed in one authentication-readiness round after P5 and before the final audit",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Already satisfied, as the Owner ruled on 2026-11-19 (FU-849, the recommendation accepted): an entity registered before the opt-in flag existed is read as opted in (tending(), absent reads as ON), and every establishment states both tending flags (the roster's one writer, register()). W799 made the beat read the entity's own economy flag and skip one that is off, and its statement says so; W888 made a beat visit name the service identity and both levers. test_w1127 holds the four together, with two blinds."
     },
     {
       "id": "FU-850",

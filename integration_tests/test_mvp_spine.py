@@ -1697,22 +1697,42 @@ def test_continuous_compliance_beat(client):
     # flag is genuinely consulted now (it was settable and reported but never checked in beat()).
     import asyncio as _aio, uuid as _uuid
     from agentic_core.organism.heartbeat import heartbeat
-    from agentic_core.economy.living_vsbs import register
+    from agentic_core.economy.living_vsbs import list_living, register
     loop = _ensure_loop()
     vid = f"vsb-w288-{_uuid.uuid4().hex[:6]}"
+    #  W1127 - THE ROTATION, NOT THE ONLY ENTITY. The beat screens the least-recently-screened living VSB and
+    #  visits the least-recently-operated one, so this entity comes first only when no other living entity is
+    #  ahead of it. In W1127's round an entity the swarm cascade made earlier in the same process was screened
+    #  instead. So the beat is driven until it reaches this entity, at most once per living entity: that bound is
+    #  the rotation's own promise (a held visit still advances last_operated, so nothing starves it).
+    _visits = {"operate_vsb", "vsb_held", "vsb_refused", "operate_vsb_failed", "operate_vsb_unclassified",
+               "roster_unavailable"}
     try:
         heartbeat.configure(auto_compliance=True, auto_economy=False)
         register(vid, name="Halal community nutrition venture", domain="care")
-        loop.run_until_complete(heartbeat.beat())
-        assert heartbeat.last_compliance and heartbeat.last_compliance["overall"] in ("pass", "review", "fail")
+        _turns = len((list_living() or {}).get("living_vsbs") or [])
+        assert _turns >= 1, "the entity just registered is not living"
+        for _ in range(_turns):
+            r_off = loop.run_until_complete(heartbeat.beat())     # auto_economy off → no visit of any kind
+            assert heartbeat.last_compliance and heartbeat.last_compliance["overall"] in ("pass", "review", "fail")
+            assert not _visits & set(r_off.get("actions", [])), r_off.get("actions")
+            if heartbeat.last_compliance.get("vsb_screened") == vid:
+                break
+        assert heartbeat.last_compliance.get("vsb_screened") == vid, (
+            "the rotation did not screen this entity in one turn per living entity", _turns,
+            heartbeat.last_compliance.get("vsb_screened"))
         from agentic_core.config import data_path, read_json_reported
         hist = read_json_reported(data_path("vsb_compliance_history.json"), {})[0]
         assert vid in hist and hist[vid]["history"]           # per-VSB history persisted
-        r_off = loop.run_until_complete(heartbeat.beat())     # auto_economy off → no operate action
-        assert "operate_vsb" not in r_off.get("actions", [])
         heartbeat.configure(auto_economy=True)
-        r_on = loop.run_until_complete(heartbeat.beat())      # on → the flag genuinely gates
-        assert "operate_vsb" in r_on.get("actions", [])
+        for _ in range(_turns):
+            r_on = loop.run_until_complete(heartbeat.beat())      # on → the flag genuinely gates
+            assert _visits & set(r_on.get("actions", [])), r_on.get("actions")
+            if heartbeat.last_vsb_operated == vid:
+                break
+        assert heartbeat.last_vsb_operated == vid and "operate_vsb" in r_on.get("actions", []), (
+            "the rotation did not operate this entity in one turn per living entity", _turns,
+            heartbeat.last_vsb_operated, r_on.get("actions"))
     finally:
         heartbeat.configure(auto_compliance=False, auto_economy=False)
     r = client.post("/api/v1/heartbeat/configure", json={"auto_compliance": True}).json()
@@ -76239,7 +76259,8 @@ def test_w887_with_sign_in_on_a_second_person_reaches_none_of_the_first_persons_
 def test_w888_a_beat_driven_visit_names_the_service_identity_and_the_levers_that_allowed_it(client):
     """FU-849 (W888, the service-identity half). The Owner ruled a per-entity opt-in and a named service identity once
     authentication is on. A visit the beat makes now names the organism's service identity and both levers that let it
-    act; an establishment's first cycle names the establishment. The opt-in default is the Owner's and stays open."""
+    act; an establishment's first cycle names the establishment. The opt-in default was ruled on 2026-11-19: an entity
+    registered before the flag existed reads as opted in, and every establishment states the flag (W1127)."""
     import uuid as _uuid888
     from agentic_core.economy import living_vsbs as _lv888
     vid = f"vsb-w888-{_uuid888.uuid4().hex[:6]}"
@@ -91922,3 +91943,51 @@ def test_w1126_fu1280_the_cost_model_marks_each_of_the_seven_gates_from_what_the
         assert rows[gate] == ("yes" if ok else "no"), (gate, "is marked", rows[gate], "and the tree shows", ok)
     assert "OWNER RULING 2026-11-19 (FU-1191)" in gates and "So no gate is evidenced today." in gates
     assert not any(met.values()), "a gate is met: its row and the closing line are to be marked again"
+
+
+def test_w1127_fu849_an_entity_says_whether_it_consents_to_be_tended_and_one_from_before_the_flag_reads_as_consenting(client):
+    """FU-849 (W1127), P4.1's readiness. The Owner ruled a per-entity opt-in and a named service identity once
+    authentication is on, and on 2026-11-19 (FU-849, the recommendation accepted): an entity registered before the
+    opt-in flag existed is read as opted in, and every new establishment records the flag explicitly. Measured: every
+    part is in the tree already (W799, W888, the roster's writer). Held here, together:
+    - an entity established through the route states both of its tending flags on its record;
+    - a record from before the flags reads as ON, and its basis says why;
+    - an entity whose own economy flag is off says it is not tended, naming the flag that is off;
+    - a beat visit names the organism's service identity and the two levers that allowed it;
+    - the plan's sign-in item carries the ruling."""
+    import pathlib
+    import uuid
+    from agentic_core import plan_followups as pf
+    from agentic_core.economy import living_vsbs as lv
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    est = client.post("/api/v1/genesis/establish", json={"problem": "w1127 a made-up orchard cooperative",
+                                                         "name": "W1127 Orchard", "ship_output": False})
+    assert est.status_code == 200, est.text[:300]
+    vid = est.json()["vsb_id"]
+    rec = lv._load()[vid]
+    t = lv.tending(rec)
+    assert (t["stated"], t["absent"]) == (["auto_economy", "auto_compliance"], []), t
+    assert (rec["auto_economy"], rec["auto_compliance"]) == (True, True), rec
+
+    legacy = {k: v for k, v in rec.items() if k not in lv.TENDING_FLAGS}
+    lt = lv.tending(legacy)
+    assert lt["flags"] == {"auto_economy": True, "auto_compliance": True} and lt["absent"] == ["auto_economy", "auto_compliance"], lt
+    assert lv.TENDING_ABSENT_MEANS in lt["basis"] and "read as ON" in lt["basis"], lt["basis"]
+
+    off = f"vsb-w1127-{uuid.uuid4().hex[:6]}"
+    lv.register(off, name="W1127 Declined", owner="w1127-owner", auto_economy=False)
+    try:
+        st = lv.living_statement(lv._load()[off])["entity_tending"]
+        assert (st["tended"], st["entity_flags"]["auto_economy"]) == (False, False) and "auto_economy is off" in st["basis"], st
+        visit = lv.operate_vsb(vid)
+        assert visit and visit.get("outcome") == "ran", visit
+        d = visit["driven_by"]
+        assert (d["identity"], d["kind"], len(d["levers"])) == (lv.SERVICE_IDENTITY, "service", 2), d
+    finally:
+        lv.deregister(off)
+
+    flat = " ".join(pf.read_doc(root / "docs" / "FABLE_DELIVERY_PROMPT.md").split())
+    p41 = flat[flat.index(" P4.1 AUTH_ENABLED on"):flat.index(" P4.2 SELF_SERVE_SIGNUP")]
+    assert ("OWNER RULING 2026-11-19 (FU-849): an entity registered before the opt-in flag existed is read as opted in, "
+            "and every new establishment records the flag explicitly") in p41
