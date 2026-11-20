@@ -4952,11 +4952,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1147",
       "note": "",
       "slot_source": "W500: it IS P4.4's own pre-flight - the item says the migration dry-run and rollback are proven before the Owner flips anything",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Closed in W1147 by the Owner's deferral of P4.4 on 2026-10-12, which records managed Postgres as a boundary until a measured need exists and rules that the database dependencies nothing imports are removed. The pre-flight this row asked for (a schema, a migration on a copy, a rollback) is not built: the switch it would come before is deferred. Measured again, no live module imported or probed sqlalchemy, sqlmodel, psycopg2-binary or greenlet, and nothing live read a database URL (config/database.py, the one importer, was archived by W897). pyproject.toml no longer declares the three; the lock and requirements.txt were made again, 175 pins becoming 171 with every other pin unchanged, after the full suite ran in a fresh venv built only from the new requirements.txt. The hardening brief, the compose file and the deploy guide no longer offer a database, and the vision's section 18 dates the boundary. A measured need would reopen it as a ruling of its own."
     },
     {
       "id": "FU-285",
@@ -14498,7 +14501,7 @@
       "tier": 3,
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
-      "close_note": "Built as the row names: docs/METRICS_MEASURED.md lists eighteen business and product metrics, each with a definition, source route, denominator and freshness, or NOT MEASURED and what would measure it. Measured or partly measured: entities, recorded revenue (the caller's figure, FU-1010), the fund, projects, AI calls and what served them, the quality pass rate over gate-assessed runs, the serving model, seconds and tokens, a learner's progress, support satisfaction, accepted deliveries, a person's saved outputs. Not measured: real-money revenue, paying customers, learners across the platform, a person completing a task or returning, time to a first useful output. The guard checks each source route is mounted and answers."
+      "close_note": "Built as the row names: docs/METRICS_MEASURED.md lists eighteen business and product metrics, each with a definition, source route, denominator and freshness, or NOT MEASURED and what would measure it. Measured or partly measured: entities, recorded revenue (the caller's figure, FU-1010), the fund, projects, AI calls and what served them, the quality pass rate over gate-assessed runs, the serving model, seconds and tokens, a learner's progress, support satisfaction, accepted deliveries, a person's saved outputs. Not measured: real-money revenue, paying customers, learners across the platform, a person completing a task or returning, time to a first useful output. The guard checks each source route is mounted and answers. MOVED in W1154 to docs/business/METRICS_MEASURED.md, beside the other documents P5.6 asks for under docs/business/, where the business documents' guard reads it; it now opens as a draft, and the metric named Paying customers is named Customers who pay."
     },
     {
       "id": "FU-744",
@@ -15878,11 +15881,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.7",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1151",
       "note": "",
       "slot_source": "the Owner asked on 2026-10-11 that this work be added to the plan; it is the item chartered for it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1151: docs/business/public/FIRST_OFFER_DRAFTS.md holds the six public drafts the clause names - landing copy, a capability sheet, a deck outline, a demonstration script on invented data, questions and answers, and outreach templates - each headed DRAFT - NOT APPROVED FOR PUBLICATION. They are built from the leading hypothesis of the first-offer comparison (candidate C, lesson plans and feedback a teacher checks), and every claim names a test of the suite that runs on the platform's own engine. No price is set, no customer, partner or endorsement is named, the demonstration uses invented material only and the outreach templates are not sent. Nothing is published."
     },
     {
       "id": "FU-810",
@@ -15896,11 +15902,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.7",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1150",
       "note": "",
       "slot_source": "the Owner asked on 2026-10-11 that this work be added to the plan; it is the item chartered for it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1150: docs/business/SUPPORT_ROUTES.md sets out the public support routes the clause names, each from its own page read on 2026-11-20 with its own date (GOV.UK's Get help and support for your business, to which the business support helpline now leads; UKRI's Innovate UK and Velocity pages), and marks NOT CHECKED, with the reason, those it could not read: Business.gov.uk and Innovate UK Business Growth, whose sites this environment's network refused, and the organisation whose short course the Owner attended, which the tree does not name. Three drafts, each DRAFT, NOT SENT, ask only what each route offers and claim no relationship, endorsement or entitlement; the one to the course's organisation says only that the Owner attended. No contact detail is copied. Nothing is sent. CORRECTED in W1152: the tree does name that organisation - IN4 Group, in docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md section 17.1 (row 12), from the Owner's prompt of 2026-10-11 - and the document now names it as recorded there; what it offers stays NOT CHECKED, since its site is refused by this environment's network."
     },
     {
       "id": "FU-811",
@@ -15914,11 +15923,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.7",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1149",
       "note": "",
       "slot_source": "the Owner asked on 2026-10-11 that this work be added to the plan; it is the item chartered for it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1149: docs/business/FORMATION_WORKPACK.md sets out the four routes the clause names - staying unincorporated during discovery (a sole trader), a company limited by shares, a community interest company, and a charitable or waqf-oriented arrangement as a later structure needing qualified advice - each from official pages read on 2026-11-20 with their own dates, compared in one table, and none chosen. A worksheet holds placeholders only, with no personal detail; there are five questions each for an accountant and a solicitor; what was not read (the statutes behind each route, registration fees, HMRC's own pages, Scotland and Northern Ireland, any source on a waqf) is listed as not read. Nothing is filed, registered or chosen. test_w1149 holds it, with eight blinds."
     },
     {
       "id": "FU-812",
@@ -20721,7 +20733,7 @@
       "tier": 2,
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
-      "close_note": "Turned once, for real, on the Owner's store (W1133m, 2026-11-20). Read first (W1133l): the ruling's premise did not hold. The fifteen are labelled studio and the studio door is live (POST /api/v1/reactor/studio), so 'source retired' would have been false, and all nineteen had been opened by development runs that wrote into the store (the page sweep of 2026-09-01, W433's reproduction and guard in exact triplets, the w347 export probe, the owned-model journey measurement of 2026-08-30, a composition run in W433's window), except the genesis of Atmospheric Harvest Solutions, which the Owner named his own. Ruled 2026-11-20: a third way out, development_run (POST /api/v1/vbs/qms/defects/{id}/development-run, offered on the Cockpit's VBS panel): the row and its evidence are kept, nothing is re-verified, no count moves, and the summary says the gate failures that opened them stay counted in the rate as recorded. Applied: 18 defects left as development_run, each with its evidence; DEF-ba1f87a2 was corrected and re-verified measured_from_content on today's journey for the same problem (floor only, scratch store): coverage 1.0 of its 8 stored sections, no stub, closed. The store now reads 0 open, 1 closed, 18 development_run, gates run 74, gate failures 19, rate 0.2568. A copy of the store from before is kept outside the repository. Guard test_w1133m_fu1038, six blinds red; the panel's rendered test, its blind red."
+      "close_note": "Turned once, for real, on the Owner's store (W1133m, 2026-11-20). Read first (W1133l): the ruling's premise did not hold. The fifteen are labelled studio and the studio door is live (POST /api/v1/reactor/studio), so 'source retired' would have been false, and all nineteen had been opened by development runs that wrote into the store (the page sweep of 2026-09-01, W433's reproduction and guard in exact triplets, the w347 export probe, the owned-model journey measurement of 2026-08-30, a composition run in W433's window), except the genesis of Atmospheric Harvest Solutions, which the Owner named as the Owner's own. Ruled 2026-11-20: a third way out, development_run (POST /api/v1/vbs/qms/defects/{id}/development-run, offered on the Cockpit's VBS panel): the row and its evidence are kept, nothing is re-verified, no count moves, and the summary says the gate failures that opened them stay counted in the rate as recorded. Applied: 18 defects left as development_run, each with its evidence; DEF-ba1f87a2 was corrected and re-verified measured_from_content on today's journey for the same problem (floor only, scratch store): coverage 1.0 of its 8 stored sections, no stub, closed. The store now reads 0 open, 1 closed, 18 development_run, gates run 74, gate failures 19, rate 0.2568. A copy of the store from before is kept outside the repository. Guard test_w1133m_fu1038, six blinds red; the panel's rendered test, its blind red."
     },
     {
       "id": "FU-1039",
@@ -21525,8 +21537,8 @@
     },
     {
       "id": "FU-1077",
-      "title": "Authorities the legal-operations brief names that have not been read at their publishers",
-      "why": "Not read at all: the Companies Act 2006 execution rule, the unfair contract terms and consumer rights legislation, the lifting-equipment regulations, and the consumer-credit and regulated-hire regime (which decides whether comparing finance products may be offered). Read by one reader through a summarising fetch only, and not re-read: the fourteen rows entered on 2026-10-13. No clause of the item that states what the law requires may be built on a source in either state.",
+      "title": "Six sources the legal-operations brief names are still one reader's summary, and the FCA's own consumer-credit rules are unread: this environment's network refuses their sites",
+      "why": "W1148 (2026-11-20) read at the publisher, whole, the four authorities this row named as never read - the Companies Act 2006 execution rule (s.44, with ss.43 and 46), the Consumer Rights Act 2015 Part 2 and the Unfair Contract Terms Act 1977 Part I, the Lifting Operations and Lifting Equipment Regulations 1998, and the consumer-credit and regulated-hire statutes (Consumer Credit Act 1974 ss.8, 15 and 145, the Regulated Activities Order arts 36A and 60N, FSMA 2000 s.19) - and re-read eight of the fourteen rows of 2026-10-13, correcting two. Still read only through a summarising fetch: hse-puwer-overview, frc-frs-102-periodic-review-2024, ec-ai-omnibus-2026, lawcom-business-tenancies-renewal, ico-duaa-2025 and caa-drone-requirements, because this environment's network refuses www.hse.gov.uk, www.frc.org.uk, digital-strategy.ec.europa.eu, lawcom.gov.uk, ico.org.uk and www.caa.co.uk (403 at the proxy). The FCA's consumer-credit rules and its perimeter guidance on credit broking are unread for the same reason (www.fca.org.uk, handbook.fca.org.uk), so P5.18 clause 4's comparison of named finance products stays closed. Reading them needs those sites allowed in this environment, which is the Owner's to approve (recommended). No clause stating what the law requires may rest on a row in either state.",
       "source": "W711 (three external mandates on legal operations and embodied systems, assessed)",
       "found": "2026-10-13",
       "files": [
@@ -21888,7 +21900,7 @@
     {
       "id": "FU-1095",
       "title": "A failure on the first deployment reaches no person: failures are recorded and shown only on a page someone must open",
-      "why": "P3.25 records every route failure in the outcome ledger and the event chain and shows them on one page; nothing sends a failure to anyone, and README.md still lists error monitoring as not built, which is half true. The first deploy is private to the Owner, so the cost is an outage nobody sees. Smallest addition, in the deploy pre-flight: an uptime check on /health from OUTSIDE the machine (a boot failure cannot report itself), e-mailing the Owner from his own cloud account beside the billing alert; it is named in the dry run and driven once at the deploy with him watching; /health returns a fixed body, so the check sees only a dead process, and the runbook says so. The README line becomes: failures recorded, not alerted.",
+      "why": "P3.25 records every route failure in the outcome ledger and the event chain and shows them on one page; nothing sends a failure to anyone, and README.md still lists error monitoring as not built, which is half true. The first deploy is private to the Owner, so the cost is an outage nobody sees. Smallest addition, in the deploy pre-flight: an uptime check on /health from OUTSIDE the machine (a boot failure cannot report itself), e-mailing the Owner from their own cloud account beside the billing alert; it is named in the dry run and driven once at the deploy with the Owner watching; /health returns a fixed body, so the check sees only a dead process, and the runbook says so. The README line becomes: failures recorded, not alerted.",
       "source": "W747",
       "found": "2026-10-16",
       "files": [
@@ -23143,12 +23155,12 @@
       "slot_source": "Owner ruling 2026-11-06 (W754): accepted as recommended: v15's paths replaced in W754; the v16 note remains, for the session that located it",
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
-      "close_note": "Built in W1121, on the Owner's go-ahead of 2026-11-19 to open these two files and only these: the five paths into the audit's data folder on the Owner's Windows machine in edition 15's record, and that folder and a folder in his home folder in edition 16's, now say what kind of place each was. Every finding, verdict and count is unchanged, and git history keeps the earlier text, as ruled on 2026-10-14. test_w1121 holds that neither record has a drive path left, with two blinds."
+      "close_note": "Built in W1121, on the Owner's go-ahead of 2026-11-19 to open these two files and only these: the five paths into the audit's data folder on the Owner's Windows machine in edition 15's record, and that folder and a folder in the Owner's home folder in edition 16's, now say what kind of place each was. Every finding, verdict and count is unchanged, and git history keeps the earlier text, as ruled on 2026-10-14. test_w1121 holds that neither record has a drive path left, with two blinds."
     },
     {
       "id": "FU-1152",
       "title": "A person whose username is the single-user label, or the configured single-user owner, would be shown every record made while sign-in was off",
-      "why": "Driven at the function on a copy with sign-in on: the ownership check admits a person named 'default' to every record carrying that label, because it compares the record's owner with the username. W753 adds a second such name, the configured single-user owner (the role word 'owner' when nothing is configured). The admin register route refuses neither name, and self-serve signup, once the Owner enables it, would not either. Smallest addition, beside the reserved-name refusal the sign-in readiness round adds for service names: refuse the label at register and signup, and the configured owner's name everywhere except the admin register route, where the Owner creates his own account.",
+      "why": "Driven at the function on a copy with sign-in on: the ownership check admits a person named 'default' to every record carrying that label, because it compares the record's owner with the username. W753 adds a second such name, the configured single-user owner (the role word 'owner' when nothing is configured). The admin register route refuses neither name, and self-serve signup, once the Owner enables it, would not either. Smallest addition, beside the reserved-name refusal the sign-in readiness round adds for service names: refuse the label at register and signup, and the configured owner's name everywhere except the admin register route, where the Owner creates their own account.",
       "source": "W753",
       "found": "2026-10-17",
       "files": [
@@ -23455,7 +23467,7 @@
       "tier": 3,
       "because": "already_satisfied",
       "because_means": "measured as satisfied by an earlier round; nothing was built for it here",
-      "close_note": "OWNER RULED 2026-11-19 (his recommendation accepted): no. A birth is never refused or held for approval on the platform's derived carrying capacity; the reading is recorded on every birth and nothing is refused on it, which is what every establishment and division has done since W839."
+      "close_note": "OWNER RULED 2026-11-19 (the recommendation accepted): no. A birth is never refused or held for approval on the platform's derived carrying capacity; the reading is recorded on every birth and nothing is refused on it, which is what every establishment and division has done since W839."
     },
     {
       "id": "FU-1167",
@@ -23626,7 +23638,7 @@
       "tier": 3,
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
-      "close_note": "OWNER RULED 2026-11-19 (his recommendation accepted): yes. streamlit and plotly are removed, and pandas as a direct declaration (camel-tools and mesa keep it installed), with the devcontainer's install line. The removal is FU-1277."
+      "close_note": "OWNER RULED 2026-11-19 (the recommendation accepted): yes. streamlit and plotly are removed, and pandas as a direct declaration (camel-tools and mesa keep it installed), with the devcontainer's install line. The removal is FU-1277."
     },
     {
       "id": "FU-1175",
@@ -23670,7 +23682,7 @@
       "tier": 3,
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
-      "close_note": "OWNER RULED 2026-11-19 (his recommendation accepted): yes, for a provider's published price only, cited with its page and the date read and labelled observed; the guide promises no zero bill and the platform's own prices stay under the rule. Stating it is FU-1278."
+      "close_note": "OWNER RULED 2026-11-19 (the recommendation accepted): yes, for a provider's published price only, cited with its page and the date read and labelled observed; the guide promises no zero bill and the platform's own prices stay under the rule. Stating it is FU-1278."
     },
     {
       "id": "FU-1177",
@@ -23868,7 +23880,7 @@
       "tier": 2,
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
-      "close_note": "OWNER RULED 2026-11-19 (his recommendation accepted): price = the declared cost / (1 - the prudential reserve rate, 20% - a platform margin set once, 20%). Recorded in the plan at P5.2; the price is FU-1279."
+      "close_note": "OWNER RULED 2026-11-19 (the recommendation accepted): price = the declared cost / (1 - the prudential reserve rate, 20% - a platform margin set once, 20%). Recorded in the plan at P5.2; the price is FU-1279."
     },
     {
       "id": "FU-1186",
@@ -23910,7 +23922,7 @@
       "tier": 2,
       "because": "already_satisfied",
       "because_means": "measured as satisfied by an earlier round; nothing was built for it here",
-      "close_note": "OWNER RULED 2026-11-19 (his recommendation accepted): CRITICAL, as built in W941. A claim that an output is wrong is answered only by a person's explicit decision; no model's review, health reading or timer closes one."
+      "close_note": "OWNER RULED 2026-11-19 (the recommendation accepted): CRITICAL, as built in W941. A claim that an output is wrong is answered only by a person's explicit decision; no model's review, health reading or timer closes one."
     },
     {
       "id": "FU-1188",
@@ -23991,7 +24003,7 @@
       "tier": 2,
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
-      "close_note": "OWNER RULED 2026-11-19 (his recommendation accepted): with no founder playbook in the tree, the seven investment gates are P4.1 to P4.6 and a first offer the interviews support. Recorded in the plan at P5.7; marking them is FU-1280."
+      "close_note": "OWNER RULED 2026-11-19 (the recommendation accepted): with no founder playbook in the tree, the seven investment gates are P4.1 to P4.6 and a first offer the interviews support. Recorded in the plan at P5.7; marking them is FU-1280."
     },
     {
       "id": "FU-1192",
@@ -25945,7 +25957,7 @@
       "id": "FU-1277",
       "title": "streamlit, plotly and pandas's direct declaration are removed, as the Owner ruled on 2026-11-19",
       "why": "FU-1174's ruling: nothing live has used streamlit, pandas or plotly since W896 moved the dashboard aside, and camel-tools and mesa keep pandas installed. Remove streamlit and plotly, pandas as a direct declaration, and the devcontainer's install line, on a fresh install with the full suite, as the earlier removal of the nineteen did (W907); 13 pins leave requirements.txt.",
-      "source": "W1120 (the Owner's rulings of 2026-11-19: his twenty-two recommendations of that day accepted)",
+      "source": "W1120 (the Owner's rulings of 2026-11-19: the twenty-two recommendations of that day accepted)",
       "found": "2026-11-19",
       "files": [
         "pyproject.toml",
@@ -25968,8 +25980,8 @@
     {
       "id": "FU-1278",
       "title": "The founder's guide states the deployment channel's published price, cited with its page and the date read",
-      "why": "FU-1176's ruling (2026-11-19): a provider's published price may be stated, cited with its page and the date it was read and labelled observed, as FU-742 asked; the guide promises no zero bill and the platform's own prices stay under the rule. The provider's pages (cloud.google.com) are not among this environment's allowed hosts yet, so nothing is stated until they are read there; nothing is written from memory. The guide's line and the cost model's that still say the question waits on him are rewritten in that round.",
-      "source": "W1120 (the Owner's rulings of 2026-11-19: his twenty-two recommendations of that day accepted)",
+      "why": "FU-1176's ruling (2026-11-19): a provider's published price may be stated, cited with its page and the date it was read and labelled observed, as FU-742 asked; the guide promises no zero bill and the platform's own prices stay under the rule. The provider's pages (cloud.google.com) are not among this environment's allowed hosts yet, so nothing is stated until they are read there; nothing is written from memory. The guide's line and the cost model's that still say the question waits on the Owner are rewritten in that round.",
+      "source": "W1120 (the Owner's rulings of 2026-11-19: the twenty-two recommendations of that day accepted)",
       "found": "2026-11-19",
       "files": [
         "docs/business/FOUNDERS_GUIDE.md"
@@ -25990,7 +26002,7 @@
       "id": "FU-1279",
       "title": "A price in WST is computed from the declared cost by the ruled formula, and never typed",
       "why": "FU-1185's ruling (2026-11-19): price = the declared cost / (1 - the prudential reserve rate, 20% - a platform margin set once, 20%), on W939's inputs (the effective waterfall and each deliverable's declared cost). A price whose input is missing is null with the input named, never a default; the platform fee (P5.16 clause 3) is taken from the distributable profit the price leaves.",
-      "source": "W1120 (the Owner's rulings of 2026-11-19: his twenty-two recommendations of that day accepted)",
+      "source": "W1120 (the Owner's rulings of 2026-11-19: the twenty-two recommendations of that day accepted)",
       "found": "2026-11-19",
       "files": [
         "agentic_core/api/economy.py",
@@ -26011,8 +26023,8 @@
     {
       "id": "FU-1280",
       "title": "The cost model marks each of the seven investment gates evidenced or not, from what the tree shows",
-      "why": "FU-1191's ruling (2026-11-19): with no founder playbook in the tree, the seven gates are P4.1 to P4.6 and a first offer the interviews support. docs/business/COST_MODEL.md marks each one evidenced or not from the tree - a switch's pre-flight measured and the switch's state read, a first offer backed by recorded interviews - and invents none. Its gates section still puts the question to him; that round marks the gates instead.",
-      "source": "W1120 (the Owner's rulings of 2026-11-19: his twenty-two recommendations of that day accepted)",
+      "why": "FU-1191's ruling (2026-11-19): with no founder playbook in the tree, the seven gates are P4.1 to P4.6 and a first offer the interviews support. docs/business/COST_MODEL.md marks each one evidenced or not from the tree - a switch's pre-flight measured and the switch's state read, a first offer backed by recorded interviews - and invents none. Its gates section still puts the question to the Owner; that round marks the gates instead.",
+      "source": "W1120 (the Owner's rulings of 2026-11-19: the twenty-two recommendations of that day accepted)",
       "found": "2026-11-19",
       "files": [
         "docs/business/COST_MODEL.md"
@@ -26189,6 +26201,92 @@
       "status": "open",
       "closed_by": null,
       "note": ""
+    },
+    {
+      "id": "FU-1290",
+      "title": "Round-written documents gave the Owner a gendered pronoun the Owner has not stated",
+      "why": "Found 2026-11-20 (W1143) while closing FU-1277: the register, the plan and its living copy, the dated measurement of the remaining work, the handover, four other documents, three code comments, two .gitignore comments, the final audit's workflow and the spine's docstrings gave the Owner a gendered pronoun in forty-odd places, and seven of W1120's notes said the rulings of 2026-11-19 accepted recommendations they called the Owner's own, when they were the recommendations put to the Owner that day. THE WORK: each sentence says the Owner, or they, them and their where the Owner is named just before; the notes say whose recommendations they were; and a guard keeps every tracked text file, outside the places test_w1135 leaves out and the knowledge folders and the Owner's inputs, from giving a person such a pronoun again, apart from five named uses that are about no person the documents describe. git history keeps the earlier text, as ruled on 2026-10-14.",
+      "source": "W1143 (found while closing FU-1277, 2026-11-20)",
+      "found": "2026-11-20",
+      "files": [
+        "docs/FOLLOWUPS.json",
+        "docs/FABLE_DELIVERY_PROMPT.md",
+        "docs/REMAINING_WORK_MEASURED.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.5",
+      "status": "done",
+      "closed_by": "W1143",
+      "note": "",
+      "slot_source": "the production image carries docs/ (W1128), so a sentence in a document ships with every deploy, as FU-1285's paths did",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1143: every gendered pronoun the rounds gave the Owner now reads the Owner, or they, them and their where the Owner is named just before: 15 lines of the register, 8 of the plan and 4 of its living copy, 32 of the dated measurement of the remaining work, 4 of the handover, one in each of four other documents, three code comments, two .gitignore comments, the final audit's workflow and the spine's docstrings and pinned phrases. W1120's notes say the recommendations of 2026-11-19 were the ones put to the Owner. The four files kept with CRLF line endings keep them. test_w1143 reads every tracked text file outside the places it names and allows five uses that are about no person the documents describe, each still present; four blinds turn it red."
+    },
+    {
+      "id": "FU-1291",
+      "title": "The plan's opening headed the Owner's own words as the Chief's, marked a model's text with a code, and hid who wrote it once no template was left",
+      "why": "Found by rendering PlanOpening against the plan routes' own answers (FU-399 part 110; it had no rendered test of its own). The heading said Chief's Opening once any field was not a template, so an opening of the Owner's own concept and four templates was headed as the Chief's, directly over the sentence saying neither the Chief nor a model had composed anything. A model's or the planning cadence's text was marked with the source's code (model_composed), a concept the Owner gave at establishment carried no mark at all, and the sentence saying who wrote the opening was shown only while a template remained, so an opening a model and the Owner wrote said nothing about who wrote it (each driven in the rendered test on the unfixed component).",
+      "source": "W1144 (FU-399 part 110: the plan's opening rendered)",
+      "found": "2026-11-20",
+      "files": [
+        "apps/workstation-superapp/src/components/PlanOpening.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1144",
+      "note": "",
+      "slot_source": "found by FU-399's render of the plan's opening; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the opening's heading is the Chief's only when a model composed a field on screen, and otherwise says it is the plan's opening (generated from the establish answers when every field is a template); each field's mark comes from the field's own source, saying owner-edited, the Owner's words, template, or a model's or the planning cadence's source in words; and the sentence saying who wrote the opening is shown whenever the plan records it. The rendered test (six cases, against the routes' answers for made-up entities, the owned model stood in as test_w471 stands it in) has six vitest blinds; test_w1144 holds the answers to the live routes and the component to the rule (three blinds)."
+    },
+    {
+      "id": "FU-1292",
+      "title": "test_w505_fu033 passed only after other tests: run alone, it read a change held for an explicit decision as one stuck in review",
+      "why": "Found by W1144's test list, which ran test_w505_fu033 without the tests before it. In a process that has measured no organism health, the health rule cannot decide a change, so it holds it for an explicit decision with the hold's reason and a held entry in its audit trail, by design. The guard asserted only that the status had left under_review, which a deliberate hold does not, so it failed alone and passed after the rest of the suite had measured health. It now holds FU-033's own property: the review completes, and the change is decided or held for a decision with its reason recorded.",
+      "source": "W1145 (found by W1144's test list)",
+      "found": "2026-11-20",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1145",
+      "note": "",
+      "slot_source": "found by FU-399's round W1144 running its test list; it rides P5.1 as FU-399 does",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1145: test_w505_fu033 holds FU-033's own property, that the review of an incomplete record completes and the change is decided or held for an explicit decision with the hold's reason and a held audit entry recorded, so it passes run alone as well as after the suite. test_w1145 runs it alone in a fresh process on an empty store (two blinds)."
+    },
+    {
+      "id": "FU-1293",
+      "title": "The conversation panel said a fixed sentence in place of the avatar's measured reason an image was not read, and of the floor's note on a language it could not answer in",
+      "why": "Found by rendering ConversationPanel against the avatar route's own answers (FU-399 part 111; the hook's rendered test read only its grounding line and send error). For an image no model could read, the route sends the measured reason (what the perception tier needs and what the machine has, P3.5 clause 2); the hook dropped it and the panel said a fixed \"no vision model was available\". For a language the floor could not answer in, the route sends its own note, which says to set up the owned model; the hook dropped that too and the panel said a fixed sentence without it.",
+      "source": "W1146 (FU-399 part 111: the conversation panel rendered)",
+      "found": "2026-11-20",
+      "files": [
+        "apps/workstation-superapp/src/hooks/useAvatarSession.ts",
+        "apps/workstation-superapp/src/components/avatar/ConversationPanel.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1146",
+      "note": "",
+      "slot_source": "found by FU-399's render of the conversation panel; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the hook carries the avatar route's measured reason an image was not read and its note on a language the floor could not answer in, and the conversation panel says them, keeping its own sentence only for an answer that carries none; the measured reason says the perception tier's explanation once. The rendered test (five cases, against the route's answers for made-up messages) has nine vitest blinds; test_w1146 asks the route again and holds the hook, the panel and the reason (three blinds)."
     },
     {
       "id": "FU-1801",

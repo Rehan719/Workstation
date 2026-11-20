@@ -1,7 +1,7 @@
 # Workstation IDBO — local/self-hosted run. COST-FREE by default: in-house-first AI (no external key),
 # file-based persistence (no managed DB), no paid services. `docker compose up` and open :8000.
-# Paid options (managed Postgres, external AI keys) are documented + commented — enable them ONLY on
-# your own accounts. See docs/DEPLOYMENT.md.
+# The paid option (an external AI key) is documented + commented — enable it ONLY on your own account.
+# A database is not an option today (see below). See docs/DEPLOYMENT.md.
 services:
   backend:
     build:
@@ -19,8 +19,10 @@ services:
       - workstation_data:/app/data       # persistent data across restarts (local volume, $0)
     restart: unless-stopped
 
-  # ── OPTIONAL: Postgres (INCURS COST when hosted; the app uses file persistence by default and does
-  #    NOT require this). Uncomment + wire DATABASE_URL only if/when you choose to.
+  # ── NOT AN OPTION TODAY: Postgres. The Owner deferred a database (plan item P4.4) on 2026-10-12 until a
+  #    measured need exists. The app keeps its records in files and reads no DATABASE_URL, so a database
+  #    started here would hold nothing. The service is kept, commented, as the shape a later round would
+  #    start from (W1147).
   # db:
   #   image: postgres:16-alpine
   #   environment:

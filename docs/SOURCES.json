@@ -765,10 +765,10 @@
    ],
    "status": "current",
    "page": "https://www.gov.uk/government/publications/execution-of-deeds/practice-guide-8-execution-of-deeds",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "Shown as updated 14 September 2026. Section 2.1 is headed for the three elements of a deed: signature, attestation and delivery.",
-   "not_read": "the guide beyond its section headings; the companion guide on electronic signatures"
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, sections 1 to 3 of the guide's own text read whole (GOV.UK's content record of the page), not through a summary, and sections 4 to 16 by their headings only; first entered by a research reader of round W711 through a fetch that summarised the page",
+   "says": "GOV.UK records it as first published 7 October 2016 and last updated 14 September 2026; it is aimed primarily at solicitors and other conveyancers. A legal interest in land cannot be conveyed or created without a deed, with exceptions such as assents and short leases (Law of Property Act 1925 ss.52 and 54(2)); electronic dispositions under the Land Registration Act 2002 s.91 are not covered. A deed must be in writing, make clear on its face that it is intended to be a deed, and be validly executed as one (section 1.2). An individual signs (a mark counts) in the presence of a witness who attests and who is not a party to the deed, and delivers it (section 2.1); the guide cites the Law Commission's 2019 conclusion that 'in the presence of a witness' requires the witness's physical presence. A company executes under its common seal, or by two authorised signatories, or by one director whose signature is witnessed and attested, and a deed is presumed delivered on execution (section 3, citing the Companies Act 2006 ss.44 and 46). Prescribed attestation clauses are given for registered land.",
+   "not_read": "sections 4 to 16 (unregistered companies, other corporations, overseas companies, local authorities, office-holders in insolvency, charity trustees, powers of attorney and the rest) beyond their headings; practice guide 82 on electronic signatures; the update history"
   },
   {
    "id": "lpmpa-1989-s1",
@@ -782,10 +782,10 @@
    ],
    "status": "current",
    "page": "https://www.legislation.gov.uk/ukpga/1989/34/section/1",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "Section 1(3): an instrument is validly executed as a deed by an individual if signed in the presence of a witness who attests, and delivered.",
-   "not_read": "section 2 (contracts for the sale of land); any later amendment not shown on that page"
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary; first entered by a research reader of round W711 through a fetch that summarised the page, whose statement was incomplete",
+   "says": "In this form from 1 January 2010; no outstanding change is listed on the publisher's record (the file was last modified 31 August 2015). An instrument is not a deed unless it makes clear on its face that it is intended to be one (by describing itself as a deed, being expressed to be executed or signed as one, or otherwise) and is validly executed as a deed; being under seal does not by itself make that clear (s.1(2), (2A)). An individual validly executes an instrument as a deed if, and only if, it is signed by the individual in the presence of a witness who attests the signature, or at the individual's direction and in their presence and the presence of two witnesses who each attest it, and it is delivered as a deed (s.1(3)); making one's mark counts as signing (s.1(4)). Where a relevant lawyer delivers an instrument as a deed for a party, it is conclusively presumed in favour of a purchaser that the lawyer was authorised to (s.1(5)).",
+   "not_read": "section 2 (contracts for the sale of land); Schedule 1"
   },
   {
    "id": "lsa-2007-sch2",
@@ -800,10 +800,10 @@
    ],
    "status": "current",
    "page": "https://www.legislation.gov.uk/ukpga/2007/29/schedule/2",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "Reserved instrument activities cover preparing an instrument of transfer or charge for land registration, an application for registration, and any other instrument relating to real or personal estate; paragraph 5 excludes an agreement not intended to be executed as a deed, and short leases are excepted from the contracts for disposition of land. Section 14 makes carrying on a reserved activity when not entitled an offence.",
-   "not_read": "the Schedule's full text was read by one reader only; the exemptions in Schedule 3"
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary, with section 14; first entered by a research reader of round W711 through a fetch that summarised the page",
+   "says": "No outstanding change touches the Schedule on the publisher's record (the file was last modified 8 January 2025). It defines the six reserved legal activities: rights of audience, the conduct of litigation, reserved instrument activities, probate activities, notarial activities and the administration of oaths. Reserved instrument activities are preparing an instrument of transfer or charge for the purposes of the Land Registration Act 2002, making an application or lodging a document for registration under it, and preparing any other instrument relating to real or personal estate for the purposes of the law of England and Wales, or relating to court proceedings there (para.5(1)). An instrument includes a contract for the sale or other disposition of land, except a contract to grant a short lease (Law of Property Act 1925 s.54(2)), and excludes a will, an agreement not intended to be executed as a deed, a letter or power of attorney, and a transfer of stock with no trust or limitation (para.5(3), (4)). Section 14 (in this form from 7 February 2023) makes carrying on a reserved legal activity when not entitled an offence, with a defence of not knowing and not reasonably being expected to know.",
+   "not_read": "Schedule 3 (exempt persons); who is entitled, under section 13"
   },
   {
    "id": "hse-puwer-overview",
@@ -820,7 +820,7 @@
    "read_on": "2026-10-13",
    "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
    "says": "Shown as updated 21 November 2024. Duties fall on those who own, operate or have control over work equipment, whether owned by them or not; those who provide equipment for others are covered.",
-   "not_read": "the Regulations themselves; the approved code of practice; the lifting regulations"
+   "not_read": "the Regulations themselves; the approved code of practice; the lifting regulations. A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network (403 at the proxy), so this row still rests on one reader's summary."
   },
   {
    "id": "frc-frs-102-periodic-review-2024",
@@ -837,7 +837,7 @@
    "read_on": "2026-10-13",
    "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
    "says": "The Periodic Review 2024 amendments have a principal effective date of 1 January 2026. The lessee change is described in the regulator's factsheet on lease accounting for lessees, published 27 November 2024.",
-   "not_read": "the standard's text; the factsheet itself; which entities may still use another regime"
+   "not_read": "the standard's text; the factsheet itself; which entities may still use another regime. A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network (403 at the proxy), so this row still rests on one reader's summary."
   },
   {
    "id": "si-2026-439-av-passenger-permits",
@@ -851,10 +851,10 @@
    ],
    "status": "current",
    "page": "https://www.legislation.gov.uk/uksi/2026/439/made",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "Made 20 April 2026, in force 15 May 2026. Procedural: the validity, renewal, variation and review of a permit for an automated passenger service, and the information to be given.",
-   "not_read": "the Automated Vehicles Act 2024 itself; the commencement regulations; whether any permit has been granted; any rule for a robot on a footway (no primary source permitting one was found)"
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: regulations 1 to 8; first entered by a research reader of round W711 through a fetch that summarised the page",
+   "says": "Made 20 April 2026, laid 23 April 2026, in force 15 May 2026; it extends to England and Wales and Scotland, and applies to an automated passenger service in a vehicle that would count as a public service vehicle, and to any other such service in England (reg.1). A permit is valid for at most five years (reg.3); renewal is applied for from six months to two months before expiry, and the permit stays valid until the application is decided (reg.4). The Secretary of State may vary, suspend or withdraw a permit with the holder's consent, or without it on listed grounds, among them a breached condition, serious or repeated traffic infractions, a false material statement, serious safety concerns, serious or repeated disruption to traffic, an unacceptable delay to an emergency worker, or an unroadworthy vehicle (reg.5), by the procedures of regs 6 to 8. The instrument does not mention robots.",
+   "not_read": "regulations 9 onward; the Automated Vehicles Act 2024 itself; the commencement regulations; whether any permit has been granted; any rule for a robot on a footway (no primary source permitting one was found)"
   },
   {
    "id": "av-act-implementation-programme",
@@ -867,10 +867,10 @@
    ],
    "status": "current",
    "page": "https://www.gov.uk/guidance/automated-vehicles-act-implementation-programme",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "Published 26 February 2025. States implementation of the Act's regime in 2027; it does not state which provisions are in force.",
-   "not_read": "any later statement of the timetable; the statement of safety principles"
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the page's own text read whole (GOV.UK's content record of the page), not through a summary; first entered by a research reader of round W711 through a fetch that summarised the page",
+   "says": "GOV.UK records it as first published 26 February 2025 and not changed since. The programme, launched in 2024, carries out the policy, legislative and operational work to implement the Automated Vehicles Act 2024 in 2027, with objectives for deployment, in-use regulation, and international work and capability; it is delivered jointly by the Centre for Connected and Autonomous Vehicles, the Department for Transport, the Department for Business and Trade, the Driver and Vehicle Standards Agency, the Driver and Vehicle Licensing Agency, the Vehicle Certification Agency and National Highways. It does not state which provisions of the Act are in force.",
+   "not_read": "any later statement of the timetable; the statement of safety principles; the code of practice on automated vehicle trialling; the Law Commissions' regulations review"
   },
   {
    "id": "ec-ai-omnibus-2026",
@@ -887,7 +887,7 @@
    "read_on": "2026-10-13",
    "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
    "says": "Published 27 July 2026 and last updated 31 July 2026: the amending act entered into force on 27 July 2026; the rules for the listed high-risk uses apply from 2 December 2027 and those for systems embedded in regulated products from 2 August 2028.",
-   "not_read": "the legal text in the Official Journal; this is a news page"
+   "not_read": "the legal text in the Official Journal; this is a news page. A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network (403 at the proxy), so this row still rests on one reader's summary."
   },
   {
    "id": "si-2026-867-machinery",
@@ -902,10 +902,10 @@
    ],
    "status": "current",
    "page": "https://www.legislation.gov.uk/uksi/2026/867/introduction/made",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "Made 22 July 2026, in force 20 January 2027; Part 2 applies to Great Britain and Part 3 to Northern Ireland. It amends the supply-side rules for machinery.",
-   "not_read": "what it changes for a robot; the 2008 Regulations; the EU machinery regulation's own text and date (the publisher's page could not be opened)"
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: Part 1, and regulation 2 to the new regulation 12A(3); first entered by a research reader of round W711 through a fetch that summarised the page",
+   "says": "Made 22 July 2026, in force 20 January 2027; Part 2 applies to Great Britain and Part 3 to Northern Ireland. It amends the supply-side rules for machinery. In Great Britain it amends the Supply of Machinery (Safety) Regulations 2008 so that a responsible person who meets the obligations of the EU Machinery Regulation, Regulation (EU) 2023/1230 (its essential health and safety requirements, technical documentation in English kept for ten years, its conformity assessment, an EU declaration of conformity, the information and instructions it requires in English, and CE marking), is treated as meeting the requirements of regulation 7(2) of the 2008 Regulations (new reg.12A). The instrument does not mention robots.",
+   "not_read": "the rest of the new regulation 12A, and Part 3; the 2008 Regulations themselves; the EU machinery regulation's own text and date (the publisher's page could not be opened)"
   },
   {
    "id": "pram-act-2025",
@@ -918,10 +918,10 @@
    ],
    "status": "current",
    "page": "https://www.legislation.gov.uk/ukpga/2025/20/contents",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "2025 c.20. Its title is as given here; 'product safety and metrology' is the title of guidance about it, not of the Act.",
-   "not_read": "its provisions; any regulations made under it"
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: sections 1, 2, 12, 14 and 15 and the Schedule; first entered by a research reader of round W711 through a fetch that summarised the page",
+   "says": "2025 c.20, the Product Regulation and Metrology Act 2025. It extends to the whole United Kingdom (s.14) and came into force on the day it was passed, 21 July 2025, except s.11(1) and (3) (s.15). It confers powers: the Secretary of State may make product regulations about the marketing or use of products in the United Kingdom to reduce or mitigate the risks products present, to make products operate efficiently or effectively, and to make weighing and measuring products accurate (s.1(1)); a product is a tangible item that results from a method of production (s.1(7)); product requirements may concern components, tangible or intangible, an intangible component including software (s.2(2), (9)), and may fall on manufacturers, sellers, importers, installers, online marketplaces and others (s.2(3)); a requirement may be treated as met by meeting a specified requirement of EU law (s.2(7)). The Schedule excludes food, feed and fertiliser, plants, plant protection products, animal by-products and products of animal origin, aircraft (save toy drones for children under 14, and drone radio equipment), products for operating aircraft, military equipment, and medicines and medical devices.",
+   "not_read": "sections 3 to 11, 13, 16 and 17 (enforcement, emergencies, metrology, information sharing, cost recovery and the rest); any regulations made under it"
   },
   {
    "id": "lawcom-business-tenancies-renewal",
@@ -939,7 +939,7 @@
    "read_on": "2026-10-13",
    "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
    "says": "First consultation 19 November 2024; second consultation opened 16 June 2026 and closed 16 September 2026; no final report. The law is unchanged while the review runs.",
-   "not_read": "the 1954 Act itself; the consultation papers"
+   "not_read": "the 1954 Act itself; the consultation papers. A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network (403 at the proxy), so this row still rests on one reader's summary."
   },
   {
    "id": "gov-ending-commercial-lease-early",
@@ -953,9 +953,9 @@
    ],
    "status": "current",
    "page": "https://www.gov.uk/terminating-a-commercial-property-lease-early",
-   "read_on": "2026-10-13",
-   "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
-   "says": "Undated page covering break clauses, surrender and assignment, and naming the 1954 Act.",
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the page's own text read whole (GOV.UK's content record of the page), not through a summary; first entered by a research reader of round W711 through a fetch that summarised the page, which called the page undated",
+   "says": "GOV.UK's content record gives it as first published 16 October 2012 and last updated 5 October 2022. It covers ending a commercial lease early with a break clause (notice as the clause says, and any other conditions), with the landlord's agreement (surrender) or by passing the lease on (assignment, with the landlord's permission), subletting, and a landlord ending a lease early only where the tenant fails to pay rent or meet other obligations, under a forfeiture clause. After a fixed term ends a tenant must usually give three months' notice and a landlord six, as the lease states. It names the Landlord and Tenant Act 1954 and the grounds on which a landlord may refuse to extend a protected lease.",
    "not_read": "anything a particular lease provides; Scotland and Northern Ireland"
   },
   {
@@ -972,7 +972,7 @@
    "read_on": "2026-10-13",
    "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
    "says": "The regulator's page says the provisions of the 2025 Act affecting data protection law and the electronic communications rules are now in force. Its separate toolkit on AI and data protection risk says it is under review because of that Act.",
-   "not_read": "the Act; the date the page was last changed (none is shown)"
+   "not_read": "the Act; the date the page was last changed (none is shown). A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network (403 at the proxy), so this row still rests on one reader's summary."
   },
   {
    "id": "caa-drone-requirements",
@@ -989,7 +989,128 @@
    "read_on": "2026-10-13",
    "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
    "says": "Undated page: a flyer ID from 100 g, an operator ID from 250 g or from 100 g with a camera, and UK class marks for models placed on the market from 1 January 2026.",
-   "not_read": "the March 2026 code itself (its text could not be read); remote identification, which this page does not mention; the specific category for commercial operations"
+   "not_read": "the March 2026 code itself (its text could not be read); remote identification, which this page does not mention; the specific category for commercial operations. A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network (403 at the proxy), so this row still rests on one reader's summary."
+  },
+  {
+   "id": "companies-act-2006-s44",
+   "names": [
+    "Companies Act 2006 s.44",
+    "execution of documents by a company"
+   ],
+   "kind": "statute",
+   "nation": [
+    "England",
+    "Wales",
+    "Northern Ireland"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/ukpga/2006/46/section/44",
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary, with sections 43 and 46",
+   "says": "In this form from 6 April 2008; no outstanding change touches it on the publisher's record (the Act's file was last modified 24 July 2026). Under the law of England and Wales or Northern Ireland a company executes a document by affixing its common seal, or by signature: by two authorised signatories (every director, and the secretary of a private company that has one or of a public company), or by a director in the presence of a witness who attests the signature (s.44(1) to (3)). Signed so and expressed to be executed by the company, it has the same effect as under seal (s.44(4)); in favour of a purchaser in good faith for valuable consideration it is deemed duly executed if it purports to be signed so (s.44(5)); one person signing for more than one company signs separately in each capacity (s.44(6)). Read with it: a contract is made by the company under its seal, or on its behalf by a person acting under its authority, express or implied (s.43); a document is validly executed by a company as a deed if, and only if, it is duly executed and delivered as a deed, delivery being presumed on execution unless a contrary intention is proved (s.46).",
+   "not_read": "the Scottish rule (s.48) and the rest of Part 4; any company's own articles, which may say more about who signs"
+  },
+  {
+   "id": "cra-2015-part-2",
+   "names": [
+    "Consumer Rights Act 2015 Part 2",
+    "unfair terms in consumer contracts"
+   ],
+   "kind": "statute",
+   "nation": [
+    "UK"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/ukpga/2015/15/part/2",
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: sections 61 to 76 and Schedule 2",
+   "says": "In force from 1 October 2015 (s.73 in this form from 31 December 2020, s.74 from 1 January 2024); no outstanding change touches Part 2 on the publisher's record. It applies to a contract between a trader and a consumer, and to a consumer notice (s.61). An unfair term or notice is not binding on the consumer, who may still rely on it; a term is unfair if, contrary to the requirement of good faith, it causes a significant imbalance in the parties' rights and obligations to the detriment of the consumer, judged by its subject matter and all the circumstances when it was agreed (s.62). Schedule 2 Part 1 is an indicative and non-exhaustive list of twenty kinds of term that may be unfair (s.63). The main subject matter and the appropriateness of the price are excluded from the assessment only if the term is transparent and prominent (s.64). A trader cannot exclude or restrict liability for death or personal injury resulting from negligence (s.65). A written term must be transparent (s.68); a term that could have different meanings takes the one most favourable to the consumer (s.69); a court must consider fairness of its own motion where it has the material (s.71).",
+   "not_read": "Part 1 (goods, digital content and services) and its exclusion rules in ss.31, 47 and 57; Schedules 3 and 5 (enforcement); the CMA's guidance on unfair terms"
+  },
+  {
+   "id": "ucta-1977-part-1",
+   "names": [
+    "Unfair Contract Terms Act 1977"
+   ],
+   "kind": "statute",
+   "nation": [
+    "England",
+    "Wales",
+    "Northern Ireland"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/ukpga/1977/50/part/I",
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: Part I, sections 1 to 14, and Schedule 2",
+   "says": "No outstanding change is listed on the publisher's record (the file was last modified 17 May 2024); since 1 October 2016 Part I no longer covers consumer contracts, which the Consumer Rights Act 2015 covers. Sections 2 to 7 apply only to business liability. Liability for death or personal injury resulting from negligence cannot be excluded or restricted, and other loss from negligence only so far as the term or notice satisfies the requirement of reasonableness (s.2). Where one party deals on the other's written standard terms of business, the other cannot exclude liability for its own breach, or claim to render a substantially different performance or none, except so far as reasonable (s.3). The seller's obligations as to title cannot be excluded, and those as to description, quality and fitness only so far as reasonable (s.6; s.7 for other contracts under which goods pass). The requirement of reasonableness is that the term was a fair and reasonable one to include, given what the parties knew or ought reasonably to have known when the contract was made, and it is for the party relying on it to show that it was (s.11); Schedule 2 lists guidelines, among them the parties' relative bargaining strength and whether the customer knew or ought reasonably to have known of the term.",
+   "not_read": "Part II (Scotland), Part III and Schedule 1 (contracts the Act does not cover)"
+  },
+  {
+   "id": "loler-1998",
+   "names": [
+    "Lifting Operations and Lifting Equipment Regulations 1998",
+    "LOLER"
+   ],
+   "kind": "statutory instrument",
+   "nation": [
+    "Great Britain"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/uksi/1998/2307",
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: regulations 1 to 12",
+   "says": "In force from 5 December 1998 (regs 2, 9 and 11 in their present form from 31 December 2020); no outstanding change is listed on the publisher's record (the file was last modified 16 May 2024). The duties fall on an employer for lifting equipment provided for or used by its employees at work, on a self-employed person, and on a person who has control, to the extent of that control, of lifting equipment, of a person at work who uses it, or of the way it is used, in connection with a business or other undertaking; not on a person who supplies it by sale or hire-purchase (reg.3). Lifting equipment must be of adequate strength and stability (reg.4), safe for lifting persons (reg.5), positioned to reduce risk as low as is reasonably practicable (reg.6) and marked with its safe working loads (reg.7); every lifting operation is planned by a competent person, supervised and carried out safely (reg.8). It is thoroughly examined before first use, after installation, and, where exposed to deterioration, at least every 6 months (equipment for lifting persons, and accessories) or every 12 months (other equipment), or under an examination scheme, and after exceptional circumstances (reg.9). A defect is notified forthwith and reported in writing, and the equipment is not used until it is rectified (reg.10); reports and records are kept for set periods (reg.11).",
+   "not_read": "Schedule 1 (what a report of a thorough examination contains); HSE's approved code of practice and guidance, whose site this environment's network refused on 2026-11-20"
+  },
+  {
+   "id": "cca-1974-credit-and-hire",
+   "names": [
+    "Consumer Credit Act 1974"
+   ],
+   "kind": "statute",
+   "nation": [
+    "UK"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/ukpga/1974/39/section/8",
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: sections 8, 15 and 145, each at its own page",
+   "says": "The Act's file was last modified 30 September 2026, and no outstanding change touches these sections. A consumer credit agreement is an agreement between an individual (the debtor) and any other person (the creditor) by which the creditor provides the debtor with credit of any amount; it is a regulated credit agreement if it is one for the purposes of Chapter 14A of Part 2 of the Regulated Activities Order (s.8, in this form from 31 December 2020). A consumer hire agreement is an agreement with an individual (the hirer) for the bailment or hiring of goods, not a hire-purchase agreement, capable of subsisting for more than three months; it is regulated if it is one for the purposes of Chapter 14B of that Order (s.15, from 1 April 2014). Credit brokerage, an ancillary credit business, means carrying on an activity of the kind specified by article 36A(1)(a) to (c) of that Order (s.145, from 1 April 2014).",
+   "not_read": "the rest of the Act, including ss.189 and 189B; the FCA's rules on consumer credit and its perimeter guidance on credit broking, whose site this environment's network refused on 2026-11-20"
+  },
+  {
+   "id": "rao-2001-credit-broking",
+   "names": [
+    "Regulated Activities Order 2001 art.36A",
+    "credit broking"
+   ],
+   "kind": "statutory instrument",
+   "nation": [
+    "UK"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/uksi/2001/544/article/36A",
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: articles 36A and 60N, each at its own page",
+   "says": "Article 36A (credit broking) is in this form from 27 June 2014 and article 60N (regulated consumer hire agreements) from 20 March 2016; the Order's file was last modified 7 August 2026, and no outstanding change touches either. Credit broking includes effecting an introduction of an individual or relevant recipient of credit who wishes to enter into a credit agreement or a consumer hire agreement to a lender or owner, or to a broker, with a view to a regulated agreement; presenting or offering an agreement which would be a regulated credit agreement; assisting by undertaking preparatory work with a view to one; and entering into one on behalf of a lender (art.36A(1)); not where the activity is operating an electronic system in relation to lending (art.36A(2), art.36H). Entering into a regulated consumer hire agreement as owner, and exercising the owner's rights and duties under one, are specified kinds of activity (art.60N).",
+   "not_read": "articles 36H, 60B to 60M and 60O to 60Q (the exempt agreements); the FCA's perimeter guidance on credit broking, whose site this environment's network refused on 2026-11-20"
+  },
+  {
+   "id": "fsma-2000-s19",
+   "names": [
+    "Financial Services and Markets Act 2000 s.19",
+    "the general prohibition"
+   ],
+   "kind": "statute",
+   "nation": [
+    "UK"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/ukpga/2000/8/section/19",
+   "read_on": "2026-11-20",
+   "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary",
+   "says": "In this form from 1 March 2019; the Act's file was last modified 9 September 2026, and no outstanding change touches s.19. No person may carry on a regulated activity in the United Kingdom, or purport to do so, unless that person is an authorised person or an exempt person; this is the general prohibition.",
+   "not_read": "the rest of the Act, including what follows a breach (ss.23 to 26) and who is exempt"
   },
   {
    "id": "dar-al-ifta-egypt-ai-fatwa-2025",

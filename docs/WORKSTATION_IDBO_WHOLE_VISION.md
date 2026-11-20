@@ -1168,6 +1168,11 @@ precondition that reports what is missing · Mode 2 — RULED 2026-10-05b (R6): 
 the Stripe keys — rotated and the old ones expired by the Owner · the 162 test-owned entities — nothing
 deleted: a scan and a reversible move only, and the quarantine folder is the Owner's to empty (rulings of
 2026-10-09). STILL with the Owner: each switch in §14.
+**Recorded W1147 (2026-11-20) — managed Postgres is a BOUNDARY, not a switch waiting to be flipped.** The Owner
+DEFERRED it on 2026-10-12 until a measured need exists (delivery-plan P4.4): the file store with its locks is
+what runs, and nothing measured calls for more. The three database packages held for it were removed (W1147),
+so no store, route or deploy step offers a database. A need that is measured later reopens it as a ruling of
+its own.
 
 *(The progress addenda formerly numbered §16.3 and §16.4 — the Rounds 11–12 reconciliation and the
 §6 architecture-vs-practice correction, W363–W380 — are preserved verbatim in git history and in
@@ -1331,7 +1336,7 @@ platform holds.
 ## A.6 The fifteen core features · **[DERIVED-FAITHFUL]**
 
 The Jules-era synthesis grouped the Owner's feature lists into exactly fifteen features plus a shared area.
-The *grouping* is agent work; the *features* are the Owner's, and each is traceable back to his own lists.
+The *grouping* is agent work; the *features* are the Owner's, and each is traceable back to the Owner's own lists.
 Adopted here as the Religion domain's feature register, with **measured status** in Workstation today.
 
 **1 · User Authentication & Profile Management.** Identity, MFA, OAuth, RBAC across four roles —

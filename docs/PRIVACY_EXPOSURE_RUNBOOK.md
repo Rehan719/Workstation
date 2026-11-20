@@ -40,7 +40,7 @@ The screen reports the path, the line and the kind. It never reports the matched
 1. **Stop.** Do not push. If the finding is already on the public host, treat it as already copied by others.
 2. **See it.** Run `python scripts/privacy_check.py` (the whole tree) or open the platform route.
 3. **A credential:**
-   - Revoke or rotate it at its provider first. Only the Owner can, or someone acting on his yes for that one key.
+   - Revoke or rotate it at its provider first. Only the Owner can, or someone acting on their yes for that one key.
    - Then replace the value with a marker.
    - Redacting the file alone does not make a published key safe.
 4. **Private papers:**

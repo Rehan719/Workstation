@@ -48,8 +48,9 @@ docker compose up --build        # backend on :8000, persistent local volume —
 ```
 
 The image runs `uvicorn agentic_core.app_mvp:app` as a non-root user with a `/health` healthcheck and
-`DATA_DIR=/app/data` (mount a volume there for durable data). Optional managed Postgres is commented in
-`docker-compose.yml` — enable only if/when you choose (it incurs hosting cost; the app does not require it).
+`DATA_DIR=/app/data` (mount a volume there for durable data). The app keeps its records in files and reads no
+database: the Owner deferred managed Postgres (plan item P4.4) on 2026-10-12 until a measured need exists, so
+the Postgres service kept commented in `docker-compose.yml` would hold nothing if started (W1147).
 
 ## Single-service option (backend serves the SPA)
 

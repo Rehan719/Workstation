@@ -32,7 +32,7 @@ anything. The deploy itself is plan item P4.5, and the switch is the Owner's.
 
 ## 4. Dependencies
 
-- Every dependency is declared once, in `pyproject.toml`. The nineteen the Owner approved for removal are gone (W907), and so are the three more that nothing live reached, which the Owner ruled on 2026-11-19 should go (W1141); `docs/DEPENDENCY_VERDICTS.md` gives each its verdict. [observed]
+- Every dependency is declared once, in `pyproject.toml`. The nineteen the Owner approved for removal are gone (W907), and so are the three more that nothing live reached, which the Owner ruled on 2026-11-19 should go (W1141), and the three database packages held for P4.4, which the Owner deferred on 2026-10-12 (W1147); `docs/DEPENDENCY_VERDICTS.md` gives each its verdict. [observed]
 - No vulnerability scan has been run on the lock. [observed]
 - Done looks like this: a scan of the lock with every finding triaged in writing (fixed, not reachable, or accepted by the Owner), repeated on each dependency change. [inference]
 
@@ -40,7 +40,7 @@ anything. The deploy itself is plan item P4.5, and the switch is the Owner's.
 
 - Every store is a file under one data root (`agentic_core/store_paths.py`). `scripts/backup_stores.py` writes one archive of the data root with a SHA-256 manifest, checks an archive against it, and restores into an empty folder, checking every file it wrote. Its guard runs that round trip in the suite on Linux and on the Windows CI job. [observed]
 - The deploy takes a daily snapshot of the data disk, kept 14 days, and its restore is a step of its own (steps 5 and 9 of the Google Cloud deploy in `docs/DEPLOYMENT.md`, W1137, 2026-11-20). The restore was drilled on this machine with Docker: the records were copied whole onto a fresh volume in a timed run, every file byte-identical, and the release started on the copy read them back. No snapshot has been taken, since nothing is deployed, and the first restore from a real snapshot is the Owner's, at the deploy (row FU-1288). [observed]
-- A database is plan item P4.4, and its migration dry-run and rollback have not been started: row FU-284. [observed]
+- There is no database. Managed Postgres is plan item P4.4, which the Owner deferred on 2026-10-12 and recorded as a boundary until a measured need exists: the file store with its locks is what runs, and the packages held for it were removed (W1147). No migration or rollback is built, since no switch to a database is to be taken. [observed]
 - Done looks like this: a backup taken on a schedule, a restore onto a clean machine timed and recorded, and the suite run against the restored data. A backup that has never been restored is not counted. [inference]
 
 ## 6. Monitoring and incident response

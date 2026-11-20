@@ -2023,7 +2023,7 @@ named. Behind, honestly: raw speech recognition, and no automatic mistake detect
 4. A Quran Foundation developer account (free; the Owner registers; production use needs their approval).
 5. Similar verses computed from the text by exact shared wording, rather than waiting for a licensed list.
 6. The teacher's attestation record: wording to be reviewed by a scholar before it is shown.
-7. Competition detail waits on real marking schemes: does the Owner have one from an event he knows?
+7. Competition detail waits on real marking schemes: does the Owner have one from an event they know?
 
 #### What the Owner ruled on this (2026-10-12)
 No ruling yet on the platform listening: a private test first. The pause-and-tap prompt is within "teach, never

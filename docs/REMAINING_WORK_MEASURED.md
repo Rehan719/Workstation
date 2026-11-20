@@ -61,21 +61,21 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
   - FU-1151 in part, from the register only: v15's paths were replaced in W754, and the renderer refuses home-directory paths in residue lines (docs/FOLLOWUPS.json FU-1151 slot_source; scripts/render_fidelity_ledger.py:148,267-276. The run records under docs/fidelity_runs/ were not opened (out of scope).)
   - W786. The New-project form and the URL default now open on CANON_REALMS[0] instead of 'technology'. FU-1046 and FU-1151 move to the OWNER slot ('both can only be done on the Owner's own machine'). (git diff: apps/workstation-superapp/src/pages/projects/ProjectsHub.tsx:102-104,550; docs/FOLLOWUPS.json; test_w786_fu969_a_new_project_opens_on_a_canonical_subject)
 - **Remaining:**
-  - captured by open rows: FU-969 (open at HEAD; closed in W786's working tree). Left after it, and outside its smallest fix: POST /api/v1/projects/ still defaults realm 'general' and domain 'product' (agentic_core/projects/api.py:142-144,161-167), and normalise_domain defaults to 'enterprise' (agentic_core/taxonomy.py:121).; FU-1046 (a), buildable here: a section-11 FAIL keeps its reason. The history entry at agentic_core/organism/heartbeat.py:145 keeps only the overall result and the time, and the row also names agentic_core/api/change_control.py. W786 routes the whole row to the Owner, although this half needs none of his data.; FU-1046 (b), on the Owner's machine: find why the 2026-09-01 entity failed. Its text is in data/_moved_books_20261012-155706, which is absent from this container.; FU-1151, on the Owner's machine: the v16 note is to be restated as the kind of matter it was. W786 records the recommendation: edit each note to say only what kind of place or matter it was, and leave git history as ruled. Not verified: the files are out of scope.
+  - captured by open rows: FU-969 (open at HEAD; closed in W786's working tree). Left after it, and outside its smallest fix: POST /api/v1/projects/ still defaults realm 'general' and domain 'product' (agentic_core/projects/api.py:142-144,161-167), and normalise_domain defaults to 'enterprise' (agentic_core/taxonomy.py:121).; FU-1046 (a), buildable here: a section-11 FAIL keeps its reason. The history entry at agentic_core/organism/heartbeat.py:145 keeps only the overall result and the time, and the row also names agentic_core/api/change_control.py. W786 routes the whole row to the Owner, although this half needs none of their data.; FU-1046 (b), on the Owner's machine: find why the 2026-09-01 entity failed. Its text is in data/_moved_books_20261012-155706, which is absent from this container.; FU-1151, on the Owner's machine: the v16 note is to be restated as the kind of matter it was. W786 records the recommendation: edit each note to say only what kind of place or matter it was, and leave git history as ruled. Not verified: the files are out of scope.
   - no row captures: The final audit, shared with P2.40 and sized as P5.22's.; A rule to watch: P3.30's ACCEPT (3) moves a mis-tiered finding to the item that owns its tier. FU-855 is marked 'possibly tier 2', and re-tiering it would put a row back on this item.
 - **Waits on:**
   - P5.22, the final audit (the joint M1/M2 re-run)
   - The Owner's machine for FU-1046's read and FU-1151's edit
 - **Only the Owner can:**
-  - On his machine: read the moved books for FU-1046, and decide FU-1151 (recommended: restate each note as a kind of place or matter, and leave git history).
-- **First round:** Split FU-1046's buildable half into its own row and do it here. In agentic_core/organism/heartbeat.py screen_living_vsb, the history entry appended at line 145 keeps only the overall result and the time. Make a FAIL entry keep its failing verdicts (framework and reason, capped), and carry the reason into the change record the row names (agentic_core/api/change_control.py). Guard: screen a living VSB whose plan text trips one framework, and assert that the HISTORY entry, not only the latest record, carries the reason. Blind: drop the field and see the guard go red. Why the 2026-09-01 entity failed stays the Owner's to find, on his machine.
+  - On the Owner's machine: read the moved books for FU-1046, and decide FU-1151 (recommended: restate each note as a kind of place or matter, and leave git history).
+- **First round:** Split FU-1046's buildable half into its own row and do it here. In agentic_core/organism/heartbeat.py screen_living_vsb, the history entry appended at line 145 keeps only the overall result and the time. Make a FAIL entry keep its failing verdicts (framework and reason, capped), and carry the reason into the change record the row names (agentic_core/api/change_control.py). Guard: screen a living VSB whose plan text trips one framework, and assert that the HISTORY entry, not only the latest record, carries the reason. Blind: drop the field and see the guard go red. Why the 2026-09-01 entity failed stays the Owner's to find, on their own machine.
 
 ## P3.30 — THE DISCLOSED GAPS GET AN OWNER (M3 queue: tier-3 findings, one row per region)
 
 - **Closes when:** ACCEPT: (1) every STUB, MISSING or DOC_OVERCLAIM among them is built, removed, or re-stated so the document no longer claims it; (2) for every PARTIAL and API_ONLY, the disclosure is DRIVEN at the surface and shown to reach the reader (a disclosure that exists only in an API field or a tooltip is not one); (3) a finding that on reading is mis-tiered is re-tiered with the reason stated and moved to the item that owns that tier, never closed here; (4) every fix is guarded on the property and driven RED; (5) M3 re-runs with M1 and M2 when this item's rows close, on an instrument that states its coverage.
 - **Delivered by:** build
 - **Size:** 44–77 rounds. The sum of the group estimates above. The plan's generated pace prices the item at about 49 rows at its own rate of about 1 row per round (W786's render says about 60). The high end prices each region row by its findings rather than as one row. ACCEPT (5)'s audit is P5.22's.
-- **Open rows:** count: 49; need owner or owner machine: FU-869: the Owner names his two entities on his own store (PUT /api/v1/economy/protected-entities); the restore route is ours to build; FU-1116: whether a birth may be refused over capacity is the Owner's decision; FU-688: the row says 'for the Owner's sequencing'; it overlaps P5.1
+- **Open rows:** count: 49; need owner or owner machine: FU-869: the Owner names their two entities on their own store (PUT /api/v1/economy/protected-entities); the restore route is ours to build; FU-1116: whether a birth may be refused over capacity is the Owner's decision; FU-688: the row says 'for the Owner's sequencing'; it overlaps P5.1
 - **Built now:**
   - 123 of the 172 riding rows are closed, recently one per round (W762-W784) (docs/FOLLOWUPS.json slot P3.30)
   - Two v17 region findings are already satisfied by later rounds. R2[9]: the direct stage advance is retired (W678/FU-965). R4[1]: the cognitive cascade's fixed threat score is now None with a basis (W730/FU-861). (agentic_core/projects/api.py:545-556; agentic_core/cognitive/hoshiyari_engine.py:28)
@@ -85,11 +85,11 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
   - captured by open rows: The 49 rows, as grouped above (G1-G9).
   - no row captures: ACCEPT (2): driving each PARTIAL/API_ONLY disclosure at its surface (43 findings) lives only inside the six region rows; no row of its own measures it.; ACCEPT (3): re-tiering mis-tiered findings (FU-855 'possibly tier 2'; the region findings must be read for this).; ACCEPT (5): the M3 re-run with M1 and M2 after the rows close is, by the rulings recorded at P2.40, the final audit (P5.22). It is not counted here.
 - **Waits on:**
-  - The Owner's decisions on FU-1116 and his naming of entities for FU-869
+  - The Owner's decisions on FU-1116 and their naming of entities for FU-869
   - ACCEPT (5) waits for the final audit (P5.22)
   - FU-688 is better done under P5.1
 - **Only the Owner can:**
-  - Name his two protected entities on his store (FU-869). Decide whether a birth may be refused over capacity (FU-1116). Sequence FU-688. Optional architecture decisions inside the region findings (a global output gate, R6[1]) are not needed for ACCEPT's honesty bar.
+  - Name the Owner's two protected entities on their store (FU-869). Decide whether a birth may be refused over capacity (FU-1116). Sequence FU-688. Optional architecture decisions inside the region findings (a global output gate, R6[1]) are not needed for ACCEPT's honesty bar.
 - **First round:** FU-984 (ledger v17 R5). (a) Run a reachability check, then archive the v280 gamification router (agentic_core/api/v280/gamification.py, mounted at agentic_core/app_mvp.py:288-290) and the cross_platform router (app_mvp.py:349-350) as reversible moves with one restore constant. Unmount PlayfulEffectsManager from apps/workstation-superapp/src/App.tsx; its store, store/gamificationStore.ts:24,33,41, is the only caller of /api/v280/gamification/*. (b) R5[2]: the Memorization card says flashcards, heatmap and audio are not built, and the 'Launch Full Dashboard' button goes (components/QEPFlagshipFeatures.tsx:158). (c) R5[3]: the avatar's empty-state line 'Responses are tailored to the ... context' (components/avatar/ConversationPanel.tsx:252) says what the floor does instead. Guard each (the routes answer retired, App.tsx no longer mounts the manager, the two sentences), with each blind seen red. The next round drives R5's four remaining disclosures at their pages and closes the row.
 
 ## P3.32 — A MODEL'S BEHAVIOUR IS MAPPED BEFORE ANYTHING IS SAID ABOUT ITS INSIDES
@@ -108,18 +108,18 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
   - FU-918's code half: the evidence and baseline blocks sit outside the lifecycle card, and a failed read is shown (apps/workstation-superapp/src/pages/developers/NativeAI.tsx around lines 517 and 1059-1089)
 - **Remaining:**
   - captured by open rows: FU-1087 (high): promote_model checks only that the model is installed. There is no runtime digest, licence line, evaluation state or research-lead refusal, and the effective default re-checks only the name (native_ai.py:1154-1170).; FU-1091: a baseline records no runtime settings, so ACCEPT's 'reproducible from its recorded versions' cannot hold on a model tier.; FU-1090: the held-out set has 3 cases (format, arithmetic, join). Add one each for injection, refusal without a source, malformed output and unsupported claim, each scored by a computed check, as a new version.; FU-1092: an answer names its server, never the model, its digest or the device. The row sequences this after token counting (FU-1100, on P4.3).; FU-1129: VISION_FAMILIES is a typed name list (agentic_core/ai/native/tiers.py:180); read the runtime's capabilities first.; FU-892: the claims scan reads three roots; docs/ and the other packages are unread.; FU-926: three typed statements stand where a probe exists. Which three was not verified.; FU-918: view the Native AI page with the lifecycle read failing (a browser check).
-  - no row captures: Showing reproducibility on a served model tier needs a machine with a local runtime and a model. None is here (no ollama binary), so it needs the Owner's machine or his decision to download one.
+  - no row captures: Showing reproducibility on a served model tier needs a machine with a local runtime and a model. None is here (no ollama binary), so it needs the Owner's machine or their decision to download one.
 - **Waits on:**
   - FU-1100 (P4.3) before FU-1092, per FU-1092's own row
   - The Owner's answer on FU-1087's baseline question
   - A machine with a local model to show model-tier reproducibility
 - **Only the Owner can:**
-  - Answer FU-1087's question (does promotion require a recorded baseline?). Any model download, and any baseline run on a real local model, are his.
+  - Answer FU-1087's question (does promotion require a recorded baseline?). Any model download, and any baseline run on a real local model, are theirs.
 - **First round:** FU-1087, the item's only high row. Drive POST /api/v1/native-ai/lifecycle/promote with model_resource.local_models patched to list a model, and first show that today's code promotes it with no licence or digest check (confirming the hypothesis). Then make promote store the runtime digest and return the licence line and evaluation state it relied on. Refuse with 409 and a stated reason when no licence text is held or the model is a research-only lead, with an admin force that leaves a UEG trail. The effective default holds only while the digest matches; patch describe_installed to report a different digest and assert the default falls back with its reason. Files: agentic_core/api/native_ai.py:1154 and agentic_core/ai/native/model_resource.py. One blind per refusal.
 
 ## P4.1 — AUTH_ENABLED on (the Owner's switch), after the authentication-readiness round
 
-- **Closes when:** 'AUTH_ENABLED on, with the auth-ON suite green and the perimeter (P2.6) closed.' The Owner flips it, on his own machine, first in the switch order. Ours is the readiness round: an instrument reading every route's MOUNTED dependency against a declared public list; the business-plan routes ask who is calling; an issued API key authenticates; the read-only role is refused every write; the heartbeat acts only on an opted-in entity under a named service identity; for a high or critical change the decider differs from the submitter once a second administrator exists. Each is a row, driven with authentication on in a test process only.
+- **Closes when:** 'AUTH_ENABLED on, with the auth-ON suite green and the perimeter (P2.6) closed.' The Owner flips it, on their own machine, first in the switch order. Ours is the readiness round: an instrument reading every route's MOUNTED dependency against a declared public list; the business-plan routes ask who is calling; an issued API key authenticates; the read-only role is refused every write; the heartbeat acts only on an opted-in entity under a named service identity; for a high or critical change the decider differs from the submitter once a second administrator exists. Each is a row, driven with authentication on in a test process only.
 - **Delivered by:** owner-switch
 - **Size:** 9–16 rounds. FU-1120 1, FU-849 1-2, FU-850 1, FU-1152 1, FU-1089 1-2, FU-1061 4-8 (one guard per record-holding router group: a second person signs in and the first person's record is not found), plus 0-1 for the final strict re-measure.
 - **Open rows:** count: 6
@@ -132,7 +132,7 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
   - P2.6 (DONE W505; the perimeter was closed at the mount in W683)
   - These rows before the Owner's switch, which comes first in the order: readiness, then auth on, then deploy, then invited, then self-serve, then external models, then money
 - **Only the Owner can:**
-  - Flip AUTH_ENABLED on his own machine and set JWT_SECRET and ADMIN_PASSWORD there. Decide whether to create a second administrator. Opt entities into the heartbeat once FU-849 is built.
+  - Flip AUTH_ENABLED on their own machine and set JWT_SECRET and ADMIN_PASSWORD there. Decide whether to create a second administrator. Opt entities into the heartbeat once FU-849 is built.
 - **First round:** FU-1120. In a test with AUTH_ENABLED=true (monkeypatched), call the VSB operating cycle (agentic_core/api/vsb.py:3601, which calls swarm.cascade_orchestration) and economy.deliver_contract (agentic_core/api/economy.py:1832) directly. Assert there is no AttributeError and the tiers run. Fix swarm.py:428 to 'user if isinstance(user, dict) else None', as line 511 already does, and sweep the other route functions that are called directly and read (user or {}). Blind: revert the line and see it go red.
 
 ## P4.2 — SELF_SERVE_SIGNUP (the Owner's switch), after an invited stage
@@ -151,7 +151,7 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
   - P5.15's calibrated reviewer agent and release rule
   - The switch order (after a private deploy)
 - **Only the Owner can:**
-  - Name the invited people. Flip SELF_SERVE_SIGNUP. Instruct the prune of the 162 test-owned entities on his store. Engage the people the four exceptions keep: a named scholar, a clinician, a solicitor, and three signatures for money.
+  - Name the invited people. Flip SELF_SERVE_SIGNUP. Instruct the prune of the 162 test-owned entities on the Owner's store. Engage the people the four exceptions keep: a named scholar, a clinician, a solicitor, and three signatures for money.
 - **First round:** Write one guard with sign-in on and self-serve off. /auth/signup answers 403; /auth/register refuses a non-admin and admits an admin. Then, for each of the four exceptions, name the enforcing check (scholar gate; Care withheld-on-terms; law route; REAL_MONEY_ENABLED) and assert that it refuses. The guard fails if an exception has no enforcing check. Expect the Care early-warning score to be the leg that has none, and register it as a row.
 
 ## P4.3 — AI_ALLOW_EXTERNAL + a key (the Owner's switch), as accelerants only
@@ -185,7 +185,7 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
 - **Waits on:**
   - The FU-604 retry plan (P4.5): in halves, on a fresh venv, with the torch-absent scipy failure bisected
 - **Only the Owner can:**
-  - He has ruled (deferred). He decides if and when a measured need re-opens it.
+  - The Owner has ruled (deferred), and decides if and when a measured need re-opens it.
 - **First round:** Re-scope FU-284 to what the deferral leaves. Remove sqlalchemy, sqlmodel and psycopg2-binary from pyproject.toml and requirements.txt, and archive the unimported config/database.py. Run the full suite on a fresh venv built only from the new requirements.txt, in its own commit. Update docs/DEPENDENCY_VERDICTS.md:18-20. Guard: every declared runtime dependency is imported by live code or carries a verdict; blind it by re-adding one undeclared import.
 
 ## P4.5 — Production deploy on Google Cloud (the Owner's account), after a measured dry run
@@ -193,7 +193,7 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
 - **Closes when:** 'Production deploy on GOOGLE CLOUD ... from the Docker image that boots (W354), behind the Owner's account. The pre-flight is a DRY RUN a round builds and measures first; the project, billing and the deploy itself are the Owner's. THE FIRST DEPLOY is ONE small virtual machine on the free tier, PRIVATE TO THE OWNER, running the floor only, and only after the dry run has measured that the platform fits its memory.' Where another person's data may be kept is a solicitor's question.
 - **Delivered by:** owner-switch
 - **Size:** 5–9 rounds. FU-603 2-4: build and boot the image with a health probe, measure peak memory under a fixed floor drive against the free-tier VM, a secrets pattern, ephemeral-disk behaviour, a rollback drill, cost labels, and the docs only after a measured boot. FU-604 1-2. FU-607 1. FU-1095 1.
-- **Open rows:** count: 4; need owner or owner machine: FU-1095: the uptime check e-mails the Owner from his own cloud account (the naming and the runbook are ours); FU-603: the dry run is ours; the GCP project, billing and the deploy are the Owner's
+- **Open rows:** count: 4; need owner or owner machine: FU-1095: the uptime check e-mails the Owner from their own cloud account (the naming and the runbook are ours); FU-603: the dry run is ours; the GCP project, billing and the deploy are the Owner's
 - **Built now:**
   - A Dockerfile whose COPY set is guarded statically, and a CI boot import check (Dockerfile; integration_tests/test_mvp_spine.py:5349; .github/workflows/spine.yml 'Boot check')
 - **Remaining:**
@@ -205,7 +205,7 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
   - The Owner's GCP project and billing
   - A solicitor's answer on US data residency before anyone else's data is stored
 - **Only the Owner can:**
-  - The GCP project, billing and the deploy itself. The billing alert and the uptime check's e-mail from his account. A solicitor's answer on where another person's data may be kept.
+  - The GCP project, billing and the deploy itself. The billing alert and the uptime check's e-mail from their account. A solicitor's answer on where another person's data may be kept.
 - **First round:** FU-603's first measurement. Build the image from the Dockerfile and boot it with AI_DISABLE_LOCAL=1 on an ephemeral DATA_DIR. Poll /health, drive a fixed set of floor requests (a Genesis journey, a deliverable, a beat), and record peak container memory (cgroup memory.peak or docker stats) against the free-tier VM's memory, the figure read at Google's own page. Record what the image lacks (dist, docs/, knowledge/). The report refuses when it measured nothing. Update docs/DEPLOYMENT.md only after the measurement, replacing its Render and Cloud Run text with the ruled single small VM.
 
 ## P4.6 — REAL_MONEY_ENABLED (the Owner's switch), last, after compliance/KYC review
@@ -250,8 +250,8 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
   - after sign in: An acceptance leg by a person (FU-1003 / FU-1049), if 'delivered' is read as accepted.
 - **Only the Owner can:**
   - None to build the guard.
-  - The walk of the Owner's own endeavour (meal service first, registered fresh, on his machine with the model on; ruled 2026-10-12, docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md section 28.6) is his act and separate from the guard.
-  - FU-301 and FU-1072 reproductions most likely need his Windows machine.
+  - The walk of the Owner's own endeavour (meal service first, registered fresh, on the Owner's machine with the model on; ruled 2026-10-12, docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md section 28.6) is their act and separate from the guard.
+  - FU-301 and FU-1072 reproductions most likely need the Owner's Windows machine.
 - **First round:** Re-slot FU-688 from P3.30 to P5.1, then write test_p51_one_tenant_journey_is_driven_and_read_back in integration_tests/test_mvp_spine.py on the isolated test store (client fixture): POST /api/v1/genesis/journey {problem, establish: true, name}; POST /api/v1/deliverables/produce scoped to the new entity; POST /api/v1/vsb/{id}/repo/ship; GET /api/v1/vsb/{id}/repo/zip; POST /api/v1/economy/cycle; GET /api/v1/deliverables/{id}/export?format=md. After each call read the record back from its own store (genesis_journeys, the VSB store, the deliverables store, the vsb_repos manifest, the entity ledger), assert each stage names its server ('native' on the floor) and that the export text carries the provenance phrase, and assert the price leg is null with a reason until P5.2 lands. Drive one blind per leg red (e.g. drop _provenance_phrase from deliverables._to_markdown).
 
 ## P5.2 — A price in WST, derived from the waterfall, never typed
@@ -356,7 +356,7 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
 - **Size:** 4–7 rounds. Three document rows at about one round each (W703 did two documents in one round), the guide 2-3 because its commands must be run and backup/restore written; the guard extension 1.
 - **Open rows:** count: 3; ids: FU-742; FU-743; FU-744; need owner or owner machine: id: FU-742; why: the guide's Windows commands (set-up, start, health, tests, backup and restore) must be run on Windows: the Owner's machine, or the backend-windows CI job if that is accepted as 'the tree it is committed with'; this Linux session cannot run .ps1/.bat
 - **Built now:**
-  - Canvas and business plan written (W703), ratified by the Owner 2026-10-13, name line changed with his word 2026-10-14 (W725) (docs/business/BUSINESS_MODEL_CANVAS.md, docs/business/BUSINESS_PLAN.md)
+  - Canvas and business plan written (W703), ratified by the Owner 2026-10-13, name line changed with their word 2026-10-14 (W725) (docs/business/BUSINESS_MODEL_CANVAS.md, docs/business/BUSINESS_PLAN.md)
   - A guard reading every docs/business/*.md: draft-or-ratified opening, files, plan items and row ids exist, every statement labelled, money only beside an Owner ruling, no count of people; driven on planted faults. It does NOT check routes, and only matches .py/.json/.md/.yml/.tsx files (integration_tests/test_mvp_spine.py _w703_faults and test_w703_the_business_documents_are_labelled_drafts_that_name_only_what_exists (:64629))
   - The Owner enters the ratified plan through the plan's own route, refused with sign-in off (/api/v1/business-plan/ratified/preview and /enter (W726 guard near test_mvp_spine.py:65790))
   - Metric sources that exist but hold no customer value (agentic_core/api/support.py:228 /sla and :273 /satisfaction; agentic_core/api/registers.py:58 /coverage; no product telemetry in agentic_core)
@@ -370,7 +370,7 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
   - after sign in: Nothing.
 - **Only the Owner can:**
   - Run, or accept a Windows CI run of, the founder's guide commands.
-  - Ratify each new document when he chooses (each stays a DRAFT until then; not needed to close).
+  - Ratify each new document when they choose (each stays a DRAFT until then; not needed to close).
 - **First round:** Extend _w703_faults in integration_tests/test_mvp_spine.py so every /api/v1/... route a document names must be a mounted route of the app, and .ps1/.bat/.mjs/.js/.sh files are checked, each with a planted fault driven red; then write docs/business/KPI_DICTIONARY.md (FU-743): each metric with definition, source, denominator and freshness, or NOT MEASURED and what would measure it - e.g. support resolution rate (GET /api/v1/support/sla), satisfaction (GET /api/v1/support/satisfaction), journeys a person can complete (GET /api/v1/registers/coverage), open register rows (docs/FOLLOWUPS.json).
 
 ## P5.7 — The working papers of a first sale, every one a draft, nothing sent
@@ -378,7 +378,7 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
 - **Closes when:** Seven drafts under docs/business: first-offer comparison and interview pack, cost model, name and brand screen, marketing drafts, route to support and partners, formation workpack, scope for outside help. ACCEPT (quoted): 'the guard of the item before this one reads these documents too (every path, route, script and row id named exists); every money figure carries a source and date or the word ASSUMED; no document states a customer, an interview, a partner, an endorsement, a price agreed or a name cleared; no personal detail of the Owner appears; every public-facing draft carries its DRAFT heading; and the guard is driven RED on each.'
 - **Delivered by:** build
 - **Size:** 7–11 rounds. Six document rows at about one round each, the clause 3 remainder 1, the guard changes 1-2; reading public pages adds time to FU-810 and FU-811.
-- **Open rows:** count: 6; ids: FU-806; FU-807; FU-809; FU-810; FU-811; FU-812; note: None needs the Owner to write; every external act (sending a draft, contacting the course organisation, interviews, filing) is his and outside this item.
+- **Open rows:** count: 6; ids: FU-806; FU-807; FU-809; FU-810; FU-811; FU-812; note: None needs the Owner to write; every external act (sending a draft, contacting the course organisation, interviews, filing) is theirs and outside this item.
 - **Built now:**
   - Name searched and ruled (FU-808 closed W725): Companies House and UK/EU trade mark registers read, one line in each ratified document, no clearance claimed (docs/business/BUSINESS_MODEL_CANVAS.md (Key resources); docs/business/BUSINESS_PLAN.md (Risks); test_w725_... (test_mvp_spine.py:65614))
   - Fees already read at publishers on 2026-10-11 and the course organisation named (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md section 17.1 rows 8-12)
@@ -392,7 +392,7 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
   - before sign in: All of it; nothing is stored about a person (no prospect tracker by ruling).
   - after sign in: Nothing.
 - **Only the Owner can:**
-  - The inventory of what he holds (accounts, domains, marks) beyond what the ratified documents already say.
+  - The inventory of what the Owner holds (accounts, domains, marks) beyond what the ratified documents already say.
   - Every external act and any choice of legal form (outside this item).
 - **First round:** Change the W703 money rule so a figure in docs/business stands only with a quoted or sourced label naming the page and the date read, or the word ASSUMED, and add the DRAFT-heading and banned-claim rules, each with a planted fault driven red; then write docs/business/COST_MODEL.md (FU-807), re-reading each fee at its publisher's page with the date (assessment section 17.1 rows 8-11 were read 2026-10-11).
 
@@ -413,7 +413,7 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
   - after sign in: All three clauses.
 - **Only the Owner can:**
   - Turn sign-in on.
-  - The data protection impact assessment for health-related entries (research can be drafted; the decision is his).
+  - The data protection impact assessment for health-related entries (research can be drafted; the decision is theirs).
   - Real payroll stays behind the real-money ruling and a compliance review (boundary, not needed to build).
 - **First round:** None until sign-in is on and P4.1's readiness rows are closed. Then: GET /api/v1/vsb/{id}/seats listing each organisational role with filled_by resource / person / none and a vacant seat shown vacant; guard: an entity with no person shows every person seat vacant, and a blind that fills a default name goes red.
 
@@ -422,7 +422,7 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
 - **Closes when:** Before any clause a reconciliation read across ledger, owner payments, fund and roster; double-entry is the book of record; the payee comes from the entity's owner record; every figure says where its value entered; then six clauses. ACCEPT (quoted, abridged): 'a guard drives one invoice from draft to settled between two registered test entities and reads back the profile, the invoice, the hold, the transfer's posting and the view from their own stores; the same invoice sent twice is one invoice and the same settlement sent twice is one transfer; the trial balance holds after every step; a reversal leaves both postings in the books and the first unchanged; reconciliation names an invoice marked settled with no posting, a posting with no invoice, and an amount that differs ...; received cannot be entered; every clause has a guard driven RED.'
 - **Delivered by:** build
 - **Size:** 16–30 rounds. Eight rows (the three reconciliation rows fold into one instrument) about 7-11 rounds, the six clauses 10-17, plus 1-2 for FU-877 and FU-887 on P3.30, which the ruled sequence closes first.
-- **Open rows:** count: 8; ids: FU-1004; FU-1005; FU-1006; FU-1007; FU-1008; FU-1009; FU-1010; FU-1049; need owner or owner machine: id: FU-1004; why: measured on the Owner's store; those books were moved aside by the Owner on 2026-10-12 (data/_moved_books_20261012-155706 on his machine), so checking them there needs his machine; id: FU-1005; why: the reversal can be built here; applying it to the real fund needs his machine and word (after the move his fund read nothing allocated - assessment 28.5); id: FU-1006; why: the code path can be read here; the data is on his store; id: FU-1007; why: code here; the 44 test-owner accounts are on his store; id: FU-1008; why: the population counts are on his store; id: FU-1009; why: the apex figures are on his store; id: FU-1049; why: an acceptance is a post-sign-in record (the Owner's P4.1 switch); what it earns was ruled 2026-10-12
+- **Open rows:** count: 8; ids: FU-1004; FU-1005; FU-1006; FU-1007; FU-1008; FU-1009; FU-1010; FU-1049; need owner or owner machine: id: FU-1004; why: measured on the Owner's store; those books were moved aside by the Owner on 2026-10-12 (data/_moved_books_20261012-155706 on the Owner's machine), so checking them there needs the Owner's machine; id: FU-1005; why: the reversal can be built here; applying it to the real fund needs the Owner's machine and word (after the move their fund read nothing allocated - assessment 28.5); id: FU-1006; why: the code path can be read here; the data is on the Owner's store; id: FU-1007; why: code here; the 44 test-owner accounts are on the Owner's store; id: FU-1008; why: the population counts are on the Owner's store; id: FU-1009; why: the apex figures are on the Owner's store; id: FU-1049; why: an acceptance is a post-sign-in record (the Owner's P4.1 switch); what it earns was ruled 2026-10-12
 - **Built now:**
   - Per-entity double-entry chart with no receivable, payable or liability account (agentic_core/economy/ledger.py:297-312 CHART)
   - Every new posting carries an identifier (W760) and a non-zero finite amount (W759); trial balance, statements, period close (agentic_core/economy/ledger.py:461 posting_id, :443-451, :581 trial_balance, :625 statements, :717 close_period)
@@ -441,7 +441,7 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
   - before sign in: Reconciliation, labels, payee, figure origins, profile, invoices and bills between the Owner's own registered entities, reversal, calendar, funding record, view.
   - after sign in: Invoices naming outside parties; acceptance (FU-1049).
 - **Only the Owner can:**
-  - Access to his store for the six rows measured on it.
+  - Access to the Owner's store for the six rows measured on it.
   - A reading of the sequence (after P5.8, or beside the readiness round).
   - Later, a certificate before a funding record's permissibility reads anything but NOT ASSESSED (not needed to build).
 - **First round:** Close FU-887 with FU-1007 in agentic_core/economy/owner_payments.py: payee_of resolves the payee from the entity's owner record and keeps the account's stored name as history, and an account whose entity has no record has no payee and says why. Guard: an account whose stored name differs from the entity's owner, and one with no entity, each read back; blind red. Next round: the read-only reconciliation instrument, driven on a test store made wrong in each way.
@@ -451,7 +451,7 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
 - **Closes when:** Nine clauses: effectiveness check, fix rule, hotspot round, literal-outcome screen, calibrated audit, rendered state, nothing earns on a structure pass, triage, a model-on checklist. ACCEPT (quoted): 'clause 1 is driven on a record made to hold a returned finding; clause 4 fails on a typed outcome added to a handler; clause 5 reports three measured rates and their sample sizes; clause 6 fails when a page's condition is disabled; clause 7 is driven both ways; every clause has a guard driven RED.'
 - **Delivered by:** build
 - **Size:** 16–32 rounds. Twelve rows at about one round each, several larger (FU-1059 is eighteen-plus callers, FU-991 a hotspot rewrite, FU-993 a calibration run): 12-24; uncaptured clauses 4, 8, 9 and the clause 2/7 legs: 4-8.
-- **Open rows:** count: 12; ids: FU-991; FU-992; FU-993; FU-995; FU-1036; FU-1038; FU-1039; FU-1040; FU-1059; FU-1060; FU-1142; FU-1143; need owner or owner machine: id: FU-1036; why: needs the local model configuration the Owner runs; id: FU-1038; why: the loop is turned on the Owner's own store; id: FU-1040; why: moving rows aside in his real store (earlier moves were made at his terminal); id: FU-1142; why: his decision whether the pre-isolation rows move (recommended no); id: FU-1039; why: code here; the 2,000 rows checked are on his store; id: FU-1059; why: its prepared classification and edit script are on his machine (C:/tmp paths); can be redone from the code
+- **Open rows:** count: 12; ids: FU-991; FU-992; FU-993; FU-995; FU-1036; FU-1038; FU-1039; FU-1040; FU-1059; FU-1060; FU-1142; FU-1143; need owner or owner machine: id: FU-1036; why: needs the local model configuration the Owner runs; id: FU-1038; why: the loop is turned on the Owner's own store; id: FU-1040; why: moving rows aside in the Owner's real store (earlier moves were made at the Owner's terminal); id: FU-1142; why: their decision whether the pre-isolation rows move (recommended no); id: FU-1039; why: code here; the 2,000 rows checked are on the Owner's store; id: FU-1059; why: its prepared classification and edit script are on the Owner's machine (C:/tmp paths); can be redone from the code
 - **Built now:**
   - Clause 1: the effectiveness check lists candidate returns and fails while one is undecided, driven on a made record (FU-990 closed W749). Reopening the row and guarding the class stay a person's follow-through (scripts/audit_returns.py; test_w676_a_returned_finding_cannot_pass_unread (integration_tests/test_mvp_spine.py:60683))
   - Clause 2: the fix rule is in the method, ratified, with enforced_by null (docs/DELIVERY_METHOD.json lesson M-CORR-07)
@@ -468,8 +468,8 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
   - before sign in: Clauses 1-6, 8, 9 and the rows; the quality store stays shared and says so.
   - after sign in: Clause 7's acceptance leg (an acceptance is a record about a person).
 - **Only the Owner can:**
-  - His machine and store for FU-1036, FU-1038, FU-1040 (and to verify FU-1039).
-  - His decision on FU-1142.
+  - The Owner's machine and store for FU-1036, FU-1038, FU-1040 (and to verify FU-1039).
+  - The Owner's decision on FU-1142.
 - **First round:** FU-1059's three silent cuts: in agentic_core/api/career.py (classifier at 2,000 characters, generator at 600 a file) and agentic_core/api/employment.py (job search at 300), pass the person's text through ai_text(material=..., material_label=..., material_limit=...) as law.py analyse does, so the cut is recorded in provenance and said in the answer. Guard: post over-limit text with a capturing ai_text, assert the material markers, read_whole False and the partial-read sentence; one blind per caller red. (Clause 9 is overdue by its own sequence.)
 
 ## P5.11 — A person with a problem leaves with a date, a place to go and a list - none generated
@@ -495,7 +495,7 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
   - before sign in: Clauses 1-8: they store nothing about a person.
   - after sign in: Clause 9: a person's own matter (facts, documents, dates).
 - **Only the Owner can:**
-  - A qualified person's view before any public release is his to arrange (not needed to build).
+  - A qualified person's view before any public release is theirs to arrange (not needed to build).
 - **First round:** Clause 2 (FU-1012): agentic_core/legal/deadlines.py holding the employment tribunal limits either side of 1 October 2026 and the Scottish exception as dated data (claim type, nation, in force from and to, source page, read on, read by), each source added to docs/SOURCES.json after reading it at the publisher; GET /api/v1/law/deadline does arithmetic on the matching rule, shows the rule, shows both rules near the change, and with no match says a limit may still apply and where to ask today. Guard drives the day before, of and after the change, a month end, 29 February, each nation and no rule; move law-tribunal-time-limit in docs/COVERAGE_REGISTER.json to 'arithmetic' naming the test.
 
 ## P5.12 — Education: a teacher or an adult learner is told what was read, what was checked and what this machine can do
@@ -618,7 +618,7 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
   - before sign in: tiers, records, calibration, both-options sentence (the phase split names 'each tool's review tier' as pre-sign-in)
   - after sign in: not ruled explicitly; clause 6's roster keeps people's names and may fall under 'anything that keeps something about a person'
 - **Only the Owner can:**
-  - run the calibration on his machine with the model on; release is his switch; qualified persons for the third tier are his to engage (not needed for ACCEPT); the four exceptions keep a person
+  - run the calibration on the Owner's machine with the model on; release is their switch; qualified persons for the third tier are theirs to engage (not needed for ACCEPT); the four exceptions keep a person
 - **First round:** FU-1054 part 1: rewrite docs/CARE_REVIEW_CALIBRATION.json as version 2 with every case written out from the defects the tree actually had (the CG161 falls entry, 999-not-first safeguarding text, respiratory rate 21 scored 1, the 'registered nurse' prompt, a medication section, a 9-year-old under the adult route, MUST 'computes', a handover 'verified against clinical guidance', 'NHS Standard', the unsaid second oxygen scale) and the clean cases as the current tree answers; read NG97 and the NEWS2 chart at their publishers and update their SOURCES rows; flip runnable only when every case has text and every clean case cites current rows. Guard: the calibration route refuses a run on a set with a case lacking text or a clean case citing a named_not_read row; blinds red. The agent and the run follow.
 
 ## P5.16 — What is charged (virtual WST throughout)
@@ -626,7 +626,7 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
 - **Closes when:** ACCEPT: 'clauses 1, 3, 4 and 5 each have a guard that drives the state and a blind driven red; the cycle's answer and the entity's page show profit, fee and the base the split used; the stages and the fee sum to the profit to the cent.'
 - **Delivered by:** build
 - **Size:** 3–5 rounds. FU-1057 is the main build (metabolism, ledger line, page, to-the-cent guards) at about 2-3; clause 5's guard once acceptance exists about 1; clause 6 about 0.5-1
-- **Open rows:** count: 1; ids: FU-1057; basis: the build needs no Owner (his three questions were answered 2026-10-12, 29.4 item 7); it is sequenced after the first walk, which runs on the Owner's machine with the model on
+- **Open rows:** count: 1; ids: FU-1057; basis: the build needs no Owner (the Owner's three questions were answered 2026-10-12, 29.4 item 7); it is sequenced after the first walk, which runs on the Owner's machine with the model on
 - **Built now:**
   - Clause 1: the Quran platform is free for individuals and institutions; an institutional price above zero is refused naming the ruling and the retired rule; canon amended as a dated ruling with the earlier words kept (agentic_core/economy/qep_pricing.py INSTITUTIONAL_PRICE l.31, check_institutional_price l.59-81; W679 guard over both vision documents)
   - Clause 2: the 99-pound price once, credited against the first profit share, waived for charitable/non-distributing, stated with the three conditions and 'nothing charged'; posts nothing, only reads the real-money switch (agentic_core/economy/generation_price.py statement(), conditions_met(); agentic_core/api/genesis.py; FU-1058 closed W687)
@@ -642,7 +642,7 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
   - before sign in: clauses 1-4 and 6
   - after sign in: clause 5 - the phase split lists 'an acceptance' among things built after sign-in
 - **Only the Owner can:**
-  - the first walk on his machine; before real money (not in scope): a scholar's view on the fee's form, a solicitor's on the regulatory line and on consumer status, an accountant's on the books; the real-money switch stays his and off
+  - the first walk on the Owner's machine; before real money (not in scope): a scholar's view on the fee's form, a solicitor's on the regulatory line and on consumer status, an accountant's on the books; the real-money switch stays theirs and off
 - **First round:** Blocked by the ruled SEQUENCE until the first walk has run (or the Owner releases it for a scratch entity). Then: in agentic_core/economy/metabolism.py run_cycle compute platform_fee = 25% of distributable_profit when above zero and the form distributes (zero for the apex and non-distributing forms; computed and not posted for an unregistered simulation), post it as one ledger line, apply the split to the remainder, return profit, fee and split_base, credit the 99 pounds against the first fee. Guard: over a grid of revenues, costs and reserves, sum(splits) + fee == profit to the cent; zero profit leaves no fee line; apex and non-distributing pay none; a simulation posts nothing; blinds red.
 
 ## P5.17 — The Quran platform's four areas, each to a driven slice before the next
@@ -650,7 +650,7 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
 - **Closes when:** ACCEPT: 'each clause that is built has a row in the coverage register naming the test that drives its journey, a guard and a blind driven red; no answer anywhere carries a score, a rank, a count of mistakes or a synthesised reading of the Arabic; every audio or data source in use has a register row whose terms permit the use.' Fixed boundaries (not work): recitation is never scored, nothing appears to correct a live recitation, the Arabic is fetched never generated, no learner is ranked, a model-written explanation waits for a named scholar.
 - **Delivered by:** build
 - **Size:** 11–18 rounds. three open rows about 3-5 (one Owner-gated); pre-sign-in clause gaps (hear-yourself and pause-tap, scheduler and layout, accessibility, coverage rows) about 3-4; teaching about 3-5 and competitions about 2-4 after sign-in; competition detail is unsized until a real marking scheme is read
-- **Open rows:** count: 3; ids: FU-1064; FU-1066; FU-1067; need owner or owner machine: FU-1067; FU-1066; basis: FU-1067 needs recordings the Owner supplies or approves, speech models downloaded (his 2026-11-06 ruling 'download no model candidate for now' stands against it unless he says otherwise) and his ruling on the numbers; FU-1066's letters are drafted by a round and SENT by the Owner
+- **Open rows:** count: 3; ids: FU-1064; FU-1066; FU-1067; need owner or owner machine: FU-1067; FU-1066; basis: FU-1067 needs recordings the Owner supplies or approves, speech models downloaded (their 2026-11-06 ruling 'download no model candidate for now' stands against it unless they say otherwise) and their ruling on the numbers; FU-1066's letters are drafted by a round and SENT by the Owner
 - **Built now:**
   - Clause 1 (most): portion plan in three tracks by ayah range, page (1-604, the fifteen-line Madinah page) or juz with no default portions; hidden-verse practice sending only what is shown; next word by position; similar verses computed by exact shared wording (agentic_core/religious_domain/memorization/practice.py; routes /api/v1/qep/hifz/practice, /next, /similar, /portion, /portions in agentic_core/religious_domain/api.py l.984-1105; apps/workstation-superapp/src/components/HifzPractice.tsx; coverage rows qep-portion-plan, qep-hidden-verse, qep-similar-verses = journey (test_w684_* l.62606-62721))
   - Clause 2 (listen slice): a named reciter's audio fetched per request from the Quran Foundation, never stored, credentials server-side; the words light as one verse plays (agentic_core/religious_domain/quran_foundation.py; api.py /recitation/source, /reciters, /audio l.637-680; QEPStudio.tsx startListening l.133-170; test_w704 (l.64697), test_w717 (l.65384))
@@ -794,6 +794,6 @@ recorded here as read, not verified. Sizes are theirs, each with its basis.
   - before sign in: build, guard and calibrate the instrument
   - after sign in: the run (because Phase 5 cannot finish before sign-in)
 - **Only the Owner can:**
-  - his machine with the local model for the second configuration; the sign-in switch, transitively; possibly a word on the agent budget an uncapped run needs
+  - the Owner's machine with the local model for the second configuration; the sign-in switch, transitively; possibly a word on the agent budget an uncapped run needs
 - **First round:** The partitioner and its guard: scripts/audit_census_partition.py reads audit_surface_census.py's JSON and writes slices (routes by mounted router module, pages by folder) with a declared overlap list, refusing an empty census; a test feeds a small census and plants a dropped surface, a surface in two slices with no stated overlap, an empty slice and a surface not in the census - each red with its own message - and the real tree's partition passes (properties 1, 2 and the empty half of 4).
 
