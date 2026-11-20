@@ -192,6 +192,20 @@ export const LawHub: React.FC = () => {
                   {Array.isArray(r?.urgent) && r.urgent.length > 0 && <div data-testid="law-research-urgent"><UrgentRoutes routes={r.urgent} /></div>}
                   {/* W1167 (P5.11 clause 7) - a subject that is regulated advice: its row, who regulates it, the pages read */}
                   {r?.boundary ? <div data-testid="law-research-boundary"><RegulatedBoundary b={r.boundary} /></div> : null}
+                  {/* W1170 (P5.11 clause 6) - each Act the answer shows, with the source it resolves against; one
+                      that resolves against none is withheld from the text, and said here only by why */}
+                  {(r?.authorities?.shown?.length || r?.authorities?.withheld?.length) ? (
+                    <div data-testid="law-research-authorities" className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                      <p className="text-[10px] font-bold text-slate-300">Acts named in this answer</p>
+                      <ul className="space-y-0.5">
+                        {(r.authorities.shown ?? []).map((a: any) => (
+                          <li key={a.name} data-testid="law-research-authority" className="text-[10px] text-slate-300">
+                            {a.name}: {a.basis}{a.checked ? `, ${a.checked}` : ''}.</li>))}
+                        {(r.authorities.withheld ?? []).map((w: any) => (
+                          <li key={w.basis} data-testid="law-research-authority-withheld" className="text-[10px] text-amber-300">
+                            An Act withheld from the answer{w.times > 1 ? ` (named ${w.times} times)` : ''}: {w.basis}.</li>))}
+                      </ul>
+                    </div>) : null}
                   {Array.isArray(r?.routed_to_people) && r.routed_to_people.length > 0 ? (
                   /* W874 (FU-1082), W1167 - a question about the person's own case, or on a subject that is
                      regulated advice, is routed to people: who they are */

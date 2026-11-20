@@ -26666,6 +26666,29 @@
       "note": "",
       "slot_source": "P5.12's boundary: nothing a person types is stored before authentication",
       "tier": 2
+    },
+    {
+      "id": "FU-1814",
+      "title": "A Law answer showed any Act its text named, resolved against nothing: the research, analysis and drafting answers passed a model's citations through as written",
+      "why": "Measured in W1170 against P5.11 clause 6: before a model is switched on, no named authority is shown unless it resolves against a held source. Only the clerk resolved a name, and only in the drafts it assembles.",
+      "source": "W1170 (the three composing Law routes read against P5.11 clause 6)",
+      "found": "2026-11-20",
+      "files": [
+        "agentic_core/legal/authorities.py",
+        "agentic_core/api/law.py",
+        "apps/workstation-superapp/src/pages/domains/LawHub.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P5.11",
+      "status": "done",
+      "closed_by": "W1170",
+      "note": "",
+      "slot_source": "P5.11 clause 6: no named authority is shown unless it resolves",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1170: agentic_core/legal/authorities.py resolves every Act a text names - by the register of sources' own pattern for a statute's name - against the register (a row naming it, read at its publisher and current, said with the day it was read) or the employment-law corpus the clerk holds. One that resolves against neither, or that the register holds as replaced, withdrawn or not read, is withheld from the text every time it appears; the answer says why and how often, and never its name. The research, analysis and drafting routes screen their text before they return it, whoever composed it. The Law page's research answer lists the Acts shown with their sources and those withheld by why. A model is stood in for in test_w1170, which drives it."
     }
   ],
   "routes": [

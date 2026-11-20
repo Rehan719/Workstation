@@ -95978,3 +95978,83 @@ def test_w1169_p511_the_law_forms_keep_nothing_typed_in_the_browser_before_sign_
     assert len(done) == 1 and (done[0]["status"], done[0]["slot"], done[0]["because"]) == ("done", "P5.11", "built"), done
     left = [r for r in rows if r.get("title", "").startswith("The Education and Care forms keep what a person typed")]
     assert len(left) == 1 and (left[0]["status"], left[0]["slot"]) == ("open", "P5.12"), left
+
+
+def test_w1170_p511_no_named_act_is_shown_in_a_law_answer_unless_it_resolves_against_a_held_source(client, monkeypatch):
+    """P5.11 clause 6 (W1170): "before a model is switched on no named authority is shown unless it resolves against a
+    held source." Before this round the research, analysis and drafting answers showed whatever Act their text named;
+    only the clerk resolved a name, in the drafts it assembles. Held here, with a model stood in for:
+    1. an Act the register holds as read and current is shown, with its source and the day it was read; one the
+       register holds as not read, and one nothing holds, are withheld from the text every time they appear, and the
+       answer says why and how often, and never names them - not in the text, not in the list, not anywhere in what
+       the route returns;
+    2. the analysis and the drafting routes screen their text the same way, whoever composed it;
+    3. a text that names no Act is unchanged and says so; a register that cannot be read withholds every Act the
+       corpus does not hold;
+    4. the module names no Act of its own, and the Law page draws what was shown and what was withheld;
+    5. the row."""
+    import datetime as _dt
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.api import law as _law
+    from agentic_core.legal import authorities as _au
+    from agentic_core.legal import time_limits as _tl
+    root = Path(__file__).resolve().parents[1]
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2026, 11, 20))
+    MADE_UP = "Imaginary Tenancy Remedies Act 2031"          # no register row and no corpus line names it
+    NOT_READ = "Care Act 2014"                                # the register names it and holds no reading of it
+    HELD = "Employment Rights Act 1996"                       # the register holds it, read at its publisher
+    text = (f"## Relevant Law\nThe {HELD} applies. The {MADE_UP} would also apply, and so would the {NOT_READ}.\n"
+            f"## Conclusion\nUnder the {MADE_UP} the claim may be stronger.")
+
+    async def _model(prompt, agent, **kw):                    # a model stood in for: it names three Acts
+        return text, {"served_by": "local", "is_external": False}
+    monkeypatch.setattr(_law, "ai_text", _model)
+
+    #  1. the research answer
+    a = client.post("/api/v1/law/research", json={"question": "what does the law say about a fair dismissal?"}).json()
+    assert a["method"] == "IRAC", a.get("method")
+    out, au = a["analysis"], a["authorities"]
+    assert HELD in out and MADE_UP not in out and NOT_READ not in out, out
+    assert out.count(_au.WITHHELD) == 3, out
+    assert [s["name"] for s in au["shown"]] == [HELD] and au["shown"][0]["held_as"] == HELD
+    assert au["shown"][0]["by"] == "register" and au["shown"][0]["checked"] == "read on 20 November 2026"
+    assert sorted((w["times"], w["basis"]) for w in au["withheld"]) == sorted([
+        (2, "no row of the register of sources names it, and the corpus the clerk holds does not name it"),
+        (1, "the register of sources names it and holds no reading of it at its publisher")]), au["withheld"]
+    blob = json.dumps(a)
+    assert MADE_UP not in blob and NOT_READ not in blob, "a withheld Act's name is in what the route returned"
+    assert au["basis"] == "1 of 3 Act(s) named resolve against a source this platform holds; 2 withheld from the text"
+
+    #  2. the analysis and the drafting routes
+    an = client.post("/api/v1/law/analyse", json={"document_text": "A clause on notice.", "document_type": "contract"}).json()
+    assert MADE_UP not in json.dumps(an) and HELD in an["analysis"] and an["authorities"]["withheld"], an.get("authorities")
+    dr = client.post("/api/v1/law/generate", json={"template_id": "nda", "parties": {"party_a": "Alpha Ltd"}}).json()
+    assert MADE_UP not in json.dumps(dr) and dr["authorities"]["shown"][0]["held_as"] == HELD, dr.get("authorities")
+
+    #  3. no Act; and a register that cannot be read
+    plain, none = _au.screen("Nothing here names a statute.")
+    assert plain == "Nothing here names a statute." and none == {"shown": [], "withheld": [], "basis": "no Act is named in this answer"}
+    _real = _tl._register
+    monkeypatch.setattr(_tl, "_register", lambda: None)
+    blind_out, blind = _au.screen(f"The {MADE_UP} applies.")
+    monkeypatch.setattr(_tl, "_register", _real)
+    assert MADE_UP not in blind_out and blind["withheld"][0]["basis"].startswith("the register of sources could not be read")
+
+    #  4. the module names no Act of its own; the Law page draws both lists
+    pat = re.compile(r"(?:[A-Z][A-Za-z']+ )+Act (?:19|20)\d{2}")
+    mod = (root / "agentic_core/legal/authorities.py").read_text(encoding="utf-8")
+    assert not pat.findall(mod), pat.findall(mod)
+    assert _au.ACT.pattern in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["patterns"]
+    law = (root / "apps/workstation-superapp/src/pages/domains/LawHub.tsx").read_text(encoding="utf-8")
+    for line in ('data-testid="law-research-authorities"', 'data-testid="law-research-authority"',
+                 'data-testid="law-research-authority-withheld"', "An Act withheld from the answer"):
+        assert line in law, line
+    assert law.index('data-testid="law-research-boundary"') < law.index('data-testid="law-research-authorities"') \
+        < law.index('data-testid="law-routed-to-people"')
+
+    #  5. the row
+    fu = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+          if r.get("title", "").startswith("A Law answer showed any Act its text named")]
+    assert len(fu) == 1 and (fu[0]["status"], fu[0]["slot"], fu[0]["because"]) == ("done", "P5.11", "built"), fu

@@ -213,6 +213,9 @@ async def analyse_document(req: AnalyseRequest):
     analysis, provenance = await ai_text(prompt, "law_analyst", realm=req.realm,
         user_text=person_said(req.analysis_focus),
         material=req.document_text, material_label="DOCUMENT", material_limit=DOCUMENT_LIMIT)
+    #  W1170 (P5.11 clause 6) - each Act the text names is resolved against a held source; one that is not is withheld
+    from agentic_core.legal import authorities as _au1170
+    analysis, _named1170 = _au1170.screen(analysis)
     _mat = (provenance or {}).get("material") or {}
     if _mat and not _mat.get("read_whole"):
         #  said in the TEXT, so it travels with a copy, a download and a saved version
@@ -227,6 +230,7 @@ async def analyse_document(req: AnalyseRequest):
         "jurisdiction": req.jurisdiction,
         "analysis_focus": req.analysis_focus,
         "analysis": analysis,
+        "authorities": _named1170,                       # W1170
         "document_read": {k: _mat.get(k) for k in ("chars", "read_chars", "read_whole", "basis")} if _mat else None,
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -328,6 +332,9 @@ async def legal_research(req: ResearchRequest):
 
     analysis, provenance = await ai_text(prompt, "law_researcher", realm=req.realm,
         user_text=person_said(req.question))
+    #  W1170 (P5.11 clause 6) - each Act the text names is resolved against a held source; one that is not is withheld
+    from agentic_core.legal import authorities as _au1170
+    analysis, _named1170 = _au1170.screen(analysis)
 
     return {
         #  W1165 - the urgent routes first, though the screen recognised nothing: nothing recognised clears nothing
@@ -338,6 +345,7 @@ async def legal_research(req: ResearchRequest):
         "area_of_law": req.area_of_law,
         "analysis": analysis,
         "method": "IRAC",
+        "authorities": _named1170,                       # W1170 - what the text names, and what was withheld
         #  W874 (FU-1082) - the screen did not recognise a question about the person's own case; that clears nothing
         "own_case_screen": {"recognised": False, "coverage": _cov874,
                             "basis": "not recognised as a question about the person's own case, which is not a clearance"},
@@ -416,6 +424,9 @@ async def generate_document(req: GenerateRequest):
     #  object is never stringified into words nobody wrote. The keys are form labels and are not passed.
     document, provenance = await ai_text(prompt, "law_generator", realm=req.realm,
         user_text=person_said(req.custom_instructions, list((req.parties or {}).values())))
+    #  W1170 (P5.11 clause 6) - each Act the text names is resolved against a held source; one that is not is withheld
+    from agentic_core.legal import authorities as _au1170
+    document, _named1170 = _au1170.screen(document)
 
     template_name = next(
         (t["name"] for t in _TEMPLATES if t["id"] == req.template_id),
@@ -428,6 +439,7 @@ async def generate_document(req: GenerateRequest):
         "template_name": template_name,
         "jurisdiction": req.jurisdiction,
         "document": document,
+        "authorities": _named1170,                       # W1170
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": disclaimer_for(provenance, _DRAFT_CLAIM, _DRAFT_SAFETY),
