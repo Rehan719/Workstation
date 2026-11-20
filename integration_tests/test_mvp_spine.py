@@ -22900,9 +22900,13 @@ def test_w499_the_plan_projects_only_the_work_a_round_closes(client):
     #  one made-up open row on P4.4, made from FU-284's own fields, so it never depends on a switch row being open.
     _stand_in = dict(next(r for r in _reg["items"] if r["id"] == "FU-284"), id="FU-99147", status="open",
                      closed_by=None, title="made-up for test_w499: an open row on a switch item")
+    #  W1156: a live row can ride a P4 item as well (FU-1294 rides P4.5, found by the release's rule), so the
+    #  made-up row is held to add P4.4, and nothing else, to the items the live register already gives the Owner
+    _live_switch = [x["slot"] for x in _schedule(_reg, _text)["schedule"] if x.get("delivered_by") == "owner-switch"]
     _sc = _schedule(dict(_reg, items=list(_reg["items"]) + [_stand_in]), _text)
     _switch_slots = [x["slot"] for x in _sc["schedule"] if x.get("delivered_by") == "owner-switch"]
-    assert _switch_slots == ["P4.4"], ("the made-up switch row is not scheduled as the Owner's", _switch_slots)
+    assert "P4.4" in _switch_slots and sorted(_switch_slots) == sorted(set(_live_switch) | {"P4.4"}), (
+        "the made-up switch row is not scheduled as the Owner's, or it moved another item", _switch_slots, _live_switch)
     assert all(x.startswith("P4.") for x in _switch_slots), _switch_slots
     assert all(x.get("delivered_by") == "build" for x in _sc["schedule"]
                if not x["slot"].startswith("P4.")), [x["slot"] for x in _sc["schedule"]]
@@ -93919,3 +93923,59 @@ def test_w1155_p53_and_p516_are_done_and_each_names_the_guards_that_hold_its_acc
         src = (root / "agentic_core" / "api" / f"{mod}.py").read_text(encoding="utf-8")
         hit = re.search(r"\b(?:price[sd]?|pricing|charge[sd]?|charging|fees?)\b", src, re.I)
         assert hit is None, (mod, "a Domain route names a price, a charge or a fee", src[max(0, hit.start() - 80):hit.end() + 40])
+
+
+def test_w1156_fu1060_the_sources_check_reads_every_backend_module_and_page_and_each_name_it_finds_is_a_row(tmp_path):
+    """FU-1060 part 1 (W1156), P5.10. The sources check read five places (agentic_core/api, care and legal, the domain
+    pages and lib/), so a standard named anywhere else in the backend, or on any other page, needed no row. Widened to
+    every .py and .json under agentic_core/ and every .ts and .tsx under the app's src/, it reads 730 files where it
+    read 139, and finds 110 names where it found 75. Every one but one was already a row. The one was ISO/IEC
+    23053:2025, named by a class whose audit report stated a compliance status of VALIDATED as a constant, for a
+    standard no round had read; nothing called the report, and the genome registry used the class only to check that a
+    block carries four fields. The class is archived, and the registry's check says what it checks; so do the eight
+    copies of the registry the product SDKs carry, which imported the class too. Held:
+    - the check's places are the whole backend and the whole frontend source, and it reads at least 700 files;
+    - every name it finds there is a row's, by the check the suite and the sources route both run;
+    - no module under agentic_core/ or products/ names that standard, and none states a compliance status of
+      VALIDATED as a constant;
+    - the class is in the archive, and the registry appends a block that carries its ledger's four fields;
+    - the ledger's place outside the data root, found in reading the registry, is a registered row, open."""
+    import json
+    import pathlib
+    import re
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    sys.path.insert(0, str(root / "scripts"))
+    import sources_check as _sc
+    d = _sc.load()
+    assert d["scan"] == [{"dir": "agentic_core", "ext": [".py", ".json"]},
+                         {"dir": "apps/workstation-superapp/src", "ext": [".ts", ".tsx"]}], d["scan"]
+    res = _sc.check(d)
+    assert res["files_examined"] >= 700, ("the check reads too little of the tree to mean anything", res["files_examined"])
+    assert res["names_with_no_row"] == [], ("a named authority has no row", res["names_with_no_row"][:5])
+    assert res["row_problems"] == [] and res["readers_of_a_replaced_source"] == [], (res["row_problems"][:3],
+                                                                                     res["readers_of_a_replaced_source"][:3])
+    hits = []
+    #  the platform's modules and the product SDKs' copies of them: eight copies of the registry under products/
+    #  imported the class, and a scan of agentic_core/ alone did not read them
+    for f in sorted([*(root / "agentic_core").rglob("*.py"), *(root / "products").rglob("*.py")]):
+        if "__pycache__" in f.parts:
+            continue
+        text = f.read_text(encoding="utf-8", errors="replace")
+        if re.search(r"ISO(?:/IEC)? ?23053", text):
+            hits.append(("names the unread standard", f.relative_to(root).as_posix()))
+        if re.search(r"[\"']compliance_status[\"']\s*:\s*[\"']VALIDATED[\"']", text):
+            hits.append(("states VALIDATED as a constant", f.relative_to(root).as_posix()))
+    assert hits == [], hits
+    assert (root / "_archive/agentic_core/compliance/iso_23053.py").exists()
+    assert not (root / "agentic_core/compliance/iso_23053.py").exists()
+    from agentic_core.genetic_immune import genomic_registry as _gr
+    ledger = tmp_path / "genome_ledger.json"
+    reg = _gr.GenomicRegistry(persistence_path=str(ledger))
+    assert reg.commit_mutation({"w1156": 1}, "w1156-proof") is True
+    blocks = json.loads(ledger.read_text(encoding="utf-8"))
+    assert len(blocks) == 1 and set(_gr._LEDGER_FIELDS) <= set(blocks[0]), blocks
+    rows = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+            if str(r.get("source", "")).startswith("W1156 ")]
+    assert len(rows) == 1 and rows[0]["status"] == "open" and rows[0]["slot"] == "P4.5", rows
+    assert "meta/genome_ledger.json" in rows[0]["why"] and "data root" in rows[0]["title"], rows[0]["title"]

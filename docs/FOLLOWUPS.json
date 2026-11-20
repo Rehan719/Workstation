@@ -26275,6 +26275,25 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the hook carries the avatar route's measured reason an image was not read and its note on a language the floor could not answer in, and the conversation panel says them, keeping its own sentence only for an answer that carries none; the measured reason says the perception tier's explanation once. The rendered test (five cases, against the route's answers for made-up messages) has nine vitest blinds; test_w1146 asks the route again and holds the hook, the panel and the reason (three blinds)."
+    },
+    {
+      "id": "FU-1294",
+      "title": "The genome registry writes its ledger under the working directory, not under the data root, so a release would not keep it",
+      "why": "Found in W1156 while archiving the registry's ISO class. GenomicRegistry() keeps its ledger at meta/genome_ledger.json relative to the process's working directory, and _save() makes meta/ there first, outside its try: an entity's establishment and each applied mutation write to it (agentic_core/api/vsb.py). In the release image the working directory is the application's, not the records' volume, so the ledger would be lost at the next release, or not written at all where that directory cannot be written. W1138 moved the logs under the data root by the same rule. Next: the ledger's place follows the data root (agentic_core.config.data_path), with the release drill run again on an image that establishes an entity.",
+      "source": "W1156 (the sources check widened; the registry read)",
+      "found": "2026-11-20",
+      "files": [
+        "agentic_core/genetic_immune/genomic_registry.py",
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.5",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "W1138's rule for the release (P4.5): what the platform writes lives under the data root",
+      "tier": 2
     }
   ],
   "routes": [

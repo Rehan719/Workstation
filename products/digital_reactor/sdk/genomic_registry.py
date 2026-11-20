@@ -4,7 +4,11 @@ import json
 import hashlib
 import time
 import os
-from agentic_core.compliance.iso_23053 import ISO23053Compliance
+
+#  W1156 - a block is appended when it carries the four fields this ledger writes into it. That is a check of
+#  the ledger's own shape and of nothing else: no standard is read or met here. A 'compliance' class stood
+#  here, whose report stated VALIDATED as a constant for a standard nobody read; it is archived.
+_LEDGER_FIELDS = ("timestamp", "genotype", "previous_hash", "zkp_proof")
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +22,6 @@ class GenomicRegistry:
         self.persistence_path = persistence_path
         self.blocks = []
         self.current_genome = {"traits": {}}
-        self.compliance = ISO23053Compliance()
         self._load()
 
     def _load(self):
@@ -57,7 +60,7 @@ class GenomicRegistry:
             "zkp_proof": zkp_proof
         }
 
-        if self.compliance.verify_block_integrity(block):
+        if all(field in block for field in _LEDGER_FIELDS):
             self.blocks.append(block)
             self._save()
             return True

@@ -1,36 +1,19 @@
 {
- "about": "Every authority this platform NAMES, as a row: the publisher's page, the date it was read, who read it, its status and what replaced it. A row is entered by whoever read the page, in a round. Nothing fetches a page on a timer; a row is current for `review_days` after it was read and is shown as not recently checked after that. A name the code uses with no row here fails scripts/sources_check.py. W948 (FU-1066): a row that names `hosts` says what its terms, as read, `permits` this platform to do; an empty `permits` means NOT TO BE USED, and the check fails if any of its hosts appears in the code.",
+ "about": "Every authority this platform NAMES, as a row: the publisher's page, the date it was read, who read it, its status and what replaced it. A row is entered by whoever read the page, in a round. Nothing fetches a page on a timer; a row is current for `review_days` after it was read and is shown as not recently checked after that. A name the code uses with no row here fails scripts/sources_check.py. W948 (FU-1066): a row that names `hosts` says what its terms, as read, `permits` this platform to do; an empty `permits` means NOT TO BE USED, and the check fails if any of its hosts appears in the code. W1156 (FU-1060): the check reads every .py and .json file under agentic_core/ and every .ts and .tsx file under the app's src/, so a name anywhere in the backend or on any page needs its row.",
  "review_days": 90,
  "scan": [
   {
-   "dir": "agentic_core/api",
-   "ext": [
-    ".py"
-   ]
-  },
-  {
-   "dir": "agentic_core/care",
-   "ext": [
-    ".py"
-   ]
-  },
-  {
-   "dir": "agentic_core/legal",
+   "dir": "agentic_core",
    "ext": [
     ".py",
     ".json"
    ]
   },
   {
-   "dir": "apps/workstation-superapp/src/pages/domains",
+   "dir": "apps/workstation-superapp/src",
    "ext": [
+    ".ts",
     ".tsx"
-   ]
-  },
-  {
-   "dir": "apps/workstation-superapp/src/lib",
-   "ext": [
-    ".ts"
    ]
   }
  ],
