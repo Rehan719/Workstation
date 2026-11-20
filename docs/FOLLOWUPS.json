@@ -23112,11 +23112,14 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1121",
       "note": "",
       "tier": 2,
-      "slot_source": "Owner ruling 2026-11-06 (W754): accepted as recommended: v15's paths replaced in W754; the v16 note remains, for the session that located it"
+      "slot_source": "Owner ruling 2026-11-06 (W754): accepted as recommended: v15's paths replaced in W754; the v16 note remains, for the session that located it",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1121, on the Owner's go-ahead of 2026-11-19 to open these two files and only these: the five paths into the audit's data folder on the Owner's Windows machine in edition 15's record, and that folder and a folder in his home folder in edition 16's, now say what kind of place each was. Every finding, verdict and count is unchanged, and git history keeps the earlier text, as ruled on 2026-10-14. test_w1121 holds that neither record has a drive path left, with two blinds."
     },
     {
       "id": "FU-1152",

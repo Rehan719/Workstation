@@ -91583,3 +91583,24 @@ def test_w1120_the_owners_rulings_of_2026_11_19_are_recorded_where_the_work_read
         assert c["source"].startswith("W1120 ") and c["slot"] == slot and c["owner_gated"] is False, (fid, c["id"], c["slot"])
         assert c["status"] == "open" or (c["status"] == "done" and c.get("closed_by") != "W1120"), (fid, c["id"], c["status"])
     assert _op.REAL_MONEY_ENABLED is False, "the real-money switch is on in the tree; it stays off until people review it"
+
+
+def test_w1121_fu1151_the_two_audit_run_records_say_what_kind_of_place_each_was_and_name_none():
+    """FU-1151 (W1121). Two committed audit run records carried text of a private kind: edition 15's named a folder on
+    the Owner's Windows machine in five places, and edition 16's named that folder once and a folder in his home folder
+    once. The Owner allowed the two files to be opened on 2026-11-19. Held here:
+    - neither record names a place on a machine by its path: no drive path is left in either;
+    - each says what kind of place it was instead, as many times as it named one;
+    - both are still whole records: they parse, and edition 15's is still the one the coverage script reads."""
+    import json
+    import re
+    from pathlib import Path
+    runs = Path(__file__).resolve().parents[1] / "docs" / "fidelity_runs"
+    audit = "[the audit's data folder on the Owner's Windows machine]"
+    home = "[a data folder in the Owner's home folder on Windows]"
+    for name, want in (("ledger_v15_W654_ab829862.json", {audit: 5, home: 0}),
+                       ("ledger_v16_W665_ca081db0.json", {audit: 1, home: 1})):
+        raw = (runs / name).read_text(encoding="utf-8")
+        assert not re.search(r"\b[A-Za-z]:(?:/|\\\\)", raw), (name, "a record names a place on a machine by its path")
+        assert {k: raw.count(k) for k in want} == want, (name, {k: raw.count(k) for k in want})
+        assert json.loads(raw), name

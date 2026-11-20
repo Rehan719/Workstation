@@ -23,12 +23,12 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
 4. Check for an unfinished round: if `git status` shows uncommitted changes, they are the last round's
    work in progress. Read `git diff`, finish it (its guard tests and blinds are in
    integration_tests/test_mvp_spine.py), run the full suite once, then commit and push.
-5. First, the two rows only this machine can do (both slotted OWNER and listed in the plan's open decisions):
+5. First, the row only this machine can do (slotted OWNER and listed in the plan's open decisions):
    - FU-1046: drive the section-11 screen on the text kept in data/_moved_books_20261012-155706 and find why
      five change records of 2026-09-01 failed; record the reason.
-   - FU-1151: the two committed audit records under docs/fidelity_runs/ that carry text of a private kind.
-     Recommended: edit each note to say only what kind of place or matter it was; leave git history as ruled
-     on 2026-10-14.
+   (The two committed audit records under docs/fidelity_runs/ that carried text of a private kind were edited
+   in the cloud session on 2026-11-20, as recommended and with your go-ahead; git history keeps the earlier
+   text, as ruled on 2026-10-14.)
 6. Then continue the plan: python scripts/followups.py priority | head -30 lists the open rows. No capped
    fidelity re-run is held before the final audit (P5.22): the Owner allowed one mid-way audit (W675) and ruled
    that the next is the final, uncapped one, after the fifth phase and the sign-in readiness round.
@@ -52,5 +52,5 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
   recommended) and 2026-11-10 (decisions go with the recommendation; PR #461 merged).
 - **Still yours:**
   - Merge PR #462 when you are ready.
-  - FU-1046 and FU-1151 (above).
+  - FU-1046 (above).
   - The P4 switches, in the order you ruled on 2026-10-12: sign-in on your own machine first, real money last.
