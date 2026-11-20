@@ -92784,3 +92784,47 @@ def test_w1138_fu1287_the_logs_folder_the_platform_writes_follows_the_data_root(
     assert "run again in W1138 on an image with FU-1287's change" in flat
     brief = " ".join(read("docs/business/PRODUCTION_HARDENING_BRIEF.md").split())
     assert "row FU-1287" not in brief and "the drill found nothing written outside the data disk and `/tmp` (W1138" in brief
+
+
+def test_w1139_fu1281_the_cockpits_latest_cycle_says_the_platform_fee_and_what_the_split_was_over(client):
+    """FU-1281 (W1139), P5.16. W1125 drew the platform's fee and what the entity's split was over on the VSB Economy
+    page. The cockpit's latest cycle named the intake, the costs, the reserve and the distributable profit, and not the
+    fee taken first, so its stages read short of the profit by the fee; its rendered tests ran no cycle that succeeded.
+    The cockpit now draws the fee and what the split was over beside the distributable profit, with the fee's own
+    sentence, and VSBCockpit.fee.test.tsx runs a cycle from the cockpit's button against the routes' own answers. Held
+    here:
+    - the fixture that rendered test reads is what the routes answer now, as the cockpit asks them: a made-up entity
+      established through Genesis, the only one on the list the cockpit opens with, runs a cycle on the 10,000 WST
+      typed into the cockpit's field; the cycle posts a quarter of its 8,000 profit and the split is over the 6,000
+      that remains; each figure the card draws, and every field of the fee, compared with a live answer;
+    - the cockpit draws the fee, what the split was over and the fee's sentence where the rendered test reads them."""
+    import json
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    page = root / "apps/workstation-superapp/src/pages/enterprise"
+    fx = json.loads((page / "VSBCockpit.fee.fixture.json").read_text(encoding="utf-8"))
+    vid0 = fx["vsb_id"]
+    assert [e["vsb_id"] for e in fx["answers"]["/api/v1/vsb"]["body"]["entities"]] == [vid0]
+    assert fx["cycle"]["request"] == {"vsb_id": vid0, "revenue": 10000} and fx["cycle"]["status"] == 200
+
+    est = client.post("/api/v1/genesis/establish", json={"problem": "w1139 a made-up repair cafe for a market town's kettles",
+                                                         "name": "W1139 Repair Cafe", "ship_output": False})
+    assert est.status_code == 200, est.text[:300]
+    vid = est.json()["vsb_id"]
+    r = client.post("/api/v1/economy/cycle", json={**fx["cycle"]["request"], "vsb_id": vid})
+    assert r.status_code == 200, r.text[:300]
+    live, cap = r.json()["cycle"], fx["cycle"]["body"]["cycle"]
+    assert live["platform_fee"] == cap["platform_fee"], (live["platform_fee"], cap["platform_fee"])
+    for k in ("intake_revenue", "operating_costs", "homeostasis_reserves", "distributable_profit", "split_base_wst"):
+        assert live[k] == cap[k], (k, live[k], cap[k])
+    assert (cap["distributable_profit"], cap["platform_fee"]["fee_wst"], cap["split_base_wst"],
+            cap["platform_fee"]["posted"]) == (8000.0, 2000.0, 6000.0, True), cap["platform_fee"]
+
+    src = (page / "VSBCockpit.tsx").read_text(encoding="utf-8")
+    for drawn in ("['Distributable profit', lastCycle.distributable_profit], ['Platform fee', lastCycle.platform_fee?.fee_wst], "
+                  "['Split over', lastCycle.split_base_wst]", 'data-testid="cockpit-platform-fee"',
+                  "Platform fee: {String(lastCycle.platform_fee.basis)}."):
+        assert drawn in src, ("the cockpit does not draw it", drawn)
+    test = (page / "VSBCockpit.fee.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './VSBCockpit.fee.fixture.json';" in test and test.count("it(") == 1
+    assert "'Revenue for this economic cycle in virtual WST'" in test and "expect(asked).toEqual([cycle.request]);" in test

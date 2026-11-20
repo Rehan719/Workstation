@@ -26026,11 +26026,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1139",
       "note": "",
       "slot_source": "P5.16 clause 3 (FU-1057): the fee on the entity's page",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1139: the cockpit's latest cycle shows the platform fee taken first and what the entity's split was over beside the distributable profit, with the fee's own sentence, as the VSB Economy page says them (W1125). Its rendered test runs a cycle from the cockpit's own button against the routes' own answers on a fresh store: a quarter of the 8,000 WST profit, 2,000, posted, and the split over the 6,000 that remains. Virtual WST."
     },
     {
       "id": "FU-1282",
