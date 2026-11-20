@@ -26410,6 +26410,28 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Measured on the Owner's machine: the BadStatusLine test_w919 raised was its own request line read back. A loopback connect from a port to the same port, with nobody listening, connects to itself and reads back what it sent, and Windows gives each new connect the next port of the range port 0 is chosen from. The guard had chosen the port by binding port 0, reading it and closing the socket, then polled /health for the 45 seconds the backend takes to start here, and nobody listened on the port in that window. Three guards chose a port that way (test_w919, test_w920, test_w938). Each now starts its server on port 0 through _serving_on_its_own_port in integration_tests/test_mvp_spine.py, which waits for the line where the server names the port it listens on before anything is sent, so the listener holds the port from the moment it exists. Guard test_w1133o_fu1802 drives the helper with a real server, with one that ends without naming a port and one that never names one, and holds the test files to it on a planted fault first; six blinds red."
+    },
+    {
+      "id": "FU-1803",
+      "title": "Each run of the suite removed every other worktree of the repository it ran in, forced, with whatever work each held",
+      "why": "Found in W1158: a dry run's worktree vanished while W1156's suite ran. test_w571 called scripts/refutation_gate.py's cleanup() on the repository the suite runs in, and cleanup() removed every secondary worktree with git worktree remove --force. So on any machine, the Owner's included, each run of the suite removed every other worktree of that repository: changes no commit held, and commits no branch held, went with them.",
+      "source": "W1159 (the refutation gate's cleanup read)",
+      "found": "2026-11-20",
+      "files": [
+        "scripts/refutation_gate.py",
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "done",
+      "closed_by": "W1159",
+      "note": "",
+      "slot_source": "the refutation gate's rows ride P5.10 (FU-1143, W871)",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1159: cleanup() takes the repository to clean and, unless it is told to force, keeps a worktree with changes no commit holds or a commit no branch holds, naming it with what it holds; the command line forces only with --force, which the round rhythm names for the round's own worktrees after a refutation. test_w571 calls it no more; test_w1159 drives it on repositories it makes and holds that the suite leaves the live repository's worktrees as they were."
     }
   ],
   "routes": [

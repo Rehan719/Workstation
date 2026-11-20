@@ -37475,13 +37475,9 @@ def test_w571_a_starved_refutation_cannot_read_as_a_complete_one(client):
     assert "main, rest = wts[0], wts[1:]" in _src571, (
         "cleanup no longer separates the main worktree from the rest by position")
     assert "for w in rest:" in _src571, "cleanup iterates something other than the secondary worktrees"
-    _cl = _rg571.cleanup()
-    assert isinstance(_cl.get("removed"), list) and isinstance(_cl.get("failed"), list), _cl
-    #  it is honest when there is nothing to do, rather than claiming a recovery
-    assert "never touched" in _cl["basis"] or "nothing is claimed" in _cl["basis"], _cl["basis"][:160]
-    #  AND THIS REPOSITORY'S OWN MAIN WORKTREE SURVIVED THE CALL
-    assert (_root / ".git").exists() and (_root / "scripts" / "refutation_gate.py").exists(), (
-        "cleanup damaged the working tree it was run in")
+    #  W1159 - cleanup is driven by test_w1159, on repositories made for it. Called here, on the repository the
+    #  suite runs in, it removed every other worktree of that repository, forced, with whatever work each held.
+    assert "def cleanup(keep_main: bool = True, repo: str | None = None, force: bool = False)" in _src571
 
     # ── L7. THE ROUND RHYTHM NAMES THE GATE, or nobody runs it ──────────────────────────────────
     #  FU-259's fix (a) is "the round rhythm must CHECK free space before launching a refutation and
@@ -94553,3 +94549,79 @@ def test_w1158_fu1294_the_genome_ledger_and_the_evidence_graph_live_under_the_da
     shared = [r for r in rows.values()
               if r["title"].startswith("Each block of the genome ledger holds the genome as one dictionary")]
     assert len(shared) == 1 and shared[0]["status"] == "open" and shared[0]["source"].startswith("W1158"), shared
+
+
+def test_w1159_the_suite_never_removes_the_live_repositorys_worktrees_and_cleanup_keeps_work_unless_forced(tmp_path):
+    """W1159, P5.10. test_w571 called scripts/refutation_gate.py's cleanup() on the repository the suite runs in, and
+    cleanup() removed every secondary worktree with --force: each run of the suite, on any machine, removed every
+    other worktree of that repository with whatever work each held. Found in W1158, when a dry run's worktree
+    vanished under W1156's suite. Held here, on repositories this test makes:
+    - unforced, cleanup removes a worktree that holds nothing a branch does not, and keeps, naming what each holds,
+      one with changes no commit holds and one whose commit no branch holds; their files are as they were;
+    - forced, it removes all three; neither run touches the main worktree;
+    - the repository the suite runs in has the worktrees it had before this test, and nothing in the suite calls
+      cleanup on a repository it did not make;
+    - the round rhythm names the forced form for the round's own worktrees, and the row is closed by this round."""
+    import json
+    import pathlib
+    import re
+    import subprocess
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    sys.path.insert(0, str(root / "scripts"))
+    import refutation_gate as _rg
+    live = _rg._worktrees(str(root))
+    assert live and pathlib.Path(live[0]).resolve() == root.resolve(), live
+
+    def make(name):
+        repo = tmp_path / name
+        repo.mkdir()
+
+        def git(*a, cwd=None):
+            out = subprocess.run(["git", "-c", "user.name=w1159", "-c", "user.email=w1159@example.invalid", *a],
+                                 cwd=str(cwd or repo), capture_output=True, text=True, timeout=120)
+            assert out.returncode == 0, (a, out.stderr[-400:])
+        git("init", "-q")
+        (repo / "a.txt").write_text("a\n", encoding="utf-8")
+        git("add", "a.txt")
+        git("commit", "-q", "-m", "a")
+        trees = {k: tmp_path / f"{name}-{k}" for k in ("clean", "changes", "own-commit")}
+        for w in trees.values():
+            git("worktree", "add", "-q", "--detach", str(w))
+        (trees["changes"] / "a.txt").write_text("changed, and in no commit\n", encoding="utf-8")
+        (trees["own-commit"] / "b.txt").write_text("b\n", encoding="utf-8")
+        git("add", "b.txt", cwd=trees["own-commit"])
+        git("commit", "-q", "-m", "b", cwd=trees["own-commit"])
+        return repo, trees
+    res = lambda p: str(pathlib.Path(p).resolve())
+
+    #  unforced: the clean one removed, the two that hold work kept and named
+    repo, trees = make("unforced")
+    got = _rg.cleanup(repo=str(repo))
+    assert [res(w) for w in got["removed"]] == [res(trees["clean"])] and got["failed"] == [], got
+    assert sorted((res(k["worktree"]), k["holds"]) for k in got["kept"]) == sorted([
+        (res(trees["changes"]), "changes no commit holds"),
+        (res(trees["own-commit"]), "a commit no branch holds")]), got["kept"]
+    assert (trees["changes"] / "a.txt").read_text(encoding="utf-8") == "changed, and in no commit\n"
+    assert (trees["own-commit"] / "b.txt").exists() and not trees["clean"].exists()
+    assert (repo / "a.txt").exists() and "never touched" in got["basis"] and "2 kept" in got["basis"], got["basis"]
+
+    #  forced: all three removed, the main worktree as it was
+    repo, trees = make("forced")
+    got = _rg.cleanup(repo=str(repo), force=True)
+    assert sorted(res(w) for w in got["removed"]) == sorted(res(w) for w in trees.values()), got
+    assert got["kept"] == [] and got["forced"] is True and "removed, forced" in got["basis"], got
+    assert (repo / "a.txt").read_text(encoding="utf-8") == "a\n" and not any(w.exists() for w in trees.values())
+
+    #  the repository the suite runs in kept its worktrees, and no test calls cleanup on one it did not make
+    assert _rg._worktrees(str(root)) == live, "the suite changed the live repository's worktrees"
+    spine = pathlib.Path(__file__).read_text(encoding="utf-8")
+    calls = re.findall(r"(?:_rg\w*|refutation_gate)\.cleanup\(([^)]*)\)", spine)
+    assert calls and all(c.startswith("repo=") for c in calls), ("cleanup is called on a repository no test made", calls)
+
+    #  the rhythm names the forced form for the round's own worktrees, and the row is this round's
+    flat = " ".join((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8").split())
+    assert "`cleanup --force` the rest, the round's own worktrees after a refutation (W1159)" in flat
+    rows = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+            if str(r.get("source", "")).startswith("W1159 ")]
+    assert len(rows) == 1 and (rows[0]["status"], rows[0]["closed_by"], rows[0]["slot"]) == ("done", "W1159", "P5.10"), rows

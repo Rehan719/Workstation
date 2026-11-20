@@ -12,7 +12,8 @@ That is the defect class this whole programme removes, in the instrument used to
 THE ROW NAMED TWO FIXES AND BOTH ARE HERE:
   (a) CHECK free space before launching, and REMOVE the round's worktrees after. `before()` refuses when
       the disk cannot hold the agents asked for, using the MEASURED cost of a checkout rather than a
-      guess; `cleanup()` removes every secondary worktree and reports what it removed.
+      guess; `cleanup()` removes every secondary worktree that holds nothing a branch does not, and reports
+      what it removed and what it kept; forced, it removes the rest too (W1159).
   (b) A REFUTATION WHOSE AGENTS DIED MUST NOT READ AS A COMPLETED REFUTATION. `after()` reconciles the
       launched count against the finished count, and the findings against the verdicts, and REFUSES
       rather than warning. A finding list is only as complete as the agents that produced it.
@@ -24,7 +25,8 @@ of 40 and "the refutation found 13".
 Usage:
     python scripts/refutation_gate.py before --agents 45
     python scripts/refutation_gate.py after --result <the workflow result JSON>
-    python scripts/refutation_gate.py cleanup
+    python scripts/refutation_gate.py cleanup            # keeps a worktree that holds work, and names it
+    python scripts/refutation_gate.py cleanup --force    # the round's own worktrees, after a refutation
 """
 from __future__ import annotations
 
@@ -48,10 +50,11 @@ BYTES_PER_WORKTREE_BASIS = ("measured W569: `git ls-files` is 5,126 files totall
 HEADROOM_BYTES = 3 * 1024 * 1024 * 1024
 
 
-def _worktrees() -> List[str]:
-    """Every worktree path git knows about, main first. Empty if git cannot be read."""
+def _worktrees(repo: str | None = None) -> List[str]:
+    """Every worktree path git knows about, main first, of `repo` (the working directory's when None). Empty if
+    git cannot be read."""
     try:
-        out = subprocess.run(["git", "worktree", "list", "--porcelain"],
+        out = subprocess.run(["git", "worktree", "list", "--porcelain"], cwd=repo,
                              capture_output=True, text=True, encoding="utf-8",
                              errors="replace", timeout=60).stdout
     except (OSError, subprocess.SubprocessError):
@@ -252,36 +255,70 @@ def after(result: Any, findings_by_lens: Dict[str, int] | None = None) -> Dict[s
     }
 
 
-def cleanup(keep_main: bool = True) -> Dict[str, Any]:
-    """Remove every SECONDARY worktree and say which. The main worktree is never touched.
+def _holds(w: str) -> str | None:
+    """What removing worktree `w` would lose, or None when it holds nothing a branch does not. W1159."""
+    def git(*a):
+        return subprocess.run(["git", "-C", w, *a], capture_output=True, text=True, encoding="utf-8",
+                              errors="replace", timeout=120)
+    try:
+        st = git("status", "--porcelain")
+        if st.returncode != 0:
+            return "git could not read it"
+        if st.stdout.strip():
+            return "changes no commit holds"
+        head = git("rev-parse", "HEAD")
+        if head.returncode != 0:
+            return "git could not read it"
+        #  real branches only: `git branch --contains` names a detached HEAD as if it were one
+        on = git("for-each-ref", "--contains", head.stdout.strip(), "--format=%(refname)", "refs/heads", "refs/remotes")
+        if on.returncode != 0 or not on.stdout.strip():
+            return "a commit no branch holds"
+    except (OSError, subprocess.SubprocessError):
+        return "git could not read it"
+    return None
+
+
+def cleanup(keep_main: bool = True, repo: str | None = None, force: bool = False) -> Dict[str, Any]:
+    """Remove the SECONDARY worktrees that hold nothing a branch does not, and say which; with `force`, every
+    secondary worktree, with whatever it holds. The main worktree is never touched.
 
     The accumulation is the cause, not the symptom: 56 of these had built up because nothing removed
     them when a round finished. This is the "after" half of the row's fix (a).
+
+    W1159 - it removed every secondary worktree, forced, and test_w571 called it on the repository the suite runs
+    in, so each run of the suite, on any machine, removed every other worktree of that repository with whatever work
+    each held. `repo` is the repository to clean, the working directory's when None. Unless `force` is asked for, a
+    worktree with changes no commit holds, or whose commit no branch holds, is kept and named with what it holds.
     """
-    wts = _worktrees()
+    wts = _worktrees(repo)
     if not wts:
-        return {"removed": [], "failed": [],
+        return {"removed": [], "failed": [], "kept": [],
                 "basis": "git reported no worktrees, so nothing was removed and nothing is claimed"}
     main, rest = wts[0], wts[1:]
-    removed, failed = [], []
+    removed, failed, kept = [], [], []
     for w in rest:
+        held = None if force else _holds(w)
+        if held:
+            kept.append({"worktree": w, "holds": held})
+            continue
         try:
-            r = subprocess.run(["git", "worktree", "remove", "--force", w],
+            r = subprocess.run(["git", "worktree", "remove", *(["--force"] if force else []), w], cwd=repo,
                                capture_output=True, text=True, encoding="utf-8",
                                errors="replace", timeout=300)
             (removed if r.returncode == 0 else failed).append(w)
         except (OSError, subprocess.SubprocessError):
             failed.append(w)
     try:
-        subprocess.run(["git", "worktree", "prune"], capture_output=True, timeout=120)
+        subprocess.run(["git", "worktree", "prune"], cwd=repo, capture_output=True, timeout=120)
     except (OSError, subprocess.SubprocessError):
         pass
     return {
-        "removed": removed, "failed": failed, "main_kept": main if keep_main else None,
-        "basis": (f"{len(removed)} secondary worktree(s) removed, {len(failed)} could not be; the main "
-                  f"worktree {main} is never touched. Each one is about "
-                  f"{BYTES_PER_WORKTREE / 1e6:.0f} MB, so this recovered roughly "
-                  f"{len(removed) * BYTES_PER_WORKTREE / 1e9:.1f} GB"),
+        "removed": removed, "failed": failed, "kept": kept, "main_kept": main if keep_main else None,
+        "forced": force,
+        "basis": (f"{len(removed)} secondary worktree(s) removed{', forced' if force else ''}, {len(failed)} could "
+                  f"not be, and {len(kept)} kept because each holds work a branch does not; the main worktree "
+                  f"{main} is never touched. Each one is about {BYTES_PER_WORKTREE / 1e6:.0f} MB, so this "
+                  f"recovered roughly {len(removed) * BYTES_PER_WORKTREE / 1e9:.1f} GB"),
     }
 
 
@@ -294,7 +331,9 @@ def main() -> int:
     a.add_argument("--result", required=True, help="a JSON file holding the workflow result")
     a.add_argument("--findings-by-lens", default=None,        # W871 (FU-1143)
                    help="a JSON file mapping each lens to the number of findings it reported")
-    sub.add_parser("cleanup", help="remove every secondary worktree")
+    cl = sub.add_parser("cleanup", help="remove every secondary worktree that holds nothing a branch does not")
+    cl.add_argument("--force", action="store_true",                # W1159
+                    help="remove the rest too, with whatever they hold: the round's own worktrees")
     args = ap.parse_args()
 
     if args.cmd == "before":
@@ -325,7 +364,9 @@ def main() -> int:
         #  findings were not reconciled does not pass: the gate cannot say every finding was judged.
         print("FINDINGS " + str(rep.get("findings_basis") or "NOT RECONCILED - no basis was given"))
         return 0 if rep["complete"] and rep.get("findings_reconciled") is True else 1
-    rep = cleanup()
+    rep = cleanup(force=args.force)
+    for k in rep.get("kept", []):
+        print(f"KEPT {k['worktree']} - it holds {k['holds']}")
     print(rep["basis"])
     return 0 if not rep["failed"] else 1
 
