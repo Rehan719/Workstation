@@ -8,12 +8,16 @@ import { apiJson, errorMessage } from '../lib/api';
 //  W1161 (P5.11 clause 2) - a person says where the claim is. A claim not listed, or one whose rule is not for that
 //  nation, is answered that a time limit may still apply, with where to ask today for that nation: never "no deadline".
 //  An Order's provision is an article, and the answer says so.
+//  W1162 (P5.11 clause 2) - each answer says the rule's sources: the page, the day it was read and by whom, and NOT
+//  RECENTLY CHECKED ninety days on; a month with no such day is worked out to the earlier of the two days it could end
+//  on, and the headline says the provision leaves it unsettled.
+type Source = { id: string; read: boolean; name?: string; checked: string; read_by?: string | null };
 type Rule = { id: string; name: string; act: string; section: string; part: string; nations: string[] };
 type Route = { name: string; link: string; for_what: string };
 type Limit = {
   matched: true; name: string; act: string; part: string; section: string; event: string; event_date: string;
   last_day: string | null; computed: boolean; basis: string; does_not_account_for: string; arithmetic: string;
-  route: Route; provision_address: string | null; not_advice: string;
+  route: Route; provision_address: string | null; not_advice: string; settled?: boolean; sources: Source[];
 };
 type NoRule = {
   matched: false; nation: string | null; basis: string; rules_for_this_nation: { id: string; name: string }[];
@@ -51,6 +55,10 @@ const TimeLimitPanel: React.FC = () => {
     } catch (e) { setRefusal(errorMessage(e)); }
     setBusy(false);
   };
+  //  a source as read, with its day and the round that read it, or as not checked
+  const sourceSaid = (s: Source) => (s.read
+    ? `${s.name}, ${s.checked}${s.read_by ? ` (${s.read_by.split(',')[0]})` : ''}`
+    : `${s.id}: ${s.checked}`);
   const field = 'bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-200';
   const link = 'underline text-sky-400';
 
@@ -84,13 +92,14 @@ const TimeLimitPanel: React.FC = () => {
       {got && got.matched && (
         <div data-testid="law-time-limit-result" className="p-3 rounded-xl bg-slate-950 border border-slate-900 text-[11px] text-slate-300 space-y-1">
           {got.computed && got.last_day
-            ? <p className="font-bold text-white">The primary limit ends at the end of {got.last_day}.</p>
+            ? <p className="font-bold text-white">The primary limit ends at the end of {got.last_day}{got.settled === false ? ', the earlier of the two days the provision leaves unsettled' : ''}.</p>
             : <p className="font-bold text-amber-300">No date is worked out.</p>}
           <p>{got.basis}</p>
           <p className="text-[10px] text-slate-400">It does not account for {got.does_not_account_for}.</p>
           <p className="text-[10px] text-slate-400">
             Ask <a href={got.route.link} target="_blank" rel="noreferrer" className={link}>{got.route.name}</a> - {got.route.for_what}.
           </p>
+          <p data-testid="law-time-limit-sources" className="text-[9px] text-slate-500">Read: {got.sources.map(sourceSaid).join('; ')}.</p>
           <p className="text-[9px] text-slate-600">{got.act}, {got.part} {got.section}{got.provision_address ? ` - ${got.provision_address}` : ''}. {got.arithmetic}. {got.not_advice}</p>
         </div>
       )}

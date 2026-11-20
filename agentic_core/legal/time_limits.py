@@ -36,12 +36,23 @@ ruling of 2026-10-12). Every place named for it is named, with the address given
 tribunals", read whole through GOV.UK's content API on 2026-11-20 (docs/SOURCES.json). The places' own sites refused an
 automated visit from where this was built, so none of them was read, and each says so; and each place is shown as not
 recently checked ninety days after the guide was read, as the same ruling sets for a rule or a place.
+
+W1162 (P5.11 clause 2) - EACH RULE'S SOURCES, AND A MONTH WITH NO SUCH DAY. Each rule names its rows in the register of
+sources (docs/SOURCES.json): the page, the day it was read and who read it; every answer says them, and a rule whose page
+was read more than ninety days ago is shown as not recently checked. Where the same date N months later does not exist
+(31 August and three months), the provision does not settle how the period ends: as the Owner ruled on 2026-10-12, the
+earlier of the two days it could end on is shown, with the sentence that the provision does not settle it, where
+nothing was worked out before. Acas's page on employment tribunal time limits and the Northern Ireland tribunals' page
+on making a claim were read on 2026-11-20 and are rows of the register; the two worked examples Acas gives are what these
+rules work out.
 """
 from __future__ import annotations
 
 import calendar
 import datetime as _dt
+import json
 import re
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 #  Who to ask, for a limit on a claim about work: the free conciliation service such a claim passes through first
@@ -90,6 +101,8 @@ RULES: Dict[str, Dict[str, Any]] = {
                       "act": "Employment Rights Act 1996"},
         "nations": _GREAT_BRITAIN,
         "change": CHANGE,
+        #  W1162 - the rule's rows in the register of sources (docs/SOURCES.json)
+        "sources": ("employment-rights-act-1996", "employment-rights-act-2025", "si-2026-954"),
         "event": "the effective date of termination",
         "relevant_date": "the effective date of termination (S.I. 2026/954, the Schedule's first table)",
         #  each period's words are the provision's as it stood in that period, read from the publisher's own version
@@ -109,6 +122,8 @@ RULES: Dict[str, Dict[str, Any]] = {
                       "act": "Equality Act 2010"},
         "nations": _GREAT_BRITAIN,
         "change": CHANGE,
+        #  W1162 - the rule's rows in the register of sources (docs/SOURCES.json)
+        "sources": ("equality-act-2010", "employment-rights-act-2025", "si-2026-954"),
         "event": "the date of the act the complaint is about",
         "relevant_date": ("the date of the act, the end of conduct extending over a period, or the date a failure was "
                           "decided on (S.I. 2026/954, the Schedule's first table)"),
@@ -129,6 +144,8 @@ RULES: Dict[str, Dict[str, Any]] = {
                       "act": "Employment Tribunals Extension of Jurisdiction (England and Wales) Order 1994"},
         "nations": ["England", "Wales"],
         "change": CHANGE_CONTRACT_ENGLAND_WALES,
+        #  W1162 - the rule's rows in the register of sources (docs/SOURCES.json)
+        "sources": ("et-extension-of-jurisdiction-england-wales-1994", "si-2026-759"),
         "event": "the effective date of termination of the contract",
         "relevant_date": ("the effective date of termination of the contract giving rise to the claim, or with none "
                           "the last day the employee worked (S.I. 2026/759, article 3)"),
@@ -145,6 +162,8 @@ RULES: Dict[str, Dict[str, Any]] = {
                       "act": "Employment Tribunals Extension of Jurisdiction (Scotland) Order 1994"},
         "nations": ["Scotland"],
         "change": CHANGE_CONTRACT_SCOTLAND,
+        #  W1162 - the rule's rows in the register of sources (docs/SOURCES.json)
+        "sources": ("et-extension-of-jurisdiction-scotland-1994", "ssi-2026-327"),
         "event": "the effective date of termination of the contract",
         "relevant_date": ("the effective date of termination of the contract giving rise to the claim, or with none "
                           "the last day the employee worked (S.S.I. 2026/327, article 3)"),
@@ -177,6 +196,16 @@ def last_day(event: _dt.date, months: int) -> Optional[_dt.date]:
     if event.day > calendar.monthrange(y, m)[1]:
         return None
     return _dt.date(y, m, event.day) - _dt.timedelta(days=1)
+
+
+def _unsettled_end(event: _dt.date, months: int) -> Tuple[_dt.date, _dt.date]:
+    """W1162 - where the same date `months` later does not exist (31 August and three months), the two days the
+    period could end on: the day before the last day of that month, taking the missing date as that last day, and the
+    last day itself, taking it as the first day of the next month. The provision does not settle which."""
+    m = event.month - 1 + months
+    y, m = event.year + m // 12, m % 12 + 1
+    last = _dt.date(y, m, calendar.monthrange(y, m)[1])
+    return last - _dt.timedelta(days=1), last
 
 
 _MONTHS = ("January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
@@ -237,6 +266,7 @@ def limit(rule_id: str, event_date: str, provision: Dict[str, Any], nation: Opti
             "nations": list(rule["nations"]), "words": period["words"] if period else None,
             "months": period["months"] if period else None, "event": rule["event"], "event_date": event_date,
             "relevant_date": rule["relevant_date"], "change": dict(change), "either_side": periods(rule_id),
+            "sources": sources(rule_id),                                       # W1162 - read, when and by whom
             "does_not_account_for": rule["does_not_account_for"], "route": rule["route"],
             "provision_address": provision.get("address"), "version_dated": provision.get("version_dated"),
             "arithmetic": ARITHMETIC, "composed": False, "not_advice": "Nothing here is legal advice."}
@@ -258,17 +288,24 @@ def limit(rule_id: str, event_date: str, provision: Dict[str, Any], nation: Opti
                 f"'{period['words']}'")
     ev = _dt.date.fromisoformat(str(event_date))
     end = last_day(ev, period["months"])
-    if end is None:
-        return {**base, "last_day": None, "computed": False,
-                "basis": (f"NOT COMPUTED - the same date {period['months']} months later does not exist, and how such "
-                          f"a period ends is a rule this does not apply. Ask {rule['route']['name']}.")}
+    settled = end is not None
+    ends = f"end at the end of {end.isoformat()}" if settled else ""
+    if not settled:
+        #  W1162 - the Owner's ruling of 2026-10-12: where the source does not settle a date (a month with no such day),
+        #  the EARLIER date is shown, with the sentence that the source does not settle it
+        end, _ = _unsettled_end(ev, period["months"])
+        m = ev.month - 1 + period["months"]
+        missing = f"{ev.day} {_MONTHS[m % 12]} {ev.year + m // 12}"
+        ends = (f"would end at the end of the day before the same date {period['months']} months later, but there is "
+                f"no {missing}. The provision does not settle how such a period ends, so the earlier of the two days it "
+                f"could end on is shown: the end of {end.isoformat()}")
     other = next(p for p in rule["periods"] if p is not period)
     earlier = next(p for p in rule["periods"] if p.get("until"))
     later = next(p for p in rule["periods"] if p.get("from"))
-    return {**base, "last_day": end.isoformat(), "computed": True,
+    return {**base, "last_day": end.isoformat(), "computed": True, "settled": settled,
             **({"read_with_unapplied_change": True} if read.startswith("from its publisher's text") else {}),
             "basis": (f"the primary limit {sets}, {read}: {period['months']} months beginning with {ev.isoformat()} "
-                      f"end at the end of {end.isoformat()}. This is the limit for {_side(period, change)}, the "
+                      f"{ends}. This is the limit for {_side(period, change)}, the "
                       f"relevant date being {rule['relevant_date'].split(' (')[0]}. The change from "
                       f"{earlier['months']} to {later['months']} months is {change['by']}, and "
                       f"{change['earlier_limit_kept']}. For {_side(other, change)} the limit is {other['months']} "
@@ -297,23 +334,38 @@ GUIDE: Dict[str, str] = {
 OWN_SITES_NOT_OPENED = ("None of these places' own sites was opened: on 20 November 2026 each refused an automated "
                         "visit from where this was built, so nothing of them was read, and each is listed as the guide "
                         "names it.")
+#  W1162 - the two places whose own page was read on 2026-11-20 (each a row of the register of sources)
+OWN_PAGE_READ = "read on 2026-11-20"
 
 
-def _place(name: str, link: str, for_what: str, part: str) -> Dict[str, str]:
+def _place(name: str, link: str, for_what: str, part: str, own_site: str = "not opened") -> Dict[str, str]:
     return {"name": name, "link": link, "for_what": for_what, "named_on": f"{GUIDE['page']}/{part}",
-            "own_site": "not opened"}
+            "own_site": own_site}
+
+
+def _own_sites(places: List[Dict[str, str]]) -> str:
+    """W1162 - which of the places listed were read at their own page, said of these places and no others."""
+    read = [p["name"] for p in places if p["own_site"] == OWN_PAGE_READ]
+    if not read:
+        return OWN_SITES_NOT_OPENED
+    if len(read) == len(places):
+        return ("Each of these places' own page was read on 20 November 2026." if len(read) > 1 else
+                "This place's own page was read on 20 November 2026.")
+    return (f"{_listing(read)}: {'its' if len(read) == 1 else 'their'} own page was read on 20 November 2026. The "
+            "other places' own sites were not opened: on that day each refused an automated visit from where this was "
+            "built, and each is listed as the guide names it.")
 
 
 #  "To find the deadline for your claim, check the employment tribunal time limits guidance on the Acas (Advisory,
 #  Conciliation and Arbitration Service) website" (the guide, "Check if you can make a claim")
 _ACAS_TIME_LIMITS = _place("Acas", "https://www.acas.org.uk/employment-tribunal-time-limits",
                            "its guidance on employment tribunal time limits, which GOV.UK's guide names for finding "
-                           "the deadline for a claim", "check-you-can-claim")
+                           "the deadline for a claim", "check-you-can-claim", own_site=OWN_PAGE_READ)
 #  "There's a different way to make a claim to an employment tribunal in Northern Ireland" (the same part)
 _NORTHERN_IRELAND_CLAIM = _place("Making a claim to an employment tribunal in Northern Ireland",
                                  "https://www.employmenttribunalsni.co.uk/how-make-claim",
                                  "how a claim is made there, which GOV.UK's guide says is a different way",
-                                 "check-you-can-claim")
+                                 "check-you-can-claim", own_site=OWN_PAGE_READ)
 #  "If you're in England or Wales / If you're in Scotland - You could get legal advice from" ("Get support and legal
 #  advice"); the guide names no place for legal advice in Northern Ireland
 _ADVICE_ENGLAND_WALES = (
@@ -378,10 +430,44 @@ def no_rule(nation: Optional[str], rule_id: Optional[str] = None) -> Dict[str, A
         why = f"The rule here for {rule['name']} is for {_listing(list(rule['nations']))}, not for {nation}"
     if nation and not for_nation:
         why += f", and no rule here is for a claim in {nation}"
+    asked_for = [nation] if nation else list(NATIONS)
     return {"rule": rule_id if rule else None, "matched": False, "nation": nation, "computed": False, "last_day": None,
             "rules_for_this_nation": for_nation,
             "basis": f"{why}, so no date is worked out. A time limit may still apply: ask today.",
-            "where_to_ask": {n: [dict(p) for p in WHERE_TO_ASK[n]] for n in ([nation] if nation else NATIONS)},
+            "where_to_ask": {n: [dict(p) for p in WHERE_TO_ASK[n]] for n in asked_for},
             "named_on": {**{k: GUIDE[k] for k in ("name", "publisher", "page", "read_on")}, **checked(GUIDE["read_on"]),
-                         "own_sites": OWN_SITES_NOT_OPENED},
+                         "own_sites": _own_sites(list({p["link"]: p for n in asked_for for p in WHERE_TO_ASK[n]}.values()))},
             "composed": False, "not_advice": "Nothing here is legal advice."}
+
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1162 (P5.11 clause 2) - EACH RULE'S SOURCES: its rows in the register of sources, each with its page, the day it
+#  was read and who read it, said as not recently checked ninety days on. The register is read when asked; a row that
+#  cannot be read is said as unread, and never left out.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+REGISTER = Path(__file__).resolve().parents[2] / "docs" / "SOURCES.json"
+
+
+def _register() -> Optional[Dict[str, Dict[str, Any]]]:
+    try:
+        return {r["id"]: r for r in json.loads(REGISTER.read_text(encoding="utf-8"))["rows"]}
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+def sources(rule_id: str) -> List[Dict[str, Any]]:
+    """The register's rows for the rule, in the rule's order: each one's name, page, the day it was read and by whom,
+    and whether that was within ninety days."""
+    rows = _register()
+    out: List[Dict[str, Any]] = []
+    for sid in RULES[rule_id]["sources"]:
+        r = (rows or {}).get(sid)
+        if r is None or not r.get("read_on"):
+            out.append({"id": sid, "read": False, "recently_checked": False,
+                        "checked": ("NOT CHECKED - the register of sources could not be read" if rows is None else
+                                    "NOT CHECKED - the register of sources holds no reading of it")})
+            continue
+        out.append({"id": sid, "read": True, "name": (r.get("names") or [sid])[0], "page": r.get("page"),
+                    "read_on": r["read_on"], "read_by": r.get("read_by"), **checked(r["read_on"])})
+    return out

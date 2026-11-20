@@ -26458,6 +26458,29 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Done in W1161: the route takes the nation a claim is in, and a claim with no rule here, or one whose rule is not for that nation, is answered that no date is worked out and a time limit may still apply, with where to ask today for that nation - every place named, with its address, on GOV.UK's employment tribunals guide read on 2026-11-20, none of their own sites opened, and said as not recently checked ninety days on - and the rules there are for it; nothing is read from a publisher for it. A nation that is none of the four is refused before anything is read. The panel asks where the claim is, offers a claim not listed here and says an Order's provision is an article. test_w1161 drives each nation with each rule and with no rule."
+    },
+    {
+      "id": "FU-1805",
+      "title": "No time-limit answer said its sources or when they were read, and a month with no such day was not worked out though the Owner ruled it is",
+      "why": "Measured in W1162. P5.11 clause 2 asks that each rule have its source page, the date that page was read and by whom; the rules' pages were rows of the register of sources, but no answer said them, and none was ever said as not recently checked. The Owner ruled on 2026-10-12 that where the source does not settle a date - a month with no such day - the earlier date is shown with the sentence that the source does not settle it; the calculator worked nothing out there.",
+      "source": "W1162 (the time-limit answers read against P5.11 clause 2 and its ruling)",
+      "found": "2026-11-20",
+      "files": [
+        "agentic_core/legal/time_limits.py",
+        "agentic_core/api/law.py",
+        "apps/workstation-superapp/src/components/TimeLimitPanel.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.11",
+      "status": "done",
+      "closed_by": "W1162",
+      "note": "",
+      "slot_source": "P5.11 clause 2 names each rule's source page, the date it was read and by whom, and its ruling sets the earlier date where a month has no such day",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1162: each rule names its rows in the register of sources, and every answer says each one's page, the day it was read and the round that read it, said as not recently checked ninety days on; an unreadable register says each source as not checked and leaves none out. Where the same date N months later does not exist, the earlier of the two days the period could end on is worked out and shown, with the sentence that the provision does not settle it, and the panel's headline says so. Acas's time-limits page and the Northern Ireland tribunals' page were read and are rows of the register; the rules reproduce Acas's two worked examples. test_w1162 drives it."
     }
   ],
   "routes": [

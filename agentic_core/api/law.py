@@ -472,6 +472,7 @@ def time_limit_rules():
     return {"rules": [{"id": k, "name": r["name"], "act": r["provision"]["act"], "section": r["provision"]["section"],
                        "part": r["provision"].get("part", "section"), "nations": list(r["nations"]),   # W1160
                        "change": dict(r["change"]),
+                       "sources": _tl.sources(k),                                # W1162 - read when, by whom
                        "event": r["event"], "relevant_date": r["relevant_date"], "periods": _tl.periods(k)}
                       for k, r in _tl.RULES.items()],
             "nations": list(_tl.NATIONS), "not_listed": dict(_tl.NOT_LISTED),          # W1161

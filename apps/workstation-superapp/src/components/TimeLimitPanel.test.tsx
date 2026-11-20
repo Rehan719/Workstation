@@ -12,6 +12,11 @@
 // for that nation, is answered that a time limit may still apply, with where to ask today for that nation. Two more
 // answers are captured (w1161_capture.py): a claim not listed here, in Scotland, and an unfair dismissal claim in
 // Northern Ireland, which no rule here is for. Neither reads a provision.
+//
+// W1162 (P5.11 clause 2) — each answer says the rule's sources, the day each was read and the round that read it; two
+// more answers are captured (w1162_capture.py): a claim from 31 August, whose same date three months on does not exist,
+// worked out to the earlier of the two days it could end on, and the same limit asked ninety-one days after its sources
+// were read, each said as not recently checked.
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -47,6 +52,10 @@ async function ask(request: Ask) {
   if (request.event_date) fireEvent.change(screen.getByLabelText('The date it runs from'), { target: { value: request.event_date } });
   fireEvent.click(screen.getByRole('button', { name: 'Work it out' }));
 }
+
+//  what the panel says of a source: as read, with its day and the round that read it, or as not checked
+type Src = { id: string; read: boolean; name?: string; checked: string; read_by?: string | null };
+const sourceSaid = (s: Src) => (s.read ? `${s.name}, ${s.checked}${s.read_by ? ` (${s.read_by.split(',')[0]})` : ''}` : `${s.id}: ${s.checked}`);
 
 const said = () => [...screen.getByTestId('law-time-limit-result').querySelectorAll('p')].map(p => p.textContent);
 const go = () => screen.getByRole('button', { name: 'Work it out' }) as HTMLButtonElement;
@@ -93,6 +102,7 @@ describe('TimeLimitPanel, how long a time limit runs, rendered', () => {
       a.basis,
       `It does not account for ${a.does_not_account_for}.`,
       `Ask ${a.route.name} - ${a.route.for_what}.`,
+      `Read: ${a.sources.map(sourceSaid).join('; ')}.`,
       `${a.act}, ${a.part} ${a.section} - ${a.provision_address}. ${a.arithmetic}. ${a.not_advice}`,
     ]);
     expect(screen.getByRole('link', { name: a.route.name }).getAttribute('href')).toBe(a.route.link);
@@ -108,6 +118,29 @@ describe('TimeLimitPanel, how long a time limit runs, rendered', () => {
     await waitFor(() => expect(said()[0]).toBe('No date is worked out.'));
     expect(g.computed).toBe(false);
     expect(said().slice(1, 3)).toEqual([g.basis, `It does not account for ${g.does_not_account_for}.`]);
+  });
+
+  it('a month with no such day: the earlier of the two days the period could end on, said as unsettled', async () => {
+    const u = captured.unsettled;
+    serve(captured.rules, u);
+    render(<TimeLimitPanel />);
+    await ask(u.request);
+    await waitFor(() => expect(said()[0]).toBe(
+      `The primary limit ends at the end of ${u.body.last_day}, the earlier of the two days the provision leaves unsettled.`));
+    expect(u.body.settled).toBe(false);
+    expect(said()[1]).toBe(u.body.basis);
+    expect(u.body.basis).toContain('The provision does not settle how such a period ends');
+  });
+
+  it('a source read more than ninety days ago is said as not recently checked', async () => {
+    const s = captured.stale;
+    serve(captured.rules, s);
+    render(<TimeLimitPanel />);
+    await ask(s.request);
+    await waitFor(() => expect(screen.getByTestId('law-time-limit-sources').textContent).toBe(
+      `Read: ${s.body.sources.map(sourceSaid).join('; ')}.`));
+    expect(s.body.sources.length).toBeGreaterThan(0);
+    expect(s.body.sources.every(x => x.checked.startsWith('NOT RECENTLY CHECKED'))).toBe(true);
   });
 
   it('a publisher that cannot be read: the refusal is said with who to ask, and no result is shown', async () => {

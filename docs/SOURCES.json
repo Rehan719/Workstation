@@ -1516,6 +1516,46 @@
    "read_by": "round W1161, the guide's nine parts read whole (GOV.UK's content record of the page, www.gov.uk/api/content/employment-tribunals), not through a summary",
    "says": "GOV.UK's content record gives it as first published 3 January 2012, last publicly updated 9 December 2024 and changed on 20 November 2026. 'Check if you can make a claim': there is a different way to make a claim to an employment tribunal in Northern Ireland, linked at https://www.employmenttribunalsni.co.uk/how-make-claim; a person usually has 6 months if the problem happened on or after 1 October 2026, and 3 months if before; to find the deadline for a claim, check the employment tribunal time limits guidance on the Acas website, linked at https://www.acas.org.uk/employment-tribunal-time-limits; a person may not be able to claim if the deadline is missed, even while trying to resolve the dispute directly; interim relief is applied for within 7 days of dismissal. 'Make a claim': a person must tell Acas that they are planning to make a claim. 'Get support and legal advice': in England or Wales, legal advice from The Law Society (https://solicitors.lawsociety.org.uk/), Citizens Advice (https://www.citizensadvice.org.uk/law-and-courts/legal-system/finding-free-or-affordable-legal-help/), Law Centres Network (https://www.lawcentres.org.uk/) and Law Works (https://www.lawworks.org.uk/); in Scotland, The Law Society of Scotland (https://www.lawscot.org.uk/) and Citizens Advice Scotland (https://www.cas.org.uk/); no place is named for Northern Ireland.",
    "not_read": "the pages it links to: each of their sites refused an automated visit from where the guide was read, so none was opened; the Welsh version of the guide; the claim form and its guidance"
+  },
+  {
+   "id": "acas-employment-tribunal-time-limits",
+   "names": [
+    "Employment tribunal time limits (Acas)"
+   ],
+   "kind": "public guidance",
+   "nation": [
+    "England",
+    "Wales",
+    "Scotland"
+   ],
+   "status": "current",
+   "page": "https://www.acas.org.uk/employment-tribunal-time-limits",
+   "read_on": "2026-11-20",
+   "read_by": "round W1162, the page's own text read whole at its site, not through a summary",
+   "says": "Shown as last updated 16 November 2026. The law on time limits changed on 1 October 2026. Before it, 3 months minus 1 day for most claims and 6 months minus 1 day for a few (statutory redundancy pay, equal pay, certain claims against a trade union, certain armed forces claims): its worked example, paid the wrong amount on 30 September 2026, ends at 11:59pm on 29 December 2026. On or after it, 6 months minus 1 day for most claims: its worked example, 1 October 2026, ends at 11:59pm on 31 March 2027. In Scotland the limit for breach of contract claims changed on 9 November 2026. The first step is to notify Acas, within the limit; early conciliation pauses the limit only if Acas is notified within it; grievance and appeal procedures do not change it; interim relief has a 7-day limit; a claim out of time may still be made, and the judge decides whether to accept it, though limits are in most cases strictly enforced.",
+   "not_read": "the pages it links to (early conciliation, interim relief, the helpline); the Welsh version",
+   "used_by": [
+    "agentic_core/legal/time_limits.py"
+   ]
+  },
+  {
+   "id": "employment-tribunals-ni-how-to-make-a-claim",
+   "names": [
+    "How to make a claim (the Industrial Tribunals and the Fair Employment Tribunal, Northern Ireland)"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "Northern Ireland"
+   ],
+   "status": "current",
+   "page": "https://www.employmenttribunalsni.co.uk/how-make-claim",
+   "read_on": "2026-11-20",
+   "read_by": "round W1162, the page's own text read whole at its site, not through a summary",
+   "says": "Most tribunal claims must be made within three months of the incident, though this varies, is subject to early conciliation, and claims usually have to be presented within three or six months depending on the type of claim; the tribunals extend a limit only in exceptional circumstances, and a claim made out of time may not be heard. The tribunals give no advice. From 27 January 2020 most claimants must first notify the Labour Relations Agency and consider early conciliation, which allows up to a calendar month, and two weeks more if needed, without affecting the deadline. It names, for help: the Labour Relations Agency, the Equality Commission, Law Centre NI, Advice NI, Protect, the Ulster University Law Clinic, the Bar of Northern Ireland and the Department of Justice on legal aid.",
+   "not_read": "the forms and guidance documents it links to; the sites of the bodies it names, of which only the Labour Relations Agency's is reachable from where this was read, and that was not opened",
+   "used_by": [
+    "agentic_core/legal/time_limits.py"
+   ]
   }
  ]
 }

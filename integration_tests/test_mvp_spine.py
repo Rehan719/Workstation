@@ -75447,9 +75447,11 @@ def test_w875_how_long_a_time_limit_runs_is_arithmetic_on_the_rules_own_words_wi
         "the rule's own provision, as it stood for the date, was not the one read", asked)
     assert a["route"]["name"] == "Acas" and "early conciliation" in a["does_not_account_for"] and a["composed"] is False
     assert work(date="2026-07-31").json()["last_day"] == "2026-10-30"
-    #  ...and a date whose same date three months on does not exist is not worked out, and says so
+    #  ...and a date whose same date three months on does not exist is worked out, as the Owner ruled on 2026-10-12
+    #  (W1162), to the earlier of the two days it could end on, with the sentence that the provision does not settle it
     end = work(date="2026-08-31").json()
-    assert end["computed"] is False and end["last_day"] is None and "NOT COMPUTED" in end["basis"], end
+    assert (end["computed"], end["settled"], end["last_day"]) == (True, False, "2026-11-29"), end
+    assert "does not settle how such a period ends" in end["basis"], end["basis"]
     assert work(date="not a date").json()["computed"] is False
 
     #  3. a provision that no longer has the rule's words: nothing is computed
@@ -91650,7 +91652,9 @@ def test_w1119_fu399_the_time_limit_panel_says_the_limit_what_it_omits_and_who_t
     assert gone["body"]["computed"] is False and gone["body"]["last_day"] is None
     assert refused["status"] == 502 and rule["route"]["name"] in refused["body"]["detail"], refused
 
-    #  the routes answer exactly that today, the provision stood in as the capture stood it in
+    #  the routes answer exactly that today, the provision stood in as the capture stood it in; W1162 - each answer
+    #  says whether its sources were read within ninety days, so the routes are asked as on the capture's day
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2026, 11, 20))
     assert client.get(fx["rules"]["url"]).json() == rules
 
     def stood_in(text):
@@ -94363,7 +94367,8 @@ def test_w1157_p511_the_tribunal_limits_either_side_of_1_october_2026_are_dated_
     assert asked.count(("111", "2026-09-30")) == 1 and asked.count(("111", None)) == 2, asked
     assert work("unfair_dismissal", "2028-02-29")["last_day"] == "2028-08-28"
     month_end = work("unfair_dismissal", "2026-10-31")
-    assert month_end["computed"] is False and "6 months later does not exist" in month_end["basis"], month_end
+    #  W1162 - there is no 31 April 2027: the earlier of the two days the period could end on, said as unsettled
+    assert (month_end["computed"], month_end["settled"], month_end["last_day"]) == (True, False, "2027-04-29"), month_end
     listed = client.get("/api/v1/law/time-limit").json()
     assert listed["change"]["page"] == "https://www.legislation.gov.uk/uksi/2026/954/regulation/4"
     assert [[p["months"] for p in r["periods"]] for r in listed["rules"]][:2] == [[3, 6], [3, 6]], listed["rules"]
@@ -94759,7 +94764,8 @@ def test_w1160_fu1296_breach_of_contract_claims_are_dated_rules_for_each_nation_
     monkeypatch.setattr(_st, "provision", publisher(texts))
     assert work("breach_of_contract_scotland", "2028-02-29")["last_day"] == "2028-08-28"
     gone = work("breach_of_contract_england_wales", "2026-12-31")
-    assert gone["computed"] is False and "6 months later does not exist" in gone["basis"], gone
+    #  W1162 - there is no 31 June 2027: the earlier of the two days the period could end on, said as unsettled
+    assert (gone["computed"], gone["settled"], gone["last_day"]) == (True, False, "2027-06-29"), gone
 
     #  5. the statute reader: an article, a part it does not know, the changes listed against an article, a dated article
     assert _st.address("uksi", 1994, 1624, "7", "article") == "https://www.legislation.gov.uk/uksi/1994/1624/article/7"
@@ -94861,7 +94867,9 @@ def test_w1161_p511_with_no_rule_a_limit_may_still_apply_and_where_to_ask_today_
     for n, places in _tl.WHERE_TO_ASK.items():
         for p in places:
             assert p["link"] in guide["says"], (n, p["name"], "is not named, with this address, on the guide as read")
-            assert p["named_on"].startswith(_tl.GUIDE["page"] + "/") and p["own_site"] == "not opened", p
+            #  W1162 - two of the places were read at their own page once the Owner allowed the advice sites
+            assert p["named_on"].startswith(_tl.GUIDE["page"] + "/") and p["own_site"] in (
+                "not opened", _tl.OWN_PAGE_READ), p
     assert [p["link"] for p in _tl.WHERE_TO_ASK["Northern Ireland"]] == ["https://www.employmenttribunalsni.co.uk/how-make-claim"]
     for n in ("England", "Wales", "Scotland"):
         assert _tl.WHERE_TO_ASK[n][0]["link"] == "https://www.acas.org.uk/employment-tribunal-time-limits", n
@@ -94998,4 +95006,157 @@ def test_w1161_p511_with_no_rule_a_limit_may_still_apply_and_where_to_ask_today_
     assert "may still apply, with where to ask today for that nation" in cov["law-tribunal-time-limit"]["today"]
     fu = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
           if r.get("closed_by") == "W1161"]
+    assert len(fu) == 1 and (fu[0]["status"], fu[0]["slot"], fu[0]["because"]) == ("done", "P5.11", "built"), fu
+
+
+def test_w1162_p511_each_rule_says_its_sources_and_a_month_with_no_such_day_shows_the_earlier_day(client, monkeypatch):
+    """P5.11 clause 2 (W1162): "each rule has its claim type, its nation, the period it is in force for, its source
+    page, the date that page was read and by whom"; and the Owner's ruling of 2026-10-12: "where the source does not
+    settle a date - a month with no such day - the EARLIER date is shown with the sentence that the source does not
+    settle it", and "a rule or a place is shown as not recently checked NINETY DAYS after the date it was read".
+    No answer said a rule's sources, nothing was said as not recently checked, and a month with no such day was not
+    worked out. Held here:
+    1. each rule's sources are rows of the register, read, in the rule's own order; every answer says each one's page,
+       the day it was read and who read it; ninety days on it is still read that day, on the ninety-first not recently
+       checked; with the register unreadable each source is said as not checked, and none is left out;
+    2. a month with no such day, for each rule: the earlier of the two days the period could end on, said as unsettled
+       with the sentence that the provision does not settle it, the missing date named, in a leap year too; a date that
+       has its same date months on is settled;
+    3. the rules reproduce the two worked examples Acas's page gives, as its register row records them;
+    4. Acas's page and the Northern Ireland tribunals' page are rows of the register, read in this round, and the two
+       places they are say so, as the answer with no rule says of the places it lists;
+    5. the panel says the sources and the unsettled headline, and its captured answers are the route's own;
+    6. the coverage rows and the row."""
+    import datetime as _dt
+    import json
+    from pathlib import Path
+    from agentic_core.legal import statute as _st
+    from agentic_core.legal import time_limits as _tl
+    root = Path(__file__).resolve().parents[1]
+    reg = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    read = _dt.date(2026, 11, 20)
+
+    text = " ".join(p["words"] for r in _tl.RULES.values() for p in r["periods"])
+    asked = []
+
+    async def _provision(kind, year, number, section, version=None, part="section"):
+        asked.append((int(number), section, version))
+        return {"parts": [{"level": 1, "number": "(a)", "text": text}],
+                "address": f"https://www.legislation.gov.uk/{kind}/{year}/{number}/{part}/{section}"}
+    monkeypatch.setattr(_st, "provision", _provision)
+
+    def work(rule, date, nation=None):
+        body = {"rule": rule, "event_date": date, **({"nation": nation} if nation else {})}
+        r = client.post("/api/v1/law/time-limit", json=body)
+        assert r.status_code == 200, (rule, date, r.text[:300])
+        return r.json()
+
+    #  1. each rule's sources, said in every answer, and their ninety days
+    monkeypatch.setattr(_tl, "_today", lambda: read)
+    listed = {x["id"]: x for x in client.get("/api/v1/law/time-limit").json()["rules"]}
+    for rid, rule in _tl.RULES.items():
+        assert rule["sources"] and all(s in reg and reg[s]["status"] == "current" for s in rule["sources"]), rid
+        got = work(rid, "2026-12-01")
+        for said, sid in ((listed[rid]["sources"], None), (got["sources"], None)):
+            assert [s["id"] for s in said] == list(rule["sources"]), (rid, said)
+            for s in said:
+                r = reg[s["id"]]
+                assert (s["read"], s["page"], s["read_on"], s["read_by"]) == (True, r["page"], r["read_on"], r["read_by"])
+                assert (s["recently_checked"], s["checked"]) == (True, "read on 20 November 2026"), s
+    monkeypatch.setattr(_tl, "_today", lambda: read + _dt.timedelta(days=90))
+    assert all(s["recently_checked"] for s in work("unfair_dismissal", "2026-12-01")["sources"])
+    monkeypatch.setattr(_tl, "_today", lambda: read + _dt.timedelta(days=91))
+    stale = work("unfair_dismissal", "2026-12-01")["sources"]
+    assert [s["checked"] for s in stale] == [
+        "NOT RECENTLY CHECKED - read on 20 November 2026, more than 90 days ago"] * len(stale), stale
+    monkeypatch.setattr(_tl, "_today", lambda: read)
+    monkeypatch.setattr(_tl, "REGISTER", root / "docs" / "no-such-register.json")
+    gone = work("discrimination_at_work", "2026-12-01")["sources"]
+    assert [(s["id"], s["read"], s["checked"]) for s in gone] == [
+        (sid, False, "NOT CHECKED - the register of sources could not be read")
+        for sid in _tl.RULES["discrimination_at_work"]["sources"]], gone
+    monkeypatch.undo()
+    monkeypatch.setattr(_st, "provision", _provision)
+    monkeypatch.setattr(_tl, "_today", lambda: read)
+
+    #  2. a month with no such day: the earlier of the two days, said as unsettled
+    for rid, date, nation, months, missing, earlier in (
+            ("unfair_dismissal", "2026-08-31", "England", 3, "31 November 2026", "2026-11-29"),
+            ("unfair_dismissal", "2026-10-31", "Wales", 6, "31 April 2027", "2027-04-29"),
+            ("discrimination_at_work", "2027-08-31", "Scotland", 6, "31 February 2028", "2028-02-28"),
+            ("breach_of_contract_england_wales", "2026-12-31", "England", 6, "31 June 2027", "2027-06-29"),
+            ("breach_of_contract_scotland", "2026-12-31", "Scotland", 6, "31 June 2027", "2027-06-29")):
+        got = work(rid, date, nation)
+        assert (got["computed"], got["settled"], got["last_day"], got["months"]) == (True, False, earlier, months), got
+        assert (f"would end at the end of the day before the same date {months} months later, but there is no "
+                f"{missing}. The provision does not settle how such a period ends, so the earlier of the two days it "
+                f"could end on is shown: the end of {earlier}.") in got["basis"], got["basis"]
+    assert _tl.last_day(_dt.date(2028, 2, 29), 6) == _dt.date(2028, 8, 28)
+    plain = work("unfair_dismissal", "2026-10-03", "England")
+    assert (plain["settled"], plain["last_day"]) == (True, "2027-04-02") and "does not settle" not in plain["basis"]
+
+    #  3. Acas's two worked examples, as its register row records them, are what the rules work out
+    acas = reg["acas-employment-tribunal-time-limits"]
+    for example in ("paid the wrong amount on 30 September 2026, ends at 11:59pm on 29 December 2026",
+                    "1 October 2026, ends at 11:59pm on 31 March 2027"):
+        assert example in acas["says"], acas["says"]
+    assert work("unfair_dismissal", "2026-09-30", "England")["last_day"] == "2026-12-29"
+    assert work("unfair_dismissal", "2026-10-01", "England")["last_day"] == "2027-03-31"
+
+    #  4. the two pages read, and the two places they are
+    for sid, page, nation in (("acas-employment-tribunal-time-limits",
+                               "https://www.acas.org.uk/employment-tribunal-time-limits", ["England", "Wales", "Scotland"]),
+                              ("employment-tribunals-ni-how-to-make-a-claim",
+                               "https://www.employmenttribunalsni.co.uk/how-make-claim", ["Northern Ireland"])):
+        r = reg[sid]
+        assert (r["page"], r["read_on"], r["status"], r["nation"]) == (page, "2026-11-20", "current", nation), sid
+        assert "W1162" in r["read_by"] and r["used_by"] == ["agentic_core/legal/time_limits.py"], sid
+    read_here = sorted({p["link"] for n in _tl.NATIONS for p in _tl.WHERE_TO_ASK[n] if p["own_site"] == _tl.OWN_PAGE_READ})
+    assert read_here == ["https://www.acas.org.uk/employment-tribunal-time-limits",
+                         "https://www.employmenttribunalsni.co.uk/how-make-claim"], read_here
+    ni = client.post("/api/v1/law/time-limit", json={"rule": "not_listed", "event_date": "", "nation": "Northern Ireland"})
+    assert ni.json()["named_on"]["own_sites"] == "This place's own page was read on 20 November 2026.", ni.json()
+    sc = client.post("/api/v1/law/time-limit", json={"rule": "not_listed", "event_date": "", "nation": "Scotland"})
+    assert sc.json()["named_on"]["own_sites"].startswith("Acas: its own page was read on 20 November 2026. The other "
+                                                         "places' own sites were not opened"), sc.json()["named_on"]
+
+    #  5. the panel, its captured answers and its rendered test
+    src = root / "apps" / "workstation-superapp" / "src" / "components"
+    panel = (src / "TimeLimitPanel.tsx").read_text(encoding="utf-8")
+    for line in ('data-testid="law-time-limit-sources"', "Read: {got.sources.map(sourceSaid).join('; ')}.",
+                 "{got.settled === false ? ', the earlier of the two days the provision leaves unsettled' : ''}"):
+        assert line in panel, ("the panel no longer has this", line)
+    fx = json.loads((src / "TimeLimitPanel.fixture.json").read_text(encoding="utf-8"))
+    assert fx["unsettled"]["request"] == {"rule": "unfair_dismissal", "event_date": "2026-08-31", "nation": "England"}
+    assert fx["unsettled"]["body"]["settled"] is False and fx["unsettled"]["body"]["last_day"] == "2026-11-29"
+    assert all(s["checked"].startswith("NOT RECENTLY CHECKED") for s in fx["stale"]["body"]["sources"])
+
+    def stood_in(words):
+        async def _p(kind, year, number, section, version=None):
+            return {"parts": [{"level": 1, "number": "(2)", "text": f"(a) before the end of the period of {words}, or"}],
+                    "address": (f"https://www.legislation.gov.uk/{kind}/{year}/{number}/section/{section}"
+                                + (f"/{version}" if version else ""))}
+        return _p
+    monkeypatch.setattr(_st, "provision", stood_in(_tl.period_for("unfair_dismissal", "2026-08-31")["words"]))
+    live = client.post(fx["rules"]["url"], json=fx["unsettled"]["request"])
+    assert (live.status_code, live.json()) == (fx["unsettled"]["status"], fx["unsettled"]["body"]), live.text[:300]
+    monkeypatch.setattr(_st, "provision", stood_in(_tl.period_for("unfair_dismissal", "2026-10-03")["words"]))
+    monkeypatch.setattr(_tl, "_today", lambda: read + _dt.timedelta(days=91))
+    live = client.post(fx["rules"]["url"], json=fx["stale"]["request"])
+    assert (live.status_code, live.json()) == (fx["stale"]["status"], fx["stale"]["body"]), live.text[:300]
+    spec = (src / "TimeLimitPanel.test.tsx").read_text(encoding="utf-8")
+    for line in ("it('a month with no such day: the earlier of the two days the period could end on, said as unsettled'",
+                 "it('a source read more than ninety days ago is said as not recently checked'",
+                 "`Read: ${a.sources.map(sourceSaid).join('; ')}.`,",
+                 "`The primary limit ends at the end of ${u.body.last_day}, the earlier of the two days the provision "
+                 "leaves unsettled.`));"):
+        assert line in spec, ("the rendered test no longer reads this", line)
+
+    #  6. the coverage rows, and the row
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    assert "a month with no such day worked out to the earlier of the two days" in cov["law-tribunal-time-limit"]["today"]
+    assert cov["law-tribunal-time-limit-northern-ireland"]["today"].endswith("whose own page was read on 2026-11-20 "
+                                                                           "(W1161; read in W1162)")
+    fu = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+          if r.get("closed_by") == "W1162"]
     assert len(fu) == 1 and (fu[0]["status"], fu[0]["slot"], fu[0]["because"]) == ("done", "P5.11", "built"), fu
