@@ -15899,11 +15899,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.7",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1150",
       "note": "",
       "slot_source": "the Owner asked on 2026-10-11 that this work be added to the plan; it is the item chartered for it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1150: docs/business/SUPPORT_ROUTES.md sets out the public support routes the clause names, each from its own page read on 2026-11-20 with its own date (GOV.UK's Get help and support for your business, to which the business support helpline now leads; UKRI's Innovate UK and Velocity pages), and marks NOT CHECKED, with the reason, those it could not read: Business.gov.uk and Innovate UK Business Growth, whose sites this environment's network refused, and the organisation whose short course the Owner attended, which the tree does not name. Three drafts, each DRAFT, NOT SENT, ask only what each route offers and claim no relationship, endorsement or entitlement; the one to the course's organisation says only that the Owner attended. No contact detail is copied. Nothing is sent."
     },
     {
       "id": "FU-811",

@@ -93588,3 +93588,58 @@ def test_w1149_fu811_the_formation_workpack_compares_four_routes_chooses_none_an
     assert "is NOT CHECKED" in flat and "a solicitor's advice" in flat and "a qualified scholar" in flat
     assert "## Not read, so not said" in doc
     assert reg["FU-811"]["slot"] == "P5.7", reg["FU-811"]["slot"]
+
+
+def test_w1150_fu810_each_support_route_is_read_from_its_page_or_not_checked_and_no_draft_claims_a_relationship():
+    """FU-810 (W1150), P5.7 clause 5: "the public support routes with what each requires, read from its own page and
+    dated, or NOT CHECKED; draft messages, including one to the organisation whose short course the Owner attended,
+    implying no relationship beyond that". docs/business/SUPPORT_ROUTES.md does so. Held here:
+    - it passes every business document's rules, so no customer, partner, endorsement or price agreed is stated and no
+      contact detail (a telephone number, an e-mail address, a postcode) is copied, even an organisation's;
+    - each route the clause names is a section: the two read cite a page the sources list names, and the two that could
+      not be read say NOT CHECKED and why;
+    - there are three drafts, each marked DRAFT, NOT SENT; none claims eligibility, an entitlement or a relationship;
+      the one to the course's organisation keeps its name and course as placeholders and says only that it was attended;
+    - every source carries its page and its own date, or says the page shows none."""
+    import json
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _fu
+    from agentic_core.app_mvp import app as _app1150
+    root = pathlib.Path(__file__).resolve().parents[1]
+    doc = (root / "docs/business/SUPPORT_ROUTES.md").read_text(encoding="utf-8")
+    flat = " ".join(doc.split())
+    plan_slots = {i["slot"] for i in _fu.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))}
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    routes = {(m, r.path) for r in _app1150.routes for m in (getattr(r, "methods", None) or ())}
+    assert _w703_faults(doc, root, plan_slots, set(reg), routes) == [], _w703_faults(doc, root, plan_slots, set(reg), routes)
+    assert "@" not in doc and not re.search(r"\b0\d{3}\s?\d{3}\s?\d{3,4}\b", doc), "a contact detail is copied"
+
+    def section(title):
+        return doc.split(title, 1)[1].split("\n## ", 1)[0]
+
+    for title in ("## The Business Support Service (England) and its counterparts", "## Innovate UK\n"):
+        assert re.search(r"\[observed: [^\]]+\]", section(title)), (title, "a route read cites no page")
+    for title in ("## Innovate UK Business Growth", "## The organisation whose short course the Owner attended"):
+        assert "NOT CHECKED" in section(title), (title, "a route not read does not say so")
+    assert "Business.gov.uk itself is NOT CHECKED" in flat
+
+    drafts = re.findall(r"^- DRAFT, NOT SENT: \"(.+)\" \[owner decision\]$", doc, re.M)
+    assert len(drafts) == 3, drafts
+    for d in drafts:
+        assert not re.search(r"\b(?:eligible|qualif(?:y|ies|ied)|entitled|approved|endorse\w*|partner\w*|our client)\b",
+                             d, re.I), ("a draft claims what nothing shows", d)
+    course = drafts[2]
+    assert course.startswith("I attended your short course [course name] in [month and year].") and "[" in course, course
+    assert "it implies no relationship beyond that" in flat
+
+    src = section("## Sources, each read on 2026-11-20")
+    lines = [l for l in src.splitlines() if l.startswith("- ") and "https://" in l]
+    assert len(lines) == 3, lines
+    for l in lines:
+        assert re.search(r"\((?:first published \d{1,2} [A-Z][a-z]+ \d{4}, last updated|last updated|the page shows no "
+                         r"date of its own)", l), (l, "a source without its date or the word that it has none")
+    named = {re.match(r"- (.+?), https://", l).group(1) for l in lines}
+    cited = set(re.findall(r"\[observed: ([^\]]+)\]", doc)) - {"page"}
+    assert cited and cited <= named, sorted(cited - named)
+    assert reg["FU-810"]["slot"] == "P5.7"
