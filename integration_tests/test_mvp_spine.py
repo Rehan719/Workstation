@@ -93522,3 +93522,69 @@ def test_w1148_fu1077_the_legal_briefs_authorities_are_read_whole_at_their_publi
 
     out = subprocess.run([sys.executable, "scripts/sources_check.py"], cwd=root, capture_output=True, text=True)
     assert out.returncode == 0, (out.stdout[-800:], out.stderr[-400:])
+
+
+def test_w1149_fu811_the_formation_workpack_compares_four_routes_chooses_none_and_holds_no_personal_detail():
+    """FU-811 (W1149), P5.7 clause 6: "the legal routes compared and none chosen; a worksheet of placeholders holding no
+    personal detail; official sources with the date each was read; the questions for an accountant and a solicitor".
+    docs/business/FORMATION_WORKPACK.md sets them out from seven official pages read on 2026-11-20. Held here:
+    - it passes every business document's rules (a draft, every statement labelled, every money figure SOURCED with
+      its page and date, no customer, partner, endorsement, price agreed or name cleared, no personal detail);
+    - the four routes the clause names are each a section, and are compared in one table on stated criteria;
+    - no sentence says a route was chosen, or that anything was filed, registered or formed;
+    - every worksheet field is a placeholder and nothing more;
+    - there are at least four questions for an accountant and four for a solicitor;
+    - every source is an official page with its own dates, and every statement cites a source the list names;
+    - the waqf-oriented route says it is NOT CHECKED and who would advise, and what was not read is listed."""
+    import json
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _fu
+    from agentic_core.app_mvp import app as _app1149
+    root = pathlib.Path(__file__).resolve().parents[1]
+    doc = (root / "docs/business/FORMATION_WORKPACK.md").read_text(encoding="utf-8")
+    flat = " ".join(doc.split())
+    plan_slots = {i["slot"] for i in _fu.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))}
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    routes = {(m, r.path) for r in _app1149.routes for m in (getattr(r, "methods", None) or ())}
+    assert _w703_faults(doc, root, plan_slots, set(reg), routes) == [], _w703_faults(doc, root, plan_slots, set(reg), routes)
+
+    for head in ("## Route 1. Staying unincorporated while the offer is tested (a sole trader)",
+                 "## Route 2. A company limited by shares", "## Route 3. A community interest company (CIC)",
+                 "## Route 4. A charitable or waqf-oriented arrangement: a later structure needing qualified advice"):
+        assert head in doc, head
+    table = [l for l in doc.splitlines() if l.startswith("| ")]
+    assert table[0] == ("| Criterion | 1. Sole trader | 2. Company limited by shares | 3. CIC | 4. Charity, or a "
+                        "waqf-oriented arrangement |"), table[:1]
+    assert len(table) >= 7 and all(l.count("|") == 6 for l in table), "the comparison is not one table of four routes"
+
+    assert "It chooses no route, files nothing, registers nothing" in flat
+    for claim in (r"\b(?:has|have|had)\s+(?:chosen|registered|incorporated|filed|formed)\b",
+                  r"\bwill\s+(?:be\s+)?(?:incorporated|registered|formed)\s+as\b", r"\bthe chosen route\b"):
+        assert not re.search(claim, flat, re.I), ("a route is stated as chosen or a filing as made", claim)
+
+    ws = doc.split("## The worksheet: placeholders only", 1)[1].split("\n## ", 1)[0]
+    fields = [l for l in ws.splitlines() if l.startswith("- ")]
+    assert len(fields) >= 6, fields
+    for l in fields:
+        value = l[2:].split(":", 1)[1].rsplit("[owner decision]", 1)[0]
+        assert re.fullmatch(r"\s*\[[^\[\]]+\]\.\s*", value), (l, "a worksheet field holds more than a placeholder")
+
+    for part in ("## Questions for an accountant", "## Questions for a solicitor"):
+        section = doc.split(part, 1)[1].split("\n## ", 1)[0]
+        assert len(re.findall(r"^\d+\. .+\?", section, re.M)) >= 4, part
+
+    src = doc.split("## Sources, each read on 2026-11-20", 1)[1].split("\n## ", 1)[0]
+    lines = [l for l in src.splitlines() if l.startswith("- ") and "https://" in l]
+    assert len(lines) >= 7, lines
+    page = re.compile(r"https://www\.gov\.uk/\S+ \(first published \d{1,2} [A-Z][a-z]+ \d{4}, last updated "
+                      r"\d{1,2} [A-Z][a-z]+ \d{4}\)\. \[observed\]$")
+    for l in lines:
+        assert page.search(l), (l, "a source without its page or its own dates")
+    named = {re.match(r"- (.+?), https://", l).group(1) for l in lines}
+    cited = set(re.findall(r"\[observed: ([^\]]+)\]", doc)) - {"page"}
+    assert cited and cited <= named, ("a statement cites a source the list does not name", sorted(cited - named))
+
+    assert "is NOT CHECKED" in flat and "a solicitor's advice" in flat and "a qualified scholar" in flat
+    assert "## Not read, so not said" in doc
+    assert reg["FU-811"]["slot"] == "P5.7", reg["FU-811"]["slot"]

@@ -15917,11 +15917,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.7",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1149",
       "note": "",
       "slot_source": "the Owner asked on 2026-10-11 that this work be added to the plan; it is the item chartered for it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1149: docs/business/FORMATION_WORKPACK.md sets out the four routes the clause names - staying unincorporated during discovery (a sole trader), a company limited by shares, a community interest company, and a charitable or waqf-oriented arrangement as a later structure needing qualified advice - each from official pages read on 2026-11-20 with their own dates, compared in one table, and none chosen. A worksheet holds placeholders only, with no personal detail; there are five questions each for an accountant and a solicitor; what was not read (the statutes behind each route, registration fees, HMRC's own pages, Scotland and Northern Ireland, any source on a waqf) is listed as not read. Nothing is filed, registered or chosen. test_w1149 holds it, with eight blinds."
     },
     {
       "id": "FU-812",
