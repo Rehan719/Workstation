@@ -4,10 +4,11 @@
 // links open the services' own pages and nothing of theirs is copied. A failed read is said, never drawn as no help.
 import React, { useEffect, useState } from 'react';
 import { apiJson, errorMessage } from '../lib/api';
+import { Place, placeSaid } from '../lib/directory';
 
 export interface WhereHelp {
   a_qualified_scholar: { heading: string; steps: string[]; names_none_because: string; this_platform: string };
-  regulated_and_free_help: { name: string; link: string; for_what: string }[];
+  regulated_and_free_help: Place[];
   this_platform_is_not: string[];
   to_complain: string;
   basis: string;
@@ -57,7 +58,9 @@ export const WhereHelpIs: React.FC = () => {
             <ul className="space-y-1 text-sm text-slate-300">
               {help.regulated_and_free_help.map(e => (
                 <li key={e.link} data-testid="where-help-legal-entry">
-                  <a href={e.link} target="_blank" rel="noreferrer" className="underline text-sky-400">{e.name}</a> — {e.for_what}
+                  <span><a href={e.link} target="_blank" rel="noreferrer" className="underline text-sky-400">{e.name}</a> — {e.for_what}</span>
+                  {/* W1163 (P5.11 clause 3) - for whom, and when the page that says so was read: NOT RECENTLY CHECKED ninety days on */}
+                  <span data-testid="where-help-legal-checked" className="block text-[10px] text-slate-500">{placeSaid(e)}</span>
                 </li>
               ))}
             </ul>

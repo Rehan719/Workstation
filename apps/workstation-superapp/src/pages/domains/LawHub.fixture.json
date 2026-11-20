@@ -196,42 +196,106 @@
    {
     "name": "Find legal advice (GOV.UK)",
     "link": "https://www.gov.uk/find-legal-advice",
-    "for_what": "finding a solicitor, a legal adviser or free advice in England and Wales"
+    "for_what": "finding a solicitor, a legal adviser or free advice in England and Wales",
+    "nations": [
+     "England",
+     "Wales"
+    ],
+    "says_so": "https://www.gov.uk/find-legal-advice",
+    "how_read": "its address resolved when it was opened; its content was not read",
+    "recently_checked": true,
+    "checked": "read on 13 October 2026"
    },
    {
     "name": "Check if you can get legal aid (GOV.UK)",
     "link": "https://www.gov.uk/legal-aid/check-legal-aid",
-    "for_what": "seeing whether the cost of advice or representation may be met"
+    "for_what": "seeing whether the cost of advice or representation may be met",
+    "nations": [
+     "England",
+     "Wales"
+    ],
+    "says_so": "https://www.gov.uk/legal-aid/check-legal-aid",
+    "how_read": "its address resolved when it was opened; its content was not read",
+    "recently_checked": true,
+    "checked": "read on 13 October 2026"
    },
    {
     "name": "Citizens Advice",
     "link": "https://www.citizensadvice.org.uk/",
-    "for_what": "free, independent advice on work, money, housing and consumer problems"
+    "for_what": "free, independent advice on work, money, housing and consumer problems",
+    "nations": [
+     "England",
+     "Wales"
+    ],
+    "says_so": "https://www.citizensadvice.org.uk/",
+    "how_read": "its address resolved when it was opened; its content was not read",
+    "recently_checked": true,
+    "checked": "read on 13 October 2026"
    },
    {
     "name": "Acas",
     "link": "https://www.acas.org.uk/",
-    "for_what": "free advice on rights at work, and conciliation before a tribunal claim"
+    "for_what": "free advice on rights at work, and conciliation before a tribunal claim",
+    "nations": [
+     "England",
+     "Wales"
+    ],
+    "says_so": "https://www.acas.org.uk/",
+    "how_read": "its address resolved when it was opened; its content was not read",
+    "recently_checked": true,
+    "checked": "read on 13 October 2026"
    },
    {
     "name": "Law Centres Network",
     "link": "https://www.lawcentres.org.uk/",
-    "for_what": "free legal help from a local law centre, where one serves the area"
+    "for_what": "free legal help from a local law centre, where one serves the area",
+    "nations": [
+     "England",
+     "Wales"
+    ],
+    "says_so": "https://www.lawcentres.org.uk/",
+    "how_read": "its address resolved when it was opened; its content was not read",
+    "recently_checked": true,
+    "checked": "read on 13 October 2026"
    },
    {
     "name": "Advicenow",
     "link": "https://www.advicenow.org.uk/",
-    "for_what": "plain guides for a person handling a legal problem themselves"
+    "for_what": "plain guides for a person handling a legal problem themselves",
+    "nations": [
+     "England",
+     "Wales"
+    ],
+    "says_so": "https://www.advicenow.org.uk/",
+    "how_read": "its address resolved when it was opened; its content was not read",
+    "recently_checked": true,
+    "checked": "read on 13 October 2026"
    },
    {
     "name": "Advocate",
     "link": "https://weareadvocate.org.uk/",
-    "for_what": "free help from a volunteer barrister, for those who cannot pay and cannot get legal aid"
+    "for_what": "free help from a volunteer barrister, for those who cannot pay and cannot get legal aid",
+    "nations": [
+     "England",
+     "Wales"
+    ],
+    "says_so": "https://weareadvocate.org.uk/",
+    "how_read": "its address resolved when it was opened; its content was not read",
+    "recently_checked": true,
+    "checked": "read on 13 October 2026"
    },
    {
     "name": "LawWorks",
     "link": "https://www.lawworks.org.uk/legal-advice-individuals",
-    "for_what": "free legal advice clinics run by volunteer solicitors"
+    "for_what": "free legal advice clinics run by volunteer solicitors",
+    "nations": [
+     "England",
+     "Wales"
+    ],
+    "says_so": "https://www.lawworks.org.uk/legal-advice-individuals",
+    "how_read": "its address resolved when it was opened; its content was not read",
+    "recently_checked": true,
+    "checked": "read on 13 October 2026"
    }
   ],
   "this_platform_is_not": [
@@ -240,7 +304,7 @@
    "able to tell you whether a provision applies to your situation"
   ],
   "to_complain": "To complain about an answer, raise a claim. Under the answer of each of the 25 domain tools on the Law, Care, Education, Employment, Science and Religion pages, say what is wrong and the claim is raised from there; against a saved deliverable, raise a claim on the support page. A claim about an answer carries the fingerprint of its text and what served it, never the text itself. A claim is filed as a change that only a person decides, and it stays open until a person answers it; with sign-in off, the Owner answers every claim. This platform is not a regulated provider, so no ombudsman or regulator handles complaints about it.",
-  "basis": "Names and addresses only: nothing is copied from any of these sites, and none of them endorses this platform. Each address resolved when it was opened on 2026-10-13. No scholar and no religious body is named.",
+  "basis": "Names and addresses only: nothing is copied from any of these sites, and none of them endorses this platform. Each place says the nations it is for and the day the page that says so was read, and how; one read more than ninety days ago is said as not recently checked. Nothing here says whether a place is open, whether it will take your question, or whether it has an appointment for you. No scholar and no religious body is named.",
   "the_page": "/support#where-help-is",
   "composed": false,
   "expectations": {

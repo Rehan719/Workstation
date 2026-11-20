@@ -16,6 +16,8 @@ from typing import Any, Dict
 
 from fastapi import APIRouter
 
+from agentic_core.legal import directory as _dir      # W1163 (P5.11 clause 3)
+
 router = APIRouter(prefix="/api/v1/support", tags=["where-help-is"])
 
 #  where the page is, for a page elsewhere that points to it
@@ -78,14 +80,18 @@ TO_COMPLAIN = ("To complain about an answer, raise a claim. Under the answer of 
                "ombudsman or regulator handles complaints about it.")
 
 BASIS = ("Names and addresses only: nothing is copied from any of these sites, and none of them endorses this "
-         "platform. Each address resolved when it was opened on 2026-10-13. No scholar and no religious body is named.")
+         "platform. Each place says the nations it is for and the day the page that says so was read, and how; one "
+         "read more than ninety days ago is said as not recently checked. " + _dir.NOTHING_SAID + " No scholar and no "
+         "religious body is named.")
 
 
 def page() -> Dict[str, Any]:
     """The one page, the same wherever it is read. Nothing is composed and nothing about the reader is used."""
     return {
         "a_qualified_scholar": {**A_QUALIFIED_SCHOLAR, "steps": list(A_QUALIFIED_SCHOLAR["steps"])},
-        "regulated_and_free_help": [dict(h) for h in HELP_FROM_A_PERSON],
+        #  W1163 (P5.11 clause 3) - each place a row of the directory: its nations, the page that says so, the day that
+        #  page was read and how, and NOT RECENTLY CHECKED ninety days on
+        "regulated_and_free_help": _dir.rows(HELP_FROM_A_PERSON),
         "this_platform_is_not": list(THIS_PLATFORM_IS_NOT),
         "to_complain": TO_COMPLAIN,
         "basis": BASIS,

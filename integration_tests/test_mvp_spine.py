@@ -66022,7 +66022,9 @@ def test_w724_a_statute_provision_is_shown_word_for_word_and_help_is_a_list_of_l
     h = client.get("/api/v1/law/help").json()
     assert h["composed"] is False and len(h["regulated_and_free_help"]) >= 6
     for e in h["regulated_and_free_help"]:
-        assert set(e) == {"name", "link", "for_what"} and e["link"].startswith("https://"), e
+        #  W1163 (P5.11 clause 3) - each place is a row of the directory: its nations, the page that says so, the day
+        #  that page was read and how, and whether that was within ninety days
+        assert set(e) == {"name", "link", "for_what", "nations", "says_so", "how_read", "recently_checked", "checked"} and e["link"].startswith("https://"), e
         assert len(e["for_what"]) <= 110 and len(e["name"]) <= 60, ("an entry carries a paragraph", e)
     assert len({e["link"] for e in h["regulated_and_free_help"]}) == len(h["regulated_and_free_help"])
     assert "not a regulated provider" in h["to_complain"] and "nothing is copied" in h["basis"] and "none of them endorses" in h["basis"]
@@ -80724,7 +80726,7 @@ def test_w952_fu1189_nothing_a_person_types_into_a_domain_tool_is_stored_before_
     assert not holding({mat}), ("material a person handed over was stored before sign-in", holding({mat}))
 
 
-def test_w953_the_one_page_of_where_help_is_says_how_to_find_a_scholar_and_is_off_the_law_route(client):
+def test_w953_the_one_page_of_where_help_is_says_how_to_find_a_scholar_and_is_off_the_law_route(client, monkeypatch):
     """P5.20 clause 6 (W953). The one page of where help is says how to find a qualified scholar, where regulated and
     free legal help is, and how to complain about an answer; advice charities are linked, never copied. Measured: the
     page said nothing of a scholar and lived only on the Law route, and its complaint sentence named no way to reach a
@@ -80743,6 +80745,11 @@ def test_w953_the_one_page_of_where_help_is_says_how_to_find_a_scholar_and_is_of
 
     from agentic_core.api import where_help as _wh
     root = Path(__file__).resolve().parents[1]
+    #  W1163 - each place now says whether its page was read within ninety days, so the routes are asked as on the
+    #  day the rendered tests' answers were captured
+    import datetime as _dt1163
+    from agentic_core.legal import time_limits as _tl1163
+    monkeypatch.setattr(_tl1163, "_today", lambda: _dt1163.date(2026, 11, 20))
     page = _wh.page()
 
     #  1. the route outside Law: the one page, from the one source, taking nothing from the caller
@@ -81600,7 +81607,7 @@ def test_w964_fu1190_a_claim_can_name_an_answer_that_was_never_saved_by_its_fing
         assert client.get(f"/api/v1/support/claims/{on['claim_id']}", headers=H[k]).status_code == (200 if sees else 404), k
 
 
-def test_w965_fu1190_a_claim_can_be_raised_under_the_answer_of_each_of_the_25_domain_tools(client):
+def test_w965_fu1190_a_claim_can_be_raised_under_the_answer_of_each_of_the_25_domain_tools(client, monkeypatch):
     """FU-1190 closed (W965, P5.20 clause 6). W964 let a claim name an answer by the sha256 of its text, the route that
     gave it and what served it. The shared form every domain tool runs through now offers it under the answer. Held:
     - the claim is sent with the fingerprint of the one composition the save, the copy and every download carry, the
@@ -81646,6 +81653,11 @@ def test_w965_fu1190_a_claim_can_be_raised_under_the_answer_of_each_of_the_25_do
 
     #  the one page of where help is says how to complain about any answer, and its rendered test reads it
     from agentic_core.api import where_help as _wh
+    #  W1163 - each place now says whether its page was read within ninety days, so the routes are asked as on the
+    #  day the rendered tests' answers were captured
+    import datetime as _dt1163
+    from agentic_core.legal import time_limits as _tl1163
+    monkeypatch.setattr(_tl1163, "_today", lambda: _dt1163.date(2026, 11, 20))
     got = client.get("/api/v1/support/where-help-is").json()
     assert got["to_complain"] == _wh.TO_COMPLAIN
     for words in ("Under the answer of each of the 25 domain tools", "never the text itself",
@@ -91109,7 +91121,7 @@ def test_w1105_fu399_the_ratified_plan_entry_is_rendered_previewed_first_and_ent
         assert line in spec, ("the rendered test no longer reads this", line)
 
 
-def test_w1106_fu399_the_statute_panel_is_rendered_and_where_help_is_said_in_the_server_s_words(client):
+def test_w1106_fu399_the_statute_panel_is_rendered_and_where_help_is_said_in_the_server_s_words(client, monkeypatch):
     """FU-399 part 95 (W1106). The Law page's statute panel (components/StatutePanel.tsx, W724) had no rendered test:
     all ten of its elements were unread. Held here:
     - the fixture holds the routes' own answers on a fresh store: where help from a person is, with the five
@@ -91132,6 +91144,11 @@ def test_w1106_fu399_the_statute_panel_is_rendered_and_where_help_is_said_in_the
     assert bad["url"] == "/api/v1/law/statute/{kind}/{year}/{number}/section/{section}".format(**fx["ask"])
 
     #  the routes answer the same today: neither reaches a publisher
+    #  W1163 - each place now says whether its page was read within ninety days, so the routes are asked as on the
+    #  day the rendered tests' answers were captured
+    import datetime as _dt1163
+    from agentic_core.legal import time_limits as _tl1163
+    monkeypatch.setattr(_tl1163, "_today", lambda: _dt1163.date(2026, 11, 20))
     live = client.get("/api/v1/law/help")
     assert live.status_code == 200 and live.json() == h["body"], "the help the panel was rendered against is not the route's"
     live = client.get(bad["url"])
@@ -95159,4 +95176,137 @@ def test_w1162_p511_each_rule_says_its_sources_and_a_month_with_no_such_day_show
                                                                            "(W1161; read in W1162)")
     fu = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
           if r.get("closed_by") == "W1162"]
+    assert len(fu) == 1 and (fu[0]["status"], fu[0]["slot"], fu[0]["because"]) == ("done", "P5.11", "built"), fu
+
+
+def test_w1163_p511_each_place_a_person_can_go_says_its_nations_the_page_that_says_so_and_when_it_was_read(client, monkeypatch):
+    """P5.11 clause 3 (W1163): "a place a person can go is a row with its nation, what it helps with, its public route,
+    the page that says so and the date read; a row past its review date is shown as not recently checked. Nothing is
+    said about availability, acceptance or an appointment." The Owner ruled on 2026-10-12 that a place is shown as not
+    recently checked ninety days after the date it was read. The help list's eight places said one sentence for all of
+    them, that each address resolved when it was opened on 2026-10-13, and no nation. Held here:
+    1. each place is a row of the directory, from its own row in the register of sources: the nations that row gives,
+       the page that says so, the day it was read and how, in the register's own terms; read that day through the
+       ninetieth day after it, and NOT RECENTLY CHECKED from the ninety-first;
+    2. a place the register holds no reading of, and every place when the register cannot be read, is said as NOT
+       CHECKED with no nation, never as read; a page whose content was read is said so;
+    3. the one page of where help is, the Law page's help and a question about a person's own case all say each
+       place's row; the one page's basis says how a place is dated, and that nothing here says whether a place is open,
+       will take a question or has an appointment, and no place's own line says any of that;
+    4. the support page, the statute panel and the box beside a routed answer say each place's row; the captured
+       answers are the routes' own, ninety-one days on too, and the rendered tests read them;
+    5. the coverage row and the row."""
+    import datetime as _dt
+    import json
+    from pathlib import Path
+    from agentic_core.api import where_help as _wh
+    from agentic_core.legal import directory as _dir
+    from agentic_core.legal import time_limits as _tl
+    root = Path(__file__).resolve().parents[1]
+    reg = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    places = [dict(h) for h in _wh.HELP_FROM_A_PERSON]
+
+    def how(read_by):
+        return ("its address resolved when it was opened; its content was not read"
+                if "the page's content was NOT read" in read_by else "its content was read")
+
+    #  1. each place, from its own row in the register, and its ninety days
+    assert sorted(_dir.SAYS_SO) == sorted(p["link"] for p in places), "a place has no row named for it, or a row no place"
+    for p in places:
+        src = reg[_dir.SAYS_SO[p["link"]]]
+        assert src["status"] == "current" and src["page"] == p["link"], (p["name"], src["page"])
+        assert src["nation"] and set(src["nation"]) <= set(_tl.NATIONS), (p["name"], src["nation"])
+        day = _dt.date.fromisoformat(src["read_on"])
+        monkeypatch.setattr(_tl, "_today", lambda: day + _dt.timedelta(days=90))
+        got = _dir.place(dict(p))
+        assert {k: got[k] for k in ("name", "link", "for_what")} == p, got
+        assert (got["nations"], got["says_so"], got["how_read"]) == (src["nation"], src["page"], how(src["read_by"])), got
+        assert (got["recently_checked"], got["checked"]) == (True, f"read on {_tl._said(src['read_on'])}"), got
+        monkeypatch.setattr(_tl, "_today", lambda: day + _dt.timedelta(days=91))
+        got = _dir.place(dict(p))
+        assert (got["recently_checked"], got["checked"]) == (
+            False, f"NOT RECENTLY CHECKED - read on {_tl._said(src['read_on'])}, more than 90 days ago"), got
+    #  as the register stands today: every place read by one request to its address on 2026-10-13, its content not read
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2026, 11, 20))
+    today = _dir.rows(_wh.HELP_FROM_A_PERSON)
+    assert [r["link"] for r in today] == [p["link"] for p in places], "the places are not in the help list's order"
+    assert {(r["checked"], r["how_read"]) for r in today} == {
+        ("read on 13 October 2026", "its address resolved when it was opened; its content was not read")}, today
+
+    #  2. no reading, an unreadable register, and a page whose content was read
+    first = places[0]
+    none = _dir.place(dict(first), {})
+    assert (none["nations"], none["says_so"], none["how_read"], none["recently_checked"], none["checked"]) == (
+        None, None, None, False, "NOT CHECKED - the register of sources holds no reading of this place"), none
+    stranger = _dir.place({"name": "A place", "link": "https://example.org/", "for_what": "help"}, reg)
+    assert (stranger["nations"], stranger["checked"]) == (
+        None, "NOT CHECKED - the register of sources holds no reading of this place"), stranger
+    sid = _dir.SAYS_SO[first["link"]]
+    read_whole = _dir.place(dict(first), {sid: dict(reg[sid], read_on="2026-11-20", read_by="a round, the page read whole")})
+    assert (read_whole["how_read"], read_whole["checked"]) == ("its content was read", "read on 20 November 2026"), read_whole
+    monkeypatch.setattr(_tl, "REGISTER", root / "docs" / "no-such-register.json")
+    gone = _dir.rows(_wh.HELP_FROM_A_PERSON)
+    assert len(gone) == len(places) and {(g["nations"], g["how_read"], g["recently_checked"], g["checked"]) for g in gone} == {
+        (None, None, False, "NOT CHECKED - the register of sources could not be read")}, gone
+    monkeypatch.setattr(_tl, "REGISTER", root / "docs" / "SOURCES.json")
+
+    #  3. the routes say each place's row, and the one page says what nothing here says
+    page = client.get("/api/v1/support/where-help-is").json()
+    assert page["regulated_and_free_help"] == today
+    assert client.get("/api/v1/law/help").json()["regulated_and_free_help"] == today
+    routed = client.post("/api/v1/law/research", json={"question": "my employer sacked me yesterday, can I sue them?"})
+    routed = routed.json()
+    assert routed["method"] == "routed to people - not answered" and routed["routed_to_people"][0]["name"] == "Acas"
+    assert sorted(routed["routed_to_people"], key=lambda r: r["link"]) == sorted(today, key=lambda r: r["link"])
+    for phrase in ("nothing is copied from any of these sites, and none of them endorses this platform",
+                   "Each place says the nations it is for and the day the page that says so was read, and how; one "
+                   "read more than ninety days ago is said as not recently checked.",
+                   "Nothing here says whether a place is open, whether it will take your question, or whether it has an "
+                   "appointment for you.", "No scholar and no religious body is named."):
+        assert phrase in page["basis"], ("the one page's basis no longer says", phrase)
+    assert "2026-10-13" not in page["basis"], "the basis still dates every place by one sentence"
+    for p in places:
+        line = f" {p['for_what'].lower()} "
+        for said in (" open ", " opening ", " appointment", " available", " accept", " will take ", " waiting "):
+            assert said not in line, ("a place's own line says something of availability or acceptance", p["name"], said)
+
+    #  4. the pages, the captured answers and the rendered tests
+    src = root / "apps" / "workstation-superapp" / "src"
+    lib = (src / "lib" / "directory.ts").read_text(encoding="utf-8")
+    for line in ("export const placeSaid = (p: Place) => (p.nations",
+                 "? `For ${listing(p.nations)}: ${p.checked}${p.how_read ? `, ${p.how_read}` : ''}.`",
+                 ": `${p.checked}.`);"):
+        assert line in lib, ("the directory's sentence is no longer this", line)
+    for rel, testid in (("components/WhereHelpIs.tsx", "where-help-legal-checked"),
+                        ("components/StatutePanel.tsx", "law-help-checked"),
+                        ("pages/domains/LawHub.tsx", "law-routed-checked")):
+        text = (src / rel).read_text(encoding="utf-8")
+        assert f'data-testid="{testid}"' in text and "lib/directory';" in text, (rel, "says no place's row")
+        assert text.count("placeSaid(") == 1, (rel, "a place's row is said more than once, or not at all")
+    fx = json.loads((src / "components" / "WhereHelpIs.fixture.json").read_text(encoding="utf-8"))
+    assert fx["page"] == page, "the support page's captured answer is not the route's own"
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2027, 1, 12))
+    assert client.get("/api/v1/support/where-help-is").json() == fx["page_stale"], "the answer ninety-one days on"
+    assert all(not p["recently_checked"] and p["checked"].startswith("NOT RECENTLY CHECKED")
+               for p in fx["page_stale"]["regulated_and_free_help"])
+    sp = json.loads((src / "components" / "StatutePanel.fixture.json").read_text(encoding="utf-8"))
+    hub = json.loads((src / "pages" / "domains" / "LawHub.fixture.json").read_text(encoding="utf-8"))
+    assert sp["help"]["body"]["regulated_and_free_help"] == hub["help"]["regulated_and_free_help"] == today
+    spec = (src / "components" / "WhereHelpIs.test.tsx").read_text(encoding="utf-8")
+    for line in ("it('a place whose page was read more than ninety days ago is said as not recently checked'",
+                 "serve({ status: 200, body: captured.page_stale });",
+                 "        `For ${listing(e.nations)}: ${e.checked}, ${e.how_read}.`);",
+                 "      stale.map(e => `For ${listing(e.nations)}: ${e.checked}, ${e.how_read}.`)));"):
+        assert line in spec, ("the support page's rendered test no longer reads this", line)
+    spec = (src / "components" / "StatutePanel.test.tsx").read_text(encoding="utf-8")
+    assert ("getByTestId('law-help-checked').textContent).toBe(\n"
+            "        `For ${listing(p.nations)}: ${p.checked}, ${p.how_read}.`);") in spec, "the statute panel's test"
+
+    #  5. the coverage row, and the row
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    assert cov["law-directory"]["today"].endswith(
+        "; each place says the nations it is for and the day the page that says so was read, and how, and is said as "
+        "not recently checked ninety days on (W1163)"), cov["law-directory"]["today"]
+    fu = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+          if r.get("closed_by") == "W1163"]
     assert len(fu) == 1 and (fu[0]["status"], fu[0]["slot"], fu[0]["because"]) == ("done", "P5.11", "built"), fu

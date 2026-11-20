@@ -26481,6 +26481,32 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Done in W1162: each rule names its rows in the register of sources, and every answer says each one's page, the day it was read and the round that read it, said as not recently checked ninety days on; an unreadable register says each source as not checked and leaves none out. Where the same date N months later does not exist, the earlier of the two days the period could end on is worked out and shown, with the sentence that the provision does not settle it, and the panel's headline says so. Acas's time-limits page and the Northern Ireland tribunals' page were read and are rows of the register; the rules reproduce Acas's two worked examples. test_w1162 drives it."
+    },
+    {
+      "id": "FU-1806",
+      "title": "The help list gave its places no nation, one reading date for all of them, and nothing was ever said as not recently checked",
+      "why": "Measured in W1163 against P5.11 clause 3: a place a person can go is a row with its nation, what it helps with, its public route, the page that says so and the date read, and a row past its review date is shown as not recently checked. The help list's eight places said one sentence for all, that each address resolved on 2026-10-13, and no nation, though each one's row in the register of sources said its nations, its page, the day it was read and that its content was not read.",
+      "source": "W1163 (the help list read against P5.11 clause 3)",
+      "found": "2026-11-20",
+      "files": [
+        "agentic_core/api/where_help.py",
+        "agentic_core/legal/directory.py",
+        "agentic_core/legal/own_case.py",
+        "apps/workstation-superapp/src/components/WhereHelpIs.tsx",
+        "apps/workstation-superapp/src/components/StatutePanel.tsx",
+        "apps/workstation-superapp/src/pages/domains/LawHub.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.11",
+      "status": "done",
+      "closed_by": "W1163",
+      "note": "",
+      "slot_source": "P5.11 clause 3 is the directory: each place a row with its nation, the page that says so and the date read, not recently checked after ninety days",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1163: each place of the help list is a row of the directory, from its row in the register of sources: the nations it is for, the page that says so, the day that page was read and how (its address resolved, its content not read, for all eight), and NOT RECENTLY CHECKED ninety days on, driven by date; a place with no reading is said as not checked. The support page, the Law page's statute panel and the box beside an answer that routes a question about a person's own case to people say it under each place, and the basis says nothing is said about whether a place is open, takes a question or has an appointment. test_w1163 drives it."
     }
   ],
   "routes": [

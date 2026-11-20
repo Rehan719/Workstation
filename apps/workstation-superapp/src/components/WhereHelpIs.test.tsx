@@ -8,6 +8,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import captured from './WhereHelpIs.fixture.json';
 import { WhereHelpIs } from './WhereHelpIs';
 
+//  W1163 - a place's row as the panel says it: for whom, and when the page that says so was read and how
+const listing = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
+
 type Reply = { status: number; body: unknown };
 
 function serve(reply: Reply) {
@@ -47,7 +50,9 @@ describe("WhereHelpIs, rendered against the route's own answer", () => {
       expect(a.getAttribute('href')).toBe(e.link);
       expect(a.getAttribute('rel')).toBe('noreferrer');
       expect(a.textContent).toBe(e.name);
-      expect(rows[i].textContent).toBe(`${e.name} — ${e.for_what}`);
+      expect(rows[i].querySelector('span')!.textContent).toBe(`${e.name} — ${e.for_what}`);
+      expect(rows[i].querySelector('[data-testid="where-help-legal-checked"]')!.textContent).toBe(
+        `For ${listing(e.nations)}: ${e.checked}, ${e.how_read}.`);
     });
   });
 
@@ -58,6 +63,15 @@ describe("WhereHelpIs, rendered against the route's own answer", () => {
     const not = screen.getByTestId('where-help-not');
     expect(Array.from(not.querySelectorAll('li')).map(li => li.textContent)).toEqual(captured.page.this_platform_is_not);
     expect(screen.getByTestId('where-help-basis').textContent).toBe(captured.page.basis);
+  });
+
+  it('a place whose page was read more than ninety days ago is said as not recently checked', async () => {
+    const stale = captured.page_stale.regulated_and_free_help;
+    serve({ status: 200, body: captured.page_stale });
+    render(<WhereHelpIs />);
+    await waitFor(() => expect(screen.getAllByTestId('where-help-legal-checked').map(s => s.textContent)).toEqual(
+      stale.map(e => `For ${listing(e.nations)}: ${e.checked}, ${e.how_read}.`)));
+    expect(stale.every(e => e.checked.startsWith('NOT RECENTLY CHECKED') && !e.recently_checked)).toBe(true);
   });
 
   it('a failed read is said in the server\'s words, and nothing is drawn as if there were no help', async () => {

@@ -12,6 +12,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import captured from './StatutePanel.fixture.json';
 import StatutePanel from './StatutePanel';
 
+//  W1163 - a place's row as the panel says it: for whom, and when the page that says so was read and how
+const listing = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
+
 type Answer = { status: number; body: unknown };
 
 //  each address answers what the routes answered for it; what was asked is kept in order
@@ -80,6 +83,8 @@ describe('StatutePanel, the Act itself and where help from a person is, rendered
       const link = within(help).getByRole('link', { name: p.name });
       expect(link.getAttribute('href')).toBe(p.link);
       expect(link.parentElement?.textContent).toBe(`${p.name} — ${p.for_what}`);
+      expect(within(link.parentElement!.parentElement!).getByTestId('law-help-checked').textContent).toBe(
+        `For ${listing(p.nations)}: ${p.checked}, ${p.how_read}.`);
     }
     for (const s of h.this_platform_is_not) expect(within(help).getByText(s)).toBeTruthy();
     expect(within(help).getByText(h.to_complain)).toBeTruthy();

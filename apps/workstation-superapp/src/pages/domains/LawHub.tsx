@@ -15,6 +15,7 @@ import { toolsFor } from '../../lib/toolRegistry';
 import { useTab } from '../../lib/useTab';   // W1027 - the tab is in the address
 import { useServingStatus, servingIsFloor } from '../../components/ServingNow';   // W866 (FU-1013)
 import { apiJson, ApiError, errorMessage } from '../../lib/api';   // W996
+import { placeSaid } from '../../lib/directory';   // W1163 (P5.11 clause 3)
 
 //  W996 (FU-399 part 28) - a refusal says the server's status and reason, an unreachable server says that, and a
 //  sentence of this page's own (an empty list) stands as written
@@ -172,7 +173,9 @@ export const LawHub: React.FC = () => {
                     <p className="text-[10px] font-bold text-amber-300">Help from a person</p>
                     <ul className="space-y-1">
                       {r.routed_to_people.map((h: any) => (
-                        <li key={h.link} className="text-[10px] text-slate-300"><a href={h.link} target="_blank" rel="noreferrer" className="underline text-sky-400">{h.name}</a> - {h.for_what}</li>
+                        <li key={h.link} className="text-[10px] text-slate-300"><a href={h.link} target="_blank" rel="noreferrer" className="underline text-sky-400">{h.name}</a> - {h.for_what}
+                          {/* W1163 (P5.11 clause 3) - for whom, and when the page that says so was read */}
+                          <span data-testid="law-routed-checked" className="block text-[9px] text-slate-500">{placeSaid(h)}</span></li>
                       ))}
                     </ul>
                   </div>
