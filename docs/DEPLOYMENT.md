@@ -114,6 +114,10 @@ passed in. The Dockerfile is the one committed here, unchanged.
 Found by the dry run: the legal matter's folder is set in `agentic_core/legal/matter.json` as a path on the
 Owner's own Windows machine, so the image carries the path and `/api/v1/law/bundle` answers with it (FU-1282).
 
+Closed by W1129: the folder is named on the machine that holds it, by `LEGAL_MATTER_FOLDER` in that machine's own
+`.env`, which the image leaves out. The committed file names none, and the route answers with the folder's state
+and the setting that named it, never its path.
+
 Not yet done (FU-603): a secrets pattern with no stored keys, the data directory's behaviour on a machine whose
 disk is replaced, a rollback drill, and cost labels. The project, the billing and the deploy itself stay the
 Owner's.

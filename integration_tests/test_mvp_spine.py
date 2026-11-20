@@ -36660,7 +36660,11 @@ def test_w566_the_supplied_distress_route_carries_its_reviewer_and_the_matter_ha
     #  No row was opened for the folder being empty, and that is only defensible because the condition
     #  is MEASURED rather than remembered. If this flag ever means "the Owner approved indexing", the
     #  approval and the readiness have been conflated and an empty folder could authorise a read.
-    assert str(_m.get("bundle_dir") or "").strip(), "no bundle folder is named"
+    #  W1129 (FU-1282) - NAMED ON THE MACHINE THAT HOLDS IT: the committed file names no folder, because a committed
+    #  path is a path on one person's machine (the dry run found it in the image and in the route's answer); its
+    #  basis says where the folder is named
+    assert not str(_m.get("bundle_dir") or "").strip(), "the committed file names a folder"
+    assert "LEGAL_MATTER_FOLDER" in str(_m.get("bundle_dir_basis") or ""), "the matter does not say where its folder is named"
     #  W605 (P3.23) — MEASURED, NOT REMEMBERED: the stored flag is gone, because a stored value is the opposite
     #  of the measurement this leg's own comment requires. legal/bundle.py computes it from the folder.
     assert "bundle_indexing_may_start" not in _m, (
@@ -59834,43 +59838,49 @@ def test_w676_no_test_or_audit_process_opens_the_owners_matter_folder(client, mo
     """W676 - the Owner's rule is that nothing about the matter leaves the machine. The folder was named by an
     absolute path in a committed file and no runner redirected it, so a test, an audit agent or a drive could be
     handed its lines. Three floors, each driven: the suite names a folder of no one; a process with no variable
-    is held back from the committed path; and the route says so."""
+    is held back from the machine's folder; and the route says so. W1129 (FU-1282) moved the folder out of the
+    committed file into the machine's own setting (LEGAL_MATTER_FOLDER, in its .env); this guard drives a folder of
+    its own in that setting, so it still proves the floor."""
     import json as _json
     import os as _os
     import pathlib as _pl
     from agentic_core.legal import bundle as _b
-    _committed = str(_json.loads((_pl.Path(_b.__file__).parent / "matter.json").read_text(encoding="utf-8")).get("bundle_dir") or "")
-    assert _committed, "the committed file names no folder, so this guard would prove nothing"
-    # 1. as the suite runs: the variable is set by the suite's own configuration, and it is not the committed path
+    _mine = tmp_path / "w676-machine-folder"
+    _mine.mkdir()
+    (_mine / "w676-letter.txt").write_text("w676 the machine's own matter line", encoding="utf-8")
+    monkeypatch.setenv(_b.MACHINE_VAR, str(_mine))
+    _named = _os.path.realpath(str(_mine))
+    # 1. as the suite runs: the variable is set by the suite's own configuration, and it is not the machine's folder
     _amb = _os.environ.get(_b.ENV_VAR, "")
-    assert _amb and _pl.Path(_amb).resolve() != _pl.Path(_committed).resolve(), _amb
+    assert _amb and _os.path.realpath(_amb) != _named, _amb
     _r = _b.resolve_bundle_dir()
-    assert _r.get("path") in (None, _os.path.realpath(_amb)) and _r.get("path") != _os.path.realpath(_committed), _r
-    # 2. the variable removed: the resolver itself holds the committed path back, and says why
+    assert _r.get("path") in (None, _os.path.realpath(_amb)) and _r.get("path") != _named, _r
+    # 2. the variable removed: the resolver itself holds the machine's folder back, and says why
     monkeypatch.delenv(_b.ENV_VAR, raising=False)
     _h = _b.resolve_bundle_dir()
     assert _h["state"] == _b.UNSET and _h["path"] is None and _h.get("held_back") is True, _h
-    assert "NOT opened" in _h["basis"] and _b.ENV_VAR in _h["basis"], _h["basis"]
+    assert "NOT opened" in _h["basis"] and _b.ENV_VAR in _h["basis"] and _b.MACHINE_VAR in _h["basis"], _h["basis"]
     _ls = _b.list_documents()
     assert _ls["documents"] is None and _ls["count"] is None, ("documents were listed from a folder that was held back", _ls)
     _s = client.get("/api/v1/law/bundle").json()
-    assert _committed not in _json.dumps(_s) or _s.get("folder") is None, ("the route still names the folder as open", _s)
+    assert _named not in _json.dumps(_s) and _s.get("folder_state") == _b.UNSET, ("the route still names the folder as open", _s)
     _a = client.post("/api/v1/law/matter/assemble", json={"template_id": "et1_claim",
-                     "particulars": [{"name": "w676 probe", "words": ["the"]}], "authorities": []})
-    assert _a.status_code == 200 and _committed not in _a.text, "the clerk answered from the committed folder"
+                     "particulars": [{"name": "w676 probe", "words": ["w676", "matter", "line"]}], "authorities": []})
+    assert _a.status_code == 200 and _named not in _a.text and "the machine's own matter line" not in _a.text, (
+        "the clerk answered from the machine's folder")
     # 2b. EVERY environment marker removed (as at import time, before a test is current): the fallback alone
-    #     still holds the path back, and says which marker it was
+    #     still holds the folder back, and says which marker it was
     for _k in _b._NOT_THE_OWNERS:
         monkeypatch.delenv(_k, raising=False)
     assert _b._not_the_owners_process() == "pytest is loaded", _b._not_the_owners_process()
     _hb = _b.resolve_bundle_dir()
     assert _hb.get("held_back") is True and "pytest is loaded" in _hb["basis"], _hb
-    # 3. with no marker at all the committed path IS resolved - so leg 2 is a refusal and not a missing folder
+    # 3. with no marker at all the machine's folder IS resolved - so leg 2 is a refusal and not a missing folder
     monkeypatch.setattr(_b, "_not_the_owners_process", lambda: "")
     _o = _b.resolve_bundle_dir()
     #    (only the folder's existence is asked; nothing in it is listed or read here)
-    assert _o.get("held_back") is not True and _o["state"] in (_b.CONFIGURED_PRESENT, _b.CONFIGURED_ABSENT), _o
-    assert _o["source"] == "agentic_core/legal/matter.json", _o
+    assert _o.get("held_back") is not True and _o["state"] == _b.CONFIGURED_PRESENT and _o["path"] == _named, _o
+    assert _b.MACHINE_VAR in str(_o["source"]), _o
     # 4. the audit backend names its own folder before anything is imported
     _boot = (_pl.Path(_b.__file__).resolve().parents[2] / "scripts" / "boot_audit_backend.py").read_text(encoding="utf-8")
     assert _boot.index('os.environ["LEGAL_BUNDLE_DIR"]') < _boot.index("os.environ.update({"), "the audit backend sets it too late"
@@ -92067,3 +92077,80 @@ def test_w1128_fu1156_the_image_carries_the_pages_what_the_routes_read_and_the_f
                                                     "machine, and the bundle route answers with it")]
     assert len(found) == 1 and found[0]["slot"] == "P4.5" and found[0]["source"].startswith("W1128 "), found
     assert found[0]["id"] in rec, "the record does not name the row the dry run found"
+
+
+def test_w1129_fu1282_the_matter_folder_is_named_on_the_machine_that_holds_it_and_no_answer_carries_its_path(client, monkeypatch, tmp_path):
+    """FU-1282 (W1129), found by P4.5's dry run (W1128): the legal matter's folder was named in a committed file, as a
+    path on the Owner's own Windows machine, so the image carried it and GET /api/v1/law/bundle answered with it.
+    - no committed file names the folder: matter.json's bundle_dir is blank, and its basis says where it is named;
+    - the machine names it by LEGAL_MATTER_FOLDER in its own .env, which set-up never fills and the image leaves out;
+    - that setting is resolved for the Owner's own process and held back from a test, audit or drive process;
+    - no answer carries the folder's path: not the route, not the clerk's answer, not a basis, present or absent;
+    - the local-session notes carry the one line for the Owner's machine, and the deployment record says it closed."""
+    import json as _json
+    import os as _os
+    import pathlib as _pl
+    import re as _re
+    from agentic_core.legal import bundle as _b
+    root = _pl.Path(__file__).resolve().parents[1]
+    _m = _json.loads((root / "agentic_core/legal/matter.json").read_text(encoding="utf-8"))
+    assert _m.get("bundle_dir") == "", "the committed file names a folder"
+    _basis = _m.get("bundle_dir_basis") or ""
+    for _frag in ("LEGAL_MATTER_FOLDER", "never committed", "Created EMPTY by W566", "consent for that file"):
+        assert _frag in _basis, (_frag, _basis[:200])
+    #  no file this round wrote names a Windows home-folder path to the matter's folder (read by its shape, no name)
+    _win = _re.compile(r"[A-Za-z]:\\+Users\\+[^\\\s`\"]+\\+data\\+legal-matter")
+    for _rel in ("agentic_core/legal/matter.json", "agentic_core/legal/bundle.py", "docs/FABLE_DELIVERY_PROMPT.md",
+                 "docs/DEPLOYMENT.md", "docs/RESUME_ON_MY_MACHINE.md", ".env.example"):
+        assert not _win.search((root / _rel).read_text(encoding="utf-8")), (_rel, "names the folder by its path")
+    assert _b.MACHINE_VAR == "LEGAL_MATTER_FOLDER" and _b.ENV_VAR == "LEGAL_BUNDLE_DIR"
+
+    #  set-up never fills the setting, and the image leaves the machine's .env out
+    _ex = (root / ".env.example").read_text(encoding="utf-8")
+    assert not _re.findall(r"^LEGAL_MATTER_FOLDER\s*=", _ex, _re.M) and "# LEGAL_MATTER_FOLDER=" in _ex, (
+        "set-up would name a folder for a machine")
+    assert ".env" in (root / ".dockerignore").read_text(encoding="utf-8").splitlines(), "the image may carry .env"
+
+    #  the Owner's own process: present, and nothing that answers carries the path
+    _mine = tmp_path / "w1129-machine-folder"
+    _mine.mkdir()
+    (_mine / "w1129-letter.txt").write_text("w1129 a line in the machine's folder", encoding="utf-8")
+    _named = _os.path.realpath(str(_mine))
+    monkeypatch.delenv(_b.ENV_VAR, raising=False)
+    monkeypatch.setenv(_b.MACHINE_VAR, str(_mine))
+    monkeypatch.setattr(_b, "_not_the_owners_process", lambda: "")
+    _o = _b.resolve_bundle_dir()
+    assert _o["state"] == _b.CONFIGURED_PRESENT and _o["path"] == _named and _b.MACHINE_VAR in _o["source"], _o
+    _st = _b.status()
+    assert "folder" not in _st and _named not in _json.dumps(_st) and str(_mine) not in _json.dumps(_st), _st
+    assert _st["folder_state"] == _b.CONFIGURED_PRESENT and _st["document_count"] == 1, _st
+    _rt = client.get("/api/v1/law/bundle")
+    assert _rt.status_code == 200 and _named not in _rt.text and str(_mine) not in _rt.text, _rt.text[:300]
+    _as = client.post("/api/v1/law/matter/assemble", json={"template_id": "et1_claim",
+                      "particulars": [{"name": "w1129 probe", "words": ["w1129", "machine"]}], "authorities": []})
+    assert _as.status_code == 200 and _named not in _as.text and str(_mine) not in _as.text, _as.text[:300]
+
+    #  absent: the basis says which setting named it, never the path
+    _gone = tmp_path / "w1129-not-here"
+    monkeypatch.setenv(_b.MACHINE_VAR, str(_gone))
+    _ab = _b.resolve_bundle_dir()
+    assert _ab["state"] == _b.CONFIGURED_ABSENT and str(_gone) not in _ab["basis"] and _b.MACHINE_VAR in _ab["basis"], _ab
+    _rt2 = client.get("/api/v1/law/bundle")
+    assert _rt2.status_code == 200 and str(_gone) not in _rt2.text, _rt2.text[:300]
+
+    #  nothing named: the safe default says where a folder is named
+    monkeypatch.delenv(_b.MACHINE_VAR, raising=False)
+    _un = _b.resolve_bundle_dir()
+    assert _un["state"] == _b.UNSET and _b.MACHINE_VAR in _un["basis"] and "never in a committed file" in _un["basis"], _un
+
+    #  a test, audit or drive process is held back from the machine's folder
+    monkeypatch.setenv(_b.MACHINE_VAR, str(_mine))
+    monkeypatch.setattr(_b, "_not_the_owners_process", lambda: "PYTEST_CURRENT_TEST")
+    _hb = _b.resolve_bundle_dir()
+    assert _hb["state"] == _b.UNSET and _hb.get("held_back") is True and _hb["path"] is None, _hb
+
+    #  the Owner's machine: one line, in the local-session notes; the record says the row closed
+    _rs = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    assert "LEGAL_MATTER_FOLDER=${USERPROFILE}\\data\\legal-matter" in _rs, "the Owner's machine is not told its line"
+    _dp = " ".join((root / "docs/DEPLOYMENT.md").read_text(encoding="utf-8").split())
+    assert "Closed by W1129" in _dp and "never its path" in _dp, "the deployment record does not say the row closed"

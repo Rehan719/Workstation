@@ -26036,11 +26036,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.5",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1129",
       "note": "",
       "slot_source": "P4.5's dry run found it (W1128): the image carries the path",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Closed by W1129: the folder is named on the machine that holds it, by LEGAL_MATTER_FOLDER in that machine's own .env (set-up never fills it and the image leaves .env out), and held back from a test, audit or drive process as the committed path was. matter.json names no folder, and no answer carries the folder's path: the route, the clerk's answer and every basis say the state and the setting that named it. The plan's ruling line names the folder by kind, and the local-session notes carry the Owner's one line. test_w1129 holds it with four blinds; test_w566 and test_w676 hold the new rule."
     }
   ],
   "routes": [

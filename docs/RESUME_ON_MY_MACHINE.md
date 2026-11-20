@@ -20,6 +20,10 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
    docs/HANDOVER_W626.md section 3 (the round discipline - follow it exactly), then docs/FABLE_DELIVERY_PROMPT.md.
 3. Set up once if needed: a Python 3.12 venv with
    pip install -r requirements.txt pytest pytest-xdist==3.8.0, then npm install at the repo root.
+   Then, once: add the line LEGAL_MATTER_FOLDER=${USERPROFILE}\data\legal-matter to .env if it is not there
+   (W1129: the legal matter's folder is named on this machine only, never in a committed file), and check it with
+   python -c "from dotenv import load_dotenv; load_dotenv(); from agentic_core.legal import bundle; print(bundle.resolve_bundle_dir()['state'])"
+   which prints configured_present. Until the line is there, no document in the folder is read.
 4. Check for an unfinished round: if `git status` shows uncommitted changes, they are the last round's
    work in progress. Read `git diff`, finish it (its guard tests and blinds are in
    integration_tests/test_mvp_spine.py), run the full suite once, then commit and push.
@@ -53,4 +57,6 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
 - **Still yours:**
   - Merge PR #462 when you are ready.
   - FU-1046 (above).
+  - One line in `.env` on your machine for the legal matter's folder (step 3 of the prompt), if the local
+    session has not added it.
   - The P4 switches, in the order you ruled on 2026-10-12: sign-in on your own machine first, real money last.
