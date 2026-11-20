@@ -77430,7 +77430,8 @@ def test_w907_fu604_the_nineteen_removable_dependencies_are_gone_and_nothing_liv
     assert not hits, ("live code reaches a removed dependency", hits[:10])
 
     #  the rows FU-283 held for a plan item, or found reached another way, are not part of the ruling
-    for kept in ("sqlalchemy", "sqlmodel", "psycopg2-binary", "streamlit", "pandas", "plotly"):
+    #  W1141 (FU-1277): streamlit, pandas and plotly left by the Owner's own ruling of 2026-11-19 (FU-1174)
+    for kept in ("sqlalchemy", "sqlmodel", "psycopg2-binary"):
         assert kept in declared, (kept, "was removed, and the ruling covered only the REMOVABLE rows")
 
 
@@ -77449,7 +77450,9 @@ def test_w908_streamlit_pandas_and_plotly_are_reached_by_nothing_live_and_their_
     dv = (root / "docs/DEPENDENCY_VERDICTS.md").read_text(encoding="utf-8")
     for dist in ("streamlit", "pandas", "plotly"):
         row = re.search(rf"^\| {dist} \| ([^|]+) \|", dv, re.M)
-        assert row and "REMOVABLE" in row.group(1) and "not ruled" in row.group(1), (dist, row and row.group(1))
+        #  W1141 (FU-1277): the Owner ruled on 2026-11-19 (FU-1174), and the three were removed
+        assert row and "REMOVABLE" in row.group(1) and "ruled 2026-11-19 (FU-1174)" in row.group(1) and (
+            "removed" in row.group(1)), (dist, row and row.group(1))
 
     #  1 - nothing live imports or probes them, or what only streamlit brings
     mods = ["streamlit", "pandas", "plotly", "altair", "blinker", "gitdb", "git", "narwhals", "pyarrow", "pydeck",
@@ -92953,3 +92956,39 @@ def test_w1140_fu1284_https_is_caddy_in_front_of_the_platform_and_no_one_signs_i
     oid = owner[0]["id"]
     assert f"({oid})" in step12 and f"({oid})" in rec and f"{oid} (W1140):" in read("docs/FABLE_DELIVERY_PROMPT.md")
     assert f"({oid})" in read("docs/RESUME_ON_MY_MACHINE.md")
+
+
+def test_w1141_fu1277_streamlit_plotly_and_pandas_are_not_declared_and_nothing_only_streamlit_brought_is_pinned():
+    """FU-1277 (W1141), P4.5, as the Owner ruled on 2026-11-19 (FU-1174). Nothing live has imported streamlit, plotly
+    or pandas since W896 moved the dashboard aside (test_w908 holds that). pyproject.toml no longer declares them, the
+    devcontainer installs only the pins, and the lock and requirements.txt were made again: 188 pins became 175, every
+    other pin at the same version. The full suite ran in a fresh venv built only from the new requirements.txt before
+    the round's own suite. Held here:
+    - none of the three is declared, and the devcontainer installs nothing the pins do not name;
+    - neither the lock nor requirements.txt holds streamlit, plotly or any of the eleven packages only streamlit
+      brought;
+    - pandas stays pinned only because packages kept here require it, as the lock says (camel-tools and mesa);
+    - the verdicts say the three were ruled and removed."""
+    import pathlib
+    import tomllib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")
+    declared = {k.lower() for k in tomllib.loads(read("pyproject.toml"))["tool"]["poetry"]["dependencies"]}
+    for dist in ("streamlit", "pandas", "plotly"):
+        assert dist not in declared, (dist, "is declared again, against the Owner's ruling of 2026-11-19 (FU-1174)")
+    dc = read(".devcontainer/devcontainer.json")
+    assert "streamlit" not in dc and "pip3 install --user -r requirements.txt;" in dc, "the devcontainer installs more"
+
+    gone = {"streamlit", "plotly", "altair", "blinker", "gitdb", "gitpython", "narwhals", "pyarrow", "pydeck", "smmap",
+            "toml", "tornado", "watchdog"}
+    lock = tomllib.loads(read("poetry.lock"))
+    locked = {p["name"].lower() for p in lock["package"]}
+    pinned = {l.split("==", 1)[0].strip().lower() for l in read("requirements.txt").splitlines() if "==" in l}
+    assert not gone & locked and not gone & pinned, ("pinned again", sorted(gone & (locked | pinned)))
+    needs = sorted(p["name"] for p in lock["package"] if "pandas" in {d.lower() for d in (p.get("dependencies") or {})})
+    assert "pandas" in locked and "pandas" in pinned and {"camel-tools", "mesa"} <= set(needs), (
+        "pandas is pinned with nothing kept here that requires it, or it is gone and they need it", needs)
+
+    dv = read("docs/DEPENDENCY_VERDICTS.md")
+    assert "## W1141 (FU-1277) — streamlit, plotly and pandas's direct declaration are removed (2026-11-20)" in dv
+    assert "188 pins became 175" in dv and "The full suite ran in a fresh venv built only from" in " ".join(dv.split())

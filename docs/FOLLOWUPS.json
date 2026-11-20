@@ -25944,11 +25944,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P4.5",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1141",
       "note": "",
       "slot_source": "the image installs what the code uses (P4.5's pre-flight, as FU-604 was); ruled 2026-11-19 on FU-1174",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1141, as the Owner ruled on 2026-11-19 (FU-1174): pyproject.toml no longer declares streamlit, plotly or pandas, and the devcontainer no longer installs streamlit. The lock was made again and requirements.txt exported from it: 188 pins became 175, streamlit and plotly leaving with the eleven packages only streamlit brought, every other pin unchanged. pandas stays pinned because camel-tools and mesa require it. The full suite ran in a fresh venv built only from the new requirements.txt before the round's own suite."
     },
     {
       "id": "FU-1278",
