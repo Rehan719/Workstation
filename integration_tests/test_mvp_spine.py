@@ -95606,8 +95606,9 @@ def test_w1167_p511_a_subject_that_is_regulated_advice_is_its_row_and_a_route_to
     went to the composer like any other. Held here:
     1. the three rows: each says who regulates it as the pages read say, quotes only sentences its register rows
        record, names its places for each nation, says each page read with the day, and says its regulator's own page:
-       the Immigration Advice Authority's, read on 2026-11-20; the Financial Conduct Authority's, not read, its site
-       refused here; for a claims company, no regulator's page - and NOT RECENTLY CHECKED ninety days on, by the one
+       the Immigration Advice Authority's, read on 2026-11-20; for a debt solution and a claims company, the Financial
+       Conduct Authority's, read at its own site by W1179 (refused here before) - and NOT RECENTLY CHECKED ninety
+       days on, by the one
        rule, and nothing said as read when the register cannot be read;
     2. GET /api/v1/law/boundaries serves them, composed by nothing;
     3. a research question naming one is answered by its row and the places a person can go, after the urgent routes,
@@ -95651,13 +95652,13 @@ def test_w1167_p511_a_subject_that_is_regulated_advice_is_its_row_and_a_route_to
     assert imm["regulator"]["page"]["id"] == "iaa-information-for-advice-seekers"
     assert imm["regulator"]["page"]["checked"] == "read on 20 November 2026"
     assert reg["iaa-information-for-advice-seekers"]["kind"] == "regulator guidance"
-    assert (debt["regulator"]["name"], debt["regulator"]["read"], debt["regulator"]["page"]) == (
-        "the Financial Conduct Authority", False, None), debt["regulator"]
-    assert "refused by this environment's network" in debt["regulator"]["why"]
-    assert (cmc["regulator"]["name"], cmc["regulator"]["read"], cmc["regulator"]["page"]) == (None, False, None)
-    assert "were not read whole" in cmc["regulator"]["why"] and "www.fca.org.uk" in cmc["regulator"]["why"]
-    assert cmc["regulated"].startswith("No page read here says who regulates a claims company today")
-    assert "June 2014" in cmc["regulated"] and cmc["places"] == []
+    #  W1179: both regulators read at the FCA's own pages once its site was allowed
+    for got, page in ((debt, "fca-unauthorised-unsuitable-debt-advice"), (cmc, "fca-using-claims-management-companies")):
+        assert (got["regulator"]["name"], got["regulator"]["read"], got["regulator"]["page"]["id"]) == (
+            "the Financial Conduct Authority", True, page), got["regulator"]
+        assert got["regulator"]["why"] is None and got["regulator"]["page"]["checked"] == "read on 20 November 2026"
+    assert cmc["regulated"].startswith("The Financial Conduct Authority's page says a claims management company")
+    assert "aviation" in cmc["regulated"] and cmc["places"] == []
     assert [p["nation"] for p in imm["places"]] == ["UK", "England and Wales", "Scotland", "Northern Ireland"]
     assert [p["nation"] for p in debt["places"]] == ["England and Wales", "Scotland"]
     assert all(p["own_site"] == _urg.NOT_OPENED for p in imm["places"] + debt["places"])
@@ -95774,7 +95775,8 @@ def test_w1167_p511_a_subject_that_is_regulated_advice_is_its_row_and_a_route_to
                        ("law-debt", "gov-uk-options-for-dealing-with-debts"),
                        ("law-claims-management", "gov-uk-claim-compensation-cmc")):
         c = cov[cid]
-        assert (c["state"], c["route"]) == ("route_only", route) and route in reg and c["today"].endswith("(W1167)"), c
+        assert (c["state"], c["route"]) == ("route_only", route) and route in reg and (
+            c["today"].endswith(("(W1167)", "(W1167, W1179)"))), c
         assert "excluded_by" not in c, c
     for cid in ("law-immigration", "law-debt-solutions"):
         assert cov[cid]["ruling"].startswith("Owner ruling 2026-10-12 (advice, 3)"), cov[cid]
@@ -96516,3 +96518,72 @@ def test_w1178_the_local_notes_name_the_open_pull_request_and_say_pr463_was_merg
     plan = " ".join(fp.split())
     assert ("PR #463 merged by the Owner once green (that evening the Owner asked the cloud session to merge it, and it "
             "was merged at 7744c530 with all six checks green; PR #465 carries the later rounds)") in plan
+
+
+def test_w1179_p511_the_debt_and_claims_company_rows_read_their_regulators_own_page(client):
+    """P5.11 clause 7 (W1179): "the row says which regulator's page was read and when." W1167's debt-solution and
+    claims-company rows could not: the Financial Conduct Authority's site was refused by this environment's network.
+    With it allowed on the evening of 2026-11-20, the FCA's two consumer pages were read whole there. Held here:
+    1. each FCA page is a current row of the register of sources, read by W1179 on 2026-11-20 at www.fca.org.uk, saying
+       its own dates and the page's sentences, and listing the FCA Handbook as not read;
+    2. both boundary rows name the FCA as their regulator, read at its own page with the day, and say nothing of a
+       refusal; the claims-company row says, from the FCA's page, which claims a company must be authorised to handle,
+       that some are regulated by a legal regulator instead and that aviation claims are not regulated by the FCA,
+       and quotes the page that a person need not use one - never the FCA's "us" as if it were this platform's;
+    3. a question about a claims company for a flight delay is answered with that row, composed by nothing;
+    4. the coverage register's two rows say what each row now says."""
+    import json
+    from pathlib import Path
+    from agentic_core.legal import boundaries as _bnd
+    root = Path(__file__).resolve().parents[1]
+    reg = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+
+    #  1. the two pages
+    pages = {"fca-using-claims-management-companies": (
+                 "https://www.fca.org.uk/consumers/using-claims-management-companies",
+                 ("first published 7 March 2019 and last updated 12 May 2026",
+                  "'CMCs must be authorised by us if they provide services for claims concerning:'",
+                  "housing disrepair", "certain industrial injuries benefits", "the Law Society of Scotland",
+                  "(such as aviation), but those services aren't regulated by us.'",
+                  "'You don’t need to use a CMC to make a claim, it’s free and simple to do it yourself.'")),
+             "fca-unauthorised-unsuitable-debt-advice": (
+                 "https://www.fca.org.uk/consumers/unauthorised-unsuitable-debt-advice",
+                 ("first published 24 March 2025 and last updated 22 September 2026",
+                  "'Firms who give debt advice must be authorised by us and follow our rules.",
+                  "insolvency practitioners, also need to be licensed to advise on and administer IVAs.'"))}
+    for sid, (page, phrases) in pages.items():
+        r = reg[sid]
+        assert (r["status"], r["page"], r["read_on"], r["kind"]) == ("current", page, "2026-11-20", "regulator guidance"), r
+        assert r["read_by"].startswith("round W1179, the FCA's own page read whole on 2026-11-20, not through a summary")
+        assert [p for p in phrases if p not in r["says"]] == [], (sid, [p for p in phrases if p not in r["says"]])
+        assert "www.handbook.fca.org.uk" in r["not_read"] and r["used_by"] == ["agentic_core/legal/boundaries.py"], sid
+
+    #  2. the boundary rows
+    rows = {r["id"]: r for r in _bnd.rows()}
+    debt, cmc = rows["debt_solution"], rows["claims_management"]
+    for got, sid in ((debt, "fca-unauthorised-unsuitable-debt-advice"), (cmc, "fca-using-claims-management-companies")):
+        g = got["regulator"]
+        assert (g["name"], g["read"], g["why"], g["page"]["id"]) == ("the Financial Conduct Authority", True, None, sid), g
+        assert g["page"]["checked"] == "read on 20 November 2026" and "refused" not in json.dumps(got), got["id"]
+    said = cmc["regulated"]
+    for part in ("The Financial Conduct Authority's page says a claims management company must be authorised by it",
+                 "financial services and products", "personal injury", "employment matters", "criminal injury",
+                 "housing disrepair", "certain industrial injuries benefits",
+                 "unless a legal regulator regulates it instead", "such as aviation, are not regulated by the FCA"):
+        assert part in said, ("the row does not say", part)
+    assert " us" not in f" {said} " and not said.endswith("."), said
+    assert "You don’t need to use a CMC to make a claim, it’s free and simple to do it yourself." in cmc["words"]
+    assert all("by us" not in w for w in cmc["words"]), "the FCA's 'us' is quoted as if it were this platform's"
+    assert "fca-using-claims-management-companies" in [s["id"] for s in cmc["sources"]]
+
+    #  3. a flight-delay question is answered with the row
+    a = client.post("/api/v1/law/research", json={"question": "should I use a claims company for my flight delay?"}).json()
+    assert a["boundary"]["id"] == "claims_management" and a["ai_provenance"]["composed"] is False, a.get("method")
+    assert "such as aviation, are not regulated by the FCA" in a["analysis"], a["analysis"]
+
+    #  4. the coverage register
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    d, c = cov["law-debt-solutions"]["today"], cov["law-claims-management"]["today"]
+    assert "refused" not in d and "the Financial Conduct Authority's own page, read there on 2026-11-20" in d, d
+    assert "no page read here establishes who regulates" not in c and "such as aviation, are not regulated by the FCA" in c
+    assert d.endswith("(W1167, W1179)") and c.endswith("(W1167, W1179)"), (d[-40:], c[-40:])

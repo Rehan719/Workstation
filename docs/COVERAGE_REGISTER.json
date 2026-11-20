@@ -169,7 +169,7 @@
    "subject": "Which debt solution to take",
    "nation": "England",
    "state": "route_only",
-   "today": "a question naming a way of dealing with debts is not answered: it is answered with the row - a Debt Management Plan is set up with a company the Financial Conduct Authority authorises and a debt adviser helps choose, in the words of GOV.UK's guide read on 2026-11-20; the Financial Conduct Authority's own site is refused by this environment's network, and the row says so - with MoneyHelper's free debt advice and Scotland's Debt Arrangement Scheme, after the urgent routes (W1167)",
+   "today": "a question naming a way of dealing with debts is not answered: it is answered with the row - a Debt Management Plan is set up with a company the Financial Conduct Authority authorises and a debt adviser helps choose, in the words of GOV.UK's guide read on 2026-11-20; the Financial Conduct Authority's own page, read there on 2026-11-20, says firms who give debt advice must be authorised by it - with MoneyHelper's free debt advice and Scotland's Debt Arrangement Scheme, after the urgent routes (W1167, W1179)",
    "ruling": "Owner ruling 2026-10-12 (advice, 3): information and a route to an authorised person, never advice",
    "route": "gov-uk-options-for-dealing-with-debts"
   },
@@ -180,7 +180,7 @@
    "nation": "England",
    "state": "route_only",
    "route": "gov-uk-claim-compensation-cmc",
-   "today": "a question naming a claims management company is not answered: its row says that no page read here establishes who regulates one today (GOV.UK's guide for a person on it was published in June 2014 and not updated since, and the Financial Conduct Authority's site is refused by this environment's network), quotes that a claim made without one keeps all the compensation, and routes to the places a person can go, after the urgent routes (W1167)"
+   "today": "a question naming a claims management company is not answered: its row says, from the Financial Conduct Authority's own page read on 2026-11-20, which claims a company must be authorised by the FCA to handle, that some are regulated by a legal regulator instead and that its services on other claims, such as aviation, are not regulated by the FCA; it quotes that a claim made without one keeps all the compensation and that a person need not use one, and routes to the places a person can go, after the urgent routes (W1167, W1179)"
   },
   {
    "id": "law-family-safety",

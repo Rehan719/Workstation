@@ -1744,6 +1744,50 @@
    "used_by": [
     "agentic_core/legal/checklists.py"
    ]
+  },
+  {
+   "id": "fca-using-claims-management-companies",
+   "names": [
+    "Using claims management companies (Financial Conduct Authority)"
+   ],
+   "kind": "regulator guidance",
+   "nation": [
+    "England",
+    "Wales",
+    "Scotland",
+    "Northern Ireland"
+   ],
+   "status": "current",
+   "page": "https://www.fca.org.uk/consumers/using-claims-management-companies",
+   "read_on": "2026-11-20",
+   "read_by": "round W1179, the FCA's own page read whole on 2026-11-20, not through a summary",
+   "says": "The Financial Conduct Authority's consumer page, first published 7 March 2019 and last updated 12 May 2026. 'CMCs must be authorised by us if they provide services for claims concerning:' financial services and products; personal injury; employment matters, for example, unfair dismissal; criminal injury; housing disrepair; certain industrial injuries benefits. 'But some CMCs, or other firms that provide claims management services, are regulated by a legal regulator instead': the Solicitors Regulation Authority, the Bar Standards Board, CILEx Regulation and the Law Society of Scotland. 'CMCs might provide services on other types of claims (such as aviation), but those services aren't regulated by us.' 'You don’t need to use a CMC to make a claim, it’s free and simple to do it yourself.' For claims started on or after 1 March 2022, the maximum fee depends on the value of the claim, and 'The fee cap doesn't apply if you choose to pursue a claim in court with a CMC.'",
+   "not_read": "the FCA Firm Checker and the legal regulators' registers it names; the FCA's rules for claims management companies, in its Handbook (www.handbook.fca.org.uk, refused by this environment's network); the two GOV.UK records of 2019 and 2020 on the regulation of claims management companies",
+   "used_by": [
+    "agentic_core/legal/boundaries.py"
+   ]
+  },
+  {
+   "id": "fca-unauthorised-unsuitable-debt-advice",
+   "names": [
+    "Unauthorised or unsuitable debt advice (Financial Conduct Authority)"
+   ],
+   "kind": "regulator guidance",
+   "nation": [
+    "England",
+    "Wales",
+    "Scotland",
+    "Northern Ireland"
+   ],
+   "status": "current",
+   "page": "https://www.fca.org.uk/consumers/unauthorised-unsuitable-debt-advice",
+   "read_on": "2026-11-20",
+   "read_by": "round W1179, the FCA's own page read whole on 2026-11-20, not through a summary",
+   "says": "The Financial Conduct Authority's consumer page, first published 24 March 2025 and last updated 22 September 2026. 'Firms who give debt advice must be authorised by us and follow our rules. Individuals who arrange IVAs, known as insolvency practitioners, also need to be licensed to advise on and administer IVAs.' 'Any advice given by a firm that isn’t authorised may be wrong, misleading or not in your best interests.' It points to MoneyHelper for guidance on dealing with debt and to its Debt Advice Locator for free services, and to the FCA Firm Checker to check that a firm is authorised.",
+   "not_read": "the FCA Firm Checker and the Financial Services Register themselves; the FCA's rules on debt advice, in its Handbook (www.handbook.fca.org.uk, refused by this environment's network); MoneyHelper's pages",
+   "used_by": [
+    "agentic_core/legal/boundaries.py"
+   ]
   }
  ]
 }
