@@ -92361,7 +92361,9 @@ def test_w1131_the_local_prompt_names_every_row_waiting_on_the_owner_and_keeps_o
     for frag in ("it may still be pushing to main-l1fsqo, so do not push there",
                  "a branch of your own", "open its own pull request", "Never push to main without me"):
         assert frag in flat, (frag, "the notes would let a local session push beside the cloud session")
-    assert "Merge PR #462" not in notes and "carried by **PR #462**" not in notes, "a merged pull request is offered"
+    for merged in ("#462", "#463"):   # W1178: #463 merged on 2026-11-20
+        assert f"Merge PR {merged}" not in notes and f"carried by **PR {merged}**" not in notes, (
+            "a merged pull request is offered", merged)
 
     fp = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
     live = re.search(r"Done: (\d+) of (\d+) items — P1 (\d+)/(\d+) · P2 (\d+)/(\d+) · P3 (\d+)/(\d+) · "
@@ -96489,3 +96491,28 @@ def test_w1177_fu1077_the_six_rows_refused_to_w1148_are_read_whole_at_their_publ
     for named in ("www.handbook.fca.org.uk", "Owner's to approve", "W1177", "403 at the proxy on 2026-11-20"):
         assert named in fu["why"], (named, "FU-1077 does not say it")
     assert "still read only through a summarising fetch" not in fu["why"].lower(), fu["why"]
+
+
+def test_w1178_the_local_notes_name_the_open_pull_request_and_say_pr463_was_merged():
+    """W1178. PR #463 was merged on the evening of 2026-11-20 by the cloud session, at the Owner's request, once all six
+    checks were green; PR #465 carries the later rounds. Held here:
+    1. the local-session notes offer no merged pull request: they name PR #465 as the one that carries the later
+       rounds, the one a local session watches for, and the one to merge, and say PR #463 was merged with its rounds;
+    2. the plan's list of what is with the Owner says PR #463 was merged, and names PR #465. (The notes' figures
+       were brought up to the plan's here; W1131's guard holds that they never say more than the plan.)"""
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    notes = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    flat = " ".join(notes.split())
+    for said in ("if the open pull request from main-l1fsqo (PR #465 from 2026-11-20) is merged,",
+                 "PR #463 (rounds W1119–W1175) on 2026-11-20, each on your instruction",
+                 "Later rounds are on `main-l1fsqo`, carried by **PR #465**.",
+                 "Merge PR #465 when you are ready, or ask the cloud session to merge it once green"):
+        assert said in flat, ("the notes do not say", said)
+    for stale in ("Merge PR #463", "carried by **PR #463**", "(PR #463 on 2026-11-20) is merged"):
+        assert stale not in flat, ("the notes still offer a merged pull request", stale)
+
+    fp = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    plan = " ".join(fp.split())
+    assert ("PR #463 merged by the Owner once green (that evening the Owner asked the cloud session to merge it, and it "
+            "was merged at 7744c530 with all six checks green; PR #465 carries the later rounds)") in plan

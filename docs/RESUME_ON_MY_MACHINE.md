@@ -18,7 +18,7 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
    audit has run; 2026-12-31 at the latest) it may still be pushing to main-l1fsqo, so do not push there: work on a
    branch of your own named local-owner (if it exists, check it out and merge origin/main-l1fsqo into it;
    otherwise create it from origin/main-l1fsqo), push that branch, and open its own pull request.
-   Once the cycles have stopped: if the open pull request from main-l1fsqo (PR #463 on 2026-11-20) is merged,
+   Once the cycles have stopped: if the open pull request from main-l1fsqo (PR #465 from 2026-11-20) is merged,
    work on main (git checkout main && git pull); otherwise git checkout main-l1fsqo && git pull origin
    main-l1fsqo, and keep pushing there. Never push to main without me.
 2. Read, in this order: docs/REMAINING_WORK_MEASURED.md (every open item, measured 2026-11-10),
@@ -55,9 +55,10 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
 
 ## What the cloud session left (the short version)
 
-- **All work is in git.** PR #462 (rounds W785–W1118) was merged into `main` on 2026-11-19 on your instruction.
-  Later rounds are on `main-l1fsqo`, carried by **PR #463**.
-- **The plan,** on 2026-11-20: 93 of 119 items done (P1 18/18 · P2 39/41 · P3 30/32 · P4 0/6 · P5 6/22). P2.40 and P2.41
+- **All work is in git.** PR #462 (rounds W785–W1118) was merged into `main` on 2026-11-19, and PR #463 (rounds
+  W1119–W1175) on 2026-11-20, each on your instruction; the cloud session merged #463 at your request, with all
+  six checks green. Later rounds are on `main-l1fsqo`, carried by **PR #465**.
+- **The plan,** on 2026-11-20: 97 of 119 items done (P1 18/18 · P2 39/41 · P3 30/32 · P4 3/6 · P5 7/22). P2.40 and P2.41
   have every row closed, and close on the final audit. The current figures are the PLAN NOW block of
   `docs/FABLE_DELIVERY_PROMPT.md`.
 - **Measured remaining work,** on 2026-11-10: about 214–392 rounds across the 32 items then open, most of it in the
@@ -69,7 +70,7 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
   measured; PR #462 merged) and 2026-11-20 (that day's recommendations accepted, and that afternoon the ten
   decisions put to you, each taken as recommended; among them, the cycles run into December).
 - **Still yours:**
-  - Merge PR #463 when you are ready.
+  - Merge PR #465 when you are ready, or ask the cloud session to merge it once green, as you did for PR #463.
   - The rows in step 5: FU-1165 and FU-1286, each a step there.
   - One line in `.env` on your machine for the legal matter's folder (step 3 of the prompt), if the local
     session has not added it.

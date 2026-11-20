@@ -243,7 +243,9 @@ STILL WITH THE OWNER (the plan marks each "OWNER RULING" — do not choose for t
     advice sites allowed; letsencrypt.org allowed for the Waterlow score's terms, whose owner's address now serves
     a parking page, so the score stays withheld (FU-1033, closed as not assessable); the domain; the deploy with
     its uptime check and its restore; the two ventures; the three letters; the five home-folder places; PR #463
-    merged by the Owner once green; the 8-hour cycles run into December, until the plan's build items are closed
+    merged by the Owner once green (that evening the Owner asked the cloud session to merge it, and it was merged
+    at 7744c530 with all six checks green; PR #465 carries the later rounds); the 8-hour cycles run into
+    December, until the plan's build items are closed
     and the final audit has run, 2026-12-31 at the latest; and what no round takes, unchanged.)
     (Five more put that evening were accepted the same day, each as recommended: seven regulator sites allowed
     in the environment's network; P4 completed as dated boundaries, with sign-in and the invited stage only on
