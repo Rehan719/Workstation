@@ -26661,11 +26661,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.12",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1171",
       "note": "",
       "slot_source": "P5.12's boundary: nothing a person types is stored before authentication",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1171: the form tool's rule covers the Education and Care forms as it covers the Law forms (an endpoint under /api/v1/law/, /api/v1/education/ or /api/v1/care/): signed out, nothing typed and no answer is kept in My Work, after an answer or a refinement, and nothing is handed to the Genesis journey; the form says so before it is filled. Signed in, the work is kept as before, and a form elsewhere is unchanged. A claim raised against an answer kept nowhere still names it by the fingerprint of the text the copy and every download carry. The coverage rows for a learner's own record and a person's care record say so. Rendered tests drive an Education form and a Care form signed out and signed in, and a claim; test_w1171 holds them."
     },
     {
       "id": "FU-1814",

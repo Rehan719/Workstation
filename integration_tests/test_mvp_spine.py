@@ -95948,7 +95948,8 @@ def test_w1169_p511_the_law_forms_keep_nothing_typed_in_the_browser_before_sign_
     #  1. the form tool
     assert "export const isSignedIn = (): boolean => signedIn();" in hist
     assert "export const ADVICE_SURFACE = '/api/v1/law/';" in tool
-    assert "export const keepsNothing = (endpoint: string) => endpoint.startsWith(ADVICE_SURFACE) && !isSignedIn();" in tool
+    #  W1171 - the rule covers the Education and Care forms too
+    assert "export const keepsNothing = (endpoint: string) =>\n  OWN_MATTER_SURFACES.some(s => endpoint.startsWith(s)) && !isSignedIn();" in tool
     saves = [m.start() for m in re.finditer(r"saveOutput\(", tool)]
     assert len(saves) == 2, ("the form tool saves in a place this guard does not know", len(saves))
     for i in saves:
@@ -95977,7 +95978,8 @@ def test_w1169_p511_the_law_forms_keep_nothing_typed_in_the_browser_before_sign_
     done = [r for r in rows if r.get("title", "").startswith("Every Law form kept what a person typed")]
     assert len(done) == 1 and (done[0]["status"], done[0]["slot"], done[0]["because"]) == ("done", "P5.11", "built"), done
     left = [r for r in rows if r.get("title", "").startswith("The Education and Care forms keep what a person typed")]
-    assert len(left) == 1 and (left[0]["status"], left[0]["slot"]) == ("open", "P5.12"), left
+    #  W1171 closed it
+    assert len(left) == 1 and (left[0]["status"], left[0]["closed_by"]) == ("done", "W1171"), left
 
 
 def test_w1170_p511_no_named_act_is_shown_in_a_law_answer_unless_it_resolves_against_a_held_source(client, monkeypatch):
@@ -96058,3 +96060,64 @@ def test_w1170_p511_no_named_act_is_shown_in_a_law_answer_unless_it_resolves_aga
     fu = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
           if r.get("title", "").startswith("A Law answer showed any Act its text named")]
     assert len(fu) == 1 and (fu[0]["status"], fu[0]["slot"], fu[0]["because"]) == ("done", "P5.11", "built"), fu
+
+
+def test_w1171_p512_p513_the_education_and_care_forms_keep_nothing_typed_in_the_browser_before_sign_in():
+    """P5.12's boundary (W1171): "nothing a person types is stored before authentication"; P5.13's: "no person's care
+    record is stored before authentication." On the server both held: every Education and Care route that composes
+    names a person's own words, which W952 keeps out of the interaction log and the AI memory before sign-in. In the
+    browser they did not. W1169 made the one form tool keep nothing typed on the Law forms before sign-in and registered
+    the Education and Care forms, which still saved the first 400 characters typed, and the answer, to My Work, signed
+    in or not, and offered to hand both to the Genesis journey. Held here:
+    1. the form tool's rule covers the Law, Education and Care forms, and every save asks it first;
+    2. every form on the Education and Care pages is the form tool's on its own surface, and every composing call of
+       their routes names the person's own words;
+    3. the rendered tests drive an Education form and a Care form signed out and signed in, and a claim against an
+       answer kept nowhere;
+    4. the coverage rows and the row."""
+    import json
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    src = root / "apps" / "workstation-superapp" / "src"
+    tool = (src / "components/DomainTool.tsx").read_text(encoding="utf-8")
+
+    #  1. the form tool
+    assert "export const OWN_MATTER_SURFACES = [ADVICE_SURFACE, '/api/v1/education/', '/api/v1/care/'];" in tool
+    assert ("export const keepsNothing = (endpoint: string) =>\n  OWN_MATTER_SURFACES.some(s => endpoint.startsWith(s)) "
+            "&& !isSignedIn();") in tool
+    saves = [m.start() for m in re.finditer(r"saveOutput\(", tool)]
+    assert len(saves) == 2, ("the form tool saves in a place this guard does not know", len(saves))
+    for i in saves:
+        assert "keepsNothing(endpoint)" in tool[max(0, i - 400):i], ("a save that does not ask first", tool[i - 200:i + 40])
+
+    #  2. the pages' forms are the form tool's on their own surfaces; the routes name the person's own words
+    for rel, prefix in (("pages/domains/EducationHub.tsx", "/api/v1/education/"), ("pages/domains/CareHub.tsx", "/api/v1/care/")):
+        page = (src / rel).read_text(encoding="utf-8")
+        ends = re.findall(r'endpoint="([^"]+)"', page)
+        assert len(ends) == 4 and all(e.startswith(prefix) for e in ends), (rel, ends)
+        assert page.count("<DomainTool") == len(ends), (rel, "a form on the page that is not the form tool's")
+    for rel in ("agentic_core/api/education.py", "agentic_core/api/care.py"):
+        code = (root / rel).read_text(encoding="utf-8")
+        calls, named = code.count("await ai_text("), code.count("user_text=person_said(")
+        assert calls == named == 4, (rel, calls, named, "a composing call that names no person's words")
+
+    #  3. the rendered tests
+    spec = (src / "components/DomainTool.test.tsx").read_text(encoding="utf-8")
+    for line in ("describe('DomainTool on the Education and Care forms keeps nothing typed until a person is signed in'",
+                 "expect(OWN_MATTER_SURFACES).toEqual(['/api/v1/law/', '/api/v1/education/', '/api/v1/care/']);",
+                 "for (const endpoint of ['/api/v1/education/lesson-plan', '/api/v1/care/care-plan']) {",
+                 "expect(kept()).not.toContain('w1171 what the person typed');",
+                 "localStorage.setItem('workstation_token', 'w1171-a-token');",
+                 "it('a claim against a Care answer kept nowhere still names it by its fingerprint, never its text'",
+                 "artefact_kind: 'answer', artefact_id: EXPORTED_SHA256,"):
+        assert line in spec, ("the rendered test no longer reads this", line)
+
+    #  4. the coverage rows and the row
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    for rid in ("education-learner-record", "care-care-record"):
+        row = cov[rid]
+        assert row["state"] == "excluded" and row["excluded_by"] and row["today"].endswith("(W1171)"), row
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    done = [r for r in rows if r.get("title", "").startswith("The Education and Care forms keep what a person typed")]
+    assert len(done) == 1 and (done[0]["status"], done[0]["closed_by"], done[0]["because"]) == ("done", "W1171", "built"), done

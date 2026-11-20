@@ -14,7 +14,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import captured from './DomainTool.fixture.json';
 import claimed from './SupportClaims.fixture.json';   // W965 - the claim route's own answers
-import { DomainTool, KEEPS_NOTHING } from './DomainTool';
+import { DomainTool, KEEPS_NOTHING, OWN_MATTER_SURFACES } from './DomainTool';
 
 type Reply = { status: number; body: unknown };
 
@@ -347,5 +347,86 @@ describe('DomainTool on the advice surface keeps nothing typed until a person is
     await run('/api/v1/science/methodology');
     expect(screen.queryByTestId('tool-keeps-nothing')).toBeNull();
     expect(kept()).toContain('w1169 what the person typed');
+  });
+});
+
+// W1171 (P5.12's and P5.13's boundaries) — THE EDUCATION AND CARE FORMS KEEP NOTHING TYPED BEFORE SIGN-IN, as the Law
+// forms do (W1169). Signed out, an Education form and a Care form keep nothing typed and no answer in this browser,
+// hand nothing to another page, and say so before the form; signed in, each keeps its work as before. A claim raised
+// against an answer kept nowhere still names it by the fingerprint of the text the copy and every download carry.
+describe('DomainTool on the Education and Care forms keeps nothing typed until a person is signed in', () => {
+  //  W965's answer and the sha256 of `${plan}\n\n_${disclaimer}_`, computed apart from the page when W965 was written
+  const ANSWER = { plan: 'w965 the plan as it was shown', disclaimer: 'w965 a disclaimer that travels with it',
+    ai_provenance: { served_by: 'native' } };
+  const EXPORTED_SHA256 = '1842c10de0336bfbb6b2ec30d863a929114d3bd67cfa9784f75816c54b7c903f';
+  const [claim] = claimed.answer_claims.claims;
+  const sent: { url: string; body: any }[] = [];
+  const kept = () => [localStorage, sessionStorage].flatMap(s =>
+    Array.from({ length: s.length }, (_, i) => `${s.key(i)}=${s.getItem(s.key(i)!) ?? ''}`)).join('\n');
+
+  async function run(endpoint: string) {
+    sent.length = 0;
+    vi.spyOn(axios, 'post').mockResolvedValue({ data: ANSWER } as never);
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      const r = (status: number, body: unknown) => ({ ok: status < 400, status, statusText: '', json: async () => body });
+      if (init?.method === 'POST') {
+        sent.push({ url, body: JSON.parse(String(init.body ?? 'null')) });
+        return r(200, { ...claim, state: 'OPEN' });
+      }
+      if (url.startsWith('/api/v1/review-options?endpoint=')) return r(599, { detail: 'the test served nothing here' });
+      if (url === '/api/v1/native-ai/status') return r(200, captured.status);
+      return r(200, {});
+    }));
+    render(
+      <MemoryRouter>
+        <DomainTool title="A tool" description="what it does" endpoint={endpoint} resultKey="plan" claimable
+          fields={[{ name: 'notes', label: 'Notes', type: 'textarea' }]} />
+      </MemoryRouter>,
+    );
+    fireEvent.change(screen.getByLabelText('Notes'), { target: { value: 'w1171 what the person typed' } });
+    fireEvent.click(screen.getByRole('button', { name: /Generate/ }));
+    await screen.findByText(ANSWER.plan);
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+
+  it('the forms that keep nothing before sign-in are the Law, Education and Care forms', () => {
+    expect(OWN_MATTER_SURFACES).toEqual(['/api/v1/law/', '/api/v1/education/', '/api/v1/care/']);
+  });
+
+  for (const endpoint of ['/api/v1/education/lesson-plan', '/api/v1/care/care-plan']) {
+    it(`${endpoint}, signed out: the sentence is said before the form, and nothing typed and no answer is kept`, async () => {
+      await run(endpoint);
+      const note = screen.getByTestId('tool-keeps-nothing');
+      expect(note.textContent).toBe(KEEPS_NOTHING);
+      expect(note.compareDocumentPosition(screen.getByLabelText('Notes')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(kept()).not.toContain('w1171 what the person typed');
+      expect(kept()).not.toContain(ANSWER.plan);
+      expect(screen.queryByRole('button', { name: /Commercialise via Genesis/ })).toBeNull();
+    });
+
+    it(`${endpoint}, signed in: the work is kept, as before`, async () => {
+      localStorage.setItem('workstation_token', 'w1171-a-token');
+      await run(endpoint);
+      expect(screen.queryByTestId('tool-keeps-nothing')).toBeNull();
+      expect(kept()).toContain('w1171 what the person typed');
+    });
+  }
+
+  it('a claim against a Care answer kept nowhere still names it by its fingerprint, never its text', async () => {
+    await run('/api/v1/care/care-plan');
+    fireEvent.change(screen.getByLabelText('What is wrong with this answer'), { target: { value: 'w1171 it leaves out the evening dose' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Raise a claim about this answer' }));
+    await waitFor(() => expect(screen.getByTestId('domain-claim-done').textContent).toBe(`Raised: ${claim.claim_id} — OPEN.`));
+    expect(sent).toEqual([{ url: '/api/v1/support/claims', body: {
+      artefact_kind: 'answer', artefact_id: EXPORTED_SHA256,
+      endpoint: '/api/v1/care/care-plan', served_by: 'native', what_is_wrong: 'w1171 it leaves out the evening dose' } }]);
+    expect(kept()).not.toContain(ANSWER.plan);
+    expect(JSON.stringify(sent)).not.toContain(ANSWER.plan);
   });
 });

@@ -127,7 +127,11 @@ const withDisclosures = (body: string, data: any): string =>
 //  PERSON'S OWN MATTER WAITS FOR SIGN-IN: until a person is signed in, a Law form keeps nothing they typed, and no
 //  answer composed from it, in this browser - not in My Work, and not handed to another page - and says so first
 export const ADVICE_SURFACE = '/api/v1/law/';
-export const keepsNothing = (endpoint: string) => endpoint.startsWith(ADVICE_SURFACE) && !isSignedIn();
+//  W1171 (P5.12's and P5.13's boundaries) - the Education and Care forms are the same: nothing a person types is
+//  stored before authentication, and no person's care record is
+export const OWN_MATTER_SURFACES = [ADVICE_SURFACE, '/api/v1/education/', '/api/v1/care/'];
+export const keepsNothing = (endpoint: string) =>
+  OWN_MATTER_SURFACES.some(s => endpoint.startsWith(s)) && !isSignedIn();
 export const KEEPS_NOTHING = ('Nothing typed into this form is kept, and neither is its answer: a person\'s own '
   + 'matter is kept only for someone signed in.');
 

@@ -368,7 +368,7 @@
    "subject": "A learner's goals, work, progress and mastery",
    "nation": "England",
    "state": "excluded",
-   "today": "not built",
+   "today": "not built: a learner's own record waits for authentication, and until then nothing typed into the Education forms is kept - on the server, by W952, and in the browser, where no Education form saves what was typed or its answer to My Work or hands them to another page, and each form says so before it is filled (W1171)",
    "excluded_by": "Owner ruling 2026-10-12 (education, 5): no learner record before authentication, never a measure of a person"
   },
   {
@@ -570,7 +570,7 @@
    "subject": "A person's care record",
    "nation": "England",
    "state": "excluded",
-   "today": "not built",
+   "today": "not built: no person's care record is kept before authentication - on the server, by W952, and in the browser, where no Care form saves what was typed or its answer to My Work or hands them to another page, and each form says so before it is filled (W1171)",
    "excluded_by": "Owner ruling 2026-10-12 (care, 9): no care record of any person before authentication"
   },
   {
