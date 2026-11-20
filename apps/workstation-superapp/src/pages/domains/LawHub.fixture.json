@@ -917,7 +917,7 @@
     ]
    }
   ],
-  "research_id": "46d2a6ad32",
+  "research_id": "e3371e823d",
   "question": "How do I apply for indefinite leave to remain?",
   "jurisdiction": "England & Wales",
   "area_of_law": "general",
@@ -933,6 +933,13 @@
     "All immigration advisers must be registered with IAA or be a member of an approved professional body.",
     "You cannot get your money back if an adviser is not regulated.",
     "While the IAA doesn’t provide immigration advice directly, it offers an online database to help you find registered and qualified immigration advisers."
+   ],
+   "words_from": [
+    "gov-uk-find-immigration-adviser",
+    "gov-uk-find-immigration-adviser",
+    "gov-uk-find-immigration-adviser",
+    "gov-uk-find-immigration-adviser",
+    "iaa-information-for-advice-seekers"
    ],
    "places": [
     {
@@ -1127,7 +1134,7 @@
    "evidence_basis": "NOT SERVED: no resource gave a reply for this - nothing was asked, or what was asked did not answer - so there is no behaviour to state and it carries no level",
    "basis": "no model and no floor composed this: the question names a subject that is regulated advice, and was routed before anything ran"
   },
-  "generated_at": "2026-11-20T16:15:46Z",
+  "generated_at": "2026-11-20T22:56:02Z",
   "disclaimer": "Not answered: a question on a subject that is regulated advice is routed to an authorised person. Nothing here is legal advice."
  },
  "checklists": {

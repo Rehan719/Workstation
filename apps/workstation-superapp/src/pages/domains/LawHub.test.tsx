@@ -94,6 +94,14 @@ describe('LawHub, rendered against the Law routes\' own answers', () => {
     expect(texts('boundary-subject')).toEqual([`${b.subject}: regulated advice, not answered here`]);
     expect(texts('boundary-regulated')).toEqual([`${b.regulated}.`]);
     expect(texts('boundary-words')).toEqual(b.words);
+    //  W1181 - each quote says the page it is from, inside its own item: the page the route named for it, or none
+    const items = Array.from(box.querySelectorAll('li')).filter(li => li.querySelector('[data-testid="boundary-words"]'));
+    expect(items.map(li => [li.querySelector('[data-testid="boundary-words"]')?.textContent,
+      li.querySelector('[data-testid="boundary-words-from"]')?.textContent ?? null]))
+      .toEqual(b.words.map((w, i) => {
+        const s = b.sources.find(x => x.id === b.words_from[i]);
+        return [w, s ? ` (${s.name ?? s.id})` : null];
+      }));
     expect(texts('boundary-place')).toEqual(b.places.map(p => `${p.nation}: ${p.name} (${p.own_site})`));
     expect(texts('boundary-read')).toEqual([`Read: ${b.sources.map(s => `${s.name}, ${s.checked}`).join('; ')}.`]);
     expect(texts('boundary-regulator')).toEqual(

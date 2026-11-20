@@ -96715,3 +96715,84 @@ def test_w1180_fu1286_is_closed_once_each_of_its_five_places_is_settled():
             in flat), "the notes do not say the row is closed"
     yours = flat.split("**Still yours:**", 1)[1].split("**Settled on 2026-11-20:**", 1)[0]
     assert "FU-1286" not in yours and "`venv/` is step 5" not in yours, "the Still-yours list still names the row"
+
+
+def test_w1181_each_quoted_sentence_of_a_regulated_subject_says_the_page_it_is_from(client, monkeypatch):
+    """P5.11 clause 7 (W1181). W1179b's check found the claims-company row quoting GOV.UK's guide and the FCA's page in
+    one list, the pages read named only after it, together: a reader could not tell whose words each quote is. Held
+    here:
+    1. every regulated subject's row names, for each quote, the one of its pages that the register holds a reading of
+       and whose reading holds the quote, and no other of the row's pages holds it;
+    2. the rule itself, on a register made here: one page names it; two pages, no page, a page with no reading and no
+       register name none; words left out are read across, in order and never out of it, white space as one;
+    3. the claims-company row's first quote (its two GOV.UK sentences) is GOV.UK's guide's and its second is the FCA's
+       page's; with the register unreadable, no page is named for any quote: none is guessed;
+    4. a research answer on a regulated subject carries the pages, and the Law page draws each quote with its page's
+       name, inside the quote's own item, as its rendered test reads it from the route's own captured answer: the
+       component and the rendered test are read as code, so a commented-out or skipped line does not count."""
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.legal import boundaries as _bnd
+    from agentic_core.legal import time_limits as _tl
+    root = Path(__file__).resolve().parents[1]
+    reg = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+
+    #  1. each quote's page is read and holds it, and no other of the row's pages does
+    rows = {r["id"]: r for r in _bnd.rows()}
+    assert set(rows) == {"immigration", "debt_solution", "claims_management"}, sorted(rows)
+    for rid, r in rows.items():
+        ids = [s["id"] for s in r["sources"]]
+        assert len(r["words_from"]) == len(r["words"]) and r["words"], rid
+        for w, sid in zip(r["words"], r["words_from"]):
+            assert sid in ids and reg[sid].get("read_on"), (rid, "a quote names no read page of its row", w[:60])
+            parts = [p for p in w.split(" ... ") if p.strip()]
+            assert all(p in reg[sid]["says"] for p in parts), (rid, sid, "the page's reading does not hold", w[:60])
+            others = [o for o in ids if o != sid and all(p in reg[o].get("says", "") for p in parts)]
+            assert others == [], (rid, "another page also holds", w[:60], others)
+
+    #  2. the rule, on a register made here
+    wf, on = _bnd._words_from, "2026-11-20"
+    one = {"p": {"read_on": on, "says": "'A said.' and more"}, "q": {"read_on": on, "says": "Other."}}
+    assert wf({"words": ("A said.",), "sources": ("p", "q")}, one) == ["p"], "a page that holds the quote is not named"
+    two = {"p": {"read_on": on, "says": "A said."}, "q": {"read_on": on, "says": "A   said."}}
+    assert wf({"words": ("A said.",), "sources": ("p", "q")}, two) == [None], "a quote two pages hold names one of them"
+    assert wf({"words": ("Not said.",), "sources": ("p", "q")}, one) == [None], "a quote no page holds names a page"
+    unread = {"p": {"says": "A said."}, "q": {"read_on": on, "says": "Other."}}
+    assert wf({"words": ("A said.",), "sources": ("p", "q")}, unread) == [None], "a page with no reading is named"
+    gap = {"p": {"read_on": on, "says": "Start of it, and the end."}, "q": {"read_on": on, "says": "Start."}}
+    assert wf({"words": ("Start ... the end.",), "sources": ("p", "q")}, gap) == ["p"], "words left out are not read across"
+    back = {"p": {"read_on": on, "says": "the end. Start"}}
+    assert wf({"words": ("Start ... the end.",), "sources": ("p",)}, back) == [None], "a quote's parts are read out of order"
+    assert wf({"words": ("A said.",), "sources": ("p",)}, None) == [None], "a page is named with no register"
+
+    #  3. whose each quote is, on the claims-company row; and no register, no page named
+    cmc = rows["claims_management"]
+    assert cmc["words_from"] == ["gov-uk-claim-compensation-cmc", "fca-using-claims-management-companies"], cmc["words_from"]
+    assert rows["immigration"]["words_from"][-1] == "iaa-information-for-advice-seekers"
+    assert set(rows["debt_solution"]["words_from"]) == {"gov-uk-options-for-dealing-with-debts"}
+    monkeypatch.setattr(_tl, "_register", lambda: None)
+    blind = {r["id"]: r for r in _bnd.rows()}
+    assert all(set(r["words_from"]) == {None} for r in blind.values()), {k: v["words_from"] for k, v in blind.items()}
+    monkeypatch.undo()
+
+    #  4. the route, the component, the rendered test and the captured answer
+    a = client.post("/api/v1/law/research", json={"question": "should I use a claims company for my flight delay?"}).json()
+    assert a["boundary"]["words_from"] == cmc["words_from"], a["boundary"].get("words_from")
+    src = root / "apps" / "workstation-superapp" / "src"
+    comp = _code_only((src / "components/RegulatedBoundary.tsx").read_text(encoding="utf-8"))
+    for line in ("words_from?: (string | null)[];",
+                 "const from = b.sources.find(s => s.id === b.words_from?.[i]);",
+                 '<span data-testid="boundary-words">{w}</span>',
+                 '{from && <span data-testid="boundary-words-from" className="text-slate-500"> ({from.name ?? from.id})</span>}'):
+        assert line in comp, ("the component does not draw this", line)
+    spec = _code_only((src / "pages/domains/LawHub.test.tsx").read_text(encoding="utf-8"))
+    for line in ("const items = Array.from(box.querySelectorAll('li')).filter(li => li.querySelector('[data-testid=\"boundary-words\"]'));",
+                 "li.querySelector('[data-testid=\"boundary-words-from\"]')?.textContent ?? null]))",
+                 "return [w, s ? ` (${s.name ?? s.id})` : null];"):
+        assert line in spec, ("the rendered test does not read each quote with its page", line)
+    assert not re.search(r"\b(?:describe|it|test)\.(?:skip|only|todo)\(", spec), "a rendered test of the Law page is skipped"
+    cap = json.loads((src / "pages/domains/LawHub.fixture.json").read_text(encoding="utf-8"))["research_boundary"]
+    b = cap["boundary"]
+    assert b["words_from"] and len(b["words_from"]) == len(b["words"]) and all(b["words_from"]), b.get("words_from")
+    assert b["words_from"] == rows["immigration"]["words_from"], "the captured answer's pages are not the route's"
