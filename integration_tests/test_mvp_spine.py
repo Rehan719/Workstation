@@ -96206,3 +96206,28 @@ def test_w1172_p511_the_platform_says_what_it_is_not_and_the_law_domain_fetches_
     rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
     fu = [r for r in rows if r.get("title", "").startswith("The Law domain never said it is not a law firm")]
     assert len(fu) == 1 and (fu[0]["status"], fu[0]["closed_by"], fu[0]["because"]) == ("done", "W1172", "built"), fu
+
+
+def test_w1173_p511_is_done_and_its_record_names_a_guard_that_holds_each_clause():
+    """W1173: P5.11 is done. Its COMPLETION RECORD names, for each clause of the ACCEPT and each line of the BOUNDARY,
+    the guard that drives it. Held here: the record is in the item's own text, every guard it names is a test in this
+    suite, the item is marked done by W1173, and no row rides it open."""
+    import json
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    plan = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    start = plan.index(" P5.11 ✅ DONE W1173 [chartered W676 ")
+    item = plan[start:plan.index("\n P5.12 ", start)]
+    assert "      COMPLETION RECORD (W1173): each clause of the ACCEPT and each line of the BOUNDARY is held by a guard" in item
+    named = re.findall(r"\btest_[a-z0-9_]+", item.split("COMPLETION RECORD (W1173)", 1)[1])
+    assert len(set(named)) >= 22, ("the record names too few guards", len(set(named)))
+    spine = Path(__file__).read_text(encoding="utf-8")
+    missing = [n for n in sorted(set(named)) if not re.search(rf"^def {re.escape(n)}\(", spine, re.M)]
+    assert missing == [], ("the record names a guard this suite does not hold", missing)
+    for clause in ("Clause 1,", "Clause 2,", "Clause 3,", "Clause 4,", "Clauses 5 and 6,", "Clause 7:", "Clause 8:",
+                   "Clause 9,", "The BOUNDARY:"):
+        assert clause in item, ("the record says nothing of", clause)
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    riding = [r["id"] for r in rows if r.get("slot") == "P5.11" and r.get("status") == "open"]
+    assert riding == [], ("a row rides the finished item open", riding)
