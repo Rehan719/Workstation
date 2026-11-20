@@ -26626,6 +26626,46 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Done in W1168: agentic_core/legal/checklists.py holds two lists of what to gather - for an employment tribunal claim (what the claim service needs, the documents GOV.UK gives as examples to share, and what to have at the hearing) and for a court claim for money (what a claim online asks for, and how the fee is paid) - every item and every line that leads a group in the words of the GOV.UK guide that gives it, checked against that part of the page's record when the round was applied, with the nations the guide is for and the day it was read, not recently checked ninety days on. GET /api/v1/law/checklists serves them; the Law page draws them beside the time-limit tool, a list that could not be read said in its place. The tribunal guide's register row records the lists; the money claim guide is a new row. A rendered test reads the panel against the route's own answer. test_w1168 drives it."
+    },
+    {
+      "id": "FU-1812",
+      "title": "Every Law form kept what a person typed, and its answer, in this browser's My Work before sign-in, and offered to hand both to the Genesis journey",
+      "why": "Measured in W1169 against P5.11 clause 9: a person's own matter waits for authentication; until then nothing a person types into the advice surface is stored. The server kept nothing typed before sign-in since W952; the form tool every Law form uses saved the first 400 characters typed and the answer to browser storage, signed in or not.",
+      "source": "W1169 (the form tool read against P5.11 clause 9)",
+      "found": "2026-11-20",
+      "files": [
+        "apps/workstation-superapp/src/components/DomainTool.tsx",
+        "apps/workstation-superapp/src/lib/outputHistory.ts"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.11",
+      "status": "done",
+      "closed_by": "W1169",
+      "note": "",
+      "slot_source": "P5.11 clause 9 is a person's own matter, waiting for authentication",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1169: on the advice surface (an endpoint under /api/v1/law/), the form tool keeps nothing a person typed, and no answer composed from it, until they are signed in: no record in My Work after an answer or a refinement, and no hand-off to the Genesis journey; and it says so before the form. Signed in, it keeps the work as before, and a form off the advice surface is unchanged. lib/outputHistory.ts says whether a person is signed in as every save there reads it. Rendered tests drive a Law form signed out, signed in, and a form elsewhere; test_w1169 holds them."
+    },
+    {
+      "id": "FU-1813",
+      "title": "The Education and Care forms keep what a person typed, and its answer, in this browser's My Work before sign-in",
+      "why": "Found in W1169: P5.12's boundary says nothing a person types is stored before authentication, and P5.13's that no person's care record is. The server keeps nothing typed before sign-in since W952 and the Law forms keep nothing in the browser since W1169, but the form tool still saves the first 400 characters typed and the answer to My Work for the Education and Care forms, signed in or not, and offers to hand them to the Genesis journey. The Law forms' rule is the one to extend, with their rendered tests, and the claim a person raises against an answer must still carry its fingerprint.",
+      "source": "W1169 (the form tool read against P5.12's and P5.13's boundaries)",
+      "found": "2026-11-20",
+      "files": [
+        "apps/workstation-superapp/src/components/DomainTool.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.12",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.12's boundary: nothing a person types is stored before authentication",
+      "tier": 2
     }
   ],
   "routes": [

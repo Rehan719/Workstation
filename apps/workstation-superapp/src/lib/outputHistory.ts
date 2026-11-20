@@ -100,6 +100,8 @@ export function lastSyncError(): string { return _lastSyncError; }
 function signedIn(): boolean {
   try { return !!getToken(); } catch { return false; }
 }
+//  W1169 (P5.11 clause 9) - whether a person is signed in, as every save here reads it
+export const isSignedIn = (): boolean => signedIn();
 
 /** Push the local workspace to the server (debounced). No-op when signed out. */
 export function scheduleWorkspacePush(): void {

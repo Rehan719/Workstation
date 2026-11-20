@@ -14,7 +14,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import captured from './DomainTool.fixture.json';
 import claimed from './SupportClaims.fixture.json';   // W965 - the claim route's own answers
-import { DomainTool } from './DomainTool';
+import { DomainTool, KEEPS_NOTHING } from './DomainTool';
 
 type Reply = { status: number; body: unknown };
 
@@ -294,5 +294,58 @@ describe('DomainTool, what the floor did and did not do, said under the answer, 
     expect(screen.queryByTestId('tool-language-note')).toBeNull();
     expect(prov.profile_state).toBe('none_written');
     expect(screen.queryByTestId('domain-profile-not-usable')).toBeNull();
+  });
+});
+
+// W1169 (P5.11 clause 9) — ON THE ADVICE SURFACE A PERSON'S OWN MATTER WAITS FOR SIGN-IN. A Law form, signed out, keeps
+// nothing typed and no answer in this browser, hands nothing to another page, and says so before the form; signed in,
+// it keeps its work as before; a form off the advice surface keeps its work as before.
+describe('DomainTool on the advice surface keeps nothing typed until a person is signed in', () => {
+  const ANSWER = { analysis: 'w1169 the answer as it was shown', ai_provenance: { served_by: 'native' } };
+  const kept = () => [localStorage, sessionStorage].flatMap(s =>
+    Array.from({ length: s.length }, (_, i) => `${s.key(i)}=${s.getItem(s.key(i)!) ?? ''}`)).join('\n');
+
+  async function run(endpoint: string) {
+    vi.spyOn(axios, 'post').mockResolvedValue({ data: ANSWER } as never);
+    serve({});
+    render(
+      <MemoryRouter>
+        <DomainTool title="A tool" description="what it does" endpoint={endpoint} resultKey="analysis"
+          fields={[{ name: 'question', label: 'Question', type: 'textarea' }]} />
+      </MemoryRouter>,
+    );
+    fireEvent.change(screen.getByLabelText('Question'), { target: { value: 'w1169 what the person typed' } });
+    fireEvent.click(screen.getByRole('button', { name: /Generate/ }));
+    await screen.findByText(ANSWER.analysis);
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+
+  it('a Law form, signed out: the sentence is said before the form, and nothing typed and no answer is kept', async () => {
+    await run('/api/v1/law/research');
+    const note = screen.getByTestId('tool-keeps-nothing');
+    expect(note.textContent).toBe(KEEPS_NOTHING);
+    expect(note.compareDocumentPosition(screen.getByLabelText('Question')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(kept()).not.toContain('w1169 what the person typed');
+    expect(kept()).not.toContain(ANSWER.analysis);
+    expect(screen.queryByRole('button', { name: /Commercialise via Genesis/ })).toBeNull();
+  });
+
+  it('a Law form, signed in: the work is kept, as before', async () => {
+    localStorage.setItem('workstation_token', 'w1169-a-token');
+    await run('/api/v1/law/research');
+    expect(screen.queryByTestId('tool-keeps-nothing')).toBeNull();
+    expect(kept()).toContain('w1169 what the person typed');
+  });
+
+  it('a form off the advice surface keeps its work, as before', async () => {
+    await run('/api/v1/science/methodology');
+    expect(screen.queryByTestId('tool-keeps-nothing')).toBeNull();
+    expect(kept()).toContain('w1169 what the person typed');
   });
 });

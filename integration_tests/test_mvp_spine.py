@@ -95926,3 +95926,55 @@ def test_w1168_p511_what_to_gather_is_a_list_in_the_words_of_its_page_with_its_s
     fu = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
           if r.get("title", "").startswith("No list of what to gather was held")]
     assert len(fu) == 1 and (fu[0]["status"], fu[0]["slot"], fu[0]["because"]) == ("done", "P5.11", "built"), fu
+
+
+def test_w1169_p511_the_law_forms_keep_nothing_typed_in_the_browser_before_sign_in():
+    """P5.11 clause 9 (W1169): "A PERSON'S OWN MATTER - saved facts, documents, dates - waits for authentication; until
+    then nothing a person types into the advice surface is stored." On the server this held since W952 (FU-1189), by
+    the Owner's rulings of 2026-10-12. In the browser it did not: every Law form saved the first 400 characters of what
+    was typed, and the answer, to My Work, signed in or not, and offered to hand both to the Genesis journey. Held here:
+    1. the form tool asks before each save and before the hand-off, and on the advice surface keeps nothing before
+       sign-in, saying so before the form;
+    2. the rendered tests drive a Law form signed out and signed in, and a form off the advice surface;
+    3. the coverage row and the rows: this round's, and the Education and Care forms' own."""
+    import json
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    src = root / "apps" / "workstation-superapp" / "src"
+    tool = (src / "components/DomainTool.tsx").read_text(encoding="utf-8")
+    hist = (src / "lib/outputHistory.ts").read_text(encoding="utf-8")
+
+    #  1. the form tool
+    assert "export const isSignedIn = (): boolean => signedIn();" in hist
+    assert "export const ADVICE_SURFACE = '/api/v1/law/';" in tool
+    assert "export const keepsNothing = (endpoint: string) => endpoint.startsWith(ADVICE_SURFACE) && !isSignedIn();" in tool
+    saves = [m.start() for m in re.finditer(r"saveOutput\(", tool)]
+    assert len(saves) == 2, ("the form tool saves in a place this guard does not know", len(saves))
+    for i in saves:
+        assert "keepsNothing(endpoint)" in tool[max(0, i - 400):i], ("a save that does not ask first", tool[i - 200:i + 40])
+    g = tool.index("sessionStorage.setItem(`ws_genesis_")
+    assert "!keepsNothing(endpoint) && (" in tool[max(0, g - 1500):g], "the hand-off to the Genesis journey does not ask first"
+    assert (tool.index("<ReviewOptions endpoint={endpoint} />") < tool.index('data-testid="tool-keeps-nothing"')
+            < tool.index("{fields.map(f => (")), "the sentence is not said before the form"
+    assert "a person\\'s own '\n  + 'matter is kept only for someone signed in." in tool
+
+    #  2. the rendered tests
+    spec = (src / "components/DomainTool.test.tsx").read_text(encoding="utf-8")
+    for line in ("it('a Law form, signed out: the sentence is said before the form, and nothing typed and no answer is kept'",
+                 "it('a Law form, signed in: the work is kept, as before'",
+                 "it('a form off the advice surface keeps its work, as before'",
+                 "expect(kept()).not.toContain('w1169 what the person typed');",
+                 "expect(screen.queryByRole('button', { name: /Commercialise via Genesis/ })).toBeNull();",
+                 "localStorage.setItem('workstation_token', 'w1169-a-token');"):
+        assert line in spec, ("the rendered test no longer reads this", line)
+
+    #  3. the coverage row and the rows
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    own = cov["law-own-matter"]
+    assert own["state"] == "excluded" and own["excluded_by"] and own["today"].endswith("(W1169)"), own
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    done = [r for r in rows if r.get("title", "").startswith("Every Law form kept what a person typed")]
+    assert len(done) == 1 and (done[0]["status"], done[0]["slot"], done[0]["because"]) == ("done", "P5.11", "built"), done
+    left = [r for r in rows if r.get("title", "").startswith("The Education and Care forms keep what a person typed")]
+    assert len(left) == 1 and (left[0]["status"], left[0]["slot"]) == ("open", "P5.12"), left
