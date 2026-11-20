@@ -56,6 +56,12 @@ const OPENING: [string, string][] = [
 /** The five fields shown above the fold on both pages; mission and strategy sit in the strategic layer. */
 const ABOVE_FOLD = ['executive_summary', 'concept', 'vision'];
 
+/** W1144 (FU-1291) - a source said in words, never by its code. */
+const SOURCE_SAID: Record<string, string> = {
+  model_composed: 'composed by a model',
+  cadence_derived: 'derived by the planning cadence',
+};
+
 interface Props {
   plan: PlanOpeningShape;
   scope: string;
@@ -76,12 +82,27 @@ export const PlanOpening: React.FC<Props> = ({ plan, scope, onSaved, fields = AB
   const templated = new Set(plan.provenance?.templated_fields ?? []);
   const anyText = shown.some(([k]) => (plan as any)[k]);
 
+  //  W1144 (FU-1291) - WHO WROTE THE TEXT ON SCREEN is the field's own source. A model's or the planning
+  //  cadence's text was marked with the source's code, and a field the Owner gave at establishment had no mark.
+  //  A plan from before field_sources keeps the old reading, by the date of the Owner's edit.
+  const writer = (k: string): 'owner' | 'template' | 'other' | null => {
+    const src = sources[k];
+    if (src === 'owner_supplied' || (!src && plan.owner_edits?.[k])) return 'owner';
+    if (templated.has(k)) return 'template';
+    return src ? 'other' : null;
+  };
+
   // W505 (FU-158) — the heading is CONDITIONAL. Calling this the Chief's Opening over five code templates is
   // the claim the sweep flagged; it is the Chief's only when something composed it.
-  const allTemplated = shown.length > 0 && shown.every(([k]) => !(plan as any)[k] || templated.has(k));
-  const heading = allTemplated
-    ? 'Plan opening — generated from your establish answers'
-    : 'Chief’s Opening';
+  //  W1144 (FU-1291) - and only a model composes. It said Chief's Opening once any field was not a template, so an
+  //  opening of the Owner's own concept and templates was headed as the Chief's, over the sentence saying
+  //  neither the Chief nor a model had composed anything.
+  const written = shown.filter(([k]) => (plan as any)[k]);
+  const allTemplated = written.length > 0 && written.every(([k]) => writer(k) === 'template');
+  const composed = written.some(([k]) => sources[k] === 'model_composed');
+  const heading = composed
+    ? 'Chief’s Opening'
+    : allTemplated ? 'Plan opening — generated from your establish answers' : 'Plan opening';
 
   const openEdit = () =>
     setEdit(Object.fromEntries(OPENING.map(([k]) => [k, ((plan as any)[k] as string) || ''])));
@@ -138,8 +159,9 @@ export const PlanOpening: React.FC<Props> = ({ plan, scope, onSaved, fields = AB
                     data-testid="plan-owner-edit-open"><PenLine size={10} /> Owner: edit</button>
           </div>
 
-          {/* W505 (FU-158) — what wrote this, in a sentence, before the text it describes. */}
-          {plan.provenance?.opening_written_by && templated.size > 0 && (
+          {/* W505 (FU-158) — what wrote this, in a sentence, before the text it describes. W1144 (FU-1291): said
+              whenever the plan records it; since W655 it names every writer, not only the templates. */}
+          {plan.provenance?.opening_written_by && (
             <p className="text-[10px] text-amber-400/80 mb-3" data-testid="plan-opening-written-by">
               {plan.provenance.opening_written_by}
             </p>
@@ -149,20 +171,28 @@ export const PlanOpening: React.FC<Props> = ({ plan, scope, onSaved, fields = AB
             <div key={k} className="mb-3 last:mb-0">
               <p className="text-[9px] font-black uppercase tracking-widest text-highlight/70 mb-1 flex items-center gap-2">
                 {label}
-                {plan.owner_edits?.[k] && (
+                {writer(k) === 'owner' && plan.owner_edits?.[k] && (
                   <span className="text-emerald-400/80 font-bold" data-testid={`plan-owner-edited-${k}`}
                         title={`set by ${plan.owner_edits_by?.[k] ?? 'the owner'} at ${plan.owner_edits[k]}`}>
                     owner-edited
                   </span>
                 )}
-                {!plan.owner_edits?.[k] && templated.has(k) && (
+                {writer(k) === 'owner' && !plan.owner_edits?.[k] && (
+                  <span className="text-emerald-400/80 font-bold" data-testid={`plan-owner-supplied-${k}`}
+                        title="the Owner's own words, given when the entity was established">
+                    the Owner’s words
+                  </span>
+                )}
+                {writer(k) === 'template' && (
                   <span className="text-amber-400/70 font-bold" data-testid={`plan-templated-${k}`}
                         title="a code template filled from your establish answers — not written by the Chief or a model">
                     template
                   </span>
                 )}
-                {!plan.owner_edits?.[k] && !templated.has(k) && sources[k] && sources[k] !== 'owner_supplied' && (
-                  <span className="text-slate-500 font-bold">{sources[k]}</span>
+                {writer(k) === 'other' && (
+                  <span className="text-slate-500 font-bold" data-testid={`plan-source-${k}`}>
+                    {SOURCE_SAID[sources[k]] ?? sources[k]}
+                  </span>
                 )}
               </p>
               <p className="text-sm text-slate-300 leading-relaxed">{(plan as any)[k]}</p>

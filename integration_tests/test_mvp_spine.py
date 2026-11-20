@@ -93110,3 +93110,105 @@ def test_w1143_no_document_a_round_wrote_gives_the_owner_a_pronoun_the_owner_has
                                        "day accepted)"), fid
     plan = " ".join((root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8").split())
     assert "OWNER RULING 2026-11-19 (the twenty-two recommendations of that day accepted together)" in plan
+
+
+def test_w1144_fu1291_the_plan_opening_says_who_wrote_what_is_on_screen_and_the_chief_only_for_a_model(client, monkeypatch):
+    """FU-399 part 110 and FU-1291 (W1144). components/PlanOpening.tsx draws the opening on the Business Plan page and
+    the cockpit's plan tab. Rendered against what the plan routes answered, it said three things that were not so: it
+    headed an opening of the Owner's own concept and templates "Chief's Opening", over the sentence saying neither the
+    Chief nor a model had composed anything; it marked a model's text with the source's code (model_composed) and
+    gave a concept the Owner supplied at establishment no mark at all; and it hid the sentence saying who wrote the
+    opening once no field was a template. Held here:
+    - the answers the rendered test serves are the routes' own, for the same made-up entities and scopes, with the
+      owned model stood in exactly as test_w471 stands it in: each opening field's text, its source, the templated
+      list, the fields carrying an edit date and the sentence, the entity's id and the times aside;
+    - the edit the rendered test makes is the body the component's own save sends, and the refusal is the route's;
+    - the component's heading is the Chief's only for a model's field, each mark comes from the field's own source
+      and says it in words, and the sentence is shown whenever the plan records one;
+    - the rendered test reads each element."""
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.ai import gateway as gw
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components"
+    fx = json.loads((src / "PlanOpening.fixture.json").read_text(encoding="utf-8"))["cases"]
+    OPEN = ["executive_summary", "concept", "vision", "mission", "strategy"]
+    stamp = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+
+    def seen(plan):
+        prov = plan.get("provenance") or {}
+        return {"text": {k: plan.get(k) for k in OPEN}, "sources": prov.get("field_sources"),
+                "templated": prov.get("templated_fields"), "edited": sorted((plan.get("owner_edits") or {})),
+                "said": stamp.sub("<time>", prov.get("opening_written_by") or "")}
+
+    def establish(name, **extra):
+        r = client.post("/api/v1/genesis/establish", json={"problem": f"W1144 made up: {name}", "ship_output": False,
+                                                            "name": name, **extra})
+        assert r.status_code == 200, (r.status_code, r.text[:300])
+        return r.json()["vsb_id"]
+
+    #  the same made-up entities and scopes, asked the same way
+    t = establish("W1144 Kettle Cafe")
+    plan_t = client.get(f"/api/v1/business-plan?scope={t}").json()
+    assert seen(plan_t) == seen(fx["templated"]["plan"]["body"]), seen(plan_t)
+    o = establish("W1144 Bicycle Library", concept="Members borrow a bicycle for a week and bring it back mended if it broke.")
+    plan_o = client.get(f"/api/v1/business-plan?scope={o}").json()
+    assert seen(plan_o) == seen(fx["owner_concept"]["plan"]["body"]), seen(plan_o)
+    s = "w1144-composed"
+    client.post("/api/v1/business-plan/generate", json={"scope": s, "context": "W1144 made up: a seed library"})
+    client.post("/api/v1/business-plan/set", json={"scope": s, "vision": "Every street keeps its own seeds."})
+    client.post("/api/v1/business-plan/set", json={"scope": s, "concept": "A first concept, later withdrawn."})
+    client.post("/api/v1/business-plan/set", json={"scope": s, "clear": ["concept"]})
+
+    async def _model(prompt, agent="assistant", **kw):
+        return {"output": ("Drafted by the owned model.\n## Executive Summary\nA seed library lending seeds by the "
+                           "season.\n## Concept\nBorrow seeds, grow them, return seeds from the crop.\n## Vision\n"
+                           "MODEL VISION\n## Mission\nKeep local seeds growing.\n## Strategy\nStart at one market "
+                           "stall.\n"),
+                "served_by": "ollama:test", "is_external": False}
+    monkeypatch.setattr(gw.gateway, "query_meta", _model)
+    g = client.post("/api/v1/business-plan/generate", json={"scope": s, "context": "x"})
+    monkeypatch.undo()
+    assert g.status_code == 200 and set(g.json()["written"]) == {"executive_summary", "concept", "mission", "strategy"}
+    plan_s = client.get(f"/api/v1/business-plan?scope={s}").json()
+    assert seen(plan_s) == seen(fx["composed"]["plan"]["body"]), seen(plan_s)
+
+    #  the edit and the refusal, asked with the component's own body
+    e = fx["edit"]
+    ask = dict(e["set"]["request"], scope=t)
+    assert e["set"]["request"]["clear"] == ["mission"] and set(e["set"]["request"]) == {"scope", "owner", "clear", "vision"}
+    r = client.post("/api/v1/business-plan/set", json=ask)
+    assert r.status_code == e["set"]["status"] == 200, r.text[:300]
+    assert seen(client.get(f"/api/v1/business-plan?scope={t}").json()) == seen(e["plan_after"]["body"])
+    f = fx["refused"]
+    r = client.post("/api/v1/business-plan/set", json=dict(f["set"]["request"], scope=o))
+    assert (r.status_code, r.json()) == (f["set"]["status"], f["set"]["body"]) == (422, {
+        "detail": "mission: the floor's pending marker is not an owner's edit"})
+    n = "w1144-none"
+    client.post("/api/v1/business-plan/generate", json={"scope": n, "context": "W1144 made up: nothing composed"})
+    assert seen(client.get(f"/api/v1/business-plan?scope={n}").json()) == seen(fx["none"]["plan"]["body"])
+
+    #  the component: the body its save sends, the heading's rule, each mark by its source, the sentence
+    comp = (src / "PlanOpening.tsx").read_text(encoding="utf-8")
+    flat = " ".join(comp.split())
+    for line in ("const clear = OPENING.map(([k]) => k).filter(k => !edit[k].trim() && (plan as any)[k]);",
+                 "const body: Record<string, unknown> = { scope, ...(plan.owner ? { owner: plan.owner } : {}), clear };",
+                 "if (v && v !== (((plan as any)[k] as string) || '')) body[k] = v;",
+                 "const composed = written.some(([k]) => sources[k] === 'model_composed');",
+                 "const heading = composed ? 'Chief’s Opening' : allTemplated ? 'Plan opening — generated from your "
+                 "establish answers' : 'Plan opening';",
+                 "if (src === 'owner_supplied' || (!src && plan.owner_edits?.[k])) return 'owner';",
+                 "model_composed: 'composed by a model',", "cadence_derived: 'derived by the planning cadence',",
+                 "{SOURCE_SAID[sources[k]] ?? sources[k]}", "{plan.provenance?.opening_written_by && ("):
+        assert line in flat, ("the opening no longer reads", line)
+    assert "templated.size > 0" not in comp and "{sources[k]}</span>" not in flat
+
+    spec = " ".join((src / "PlanOpening.test.tsx").read_text(encoding="utf-8").split())
+    for line in ("expect(heading()).toBe('Plan opening — generated from your establish answers');",
+                 "expect(heading()).toBe('Plan opening');", "expect(heading()).toBe('Chief’s Opening');",
+                 "expect(mark('owner-supplied', 'concept')).toBe('the Owner’s words');",
+                 "toEqual(['composed by a model', 'composed by a model']);",
+                 "expect(sentence()).toBe(plan.provenance.opening_written_by);",
+                 "expect(posted).toEqual([c.set.request]);",
+                 "`The owner edit was NOT saved: Failed (HTTP ${c.set.status}): ${c.set.body.detail}`"):
+        assert line in spec, ("the rendered test no longer reads this", line)

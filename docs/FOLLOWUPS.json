@@ -26199,6 +26199,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Done in W1143: every gendered pronoun the rounds gave the Owner now reads the Owner, or they, them and their where the Owner is named just before: 15 lines of the register, 8 of the plan and 4 of its living copy, 32 of the dated measurement of the remaining work, 4 of the handover, one in each of four other documents, three code comments, two .gitignore comments, the final audit's workflow and the spine's docstrings and pinned phrases. W1120's notes say the recommendations of 2026-11-19 were the ones put to the Owner. The four files kept with CRLF line endings keep them. test_w1143 reads every tracked text file outside the places it names and allows five uses that are about no person the documents describe, each still present; four blinds turn it red."
+    },
+    {
+      "id": "FU-1291",
+      "title": "The plan's opening headed the Owner's own words as the Chief's, marked a model's text with a code, and hid who wrote it once no template was left",
+      "why": "Found by rendering PlanOpening against the plan routes' own answers (FU-399 part 110; it had no rendered test of its own). The heading said Chief's Opening once any field was not a template, so an opening of the Owner's own concept and four templates was headed as the Chief's, directly over the sentence saying neither the Chief nor a model had composed anything. A model's or the planning cadence's text was marked with the source's code (model_composed), a concept the Owner gave at establishment carried no mark at all, and the sentence saying who wrote the opening was shown only while a template remained, so an opening a model and the Owner wrote said nothing about who wrote it (each driven in the rendered test on the unfixed component).",
+      "source": "W1144 (FU-399 part 110: the plan's opening rendered)",
+      "found": "2026-11-20",
+      "files": [
+        "apps/workstation-superapp/src/components/PlanOpening.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1144",
+      "note": "",
+      "slot_source": "found by FU-399's render of the plan's opening; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the opening's heading is the Chief's only when a model composed a field on screen, and otherwise says it is the plan's opening (generated from the establish answers when every field is a template); each field's mark comes from the field's own source, saying owner-edited, the Owner's words, template, or a model's or the planning cadence's source in words; and the sentence saying who wrote the opening is shown whenever the plan records it. The rendered test (six cases, against the routes' answers for made-up entities, the owned model stood in as test_w471 stands it in) has six vitest blinds; test_w1144 holds the answers to the live routes and the component to the rule (three blinds)."
     }
   ],
   "routes": [
