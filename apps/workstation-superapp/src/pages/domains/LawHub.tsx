@@ -17,6 +17,7 @@ import { useServingStatus, servingIsFloor } from '../../components/ServingNow'; 
 import { apiJson, ApiError, errorMessage } from '../../lib/api';   // W996
 import { placeSaid } from '../../lib/directory';   // W1163 (P5.11 clause 3)
 import UrgentRoutes, { UrgentRoute } from '../../components/UrgentRoutes';   // W1166 (P5.11 clause 4)
+import RegulatedBoundary from '../../components/RegulatedBoundary';   // W1167 (P5.11 clause 7)
 
 //  W996 (FU-399 part 28) - a refusal says the server's status and reason, an unreachable server says that, and a
 //  sentence of this page's own (an empty list) stands as written
@@ -186,8 +187,11 @@ export const LawHub: React.FC = () => {
                 renderExtra={(r: any) => <>
                   {/* W1166 (P5.11 clause 4) - every answer's urgent routes first, whatever the screen recognised */}
                   {Array.isArray(r?.urgent) && r.urgent.length > 0 && <div data-testid="law-research-urgent"><UrgentRoutes routes={r.urgent} /></div>}
+                  {/* W1167 (P5.11 clause 7) - a subject that is regulated advice: its row, who regulates it, the pages read */}
+                  {r?.boundary ? <div data-testid="law-research-boundary"><RegulatedBoundary b={r.boundary} /></div> : null}
                   {Array.isArray(r?.routed_to_people) && r.routed_to_people.length > 0 ? (
-                  /* W874 (FU-1082) - a question about the person's own case is routed to people: who they are */
+                  /* W874 (FU-1082), W1167 - a question about the person's own case, or on a subject that is
+                     regulated advice, is routed to people: who they are */
                   <div data-testid="law-routed-to-people" className="p-3 rounded-xl bg-slate-950 border border-amber-500/30 space-y-1">
                     <p className="text-[10px] font-bold text-amber-300">Help from a person</p>
                     <ul className="space-y-1">

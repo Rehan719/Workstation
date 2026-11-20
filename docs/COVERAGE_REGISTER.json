@@ -22,8 +22,9 @@
    "domain": "Law",
    "subject": "Debt and money difficulties",
    "nation": "England",
-   "state": "nothing_built",
-   "today": "nothing here serves this subject"
+   "state": "route_only",
+   "today": "a question naming a person's own debts is routed as a debt solution is, to the row and the places a person can go; nothing here works out what is owed or what to pay (W1167)",
+   "route": "gov-uk-options-for-dealing-with-debts"
   },
   {
    "id": "law-consumer",
@@ -139,18 +140,29 @@
    "domain": "Law",
    "subject": "Immigration and nationality",
    "nation": "England",
-   "state": "excluded",
-   "today": "not built",
-   "excluded_by": "Owner ruling 2026-10-12 (advice, 3): information and a route to an authorised person, never advice"
+   "state": "route_only",
+   "today": "a question naming immigration or nationality is not answered: it is answered with the row - who regulates it, the words of GOV.UK's guide and of the Immigration Advice Authority's own page, each read on 2026-11-20 and not recently checked ninety days on, the Adviser Finder and the Law Societies by nation - and the places a person can go, after the urgent routes (W1167)",
+   "ruling": "Owner ruling 2026-10-12 (advice, 3): information and a route to an authorised person, never advice",
+   "route": "gov-uk-find-immigration-adviser"
   },
   {
    "id": "law-debt-solutions",
    "domain": "Law",
    "subject": "Which debt solution to take",
    "nation": "England",
-   "state": "excluded",
-   "today": "not built",
-   "excluded_by": "Owner ruling 2026-10-12 (advice, 3): information and a route to an authorised person, never advice"
+   "state": "route_only",
+   "today": "a question naming a way of dealing with debts is not answered: it is answered with the row - a Debt Management Plan is set up with a company the Financial Conduct Authority authorises and a debt adviser helps choose, in the words of GOV.UK's guide read on 2026-11-20; the Financial Conduct Authority's own site is refused by this environment's network, and the row says so - with MoneyHelper's free debt advice and Scotland's Debt Arrangement Scheme, after the urgent routes (W1167)",
+   "ruling": "Owner ruling 2026-10-12 (advice, 3): information and a route to an authorised person, never advice",
+   "route": "gov-uk-options-for-dealing-with-debts"
+  },
+  {
+   "id": "law-claims-management",
+   "domain": "Law",
+   "subject": "A claim managed for someone by a claims company",
+   "nation": "England",
+   "state": "route_only",
+   "route": "gov-uk-claim-compensation-cmc",
+   "today": "a question naming a claims management company is not answered: its row says that no page read here establishes who regulates one today (GOV.UK's guide for a person on it was published in June 2014 and not updated since, and the Financial Conduct Authority's site is refused by this environment's network), quotes that a claim made without one keeps all the compensation, and routes to the places a person can go, after the urgent routes (W1167)"
   },
   {
    "id": "law-family-safety",

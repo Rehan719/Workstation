@@ -26555,6 +26555,30 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Done in W1166: one component (components/UrgentRoutes.tsx) draws the urgent routes: each situation, its steps in the words of its GOV.UK page, the places that page names for each nation with whether each one's own site was opened, and the page with the day it was read. The Law page reads GET /api/v1/law/urgent and draws it before its heading, a failed read said in its place with the line to call 999 in immediate danger; the support page, the statute panel's help and every research answer draw the list their answer carries before anything else. Rendered tests read each; test_w1166 holds the order."
+    },
+    {
+      "id": "FU-1809",
+      "title": "A question on a subject that is regulated advice - immigration, a debt solution, a claim managed by a claims company - went to the composer like any other, and no row said which regulator's page was read",
+      "why": "Measured in W1167 against P5.11 clause 7: a subject that is regulated advice is information and a route to an authorised person, and the row says which regulator's page was read and when. The coverage register held immigration and the choice of a debt solution as excluded with nothing built, debts as nothing built, and a claims company had no row.",
+      "source": "W1167 (the research route and the coverage register read against P5.11 clause 7)",
+      "found": "2026-11-20",
+      "files": [
+        "agentic_core/legal/boundaries.py",
+        "agentic_core/api/law.py",
+        "apps/workstation-superapp/src/components/RegulatedBoundary.tsx",
+        "apps/workstation-superapp/src/pages/domains/LawHub.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.11",
+      "status": "done",
+      "closed_by": "W1167",
+      "note": "",
+      "slot_source": "P5.11 clause 7 is boundaries as rows",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1167: agentic_core/legal/boundaries.py holds three rows - immigration and nationality, which debt solution to take, and a claim managed by a claims company - each saying who regulates it as the pages read say, quoting only sentences of pages read whole at GOV.UK's content records on 2026-11-20 (each a row of the register of sources), naming the places those pages give for each nation, and saying its regulator's own page: the Immigration Advice Authority's, read on 2026-11-20; the Financial Conduct Authority's, not read, its site refused by this environment's network; for a claims company, no regulator's page, and GOV.UK's guide for a person on it dates from June 2014. GET /api/v1/law/boundaries serves them. A research question naming one is answered by its row and the places a person can go, after the urgent routes, with nothing composed; a question about one's own case that names one carries the row too; one that names none is composed as before and says that clears nothing. The screen is driven by its labelled phrasings in scripts/screen_phrasings.py. The Law page draws the row in a research answer, between the urgent routes and the people; a rendered test reads it against the route's own answer. test_w1167 drives it."
     }
   ],
   "routes": [

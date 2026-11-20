@@ -256,7 +256,9 @@ async def legal_research(req: ResearchRequest):
     from agentic_core.legal.own_case import COVERAGE as _cov874, own_case_route as _own874
     from agentic_core.api._ai_provenance import no_reply_evidence as _no_reply_evidence874
     from agentic_core.legal import urgent as _urg1165      # W1165 (P5.11 clause 4) - before anything else
+    from agentic_core.legal import boundaries as _bnd1167  # W1167 (P5.11 clause 7) - regulated advice is a route
     _routed874 = _own874(req.question, req.context)
+    _bound1167 = _bnd1167.route(req.question, f"{req.context} {req.area_of_law}")
     if _routed874:
         return {
             #  W1165 - the urgent routes first; the screen may add one (its "urgent_added") and never remove one
@@ -270,12 +272,39 @@ async def legal_research(req: ResearchRequest):
             "routed_to_people": _routed874["people"],
             "published_material": _routed874["published_material"],
             "own_case_screen": {"recognised": True, "coverage": _cov874},
+            #  W1167 (P5.11 clause 7) - a regulated subject's row too, when the question names one
+            **({"boundary": _bound1167["boundary"]} if _bound1167 else {}),
             "ai_provenance": {"served_by": "none", "is_external": False, "routed_by": "own_case_screen",
                               "composed": False, **_no_reply_evidence874(),
                               "basis": "no model and no floor composed this: the question was routed before anything ran"},
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "disclaimer": ("Not answered: a question about a person's own case is routed to people. Nothing here is "
                            "legal advice."),
+        }
+    #  W1167 (P5.11 clause 7) - A QUESTION ON A SUBJECT THAT IS REGULATED ADVICE is information and a route to an
+    #  authorised person: its row and the places a person can go, before anything composes. No model and no floor is
+    #  asked. The screen may route; recognising nothing is not a clearance.
+    if _bound1167:
+        return {
+            "urgent": _urg1165.shown(),
+            "research_id": uuid.uuid4().hex[:10],
+            "question": req.question,
+            "jurisdiction": req.jurisdiction,
+            "area_of_law": req.area_of_law,
+            "analysis": _bound1167["message"],
+            "method": "routed to an authorised person - not answered",
+            "boundary": _bound1167["boundary"],
+            "routed_to_people": _bound1167["people"],
+            "own_case_screen": {"recognised": False, "coverage": _cov874,
+                                "basis": "not recognised as a question about the person's own case, which is not a clearance"},
+            "boundary_screen": {"recognised": True, "coverage": _bnd1167.COVERAGE},
+            "ai_provenance": {"served_by": "none", "is_external": False, "routed_by": "boundary_screen",
+                              "composed": False, **_no_reply_evidence874(),
+                              "basis": ("no model and no floor composed this: the question names a subject that is "
+                                        "regulated advice, and was routed before anything ran")},
+            "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "disclaimer": ("Not answered: a question on a subject that is regulated advice is routed to an "
+                           "authorised person. Nothing here is legal advice."),
         }
     prompt = (
         f"Set out the following {req.area_of_law} question under {req.jurisdiction} law using the IRAC "
@@ -312,6 +341,9 @@ async def legal_research(req: ResearchRequest):
         #  W874 (FU-1082) - the screen did not recognise a question about the person's own case; that clears nothing
         "own_case_screen": {"recognised": False, "coverage": _cov874,
                             "basis": "not recognised as a question about the person's own case, which is not a clearance"},
+        #  W1167 (P5.11 clause 7) - the screen named no subject that is regulated advice; that clears nothing
+        "boundary_screen": {"recognised": False, "coverage": _bnd1167.COVERAGE,
+                            "basis": "not recognised as a subject that is regulated advice, which is not a clearance"},
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": (_FLOOR_LAW if provenance.get("floor_note") else
@@ -548,6 +580,15 @@ def urgent_routes():
     GOV.UK page that gives it, the day that page was read, and NOT RECENTLY CHECKED ninety days on."""
     from agentic_core.legal import urgent as _urg1165
     return {"routes": _urg1165.shown(), "basis": _urg1165.BASIS, "composed": False}
+
+
+@router.get("/boundaries")
+def regulated_boundaries():
+    """W1167 (P5.11 clause 7) - each subject that is regulated advice as a row: who regulates it as the pages read say,
+    the pages' own words, the places they name for each nation, the pages read with the day each was read, and its
+    regulator's own page, read or not and why. Nothing is composed."""
+    from agentic_core.legal import boundaries as _bnd1167
+    return {"boundaries": _bnd1167.rows(), "basis": _bnd1167.BASIS, "coverage": _bnd1167.COVERAGE, "composed": False}
 
 
 @router.get("/help")

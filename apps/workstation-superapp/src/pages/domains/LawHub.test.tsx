@@ -6,6 +6,7 @@
 // by w996_capture.py), and has the server refuse each read. A refusal says the server's reason, and a count on the
 // page is the server's.
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import axios from 'axios';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -49,6 +50,7 @@ function mount() {
 describe('LawHub, rendered against the Law routes\' own answers', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it('the urgent routes come before anything else on the page, in the route\'s own words', async () => {
@@ -72,6 +74,33 @@ describe('LawHub, rendered against the Law routes\' own answers', () => {
       + 'If you are in immediate danger, call 999.');
     expect(screen.queryByTestId('law-urgent')).toBeNull();
     expect(note.compareDocumentPosition(screen.getByRole('heading', { level: 1 })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  //  W1167 (P5.11 clause 7) - the research route's own answer to a question on a regulated subject (its POST is
+  //  axios's, answered here with the answer the route gave): its row after the urgent routes, before the people
+  it('a question on a regulated subject is answered by its row and a route, after the urgent routes', async () => {
+    serve();
+    const a = captured.research_boundary;
+    const post = vi.spyOn(axios, 'post').mockResolvedValue({ data: a } as never);
+    mount();
+    fireEvent.click(await screen.findByRole('button', { name: 'Research' }));
+    fireEvent.change(screen.getByLabelText('Legal question'), { target: { value: a.question } });
+    fireEvent.click(screen.getByRole('button', { name: /Research question/ }));
+    const box = await screen.findByTestId('law-research-boundary');
+    expect(post.mock.calls[0][0]).toBe('/api/v1/law/research');
+    const b = a.boundary;
+    const texts = (id: string) => Array.from(box.querySelectorAll(`[data-testid="${id}"]`)).map(e => e.textContent);
+    expect(texts('boundary-subject')).toEqual([`${b.subject}: regulated advice, not answered here`]);
+    expect(texts('boundary-regulated')).toEqual([`${b.regulated}.`]);
+    expect(texts('boundary-words')).toEqual(b.words);
+    expect(texts('boundary-place')).toEqual(b.places.map(p => `${p.nation}: ${p.name} (${p.own_site})`));
+    expect(texts('boundary-read')).toEqual([`Read: ${b.sources.map(s => `${s.name}, ${s.checked}`).join('; ')}.`]);
+    expect(texts('boundary-regulator')).toEqual(
+      [`Regulator: ${b.regulator.name}. Its own page was read: ${b.regulator.page.name}, ${b.regulator.page.checked}.`]);
+    //  the urgent routes come first, the people it is routed to after, and the answer's text is the route's message
+    expect(screen.getByTestId('law-research-urgent').compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(box.compareDocumentPosition(screen.getByTestId('law-routed-to-people')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText(a.analysis)).toBeTruthy();
   });
 
   it('what runs here is the server\'s, and the count of forms that need a model is its list\'s', async () => {

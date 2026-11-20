@@ -95593,3 +95593,188 @@ def test_w1166_fu1808_the_urgent_routes_are_drawn_before_anything_else_wherever_
     rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
     done = [r for r in rows if r.get("title", "").startswith("The urgent routes are served first but no page shows them")]
     assert len(done) == 1 and (done[0]["status"], done[0]["closed_by"], done[0]["because"]) == ("done", "W1166", "built"), done
+
+
+def test_w1167_p511_a_subject_that_is_regulated_advice_is_its_row_and_a_route_to_an_authorised_person(client, monkeypatch):
+    """P5.11 clause 7 (W1167): "a subject that is regulated advice - immigration, a debt solution, a claim managed for
+    someone - is information and a route to an authorised person, and the row says which regulator's page was read
+    and when." Before this round the coverage register held immigration and the choice of a debt solution as excluded
+    with nothing built, debts as nothing built, a claims company had no row, and a research question on any of them
+    went to the composer like any other. Held here:
+    1. the three rows: each says who regulates it as the pages read say, quotes only sentences its register rows
+       record, names its places for each nation, says each page read with the day, and says its regulator's own page:
+       the Immigration Advice Authority's, read on 2026-11-20; the Financial Conduct Authority's, not read, its site
+       refused here; for a claims company, no regulator's page - and NOT RECENTLY CHECKED ninety days on, by the one
+       rule, and nothing said as read when the register cannot be read;
+    2. GET /api/v1/law/boundaries serves them, composed by nothing;
+    3. a research question naming one is answered by its row and the places a person can go, after the urgent routes,
+       with no model and no floor asked; one about one's own case that names one carries the row too; one that names
+       none is composed as before and says that clears nothing;
+    4. the screen agrees with its labelled phrasings, and the one phrasing outside its coverage is its stated limit;
+    5. the Law page draws the row in a research answer after the urgent routes and before the people, its captured
+       answer is the route's own, and the rendered test reads it;
+    6. the register rows, the coverage rows and the row."""
+    import datetime as _dt
+    import importlib.util as _ilu
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.ai import gateway as _gw
+    from agentic_core.api.where_help import HELP_FROM_A_PERSON
+    from agentic_core.legal import boundaries as _bnd
+    from agentic_core.legal import time_limits as _tl
+    from agentic_core.legal import urgent as _urg
+    root = Path(__file__).resolve().parents[1]
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2026, 11, 20))
+    reg = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    norm = lambda s: re.sub(r"\s+", " ", s)       # noqa: E731
+
+    #  1. the three rows
+    rows = {r["id"]: r for r in _bnd.rows()}
+    assert list(rows) == ["immigration", "debt_solution", "claims_management"], list(rows)
+    for b in _bnd.BOUNDARIES:
+        r = rows[b["id"]]
+        recorded = " ".join(norm(reg[s]["says"]) for s in b["sources"])
+        for w in b["words"]:
+            for piece in w.split(" ... "):
+                assert norm(piece) in recorded, (b["id"], "a quoted sentence no register row of its pages records", piece)
+        assert r["sources"] and all(s["read"] and s["read_on"] == "2026-11-20" and s["checked"] == "read on 20 November 2026"
+                                    for s in r["sources"]), r["sources"]
+        assert [p["nation"] for p in r["places"]] == [p["nation"] for p in b["places"]]
+        assert r["regulated"] and not r["regulated"].endswith("."), "the page adds the full stop"
+    imm, debt, cmc = rows["immigration"], rows["debt_solution"], rows["claims_management"]
+    assert (imm["regulator"]["name"], imm["regulator"]["read"], imm["regulator"]["why"]) == (
+        "the Immigration Advice Authority", True, None), imm["regulator"]
+    assert imm["regulator"]["page"]["id"] == "iaa-information-for-advice-seekers"
+    assert imm["regulator"]["page"]["checked"] == "read on 20 November 2026"
+    assert reg["iaa-information-for-advice-seekers"]["kind"] == "regulator guidance"
+    assert (debt["regulator"]["name"], debt["regulator"]["read"], debt["regulator"]["page"]) == (
+        "the Financial Conduct Authority", False, None), debt["regulator"]
+    assert "refused by this environment's network" in debt["regulator"]["why"]
+    assert (cmc["regulator"]["name"], cmc["regulator"]["read"], cmc["regulator"]["page"]) == (None, False, None)
+    assert "were not read whole" in cmc["regulator"]["why"] and "www.fca.org.uk" in cmc["regulator"]["why"]
+    assert cmc["regulated"].startswith("No page read here says who regulates a claims company today")
+    assert "June 2014" in cmc["regulated"] and cmc["places"] == []
+    assert [p["nation"] for p in imm["places"]] == ["UK", "England and Wales", "Scotland", "Northern Ireland"]
+    assert [p["nation"] for p in debt["places"]] == ["England and Wales", "Scotland"]
+    assert all(p["own_site"] == _urg.NOT_OPENED for p in imm["places"] + debt["places"])
+    #    ninety days on, a page read is said as not recently checked, by the one rule the time limits use
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2027, 3, 1))
+    late = _bnd.row(_bnd.BOUNDARIES[0])
+    assert late["regulator"]["read"] is True and late["regulator"]["page"]["checked"].startswith("NOT RECENTLY CHECKED")
+    assert all(s["checked"].startswith("NOT RECENTLY CHECKED") for s in late["sources"])
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2026, 11, 20))
+    #    a register that cannot be read: nothing is said as read, the regulator's page least of all
+    _real_register = _tl._register
+    monkeypatch.setattr(_tl, "_register", lambda: None)
+    unread = _bnd.row(_bnd.BOUNDARIES[0])
+    monkeypatch.setattr(_tl, "_register", _real_register)
+    assert unread["regulator"]["read"] is False and unread["regulator"]["why"].startswith("NOT CHECKED")
+    assert not any(s["read"] for s in unread["sources"])
+
+    #  2. the route
+    got = client.get("/api/v1/law/boundaries")
+    assert got.status_code == 200, got.text[:200]
+    assert got.json()["boundaries"] == _bnd.rows() and got.json()["composed"] is False
+    assert got.json()["basis"] == _bnd.BASIS and "Nothing here is legal advice." in _bnd.BASIS
+
+    #  3. the research route: routed before anything composes, after the urgent routes
+    asked = []
+    _real = _gw.gateway.query_meta
+
+    async def _counting(*a, **k):
+        asked.append(k.get("agent"))
+        return await _real(*a, **k)
+    monkeypatch.setattr(_gw.gateway, "query_meta", _counting)
+    a = client.post("/api/v1/law/research", json={"question": "How do I apply for indefinite leave to remain?"}).json()
+    assert a["method"] == "routed to an authorised person - not answered" and not asked, (a.get("method"), asked)
+    assert list(a)[0] == "urgent" and a["urgent"] == _urg.shown(), list(a)[:2]
+    assert a["boundary"] == imm and a["boundary_screen"]["recognised"] is True
+    assert a["own_case_screen"]["recognised"] is False and "not a clearance" in a["own_case_screen"]["basis"]
+    assert a["analysis"] == _bnd.message(_bnd.BOUNDARIES[0]) and "so it is not answered here" in a["analysis"]
+    assert a["analysis"].endswith("Nothing here is legal advice.")
+    assert [p["name"] for p in a["routed_to_people"]] == [h["name"] for h in HELP_FROM_A_PERSON]
+    assert (a["ai_provenance"]["served_by"], a["ai_provenance"]["composed"], a["ai_provenance"]["routed_by"]) == (
+        "none", False, "boundary_screen"), a["ai_provenance"]
+    for question, bid in (("should I get an IVA or go bankrupt?", "debt_solution"),
+                          ("should I use a claims company for my flight delay?", "claims_management")):
+        x = client.post("/api/v1/law/research", json={"question": question}).json()
+        assert (x["method"], x["boundary"]["id"]) == ("routed to an authorised person - not answered", bid), question
+    #    ...the subject named in the area of law reaches the screen as well as the question
+    x = client.post("/api/v1/law/research", json={"question": "what are the steps?", "area_of_law": "immigration"}).json()
+    assert x["boundary"]["id"] == "immigration", x.get("method")
+    #    ...one about one's own case that names one: routed to people, with the row
+    own = client.post("/api/v1/law/research", json={"question": "I am being deported, should I appeal in court?"}).json()
+    assert own["method"] == "routed to people - not answered" and own["boundary"] == imm, own.get("method")
+    assert not asked, asked
+    #    ...one that names none: composed as before, and that clears nothing
+    g = client.post("/api/v1/law/research", json={"question": "explain the elements of negligence"}).json()
+    assert g["method"] == "IRAC" and asked and "boundary" not in g, (g.get("method"), asked)
+    assert g["boundary_screen"]["recognised"] is False and "not a clearance" in g["boundary_screen"]["basis"]
+
+    #  4. the screen and its labelled phrasings (the method of scripts/screen_phrasings.py)
+    spec = _ilu.spec_from_file_location("_sp1167", root / "scripts" / "screen_phrasings.py")
+    sp = _ilu.module_from_spec(spec)
+    spec.loader.exec_module(sp)
+    assert len(sp.BOUNDARY) >= 24 and sum(1 for _t, lab in sp.BOUNDARY if lab == "for") >= 16, len(sp.BOUNDARY)
+    limit = {"can I bring my parents to live with me in the UK?"}   # names no word the screen reads: its stated limit
+    wrong = [(lab, t) for t, lab in sp.BOUNDARY if (_bnd.recognises(t) is not None) != (lab == "for") and t not in limit]
+    assert not wrong, ("the screen and its labelled list disagree", wrong)
+    assert all(_bnd.recognises(t) is None for t in limit) and "however regulated its subject" in _bnd.COVERAGE
+    assert _bnd.recognises("can my wife join me on a spouse visa?")["id"] == "immigration"
+    assert _bnd.recognises("can I get a debt relief order?")["id"] == "debt_solution"
+    assert _bnd.recognises("a claims management company wants 30% of my PPI refund")["id"] == "claims_management"
+    assert _bnd.recognises("can I use my Visa card abroad without fees?") is None
+    drv = (root / "scripts" / "screen_phrasings.py").read_text(encoding="utf-8")
+    assert 'results.append(_table("legal.boundaries", BOUNDARY, lambda t: _boundaries.recognises(t) is not None))' in drv
+
+    #  5. the Law page
+    src = root / "apps" / "workstation-superapp" / "src"
+    read = lambda rel: (src / rel).read_text(encoding="utf-8")       # noqa: E731
+    comp = read("components/RegulatedBoundary.tsx")
+    for line in ('data-testid="regulated-boundary"', 'data-testid="boundary-subject"', 'data-testid="boundary-words"',
+                 'data-testid="boundary-place"', 'data-testid="boundary-read"', 'data-testid="boundary-regulator"',
+                 "{b.subject}: regulated advice, not answered here", "Read: {b.sources.map(urgentSourceSaid).join('; ')}.",
+                 "`Regulator: ${r.name}. Its own page was read: ${urgentSourceSaid(r.page)}.`",
+                 "`Regulator: ${r.name}. Its own page was not read: ${r.why}.`",
+                 "`No regulator's page was read: ${r.why}.`"):
+        assert line in comp, ("the component no longer draws this", line)
+    law = read("pages/domains/LawHub.tsx")
+    assert '<div data-testid="law-research-boundary"><RegulatedBoundary b={r.boundary} /></div>' in law
+    assert (law.index('data-testid="law-research-urgent"') < law.index('data-testid="law-research-boundary"')
+            < law.index('data-testid="law-routed-to-people"')), "a research answer draws the row out of its place"
+    hub = json.loads(read("pages/domains/LawHub.fixture.json"))
+    cap = hub["research_boundary"]
+    live = client.post("/api/v1/law/research", json={"question": cap["question"]}).json()
+    keep = lambda d: {k: v for k, v in d.items() if k not in ("research_id", "generated_at")}   # noqa: E731
+    assert keep(cap) == keep(live), "the Law page's captured answer is not the route's"
+    spec_t = read("pages/domains/LawHub.test.tsx")
+    for line in ("it('a question on a regulated subject is answered by its row and a route, after the urgent routes'",
+                 "const post = vi.spyOn(axios, 'post').mockResolvedValue({ data: a } as never);",
+                 "const box = await screen.findByTestId('law-research-boundary');",
+                 "[`Regulator: ${b.regulator.name}. Its own page was read: ${b.regulator.page.name}, ${b.regulator.page.checked}.`]",
+                 "expect(screen.getByTestId('law-research-urgent').compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();",
+                 "    vi.restoreAllMocks();\n"):
+        assert line in spec_t, ("the rendered test no longer reads this", line)
+
+    #  6. the register rows, the coverage rows and the row
+    for sid in ("gov-uk-find-immigration-adviser", "iaa-information-for-advice-seekers",
+                "gov-uk-options-for-dealing-with-debts", "gov-uk-claim-compensation-cmc"):
+        r = reg[sid]
+        assert (r["status"], r["read_on"], r["used_by"]) == ("current", "2026-11-20", ["agentic_core/legal/boundaries.py"]), sid
+        assert r["page"].startswith("https://www.gov.uk/") and "round W1167" in r["read_by"] and r["not_read"], sid
+    old = reg["gov-uk-claim-compensation-cmc"]["says"]
+    assert "first published 16 June 2014 and holds no later change" in old and "were not read whole" in old
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    for cid, route in (("law-immigration", "gov-uk-find-immigration-adviser"),
+                       ("law-debt-solutions", "gov-uk-options-for-dealing-with-debts"),
+                       ("law-debt", "gov-uk-options-for-dealing-with-debts"),
+                       ("law-claims-management", "gov-uk-claim-compensation-cmc")):
+        c = cov[cid]
+        assert (c["state"], c["route"]) == ("route_only", route) and route in reg and c["today"].endswith("(W1167)"), c
+        assert "excluded_by" not in c, c
+    for cid in ("law-immigration", "law-debt-solutions"):
+        assert cov[cid]["ruling"].startswith("Owner ruling 2026-10-12 (advice, 3)"), cov[cid]
+    fu = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+          if r.get("title", "").startswith("A question on a subject that is regulated advice")]
+    assert len(fu) == 1 and (fu[0]["status"], fu[0]["slot"], fu[0]["because"]) == ("done", "P5.11", "built"), fu

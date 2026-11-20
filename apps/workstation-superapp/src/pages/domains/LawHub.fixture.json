@@ -734,5 +734,399 @@
   ],
   "basis": "Shown before anything else, whatever was asked: each step is in the words of the GOV.UK page that gives it, with the day that page was read, and is said as not recently checked ninety days on. A place a page names whose own site was not opened is said so. Nothing here says whether a place is open, will answer or has room. Nothing here is legal advice.",
   "composed": false
+ },
+ "research_boundary": {
+  "urgent": [
+   {
+    "id": "danger_from_a_person",
+    "situation": "You are in danger from a person",
+    "nations": [
+     "England",
+     "Wales",
+     "Scotland",
+     "Northern Ireland"
+    ],
+    "steps": [
+     "If you are in immediate danger, call 999 and ask for the police.",
+     "If you can’t speak and are calling on a mobile press 55 to have your call transferred to the police.",
+     "For free, confidential advice, 24 hours a day contact a domestic abuse helpline."
+    ],
+    "places": [
+     {
+      "nation": "England",
+      "name": "Refuge’s National Domestic Abuse Helpline",
+      "number": "0808 2000 247",
+      "link": "https://www.nationaldahelpline.org.uk/",
+      "own_site": "named on that GOV.UK page; its own site was not opened"
+     },
+     {
+      "nation": "Wales",
+      "name": "Live Fear Free",
+      "number": "0808 80 10 100",
+      "link": null,
+      "own_site": "named on that GOV.UK page; its own site was not opened"
+     },
+     {
+      "nation": "Scotland",
+      "name": "Domestic Abuse and Forced Marriage Helpline",
+      "number": "0800 027 1234",
+      "link": "https://sdafmh.org.uk/",
+      "own_site": "named on that GOV.UK page; its own site was not opened"
+     },
+     {
+      "nation": "Northern Ireland",
+      "name": "Domestic and Sexual Abuse Helpline",
+      "number": "0808 802 1414",
+      "link": "https://dsahelpline.org/",
+      "own_site": "named on that GOV.UK page; its own site was not opened"
+     },
+     {
+      "nation": "UK-wide",
+      "name": "The Men’s Advice Line run by Respect",
+      "number": "0808 801 0327",
+      "link": null,
+      "own_site": "named on that GOV.UK page; its own site was not opened"
+     }
+    ],
+    "here": null,
+    "sources": [
+     {
+      "id": "gov-uk-domestic-abuse-help",
+      "read": true,
+      "name": "Domestic abuse: how to get help (GOV.UK)",
+      "page": "https://www.gov.uk/guidance/domestic-abuse-how-to-get-help",
+      "read_on": "2026-11-20",
+      "read_by": "round W1165, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/guidance/domestic-abuse-how-to-get-help) on 2026-11-20, not through a summary",
+      "recently_checked": true,
+      "checked": "read on 20 November 2026"
+     }
+    ]
+   },
+   {
+    "id": "no_safe_place_tonight",
+    "situation": "You have no safe place to stay tonight",
+    "nations": [
+     "England"
+    ],
+    "steps": [
+     "In England, your council must help if you’re legally homeless or will become homeless within the next 8 weeks.",
+     "You may be legally homeless if: ... it’s not reasonable to stay in your home, for example you’re at risk of violence or abuse",
+     "Find your council to get help and advice."
+    ],
+    "places": [
+     {
+      "nation": "England",
+      "name": "Find your council (GOV.UK)",
+      "number": null,
+      "link": "https://www.gov.uk/homelessness-help-from-council",
+      "own_site": "a GOV.UK page"
+     },
+     {
+      "nation": "Wales",
+      "name": "Help if you’re homeless in Wales",
+      "number": null,
+      "link": "https://gov.wales/support-if-you-are-homeless-or-about-become-homeless",
+      "own_site": "named on that GOV.UK page; its own site was not opened"
+     },
+     {
+      "nation": "Scotland",
+      "name": "Help if you’re homeless in Scotland",
+      "number": null,
+      "link": "https://www.mygov.scot/if-youre-homeless",
+      "own_site": "named on that GOV.UK page; its own site was not opened"
+     },
+     {
+      "nation": "Northern Ireland",
+      "name": "Help if you’re homeless in Northern Ireland",
+      "number": null,
+      "link": "https://www.nihe.gov.uk/Housing-Help/Homelessness",
+      "own_site": "named on that GOV.UK page; its own site was not opened"
+     }
+    ],
+    "here": null,
+    "sources": [
+     {
+      "id": "gov-uk-homeless-help",
+      "read": true,
+      "name": "Help if you're homeless or about to become homeless (GOV.UK)",
+      "page": "https://www.gov.uk/if-youre-homeless-at-risk-of-homelessness",
+      "read_on": "2026-11-20",
+      "read_by": "round W1165, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/if-youre-homeless-at-risk-of-homelessness) on 2026-11-20, not through a summary",
+      "recently_checked": true,
+      "checked": "read on 20 November 2026"
+     }
+    ]
+   },
+   {
+    "id": "hearing_or_deadline_within_days",
+    "situation": "You have a hearing or a deadline within days",
+    "nations": [
+     "England",
+     "Wales"
+    ],
+    "steps": [
+     "Find contact details and information on courts and tribunals in England and Wales, and some non-devolved tribunals in Scotland.",
+     "If you need help understanding or taking part in your hearing, you can ask for support from a communication specialist (known as an ‘intermediary’)."
+    ],
+    "places": [
+     {
+      "nation": "England and Wales",
+      "name": "Find a court or tribunal (GOV.UK)",
+      "number": null,
+      "link": "https://www.gov.uk/find-court-tribunal",
+      "own_site": "a GOV.UK page"
+     },
+     {
+      "nation": "Scotland",
+      "name": "Scottish Courts website",
+      "number": null,
+      "link": null,
+      "own_site": "named on that GOV.UK page; its own site was not opened"
+     },
+     {
+      "nation": "Northern Ireland",
+      "name": "Northern Ireland Courts and Tribunals Service",
+      "number": null,
+      "link": null,
+      "own_site": "named on that GOV.UK page; its own site was not opened"
+     }
+    ],
+    "here": "For a time limit, the time-limit tool on the Law page works out the date from a dated rule, or says that a limit may still apply and where to ask today.",
+    "sources": [
+     {
+      "id": "gov-uk-find-court-tribunal",
+      "read": true,
+      "name": "Find a court or tribunal (GOV.UK)",
+      "page": "https://www.gov.uk/find-court-tribunal",
+      "read_on": "2026-11-20",
+      "read_by": "round W1165, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/find-court-tribunal) on 2026-11-20, not through a summary",
+      "recently_checked": true,
+      "checked": "read on 20 November 2026"
+     },
+     {
+      "id": "gov-uk-represent-yourself",
+      "read": true,
+      "name": "Represent yourself in court (GOV.UK)",
+      "page": "https://www.gov.uk/represent-yourself-in-court",
+      "read_on": "2026-11-20",
+      "read_by": "round W1165, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/represent-yourself-in-court) on 2026-11-20, not through a summary",
+      "recently_checked": true,
+      "checked": "read on 20 November 2026"
+     }
+    ]
+   }
+  ],
+  "research_id": "46d2a6ad32",
+  "question": "How do I apply for indefinite leave to remain?",
+  "jurisdiction": "England & Wales",
+  "area_of_law": "general",
+  "analysis": "This asks about immigration or nationality, which is regulated advice, so it is not answered here. An immigration adviser must be registered with the Immigration Advice Authority (IAA) or be a member of an approved professional body. What the pages read say, and where to go, are listed with this answer. The services listed with it give free or regulated help. Nothing here is legal advice.",
+  "method": "routed to an authorised person - not answered",
+  "boundary": {
+   "id": "immigration",
+   "subject": "Immigration and nationality",
+   "regulated": "An immigration adviser must be registered with the Immigration Advice Authority (IAA) or be a member of an approved professional body",
+   "words": [
+    "Immigration advisers can help you with most things to do with immigration, including helping you to fill in the right forms and representing you at a tribunal. They do not make immigration decisions.",
+    "Check if the adviser is registered and if they charge a fee before you use them.",
+    "All immigration advisers must be registered with IAA or be a member of an approved professional body.",
+    "You cannot get your money back if an adviser is not regulated.",
+    "While the IAA doesn’t provide immigration advice directly, it offers an online database to help you find registered and qualified immigration advisers."
+   ],
+   "places": [
+    {
+     "nation": "UK",
+     "name": "Adviser Finder (Immigration Advice Authority)",
+     "number": null,
+     "link": "https://portal.immigrationadviceauthority.gov.uk/s/adviser-finder",
+     "own_site": "named on that GOV.UK page; its own site was not opened"
+    },
+    {
+     "nation": "England and Wales",
+     "name": "The Law Society",
+     "number": null,
+     "link": "https://solicitors.lawsociety.org.uk/",
+     "own_site": "named on that GOV.UK page; its own site was not opened"
+    },
+    {
+     "nation": "Scotland",
+     "name": "The Law Society of Scotland",
+     "number": null,
+     "link": "https://www.lawscot.org.uk/find-a-solicitor/",
+     "own_site": "named on that GOV.UK page; its own site was not opened"
+    },
+    {
+     "nation": "Northern Ireland",
+     "name": "The Law Society of Northern Ireland",
+     "number": null,
+     "link": "https://lawsoc-ni.org/using-a-solicitor",
+     "own_site": "named on that GOV.UK page; its own site was not opened"
+    }
+   ],
+   "sources": [
+    {
+     "id": "gov-uk-find-immigration-adviser",
+     "read": true,
+     "name": "Find an immigration adviser (GOV.UK)",
+     "page": "https://www.gov.uk/find-an-immigration-adviser",
+     "read_on": "2026-11-20",
+     "read_by": "round W1167, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/find-an-immigration-adviser) on 2026-11-20, not through a summary",
+     "recently_checked": true,
+     "checked": "read on 20 November 2026"
+    },
+    {
+     "id": "iaa-information-for-advice-seekers",
+     "read": true,
+     "name": "Information for advice seekers (Immigration Advice Authority)",
+     "page": "https://www.gov.uk/guidance/information-for-advice-seekers",
+     "read_on": "2026-11-20",
+     "read_by": "round W1167, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/guidance/information-for-advice-seekers) on 2026-11-20, not through a summary; with the regulator's organisation record (/government/organisations/immigration-advice-authority), read the same way",
+     "recently_checked": true,
+     "checked": "read on 20 November 2026"
+    }
+   ],
+   "regulator": {
+    "name": "the Immigration Advice Authority",
+    "read": true,
+    "page": {
+     "id": "iaa-information-for-advice-seekers",
+     "read": true,
+     "name": "Information for advice seekers (Immigration Advice Authority)",
+     "page": "https://www.gov.uk/guidance/information-for-advice-seekers",
+     "read_on": "2026-11-20",
+     "read_by": "round W1167, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/guidance/information-for-advice-seekers) on 2026-11-20, not through a summary; with the regulator's organisation record (/government/organisations/immigration-advice-authority), read the same way",
+     "recently_checked": true,
+     "checked": "read on 20 November 2026"
+    },
+    "why": null
+   }
+  },
+  "routed_to_people": [
+   {
+    "name": "Find legal advice (GOV.UK)",
+    "link": "https://www.gov.uk/find-legal-advice",
+    "for_what": "finding a solicitor, a legal adviser or free advice in England and Wales",
+    "nations": [
+     "England",
+     "Wales"
+    ],
+    "says_so": "https://www.gov.uk/find-legal-advice",
+    "how_read": "its address resolved when it was opened; its content was not read",
+    "recently_checked": true,
+    "checked": "read on 13 October 2026"
+   },
+   {
+    "name": "Check if you can get legal aid (GOV.UK)",
+    "link": "https://www.gov.uk/legal-aid/check-legal-aid",
+    "for_what": "seeing whether the cost of advice or representation may be met",
+    "nations": [
+     "England",
+     "Wales"
+    ],
+    "says_so": "https://www.gov.uk/legal-aid/check-legal-aid",
+    "how_read": "its address resolved when it was opened; its content was not read",
+    "recently_checked": true,
+    "checked": "read on 13 October 2026"
+   },
+   {
+    "name": "Citizens Advice",
+    "link": "https://www.citizensadvice.org.uk/",
+    "for_what": "free, independent advice on work, money, housing and consumer problems",
+    "nations": [
+     "England",
+     "Wales"
+    ],
+    "says_so": "https://www.citizensadvice.org.uk/",
+    "how_read": "its address resolved when it was opened; its content was not read",
+    "recently_checked": true,
+    "checked": "read on 13 October 2026"
+   },
+   {
+    "name": "Acas",
+    "link": "https://www.acas.org.uk/",
+    "for_what": "free advice on rights at work, and conciliation before a tribunal claim",
+    "nations": [
+     "England",
+     "Wales"
+    ],
+    "says_so": "https://www.acas.org.uk/",
+    "how_read": "its address resolved when it was opened; its content was not read",
+    "recently_checked": true,
+    "checked": "read on 13 October 2026"
+   },
+   {
+    "name": "Law Centres Network",
+    "link": "https://www.lawcentres.org.uk/",
+    "for_what": "free legal help from a local law centre, where one serves the area",
+    "nations": [
+     "England",
+     "Wales"
+    ],
+    "says_so": "https://www.lawcentres.org.uk/",
+    "how_read": "its address resolved when it was opened; its content was not read",
+    "recently_checked": true,
+    "checked": "read on 13 October 2026"
+   },
+   {
+    "name": "Advicenow",
+    "link": "https://www.advicenow.org.uk/",
+    "for_what": "plain guides for a person handling a legal problem themselves",
+    "nations": [
+     "England",
+     "Wales"
+    ],
+    "says_so": "https://www.advicenow.org.uk/",
+    "how_read": "its address resolved when it was opened; its content was not read",
+    "recently_checked": true,
+    "checked": "read on 13 October 2026"
+   },
+   {
+    "name": "Advocate",
+    "link": "https://weareadvocate.org.uk/",
+    "for_what": "free help from a volunteer barrister, for those who cannot pay and cannot get legal aid",
+    "nations": [
+     "England",
+     "Wales"
+    ],
+    "says_so": "https://weareadvocate.org.uk/",
+    "how_read": "its address resolved when it was opened; its content was not read",
+    "recently_checked": true,
+    "checked": "read on 13 October 2026"
+   },
+   {
+    "name": "LawWorks",
+    "link": "https://www.lawworks.org.uk/legal-advice-individuals",
+    "for_what": "free legal advice clinics run by volunteer solicitors",
+    "nations": [
+     "England",
+     "Wales"
+    ],
+    "says_so": "https://www.lawworks.org.uk/legal-advice-individuals",
+    "how_read": "its address resolved when it was opened; its content was not read",
+    "recently_checked": true,
+    "checked": "read on 13 October 2026"
+   }
+  ],
+  "own_case_screen": {
+   "recognised": false,
+   "coverage": "recognises a question written in the first person that names a dispute or a legal step and asks what to do, whether it will succeed, or what the person is owed. A question about one's own case written in the third person, or in another language, is not recognised: it is answered as information, with the statement every answer carries. Recognising nothing is not a clearance.",
+   "basis": "not recognised as a question about the person's own case, which is not a clearance"
+  },
+  "boundary_screen": {
+   "recognised": true,
+   "coverage": "recognises a question that names immigration or nationality, a way of dealing with debts or a person's own debts, or a claims management company, in English. A question that names none of these words is not recognised, however regulated its subject: it goes on as before. Recognising nothing is not a clearance."
+  },
+  "ai_provenance": {
+   "served_by": "none",
+   "is_external": false,
+   "routed_by": "boundary_screen",
+   "composed": false,
+   "evidence_level": null,
+   "evidence_level_number": null,
+   "evidence_basis": "NOT SERVED: no resource gave a reply for this - nothing was asked, or what was asked did not answer - so there is no behaviour to state and it carries no level",
+   "basis": "no model and no floor composed this: the question names a subject that is regulated advice, and was routed before anything ran"
+  },
+  "generated_at": "2026-11-20T16:15:46Z",
+  "disclaimer": "Not answered: a question on a subject that is regulated advice is routed to an authorised person. Nothing here is legal advice."
  }
 }

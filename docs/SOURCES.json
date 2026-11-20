@@ -1637,6 +1637,90 @@
    "used_by": [
     "agentic_core/legal/urgent.py"
    ]
+  },
+  {
+   "id": "gov-uk-find-immigration-adviser",
+   "names": [
+    "Find an immigration adviser (GOV.UK)"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "England",
+    "Wales",
+    "Scotland",
+    "Northern Ireland"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/find-an-immigration-adviser",
+   "read_on": "2026-11-20",
+   "read_by": "round W1167, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/find-an-immigration-adviser) on 2026-11-20, not through a summary",
+   "says": "GOV.UK's content record gives it as first published 15 September 2014 and last publicly updated 18 October 2024, in four parts: search for an adviser, what advisers can do, hiring an adviser, and complain about an adviser. 'Immigration advisers can help you with most things to do with immigration, including helping you to fill in the right forms and representing you at a tribunal. They do not make immigration decisions.' 'Check if the adviser is registered and if they charge a fee before you use them.' 'Use the Immigration Advice Authority (IAA) Adviser Finder to find a registered adviser near you.' 'All immigration advisers must be registered with IAA or be a member of an approved professional body.' Solicitors who give immigration advice are found through 'The Law Society if you live in England or Wales', the Law Society of Scotland and the Law Society of Northern Ireland, and barristers through the Bar Council's Direct Access scheme, the Faculty of Advocates and the Bar of Northern Ireland. 'You cannot get your money back if an adviser is not regulated.'",
+   "not_read": "the Adviser Finder itself, and the Law Societies' and the Bar bodies' own sites",
+   "used_by": [
+    "agentic_core/legal/boundaries.py"
+   ]
+  },
+  {
+   "id": "iaa-information-for-advice-seekers",
+   "names": [
+    "Information for advice seekers (Immigration Advice Authority)"
+   ],
+   "kind": "regulator guidance",
+   "nation": [
+    "England",
+    "Wales",
+    "Scotland",
+    "Northern Ireland"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/guidance/information-for-advice-seekers",
+   "read_on": "2026-11-20",
+   "read_by": "round W1167, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/guidance/information-for-advice-seekers) on 2026-11-20, not through a summary; with the regulator's organisation record (/government/organisations/immigration-advice-authority), read the same way",
+   "says": "Published on GOV.UK by the Immigration Advice Authority, an executive non-departmental public body sponsored by the Home Office; the content record gives it as first published 16 January 2025 and last publicly updated 22 July 2025. 'The Immigration Advice Authority (IAA) helps people seeking immigration advice by regulating advisers to ensure they are qualified, competent, and act in your best interests.' 'While the IAA doesn’t provide immigration advice directly, it offers an online database to help you find registered and qualified immigration advisers.' The Adviser Finder lists organisations by distance, and its results 'will only include organisations who have opted in'; the Adviser Register lets the public check whether an organisation or individual is registered. A complaint may be made about poor service from a registered adviser, advice from an unregulated adviser, or the IAA itself. Advisers are registered at three levels: advice and assistance, casework, and advocacy and representation. The organisation record names the Adviser Finder at portal.immigrationadviceauthority.gov.uk.",
+   "not_read": "the Adviser Finder and the Adviser Register themselves, and the pages it links on choosing an adviser",
+   "used_by": [
+    "agentic_core/legal/boundaries.py"
+   ]
+  },
+  {
+   "id": "gov-uk-options-for-dealing-with-debts",
+   "names": [
+    "Options for dealing with your debts (GOV.UK)"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/options-for-dealing-with-your-debts",
+   "read_on": "2026-11-20",
+   "read_by": "round W1167, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/options-for-dealing-with-your-debts) on 2026-11-20, not through a summary; the older address /options-for-paying-off-your-debts redirects to it",
+   "says": "GOV.UK's content record gives it as first published 26 January 2012 and last publicly updated 8 November 2024, in six parts: overview, Breathing Space, Debt Management Plans, administration orders, Individual Voluntary Arrangements and Debt Relief Orders. 'Speak to a debt adviser to get help choosing the best way to deal with your debt.' 'MoneyHelper has information about debt management and free debt advisory services.' For a Debt Management Plan: 'Set up a plan with a debt management company authorised by the Financial Conduct Authority (FCA). Search the Financial Services Register for an authorised company.' Breathing Space is for a person who lives in England or Wales, for 'up to 60 days': 'To apply for the ‘Breathing Space’ scheme, you need to talk to a debt adviser.' 'In Scotland you can arrange a Debt Payment Programme from the Debt Arrangement Scheme.'",
+   "not_read": "the Financial Conduct Authority's own site (www.fca.org.uk), which this environment's network refuses; MoneyHelper's pages, the Financial Services Register and the Debt Arrangement Scheme's page were not opened",
+   "used_by": [
+    "agentic_core/legal/boundaries.py"
+   ]
+  },
+  {
+   "id": "gov-uk-claim-compensation-cmc",
+   "names": [
+    "Claim compensation for injury or financial loss (GOV.UK)"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/guidance/claim-compensation-for-injury-or-financial-loss",
+   "read_on": "2026-11-20",
+   "read_by": "round W1167, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/guidance/claim-compensation-for-injury-or-financial-loss) on 2026-11-20, not through a summary",
+   "says": "Published on GOV.UK by the Ministry of Justice; the content record gives it as first published 16 June 2014 and holds no later change. 'Any business in England and Wales that manages claims must be authorised by the Ministry of Justice’s Claims Management Regulator.' 'Many organisations offer impartial advice with no fee or obligation. If you make a successful claim without using a CMC, you’ll keep all the compensation yourself.' It gives 29 August 2019 as the deadline to complain about the sale of PPI. Two later GOV.UK records, opinions of the Regulatory Policy Committee of 2019 and 2020, are titled 'How we will regulate claims management companies: RPC Opinion' and 'How FCA will regulate claims management companies: RPC Opinion'; they were found by GOV.UK's search on 2026-11-20 and were not read whole, so who regulates a claims company today is not taken from this page or from them.",
+   "not_read": "the two Regulatory Policy Committee opinions (their titles only, from GOV.UK's search), the authorised business register it links, and the Financial Conduct Authority's own site (www.fca.org.uk), which this environment's network refuses",
+   "used_by": [
+    "agentic_core/legal/boundaries.py"
+   ]
   }
  ]
 }
