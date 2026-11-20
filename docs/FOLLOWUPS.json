@@ -26061,6 +26061,23 @@
       "status": "open",
       "closed_by": null,
       "note": ""
+    },
+    {
+      "id": "FU-1284",
+      "title": "The release machine would serve plain HTTP: no certificate fronts it",
+      "why": "W1134 wrote the Google Cloud deploy steps into docs/DEPLOYMENT.md: one e2-micro machine serving the platform on port 80 at its public address. Nothing in them puts a certificate in front of it, so what a person types into a tool would cross the internet unencrypted, and sign-in (P4.1) must not open over it. THE WORK: read at each option's own page, dated, how a certificate can front the machine (for example a reverse proxy on the machine that obtains one for a domain, or a Google front door), with each option's price and what it needs from the Owner; write the chosen steps into the deploy section with a test, as W1134 did; and keep the section saying that no person signs in until it is in place. A domain, if one is needed, is the Owner's to buy.",
+      "source": "W1134 (FU-603 part 2: the Google Cloud deploy steps written from Google's pages)",
+      "found": "2026-11-20",
+      "files": [
+        "docs/DEPLOYMENT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.5",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.5 is the production deploy on Google Cloud: the machine its steps describe must not open sign-in (P4.1) over plain HTTP, so the certificate is part of that deploy's pre-flight"
     }
   ],
   "routes": [

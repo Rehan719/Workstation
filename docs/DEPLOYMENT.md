@@ -68,7 +68,8 @@ uvicorn agentic_core.app_mvp:app --port 8000       # GET / now serves the app
 
 **$0 by default:** local/Docker run, in-house native AI + self-hosted Ollama, file persistence, Stripe
 **test** mode. **Costs money only when YOU enable it on your own account:** hosting the backend
-(Render/any host), a managed Postgres, an external AI key (per-token), Stripe **live** mode (real money +
+(Render/any host; on Google Cloud about $3.65 a month for the release machine's address, costed below), a
+managed Postgres, an external AI key (per-token), Stripe **live** mode (real money +
 fees). Nothing chargeable is triggered autonomously.
 
 ## Frontend — Vercel RETIRED; Google Cloud planned (Owner, 2026-10-07)
@@ -83,10 +84,11 @@ fees). Nothing chargeable is triggered autonomously.
   - **beta**: a tag or a `beta` branch;
   - **release**: `main` after a reviewed merge.
 
-  Likely shape, not yet built or costed: the static `dist/` on Firebase Hosting or Cloud Storage, the FastAPI
-  backend on Cloud Run (free tier), each channel with its own service and URL, deployed by a GitHub Actions
-  workflow using Workload Identity Federation (no stored keys). Building it is a P4 item and needs the Owner's GCP
-  project.
+  The shape chosen and costed, with its steps, is "The Google Cloud deploy, step by step" below (W1134). The
+  release channel runs on one free-tier machine with its records on a disk of their own, because the platform
+  keeps its records as files and Cloud Run's storage volumes do not lock them; Cloud Run stays a candidate for
+  development and beta. Deploys from GitHub sign in by Workload Identity Federation (no stored keys). The
+  project and the deploy are the Owner's.
 - Build: root `apps/workstation-superapp` (npm workspace), `npm run build` → `dist` (Vite).
 
 ## The dry run (P4.5), measured on 2026-11-20 (W1128)
@@ -118,9 +120,205 @@ Closed by W1129: the folder is named on the machine that holds it, by `LEGAL_MAT
 `.env`, which the image leaves out. The committed file names none, and the route answers with the folder's state
 and the setting that named it, never its path.
 
-Not yet done (FU-603): a secrets pattern with no stored keys, the data directory's behaviour on a machine whose
-disk is replaced, a rollback drill, and cost labels. The project, the billing and the deploy itself stay the
-Owner's.
+Not yet done (FU-603): a backup, a restore drill and a rollback drill. W1134 wrote the rest into the next
+section: the secrets pattern with no stored keys, the records' disk kept apart from the machine, the cost labels
+and the costs. The project, the billing and the deploy itself stay the Owner's.
+
+## The Google Cloud deploy, step by step (P4.5), read at Google's pages on 2026-11-20 (W1134)
+
+OWNER RULING 2026-11-20: the exact Google Cloud deploy steps are written here. The project, its billing and the
+deploy itself stay the Owner's. Nothing here has been run against a Google account: each command is copied from the
+Google page its step names, in the form that page gives it. A value in capitals (PROJECT_ID, PROJECT_NUMBER,
+BILLING_ACCOUNT, BUCKET_NAME, TAG and the like) is the Owner's to fill in. Where no page read here settles a point,
+the step says so.
+
+THE PAGES, each read on 2026-11-20 (in brackets, the date the page gives as last updated; the two pricing pages give
+none):
+- [free] https://docs.cloud.google.com/free/docs/free-cloud-features (2026-11-13)
+- [vm] https://docs.cloud.google.com/sdk/gcloud/reference/compute/instances/create (2026-11-10)
+- [cos] https://docs.cloud.google.com/container-optimized-os/docs/how-to/create-configure-instance (2026-11-10)
+- [cos-run] https://docs.cloud.google.com/container-optimized-os/docs/how-to/run-container-instance (2026-11-10)
+- [containers] https://docs.cloud.google.com/compute/docs/containers (2026-11-10)
+- [migrate] https://docs.cloud.google.com/compute/docs/containers/migrate-containers (2026-11-10)
+- [startup] https://docs.cloud.google.com/compute/docs/instances/startup-scripts/linux (2026-11-10)
+- [metadata] https://docs.cloud.google.com/compute/docs/metadata/querying-metadata (2026-11-10)
+- [mount] https://docs.cloud.google.com/compute/docs/disks/format-mount-disk-linux (2026-11-10)
+- [firewall] https://docs.cloud.google.com/firewall/docs/using-firewalls (2026-11-10)
+- [registry] https://docs.cloud.google.com/artifact-registry/docs/docker/store-docker-container-images (2026-11-10)
+- [registry-pricing] https://cloud.google.com/artifact-registry/pricing (no date shown)
+- [network-pricing] https://cloud.google.com/vpc/network-pricing (no date shown)
+- [run-volumes] https://docs.cloud.google.com/run/docs/configuring/services/cloud-storage-volume-mounts (2026-11-19)
+- [bucket] https://docs.cloud.google.com/storage/docs/creating-buckets (2026-11-17)
+- [budget-cli] https://docs.cloud.google.com/sdk/gcloud/reference/billing/budgets/create (2026-05-27)
+- [budgets] https://docs.cloud.google.com/billing/docs/how-to/budgets (2026-11-10)
+- [uptime] https://docs.cloud.google.com/monitoring/uptime-checks (2026-11-20)
+- [wif] https://docs.cloud.google.com/iam/docs/workload-identity-federation-with-deployment-pipelines (2026-11-17)
+
+THE SHAPE, AND WHY
+- One e2-micro machine in us-central1 runs the release channel. The free tier gives one non-preemptible e2-micro a
+  month in us-west1, us-central1 or us-east1, and 30 GB-months of standard persistent disk [free].
+- The platform keeps its records as files under DATA_DIR, so they live on a 20 GB disk of their own beside a 10 GB
+  boot disk: 30 GB together, the free tier's whole allowance. The data disk is created with auto-delete=no, because
+  a disk created with a machine is deleted with it by default [vm]; deleting or replacing the machine leaves the
+  records where they are.
+- Not Cloud Run for the release channel. A Cloud Storage volume there "does not provide concurrency control for
+  multiple writes (file locking) to the same file": the last write wins and all previous writes are lost, and it is
+  "not a fully POSIX-compliant file system" [run-volumes]. Cloud Run stays a candidate for a development or beta
+  channel whose records may be lost.
+- The machine runs Container-Optimized OS, from the image project cos-cloud [cos]. It starts the image with docker
+  run from a startup script, because the container startup agent that once did that is deprecated [containers]; the
+  script follows the migration page's own example [migrate].
+
+WHAT IT COSTS, read at the pricing pages (the arithmetic is this round's, over a 730-hour month)
+- The machine and its two disks: inside the free tier [free].
+- The machine's public IPv4 address: $0.005 an hour on a standard machine, and the free tier covers one hour a
+  month [network-pricing], so about $3.65 a month. It is this shape's one recurring charge.
+- The registry: free up to 0.5 GiB a month, then $0.000136986 per GiB-hour, about $0.10 per GiB-month
+  [registry-pricing]. The image is 2.28 GB as built (W1128) and the registry stores it compressed, so one image costs
+  at most about $0.16 a month; the stored size is read from the repository after the first push.
+- The backup bucket: 5 GB-months of regional storage a month are free, in us-east1, us-west1 and us-central1 only
+  [free].
+- Data sent out: 1 GB a month is free from North America [free]. The rate after that was not read here, nor was the
+  uptime check's own price.
+- In all, about $3.65 to $3.85 a month before data sent out. The budget alert in step 1 watches the bill.
+
+THE STEPS, run from the Workstation folder with gcloud signed in as the Owner
+
+**Step 1. A budget alert, before anything else** [budget-cli] [budgets]
+
+```bash
+gcloud billing budgets create --billing-account=BILLING_ACCOUNT --display-name="workstation" \
+    --budget-amount=10USD --filter-projects=projects/PROJECT_ID \
+    --threshold-rule=percent=0.50 --threshold-rule=percent=0.90 --threshold-rule=percent=1.00
+```
+
+The amount is the Owner's; 10 USD is about three times the bill above. An alert warns and stops nothing: "Setting an
+alerts-only budget doesn't automatically cap Google Cloud or Google Maps Platform usage or spending" [budgets]. That
+page points to a spend cap budget where a service supports one; the spend cap page was not read here.
+
+**Step 2. Each service's API, once** [registry]
+
+The registry page's first step is to enable its service's API in the project, if it is not already enabled; the
+project's creator holds the permission to do so through the Owner role [registry]. Each service the steps use is
+enabled the same way, once: Compute Engine, Artifact Registry, Cloud Storage, Cloud Monitoring and Cloud Billing's
+budgets.
+
+**Step 3. The registry, in the machine's region** [registry] [registry-pricing]
+
+```bash
+gcloud artifacts repositories create workstation --repository-format=docker \
+    --location=us-central1 --description="Workstation images" --project=PROJECT_ID
+gcloud auth configure-docker us-central1-docker.pkg.dev
+```
+
+The pricing page's own advice is to keep a repository in the region its machines run in, "so that there are no
+cross-region data transfer costs" [registry-pricing].
+
+**Step 4. Build the release and push it** [registry]
+
+```bash
+docker build -t workstation:TAG .
+docker tag workstation:TAG us-central1-docker.pkg.dev/PROJECT_ID/workstation/workstation:TAG
+docker push us-central1-docker.pkg.dev/PROJECT_ID/workstation/workstation:TAG
+```
+
+The image is built from this tree's Dockerfile, as the dry run built it; the tag and the push are the page's. TAG is
+the commit's short hash (`git rev-parse --short HEAD`), so a release names the code it carries, and every earlier
+release stays in the repository to roll back to.
+
+**Step 5. The backup bucket, in the free tier's region** [bucket] [free]
+
+```bash
+gcloud storage buckets create gs://BUCKET_NAME --location=us-central1
+```
+
+The free tier's storage applies in us-east1, us-west1 and us-central1 only [free]; a bucket in the US multi-region
+would be outside it. Nothing writes to the bucket yet: the backup is FU-603's (below).
+
+**Step 6. The firewall rule: port 80, to the machine tagged workstation** [firewall] [migrate]
+
+```bash
+gcloud compute firewall-rules create workstation-http --network=default --direction=ingress --action=allow \
+    --target-tags=workstation --source-ranges=0.0.0.0/0 --rules=tcp:80
+```
+
+Container-Optimized OS denies incoming traffic by default, so the startup script opens the machine's own firewall
+with the migration page's two rules [migrate]; this rule is what lets port 80 in from outside, and the network's
+other rules are unchanged.
+
+**Step 7. The machine, its kept data disk and its startup script** [vm] [cos] [startup] [mount] [metadata] [cos-run]
+
+```bash
+gcloud compute instances create workstation --zone=us-central1-a --machine-type=e2-micro \
+    --image-family=cos-stable --image-project=cos-cloud \
+    --boot-disk-size=10GB --boot-disk-type=pd-standard \
+    --create-disk=name=workstation-data,device-name=workstation-data,size=20GB,type=pd-standard,auto-delete=no \
+    --metadata=image-tag=TAG --metadata-from-file=startup-script=deploy/gcp/startup.sh \
+    --tags=workstation --labels=app=workstation,channel=release --deletion-protection
+```
+
+The flags are the reference's [vm]; an image family starts the machine from the family's latest image, and
+cos-stable is the Container-Optimized OS family the OS's own page lists [cos]. `deploy/gcp/startup.sh` is committed
+beside this file and keeps Unix line endings on every checkout (`.gitattributes`), since the machine runs it with
+bash. Compute Engine runs it as root at every boot [startup]. It formats the data disk only if the disk is blank,
+mounts it at /mnt/disks/data with the mount page's commands [mount], opens the host firewall, reads the project and
+the image's tag from the machine's metadata server [metadata], signs the registry in with `docker-credential-gcr`,
+which the OS carries [cos-run], and starts the platform with its records on the data disk. Its disk step was driven
+in this round on disk images: a blank disk is formatted once, a formatted one is kept byte for byte, and a disk
+holding anything else, a short one or a missing one is refused, untouched, and the platform is not started
+(test_w1134). The labels are the cost labels: a budget can be narrowed to them with --filter-labels [budget-cli].
+NOT READ HERE: the roles the machine's service account needs to pull from the repository; if the pull is refused,
+that grant is what is missing. The script's output is read on the machine with
+`sudo journalctl -u google-startup-scripts.service` [startup].
+
+**Step 8. A release, and a rollback, are the same two commands** [startup] [vm]
+
+```bash
+gcloud compute instances add-metadata workstation --zone=us-central1-a --metadata=image-tag=TAG
+sudo google_metadata_script_runner startup
+```
+
+The first runs where gcloud is and sets the tag the platform starts from. The second runs on the machine (SSH from
+the console) and re-runs the startup script, the page's way to re-run one [startup]; the script pulls the image
+first, and leaves the running platform as it was if the pull fails. A rollback is the same with the previous tag.
+The page shows add-metadata with --metadata-from-file; the --metadata form is the one create takes [vm]. Not yet
+drilled (FU-603).
+
+**Step 9. The uptime check and its alert, from outside the machine (FU-1095)** [uptime]
+
+In the console: Monitoring, Uptime checks, Create uptime check; protocol HTTP, resource type URL, the machine's
+address as the host and /health as the path. Then, in the page's words: "To be notified when an uptime check fails,
+create an alerting policy and configure notification channels for that policy"; the channel is the Owner's e-mail.
+By default a notification is sent when at least two regions report the check failing for at least a minute [uptime].
+Then the drill FU-1095 asks for, with the Owner watching: on the machine, `docker stop workstation`; see the e-mail
+arrive; `docker start workstation`; see the alert clear.
+
+**Step 10. Later: deploys from GitHub, with no stored key** [wif]
+
+The first deploys are run by the Owner by hand, signed in as the Owner. When a workflow deploys, it signs in through
+a workload identity pool and holds no key:
+
+```bash
+gcloud iam workload-identity-pools create github --location="global" \
+    --description="GitHub Actions" --display-name="GitHub Actions"
+gcloud iam workload-identity-pools providers create-oidc workstation --location="global" \
+    --workload-identity-pool="github" --issuer-uri="https://token.actions.githubusercontent.com/" \
+    --attribute-mapping="google.subject=assertion.sub,attribute.repository_id=assertion.repository_id,attribute.ref=assertion.ref" \
+    --attribute-condition="assertion.repository_id=='REPOSITORY_ID' && assertion.ref=='refs/heads/main'"
+gcloud iam service-accounts add-iam-policy-binding SERVICE_ACCOUNT_EMAIL --role=roles/iam.workloadIdentityUser \
+    --member="principalSet://iam.googleapis.com/projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.repository_id/REPOSITORY_ID"
+```
+
+The condition names the repository by its number, not its name: the page warns that the name fields "increase the
+chances of cybersquatting and typosquatting attacks" and says to use the numeric `*_id` fields, "which are unique and
+can't be reused" [wif]. Only main, the release channel, may deploy. The workflow's job asks for `id-token: write` and
+`contents: read`, and signs in with the step `uses: 'google-github-actions/auth@v1'`, given
+`workload_identity_provider` and `service_account` [wif]. NOT READ HERE: the roles the deploying service account
+needs, and whether a later version of that action is current.
+
+NOT YET DONE (FU-603): the backup of the data disk to the bucket, a restore of a backup onto a fresh disk, and a
+rollback, each driven once. HTTPS is its own row (FU-1284): as written the machine serves plain HTTP at its address,
+so no person signs in (P4.1) until a certificate fronts it.
 
 ## Payments & money safety (READ BEFORE LAUNCH)
 

@@ -92347,3 +92347,187 @@ def test_w1133_fu1055_the_departments_thirteen_headings_are_each_set_against_the
     for route in re.findall(r"`GET (/api/[A-Za-z0-9_./-]+)`", sec):
         assert route in served, (route, "a row names a route that is not served")
     assert "the children's gate stays closed" in " ".join(sec.split()), "the table does not keep the gate closed"
+
+
+def test_w1134_fu603_the_google_cloud_deploy_is_written_from_googles_pages_and_no_disk_with_records_is_formatted(tmp_path):
+    """FU-603 part 2 (W1134), P4.5; the Owner's ruling of 2026-11-20 (the exact Google Cloud deploy steps go into
+    docs/DEPLOYMENT.md). Held here:
+    - every step cites a page the section lists, each listed page with its own last-updated date, and every listed
+      page is cited;
+    - the shape is the free tier's: one e2-micro in us-central1, standard disks of 30 GB together, a registry and a
+      bucket in the same region;
+    - the records' disk outlives the machine (auto-delete=no), and the machine is protected from deletion;
+    - the costs are stated from their pages, the address at $0.005 an hour, and the alert is said not to cap spend;
+    - no stored key: the workflow signs in through a pool whose condition names the repository by its number, as the
+      page advises, and only main may deploy;
+    - the startup script the machine runs is committed, keeps LF on every checkout, starts the image the Dockerfile
+      builds with its records where the Dockerfile keeps them, reads its tag from the metadata server and holds no key;
+    - driven on disk images: a blank disk is formatted once, a formatted one is kept byte for byte, and one holding
+      anything else, a short one or a missing one is refused, untouched;
+    - what is not done is said: the backup, the restore and the rollback drills (FU-603), and HTTPS (its own row)."""
+    import hashlib
+    import json
+    import os
+    import pathlib
+    import re
+    import shutil
+    import subprocess
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    dep = (root / "docs" / "DEPLOYMENT.md").read_text(encoding="utf-8")
+    head = "## The Google Cloud deploy, step by step (P4.5), read at Google's pages on 2026-11-20 (W1134)"
+    assert head in dep, "the deploy steps are not written"
+    sec = dep.split(head, 1)[1].split("\n## ", 1)[0]
+    flat = " ".join(sec.split())
+
+    # == THE PAGES: listed with their dates, and each step cites listed pages only, every one of them somewhere ==
+    listed = re.findall(r"^- \[([a-z-]+)\] (https://(?:docs\.)?cloud\.google\.com/\S+) \(([^)]+)\)$", sec, re.M)
+    pages = {k: (url, when) for k, url, when in listed}
+    assert len(pages) == len(listed) >= 15, ("a page is listed twice, or too few are listed", listed)
+    for k, (url, when) in pages.items():
+        assert re.fullmatch(r"20\d\d-\d\d-\d\d", when) or (when == "no date shown" and "pricing" in url), (k, when)
+    steps = re.split(r"^\*\*Step (\d+)\. [^*]+\*\*", sec, flags=re.M)
+    numbers = [int(n) for n in steps[1::2]]
+    assert numbers == list(range(1, len(numbers) + 1)) and len(numbers) >= 10, numbers
+    body = sec.split("THE STEPS", 1)
+    assert len(body) == 2, "the section has no steps"
+    cited = set()
+    for n, text in zip(numbers, steps[2::2]):
+        tags = set(re.findall(r"\[([a-z][a-z-]*)\]", text))
+        assert tags, ("a step cites no page", n)
+        assert tags <= set(pages), ("a step cites a page the section does not list", n, sorted(tags - set(pages)))
+        cited |= tags
+    prose = sec.split("THE PAGES", 1)[0] + sec.split("THE SHAPE", 1)[1]
+    cited |= set(re.findall(r"\[([a-z][a-z-]*)\]", prose)) & set(pages)
+    assert cited == set(pages), ("a page is listed and never cited", sorted(set(pages) - cited))
+
+    # == THE COMMANDS, read as the Owner would run them ==
+    blocks = [" ".join(b.replace("\\\n", " ").split()) for b in re.findall(r"```bash\n(.*?)```", sec, re.S)]
+
+    def block(prefix):
+        found = [b for b in blocks if prefix in b]
+        assert len(found) == 1, (prefix, "is not in exactly one command block")
+        return found[0]
+
+    def flags(cmd):
+        return dict(re.findall(r"--([a-z-]+)=(\S+)", cmd))
+
+    vm_cmd = block("gcloud compute instances create workstation")
+    vm = flags(vm_cmd)
+    assert vm["machine-type"] == "e2-micro" and vm["zone"].startswith("us-central1-"), vm
+    assert vm["image-project"] == "cos-cloud" and vm["image-family"] == "cos-stable", vm
+    assert vm["boot-disk-type"] == "pd-standard", "the boot disk is not the free tier's standard disk"
+    disk = dict(p.split("=", 1) for p in vm["create-disk"].split(","))
+    assert disk.get("auto-delete") == "no", ("the records' disk would be deleted with the machine", disk)
+    assert disk.get("type") == "pd-standard", disk
+    total = int(vm["boot-disk-size"].rstrip("GB")) + int(disk["size"].rstrip("GB"))
+    assert total <= 30, ("the disks are more than the free tier's 30 GB-months", total)
+    assert "--deletion-protection" in vm_cmd, "the machine is not protected from deletion"
+    assert set(vm["labels"].split(",")) >= {"app=workstation", "channel=release"}, vm["labels"]
+    assert vm["metadata-from-file"] == "startup-script=deploy/gcp/startup.sh", vm["metadata-from-file"]
+    assert vm["metadata"].startswith("image-tag="), vm["metadata"]
+    fw = flags(block("gcloud compute firewall-rules create"))
+    assert fw["target-tags"] == vm["tags"] == "workstation" and fw["rules"] == "tcp:80", fw
+    reg = flags(block("gcloud artifacts repositories create workstation"))
+    assert reg["location"] == "us-central1" and reg["repository-format"] == "docker", reg
+    bucket = flags(block("gcloud storage buckets create"))
+    assert bucket["location"] == "us-central1", ("the bucket is outside the free tier's regions", bucket)
+    push = block("docker push")
+    assert "docker push us-central1-docker.pkg.dev/PROJECT_ID/workstation/workstation:TAG" in push, push
+    budget = block("gcloud billing budgets create")
+    assert "--filter-projects=projects/PROJECT_ID" in budget and "--threshold-rule=percent=" in budget, budget
+    assert "doesn't automatically cap Google Cloud" in flat, "the section does not say the alert caps nothing"
+
+    # == THE COSTS, from their pages, the arithmetic shown ==
+    assert "$0.005 an hour" in flat and "covers one hour a month [network-pricing]" in flat, "the address's price"
+    assert "730-hour month" in flat and "about $3.65 a month" in flat and round(0.005 * 730, 2) == 3.65
+    assert "$0.000136986 per GiB-hour" in flat and round(0.000136986 * 730, 2) == 0.10
+
+    # == NO STORED KEY ==
+    wif = block("providers create-oidc")
+    cond = re.search(r'--attribute-condition="([^"]+)"', wif).group(1)
+    assert "assertion.repository_id==" in cond and "repository_owner" not in cond and "assertion.repository==" not in cond, (
+        "the condition names the repository by a name the page warns can be re-claimed", cond)
+    assert "assertion.ref=='refs/heads/main'" in cond, ("a branch other than main could deploy", cond)
+    assert "attribute.repository_id=assertion.repository_id" in wif, "the claim the grant names is not mapped"
+    assert '--issuer-uri="https://token.actions.githubusercontent.com/"' in wif
+    for key_shape in ("credentials_json", "GOOGLE_APPLICATION_CREDENTIALS", "BEGIN PRIVATE KEY", "keys create"):
+        assert key_shape not in sec, ("the section stores a key", key_shape)
+
+    # == THE STARTUP SCRIPT: committed, LF everywhere, the Dockerfile's own image and records ==
+    script_path = root / "deploy" / "gcp" / "startup.sh"
+    raw = script_path.read_bytes()
+    assert b"\r" not in raw, "the startup script has Windows line endings: bash on the machine would refuse it"
+    attrs = (root / ".gitattributes").read_text(encoding="utf-8").splitlines()
+    assert "deploy/gcp/startup.sh text eol=lf" in attrs, "nothing keeps the startup script LF on a Windows checkout"
+    script = raw.decode("utf-8")
+    df = (root / "Dockerfile").read_text(encoding="utf-8")
+    data_dir = re.search(r"\bDATA_DIR=(\S+)", df).group(1)
+    port = re.search(r"\bPORT=(\d+)", df).group(1)
+    assert f'--volume="$MNT":{data_dir} ' in script, ("the records are not mounted where the image keeps them", data_dir)
+    assert f"--publish=80:{port} " in script, ("the platform's port is not the image's", port)
+    assert 'DISK="${WORKSTATION_DISK:-/dev/disk/by-id/google-' + disk["device-name"] + '}"' in script, (
+        "the script looks for the data disk under another name than the steps give it")
+    assert 'metadata instance/attributes/image-tag' in script and 'metadata project/project-id' in script
+    assert '-H "Metadata-Flavor: Google"' in script
+    assert 'image="$REGION-docker.pkg.dev/$project/workstation/workstation:$tag"' in script
+    assert 'REGION="${WORKSTATION_REGION:-us-central1}"' in script
+    assert not re.search(r"(?i)(api[_-]?key|secret|passw|BEGIN [A-Z ]*PRIVATE KEY|sk_live)", script), "a key in the script"
+
+    # == THE DISK STEP, DRIVEN: only a blank disk is ever formatted ==
+    bash = shutil.which("bash")
+    path = os.pathsep.join([os.environ.get("PATH", ""), "/usr/sbin", "/sbin"])
+    mkfs = shutil.which("mkfs.ext4", path=path)
+    if sys.platform.startswith("linux"):
+        assert bash and mkfs, "the round's own machine must drive the disk step"
+    if os.name != "nt" and bash and mkfs:
+        env = dict(os.environ, PATH=path, WORKSTATION_STARTUP_SOURCED="1")
+
+        def prepare(img):
+            return subprocess.run([bash, "-c", 'source "$1"; prepare_disk "$2"', "bash", str(script_path), str(img)],
+                                  capture_output=True, text=True, env=env, timeout=120, stdin=subprocess.DEVNULL)
+
+        def digest(p):
+            return hashlib.sha256(p.read_bytes()).hexdigest()
+
+        def ext4(p):
+            with open(p, "rb") as fh:
+                fh.seek(1080)
+                return fh.read(2) == b"\x53\xef"
+
+        blank = tmp_path / "blank.img"
+        with open(blank, "wb") as fh:
+            fh.truncate(64 << 20)
+        r1 = prepare(blank)
+        assert r1.returncode == 0 and ext4(blank) and "formatting it once" in r1.stdout, (r1.stdout, r1.stderr[-400:])
+        before = digest(blank)
+        r2 = prepare(blank)
+        assert r2.returncode == 0 and "kept as it is" in r2.stdout and digest(blank) == before, (
+            "a disk that holds its file system was touched", r2.stdout)
+        noise = tmp_path / "noise.img"
+        data = bytearray(os.urandom(8 << 20))
+        data[1080:1082] = b"\x00\x00"
+        with open(noise, "wb") as fh:
+            fh.write(bytes(data))
+            fh.truncate(64 << 20)
+        before = digest(noise)
+        r3 = prepare(noise)
+        assert r3.returncode == 1 and "NOT formatted" in r3.stdout and digest(noise) == before, (
+            "a disk holding something else was formatted", r3.stdout, r3.stderr[-400:])
+        short = tmp_path / "short.img"
+        short.write_bytes(b"\x00" * (512 << 10))
+        r4 = prepare(short)
+        assert r4.returncode == 1 and short.read_bytes() == b"\x00" * (512 << 10), r4.stdout
+        r5 = prepare(tmp_path / "absent.img")
+        assert r5.returncode == 1 and "no data disk" in r5.stdout and not (tmp_path / "absent.img").exists(), r5.stdout
+
+    # == WHAT IS NOT DONE IS SAID, AND HTTPS IS A ROW OF ITS OWN ==
+    assert re.search(r"NOT YET DONE \(FU-603\): the backup of the data disk to the bucket, a restore of a backup onto "
+                     r"a fresh disk, and a rollback, each driven once\.", flat), "the section does not say what is left"
+    rows = json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    https = [r for r in rows if r.get("title") == "The release machine would serve plain HTTP: no certificate fronts it"]
+    assert len(https) == 1 and https[0]["slot"] == "P4.5" and https[0]["source"].startswith("W1134 "), https
+    assert f"HTTPS is its own row ({https[0]['id']})" in flat and "no person signs in (P4.1)" in flat
+    fu603 = [r for r in rows if r.get("id") == "FU-603"]
+    assert len(fu603) == 1 and fu603[0]["status"] == "open", "FU-603 has parts left and must stay open"
+    assert "Not yet done (FU-603): a backup, a restore drill and a rollback drill." in " ".join(dep.split())
