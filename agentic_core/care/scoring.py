@@ -407,8 +407,11 @@ WITHHELD_ON_TERMS: Dict[str, Dict[str, Any]] = {
                      "is its owner's to say, and the owner has not yet said")},
     "waterlow": {"owner": "the rights holder of the Waterlow score", "page": None, "read_on": None,
                  "terms_read": False, "says": None,
-                 "why": ("its owner's terms have NOT been read: the owner's site answered only with a redirect "
-                         "on 2026-10-12, so whether this use is allowed is not known")},
+                 #  W1164 (FU-1033) - the address opened again on 2026-11-20 with its certificate checked
+                 "why": ("its owner's terms have NOT been read: the address its owner published answered only "
+                         "with a redirect on 2026-10-12, and on 2026-11-20, opened with its certificate checked, it "
+                         "served a domain-parking redirect, not the owner's pages, so whether this use is allowed "
+                         "is not known")},
 }
 
 

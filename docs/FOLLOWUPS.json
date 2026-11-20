@@ -20626,11 +20626,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.13",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1164",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "performed_not_assessable",
+      "because_means": "the work was performed and its answer is NOT ASSESSABLE, with a basis",
+      "close_note": "Read as far as the sources allow. NEWS2: its terms were read at the Royal College of Physicians on 2026-10-12 (no copyright restriction, given the stated acknowledgement, no modification and the charts in colour), and it computes with its acknowledgement. MUST: its terms were read at BAPEN on 2026-10-12 (commercial use needs permission, a licence agreement and a fee), and it stays withheld. Waterlow: on 2026-11-20 the address its owner published (www.judy-waterlow.co.uk) was opened with its certificate checked against Let's Encrypt's Root YE, whose key ISRG Root X1 vouches for through ISRG Root X2, for that one site only; it serves a domain-parking redirect, not the owner's pages, so its terms are NOT ASSESSABLE here and it stays withheld (agentic_core/care/scoring.py says so). Restoring it needs its rights holder's written terms. test_w1164 holds it."
     },
     {
       "id": "FU-1034",
@@ -21900,7 +21903,7 @@
     {
       "id": "FU-1095",
       "title": "A failure on the first deployment reaches no person: failures are recorded and shown only on a page someone must open",
-      "why": "P3.25 records every route failure in the outcome ledger and the event chain and shows them on one page; nothing sends a failure to anyone, and README.md still lists error monitoring as not built, which is half true. The first deploy is private to the Owner, so the cost is an outage nobody sees. Smallest addition, in the deploy pre-flight: an uptime check on /health from OUTSIDE the machine (a boot failure cannot report itself), e-mailing the Owner from their own cloud account beside the billing alert; it is named in the dry run and driven once at the deploy with the Owner watching; /health returns a fixed body, so the check sees only a dead process, and the runbook says so. The README line becomes: failures recorded, not alerted.",
+      "why": "P3.25 records every route failure in the outcome ledger and the event chain and shows them on one page; nothing sends a failure to anyone, and README.md still lists error monitoring as not built, which is half true. The first deploy is private to the Owner, so the cost is an outage nobody sees. Smallest addition, in the deploy pre-flight: an uptime check on /health from OUTSIDE the machine (a boot failure cannot report itself), e-mailing the Owner from their own cloud account beside the billing alert; it is named in the dry run and driven once at the deploy with the Owner watching; /health returns a fixed body, so the check sees only a dead process, and the runbook says so. The README line becomes: failures recorded, not alerted. ACCEPTED 2026-11-20 (the Owner's ten decisions, recommendation 4): set up at the first deploy, soon after the domain (FU-1289), with the restore of FU-1288 the day after.",
       "source": "W747",
       "found": "2026-10-16",
       "files": [
@@ -23435,7 +23438,7 @@
     {
       "id": "FU-1165",
       "title": "OWNER: name your own two protected entities (Settings, Protected enterprises)",
-      "why": "Your ruling of 2026-10-11 protects your own two entities and the apex. The shipped rule names the apex; it cannot name your two, because their ids are not in the repository and these rounds do not read the data directory. Until you name them (the Settings page's Protected enterprises, which calls PUT /api/v1/economy/protected-entities), the named-in-a-ruling rule stays not assessable and every removal stays refused. The restore route your ruling asked for before any removal was built in W833.",
+      "why": "Your ruling of 2026-10-11 protects your own two entities and the apex. The shipped rule names the apex; it cannot name your two, because their ids are not in the repository and these rounds do not read the data directory. Until you name them (the Settings page's Protected enterprises, which calls PUT /api/v1/economy/protected-entities), the named-in-a-ruling rule stays not assessable and every removal stays refused. The restore route your ruling asked for before any removal was built in W833. ANSWERED 2026-11-20: the Owner's two are Atmospheric Harvest Solutions and Aerius Energy Harvest, the two atmospheric harvesting ventures, registered fresh in the new books on the Owner's machine and named there once each exists.",
       "source": "W833 (the other half of FU-869)",
       "found": "2026-11-11",
       "files": [
@@ -23927,7 +23930,7 @@
     {
       "id": "FU-1188",
       "title": "OWNER: send the two letters asking written permission for the Quranic Universal Library's data and the King Fahd Complex's recitations and fonts",
-      "why": "FU-1066 (W948) drafted both letters in docs/letters/: QUL_DATA_PERMISSION_REQUEST.md asks the Quranic Universal Library for its page layouts, similar-verse lists and word timings, whose data carries no licence on any page read; KFGQPC_PERMISSION_REQUEST.md asks the King Fahd Glorious Qur'an Printing Complex for its recitations and fonts, whose site could not be opened from this machine. Sending is outward-facing and in your name. RECOMMENDED: fill in your name and address, read each through, and send both as drafted. Nothing from either source is used until a written answer grants it, and the source check fails if any code reaches them.",
+      "why": "FU-1066 (W948) drafted both letters in docs/letters/: QUL_DATA_PERMISSION_REQUEST.md asks the Quranic Universal Library for its page layouts, similar-verse lists and word timings, whose data carries no licence on any page read; KFGQPC_PERMISSION_REQUEST.md asks the King Fahd Glorious Qur'an Printing Complex for its recitations and fonts, whose site could not be opened from this machine. Sending is outward-facing and in your name. RECOMMENDED (accepted 2026-11-20): fill in your name and address, read each through, and send both as drafted. Nothing from either source is used until a written answer grants it, and the source check fails if any code reaches them.",
       "source": "W948 (FU-1066: the letters are drafted by a round and sent by the Owner)",
       "found": "2026-11-13",
       "files": [
@@ -26142,7 +26145,7 @@
     {
       "id": "FU-1286",
       "title": "OWNER: five places still name your Windows home folder by its path",
-      "why": "W1135 made every other tracked file's path start at ~. These five are yours to decide. (1) One audit record under docs/fidelity_runs/, which is not opened without your go-ahead. RECOMMENDED: let it be opened and its paths start at ~, as FU-1151 did for two others. (2) The pinned fidelity ledgers, docs/VISION_FIDELITY_LEDGER and its numbered editions: docs/LEDGER_BLOBS.json pins each byte for byte (P5.22, W972) so no edition changes after it is written. RECOMMENDED: leave them as they are; no route reads them, and git history keeps every earlier text anyway. (3) venv/: a Windows virtual environment committed before .gitignore left venv/ out. Its files name your folder. RECOMMENDED: on your machine, run git rm -r --cached venv and commit; the folder stays on your disk. Removing it here instead would delete those files from your copy when you pull. (4) .claude/settings.json: three one-off command permissions name your folder. RECOMMENDED: remove those three entries on your machine; nothing else uses them. (5) _archive/: archived documents that name it. RECOMMENDED: leave them as archived history; nothing reads them.",
+      "why": "W1135 made every other tracked file's path start at ~. These five are yours to decide. (1) One audit record under docs/fidelity_runs/ (ledger_v14_W639_375c5ffb.json), which is not opened without your go-ahead; the go-ahead of 2026-11-20 named no file, so it is opened once one names it. RECOMMENDED (accepted 2026-11-20): let it be opened and its paths start at ~, as FU-1151 did for two others. (2) The pinned fidelity ledgers, docs/VISION_FIDELITY_LEDGER and its numbered editions: docs/LEDGER_BLOBS.json pins each byte for byte (P5.22, W972) so no edition changes after it is written. RECOMMENDED (accepted 2026-11-20): leave them as they are; no route reads them, and git history keeps every earlier text anyway. (3) venv/: a Windows virtual environment committed before .gitignore left venv/ out. Its files name your folder. RECOMMENDED (accepted 2026-11-20): on your machine, run git rm -r --cached venv and commit; the folder stays on your disk. Removing it here instead would delete those files from your copy when you pull. (4) .claude/settings.json: three one-off command permissions name your folder. RECOMMENDED (accepted 2026-11-20): remove those three entries on your machine; nothing else uses them. (5) _archive/: archived documents that name it. RECOMMENDED (accepted 2026-11-20): leave them as archived history; nothing reads them.",
       "source": "W1135 (the four places that are the Owner's, each with a recommendation)",
       "found": "2026-11-20",
       "files": [],
@@ -26177,7 +26180,7 @@
     {
       "id": "FU-1288",
       "title": "OWNER: at the first deploy, restore the data disk once from its snapshot, watching",
-      "why": "W1137 drilled the restore and the rollback on this machine with Docker, and wrote the Google Cloud restore into docs/DEPLOYMENT.md (step 9) from Google's own references. A restore from a real snapshot can only be driven in your project. RECOMMENDED: the day after the first deploy, once the schedule has taken a snapshot, run step 9 with the platform's address open, see the made-up project you wrote before it still there, and delete the old disk. It is the restore FU-1095's uptime drill pairs with.",
+      "why": "W1137 drilled the restore and the rollback on this machine with Docker, and wrote the Google Cloud restore into docs/DEPLOYMENT.md (step 9) from Google's own references. A restore from a real snapshot can only be driven in your project. RECOMMENDED (accepted 2026-11-20): the day after the first deploy, once the schedule has taken a snapshot, run step 9 with the platform's address open, see the made-up project you wrote before it still there, and delete the old disk. It is the restore FU-1095's uptime drill pairs with.",
       "source": "W1137 (FU-603 part 3: the restore and rollback drilled on this machine)",
       "found": "2026-11-20",
       "files": [],
@@ -26191,7 +26194,7 @@
     {
       "id": "FU-1289",
       "title": "OWNER: buy a domain for the release machine and point it at the machine's fixed address",
-      "why": "W1140 wrote HTTPS into the deploy (docs/DEPLOYMENT.md, step 12): Caddy obtains a publicly trusted certificate only for a domain, never for an IP address, so the release machine serves plain HTTP until it has one, and no person signs in until then. The domain is yours to buy, at any registrar, with its A record naming the machine's fixed address (step 12's first command). RECOMMENDED: a short name you already hold or buy now; once its A record points at the machine, set the machine's domain (step 12) and watch the first HTTPS answer, with the uptime check of step 10 moved to HTTPS.",
+      "why": "W1140 wrote HTTPS into the deploy (docs/DEPLOYMENT.md, step 12): Caddy obtains a publicly trusted certificate only for a domain, never for an IP address, so the release machine serves plain HTTP until it has one, and no person signs in until then. The domain is yours to buy, at any registrar, with its A record naming the machine's fixed address (step 12's first command). RECOMMENDED (accepted 2026-11-20): a short name you already hold or buy now; once its A record points at the machine, set the machine's domain (step 12) and watch the first HTTPS answer, with the uptime check of step 10 moved to HTTPS.",
       "source": "W1140 (FU-1284: HTTPS in front of the release machine)",
       "found": "2026-11-20",
       "files": [],

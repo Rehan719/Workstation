@@ -213,8 +213,8 @@
    "status": "named_not_read",
    "page": null,
    "read_on": null,
-   "read_by": "round W678: the owner's site answered only with a redirect, twice",
-   "says": "NOT READ. Nothing is known here of its reuse terms."
+   "read_by": "round W678: the owner's site answered only with a redirect, twice; round W1164, on 2026-11-20: one request to https://www.judy-waterlow.co.uk/ with its certificate checked against Let's Encrypt's Root YE, whose key ISRG Root X1 vouches for through ISRG Root X2, for this one site only. The certificate is valid; the address served a domain-parking redirect to a parking network, not the owner's pages, so the owner's content was NOT read",
+   "says": "NOT READ. The address the Waterlow score's owner published serves a domain-parking redirect, not the owner's pages (2026-11-20), so nothing is known here of its reuse terms, and the score stays withheld."
   },
   {
    "id": "gov-report-child-abuse",

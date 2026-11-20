@@ -92329,7 +92329,8 @@ def test_w1131_the_local_prompt_names_every_row_waiting_on_the_owner_and_keeps_o
     Owner's machine can do, and would have had a local session push to the branch the cloud cycles push to.
     Held here:
     - every owner-gated row still open in the register is named in the notes, so none waits unseen;
-    - before 2026-12-01 a local session keeps to a branch of its own;
+    - while the cloud cycles run, a local session keeps to a branch of its own (W1164: the cycles run into
+      December, so the notes no longer give 2026-12-01 as their end);
     - the merged pull request is not offered for merging;
     - the plan's figures are a dated snapshot whose phase totals equal the plan's own and whose done counts do not
       lead it."""
@@ -92350,11 +92351,12 @@ def test_w1131_the_local_prompt_names_every_row_waiting_on_the_owner_and_keeps_o
     sent = re.search(r"The rows in step 5: (.+?)\.", flat)
     assert sent, "the summary does not say which rows step 5 carries"
     ids = re.findall(r"FU-\d+", sent.group(1))
-    assert len(ids) >= 5, ids
+    #  W1164 - the rows step 5 names are open ones: four the local session did on 2026-11-20 stood there after
+    assert ids and all(rid in waiting for rid in ids), (ids, waiting)
     missing = [rid for rid in ids if not re.search(r"- " + re.escape(rid) + r":", step5)]
     assert missing == [], ("the summary sends a row to step 5 and step 5 has no step for it", missing)
 
-    for frag in ("Before 2026-12-01 the cloud session may still be pushing to main-l1fsqo, so do not push there",
+    for frag in ("it may still be pushing to main-l1fsqo, so do not push there",
                  "a branch of your own", "open its own pull request", "Never push to main without me"):
         assert frag in flat, (frag, "the notes would let a local session push beside the cloud session")
     assert "Merge PR #462" not in notes and "carried by **PR #462**" not in notes, "a merged pull request is offered"
@@ -95310,3 +95312,76 @@ def test_w1163_p511_each_place_a_person_can_go_says_its_nations_the_page_that_sa
     fu = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
           if r.get("closed_by") == "W1163"]
     assert len(fu) == 1 and (fu[0]["status"], fu[0]["slot"], fu[0]["because"]) == ("done", "P5.11", "built"), fu
+
+
+def test_w1164_the_owners_ten_decisions_of_2026_11_20_are_recorded_and_the_waterlow_address_is_said_as_read():
+    """W1164 - the Owner answered the ten decisions put on 2026-11-20 with "1-10 decisions i want to go with your
+    recommendations". Held here:
+    1. the Waterlow score (FU-1033): its owner's address was opened on 2026-11-20 with its certificate checked against
+       Let's Encrypt's Root YE, for that one site only, and served a domain-parking redirect, not the owner's pages. The
+       score stays withheld and says why; the register's row says it was not read, and how it was tried; the row is
+       closed as performed and not assessable, naming each of the three instruments;
+    2. each owner-gated row the decisions cover says what was accepted, or answered, on 2026-11-20, and the audit
+       record still to open is named, since the go-ahead given named no file;
+    3. the plan's list of what is with the Owner says the ten were accepted, and the cycles' new end;
+    4. the local-session notes say the cycles run into December, give no end of November for them, and step 5 names
+       only rows still open, with the two ventures as answered."""
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.care import scoring as _sc
+    root = Path(__file__).resolve().parents[1]
+
+    #  1. Waterlow: withheld, its reason what the address served; the register's row; FU-1033 closed
+    w = _sc.WITHHELD_ON_TERMS["waterlow"]
+    assert (w["terms_read"], w["page"], w["says"]) == (False, None, None), w
+    for said in ("NOT been read", "answered only with a redirect on 2026-10-12", "on 2026-11-20, opened with its "
+                 "certificate checked, it served a domain-parking redirect, not the owner's pages"):
+        assert said in w["why"], ("the withheld score no longer says", said)
+    assert _sc.compute_score("waterlow", {"age": 70})["withheld"] is True
+    src = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    row = src["waterlow-terms"]
+    assert row["status"] == "named_not_read" and not row.get("page") and not row.get("read_on"), row
+    for said in ("round W1164, on 2026-11-20", "Let's Encrypt's Root YE, whose key ISRG Root X1 vouches for through "
+                 "ISRG Root X2, for this one site only", "domain-parking redirect", "the owner's content was NOT read"):
+        assert said in row["read_by"], ("the register's row no longer says how it was tried", said)
+    assert row["says"].startswith("NOT READ.") and row["says"].endswith("and the score stays withheld."), row["says"]
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    fu = reg["FU-1033"]
+    assert (fu["status"], fu["closed_by"], fu["because"]) == ("done", "W1164", "performed_not_assessable"), fu
+    for said in ("NEWS2:", "MUST:", "Waterlow:", "its terms are NOT ASSESSABLE here and it stays withheld",
+                 "Restoring it needs its rights holder's written terms."):
+        assert said in fu["close_note"], ("FU-1033's close does not say", said)
+
+    #  2. the owner-gated rows say what was accepted or answered
+    for rid, n in (("FU-1188", 1), ("FU-1288", 1), ("FU-1289", 1), ("FU-1286", 5)):
+        r = reg[rid]
+        assert r["status"] == "open" and r["owner_gated"] is True, rid
+        assert r["why"].count("RECOMMENDED (accepted 2026-11-20):") == n and "RECOMMENDED:" not in r["why"], rid
+    assert "(ledger_v14_W639_375c5ffb.json), which is not opened without your go-ahead; the go-ahead of 2026-11-20 " \
+           "named no file" in reg["FU-1286"]["why"], "the audit record still to open is not named"
+    assert "ACCEPTED 2026-11-20 (the Owner's ten decisions, recommendation 4)" in reg["FU-1095"]["why"]
+    assert ("ANSWERED 2026-11-20: the Owner's two are Atmospheric Harvest Solutions and Aerius Energy Harvest"
+            in reg["FU-1165"]["why"]), "FU-1165 does not carry the Owner's answer"
+
+    #  3. the plan's list of what is with the Owner
+    fp = " ".join((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8").split())
+    for said in ("Recommended, and accepted on 2026-11-20: send both as drafted.",
+                 "(Ten put to the Owner on the afternoon of 2026-11-20 were accepted the same day, each as recommended:",
+                 "the 8-hour cycles run into December, until the plan's build items are closed and the final audit has "
+                 "run, 2026-12-31 at the latest;", "opened once a go-ahead names it, since the one given named no file."):
+        assert said in fp, ("the plan's list no longer says", said)
+
+    #  4. the local-session notes
+    notes = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    flat = " ".join(notes.split())
+    for gone in ("until 2026-11-30", "Before 2026-12-01", "From 2026-12-01"):
+        assert gone not in flat, ("the notes still end the cycles in November", gone)
+    assert ("The cloud session works in 8-hour cycles into December, until the plan's build items are closed and the "
+            "final audit has run (2026-12-31 at the latest)") in flat
+    step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
+    steps = re.findall(r"^   - (FU-\d+):", step5, re.M)
+    assert steps == ["FU-1165", "FU-1286"], steps
+    assert all(reg[s]["status"] == "open" for s in steps), steps
+    assert "register my two ventures, Atmospheric Harvest Solutions and Aerius Energy Harvest, fresh in the new books" \
+           in " ".join(step5.split()), "step 5 does not carry the Owner's answer on the two ventures"
