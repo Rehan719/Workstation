@@ -96587,3 +96587,65 @@ def test_w1179_p511_the_debt_and_claims_company_rows_read_their_regulators_own_p
     assert "refused" not in d and "the Financial Conduct Authority's own page, read there on 2026-11-20" in d, d
     assert "no page read here establishes who regulates" not in c and "such as aviation, are not regulated by the FCA" in c
     assert d.endswith("(W1167, W1179)") and c.endswith("(W1167, W1179)"), (d[-40:], c[-40:])
+
+
+def test_w1179b_the_fca_rows_say_what_their_pages_say_and_name_no_handbook_a_page_does_not():
+    """W1179b corrects W1179 (P5.11 clause 7). W1179's rows were checked claim by claim against the saved FCA pages
+    on 2026-11-20. The claims-company row said the maximum fee depends on a claim's value, without the page's limit to
+    financial services claims. Both FCA rows said the FCA's rules are in its Handbook, which neither page says. The
+    claims-company row named GOV.UK records that its page does not name. The coverage register said "to handle" where
+    the page says "provide services for", and quoted GOV.UK's sentence as if it were the FCA's. Two GOV.UK rows still
+    said the FCA's site is refused after W1179 read it. Held here:
+    1. the claims-company row quotes the cap as the page gives it, for financial services claims, and dates the
+       value-based maximum to those claims;
+    2. each FCA row says the page names the FCA's rules but does not set them out or link them, quotes the page's
+       words, and says the Handbook's site was refused when the page was read; the claims-company row says whose the
+       two opinions are; the debt row's Firm Checker keeps "has the FCA's permission for the services";
+    3. no current row of the register says www.fca.org.uk is refused, and each GOV.UK row names the FCA page read
+       there later the same day;
+    4. the coverage row says what the page says, and whose each quoted sentence is."""
+    import json
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    reg = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    cmc, debt = reg["fca-using-claims-management-companies"], reg["fca-unauthorised-unsuitable-debt-advice"]
+
+    #  1. the fee cap
+    assert ("'To make sure you get fair value for money, we introduced a cap to the fees you can be charged for "
+            "financial services claims.' For those claims started on or after 1 March 2022, the maximum fee depends "
+            "on the value of the claim") in cmc["says"], cmc["says"]
+    assert "For claims started on or after" not in cmc["says"], "the cap is said for every claim"
+
+    #  2. what was not read
+    for r, words in ((cmc, "('CMCs that are authorised by us must follow our rules')"), (debt, "('follow our rules')")):
+        nr = r["not_read"]
+        assert "in its Handbook (www.handbook.fca.org.uk" not in nr, (r["id"], "says the page names the Handbook")
+        assert words in nr and "but does not set out or link" in nr, (r["id"], nr)
+        assert "(www.handbook.fca.org.uk) was refused by this environment's network when the page was read" in nr, nr
+    assert "a glossary entry at handbook.fca.org.uk, was not opened" in cmc["not_read"], cmc["not_read"]
+    assert "the two GOV.UK records" not in cmc["not_read"] and (
+        "the two opinions of the Regulatory Policy Committee, of 2019 and 2020, that the GOV.UK row "
+        "gov-uk-claim-compensation-cmc names by title, which this page does not name") in cmc["not_read"]
+    assert "opinions of the Regulatory Policy Committee of 2019 and 2020" in reg["gov-uk-claim-compensation-cmc"]["says"]
+    assert "the site's menu links the FCA's 'Handbook of rules and guidance', not opened" in debt["not_read"]
+    assert "to check that a firm is authorised and has the FCA's permission for the services it offers." in debt["says"]
+
+    #  3. the FCA's site is no longer said as refused
+    refuses = re.compile(r"www\.fca\.org\.uk\),? which this environment's network refuses")
+    assert [r["id"] for r in reg.values() if r.get("status") == "current"
+            and refuses.search(json.dumps(r, ensure_ascii=False))] == [], "a row still says the FCA's site is refused"
+    for sid, read in (("gov-uk-options-for-dealing-with-debts", "fca-unauthorised-unsuitable-debt-advice"),
+                      ("gov-uk-claim-compensation-cmc", "fca-using-claims-management-companies")):
+        nr = reg[sid]["not_read"]
+        assert "which this environment's network refused when this page was read" in nr and f"{read}, W1179" in nr, nr
+        assert reg[read]["status"] == "current" and reg[read]["read_on"] == reg[sid]["read_on"] == "2026-11-20", sid
+
+    #  4. the coverage row
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    c = cov["law-claims-management"]["today"]
+    assert "authorised by the FCA to provide services for," in c and "to handle" not in c, c
+    assert ("it quotes GOV.UK's guide that a person who makes a successful claim without one keeps all the "
+            "compensation, and the FCA's page that a person need not use one,") in c, c
+    assert c.endswith("(W1167, W1179)"), c[-40:]
+

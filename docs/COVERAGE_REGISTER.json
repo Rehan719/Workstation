@@ -180,7 +180,7 @@
    "nation": "England",
    "state": "route_only",
    "route": "gov-uk-claim-compensation-cmc",
-   "today": "a question naming a claims management company is not answered: its row says, from the Financial Conduct Authority's own page read on 2026-11-20, which claims a company must be authorised by the FCA to handle, that some are regulated by a legal regulator instead and that its services on other claims, such as aviation, are not regulated by the FCA; it quotes that a claim made without one keeps all the compensation and that a person need not use one, and routes to the places a person can go, after the urgent routes (W1167, W1179)"
+   "today": "a question naming a claims management company is not answered: its row says, from the Financial Conduct Authority's own page read on 2026-11-20, which claims a company must be authorised by the FCA to provide services for, that some are regulated by a legal regulator instead and that its services on other claims, such as aviation, are not regulated by the FCA; it quotes GOV.UK's guide that a person who makes a successful claim without one keeps all the compensation, and the FCA's page that a person need not use one, and routes to the places a person can go, after the urgent routes (W1167, W1179)"
   },
   {
    "id": "law-family-safety",
