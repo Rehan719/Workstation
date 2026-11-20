@@ -32,7 +32,7 @@ anything. The deploy itself is plan item P4.5, and the switch is the Owner's.
 
 ## 4. Dependencies
 
-- Every dependency is declared once, in `pyproject.toml`, and the nineteen the Owner approved for removal are gone (W907, see `docs/DEPENDENCY_VERDICTS.md`). Three more are reached by nothing live and wait on the Owner: row FU-1174. [observed]
+- Every dependency is declared once, in `pyproject.toml`, and the nineteen the Owner approved for removal are gone (W907, see `docs/DEPENDENCY_VERDICTS.md`). Three more are reached by nothing live; the Owner ruled on 2026-11-19 that they go, and their removal is row FU-1277. [observed]
 - No vulnerability scan has been run on the lock. [observed]
 - Done looks like this: a scan of the lock with every finding triaged in writing (fixed, not reachable, or accepted by the Owner), repeated on each dependency change. [inference]
 

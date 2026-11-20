@@ -78390,13 +78390,15 @@ def test_w923_fu742_the_guides_price_section_is_put_to_the_owner_with_the_recomm
     row = next((r for r in reg if r.get("title", "").startswith(
         "OWNER DECISION: may the founder's guide state a provider's published price")), None)
     assert row, "the price question was not put to the Owner"
-    assert (row["status"], row.get("owner_gated"), row.get("slot")) == ("open", True, "OWNER"), row
+    #  W1120: RULED on 2026-11-19 (yes, as recommended): the row is closed with the ruling, and stating the price
+    #  is the row it names; until that round the guide still quotes no price
+    assert (row["status"], row.get("closed_by")) == ("done", "W1120") and row["close_note"].startswith("OWNER RULED 2026-11-19 (his recommendation accepted): "), row
     assert "RECOMMENDED: yes, for a provider's published price only" in row["why"]
     assert "docs/business/FOUNDERS_GUIDE.md" in (row.get("files") or [])
 
     prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
     still = prompt.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
-    assert f"{row['id']} (W923): may the founder's guide state a provider's published price" in still
+    assert f"{row['id']} (W923):" not in still, "a ruled question is still put to the Owner"
 
     guide = (root / "docs/business/FOUNDERS_GUIDE.md").read_text(encoding="utf-8")
     assert f"waits on your decision in row {row['id']}: whether this guide may quote" in guide
@@ -79577,11 +79579,13 @@ def test_w939_p52_a_price_is_recomputed_on_read_and_is_null_while_an_input_is_ab
     reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
     row = next((r for r in reg if r.get("title") == (
         "OWNER DECISION: what arithmetic turns an entity's declared cost and its waterfall into a price?")), None)
-    assert row and (row["status"], row.get("owner_gated"), row.get("slot")) == ("open", True, "OWNER"), row
+    #  W1120: RULED on 2026-11-19 (the formula, as recommended): the row is closed with the ruling, and the price
+    #  module is the row it names; until that round no arithmetic is set, as above
+    assert row and (row["status"], row.get("closed_by")) == ("done", "W1120") and row["close_note"].startswith("OWNER RULED 2026-11-19 (his recommendation accepted): "), row
     assert "RECOMMENDED: price = the declared cost / (1 - the prudential reserve rate" in row["why"]
     prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
     still = prompt.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
-    assert f"{row['id']} (W939): what arithmetic turns an entity's declared cost and its waterfall into a price?" in still
+    assert f"{row['id']} (W939):" not in still, "a ruled question is still put to the Owner"
 
 
 def test_w940_p55_what_is_not_for_sale_is_one_register_and_pricing_one_is_refused_with_its_ruling(client):
@@ -79720,11 +79724,12 @@ def test_w941_p53_a_claim_that_an_output_is_wrong_stays_open_until_a_person_answ
     reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
     row = next((x for x in reg if x.get("title") == (
         "OWNER DECISION: under which Change Control tier is a claim that an output is wrong filed?")), None)
-    assert row and (row["status"], row.get("owner_gated"), row.get("slot")) == ("open", True, "OWNER"), row
+    #  W1120: RULED on 2026-11-19 (CRITICAL, as built): the row is closed with the ruling, and nothing changes
+    assert row and (row["status"], row.get("closed_by")) == ("done", "W1120") and row["close_note"].startswith("OWNER RULED 2026-11-19 (his recommendation accepted): ") and row.get("because") == "already_satisfied", row
     assert "RECOMMENDED: CRITICAL, as built" in row["why"]
     prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
     still = prompt.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
-    assert f"{row['id']} (W941): under which Change Control tier is a claim that an output is wrong filed?" in still
+    assert f"{row['id']} (W941):" not in still, "a ruled question is still put to the Owner"
 
 
 def test_w942_p53_claims_are_on_the_support_page_and_an_answer_says_whether_it_reached_the_ledger(client):
@@ -81280,8 +81285,11 @@ def test_w962_fu807_the_cost_model_marks_every_cost_by_where_it_came_from_and_fi
     row = next(r for r in reg if r.get("title") == "OWNER DECISION: which are the seven investment gates the cost model is to mark?")
     assert row.get("owner_gated") and row.get("slot") == "OWNER" and "RECOMMENDED" in row["why"]
     prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
-    assert f"{row['id']} (W962): which are the seven investment gates" in prompt
-    assert prompt.index(f"{row['id']} (W962):") < prompt.index("THAT IS THE WHOLE LIST.")
+    #  W1120: RULED on 2026-11-19 (P4.1 to P4.6 and a first offer, as recommended): the row is closed with the
+    #  ruling and has left the open-decisions list; marking the gates is the row it names
+    assert (row["status"], row.get("closed_by")) == ("done", "W1120") and row["close_note"].startswith("OWNER RULED 2026-11-19 (his recommendation accepted): "), row
+    still = prompt.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
+    assert f"{row['id']} (W962):" not in still, "a ruled question is still put to the Owner"
 
 
 def test_w963_p57_no_business_document_states_a_customer_a_partner_or_a_cleared_name_or_carries_a_personal_detail():
@@ -91520,3 +91528,58 @@ def test_w1119_fu399_the_time_limit_panel_says_the_limit_what_it_omits_and_who_t
                  "`Failed (HTTP ${r.status}): ${r.body.detail}`));",
                  "await waitFor(() => expect(screen.getByTestId('law-time-limit-rules-note').textContent).toBe("):
         assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1120_the_owners_rulings_of_2026_11_19_are_recorded_where_the_work_reads_them():
+    """The Owner's rulings of 2026-11-19 (W1120). He accepted the twenty-two recommendations put to him that evening
+    and delegated the six switches of his hand, with AI agents standing in for the people the invited stage would
+    invite. Held here:
+    - each ruling is in the plan where the work reads it: the switches proceeding in the ruled order without him and
+      what stays his (the P4 heading), the opt-in rule (P4.1), the dry run (P4.5), real money staying off (P4.6),
+      the price (P5.2), a provider's price in the guide (P5.6), the seven gates (P5.7) and the fee's release (P5.16);
+    - the two rows whose ruling is what the code does are closed as satisfied, the four whose ruling sets work are
+      closed as answered, each close says who ruled and when, and each of the four names one row from this round,
+      on the item that builds it and not waiting on him, that carries the work;
+    - the real-money switch is still off in the tree."""
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core import plan_followups as pf
+    from agentic_core.economy import owner_payments as _op
+    root = Path(__file__).resolve().parents[1]
+    plan = pf.read_doc(root / "docs" / "FABLE_DELIVERY_PROMPT.md")
+    flat = " ".join(plan.split())
+    R = "OWNER RULING 2026-11-19"
+    head = flat[flat.index("PHASE P4 — THE OWNER'S HAND"):flat.index(" P4.1 AUTH_ENABLED on")]
+    for words in (f"{R} (his twenty-two recommendations of that day accepted together): the six steps now proceed "
+                  "WITHOUT waiting on the Owner for each one",
+                  "the invited stage is run with AI agents standing in for the people invited, on made-up accounts that "
+                  "hold nothing about a real person",
+                  "real money stays off until a compliance and KYC review by qualified people (P4.6), which no agent "
+                  "stands in for"):
+        assert words in head, ("the P4 heading does not carry the ruling", words[:70])
+    blocks = pf._item_blocks(pf.delivery_plan_body(plan) or plan)
+    for slot, words in (("P4.1", " (FU-849): an entity registered before the opt-in flag existed is read as opted in"),
+                        ("P4.5", ": the dry run is taken now"),
+                        ("P4.6", ": the switch stays off. Its condition is a compliance and KYC review by qualified people"),
+                        ("P5.2", " (FU-1185): price = the declared cost / (1 - the prudential reserve rate, 20% - a "
+                                 "platform margin set once, 20%)"),
+                        ("P5.6", " (FU-1176): the founder's guide may state a provider's published price"),
+                        ("P5.7", " (FU-1191): with no founder playbook in the tree, the seven investment gates are the six "
+                                 "switches of his hand, P4.1 to P4.6"),
+                        ("P5.16", " (FU-1057): clause 3 is released for a made-up entity now")):
+        assert f"{R}{words}" in " ".join(blocks[slot].split()), ("the item does not carry its ruling", slot)
+
+    reg = {r["id"]: r for r in json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    for fid, because in (("FU-1166", "already_satisfied"), ("FU-1187", "already_satisfied"), ("FU-1174", "built"),
+                         ("FU-1176", "built"), ("FU-1185", "built"), ("FU-1191", "built")):
+        r = reg[fid]
+        assert (r["status"], r.get("closed_by"), r.get("because")) == ("done", "W1120", because), (fid, r["status"])
+        assert r["close_note"].startswith("OWNER RULED 2026-11-19 (his recommendation accepted): "), (fid, r["close_note"][:60])
+    for fid, slot in (("FU-1174", "P4.5"), ("FU-1176", "P5.6"), ("FU-1185", "P5.2"), ("FU-1191", "P5.7")):
+        carried = [reg[n] for n in re.findall(r"FU-\d+", reg[fid]["close_note"]) if n != fid]
+        assert len(carried) == 1, (fid, "names no single row that carries the work")
+        c = carried[0]
+        assert c["source"].startswith("W1120 ") and c["slot"] == slot and c["owner_gated"] is False, (fid, c["id"], c["slot"])
+        assert c["status"] == "open" or (c["status"] == "done" and c.get("closed_by") != "W1120"), (fid, c["id"], c["status"])
+    assert _op.REAL_MONEY_ENABLED is False, "the real-money switch is on in the tree; it stays off until people review it"

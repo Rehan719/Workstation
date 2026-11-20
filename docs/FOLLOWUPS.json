@@ -23419,10 +23419,13 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1120",
       "note": "",
-      "tier": 3
+      "tier": 3,
+      "because": "already_satisfied",
+      "because_means": "measured as satisfied by an earlier round; nothing was built for it here",
+      "close_note": "OWNER RULED 2026-11-19 (his recommendation accepted): no. A birth is never refused or held for approval on the platform's derived carrying capacity; the reading is recorded on every birth and nothing is refused on it, which is what every establishment and division has done since W839."
     },
     {
       "id": "FU-1167",
@@ -23586,11 +23589,14 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1120",
       "note": "",
       "slot_source": "a dependency removal is the Owner's: the 2026-10-07b ruling covered only the rows that were REMOVABLE then",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "OWNER RULED 2026-11-19 (his recommendation accepted): yes. streamlit and plotly are removed, and pandas as a direct declaration (camel-tools and mesa keep it installed), with the devcontainer's install line. The removal is FU-1277."
     },
     {
       "id": "FU-1175",
@@ -23627,11 +23633,14 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1120",
       "note": "",
       "slot_source": "a production channel's price touches the production deploy, and a money figure in a business document stands only beside an Owner ruling",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "OWNER RULED 2026-11-19 (his recommendation accepted): yes, for a provider's published price only, cited with its page and the date read and labelled observed; the guide promises no zero bill and the platform's own prices stay under the rule. Stating it is FU-1278."
     },
     {
       "id": "FU-1177",
@@ -23822,11 +23831,14 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1120",
       "note": "",
       "slot_source": "P5.2 derives a price from the waterfall, which splits a profit and does not set one; what margin or target the derivation uses is the Owner's",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "OWNER RULED 2026-11-19 (his recommendation accepted): price = the declared cost / (1 - the prudential reserve rate, 20% - a platform margin set once, 20%). Recorded in the plan at P5.2; the price is FU-1279."
     },
     {
       "id": "FU-1186",
@@ -23861,11 +23873,14 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1120",
       "note": "",
       "slot_source": "P5.3's measured remaining work names the claim's Change Control tier as the Owner's to rule",
-      "tier": 2
+      "tier": 2,
+      "because": "already_satisfied",
+      "because_means": "measured as satisfied by an earlier round; nothing was built for it here",
+      "close_note": "OWNER RULED 2026-11-19 (his recommendation accepted): CRITICAL, as built in W941. A claim that an output is wrong is answered only by a person's explicit decision; no model's review, health reading or timer closes one."
     },
     {
       "id": "FU-1188",
@@ -23939,11 +23954,14 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1120",
       "note": "",
       "slot_source": "P5.7 clause 2 names seven investment gates the tree does not define",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "OWNER RULED 2026-11-19 (his recommendation accepted): with no founder playbook in the tree, the seven investment gates are P4.1 to P4.6 and a first offer the interviews support. Recorded in the plan at P5.7; marking them is FU-1280."
     },
     {
       "id": "FU-1192",
@@ -25892,6 +25910,82 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: every form of the open record is cleared when a record is opened, its text set from the record itself. The rendered test types into five forms of one agreement, opens another and finds each empty, and drives each of the seven actions' refusals beside its own button and in no other place, on the routes' own refusals captured again; three vitest blinds, and test_w1103 holds the fixture and the cases with two blinds."
+    },
+    {
+      "id": "FU-1277",
+      "title": "streamlit, plotly and pandas's direct declaration are removed, as the Owner ruled on 2026-11-19",
+      "why": "FU-1174's ruling: nothing live has used streamlit, pandas or plotly since W896 moved the dashboard aside, and camel-tools and mesa keep pandas installed. Remove streamlit and plotly, pandas as a direct declaration, and the devcontainer's install line, on a fresh install with the full suite, as the earlier removal of the nineteen did (W907); 13 pins leave requirements.txt.",
+      "source": "W1120 (the Owner's rulings of 2026-11-19: his twenty-two recommendations of that day accepted)",
+      "found": "2026-11-19",
+      "files": [
+        "pyproject.toml",
+        "requirements.txt",
+        ".devcontainer/devcontainer.json",
+        "docs/DEPENDENCY_VERDICTS.md"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.5",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the image installs what the code uses (P4.5's pre-flight, as FU-604 was); ruled 2026-11-19 on FU-1174",
+      "tier": 3
+    },
+    {
+      "id": "FU-1278",
+      "title": "The founder's guide states the deployment channel's published price, cited with its page and the date read",
+      "why": "FU-1176's ruling (2026-11-19): a provider's published price may be stated, cited with its page and the date it was read and labelled observed, as FU-742 asked; the guide promises no zero bill and the platform's own prices stay under the rule. The provider's pages (cloud.google.com) are not among this environment's allowed hosts yet, so nothing is stated until they are read there; nothing is written from memory. The guide's line and the cost model's that still say the question waits on him are rewritten in that round.",
+      "source": "W1120 (the Owner's rulings of 2026-11-19: his twenty-two recommendations of that day accepted)",
+      "found": "2026-11-19",
+      "files": [
+        "docs/business/FOUNDERS_GUIDE.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.6",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the founder's guide is P5.6's (W920); ruled 2026-11-19 on FU-1176",
+      "tier": 2
+    },
+    {
+      "id": "FU-1279",
+      "title": "A price in WST is computed from the declared cost by the ruled formula, and never typed",
+      "why": "FU-1185's ruling (2026-11-19): price = the declared cost / (1 - the prudential reserve rate, 20% - a platform margin set once, 20%), on W939's inputs (the effective waterfall and each deliverable's declared cost). A price whose input is missing is null with the input named, never a default; the platform fee (P5.16 clause 3) is taken from the distributable profit the price leaves.",
+      "source": "W1120 (the Owner's rulings of 2026-11-19: his twenty-two recommendations of that day accepted)",
+      "found": "2026-11-19",
+      "files": [
+        "agentic_core/api/economy.py",
+        "agentic_core/economy/metabolism.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.2 is the price derived from the waterfall; ruled 2026-11-19 on FU-1185",
+      "tier": 2
+    },
+    {
+      "id": "FU-1280",
+      "title": "The cost model marks each of the seven investment gates evidenced or not, from what the tree shows",
+      "why": "FU-1191's ruling (2026-11-19): with no founder playbook in the tree, the seven gates are P4.1 to P4.6 and a first offer the interviews support. docs/business/COST_MODEL.md marks each one evidenced or not from the tree - a switch's pre-flight measured and the switch's state read, a first offer backed by recorded interviews - and invents none. Its gates section still puts the question to him; that round marks the gates instead.",
+      "source": "W1120 (the Owner's rulings of 2026-11-19: his twenty-two recommendations of that day accepted)",
+      "found": "2026-11-19",
+      "files": [
+        "docs/business/COST_MODEL.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.7",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.7 clause 2 asks the cost model for the gates; ruled 2026-11-19 on FU-1191",
+      "tier": 2
     }
   ],
   "routes": [
