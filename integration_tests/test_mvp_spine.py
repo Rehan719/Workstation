@@ -92252,3 +92252,48 @@ def test_w1131_the_local_prompt_names_every_row_waiting_on_the_owner_and_keeps_o
         s_done, s_tot = int(said.group(4 + 2 * i)), int(said.group(5 + 2 * i))
         l_done, l_tot = int(live.group(3 + 2 * i)), int(live.group(4 + 2 * i))
         assert s_tot == l_tot and s_done <= l_done, (f"P{i + 1}", (s_done, s_tot), (l_done, l_tot))
+
+
+def test_w1132_fu1067_the_recordings_request_is_drafted_its_source_permits_nothing_and_the_owner_is_asked_to_send_it():
+    """FU-1067's next step (W1132; the Owner accepted the recommendation on 2026-11-20). The private test needs lawful
+    recordings of ordinary adult reciters, and the closest dataset states no licence for its recordings and cannot
+    rule children out. Held here:
+    - the letter is drafted for the Owner and sent by no one: it asks the licence, adult consent and a private test
+      that scores nothing, and promises no recording of a child;
+    - the dataset's row in the register of sources permits nothing, and names only the dataset's own address, which
+      no code reaches;
+    - an open, owner-gated row asks the Owner to send it, and both the plan's list and the local notes name it."""
+    import json
+    import pathlib
+    import re
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    letter = (root / "docs" / "letters" / "QURANIC_AUDIO_DATASET_REQUEST.md").read_text(encoding="utf-8")
+    flat = " ".join(letter.split())
+    for frag in ("DRAFTED FOR THE OWNER TO SEND", "Nothing has been sent", "[your name]", "[your address]",
+                 "under what licence the recordings are offered", "whether every participant was an adult",
+                 "It would score or grade no recording", "We will use no recording of a child",
+                 "nothing from the dataset is downloaded or used"):
+        assert frag in flat, (frag, "the letter does not say it")
+
+    src = json.loads((root / "docs" / "SOURCES.json").read_text(encoding="utf-8"))["rows"]
+    row = next((r for r in src if r.get("id") == "quranic-audio-dataset"), None)
+    assert row and row["permits"] == [] and row["read_on"] == "2026-11-19", row
+    assert row["hosts"] == ["huggingface.co/datasets/RetaSy"], ("the row bans more or less than the dataset's address", row)
+    sys.path.insert(0, str(root / "scripts"))
+    import sources_check as _sc
+    hits, files, banned = _sc.reached_but_not_permitted(_sc.load(), root)
+    assert files and not [h for h in hits if h[2] == "quranic-audio-dataset"], hits
+
+    reg = json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    ask = [r for r in reg if r.get("title", "").startswith("OWNER: send the request to the Quranic Audio Dataset's authors")
+           and "docs/letters/QURANIC_AUDIO_DATASET_REQUEST.md" in (r.get("why") or "")]
+    assert len(ask) == 1 and ask[0]["status"] == "open" and ask[0].get("owner_gated") and ask[0]["slot"] == "OWNER", ask
+    rid = ask[0]["id"]
+    fp = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    still = fp.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
+    assert re.search(re.escape(rid) + r" \(W1132\): send the request drafted in docs/letters/QURANIC_AUDIO_DATASET_REQUEST",
+                     " ".join(still.split())), "the plan's list does not ask the Owner to send it"
+    notes = (root / "docs" / "RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    assert f"Sending the request to the Quranic Audio Dataset's authors, also in `docs/letters/` ({rid})" in notes, (
+        "the local notes do not name it")

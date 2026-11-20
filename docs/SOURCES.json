@@ -1260,6 +1260,27 @@
    "status": "named_not_read",
    "says": "NOT READ. No competition's marking scheme has been opened, so nothing here judges or marks a recitation, and a judged event waits for a real scheme read by a person.",
    "not_read": "every marking scheme; a judged event is not built until one is read and entered"
+  },
+  {
+   "id": "quranic-audio-dataset",
+   "names": [
+    "Quranic Audio Dataset"
+   ],
+   "kind": "data licence",
+   "nation": [
+    "any"
+   ],
+   "status": "current",
+   "page": "https://huggingface.co/datasets/RetaSy/quranic_audio_dataset",
+   "read_on": "2026-11-19",
+   "read_by": "the cloud session, at the dataset's card and the paper's page (arXiv 2405.02675); NOT re-read",
+   "says": "Recordings by 1,287 volunteer participants, beginner learners from more than 11 non-Arabic countries, in 6,828 examples. Each example has a reciter_age field, which reads 'Unknown' in the card's own example, and a correct/incorrect label. The card states no licence for the data; the paper's page shows CC BY 4.0, the paper's own licence.",
+   "not_read": "any licence for the recordings, and whether every participant was an adult who consented to reuse. NOT TO BE USED until a written answer grants it (a letter is drafted for the Owner to send, docs/letters/QURANIC_AUDIO_DATASET_REQUEST.md)",
+   "hosts": [
+    "huggingface.co/datasets/RetaSy"
+   ],
+   "permits": [],
+   "permits_basis": "nothing: no terms permitting a use were read, so it is not to be used until written permission is held or its terms are read and entered. The host named is the dataset's own address, not the whole site, so models may still be fetched from that site under their own licences"
   }
  ]
 }

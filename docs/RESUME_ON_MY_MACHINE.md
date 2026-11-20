@@ -75,6 +75,7 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
   - One line in `.env` on your machine for the legal matter's folder (step 3 of the prompt), if the local
     session has not added it.
   - Sending the two permission letters in `docs/letters/` (FU-1188).
+  - Sending the request to the Quranic Audio Dataset's authors, also in `docs/letters/` (FU-1283).
   - At the first deploy, an uptime check on `/health` from your own cloud account, beside the billing alert
     (FU-1095).
   - What no round takes (ruling of 2026-11-19): the deploy on your Google Cloud project, the external-model key,
