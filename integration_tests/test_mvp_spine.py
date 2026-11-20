@@ -25672,7 +25672,15 @@ def test_w505_fu033_a_record_missing_its_review_fields_is_reviewable(client):
     rr = client.post(f"/api/v1/cca/{cid}/review", json={})
     assert rr.status_code == 200, f"an incomplete record still answers {rr.status_code}: {rr.text[:300]}"
     rec = cc._load_change(cid)
-    assert rec["status"] != "under_review", f"the change was left stuck in {rec['status']}"
+    #  W1145 (FU-1292) - NOT STUCK is decided, or held for an explicit decision with the hold's reason on the record.
+    #  In a process that has measured no organism health the health rule cannot decide, and holds the change for an
+    #  admin, who decides it on this route with override_decision; after the rest of the suite health is measured
+    #  and the rule decides. FU-033's KeyError left neither: no review written, and no way out.
+    assert rec.get("reviewed_at") and rec.get("review_result"), "the review did not complete"
+    held = rec.get("decision_source") == "held_awaiting_admin" and bool(rec.get("hold_reason")) and any(
+        e.get("event") == "held_awaiting_admin_decision" for e in (rec.get("audit_trail") or []))
+    assert rec["status"] != "under_review" or held, (
+        f"the change was left stuck in {rec['status']}", rec.get("decision_source"), rec.get("hold_reason"))
     # and the absences are on the RECORD, not only in the prompt: a person reading this back needs to know
     # the change was reviewed without a rollback plan. (The first version of this guard looked in
     # `review_result`, where the sentence never was — it goes to the reviewing resource.)
@@ -93212,3 +93220,32 @@ def test_w1144_fu1291_the_plan_opening_says_who_wrote_what_is_on_screen_and_the_
                  "expect(posted).toEqual([c.set.request]);",
                  "`The owner edit was NOT saved: Failed (HTTP ${c.set.status}): ${c.set.body.detail}`"):
         assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1145_fu1292_fu033s_guard_passes_run_alone_in_a_fresh_process():
+    """FU-1292 (W1145). test_w505_fu033 passed only after other tests had measured organism health: run alone, the
+    health rule could not decide its change and held it for an explicit decision, by design, and the guard read the
+    hold as the change being stuck in review. It now holds FU-033's property, that the review completes and the change
+    is decided or held for a decision with its reason recorded. Held here:
+    - the guard, run alone in a fresh process on its own empty store, passes;
+    - it still asserts that the review completed and that a change left in review is a recorded hold."""
+    import os
+    import pathlib
+    import subprocess
+    import sys
+    import tempfile
+    root = pathlib.Path(__file__).resolve().parents[1]
+    spine = (root / "integration_tests" / "test_mvp_spine.py").read_text(encoding="utf-8")
+    body = spine.split("def test_w505_fu033_a_record_missing_its_review_fields_is_reviewable(", 1)[1].split("\ndef ", 1)[0]
+    for line in ('assert rec.get("reviewed_at") and rec.get("review_result"), "the review did not complete"',
+                 'held = rec.get("decision_source") == "held_awaiting_admin" and bool(rec.get("hold_reason"))',
+                 'e.get("event") == "held_awaiting_admin_decision"', 'assert rec["status"] != "under_review" or held'):
+        assert line in body, ("FU-033's guard no longer holds", line)
+    with tempfile.TemporaryDirectory(prefix="w1145_") as d:
+        env = {k: v for k, v in os.environ.items() if not k.startswith(("PYTEST_", "COV_"))}
+        env.update(DATA_DIR=d, WORKSTATION_DATA_DIR=d, WORKSTATION_UEG_PATH=os.path.join(d, "ueg.json"),
+                   PROJECTS_DIR=os.path.join(d, "projects"), AI_DISABLE_LOCAL="1")
+        r = subprocess.run([sys.executable, "-m", "pytest", "integration_tests/test_mvp_spine.py", "-q", "--no-header",
+                            "-p", "no:warnings", "-p", "no:cacheprovider", "-k", "test_w505_fu033"],
+                           cwd=root, env=env, capture_output=True, text=True, timeout=600, stdin=subprocess.DEVNULL)
+    assert r.returncode == 0 and "1 passed" in r.stdout, ("FU-033's guard fails run alone", r.stdout[-1500:])

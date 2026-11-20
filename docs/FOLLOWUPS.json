@@ -26220,6 +26220,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the opening's heading is the Chief's only when a model composed a field on screen, and otherwise says it is the plan's opening (generated from the establish answers when every field is a template); each field's mark comes from the field's own source, saying owner-edited, the Owner's words, template, or a model's or the planning cadence's source in words; and the sentence saying who wrote the opening is shown whenever the plan records it. The rendered test (six cases, against the routes' answers for made-up entities, the owned model stood in as test_w471 stands it in) has six vitest blinds; test_w1144 holds the answers to the live routes and the component to the rule (three blinds)."
+    },
+    {
+      "id": "FU-1292",
+      "title": "test_w505_fu033 passed only after other tests: run alone, it read a change held for an explicit decision as one stuck in review",
+      "why": "Found by W1144's test list, which ran test_w505_fu033 without the tests before it. In a process that has measured no organism health, the health rule cannot decide a change, so it holds it for an explicit decision with the hold's reason and a held entry in its audit trail, by design. The guard asserted only that the status had left under_review, which a deliberate hold does not, so it failed alone and passed after the rest of the suite had measured health. It now holds FU-033's own property: the review completes, and the change is decided or held for a decision with its reason recorded.",
+      "source": "W1145 (found by W1144's test list)",
+      "found": "2026-11-20",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1145",
+      "note": "",
+      "slot_source": "found by FU-399's round W1144 running its test list; it rides P5.1 as FU-399 does",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1145: test_w505_fu033 holds FU-033's own property, that the review of an incomplete record completes and the change is decided or held for an explicit decision with the hold's reason and a held audit entry recorded, so it passes run alone as well as after the suite. test_w1145 runs it alone in a fresh process on an empty store (two blinds)."
     }
   ],
   "routes": [
