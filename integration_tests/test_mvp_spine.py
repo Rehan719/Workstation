@@ -92992,3 +92992,57 @@ def test_w1141_fu1277_streamlit_plotly_and_pandas_are_not_declared_and_nothing_o
     dv = read("docs/DEPENDENCY_VERDICTS.md")
     assert "## W1141 (FU-1277) — streamlit, plotly and pandas's direct declaration are removed (2026-11-20)" in dv
     assert "188 pins became 175" in dv and "The full suite ran in a fresh venv built only from" in " ".join(dv.split())
+
+
+def test_w1142_fu399_the_matter_panel_says_each_particulars_source_each_authoritys_fate_and_the_checks_left(client, monkeypatch, tmp_path):
+    """FU-399 part 109 (W1142). The Law page's matter panel had no rendered test: test_w610 held it by a text scan, so
+    none of its elements was read as a person reads it. Held here:
+    - the answers the rendered test serves are the routes' own, for a made-up folder named by LEGAL_BUNDLE_DIR (the
+      only way a test process reads one): empty, where the particular is a BLANK and the authority is refused; then
+      holding one made-up letter, where the particular comes with its document and line and the authority resolves;
+    - the routes still answer exactly that today, for the same folder and the same asks, the draft's own id and time
+      aside, and each ask is the body the panel's three fields send;
+    - the rendered test reads each element in the routes' words."""
+    import json
+    from pathlib import Path
+    from agentic_core.legal import bundle as _b
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components"
+    fx = json.loads((src / "MatterAssemblyPanel.fixture.json").read_text(encoding="utf-8"))
+    empty, letter = fx["cases"]["empty"], fx["cases"]["letter"]
+
+    #  each ask is the panel's own body for its three fields
+    for case in (empty, letter):
+        f = case["fields"]
+        assert case["assemble"]["request"] == {
+            "template_id": "et1_claim", "authorities": [f["authority"]],
+            "particulars": [{"name": f["particular"], "words": [w.strip() for w in f["words"].split(",") if w.strip()]}]}
+    panel = (src / "MatterAssemblyPanel.tsx").read_text(encoding="utf-8")
+    assert "template_id: 'et1_claim'" in panel and "words.split(',').map(w => w.trim()).filter(Boolean)" in panel
+
+    #  the states the cases read
+    pe, pl = empty["assemble"]["body"], letter["assemble"]["body"]
+    assert (empty["bundle"]["body"]["document_count"], letter["bundle"]["body"]["document_count"]) == (0, 1)
+    assert not pe["particulars"][0]["found"] and pe["authorities_refused"] == [empty["fields"]["authority"]], pe["face"]
+    assert pl["particulars"][0]["found"] and pl["authorities"][0]["resolved"] and pl["unresolved_checks"] == [], pl["face"]
+
+    #  the routes answer exactly that today, for the same made-up folder
+    folder = tmp_path / "legal-matter"
+    folder.mkdir()
+    monkeypatch.setenv(_b.ENV_VAR, str(folder))
+    own = lambda body: {k: v for k, v in body.items() if k not in ("artefact_id", "created_at")}
+    for name, case in (("empty", empty), ("letter", letter)):
+        if name == "letter":
+            (folder / "dismissal_letter.txt").write_text(case["letter"], encoding="utf-8")
+        assert client.get("/api/v1/law/bundle").json() == case["bundle"]["body"], name
+        live = client.post("/api/v1/law/matter/assemble", json=case["assemble"]["request"])
+        assert live.status_code == case["assemble"]["status"] == 200, (name, live.text[:300])
+        assert own(live.json()) == own(case["assemble"]["body"]), (name, live.json()["face"])
+
+    spec = (src / "MatterAssemblyPanel.test.tsx").read_text(encoding="utf-8")
+    for line in ("a.particulars.map((p: any) => `${p.particular}: ${p.rendered}`)));",
+                 "[`${p.particular}: ${p.rendered} — ${p.document}:${p.line} (${p.verification.verdict})`]));",
+                 "expect(items('matter-authorities')).toEqual(a.authorities.map((x: any) => `${x.authority}: REFUSED — ${x.basis}`));",
+                 "`Unresolved: ${empty.fields.authority} (authority refused)`);",
+                 "expect(screen.getByTestId('matter-unresolved-checks').textContent).toBe('No unresolved check.');",
+                 "'The matter folder could not be read: Failed — backend unreachable.'"):
+        assert line in spec, ("the rendered test no longer reads this", line)
