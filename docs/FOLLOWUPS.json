@@ -20035,11 +20035,14 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1133m",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "already_satisfied",
+      "because_means": "measured as satisfied by an earlier round; nothing was built for it here",
+      "close_note": "Ruled by the Owner on 2026-11-20: closed as satisfied by the move. Measured on the Owner's machine (W1133l): the three June allocations (alloc-973e42b6 50,000; alloc-bf632e6c 4,975,000; alloc-7a1d633d 1,000 WST, to p1, p3 and p4, which are not entities) are held only in data/_moved_books_20261012-155706/capital_fund.json, moved with the old books on the Owner's word of 2026-10-12. The live store holds no fund record, so no page shows them and nothing live can be reversed. If the old books are ever restored, reverse each with POST /api/v1/fund/allocations/{allocation_id}/reverse (W861): a Change Control hold, its approval, then the same request again."
     },
     {
       "id": "FU-1006",
@@ -20723,11 +20726,14 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1133m",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Turned once, for real, on the Owner's store (W1133m, 2026-11-20). Read first (W1133l): the ruling's premise did not hold. The fifteen are labelled studio and the studio door is live (POST /api/v1/reactor/studio), so 'source retired' would have been false, and all nineteen had been opened by development runs that wrote into the store (the page sweep of 2026-09-01, W433's reproduction and guard in exact triplets, the w347 export probe, the owned-model journey measurement of 2026-08-30, a composition run in W433's window), except the genesis of Atmospheric Harvest Solutions, which the Owner named as the Owner's own. Ruled 2026-11-20: a third way out, development_run (POST /api/v1/vbs/qms/defects/{id}/development-run, offered on the Cockpit's VBS panel): the row and its evidence are kept, nothing is re-verified, no count moves, and the summary says the gate failures that opened them stay counted in the rate as recorded. Applied: 18 defects left as development_run, each with its evidence; DEF-ba1f87a2 was corrected and re-verified measured_from_content on today's journey for the same problem (floor only, scratch store): coverage 1.0 of its 8 stored sections, no stub, closed. The store now reads 0 open, 1 closed, 18 development_run, gates run 74, gate failures 19, rate 0.2568. A copy of the store from before is kept outside the repository. Guard test_w1133m_fu1038, six blinds red; the panel's rendered test, its blind red."
     },
     {
       "id": "FU-1039",
@@ -20762,11 +20768,14 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1133l",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done on the Owner's store (W1133l, 2026-11-20). The writer is test_orchestrator_adapts_to_model_health, which records six failed model attempts served by 'flaky' per run: the 162 rows are 27 runs between 2026-06-28T20 and 2026-06-30T15, all kind model_attempt, resource model:flaky, 25000 ms, failed, from before the suite had its own store (W394). Moved aside with scripts/quarantine_test_double_rows.py --apply: 2000 rows before, 1838 left, the 162 kept whole with their positions in data/_pruned_ops_20261120-042017/manifest.json; --restore with that manifest puts every row back. The native floor's rows from the same window were left, as the script's rule says."
     },
     {
       "id": "FU-1041",
@@ -20885,11 +20894,14 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1133l",
       "note": "",
       "slot_source": "found by a dated read of the Owner's store in W678; the area has no routed owner",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Driven on this machine (W1133l) on the text of Atmospheric Harvest Solutions (vsb-dac8f03ab5) kept in data/_moved_books_20261012-155706 and in its board pack and shipped repository: the five 2026-09-01 FAILs had one cause. The legal engine's ACAS Code term 'disciplinary' was matched as a substring, and the venture's text says 'multi-disciplinary' 19 times in the entity body and 8 times in the board pack, with no whole-word statute term anywhere (0 hits for disciplinary or grievance as words). The code of 2026-09-01 (W285) turned any statute-vocabulary hit into a FAIL, which is the reason the records carry ('STATUTORY_BREACH: ACASCode'). W455 (2026-09-12) made a hit a REVIEW, but the substring match stayed, so today's screen still named the ACAS Code on the same text. Fixed: a statute term matches as a word (plural allowed; joined to letters or by a hyphen it is part of another word, unless the prefix is non- or anti-). Guard test_w1133l_fu1046, five blinds red. The five change records were already rejected by the Owner on 2026-10-12 and are left as written."
     },
     {
       "id": "FU-1047",
@@ -26356,6 +26368,48 @@
       "note": "",
       "slot_source": "the Owner's ruling of 2026-10-09 puts a tier-3 finding on P3.30, one row per region; this one's region is the genome registry",
       "tier": 3
+    },
+    {
+      "id": "FU-1801",
+      "title": "With the pages built, a POST to a path no route serves answers 405 Method Not Allowed instead of 404",
+      "why": "Measured on the Owner's machine (W1133l), where apps/workstation-superapp/dist exists, as it does in the image (W1128). agentic_core/app_mvp.py then mounts the page fallback GET /{full_path:path}, whose path matches every path, so a POST, PUT or DELETE to a path no route serves (POST /api/cross-platform/voice/command, retired in W793) answers 405, which says the path exists and only the method is wrong. The fallback already refuses an /api path on GET with 404; other methods never reach it. Smallest fix: the fallback also takes the other methods and answers 404 for an API prefix (405 with Allow: GET otherwise), keeping the route count the build-only routes in docs/PUBLIC_ROUTES.json declare. Drive it with the build present and absent. W793's guard now holds the property either way.",
+      "source": "W1133l (the full suite on the Owner's machine, with the pages built)",
+      "found": "2026-11-20",
+      "files": [
+        "agentic_core/app_mvp.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.5",
+      "status": "done",
+      "closed_by": "W1133n",
+      "note": "",
+      "slot_source": "the image carries the pages since W1128 (FU-1156, P4.5), so the deployed app is where a POST to an unserved path answers 405",
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Reproduced on the Owner's machine with the pages built: POST /api/v1/__no_such_route__ and DELETE /api/cross-platform/voice/command answered 405 with Allow: GET, while POST /api/v1/plan (a GET route) rightly answered 405. Cause: the page fallback GET /{full_path:path} matched every path, so any method but GET stopped at it as a path match with the wrong method. Fixed in agentic_core/app_mvp.py: the fallback's path is a convertor (page) that refuses the API, health, docs and socket prefixes, computed from the same _API_PREFIXES tuple, so such a request matches no route and is a 404; a real 405 on a route or a page is unchanged, and the page shell, deep links and assets are served as before. The mounting is a function (_mount_pages) so the guard drives it on a fresh app with a planted build and with none. docs/PUBLIC_ROUTES.json and two W683 guards name the new path; W793's guard is strict again. Guard test_w1133n_fu1801, five blinds red."
+    },
+    {
+      "id": "FU-1802",
+      "title": "A guard that starts a server picks a free port, closes it, then starts the server there, and another process can take it between the two",
+      "why": "Seen on the Owner's machine in the full suite of W1133m (3 workers, the pages built): test_w919_fu742 bound port 0, read the port, closed the socket, and started the backend script on it; its /health read raised BadStatusLine with its own request line, so something else answered on that port in between. The test passed alone on the same tree. Any guard that chooses a port this way can fail like this while other workers start servers. Drive it by listing every test that binds port 0 and then hands the number to a subprocess; the fix is to keep the socket bound until the child binds, pass the listening socket, or retry on a refused or foreign answer, with a blind that holds the port between the two steps.",
+      "source": "W1133l (the full suite on the Owner's machine)",
+      "found": "2026-11-20",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1133o",
+      "note": "",
+      "slot_source": "P5.1 carries the suite's health rows (FU-301, FU-417, FU-1071, FU-1072, FU-1085), re-slotted there by the Owner's ruling of 2026-10-07b",
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Measured on the Owner's machine: the BadStatusLine test_w919 raised was its own request line read back. A loopback connect from a port to the same port, with nobody listening, connects to itself and reads back what it sent, and Windows gives each new connect the next port of the range port 0 is chosen from. The guard had chosen the port by binding port 0, reading it and closing the socket, then polled /health for the 45 seconds the backend takes to start here, and nobody listened on the port in that window. Three guards chose a port that way (test_w919, test_w920, test_w938). Each now starts its server on port 0 through _serving_on_its_own_port in integration_tests/test_mvp_spine.py, which waits for the line where the server names the port it listens on before anything is sent, so the listener holds the port from the moment it exists. Guard test_w1133o_fu1802 drives the helper with a real server, with one that ends without naming a port and one that never names one, and holds the test files to it on a planted fault first; six blinds red."
     }
   ],
   "routes": [

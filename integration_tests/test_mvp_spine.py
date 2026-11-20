@@ -6608,14 +6608,13 @@ def test_cca_ui_contract_shapes(client):
     try:
         assert "auto_approved" not in sub and sub["status"] in (
             "submitted", "under_review", "approved")
-        # Trailing slash is NOT forgiven when the built SPA is served (its catch-all route
-        # intercepts '/api/v1/cca/' before the slash-redirect — true in production and local dev).
-        # Without dist/ (CI's backend job) the 307 redirect fires instead — so assert the 404
-        # only in the SPA-mounted environment; the UI calls the bare path, correct in BOTH.
-        import pathlib as _pl
-        _spa = _pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "dist" / "index.html"
-        if _spa.exists():
-            assert client.get("/api/v1/cca/").status_code == 404
+        # W1133n (FU-1801) - the trailing slash is forgiven the same way whether the pages are built or not. It used
+        # to be a 404 only where the built pages were served, because their catch-all intercepted '/api/v1/cca/'
+        # before the slash redirect; the catch-all no longer matches an API path, so the redirect fires in
+        # production, local dev and CI alike. The UI calls the bare path.
+        _slash = client.get("/api/v1/cca/", follow_redirects=False)
+        assert _slash.status_code == 307 and _slash.headers.get("location", "").endswith("/api/v1/cca"), (
+            _slash.status_code, _slash.headers.get("location"))
         d = client.get("/api/v1/cca")
         assert d.status_code == 200
         body = d.json()
@@ -62692,7 +62691,7 @@ def test_w683_every_mounted_route_asks_or_is_declared_public_and_the_strict_chec
     declared = {(d["method"], d["path"]) for d in _lines if not d.get("only_when")}
     mounted = {(r["method"], r["path"]) for r in rows}
     assert declared <= mounted, f"declared and not mounted: {sorted(declared - mounted)}"
-    assert sorted(d["path"] for d in _lines if d.get("only_when")) == ["/", "/{full_path:path}"], "only the two page routes may be conditional"
+    assert sorted(d["path"] for d in _lines if d.get("only_when")) == ["/", "/{full_path:page}"], "only the two page routes may be conditional"
 
 
 def test_w683_with_authentication_on_every_asking_route_refuses_an_anonymous_call(client, monkeypatch):
@@ -62715,7 +62714,7 @@ def test_w683_with_authentication_on_every_asking_route_refuses_an_anonymous_cal
     #  ... and a route declared public is not refused for want of a caller
     refused = []
     for r in public:
-        if r["path"] == "/{full_path:path}":
+        if r["path"] == "/{full_path:page}":
             continue
         path = _re.sub(r"\{[^}]+\}", "1", r["path"])
         got = client.request(r["method"], path)
@@ -70791,6 +70790,8 @@ def test_w793_fu984_r5_the_stub_routers_are_archived_and_two_sentences_say_what_
         assert client.get(path).status_code == 404, path
     for path in ("/api/cross-platform/ar/scene",):
         assert client.get(path).status_code == 404, path
+    #  W1133l found this answering 405 where the pages are built (the page fallback's path matched every path);
+    #  FU-1801 (W1133n) fixed the fallback, so the retired path is a 404 with the pages built or not.
     assert client.post("/api/cross-platform/voice/command", json={}).status_code == 404
     app = pathlib.Path("apps/workstation-superapp/src/App.tsx").read_text(encoding="utf-8")
     assert "<PlayfulEffectsManager" not in app and "import { PlayfulEffectsManager }" not in app
@@ -75527,7 +75528,7 @@ def test_w876_the_fund_says_where_the_shares_cycles_set_aside_for_it_went(client
     assert 'data-testid="fund-set-aside"' in page and "{fund.set_aside_reconciliation.basis}" in page
 
 
-def test_w877_no_parallel_source_tree_stands_beside_agentic_core_where_core_stood(client):
+def test_w877_no_parallel_source_tree_stands_beside_agentic_core_where_core_stood(client, tmp_path):
     """FU-605 (W877). A top-level core/ package stood beside agentic_core, against the Owner's ratified refusal (a) of
     2026-09-30 (NO PARALLEL SOURCE TREE), imported by two live modules. Measured first: it predates the refusal (the
     Stage 1 archive kept it for one reachable module and it was never moved), both importers take one class, and the
@@ -75536,7 +75537,18 @@ def test_w877_no_parallel_source_tree_stands_beside_agentic_core_where_core_stoo
     import ast
     import pathlib
     root = pathlib.Path(__file__).resolve().parents[1]
-    assert not (root / "core").exists(), "a top-level core/ tree stands beside agentic_core again"
+    #  W1133l - A FOLDER OF BYTECODE CACHES IS NOT A SOURCE TREE. On the Owner's machine core/ is still there holding
+    #  only __pycache__ from before the move, untracked and with no source file, and this read it as the tree standing
+    #  again. What the refusal forbids is source: any file outside a __pycache__ folder (a sourceless .pyc included).
+    def _source_files(d):
+        return sorted(p.relative_to(d).as_posix() for p in d.rglob("*") if p.is_file() and "__pycache__" not in p.parts)
+    (tmp_path / "t" / "__pycache__").mkdir(parents=True)
+    (tmp_path / "t" / "__pycache__" / "m.cpython-312.pyc").write_bytes(b"")
+    assert _source_files(tmp_path / "t") == [], "a folder of bytecode caches was read as a source tree"
+    (tmp_path / "t" / "m.py").write_bytes(b"")
+    assert _source_files(tmp_path / "t") == ["m.py"], "a source file in the folder was not seen"
+    assert not (root / "core").exists() or _source_files(root / "core") == [], (
+        "a top-level core/ tree stands beside agentic_core again", _source_files(root / "core")[:5])
     assert (root / "agentic_core" / "transcendent_subsystems" / "tfel.py").exists()
     assert (root / "_archive" / "core" / "identity.py").exists(), "the dead module was not kept in the archive"
 
@@ -76456,11 +76468,22 @@ def test_w890_a_test_doubles_rows_move_out_of_the_operations_record_and_back(mon
     assert store.is_relative_to(pathlib.Path(os.environ["DATA_DIR"]).resolve()), (
         "the operations record this run writes is not under its own store root", store)
 
-    #    and the Owner, who holds that store, has the steps in the resume prompt's list
+    #    and the Owner, who holds that store, has the steps in the resume prompt's list while the row is open.
+    #    W1133l - the move was made on the Owner's store, so the row is done: a done owner row leaves the list (W594's
+    #    rule), and the way back is kept in the row's close note instead.
     prompt = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
-    owner = prompt.split("FU-1040 (W890):")[1].split("THAT IS THE WHOLE LIST.")[0] if "FU-1040 (W890):" in prompt else ""
-    assert "quarantine_test_double_rows.py" in owner and "--apply" in owner and "--restore" in owner, (
-        "the Owner's list does not give the steps for moving the rows on the Owner's store", owner[:300])
+    row1040 = next(r for r in json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+                   if r["id"] == "FU-1040")
+    if row1040["status"] == "open":
+        owner = (prompt.split("FU-1040 (W890):")[1].split("THAT IS THE WHOLE LIST.")[0]
+                 if "FU-1040 (W890):" in prompt else "")
+        assert "quarantine_test_double_rows.py" in owner and "--apply" in owner and "--restore" in owner, (
+            "the Owner's list does not give the steps for moving the rows on the Owner's store", owner[:300])
+    else:
+        still = prompt.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
+        assert "FU-1040" not in still, "a done row is still put to the Owner"
+        said = " ".join(str(row1040.get("close_note") or "").split())
+        assert "_pruned_ops_" in said and "--restore" in said, ("the done row does not keep the way back", said[:300])
 
     # 2. on a planted record: a dry run moves nothing, apply takes the test double's rows, restore puts each back
     def _row(served, at, ok=True, resource=None):
@@ -76787,7 +76810,7 @@ def test_w895_a_row_just_written_is_read_even_when_the_os_withholds_the_file_for
     assert _oe895._load() == []
 
 
-def test_w896_src_no_longer_stands_beside_agentic_core_its_live_modules_moved_in_the_rest_archived():
+def test_w896_src_no_longer_stands_beside_agentic_core_its_live_modules_moved_in_the_rest_archived(tmp_path):
     """FU-1168, part 2: src/, the second tree W877's measure found beside agentic_core, against the Owner's ratified
     refusal (a) of 2026-09-30 (no parallel source tree). Read before moving: of its 24 tracked files the live code
     reached three, and only through the avatar tool registry. Those moved into agentic_core/avatars/tools/ beside it.
@@ -76798,7 +76821,17 @@ def test_w896_src_no_longer_stands_beside_agentic_core_its_live_modules_moved_in
     import pathlib
     import re
     root = pathlib.Path(__file__).resolve().parents[1]
-    assert not (root / "src").exists(), "a top-level src/ stands beside agentic_core again"
+    #  W1133l - as in W877: a folder holding only bytecode caches (as src/ still does, untracked, on the Owner's
+    #  machine) is not a source tree; any file outside a __pycache__ folder is.
+    def _source_files(d):
+        return sorted(p.relative_to(d).as_posix() for p in d.rglob("*") if p.is_file() and "__pycache__" not in p.parts)
+    (tmp_path / "t" / "__pycache__").mkdir(parents=True)
+    (tmp_path / "t" / "__pycache__" / "m.cpython-312.pyc").write_bytes(b"")
+    assert _source_files(tmp_path / "t") == [], "a folder of bytecode caches was read as a source tree"
+    (tmp_path / "t" / "m.py").write_bytes(b"")
+    assert _source_files(tmp_path / "t") == ["m.py"], "a source file in the folder was not seen"
+    assert not (root / "src").exists() or _source_files(root / "src") == [], (
+        "a top-level src/ stands beside agentic_core again", _source_files(root / "src")[:5])
 
     # 1. no live code imports the old tree
     offenders = []
@@ -78128,6 +78161,62 @@ def test_w918_fu742_the_file_stores_are_backed_up_verified_and_restored_byte_for
     assert "No snapshot has been taken, since nothing is deployed" in brief
 
 
+class _serving_on_its_own_port:
+    """FU-1802 (W1133o). Start a local server on a port it chooses itself, and wait until it names that port.
+
+    `cmd` asks for port 0, and `said` is a pattern whose one group is the port, matched in the line the server
+    prints once it listens. The guards used to choose the port themselves: bind port 0, read it, close it, and
+    hand the number on. That left the port free until the server listened, and on the Owner's machine a loopback
+    connect to a port nobody listens on can connect to itself, so a poll sent in that window read back its own
+    request (test_w919 in the full suite of W1133m). Here the listener holds the port from the moment it exists.
+
+    Used as `with _serving_on_its_own_port(cmd, said, cwd=...) as srv:`. srv.port is None if the server exited, or
+    `timeout` passed, before it named a port. srv.output() is what it printed (stdout and stderr), for the
+    failure message. The server is stopped when the block ends."""
+
+    def __init__(self, cmd, said, *, cwd, env=None, timeout=180):
+        self.cmd, self.said, self.cwd, self.env, self.timeout = list(cmd), said, cwd, env, timeout
+        self.port, self.proc, self.lines, self._found = None, None, [], None
+
+    def __enter__(self):
+        import re
+        import subprocess
+        import threading
+        named = threading.Event()
+
+        def read():
+            for raw in self.proc.stdout:
+                line = raw.decode("utf-8", "replace")
+                self.lines.append(line)
+                m = self._found is None and re.search(self.said, line)
+                if m:
+                    self._found = int(m.group(1))
+                    named.set()
+            named.set()                                   # it ended without naming a port
+
+        self.proc = subprocess.Popen(self.cmd, cwd=self.cwd, env=self.env, stdin=subprocess.DEVNULL,
+                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        self._reader = threading.Thread(target=read, daemon=True)
+        self._reader.start()
+        named.wait(self.timeout)
+        self.port = self._found
+        return self
+
+    def output(self, last=1500):
+        return "".join(self.lines)[-last:]
+
+    def __exit__(self, *exc):
+        import subprocess
+        self.proc.terminate()
+        try:
+            self.proc.wait(timeout=60)
+        except subprocess.TimeoutExpired:
+            self.proc.kill()
+            self.proc.wait()
+        self._reader.join(timeout=10)
+        return False
+
+
 def test_w919_fu742_the_windows_start_path_names_only_what_exists_and_starts_the_app_every_deployment_starts(tmp_path):
     """FU-742 part 2 (W919). The founder's guide rests on the Windows set-up and start scripts, so they were
     measured first. None of the three could have worked:
@@ -78148,10 +78237,7 @@ def test_w919_fu742_the_windows_start_path_names_only_what_exists_and_starts_the
     import os
     import pathlib
     import re
-    import socket
-    import subprocess
     import sys
-    import time
     import urllib.request
 
     root = pathlib.Path(__file__).resolve().parents[1]
@@ -78190,38 +78276,23 @@ def test_w919_fu742_the_windows_start_path_names_only_what_exists_and_starts_the
             assert (root / ws / "package.json").is_file(), (cmd, "names a workspace that does not exist")
     assert '"dev": "vite"' in (root / "apps/workstation-superapp/package.json").read_text(encoding="utf-8")
 
-    #  the app the backend script names really serves: started as the script starts it, on a free port
-    with socket.socket() as so:
-        so.bind(("127.0.0.1", 0))
-        port = so.getsockname()[1]
+    #  the app the backend script names really serves: started as the script starts it, on a port it chooses
+    #  itself and names before it is asked anything (FU-1802, W1133o)
     data = tmp_path / "data"
     env = {**os.environ, "DATA_DIR": str(data), "WORKSTATION_DATA_DIR": str(data),
            "WORKSTATION_UEG_PATH": str(data / "ueg.json"), "PROJECTS_DIR": str(data / "projects"),
            "PYTHONPATH": str(root), "AI_DISABLE_LOCAL": "1"}
     (module, attr), = apps
-    proc = subprocess.Popen([sys.executable, "-m", "uvicorn", f"{module}:{attr}", "--host", "127.0.0.1",
-                             "--port", str(port)], cwd=str(root), env=env,
-                            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
     direct = urllib.request.build_opener(urllib.request.ProxyHandler({}))     # never through a proxy
     health = None
-    try:
-        deadline = time.time() + 180
-        while time.time() < deadline and proc.poll() is None:
-            try:
-                with direct.open(f"http://127.0.0.1:{port}/health", timeout=5) as resp:
-                    health = (resp.status, json.loads(resp.read().decode("utf-8")))
-                    break
-            except OSError:
-                time.sleep(1)
-    finally:
-        proc.terminate()
-        try:
-            _, err = proc.communicate(timeout=60)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            _, err = proc.communicate()
+    with _serving_on_its_own_port([sys.executable, "-m", "uvicorn", f"{module}:{attr}", "--host", "127.0.0.1",
+                                   "--port", "0"], r"Uvicorn running on http://127\.0\.0\.1:(\d+)",
+                                  cwd=str(root), env=env) as srv:
+        if srv.port:
+            with direct.open(f"http://127.0.0.1:{srv.port}/health", timeout=30) as resp:
+                health = (resp.status, json.loads(resp.read().decode("utf-8")))
     assert health is not None and health[0] == 200, (
-        "the app the backend script names did not answer /health", (err or b"")[-1500:].decode("utf-8", "replace"))
+        "the app the backend script names did not answer /health", srv.output())
 
 
 def test_w920_fu742_the_founders_guide_gives_only_commands_a_guard_runs_on_the_tree_it_ships_with(tmp_path):
@@ -78243,10 +78314,8 @@ def test_w920_fu742_the_founders_guide_gives_only_commands_a_guard_runs_on_the_t
     import pathlib
     import re
     import shutil
-    import socket
     import subprocess
     import sys
-    import time
     from agentic_core import plan_followups as _fu
     from agentic_core.app_mvp import app as _app920
 
@@ -78293,9 +78362,6 @@ def test_w920_fu742_the_founders_guide_gives_only_commands_a_guard_runs_on_the_t
 
     #  the health check, as the guide writes it, against the app started as start_backend.bat names it
     (module, attr), = re.findall(r"-m uvicorn ([\w.]+):(\w+)", back)
-    with socket.socket() as so:
-        so.bind(("127.0.0.1", 0))
-        port = so.getsockname()[1]
     data = tmp_path / "data"
     no_proxy = {k: v for k, v in os.environ.items() if k.lower() not in ("http_proxy", "https_proxy", "all_proxy")}
     env = {**no_proxy, "DATA_DIR": str(data), "WORKSTATION_DATA_DIR": str(data), "PYTHONPATH": str(root),
@@ -78303,27 +78369,18 @@ def test_w920_fu742_the_founders_guide_gives_only_commands_a_guard_runs_on_the_t
     exe, url = health.split()
     exe = exe if sys.platform == "win32" else "curl"
     assert shutil.which(exe), f"{exe} is not on this machine, so the guide's health check cannot be run here"
-    url = url.replace(":8000/", f":{port}/")
-    proc = subprocess.Popen([sys.executable, "-m", "uvicorn", f"{module}:{attr}", "--host", "127.0.0.1", "--port",
-                             str(port)], cwd=str(root), env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
     answer = None
-    try:
-        deadline = time.time() + 180
-        while time.time() < deadline and proc.poll() is None:
-            r = subprocess.run([exe, url], env=no_proxy, capture_output=True, text=True, timeout=30)
+    #  on a port the app chooses itself and names before the check is run (FU-1802, W1133o)
+    with _serving_on_its_own_port([sys.executable, "-m", "uvicorn", f"{module}:{attr}", "--host", "127.0.0.1",
+                                   "--port", "0"], r"Uvicorn running on http://127\.0\.0\.1:(\d+)",
+                                  cwd=str(root), env=env) as srv:
+        if srv.port:
+            r = subprocess.run([exe, url.replace(":8000/", f":{srv.port}/")], env=no_proxy, capture_output=True,
+                               text=True, timeout=30)
             if r.returncode == 0 and r.stdout.strip():
                 answer = json.loads(r.stdout)
-                break
-            time.sleep(1)
-    finally:
-        proc.terminate()
-        try:
-            _, err = proc.communicate(timeout=60)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            _, err = proc.communicate()
     assert answer and answer.get("status") == "healthy", ("the guide's health check got no healthy answer",
-                                                          (err or b"")[-1500:].decode("utf-8", "replace"))
+                                                          srv.output())
     assert '"status": "healthy"' in guide
 
     #  the gates in the plan's order; no channel called free or priced; the mandates row names the guide
@@ -79495,10 +79552,8 @@ def test_w938_p54_a_clean_clone_of_the_entity_repository_serves_its_own_pages_by
     import posixpath
     import re
     import shutil
-    import socket
     import subprocess
     import sys
-    import time
     import urllib.request
 
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))    # a local server is never reached by proxy
@@ -79527,24 +79582,14 @@ def test_w938_p54_a_clean_clone_of_the_entity_repository_serves_its_own_pages_by
         cmd = re.findall(r"(?m)^    python3 -m http\.server (\d+)$", run)
         assert len(cmd) == 1, run
         named = re.findall(r"http://localhost:" + cmd[0] + r"/(\S+?)\.?(?:\s|$)", run)
-        with socket.socket() as s:
-            s.bind(("127.0.0.1", 0))
-            port = s.getsockname()[1]
-        server = subprocess.Popen([sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1"], cwd=str(clone),
-                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        #  on a port the server chooses itself and names before it is asked anything (FU-1802, W1133o)
+        with _serving_on_its_own_port([sys.executable, "-u", "-m", "http.server", "0", "--bind", "127.0.0.1"],
+                                      r"Serving HTTP on 127\.0\.0\.1 port (\d+)", cwd=str(clone), timeout=20) as srv:
+            assert srv.port, ("the clone's server never named its port", srv.output())
 
-        def get(path):
-            with opener.open(f"http://127.0.0.1:{port}/{path}", timeout=10) as resp:
-                return resp.status, resp.read()
-        try:
-            deadline = time.time() + 20
-            while True:
-                try:
-                    get("")
-                    break
-                except Exception:                                        # noqa: BLE001 - not listening yet
-                    assert time.time() < deadline, "the clone's server never answered"
-                    time.sleep(0.2)
+            def get(path):
+                with opener.open(f"http://127.0.0.1:{srv.port}/{path}", timeout=10) as resp:
+                    return resp.status, resp.read()
             seen, todo = set(), [p for p in named if p.endswith(".html")] + ["web/index.html"]
             for page in named:
                 status, body = get(page)
@@ -79562,9 +79607,6 @@ def test_w938_p54_a_clean_clone_of_the_entity_repository_serves_its_own_pages_by
                     if target.endswith(".html"):
                         todo.append(target)
             return named, seen, get
-        finally:
-            server.terminate()
-            server.wait(timeout=10)
 
     vid = entity("W938 Served")
     m, clone = serve_clone(vid, ("website", "webapp", "mobile"))
@@ -92403,6 +92445,254 @@ def test_w1133_fu1055_the_departments_thirteen_headings_are_each_set_against_the
     assert "the children's gate stays closed" in " ".join(sec.split()), "the table does not keep the gate closed"
 
 
+def test_w1133l_fu1046_a_statute_term_is_a_word_and_multi_disciplinary_names_no_acas_code(client):
+    """FU-1046 (W1133l) - five change records of 2026-09-01 failed Atmospheric Harvest Solutions' board pack,
+    repository, website, web app and mobile app on 'STATUTORY_BREACH: ACASCode'. Driven on the text kept in
+    the moved books, the only engine term in it is 'disciplinary' inside 'multi-disciplinary' (19 times), and
+    there is no whole-word statute term anywhere. The engine's vocabulary was matched as a substring, and the
+    code of that day made any vocabulary hit a FAIL. W455 made a hit a REVIEW; the substring match stayed, so
+    the same text still named the ACAS Code. A term now matches as a word, on the route a person uses."""
+    def legal(subject):
+        r = client.post("/api/v1/compliance/check", json={"subject": subject})
+        assert r.status_code == 200, r.text
+        return next(v for v in r.json()["verdicts"] if v["framework"] == "uk_legal")
+
+    # the venture's own words, as its board pack has them: no statute is named
+    for subject in ("The AWHEN framework is a holistic, multi-disciplinary solution that integrates water and "
+                    "energy harvesting technologies.",
+                    "An interdisciplinary team designs the condensers; a cross-disciplinary review signs them off."):
+        v = legal(subject)
+        assert "STATUTORY_BREACH" not in v["reason"] and v["coverage"] != "vocabulary", (subject, v)
+        assert "matched nothing" in v["reason"], (subject, v)
+    # a statute term as a word still names its statute: singular, plural, and a prefix that only turns the
+    # topic around
+    for subject, statute in (("our disciplinary procedure follows the code", "ACASCode"),
+                             ("staff grievances are heard within five days", "ACASCode"),
+                             ("a non-discrimination policy for every hire", "EqualityAct2010"),
+                             ("the plan involves unfair dismissal of staff", "ERA1996")):
+        v = legal(subject)
+        assert v["status"] == "review" and v["coverage"] == "vocabulary", (subject, v)
+        assert f"STATUTORY_BREACH: {statute}" in v["reason"], (subject, v)
+
+
+def test_w1133m_fu1038_a_defect_a_development_run_opened_leaves_the_loop_saying_so_and_its_failure_stays_counted(client):
+    """FU-1038 (W1133m; the Owner's ruling of 2026-11-20). Read on the Owner's store in W1133l, all nineteen open
+    defects had been opened by development runs that wrote into it (a page sweep, W433's reproduction and guard, a
+    browser export probe), and the studio door fifteen of them carry is live, so closing them as 'source retired' would
+    have been false, and the route refuses it, as built. Ruled: a third way out, 'opened by a development run'. It keeps
+    the row and the evidence, re-verifies nothing, moves no count, and says that the gate failure that opened the defect
+    stays counted in the rate as it was recorded, because the rate is never recomputed."""
+    import asyncio as _a1133
+    import pathlib as _pl1133
+    from agentic_core.vbs.registry import qms as _q1133
+
+    def opened(label):
+        before = {d["id"] for d in _q1133.defects}
+        _a1133.run(_q1133.run_quality_gates({"coverage": 0.1}, label=label))
+        return next(d["id"] for d in _q1133.defects if d["id"] not in before)
+
+    base = "/api/v1/vbs/qms/defects"
+
+    def summary():
+        return client.get(base).json()["summary"]
+
+    studio, second = opened("studio"), opened("studio")            # a live label, as on the Owner's store
+    s0 = summary()
+    assert "development_run" in s0, ("the summary has no count for the third way out", sorted(s0))
+    ev = ("opened by W433's reproduction on 2026-09-01: three studio calls within a second carrying the guard's three "
+          "series, against a development server on this store")
+    #  the live door still refuses 'retired', as built; the third way out is the true one
+    assert client.post(f"{base}/{studio}/close-source-retired", json={"reason": ev}).status_code == 409
+    assert client.post(f"{base}/{studio}/development-run", json={"evidence": "a test run"}).status_code == 422
+    r = client.post(f"{base}/{studio}/development-run", json={"evidence": ev})
+    assert r.status_code == 200, r.text[:300]
+    j = r.json()
+    d = j["defect"]
+    assert d["status"] == "development_run" and d["reverified"] is False, d
+    cl = d["closure"]
+    assert (cl["how"], cl["reason"], cl["by"], cl["by_verified"], cl["status_before"]) == (
+        "development_run", ev, "owner", False, "open"), cl
+    assert j["measured"] is False and j["counted_in_rate"] is False, j
+    assert "not re-verified" in j["basis"] and "stays counted there as it was recorded" in j["basis"], j["basis"]
+
+    s1 = summary()
+    for k in ("gates_run", "gate_failures", "defects_total", "what_if_gates", "what_if_failures", "closed",
+              "closed_source_retired", "not_reproducible", "non_conformance_rate", "attested_reverifications"):
+        assert s1[k] == s0[k], ("taking a development run's defect out of the loop moved a count", k, s0[k], s1[k])
+    assert s1["development_run"] == s0["development_run"] + 1 and s1["open"] == s0["open"] - 1, s1
+    said = " ".join(s1["dispositions_basis"].split())
+    assert f"{s1['development_run']} defect(s) closed because a development run opened them" in said, said
+    assert "stay counted in the rate as they were recorded" in said, said
+    assert "because a development run opened it" in s1["closed_basis"], s1["closed_basis"]
+
+    #  out of the loop: not taken out again, not reported, not re-verified
+    for path, body in (("development-run", {"evidence": ev}), ("not-reproducible", {"tried": ev}),
+                       ("reverify", {"coverage": 0.99})):
+        assert client.post(f"{base}/{studio}/{path}", json=body).status_code == 404, path
+    #  a corrected defect can leave this way too, and says what it was before
+    assert client.post(f"{base}/{second}/correct", json={"correction": "nothing to correct: a development run"}
+                       ).status_code == 200
+    d2 = client.post(f"{base}/{second}/development-run", json={"evidence": ev}).json()["defect"]
+    assert (d2["status"], d2["closure"]["status_before"]) == ("development_run", "corrected"), d2
+
+    #  the panel offers it and names it on a closed row (rendered in VBSSystemsPanel.test.tsx on the route's answers)
+    page = _code_only((_pl1133.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+                       / "components" / "VBSSystemsPanel.tsx").read_bytes().decode("utf-8"))
+    for needle in ('data-testid="defect-development-run"', "disposeDefect('development-run')",
+                   "development_run: 'closed — a development run opened it, not a delivery'"):
+        assert needle in page, ("the panel does not offer or name the third way out", needle)
+
+
+def test_w1133n_fu1801_with_the_pages_built_a_path_no_route_serves_is_a_404_whatever_the_method(client, tmp_path):
+    """FU-1801 (W1133n). Measured on the Owner's machine, where the pages are built as they are in the image: the page
+    fallback was GET /{full_path:path}, whose path matches every path, so a POST, PUT or DELETE to an API path no route
+    serves answered 405 Method Not Allowed with 'Allow: GET', saying the path exists and only the method is wrong. The
+    fallback's path is now a convertor that refuses the API prefixes, computed from the same tuple. Driven here on a
+    fresh app with a planted build (and with none), so it holds on the build server too, where no build exists."""
+    import re as _re1801
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from agentic_core import app_mvp as _am
+
+    dist = tmp_path / "dist"
+    (dist / "assets").mkdir(parents=True)
+    (dist / "index.html").write_bytes(b"<!doctype html><html><body>shell w1133n</body></html>")
+    (dist / "assets" / "a.js").write_bytes(b"console.log('w1133n')")
+    fresh = FastAPI()
+
+    @fresh.get("/api/v1/w1133n/thing")
+    async def _thing():
+        return {"ok": True}
+
+    @fresh.post("/api/v1/w1133n/make")
+    async def _make():
+        return {"made": True}
+
+    assert _am._mount_pages(fresh, dist) is True
+    c = TestClient(fresh)
+    #  a path no route serves, under every API prefix and with every method: not found, never 'method not allowed'
+    for method in ("POST", "PUT", "PATCH", "DELETE", "GET"):
+        for path in ("/api/v1/w1133n/nothing", "/api/cross-platform/voice/command", "/health", "/docs/x", "/ws/x"):
+            r = c.request(method, path)
+            assert r.status_code == 404, (method, path, r.status_code, r.headers.get("allow"))
+    #  a real 405 is unchanged: a wrong method on a route that exists, and on a page
+    r = c.post("/api/v1/w1133n/thing")
+    assert r.status_code == 405 and r.headers.get("allow") == "GET", (r.status_code, r.headers.get("allow"))
+    assert c.post("/api/v1/w1133n/make").json() == {"made": True}
+    r = c.post("/a/client/route")
+    assert r.status_code == 405 and r.headers.get("allow") == "GET", (r.status_code, r.headers.get("allow"))
+    #  the pages are still served: the shell at /, a client route, a deep link, an asset
+    for path in ("/", "/a/client/route", "/native-ai"):
+        assert c.get(path).status_code == 200 and "shell w1133n" in c.get(path).text, path
+    assert c.get("/assets/a.js").text == "console.log('w1133n')"
+    #  the refused prefixes are the tuple the fallback refuses, computed, not typed beside it
+    for p in _am._API_PREFIXES:
+        assert _re1801.fullmatch(_am._PagePath.regex, p + "x") is None, p
+    assert _re1801.fullmatch(_am._PagePath.regex, "native-ai") is not None
+
+    #  with no build, nothing is mounted
+    bare = FastAPI()
+    assert _am._mount_pages(bare, tmp_path / "no_build") is False
+    assert not [r for r in bare.routes if getattr(r, "path", "") in ("/", "/{full_path:page}", "/assets")], bare.routes
+    #  and the platform itself, built here or not: the retired path is not found
+    assert client.post("/api/cross-platform/voice/command", json={}).status_code == 404
+
+
+def test_w1133o_fu1802_a_server_a_guard_starts_chooses_its_own_port_and_names_it_before_it_is_asked(tmp_path):
+    """FU-1802 (W1133o). Seen in the full suite of W1133m on the Owner's machine: test_w919 read
+    'BadStatusLine: GET /health HTTP/1.1' from the backend it had started, and it passed alone on the same tree. That
+    line is the guard's own request read back. The guard chose the port by binding port 0, reading the number and
+    closing the socket. It then started the server there and polled /health while the server started, which takes
+    45 seconds on this machine, and in that window nobody listened on the port. Measured on this machine:
+    - a loopback connect from a port to the same port, with nobody listening, connects to itself and reads back
+      what it sent;
+    - Windows gives each new connect the next port of the range port 0 is chosen from.
+    Any other process could also take the port in that window. Three guards chose a port that way: test_w919,
+    test_w920 and test_w938.
+
+    Each now starts its server on port 0 through _serving_on_its_own_port. The helper waits for the line where the
+    server names the port it listens on, and nothing is sent before it. The listener holds the port from the moment
+    it exists, so nothing can connect to itself on it or take it. This guard:
+    - drives the helper with a real server: the port it gives is the one the server named, it answers, nobody else
+      can bind it while the server runs, and the server is stopped when the block ends;
+    - a server that ends without naming a port gives no port at once, with what it printed, not when the timeout
+      passes; one that never names a port gives none when the timeout passes, and is stopped;
+    - holds the test files to it, first on a planted fault. No function reads a socket's name to hand a port on.
+      None but the helper starts a server process itself, and the three guards start theirs through it."""
+    import pathlib
+    import re
+    import socket
+    import sys
+    import time
+    import urllib.request
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))     # a local server is never reached by proxy
+
+    #  a real server: the port is the one it named, it answers, it is held while the server runs, the server stops
+    (tmp_path / "page.txt").write_bytes(b"w1133o")
+    with _serving_on_its_own_port([sys.executable, "-u", "-m", "http.server", "0", "--bind", "127.0.0.1"],
+                                  r"Serving HTTP on 127\.0\.0\.1 port (\d+)", cwd=str(tmp_path), timeout=30) as srv:
+        assert srv.port and f"port {srv.port} " in srv.output(), ("the server named no port", srv.output())
+        with opener.open(f"http://127.0.0.1:{srv.port}/page.txt", timeout=10) as resp:
+            assert (resp.status, resp.read()) == (200, b"w1133o")
+        with socket.socket() as other:
+            with pytest.raises(OSError):
+                other.bind(("127.0.0.1", srv.port))
+    stopped = srv.proc.poll() is not None
+    srv.proc.kill()                                                         # never leave it running, even when red
+    assert stopped, "the server was still running when the block ended"
+
+    #  a server that ends without naming a port: no port, at once, with what it printed
+    t = time.time()
+    with _serving_on_its_own_port([sys.executable, "-c", "print('w1133o: no listening here')"], r"port (\d+)",
+                                  cwd=str(tmp_path), timeout=60) as gone:
+        took = time.time() - t
+        assert gone.port is None and took < 30, (gone.port, took, "it waited for the timeout")
+    assert "w1133o: no listening here" in gone.output(), gone.output()
+
+    #  one that never names a port: none when the timeout passes, and it is stopped
+    with _serving_on_its_own_port([sys.executable, "-c", "import time; print('w1133o waits', flush=True); "
+                                   "time.sleep(120)"], r"port (\d+)", cwd=str(tmp_path), timeout=3) as slow:
+        assert slow.port is None and slow.proc.poll() is None, (slow.port, slow.proc.poll())
+    stopped = slow.proc.poll() is not None
+    slow.proc.kill()
+    assert stopped, "a server that named no port was not stopped"
+
+    #  the test files: the rule, proved on a planted fault first
+    sock_name = ".getsock" + "name("                                       # built, so this guard does not match itself
+    starts = "Pop" + "en("
+    servers = ('"uvicorn"', '"http.server"')
+
+    def faults_in(text, fname):
+        out = []
+        for chunk in re.split(r"\n(?=(?:def|class) )", text):
+            m = re.match(r"(?:def|class) (\w+)", chunk)
+            name = m.group(1) if m else "<module>"
+            if name == "_serving_on_its_own_port":
+                continue
+            if sock_name in chunk:
+                out.append(f"{fname}::{name} reads a socket's name to hand a port on")
+            if starts in chunk and any(s in chunk for s in servers):
+                out.append(f"{fname}::{name} starts a server process itself")
+        return out
+
+    planted = ("def test_planted(tmp_path):\n    with socket.socket() as so:\n        so.bind(('127.0.0.1', 0))\n"
+               "        port = so" + sock_name + ")[1]\n    proc = subprocess." + starts + "[sys.executable, '-m', "
+               "\"uvicorn\", 'a:b', '--port', str(port)])\n")
+    assert faults_in(planted, "planted.py") == ["planted.py::test_planted reads a socket's name to hand a port on",
+                                                "planted.py::test_planted starts a server process itself"]
+    found = []
+    for f in sorted((root / "integration_tests").glob("*.py")):
+        found += faults_in(f.read_text(encoding="utf-8"), f.name)
+    assert found == [], found
+    tests = (root / "integration_tests/test_mvp_spine.py").read_text(encoding="utf-8")
+    for guard in ("test_w919_", "test_w920_", "test_w938_"):
+        body = tests.split(f"\ndef {guard}", 1)[1].split("\ndef ", 1)[0]
+        assert body.count("with _serving_on_its_own_port([") == 1, (guard, "does not start its server through the helper")
+        assert '"--port", "0"]' in body or '"http.server", "0",' in body, (guard, "does not ask for port 0")
+
+
 def test_w1134_fu603_the_google_cloud_deploy_is_written_from_googles_pages_and_no_disk_with_records_is_formatted(tmp_path):
     """FU-603 part 2 (W1134), P4.5; the Owner's ruling of 2026-11-20 (the exact Google Cloud deploy steps go into
     docs/DEPLOYMENT.md). Held here:
@@ -93275,7 +93565,7 @@ def test_w1145_fu1292_fu033s_guard_passes_run_alone_in_a_fresh_process():
     assert r.returncode == 0 and "1 passed" in r.stdout, ("FU-033's guard fails run alone", r.stdout[-1500:])
 
 
-def test_w1146_fu1293_the_conversation_panel_says_the_avatars_own_reasons_and_the_image_reason_reads_once(client):
+def test_w1146_fu1293_the_conversation_panel_says_the_avatars_own_reasons_and_the_image_reason_reads_once(client, monkeypatch):
     """FU-399 part 111 and FU-1293 (W1146). The footer's conversation panel says, under each reply, what the server
     could not do; the hook's rendered test read only its grounding line and send error. Rendered against what the
     avatar route answered, it said a fixed sentence in place of two of the route's own: the measured reason an image
@@ -93296,6 +93586,10 @@ def test_w1146_fu1293_the_conversation_panel_says_the_avatars_own_reasons_and_th
     src = root / "apps" / "workstation-superapp" / "src"
     fx = json.loads((src / "components" / "avatar" / "ConversationPanel.fixture.json").read_text(encoding="utf-8"))
     cases = {k: v["reply"] for k, v in fx["cases"].items()}
+    #  the cases were captured on a machine with no external vision key. Where one is configured and
+    #  AI_ALLOW_EXTERNAL is off, as on the Owner's machine, the image status is rightly blocked_by_policy, so the
+    #  route is asked here under the conditions the cases were captured under (merge into local-owner, 2026-11-20)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
     a = client.post("/api/v1/genesis/establish", json={"problem": "W1146 made up: a lending library for garden tools",
                                                         "ship_output": False, "name": "W1146 Tool Library"})

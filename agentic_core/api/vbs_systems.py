@@ -216,6 +216,11 @@ class DefectNotReproducible(BaseModel):
     actor: str = "owner"
 
 
+class DefectDevelopmentRun(BaseModel):
+    evidence: str = Field(min_length=12, max_length=2000)   # which run opened it, and how that is known
+    actor: str = "owner"
+
+
 def _disposer(actor: str, user: dict | None) -> tuple[str, bool]:
     """Who takes a defect out of the loop: the signed-in user; with sign-in off, the typed name, unverified."""
     _u = user if isinstance(user, dict) else None
@@ -282,6 +287,20 @@ async def qms_not_reproducible(defect_id: str, req: DefectNotReproducible,
     _require_defect_access(defect_id, user)
     by, verified = _disposer(req.actor, user)
     d = qms.dispose_defect(defect_id, "not_reproducible", req.tried, by, verified)
+    if not d:
+        raise HTTPException(status_code=404, detail=f"No OPEN or CORRECTED defect '{defect_id}'.")
+    return {"defect": d, "measured": False, "counted_in_rate": False, "basis": d["closure"]["basis"]}
+
+
+@router.post("/qms/defects/{defect_id}/development-run")
+async def qms_development_run(defect_id: str, req: DefectDevelopmentRun,
+                              user: dict | None = Depends(get_current_user)):
+    """W1133m (FU-1038; Owner ruling 2026-11-20) - close an open or corrected defect because a development or test run
+    opened it, not a delivery a person made, with the evidence. Not a re-verification: nothing in the rate moves, the gate
+    failure that opened it stays counted as it was recorded, and the row keeps who said so, when, and on what evidence."""
+    _require_defect_access(defect_id, user)
+    by, verified = _disposer(req.actor, user)
+    d = qms.dispose_defect(defect_id, "development_run", req.evidence, by, verified)
     if not d:
         raise HTTPException(status_code=404, detail=f"No OPEN or CORRECTED defect '{defect_id}'.")
     return {"defect": d, "measured": False, "counted_in_rate": False, "basis": d["closure"]["basis"]}
