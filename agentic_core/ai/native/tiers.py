@@ -280,9 +280,12 @@ def image_intake(models: Optional[List[str]] = None,
             f"NO TEXT IS PRODUCED FROM AN IMAGE on this deployment. What is missing, measured rather than "
             f"asserted: the perception tier needs about {spec['needs']['ram_gb']} GB"
             + (" and a CUDA device" if spec['needs']['gpu'] else "")
-            + f", and {why} {spec['why_it_needs_that']}. Nothing is described, summarised or guessed at from "
-              f"the image: a fabricated description would be worse than a refusal, because a reader cannot "
-              f"tell one from a reading."),
+            #  W1146 (FU-1293) - the tier's explanation is said once: runnable() already ends a missing device's
+            #  reason with it, and appending it again ran the same clause into itself
+            + f", and {why.rstrip('.')}"
+            + ("" if spec["why_it_needs_that"] in why else f"; {spec['why_it_needs_that']}")
+            + ". Nothing is described, summarised or guessed at from the image: a fabricated description would be "
+              "worse than a refusal, because a reader cannot tell one from a reading."),
         "vision_screen_basis": v["basis"],
     }
 

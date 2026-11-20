@@ -113,6 +113,11 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
                     : m.imageStatus === 'blocked_by_policy'
                     ? <>The image was received and NOT sent anywhere: an external vision provider is
                         configured but external use is switched off, so it was not read.</>
+                    //  W1146 (FU-1293) - the route's measured reason, when it gave one: a fixed "no vision model was
+                    //  available" stood in its place
+                    : m.imageRefusal
+                    ? <>The image was received but not read, so this reply is not based on what is in it.
+                        {' '}{m.imageRefusal}</>
                     : <>The image was received but not read — no vision model was available, so this
                         reply is not based on what is in it.</>}
                 </p>
@@ -158,8 +163,9 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
               )}
               {m.role === 'assistant' && m.languageRequested && !m.languageHonoured && (
                 <p data-testid="language-not-honoured" className="text-[9px] font-bold text-amber-400 px-1">
-                  Answered in English: the structured floor cannot translate, so your {m.languageRequested}
-                  {' '}request was not honoured.
+                  {/* W1146 (FU-1293) - the floor's own note, which says what to do about it, when it sent one */}
+                  {m.languageNote || <>Answered in English: the structured floor cannot translate, so your
+                    {' '}{m.languageRequested} request was not honoured.</>}
                 </p>
               )}
               {m.role === 'assistant' && (m.suggestedAreas?.length ?? 0) > 0 && (

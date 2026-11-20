@@ -28,8 +28,10 @@ export interface AvatarMessage {
   imageServedBy?: string | null;
   imageIsExternal?: boolean;
   imageStatus?: string;   // W490 (refutation) — WHICH not-read state it was
+  imageRefusal?: string | null;   // W1146 (FU-1293) - the measured reason no text came from the image (P3.5 clause 2)
   languageRequested?: string | null;
   languageHonoured?: string | null;
+  languageNote?: string | null;    // W1146 (FU-1293) - the floor's own note on a language it could not answer in
   profileApplied?: boolean;   // W505 (P2.3)
   profileState?: string | null;   // W616 (FU-397) — 'unreadable' is said, never shown as "no profile"
   groundedIn?: string | null;     // W625 (FU-535) — which entity the answer was grounded in, shown
@@ -291,8 +293,11 @@ export function useAvatarSession() {
         imageServedBy: resp.data.image_served_by ?? null,
         imageIsExternal: Boolean(resp.data.image_is_external),
         imageStatus: resp.data.image_status ?? undefined,
+        //  W1146 (FU-1293) - the route's own reason and note: the panel said a fixed sentence in place of each
+        imageRefusal: typeof resp.data.image_refusal === 'string' ? resp.data.image_refusal : null,
         languageRequested: prefLanguageName() || null,
         languageHonoured: resp.data.language ?? null,
+        languageNote: typeof resp.data.language_note === 'string' ? resp.data.language_note : null,
         // W505 (P2.3) — whether the user's profile shaped this answer. Produced by the gateway since W428
         // and shown by nothing until now.
         profileApplied: Boolean(resp.data.profile_applied),

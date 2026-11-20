@@ -93249,3 +93249,95 @@ def test_w1145_fu1292_fu033s_guard_passes_run_alone_in_a_fresh_process():
                             "-p", "no:warnings", "-p", "no:cacheprovider", "-k", "test_w505_fu033"],
                            cwd=root, env=env, capture_output=True, text=True, timeout=600, stdin=subprocess.DEVNULL)
     assert r.returncode == 0 and "1 passed" in r.stdout, ("FU-033's guard fails run alone", r.stdout[-1500:])
+
+
+def test_w1146_fu1293_the_conversation_panel_says_the_avatars_own_reasons_and_the_image_reason_reads_once(client):
+    """FU-399 part 111 and FU-1293 (W1146). The footer's conversation panel says, under each reply, what the server
+    could not do; the hook's rendered test read only its grounding line and send error. Rendered against what the
+    avatar route answered, it said a fixed sentence in place of two of the route's own: the measured reason an image
+    was not read (P3.5 clause 2), and the floor's note on a language it could not answer in, which says what to do.
+    The measured reason itself said the perception tier's explanation twice, run together. Held here:
+    - the answers the rendered test serves are the route's own, asked again the same way: each field a case reads is
+      compared with the live route's, except what depends on the machine (the measured reason's middle) or on records
+      other tests write (whether a reply was cleared);
+    - the measured reason says the tier's explanation once, between its fixed opening and closing;
+    - the hook carries the route's reason and note, and the panel says them, keeping its own sentence only for an
+      answer that carries none;
+    - the rendered test reads each line in the route's words."""
+    import json
+    import pathlib
+    from agentic_core.ai.native import tiers
+    from agentic_core.api import user_workspace as uw
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps" / "workstation-superapp" / "src"
+    fx = json.loads((src / "components" / "avatar" / "ConversationPanel.fixture.json").read_text(encoding="utf-8"))
+    cases = {k: v["reply"] for k, v in fx["cases"].items()}
+
+    a = client.post("/api/v1/genesis/establish", json={"problem": "W1146 made up: a lending library for garden tools",
+                                                        "ship_output": False, "name": "W1146 Tool Library"})
+    assert a.status_code == 200, a.text[:300]
+    vid = a.json()["vsb_id"]
+
+    def chat(name):
+        r = client.post("/api/v1/avatar/chat", json=dict(cases[name]["request"], vsb_id=vid))
+        assert r.status_code == cases[name]["status"] == 200, (name, r.status_code, r.text[:300])
+        return r.json()
+
+    def keep(body, *keys):
+        return {k: body.get(k) for k in keys}
+
+    floor, want = chat("floor"), cases["floor"]["body"]
+    assert keep(floor, "grounding_used", "grounding_basis", "suggested_areas", "suggested_areas_basis") == keep(
+        want, "grounding_used", "grounding_basis", "suggested_areas", "suggested_areas_basis"), floor
+    assert want["grounding_used"] is False and want["suggested_areas"] and not want.get("cleared")
+    assert want["clearance_reason"].startswith("NOT cleared by the constitutional clearance chain"), want
+    lang = chat("language")
+    assert keep(lang, "language", "language_note") == keep(cases["language"]["body"], "language", "language_note")
+    assert lang["language"] is None and "You asked for Arabic" in lang["language_note"], lang["language_note"]
+
+    #  the measured reason: its opening and closing are fixed, its middle is this machine's, and the tier's own
+    #  explanation is said once
+    need = tiers.TIERS["perception"]["why_it_needs_that"]
+    img = chat("image")
+    for said in (img["image_refusal"], cases["image"]["body"]["image_refusal"]):
+        assert said.startswith("NO TEXT IS PRODUCED FROM AN IMAGE on this deployment. What is missing, measured "
+                               "rather than asserted: the perception tier needs about "), said[:160]
+        assert said.endswith("Nothing is described, summarised or guessed at from the image: a fabricated description "
+                             "would be worse than a refusal, because a reader cannot tell one from a reading."), said[-160:]
+        assert said.count(need) == 1, ("the tier's explanation is not said once", said)
+    assert img["image_status"] == cases["image"]["body"]["image_status"] == "no_vision_model"
+
+    #  a saved profile the floor cannot use, then that profile's file cut short (put back whole afterwards)
+    saved = client.put("/api/v1/user/profile", json={"about_you": "W1146 made up: a volunteer who runs a tool library",
+                                                      "goals": "lend more tools", "owner_id": "default"})
+    assert saved.status_code == 200, saved.text[:300]
+    prof = chat("profile")
+    assert keep(prof, "profile_state", "profile_basis") == keep(cases["profile"]["body"], "profile_state", "profile_basis")
+    path = uw._path_for("default")
+    whole = path.read_bytes()
+    try:
+        path.write_bytes(whole[: len(whole) // 2])
+        bad = chat("unreadable")
+    finally:
+        path.write_bytes(whole)
+    for b in (bad, cases["unreadable"]["body"]):
+        assert b["profile_state"] == "unreadable", b["profile_state"]
+        assert b["profile_basis"].startswith("your saved profile could not be read whole (") and b[
+            "profile_basis"].endswith("so it was NOT applied"), b["profile_basis"]
+
+    #  the hook carries the route's words, and the panel says them
+    hook = (src / "hooks" / "useAvatarSession.ts").read_text(encoding="utf-8")
+    assert "imageRefusal: typeof resp.data.image_refusal === 'string' ? resp.data.image_refusal : null," in hook
+    assert "languageNote: typeof resp.data.language_note === 'string' ? resp.data.language_note : null," in hook
+    panel = " ".join((src / "components" / "avatar" / "ConversationPanel.tsx").read_text(encoding="utf-8").split())
+    assert (": m.imageRefusal ? <>The image was received but not read, so this reply is not based on what is in it. "
+            "{' '}{m.imageRefusal}</>") in panel
+    assert "{m.languageNote || <>Answered in English: the structured floor cannot translate, so your" in panel
+
+    spec = " ".join((src / "components" / "avatar" / "ConversationPanel.test.tsx").read_text(encoding="utf-8").split())
+    for line in ("`The image was received but not read, so this reply is not based on what is in it. ${c.body.image_refusal}`",
+                 "expect(said('language-not-honoured')).toBe(c.body.language_note)",
+                 "toBe(`not cleared: ${b.clearance_reason}`)", "toBe(`${b.grounded_in}: ${b.grounding_basis}`)",
+                 "expect(said('suggested-areas-basis')).toBe(b.suggested_areas_basis);",
+                 "toBe(`profile: NOT applied — ${c.body.profile_basis}.`)", "expect(sent).toEqual([c.request]);"):
+        assert line in spec, ("the rendered test no longer reads this", line)
