@@ -26202,11 +26202,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P4.5",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1133n",
       "note": "",
       "slot_source": "the image carries the pages since W1128 (FU-1156, P4.5), so the deployed app is where a POST to an unserved path answers 405",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Reproduced on the Owner's machine with the pages built: POST /api/v1/__no_such_route__ and DELETE /api/cross-platform/voice/command answered 405 with Allow: GET, while POST /api/v1/plan (a GET route) rightly answered 405. Cause: the page fallback GET /{full_path:path} matched every path, so any method but GET stopped at it as a path match with the wrong method. Fixed in agentic_core/app_mvp.py: the fallback's path is a convertor (page) that refuses the API, health, docs and socket prefixes, computed from the same _API_PREFIXES tuple, so such a request matches no route and is a 404; a real 405 on a route or a page is unchanged, and the page shell, deep links and assets are served as before. The mounting is a function (_mount_pages) so the guard drives it on a fresh app with a planted build and with none. docs/PUBLIC_ROUTES.json and two W683 guards name the new path; W793's guard is strict again. Guard test_w1133n_fu1801, five blinds red."
     },
     {
       "id": "FU-1802",

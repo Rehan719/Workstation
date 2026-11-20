@@ -6608,14 +6608,13 @@ def test_cca_ui_contract_shapes(client):
     try:
         assert "auto_approved" not in sub and sub["status"] in (
             "submitted", "under_review", "approved")
-        # Trailing slash is NOT forgiven when the built SPA is served (its catch-all route
-        # intercepts '/api/v1/cca/' before the slash-redirect — true in production and local dev).
-        # Without dist/ (CI's backend job) the 307 redirect fires instead — so assert the 404
-        # only in the SPA-mounted environment; the UI calls the bare path, correct in BOTH.
-        import pathlib as _pl
-        _spa = _pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "dist" / "index.html"
-        if _spa.exists():
-            assert client.get("/api/v1/cca/").status_code == 404
+        # W1133n (FU-1801) - the trailing slash is forgiven the same way whether the pages are built or not. It used
+        # to be a 404 only where the built pages were served, because their catch-all intercepted '/api/v1/cca/'
+        # before the slash redirect; the catch-all no longer matches an API path, so the redirect fires in
+        # production, local dev and CI alike. The UI calls the bare path.
+        _slash = client.get("/api/v1/cca/", follow_redirects=False)
+        assert _slash.status_code == 307 and _slash.headers.get("location", "").endswith("/api/v1/cca"), (
+            _slash.status_code, _slash.headers.get("location"))
         d = client.get("/api/v1/cca")
         assert d.status_code == 200
         body = d.json()
@@ -62675,7 +62674,7 @@ def test_w683_every_mounted_route_asks_or_is_declared_public_and_the_strict_chec
     declared = {(d["method"], d["path"]) for d in _lines if not d.get("only_when")}
     mounted = {(r["method"], r["path"]) for r in rows}
     assert declared <= mounted, f"declared and not mounted: {sorted(declared - mounted)}"
-    assert sorted(d["path"] for d in _lines if d.get("only_when")) == ["/", "/{full_path:path}"], "only the two page routes may be conditional"
+    assert sorted(d["path"] for d in _lines if d.get("only_when")) == ["/", "/{full_path:page}"], "only the two page routes may be conditional"
 
 
 def test_w683_with_authentication_on_every_asking_route_refuses_an_anonymous_call(client, monkeypatch):
@@ -62698,7 +62697,7 @@ def test_w683_with_authentication_on_every_asking_route_refuses_an_anonymous_cal
     #  ... and a route declared public is not refused for want of a caller
     refused = []
     for r in public:
-        if r["path"] == "/{full_path:path}":
+        if r["path"] == "/{full_path:page}":
             continue
         path = _re.sub(r"\{[^}]+\}", "1", r["path"])
         got = client.request(r["method"], path)
@@ -70766,19 +70765,9 @@ def test_w793_fu984_r5_the_stub_routers_are_archived_and_two_sentences_say_what_
         assert client.get(path).status_code == 404, path
     for path in ("/api/cross-platform/ar/scene",):
         assert client.get(path).status_code == 404, path
-    #  W1133l - with the pages built (apps/workstation-superapp/dist, as on the Owner's machine and in the image) the
-    #  page fallback GET /{full_path:path} matches every path, so a POST to a path no route serves answers 405, not 404
-    #  (registered as FU-1801). What this holds is that no route serves it: 404, or 405 with the fallback the only
-    #  route whose path matches.
-    _r793 = client.post("/api/cross-platform/voice/command", json={})
-    if _r793.status_code == 405:
-        _hits793 = [getattr(r, "path", "") for r in client.app.routes
-                    if getattr(r, "path_regex", None) is not None
-                    and r.path_regex.match("/api/cross-platform/voice/command")]
-        assert _hits793 == ["/{full_path:path}"], ("a route other than the page fallback matches the retired path",
-                                                   _hits793)
-    else:
-        assert _r793.status_code == 404, _r793.status_code
+    #  W1133l found this answering 405 where the pages are built (the page fallback's path matched every path);
+    #  FU-1801 (W1133n) fixed the fallback, so the retired path is a 404 with the pages built or not.
+    assert client.post("/api/cross-platform/voice/command", json={}).status_code == 404
     app = pathlib.Path("apps/workstation-superapp/src/App.tsx").read_text(encoding="utf-8")
     assert "<PlayfulEffectsManager" not in app and "import { PlayfulEffectsManager }" not in app
     qep = pathlib.Path("apps/workstation-superapp/src/components/QEPFlagshipFeatures.tsx").read_text(encoding="utf-8")
@@ -92511,6 +92500,61 @@ def test_w1133m_fu1038_a_defect_a_development_run_opened_leaves_the_loop_saying_
     for needle in ('data-testid="defect-development-run"', "disposeDefect('development-run')",
                    "development_run: 'closed — a development run opened it, not a delivery'"):
         assert needle in page, ("the panel does not offer or name the third way out", needle)
+
+
+def test_w1133n_fu1801_with_the_pages_built_a_path_no_route_serves_is_a_404_whatever_the_method(client, tmp_path):
+    """FU-1801 (W1133n). Measured on the Owner's machine, where the pages are built as they are in the image: the page
+    fallback was GET /{full_path:path}, whose path matches every path, so a POST, PUT or DELETE to an API path no route
+    serves answered 405 Method Not Allowed with 'Allow: GET', saying the path exists and only the method is wrong. The
+    fallback's path is now a convertor that refuses the API prefixes, computed from the same tuple. Driven here on a
+    fresh app with a planted build (and with none), so it holds on the build server too, where no build exists."""
+    import re as _re1801
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from agentic_core import app_mvp as _am
+
+    dist = tmp_path / "dist"
+    (dist / "assets").mkdir(parents=True)
+    (dist / "index.html").write_bytes(b"<!doctype html><html><body>shell w1133n</body></html>")
+    (dist / "assets" / "a.js").write_bytes(b"console.log('w1133n')")
+    fresh = FastAPI()
+
+    @fresh.get("/api/v1/w1133n/thing")
+    async def _thing():
+        return {"ok": True}
+
+    @fresh.post("/api/v1/w1133n/make")
+    async def _make():
+        return {"made": True}
+
+    assert _am._mount_pages(fresh, dist) is True
+    c = TestClient(fresh)
+    #  a path no route serves, under every API prefix and with every method: not found, never 'method not allowed'
+    for method in ("POST", "PUT", "PATCH", "DELETE", "GET"):
+        for path in ("/api/v1/w1133n/nothing", "/api/cross-platform/voice/command", "/health", "/docs/x", "/ws/x"):
+            r = c.request(method, path)
+            assert r.status_code == 404, (method, path, r.status_code, r.headers.get("allow"))
+    #  a real 405 is unchanged: a wrong method on a route that exists, and on a page
+    r = c.post("/api/v1/w1133n/thing")
+    assert r.status_code == 405 and r.headers.get("allow") == "GET", (r.status_code, r.headers.get("allow"))
+    assert c.post("/api/v1/w1133n/make").json() == {"made": True}
+    r = c.post("/a/client/route")
+    assert r.status_code == 405 and r.headers.get("allow") == "GET", (r.status_code, r.headers.get("allow"))
+    #  the pages are still served: the shell at /, a client route, a deep link, an asset
+    for path in ("/", "/a/client/route", "/native-ai"):
+        assert c.get(path).status_code == 200 and "shell w1133n" in c.get(path).text, path
+    assert c.get("/assets/a.js").text == "console.log('w1133n')"
+    #  the refused prefixes are the tuple the fallback refuses, computed, not typed beside it
+    for p in _am._API_PREFIXES:
+        assert _re1801.fullmatch(_am._PagePath.regex, p + "x") is None, p
+    assert _re1801.fullmatch(_am._PagePath.regex, "native-ai") is not None
+
+    #  with no build, nothing is mounted
+    bare = FastAPI()
+    assert _am._mount_pages(bare, tmp_path / "no_build") is False
+    assert not [r for r in bare.routes if getattr(r, "path", "") in ("/", "/{full_path:page}", "/assets")], bare.routes
+    #  and the platform itself, built here or not: the retired path is not found
+    assert client.post("/api/cross-platform/voice/command", json={}).status_code == 404
 
 
 def test_w1134_fu603_the_google_cloud_deploy_is_written_from_googles_pages_and_no_disk_with_records_is_formatted(tmp_path):
