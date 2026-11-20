@@ -138,6 +138,16 @@
      ]
     }
    ],
+   "nations": [
+    "England",
+    "Wales",
+    "Scotland",
+    "Northern Ireland"
+   ],
+   "not_listed": {
+    "id": "not_listed",
+    "name": "A claim not listed here"
+   },
    "change": {
     "on": "2026-10-01",
     "by": "Schedule 12 to the Employment Rights Act 2025, in force on 1 October 2026 by regulation 3 of S.I. 2026/954",
@@ -151,11 +161,14 @@
  "computed": {
   "request": {
    "rule": "unfair_dismissal",
-   "event_date": "2026-10-03"
+   "event_date": "2026-10-03",
+   "nation": "England"
   },
   "status": 200,
   "body": {
    "rule": "unfair_dismissal",
+   "matched": true,
+   "nation": "England",
    "name": "an unfair dismissal claim to an employment tribunal",
    "act": "Employment Rights Act 1996",
    "part": "section",
@@ -209,11 +222,14 @@
  "words_gone": {
   "request": {
    "rule": "unfair_dismissal",
-   "event_date": "2026-10-03"
+   "event_date": "2026-10-03",
+   "nation": "England"
   },
   "status": 200,
   "body": {
    "rule": "unfair_dismissal",
+   "matched": true,
+   "nation": "England",
    "name": "an unfair dismissal claim to an employment tribunal",
    "act": "Employment Rights Act 1996",
    "part": "section",
@@ -267,11 +283,117 @@
  "refused": {
   "request": {
    "rule": "unfair_dismissal",
-   "event_date": "2026-10-03"
+   "event_date": "2026-10-03",
+   "nation": "England"
   },
   "status": 502,
   "body": {
    "detail": "No limit is computed: the provision that sets it could not be read from its publisher (the publisher could not be reached (ConnectError)), so the rule cannot be checked against its words. Ask Acas."
+  }
+ },
+ "not_listed": {
+  "request": {
+   "rule": "not_listed",
+   "event_date": "",
+   "nation": "Scotland"
+  },
+  "status": 200,
+  "body": {
+   "rule": null,
+   "matched": false,
+   "nation": "Scotland",
+   "computed": false,
+   "last_day": null,
+   "rules_for_this_nation": [
+    {
+     "id": "unfair_dismissal",
+     "name": "an unfair dismissal claim to an employment tribunal"
+    },
+    {
+     "id": "discrimination_at_work",
+     "name": "a discrimination claim about work to an employment tribunal"
+    },
+    {
+     "id": "breach_of_contract_scotland",
+     "name": "a breach of contract claim to an employment tribunal, in Scotland"
+    }
+   ],
+   "basis": "No rule here is for that claim, so no date is worked out. A time limit may still apply: ask today.",
+   "where_to_ask": {
+    "Scotland": [
+     {
+      "name": "Acas",
+      "link": "https://www.acas.org.uk/employment-tribunal-time-limits",
+      "for_what": "its guidance on employment tribunal time limits, which GOV.UK's guide names for finding the deadline for a claim",
+      "named_on": "https://www.gov.uk/employment-tribunals/check-you-can-claim",
+      "own_site": "not opened"
+     },
+     {
+      "name": "The Law Society of Scotland",
+      "link": "https://www.lawscot.org.uk/",
+      "for_what": "finding a solicitor",
+      "named_on": "https://www.gov.uk/employment-tribunals/get-support-legal-advice",
+      "own_site": "not opened"
+     },
+     {
+      "name": "Citizens Advice Scotland",
+      "link": "https://www.cas.org.uk/",
+      "for_what": "finding free or affordable legal advice",
+      "named_on": "https://www.gov.uk/employment-tribunals/get-support-legal-advice",
+      "own_site": "not opened"
+     }
+    ]
+   },
+   "named_on": {
+    "name": "Employment tribunals",
+    "publisher": "GOV.UK",
+    "page": "https://www.gov.uk/employment-tribunals",
+    "read_on": "2026-11-20",
+    "recently_checked": true,
+    "checked": "read on 20 November 2026",
+    "own_sites": "None of these places' own sites was opened: on 20 November 2026 each refused an automated visit from where this was built, so nothing of them was read, and each is listed as the guide names it."
+   },
+   "composed": false,
+   "not_advice": "Nothing here is legal advice."
+  }
+ },
+ "not_this_nation": {
+  "request": {
+   "rule": "unfair_dismissal",
+   "event_date": "2026-10-03",
+   "nation": "Northern Ireland"
+  },
+  "status": 200,
+  "body": {
+   "rule": "unfair_dismissal",
+   "matched": false,
+   "nation": "Northern Ireland",
+   "computed": false,
+   "last_day": null,
+   "rules_for_this_nation": [],
+   "basis": "The rule here for an unfair dismissal claim to an employment tribunal is for England, Wales and Scotland, not for Northern Ireland, and no rule here is for a claim in Northern Ireland, so no date is worked out. A time limit may still apply: ask today.",
+   "where_to_ask": {
+    "Northern Ireland": [
+     {
+      "name": "Making a claim to an employment tribunal in Northern Ireland",
+      "link": "https://www.employmenttribunalsni.co.uk/how-make-claim",
+      "for_what": "how a claim is made there, which GOV.UK's guide says is a different way",
+      "named_on": "https://www.gov.uk/employment-tribunals/check-you-can-claim",
+      "own_site": "not opened"
+     }
+    ]
+   },
+   "named_on": {
+    "name": "Employment tribunals",
+    "publisher": "GOV.UK",
+    "page": "https://www.gov.uk/employment-tribunals",
+    "read_on": "2026-11-20",
+    "recently_checked": true,
+    "checked": "read on 20 November 2026",
+    "own_sites": "None of these places' own sites was opened: on 20 November 2026 each refused an automated visit from where this was built, so nothing of them was read, and each is listed as the guide names it."
+   },
+   "composed": false,
+   "not_advice": "Nothing here is legal advice."
   }
  }
 }

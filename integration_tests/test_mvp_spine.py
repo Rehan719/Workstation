@@ -75463,7 +75463,11 @@ def test_w875_how_long_a_time_limit_runs_is_arithmetic_on_the_rules_own_words_wi
     monkeypatch.setattr(_st875, "provision", _refused)
     down = work()
     assert down.status_code == 502 and "No limit is computed" in down.json()["detail"] and "Acas" in down.json()["detail"]
-    assert work(rule="no_such_rule").status_code == 422
+    #  W1161 - a claim with no rule here is answered, not refused: a time limit may still apply, and where to ask
+    #  today is said (test_w1161 holds it for each nation)
+    none = work(rule="no_such_rule")
+    assert none.status_code == 200 and none.json()["matched"] is False, none.text[:300]
+    assert none.json()["basis"].endswith("A time limit may still apply: ask today."), none.json()["basis"]
 
     #  5. the tool is among those that need no model, and the page shows it before the forms
     assert "time_limit" in [t["id"] for t in client.get("/api/v1/law/tools").json()["needs_no_model"]]
@@ -91668,7 +91672,8 @@ def test_w1119_fu399_the_time_limit_panel_says_the_limit_what_it_omits_and_who_t
     spec = (src / "TimeLimitPanel.test.tsx").read_text(encoding="utf-8")
     for line in ("await waitFor(() => expect(said()[0]).toBe(`The primary limit ends at the end of ${a.last_day}.`));",
                  "`Ask ${a.route.name} - ${a.route.for_what}.`,",
-                 "`${a.act}, section ${a.section} - ${a.provision_address}. ${a.arithmetic}. ${a.not_advice}`,",
+                 #  W1161 - an Order's provision is an article, and the panel says the part the answer gives
+                 "`${a.act}, ${a.part} ${a.section} - ${a.provision_address}. ${a.arithmetic}. ${a.not_advice}`,",
                  "expect(said().slice(1, 3)).toEqual([g.basis, `It does not account for ${g.does_not_account_for}.`]);",
                  "`Failed (HTTP ${r.status}): ${r.body.detail}`));",
                  "await waitFor(() => expect(screen.getByTestId('law-time-limit-rules-note').textContent).toBe("):
@@ -94817,3 +94822,180 @@ def test_w1160_fu1296_breach_of_contract_claims_are_dated_rules_for_each_nation_
     assert "9 November 2026 (S.S.I. 2026/327)" in row["today"] and "not among the rules" not in row["today"], row["today"]
     fu = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
     assert (fu["FU-1296"]["status"], fu["FU-1296"]["closed_by"]) == ("done", "W1160"), fu["FU-1296"]
+
+
+def test_w1161_p511_with_no_rule_a_limit_may_still_apply_and_where_to_ask_today_is_said_nation_by_nation(client, monkeypatch):
+    """P5.11 clause 2 (W1161): "It never answers 'no deadline': when no rule matches it says a limit may still apply and
+    where to ask today", driven "for each nation, and with no matching rule"; and, as the Owner ruled on 2026-10-12, a
+    question from another nation is given a route and not a rule. The route refused a claim it holds no rule for (422),
+    and took no nation, so a claim in Northern Ireland was worked out from a rule for England, Wales and Scotland.
+    Held here:
+    1. the nations are the four, every rule's nations are among them, and every nation has places to ask, each named
+       with its address on GOV.UK's employment tribunals guide as its row in the register of sources says it was read;
+       Northern Ireland's is the guide's one route there, and Acas is not given for it;
+    2. each nation with each rule: worked out where the rule is for that nation, reading its provision once; otherwise
+       answered with no rule, reading nothing, with where to ask today for that nation and the rules there are for it;
+    3. a claim not listed here, for each nation and with none given: the same, and for every nation when none is given;
+    4. no answer with no rule says there is no deadline or no time limit, and each says one may still apply;
+    5. a nation that is none of the four is refused before anything is read, and a nation in another case is read;
+    6. a place is said as read on the guide's date for ninety days and as not recently checked after;
+    7. the panel asks where the claim is, offers a claim not listed, posts the nation and shows the answer with no rule;
+       its two new captured answers are the route's own today, and its rendered test reads them;
+    8. the register of sources, the coverage rows and the row."""
+    import datetime as _dt
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.legal import statute as _st
+    from agentic_core.legal import time_limits as _tl
+    root = Path(__file__).resolve().parents[1]
+
+    #  1. the nations, and where to ask in each, as the guide that names each place was read
+    assert _tl.NATIONS == ("England", "Wales", "Scotland", "Northern Ireland")
+    assert all(set(r["nations"]) <= set(_tl.NATIONS) for r in _tl.RULES.values())
+    assert set(_tl.WHERE_TO_ASK) == set(_tl.NATIONS) and all(_tl.WHERE_TO_ASK[n] for n in _tl.NATIONS)
+    reg = json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))
+    guide = {r["id"]: r for r in reg["rows"]}["gov-uk-employment-tribunals-guide"]
+    assert (guide["page"], guide["read_on"], guide["status"]) == (_tl.GUIDE["page"], _tl.GUIDE["read_on"], "current"), guide
+    assert "W1161" in guide["read_by"] and _tl.REVIEW_DAYS == reg["review_days"] == 90
+    for n, places in _tl.WHERE_TO_ASK.items():
+        for p in places:
+            assert p["link"] in guide["says"], (n, p["name"], "is not named, with this address, on the guide as read")
+            assert p["named_on"].startswith(_tl.GUIDE["page"] + "/") and p["own_site"] == "not opened", p
+    assert [p["link"] for p in _tl.WHERE_TO_ASK["Northern Ireland"]] == ["https://www.employmenttribunalsni.co.uk/how-make-claim"]
+    for n in ("England", "Wales", "Scotland"):
+        assert _tl.WHERE_TO_ASK[n][0]["link"] == "https://www.acas.org.uk/employment-tribunal-time-limits", n
+    assert [p["name"] for p in _tl.WHERE_TO_ASK["Scotland"][1:]] == ["The Law Society of Scotland", "Citizens Advice Scotland"]
+
+    #  2. each nation with each rule; the provision stood in, holding every period's words, and each read counted
+    text = " ".join(p["words"] for r in _tl.RULES.values() for p in r["periods"])
+    asked = []
+
+    async def _provision(kind, year, number, section, version=None, part="section"):
+        asked.append((int(number), section))
+        return {"parts": [{"level": 1, "number": "(a)", "text": text}],
+                "address": f"https://www.legislation.gov.uk/{kind}/{year}/{number}/{part}/{section}"}
+    monkeypatch.setattr(_st, "provision", _provision)
+
+    def work(rule, nation, date="2026-12-01"):
+        r = client.post("/api/v1/law/time-limit", json={"rule": rule, "event_date": date, "nation": nation})
+        assert r.status_code == 200, (rule, nation, r.text[:300])
+        return r.json()
+
+    with_no_rule = []
+    for nation in _tl.NATIONS:
+        for rid, rule in _tl.RULES.items():
+            before = len(asked)
+            got = work(rid, nation)
+            if nation in rule["nations"]:
+                assert (got["matched"], got["computed"], got["nation"], got["rule"]) == (True, True, nation, rid), got
+                assert len(asked) == before + 1, (rid, nation, "the provision was not read once")
+                continue
+            with_no_rule.append(got)
+            assert (got["matched"], got["computed"], got["last_day"], got["rule"]) == (False, False, None, rid), got
+            assert len(asked) == before, (rid, nation, "a provision was read for a claim no rule here is for there")
+            assert got["where_to_ask"] == {nation: [dict(p) for p in _tl.WHERE_TO_ASK[nation]]}, got["where_to_ask"]
+            assert [x["id"] for x in got["rules_for_this_nation"]] == [
+                k for k, r in _tl.RULES.items() if nation in r["nations"]], got["rules_for_this_nation"]
+    #  Northern Ireland's four, and each breach of contract rule in the nations it is not for (one, two)
+    assert len(with_no_rule) == 4 + 1 + 2, [(g["rule"], g["nation"]) for g in with_no_rule]
+    by = {(g["rule"], g["nation"]): g for g in with_no_rule}
+    assert by[("breach_of_contract_england_wales", "Scotland")]["basis"] == (
+        "The rule here for a breach of contract claim to an employment tribunal, in England or Wales is for England and "
+        "Wales, not for Scotland, so no date is worked out. A time limit may still apply: ask today.")
+    assert [x["id"] for x in by[("breach_of_contract_england_wales", "Scotland")]["rules_for_this_nation"]] == [
+        "unfair_dismissal", "discrimination_at_work", "breach_of_contract_scotland"]
+    assert [x["id"] for x in by[("breach_of_contract_scotland", "Wales")]["rules_for_this_nation"]] == [
+        "unfair_dismissal", "discrimination_at_work", "breach_of_contract_england_wales"]
+    ni = by[("unfair_dismissal", "Northern Ireland")]
+    assert ni["basis"] == (
+        "The rule here for an unfair dismissal claim to an employment tribunal is for England, Wales and Scotland, not for "
+        "Northern Ireland, and no rule here is for a claim in Northern Ireland, so no date is worked out. A time limit may "
+        "still apply: ask today.") and ni["rules_for_this_nation"] == [], ni
+    #  ...and with no nation given, every rule is worked out, its own nations said
+    for rid, rule in _tl.RULES.items():
+        r = client.post("/api/v1/law/time-limit", json={"rule": rid, "event_date": "2026-12-01"}).json()
+        assert (r["matched"], r["computed"], r["nation"], r["nations"]) == (True, True, None, list(rule["nations"])), r
+
+    #  3. a claim not listed here, for each nation and with none given: nothing is read
+    before = len(asked)
+    for nation in _tl.NATIONS:
+        got = work(_tl.NOT_LISTED["id"], nation, "")
+        with_no_rule.append(got)
+        assert (got["matched"], got["rule"], got["nation"]) == (False, None, nation), got
+        assert got["where_to_ask"] == {nation: [dict(p) for p in _tl.WHERE_TO_ASK[nation]]}, got["where_to_ask"]
+        assert got["basis"] == ("No rule here is for that claim"
+                                + (", and no rule here is for a claim in Northern Ireland" if nation == "Northern Ireland" else "")
+                                + ", so no date is worked out. A time limit may still apply: ask today."), got["basis"]
+    unknown = client.post("/api/v1/law/time-limit", json={"rule": "a claim this platform has never heard of",
+                                                         "event_date": "2026-12-01"})
+    assert unknown.status_code == 200, unknown.text[:300]
+    got = unknown.json()
+    with_no_rule.append(got)
+    assert (got["matched"], got["rule"], got["nation"], list(got["where_to_ask"])) == (False, None, None, list(_tl.NATIONS))
+    assert len(asked) == before, "a provision was read for a claim not listed here"
+
+    #  4. never "no deadline": each answer with no rule says a limit may still apply, and nothing says there is none
+    for got in with_no_rule:
+        said = json.dumps(got, ensure_ascii=False)
+        assert not re.search(r"\bno (?:deadline|time limit)s?\b", said, re.I), said[:300]
+        assert got["basis"].endswith("A time limit may still apply: ask today.") and got["composed"] is False, got["basis"]
+        assert got["not_advice"] == "Nothing here is legal advice." and got["named_on"]["page"] == _tl.GUIDE["page"]
+
+    #  5. a nation that is none of the four is refused before anything is read; one written in another case is read
+    before = len(asked)
+    for bad in ("France", "", "Great Britain", "UK", "England and Wales"):
+        r = client.post("/api/v1/law/time-limit", json={"rule": "unfair_dismissal", "event_date": "2026-12-01", "nation": bad})
+        assert r.status_code == 422 and r.json()["detail"].startswith("That does not name a nation"), (bad, r.text[:200])
+        assert "England, Wales, Scotland, Northern Ireland" in r.json()["detail"], r.json()["detail"]
+    assert len(asked) == before, "a provision was read for a nation that is none of the four"
+    assert work("unfair_dismissal", "  SCOTLAND ")["nation"] == "Scotland"
+
+    #  6. ninety days after the guide was read, a place is still said as read that day; on the ninety-first, not recently
+    read = _dt.date.fromisoformat(_tl.GUIDE["read_on"])
+    monkeypatch.setattr(_tl, "_today", lambda: read + _dt.timedelta(days=90))
+    o = work(_tl.NOT_LISTED["id"], "England", "")["named_on"]
+    assert (o["recently_checked"], o["checked"]) == (True, "read on 20 November 2026"), o
+    monkeypatch.setattr(_tl, "_today", lambda: read + _dt.timedelta(days=91))
+    o = work(_tl.NOT_LISTED["id"], "Wales", "")["named_on"]
+    assert (o["recently_checked"], o["checked"]) == (
+        False, "NOT RECENTLY CHECKED - read on 20 November 2026, more than 90 days ago"), o
+
+    #  7. the panel, its captured answers (read as on the day the guide was read) and its rendered test
+    monkeypatch.setattr(_tl, "_today", lambda: read)
+    src = root / "apps" / "workstation-superapp" / "src" / "components"
+    panel = (src / "TimeLimitPanel.tsx").read_text(encoding="utf-8")
+    for line in ('aria-label="Where the claim is"',
+                 "{ method: 'POST', body: { rule, event_date: unlisted ? '' : date, nation } }",
+                 "<option value={listed.not_listed.id}>{listed.not_listed.name}</option>",
+                 "disabled={busy || !nation || !rule || (!unlisted && !date)}",
+                 'data-testid="law-time-limit-no-rule"',
+                 "{got.act}, {got.part} {got.section}"):
+        assert line in panel, ("the panel no longer has this", line)
+    fx = json.loads((src / "TimeLimitPanel.fixture.json").read_text(encoding="utf-8"))
+    assert fx["rules"]["body"]["nations"] == list(_tl.NATIONS) and fx["rules"]["body"]["not_listed"] == _tl.NOT_LISTED
+    assert fx["computed"]["request"] == {"rule": "unfair_dismissal", "event_date": "2026-10-03", "nation": "England"}
+    assert fx["not_listed"]["request"] == {"rule": "not_listed", "event_date": "", "nation": "Scotland"}
+    assert fx["not_this_nation"]["request"] == {"rule": "unfair_dismissal", "event_date": "2026-10-03",
+                                                "nation": "Northern Ireland"}
+    for key in ("not_listed", "not_this_nation"):
+        live = client.post(fx["rules"]["url"], json=fx[key]["request"])
+        assert (live.status_code, live.json()) == (fx[key]["status"], fx[key]["body"]), (key, live.text[:300])
+    spec = (src / "TimeLimitPanel.test.tsx").read_text(encoding="utf-8")
+    for line in ("it('a claim not listed here: a time limit may still apply, the rules there are and where to ask today, "
+                 "for that nation'",
+                 "it('a claim in a nation no rule here is for: a route and not a rule, and no rule listed for it'",
+                 "expect(posted).toEqual([n.request]);",
+                 "expect(screen.queryByTestId('law-time-limit-rules-here')).toBeNull();",
+                 "`Each place is named on ${o.publisher}'s guide ${o.name}, ${o.checked}. ${o.own_sites} ${n.body.not_advice}`"):
+        assert line in spec, ("the rendered test no longer reads this", line)
+
+    #  8. the registers: the coverage rows, and the row
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    nir = cov["law-tribunal-time-limit-northern-ireland"]
+    assert (nir["state"], nir["nation"], nir["route"], nir.get("driven_by")) == (
+        "route_only", "Northern Ireland", "gov-uk-employment-tribunals-guide", None), nir
+    assert "may still apply, with where to ask today for that nation" in cov["law-tribunal-time-limit"]["today"]
+    fu = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+          if r.get("closed_by") == "W1161"]
+    assert len(fu) == 1 and (fu[0]["status"], fu[0]["slot"], fu[0]["because"]) == ("done", "P5.11", "built"), fu

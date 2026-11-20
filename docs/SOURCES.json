@@ -1498,6 +1498,24 @@
    "read_by": "round W1160, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: the Order whole, as made",
    "says": "The Employment Tribunals Extension of Jurisdiction (Amendment) (Scotland) Order 2026. Article 1: it comes into force on 9 November 2026. Article 2(2): in article 7(a) and (b) of the 1994 Order, for \"three\" substitute \"six\". Article 3(1): the amendments apply where the effective date of termination of the contract giving rise to the claim, or with none the last day on which the employee worked, occurs on or after 9 November 2026; article 3(2) says what the effective date of termination is.",
    "not_read": "nothing: the Order was read whole"
+  },
+  {
+   "id": "gov-uk-employment-tribunals-guide",
+   "names": [
+    "Employment tribunals (GOV.UK guide)"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "England",
+    "Wales",
+    "Scotland"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/employment-tribunals",
+   "read_on": "2026-11-20",
+   "read_by": "round W1161, the guide's nine parts read whole (GOV.UK's content record of the page, www.gov.uk/api/content/employment-tribunals), not through a summary",
+   "says": "GOV.UK's content record gives it as first published 3 January 2012, last publicly updated 9 December 2024 and changed on 20 November 2026. 'Check if you can make a claim': there is a different way to make a claim to an employment tribunal in Northern Ireland, linked at https://www.employmenttribunalsni.co.uk/how-make-claim; a person usually has 6 months if the problem happened on or after 1 October 2026, and 3 months if before; to find the deadline for a claim, check the employment tribunal time limits guidance on the Acas website, linked at https://www.acas.org.uk/employment-tribunal-time-limits; a person may not be able to claim if the deadline is missed, even while trying to resolve the dispute directly; interim relief is applied for within 7 days of dismissal. 'Make a claim': a person must tell Acas that they are planning to make a claim. 'Get support and legal advice': in England or Wales, legal advice from The Law Society (https://solicitors.lawsociety.org.uk/), Citizens Advice (https://www.citizensadvice.org.uk/law-and-courts/legal-system/finding-free-or-affordable-legal-help/), Law Centres Network (https://www.lawcentres.org.uk/) and Law Works (https://www.lawworks.org.uk/); in Scotland, The Law Society of Scotland (https://www.lawscot.org.uk/) and Citizens Advice Scotland (https://www.cas.org.uk/); no place is named for Northern Ireland.",
+   "not_read": "the pages it links to: each of their sites refused an automated visit from where the guide was read, so none was opened; the Welsh version of the guide; the claim form and its guidance"
   }
  ]
 }

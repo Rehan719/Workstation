@@ -460,6 +460,8 @@ NO_MODEL_TOOLS = (
 class TimeLimitRequest(BaseModel):
     rule: str
     event_date: str
+    #  W1161 - the nation the claim is in: England, Wales, Scotland or Northern Ireland; none given, none assumed
+    nation: Optional[str] = None
 
 
 @router.get("/time-limit")
@@ -472,6 +474,7 @@ def time_limit_rules():
                        "change": dict(r["change"]),
                        "event": r["event"], "relevant_date": r["relevant_date"], "periods": _tl.periods(k)}
                       for k, r in _tl.RULES.items()],
+            "nations": list(_tl.NATIONS), "not_listed": dict(_tl.NOT_LISTED),          # W1161
             "change": dict(_tl.CHANGE), "arithmetic": _tl.ARITHMETIC, "composed": False}
 
 
@@ -479,15 +482,26 @@ def time_limit_rules():
 async def time_limit(req: TimeLimitRequest):
     """The primary limit a rule sets from a date, checked against the provision as its publisher gives it for that
     date (W1157: the publisher's version of the date's period), with the limit on the other side of a change, with
-    what it does not account for and who to ask. Nothing is composed, and nothing here is legal advice."""
+    what it does not account for and who to ask. Nothing is composed, and nothing here is legal advice. W1161: a claim
+    with no rule here, or a rule not for the nation asked about, is answered that a time limit may still apply, with
+    where to ask today for that nation - never refused, and never answered "no deadline"."""
     from agentic_core.legal import statute as _st, time_limits as _tl
+    #  W1161 - a nation asked about is one of the four, or nothing is read and nothing is worked out
+    nation = None
+    if req.nation is not None:
+        nation = _tl.nation_named(req.nation)
+        if nation is None:
+            raise HTTPException(status_code=422, detail=(
+                f"That does not name a nation a rule here can be for. The nations are: {', '.join(_tl.NATIONS)}. "
+                f"Nothing was computed."))
     rule = _tl.RULES.get(req.rule)
-    if rule is None:
-        raise HTTPException(status_code=422, detail=(f"No such rule: {req.rule!r}. The rules are: {', '.join(_tl.RULES)}. "
-                                                     f"Nothing was computed."))
+    #  W1161 - no rule here for the claim, or none for it in that nation: a time limit may still apply, and where to ask
+    #  today is said. No provision is read for it.
+    if rule is None or (nation is not None and nation not in rule["nations"]):
+        return _tl.no_rule(nation, req.rule)
     period = _tl.period_for(req.rule, req.event_date)
     if period is None:                  # W1157 - not a date, so there is no period to read the provision for
-        return _tl.limit(req.rule, req.event_date, {})
+        return _tl.limit(req.rule, req.event_date, {}, nation)
     p = rule["provision"]
     try:
         #  W1157 - the provision as it stood for the date's period: the publisher's dated version for an earlier one
@@ -499,7 +513,7 @@ async def time_limit(req: TimeLimitRequest):
         raise HTTPException(status_code=502, detail=(
             f"No limit is computed: the provision that sets it could not be read from its publisher ({exc}), so the "
             f"rule cannot be checked against its words. Ask {rule['route']['name']}.")) from None
-    return _tl.limit(req.rule, req.event_date, provision)
+    return _tl.limit(req.rule, req.event_date, provision, nation)
 
 
 @router.get("/tools")

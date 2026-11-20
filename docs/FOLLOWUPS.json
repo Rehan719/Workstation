@@ -26435,6 +26435,29 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Done in W1159: cleanup() takes the repository to clean and, unless it is told to force, keeps a worktree with changes no commit holds or a commit no branch holds, naming it with what it holds; the command line forces only with --force, which the round rhythm names for the round's own worktrees after a refutation. test_w571 calls it no more; test_w1159 drives it on repositories it makes and holds that the suite leaves the live repository's worktrees as they were."
+    },
+    {
+      "id": "FU-1804",
+      "title": "The time-limit tool refused a claim it holds no rule for, and asked no nation, so a claim in Northern Ireland was given a date from a rule for Great Britain",
+      "why": "Measured in W1161: POST /api/v1/law/time-limit answered a claim with no rule with a 422 and said nothing of a limit that may still apply or of where to ask; it took no nation, so an unfair dismissal claim in Northern Ireland was worked out from a rule whose own nations are England, Wales and Scotland. P5.11 clause 2: it never answers 'no deadline'; when no rule matches it says a limit may still apply and where to ask today; and a question from another nation is given a route and not a rule.",
+      "source": "W1161 (the time-limit route read with a claim not listed and a nation)",
+      "found": "2026-11-20",
+      "files": [
+        "agentic_core/legal/time_limits.py",
+        "agentic_core/api/law.py",
+        "apps/workstation-superapp/src/components/TimeLimitPanel.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.11",
+      "status": "done",
+      "closed_by": "W1161",
+      "note": "",
+      "slot_source": "P5.11 clause 2 says the calculator never answers 'no deadline' and, when no rule matches, says a limit may still apply and where to ask today",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1161: the route takes the nation a claim is in, and a claim with no rule here, or one whose rule is not for that nation, is answered that no date is worked out and a time limit may still apply, with where to ask today for that nation - every place named, with its address, on GOV.UK's employment tribunals guide read on 2026-11-20, none of their own sites opened, and said as not recently checked ninety days on - and the rules there are for it; nothing is read from a publisher for it. A nation that is none of the four is refused before anything is read. The panel asks where the claim is, offers a claim not listed here and says an Order's provision is an article. test_w1161 drives each nation with each rule and with no rule."
     }
   ],
   "routes": [

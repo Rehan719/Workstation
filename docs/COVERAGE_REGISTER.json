@@ -71,8 +71,17 @@
    "subject": "How long a person has to bring an employment tribunal claim",
    "nation": "England, Wales, Scotland",
    "state": "arithmetic",
-   "today": "the primary limit is worked out from the date it runs from: for a relevant date before 1 October 2026 three months, on or after it six (Schedule 12 to the Employment Rights Act 2025, with regulation 4 of S.I. 2026/954), each from the words of the provision as it stood for that date, read from its publisher when asked, with who to ask; early conciliation and extensions are not accounted for, and breach of contract claims are worked out for England and Wales and for Scotland, each either side of its own change: six months from 1 October 2026 (S.I. 2026/759) and from 9 November 2026 (S.S.I. 2026/327), the Scottish one read with the change its publisher lists as not yet written into its text (built in W875; dated either side of the change in W1157; breach of contract added in W1160)",
+   "today": "the primary limit is worked out from the date it runs from: for a relevant date before 1 October 2026 three months, on or after it six (Schedule 12 to the Employment Rights Act 2025, with regulation 4 of S.I. 2026/954), each from the words of the provision as it stood for that date, read from its publisher when asked, with who to ask; early conciliation and extensions are not accounted for, and breach of contract claims are worked out for England and Wales and for Scotland, each either side of its own change: six months from 1 October 2026 (S.I. 2026/759) and from 9 November 2026 (S.S.I. 2026/327), the Scottish one read with the change its publisher lists as not yet written into its text; and a claim no rule here is for, or one whose rule is not for the nation asked about, is answered that a time limit may still apply, with where to ask today for that nation (built in W875; dated either side of the change in W1157; breach of contract added in W1160; the answer with no rule, nation by nation, in W1161)",
    "driven_by": "test_w1157_p511_the_tribunal_limits_either_side_of_1_october_2026_are_dated_rules_each_read_as_it_stood"
+  },
+  {
+   "id": "law-tribunal-time-limit-northern-ireland",
+   "domain": "Law",
+   "subject": "How long a person has to bring an employment tribunal claim in Northern Ireland",
+   "nation": "Northern Ireland",
+   "state": "route_only",
+   "today": "no rule here is for Northern Ireland, so no date is worked out for a claim there: the answer says a time limit may still apply and gives the route GOV.UK's employment tribunals guide names for making a claim in Northern Ireland, whose own site was not opened (W1161)",
+   "route": "gov-uk-employment-tribunals-guide"
   },
   {
    "id": "law-urgent-routes",

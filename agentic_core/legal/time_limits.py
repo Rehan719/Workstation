@@ -28,13 +28,21 @@ is for and the change it has. The publisher has written the England and Wales ch
 lists the change as not yet written into its text of article 7, so the Scottish rule's later period is read from the
 earlier words together with the change the publisher lists, and from nothing else. All of it was read at
 www.legislation.gov.uk on 2026-11-20 (docs/SOURCES.json).
+
+W1161 (P5.11 clause 2) - WHEN NO RULE MATCHES. The calculator never answers "no deadline". A claim it holds no rule for,
+and a claim whose rule is not for the nation asked about, are answered that a time limit may still apply, with where to
+ask today for that nation; a question from a nation no rule here is for is given a route and not a rule (the Owner's
+ruling of 2026-10-12). Every place named for it is named, with the address given, on GOV.UK's guide "Employment
+tribunals", read whole through GOV.UK's content API on 2026-11-20 (docs/SOURCES.json). The places' own sites refused an
+automated visit from where this was built, so none of them was read, and each says so; and each place is shown as not
+recently checked ninety days after the guide was read, as the same ruling sets for a rule or a place.
 """
 from __future__ import annotations
 
 import calendar
 import datetime as _dt
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 #  Who to ask, for a limit on a claim about work: the free conciliation service such a claim passes through first
 _ACAS = {"name": "Acas", "link": "https://www.acas.org.uk/",
@@ -216,14 +224,15 @@ def _listed(provision: Dict[str, Any], unapplied: Dict[str, str]) -> List[Dict[s
             and e.get("AffectingClass") in (None, unapplied["class"])]
 
 
-def limit(rule_id: str, event_date: str, provision: Dict[str, Any]) -> Dict[str, Any]:
+def limit(rule_id: str, event_date: str, provision: Dict[str, Any], nation: Optional[str] = None) -> Dict[str, Any]:
     """The primary limit for `rule_id` from `event_date`, checked against `provision` as its publisher returned it
-    for that date's period, with the limit on the other side of the change beside it."""
+    for that date's period, with the limit on the other side of the change beside it. W1161: `nation` is the nation
+    asked about, which the rule is for (a nation it is not for is answered by `no_rule`), or None when none was given."""
     rule = RULES[rule_id]
     change = rule["change"]
     period = period_for(rule_id, event_date)
     sets = "the Act sets" if rule["provision"]["kind"] == "ukpga" else "the Order sets"
-    base = {"rule": rule_id, "name": rule["name"], "act": rule["provision"]["act"],
+    base = {"rule": rule_id, "matched": True, "nation": nation, "name": rule["name"], "act": rule["provision"]["act"],
             "part": rule["provision"].get("part", "section"), "section": rule["provision"]["section"],
             "nations": list(rule["nations"]), "words": period["words"] if period else None,
             "months": period["months"] if period else None, "event": rule["event"], "event_date": event_date,
@@ -264,3 +273,115 @@ def limit(rule_id: str, event_date: str, provision: Dict[str, Any]) -> Dict[str,
                       f"{earlier['months']} to {later['months']} months is {change['by']}, and "
                       f"{change['earlier_limit_kept']}. For {_side(other, change)} the limit is {other['months']} "
                       f"months. It does not account for {rule['does_not_account_for']}.")}
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1161 (P5.11 clause 2) - WHEN NO RULE MATCHES, A TIME LIMIT MAY STILL APPLY, AND WHERE TO ASK TODAY IS SAID.
+#  Nothing below is fetched on a person's action or on a timer: each place is a name, an address and a line of this
+#  platform's own words, and the page that names it is GOV.UK's guide, read once on the date below.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+NATIONS: Tuple[str, ...] = ("England", "Wales", "Scotland", "Northern Ireland")
+#  the claim a person picks when theirs is not among the rules
+NOT_LISTED: Dict[str, str] = {"id": "not_listed", "name": "A claim not listed here"}
+#  the Owner's ruling of 2026-10-12 (P5.11): "a rule or a place is shown as not recently checked NINETY DAYS after
+#  the date it was read"
+REVIEW_DAYS = 90
+#  the one page every place below is named on, with the address each is given at
+GUIDE: Dict[str, str] = {
+    "name": "Employment tribunals",
+    "publisher": "GOV.UK",
+    "page": "https://www.gov.uk/employment-tribunals",
+    "read_on": "2026-11-20",
+    "read_by": "round W1161, the guide's nine parts read whole through GOV.UK's content API",
+}
+OWN_SITES_NOT_OPENED = ("None of these places' own sites was opened: on 20 November 2026 each refused an automated "
+                        "visit from where this was built, so nothing of them was read, and each is listed as the guide "
+                        "names it.")
+
+
+def _place(name: str, link: str, for_what: str, part: str) -> Dict[str, str]:
+    return {"name": name, "link": link, "for_what": for_what, "named_on": f"{GUIDE['page']}/{part}",
+            "own_site": "not opened"}
+
+
+#  "To find the deadline for your claim, check the employment tribunal time limits guidance on the Acas (Advisory,
+#  Conciliation and Arbitration Service) website" (the guide, "Check if you can make a claim")
+_ACAS_TIME_LIMITS = _place("Acas", "https://www.acas.org.uk/employment-tribunal-time-limits",
+                           "its guidance on employment tribunal time limits, which GOV.UK's guide names for finding "
+                           "the deadline for a claim", "check-you-can-claim")
+#  "There's a different way to make a claim to an employment tribunal in Northern Ireland" (the same part)
+_NORTHERN_IRELAND_CLAIM = _place("Making a claim to an employment tribunal in Northern Ireland",
+                                 "https://www.employmenttribunalsni.co.uk/how-make-claim",
+                                 "how a claim is made there, which GOV.UK's guide says is a different way",
+                                 "check-you-can-claim")
+#  "If you're in England or Wales / If you're in Scotland - You could get legal advice from" ("Get support and legal
+#  advice"); the guide names no place for legal advice in Northern Ireland
+_ADVICE_ENGLAND_WALES = (
+    _place("The Law Society", "https://solicitors.lawsociety.org.uk/", "finding a solicitor",
+           "get-support-legal-advice"),
+    _place("Citizens Advice",
+           "https://www.citizensadvice.org.uk/law-and-courts/legal-system/finding-free-or-affordable-legal-help/",
+           "finding free or affordable legal advice", "get-support-legal-advice"),
+    _place("Law Centres Network", "https://www.lawcentres.org.uk/", "finding a local Law Centre",
+           "get-support-legal-advice"),
+    _place("Law Works", "https://www.lawworks.org.uk/", "being put in touch with a volunteer lawyer",
+           "get-support-legal-advice"),
+)
+_ADVICE_SCOTLAND = (
+    _place("The Law Society of Scotland", "https://www.lawscot.org.uk/", "finding a solicitor",
+           "get-support-legal-advice"),
+    _place("Citizens Advice Scotland", "https://www.cas.org.uk/", "finding free or affordable legal advice",
+           "get-support-legal-advice"),
+)
+#  where to ask today, nation by nation: a question from a nation no rule here is for is given a route, not a rule
+WHERE_TO_ASK: Dict[str, Tuple[Dict[str, str], ...]] = {
+    "England": (_ACAS_TIME_LIMITS,) + _ADVICE_ENGLAND_WALES,
+    "Wales": (_ACAS_TIME_LIMITS,) + _ADVICE_ENGLAND_WALES,
+    "Scotland": (_ACAS_TIME_LIMITS,) + _ADVICE_SCOTLAND,
+    "Northern Ireland": (_NORTHERN_IRELAND_CLAIM,),
+}
+
+
+def _today() -> _dt.date:
+    return _dt.date.today()
+
+
+def nation_named(asked: Any) -> Optional[str]:
+    """The nation `asked` names, in any case and spacing, or None when it names none of the four."""
+    s = _flat(asked)
+    return next((n for n in NATIONS if n.lower() == s), None)
+
+
+def _listing(items: List[str]) -> str:
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
+
+
+def checked(read_on: str) -> Dict[str, Any]:
+    """Whether a page read on `read_on` was read recently: within REVIEW_DAYS of today it is said as read on that day,
+    and after that as NOT RECENTLY CHECKED, with the day it was read."""
+    age = (_today() - _dt.date.fromisoformat(read_on)).days
+    if age <= REVIEW_DAYS:
+        return {"recently_checked": True, "checked": f"read on {_said(read_on)}"}
+    return {"recently_checked": False,
+            "checked": f"NOT RECENTLY CHECKED - read on {_said(read_on)}, more than {REVIEW_DAYS} days ago"}
+
+
+def no_rule(nation: Optional[str], rule_id: Optional[str] = None) -> Dict[str, Any]:
+    """The answer when no rule here matches: the claim has no rule here, or its rule is not for the nation asked about.
+    It never says there is no time limit: it says one may still apply, and where to ask today, for the nation asked
+    about or, when none was given, for each nation. Nothing is fetched and nothing is worked out."""
+    rule = RULES.get(rule_id or "")
+    for_nation = [{"id": k, "name": r["name"]} for k, r in RULES.items() if nation in r["nations"]] if nation else []
+    if rule is None:
+        why = "No rule here is for that claim"
+    else:
+        why = f"The rule here for {rule['name']} is for {_listing(list(rule['nations']))}, not for {nation}"
+    if nation and not for_nation:
+        why += f", and no rule here is for a claim in {nation}"
+    return {"rule": rule_id if rule else None, "matched": False, "nation": nation, "computed": False, "last_day": None,
+            "rules_for_this_nation": for_nation,
+            "basis": f"{why}, so no date is worked out. A time limit may still apply: ask today.",
+            "where_to_ask": {n: [dict(p) for p in WHERE_TO_ASK[n]] for n in ([nation] if nation else NATIONS)},
+            "named_on": {**{k: GUIDE[k] for k in ("name", "publisher", "page", "read_on")}, **checked(GUIDE["read_on"]),
+                         "own_sites": OWN_SITES_NOT_OPENED},
+            "composed": False, "not_advice": "Nothing here is legal advice."}
