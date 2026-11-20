@@ -93868,3 +93868,54 @@ def test_w1154_p56_its_five_documents_are_under_docs_business_each_a_draft_the_g
     note = reg["FU-743"]["close_note"]
     assert "MOVED in W1154 to docs/business/METRICS_MEASURED.md" in note, note[-300:]
     assert items["P5.6"]["done"] and items["P5.6"]["done_by"] == "W1154", items["P5.6"]
+
+
+def test_w1155_p53_and_p516_are_done_and_each_names_the_guards_that_hold_its_accept():
+    """P5.3 and P5.16 (W1155): neither had an open row or a DONE marker. Read against its ACCEPT, each clause of each is
+    held by a guard that drives it, its blinds seen red in its own round; each item now carries a COMPLETION RECORD
+    naming those guards, and is marked done. Held:
+    - each item is done by W1155, and no open row rides it;
+    - its record names exactly the guards it rests on, each defined in this suite and runnable without an outside model;
+    - P5.16 clause 1's Domains half, which no guard held because nothing prices a Domain: no Domain route module
+      names a price, a charge or a fee."""
+    import json
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _fu
+    root = pathlib.Path(__file__).resolve().parents[1]
+    plan = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    items = {i["slot"]: i for i in _fu.plan_items(plan)}
+    blocks = _fu._item_blocks(_fu.delivery_plan_body(plan) or plan)
+    reg = json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    spine = pathlib.Path(__file__).read_text(encoding="utf-8")
+    want = {
+        "P5.3": {"test_w941_p53_a_claim_that_an_output_is_wrong_stays_open_until_a_person_answers_it",
+                 "test_w942_p53_claims_are_on_the_support_page_and_an_answer_says_whether_it_reached_the_ledger"},
+        "P5.16": {"test_w600_p311_the_qep_vsb_has_an_economic_model_that_is_its_own",
+                  "test_w1155_p53_and_p516_are_done_and_each_names_the_guards_that_hold_its_accept",
+                  "test_w1124_fu1057_the_platform_fee_is_a_quarter_of_the_profit_taken_first_and_the_split_applies_to_what_remains",
+                  "test_w851_a_person_accepts_a_version_of_an_entitys_delivery_and_acceptance_alone_earns_nothing",
+                  "test_w676_nothing_earns_on_a_structure_pass",
+                  "test_w1125_fu1057_the_economy_page_shows_the_profit_the_platform_fee_and_what_the_split_was_over",
+                  "test_w1139_fu1281_the_cockpits_latest_cycle_says_the_platform_fee_and_what_the_split_was_over",
+                  "test_w1117_fu399_the_price_panel_says_what_generating_an_entity_costs_in_the_routes_words",
+                  "test_w933_p515_clause6_the_roster_is_on_the_entitys_page_and_a_generated_entity_is_recommended_a_specialist"},
+    }
+    for slot, tests in want.items():
+        assert items[slot]["done"] and items[slot]["done_by"] == "W1155", (slot, items[slot])
+        riding = [r["id"] for r in reg if r.get("slot") == slot and r.get("status") == "open"]
+        assert riding == [], (slot, riding)
+        flat = " ".join(blocks[slot].split())
+        assert flat.count("COMPLETION RECORD (W1155): ") == 1, (slot, "the item carries no completion record")
+        record = flat.split("COMPLETION RECORD (W1155): ", 1)[1]
+        named = set(re.findall(r"test_[a-z0-9_]+", record))
+        assert named == tests, (slot, sorted(named ^ tests))
+        for t in sorted(named):
+            m = re.search(r"((?:^@[^\n]+\n)*)^def " + re.escape(t) + r"\(", spine, re.M)
+            assert m, (slot, t, "the record names a guard this suite does not define")
+            assert "_ai_only" not in m.group(1), (slot, t, "the record rests on a guard that needs an outside model")
+    #  P5.16 clause 1: the Domains are free - no Domain route module names a price, a charge or a fee
+    for mod in ("care", "career", "education", "employment", "law", "religion", "science"):
+        src = (root / "agentic_core" / "api" / f"{mod}.py").read_text(encoding="utf-8")
+        hit = re.search(r"\b(?:price[sd]?|pricing|charge[sd]?|charging|fees?)\b", src, re.I)
+        assert hit is None, (mod, "a Domain route names a price, a charge or a fee", src[max(0, hit.start() - 80):hit.end() + 40])
