@@ -117,6 +117,10 @@ def _log_split(report: Dict[str, Any], waterfall_source: str, source: str) -> No
         "source": source,
         "intake_revenue_wst": report.get("intake_revenue"),
         "distributable_wst": report.get("distributable_profit"),
+        #  W1124 (FU-1057) - the platform's fee, taken first, and the base the split used
+        "platform_fee_wst": (report.get("platform_fee") or {}).get("fee_wst"),
+        "platform_fee_posted": (report.get("platform_fee") or {}).get("posted"),
+        "split_base_wst": report.get("split_base_wst"),
         "splits_wst": {k: (v or {}).get("amount_wst") for k, v in circ.items()},
         "waterfall_source": waterfall_source,
         "reserve_rate_applied": report.get("reserve_rate_applied"),

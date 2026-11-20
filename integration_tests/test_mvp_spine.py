@@ -17871,12 +17871,19 @@ def test_w475_second_truth_pass_ledger_v4_tier1_entries(client, tmp_path, monkey
     stm = led.statements()
     assert stm["profit_and_loss"]["expenses"].get("operating_costs") == 200.0, stm["profit_and_loss"]   # the P&L shows the cost
     assert stm["balance_sheet"]["assets"].get("reserve_fund") == 200.0, stm["balance_sheet"]           # the reserve holds only the reserve
-    assert stm["profit_and_loss"]["net_profit_wst"] == 200.0 and led.trial_balance()["balanced"] is True
+    #  W1124 (FU-1057) - this scope is not a registered entity, so its fee (150, a quarter of the 600 profit) is shown
+    #  and never posted, and the split is over the 450 that remains: the 150 stays in its books, as profit
+    assert out["platform_fee"]["fee_wst"] == 150.0 and out["platform_fee"]["posted"] is False, out["platform_fee"]
+    assert stm["profit_and_loss"]["net_profit_wst"] == 350.0 and led.trial_balance()["balanced"] is True
     # (refutation, consumers) the board pack's P&L carries the costs, and its figures reconcile to the revenue
     pack = client.get("/api/v1/economy/board-pack", params={"vsb_id": vid}).json()
     pl = pack["profit_and_loss"]
     assert pl["total_costs_wst"] == 200.0, pl
-    assert abs(pl["total_costs_wst"] + pl["total_reserves_wst"] + pl["total_distributed_wst"] - pl["total_revenue_wst"]) < 0.02, pl
+    #  W1124 - and with the platform's fee they reconcile: none posted here, and the fee shown and never posted
+    _unposted1124 = 0.0 if out["platform_fee"]["posted"] else out["platform_fee"]["fee_wst"]
+    assert pl["total_platform_fee_wst"] == 0.0, pl
+    assert abs(pl["total_costs_wst"] + pl["total_reserves_wst"] + pl["total_platform_fee_wst"] + pl["total_distributed_wst"]
+               + _unposted1124 - pl["total_revenue_wst"]) < 0.02, pl
     # (refutation) the pages label the two figures as what they are
     ve2 = (root / "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8")
     assert 'label="Costs + reserves"' not in ve2 and 'label="Operating costs"' in ve2 and 'label="Reserve"' in ve2
@@ -91724,3 +91731,97 @@ def test_w1123_fu1279_a_price_is_the_declared_cost_by_the_ruled_formula_and_the_
     assert client.post("/api/v1/economy/deliverable-cost", json={**q, "cost_wst": 45,
                                                                  "made_of": "a day and a half, made up"}).status_code == 200
     assert client.get("/api/v1/economy/price", params=q).json()["price_wst"] == 75.0
+
+
+def test_w1124_fu1057_the_platform_fee_is_a_quarter_of_the_profit_taken_first_and_the_split_applies_to_what_remains(client):
+    """FU-1057 part 1 (W1124), P5.16 clauses 3 and 4. OWNER RULING 2026-10-12: each generated entity pays 25% of its
+    profit for updates and maintenance, TAKEN FIRST - the profit being the cycle's own figure (revenue less declared
+    costs less the prudential reserve, never below zero) - the fee one ledger line the entity's owner can see, and the
+    entity's own split applied to what remains. No profit, no fee; the apex and a non-distributing entity pay none; an
+    unregistered simulation's fee is shown and never posted. OWNER RULING 2026-11-19 (FU-1057): released for a
+    made-up entity now, ahead of the first walk. Held here, on made-up entities:
+    - a registered entity's cycle (1000 WST in, 200 of costs, the 20% reserve 200): profit 600, a fee of 150 posted
+      as one line (Dr platform_fee / Cr cash, its source named), and the split over the 450 that remains;
+    - over a grid of intakes, costs and reserve rates, the stages and the fee sum to the profit to the cent, and each
+      fee posted is the fee the cycle said;
+    - no profit, no fee and no fee line; a loss is not carried to the next cycle;
+    - the apex and a non-distributing form pay none, and their split is over the whole profit;
+    - an unregistered simulation's fee is shown and never posted, and its split is over what remains;
+    - nothing is credited for the price of generating an entity, because nothing has been charged for one."""
+    from agentic_core.economy.ledger import VirtualLedger
+    from agentic_core.economy.metabolism import PLATFORM_FEE_RATE, EconomicMetabolism
+    assert PLATFORM_FEE_RATE == 0.25
+
+    def establish(name, form):
+        r = client.post("/api/v1/genesis/establish", json={"problem": f"w1124 {name}: a made-up bakery", "name": name,
+                                                            "ship_output": False, "entity_type": form})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()["vsb_id"]
+
+    def fee_lines(vid):
+        return [p for p in VirtualLedger(vid)._data.get("postings", []) if p.get("source") == "cycle_platform_fee"]
+
+    def to_the_cent(rep):
+        stages = sum(v["amount_wst"] for v in rep["circulation"].values())
+        f = rep["platform_fee"]
+        assert round(stages, 2) == f["split_base_wst"] == rep["split_base_wst"], (stages, f, rep["split_base_wst"])
+        assert round(stages + f["fee_wst"], 2) == rep["distributable_profit"] == f["profit_wst"], (stages, f)
+
+    #  a registered, profit-distributing entity: the fee is taken first and posted as one line
+    vid = establish("W1124 Bakery", "ltd")
+    c = client.post("/api/v1/economy/cycle", json={"vsb_id": vid, "revenue": 1000, "costs": 200})
+    assert c.status_code == 200, c.text[:300]
+    rep = c.json().get("cycle") or c.json()
+    f = rep["platform_fee"]
+    assert (rep["distributable_profit"], f["fee_wst"], f["split_base_wst"], f["posted"], f["exempt"]) == (600.0, 150.0, 450.0, True, None), f
+    assert f["ruling"].startswith("OWNER RULING 2026-10-12 (P5.16 clause 3)") and "taken first" in f["basis"]
+    to_the_cent(rep)
+    assert rep["circulation"]["owner"]["amount_wst"] == 90.0, rep["circulation"]          # 20% of 450, never of 600
+    lines = fee_lines(vid)
+    assert [(p["debit"], p["credit"], p["amount"]) for p in lines] == [("platform_fee", "cash", 150.0)], lines
+    assert f["credit"]["applied_wst"] == 0.0 and "Nothing is credited" in f["credit"]["basis"], f["credit"]
+    pl = client.get("/api/v1/economy/board-pack", params={"vsb_id": vid}).json()["profit_and_loss"]
+    assert pl["total_platform_fee_wst"] == 150.0, pl
+    assert round(pl["total_costs_wst"] + pl["total_reserves_wst"] + pl["total_platform_fee_wst"]
+                 + pl["total_distributed_wst"], 2) == pl["total_revenue_wst"] == 1000.0, pl
+
+    #  the grid: the stages and the fee sum to the profit to the cent, and each posted fee is the one said
+    m = EconomicMetabolism(vid, "ltd")
+    said = [150.0]
+    for revenue in (0.01, 1.0, 33.33, 99.99, 1234.57):
+        for costs in (0.0, 0.07, revenue * 0.3):
+            for rate in (0.0, 0.2, 0.35):
+                r = m.run_cycle(revenue, costs, reserve_rate=rate)
+                to_the_cent(r)
+                if r["platform_fee"]["fee_wst"] > 0:
+                    assert r["platform_fee"]["posted"] is True, r["platform_fee"]
+                    said.append(r["platform_fee"]["fee_wst"])
+    assert [p["amount"] for p in fee_lines(vid)] == said
+
+    #  no profit, no fee and no fee line; and a loss is not carried to the next cycle
+    before = len(fee_lines(vid))
+    loss = m.run_cycle(100.0, 500.0)
+    assert (loss["distributable_profit"], loss["platform_fee"]["fee_wst"], loss["platform_fee"]["posted"]) == (0.0, 0.0, False)
+    assert "no profit" in loss["platform_fee"]["basis"] and len(fee_lines(vid)) == before
+    after = m.run_cycle(1000.0, 200.0)
+    assert after["platform_fee"]["fee_wst"] == 150.0, "a loss was carried into the next cycle's fee"
+
+    #  a non-distributing form and the apex pay none; their split is over the whole profit
+    charity = establish("W1124 Charity", "charity")
+    cr = client.post("/api/v1/economy/cycle", json={"vsb_id": charity, "revenue": 1000, "costs": 200}).json()
+    cr = cr.get("cycle") or cr
+    assert (cr["platform_fee"]["fee_wst"], cr["platform_fee"]["exempt"], cr["split_base_wst"]) == (0.0, "non_distributing", 600.0), cr["platform_fee"]
+    to_the_cent(cr)
+    assert fee_lines(charity) == []
+    apex = EconomicMetabolism("workstation-idbo", "waqf_ltd_hybrid").run_cycle(1000.0, 200.0)
+    assert (apex["platform_fee"]["fee_wst"], apex["platform_fee"]["exempt"]) == (0.0, "apex"), apex["platform_fee"]
+    to_the_cent(apex)
+    assert fee_lines("workstation-idbo") == []
+
+    #  an unregistered simulation: the fee is shown and never posted; its split is over what remains
+    sim = EconomicMetabolism("w1124-unregistered-scope", "ltd").run_cycle(1000.0, 200.0)
+    sf = sim["platform_fee"]
+    assert (sf["fee_wst"], sf["posted"], sf["simulated"], sim["split_base_wst"]) == (150.0, False, True, 450.0), sf
+    assert "never posted" in sf["basis"]
+    to_the_cent(sim)
+    assert fee_lines("w1124-unregistered-scope") == []
