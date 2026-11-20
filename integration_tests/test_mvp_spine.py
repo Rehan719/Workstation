@@ -78132,6 +78132,62 @@ def test_w918_fu742_the_file_stores_are_backed_up_verified_and_restored_byte_for
     assert "No snapshot has been taken, since nothing is deployed" in brief
 
 
+class _serving_on_its_own_port:
+    """FU-1802 (W1133o). Start a local server on a port it chooses itself, and wait until it names that port.
+
+    `cmd` asks for port 0, and `said` is a pattern whose one group is the port, matched in the line the server
+    prints once it listens. The guards used to choose the port themselves: bind port 0, read it, close it, and
+    hand the number on. That left the port free until the server listened, and on the Owner's machine a loopback
+    connect to a port nobody listens on can connect to itself, so a poll sent in that window read back its own
+    request (test_w919 in the full suite of W1133m). Here the listener holds the port from the moment it exists.
+
+    Used as `with _serving_on_its_own_port(cmd, said, cwd=...) as srv:`. srv.port is None if the server exited, or
+    `timeout` passed, before it named a port. srv.output() is what it printed (stdout and stderr), for the
+    failure message. The server is stopped when the block ends."""
+
+    def __init__(self, cmd, said, *, cwd, env=None, timeout=180):
+        self.cmd, self.said, self.cwd, self.env, self.timeout = list(cmd), said, cwd, env, timeout
+        self.port, self.proc, self.lines, self._found = None, None, [], None
+
+    def __enter__(self):
+        import re
+        import subprocess
+        import threading
+        named = threading.Event()
+
+        def read():
+            for raw in self.proc.stdout:
+                line = raw.decode("utf-8", "replace")
+                self.lines.append(line)
+                m = self._found is None and re.search(self.said, line)
+                if m:
+                    self._found = int(m.group(1))
+                    named.set()
+            named.set()                                   # it ended without naming a port
+
+        self.proc = subprocess.Popen(self.cmd, cwd=self.cwd, env=self.env, stdin=subprocess.DEVNULL,
+                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        self._reader = threading.Thread(target=read, daemon=True)
+        self._reader.start()
+        named.wait(self.timeout)
+        self.port = self._found
+        return self
+
+    def output(self, last=1500):
+        return "".join(self.lines)[-last:]
+
+    def __exit__(self, *exc):
+        import subprocess
+        self.proc.terminate()
+        try:
+            self.proc.wait(timeout=60)
+        except subprocess.TimeoutExpired:
+            self.proc.kill()
+            self.proc.wait()
+        self._reader.join(timeout=10)
+        return False
+
+
 def test_w919_fu742_the_windows_start_path_names_only_what_exists_and_starts_the_app_every_deployment_starts(tmp_path):
     """FU-742 part 2 (W919). The founder's guide rests on the Windows set-up and start scripts, so they were
     measured first. None of the three could have worked:
@@ -78152,10 +78208,7 @@ def test_w919_fu742_the_windows_start_path_names_only_what_exists_and_starts_the
     import os
     import pathlib
     import re
-    import socket
-    import subprocess
     import sys
-    import time
     import urllib.request
 
     root = pathlib.Path(__file__).resolve().parents[1]
@@ -78194,38 +78247,23 @@ def test_w919_fu742_the_windows_start_path_names_only_what_exists_and_starts_the
             assert (root / ws / "package.json").is_file(), (cmd, "names a workspace that does not exist")
     assert '"dev": "vite"' in (root / "apps/workstation-superapp/package.json").read_text(encoding="utf-8")
 
-    #  the app the backend script names really serves: started as the script starts it, on a free port
-    with socket.socket() as so:
-        so.bind(("127.0.0.1", 0))
-        port = so.getsockname()[1]
+    #  the app the backend script names really serves: started as the script starts it, on a port it chooses
+    #  itself and names before it is asked anything (FU-1802, W1133o)
     data = tmp_path / "data"
     env = {**os.environ, "DATA_DIR": str(data), "WORKSTATION_DATA_DIR": str(data),
            "WORKSTATION_UEG_PATH": str(data / "ueg.json"), "PROJECTS_DIR": str(data / "projects"),
            "PYTHONPATH": str(root), "AI_DISABLE_LOCAL": "1"}
     (module, attr), = apps
-    proc = subprocess.Popen([sys.executable, "-m", "uvicorn", f"{module}:{attr}", "--host", "127.0.0.1",
-                             "--port", str(port)], cwd=str(root), env=env,
-                            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
     direct = urllib.request.build_opener(urllib.request.ProxyHandler({}))     # never through a proxy
     health = None
-    try:
-        deadline = time.time() + 180
-        while time.time() < deadline and proc.poll() is None:
-            try:
-                with direct.open(f"http://127.0.0.1:{port}/health", timeout=5) as resp:
-                    health = (resp.status, json.loads(resp.read().decode("utf-8")))
-                    break
-            except OSError:
-                time.sleep(1)
-    finally:
-        proc.terminate()
-        try:
-            _, err = proc.communicate(timeout=60)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            _, err = proc.communicate()
+    with _serving_on_its_own_port([sys.executable, "-m", "uvicorn", f"{module}:{attr}", "--host", "127.0.0.1",
+                                   "--port", "0"], r"Uvicorn running on http://127\.0\.0\.1:(\d+)",
+                                  cwd=str(root), env=env) as srv:
+        if srv.port:
+            with direct.open(f"http://127.0.0.1:{srv.port}/health", timeout=30) as resp:
+                health = (resp.status, json.loads(resp.read().decode("utf-8")))
     assert health is not None and health[0] == 200, (
-        "the app the backend script names did not answer /health", (err or b"")[-1500:].decode("utf-8", "replace"))
+        "the app the backend script names did not answer /health", srv.output())
 
 
 def test_w920_fu742_the_founders_guide_gives_only_commands_a_guard_runs_on_the_tree_it_ships_with(tmp_path):
@@ -78247,10 +78285,8 @@ def test_w920_fu742_the_founders_guide_gives_only_commands_a_guard_runs_on_the_t
     import pathlib
     import re
     import shutil
-    import socket
     import subprocess
     import sys
-    import time
     from agentic_core import plan_followups as _fu
     from agentic_core.app_mvp import app as _app920
 
@@ -78297,9 +78333,6 @@ def test_w920_fu742_the_founders_guide_gives_only_commands_a_guard_runs_on_the_t
 
     #  the health check, as the guide writes it, against the app started as start_backend.bat names it
     (module, attr), = re.findall(r"-m uvicorn ([\w.]+):(\w+)", back)
-    with socket.socket() as so:
-        so.bind(("127.0.0.1", 0))
-        port = so.getsockname()[1]
     data = tmp_path / "data"
     no_proxy = {k: v for k, v in os.environ.items() if k.lower() not in ("http_proxy", "https_proxy", "all_proxy")}
     env = {**no_proxy, "DATA_DIR": str(data), "WORKSTATION_DATA_DIR": str(data), "PYTHONPATH": str(root),
@@ -78307,27 +78340,18 @@ def test_w920_fu742_the_founders_guide_gives_only_commands_a_guard_runs_on_the_t
     exe, url = health.split()
     exe = exe if sys.platform == "win32" else "curl"
     assert shutil.which(exe), f"{exe} is not on this machine, so the guide's health check cannot be run here"
-    url = url.replace(":8000/", f":{port}/")
-    proc = subprocess.Popen([sys.executable, "-m", "uvicorn", f"{module}:{attr}", "--host", "127.0.0.1", "--port",
-                             str(port)], cwd=str(root), env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
     answer = None
-    try:
-        deadline = time.time() + 180
-        while time.time() < deadline and proc.poll() is None:
-            r = subprocess.run([exe, url], env=no_proxy, capture_output=True, text=True, timeout=30)
+    #  on a port the app chooses itself and names before the check is run (FU-1802, W1133o)
+    with _serving_on_its_own_port([sys.executable, "-m", "uvicorn", f"{module}:{attr}", "--host", "127.0.0.1",
+                                   "--port", "0"], r"Uvicorn running on http://127\.0\.0\.1:(\d+)",
+                                  cwd=str(root), env=env) as srv:
+        if srv.port:
+            r = subprocess.run([exe, url.replace(":8000/", f":{srv.port}/")], env=no_proxy, capture_output=True,
+                               text=True, timeout=30)
             if r.returncode == 0 and r.stdout.strip():
                 answer = json.loads(r.stdout)
-                break
-            time.sleep(1)
-    finally:
-        proc.terminate()
-        try:
-            _, err = proc.communicate(timeout=60)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            _, err = proc.communicate()
     assert answer and answer.get("status") == "healthy", ("the guide's health check got no healthy answer",
-                                                          (err or b"")[-1500:].decode("utf-8", "replace"))
+                                                          srv.output())
     assert '"status": "healthy"' in guide
 
     #  the gates in the plan's order; no channel called free or priced; the mandates row names the guide
@@ -79499,10 +79523,8 @@ def test_w938_p54_a_clean_clone_of_the_entity_repository_serves_its_own_pages_by
     import posixpath
     import re
     import shutil
-    import socket
     import subprocess
     import sys
-    import time
     import urllib.request
 
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))    # a local server is never reached by proxy
@@ -79531,24 +79553,14 @@ def test_w938_p54_a_clean_clone_of_the_entity_repository_serves_its_own_pages_by
         cmd = re.findall(r"(?m)^    python3 -m http\.server (\d+)$", run)
         assert len(cmd) == 1, run
         named = re.findall(r"http://localhost:" + cmd[0] + r"/(\S+?)\.?(?:\s|$)", run)
-        with socket.socket() as s:
-            s.bind(("127.0.0.1", 0))
-            port = s.getsockname()[1]
-        server = subprocess.Popen([sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1"], cwd=str(clone),
-                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        #  on a port the server chooses itself and names before it is asked anything (FU-1802, W1133o)
+        with _serving_on_its_own_port([sys.executable, "-u", "-m", "http.server", "0", "--bind", "127.0.0.1"],
+                                      r"Serving HTTP on 127\.0\.0\.1 port (\d+)", cwd=str(clone), timeout=20) as srv:
+            assert srv.port, ("the clone's server never named its port", srv.output())
 
-        def get(path):
-            with opener.open(f"http://127.0.0.1:{port}/{path}", timeout=10) as resp:
-                return resp.status, resp.read()
-        try:
-            deadline = time.time() + 20
-            while True:
-                try:
-                    get("")
-                    break
-                except Exception:                                        # noqa: BLE001 - not listening yet
-                    assert time.time() < deadline, "the clone's server never answered"
-                    time.sleep(0.2)
+            def get(path):
+                with opener.open(f"http://127.0.0.1:{srv.port}/{path}", timeout=10) as resp:
+                    return resp.status, resp.read()
             seen, todo = set(), [p for p in named if p.endswith(".html")] + ["web/index.html"]
             for page in named:
                 status, body = get(page)
@@ -79566,9 +79578,6 @@ def test_w938_p54_a_clean_clone_of_the_entity_repository_serves_its_own_pages_by
                     if target.endswith(".html"):
                         todo.append(target)
             return named, seen, get
-        finally:
-            server.terminate()
-            server.wait(timeout=10)
 
     vid = entity("W938 Served")
     m, clone = serve_clone(vid, ("website", "webapp", "mobile"))
@@ -92555,6 +92564,101 @@ def test_w1133n_fu1801_with_the_pages_built_a_path_no_route_serves_is_a_404_what
     assert not [r for r in bare.routes if getattr(r, "path", "") in ("/", "/{full_path:page}", "/assets")], bare.routes
     #  and the platform itself, built here or not: the retired path is not found
     assert client.post("/api/cross-platform/voice/command", json={}).status_code == 404
+
+
+def test_w1133o_fu1802_a_server_a_guard_starts_chooses_its_own_port_and_names_it_before_it_is_asked(tmp_path):
+    """FU-1802 (W1133o). Seen in the full suite of W1133m on the Owner's machine: test_w919 read
+    'BadStatusLine: GET /health HTTP/1.1' from the backend it had started, and it passed alone on the same tree. That
+    line is the guard's own request read back. The guard chose the port by binding port 0, reading the number and
+    closing the socket. It then started the server there and polled /health while the server started, which takes
+    45 seconds on this machine, and in that window nobody listened on the port. Measured on this machine:
+    - a loopback connect from a port to the same port, with nobody listening, connects to itself and reads back
+      what it sent;
+    - Windows gives each new connect the next port of the range port 0 is chosen from.
+    Any other process could also take the port in that window. Three guards chose a port that way: test_w919,
+    test_w920 and test_w938.
+
+    Each now starts its server on port 0 through _serving_on_its_own_port. The helper waits for the line where the
+    server names the port it listens on, and nothing is sent before it. The listener holds the port from the moment
+    it exists, so nothing can connect to itself on it or take it. This guard:
+    - drives the helper with a real server: the port it gives is the one the server named, it answers, nobody else
+      can bind it while the server runs, and the server is stopped when the block ends;
+    - a server that ends without naming a port gives no port at once, with what it printed, not when the timeout
+      passes; one that never names a port gives none when the timeout passes, and is stopped;
+    - holds the test files to it, first on a planted fault. No function reads a socket's name to hand a port on.
+      None but the helper starts a server process itself, and the three guards start theirs through it."""
+    import pathlib
+    import re
+    import socket
+    import sys
+    import time
+    import urllib.request
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))     # a local server is never reached by proxy
+
+    #  a real server: the port is the one it named, it answers, it is held while the server runs, the server stops
+    (tmp_path / "page.txt").write_bytes(b"w1133o")
+    with _serving_on_its_own_port([sys.executable, "-u", "-m", "http.server", "0", "--bind", "127.0.0.1"],
+                                  r"Serving HTTP on 127\.0\.0\.1 port (\d+)", cwd=str(tmp_path), timeout=30) as srv:
+        assert srv.port and f"port {srv.port} " in srv.output(), ("the server named no port", srv.output())
+        with opener.open(f"http://127.0.0.1:{srv.port}/page.txt", timeout=10) as resp:
+            assert (resp.status, resp.read()) == (200, b"w1133o")
+        with socket.socket() as other:
+            with pytest.raises(OSError):
+                other.bind(("127.0.0.1", srv.port))
+    stopped = srv.proc.poll() is not None
+    srv.proc.kill()                                                         # never leave it running, even when red
+    assert stopped, "the server was still running when the block ended"
+
+    #  a server that ends without naming a port: no port, at once, with what it printed
+    t = time.time()
+    with _serving_on_its_own_port([sys.executable, "-c", "print('w1133o: no listening here')"], r"port (\d+)",
+                                  cwd=str(tmp_path), timeout=60) as gone:
+        took = time.time() - t
+        assert gone.port is None and took < 30, (gone.port, took, "it waited for the timeout")
+    assert "w1133o: no listening here" in gone.output(), gone.output()
+
+    #  one that never names a port: none when the timeout passes, and it is stopped
+    with _serving_on_its_own_port([sys.executable, "-c", "import time; print('w1133o waits', flush=True); "
+                                   "time.sleep(120)"], r"port (\d+)", cwd=str(tmp_path), timeout=3) as slow:
+        assert slow.port is None and slow.proc.poll() is None, (slow.port, slow.proc.poll())
+    stopped = slow.proc.poll() is not None
+    slow.proc.kill()
+    assert stopped, "a server that named no port was not stopped"
+
+    #  the test files: the rule, proved on a planted fault first
+    sock_name = ".getsock" + "name("                                       # built, so this guard does not match itself
+    starts = "Pop" + "en("
+    servers = ('"uvicorn"', '"http.server"')
+
+    def faults_in(text, fname):
+        out = []
+        for chunk in re.split(r"\n(?=(?:def|class) )", text):
+            m = re.match(r"(?:def|class) (\w+)", chunk)
+            name = m.group(1) if m else "<module>"
+            if name == "_serving_on_its_own_port":
+                continue
+            if sock_name in chunk:
+                out.append(f"{fname}::{name} reads a socket's name to hand a port on")
+            if starts in chunk and any(s in chunk for s in servers):
+                out.append(f"{fname}::{name} starts a server process itself")
+        return out
+
+    planted = ("def test_planted(tmp_path):\n    with socket.socket() as so:\n        so.bind(('127.0.0.1', 0))\n"
+               "        port = so" + sock_name + ")[1]\n    proc = subprocess." + starts + "[sys.executable, '-m', "
+               "\"uvicorn\", 'a:b', '--port', str(port)])\n")
+    assert faults_in(planted, "planted.py") == ["planted.py::test_planted reads a socket's name to hand a port on",
+                                                "planted.py::test_planted starts a server process itself"]
+    found = []
+    for f in sorted((root / "integration_tests").glob("*.py")):
+        found += faults_in(f.read_text(encoding="utf-8"), f.name)
+    assert found == [], found
+    tests = (root / "integration_tests/test_mvp_spine.py").read_text(encoding="utf-8")
+    for guard in ("test_w919_", "test_w920_", "test_w938_"):
+        body = tests.split(f"\ndef {guard}", 1)[1].split("\ndef ", 1)[0]
+        assert body.count("with _serving_on_its_own_port([") == 1, (guard, "does not start its server through the helper")
+        assert '"--port", "0"]' in body or '"http.server", "0",' in body, (guard, "does not ask for port 0")
 
 
 def test_w1134_fu603_the_google_cloud_deploy_is_written_from_googles_pages_and_no_disk_with_records_is_formatted(tmp_path):

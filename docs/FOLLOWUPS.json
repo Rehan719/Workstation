@@ -26223,11 +26223,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1133o",
       "note": "",
       "slot_source": "P5.1 carries the suite's health rows (FU-301, FU-417, FU-1071, FU-1072, FU-1085), re-slotted there by the Owner's ruling of 2026-10-07b",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Measured on the Owner's machine: the BadStatusLine test_w919 raised was its own request line read back. A loopback connect from a port to the same port, with nobody listening, connects to itself and reads back what it sent, and Windows gives each new connect the next port of the range port 0 is chosen from. The guard had chosen the port by binding port 0, reading it and closing the socket, then polled /health for the 45 seconds the backend takes to start here, and nobody listened on the port in that window. Three guards chose a port that way (test_w919, test_w920, test_w938). Each now starts its server on port 0 through _serving_on_its_own_port in integration_tests/test_mvp_spine.py, which waits for the line where the server names the port it listens on before anything is sent, so the listener holds the port from the moment it exists. Guard test_w1133o_fu1802 drives the helper with a real server, with one that ends without naming a port and one that never names one, and holds the test files to it on a planted fault first; six blinds red."
     }
   ],
   "routes": [
