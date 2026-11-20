@@ -75561,13 +75561,13 @@ def test_w877_no_parallel_source_tree_stands_beside_agentic_core_where_core_stoo
 
 
 def test_w878_a_document_says_which_metrics_are_measured_and_what_would_measure_the_rest(client):
-    """FU-743 (W878). No document said which business and product metrics are measured. docs/METRICS_MEASURED.md
+    """FU-743 (W878). No document said which business and product metrics are measured. docs/business/METRICS_MEASURED.md
     does: each metric MEASURED or PARTLY names the route that returns it, mounted on this app, with its denominator
     and freshness; each NOT MEASURED says what would measure it. Nothing records a person completing a task,
     returning, or accepting an output across people, and the document says so rather than leaving it to be assumed."""
     import pathlib
     import re as _re878
-    doc = (pathlib.Path(__file__).resolve().parents[1] / "docs" / "METRICS_MEASURED.md").read_text(encoding="utf-8")
+    doc = (pathlib.Path(__file__).resolve().parents[1] / "docs" / "business" / "METRICS_MEASURED.md").read_text(encoding="utf-8")
     rows = []
     for ln in doc.splitlines():
         cells = [c.strip() for c in ln.strip().strip("|").split("|")]
@@ -75588,7 +75588,7 @@ def test_w878_a_document_says_which_metrics_are_measured_and_what_would_measure_
             assert client.get(m.group(1)).status_code == 200, (r["metric"], m.group(1))
     states = {r["metric"]: r["state"] for r in rows}
     #  what the row named as unmeasured is said as unmeasured
-    for absent in ("A person completing a task", "A person returning", "Real-money revenue", "Paying customers"):
+    for absent in ("A person completing a task", "A person returning", "Real-money revenue", "Customers who pay"):
         assert states.get(absent) == "NOT MEASURED", (absent, states.get(absent))
     assert "virtual WST" in doc and "Owner" in doc
 
@@ -93819,3 +93819,52 @@ def test_w1153_p57_each_name_says_what_was_searched_and_each_public_claim_is_one
     for name in ("FIRST_OFFER_CANDIDATES.md", "COST_MODEL.md", "NAME_AND_BRAND_SCREEN.md", "public/FIRST_OFFER_DRAFTS.md",
                  "SUPPORT_ROUTES.md", "FORMATION_WORKPACK.md", "PRODUCTION_HARDENING_BRIEF.md"):
         assert (root / "docs/business" / name).exists(), name
+
+
+def test_w1154_p56_its_five_documents_are_under_docs_business_each_a_draft_the_guard_reads():
+    """P5.6 (W1154): five documents under docs/business/ - the canvas, the business plan, the founder's guide, the
+    evidence and KPI dictionary, the living-strategy map - each saying it is a DRAFT until the Owner ratifies it (or that
+    the Owner ratified it), under a guard that checks every path, route and id each names. The dictionary, written in
+    W878 for FU-743, was docs/METRICS_MEASURED.md: outside the folder, so that guard never read it, and opening as
+    neither a draft nor ratified; read against the rules, it also named a metric "Paying customers", a customer stated
+    as a fact. Held:
+    - the dictionary is under docs/business/ and nowhere else, and no tracked file but the register's history (and
+      this guard) names its old place;
+    - each of the five passes every business document's rules (the W703 guard's), the dictionary included;
+    - the dictionary's table is still the one W878's guard reads, under the metric's new name;
+    - FU-743's close note says where the document went;
+    - every clause of P5.6 has its document, so P5.6 is marked done."""
+    import json
+    import pathlib
+    import subprocess
+    from agentic_core import plan_followups as _fu
+    from agentic_core.app_mvp import app as _app1154
+    root = pathlib.Path(__file__).resolve().parents[1]
+    biz = root / "docs" / "business"
+    assert not (root / "docs" / "METRICS_MEASURED.md").exists(), "the dictionary is outside docs/business/ again"
+    named = subprocess.run(["git", "grep", "-l", "docs/METRICS_MEASURED.md"], cwd=root, capture_output=True, text=True)
+    #  the register's close note keeps the history, and this guard names the old place to look for it
+    assert set(named.stdout.split()) <= {"docs/FOLLOWUPS.json", "integration_tests/test_mvp_spine.py"}, (
+        "a tracked file still names the old place", named.stdout.split())
+    items = {i["slot"]: i for i in _fu.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))}
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    routes = {(m, r.path) for r in _app1154.routes for m in (getattr(r, "methods", None) or ())}
+    five = ("BUSINESS_MODEL_CANVAS.md", "BUSINESS_PLAN.md", "FOUNDERS_GUIDE.md", "METRICS_MEASURED.md",
+            "LIVING_STRATEGY_MAP.md")
+    for name in five:
+        text = (biz / name).read_text(encoding="utf-8")
+        faults = _w703_faults(text, root, set(items), set(reg), routes)
+        assert faults == [], (name, faults)
+    doc = (biz / "METRICS_MEASURED.md").read_text(encoding="utf-8")
+    opening = " ".join(doc.split("\n## ", 1)[0].split())
+    assert "DRAFT until the Owner ratifies it" in opening and "moved here in W1154" in opening, opening[:200]
+    states = {}
+    for ln in doc.splitlines():
+        cells = [c.strip() for c in ln.strip().strip("|").split("|")]
+        if len(cells) == 7 and cells[1] in ("MEASURED", "PARTLY", "NOT MEASURED"):
+            states[cells[0]] = cells[1]
+    assert len(states) >= 18 and states.get("Customers who pay") == "NOT MEASURED", sorted(states)
+    assert "Paying customers" not in doc
+    note = reg["FU-743"]["close_note"]
+    assert "MOVED in W1154 to docs/business/METRICS_MEASURED.md" in note, note[-300:]
+    assert items["P5.6"]["done"] and items["P5.6"]["done_by"] == "W1154", items["P5.6"]

@@ -1,20 +1,28 @@
 # Which business and product metrics are measured, and which are not
 
-W878 (plan item P5.6, row FU-743). Written from this tree on 2026-11-12. A metric is MEASURED only when a
-route returns it from a store the platform writes as the thing happens; PARTLY when it is returned with a stated limit
-that changes what it can be read as; NOT MEASURED when nothing records it, and then the row says what would measure
-it. Every amount of money below is virtual WST: no real-money rail is enabled, and the switch is the Owner's.
+**DRAFT until the Owner ratifies it.** Written in W878 for plan item P5.6 (row FU-743) on 2026-11-12, from this tree,
+and moved here in W1154 beside the other business documents of that item. A metric is MEASURED only when a route
+returns it from a store the platform writes as the thing happens; PARTLY when it is returned with a stated limit that
+changes what it can be read as; NOT MEASURED when nothing records it, and then the row says what would measure it.
+Every amount of money below is virtual WST: no real-money rail is enabled, and the switch is the Owner's.
 
-The guard (test_w878) reads the table: each MEASURED or PARTLY row names a route that is mounted, and each NOT
-MEASURED row says what would measure it. A row moves from NOT MEASURED only with its source.
+## How to read this document
+
+- MEASURED: a route returns the metric from a store the platform writes as the thing happens. [observed]
+- PARTLY: a route returns it with a stated limit, and the limit changes what it can be read as. [observed]
+- NOT MEASURED: nothing records it, and the row says what would measure it. [observed]
+- Each MEASURED or PARTLY row names a route this app serves, and each NOT MEASURED row says what would measure it. The guard (test_w878) reads the table, and a row moves from NOT MEASURED only with its source. [observed]
+- No figure is copied here: each is read from its route when it is wanted, so nothing in this document goes stale. [observed]
+
+## The metrics
 
 | Metric | State | Definition | Source | Denominator | Freshness | What would measure it |
 |---|---|---|---|---|---|---|
 | Entities established | MEASURED | registered living entities on the roster | GET /api/v1/economy/living-vsbs | none (a count) | read from the roster on each request | - |
-| Revenue recorded per entity | PARTLY | revenue each entity's ledger holds | GET /api/v1/economy/ledger/{vsb_id} | none | per cycle | the figure is the one the cycle's caller supplied (FU-1010): it is recorded, not earned from a customer |
+| Revenue recorded per entity | PARTLY | revenue each entity's ledger holds | GET /api/v1/economy/ledger/{vsb_id} | none | per cycle | each figure says where its value entered (W881, FU-1010): a number the caller typed at the cycle, a recorded event, or a return received; it is recorded, not earned from a customer |
 | Capital fund contributions and allocations | MEASURED | what cycles paid in, what was allocated, and what was set aside and not received | GET /api/v1/fund/status | the pool, part of it an unfunded seed (said on the route) | read from the fund store on each request | - |
 | Real-money revenue | NOT MEASURED | money received from a customer | none | - | - | settled transactions from a live payment provider, which needs the Owner's real-money switch |
-| Paying customers | NOT MEASURED | people or organisations paying for the product | none | - | - | an account with a subscription or a purchase record, which needs billing (the Owner's decision) |
+| Customers who pay | NOT MEASURED | people or organisations paying for the product | none | - | - | an account with a subscription or a purchase record, which needs billing (the Owner's decision) |
 | Projects created, by stage | MEASURED | projects on disk, by lifecycle stage, with their outputs | GET /api/v1/projects/stats/summary | none (counts) | read from the project store on each request | - |
 | AI calls and what served them | MEASURED | each recorded run: what served it (the floor, a local model, an external one), how long it took, whether it produced output | GET /api/v1/operations/summary | recorded runs in the store, the rows from before the suite's isolation counted apart (W855) | appended as each run ends | - |
 | Output quality pass rate | PARTLY | runs a quality gate passed, of the runs a gate assessed | GET /api/v1/operations/rankings | gate-assessed runs only; floor text is not assessable, so on a floor-only deployment the rate is over few or no runs | appended as each run ends | the basis on the route says how many runs carry a verdict |
@@ -28,3 +36,16 @@ MEASURED row says what would measure it. A row moves from NOT MEASURED only with
 | A person returning | NOT MEASURED | someone coming back on a later day | none | - | - | sign-in events per person per day, which exist only with sign-in on |
 | An output kept or used | PARTLY | outputs a person saved to their workspace | GET /api/v1/user/workspace | that person's own history only; no count across people or tools | as each save happens | a count over the workspace store per tool would make it a metric |
 | Time to a first useful output | NOT MEASURED | how long from arriving to a first output the person keeps | none | - | - | the time between a person's first visit and their first save, per person |
+
+## What is not measured, and what that means
+
+- Nothing records a person completing a task, returning on a later day, or keeping an output across people, so this tree supports no statement about use, return or satisfaction across people. [observed]
+- Real-money revenue and customers who pay are not measured: no real-money rail and no billing exist, and both are the Owner's to switch on (real money is plan item P4.6). [observed]
+- Revenue per entity is recorded, not earned: each figure says where its value entered, a number the caller typed at the cycle, a recorded event or a return received (row FU-1010, built in W881). [observed]
+- The output quality rate covers only the runs a quality gate assessed. Text the floor composes is not assessable, so on a floor-only deployment the rate is over few runs or none. [observed]
+- Tokens are counted only where a serving model reports them; the floor counts none. [observed]
+- Building what would measure each missing metric is a later item for the Owner to schedule; this item builds no telemetry. [plan item P5.6]
+
+## What this document does not do
+
+- It states no figure, builds no telemetry, and says nothing of how many people use the product. [observed]
