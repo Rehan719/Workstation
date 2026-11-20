@@ -85,6 +85,24 @@
    "route": "gov-uk-employment-tribunals-guide"
   },
   {
+   "id": "law-tribunal-claim-gather",
+   "domain": "Law",
+   "subject": "What to gather to make an employment tribunal claim",
+   "nation": "England",
+   "state": "route_only",
+   "route": "gov-uk-employment-tribunals-guide",
+   "today": "the Law page lists what GOV.UK's employment tribunals guide says the claim service needs, the documents it gives as examples to share, and what to have at the hearing, each in the guide's own words with the part of the page it is in and the day it was read, not recently checked ninety days on; for England, Wales and Scotland, saying Northern Ireland has a different way to claim (W1168)"
+  },
+  {
+   "id": "law-money-claim-gather",
+   "domain": "Law",
+   "subject": "What to gather to make a court claim for money",
+   "nation": "England",
+   "state": "route_only",
+   "route": "gov-uk-make-court-claim-for-money",
+   "today": "the Law page lists what GOV.UK's guide to making a court claim for money says a claim online asks for and how the fee is paid, in the guide's own words with the day it was read, not recently checked ninety days on; for England and Wales (W1168)"
+  },
+  {
    "id": "law-urgent-routes",
    "domain": "Law",
    "subject": "Somewhere safe tonight, danger from a person, a hearing within days",

@@ -27,6 +27,7 @@ function serve(over: Record<string, Reply> = {}) {
     [TEMPLATES]: ok(captured.templates), [TOOLS]: ok(captured.tools),
     '/api/v1/native-ai/status': ok(captured.serving), '/api/v1/law/help': ok(captured.help),
     '/api/v1/law/urgent': ok(captured.urgent),   // W1166
+    '/api/v1/law/checklists': ok(captured.checklists),   // W1168
   };
   vi.stubGlobal('fetch', vi.fn(async (url: string) => {
     const r = (url in over ? over[url] : base[url]) ?? refused(404, `not served in this test: ${url}`);

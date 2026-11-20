@@ -7,6 +7,7 @@ import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 import MatterAssemblyPanel from '../../components/MatterAssemblyPanel';
 import StatutePanel from '../../components/StatutePanel';
 import TimeLimitPanel from '../../components/TimeLimitPanel';   // W875 (FU-1012)
+import ChecklistsPanel from '../../components/ChecklistsPanel';   // W1168 (P5.11 clause 8)
 import AgreementsPanel from '../../components/AgreementsPanel';   // W1081 (P5.18)
 import AssetsPanel from '../../components/AssetsPanel';   // W1083 (P5.19)
 import WaitingPanel from '../../components/WaitingPanel';   // W1086 (P5.18 clause 3)
@@ -157,6 +158,8 @@ export const LawHub: React.FC = () => {
       {/* W875 (FU-1012) - how long a time limit runs: arithmetic on the rule's own words, and who to ask */}
       <Card className="p-6">
         <TimeLimitPanel />
+        {/* W1168 (P5.11 clause 8) - what to gather, each list in the words of the page that gives it */}
+        <ChecklistsPanel />
       </Card>
       {/* P3.23 — the matter specialist: provenance per particular, refused authorities, unresolved checks */}
       <Card className="p-6">

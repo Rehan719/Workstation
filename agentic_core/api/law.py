@@ -591,6 +591,15 @@ def regulated_boundaries():
     return {"boundaries": _bnd1167.rows(), "basis": _bnd1167.BASIS, "coverage": _bnd1167.COVERAGE, "composed": False}
 
 
+@router.get("/checklists")
+def what_to_gather():
+    """W1168 (P5.11 clause 8) - what to gather for a subject, as lists: each item in the words of the page that gives
+    it, with the part of the page it is in, the nations the page is for, and the day the page was read. Nothing is
+    composed."""
+    from agentic_core.legal import checklists as _cl1168
+    return {"checklists": _cl1168.rows(), "basis": _cl1168.BASIS, "composed": False}
+
+
 @router.get("/help")
 def help_from_a_person():
     """Where regulated and free legal help is, what this platform is not, and how to complain. Links only."""

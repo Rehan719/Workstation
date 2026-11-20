@@ -26602,6 +26602,30 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Done in W1167b: the urgent box says an answer that carries no urgent routes, or an empty list of them, in the list's place with the line to call 999, and maps no list it was not given. The support page's captured help answer is the one page's capture, which test_w1163 holds equal to GET /api/v1/support/where-help-is, and test_w1167b holds the two equal to the route. The one page's rendered test drives an answer with no list and one with an empty list. The chain now runs the whole vitest run, as CI's frontend job does, before a round that changes a page is landed."
+    },
+    {
+      "id": "FU-1811",
+      "title": "No list of what to gather was held: a person asking what to bring to a tribunal claim or a court claim was given prose a model or the floor composed, or nothing",
+      "why": "Measured in W1168 against P5.11 clause 8: what to gather for a subject is a list with its source, not prose. Nothing in the tree held such a list.",
+      "source": "W1168 (the Law routes and the Law page read against P5.11 clause 8)",
+      "found": "2026-11-20",
+      "files": [
+        "agentic_core/legal/checklists.py",
+        "agentic_core/api/law.py",
+        "apps/workstation-superapp/src/components/ChecklistsPanel.tsx",
+        "apps/workstation-superapp/src/pages/domains/LawHub.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.11",
+      "status": "done",
+      "closed_by": "W1168",
+      "note": "",
+      "slot_source": "P5.11 clause 8 is checklists",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1168: agentic_core/legal/checklists.py holds two lists of what to gather - for an employment tribunal claim (what the claim service needs, the documents GOV.UK gives as examples to share, and what to have at the hearing) and for a court claim for money (what a claim online asks for, and how the fee is paid) - every item and every line that leads a group in the words of the GOV.UK guide that gives it, checked against that part of the page's record when the round was applied, with the nations the guide is for and the day it was read, not recently checked ninety days on. GET /api/v1/law/checklists serves them; the Law page draws them beside the time-limit tool, a list that could not be read said in its place. The tribunal guide's register row records the lists; the money claim guide is a new row. A rendered test reads the panel against the route's own answer. test_w1168 drives it."
     }
   ],
   "routes": [

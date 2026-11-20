@@ -1514,8 +1514,11 @@
    "page": "https://www.gov.uk/employment-tribunals",
    "read_on": "2026-11-20",
    "read_by": "round W1161, the guide's nine parts read whole (GOV.UK's content record of the page, www.gov.uk/api/content/employment-tribunals), not through a summary",
-   "says": "GOV.UK's content record gives it as first published 3 January 2012, last publicly updated 9 December 2024 and changed on 20 November 2026. 'Check if you can make a claim': there is a different way to make a claim to an employment tribunal in Northern Ireland, linked at https://www.employmenttribunalsni.co.uk/how-make-claim; a person usually has 6 months if the problem happened on or after 1 October 2026, and 3 months if before; to find the deadline for a claim, check the employment tribunal time limits guidance on the Acas website, linked at https://www.acas.org.uk/employment-tribunal-time-limits; a person may not be able to claim if the deadline is missed, even while trying to resolve the dispute directly; interim relief is applied for within 7 days of dismissal. 'Make a claim': a person must tell Acas that they are planning to make a claim. 'Get support and legal advice': in England or Wales, legal advice from The Law Society (https://solicitors.lawsociety.org.uk/), Citizens Advice (https://www.citizensadvice.org.uk/law-and-courts/legal-system/finding-free-or-affordable-legal-help/), Law Centres Network (https://www.lawcentres.org.uk/) and Law Works (https://www.lawworks.org.uk/); in Scotland, The Law Society of Scotland (https://www.lawscot.org.uk/) and Citizens Advice Scotland (https://www.cas.org.uk/); no place is named for Northern Ireland.",
-   "not_read": "the pages it links to: each of their sites refused an automated visit from where the guide was read, so none was opened; the Welsh version of the guide; the claim form and its guidance"
+   "says": "GOV.UK's content record gives it as first published 3 January 2012, last publicly updated 9 December 2024 and changed on 20 November 2026. 'Check if you can make a claim': there is a different way to make a claim to an employment tribunal in Northern Ireland, linked at https://www.employmenttribunalsni.co.uk/how-make-claim; a person usually has 6 months if the problem happened on or after 1 October 2026, and 3 months if before; to find the deadline for a claim, check the employment tribunal time limits guidance on the Acas website, linked at https://www.acas.org.uk/employment-tribunal-time-limits; a person may not be able to claim if the deadline is missed, even while trying to resolve the dispute directly; interim relief is applied for within 7 days of dismissal. 'Make a claim': a person must tell Acas that they are planning to make a claim. 'Get support and legal advice': in England or Wales, legal advice from The Law Society (https://solicitors.lawsociety.org.uk/), Citizens Advice (https://www.citizensadvice.org.uk/law-and-courts/legal-system/finding-free-or-affordable-legal-help/), Law Centres Network (https://www.lawcentres.org.uk/) and Law Works (https://www.lawworks.org.uk/); in Scotland, The Law Society of Scotland (https://www.lawscot.org.uk/) and Citizens Advice Scotland (https://www.cas.org.uk/); no place is named for Northern Ireland. Round W1168 read the record again on 2026-11-20 for what to gather. 'Make a claim', under 'What you’ll need': 'To use this service, you’ll need:' 'the names and addresses of all the people making the claim (the ‘claimants’)', 'the names and addresses of the employer or organisation you’re claiming against (the ‘respondents’)' and 'your Acas early conciliation certificate number'. 'After you make a claim', under 'Share documents': 'You’ll have to share any relevant documents with the respondent and the tribunal, even if they do not help your case.' 'Examples of relevant documents could include:' 'a contract of employment', 'pay slips', 'details of your pension scheme' and 'notes from relevant meetings you attended at work'. 'Going to a tribunal hearing': 'You must have all the documents you’re using to support your case with you.'",
+   "not_read": "the pages it links to: each of their sites refused an automated visit from where the guide was read, so none was opened; the Welsh version of the guide; the claim form and its guidance",
+   "used_by": [
+    "agentic_core/legal/checklists.py"
+   ]
   },
   {
    "id": "acas-employment-tribunal-time-limits",
@@ -1720,6 +1723,26 @@
    "not_read": "the two Regulatory Policy Committee opinions (their titles only, from GOV.UK's search), the authorised business register it links, and the Financial Conduct Authority's own site (www.fca.org.uk), which this environment's network refuses",
    "used_by": [
     "agentic_core/legal/boundaries.py"
+   ]
+  },
+  {
+   "id": "gov-uk-make-court-claim-for-money",
+   "names": [
+    "Make a court claim for money (GOV.UK)"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/make-court-claim-for-money",
+   "read_on": "2026-11-20",
+   "read_by": "round W1168, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/make-court-claim-for-money) on 2026-11-20, not through a summary",
+   "says": "GOV.UK's content record gives it as first published 19 January 2012 and last publicly updated 5 November 2024. A claim can be made online unless, among other things, 'you or the people or organisations you’re claiming against do not have an address in England or Wales'. 'You’ll be asked for the name, address and email address of the person you’re claiming against.' 'You’ll also need either:' 'a debit or credit card to pay the court fee' or 'your ‘help with fees’ reference number if you’ve already applied for help with fees online'. By post, 'download and fill in paper claim form N1'. 'You may need to get legal advice if your claim is complex.' It names Advicenow and Citizens Advice for help and advice about making a claim.",
+   "not_read": "the online services, form N1 and its notes, and the pages it links on fees and help with fees",
+   "used_by": [
+    "agentic_core/legal/checklists.py"
    ]
   }
  ]

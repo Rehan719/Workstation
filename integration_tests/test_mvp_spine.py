@@ -95836,3 +95836,93 @@ def test_w1167b_the_urgent_box_says_an_answer_without_its_routes_and_the_support
     rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
     fu = [r for r in rows if r.get("title", "").startswith("The urgent box took the support page down")]
     assert len(fu) == 1 and (fu[0]["status"], fu[0]["closed_by"], fu[0]["because"]) == ("done", "W1167b", "built"), fu
+
+
+def test_w1168_p511_what_to_gather_is_a_list_in_the_words_of_its_page_with_its_source(client, monkeypatch):
+    """P5.11 clause 8 (W1168): "what to gather for a subject is a list with its source, not prose." Before this round no
+    list of what to gather was held anywhere: a person asking what to bring to a tribunal claim or a court claim was
+    given prose a model or the floor composed, or nothing. Held here:
+    1. the two lists: every item, and every line that leads a group, is recorded in its page's row of the register of
+       sources, which says the page was read on 2026-11-20; each list says its nations (the tribunal list says Northern
+       Ireland has its own way to claim), and each page is said as read with the day, NOT RECENTLY CHECKED ninety days
+       on, and as not checked when the register cannot be read;
+    2. GET /api/v1/law/checklists serves them, composed by nothing, and says what a list does not say;
+    3. the Law page draws them after the time-limit tool, the panel says a failed read in its place and a list of none
+       as none, and the rendered tests read the route's own answer;
+    4. the register rows, the coverage rows and the row."""
+    import datetime as _dt
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.legal import checklists as _cl
+    from agentic_core.legal import time_limits as _tl
+    root = Path(__file__).resolve().parents[1]
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2026, 11, 20))
+    reg = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    norm = lambda s: re.sub(r"\s+", " ", s)       # noqa: E731
+
+    #  1. the lists
+    rows = {r["id"]: r for r in _cl.rows()}
+    assert list(rows) == ["employment_tribunal_claim", "court_claim_for_money"], list(rows)
+    for c in _cl.CHECKLISTS:
+        r = rows[c["id"]]
+        recorded = " ".join(norm(reg[s]["says"]) for s in c["sources"])
+        for g in c["groups"]:
+            for line in ([g["lead"]] if g["lead"] else []) + list(g["items"]):
+                assert norm(line) in recorded, (c["id"], "an item no register row of its page records", line)
+        assert r["sources"] and all(s["read"] and s["checked"] == "read on 20 November 2026" for s in r["sources"]), r["sources"]
+        assert r["groups"] and all(g["items"] and g["part"] for g in r["groups"])
+    et, money = rows["employment_tribunal_claim"], rows["court_claim_for_money"]
+    assert et["nations"] == ["England", "Wales", "Scotland"] and "Northern Ireland" in et["elsewhere"]
+    assert money["nations"] == ["England", "Wales"] and money["elsewhere"] is None
+    assert [len(g["items"]) for g in et["groups"]] == [3, 4, 1] and [len(g["items"]) for g in money["groups"]] == [1, 2]
+    assert et["groups"][0]["items"][2] == "your Acas early conciliation certificate number"
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2027, 3, 1))
+    assert all(s["checked"].startswith("NOT RECENTLY CHECKED") for s in _cl.row(_cl.CHECKLISTS[0])["sources"])
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2026, 11, 20))
+    _real_register = _tl._register
+    monkeypatch.setattr(_tl, "_register", lambda: None)
+    unread = _cl.row(_cl.CHECKLISTS[1])
+    monkeypatch.setattr(_tl, "_register", _real_register)
+    assert not any(s["read"] for s in unread["sources"]) and unread["sources"][0]["checked"].startswith("NOT CHECKED")
+
+    #  2. the route
+    got = client.get("/api/v1/law/checklists")
+    assert got.status_code == 200 and got.json()["composed"] is False, got.text[:200]
+    assert got.json()["checklists"] == _cl.rows() and got.json()["basis"] == _cl.BASIS
+    assert "says nothing about whether a claim will succeed" in _cl.BASIS and _cl.BASIS.endswith("Nothing here is legal advice.")
+
+    #  3. the Law page
+    src = root / "apps" / "workstation-superapp" / "src"
+    read = lambda rel: (src / rel).read_text(encoding="utf-8")       # noqa: E731
+    panel = read("components/ChecklistsPanel.tsx")
+    for line in ("apiJson('/api/v1/law/checklists')", "`What to gather could not be read (${readFailure(e)}).`",
+                 'data-testid="law-checklists"', 'data-testid="checklist-item"', 'data-testid="checklist-read"',
+                 "Read: {c.sources.map(urgentSourceSaid).join('; ')}.", "The server lists no subject."):
+        assert line in panel, ("the panel no longer draws this", line)
+    law = read("pages/domains/LawHub.tsx")
+    assert law.index("        <TimeLimitPanel />\n") < law.index("        <ChecklistsPanel />\n")
+    assert json.loads(read("components/ChecklistsPanel.fixture.json"))["checklists"] == got.json(), \
+        "the panel's captured answer is not the route's"
+    assert json.loads(read("pages/domains/LawHub.fixture.json"))["checklists"] == got.json(), \
+        "the Law page's captured answer is not the route's"
+    spec = read("components/ChecklistsPanel.test.tsx")
+    for line in ("import ChecklistsPanel from './ChecklistsPanel';",
+                 "it('lists that could not be read are said in their place, never as none'",
+                 "expect(texts(box, 'checklist-item')).toEqual(lists.flatMap(c => c.groups.flatMap(g => g.items)));",
+                 "expect(texts(box, 'checklist-nations')).toEqual(['For England, Wales and Scotland.', 'For England and Wales.']);"):
+        assert line in spec, ("the rendered test no longer reads this", line)
+    assert "'/api/v1/law/checklists': ok(captured.checklists),   // W1168" in read("pages/domains/LawHub.test.tsx")
+
+    #  4. the register rows, the coverage rows and the row
+    et_row, money_row = reg["gov-uk-employment-tribunals-guide"], reg["gov-uk-make-court-claim-for-money"]
+    assert "agentic_core/legal/checklists.py" in et_row["used_by"] and "Round W1168 read the record again" in et_row["says"]
+    assert (money_row["status"], money_row["read_on"], money_row["used_by"]) == (
+        "current", "2026-11-20", ["agentic_core/legal/checklists.py"]), money_row
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    for cid, route in (("law-tribunal-claim-gather", "gov-uk-employment-tribunals-guide"),
+                       ("law-money-claim-gather", "gov-uk-make-court-claim-for-money")):
+        assert (cov[cid]["state"], cov[cid]["route"]) == ("route_only", route) and cov[cid]["today"].endswith("(W1168)"), cov[cid]
+    fu = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+          if r.get("title", "").startswith("No list of what to gather was held")]
+    assert len(fu) == 1 and (fu[0]["status"], fu[0]["slot"], fu[0]["because"]) == ("done", "P5.11", "built"), fu
