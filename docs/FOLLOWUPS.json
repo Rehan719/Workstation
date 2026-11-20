@@ -21054,11 +21054,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.12",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1133",
       "note": "",
       "slot_source": "the Owner's rulings of 2026-10-12 chartered this item",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1133: the department's page read whole on 2026-11-20 (updated 19 January 2026) and its thirteen headings set against the four Education forms in INSTRUMENT_CELL_BRIEF_ASSESSMENT.md section 34, one row each: none met, nine partly met, four not met (filtering, monitoring and reporting, cognitive development, mental health). The children's gate stays closed; no code, as ruled."
     },
     {
       "id": "FU-1056",

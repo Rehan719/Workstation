@@ -316,9 +316,10 @@
    ],
    "status": "current",
    "page": "https://www.gov.uk/government/publications/generative-ai-product-safety-standards/generative-ai-product-safety-standards",
-   "read_on": "2026-10-12",
-   "read_by": "round W678, in a browser",
-   "says": "Updated 19 January 2026; applies to England. Thirteen headings from stated purpose to manipulation. Products are expected not to provide final answers, full solutions or complete worked examples by default. NOT READ: the text under twelve of the thirteen headings; whether the page calls itself non-statutory."
+   "read_on": "2026-11-20",
+   "read_by": "the cloud session (W1133), the whole page",
+   "says": "Updated 19 January 2026; applies to England. Thirteen headings: Stated purpose, Educational use cases, Filtering, Monitoring and reporting, Security, Privacy and data protection, Intellectual property, Design and testing, Governance, Cognitive development, Emotional and social development, Mental health, Manipulation. Products are expected not to provide final answers, full solutions or complete worked examples by default. The page does not say whether it is statutory. Set against the Education tools in docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md section 34.",
+   "not_read": "the regulations and codes the page links to: Keeping children safe in education, the filtering and monitoring standards, the ICO's Children's code, the Online Safety Act and Ofcom's codes"
   },
   {
    "id": "dfe-genai-in-education",

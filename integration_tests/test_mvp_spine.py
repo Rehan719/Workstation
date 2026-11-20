@@ -92297,3 +92297,53 @@ def test_w1132_fu1067_the_recordings_request_is_drafted_its_source_permits_nothi
     notes = (root / "docs" / "RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
     assert f"Sending the request to the Quranic Audio Dataset's authors, also in `docs/letters/` ({rid})" in notes, (
         "the local notes do not name it")
+
+
+def test_w1133_fu1055_the_departments_thirteen_headings_are_each_set_against_the_education_tools():
+    """FU-1055 (W1133), P5.12; the Owner's ruling of 2026-10-12 (the children's gate, its first step). The education
+    department's product safety standards, read at its page on 2026-11-20, set against the four Education forms in a
+    table: one row per heading, in the page's order, each marked met, partly met or not met, with what the tree has and
+    what meeting it would take. Held here:
+    - the thirteen headings, as the register of sources records them from the page, each a row, in order;
+    - every verdict is one of the three, and the count stated is the table's;
+    - every file a row names exists, and every route it names is served;
+    - the register of sources says the page was read whole, on the date, and points to the table;
+    - the gate stays closed."""
+    import json
+    import pathlib
+    import re
+    from agentic_core.app_mvp import app
+    root = pathlib.Path(__file__).resolve().parents[1]
+    heads = ["Stated purpose", "Educational use cases", "Filtering", "Monitoring and reporting", "Security",
+             "Privacy and data protection", "Intellectual property", "Design and testing", "Governance",
+             "Cognitive development", "Emotional and social development", "Mental health", "Manipulation"]
+    src = json.loads((root / "docs" / "SOURCES.json").read_text(encoding="utf-8"))["rows"]
+    row = next(r for r in src if r["id"] == "dfe-genai-product-safety")
+    assert row["read_on"] == "2026-11-20" and "the whole page" in row["read_by"], row
+    assert "NOT READ" not in row["says"] and "section 34" in row["says"], row["says"]
+    assert ", ".join(heads) in row["says"], "the register does not record the thirteen headings as the page has them"
+
+    doc = (root / "docs" / "INSTRUMENT_CELL_BRIEF_ASSESSMENT.md").read_text(encoding="utf-8")
+    sec = doc.split("\n## 34. Addendum (W1133)", 1)[1]
+    rows = re.findall(r"^\| (\d+) \| ([^|]+) \| ([^|]+) \| ([^|]+) \| ([^|]+) \| ([^|]+) \|$", sec, re.M)
+    assert [r[1].strip() for r in rows] == heads, ("the table's headings are not the page's thirteen, in order",
+                                                   [r[1].strip() for r in rows])
+    assert [int(r[0]) for r in rows] == list(range(1, 14))
+    verdicts = [r[3].strip() for r in rows]
+    assert set(verdicts) <= {"met", "partly met", "not met"}, verdicts
+    for n, (_, head, _for, _v, has, take) in enumerate(rows, 1):
+        assert len(has.strip()) > 40 and len(take.strip()) > 30, (head, "a row says too little to act on")
+    said = re.search(r"THE COUNT: (\w+) met, (\w+) partly met, (\w+) not met\.", " ".join(sec.split()))
+    words = {"none": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8,
+             "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13}
+    assert said, "the section states no count"
+    assert [words[said.group(i)] for i in (1, 2, 3)] == [verdicts.count("met"), verdicts.count("partly met"),
+                                                         verdicts.count("not met")], ("the count is not the table's",
+                                                                                     said.group(0))
+
+    for path in re.findall(r"`((?:agentic_core|apps|docs|scripts)/[A-Za-z0-9_./-]+)`", sec):
+        assert (root / path).exists(), (path, "a row names a file that does not exist")
+    served = {r.path for r in app.routes}
+    for route in re.findall(r"`GET (/api/[A-Za-z0-9_./-]+)`", sec):
+        assert route in served, (route, "a row names a route that is not served")
+    assert "the children's gate stays closed" in " ".join(sec.split()), "the table does not keep the gate closed"
