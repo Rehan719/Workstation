@@ -100,11 +100,13 @@ Or go straight to `/factory` → New Production Line → Business Model → Prod
 
 **Frontend: Vercel is RETIRED (Owner, 2026-10-07).** Its config is archived at
 `_archive/deployment/vercel/workstation-superapp.vercel.json`. The planned target is **Google Cloud Platform**
-(free tier), with separate **development**, **beta** and **release** channels. That plan is not built yet; see
-`docs/DEPLOYMENT.md`. Until then the frontend runs locally with `npm run dev` (the Vite proxy sends /api to :8000),
-and `npm run build` produces the static `dist/`.
+(free tier), with separate **development**, **beta** and **release** channels. The image is built: one container
+serves the pages and the API together. It was booted in a dry run on 2026-11-20 (W1128): built in 206 seconds,
+healthy 8.3 seconds after it started, at 253 MiB of memory under a 1 GiB cap. The project, its billing and the
+deploy itself are the Owner's; see `docs/DEPLOYMENT.md`. Locally the frontend runs with `npm run dev` (the Vite
+proxy sends /api to :8000), and `npm run build` produces the static `dist/`.
 
-**Backend → Render**
+**Backend → Render** (an earlier path, kept; the plan's target is Google Cloud, above)
 
 `render.yaml` is committed. Connect the repo in Render dashboard; no AI key is required (the backend serves on its native fabric). An `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` is used only when `AI_ALLOW_EXTERNAL=true` — see `docs/DEPLOYMENT.md`.
 
@@ -133,7 +135,7 @@ apps/workstation-superapp/  — Vite + React 18 + TypeScript frontend
                          + domain hubs + all product pages
 ```
 
-> Verified in CI on every push: backend boots clean; **807 integration tests passing / 15 skipped** (the last full run on the Owner's own machine, W688 tree, 2026-10-13 - since then the whole suite runs on the build server on Linux AND on Windows on every push, both required, and the local full run is retired by the Owner's ruling of 2026-10-13; the figures above it are recomputed by `scripts/readme_figures.py` and asserted by the suite, so they cannot drift again — this one is dated because a test count is only true of a tree); production
+> Verified in CI on every push: backend boots clean; **1,260 integration tests passing / 16 skipped** (the full suite run before W1129's commit, 2026-11-20; the whole suite runs on the build server on Linux AND on Windows on every push, both required, and the local full run is retired by the Owner's ruling of 2026-10-13; the figures above it are recomputed by `scripts/readme_figures.py` and asserted by the suite, so they cannot drift again — this one is dated because a test count is only true of a tree); production
 > build (`tsc && vite build`) succeeds.
 
 Data persists under `data/` as atomically-written JSON files.
@@ -149,20 +151,28 @@ orchestration, and swarm are native, not API wrappers. The gateway routes:
 
 ## Roadmap
 
-The live, authoritative roadmap is the **Living Plan** (`docs/WORKSTATION_IDBO_LIVING_PLAN.md`,
-served at `GET /api/v1/plan`) and **`docs/AUTONOMOUS_PROGRESS.md`** (the cycle-by-cycle log; the
-older `ACTION_PLAN.md` is archived under `_archive/docs/`); cycle-by-cycle progress is in
-**`docs/AUTONOMOUS_PROGRESS.md`**. Summary:
+The live, authoritative roadmap is the **Living Plan** (`docs/WORKSTATION_IDBO_LIVING_PLAN.md`, served at
+`GET /api/v1/plan`). The delivery plan's status is generated on every register change, in the PLAN NOW block of
+`docs/FABLE_DELIVERY_PROMPT.md`, and every open task is a row in `docs/FOLLOWUPS.json`. Each round's own record is
+its commit message; `docs/AUTONOMOUS_PROGRESS.md` is the cycle log up to 2026-10-03, and the older `ACTION_PLAN.md`
+is archived under `_archive/docs/`.
 
-**Phase 1 — ✅ done**: authentication (opt-in JWT, resilient crypto imports), integration test
-suite (370 passing at the last CI-green run, W463), clean boot verified, frontend↔backend integration (all 18 previously-broken
-endpoints wired), production build verified + code-split.
+Where it stood on 2026-11-20, from that generated block: **89 of 119 plan items done.**
 
-**Phase 2 — in progress (non-gated)**: deeper domain-specific AI depth across Realm × Domain,
-broader test coverage, data-fidelity + operational hardening, SQLite/Postgres persistence.
+| Phase | Done | Left |
+|---|---|---|
+| P1 | 18 of 18 | 0 open |
+| P2 Reach and disclosure | 39 of 41 | 2 open |
+| P3 Capability | 30 of 32 | 2 open |
+| P4 The Owner's switches | 0 of 6 | 6 open |
+| P5 Commercialisation, rehearsed on virtual WST | 2 of 22 | 20 open |
 
-**Phase 3 — ⛔ Owner-gated (launch/commercial)**: real-money rails (Stripe — virtual/simulated
-until directed), production deployment hardening, live AI key in the running environment.
+The fourth phase is the Owner's six switches: sign-in, self-serve sign-up, external models, managed Postgres, the
+production deploy and real money. By the Owner's ruling of 2026-11-19 they proceed in order, each once its pre-flight
+is built and measured, with AI agents standing in for invited people; the deploy, the external-model key and real
+money stay the Owner's, and real money stays off until a compliance and KYC review by qualified people. The
+remaining work was measured on 2026-11-10 at 214–392 rounds (`docs/REMAINING_WORK_MEASURED.md`). These figures are
+dated; the generated block is the current one.
 
 ---
 

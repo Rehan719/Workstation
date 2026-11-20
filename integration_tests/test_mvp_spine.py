@@ -92154,3 +92154,52 @@ def test_w1129_fu1282_the_matter_folder_is_named_on_the_machine_that_holds_it_an
     assert "LEGAL_MATTER_FOLDER=${USERPROFILE}\\data\\legal-matter" in _rs, "the Owner's machine is not told its line"
     _dp = " ".join((root / "docs/DEPLOYMENT.md").read_text(encoding="utf-8").split())
     assert "Closed by W1129" in _dp and "never its path" in _dp, "the deployment record does not say the row closed"
+
+
+def test_w1130_the_readme_says_where_the_plan_stands_what_the_suite_measured_and_that_the_image_is_built():
+    """W1130 - the Owner asked whether the README was up to date (2026-11-20). Three statements were stale: a test
+    count from 2026-10-13, a three-phase roadmap naming a cycle log last changed 2026-10-03, and a deploy section
+    saying the Google Cloud plan was not built after P4.5's dry run (W1128) built and booted the image. Held here:
+    - the test count is a full suite's, dated, with the round it ran for;
+    - the roadmap names the plan's five phases, each with the total the plan's generated status gives it and a done
+      count no greater than that status's (a dated snapshot may lag, never lead), and points at the generated block;
+    - the deploy paragraph says the image is built, with the dry run's own figures as the deployment record states
+      them, and that the deploy is the Owner's."""
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    rd = (root / "README.md").read_text(encoding="utf-8")
+    flat = " ".join(rd.split())
+
+    m = re.search(r"\*\*([\d,]+) integration tests passing / (\d+) skipped\*\* \(the full suite run before W(\d+)'s "
+                  r"commit, (\d{4}-\d{2}-\d{2});", rd)
+    assert m and int(m.group(1).replace(",", "")) >= 1000, "the README's test count is not a dated full-suite figure"
+    assert "807 integration tests" not in rd, "the count of 2026-10-13 is still stated"
+
+    fp = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    live = re.search(r"Done: (\d+) of (\d+) items — P1 (\d+)/(\d+) · P2 (\d+)/(\d+) · P3 (\d+)/(\d+) · "
+                     r"P4 (\d+)/(\d+) · P5 (\d+)/(\d+)\.", fp)
+    assert live, "the plan's generated status has no Done line to compare with"
+    names = ["P1", "P2 Reach and disclosure", "P3 Capability", "P4 The Owner's switches",
+             "P5 Commercialisation, rehearsed on virtual WST"]
+    said_done = 0
+    for i, name in enumerate(names):
+        row = re.search(r"^\| " + re.escape(name) + r" \| (\d+) of (\d+) \| (\d+) open \|$", rd, re.M)
+        assert row, (name, "the roadmap does not state this phase")
+        x, y, left = (int(g) for g in row.groups())
+        live_done, live_total = int(live.group(3 + 2 * i)), int(live.group(4 + 2 * i))
+        assert y == live_total and x <= live_done and left == y - x, (name, (x, y, left), (live_done, live_total))
+        said_done += x
+    tot = re.search(r"from that generated block: \*\*(\d+) of (\d+) plan items done\.\*\*", rd)
+    assert tot and int(tot.group(1)) == said_done and int(tot.group(2)) == int(live.group(2)), "the totals disagree"
+    for frag in ("PLAN NOW block of `docs/FABLE_DELIVERY_PROMPT.md`", "`GET /api/v1/plan`", "`docs/FOLLOWUPS.json`",
+                 "`docs/AUTONOMOUS_PROGRESS.md` is the cycle log up to 2026-10-03"):
+        assert frag in flat, (frag, "the roadmap does not say where the current figures are")
+    assert "Phase 3 — ⛔ Owner-gated" not in rd, "the early three-phase summary is still the roadmap"
+
+    assert "That plan is not built yet" not in rd, "the README still says the deploy plan is not built"
+    dep = " ".join((root / "docs" / "DEPLOYMENT.md").read_text(encoding="utf-8").split())
+    run = dep[dep.index("## The dry run (P4.5)"):]
+    for figure in ("206 seconds", "8.3 seconds", "253 MiB", "1 GiB"):
+        assert figure in flat and figure in run, (figure, "the README's dry run differs from the deployment record")
+    assert "The project, its billing and the deploy itself are the Owner's" in flat, "the deploy is not said to be the Owner's"
