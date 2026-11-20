@@ -26510,6 +26510,48 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Done in W1163: each place of the help list is a row of the directory, from its row in the register of sources: the nations it is for, the page that says so, the day that page was read and how (its address resolved, its content not read, for all eight), and NOT RECENTLY CHECKED ninety days on, driven by date; a place with no reading is said as not checked. The support page, the Law page's statute panel and the box beside an answer that routes a question about a person's own case to people say it under each place, and the basis says nothing is said about whether a place is open, takes a question or has an appointment. test_w1163 drives it."
+    },
+    {
+      "id": "FU-1807",
+      "title": "No urgent situation was named anywhere: help was said with nothing before it, and a question the screen did not recognise reached the composer with no route said",
+      "why": "Measured in W1165 against P5.11 clause 4: a short fixed list of situations - no safe place tonight, danger from a person, a hearing or deadline within days - each shows its route before anything else; a screen may add one and may never remove one. Nothing in the tree named one.",
+      "source": "W1165 (the Law routes and the help page read against P5.11 clause 4)",
+      "found": "2026-11-20",
+      "files": [
+        "agentic_core/legal/urgent.py",
+        "agentic_core/api/law.py",
+        "agentic_core/api/where_help.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.11",
+      "status": "done",
+      "closed_by": "W1165",
+      "note": "",
+      "slot_source": "P5.11 clause 4 is the urgent routes",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1165: agentic_core/legal/urgent.py holds the three situations in a fixed order (danger from a person, no safe place to stay tonight, a hearing or a deadline within days), each step quoted from the GOV.UK page that gives it, read whole on 2026-11-20 and a row of the register of sources, with its places by nation and NOT RECENTLY CHECKED ninety days on. They are served on GET /api/v1/law/urgent, first on the one page of where help is and so on the Law page's help, and first on every answer of the research route, whether or not the own-case screen recognised the question. A screen can add a route and can never remove or replace one: nothing, None, a shorter list or a non-route from it still gives all three. test_w1165 drives it."
+    },
+    {
+      "id": "FU-1808",
+      "title": "The urgent routes are served first but no page shows them yet: the Law page and the support page draw what they drew before",
+      "why": "Found in W1165, which served the three urgent situations first on GET /api/v1/law/urgent, the one page of where help is and every research answer. P5.11 clause 4 asks that each show its route before anything else: the Law page, the support page and the box beside a routed answer must draw them first, with a rendered test each, driven with the screen made to return nothing.",
+      "source": "W1165 (the urgent routes served; the pages not yet drawn)",
+      "found": "2026-11-20",
+      "files": [
+        "apps/workstation-superapp/src/pages/domains/LawHub.tsx",
+        "apps/workstation-superapp/src/components/WhereHelpIs.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.11",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.11 clause 4 is the urgent routes, each shown before anything else",
+      "tier": 2
     }
   ],
   "routes": [

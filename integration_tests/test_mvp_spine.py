@@ -95385,3 +95385,130 @@ def test_w1164_the_owners_ten_decisions_of_2026_11_20_are_recorded_and_the_water
     assert all(reg[s]["status"] == "open" for s in steps), steps
     assert "register my two ventures, Atmospheric Harvest Solutions and Aerius Energy Harvest, fresh in the new books" \
            in " ".join(step5.split()), "step 5 does not carry the Owner's answer on the two ventures"
+
+
+def test_w1165_p511_the_urgent_routes_come_before_anything_else_and_no_screen_removes_one(client, monkeypatch):
+    """P5.11 clause 4 (W1165): "a short fixed list of situations - no safe place tonight, danger from a person, a hearing
+    or deadline within days - each shows its route before anything else; a screen may add one and may never remove
+    one", driven "with the screen made to return nothing". Nothing in the tree named an urgent situation. Held here:
+    1. the three situations in their fixed order, each step a sentence of its GOV.UK page as the register records the
+       reading, each page a current row read on 2026-11-20; each place one the page names, a GOV.UK page said as one
+       and every other site said as not opened;
+    2. ninety days on each page is still said as read that day, from the ninety-first as not recently checked, and with
+       the register unreadable each source is said as not checked and none is left out;
+    3. a screen adds and never removes: nothing, None, a number, a shorter list or a route under a fixed id leave the
+       three first and unchanged; a well-formed route is added after them and said as added;
+    4. the routes: GET /api/v1/law/urgent; first on the one page of where help is and on the Law page's help; first on
+       every research answer, routed or not, and with the screen made to return nothing;
+    5. the captured answers are the routes' own; the basis says nothing of availability; the coverage rows and the
+       two rows."""
+    import datetime as _dt
+    import json
+    from pathlib import Path
+    from urllib.parse import urlparse
+    from agentic_core.api import law as _law
+    from agentic_core.api import where_help as _wh
+    from agentic_core.legal import own_case as _oc
+    from agentic_core.legal import time_limits as _tl
+    from agentic_core.legal import urgent as _urg
+    root = Path(__file__).resolve().parents[1]
+    reg = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    read = _dt.date(2026, 11, 20)
+    monkeypatch.setattr(_tl, "_today", lambda: read)
+
+    #  1. the fixed three, each step the page's own words, each place one the page names
+    assert _urg.FIXED_IDS == ("danger_from_a_person", "no_safe_place_tonight", "hearing_or_deadline_within_days")
+    three = _urg.shown()
+    assert [s["id"] for s in three] == list(_urg.FIXED_IDS) and not any(s.get("added_by_screen") for s in three)
+    for s in three:
+        rows = [reg[sid] for sid in [x["id"] for x in s["sources"]]]
+        assert rows and all(r["status"] == "current" and r["read_on"] == "2026-11-20" and "W1165" in r["read_by"]
+                            for r in rows), s["id"]
+        said = " ".join(r["says"] for r in rows)
+        pages = {r["page"] for r in rows}
+        assert set(s["nations"]) <= {n for r in rows for n in r["nation"]}, (s["id"], s["nations"])
+        for step in s["steps"]:
+            for part in step.split(" ... "):
+                assert part.strip().rstrip(".") in said, (s["id"], "a step is not in its page's words", part)
+        assert s["places"], s["id"]
+        for p in s["places"]:
+            link = p.get("link")
+            named = ((p.get("number") and p["number"] in said) or p["name"] in said
+                     or (link and (link in pages or urlparse(link).netloc in said
+                                   or urlparse(link).path.strip("/") in said)))
+            assert named, (s["id"], "a place its page does not name", p)
+            assert p["own_site"] == (_urg.GOV_UK if link and link.startswith("https://www.gov.uk/") else _urg.NOT_OPENED), p
+        assert all((x["read"], x["recently_checked"], x["checked"]) == (True, True, "read on 20 November 2026")
+                   for x in s["sources"]), s["sources"]
+    assert three[0]["steps"][0] == "If you are in immediate danger, call 999 and ask for the police."
+    assert [p["number"] for p in three[0]["places"] if p["nation"] == "England"] == ["0808 2000 247"]
+
+    #  2. the ninety days, and an unreadable register
+    monkeypatch.setattr(_tl, "_today", lambda: read + _dt.timedelta(days=90))
+    assert all(x["recently_checked"] for s in _urg.shown() for x in s["sources"])
+    monkeypatch.setattr(_tl, "_today", lambda: read + _dt.timedelta(days=91))
+    assert {x["checked"] for s in _urg.shown() for x in s["sources"]} == {
+        "NOT RECENTLY CHECKED - read on 20 November 2026, more than 90 days ago"}
+    monkeypatch.setattr(_tl, "_today", lambda: read)
+    monkeypatch.setattr(_tl, "REGISTER", root / "docs" / "no-such-register.json")
+    gone = _urg.shown()
+    assert [len(s["sources"]) for s in gone] == [len(s["sources"]) for s in three]
+    assert {(x["read"], x["checked"]) for s in gone for x in s["sources"]} == {
+        (False, "NOT CHECKED - the register of sources could not be read")}, gone
+    monkeypatch.setattr(_tl, "REGISTER", root / "docs" / "SOURCES.json")
+
+    #  3. a screen adds and never removes
+    for nothing in (None, [], 42, ["not a route"], [{"id": "danger_from_a_person", "situation": "Something else",
+                                                    "steps": ["a step of a screen's own"]}], three[:1]):
+        assert _urg.shown(nothing) == three, ("a screen's answer changed the fixed three", nothing)
+    added = {"id": "locked_out_tonight", "situation": "Your landlord has locked you out",
+             "steps": ["you cannot get into your home, for example your landlord has locked you out"],
+             "sources": ["gov-uk-homeless-help"]}
+    more = _urg.shown([added])
+    assert more[:3] == three and more[3]["id"] == "locked_out_tonight" and more[3]["added_by_screen"] is True, more[3]
+
+    #  4. the routes: the list, the one page, the Law page's help, every research answer
+    assert client.get("/api/v1/law/urgent").json() == {"routes": three, "basis": _urg.BASIS, "composed": False}
+    page = client.get("/api/v1/support/where-help-is").json()
+    assert list(page)[0] == "urgent" and page["urgent"] == three and page["urgent_basis"] == _urg.BASIS
+    law_help = client.get("/api/v1/law/help").json()
+    assert list(law_help)[0] == "urgent" and law_help["urgent"] == three
+    routed = client.post("/api/v1/law/research", json={"question": "my employer sacked me yesterday, can I sue them?"}).json()
+    assert routed["method"] == "routed to people - not answered" and list(routed)[0] == "urgent" and routed["urgent"] == three
+
+    async def _composed(prompt, agent, **kw):
+        return "an answer composed for the test", {"served_by": "test", "composed": True}
+    monkeypatch.setattr(_law, "ai_text", _composed)
+    monkeypatch.setattr(_oc, "own_case_route", lambda *a, **k: None)          # the screen made to return nothing
+    bare = client.post("/api/v1/law/research", json={"question": "my employer sacked me yesterday, can I sue them?"}).json()
+    assert bare["method"] == "IRAC" and list(bare)[0] == "urgent" and bare["urgent"] == three, list(bare)[:3]
+    monkeypatch.undo()
+    monkeypatch.setattr(_tl, "_today", lambda: read)
+    orig = _oc.own_case_route
+
+    def _adds(question, context=""):
+        r = orig(question, context)
+        return {**r, "urgent_added": [added, {"id": "no_safe_place_tonight", "situation": "x", "steps": ["y"]}]} if r else r
+    monkeypatch.setattr(_oc, "own_case_route", _adds)
+    routed = client.post("/api/v1/law/research", json={"question": "my employer sacked me yesterday, can I sue them?"}).json()
+    assert routed["urgent"][:3] == three and [s["id"] for s in routed["urgent"][3:]] == ["locked_out_tonight"], routed["urgent"]
+
+    #  5. the captured answers, the basis, the coverage rows and the rows
+    src = root / "apps" / "workstation-superapp" / "src"
+    fx = json.loads((src / "components" / "WhereHelpIs.fixture.json").read_text(encoding="utf-8"))
+    assert fx["page"]["urgent"] == three and fx["page_stale"]["urgent"] == three
+    sp = json.loads((src / "components" / "StatutePanel.fixture.json").read_text(encoding="utf-8"))
+    hub = json.loads((src / "pages" / "domains" / "LawHub.fixture.json").read_text(encoding="utf-8"))
+    assert sp["help"]["body"]["urgent"] == hub["help"]["urgent"] == three
+    for said in ("Shown before anything else, whatever was asked", "Nothing here says whether a place is open, will "
+                 "answer or has room.", "Nothing here is legal advice."):
+        assert said in _urg.BASIS, said
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    row = cov["law-urgent-routes"]
+    assert (row["state"], row["route"]) == ("route_only", "gov-uk-domestic-abuse-help") and row["route"] in reg, row
+    assert row["today"].startswith("the three situations are served first") and row["today"].endswith("(W1165)"), row
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    done = [r for r in rows if r.get("closed_by") == "W1165"]
+    assert len(done) == 1 and (done[0]["status"], done[0]["slot"], done[0]["because"]) == ("done", "P5.11", "built"), done
+    left = [r for r in rows if r.get("title", "").startswith("The urgent routes are served first but no page shows them")]
+    assert len(left) == 1 and (left[0]["status"], left[0]["slot"]) == ("open", "P5.11"), left

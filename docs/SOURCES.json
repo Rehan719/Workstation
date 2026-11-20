@@ -1556,6 +1556,87 @@
    "used_by": [
     "agentic_core/legal/time_limits.py"
    ]
+  },
+  {
+   "id": "gov-uk-domestic-abuse-help",
+   "names": [
+    "Domestic abuse: how to get help (GOV.UK)"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "England",
+    "Wales",
+    "Scotland",
+    "Northern Ireland"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/guidance/domestic-abuse-how-to-get-help",
+   "read_on": "2026-11-20",
+   "read_by": "round W1165, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/guidance/domestic-abuse-how-to-get-help) on 2026-11-20, not through a summary",
+   "says": "GOV.UK's content record gives it as first published 5 October 2018 and last publicly updated 29 April 2025. 'If you are in immediate danger, call 999 and ask for the police. If you can’t speak and are calling on a mobile press 55 to have your call transferred to the police.' 'For free, confidential advice, 24 hours a day contact a domestic abuse helpline.' 'If you believe there is an immediate risk of harm to someone, or it is an emergency, you should always call 999.' Its table of helplines by nation: England, Refuge’s National Domestic Abuse Helpline, 0808 2000 247; Northern Ireland, Domestic and Sexual Abuse Helpline, 0808 802 1414; Scotland, Domestic Abuse and Forced Marriage Helpline, 0800 027 1234; Wales, Live Fear Free, 0808 80 10 100; UK-wide, The Men’s Advice Line run by Respect, 0808 801 0327, and the Bright Sky app.",
+   "not_read": "the helplines' own sites, which this environment's network does not reach, and the page's translated and easy read versions",
+   "used_by": [
+    "agentic_core/legal/urgent.py"
+   ]
+  },
+  {
+   "id": "gov-uk-homeless-help",
+   "names": [
+    "Help if you're homeless or about to become homeless (GOV.UK)"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "England"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/if-youre-homeless-at-risk-of-homelessness",
+   "read_on": "2026-11-20",
+   "read_by": "round W1165, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/if-youre-homeless-at-risk-of-homelessness) on 2026-11-20, not through a summary",
+   "says": "GOV.UK's content record gives it as first published 26 January 2012 and last publicly updated 17 October 2024. 'In England, your council must help if you’re legally homeless or will become homeless within the next 8 weeks.' It links help if you’re homeless in Scotland (www.mygov.scot), in Wales (gov.wales) and in Northern Ireland (www.nihe.gov.uk). 'You may be legally homeless if:' among others 'you cannot get into your home, for example your landlord has locked you out' and 'it’s not reasonable to stay in your home, for example you’re at risk of violence or abuse'. 'Find your council to get help and advice.' (www.gov.uk/homelessness-help-from-council). The council 'may offer you advice, emergency housing, support to find longer-term housing or help so you can stay in your home'.",
+   "not_read": "the other nations' pages it links, and Shelter's guides, which this environment's network does not reach",
+   "used_by": [
+    "agentic_core/legal/urgent.py"
+   ]
+  },
+  {
+   "id": "gov-uk-find-court-tribunal",
+   "names": [
+    "Find a court or tribunal (GOV.UK)"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/find-court-tribunal",
+   "read_on": "2026-11-20",
+   "read_by": "round W1165, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/find-court-tribunal) on 2026-11-20, not through a summary",
+   "says": "GOV.UK's content record (a service's start page) gives it as first published 15 August 2013 and last publicly updated 13 September 2019. 'Find contact details and information on courts and tribunals in England and Wales, and some non-devolved tribunals in Scotland.' It gives a court's address, contact details, opening times, how to get there, the areas of law it covers and disabled access. For Scotland and Northern Ireland it names the Scottish Courts website and the Northern Ireland Courts and Tribunals Service.",
+   "not_read": "the service itself (www.find-court-tribunal.service.gov.uk) and the Scottish and Northern Ireland courts' sites",
+   "used_by": [
+    "agentic_core/legal/urgent.py"
+   ]
+  },
+  {
+   "id": "gov-uk-represent-yourself",
+   "names": [
+    "Represent yourself in court (GOV.UK)"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/represent-yourself-in-court",
+   "read_on": "2026-11-20",
+   "read_by": "round W1165, its content record read whole at GOV.UK's content API (www.gov.uk/api/content/represent-yourself-in-court) on 2026-11-20, not through a summary",
+   "says": "GOV.UK's content record gives it as first published 28 November 2011 and last publicly updated 16 January 2025; it is for England and Wales ('There are different courts and rules in Scotland'). A McKenzie friend may help by taking notes and giving advice, if the judge allows. 'If you need help understanding or taking part in your hearing, you can ask for support from a communication specialist (known as an ‘intermediary’).' It names Advicenow's guides to going to court, and legal aid.",
+   "not_read": "the guides it links (Advicenow's and the McKenzie friend guidance)",
+   "used_by": [
+    "agentic_core/legal/urgent.py"
+   ]
   }
  ]
 }

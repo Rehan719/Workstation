@@ -88,8 +88,9 @@
    "domain": "Law",
    "subject": "Somewhere safe tonight, danger from a person, a hearing within days",
    "nation": "England",
-   "state": "nothing_built",
-   "today": "no route is shown first"
+   "state": "route_only",
+   "today": "the three situations are served first, whatever was asked, on the one page of where help is, the Law page's help and every research answer, each in the words of the GOV.UK page that gives it (domestic abuse: how to get help; help if you're homeless; find a court or tribunal, with represent yourself in court), with the day it was read and not recently checked ninety days on; drawing them first on the Law page and the support page is the next round's (W1165)",
+   "route": "gov-uk-domestic-abuse-help"
   },
   {
    "id": "law-directory",

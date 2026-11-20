@@ -255,9 +255,12 @@ async def legal_research(req: ResearchRequest):
     #  anything composes: no model and no floor is asked. The screen may route; recognising nothing is not a clearance.
     from agentic_core.legal.own_case import COVERAGE as _cov874, own_case_route as _own874
     from agentic_core.api._ai_provenance import no_reply_evidence as _no_reply_evidence874
+    from agentic_core.legal import urgent as _urg1165      # W1165 (P5.11 clause 4) - before anything else
     _routed874 = _own874(req.question, req.context)
     if _routed874:
         return {
+            #  W1165 - the urgent routes first; the screen may add one (its "urgent_added") and never remove one
+            "urgent": _urg1165.shown(_routed874.get("urgent_added")),
             "research_id": uuid.uuid4().hex[:10],
             "question": req.question,
             "jurisdiction": req.jurisdiction,
@@ -298,6 +301,8 @@ async def legal_research(req: ResearchRequest):
         user_text=person_said(req.question))
 
     return {
+        #  W1165 - the urgent routes first, though the screen recognised nothing: nothing recognised clears nothing
+        "urgent": _urg1165.shown(),
         "research_id": uuid.uuid4().hex[:10],
         "question": req.question,
         "jurisdiction": req.jurisdiction,
@@ -535,6 +540,14 @@ def law_tools():
                   "now is the native status's reading, not this list's."),
         "composed": False,
     }
+
+
+@router.get("/urgent")
+def urgent_routes():
+    """W1165 (P5.11 clause 4) - the short fixed list of urgent situations, each with its route in the words of the
+    GOV.UK page that gives it, the day that page was read, and NOT RECENTLY CHECKED ninety days on."""
+    from agentic_core.legal import urgent as _urg1165
+    return {"routes": _urg1165.shown(), "basis": _urg1165.BASIS, "composed": False}
 
 
 @router.get("/help")

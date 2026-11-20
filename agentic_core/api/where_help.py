@@ -17,6 +17,7 @@ from typing import Any, Dict
 from fastapi import APIRouter
 
 from agentic_core.legal import directory as _dir      # W1163 (P5.11 clause 3)
+from agentic_core.legal import urgent as _urg          # W1165 (P5.11 clause 4)
 
 router = APIRouter(prefix="/api/v1/support", tags=["where-help-is"])
 
@@ -88,6 +89,9 @@ BASIS = ("Names and addresses only: nothing is copied from any of these sites, a
 def page() -> Dict[str, Any]:
     """The one page, the same wherever it is read. Nothing is composed and nothing about the reader is used."""
     return {
+        #  W1165 (P5.11 clause 4) - the urgent routes, before anything else, whatever else the page says
+        "urgent": _urg.shown(),
+        "urgent_basis": _urg.BASIS,
         "a_qualified_scholar": {**A_QUALIFIED_SCHOLAR, "steps": list(A_QUALIFIED_SCHOLAR["steps"])},
         #  W1163 (P5.11 clause 3) - each place a row of the directory: its nations, the page that says so, the day that
         #  page was read and how, and NOT RECENTLY CHECKED ninety days on
