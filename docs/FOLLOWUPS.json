@@ -25990,11 +25990,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.7",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1126",
       "note": "",
       "slot_source": "P5.7 clause 2 asks the cost model for the gates; ruled 2026-11-19 on FU-1191",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1126: docs/business/COST_MODEL.md names the seven investment gates the Owner ruled on 2026-11-19 (FU-1191) - the switches of P4.1 to P4.6 and a first offer the interviews support - says what would evidence each, and marks each from what the tree shows: none is evidenced today. test_w1126 computes each gate's state from the tree and holds its row to it, with two blinds."
     },
     {
       "id": "FU-1281",

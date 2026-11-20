@@ -60,6 +60,18 @@ only beside the Owner's ruling. It promises no zero bill.
 
 ## The seven investment gates
 
-- Plan item P5.7 asks for the seven investment gates and which one is evidenced today. No gate is defined anywhere in this tree: the four commercialisation prompts the clause was chartered from are not kept here, and the founder playbook they referred to was not received. [observed: `docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md`]
-- So no gate can be marked evidenced, and none is invented here. [observed]
-- To name them, the Owner can add the playbook, or rule which seven they are. Recommended, if the playbook is not to hand: the six switches of the Owner's hand, plan items P4.1 to P4.6, and a first offer the interviews support, so that each can be marked evidenced or not from what this tree shows. [owner decision]
+- Plan item P5.7 asks for the seven investment gates and which one is evidenced today. The founder playbook the clause was chartered from was not received, so the gates are the ones the Owner ruled. [observed: `docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md`]
+- OWNER RULING 2026-11-19 (FU-1191): the seven gates are the six switches of plan items P4.1 to P4.6, and a first offer the interviews support. [owner-defined, 2026-11-19]
+- A switch's gate is evidenced when its pre-flight has been measured and the switch reads on where the platform runs; the first offer's is evidenced when interviews recorded in the notes template of `docs/business/FIRST_OFFER_CANDIDATES.md` support it. Each row below is marked from what this tree shows, and none is invented. [owner-defined, 2026-11-19]
+
+| Gate | What this tree shows | Evidenced |
+|---|---|---|
+| P4.1 sign-in | AUTH_ENABLED reads false unless it is set (`agentic_core/auth/core.py`), and the committed deploy file sets it false (`render.yaml`); the readiness round's rows are open | no |
+| P4.2 self-serve sign-up | SELF_SERVE_SIGNUP_ENABLED reads false unless it is set (`agentic_core/auth/core.py`); the invited stage before it has not been run | no |
+| P4.3 external models | AI_ALLOW_EXTERNAL reads false unless it is set, and the image sets it false (`Dockerfile`); no key is held | no |
+| P4.4 managed Postgres | deferred by the Owner on 2026-10-12 and recorded as a boundary; the file store is what runs | no |
+| P4.5 production deploy | the dry run's rows (FU-603, FU-1156) are open, and no deploy is recorded | no |
+| P4.6 real money | REAL_MONEY_ENABLED is False in the code (`agentic_core/economy/owner_payments.py`), and stays so until a compliance and KYC review by qualified people | no |
+| A first offer the interviews support | the interview guide and notes template exist; no interview is recorded in this tree | no |
+
+- So no gate is evidenced today. [observed]

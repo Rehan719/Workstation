@@ -81276,7 +81276,9 @@ def test_w962_fu807_the_cost_model_marks_every_cost_by_where_it_came_from_and_fi
     for mark in ("QUOTED: a price a named supplier gave in writing", "SOURCED: a provider's published price",
                  "ASSUMED: a value chosen only so a calculation can be run", "NOT MEASURED: everything else"):
         assert mark in flat, mark
-    table = [ln for ln in text.splitlines() if ln.startswith("| ") and "---" not in ln and not ln.startswith("| Line")]
+    #  W1126: the cost table is the one under its own heading; the gates section has a table of its own
+    _costs1126 = text.split("## The cost lines", 1)[1].split("\n## ", 1)[0]
+    table = [ln for ln in _costs1126.splitlines() if ln.startswith("| ") and "---" not in ln and not ln.startswith("| Line")]
     assert len(table) == 8, len(table)
     for row in table:
         for cell in [c.strip() for c in row.strip("|").split("|")[1:4]]:
@@ -81297,9 +81299,9 @@ def test_w962_fu807_the_cost_model_marks_every_cost_by_where_it_came_from_and_fi
     assert "the bill is not promised to be zero" in flat and "zero bill" in flat
     assert not re.search(r"\b\d[\d,.]*\s*(?:per cent|%)", text.split("## Unit economics", 1)[1]), "a figure crept into the formulas"
 
-    #  the seven gates: said not to be in the tree, and put to the Owner
+    #  the seven gates: not in the tree as a playbook, and ruled by the Owner on 2026-11-19 (W1126 marks each)
     gates = text.split("## The seven investment gates", 1)[1]
-    assert "was not received" in gates and "none is invented here" in gates and "[owner decision]" in gates
+    assert "was not received" in gates and "none is invented" in gates and "[owner-defined, 2026-11-19]" in gates
     row = next(r for r in reg if r.get("title") == "OWNER DECISION: which are the seven investment gates the cost model is to mark?")
     assert row.get("owner_gated") and row.get("slot") == "OWNER" and "RECOMMENDED" in row["why"]
     prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
@@ -91879,3 +91881,44 @@ def test_w1125_fu1057_the_economy_page_shows_the_profit_the_platform_fee_and_wha
     reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
     rows = [r for r in reg if r.get("title") == "The cockpit's latest cycle says the platform fee it took and what the split was over"]
     assert len(rows) == 1 and rows[0]["slot"] == "P5.16" and rows[0]["source"].startswith("W1125 "), rows
+
+
+def test_w1126_fu1280_the_cost_model_marks_each_of_the_seven_gates_from_what_the_tree_shows():
+    """FU-1280 (W1126), P5.7. OWNER RULING 2026-11-19 (FU-1191, the recommendation accepted): with no founder playbook in
+    the tree, the seven investment gates are the six switches of plan items P4.1 to P4.6 and a first offer the
+    interviews support. The cost model marks each evidenced or not from what the tree shows, and invents none. Held
+    here, each gate's state computed from the tree and its row's mark held to it:
+    - P4.1, P4.2, P4.3: each switch reads off unless it is set, and the committed deploy file and image set two off;
+    - P4.4: the plan records it deferred by the Owner; P4.5: the dry run's rows are open;
+    - P4.6: REAL_MONEY_ENABLED is False;
+    - the first offer: no interview is recorded in the tree.
+    A gate whose state changes fails this until its row is marked again."""
+    import json
+    import pathlib
+    import re
+    from agentic_core.economy import owner_payments as _op
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda p: (root / p).read_text(encoding="utf-8")
+    auth, model = read("agentic_core/auth/core.py"), read("agentic_core/ai/native/model_resource.py")
+    reg = {r["id"]: r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"]}
+    flat = " ".join(read("docs/FABLE_DELIVERY_PROMPT.md").split())
+    p44 = flat[flat.index(" P4.4 Managed Postgres"):flat.index(" P4.5 Production deploy")]
+    interviews = [p for p in (root / "docs").rglob("*") if p.is_file() and re.search(r"interview", p.name, re.I)]
+    met = {
+        "P4.1 sign-in": 'os.getenv("AUTH_ENABLED", "false")' not in auth
+                        or not re.search(r'key: AUTH_ENABLED\n\s+value: "false"', read("render.yaml")),
+        "P4.2 self-serve sign-up": 'os.getenv("SELF_SERVE_SIGNUP_ENABLED", "false")' not in auth,
+        "P4.3 external models": 'os.getenv("AI_ALLOW_EXTERNAL", "false")' not in model
+                                or "AI_ALLOW_EXTERNAL=false" not in read("Dockerfile"),
+        "P4.4 managed Postgres": "DEFERRED BY THE OWNER" not in p44,
+        "P4.5 production deploy": reg["FU-603"]["status"] == "done" and reg["FU-1156"]["status"] == "done",
+        "P4.6 real money": _op.REAL_MONEY_ENABLED is not False,
+        "A first offer the interviews support": bool(interviews),
+    }
+    gates = read("docs/business/COST_MODEL.md").split("## The seven investment gates", 1)[1]
+    rows = dict(re.findall(r"^\| (.+?) \| .+? \| (yes|no) \|$", gates, re.M))
+    assert list(rows) == list(met), ("the seven gates are not the ruled seven, in order", list(rows))
+    for gate, ok in met.items():
+        assert rows[gate] == ("yes" if ok else "no"), (gate, "is marked", rows[gate], "and the tree shows", ok)
+    assert "OWNER RULING 2026-11-19 (FU-1191)" in gates and "So no gate is evidenced today." in gates
+    assert not any(met.values()), "a gate is met: its row and the closing line are to be marked again"
