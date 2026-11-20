@@ -92917,11 +92917,13 @@ def test_w1135_no_tracked_document_names_the_owners_windows_home_folder_by_its_p
     """W1135 (found 2026-11-20 while walking the Owner through the local session). The local-session notes' header,
     and more tracked files, named the Owner's Windows home folder by its full path, the user name in it.
     Held here:
-    - no tracked text file outside the five places the Owner decides names a Windows home folder by its path: a path
-      starts at ~ instead, the rest of it unchanged (the folder is found by its shape; no name is written here). The
-      pinned fidelity ledgers are among the five: P5.22 pins each byte for byte, so no round edits one;
-    - the five places are each named, with a recommendation, in one open owner-gated row, which the plan's list of
-      what is with the Owner and the local-session notes both name;
+    - no tracked text file names a Windows home folder by its path outside the places left as they are (the pinned
+      ledgers and _archive/) and docs/fidelity_runs/, whose files are opened only on a go-ahead that names one: a
+      path starts at ~ instead, the rest of it unchanged (the folder is found by its shape; no name is written
+      here). The pinned ledgers are left because P5.22 pins each byte for byte, so no round edits one;
+    - the five places are each named, with the recommendation the Owner accepted, in one owner-gated row, closed by
+      W1180 once each was settled: the plan's list of what is with the Owner no longer asks about it, and the
+      local-session notes say it is closed;
     - the local-session notes still say which folder to open: ~\\Workstation."""
     import json
     import pathlib
@@ -92929,7 +92931,7 @@ def test_w1135_no_tracked_document_names_the_owners_windows_home_folder_by_its_p
     import subprocess
     root = pathlib.Path(__file__).resolve().parents[1]
     home = re.compile(r"(?i)\b[a-z]:[\\/]+users[\\/]+[^\\/\s`'\"<>()|,;:*?]+")
-    left = ("_archive/", "docs/fidelity_runs/", "venv/", "docs/VISION_FIDELITY_LEDGER")   # .claude/ read from W1176
+    left = ("_archive/", "docs/fidelity_runs/", "docs/VISION_FIDELITY_LEDGER")   # .claude/ read from W1176, venv/ from W1180
     out = subprocess.run(["git", "ls-files", "-z"], cwd=root, capture_output=True, check=True).stdout
     files = [f for f in out.decode("utf-8").split("\0") if f]
     assert len(files) > 1000, ("git listed too few tracked files to mean anything", len(files))
@@ -92949,15 +92951,17 @@ def test_w1135_no_tracked_document_names_the_owners_windows_home_folder_by_its_p
     owner = [r for r in rows if r.get("title") == "OWNER: five places still name your Windows home folder by its path"]
     assert len(owner) == 1, owner
     row = owner[0]
-    assert row["status"] == "open" and row["owner_gated"] is True and row["slot"] == "OWNER", row
+    assert (row["status"], row["closed_by"], row["owner_gated"], row["slot"]) == ("done", "W1180", True, "OWNER"), row
     for place in ("docs/fidelity_runs/", "docs/VISION_FIDELITY_LEDGER", "docs/LEDGER_BLOBS.json", "venv/",
                   ".claude/settings.json", "_archive/"):
         assert place in row["why"], ("the Owner's row does not name a place this guard leaves out", place)
     assert row["why"].count("RECOMMENDED") == 5, "each of the five places carries a recommendation"
     fable = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
     resume = (root / "docs" / "RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
-    assert f"{row['id']} (W1135):" in fable, "the plan's list of what is with the Owner does not name the row"
-    assert f"({row['id']})" in resume, "the local-session notes do not name the row"
+    still = " ".join(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0].split())
+    assert row["id"] not in still and "The five places that named your Windows home folder are settled" in still, \
+        "the plan's list still asks about the row, or does not say the places are settled"   # W1180
+    assert f"({row['id']}, closed W1180)" in resume, "the local-session notes do not say the row is closed"
     assert "in your local clone** (`~\\Workstation`)" in resume, "the notes no longer say which folder to open"
     fixed = [r for r in rows if r.get("title") == ("Tracked documents name the Owner's Windows home folder by its "
                                                    "full path, the user name in it")]
@@ -93411,8 +93415,9 @@ def test_w1143_no_document_a_round_wrote_gives_the_owner_a_pronoun_the_owner_has
       guardrails' crisis-language patterns and the two blind files that copy them, the language code of Hebrew,
       and (W1160) the publisher's own description of the Employment Tribunals Extension of Jurisdiction (Scotland)
       Order 1994, in the words of 1994, which the statute reader's fixture keeps word for word;
-    - left out of the scan, as test_w1135 leaves them: the archive, the fidelity runs (never opened), the venv, the
-      Owner's .claude settings and the pinned ledger editions; and also the source texts of the knowledge folders,
+    - left out of the scan, as test_w1135 left them when W1143 was written (it has read .claude/ since W1176 and
+      venv/ since W1180): the archive, the fidelity runs (never opened), the venv, the Owner's .claude settings and
+      the pinned ledger editions; and also the source texts of the knowledge folders,
       the Owner's own inputs, and this spine, whose variables are named he, hers and his and whose crisis-language
       tests quote the phrases they test;
     - the W1120 rows say whose recommendations they were."""
@@ -95360,7 +95365,8 @@ def test_w1164_the_owners_ten_decisions_of_2026_11_20_are_recorded_and_the_water
     #  2. the owner-gated rows say what was accepted or answered
     for rid, n in (("FU-1188", 1), ("FU-1288", 1), ("FU-1289", 1), ("FU-1286", 5)):
         r = reg[rid]
-        assert r["status"] == "open" and r["owner_gated"] is True, rid
+        #  W1180 - FU-1286 closed once each of its five places was settled
+        assert r["status"] == ("done" if rid == "FU-1286" else "open") and r["owner_gated"] is True, rid
         assert r["why"].count("RECOMMENDED (accepted 2026-11-20):") == n and "RECOMMENDED:" not in r["why"], rid
     assert "(ledger_v14_W639_375c5ffb.json), opened only on a go-ahead that names it. DONE W1175" \
            in reg["FU-1286"]["why"], "the audit record is not named"   # W1175
@@ -95385,7 +95391,7 @@ def test_w1164_the_owners_ten_decisions_of_2026_11_20_are_recorded_and_the_water
             "final audit has run (2026-12-31 at the latest)") in flat
     step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
     steps = re.findall(r"^   - (FU-\d+):", step5, re.M)
-    assert steps == ["FU-1165", "FU-1286"], steps
+    assert steps == ["FU-1165"], steps   # W1180: FU-1286 closed
     assert all(reg[s]["status"] == "open" for s in steps), steps
     assert "register my two ventures, Atmospheric Harvest Solutions and Aerius Energy Harvest, fresh in the new books" \
            in " ".join(step5.split()), "step 5 does not carry the Owner's answer on the two ventures"
@@ -96335,9 +96341,9 @@ def test_w1175_fu1286_the_audit_record_the_owner_named_names_no_place_on_a_machi
     2. each home-folder path starts at ~ with the rest of it unchanged, each data-folder path says what kind of place it
        was, and the record is still whole: six regions, each with its ten findings and ten verdicts;
     3. the three records the Owner allowed to be opened (editions 14, 15 and 16) all hold to the same;
-    4. FU-1286 stays open for the places that are the Owner's machine's: its first place says it is done and each of
-       the five still carries its accepted recommendation; the plan's list of what is with the Owner and the local
-       notes say the record was edited, and neither says it still waits on a go-ahead."""
+    4. FU-1286, closed by W1180 once each of its places was settled: its first place says it is done and each of the
+       five still carries its accepted recommendation; the plan's list of what is with the Owner and the local notes
+       say the record was edited, and neither says it still waits on a go-ahead."""
     import json
     import re
     from pathlib import Path
@@ -96370,7 +96376,7 @@ def test_w1175_fu1286_the_audit_record_the_owner_named_names_no_place_on_a_machi
     #  4. FU-1286, the plan's list and the local notes
     reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
     row = reg["FU-1286"]
-    assert (row["status"], row["owner_gated"], row["slot"]) == ("open", True, "OWNER"), row
+    assert (row["status"], row["owner_gated"], row["slot"]) == ("done", True, "OWNER"), row   # W1180 closed it
     assert ("(1) One audit record under docs/fidelity_runs/ (ledger_v14_W639_375c5ffb.json), opened only on a go-ahead "
             "that names it. DONE W1175: your go-ahead of 2026-11-20 named it;") in row["why"], "place 1 is not said done"
     assert row["why"].count("RECOMMENDED (accepted 2026-11-20):") == 5, "a place lost its accepted recommendation"
@@ -96392,10 +96398,9 @@ def test_w1176_fu1286_the_project_settings_name_no_windows_home_folder_and_the_g
     1. no file under .claude/ names a Windows home folder by its path, and the settings still parse with their
        permissions in place;
     2. W1135's guard no longer leaves .claude/ out, so an entry naming the folder fails it again;
-    3. FU-1286 stays open for venv/, which only the Owner's machine can untrack without a pull deleting its files; its
-       fourth place says it is done, each of the five still carries its accepted recommendation, and the plan's list
-       of what is with the Owner and the local notes say the permissions were removed, while step 5 still asks for
-       venv/."""
+    3. FU-1286's fourth place says it is done and each of the five still carries its accepted recommendation, and the
+       plan's list of what is with the Owner and the local notes say the permissions were removed. (venv/ was
+       untracked on the Owner's machine that evening, and W1180 closed the row; step 5 no longer asks for it.)"""
     import json
     import re
     from pathlib import Path
@@ -96422,17 +96427,17 @@ def test_w1176_fu1286_the_project_settings_name_no_windows_home_folder_and_the_g
     #  3. FU-1286, the plan's list and the local notes
     reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
     row = reg["FU-1286"]
-    assert (row["status"], row["owner_gated"], row["slot"]) == ("open", True, "OWNER"), row
+    assert (row["status"], row["owner_gated"], row["slot"]) == ("done", True, "OWNER"), row   # W1180 closed it
     assert "(4) .claude/settings.json: three one-off command permissions named your folder. DONE W1176:" in row["why"]
     assert row["why"].count("RECOMMENDED (accepted 2026-11-20):") == 5, "a place lost its accepted recommendation"
     plan = " ".join((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8").split())
-    assert ("The three permissions in .claude/settings.json were removed in the cloud session that evening (W1176); "
-            "untracking venv/ stays yours, on your machine.") in plan, "the plan's list does not say they were removed"
+    assert "The three permissions in .claude/settings.json were removed in the cloud session that evening (W1176)." \
+        in plan, "the plan's list does not say they were removed"
     notes = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
     step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
-    mine = " ".join(step5.split("   - FU-1286:", 1)[1].split("\n   - ", 1)[0].split())
-    assert mine.startswith("run git rm -r --cached venv and commit (the folder stays on this disk)"), mine
-    assert "remove the three" not in mine and "were removed in the cloud session on 2026-11-20, W1176" in mine, mine
+    #  W1180 - the row is closed: step 5 no longer asks for venv/, and says the permissions were removed
+    assert "   - FU-1286:" not in step5 and "remove the three" not in step5, "step 5 still asks for FU-1286"
+    assert "were removed in the cloud session the same day, W1176" in " ".join(step5.split()), step5
     flat = " ".join(notes.split())
     assert "the three permissions in `.claude/settings.json` were removed in the cloud session (W1176)" in flat
 
@@ -96649,3 +96654,64 @@ def test_w1179b_the_fca_rows_say_what_their_pages_say_and_name_no_handbook_a_pag
             "compensation, and the FCA's page that a person need not use one,") in c, c
     assert c.endswith("(W1167, W1179)"), c[-40:]
 
+
+
+def test_w1180_fu1286_is_closed_once_each_of_its_five_places_is_settled():
+    """FU-1286 (W1180). Five places named the Owner's Windows home folder by its path, and the Owner accepted a
+    recommendation for each on 2026-11-20: (1) the audit record ledger_v14_W639_375c5ffb.json was opened on the
+    go-ahead that named it, and its home-folder paths start at ~ (W1175); (2) the pinned fidelity ledgers stay as they are; (3)
+    venv/ was untracked on the Owner's machine by its local session (7afa4aa9, git rm -r --cached, the folder kept on
+    that disk) and merged into main-l1fsqo at 07fb9817; (4) the three permissions in .claude/settings.json were removed
+    (W1176); (5) _archive/ stays as archived history. Held here:
+    1. git tracks nothing under venv/, .gitignore still leaves it out, and W1135's guard no longer leaves it out, so a
+       tracked file there that names a home folder fails that guard;
+    2. the row is closed by W1180, its third place says it is done, and its close note names each place;
+    3. the plan's list of what is with the Owner no longer asks about it and says the places are settled; the local
+       notes' step 5 and their summary no longer send the Owner to it, the Still-yours list does not name it, and the
+       notes say it is closed."""
+    import json
+    import re
+    import subprocess
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+
+    #  1. venv/
+    tracked = subprocess.run(["git", "ls-files", "-z", "--", "venv"], cwd=root, capture_output=True, check=True).stdout
+    assert tracked == b"", ("git still tracks files under venv/", tracked[:200])
+    assert "venv/" in (root / ".gitignore").read_text(encoding="utf-8").split(), ".gitignore no longer leaves venv/ out"
+    spine = Path(__file__).read_text(encoding="utf-8")
+    body = spine.split("def test_w1135_no_tracked_document_names_the_owners_windows_home_folder_by_its_path", 1)[1]
+    body = body.split("\ndef test_", 1)[0]
+    left = re.search(r"^    left = \(([^)]*)\)", body, re.M)
+    assert left and '"venv/"' not in left.group(1) and '".claude/"' not in left.group(1), "W1135's guard leaves one out"
+
+    #  2. the row
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    row = reg["FU-1286"]
+    assert (row["status"], row["closed_by"], row["because"], row["owner_gated"]) == ("done", "W1180", "built", True), row
+    assert ("Its files name your folder. DONE 7afa4aa9: your local session ran git rm -r --cached venv and committed it "
+            "on 2026-11-20, its message saying the folder stays on your disk; merged into main-l1fsqo at 07fb9817, and "
+            "recorded here by W1180.") in row["why"]
+    assert row["why"].count("RECOMMENDED (accepted 2026-11-20):") == 5, "a place lost its accepted recommendation"
+    note = " ".join(str(row.get("close_note") or "").split())
+    for said in ("(1) The audit record docs/fidelity_runs/ledger_v14_W639_375c5ffb.json", "docs/LEDGER_BLOBS.json",
+                 "(7afa4aa9, git rm -r --cached venv; its message says the folder stays on that disk)", "07fb9817",
+                 "(4) The three permissions in .claude/settings.json", "(5) _archive/ stays as archived history."):
+        assert said in note, ("the close note does not say", said)
+
+    #  3. the plan's list and the local notes
+    fable = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    still = " ".join(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0].split())
+    assert "FU-1286" not in still and "untracking venv/ stays yours" not in still, "the plan's list still asks for it"
+    assert ("(The five places that named your Windows home folder are settled, each as you accepted on 2026-11-20:"
+            in still and "Your local session untracked venv/ on your machine (7afa4aa9), the folder kept on your disk, "
+            "and the cloud session merged it (07fb9817)." in still), "the plan's list does not say the places are settled"
+    notes = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    flat = " ".join(notes.split())
+    step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
+    assert re.findall(r"^   - (FU-\d+):", step5, re.M) == ["FU-1165"] and "git rm -r --cached venv" not in step5
+    assert "The rows in step 5: FU-1165, a step there." in flat and "FU-1165 and FU-1286" not in flat
+    assert ("**Settled on 2026-11-20:** the five places that named your Windows home folder (FU-1286, closed W1180)"
+            in flat), "the notes do not say the row is closed"
+    yours = flat.split("**Still yours:**", 1)[1].split("**Settled on 2026-11-20:**", 1)[0]
+    assert "FU-1286" not in yours and "`venv/` is step 5" not in yours, "the Still-yours list still names the row"

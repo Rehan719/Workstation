@@ -37,9 +37,9 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
    FU-1005 were done here on 2026-11-20 (W1133l, W1133m), and are closed:
    - FU-1165: as I answered on 2026-11-20, register my two ventures, Atmospheric Harvest Solutions and Aerius
      Energy Harvest, fresh in the new books, then name each in Settings, Protected enterprises, once it exists.
-   - FU-1286: run git rm -r --cached venv and commit (the folder stays on this disk), as I accepted on
-     2026-11-20. (The three one-off command permissions in .claude/settings.json that named my home folder
-     were removed in the cloud session on 2026-11-20, W1176.)
+   (FU-1286's step here was done on 2026-11-20 and the row is closed (W1180): venv/ was untracked (7afa4aa9), the
+   folder kept on this disk, and merged in the cloud session at 07fb9817. The three one-off command permissions
+   in .claude/settings.json that named my home folder were removed in the cloud session the same day, W1176.)
    (The two committed audit records under docs/fidelity_runs/ that carried text of a private kind were edited
    in the cloud session on 2026-11-20, as recommended and with your go-ahead; git history keeps the earlier
    text, as ruled on 2026-10-14.)
@@ -71,16 +71,11 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
   decisions put to you, each taken as recommended; among them, the cycles run into December).
 - **Still yours:**
   - Merge PR #465 when you are ready, or ask the cloud session to merge it once green, as you did for PR #463.
-  - The rows in step 5: FU-1165 and FU-1286, each a step there.
+  - The rows in step 5: FU-1165, a step there.
   - One line in `.env` on your machine for the legal matter's folder (step 3 of the prompt), if the local
     session has not added it.
   - Sending the two permission letters in `docs/letters/` (FU-1188).
   - Sending the request to the Quranic Audio Dataset's authors, also in `docs/letters/` (FU-1283).
-  - Five places that named your Windows home folder (FU-1286), each as you accepted on 2026-11-20: `venv/`
-    is step 5; the three permissions in `.claude/settings.json` were removed in the cloud session (W1176);
-    the pinned fidelity ledgers and `_archive/` stay as they are; the
-    audit record (docs/fidelity_runs/ledger_v14_W639_375c5ffb.json) was edited in the cloud session on
-    2026-11-20, on your go-ahead naming it (W1175).
   - At the first deploy, restoring the data disk once from its snapshot, watching (FU-1288).
   - Buying a domain for the release machine and pointing it at the machine's fixed address (FU-1289).
   - At the first deploy, an uptime check on `/health` from your own cloud account, beside the billing alert
@@ -92,3 +87,9 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
   - One solicitor's engagement before anyone but you is invited (FU-1817): the Law pages before any public
     release, and where other people's data may be kept.
   - Five to eight short interviews with teachers or tutors before the first offer is chosen (FU-1818).
+- **Settled on 2026-11-20:** the five places that named your Windows home folder (FU-1286, closed W1180), each
+  as you accepted that day: `venv/` was untracked on your machine (7afa4aa9, merged into `main-l1fsqo` at
+  07fb9817), the folder kept on your disk; the three permissions in `.claude/settings.json` were removed in the
+  cloud session (W1176); the pinned fidelity ledgers and `_archive/` stay as they are; and the audit record
+  (docs/fidelity_runs/ledger_v14_W639_375c5ffb.json) was edited in the cloud session on 2026-11-20, on your
+  go-ahead naming it (W1175).
