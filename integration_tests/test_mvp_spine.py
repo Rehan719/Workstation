@@ -95778,3 +95778,61 @@ def test_w1167_p511_a_subject_that_is_regulated_advice_is_its_row_and_a_route_to
     fu = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
           if r.get("title", "").startswith("A question on a subject that is regulated advice")]
     assert len(fu) == 1 and (fu[0]["status"], fu[0]["slot"], fu[0]["because"]) == ("done", "P5.11", "built"), fu
+
+
+def test_w1167b_the_urgent_box_says_an_answer_without_its_routes_and_the_support_pages_capture_is_the_routes(client, monkeypatch):
+    """W1167b: PR #463's frontend job (its whole vitest run) went red on W1166 and W1167. Support.test.tsx mounts the
+    support page against Support.fixture.json, whose help answer W995 captured before W1165 served the urgent routes on
+    the one page of where help is. W1165 refreshed the three other captured help answers, and nothing held this one to
+    the route. The box W1166 drew mapped the list it was not given and took the whole page down: four of the page's
+    rendered tests found an empty body. The rounds' own rendered checks ran chosen files, none of them this one.
+    Held here:
+    1. the box says an answer that carries no urgent routes, or an empty list of them, in the list's place with the line
+       to call 999, and maps no list it was not given;
+    2. the support page's captured help answer is the route's own, as the one page's is;
+    3. the one page's rendered test drives an answer with no list and one with an empty list, and the support page's
+       says where its help answer comes from;
+    4. the row."""
+    import datetime as _dt
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.legal import time_limits as _tl
+    root = Path(__file__).resolve().parents[1]
+    src = root / "apps" / "workstation-superapp" / "src"
+    read = lambda rel: (src / rel).read_text(encoding="utf-8")       # noqa: E731
+    said = "This answer carried no urgent routes. If you are in immediate danger, call 999."
+
+    #  1. the box
+    comp = read("components/UrgentRoutes.tsx")
+    assert f"export const URGENT_MISSING = '{said}';" in comp
+    assert "routes?: UrgentRoute[] | null" in comp, "the box still says every caller hands it a list"
+    assert "{Array.isArray(routes) && routes.length > 0 ? routes.map(r => (" in comp
+    assert ')) : <p data-testid="urgent-missing" className="text-xs font-bold text-rose-300">{URGENT_MISSING}</p>}' in comp
+    assert len(re.findall(r"\broutes\.map\(", comp)) == 1, "the list is mapped somewhere its check does not cover"
+
+    #  2. the support page's captured help answer is the route's own
+    monkeypatch.setattr(_tl, "_today", lambda: _dt.date(2026, 11, 20))
+    page = client.get("/api/v1/support/where-help-is").json()
+    sup = json.loads(read("pages/support/Support.fixture.json"))
+    one = json.loads(read("components/WhereHelpIs.fixture.json"))
+    assert sup["help"] == page == one["page"], "the support page's captured help answer is not the route's own"
+    assert sup["help"]["urgent"] and [r["id"] for r in sup["help"]["urgent"]] == [r["id"] for r in page["urgent"]]
+
+    #  3. the rendered tests
+    spec = read("components/WhereHelpIs.test.tsx")
+    for line in ("it('an answer that carries no urgent routes says so in their place, and the rest of the page is drawn'",
+                 "serve({ status: 200, body: { ...captured.page, urgent: undefined } });",
+                 "it('an empty list of urgent routes is said the same way, never drawn as if there were no route'",
+                 "serve({ status: 200, body: { ...captured.page, urgent: [] } });",
+                 "expect(screen.queryAllByTestId('urgent-route')).toHaveLength(0);"):
+        assert line in spec, ("the one page's rendered test no longer reads this", line)
+    assert spec.count(f"      '{said}'));") == 2, "the rendered test no longer reads the box's own sentence"
+    sup_spec = read("pages/support/Support.test.tsx")
+    assert "'/api/v1/support/where-help-is': captured.help," in sup_spec
+    assert "// Its help answer is the one page's capture (components/WhereHelpIs.fixture.json)" in sup_spec
+
+    #  4. the row
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    fu = [r for r in rows if r.get("title", "").startswith("The urgent box took the support page down")]
+    assert len(fu) == 1 and (fu[0]["status"], fu[0]["closed_by"], fu[0]["because"]) == ("done", "W1167b", "built"), fu

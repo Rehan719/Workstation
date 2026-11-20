@@ -26579,6 +26579,29 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Done in W1167: agentic_core/legal/boundaries.py holds three rows - immigration and nationality, which debt solution to take, and a claim managed by a claims company - each saying who regulates it as the pages read say, quoting only sentences of pages read whole at GOV.UK's content records on 2026-11-20 (each a row of the register of sources), naming the places those pages give for each nation, and saying its regulator's own page: the Immigration Advice Authority's, read on 2026-11-20; the Financial Conduct Authority's, not read, its site refused by this environment's network; for a claims company, no regulator's page, and GOV.UK's guide for a person on it dates from June 2014. GET /api/v1/law/boundaries serves them. A research question naming one is answered by its row and the places a person can go, after the urgent routes, with nothing composed; a question about one's own case that names one carries the row too; one that names none is composed as before and says that clears nothing. The screen is driven by its labelled phrasings in scripts/screen_phrasings.py. The Law page draws the row in a research answer, between the urgent routes and the people; a rendered test reads it against the route's own answer. test_w1167 drives it."
+    },
+    {
+      "id": "FU-1810",
+      "title": "The urgent box took the support page down when an answer carried no urgent routes: the page's captured help answer predated them, and PR #463's frontend job went red",
+      "why": "Measured in W1167b: the frontend job's whole vitest run failed on W1166 and W1167, four of the support page's rendered tests finding an empty body. Support.fixture.json's help answer was captured by W995, before W1165 served the urgent routes; W1165 refreshed the three other captured help answers and nothing held this one to the route. The box W1166 drew mapped the list it was not given. The rounds' own rendered checks ran chosen files, none of them the support page's.",
+      "source": "W1167b (PR #463's frontend job read on ecbbeea9 and fa619dc1)",
+      "found": "2026-11-20",
+      "files": [
+        "apps/workstation-superapp/src/components/UrgentRoutes.tsx",
+        "apps/workstation-superapp/src/pages/support/Support.fixture.json",
+        "apps/workstation-superapp/src/components/WhereHelpIs.test.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.11",
+      "status": "done",
+      "closed_by": "W1167b",
+      "note": "",
+      "slot_source": "P5.11 clause 4: the urgent routes drawn before anything else",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1167b: the urgent box says an answer that carries no urgent routes, or an empty list of them, in the list's place with the line to call 999, and maps no list it was not given. The support page's captured help answer is the one page's capture, which test_w1163 holds equal to GET /api/v1/support/where-help-is, and test_w1167b holds the two equal to the route. The one page's rendered test drives an answer with no list and one with an empty list. The chain now runs the whole vitest run, as CI's frontend job does, before a round that changes a page is landed."
     }
   ],
   "routes": [

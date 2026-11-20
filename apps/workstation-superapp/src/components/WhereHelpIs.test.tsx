@@ -92,6 +92,26 @@ describe("WhereHelpIs, rendered against the route's own answer", () => {
     expect(stale.every(e => e.checked.startsWith('NOT RECENTLY CHECKED') && !e.recently_checked)).toBe(true);
   });
 
+  //  W1167b - an answer without the urgent routes (one drawn before they were served, or a partial one) says so in
+  //  their place, with the line to call 999, and the rest of the page is drawn
+  it('an answer that carries no urgent routes says so in their place, and the rest of the page is drawn', async () => {
+    serve({ status: 200, body: { ...captured.page, urgent: undefined } });
+    render(<WhereHelpIs />);
+    await waitFor(() => expect(screen.getByTestId('urgent-missing').textContent).toBe(
+      'This answer carried no urgent routes. If you are in immediate danger, call 999.'));
+    expect(screen.queryAllByTestId('urgent-route')).toHaveLength(0);
+    expect(screen.getByTestId('where-help-scholar').textContent).toContain(captured.page.a_qualified_scholar.heading);
+    expect(screen.getByTestId('where-help-complain').textContent).toBe(captured.page.to_complain);
+  });
+
+  it('an empty list of urgent routes is said the same way, never drawn as if there were no route', async () => {
+    serve({ status: 200, body: { ...captured.page, urgent: [] } });
+    render(<WhereHelpIs />);
+    await waitFor(() => expect(screen.getByTestId('urgent-missing').textContent).toBe(
+      'This answer carried no urgent routes. If you are in immediate danger, call 999.'));
+    expect(screen.queryAllByTestId('urgent-route')).toHaveLength(0);
+  });
+
   it('a failed read is said in the server\'s words, and nothing is drawn as if there were no help', async () => {
     serve({ status: 503, body: { detail: captured.refusal_detail } });
     render(<WhereHelpIs />);

@@ -21,13 +21,17 @@ export const urgentSourceSaid = (s: UrgentSource) => (s.read ? `${s.name}, ${s.c
 export const urgentPlaceSaid = (p: UrgentPlace) =>
   `${p.nation}: ${p.name}${p.number ? `, ${p.number}` : ''} (${p.own_site})`;
 
+//  W1167b - an answer that carries no urgent routes, or an empty list of them, is said in the list's place with the
+//  line to call 999: the box never maps a list it was not given, so an older or partial answer never takes a page down
+export const URGENT_MISSING = 'This answer carried no urgent routes. If you are in immediate danger, call 999.';
+
 //  a page that reads the box by a test id of its own wraps it in an element that carries that id in its own source
-export default function UrgentRoutes({ routes, basis }: { routes: UrgentRoute[]; basis?: string }) {
+export default function UrgentRoutes({ routes, basis }: { routes?: UrgentRoute[] | null; basis?: string }) {
   return (
     <section data-testid="urgent-routes" aria-label="If it is urgent"
       className="rounded-xl border border-rose-500/40 bg-rose-500/5 p-4 space-y-3">
       <h3 className="text-xs font-black uppercase tracking-widest text-rose-300">If it is urgent</h3>
-      {routes.map(r => (
+      {Array.isArray(routes) && routes.length > 0 ? routes.map(r => (
         <div key={r.id} data-testid="urgent-route" className="space-y-1">
           <p data-testid="urgent-situation" className="text-sm font-bold text-white">{r.situation}</p>
           <ul className="list-disc ml-5 text-xs text-slate-200 space-y-0.5">
@@ -49,7 +53,7 @@ export default function UrgentRoutes({ routes, basis }: { routes: UrgentRoute[];
             Read: {r.sources.map(urgentSourceSaid).join('; ')}.
           </p>
         </div>
-      ))}
+      )) : <p data-testid="urgent-missing" className="text-xs font-bold text-rose-300">{URGENT_MISSING}</p>}
       {basis && <p data-testid="urgent-basis" className="text-[10px] text-slate-500">{basis}</p>}
     </section>
   );
