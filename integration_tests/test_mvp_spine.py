@@ -75415,15 +75415,16 @@ def test_w875_how_long_a_time_limit_runs_is_arithmetic_on_the_rules_own_words_wi
     is a row in a directory. Each rule names the provision that sets its limit and the words it was built from; the
     provision is read from its publisher when a person asks (faked here: the suite reaches no outside host), and
     nothing is computed unless those words are in it. What the limit does not account for, and who to ask, travel
-    with it. Nothing is composed."""
+    with it. Nothing is composed. W1157: the rules are dated either side of 1 October 2026. This test works on dates
+    before it, whose words are the provision's as it stood on 30 September 2026; test_w1157 holds both sides."""
     import pathlib
     from agentic_core.legal import statute as _st875
     from agentic_core.legal import time_limits as _tl875
     asked = []
 
     def fake(text):
-        async def _provision(kind, year, number, section):
-            asked.append((kind, int(year), int(number), str(section)))
+        async def _provision(kind, year, number, section, version=None):
+            asked.append((kind, int(year), int(number), str(section), version))
             return {"parts": [{"level": 1, "number": "(2)", "text": text}],
                     "address": f"https://www.legislation.gov.uk/{kind}/{year}/{number}/section/{section}",
                     "version_dated": "2026-01-01"}
@@ -75431,29 +75432,31 @@ def test_w875_how_long_a_time_limit_runs_is_arithmetic_on_the_rules_own_words_wi
     words = ("(a) before the end of the period of three months beginning with the effective date of termination, or")
     monkeypatch.setattr(_st875, "provision", fake(words))
 
-    def work(rule="unfair_dismissal", date="2026-10-03"):
+    def work(rule="unfair_dismissal", date="2026-07-03"):
         return client.post("/api/v1/law/time-limit", json={"rule": rule, "event_date": date})
 
-    #  1. the rules, each with its provision and its words
+    #  1. the rules, each with its provision and the words of each of its periods
     listed = client.get("/api/v1/law/time-limit").json()
     assert {r["id"] for r in listed["rules"]} == set(_tl875.RULES) >= {"unfair_dismissal", "discrimination_at_work"}
-    assert all(r["words"] and r["act"] and r["section"] for r in listed["rules"])
+    assert all(r["periods"] and all(p["words"] for p in r["periods"]) and r["act"] and r["section"]
+               for r in listed["rules"])
 
-    #  2. the arithmetic: three months beginning with 3 October end at the end of 2 January
+    #  2. the arithmetic: three months beginning with 3 July 2026 end at the end of 2 October 2026
     r = work()
     assert r.status_code == 200, r.text[:200]
     a = r.json()
-    assert a["computed"] is True and a["last_day"] == "2027-01-02", a
-    assert asked[-1] == ("ukpga", 1996, 18, "111"), ("the rule's own provision was not the one read", asked)
+    assert a["computed"] is True and a["last_day"] == "2026-10-02", a
+    assert asked[-1] == ("ukpga", 1996, 18, "111", "2026-09-30"), (
+        "the rule's own provision, as it stood for the date, was not the one read", asked)
     assert a["route"]["name"] == "Acas" and "early conciliation" in a["does_not_account_for"] and a["composed"] is False
-    assert work(date="2026-10-31").json()["last_day"] == "2027-01-30"
+    assert work(date="2026-07-31").json()["last_day"] == "2026-10-30"
     #  ...and a date whose same date three months on does not exist is not worked out, and says so
-    end = work(date="2026-11-30").json()
+    end = work(date="2026-08-31").json()
     assert end["computed"] is False and end["last_day"] is None and "NOT COMPUTED" in end["basis"], end
     assert work(date="not a date").json()["computed"] is False
 
     #  3. a provision that no longer has the rule's words: nothing is computed
-    monkeypatch.setattr(_st875, "provision", fake("(a) before the end of the period of six months, or"))
+    monkeypatch.setattr(_st875, "provision", fake("(a) before the end of the period of nine months, or"))
     gone = work().json()
     assert gone["computed"] is False and gone["last_day"] is None and "does not contain the words" in gone["basis"], gone
 
@@ -80766,7 +80769,8 @@ def test_w953_the_one_page_of_where_help_is_says_how_to_find_a_scholar_and_is_of
     assert rows["law-directory"]["state"] == "journey" and rows["law-directory"]["driven_by"] == me, rows["law-directory"]
     assert "qualified scholar" in rows["law-directory"]["today"]
     assert rows["law-tribunal-time-limit"]["state"] == "arithmetic"
-    assert rows["law-tribunal-time-limit"]["driven_by"].startswith("test_w875_")
+    #  W1157 - the dated rules' guard drives the time-limit row now
+    assert rows["law-tribunal-time-limit"]["driven_by"].startswith("test_w1157_")
     tests = set(re.findall(r"^def (test_\w+)", Path(__file__).read_text(encoding="utf-8"), re.M))
     assert cov.check(reg, tests)["problems"] == [], cov.check(reg, tests)["problems"]
 
@@ -91597,7 +91601,8 @@ def test_w1119_fu399_the_time_limit_panel_says_the_limit_what_it_omits_and_who_t
     ask = done["request"]
     assert gone["request"] == refused["request"] == ask and ask["rule"] == rules["rules"][0]["id"]
     rule = _tl.RULES[ask["rule"]]
-    end = _tl.last_day(_dt.date.fromisoformat(ask["event_date"]), rule["months"])
+    per = _tl.period_for(ask["rule"], ask["event_date"])          # W1157: the period the date falls in
+    end = _tl.last_day(_dt.date.fromisoformat(ask["event_date"]), per["months"])
     assert done["body"]["computed"] is True and done["body"]["last_day"] == end.isoformat(), done["body"]
     assert done["body"]["route"]["name"] == rule["route"]["name"] and done["body"]["provision_address"], done["body"]
     assert gone["body"]["computed"] is False and gone["body"]["last_day"] is None
@@ -91607,15 +91612,16 @@ def test_w1119_fu399_the_time_limit_panel_says_the_limit_what_it_omits_and_who_t
     assert client.get(fx["rules"]["url"]).json() == rules
 
     def stood_in(text):
-        async def _provision(kind, year, number, section):
+        async def _provision(kind, year, number, section, version=None):
             return {"parts": [{"level": 1, "number": "(2)", "text": text}],
-                    "address": f"https://www.legislation.gov.uk/{kind}/{year}/{number}/section/{section}"}
+                    "address": (f"https://www.legislation.gov.uk/{kind}/{year}/{number}/section/{section}"
+                                + (f"/{version}" if version else ""))}
         return _provision
 
     async def _unreachable(*_a, **_k):
         raise _st.PublisherRefused("the publisher could not be reached (ConnectError)")
-    for key, prov in (("computed", stood_in(f"(a) before the end of the period of {rule['words']}, or")),
-                      ("words_gone", stood_in("(a) before the end of the period of six months, or")),
+    for key, prov in (("computed", stood_in(f"(a) before the end of the period of {per['words']}, or")),
+                      ("words_gone", stood_in("(a) before the end of the period of nine months, or")),
                       ("refused", _unreachable)):
         monkeypatch.setattr(_st, "provision", prov)
         live = client.post(fx["rules"]["url"], json=ask)
@@ -93979,3 +93985,131 @@ def test_w1156_fu1060_the_sources_check_reads_every_backend_module_and_page_and_
             if str(r.get("source", "")).startswith("W1156 ")]
     assert len(rows) == 1 and rows[0]["status"] == "open" and rows[0]["slot"] == "P4.5", rows
     assert "meta/genome_ledger.json" in rows[0]["why"] and "data root" in rows[0]["title"], rows[0]["title"]
+
+
+def test_w1157_p511_the_tribunal_limits_either_side_of_1_october_2026_are_dated_rules_each_read_as_it_stood(client, monkeypatch):
+    """P5.11 clause 2 (W1157). Schedule 12 to the Employment Rights Act 2025 put six months for three in section 111(2)
+    of the Employment Rights Act 1996 and in section 123(1)(a) of the Equality Act 2010, in force on 1 October 2026 by
+    regulation 3 of S.I. 2026/954; by regulation 4 the change does not apply where the relevant date is before then. The
+    rules W875 wrote held the three-month words alone, so once the publisher wrote the change into its text the Law
+    page worked out no date for either claim. Read at www.legislation.gov.uk on 2026-11-20. Held:
+    - each rule has a period on each side of 1 October 2026, three months before and six on or after, each with the
+      provision's words as it stood in that period;
+    - the period is chosen by the relevant date, for both claims: the day before the change, the day of it, and after;
+    - the provision is read as it stood for that period: the publisher's version of 30 September 2026 for the earlier,
+      the current text for the later; the earlier words alone in the text compute nothing for a later date;
+    - the arithmetic on 29 February, and a month end six months on that does not exist;
+    - every answer says the rule it used, the change and the regulations that make it, and the limit on the other side;
+    - the statute reader asks the publisher for a dated version at its own address and refuses one that is not a date;
+    - each provision read is a row of the register of sources saying when and by whom, and the coverage row names
+      this test."""
+    import asyncio
+    import json
+    import pathlib
+    import httpx
+    import pytest
+    from agentic_core.legal import statute as _st
+    from agentic_core.legal import time_limits as _tl
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read_provision = _st.provision
+
+    #  1. the periods, as data
+    for rid, rule in _tl.RULES.items():
+        ps = rule["periods"]
+        assert [p.get("until") for p in ps] == ["2026-09-30", None] and [p.get("from") for p in ps] == [None, "2026-10-01"], rid
+        assert [p["months"] for p in ps] == [3, 6] and ps[0]["version"] == "2026-09-30" and ps[1]["version"] is None, rid
+    assert [p["words"] for p in _tl.RULES["unfair_dismissal"]["periods"]] == [
+        "three months beginning with the effective date of termination",
+        "six months beginning with the effective date of termination"]
+    assert [p["words"] for p in _tl.RULES["discrimination_at_work"]["periods"]] == [
+        "3 months starting with the date of the act to which the complaint relates",
+        "6 months starting with the date of the act to which the complaint relates"]
+    assert _tl.CHANGE["on"] == "2026-10-01" and "regulation 4 of S.I. 2026/954" in _tl.CHANGE["earlier_limit_kept"]
+
+    #  2. a publisher stood in that gives each version of each provision the words it had
+    asked = []
+    texts = {"111": {"2026-09-30": _tl.RULES["unfair_dismissal"]["periods"][0]["words"],
+                     None: _tl.RULES["unfair_dismissal"]["periods"][1]["words"]},
+             "123": {"2026-09-30": _tl.RULES["discrimination_at_work"]["periods"][0]["words"],
+                     None: _tl.RULES["discrimination_at_work"]["periods"][1]["words"]}}
+
+    async def _as_it_stood(kind, year, number, section, version=None):
+        asked.append((str(section), version))
+        return {"parts": [{"level": 1, "number": "(2)",
+                           "text": "(a) before the end of the period of " + texts[str(section)][version] + ", or"}],
+                "address": (f"https://www.legislation.gov.uk/{kind}/{year}/{number}/section/{section}"
+                            + (f"/{version}" if version else ""))}
+    monkeypatch.setattr(_st, "provision", _as_it_stood)
+
+    def work(rule, date):
+        r = client.post("/api/v1/law/time-limit", json={"rule": rule, "event_date": date})
+        assert r.status_code == 200, r.text[:200]
+        return r.json()
+    for rule, sec in (("unfair_dismissal", "111"), ("discrimination_at_work", "123")):
+        before, on, after = work(rule, "2026-09-30"), work(rule, "2026-10-01"), work(rule, "2026-10-03")
+        assert (before["months"], before["last_day"]) == (3, "2026-12-29"), before
+        assert (on["months"], on["last_day"]) == (6, "2027-03-31"), on
+        assert (after["months"], after["last_day"]) == (6, "2027-04-02"), after
+        assert before["provision_address"].endswith(f"/section/{sec}/2026-09-30"), before["provision_address"]
+        assert on["provision_address"].endswith(f"/section/{sec}"), on["provision_address"]
+        for got, other_side in ((before, "For a relevant date on or after 1 October 2026 the limit is 6 months."),
+                                (on, "For a relevant date before 1 October 2026 the limit is 3 months.")):
+            assert other_side in got["basis"] and "regulation 4 of S.I. 2026/954" in got["basis"], got["basis"]
+            assert "Schedule 12 to the Employment Rights Act 2025" in got["basis"], got["basis"]
+            assert [p["months"] for p in got["either_side"]] == [3, 6] and got["change"]["on"] == "2026-10-01"
+    assert asked.count(("111", "2026-09-30")) == 1 and asked.count(("111", None)) == 2, asked
+    assert work("unfair_dismissal", "2028-02-29")["last_day"] == "2028-08-28"
+    month_end = work("unfair_dismissal", "2026-10-31")
+    assert month_end["computed"] is False and "6 months later does not exist" in month_end["basis"], month_end
+    listed = client.get("/api/v1/law/time-limit").json()
+    assert listed["change"]["page"] == "https://www.legislation.gov.uk/uksi/2026/954/regulation/4"
+    assert [[p["months"] for p in r["periods"]] for r in listed["rules"]] == [[3, 6], [3, 6]], listed["rules"]
+
+    #  3. the earlier words alone in the text, as the W875 rules met the publisher's change: nothing is computed
+    async def _three_months_everywhere(kind, year, number, section, version=None):
+        return {"parts": [{"text": "(a) before the end of the period of " + texts[str(section)]["2026-09-30"] + ", or"}],
+                "address": "https://www.legislation.gov.uk/x"}
+    monkeypatch.setattr(_st, "provision", _three_months_everywhere)
+    stale = work("unfair_dismissal", "2026-10-03")
+    assert stale["computed"] is False and "does not contain the words" in stale["basis"], stale
+
+    #  4. the statute reader asks the publisher for a dated version, at its own address
+    sample = (root / "integration_tests/fixtures/statute_sample_a.xml").read_text(encoding="utf-8")
+    seen = []
+
+    class _Resp:
+        status_code, text, url = 200, sample, httpx.URL("https://www.legislation.gov.uk/x")
+
+    class _Client:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def get(self, url):
+            seen.append(url)
+            return _Resp()
+    monkeypatch.setattr(_st.httpx, "AsyncClient", _Client)
+    got = asyncio.new_event_loop().run_until_complete(read_provision("ukpga", "2099", "1", "7", version="2099-01-02"))
+    assert seen == ["https://www.legislation.gov.uk/ukpga/2099/1/section/7/2099-01-02/data.xml"], seen
+    assert got["address"] == "https://www.legislation.gov.uk/ukpga/2099/1/section/7/2099-01-02", got["address"]
+    with pytest.raises(_st.NotAnAddress):
+        asyncio.new_event_loop().run_until_complete(read_provision("ukpga", "2099", "1", "7", version="yesterday"))
+    assert len(seen) == 1, "a version that is not a date reached the publisher"
+
+    #  5. each provision read is a row of the register of sources, and the coverage row names this test
+    rows = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    for rid, page in (("employment-rights-act-1996", "https://www.legislation.gov.uk/ukpga/1996/18/section/111"),
+                      ("equality-act-2010", "https://www.legislation.gov.uk/ukpga/2010/15/section/123"),
+                      ("employment-rights-act-2025", "https://www.legislation.gov.uk/ukpga/2025/36/schedule/12"),
+                      ("si-2026-954", "https://www.legislation.gov.uk/uksi/2026/954/made")):
+        r = rows[rid]
+        assert (r["status"], r["page"], r["read_on"]) == ("current", page, "2026-11-20") and "W1157" in r["read_by"], rid
+    cov = json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))
+    row = next(r for r in cov["rows"] if r["id"] == "law-tribunal-time-limit")
+    assert row["driven_by"] == "test_w1157_p511_the_tribunal_limits_either_side_of_1_october_2026_are_dated_rules_each_read_as_it_stood"
+    assert "1 October 2026" in row["today"], row["today"]

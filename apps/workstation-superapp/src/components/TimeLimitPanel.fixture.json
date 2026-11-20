@@ -9,18 +9,52 @@
      "name": "an unfair dismissal claim to an employment tribunal",
      "act": "Employment Rights Act 1996",
      "section": "111",
-     "words": "three months beginning with the effective date of termination",
-     "event": "the effective date of termination"
+     "event": "the effective date of termination",
+     "relevant_date": "the effective date of termination (S.I. 2026/954, the Schedule's first table)",
+     "periods": [
+      {
+       "applies_to": "a relevant date before 1 October 2026",
+       "months": 3,
+       "words": "three months beginning with the effective date of termination",
+       "read_from": "the provision as it stood on 2026-09-30"
+      },
+      {
+       "applies_to": "a relevant date on or after 1 October 2026",
+       "months": 6,
+       "words": "six months beginning with the effective date of termination",
+       "read_from": "the provision as it stands now"
+      }
+     ]
     },
     {
      "id": "discrimination_at_work",
      "name": "a discrimination claim about work to an employment tribunal",
      "act": "Equality Act 2010",
      "section": "123",
-     "words": "3 months starting with the date of the act to which the complaint relates",
-     "event": "the date of the act the complaint is about"
+     "event": "the date of the act the complaint is about",
+     "relevant_date": "the date of the act, the end of conduct extending over a period, or the date a failure was decided on (S.I. 2026/954, the Schedule's first table)",
+     "periods": [
+      {
+       "applies_to": "a relevant date before 1 October 2026",
+       "months": 3,
+       "words": "3 months starting with the date of the act to which the complaint relates",
+       "read_from": "the provision as it stood on 2026-09-30"
+      },
+      {
+       "applies_to": "a relevant date on or after 1 October 2026",
+       "months": 6,
+       "words": "6 months starting with the date of the act to which the complaint relates",
+       "read_from": "the provision as it stands now"
+      }
+     ]
     }
    ],
+   "change": {
+    "on": "2026-10-01",
+    "by": "Schedule 12 to the Employment Rights Act 2025, in force on 1 October 2026 by regulation 3 of S.I. 2026/954",
+    "earlier_limit_kept": "by regulation 4 of S.I. 2026/954 the change does not apply where the relevant date is before 1 October 2026",
+    "page": "https://www.legislation.gov.uk/uksi/2026/954/regulation/4"
+   },
    "arithmetic": "a period of N months beginning, or starting, with a day includes that day, so it ends at the end of the day before the same date N months later",
    "composed": false
   }
@@ -36,9 +70,31 @@
    "name": "an unfair dismissal claim to an employment tribunal",
    "act": "Employment Rights Act 1996",
    "section": "111",
-   "words": "three months beginning with the effective date of termination",
+   "words": "six months beginning with the effective date of termination",
+   "months": 6,
    "event": "the effective date of termination",
    "event_date": "2026-10-03",
+   "relevant_date": "the effective date of termination (S.I. 2026/954, the Schedule's first table)",
+   "change": {
+    "on": "2026-10-01",
+    "by": "Schedule 12 to the Employment Rights Act 2025, in force on 1 October 2026 by regulation 3 of S.I. 2026/954",
+    "earlier_limit_kept": "by regulation 4 of S.I. 2026/954 the change does not apply where the relevant date is before 1 October 2026",
+    "page": "https://www.legislation.gov.uk/uksi/2026/954/regulation/4"
+   },
+   "either_side": [
+    {
+     "applies_to": "a relevant date before 1 October 2026",
+     "months": 3,
+     "words": "three months beginning with the effective date of termination",
+     "read_from": "the provision as it stood on 2026-09-30"
+    },
+    {
+     "applies_to": "a relevant date on or after 1 October 2026",
+     "months": 6,
+     "words": "six months beginning with the effective date of termination",
+     "read_from": "the provision as it stands now"
+    }
+   ],
    "does_not_account_for": "early conciliation through Acas, which must be started before this limit and can extend it, and the tribunal's narrow power to allow a later claim",
    "route": {
     "name": "Acas",
@@ -50,9 +106,9 @@
    "arithmetic": "a period of N months beginning, or starting, with a day includes that day, so it ends at the end of the day before the same date N months later",
    "composed": false,
    "not_advice": "Nothing here is legal advice.",
-   "last_day": "2027-01-02",
+   "last_day": "2027-04-02",
    "computed": true,
-   "basis": "the primary limit the Act sets, from its words as published now ('three months beginning with the effective date of termination'): 3 months beginning with 2026-10-03 end at the end of 2027-01-02. It does not account for early conciliation through Acas, which must be started before this limit and can extend it, and the tribunal's narrow power to allow a later claim."
+   "basis": "the primary limit the Act sets, from its words as its publisher gives them for this date ('six months beginning with the effective date of termination'): 6 months beginning with 2026-10-03 end at the end of 2027-04-02. This is the limit for a relevant date on or after 1 October 2026, the relevant date being the effective date of termination. The change from 3 to 6 months is Schedule 12 to the Employment Rights Act 2025, in force on 1 October 2026 by regulation 3 of S.I. 2026/954, and by regulation 4 of S.I. 2026/954 the change does not apply where the relevant date is before 1 October 2026. For a relevant date before 1 October 2026 the limit is 3 months. It does not account for early conciliation through Acas, which must be started before this limit and can extend it, and the tribunal's narrow power to allow a later claim."
   }
  },
  "words_gone": {
@@ -66,9 +122,31 @@
    "name": "an unfair dismissal claim to an employment tribunal",
    "act": "Employment Rights Act 1996",
    "section": "111",
-   "words": "three months beginning with the effective date of termination",
+   "words": "six months beginning with the effective date of termination",
+   "months": 6,
    "event": "the effective date of termination",
    "event_date": "2026-10-03",
+   "relevant_date": "the effective date of termination (S.I. 2026/954, the Schedule's first table)",
+   "change": {
+    "on": "2026-10-01",
+    "by": "Schedule 12 to the Employment Rights Act 2025, in force on 1 October 2026 by regulation 3 of S.I. 2026/954",
+    "earlier_limit_kept": "by regulation 4 of S.I. 2026/954 the change does not apply where the relevant date is before 1 October 2026",
+    "page": "https://www.legislation.gov.uk/uksi/2026/954/regulation/4"
+   },
+   "either_side": [
+    {
+     "applies_to": "a relevant date before 1 October 2026",
+     "months": 3,
+     "words": "three months beginning with the effective date of termination",
+     "read_from": "the provision as it stood on 2026-09-30"
+    },
+    {
+     "applies_to": "a relevant date on or after 1 October 2026",
+     "months": 6,
+     "words": "six months beginning with the effective date of termination",
+     "read_from": "the provision as it stands now"
+    }
+   ],
    "does_not_account_for": "early conciliation through Acas, which must be started before this limit and can extend it, and the tribunal's narrow power to allow a later claim",
    "route": {
     "name": "Acas",
@@ -82,7 +160,7 @@
    "not_advice": "Nothing here is legal advice.",
    "last_day": null,
    "computed": false,
-   "basis": "NOT COMPUTED - the provision as its publisher returned it now does not contain the words this rule was built from, so the rule may have changed. Read the provision, and ask Acas."
+   "basis": "NOT COMPUTED - the provision as its publisher returned it for this date does not contain the words this rule was built from, so the rule may have changed. Read the provision, and ask Acas."
   }
  },
  "refused": {

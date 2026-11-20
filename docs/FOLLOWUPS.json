@@ -26294,6 +26294,47 @@
       "note": "",
       "slot_source": "W1138's rule for the release (P4.5): what the platform writes lives under the data root",
       "tier": 2
+    },
+    {
+      "id": "FU-1295",
+      "title": "The two tribunal time limits became six months on 1 October 2026 and the rules held only the three-month words, so the Law page worked out no date for either claim",
+      "why": "Found in W1157, reading at legislation.gov.uk the provisions the time-limit rules are built from: section 111(2)(a) of the Employment Rights Act 1996 and section 123(1)(a) of the Equality Act 2010 now read six months, by Schedule 12 to the Employment Rights Act 2025 in force on 1 October 2026 (S.I. 2026/954, regulation 3), and by regulation 4 the change does not apply where the relevant date is before then. W875's rules held the three-month words alone and the route read only the current text, so a person asking was told no date, for either claim, whatever the date.",
+      "source": "W1157 (the tribunal limits read at their publisher)",
+      "found": "2026-11-20",
+      "files": [
+        "agentic_core/legal/time_limits.py",
+        "agentic_core/api/law.py",
+        "agentic_core/legal/statute.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.11",
+      "status": "done",
+      "closed_by": "W1157",
+      "note": "",
+      "slot_source": "P5.11 clause 2 is the tribunal limits either side of 1 October 2026, and this finding is that clause's",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1157: each rule has a period on each side of 1 October 2026, chosen by the relevant date (the effective date of termination; the date of the act), with its words as the provision stood in that period; the statute reader asks the publisher for its version of 30 September 2026 for the earlier period; every answer says the rule used, the change and its regulations, and the limit on the other side. The four instruments are rows of docs/SOURCES.json, read 2026-11-20. test_w1157, with blinds."
+    },
+    {
+      "id": "FU-1296",
+      "title": "Breach of contract claims to an employment tribunal are not among the time-limit rules, and in Scotland their limit changes on 9 November 2026",
+      "why": "P5.11 clause 2 names the tribunal limits either side of 1 October 2026 with the Scottish exception. The assessment (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md section 23.2, read 2026-10-12 at the conciliation service's page) records that breach of contract claims in Scotland do not change until 9 November 2026. W1157 dated the two rules the tool has (unfair dismissal; discrimination at work); breach of contract is not one of them. Next: read the two Extension of Jurisdiction Orders and what changed them at legislation.gov.uk, and add the claim as a dated rule for each nation, or say plainly that it is not worked out here.",
+      "source": "W1157 (the tribunal limits read at their publisher)",
+      "found": "2026-11-20",
+      "files": [
+        "agentic_core/legal/time_limits.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.11",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.11 clause 2 names the Scottish exception beside the limits either side of 1 October 2026, and this row is that exception",
+      "tier": 2
     }
   ],
   "routes": [

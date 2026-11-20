@@ -145,7 +145,12 @@
     "Wales",
     "Scotland"
    ],
-   "status": "named_not_read"
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/ukpga/2010/15/section/123",
+   "read_on": "2026-11-20",
+   "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: section 123 as it stands from 1 October 2026, and as it stood on 30 September 2026 (the publisher's version for that date)",
+   "says": "Section 123(1): subject to section 140B, proceedings on a complaint within section 120 may not be brought after the end of (a) the period of 6 months starting with the date of the act to which the complaint relates, or (b) such other period as the employment tribunal thinks just and equitable; as it stood on 30 September 2026 it said 3 months. Conduct extending over a period is treated as done at its end, and a failure to do something as occurring when the person decided on it (s.123(3)). The figure was changed by paragraph 18 of Schedule 12 to the Employment Rights Act 2025, in force on 1 October 2026 by S.I. 2026/954, regulation 3, with regulation 4. The publisher lists no change not yet written into section 123.",
+   "not_read": "the rest of the Act"
   },
   {
    "id": "employment-rights-act-1996",
@@ -158,7 +163,12 @@
     "Wales",
     "Scotland"
    ],
-   "status": "named_not_read"
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/ukpga/1996/18/section/111",
+   "read_on": "2026-11-20",
+   "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: section 111 as it stands from 1 October 2026, and as it stood on 30 September 2026 (the publisher's version for that date)",
+   "says": "Section 111(2): an employment tribunal shall not consider an unfair dismissal complaint unless it is presented (a) before the end of the period of six months beginning with the effective date of termination, or (b) within such further period as it considers reasonable where it is satisfied it was not reasonably practicable to present it within six months; as it stood on 30 September 2026 (in this form from 31 December 2020) both said three months. Section 207B (extension of time limits to facilitate conciliation) applies for subsection (2)(a) (s.111(2A)). The word was changed by paragraph 4(25) of Schedule 12 to the Employment Rights Act 2025, in force on 1 October 2026 by S.I. 2026/954, regulation 3, with regulation 4. The publisher lists no change not yet written into section 111.",
+   "not_read": "the rest of the Act"
   },
   {
    "id": "nice-ng97",
@@ -1386,6 +1396,42 @@
    ],
    "permits": [],
    "permits_basis": "nothing: no terms permitting a use were read, so it is not to be used until written permission is held or its terms are read and entered. The host named is the dataset's own address, not the whole site, so models may still be fetched from that site under their own licences"
+  },
+  {
+   "id": "employment-rights-act-2025",
+   "names": [
+    "Employment Rights Act 2025"
+   ],
+   "kind": "statute",
+   "nation": [
+    "England",
+    "Wales",
+    "Scotland"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/ukpga/2025/36/schedule/12",
+   "read_on": "2026-11-20",
+   "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: Schedule 12 (increase in time limits for making claims), paragraphs 4(25) and 18",
+   "says": "Paragraph 4(25) of Schedule 12: in section 111(2) of the Employment Rights Act 1996, in paragraphs (a) and (b), for \"three\" substitute \"six\". Paragraph 18: in section 123(1)(a) of the Equality Act 2010, for \"3\" substitute \"6\". In force on 1 October 2026 (S.I. 2026/954, regulation 3).",
+   "not_read": "the rest of the Act, and the rest of Schedule 12"
+  },
+  {
+   "id": "si-2026-954",
+   "names": [
+    "S.I. 2026/954"
+   ],
+   "kind": "statutory instrument",
+   "nation": [
+    "England",
+    "Wales",
+    "Scotland"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/uksi/2026/954/made",
+   "read_on": "2026-11-20",
+   "read_by": "round W1157, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary: regulations 3 and 4, and the Schedule's first table for the two complaints the rules work out",
+   "says": "The Employment Rights Act 2025 (Commencement No. 5 and Transitional Provisions) (Amendment) Regulations 2026. Regulation 3: section 152 of and Schedule 12 to the 2025 Act (increase in time limits for making claims) come into force on 1 October 2026, subject to regulation 4. Regulation 4(1): the amendments made by Schedule 12 do not apply in any case where the relevant date occurs before 1 October 2026. The Schedule's first table: for a complaint under section 111(1) of the Employment Rights Act 1996, the effective date of termination; for a complaint under section 120 of the Equality Act 2010, the date of the act, or for conduct extending over a period the end of the period, or for a failure the date it was decided on.",
+   "not_read": "regulations 1, 2 and 5, and the Schedule's other rows"
   }
  ]
 }

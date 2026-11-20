@@ -138,9 +138,14 @@ def parse(xml_text: str, section: str) -> Dict[str, Any]:
     }
 
 
-async def provision(kind: str, year: Any, number: Any, section: Any) -> Dict[str, Any]:
-    """Fetch one provision now. One request, to the publisher's own host, on a person's action."""
+async def provision(kind: str, year: Any, number: Any, section: Any, version: Any = None) -> Dict[str, Any]:
+    """Fetch one provision now. One request, to the publisher's own host, on a person's action. W1157: `version`, a
+    date written YYYY-MM-DD, asks for the provision as it stood on that date - the publisher's own version for it."""
     url = address(kind, year, number, section)
+    if version is not None:
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(version)):
+            raise NotAnAddress("a version is a date, written YYYY-MM-DD")
+        url = f"{url}/{version}"
     try:
         async with httpx.AsyncClient(timeout=20.0, follow_redirects=True,
                                      headers={"User-Agent": "Workstation (one provision on a person's request)"}) as c:

@@ -464,25 +464,33 @@ class TimeLimitRequest(BaseModel):
 
 @router.get("/time-limit")
 def time_limit_rules():
-    """The time-limit rules this platform can work out, each with the provision and the words it is built from."""
+    """The time-limit rules this platform can work out, each with the provision, the words of each of its periods,
+    and the change between them (W1157)."""
     from agentic_core.legal import time_limits as _tl
     return {"rules": [{"id": k, "name": r["name"], "act": r["provision"]["act"], "section": r["provision"]["section"],
-                       "words": r["words"], "event": r["event"]} for k, r in _tl.RULES.items()],
-            "arithmetic": _tl.ARITHMETIC, "composed": False}
+                       "event": r["event"], "relevant_date": r["relevant_date"], "periods": _tl.periods(k)}
+                      for k, r in _tl.RULES.items()],
+            "change": dict(_tl.CHANGE), "arithmetic": _tl.ARITHMETIC, "composed": False}
 
 
 @router.post("/time-limit")
 async def time_limit(req: TimeLimitRequest):
-    """The primary limit a rule sets from a date, checked against the provision as its publisher returns it now, with
+    """The primary limit a rule sets from a date, checked against the provision as its publisher gives it for that
+    date (W1157: the publisher's version of the date's period), with the limit on the other side of a change, with
     what it does not account for and who to ask. Nothing is composed, and nothing here is legal advice."""
     from agentic_core.legal import statute as _st, time_limits as _tl
     rule = _tl.RULES.get(req.rule)
     if rule is None:
         raise HTTPException(status_code=422, detail=(f"No such rule: {req.rule!r}. The rules are: {', '.join(_tl.RULES)}. "
                                                      f"Nothing was computed."))
+    period = _tl.period_for(req.rule, req.event_date)
+    if period is None:                  # W1157 - not a date, so there is no period to read the provision for
+        return _tl.limit(req.rule, req.event_date, {})
     p = rule["provision"]
     try:
-        provision = await _st.provision(p["kind"], p["year"], p["number"], p["section"])
+        #  W1157 - the provision as it stood for the date's period: the publisher's dated version for an earlier one
+        provision = await _st.provision(p["kind"], p["year"], p["number"], p["section"],
+                                        **({"version": period["version"]} if period.get("version") else {}))
     except _st.PublisherRefused as exc:
         raise HTTPException(status_code=502, detail=(
             f"No limit is computed: the provision that sets it could not be read from its publisher ({exc}), so the "

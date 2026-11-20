@@ -71,8 +71,8 @@
    "subject": "How long a person has to bring an employment tribunal claim",
    "nation": "England, Wales, Scotland",
    "state": "arithmetic",
-   "today": "the primary limit is worked out from the date it runs from, using the words of the provision that sets it, read from its publisher when asked, with who to ask; early conciliation and extensions are not accounted for (built in W875; this row was left as nothing built until W953)",
-   "driven_by": "test_w875_how_long_a_time_limit_runs_is_arithmetic_on_the_rules_own_words_with_a_route"
+   "today": "the primary limit is worked out from the date it runs from: for a relevant date before 1 October 2026 three months, on or after it six (Schedule 12 to the Employment Rights Act 2025, with regulation 4 of S.I. 2026/954), each from the words of the provision as it stood for that date, read from its publisher when asked, with who to ask; early conciliation and extensions are not accounted for, and breach of contract claims are not among the rules (built in W875; dated either side of the change in W1157)",
+   "driven_by": "test_w1157_p511_the_tribunal_limits_either_side_of_1_october_2026_are_dated_rules_each_read_as_it_stood"
   },
   {
    "id": "law-urgent-routes",
