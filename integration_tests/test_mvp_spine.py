@@ -70760,7 +70760,19 @@ def test_w793_fu984_r5_the_stub_routers_are_archived_and_two_sentences_say_what_
         assert client.get(path).status_code == 404, path
     for path in ("/api/cross-platform/ar/scene",):
         assert client.get(path).status_code == 404, path
-    assert client.post("/api/cross-platform/voice/command", json={}).status_code == 404
+    #  W1133l - with the pages built (apps/workstation-superapp/dist, as on the Owner's machine and in the image) the
+    #  page fallback GET /{full_path:path} matches every path, so a POST to a path no route serves answers 405, not 404
+    #  (registered as FU-1384). What this holds is that no route serves it: 404, or 405 with the fallback the only
+    #  route whose path matches.
+    _r793 = client.post("/api/cross-platform/voice/command", json={})
+    if _r793.status_code == 405:
+        _hits793 = [getattr(r, "path", "") for r in client.app.routes
+                    if getattr(r, "path_regex", None) is not None
+                    and r.path_regex.match("/api/cross-platform/voice/command")]
+        assert _hits793 == ["/{full_path:path}"], ("a route other than the page fallback matches the retired path",
+                                                   _hits793)
+    else:
+        assert _r793.status_code == 404, _r793.status_code
     app = pathlib.Path("apps/workstation-superapp/src/App.tsx").read_text(encoding="utf-8")
     assert "<PlayfulEffectsManager" not in app and "import { PlayfulEffectsManager }" not in app
     qep = pathlib.Path("apps/workstation-superapp/src/components/QEPFlagshipFeatures.tsx").read_text(encoding="utf-8")
@@ -75493,7 +75505,7 @@ def test_w876_the_fund_says_where_the_shares_cycles_set_aside_for_it_went(client
     assert 'data-testid="fund-set-aside"' in page and "{fund.set_aside_reconciliation.basis}" in page
 
 
-def test_w877_no_parallel_source_tree_stands_beside_agentic_core_where_core_stood(client):
+def test_w877_no_parallel_source_tree_stands_beside_agentic_core_where_core_stood(client, tmp_path):
     """FU-605 (W877). A top-level core/ package stood beside agentic_core, against the Owner's ratified refusal (a) of
     2026-09-30 (NO PARALLEL SOURCE TREE), imported by two live modules. Measured first: it predates the refusal (the
     Stage 1 archive kept it for one reachable module and it was never moved), both importers take one class, and the
@@ -75502,7 +75514,18 @@ def test_w877_no_parallel_source_tree_stands_beside_agentic_core_where_core_stoo
     import ast
     import pathlib
     root = pathlib.Path(__file__).resolve().parents[1]
-    assert not (root / "core").exists(), "a top-level core/ tree stands beside agentic_core again"
+    #  W1133l - A FOLDER OF BYTECODE CACHES IS NOT A SOURCE TREE. On the Owner's machine core/ is still there holding
+    #  only __pycache__ from before the move, untracked and with no source file, and this read it as the tree standing
+    #  again. What the refusal forbids is source: any file outside a __pycache__ folder (a sourceless .pyc included).
+    def _source_files(d):
+        return sorted(p.relative_to(d).as_posix() for p in d.rglob("*") if p.is_file() and "__pycache__" not in p.parts)
+    (tmp_path / "t" / "__pycache__").mkdir(parents=True)
+    (tmp_path / "t" / "__pycache__" / "m.cpython-312.pyc").write_bytes(b"")
+    assert _source_files(tmp_path / "t") == [], "a folder of bytecode caches was read as a source tree"
+    (tmp_path / "t" / "m.py").write_bytes(b"")
+    assert _source_files(tmp_path / "t") == ["m.py"], "a source file in the folder was not seen"
+    assert not (root / "core").exists() or _source_files(root / "core") == [], (
+        "a top-level core/ tree stands beside agentic_core again", _source_files(root / "core")[:5])
     assert (root / "agentic_core" / "transcendent_subsystems" / "tfel.py").exists()
     assert (root / "_archive" / "core" / "identity.py").exists(), "the dead module was not kept in the archive"
 
@@ -76422,11 +76445,22 @@ def test_w890_a_test_doubles_rows_move_out_of_the_operations_record_and_back(mon
     assert store.is_relative_to(pathlib.Path(os.environ["DATA_DIR"]).resolve()), (
         "the operations record this run writes is not under its own store root", store)
 
-    #    and the Owner, who holds that store, has the steps in the resume prompt's list
+    #    and the Owner, who holds that store, has the steps in the resume prompt's list while the row is open.
+    #    W1133l - the move was made on the Owner's store, so the row is done: a done owner row leaves the list (W594's
+    #    rule), and the way back is kept in the row's close note instead.
     prompt = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
-    owner = prompt.split("FU-1040 (W890):")[1].split("THAT IS THE WHOLE LIST.")[0] if "FU-1040 (W890):" in prompt else ""
-    assert "quarantine_test_double_rows.py" in owner and "--apply" in owner and "--restore" in owner, (
-        "the Owner's list does not give the steps for moving the rows on the Owner's store", owner[:300])
+    row1040 = next(r for r in json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+                   if r["id"] == "FU-1040")
+    if row1040["status"] == "open":
+        owner = (prompt.split("FU-1040 (W890):")[1].split("THAT IS THE WHOLE LIST.")[0]
+                 if "FU-1040 (W890):" in prompt else "")
+        assert "quarantine_test_double_rows.py" in owner and "--apply" in owner and "--restore" in owner, (
+            "the Owner's list does not give the steps for moving the rows on the Owner's store", owner[:300])
+    else:
+        still = prompt.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
+        assert "FU-1040" not in still, "a done row is still put to the Owner"
+        said = " ".join(str(row1040.get("close_note") or "").split())
+        assert "_pruned_ops_" in said and "--restore" in said, ("the done row does not keep the way back", said[:300])
 
     # 2. on a planted record: a dry run moves nothing, apply takes the test double's rows, restore puts each back
     def _row(served, at, ok=True, resource=None):
@@ -76753,7 +76787,7 @@ def test_w895_a_row_just_written_is_read_even_when_the_os_withholds_the_file_for
     assert _oe895._load() == []
 
 
-def test_w896_src_no_longer_stands_beside_agentic_core_its_live_modules_moved_in_the_rest_archived():
+def test_w896_src_no_longer_stands_beside_agentic_core_its_live_modules_moved_in_the_rest_archived(tmp_path):
     """FU-1168, part 2: src/, the second tree W877's measure found beside agentic_core, against the Owner's ratified
     refusal (a) of 2026-09-30 (no parallel source tree). Read before moving: of its 24 tracked files the live code
     reached three, and only through the avatar tool registry. Those moved into agentic_core/avatars/tools/ beside it.
@@ -76764,7 +76798,17 @@ def test_w896_src_no_longer_stands_beside_agentic_core_its_live_modules_moved_in
     import pathlib
     import re
     root = pathlib.Path(__file__).resolve().parents[1]
-    assert not (root / "src").exists(), "a top-level src/ stands beside agentic_core again"
+    #  W1133l - as in W877: a folder holding only bytecode caches (as src/ still does, untracked, on the Owner's
+    #  machine) is not a source tree; any file outside a __pycache__ folder is.
+    def _source_files(d):
+        return sorted(p.relative_to(d).as_posix() for p in d.rglob("*") if p.is_file() and "__pycache__" not in p.parts)
+    (tmp_path / "t" / "__pycache__").mkdir(parents=True)
+    (tmp_path / "t" / "__pycache__" / "m.cpython-312.pyc").write_bytes(b"")
+    assert _source_files(tmp_path / "t") == [], "a folder of bytecode caches was read as a source tree"
+    (tmp_path / "t" / "m.py").write_bytes(b"")
+    assert _source_files(tmp_path / "t") == ["m.py"], "a source file in the folder was not seen"
+    assert not (root / "src").exists() or _source_files(root / "src") == [], (
+        "a top-level src/ stands beside agentic_core again", _source_files(root / "src")[:5])
 
     # 1. no live code imports the old tree
     offenders = []
@@ -92347,3 +92391,33 @@ def test_w1133_fu1055_the_departments_thirteen_headings_are_each_set_against_the
     for route in re.findall(r"`GET (/api/[A-Za-z0-9_./-]+)`", sec):
         assert route in served, (route, "a row names a route that is not served")
     assert "the children's gate stays closed" in " ".join(sec.split()), "the table does not keep the gate closed"
+
+
+def test_w1133l_fu1046_a_statute_term_is_a_word_and_multi_disciplinary_names_no_acas_code(client):
+    """FU-1046 (W1133l) - five change records of 2026-09-01 failed Atmospheric Harvest Solutions' board pack,
+    repository, website, web app and mobile app on 'STATUTORY_BREACH: ACASCode'. Driven on the text kept in
+    the moved books, the only engine term in it is 'disciplinary' inside 'multi-disciplinary' (19 times), and
+    there is no whole-word statute term anywhere. The engine's vocabulary was matched as a substring, and the
+    code of that day made any vocabulary hit a FAIL. W455 made a hit a REVIEW; the substring match stayed, so
+    the same text still named the ACAS Code. A term now matches as a word, on the route a person uses."""
+    def legal(subject):
+        r = client.post("/api/v1/compliance/check", json={"subject": subject})
+        assert r.status_code == 200, r.text
+        return next(v for v in r.json()["verdicts"] if v["framework"] == "uk_legal")
+
+    # the venture's own words, as its board pack has them: no statute is named
+    for subject in ("The AWHEN framework is a holistic, multi-disciplinary solution that integrates water and "
+                    "energy harvesting technologies.",
+                    "An interdisciplinary team designs the condensers; a cross-disciplinary review signs them off."):
+        v = legal(subject)
+        assert "STATUTORY_BREACH" not in v["reason"] and v["coverage"] != "vocabulary", (subject, v)
+        assert "matched nothing" in v["reason"], (subject, v)
+    # a statute term as a word still names its statute: singular, plural, and a prefix that only turns the
+    # topic around
+    for subject, statute in (("our disciplinary procedure follows the code", "ACASCode"),
+                             ("staff grievances are heard within five days", "ACASCode"),
+                             ("a non-discrimination policy for every hire", "EqualityAct2010"),
+                             ("the plan involves unfair dismissal of staff", "ERA1996")):
+        v = legal(subject)
+        assert v["status"] == "review" and v["coverage"] == "vocabulary", (subject, v)
+        assert f"STATUTORY_BREACH: {statute}" in v["reason"], (subject, v)

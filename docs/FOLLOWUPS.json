@@ -20747,11 +20747,14 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1133l",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done on the Owner's store (W1133l, 2026-11-20). The writer is test_orchestrator_adapts_to_model_health, which records six failed model attempts served by 'flaky' per run: the 162 rows are 27 runs between 2026-06-28T20 and 2026-06-30T15, all kind model_attempt, resource model:flaky, 25000 ms, failed, from before the suite had its own store (W394). Moved aside with scripts/quarantine_test_double_rows.py --apply: 2000 rows before, 1838 left, the 162 kept whole with their positions in data/_pruned_ops_20261120-042017/manifest.json; --restore with that manifest puts every row back. The native floor's rows from the same window were left, as the script's rule says."
     },
     {
       "id": "FU-1041",
@@ -20870,11 +20873,14 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1133l",
       "note": "",
       "slot_source": "found by a dated read of the Owner's store in W678; the area has no routed owner",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Driven on this machine (W1133l) on the text of Atmospheric Harvest Solutions (vsb-dac8f03ab5) kept in data/_moved_books_20261012-155706 and in its board pack and shipped repository: the five 2026-09-01 FAILs had one cause. The legal engine's ACAS Code term 'disciplinary' was matched as a substring, and the venture's text says 'multi-disciplinary' 19 times in the entity body and 8 times in the board pack, with no whole-word statute term anywhere (0 hits for disciplinary or grievance as words). The code of 2026-09-01 (W285) turned any statute-vocabulary hit into a FAIL, which is the reason the records carry ('STATUTORY_BREACH: ACASCode'). W455 (2026-09-12) made a hit a REVIEW, but the substring match stayed, so today's screen still named the ACAS Code on the same text. Fixed: a statute term matches as a word (plural allowed; joined to letters or by a hyphen it is part of another word, unless the prefix is non- or anti-). Guard test_w1133l_fu1046, five blinds red. The five change records were already rejected by the Owner on 2026-10-12 and are left as written."
     },
     {
       "id": "FU-1047",
@@ -26061,6 +26067,24 @@
       "status": "open",
       "closed_by": null,
       "note": ""
+    },
+    {
+      "id": "FU-1384",
+      "title": "With the pages built, a POST to a path no route serves answers 405 Method Not Allowed instead of 404",
+      "why": "Measured on the Owner's machine (W1133l), where apps/workstation-superapp/dist exists, as it does in the image (W1128). agentic_core/app_mvp.py then mounts the page fallback GET /{full_path:path}, whose path matches every path, so a POST, PUT or DELETE to a path no route serves (POST /api/cross-platform/voice/command, retired in W793) answers 405, which says the path exists and only the method is wrong. The fallback already refuses an /api path on GET with 404; other methods never reach it. Smallest fix: the fallback also takes the other methods and answers 404 for an API prefix (405 with Allow: GET otherwise), keeping the route count the build-only routes in docs/PUBLIC_ROUTES.json declare. Drive it with the build present and absent. W793's guard now holds the property either way.",
+      "source": "W1133l (the full suite on the Owner's machine, with the pages built)",
+      "found": "2026-11-20",
+      "files": [
+        "agentic_core/app_mvp.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.5",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the image carries the pages since W1128 (FU-1156, P4.5), so the deployed app is where a POST to an unserved path answers 405",
+      "tier": 3
     }
   ],
   "routes": [
