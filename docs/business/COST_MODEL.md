@@ -29,7 +29,7 @@ only beside the Owner's ruling. It promises no zero bill.
 | Line | LEAN | BASE | HIGHER ASSURANCE | How it would be marked |
 |---|---|---|---|---|
 | The virtual machine | SOURCED: inside the free tier; its public address $0.005 an hour after one free hour a month, about $3.65 a month; the image's registry at most about $0.16 a month | SOURCED, as LEAN | NOT MEASURED | SOURCED from Google's pages, read on 2026-11-20 and listed in `docs/DEPLOYMENT.md` |
-| Disk, and backups kept off the machine | none kept off it | SOURCED: 5 GB-months of regional storage free in us-central1; the rate beyond it not read | NOT MEASURED | SOURCED |
+| Disk, and backups kept off the machine | none kept off it | SOURCED: daily snapshots of the data disk at $0.05 per GB a month in us-central1, each after the first holding only what changed | NOT MEASURED | SOURCED |
 | Network out of the machine | SOURCED: 1 GB a month free from North America; the rate beyond it not read | SOURCED, as LEAN | NOT MEASURED | SOURCED |
 | The outside uptime check | none | NOT MEASURED | NOT MEASURED | SOURCED, or none if the provider's free tier covers it |
 | A domain name and certificate | none | NOT MEASURED | NOT MEASURED | QUOTED by the registrar |
@@ -70,7 +70,7 @@ only beside the Owner's ruling. It promises no zero bill.
 | P4.2 self-serve sign-up | SELF_SERVE_SIGNUP_ENABLED reads false unless it is set (`agentic_core/auth/core.py`); the invited stage before it has not been run | no |
 | P4.3 external models | AI_ALLOW_EXTERNAL reads false unless it is set, and the image sets it false (`Dockerfile`); no key is held | no |
 | P4.4 managed Postgres | deferred by the Owner on 2026-10-12 and recorded as a boundary; the file store is what runs | no |
-| P4.5 production deploy | the dry run's rows (FU-603, FU-1156) are open, and no deploy is recorded | no |
+| P4.5 production deploy | the dry run's rows (FU-603, FU-1156) are done, so its pre-flight is measured; no deploy is recorded, and the first is the Owner's, with its first restore from a snapshot (FU-1288) | no |
 | P4.6 real money | REAL_MONEY_ENABLED is False in the code (`agentic_core/economy/owner_payments.py`), and stays so until a compliance and KYC review by qualified people | no |
 | A first offer the interviews support | the interview guide and notes template exist; no interview is recorded in this tree | no |
 

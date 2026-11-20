@@ -21,7 +21,7 @@ anything. The deploy itself is plan item P4.5, and the switch is the Owner's.
 ## 2. Reproducible deployment
 
 - `requirements.txt` is exported from the lock, and the lock is made from `pyproject.toml`, so CI and a deploy install the same versions (W906). A fresh environment built only from it ran the whole suite (W907). [observed]
-- The production image serves the pages and carries the plan, the law corpus and the product catalogue. It was built from this tree and booted in a dry run under a 1 GiB memory cap (W1128, 2026-11-20; recorded in `docs/DEPLOYMENT.md`). What the Google Cloud path still lacks before a deploy is row FU-603. [observed]
+- The production image serves the pages and carries the plan, the law corpus and the product catalogue. It was built from this tree and booted in a dry run under a 1 GiB memory cap (W1128, 2026-11-20; recorded in `docs/DEPLOYMENT.md`). The Google Cloud deploy is written step by step with no stored key, and its backup, restore and rollback were drilled on this machine (W1134, W1137, 2026-11-20; recorded in `docs/DEPLOYMENT.md`). What it still lacks before a deploy is a certificate in front of the machine (row FU-1284) and the folders the platform writes on its data disk (row FU-1287); the deploy itself is the Owner's. [observed]
 - Done looks like this: an image built from a clean checkout of one commit serves `GET /health` and the pages, a dry run of the deploy steps in `docs/DEPLOYMENT.md` is recorded with its output, and a second person repeats it from the document alone. [inference]
 
 ## 3. Secrets and access
@@ -39,7 +39,7 @@ anything. The deploy itself is plan item P4.5, and the switch is the Owner's.
 ## 5. Backup and restore, demonstrated
 
 - Every store is a file under one data root (`agentic_core/store_paths.py`). `scripts/backup_stores.py` writes one archive of the data root with a SHA-256 manifest, checks an archive against it, and restores into an empty folder, checking every file it wrote. Its guard runs that round trip in the suite on Linux and on the Windows CI job. [observed]
-- No backup is taken on a schedule, no copy leaves the machine, and no restore onto a clean machine has been timed. [observed]
+- The deploy takes a daily snapshot of the data disk, kept 14 days, and its restore is a step of its own (steps 5 and 9 of the Google Cloud deploy in `docs/DEPLOYMENT.md`, W1137, 2026-11-20). The restore was drilled on this machine with Docker: the records were copied whole onto a fresh volume in a timed run, every file byte-identical, and the release started on the copy read them back. No snapshot has been taken, since nothing is deployed, and the first restore from a real snapshot is the Owner's, at the deploy (row FU-1288). [observed]
 - A database is plan item P4.4, and its migration dry-run and rollback have not been started: row FU-284. [observed]
 - Done looks like this: a backup taken on a schedule, a restore onto a clean machine timed and recorded, and the suite run against the restored data. A backup that has never been restored is not counted. [inference]
 
@@ -51,7 +51,7 @@ anything. The deploy itself is plan item P4.5, and the switch is the Owner's.
 ## 7. Limits
 
 - The app limits itself in four places: calls through the AI gateway (a governed rate), sign-in attempts per name and per address, external AI calls per hour, and the work budget. [observed]
-- Nothing has measured the app's memory or response times on the machine it would run on: row FU-603 asks for the peak-memory measurement. [observed]
+- The app's memory has been measured only on a round's machine, under the release machine's 1 GiB cap: 225 MiB at idle and 253 MiB after the dry run's probes (W1128, recorded in `docs/DEPLOYMENT.md`). Nothing has measured its response times, or its memory on the machine it would run on. [observed]
 - Done looks like this: a load test of stated shape against the target machine, with its peak memory, its slowest routes and the point where it refuses work, recorded with the commit it ran on. [inference]
 
 ## 8. Privacy and retention
@@ -62,7 +62,7 @@ anything. The deploy itself is plan item P4.5, and the switch is the Owner's.
 
 ## 9. Rollback and shutdown
 
-- `docs/DEPLOYMENT.md` has no rollback step and no shutdown step. [observed]
+- `docs/DEPLOYMENT.md` has a rollback step: step 8 gives the machine the previous release's tag and runs its startup script again (W1134). The rollback was drilled on this machine with Docker: the previous release, started on the current release's records, read them, and the current release, started again, read them too (W1137, 2026-11-20). No rollback has been carried out on a running deployment, since nothing is deployed, and no shutdown step is written. [observed]
 - Done looks like this: a return to the previous release carried out once on a running deployment, and a shutdown that keeps the data root carried out once, each recorded with the time it took. [inference]
 
 ## 10. Handover

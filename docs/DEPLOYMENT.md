@@ -120,9 +120,9 @@ Closed by W1129: the folder is named on the machine that holds it, by `LEGAL_MAT
 `.env`, which the image leaves out. The committed file names none, and the route answers with the folder's state
 and the setting that named it, never its path.
 
-Not yet done (FU-603): a backup, a restore drill and a rollback drill. W1134 wrote the rest into the next
-section: the secrets pattern with no stored keys, the records' disk kept apart from the machine, the cost labels
-and the costs. The project, the billing and the deploy itself stay the Owner's.
+Done since (FU-603): W1134 wrote the next section, with the secrets pattern with no stored keys, the records' disk
+kept apart from the machine, the cost labels and the costs; W1137 made the backup a daily snapshot and drilled the
+restore and the rollback on this machine. The project, the billing and the deploy itself stay the Owner's.
 
 ## The Google Cloud deploy, step by step (P4.5), read at Google's pages on 2026-11-20 (W1134)
 
@@ -148,7 +148,13 @@ none):
 - [registry-pricing] https://cloud.google.com/artifact-registry/pricing (no date shown)
 - [network-pricing] https://cloud.google.com/vpc/network-pricing (no date shown)
 - [run-volumes] https://docs.cloud.google.com/run/docs/configuring/services/cloud-storage-volume-mounts (2026-11-19)
-- [bucket] https://docs.cloud.google.com/storage/docs/creating-buckets (2026-11-17)
+- [snapshots] https://docs.cloud.google.com/compute/docs/disks/scheduled-snapshots (2026-11-10)
+- [disk-pricing] https://cloud.google.com/compute/disks-image-pricing (no date shown)
+- [disks-create] https://docs.cloud.google.com/sdk/gcloud/reference/compute/disks/create (2026-09-29)
+- [detach-disk] https://docs.cloud.google.com/sdk/gcloud/reference/compute/instances/detach-disk (2026-05-27)
+- [attach-disk] https://docs.cloud.google.com/sdk/gcloud/reference/compute/instances/attach-disk (2026-07-21)
+- [vm-stop] https://docs.cloud.google.com/sdk/gcloud/reference/compute/instances/stop (2026-08-11)
+- [vm-start] https://docs.cloud.google.com/sdk/gcloud/reference/compute/instances/start (2026-07-21)
 - [budget-cli] https://docs.cloud.google.com/sdk/gcloud/reference/billing/budgets/create (2026-05-27)
 - [budgets] https://docs.cloud.google.com/billing/docs/how-to/budgets (2026-11-10)
 - [uptime] https://docs.cloud.google.com/monitoring/uptime-checks (2026-11-20)
@@ -176,11 +182,14 @@ WHAT IT COSTS, read at the pricing pages (the arithmetic is this round's, over a
 - The registry: free up to 0.5 GiB a month, then $0.000136986 per GiB-hour, about $0.10 per GiB-month
   [registry-pricing]. The image is 2.28 GB as built (W1128) and the registry stores it compressed, so one image costs
   at most about $0.16 a month; the stored size is read from the repository after the first push.
-- The backup bucket: 5 GB-months of regional storage a month are free, in us-east1, us-west1 and us-central1 only
-  [free].
+- The daily snapshots of the data disk: standard snapshot storage is $0.05 per GB a month in us-central1, and a
+  snapshot after the first holds only what changed [disk-pricing]. The records are small, so this is cents a month;
+  the figure is read from the bill after the first week. While a restored disk and the old one both exist, the
+  standard disk space past the free 30 GB-months is $0.000054795 per GiB-hour [disk-pricing].
 - Data sent out: 1 GB a month is free from North America [free]. The rate after that was not read here, nor was the
   uptime check's own price.
-- In all, about $3.65 to $3.85 a month before data sent out. The budget alert in step 1 watches the bill.
+- In all, about $3.65 to $3.85 a month before data sent out and the snapshots' cents. The budget alert in step 1
+  watches the bill.
 
 THE STEPS, run from the Workstation folder with gcloud signed in as the Owner
 
@@ -226,14 +235,20 @@ The image is built from this tree's Dockerfile, as the dry run built it; the tag
 the commit's short hash (`git rev-parse --short HEAD`), so a release names the code it carries, and every earlier
 release stays in the repository to roll back to.
 
-**Step 5. The backup bucket, in the free tier's region** [bucket] [free]
+**Step 5. The backup: a daily snapshot of the data disk, kept 14 days** [snapshots] [disk-pricing]
 
 ```bash
-gcloud storage buckets create gs://BUCKET_NAME --location=us-central1
+gcloud compute resource-policies create snapshot-schedule workstation-daily --region=us-central1 \
+    --description="Workstation records, daily" --max-retention-days=14 --start-time=03:00 --daily-schedule \
+    --on-source-disk-delete=keep-auto-snapshots --storage-location=us-central1
 ```
 
-The free tier's storage applies in us-east1, us-west1 and us-central1 only [free]; a bucket in the US multi-region
-would be outside it. Nothing writes to the bucket yet: the backup is FU-603's (below).
+Google takes the snapshots; nothing runs on the machine and nothing holds a key. The page's daily example takes
+its flags this way, starting at a UTC time, and keep-auto-snapshots keeps the snapshots if the disk itself is
+deleted [snapshots]; its example stores them in the US multi-region, and us-central1 keeps them beside the disk at
+the rate the pricing page gives for it [disk-pricing]. The schedule is attached to the data disk once step 7 has
+made it. Each snapshot is taken while the platform runs; an application-consistent snapshot is on a page not read
+here.
 
 **Step 6. The firewall rule: port 80, to the machine tagged workstation** [firewall] [migrate]
 
@@ -269,7 +284,13 @@ holding anything else, a short one or a missing one is refused, untouched, and t
 (test_w1134). The labels are the cost labels: a budget can be narrowed to them with --filter-labels [budget-cli].
 NOT READ HERE: the roles the machine's service account needs to pull from the repository; if the pull is refused,
 that grant is what is missing. The script's output is read on the machine with
-`sudo journalctl -u google-startup-scripts.service` [startup].
+`sudo journalctl -u google-startup-scripts.service` [startup]. Then the data disk takes step 5's schedule
+[snapshots]:
+
+```bash
+gcloud compute disks add-resource-policies workstation-data --resource-policies=workstation-daily \
+    --zone=us-central1-a
+```
 
 **Step 8. A release, and a rollback, are the same two commands** [startup] [vm]
 
@@ -281,10 +302,28 @@ sudo google_metadata_script_runner startup
 The first runs where gcloud is and sets the tag the platform starts from. The second runs on the machine (SSH from
 the console) and re-runs the startup script, the page's way to re-run one [startup]; the script pulls the image
 first, and leaves the running platform as it was if the pull fails. A rollback is the same with the previous tag.
-The page shows add-metadata with --metadata-from-file; the --metadata form is the one create takes [vm]. Not yet
-drilled (FU-603).
+The page shows add-metadata with --metadata-from-file; the --metadata form is the one create takes [vm]. Drilled on
+this machine (below).
 
-**Step 9. The uptime check and its alert, from outside the machine (FU-1095)** [uptime]
+**Step 9. A restore, from the latest snapshot** [vm-stop] [disks-create] [detach-disk] [attach-disk] [vm-start]
+
+```bash
+gcloud compute instances stop workstation --zone=us-central1-a
+gcloud compute disks create workstation-data-restored --source-snapshot=SNAPSHOT --type=pd-standard \
+    --zone=us-central1-a
+gcloud compute instances detach-disk workstation --device-name=workstation-data --zone=us-central1-a
+gcloud compute instances attach-disk workstation --disk=workstation-data-restored --device-name=workstation-data \
+    --zone=us-central1-a
+gcloud compute instances start workstation --zone=us-central1-a
+```
+
+The machine is stopped first: the detach reference warns that "detaching a disk without first unmounting it may
+result in incomplete I/O operations and data corruption" [detach-disk]. SNAPSHOT is the latest of the schedule's,
+and the disk made from it keeps the device name the startup script looks for, so at the next boot the script finds
+its file system and keeps it. The old disk is deleted once the restored one has been read; until then the two
+together are past the free 30 GB-months [disk-pricing]. Drilled on this machine (below).
+
+**Step 10. The uptime check and its alert, from outside the machine (FU-1095)** [uptime]
 
 In the console: Monitoring, Uptime checks, Create uptime check; protocol HTTP, resource type URL, the machine's
 address as the host and /health as the path. Then, in the page's words: "To be notified when an uptime check fails,
@@ -293,7 +332,7 @@ By default a notification is sent when at least two regions report the check fai
 Then the drill FU-1095 asks for, with the Owner watching: on the machine, `docker stop workstation`; see the e-mail
 arrive; `docker start workstation`; see the alert clear.
 
-**Step 10. Later: deploys from GitHub, with no stored key** [wif]
+**Step 11. Later: deploys from GitHub, with no stored key** [wif]
 
 The first deploys are run by the Owner by hand, signed in as the Owner. When a workflow deploys, it signs in through
 a workload identity pool and holds no key:
@@ -316,9 +355,23 @@ can't be reused" [wif]. Only main, the release channel, may deploy. The workflow
 `workload_identity_provider` and `service_account` [wif]. NOT READ HERE: the roles the deploying service account
 needs, and whether a later version of that action is current.
 
-NOT YET DONE (FU-603): the backup of the data disk to the bucket, a restore of a backup onto a fresh disk, and a
-rollback, each driven once. HTTPS is its own row (FU-1284): as written the machine serves plain HTTP at its address,
-so no person signs in (P4.1) until a certificate fronts it.
+DRILLED ON THIS MACHINE, 2026-11-20 (W1137): the image built from the current tree (workstation:db8c3793) and
+the one built from W1128's tree (workstation:9dfc0f37), each started with the flags `deploy/gcp/startup.sh` gives the
+release machine and the free tier's 1 GiB of memory, on Docker volumes standing in for the data disk.
+- The current release came up healthy in 7.3 seconds and wrote a made-up project. After
+  the writes, `docker diff` showed the container had changed two things outside the volume and `/tmp`: `/app/logs/autonomy`, where the autonomy pipelines keep what they write, which a release or a rollback would lose (row FU-1287), and matplotlib's font cache under `/home/app`, which it rebuilds when it is missing. The records themselves are on the volume.
+- RESTORE: the volume was copied whole (3618 bytes compressed) and restored onto a fresh volume in
+  0.6 seconds; the 13 files on the copy are byte-identical to the
+  original, owned by the image's user. The current release on the copy came up in
+  7.3 seconds and read the project back (HTTP 200).
+- ROLLBACK: the previous release, started on the same records, came up in 7.3 seconds,
+  read the project (HTTP 200) and listed it; the current release, started again, came up in
+  7.3 seconds and read it (HTTP 200).
+- On Google Cloud the copy is the snapshot of step 5 and the fresh volume is step 9's restored disk; the first
+  restore from a real snapshot is driven at the deploy, with the Owner watching (FU-1288).
+
+HTTPS is its own row (FU-1284): as written the machine serves plain HTTP at its address, so no person signs in
+(P4.1) until a certificate fronts it.
 
 ## Payments & money safety (READ BEFORE LAUNCH)
 

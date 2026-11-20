@@ -78089,7 +78089,9 @@ def test_w918_fu742_the_file_stores_are_backed_up_verified_and_restored_byte_for
     #  the brief says what exists now, and what still does not
     brief = (root / "docs/business/PRODUCTION_HARDENING_BRIEF.md").read_text(encoding="utf-8")
     assert "No backup script exists" not in brief and "`scripts/backup_stores.py`" in brief
-    assert "No backup is taken on a schedule, no copy leaves the machine" in brief
+    #  W1137 - the deploy's daily snapshot and its drilled restore are what exists now; no snapshot has been taken
+    assert "The deploy takes a daily snapshot of the data disk" in brief
+    assert "No snapshot has been taken, since nothing is deployed" in brief
 
 
 def test_w919_fu742_the_windows_start_path_names_only_what_exists_and_starts_the_app_every_deployment_starts(tmp_path):
@@ -91932,7 +91934,8 @@ def test_w1126_fu1280_the_cost_model_marks_each_of_the_seven_gates_from_what_the
     interviews support. The cost model marks each evidenced or not from what the tree shows, and invents none. Held
     here, each gate's state computed from the tree and its row's mark held to it:
     - P4.1, P4.2, P4.3: each switch reads off unless it is set, and the committed deploy file and image set two off;
-    - P4.4: the plan records it deferred by the Owner; P4.5: the dry run's rows are open;
+    - P4.4: the plan records it deferred by the Owner; P4.5: the dry run's rows are done (W1137) and no deploy is
+      recorded: the Owner's first restore at the deploy (FU-1288) is open;
     - P4.6: REAL_MONEY_ENABLED is False;
     - the first offer: no interview is recorded in the tree.
     A gate whose state changes fails this until its row is marked again."""
@@ -91954,7 +91957,9 @@ def test_w1126_fu1280_the_cost_model_marks_each_of_the_seven_gates_from_what_the
         "P4.3 external models": 'os.getenv("AI_ALLOW_EXTERNAL", "false")' not in model
                                 or "AI_ALLOW_EXTERNAL=false" not in read("Dockerfile"),
         "P4.4 managed Postgres": "DEFERRED BY THE OWNER" not in p44,
-        "P4.5 production deploy": reg["FU-603"]["status"] == "done" and reg["FU-1156"]["status"] == "done",
+        #  W1137 - the pre-flight measured AND the deploy made, which a round reads from the Owner's first restore at it
+        "P4.5 production deploy": (reg["FU-603"]["status"] == "done" and reg["FU-1156"]["status"] == "done"
+                                   and reg["FU-1288"]["status"] == "done"),
         "P4.6 real money": _op.REAL_MONEY_ENABLED is not False,
         "A first offer the interviews support": bool(interviews),
     }
@@ -92082,7 +92087,7 @@ def test_w1128_fu1156_the_image_carries_the_pages_what_the_routes_read_and_the_f
     rec = dep.split("## The dry run (P4.5), measured on 2026-11-20 (W1128)", 1)[1].split("## ", 1)[0]
     for said in ("healthy 8.3 seconds after it started", "225 MiB of memory at idle", "under the 1 GiB cap",
                  "the image is 2.28 GB", "nothing is deployed and no account is touched",
-                 "The Dockerfile is the one committed here", "Not yet done (FU-603)"):
+                 "The Dockerfile is the one committed here", "Done since (FU-603)"):
         assert said in rec, said
     reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
     found = [r for r in reg if r.get("title") == ("The image carries the legal matter's folder as a path on the Owner's own "
@@ -92442,8 +92447,13 @@ def test_w1134_fu603_the_google_cloud_deploy_is_written_from_googles_pages_and_n
     assert fw["target-tags"] == vm["tags"] == "workstation" and fw["rules"] == "tcp:80", fw
     reg = flags(block("gcloud artifacts repositories create workstation"))
     assert reg["location"] == "us-central1" and reg["repository-format"] == "docker", reg
-    bucket = flags(block("gcloud storage buckets create"))
-    assert bucket["location"] == "us-central1", ("the bucket is outside the free tier's regions", bucket)
+    #  W1137: the backup is a daily snapshot of the data disk, beside it in us-central1, kept if the disk goes
+    snap = block("gcloud compute resource-policies create snapshot-schedule workstation-daily")
+    sf = flags(snap)
+    assert sf["region"] == sf["storage-location"] == "us-central1" and "--daily-schedule" in snap, sf
+    assert sf["on-source-disk-delete"] == "keep-auto-snapshots" and int(sf["max-retention-days"]) >= 7, sf
+    attach = flags(block("gcloud compute disks add-resource-policies workstation-data"))
+    assert attach["resource-policies"] == "workstation-daily", attach
     push = block("docker push")
     assert "docker push us-central1-docker.pkg.dev/PROJECT_ID/workstation/workstation:TAG" in push, push
     budget = block("gcloud billing budgets create")
@@ -92534,15 +92544,15 @@ def test_w1134_fu603_the_google_cloud_deploy_is_written_from_googles_pages_and_n
         assert r5.returncode == 1 and "no data disk" in r5.stdout and not (tmp_path / "absent.img").exists(), r5.stdout
 
     # == WHAT IS NOT DONE IS SAID, AND HTTPS IS A ROW OF ITS OWN ==
-    assert re.search(r"NOT YET DONE \(FU-603\): the backup of the data disk to the bucket, a restore of a backup onto "
-                     r"a fresh disk, and a rollback, each driven once\.", flat), "the section does not say what is left"
+    #  W1137: the backup, the restore and the rollback are drilled, and the record says so
+    assert "DRILLED ON THIS MACHINE, 2026-11-20 (W1137)" in flat, "the section does not record the drills"
     rows = json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
     https = [r for r in rows if r.get("title") == "The release machine would serve plain HTTP: no certificate fronts it"]
     assert len(https) == 1 and https[0]["slot"] == "P4.5" and https[0]["source"].startswith("W1134 "), https
     assert f"HTTPS is its own row ({https[0]['id']})" in flat and "no person signs in (P4.1)" in flat
     fu603 = [r for r in rows if r.get("id") == "FU-603"]
-    assert len(fu603) == 1 and fu603[0]["status"] == "open", "FU-603 has parts left and must stay open"
-    assert "Not yet done (FU-603): a backup, a restore drill and a rollback drill." in " ".join(dep.split())
+    assert len(fu603) == 1, fu603
+    assert "Done since (FU-603): W1134 wrote the next section" in " ".join(dep.split())
 
 
 def test_w1135_no_tracked_document_names_the_owners_windows_home_folder_by_its_path():
@@ -92649,3 +92659,85 @@ def test_w1136_fu1278_the_deploy_channels_published_price_is_stated_as_sourced_w
              and not ln.startswith("| Line") for c in ln.strip("|").split("|")[1:4]]
     priced = [c for c in cells if "$" in c]
     assert priced and all(c.startswith("SOURCED") for c in priced), priced
+
+
+def test_w1137_fu603_the_backup_is_a_snapshot_and_the_restore_and_rollback_are_drilled():
+    """FU-603 part 3 (W1137), P4.5. The backup is a daily snapshot of the data disk that Google takes, the restore is
+    written from Google's references, and both the restore and the rollback were drilled with Docker on this
+    machine. Held here:
+    - the restore stops the machine before it detaches the disk, as the detach reference warns, makes the disk from a
+      snapshot, gives it the device name the startup script looks for, and starts the machine again;
+    - the snapshots' price is the pricing page's, and the cost model's cell for backups states that price;
+    - the drill is committed, LF on every checkout, and starts each release with the startup script's own flags: the
+      records where the image keeps them and the image's own port;
+    - the record of the drill: the records never left the volume, the copy was byte-identical, and the current
+      release, the previous one and the current one again each read the same record back;
+    - the first restore from a real snapshot is the Owner's, at the deploy, and is on the Owner's list."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")
+    dep = read("docs/DEPLOYMENT.md")
+    sec = dep.split("## The Google Cloud deploy, step by step (P4.5), read at Google's pages on 2026-11-20 (W1134)", 1)[1]
+    sec = sec.split("\n## ", 1)[0]
+    flat = " ".join(sec.split())
+
+    #  the restore, in its order
+    blocks = [" ".join(b.replace("\\\n", " ").split()) for b in re.findall(r"```bash\n(.*?)```", sec, re.S)]
+    restore = [b for b in blocks if "--source-snapshot=SNAPSHOT" in b]
+    assert len(restore) == 1, "the section has no restore, or more than one"
+    cmds = [c.strip() for c in re.split(r"(?=gcloud compute )", restore[0]) if c.strip()]
+    verbs = [c.split()[2] + " " + c.split()[3] for c in cmds]
+    assert verbs == ["instances stop", "disks create", "instances detach-disk", "instances attach-disk",
+                     "instances start"], verbs
+    flags = [dict(re.findall(r"--([a-z-]+)=(\S+)", c)) for c in cmds]
+    vm = [b for b in blocks if "gcloud compute instances create workstation" in b][0]
+    device = dict(p.split("=", 1) for p in dict(re.findall(r"--([a-z-]+)=(\S+)", vm))["create-disk"].split(","))["device-name"]
+    #  the restored disk takes the device name the machine's disk was made with, which the startup script looks for
+    assert flags[3]["device-name"] == flags[2]["device-name"] == device, (flags[2], flags[3], device)
+    assert "/dev/disk/by-id/google-" + device in read("deploy/gcp/startup.sh")
+    assert flags[3]["disk"] == "workstation-data-restored" and flags[1]["type"] == "pd-standard", flags
+    assert "detaching a disk without first unmounting it may result in incomplete I/O operations" in flat
+
+    #  the price of the snapshots, and the cost model's cell for backups
+    assert "standard snapshot storage is $0.05 per GB a month in us-central1" in flat and "[disk-pricing]" in flat
+    cost = read("docs/business/COST_MODEL.md")
+    row = [ln for ln in cost.splitlines() if ln.startswith("| Disk, and backups kept off the machine |")]
+    assert len(row) == 1 and "SOURCED: daily snapshots of the data disk at $0.05 per GB a month" in row[0], row
+
+    #  the drill: committed, LF, the startup script's own flags
+    drill = (root / "deploy" / "drill.sh").read_bytes()
+    assert b"\r" not in drill and "deploy/drill.sh text eol=lf" in read(".gitattributes").splitlines()
+    drill = drill.decode("utf-8")
+    script = read("deploy/gcp/startup.sh")
+    df = read("Dockerfile")
+    data_dir = re.search(r"\bDATA_DIR=(\S+)", df).group(1)
+    port = re.search(r"\bPORT=(\d+)", df).group(1)
+    assert f'--volume="$2":{data_dir}' in drill and f':{port} ' in drill, "the drill starts the image elsewhere"
+    for flag in ("--log-opt max-size=10m", "--log-opt max-file=3"):
+        assert flag in drill and flag in script, flag
+    assert "--memory=1g" in drill and "docker diff" in drill and "sha256sum" in drill
+
+    #  the record
+    rec = flat.split("DRILLED ON THIS MACHINE, 2026-11-20 (W1137):", 1)[1].split("HTTPS is its own row", 1)[0]
+    for said in ("The records themselves are on the volume", "byte-identical to the original",
+                 "read the project back (HTTP 200)", "read the project (HTTP 200) and listed it", "came up in"):
+        assert said in rec, said
+    #  what the drill found written outside the volume is said, and what a release would lose is a row of its own
+    m = re.search(r"the container had changed two things outside the volume and `/tmp`: `/app/logs/autonomy`, "
+                  r"where the autonomy pipelines keep what they write, which a release or a rollback would lose "
+                  r"\(row (FU-\d+)\), and matplotlib's font cache under `/home/app`", rec)
+    assert m, "the record does not say what the container wrote outside the volume"
+    rows0 = json.loads(read("docs/FOLLOWUPS.json"))["items"]
+    lost = [r for r in rows0 if r["id"] == m.group(1)]
+    assert lost and lost[0]["status"] == "open" and "not on the data disk" in lost[0]["title"], lost
+    seconds = [float(x) for x in re.findall(r"in ([\d.]+) seconds", rec)]
+    assert len(seconds) >= 5 and all(0 < s < 120 for s in seconds), seconds
+
+    #  the first real restore is the Owner's
+    rows = json.loads(read("docs/FOLLOWUPS.json"))["items"]
+    owner = [r for r in rows if r.get("title") == "OWNER: at the first deploy, restore the data disk once from its snapshot, watching"]
+    assert len(owner) == 1 and owner[0]["owner_gated"] and owner[0]["status"] == "open", owner
+    assert f"({owner[0]['id']})" in rec and f"{owner[0]['id']} (W1137):" in read("docs/FABLE_DELIVERY_PROMPT.md")
+    assert f"({owner[0]['id']})" in read("docs/RESUME_ON_MY_MACHINE.md")

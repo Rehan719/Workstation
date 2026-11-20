@@ -11584,11 +11584,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.5",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1137",
       "note": "",
       "slot_source": "P4.5 is the production-deploy switch and its pre-flight is built by a round before the Owner flips it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done across W1128, W1134 and W1137: the image boots from the artifact with a health probe under the free tier's memory (W1128); the Google Cloud deploy is written from Google's pages with no stored key, the records' disk kept apart from the machine, cost labels and costs (W1134); the backup is a daily snapshot of the data disk, the restore is written from Google's references, and the restore and the rollback were drilled on this machine with Docker: the copy was byte-identical, and the current release, the previous one and the current one again each read the same record (W1137). The drill found the autonomy pipelines writing beside the code, which a release would lose: that is FU-1287. HTTPS is FU-1284; the first real restore at the deploy is the Owner's (FU-1288)."
     },
     {
       "id": "FU-604",
@@ -26108,6 +26111,38 @@
       "title": "OWNER: five places still name your Windows home folder by its path",
       "why": "W1135 made every other tracked file's path start at ~. These five are yours to decide. (1) One audit record under docs/fidelity_runs/, which is not opened without your go-ahead. RECOMMENDED: let it be opened and its paths start at ~, as FU-1151 did for two others. (2) The pinned fidelity ledgers, docs/VISION_FIDELITY_LEDGER and its numbered editions: docs/LEDGER_BLOBS.json pins each byte for byte (P5.22, W972) so no edition changes after it is written. RECOMMENDED: leave them as they are; no route reads them, and git history keeps every earlier text anyway. (3) venv/: a Windows virtual environment committed before .gitignore left venv/ out. Its files name your folder. RECOMMENDED: on your machine, run git rm -r --cached venv and commit; the folder stays on your disk. Removing it here instead would delete those files from your copy when you pull. (4) .claude/settings.json: three one-off command permissions name your folder. RECOMMENDED: remove those three entries on your machine; nothing else uses them. (5) _archive/: archived documents that name it. RECOMMENDED: leave them as archived history; nothing reads them.",
       "source": "W1135 (the four places that are the Owner's, each with a recommendation)",
+      "found": "2026-11-20",
+      "files": [],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-1287",
+      "title": "The autonomy pipelines write beside the code, not on the data disk, so a release loses what they wrote",
+      "why": "FU-603's drill (W1137) ran the image with its records on a volume and listed what the container changed outside it: /app/logs/autonomy, where the autonomy pipelines save what they write (agentic_core/ai/ceo/autonomy_pipelines.py, from LOG_DIR in agentic_core/store_paths.py), and matplotlib's font cache. W893 made every store follow the one data root a deployment sets; LOG_DIR, GENOME_DIR and MODELS_DIR still sit beside the code, so a release or a rollback replaces them. THE WORK: each folder the platform writes follows DATA_DIR when a deployment sets it, the guards that pin them are moved with it, and the drill is run again until nothing but a cache is written outside the volume.",
+      "source": "W1137 (FU-603's drill, the container's changes listed with docker diff)",
+      "found": "2026-11-20",
+      "files": [
+        "agentic_core/store_paths.py",
+        "agentic_core/ai/ceo/autonomy_pipelines.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.5",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found by P4.5's drill: a release replaces the image's own folders"
+    },
+    {
+      "id": "FU-1288",
+      "title": "OWNER: at the first deploy, restore the data disk once from its snapshot, watching",
+      "why": "W1137 drilled the restore and the rollback on this machine with Docker, and wrote the Google Cloud restore into docs/DEPLOYMENT.md (step 9) from Google's own references. A restore from a real snapshot can only be driven in your project. RECOMMENDED: the day after the first deploy, once the schedule has taken a snapshot, run step 9 with the platform's address open, see the made-up project you wrote before it still there, and delete the old disk. It is the restore FU-1095's uptime drill pairs with.",
+      "source": "W1137 (FU-603 part 3: the restore and rollback drilled on this machine)",
       "found": "2026-11-20",
       "files": [],
       "severity": "low",
