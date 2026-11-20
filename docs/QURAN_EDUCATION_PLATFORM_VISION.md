@@ -2,7 +2,7 @@
 
 > **Status:** Canonical vision capture, reconstructed from primary sources.
 > **Compiled:** 2026-09-06
-> **Sources:** three separate build attempts in `C:\Users\rehan\github_repos`, plus ~2.4 MB (2,395,108 bytes; 2.1 MB net of two byte-identical duplicates) of original planning
+> **Sources:** three separate build attempts in `~\github_repos`, plus ~2.4 MB (2,395,108 bytes; 2.1 MB net of two byte-identical duplicates) of original planning
 > transcripts preserved under `Quran-recitation-platform/sources/`.
 > **Read with Appendix A.9 of `WORKSTATION_IDBO_WHOLE_VISION.md`.** Six capabilities this document describes as
 > vision are FORBIDDEN by that canon's §11 faith-content constitution — recitation scoring (Feature 2, §11's recitation-analysis service),
@@ -1163,4 +1163,4 @@ Not part of the vision; offered because the audit produced them.
 
 ---
 
-*Compiled from `C:\Users\rehan\github_repos\{quran-recitation-mvp, Quran-recitation-platform, QEP-MVP}`. All quotations are verbatim from those repositories. All audit figures (file counts, line counts, error counts, commit counts) were measured directly, not estimated.*
+*Compiled from `~\github_repos\{quran-recitation-mvp, Quran-recitation-platform, QEP-MVP}`. All quotations are verbatim from those repositories. All audit figures (file counts, line counts, error counts, commit counts) were measured directly, not estimated.*

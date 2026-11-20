@@ -18,9 +18,9 @@ Owner ruling 2026-10-07b: the REMOVABLE ones may be removed, in a separate commi
 | sqlalchemy | HELD — P4.4 | Managed Postgres migration dry-run; `config/database.py` builds on sqlmodel over it |
 | sqlmodel | HELD — P4.4 | `config/database.py` imports it (outside the scanned dirs); the P4.4 store layer |
 | psycopg2-binary | HELD — P4.4 | A driver loaded by database URL, never imported; P4.4's Postgres target |
-| streamlit | REMOVABLE, not ruled (W908) | Was REACHED through `src/dashboard/app.py`, which W896 moved aside with the devcontainer's launch. Nothing live imports it, and nothing in the lock requires it |
-| pandas | REMOVABLE as a DIRECT dependency, not ruled (W908) | Was REACHED through the same dashboard. Nothing live imports it. camel-tools and mesa require it, so it stays installed |
-| plotly | REMOVABLE, not ruled (W908) | Was REACHED through the same dashboard. Nothing live imports it, and nothing in the lock requires it |
+| streamlit | REMOVABLE, ruled 2026-11-19 (FU-1174) and removed (W1141) | Was REACHED through `src/dashboard/app.py`, which W896 moved aside with the devcontainer's launch. Nothing live imports it, and nothing in the lock requires it |
+| pandas | REMOVABLE as a DIRECT dependency, ruled 2026-11-19 (FU-1174) and removed as one (W1141) | Was REACHED through the same dashboard. Nothing live imports it. camel-tools and mesa require it, so it stays installed |
+| plotly | REMOVABLE, ruled 2026-11-19 (FU-1174) and removed (W1141) | Was REACHED through the same dashboard. Nothing live imports it, and nothing in the lock requires it |
 | redis | REMOVABLE | Only `_archive/` and an unrelated comment in `agentic_core/api/method.py`; no `redis://` URL anywhere live |
 | langchain | REMOVABLE | Named only in `_archive/` notes and the lock files |
 | langchain-community | REMOVABLE | Named only in the dependency files |
@@ -155,4 +155,16 @@ W907 did. A trial lock shows 13 pins leaving `requirements.txt` (188 become 175)
 packages that only streamlit brings (altair, blinker, gitdb, gitpython, narwhals, pyarrow, pydeck, smmap, toml,
 tornado, watchdog). Nothing live imports any of them. `test_w908` holds the verdict until the Owner rules: none
 of the fourteen is imported by live code, the devcontainer launches no dashboard, and the three stay declared.
+
+## W1141 (FU-1277) — streamlit, plotly and pandas's direct declaration are removed (2026-11-20)
+
+The Owner ruled on 2026-11-19 (FU-1174) that the three go, as W908 recommended. `pyproject.toml` no longer
+declares them, and the devcontainer no longer runs `pip3 install --user streamlit`. The lock was made again with
+`poetry lock`, and `requirements.txt` exported from it: 188 pins became 175. streamlit and plotly left, and with
+them the eleven packages only streamlit brought (altair, blinker, gitdb, gitpython, narwhals, pyarrow, pydeck,
+smmap, toml, tornado, watchdog). Every other pin is unchanged, at the same version. pandas stays pinned, as
+camel-tools and mesa require it, and is no longer declared. The full suite ran in a fresh venv built only from
+the new `requirements.txt`, plus pytest and pytest-xdist, which CI installs beside it, as W907's did, before the
+round's own suite. `test_w1141` fails if any of the three is declared again, if one of the thirteen is pinned
+again, or if pandas stays pinned with nothing that requires it.
 

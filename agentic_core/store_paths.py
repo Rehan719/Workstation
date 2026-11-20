@@ -20,7 +20,11 @@ _LEGACY_BASE = BASE_DIR.parent
 # WORKSTATION_DATA_DIR still wins where it is set; otherwise DATA_DIR; otherwise <root>/data, as before.
 _ROOT_SET = os.environ.get("WORKSTATION_DATA_DIR") or os.environ.get("DATA_DIR")
 DATA_DIR = Path(_ROOT_SET).expanduser() if _ROOT_SET else BASE_DIR / "data"
-LOG_DIR = BASE_DIR / "logs"
+#  W1138 (FU-1287) - WHAT THE PLATFORM WRITES FOLLOWS THE DATA ROOT. FU-603's drill (W1137) ran the image with its
+#  records on a volume: the autonomy pipelines wrote /app/logs/autonomy beside the code, which a release replaces.
+#  Where a deployment sets the data root, the logs folder is under it; a checkout without one keeps it beside the
+#  code, as before. The genome and models folders hold nothing the platform writes, and stay beside the code.
+LOG_DIR = (DATA_DIR / "logs") if _ROOT_SET else BASE_DIR / "logs"
 GENOME_DIR = BASE_DIR / "genome"
 MODELS_DIR = BASE_DIR / "models"
 L7_DIR = BASE_DIR / "agentic_core" / "layers" / "l7_module_library"

@@ -16,7 +16,7 @@ export const meta = {
 }
 const BASE = 'http://127.0.0.1:8024'
 const COMMON = `
-Repo: C:/Users/rehan/Workstation (HEAD 06c51109, 2026-09-04). A backend booted from HEAD is LIVE at
+Repo: ~/Workstation (HEAD 06c51109, 2026-09-04). A backend booted from HEAD is LIVE at
 ${BASE} (single-user mode, AUTH off, AI_DISABLE_LOCAL=1 → only the deterministic native floor serves
 model calls — that is the environment, not a defect; what IS assessable is whether every floor-served
 surface DISCLOSES it honestly). The built frontend is served by the same backend at ${BASE}/ (use

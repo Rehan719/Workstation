@@ -1,0 +1,5 @@
+# W1134 (FU-603) - the release machine runs this file with bash, so it keeps Unix line endings on every
+# checkout, Windows included: the copy gcloud sends from the Owner's machine runs as written
+deploy/gcp/startup.sh text eol=lf
+deploy/drill.sh text eol=lf
+deploy/https_drill.sh text eol=lf

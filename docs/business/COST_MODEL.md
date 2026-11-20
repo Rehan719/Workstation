@@ -10,13 +10,13 @@ only beside the Owner's ruling. It promises no zero bill.
 
 - Every statement carries a label: [observed] is read from this tree on 2026-11-13; [owner-defined] is a ruling of the Owner's, with its date; [inference] is reasoned from what was observed; [hypothesis] is a claim something would test; [owner decision] is the Owner's to make. [observed]
 - A cost is marked one of four ways. QUOTED: a price a named supplier gave in writing for this platform, with the date. SOURCED: a provider's published price, with its page and the date it was read. ASSUMED: a value chosen only so a calculation can be run, said to be assumed wherever it appears. NOT MEASURED: everything else. [observed]
-- Every cost below is NOT MEASURED today. No supplier has been asked for a quote [observed]. Whether a business document may state a provider's published price is the Owner's question (row FU-1176) [owner decision]. An assumed money figure would need the Owner's ruling beside it, as plan item P5.6 holds for every business document [observed: `integration_tests/test_mvp_spine.py`].
+- No supplier has been asked for a quote [observed]. A provider's published price is stated only as SOURCED, with its page and the date it was read, as the Owner ruled on 2026-11-19 in row FU-1176 [owner-defined, 2026-11-19]. The SOURCED cells below are Google's, read on 2026-11-20 and listed with the deploy steps in `docs/DEPLOYMENT.md` [observed]. Every other cost is NOT MEASURED. An assumed money figure would need the Owner's ruling beside it, as plan item P5.6 holds for every business document [observed: `integration_tests/test_mvp_spine.py`].
 - Nothing here is charged: amounts inside the platform are virtual WST, the one price the Owner has set is shown as set and not charged, and the real-money switch stays off (plan item P4.6). [observed]
 
 ## The three scenarios
 
 - LEAN is the first deploy the Owner ruled: one small virtual machine on the free tier, private to the Owner, running the floor only, after a dry run has measured that the platform fits its memory (plan item P4.5). [owner-defined, 2026-10-12]
-- In LEAN, the machine, its disk and its network are expected to fall inside the provider's free tier, but nothing has measured that they do; the dry run is what would show it (row FU-603). [inference]
+- In LEAN, the machine and its two disks fall inside the provider's free tier as the deploy steps lay them out, and the dry run measured that the platform fits the machine's memory (W1128); the machine's public address does not, and is charged, as the cost lines below say (row FU-603). [observed]
 - In LEAN, the bill is not promised to be zero: a free tier has limits, and use beyond them is charged. [inference]
 - BASE adds what opening to a first person other than the Owner would need: sign-in on (plan item P4.1), backups kept off the machine (`scripts/backup_stores.py`), the outside uptime check the Owner holds (row FU-1095), and a solicitor's view on where that person's data may be kept, since the free regions are in the United States (plan item P4.5). [inference]
 - In BASE, each added part is NOT MEASURED, and the storage for a backup kept off the machine is the part most likely to leave the free tier. [hypothesis]
@@ -28,16 +28,16 @@ only beside the Owner's ruling. It promises no zero bill.
 
 | Line | LEAN | BASE | HIGHER ASSURANCE | How it would be marked |
 |---|---|---|---|---|
-| The virtual machine | free tier, NOT MEASURED | NOT MEASURED | NOT MEASURED | SOURCED from the provider's page, once row FU-1176 is decided |
-| Disk, and backups kept off the machine | none kept off it | NOT MEASURED | NOT MEASURED | SOURCED |
-| Network out of the machine | NOT MEASURED | NOT MEASURED | NOT MEASURED | SOURCED |
+| The virtual machine | SOURCED: inside the free tier; its public address $0.005 an hour after one free hour a month, about $3.65 a month; the image's registry at most about $0.16 a month | SOURCED, as LEAN | NOT MEASURED | SOURCED from Google's pages, read on 2026-11-20 and listed in `docs/DEPLOYMENT.md` |
+| Disk, and backups kept off the machine | none kept off it | SOURCED: daily snapshots of the data disk at $0.05 per GB a month in us-central1, each after the first holding only what changed | NOT MEASURED | SOURCED |
+| Network out of the machine | SOURCED: 1 GB a month free from North America; the rate beyond it not read | SOURCED, as LEAN | NOT MEASURED | SOURCED |
 | The outside uptime check | none | NOT MEASURED | NOT MEASURED | SOURCED, or none if the provider's free tier covers it |
 | A domain name and certificate | none | NOT MEASURED | NOT MEASURED | QUOTED by the registrar |
 | Outside review and hardening | none | none | NOT MEASURED | QUOTED, part by part |
 | A solicitor, an accountant and a scholar | none | NOT MEASURED | NOT MEASURED | QUOTED by each adviser |
 | The founder's time | kept apart below | kept apart below | kept apart below | the Owner's own rate |
 
-- The table names no amount. A line marked "none" is not part of that scenario, and every other cell waits for a quote, a dated provider page, or the Owner's ruling. [observed]
+- The table names only SOURCED amounts, each read at Google's pages on 2026-11-20 and listed in `docs/DEPLOYMENT.md`. A line marked "none" is not part of that scenario, and every cell still NOT MEASURED waits for a quote, a dated provider page, or the Owner's ruling. [observed]
 - Before real money, a scholar's view on the fee's form, a solicitor's on the regulatory line and an accountant's on the books are each the Owner's to arrange (plan item P5.16); before another person's data is stored in the free regions, where it may be kept is a solicitor's question (plan item P4.5). [owner-defined, 2026-10-12]
 
 ## The founder's time, kept apart
@@ -70,7 +70,7 @@ only beside the Owner's ruling. It promises no zero bill.
 | P4.2 self-serve sign-up | SELF_SERVE_SIGNUP_ENABLED reads false unless it is set (`agentic_core/auth/core.py`); the invited stage before it has not been run | no |
 | P4.3 external models | AI_ALLOW_EXTERNAL reads false unless it is set, and the image sets it false (`Dockerfile`); no key is held | no |
 | P4.4 managed Postgres | deferred by the Owner on 2026-10-12 and recorded as a boundary; the file store is what runs | no |
-| P4.5 production deploy | the dry run's rows (FU-603, FU-1156) are open, and no deploy is recorded | no |
+| P4.5 production deploy | the dry run's rows (FU-603, FU-1156) are done, so its pre-flight is measured; no deploy is recorded, and the first is the Owner's, with its first restore from a snapshot (FU-1288) | no |
 | P4.6 real money | REAL_MONEY_ENABLED is False in the code (`agentic_core/economy/owner_payments.py`), and stays so until a compliance and KYC review by qualified people | no |
 | A first offer the interviews support | the interview guide and notes template exist; no interview is recorded in this tree | no |
 

@@ -17319,7 +17319,9 @@ def test_w473_canon_and_suite_hygiene_before_m1(client, tmp_path, monkeypatch):
 
     # ── FU-026: the data root is the repository; a larger legacy store is named, never switched away from silently ──
     from agentic_core import store_paths as paths            # W897 (FU-1168) - moved from config/paths.py
-    assert paths.BASE_DIR == root and paths.LOG_DIR == root / "logs" and paths.GENOME_DIR == root / "genome"
+    #  W1138 (FU-1287): where a data root is set, as it is here, the logs folder the platform writes is under it
+    assert paths.BASE_DIR == root and paths._ROOT_SET and paths.GENOME_DIR == root / "genome"
+    assert paths.LOG_DIR == paths.DATA_DIR / "logs"
     assert paths.legacy_store_warning() is None                               # tests run under WORKSTATION_DATA_DIR
     monkeypatch.delenv("WORKSTATION_DATA_DIR", raising=False)
     monkeypatch.setattr(paths, "_LEGACY_BASE", tmp_path)
@@ -64836,8 +64838,12 @@ def _w703_faults(text, root, plan_slots, row_ids, routes=None, public=False):
             faults.append(f"a statement carries no label: {first[:70]}")
     #  a money figure stands only inside a statement the Owner ruled. The WHOLE STATEMENT is read - the first
     #  version looked 400 characters ahead of the line and so passed on whatever happened to follow it
+    #  W1136 (FU-1278) - or, by the Owner's ruling of 2026-11-19 (FU-1176), a provider's published price marked
+    #  SOURCED, in the same statement as the date it was read and its page or the record that lists the pages
     for block in re.split(r"\n(?=- |\d+\. |\n)", text):
-        if re.search(r"\b(GBP|USD|EUR)\s*\d|[£$€]\s*\d", block) and "[owner-defined" not in block:
+        _sourced = ("SOURCED" in block and re.search(r"\b20\d\d-\d\d-\d\d\b", block)
+                    and ("https://" in block or "`docs/DEPLOYMENT.md`" in block))
+        if re.search(r"\b(GBP|USD|EUR)\s*\d|[£$€]\s*\d", block) and "[owner-defined" not in block and not _sourced:
             faults.append(f"a money figure is stated with no ruling behind it: {block.strip()[:70]}")
     for line in text.splitlines():
         if re.search(r"\b\d[\d,]*\s+(users|customers|subscribers|learners)\b", line):
@@ -70762,7 +70768,7 @@ def test_w793_fu984_r5_the_stub_routers_are_archived_and_two_sentences_say_what_
         assert client.get(path).status_code == 404, path
     #  W1133l - with the pages built (apps/workstation-superapp/dist, as on the Owner's machine and in the image) the
     #  page fallback GET /{full_path:path} matches every path, so a POST to a path no route serves answers 405, not 404
-    #  (registered as FU-1384). What this holds is that no route serves it: 404, or 405 with the fallback the only
+    #  (registered as FU-1801). What this holds is that no route serves it: 404, or 405 with the fallback the only
     #  route whose path matches.
     _r793 = client.post("/api/cross-platform/voice/command", json={})
     if _r793.status_code == 405:
@@ -77468,7 +77474,8 @@ def test_w907_fu604_the_nineteen_removable_dependencies_are_gone_and_nothing_liv
     assert not hits, ("live code reaches a removed dependency", hits[:10])
 
     #  the rows FU-283 held for a plan item, or found reached another way, are not part of the ruling
-    for kept in ("sqlalchemy", "sqlmodel", "psycopg2-binary", "streamlit", "pandas", "plotly"):
+    #  W1141 (FU-1277): streamlit, pandas and plotly left by the Owner's own ruling of 2026-11-19 (FU-1174)
+    for kept in ("sqlalchemy", "sqlmodel", "psycopg2-binary"):
         assert kept in declared, (kept, "was removed, and the ruling covered only the REMOVABLE rows")
 
 
@@ -77487,7 +77494,9 @@ def test_w908_streamlit_pandas_and_plotly_are_reached_by_nothing_live_and_their_
     dv = (root / "docs/DEPENDENCY_VERDICTS.md").read_text(encoding="utf-8")
     for dist in ("streamlit", "pandas", "plotly"):
         row = re.search(rf"^\| {dist} \| ([^|]+) \|", dv, re.M)
-        assert row and "REMOVABLE" in row.group(1) and "not ruled" in row.group(1), (dist, row and row.group(1))
+        #  W1141 (FU-1277): the Owner ruled on 2026-11-19 (FU-1174), and the three were removed
+        assert row and "REMOVABLE" in row.group(1) and "ruled 2026-11-19 (FU-1174)" in row.group(1) and (
+            "removed" in row.group(1)), (dist, row and row.group(1))
 
     #  1 - nothing live imports or probes them, or what only streamlit brings
     mods = ["streamlit", "pandas", "plotly", "altair", "blinker", "gitdb", "git", "narwhals", "pyarrow", "pydeck",
@@ -78129,7 +78138,9 @@ def test_w918_fu742_the_file_stores_are_backed_up_verified_and_restored_byte_for
     #  the brief says what exists now, and what still does not
     brief = (root / "docs/business/PRODUCTION_HARDENING_BRIEF.md").read_text(encoding="utf-8")
     assert "No backup script exists" not in brief and "`scripts/backup_stores.py`" in brief
-    assert "No backup is taken on a schedule, no copy leaves the machine" in brief
+    #  W1137 - the deploy's daily snapshot and its drilled restore are what exists now; no snapshot has been taken
+    assert "The deploy takes a daily snapshot of the data disk" in brief
+    assert "No snapshot has been taken, since nothing is deployed" in brief
 
 
 def test_w919_fu742_the_windows_start_path_names_only_what_exists_and_starts_the_app_every_deployment_starts(tmp_path):
@@ -78333,8 +78344,9 @@ def test_w920_fu742_the_founders_guide_gives_only_commands_a_guard_runs_on_the_t
     #  the gates in the plan's order; no channel called free or priced; the mandates row names the guide
     assert re.findall(r"\[plan item (P4\.\d)\]", guide) == ["P4.1", "P4.2", "P4.3", "P4.4", "P4.5", "P4.6"]
     assert not re.search(r"\bfree\b", guide, re.I) and "No channel here is promised to cost nothing." in guide
-    #  W923 - the price section waits on the Owner's decision row, named where the guide stops
-    assert re.search(r"waits on your decision in row FU-\d+: whether this guide may quote", guide)
+    #  W923 - the price section waited on the Owner's decision row; W1136 (FU-1278) applies the ruling of
+    #  2026-11-19: the guide states the price as SOURCED, and still calls no channel free
+    assert "as the Owner ruled on 2026-11-19 in row FU-1176" in guide and "waits on your decision" not in guide
     mandates = (root / "docs/compliance/MANDATES.md").read_text(encoding="utf-8")
     assert "`docs/business/FOUNDERS_GUIDE.md`" in mandates and "the setup document does not" not in mandates
 
@@ -78485,9 +78497,13 @@ def test_w923_fu742_the_guides_price_section_is_put_to_the_owner_with_the_recomm
     assert f"{row['id']} (W923):" not in still, "a ruled question is still put to the Owner"
 
     guide = (root / "docs/business/FOUNDERS_GUIDE.md").read_text(encoding="utf-8")
-    assert f"waits on your decision in row {row['id']}: whether this guide may quote" in guide
-    assert "[owner decision]" in guide and "stays open for it" not in guide
-    assert not re.search(r"[£$€]\s*\d|\b(GBP|USD|EUR)\s*\d", guide), "the guide quotes a price before the ruling"
+    #  W1136 (FU-1278): the ruling is applied - the guide states the deploy channel's published price as SOURCED,
+    #  with its pages and the date they were read, and no longer says the question waits on the Owner
+    assert f"waits on your decision in row {row['id']}" not in guide and "stays open for it" not in guide
+    assert f"as the Owner ruled on 2026-11-19 in row {row['id']}. [owner-defined, 2026-11-19]" in guide
+    for _blk in re.split(r"\n(?=- |\d+\. |\n)", guide):
+        if re.search(r"[£$€]\s*\d|\b(GBP|USD|EUR)\s*\d", _blk):
+            assert "SOURCED" in _blk and "2026-11-20" in _blk and "`docs/DEPLOYMENT.md`" in _blk, _blk[:120]
 
 
 def test_w924_fu399_a_genesis_journeys_stage_rail_and_rank_stage_are_guarded_by_a_render(client):
@@ -81357,7 +81373,10 @@ def test_w962_fu807_the_cost_model_marks_every_cost_by_where_it_came_from_and_fi
     assert len(table) == 8, len(table)
     for row in table:
         for cell in [c.strip() for c in row.strip("|").split("|")[1:4]]:
-            assert re.fullmatch(r"(free tier, )?NOT MEASURED|none|none kept off it|kept apart below", cell), (row, cell)
+            #  W1136 (FU-1278): a cell may be SOURCED, under the Owner's ruling of 2026-11-19; an amount only so
+            assert re.fullmatch(r"(free tier, )?NOT MEASURED|none|none kept off it|kept apart below|SOURCED[:,] [^|]+",
+                                cell), (row, cell)
+            assert not re.search(r"[£$€]\s*\d", cell) or cell.startswith("SOURCED"), (row, cell)
     assert "| The founder's time | kept apart below | kept apart below | kept apart below |" in text
     for scen in ("LEAN is the first deploy the Owner ruled", "BASE adds what opening to a first person other than the Owner would need",
                  "HIGHER ASSURANCE adds the outside help scoped in"):
@@ -91964,7 +91983,8 @@ def test_w1126_fu1280_the_cost_model_marks_each_of_the_seven_gates_from_what_the
     interviews support. The cost model marks each evidenced or not from what the tree shows, and invents none. Held
     here, each gate's state computed from the tree and its row's mark held to it:
     - P4.1, P4.2, P4.3: each switch reads off unless it is set, and the committed deploy file and image set two off;
-    - P4.4: the plan records it deferred by the Owner; P4.5: the dry run's rows are open;
+    - P4.4: the plan records it deferred by the Owner; P4.5: the dry run's rows are done (W1137) and no deploy is
+      recorded: the Owner's first restore at the deploy (FU-1288) is open;
     - P4.6: REAL_MONEY_ENABLED is False;
     - the first offer: no interview is recorded in the tree.
     A gate whose state changes fails this until its row is marked again."""
@@ -91986,7 +92006,9 @@ def test_w1126_fu1280_the_cost_model_marks_each_of_the_seven_gates_from_what_the
         "P4.3 external models": 'os.getenv("AI_ALLOW_EXTERNAL", "false")' not in model
                                 or "AI_ALLOW_EXTERNAL=false" not in read("Dockerfile"),
         "P4.4 managed Postgres": "DEFERRED BY THE OWNER" not in p44,
-        "P4.5 production deploy": reg["FU-603"]["status"] == "done" and reg["FU-1156"]["status"] == "done",
+        #  W1137 - the pre-flight measured AND the deploy made, which a round reads from the Owner's first restore at it
+        "P4.5 production deploy": (reg["FU-603"]["status"] == "done" and reg["FU-1156"]["status"] == "done"
+                                   and reg["FU-1288"]["status"] == "done"),
         "P4.6 real money": _op.REAL_MONEY_ENABLED is not False,
         "A first offer the interviews support": bool(interviews),
     }
@@ -92114,7 +92136,7 @@ def test_w1128_fu1156_the_image_carries_the_pages_what_the_routes_read_and_the_f
     rec = dep.split("## The dry run (P4.5), measured on 2026-11-20 (W1128)", 1)[1].split("## ", 1)[0]
     for said in ("healthy 8.3 seconds after it started", "225 MiB of memory at idle", "under the 1 GiB cap",
                  "the image is 2.28 GB", "nothing is deployed and no account is touched",
-                 "The Dockerfile is the one committed here", "Not yet done (FU-603)"):
+                 "The Dockerfile is the one committed here", "Done since (FU-603)"):
         assert said in rec, said
     reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
     found = [r for r in reg if r.get("title") == ("The image carries the legal matter's folder as a path on the Owner's own "
@@ -92489,3 +92511,626 @@ def test_w1133m_fu1038_a_defect_a_development_run_opened_leaves_the_loop_saying_
     for needle in ('data-testid="defect-development-run"', "disposeDefect('development-run')",
                    "development_run: 'closed — a development run opened it, not a delivery'"):
         assert needle in page, ("the panel does not offer or name the third way out", needle)
+
+
+def test_w1134_fu603_the_google_cloud_deploy_is_written_from_googles_pages_and_no_disk_with_records_is_formatted(tmp_path):
+    """FU-603 part 2 (W1134), P4.5; the Owner's ruling of 2026-11-20 (the exact Google Cloud deploy steps go into
+    docs/DEPLOYMENT.md). Held here:
+    - every step cites a page the section lists, each listed page with its own last-updated date, and every listed
+      page is cited;
+    - the shape is the free tier's: one e2-micro in us-central1, standard disks of 30 GB together, a registry and a
+      bucket in the same region;
+    - the records' disk outlives the machine (auto-delete=no), and the machine is protected from deletion;
+    - the costs are stated from their pages, the address at $0.005 an hour, and the alert is said not to cap spend;
+    - no stored key: the workflow signs in through a pool whose condition names the repository by its number, as the
+      page advises, and only main may deploy;
+    - the startup script the machine runs is committed, keeps LF on every checkout, starts the image the Dockerfile
+      builds with its records where the Dockerfile keeps them, reads its tag from the metadata server and holds no key;
+    - driven on disk images: a blank disk is formatted once, a formatted one is kept byte for byte, and one holding
+      anything else, a short one or a missing one is refused, untouched;
+    - what is not done is said: the backup, the restore and the rollback drills (FU-603), and HTTPS (its own row)."""
+    import hashlib
+    import json
+    import os
+    import pathlib
+    import re
+    import shutil
+    import subprocess
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    dep = (root / "docs" / "DEPLOYMENT.md").read_text(encoding="utf-8")
+    head = "## The Google Cloud deploy, step by step (P4.5), read at Google's pages on 2026-11-20 (W1134)"
+    assert head in dep, "the deploy steps are not written"
+    sec = dep.split(head, 1)[1].split("\n## ", 1)[0]
+    flat = " ".join(sec.split())
+
+    # == THE PAGES: listed with their dates, and each step cites listed pages only, every one of them somewhere ==
+    listed = re.findall(r"^- \[([a-z-]+)\] (https://\S+) \(([^)]+)\)$", sec, re.M)    # W1140: beyond Google's too
+    pages = {k: (url, when) for k, url, when in listed}
+    assert len(pages) == len(listed) >= 15, ("a page is listed twice, or too few are listed", listed)
+    for k, (url, when) in pages.items():
+        assert re.fullmatch(r"20\d\d-\d\d-\d\d", when) or (when == "no date shown" and (
+            "pricing" in url or url.startswith("https://raw.githubusercontent.com/"))), (k, when)
+    steps = re.split(r"^\*\*Step (\d+)\. [^*]+\*\*", sec, flags=re.M)
+    numbers = [int(n) for n in steps[1::2]]
+    assert numbers == list(range(1, len(numbers) + 1)) and len(numbers) >= 10, numbers
+    body = sec.split("THE STEPS", 1)
+    assert len(body) == 2, "the section has no steps"
+    cited = set()
+    for n, text in zip(numbers, steps[2::2]):
+        tags = set(re.findall(r"\[([a-z][a-z-]*)\]", text))
+        assert tags, ("a step cites no page", n)
+        assert tags <= set(pages), ("a step cites a page the section does not list", n, sorted(tags - set(pages)))
+        cited |= tags
+    prose = sec.split("THE PAGES", 1)[0] + sec.split("THE SHAPE", 1)[1]
+    cited |= set(re.findall(r"\[([a-z][a-z-]*)\]", prose)) & set(pages)
+    assert cited == set(pages), ("a page is listed and never cited", sorted(set(pages) - cited))
+
+    # == THE COMMANDS, read as the Owner would run them ==
+    blocks = [" ".join(b.replace("\\\n", " ").split()) for b in re.findall(r"```bash\n(.*?)```", sec, re.S)]
+
+    def block(prefix):
+        found = [b for b in blocks if prefix in b]
+        assert len(found) == 1, (prefix, "is not in exactly one command block")
+        return found[0]
+
+    def flags(cmd):
+        return dict(re.findall(r"--([a-z-]+)=(\S+)", cmd))
+
+    vm_cmd = block("gcloud compute instances create workstation")
+    vm = flags(vm_cmd)
+    assert vm["machine-type"] == "e2-micro" and vm["zone"].startswith("us-central1-"), vm
+    assert vm["image-project"] == "cos-cloud" and vm["image-family"] == "cos-stable", vm
+    assert vm["boot-disk-type"] == "pd-standard", "the boot disk is not the free tier's standard disk"
+    disk = dict(p.split("=", 1) for p in vm["create-disk"].split(","))
+    assert disk.get("auto-delete") == "no", ("the records' disk would be deleted with the machine", disk)
+    assert disk.get("type") == "pd-standard", disk
+    total = int(vm["boot-disk-size"].rstrip("GB")) + int(disk["size"].rstrip("GB"))
+    assert total <= 30, ("the disks are more than the free tier's 30 GB-months", total)
+    assert "--deletion-protection" in vm_cmd, "the machine is not protected from deletion"
+    assert set(vm["labels"].split(",")) >= {"app=workstation", "channel=release"}, vm["labels"]
+    assert vm["metadata-from-file"] == "startup-script=deploy/gcp/startup.sh", vm["metadata-from-file"]
+    assert vm["metadata"].startswith("image-tag="), vm["metadata"]
+    fw = flags(block("gcloud compute firewall-rules create"))
+    #  W1140 (FU-1284): 443 as well, for the HTTPS front of step 12
+    assert fw["target-tags"] == vm["tags"] == "workstation" and fw["rules"] == "tcp:80,tcp:443", fw
+    reg = flags(block("gcloud artifacts repositories create workstation"))
+    assert reg["location"] == "us-central1" and reg["repository-format"] == "docker", reg
+    #  W1137: the backup is a daily snapshot of the data disk, beside it in us-central1, kept if the disk goes
+    snap = block("gcloud compute resource-policies create snapshot-schedule workstation-daily")
+    sf = flags(snap)
+    assert sf["region"] == sf["storage-location"] == "us-central1" and "--daily-schedule" in snap, sf
+    assert sf["on-source-disk-delete"] == "keep-auto-snapshots" and int(sf["max-retention-days"]) >= 7, sf
+    attach = flags(block("gcloud compute disks add-resource-policies workstation-data"))
+    assert attach["resource-policies"] == "workstation-daily", attach
+    push = block("docker push")
+    assert "docker push us-central1-docker.pkg.dev/PROJECT_ID/workstation/workstation:TAG" in push, push
+    budget = block("gcloud billing budgets create")
+    assert "--filter-projects=projects/PROJECT_ID" in budget and "--threshold-rule=percent=" in budget, budget
+    assert "doesn't automatically cap Google Cloud" in flat, "the section does not say the alert caps nothing"
+
+    # == THE COSTS, from their pages, the arithmetic shown ==
+    assert "$0.005 an hour" in flat and "covers one hour a month [network-pricing]" in flat, "the address's price"
+    assert "730-hour month" in flat and "about $3.65 a month" in flat and round(0.005 * 730, 2) == 3.65
+    assert "$0.000136986 per GiB-hour" in flat and round(0.000136986 * 730, 2) == 0.10
+
+    # == NO STORED KEY ==
+    wif = block("providers create-oidc")
+    cond = re.search(r'--attribute-condition="([^"]+)"', wif).group(1)
+    assert "assertion.repository_id==" in cond and "repository_owner" not in cond and "assertion.repository==" not in cond, (
+        "the condition names the repository by a name the page warns can be re-claimed", cond)
+    assert "assertion.ref=='refs/heads/main'" in cond, ("a branch other than main could deploy", cond)
+    assert "attribute.repository_id=assertion.repository_id" in wif, "the claim the grant names is not mapped"
+    assert '--issuer-uri="https://token.actions.githubusercontent.com/"' in wif
+    for key_shape in ("credentials_json", "GOOGLE_APPLICATION_CREDENTIALS", "BEGIN PRIVATE KEY", "keys create"):
+        assert key_shape not in sec, ("the section stores a key", key_shape)
+
+    # == THE STARTUP SCRIPT: committed, LF everywhere, the Dockerfile's own image and records ==
+    script_path = root / "deploy" / "gcp" / "startup.sh"
+    raw = script_path.read_bytes()
+    assert b"\r" not in raw, "the startup script has Windows line endings: bash on the machine would refuse it"
+    attrs = (root / ".gitattributes").read_text(encoding="utf-8").splitlines()
+    assert "deploy/gcp/startup.sh text eol=lf" in attrs, "nothing keeps the startup script LF on a Windows checkout"
+    script = raw.decode("utf-8")
+    df = (root / "Dockerfile").read_text(encoding="utf-8")
+    data_dir = re.search(r"\bDATA_DIR=(\S+)", df).group(1)
+    port = re.search(r"\bPORT=(\d+)", df).group(1)
+    assert f'--volume="$MNT":{data_dir} ' in script, ("the records are not mounted where the image keeps them", data_dir)
+    assert f"--publish=80:{port} " in script, ("the platform's port is not the image's", port)
+    assert 'DISK="${WORKSTATION_DISK:-/dev/disk/by-id/google-' + disk["device-name"] + '}"' in script, (
+        "the script looks for the data disk under another name than the steps give it")
+    assert 'metadata instance/attributes/image-tag' in script and 'metadata project/project-id' in script
+    assert '-H "Metadata-Flavor: Google"' in script
+    assert 'image="$REGION-docker.pkg.dev/$project/workstation/workstation:$tag"' in script
+    assert 'REGION="${WORKSTATION_REGION:-us-central1}"' in script
+    assert not re.search(r"(?i)(api[_-]?key|secret|passw|BEGIN [A-Z ]*PRIVATE KEY|sk_live)", script), "a key in the script"
+
+    # == THE DISK STEP, DRIVEN: only a blank disk is ever formatted ==
+    bash = shutil.which("bash")
+    path = os.pathsep.join([os.environ.get("PATH", ""), "/usr/sbin", "/sbin"])
+    mkfs = shutil.which("mkfs.ext4", path=path)
+    if sys.platform.startswith("linux"):
+        assert bash and mkfs, "the round's own machine must drive the disk step"
+    if os.name != "nt" and bash and mkfs:
+        env = dict(os.environ, PATH=path, WORKSTATION_STARTUP_SOURCED="1")
+
+        def prepare(img):
+            return subprocess.run([bash, "-c", 'source "$1"; prepare_disk "$2"', "bash", str(script_path), str(img)],
+                                  capture_output=True, text=True, env=env, timeout=120, stdin=subprocess.DEVNULL)
+
+        def digest(p):
+            return hashlib.sha256(p.read_bytes()).hexdigest()
+
+        def ext4(p):
+            with open(p, "rb") as fh:
+                fh.seek(1080)
+                return fh.read(2) == b"\x53\xef"
+
+        blank = tmp_path / "blank.img"
+        with open(blank, "wb") as fh:
+            fh.truncate(64 << 20)
+        r1 = prepare(blank)
+        assert r1.returncode == 0 and ext4(blank) and "formatting it once" in r1.stdout, (r1.stdout, r1.stderr[-400:])
+        before = digest(blank)
+        r2 = prepare(blank)
+        assert r2.returncode == 0 and "kept as it is" in r2.stdout and digest(blank) == before, (
+            "a disk that holds its file system was touched", r2.stdout)
+        noise = tmp_path / "noise.img"
+        data = bytearray(os.urandom(8 << 20))
+        data[1080:1082] = b"\x00\x00"
+        with open(noise, "wb") as fh:
+            fh.write(bytes(data))
+            fh.truncate(64 << 20)
+        before = digest(noise)
+        r3 = prepare(noise)
+        assert r3.returncode == 1 and "NOT formatted" in r3.stdout and digest(noise) == before, (
+            "a disk holding something else was formatted", r3.stdout, r3.stderr[-400:])
+        short = tmp_path / "short.img"
+        short.write_bytes(b"\x00" * (512 << 10))
+        r4 = prepare(short)
+        assert r4.returncode == 1 and short.read_bytes() == b"\x00" * (512 << 10), r4.stdout
+        r5 = prepare(tmp_path / "absent.img")
+        assert r5.returncode == 1 and "no data disk" in r5.stdout and not (tmp_path / "absent.img").exists(), r5.stdout
+
+    # == WHAT IS NOT DONE IS SAID, AND HTTPS IS A ROW OF ITS OWN ==
+    #  W1137: the backup, the restore and the rollback are drilled, and the record says so
+    assert "DRILLED ON THIS MACHINE, 2026-11-20 (W1137)" in flat, "the section does not record the drills"
+    rows = json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    https = [r for r in rows if r.get("title") == "The release machine would serve plain HTTP: no certificate fronts it"]
+    assert len(https) == 1 and https[0]["slot"] == "P4.5" and https[0]["source"].startswith("W1134 "), https
+    #  W1140 (FU-1284): HTTPS is step 12, and no person signs in until it is done
+    assert "Step 12. HTTPS, before anyone signs in" in flat and "no person signs in (P4.1) until this step is done" in flat
+    fu603 = [r for r in rows if r.get("id") == "FU-603"]
+    assert len(fu603) == 1, fu603
+    assert "Done since (FU-603): W1134 wrote the next section" in " ".join(dep.split())
+
+
+def test_w1135_no_tracked_document_names_the_owners_windows_home_folder_by_its_path():
+    """W1135 (found 2026-11-20 while walking the Owner through the local session). The local-session notes' header,
+    and more tracked files, named the Owner's Windows home folder by its full path, the user name in it.
+    Held here:
+    - no tracked text file outside the five places the Owner decides names a Windows home folder by its path: a path
+      starts at ~ instead, the rest of it unchanged (the folder is found by its shape; no name is written here). The
+      pinned fidelity ledgers are among the five: P5.22 pins each byte for byte, so no round edits one;
+    - the five places are each named, with a recommendation, in one open owner-gated row, which the plan's list of
+      what is with the Owner and the local-session notes both name;
+    - the local-session notes still say which folder to open: ~\\Workstation."""
+    import json
+    import pathlib
+    import re
+    import subprocess
+    root = pathlib.Path(__file__).resolve().parents[1]
+    home = re.compile(r"(?i)\b[a-z]:[\\/]+users[\\/]+[^\\/\s`'\"<>()|,;:*?]+")
+    left = ("_archive/", "docs/fidelity_runs/", "venv/", ".claude/", "docs/VISION_FIDELITY_LEDGER")
+    out = subprocess.run(["git", "ls-files", "-z"], cwd=root, capture_output=True, check=True).stdout
+    files = [f for f in out.decode("utf-8").split("\0") if f]
+    assert len(files) > 1000, ("git listed too few tracked files to mean anything", len(files))
+    named = []
+    for rel in files:
+        if rel.startswith(left):
+            continue
+        try:
+            text = (root / rel).read_bytes().decode("utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if home.search(text):
+            named.append(rel)
+    assert named == [], ("a tracked file names a Windows home folder by its path; start it at ~", named)
+
+    rows = json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    owner = [r for r in rows if r.get("title") == "OWNER: five places still name your Windows home folder by its path"]
+    assert len(owner) == 1, owner
+    row = owner[0]
+    assert row["status"] == "open" and row["owner_gated"] is True and row["slot"] == "OWNER", row
+    for place in ("docs/fidelity_runs/", "docs/VISION_FIDELITY_LEDGER", "docs/LEDGER_BLOBS.json", "venv/",
+                  ".claude/settings.json", "_archive/"):
+        assert place in row["why"], ("the Owner's row does not name a place this guard leaves out", place)
+    assert row["why"].count("RECOMMENDED") == 5, "each of the five places carries a recommendation"
+    fable = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    resume = (root / "docs" / "RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    assert f"{row['id']} (W1135):" in fable, "the plan's list of what is with the Owner does not name the row"
+    assert f"({row['id']})" in resume, "the local-session notes do not name the row"
+    assert "in your local clone** (`~\\Workstation`)" in resume, "the notes no longer say which folder to open"
+    fixed = [r for r in rows if r.get("title") == ("Tracked documents name the Owner's Windows home folder by its "
+                                                   "full path, the user name in it")]
+    assert len(fixed) == 1 and fixed[0]["source"].startswith("W1135 "), fixed
+
+
+def test_w1136_fu1278_the_deploy_channels_published_price_is_stated_as_sourced_with_its_pages_and_date():
+    """FU-1278 (W1136), P5.6; the Owner's ruling of 2026-11-19 (FU-1176): a provider's published price may be stated,
+    cited with its page and the date it was read, labelled observed; the guide promises no zero bill. Held here:
+    - the founder's guide and the cost model state Google's price as SOURCED, read on 2026-11-20, pointing at the
+      deploy section that lists the pages, and every figure either states is one that section states;
+    - neither says the question still waits on the Owner, and the guide still promises no channel costs nothing;
+    - P5.6's guard passes both, refuses a price with a date and a page but no SOURCED mark, and refuses one marked
+      SOURCED with no date read; the cost table holds an amount only in a SOURCED cell."""
+    import json
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _fu
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")
+    dep = read("docs/DEPLOYMENT.md").split("## The Google Cloud deploy, step by step (P4.5), read at Google's pages "
+                                           "on 2026-11-20 (W1134)", 1)[1].split("\n## ", 1)[0]
+    stated = set(re.findall(r"\$\d+(?:\.\d+)?", dep))
+    assert {"$0.005", "$3.65", "$0.16"} <= stated, stated
+    guide, cost = read("docs/business/FOUNDERS_GUIDE.md"), read("docs/business/COST_MODEL.md")
+
+    google = [b for b in re.split(r"\n(?=- )", guide) if b.startswith("- Google Cloud, plan item P4.5")]
+    assert len(google) == 1, "the guide has no single line for the Google Cloud channel"
+    line = " ".join(google[0].split())
+    for said in ("SOURCED from Google's own pages, read on 2026-11-20", "`docs/DEPLOYMENT.md`", "$0.005 an hour",
+                 "about $3.65 a month", "at most about $0.16 a month", "charged at a rate not read", "[observed]"):
+        assert said in line, said
+    for doc, name in ((guide, "guide"), (cost, "cost model")):
+        for amount in re.findall(r"\$\d+(?:\.\d+)?", doc):
+            assert amount in stated, (name, amount, "a figure the deploy section does not state")
+        flat = " ".join(doc.split())
+        for waits in ("waits on your decision in row FU-1176", "once row FU-1176 is decided",
+                      "the Owner's question (row FU-1176)"):
+            assert waits not in flat, (name, "still says the question waits on the Owner", waits)
+        assert "as the Owner ruled on 2026-11-19 in row FU-1176" in flat and "[owner-defined, 2026-11-19]" in flat, name
+    assert "- No channel here is promised to cost nothing. [observed]" in guide
+    assert "the bill is not promised to be zero" in " ".join(cost.split())
+
+    plan_slots = {i["slot"] for i in _fu.plan_items(read("docs/FABLE_DELIVERY_PROMPT.md"))}
+    rows = {r["id"] for r in json.loads(read("docs/FOLLOWUPS.json"))["items"]}
+    faults = _w703_faults
+    assert faults(guide, root, plan_slots, rows) == [] and faults(cost, root, plan_slots, rows) == []
+    opening = "# A\n\nDRAFT until the Owner ratifies it.\n\n## B\n\n"
+    unmarked = opening + "- The machine costs $4 a month, read on 2026-11-20 at `docs/DEPLOYMENT.md`. [observed]\n"
+    undated = opening + "- SOURCED: the machine costs $4 a month, at `docs/DEPLOYMENT.md`. [observed]\n"
+    marked = opening + "- SOURCED: the machine costs $4 a month, read on 2026-11-20 at `docs/DEPLOYMENT.md`. [observed]\n"
+    assert any("a money figure is stated with no ruling behind it" in f for f in faults(unmarked, root, plan_slots, rows))
+    assert any("a money figure is stated with no ruling behind it" in f for f in faults(undated, root, plan_slots, rows))
+    assert faults(marked, root, plan_slots, rows) == []
+    table = cost.split("## The cost lines", 1)[1].split("\n## ", 1)[0]
+    cells = [c.strip() for ln in table.splitlines() if ln.startswith("| ") and "---" not in ln
+             and not ln.startswith("| Line") for c in ln.strip("|").split("|")[1:4]]
+    priced = [c for c in cells if "$" in c]
+    assert priced and all(c.startswith("SOURCED") for c in priced), priced
+
+
+def test_w1137_fu603_the_backup_is_a_snapshot_and_the_restore_and_rollback_are_drilled():
+    """FU-603 part 3 (W1137), P4.5. The backup is a daily snapshot of the data disk that Google takes, the restore is
+    written from Google's references, and both the restore and the rollback were drilled with Docker on this
+    machine. Held here:
+    - the restore stops the machine before it detaches the disk, as the detach reference warns, makes the disk from a
+      snapshot, gives it the device name the startup script looks for, and starts the machine again;
+    - the snapshots' price is the pricing page's, and the cost model's cell for backups states that price;
+    - the drill is committed, LF on every checkout, and starts each release with the startup script's own flags: the
+      records where the image keeps them and the image's own port;
+    - the record of the drill: the records never left the volume, the copy was byte-identical, and the current
+      release, the previous one and the current one again each read the same record back;
+    - the first restore from a real snapshot is the Owner's, at the deploy, and is on the Owner's list."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")
+    dep = read("docs/DEPLOYMENT.md")
+    sec = dep.split("## The Google Cloud deploy, step by step (P4.5), read at Google's pages on 2026-11-20 (W1134)", 1)[1]
+    sec = sec.split("\n## ", 1)[0]
+    flat = " ".join(sec.split())
+
+    #  the restore, in its order
+    blocks = [" ".join(b.replace("\\\n", " ").split()) for b in re.findall(r"```bash\n(.*?)```", sec, re.S)]
+    restore = [b for b in blocks if "--source-snapshot=SNAPSHOT" in b]
+    assert len(restore) == 1, "the section has no restore, or more than one"
+    cmds = [c.strip() for c in re.split(r"(?=gcloud compute )", restore[0]) if c.strip()]
+    verbs = [c.split()[2] + " " + c.split()[3] for c in cmds]
+    assert verbs == ["instances stop", "disks create", "instances detach-disk", "instances attach-disk",
+                     "instances start"], verbs
+    flags = [dict(re.findall(r"--([a-z-]+)=(\S+)", c)) for c in cmds]
+    vm = [b for b in blocks if "gcloud compute instances create workstation" in b][0]
+    device = dict(p.split("=", 1) for p in dict(re.findall(r"--([a-z-]+)=(\S+)", vm))["create-disk"].split(","))["device-name"]
+    #  the restored disk takes the device name the machine's disk was made with, which the startup script looks for
+    assert flags[3]["device-name"] == flags[2]["device-name"] == device, (flags[2], flags[3], device)
+    assert "/dev/disk/by-id/google-" + device in read("deploy/gcp/startup.sh")
+    assert flags[3]["disk"] == "workstation-data-restored" and flags[1]["type"] == "pd-standard", flags
+    assert "detaching a disk without first unmounting it may result in incomplete I/O operations" in flat
+
+    #  the price of the snapshots, and the cost model's cell for backups
+    assert "standard snapshot storage is $0.05 per GB a month in us-central1" in flat and "[disk-pricing]" in flat
+    cost = read("docs/business/COST_MODEL.md")
+    row = [ln for ln in cost.splitlines() if ln.startswith("| Disk, and backups kept off the machine |")]
+    assert len(row) == 1 and "SOURCED: daily snapshots of the data disk at $0.05 per GB a month" in row[0], row
+
+    #  the drill: committed, LF, the startup script's own flags
+    drill = (root / "deploy" / "drill.sh").read_bytes()
+    assert b"\r" not in drill and "deploy/drill.sh text eol=lf" in read(".gitattributes").splitlines()
+    drill = drill.decode("utf-8")
+    script = read("deploy/gcp/startup.sh")
+    df = read("Dockerfile")
+    data_dir = re.search(r"\bDATA_DIR=(\S+)", df).group(1)
+    port = re.search(r"\bPORT=(\d+)", df).group(1)
+    assert f'--volume="$2":{data_dir}' in drill and f':{port} ' in drill, "the drill starts the image elsewhere"
+    for flag in ("--log-opt max-size=10m", "--log-opt max-file=3"):
+        assert flag in drill and flag in script, flag
+    assert "--memory=1g" in drill and "docker diff" in drill and "sha256sum" in drill
+
+    #  the record
+    rec = flat.split("DRILLED ON THIS MACHINE, 2026-11-20 (W1137):", 1)[1].split("HTTPS, DRILLED ON THIS MACHINE", 1)[0]
+    for said in ("the records, and everything else the platform wrote in the drill, are on the volume", "byte-identical to the original",
+                 "read the project back (HTTP 200)", "read the project (HTTP 200) and listed it", "came up in"):
+        assert said in rec, said
+    #  what the drill found written outside the volume is said, and what a release would lose is a row of its own
+    #  W1138 (FU-1287): run again on an image with the folders on the data root, nothing is written outside it
+    assert "the container had changed nothing outside the volume and `/tmp`" in rec, (
+        "the record does not say the platform writes nothing outside its volume")
+    assert "The first drill found `/app/logs/autonomy`" in rec and "(FU-1287)" in rec
+    seconds = [float(x) for x in re.findall(r"in ([\d.]+) seconds", rec)]
+    assert len(seconds) >= 5 and all(0 < s < 120 for s in seconds), seconds
+
+    #  the first real restore is the Owner's
+    rows = json.loads(read("docs/FOLLOWUPS.json"))["items"]
+    owner = [r for r in rows if r.get("title") == "OWNER: at the first deploy, restore the data disk once from its snapshot, watching"]
+    assert len(owner) == 1 and owner[0]["owner_gated"] and owner[0]["status"] == "open", owner
+    assert f"({owner[0]['id']})" in rec and f"{owner[0]['id']} (W1137):" in read("docs/FABLE_DELIVERY_PROMPT.md")
+    assert f"({owner[0]['id']})" in read("docs/RESUME_ON_MY_MACHINE.md")
+
+
+def test_w1138_fu1287_the_logs_folder_the_platform_writes_follows_the_data_root(tmp_path):
+    """FU-1287 (W1138), P4.5, found by FU-603's drill (W1137): the image, run with its records on a volume, wrote
+    /app/logs/autonomy beside the code, which a release replaces, and matplotlib's font cache under the home folder.
+    Held here:
+    - where a deployment sets the data root, the logs folder is under it; a checkout with none keeps it beside the
+      code, as before; the genome and models folders hold nothing the platform writes and stay beside the code (each
+      read in a fresh interpreter, so no import order decides it);
+    - the autonomy pipelines write under LOG_DIR, and the image keeps matplotlib's cache under /tmp;
+    - the drill's record, run again on an image with the change, says nothing was written outside the volume, and
+      the hardening brief no longer names the folders as what the deploy lacks."""
+    import os
+    import pathlib
+    import re
+    import subprocess
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")
+    code = ("from agentic_core import store_paths as p; "
+            "print(p.DATA_DIR, p.LOG_DIR, p.GENOME_DIR, p.MODELS_DIR, sep='|')")
+
+    def folders(env):
+        e = {k: v for k, v in os.environ.items() if k not in ("DATA_DIR", "WORKSTATION_DATA_DIR")}
+        e.update(env)
+        out = subprocess.run([sys.executable, "-c", code], cwd=root, env=e, capture_output=True, text=True, timeout=120)
+        assert out.returncode == 0, out.stderr[-800:]
+        return [pathlib.Path(x) for x in out.stdout.strip().split("|")]
+
+    data, logs, genome, models = folders({"DATA_DIR": str(tmp_path / "root")})
+    assert data == tmp_path / "root" and logs == data / "logs", (data, logs)
+    assert (genome, models) == (root / "genome", root / "models"), (genome, models)
+    data, logs, genome, models = folders({"WORKSTATION_DATA_DIR": str(tmp_path / "other")})
+    assert logs == tmp_path / "other" / "logs", logs
+    data, logs, genome, models = folders({})
+    assert data == root / "data" and (logs, genome, models) == (root / "logs", root / "genome", root / "models")
+
+    assert 'log_dir = str(LOG_DIR / "autonomy")' in read("agentic_core/ai/ceo/autonomy_pipelines.py")
+    assert re.search(r"^\s*MPLCONFIGDIR=/tmp/\S+ \\$", read("Dockerfile"), re.M), "matplotlib's cache is not under /tmp"
+    flat = " ".join(read("docs/DEPLOYMENT.md").split())
+    assert "the container had changed nothing outside the volume and `/tmp`" in flat, "the drill's record says otherwise"
+    assert "run again in W1138 on an image with FU-1287's change" in flat
+    brief = " ".join(read("docs/business/PRODUCTION_HARDENING_BRIEF.md").split())
+    assert "row FU-1287" not in brief and "the drill found nothing written outside the data disk and `/tmp` (W1138" in brief
+
+
+def test_w1139_fu1281_the_cockpits_latest_cycle_says_the_platform_fee_and_what_the_split_was_over(client):
+    """FU-1281 (W1139), P5.16. W1125 drew the platform's fee and what the entity's split was over on the VSB Economy
+    page. The cockpit's latest cycle named the intake, the costs, the reserve and the distributable profit, and not the
+    fee taken first, so its stages read short of the profit by the fee; its rendered tests ran no cycle that succeeded.
+    The cockpit now draws the fee and what the split was over beside the distributable profit, with the fee's own
+    sentence, and VSBCockpit.fee.test.tsx runs a cycle from the cockpit's button against the routes' own answers. Held
+    here:
+    - the fixture that rendered test reads is what the routes answer now, as the cockpit asks them: a made-up entity
+      established through Genesis, the only one on the list the cockpit opens with, runs a cycle on the 10,000 WST
+      typed into the cockpit's field; the cycle posts a quarter of its 8,000 profit and the split is over the 6,000
+      that remains; each figure the card draws, and every field of the fee, compared with a live answer;
+    - the cockpit draws the fee, what the split was over and the fee's sentence where the rendered test reads them."""
+    import json
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    page = root / "apps/workstation-superapp/src/pages/enterprise"
+    fx = json.loads((page / "VSBCockpit.fee.fixture.json").read_text(encoding="utf-8"))
+    vid0 = fx["vsb_id"]
+    assert [e["vsb_id"] for e in fx["answers"]["/api/v1/vsb"]["body"]["entities"]] == [vid0]
+    assert fx["cycle"]["request"] == {"vsb_id": vid0, "revenue": 10000} and fx["cycle"]["status"] == 200
+
+    est = client.post("/api/v1/genesis/establish", json={"problem": "w1139 a made-up repair cafe for a market town's kettles",
+                                                         "name": "W1139 Repair Cafe", "ship_output": False})
+    assert est.status_code == 200, est.text[:300]
+    vid = est.json()["vsb_id"]
+    r = client.post("/api/v1/economy/cycle", json={**fx["cycle"]["request"], "vsb_id": vid})
+    assert r.status_code == 200, r.text[:300]
+    live, cap = r.json()["cycle"], fx["cycle"]["body"]["cycle"]
+    assert live["platform_fee"] == cap["platform_fee"], (live["platform_fee"], cap["platform_fee"])
+    for k in ("intake_revenue", "operating_costs", "homeostasis_reserves", "distributable_profit", "split_base_wst"):
+        assert live[k] == cap[k], (k, live[k], cap[k])
+    assert (cap["distributable_profit"], cap["platform_fee"]["fee_wst"], cap["split_base_wst"],
+            cap["platform_fee"]["posted"]) == (8000.0, 2000.0, 6000.0, True), cap["platform_fee"]
+
+    src = (page / "VSBCockpit.tsx").read_text(encoding="utf-8")
+    for drawn in ("['Distributable profit', lastCycle.distributable_profit], ['Platform fee', lastCycle.platform_fee?.fee_wst], "
+                  "['Split over', lastCycle.split_base_wst]", 'data-testid="cockpit-platform-fee"',
+                  "Platform fee: {String(lastCycle.platform_fee.basis)}."):
+        assert drawn in src, ("the cockpit does not draw it", drawn)
+    test = (page / "VSBCockpit.fee.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './VSBCockpit.fee.fixture.json';" in test and test.count("it(") == 1
+    assert "'Revenue for this economic cycle in virtual WST'" in test and "expect(asked).toEqual([cycle.request]);" in test
+
+
+def test_w1140_fu1284_https_is_caddy_in_front_of_the_platform_and_no_one_signs_in_before_it():
+    """FU-1284 (W1140), P4.5. As W1134 wrote the deploy, the release machine served plain HTTP at its address. The
+    options were read at their own pages on 2026-11-20: Google's at Google, and Caddy's and Let's Encrypt's from the
+    source each site is built from, since this environment's network refuses both sites. A publicly trusted
+    certificate is for a domain, never an IP address, so the domain is the Owner's to buy. Step 12 makes the machine's
+    address its own, points the domain at it and tells the machine its domain; the startup script then puts Caddy's
+    one-command reverse proxy in front of the platform, which has no port of its own and believes a forwarded client
+    address only from Caddy's fixed address. A Google load balancer would need the domain too, and its forwarding rule
+    alone costs about $18.25 a month. Held here:
+    - the script's check of a domain, driven on names it must take and names it must refuse;
+    - the front's flags: Caddy pinned by its digest, on ports 80 and 443, at a fixed address outside the addresses
+      Docker hands out and the one address the platform trusts; the platform with no port of its own, at the image's
+      port; and a bad domain refused, and the front's image pulled, before anything running is stopped;
+    - the steps' commands in their pages' forms, the prices, the firewall admitting 443 as well as 80, each page
+      listed and cited, and no person signing in until step 12 is done;
+    - the drill's record of what it measured, the drill committed and LF, and the domain on the Owner's list."""
+    import ipaddress
+    import json
+    import os
+    import pathlib
+    import re
+    import shutil
+    import subprocess
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")
+    script = read("deploy/gcp/startup.sh")
+
+    #  the domain's check, driven
+    take = ["example.com", "app.example.co.uk", "workstation.localhost", "a-b.example.org", "x" * 63 + ".com"]
+    refuse = ["", "localhost", "1.2.3.4", "203.0.113.7", "-a.com", "a-.com", "a..com", ".example.com", "example.com.",
+              "example.com/x", "exa mple.com", "example.com;reboot", "$(reboot).com", "EXAMPLE.COM", "x" * 64 + ".com",
+              ("a" * 60 + ".") * 5 + "com", "example.com\nevil.com"]
+    bash = shutil.which("bash")
+    if sys.platform.startswith("linux"):
+        assert bash, "the round's own machine must drive the domain's check"
+    if os.name != "nt" and bash:
+        probe = 'source "$1"; shift; for d in "$@"; do if valid_domain "$d"; then echo take; else echo refuse; fi; done'
+        out = subprocess.run([bash, "-c", probe, "bash", str(root / "deploy" / "gcp" / "startup.sh"), *take, *refuse],
+                             capture_output=True, text=True, timeout=60, stdin=subprocess.DEVNULL,
+                             env=dict(os.environ, WORKSTATION_STARTUP_SOURCED="1"))
+        assert out.returncode == 0, out.stderr[-600:]
+        said = out.stdout.split()
+        assert said == ["take"] * len(take) + ["refuse"] * len(refuse), [p for p in zip(take + refuse, said) if
+                                                                       (p[0] in take) != (p[1] == "take")]
+
+    #  the front's own flags
+    front = script.split("start_front() {", 1)[1].split("\n}\n", 1)[0]
+    runs = " ".join(front.replace("\\\n", " ").split()).split("docker run ")[1:]
+    assert len(runs) == 2, runs
+    platform, caddy = runs
+    assert "--name=workstation" in platform and "--name=caddy" in caddy, runs
+    assert "--publish" not in platform, ("behind the front the platform has a port of its own", platform)
+    assert "--publish=80:80" in caddy and "--publish=443:443" in caddy, caddy
+    assert '--env=FORWARDED_ALLOW_IPS="$FRONT_IP"' in platform and '--ip="$FRONT_IP"' in caddy, runs
+    assert '--volume="$MNT":/app/data' in platform and "--volume=caddy-data:/data" in caddy, runs
+    ip = ipaddress.ip_address(re.search(r"^FRONT_IP=(\S+)$", script, re.M).group(1))
+    net = re.search(r"--subnet=(\S+) --ip-range=(\S+) --gateway=(\S+)", front)
+    subnet, pool, gateway = (ipaddress.ip_network(net.group(1)), ipaddress.ip_network(net.group(2)),
+                             ipaddress.ip_address(net.group(3)))
+    assert ip in subnet and pool.subnet_of(subnet) and ip not in pool and gateway not in pool and ip != gateway, (
+        "Docker could hand Caddy's address to another container", ip, net.groups())
+    assert re.search(r'^CADDY_IMAGE="caddy:[\d.]+@sha256:[0-9a-f]{64}"$', script, re.M), "the front's image is not pinned"
+    port = re.search(r"\bPORT=(\d+)", read("Dockerfile")).group(1)
+    assert f'caddy reverse-proxy --from "$3" --to workstation:{port}' in caddy, ("Caddy proxies to another port", caddy)
+    main = script.split("\nmain() {\n", 1)[1].split("\n}\n", 1)[0]     # a whole line: valid_domain() holds "main() {"
+    lower, check = main.index("tr 'A-Z' 'a-z'"), main.index('! valid_domain "$domain"')
+    pull, stop = main.index('docker pull "$CADDY_IMAGE"'), main.index("docker stop")
+    assert lower < check < stop and pull < stop, "the domain is checked, or the front's image pulled, after the stop"
+    assert 'start_front "$image" "$tag" "$domain"' in main and "--publish=80:8000 " in main, main
+
+    #  the steps, their prices and their pages
+    sec = read("docs/DEPLOYMENT.md").split("## The Google Cloud deploy, step by step (P4.5)", 1)[1].split("\n## ", 1)[0]
+    flat = " ".join(sec.split())
+    blocks = [" ".join(b.replace("\\\n", " ").split()) for b in re.findall(r"```bash\n(.*?)```", sec, re.S)]
+    promote = [b for b in blocks if "gcloud compute addresses create" in b]
+    assert promote == ["gcloud compute addresses create workstation-ip --addresses=EXTERNAL_IP --region=us-central1"], promote
+    told = [b for b in blocks if "--metadata=domain=" in b]
+    assert len(told) == 1 and told[0] == ("gcloud compute instances add-metadata workstation --zone=us-central1-a "
+                                          "--metadata=domain=DOMAIN sudo google_metadata_script_runner startup"), told
+    fw = [b for b in blocks if "gcloud compute firewall-rules create" in b]
+    assert len(fw) == 1 and "--rules=tcp:80,tcp:443" in fw[0], fw
+    assert "$0.025 an hour, about $18.25 a month [network-pricing]" in flat and round(0.025 * 730, 2) == 18.25
+    assert "attached to nothing is $0.01 an hour [network-pricing]" in flat
+    assert '"whether the instance is running or stopped"' in flat
+    step12 = flat.split("**Step 12. HTTPS, before anyone signs in", 1)[1].split("HTTPS, DRILLED ON THIS MACHINE", 1)[0]
+    for key in ("static-promote", "managed-certs", "cos-fs", "caddy-https", "caddy-proxy", "caddy-headers",
+                "caddy-image", "le-challenges"):
+        assert re.search(r"^- \[" + re.escape(key) + r"\] https://\S+ \((20\d\d-\d\d-\d\d|no date shown)\)$", sec, re.M), (
+            key, "is not listed with its address and date")
+        assert f"[{key}]" in step12, (key, "is listed and not cited")
+    for said in ('"not an IP address" [caddy-https]', '"can only be done on port 80" [le-challenges]',
+                 '"must not be treated as a cache" [caddy-image]', '"to prevent spoofing" [caddy-headers]'):
+        assert said in step12, said
+    assert "no person signs in (P4.1) until this step is done" in flat
+
+    #  the drill and its record
+    rec = flat.split("HTTPS, DRILLED ON THIS MACHINE, 2026-11-20 (W1140):", 1)[1]
+    for said in ("HTTPS answered 200", "plain HTTP was answered 308 https://workstation.localhost/health",
+                 "the platform had no port of its own", f"Caddy held its fixed address, {ip},",
+                 "X-Forwarded-For of 203.0.113.7", f"the platform gave Caddy's own address, {ip},"):
+        assert said in rec, said
+    saw = re.search(r"The platform's log gave the request's address as (\S+), the address Caddy saw it come from, and "
+                    r"gave (\S+) again", rec)
+    assert saw and saw.group(1) == saw.group(2) and ipaddress.ip_address(saw.group(1)) in subnet, rec[:600]
+    assert ipaddress.ip_address(saw.group(1)) != ip, "the record shows the platform believing Caddy's own address"
+    drill = (root / "deploy" / "https_drill.sh").read_bytes()
+    assert b"\r" not in drill and "deploy/https_drill.sh text eol=lf" in read(".gitattributes").splitlines()
+    drill = drill.decode("utf-8")
+    assert '. "$HERE/gcp/startup.sh"' in drill and 'start_front "$IMG"' in drill, "the drill starts another front"
+    assert "X-Forwarded-For: 203.0.113.7" in drill and "WITHOUT_THE_SETTING_PLATFORM_SAW" in drill
+
+    #  the domain is the Owner's, and on the Owner's list
+    rows = json.loads(read("docs/FOLLOWUPS.json"))["items"]
+    owner = [r for r in rows if r.get("title") ==
+             "OWNER: buy a domain for the release machine and point it at the machine's fixed address"]
+    assert len(owner) == 1 and owner[0]["owner_gated"] and owner[0]["status"] == "open", owner
+    oid = owner[0]["id"]
+    assert f"({oid})" in step12 and f"({oid})" in rec and f"{oid} (W1140):" in read("docs/FABLE_DELIVERY_PROMPT.md")
+    assert f"({oid})" in read("docs/RESUME_ON_MY_MACHINE.md")
+
+
+def test_w1141_fu1277_streamlit_plotly_and_pandas_are_not_declared_and_nothing_only_streamlit_brought_is_pinned():
+    """FU-1277 (W1141), P4.5, as the Owner ruled on 2026-11-19 (FU-1174). Nothing live has imported streamlit, plotly
+    or pandas since W896 moved the dashboard aside (test_w908 holds that). pyproject.toml no longer declares them, the
+    devcontainer installs only the pins, and the lock and requirements.txt were made again: 188 pins became 175, every
+    other pin at the same version. The full suite ran in a fresh venv built only from the new requirements.txt before
+    the round's own suite. Held here:
+    - none of the three is declared, and the devcontainer installs nothing the pins do not name;
+    - neither the lock nor requirements.txt holds streamlit, plotly or any of the eleven packages only streamlit
+      brought;
+    - pandas stays pinned only because packages kept here require it, as the lock says (camel-tools and mesa);
+    - the verdicts say the three were ruled and removed."""
+    import pathlib
+    import tomllib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")
+    declared = {k.lower() for k in tomllib.loads(read("pyproject.toml"))["tool"]["poetry"]["dependencies"]}
+    for dist in ("streamlit", "pandas", "plotly"):
+        assert dist not in declared, (dist, "is declared again, against the Owner's ruling of 2026-11-19 (FU-1174)")
+    dc = read(".devcontainer/devcontainer.json")
+    assert "streamlit" not in dc and "pip3 install --user -r requirements.txt;" in dc, "the devcontainer installs more"
+
+    gone = {"streamlit", "plotly", "altair", "blinker", "gitdb", "gitpython", "narwhals", "pyarrow", "pydeck", "smmap",
+            "toml", "tornado", "watchdog"}
+    lock = tomllib.loads(read("poetry.lock"))
+    locked = {p["name"].lower() for p in lock["package"]}
+    pinned = {l.split("==", 1)[0].strip().lower() for l in read("requirements.txt").splitlines() if "==" in l}
+    assert not gone & locked and not gone & pinned, ("pinned again", sorted(gone & (locked | pinned)))
+    needs = sorted(p["name"] for p in lock["package"] if "pandas" in {d.lower() for d in (p.get("dependencies") or {})})
+    assert "pandas" in locked and "pandas" in pinned and {"camel-tools", "mesa"} <= set(needs), (
+        "pandas is pinned with nothing kept here that requires it, or it is gone and they need it", needs)
+
+    dv = read("docs/DEPENDENCY_VERDICTS.md")
+    assert "## W1141 (FU-1277) — streamlit, plotly and pandas's direct declaration are removed (2026-11-20)" in dv
+    assert "188 pins became 175" in dv and "The full suite ran in a fresh venv built only from" in " ".join(dv.split())
