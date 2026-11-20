@@ -92203,3 +92203,52 @@ def test_w1130_the_readme_says_where_the_plan_stands_what_the_suite_measured_and
     for figure in ("206 seconds", "8.3 seconds", "253 MiB", "1 GiB"):
         assert figure in flat and figure in run, (figure, "the README's dry run differs from the deployment record")
     assert "The project, its billing and the deploy itself are the Owner's" in flat, "the deploy is not said to be the Owner's"
+
+
+def test_w1131_the_local_prompt_names_every_row_waiting_on_the_owner_and_keeps_off_the_cloud_branch():
+    """W1131 - the Owner pasted the local-session prompt on 2026-11-20 and it was ten days old: it named a merged pull
+    request as the open one, gave figures from before ten rounds of closures, listed one of the five rows only the
+    Owner's machine can do, and would have had a local session push to the branch the cloud cycles push to.
+    Held here:
+    - every owner-gated row still open in the register is named in the notes, so none waits unseen;
+    - before 2026-12-01 a local session keeps to a branch of its own;
+    - the merged pull request is not offered for merging;
+    - the plan's figures are a dated snapshot whose phase totals equal the plan's own and whose done counts do not
+      lead it."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    notes = (root / "docs" / "RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    flat = " ".join(notes.split())
+
+    reg = json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    waiting = [r["id"] for r in reg if r.get("status") == "open" and (r.get("owner_gated") or r.get("slot") == "OWNER")]
+    assert waiting, "no row waits on the Owner, so this guard would prove nothing"
+    unnamed = [rid for rid in waiting if not re.search(re.escape(rid) + r"(?!\d)", notes)]
+    assert unnamed == [], ("a row waits on the Owner and the local notes do not name it", unnamed)
+    #  the summary and the steps agree: each row the summary sends to step 5 is a step of its own there
+    step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
+    sent = re.search(r"The rows in step 5: (.+?)\.", flat)
+    assert sent, "the summary does not say which rows step 5 carries"
+    ids = re.findall(r"FU-\d+", sent.group(1))
+    assert len(ids) >= 5, ids
+    missing = [rid for rid in ids if not re.search(r"- " + re.escape(rid) + r":", step5)]
+    assert missing == [], ("the summary sends a row to step 5 and step 5 has no step for it", missing)
+
+    for frag in ("Before 2026-12-01 the cloud session may still be pushing to main-l1fsqo, so do not push there",
+                 "a branch of your own", "open its own pull request", "Never push to main without me"):
+        assert frag in flat, (frag, "the notes would let a local session push beside the cloud session")
+    assert "Merge PR #462" not in notes and "carried by **PR #462**" not in notes, "a merged pull request is offered"
+
+    fp = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    live = re.search(r"Done: (\d+) of (\d+) items — P1 (\d+)/(\d+) · P2 (\d+)/(\d+) · P3 (\d+)/(\d+) · "
+                     r"P4 (\d+)/(\d+) · P5 (\d+)/(\d+)\.", fp)
+    said = re.search(r"\*\*The plan,\*\* on (\d{4}-\d{2}-\d{2}): (\d+) of (\d+) items done \(P1 (\d+)/(\d+) · "
+                     r"P2 (\d+)/(\d+) · P3 (\d+)/(\d+) · P4 (\d+)/(\d+) · P5 (\d+)/(\d+)\)", flat)
+    assert live and said, "the plan's figures are not both there to compare"
+    assert int(said.group(3)) == int(live.group(2)), "the notes count a different number of items"
+    for i in range(5):
+        s_done, s_tot = int(said.group(4 + 2 * i)), int(said.group(5 + 2 * i))
+        l_done, l_tot = int(live.group(3 + 2 * i)), int(live.group(4 + 2 * i))
+        assert s_tot == l_tot and s_done <= l_done, (f"P{i + 1}", (s_done, s_tot), (l_done, l_tot))
