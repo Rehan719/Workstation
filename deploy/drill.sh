@@ -41,9 +41,16 @@ pid=$(api -X POST "http://127.0.0.1:$PORT/api/v1/projects/" -H 'Content-Type: ap
       -d '{"title": "Drill project W1137", "description": "made up for the restore and rollback drills"}' \
       | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])") || { echo "WRITE_FAILED"; exit 1; }
 echo "PROJECT_WRITTEN=$pid"
+#  W1158 (FU-1294) - an entity established as well, through Genesis, the one door that establishes one: its records
+#  are the platform's own. The spawn door, the one route that writes the genome ledger, answers 410 on a release (W695).
+vid=$(api -X POST "http://127.0.0.1:$PORT/api/v1/genesis/establish" -H 'Content-Type: application/json' \
+      -d '{"problem": "a made-up drill entity: a repair cafe for a market town", "name": "Drill Entity W1158", "ship_output": false}' \
+      | python3 -c "import json,sys; print(json.load(sys.stdin)['vsb_id'])") || { echo "ESTABLISH_FAILED"; exit 1; }
+echo "ENTITY_ESTABLISHED=$vid"
 api "http://127.0.0.1:$PORT/api/v1/plan" -o /dev/null; api "http://127.0.0.1:$PORT/api/v1/projects/" -o /dev/null
 echo "CHANGED_OUTSIDE_THE_VOLUME=$(docker diff $N | awk '{print $2}' | grep -v -E '^/app/data(/|$)' | grep -v -E '^/tmp(/|$)' | tr '\n' ' ')"
 echo "CHANGED_IN_TMP=$(docker diff $N | awk '{print $2}' | grep -c -E '^/tmp/')"
+echo "GENOME_LEDGER_FILES=$(docker exec $N sh -c 'ls /app/meta/genome_ledger.json /app/data/meta/genome_ledger.json 2>/dev/null' | wc -l | tr -d ' ')"
 docker stop -t 10 $N >/dev/null
 
 # 2. backup: the volume's records copied off it whole; restore: onto a fresh volume
@@ -59,11 +66,14 @@ echo "OWNER_ON_RESTORED=$(docker run --rm --user 0 -v $VB:/data --entrypoint sta
 # 3. the current release on the restored copy reads the record back
 s=$(start "$CUR" $VB) || { echo "RESTORED_START_FAILED"; exit 1; }; echo "RESTORED_TO_HEALTH_SECONDS=$s"
 echo "RESTORED_READS_PROJECT=$(api -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/api/v1/projects/$pid")"
+echo "RESTORED_READS_ENTITY=$(api -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/api/v1/vsb/$vid")"
 
 # 4. rollback: the previous release on the same records, then forward again
 s=$(start "$PREV" $VB) || { echo "ROLLBACK_START_FAILED"; exit 1; }; echo "ROLLBACK_TO_HEALTH_SECONDS=$s"
 echo "ROLLBACK_READS_PROJECT=$(api -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/api/v1/projects/$pid")"
+echo "ROLLBACK_READS_ENTITY=$(api -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/api/v1/vsb/$vid")"
 echo "ROLLBACK_LISTS_PROJECT=$(api "http://127.0.0.1:$PORT/api/v1/projects/" | python3 -c "import json,sys; print(any(p['id']=='$pid' for p in json.load(sys.stdin)))")"
 s=$(start "$CUR" $VB) || { echo "FORWARD_START_FAILED"; exit 1; }; echo "FORWARD_TO_HEALTH_SECONDS=$s"
 echo "FORWARD_READS_PROJECT=$(api -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/api/v1/projects/$pid")"
+echo "FORWARD_READS_ENTITY=$(api -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/api/v1/vsb/$vid")"
 echo "DRILL_DONE=yes"

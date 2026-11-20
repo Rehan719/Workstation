@@ -26289,11 +26289,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.5",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1158",
       "note": "",
       "slot_source": "W1138's rule for the release (P4.5): what the platform writes lives under the data root",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1158: the genome ledger is under the data root (agentic_core.config.data_path, meta/genome_ledger.json), and so is the evidence graph beside it (meta/ueg_graph.json). The ledger is written whole in its own folder, and a write that failed is said as one, by the registry and by the spawn stream. Read through, the row's premise was wider than the code: only the spawn door's stream commits a mutation, that door answers 410 on a release (W695), and Genesis holds an entity's genome spec in the registry's memory, so a release writes no ledger. The release drill now establishes an entity through Genesis; on workstation:w1138 it found nothing written outside the volume and no ledger anywhere. The suite, which opens the spawn door, wrote its ledger into the checkout's meta/ folder; that file is not read now and is left where it is. test_w1158."
     },
     {
       "id": "FU-1295",
@@ -26335,6 +26338,24 @@
       "note": "",
       "slot_source": "P5.11 clause 2 names the Scottish exception beside the limits either side of 1 October 2026, and this row is that exception",
       "tier": 2
+    },
+    {
+      "id": "FU-1297",
+      "title": "Each block of the genome ledger holds the genome as one dictionary shared with every later block, so the blocks do not say the genome as it stood and the ledger grows with the square of the commits",
+      "why": "Found in W1158. GenomicRegistry.commit_mutation() appends a block whose genotype is the registry's current genome itself, not a copy, so every block written in one process, and the last block it read, show the genome as it is at the next save. The hash each block carries of the one before was taken before later mutations changed that block, so from the third commit in a process it no longer matches what is written; nothing checks the chain. And the ledger is written whole on each commit with the whole genome in every block, so it grows with the square of the commits: in the checkout W1158 ran in, the suite's, written there until W1158, came to 23.9 MB. Only the spawn door commits, and it answers 410 on a release (W695), so this is the suite's and the kept door's. Next: each block records what its mutation changed, the genome is the blocks replayed, and the chain is checked when the ledger is read.",
+      "source": "W1158 (the genome ledger moved under the data root; the registry read)",
+      "found": "2026-11-20",
+      "files": [
+        "agentic_core/genetic_immune/genomic_registry.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's ruling of 2026-10-09 puts a tier-3 finding on P3.30, one row per region; this one's region is the genome registry",
+      "tier": 3
     }
   ],
   "routes": [

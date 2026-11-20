@@ -435,6 +435,16 @@ Docker volumes standing in for the data disk.
 - On Google Cloud the copy is the snapshot of step 5 and the fresh volume is step 9's restored disk; the first
   restore from a real snapshot is driven at the deploy, with the Owner watching (FU-1288).
 
+AN ENTITY ESTABLISHED, DRILLED ON THIS MACHINE, 2026-11-20 (W1158): the drill establishes an entity through Genesis
+as well, and reads it back on the restored copy, on the previous release and forward again. Run on workstation:w1138
+and workstation:9dfc0f37 with the flags above:
+- After the writes, `docker diff` showed the container had changed nothing outside the volume and `/tmp`: the
+  entity's records are on the volume with the project's.
+- The restored copy read the entity back (HTTP 200), the previous release read it (HTTP 200), and the current
+  release read it again (HTTP 200).
+- No genome ledger was written, on the volume or beside the code. The spawn door is the one route that writes it,
+  and it answers 410 on a release (W695); Genesis holds an entity's genome spec in the registry's memory (FU-1294).
+
 HTTPS, DRILLED ON THIS MACHINE, 2026-11-20 (W1140): the startup script's own front (`start_front`, sourced from
 `deploy/gcp/startup.sh` by `deploy/https_drill.sh`), started for workstation.localhost, a name Caddy certifies from
 its own local authority: a public authority certifies only a domain, which is the Owner's. Ports 80 and 443 of this

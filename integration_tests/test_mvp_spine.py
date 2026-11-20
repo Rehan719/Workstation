@@ -93983,7 +93983,8 @@ def test_w1156_fu1060_the_sources_check_reads_every_backend_module_and_page_and_
     assert len(blocks) == 1 and set(_gr._LEDGER_FIELDS) <= set(blocks[0]), blocks
     rows = [r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
             if str(r.get("source", "")).startswith("W1156 ")]
-    assert len(rows) == 1 and rows[0]["status"] == "open" and rows[0]["slot"] == "P4.5", rows
+    #  W1158 closed the row: the ledger, and the evidence graph beside it, moved under the data root
+    assert len(rows) == 1 and (rows[0]["status"], rows[0]["closed_by"]) == ("done", "W1158") and rows[0]["slot"] == "P4.5", rows
     assert "meta/genome_ledger.json" in rows[0]["why"] and "data root" in rows[0]["title"], rows[0]["title"]
 
 
@@ -94113,3 +94114,148 @@ def test_w1157_p511_the_tribunal_limits_either_side_of_1_october_2026_are_dated_
     row = next(r for r in cov["rows"] if r["id"] == "law-tribunal-time-limit")
     assert row["driven_by"] == "test_w1157_p511_the_tribunal_limits_either_side_of_1_october_2026_are_dated_rules_each_read_as_it_stood"
     assert "1 October 2026" in row["today"], row["today"]
+
+
+def test_w1158_fu1294_the_genome_ledger_and_the_evidence_graph_live_under_the_data_root_and_are_written_whole(client, tmp_path, monkeypatch):
+    """FU-1294 (W1158), P4.5, found in W1156. GenomicRegistry() kept its ledger at meta/genome_ledger.json under the
+    working directory and made a folder named meta there, outside its try, whatever path it had. Only the spawn door's
+    stream commits to the ledger, and that door answers 410 on a release (W695), so a release writes none; the suite
+    opens the door for the kept code it guards and, its working directory the checkout, wrote its spawns into the
+    checkout's meta/ folder, outside every run's data root. The evidence graph's manager kept its graph the same way.
+    Held here:
+    - built with no path, each resolves its store under the data root, in a fresh interpreter whose working directory
+      is empty, and a mutation committed there writes the ledger under the data root and nothing in the working
+      directory; with no data root set, the ledger is under the default one, data/;
+    - the spawn stream, through the door the suite opens, commits its mutation to the ledger under the suite's data
+      root and says the genome was encoded, and the checkout's meta/genome_ledger.json is as it was before;
+    - where the ledger cannot be written, the spawn stream says so and its flag is false;
+    - the ledger is written whole or not at all: a write that fails part-way leaves the ledger as it stood and no file
+      beside it, and is said as a failure; a ledger whose folder cannot be made is a failure, not an exception;
+    - the registry keeps no layer 1 across a restart and nothing else reads its layers, and the Genesis journey says so;
+    - the release drill establishes an entity through Genesis and reads it back after the restore and the rollback,
+      and its record says nothing was written outside the volume and no ledger anywhere;
+    - FU-1294 closed by this round, and the ledger's shared genome a row of its own."""
+    import json
+    import os
+    import pathlib
+    import re
+    import subprocess
+    import sys
+    from agentic_core.api import vsb as _vsb
+    from agentic_core.config import data_path
+    from agentic_core.genetic_immune.genomic_registry import GenomicRegistry
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")
+
+    #  1. built with no path, each store is under the data root: a fresh interpreter, its working directory empty
+    def fresh(code, cwd, data_root):
+        env = {k: v for k, v in os.environ.items() if k not in ("DATA_DIR", "WORKSTATION_DATA_DIR")}
+        env["PYTHONPATH"] = str(root)
+        if data_root is not None:
+            env["DATA_DIR"] = str(data_root)
+        out = subprocess.run([sys.executable, "-c", code], cwd=cwd, env=env, capture_output=True, text=True, timeout=120)
+        assert out.returncode == 0, out.stderr[-800:]
+        return out.stdout.strip().splitlines()[-1].split("|")
+    work = tmp_path / "work"
+    work.mkdir()
+    ledger, graph, wrote = fresh(
+        "from agentic_core.genetic_immune.genomic_registry import GenomicRegistry as G; "
+        "from agentic_core.ueg.ueg_manager import UEGManager as U; "
+        "g = G(); ok = g.commit_mutation({'w1158': 1}, 'w1158-fresh'); "
+        "print(g.persistence_path, U().storage_path, ok, sep='|')", work, tmp_path / "root")
+    assert pathlib.Path(ledger) == tmp_path / "root" / "meta" / "genome_ledger.json", ledger
+    assert pathlib.Path(graph) == tmp_path / "root" / "meta" / "ueg_graph.json", graph
+    assert wrote == "True", wrote
+    blocks = json.loads((tmp_path / "root" / "meta" / "genome_ledger.json").read_text(encoding="utf-8"))
+    assert [b["zkp_proof"] for b in blocks] == ["w1158-fresh"] and blocks[0]["genotype"]["traits"] == {"w1158": 1}, blocks
+    assert sorted(os.listdir(tmp_path / "root" / "meta")) == ["genome_ledger.json"], "the write left a file beside it"
+    assert list(work.iterdir()) == [], ("written into the working directory", list(work.iterdir()))
+    bare = tmp_path / "bare"
+    bare.mkdir()
+    (unset,) = fresh("from agentic_core.genetic_immune.genomic_registry import GenomicRegistry as G; "
+                     "print(G().persistence_path)", bare, None)
+    assert pathlib.Path(unset) == pathlib.Path("data", "meta", "genome_ledger.json"), unset
+
+    #  2. the spawn stream commits its mutation under the suite's data root; the checkout's ledger is left as it was
+    reg = _vsb._genome_registry
+    assert pathlib.Path(reg.persistence_path).resolve() == pathlib.Path(data_path("meta", "genome_ledger.json")).resolve(), (
+        reg.persistence_path, str(data_path("meta", "genome_ledger.json")))
+    legacy = root / "meta" / "genome_ledger.json"
+    state = lambda p: (p.stat().st_size, p.stat().st_mtime_ns) if p.exists() else None
+    before = state(legacy)
+
+    def spawn(challenge):
+        r = client.post("/api/v1/vsb/spawn", json={"challenge": challenge, "domain": "enterprise"})
+        assert r.status_code == 200, r.text[:300]
+        vid = re.search(r'"vsb_id": "(vsb-[a-f0-9]+)"', r.text).group(1)
+        events = []
+        for line in r.text.splitlines():
+            if line.startswith("data: "):
+                try:
+                    events.append(json.loads(line[len("data: "):]))
+                except ValueError:
+                    pass
+        (genome,) = [e for e in events if e.get("stage") == "genome_complete"]
+        return vid, genome
+    vid, genome = spawn("w1158 a made-up check of where the genome ledger is written")
+    assert genome["data"]["encoded"] is True and genome["label"] == "Genome Encoded", genome
+    assert genome["content"] == "VSB genome encoded in epigenetic registry.", genome
+    written = json.loads(pathlib.Path(reg.persistence_path).read_text(encoding="utf-8"))
+    assert written[-1]["zkp_proof"] == f"spawn_{vid}", written[-1]["zkp_proof"]
+    assert state(legacy) == before, "the spawn wrote the checkout's meta/genome_ledger.json"
+
+    #  3. where the ledger cannot be written, the stream says so, and its flag is false
+    blocker = tmp_path / "a-file"
+    blocker.write_text("a file, where the ledger's folder would be", encoding="utf-8")
+    monkeypatch.setattr(reg, "persistence_path", str(blocker / "meta" / "genome_ledger.json"))
+    _, refused = spawn("w1158 a made-up check of a ledger that cannot be written")
+    monkeypatch.undo()
+    assert refused["data"]["encoded"] is False and refused["label"] == "Genome Not Written", refused
+    assert refused["content"] == "VSB genome not written: the genome ledger could not be written.", refused
+
+    #  4. written whole or not at all; a folder that cannot be made is a failure, not an exception
+    led = tmp_path / "whole" / "meta" / "genome_ledger.json"
+    g = GenomicRegistry(str(led))
+    assert g.commit_mutation({"w1158_first": 1}, "w1158-first") is True
+    kept = led.read_bytes()
+    #  a proof that cannot be written is in the new block alone, so the write fails part-way, after the blocks before it
+    assert g.commit_mutation({"w1158_second": 2}, object()) is False
+    assert led.read_bytes() == kept, "a write that failed part-way changed the ledger"
+    assert sorted(os.listdir(led.parent)) == ["genome_ledger.json"], "a failed write left a file beside the ledger"
+    assert GenomicRegistry(str(blocker / "x" / "genome_ledger.json")).commit_mutation({"w1158": 2}, "w1158-third") is False
+
+    #  5. layer 1 is not kept across a restart and nothing else reads the layers; the journey says so
+    g2 = GenomicRegistry(str(led))
+    g2.store_epigenetic_pattern("w1158-pattern", {"held": True}, layer=1)
+    assert g2.epigenetic_layers["layer_1"] == {"w1158-pattern": {"held": True}}
+    assert g2.commit_mutation({"w1158_fourth": 1}, "w1158-fourth") is True
+    assert GenomicRegistry(str(led)).epigenetic_layers["layer_1"] == {}, "layer 1 is kept across a restart after all"
+    readers = sorted(p.relative_to(root).as_posix() for p in (root / "agentic_core").rglob("*.py")
+                     if "__pycache__" not in p.parts and "epigenetic_layers" in p.read_text(encoding="utf-8", errors="replace"))
+    assert readers == ["agentic_core/genetic_immune/genomic_registry.py"], readers
+    gsrc = read("agentic_core/api/genesis.py")
+    assert "the epigenetic registry (layer 1)" not in gsrc
+    assert ('"A genome spec was written to this entity. The epigenetic registry holds it in layer 1, in "\n'
+            '                         "this process\'s memory only: a restart clears layer 1, and nothing reads it. "') in gsrc
+
+    #  6. the release drill establishes an entity through Genesis and reads it back; its record says what it found
+    drill = read("deploy/drill.sh")
+    assert '"http://127.0.0.1:$PORT/api/v1/genesis/establish"' in drill and 'echo "GENOME_LEDGER_FILES=' in drill
+    assert drill.index("/api/v1/genesis/establish") < drill.index('echo "CHANGED_OUTSIDE_THE_VOLUME=')
+    for k in ("RESTORED", "ROLLBACK", "FORWARD"):
+        line = f'echo "{k}_READS_ENTITY=$(api -o /dev/null -w \'%{{http_code}}\' "http://127.0.0.1:$PORT/api/v1/vsb/$vid")"'
+        assert line in drill and drill.index(line) > drill.index(f'echo "{k}_READS_PROJECT='), k
+    flat = " ".join(read("docs/DEPLOYMENT.md").split())
+    assert "AN ENTITY ESTABLISHED, DRILLED ON THIS MACHINE, 2026-11-20 (W1158)" in flat
+    assert ("After the writes, `docker diff` showed the container had changed nothing outside the volume and `/tmp`: "
+            "the entity's records are on the volume with the project's.") in flat
+    assert ("The restored copy read the entity back (HTTP 200), the previous release read it (HTTP 200), and the "
+            "current release read it again (HTTP 200).") in flat
+    assert "No genome ledger was written, on the volume or beside the code." in flat
+
+    #  7. FU-1294 closed by this round, and the ledger's shared genome a row of its own
+    rows = {r["id"]: r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"]}
+    assert (rows["FU-1294"]["status"], rows["FU-1294"]["closed_by"]) == ("done", "W1158"), rows["FU-1294"]
+    shared = [r for r in rows.values()
+              if r["title"].startswith("Each block of the genome ledger holds the genome as one dictionary")]
+    assert len(shared) == 1 and shared[0]["status"] == "open" and shared[0]["source"].startswith("W1158"), shared
