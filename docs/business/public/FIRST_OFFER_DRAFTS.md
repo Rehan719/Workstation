@@ -36,7 +36,7 @@ in `integration_tests/test_mvp_spine.py` that runs on the platform's own engine,
 1. The problem as a teacher would put it: planning and feedback take time the teaching needs. [hypothesis]
 2. What the tool drafts, and that the teacher checks every line before using it. [observed: test_domains_in_house_provenance]
 3. What it will not do: give a final mark on the floor, speak to children, or keep what is typed before sign-in. [observed: test_w823_education_feedback_on_the_floor_says_its_next_steps_are_not_drawn_from_the_work]
-4. How it was tested: the tests this document names, which run on the platform's own engine. [observed]
+4. How it was tested: the tests this document names, which run on the platform's own engine. [observed: test_w1151_fu809_each_public_draft_is_headed_and_every_claim_names_a_test_that_runs_without_an_outside_model]
 5. What is not yet known: demand, the price and the buyer, each NOT MEASURED. [observed: `docs/business/FIRST_OFFER_CANDIDATES.md`]
 6. The ask: thirty minutes of a teacher's time, trying it on invented material. [owner decision]
 

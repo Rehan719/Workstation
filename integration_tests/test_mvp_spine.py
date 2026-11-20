@@ -93716,3 +93716,106 @@ def test_w1152_the_support_routes_name_the_courses_organisation_as_the_tree_reco
     assert "NOT CHECKED: its own site was refused by this environment's network on 2026-11-20" in flat
     reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
     assert "CORRECTED in W1152: the tree does name that organisation - IN4 Group" in reg["FU-810"]["close_note"]
+
+
+def test_w1153_p57_each_name_says_what_was_searched_and_each_public_claim_is_one_row_of_the_register():
+    """P5.7 clause 3 (W1153): THE NAME AND BRAND SCREEN - each candidate name with what was searched, where and when, or
+    NOT CHECKED; an inventory of what the Owner holds; a register of each public claim with its evidence. FU-808 searched
+    the chosen name (W725) and closed without the other two parts, which no row carried. docs/business/
+    NAME_AND_BRAND_SCREEN.md gives all three. Held:
+    - it passes every business document's rules (a draft; every statement labelled; every path, plan item and row it
+      names exists; no clearance, customer or partner stated; no personal detail);
+    - every name the tree records has a row: the chosen one, searched where FU-808 says, with the US register and
+      domains NOT CHECKED as FU-808 left them, and the five suggestions of 2026-10-11, NOT CHECKED everywhere;
+    - what the tree says is not held is said as not held: no mark (the ratified plan), no legal form (the workpack
+      chooses none), no domain (FU-1289 still open), no cloud project (nothing in the deploy has been run); and the
+      rest is kept outside the repository;
+    - the register is exactly what the public drafts cite: one row for each piece of evidence a numbered section of a
+      public draft cites beside a claim, naming exactly the sections that cite it, and no numbered section makes a
+      claim that cites nothing; each test it names is defined here and runs without an outside model;
+    - with clause 3 written, P5.7 is marked done."""
+    import json
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _fu
+    from agentic_core.app_mvp import app as _app1153
+    root = pathlib.Path(__file__).resolve().parents[1]
+    doc = (root / "docs/business/NAME_AND_BRAND_SCREEN.md").read_text(encoding="utf-8")
+    flat = " ".join(doc.split())
+    items = {i["slot"]: i for i in _fu.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))}
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    routes = {(m, r.path) for r in _app1153.routes for m in (getattr(r, "methods", None) or ())}
+    faults = _w703_faults(doc, root, set(items), set(reg), routes)
+    assert faults == [], faults
+    assert "A search of a register is not legal clearance, and nothing here is one" in flat
+
+    def _table(section, width):
+        out = {}
+        for ln in section.splitlines():
+            cells = [c.strip() for c in ln.strip().strip("|").split("|")]
+            if ln.startswith("| ") and len(cells) == width and not set(cells[0]) <= set("-"):
+                out[cells[0]] = cells[1:]
+        return out
+
+    #  1. each name the tree records, with what was searched for it
+    assessment = (root / "docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md").read_text(encoding="utf-8")
+    row13 = next(ln for ln in assessment.splitlines() if ln.startswith("| 13 | Five candidate names"))
+    suggested = [n.strip() for n in re.search(r"\(([^)]+)\)", row13).group(1).split(",")]
+    assert len(suggested) == 5 and "NOT CHECKED" in row13, row13
+    screen = _table(doc.split("## 1. Each candidate name", 1)[1].split("\n## ", 1)[0], 6)
+    screen.pop("Name", None)
+    assert sorted(screen) == sorted(["Workstation IDBO"] + suggested), sorted(screen)
+    for n in suggested:
+        assert screen[n] == ["NOT CHECKED"] * 5, (n, "a suggested name is said to have been searched", screen[n])
+    chosen = screen["Workstation IDBO"]
+    note = reg["FU-808"]["close_note"]
+    assert "read on 2026-10-13 and 14" in note and "The US register was not read" in note, note
+    assert all(c != "NOT CHECKED" for c in chosen[:3]) and chosen[3:] == ["NOT CHECKED", "NOT CHECKED"], chosen
+    assert "for Workstation IDBO on 2026-10-13 and 2026-10-14" in flat
+    plan = " ".join((root / "docs/business/BUSINESS_PLAN.md").read_text(encoding="utf-8").split())
+    assert "no mark has been applied for, and no domain is held" in plan
+    assert "no mark has been applied for, and no domain is held" in flat
+
+    #  2. what the Owner holds: what the tree says is not held is said as not held
+    held = " ".join(doc.split("## 2. What the Owner holds", 1)[1].split("\n## ", 1)[0].split())
+    assert "No domain:" in held and "(row FU-1289)" in held and reg["FU-1289"]["status"] == "open", held
+    workpack = " ".join((root / "docs/business/FORMATION_WORKPACK.md").read_text(encoding="utf-8").split())
+    assert "It chooses no route" in workpack and "No company or other legal form" in held
+    deploy = " ".join((root / "docs/DEPLOYMENT.md").read_text(encoding="utf-8").split())
+    assert "Nothing here has been run against a Google account" in deploy and "No cloud project for the release yet" in held
+    assert "with no mark applied for or registered for it" in held
+    assert "not recorded in this repository, by design" in held
+
+    #  3. the register of public claims is exactly what the public drafts cite
+    cited = {}
+    for d in sorted((root / "docs/business/public").glob("*.md")):
+        for sec in re.split(r"\n(?=## )", d.read_text(encoding="utf-8")):
+            m = re.match(r"## (\d+)\. ", sec)
+            if not m:
+                continue
+            assert "[observed]" not in sec, (d.name, sec.split("\n", 1)[0], "a public claim cites no evidence")
+            for ev in re.findall(r"\[observed: ([^\]]+)\]", sec):
+                cited.setdefault(ev.strip(), set()).add(int(m.group(1)))
+    claims = _table(doc.split("## 3. Each public claim", 1)[1].split("\n## ", 1)[0], 3)
+    claims.pop("Claim", None)
+    rows = {}
+    for claim, (evidence, sections) in claims.items():
+        assert evidence not in rows, ("one piece of evidence has two rows", evidence)
+        assert len(claim) > 20, claim
+        rows[evidence] = {int(x) for x in sections.split(",")}
+    assert rows == cited, ({k: sorted(v) for k, v in rows.items() if cited.get(k) != v},
+                           {k: sorted(v) for k, v in cited.items() if rows.get(k) != v})
+    spine = pathlib.Path(__file__).read_text(encoding="utf-8")
+    for ev in rows:
+        if ev.startswith("test_"):
+            m = re.search(r"((?:^@[^\n]+\n)*)^def " + re.escape(ev) + r"\(", spine, re.M)
+            assert m and "_ai_only" not in m.group(1), (ev, "the register names a test that is missing or needs an outside model")
+        else:
+            assert re.fullmatch(r"`[A-Za-z0-9_./-]+\.md`", ev) and (root / ev.strip("`")).exists(), ev
+    assert len(rows) >= 8, sorted(rows)
+
+    #  every clause of P5.7 has its document, so the item is done
+    assert items["P5.7"]["done"] and items["P5.7"]["done_by"] == "W1153", items["P5.7"]
+    for name in ("FIRST_OFFER_CANDIDATES.md", "COST_MODEL.md", "NAME_AND_BRAND_SCREEN.md", "public/FIRST_OFFER_DRAFTS.md",
+                 "SUPPORT_ROUTES.md", "FORMATION_WORKPACK.md", "PRODUCTION_HARDENING_BRIEF.md"):
+        assert (root / "docs/business" / name).exists(), name
