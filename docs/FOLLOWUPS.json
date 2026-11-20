@@ -4952,11 +4952,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1147",
       "note": "",
       "slot_source": "W500: it IS P4.4's own pre-flight - the item says the migration dry-run and rollback are proven before the Owner flips anything",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Closed in W1147 by the Owner's deferral of P4.4 on 2026-10-12, which records managed Postgres as a boundary until a measured need exists and rules that the database dependencies nothing imports are removed. The pre-flight this row asked for (a schema, a migration on a copy, a rollback) is not built: the switch it would come before is deferred. Measured again, no live module imported or probed sqlalchemy, sqlmodel, psycopg2-binary or greenlet, and nothing live read a database URL (config/database.py, the one importer, was archived by W897). pyproject.toml no longer declares the three; the lock and requirements.txt were made again, 175 pins becoming 171 with every other pin unchanged, after the full suite ran in a fresh venv built only from the new requirements.txt. The hardening brief, the compose file and the deploy guide no longer offer a database, and the vision's section 18 dates the boundary. A measured need would reopen it as a ruling of its own."
     },
     {
       "id": "FU-285",

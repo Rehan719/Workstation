@@ -22895,9 +22895,14 @@ def test_w499_the_plan_projects_only_the_work_a_round_closes(client):
     # close them.
     from agentic_core.plan_followups import schedule as _schedule
     _app = root / "apps/workstation-superapp/src"
-    _sc = _schedule(_reg, _text)
+    #  W1147 (FU-284): the last open row on a P4 item was closed, so the live schedule holds no owner-switch item
+    #  and the marker would be unreachable from it. The schedule's property is checked on the live register with
+    #  one made-up open row on P4.4, made from FU-284's own fields, so it never depends on a switch row being open.
+    _stand_in = dict(next(r for r in _reg["items"] if r["id"] == "FU-284"), id="FU-99147", status="open",
+                     closed_by=None, title="made-up for test_w499: an open row on a switch item")
+    _sc = _schedule(dict(_reg, items=list(_reg["items"]) + [_stand_in]), _text)
     _switch_slots = [x["slot"] for x in _sc["schedule"] if x.get("delivered_by") == "owner-switch"]
-    assert _switch_slots, "no owner-switch item is in the schedule, so the queue marker is unreachable"
+    assert _switch_slots == ["P4.4"], ("the made-up switch row is not scheduled as the Owner's", _switch_slots)
     assert all(x.startswith("P4.") for x in _switch_slots), _switch_slots
     assert all(x.get("delivered_by") == "build" for x in _sc["schedule"]
                if not x["slot"].startswith("P4.")), [x["slot"] for x in _sc["schedule"]]
@@ -77396,7 +77401,8 @@ def test_w907_fu604_the_nineteen_removable_dependencies_are_gone_and_nothing_liv
     prose. They are removed now, after the full suite ran in a fresh venv built only from the new requirements.txt.
     Three stay in the lock because packages kept here require them. This guard holds the removal: none of the
     nineteen is declared, none is imported or probed by live code, and none stays pinned without something that
-    requires it. The rows held for a plan item or reached another way are still declared."""
+    requires it. The rows held for a plan item or reached another way stayed declared until a ruling of their own
+    released them (W1141, W1147)."""
     import pathlib
     import re
     import tomllib
@@ -77437,10 +77443,10 @@ def test_w907_fu604_the_nineteen_removable_dependencies_are_gone_and_nothing_liv
             hits += [(str(f.relative_to(root)), m.group(1)) for m in probe.finditer(text)]
     assert not hits, ("live code reaches a removed dependency", hits[:10])
 
-    #  the rows FU-283 held for a plan item, or found reached another way, are not part of the ruling
-    #  W1141 (FU-1277): streamlit, pandas and plotly left by the Owner's own ruling of 2026-11-19 (FU-1174)
-    for kept in ("sqlalchemy", "sqlmodel", "psycopg2-binary"):
-        assert kept in declared, (kept, "was removed, and the ruling covered only the REMOVABLE rows")
+    #  the rows FU-283 held for a plan item, or found reached another way, were not part of this ruling. Each left
+    #  by a ruling of its own: streamlit, pandas and plotly by the Owner's of 2026-11-19 (FU-1174, W1141), and the
+    #  three held for P4.4 by the Owner's deferral of P4.4 on 2026-10-12 (FU-284, W1147). test_w1141 and
+    #  test_w1147 hold them gone.
 
 
 def test_w908_streamlit_pandas_and_plotly_are_reached_by_nothing_live_and_their_removal_is_asked_of_the_owner():
@@ -93341,3 +93347,86 @@ def test_w1146_fu1293_the_conversation_panel_says_the_avatars_own_reasons_and_th
                  "expect(said('suggested-areas-basis')).toBe(b.suggested_areas_basis);",
                  "toBe(`profile: NOT applied — ${c.body.profile_basis}.`)", "expect(sent).toEqual([c.request]);"):
         assert line in spec, ("the rendered test no longer reads this", line)
+
+
+def test_w1147_fu284_the_database_packages_held_for_p44_are_gone_and_p44_is_a_dated_boundary():
+    """FU-284 (W1147), P4.4. The Owner deferred managed Postgres on 2026-10-12 and recorded it as a boundary until a
+    measured need exists: the file store with its locks is what runs, and the database dependencies nothing imports are
+    removed. FU-283 had held sqlalchemy, sqlmodel and psycopg2-binary for P4.4 because config/database.py imported
+    sqlmodel; W897 found that module imported by nothing and moved it to _archive/config/. They are removed now, with
+    greenlet, which only sqlalchemy brought: 175 pins became 171, every other pin at the same version, after the full
+    suite ran in a fresh venv built only from the new requirements.txt. Held here:
+    - none of the four is declared, locked or pinned;
+    - no live module imports or probes one, and none reads a database URL, while the plan keeps P4.4 deferred;
+    - the verdicts say ruled and removed, and no row of theirs is held for a plan item;
+    - the hardening brief, the compose file and the deploy guide offer no database and call no pre-flight open;
+    - the plan's P4.4 and the vision's section 18 record the boundary, dated."""
+    import pathlib
+    import re
+    import tomllib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")
+    flat = lambda rel: " ".join(read(rel).split())
+
+    def norm(name):
+        return re.sub(r"[-_.]+", "-", name).lower()
+
+    gone = {"sqlalchemy", "sqlmodel", "psycopg2-binary", "greenlet"}
+    declared = {norm(k) for k in tomllib.loads(read("pyproject.toml"))["tool"]["poetry"]["dependencies"]}
+    locked = {norm(p["name"]) for p in tomllib.loads(read("poetry.lock"))["package"]}
+    pinned = {norm(l.split("==", 1)[0]) for l in read("requirements.txt").splitlines() if "==" in l}
+    assert not gone & (declared | locked | pinned), ("back again", sorted(gone & (declared | locked | pinned)))
+
+    #  nothing live reaches one, by an import, a probe or a database URL
+    mods = "sqlalchemy|sqlmodel|psycopg2|greenlet"
+    imp = re.compile(r"^\s*(?:import|from)\s+(" + mods + r")(?:\.|\s|,|$)", re.M)
+    probe = re.compile(r"(?:find_spec|import_module|__import__|importorskip)\(\s*['\"](" + mods + r")['\"]")
+    url = re.compile(r"DATABASE_URL|postgres(?:ql)?(?:\+\w+)?://")
+    hits = []
+    for base in ("agentic_core", "scripts", "integration_tests", "config", "deploy"):
+        for f in (root / base).rglob("*.py"):
+            if "_archive" in f.parts:
+                continue
+            text = f.read_text(encoding="utf-8", errors="replace")
+            hits += [(str(f.relative_to(root)), m.group(1)) for m in imp.finditer(text)]
+            hits += [(str(f.relative_to(root)), m.group(1)) for m in probe.finditer(text)]
+            if base != "integration_tests":
+                hits += [(str(f.relative_to(root)), m.group(0)) for m in url.finditer(text)]
+    assert not hits, ("live code reaches a database the Owner deferred", hits[:10])
+    p44 = flat("docs/FABLE_DELIVERY_PROMPT.md")
+    p44 = p44[p44.index(" P4.4 Managed Postgres"):p44.index(" P4.5 Production deploy")]
+    assert "DEFERRED BY THE OWNER (2026-10-12) AND RECORDED AS A BOUNDARY" in p44, p44[:200]
+    assert ("W1147 (2026-11-20, FU-284): removed - sqlalchemy, sqlmodel and psycopg2-binary, and greenlet, which only "
+            "sqlalchemy brought (175 pins became 171)") in p44
+    assert "The boundary is dated in the vision's section 18." in p44
+
+    #  the verdicts
+    dv = read("docs/DEPENDENCY_VERDICTS.md")
+    for dist in ("sqlalchemy", "sqlmodel", "psycopg2-binary"):
+        row = re.search(rf"^\| {re.escape(dist)} \| ([^|]+) \|", dv, re.M)
+        assert row and row.group(1).strip() == "REMOVABLE, ruled 2026-10-12 (P4.4 deferred) and removed (W1147)", (
+            dist, row and row.group(1))
+    assert not re.search(r"^\| [^|]+ \| HELD", dv, re.M), "a verdict is still held for a plan item"
+    assert "## W1147 (FU-284) — the three database packages held for P4.4 are removed (2026-11-20)" in dv
+    assert "175 pins became 171 (the three, and greenlet)" in " ".join(dv.split())
+
+    #  no document offers a database, or calls P4.4's pre-flight an open row
+    brief = flat("docs/business/PRODUCTION_HARDENING_BRIEF.md")
+    assert "There is no database. Managed Postgres is plan item P4.4, which the Owner deferred on 2026-10-12" in brief
+    assert "FU-284" not in brief and "migration dry-run and rollback have not been started" not in brief
+    compose = read("docker-compose.yml")
+    assert "wire DATABASE_URL" not in compose and "Paid options (managed Postgres" not in compose
+    assert "NOT AN OPTION TODAY: Postgres." in compose and "reads no DATABASE_URL" in compose
+    live = [l for l in compose.splitlines() if l.strip() and not l.lstrip().startswith("#")]
+    assert not [l for l in live if "postgres" in l.lower() or l.strip() == "db:"], ("a database service runs", live)
+    guide = flat("docs/DEPLOYMENT.md")
+    assert "Optional managed Postgres is commented" not in guide
+    assert ("The app keeps its records in files and reads no database: the Owner deferred managed Postgres (plan item "
+            "P4.4) on 2026-10-12") in guide
+
+    #  the vision's section 18 dates the boundary
+    vision = read("docs/WORKSTATION_IDBO_WHOLE_VISION.md")
+    at = vision.index("## 18. Certainty & Agreement")
+    s18 = vision[at:vision.index("# Appendix A", at)]
+    assert ("**Recorded W1147 (2026-11-20) — managed Postgres is a BOUNDARY, not a switch waiting to be flipped.** "
+            "The Owner DEFERRED it on 2026-10-12") in " ".join(s18.split())
