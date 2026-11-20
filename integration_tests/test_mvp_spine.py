@@ -65443,7 +65443,15 @@ def test_w711_the_two_chartered_items_keep_their_boundaries_and_every_source_say
         r = rows[rid]
         assert r["page"].startswith("https://") and re.fullmatch(r"\d{4}-\d{2}-\d{2}", r["read_on"]), rid
         assert len(r["says"]) > 40 and len(r["not_read"]) > 10, (rid, "a row must say what was read and what was not")
-        assert "NOT re-read by a second reader" in r["read_by"], (rid, "one reader's summary is presented as more than that")
+        #  W1148 (FU-1077): eight were re-read whole at their publishers and say so; the six whose sites this
+        #  environment refused still say they rest on one reader's summary, and that the re-reading was refused
+        if rid in ("hse-puwer-overview", "frc-frs-102-periodic-review-2024", "ec-ai-omnibus-2026",
+                   "lawcom-business-tenancies-renewal", "ico-duaa-2025", "caa-drone-requirements"):
+            assert "NOT re-read by a second reader" in r["read_by"] and "refused by this environment's network" in (
+                r["not_read"]), (rid, "one reader's summary is presented as more than that")
+        else:
+            assert r["read_on"] == "2026-11-20" and r["read_by"].startswith("round W1148, ") and "read whole" in (
+                r["read_by"]) and "not through a summary" in r["read_by"], (rid, r["read_by"])
     #  the date the external documents got wrong is recorded as the publisher gives it
     assert "entered into force on 27 July 2026" in rows["ec-ai-omnibus-2026"]["says"]
 
@@ -93430,3 +93438,87 @@ def test_w1147_fu284_the_database_packages_held_for_p44_are_gone_and_p44_is_a_da
     s18 = vision[at:vision.index("# Appendix A", at)]
     assert ("**Recorded W1147 (2026-11-20) — managed Postgres is a BOUNDARY, not a switch waiting to be flipped.** "
             "The Owner DEFERRED it on 2026-10-12") in " ".join(s18.split())
+
+
+def test_w1148_fu1077_the_legal_briefs_authorities_are_read_whole_at_their_publishers_and_what_was_refused_says_so():
+    """FU-1077 part 1 (W1148), P5.18 clause 8: every statement of what the law requires names a row read at its
+    publisher and the date, and what was not read is listed as not read. FU-1077 named four authorities never read and
+    fourteen rows that one reader had taken through a fetch that summarised each page. On 2026-11-20 the round read each
+    provision's own text at www.legislation.gov.uk and each GOV.UK page's own content record, whole. Held here:
+    - the four authorities are seven rows (the credit regime is three instruments), each read whole on 2026-11-20 at
+      its publisher's page, saying what it says, with a date of its own and what was not read;
+    - eight of the fourteen are re-read, and say by whom and how; the two statements the summary got wrong are
+      corrected (the deeds section's "if, and only if" and its second way to sign; the lease page's dates);
+    - the six whose sites this environment refused still say they rest on one reader's summary, and that the
+      re-reading was refused;
+    - FU-1077 stays open and names those six, the FCA's rules and the sites to allow;
+    - the register's own check passes."""
+    import json
+    import pathlib
+    import re
+    import subprocess
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    rows = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    day = re.compile(r"\d{4}-\d{2}-\d{2}")
+
+    new = {"companies-act-2006-s44": ("https://www.legislation.gov.uk/ukpga/2006/46/section/44",
+                                      ("by two authorised signatories", "in the presence of a witness who attests the signature",
+                                       "if, and only if, it is duly executed and delivered as a deed")),
+           "cra-2015-part-2": ("https://www.legislation.gov.uk/ukpga/2015/15/part/2",
+                               ("is not binding on the consumer", "significant imbalance", "transparent and prominent")),
+           "ucta-1977-part-1": ("https://www.legislation.gov.uk/ukpga/1977/50/part/I",
+                                ("satisfies the requirement of reasonableness", "written standard terms of business")),
+           "loler-1998": ("https://www.legislation.gov.uk/uksi/1998/2307",
+                          ("at least every 6 months", "every 12 months", "planned by a competent person")),
+           "cca-1974-credit-and-hire": ("https://www.legislation.gov.uk/ukpga/1974/39/section/8",
+                                        ("credit of any amount", "more than three months", "article 36A(1)(a) to (c)")),
+           "rao-2001-credit-broking": ("https://www.legislation.gov.uk/uksi/2001/544/article/36A",
+                                       ("effecting an introduction", "presenting or offering an agreement",
+                                        "undertaking preparatory work")),
+           "fsma-2000-s19": ("https://www.legislation.gov.uk/ukpga/2000/8/section/19", ("the general prohibition",))}
+    for rid, (page, phrases) in new.items():
+        r = rows.get(rid)
+        assert r, (rid, "an authority FU-1077 named is not a row")
+        assert r["status"] == "current" and r["page"] == page and r["read_on"] == "2026-11-20", (rid, r.get("page"))
+        assert r["read_by"].startswith("round W1148, ") and "read whole" in r["read_by"] and (
+            "not through a summary" in r["read_by"]), (rid, r["read_by"])
+        assert all(p in r["says"] for p in phrases), (rid, [p for p in phrases if p not in r["says"]])
+        assert re.search(r"(?:from|in force from|last modified) \d{1,2} [A-Z][a-z]+ \d{4}", r["says"]), (
+            rid, "a reading says no date of its own")
+        assert len(r["not_read"]) > 20, (rid, "a reading says nothing of what it did not read")
+
+    reread = ("lpmpa-1989-s1", "lsa-2007-sch2", "hmlr-practice-guide-8", "si-2026-439-av-passenger-permits",
+              "av-act-implementation-programme", "si-2026-867-machinery", "pram-act-2025",
+              "gov-ending-commercial-lease-early")
+    for rid in reread:
+        r = rows[rid]
+        assert r["read_on"] == "2026-11-20" and r["read_by"].startswith("round W1148, ") and (
+            "not through a summary" in r["read_by"]) and "first entered by a research reader of round W711" in (
+            r["read_by"]), (rid, r["read_by"])
+        assert "NOT re-read" not in r["read_by"], rid
+    #  the two the summary got wrong
+    deeds = rows["lpmpa-1989-s1"]["says"]
+    assert "if, and only if" in deeds and "two witnesses who each attest" in deeds and "on its face" in deeds, deeds
+    lease = rows["gov-ending-commercial-lease-early"]
+    assert "16 October 2012" in lease["says"] and "5 October 2022" in lease["says"] and "Undated" not in lease["says"]
+    assert "which called the page undated" in lease["read_by"]
+
+    refused = ("hse-puwer-overview", "frc-frs-102-periodic-review-2024", "ec-ai-omnibus-2026",
+               "lawcom-business-tenancies-renewal", "ico-duaa-2025", "caa-drone-requirements")
+    for rid in refused:
+        r = rows[rid]
+        assert r["read_on"] == "2026-10-13" and "NOT re-read by a second reader" in r["read_by"], (rid, r["read_by"])
+        assert ("A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network" in
+                r["not_read"] and "still rests on one reader's summary" in r["not_read"]), (rid, r["not_read"])
+
+    #  FU-1077 says what is left, and where the rows are
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    fu = reg["FU-1077"]
+    assert fu["status"] == "open" and fu["slot"] == "P5.18", (fu["status"], fu["slot"])
+    for named in refused + ("www.fca.org.uk", "handbook.fca.org.uk", "Owner's to approve"):
+        assert named in fu["why"], named
+    assert all(day.fullmatch(rows[i]["read_on"]) for i in list(new) + list(reread) + list(refused))
+
+    out = subprocess.run([sys.executable, "scripts/sources_check.py"], cwd=root, capture_output=True, text=True)
+    assert out.returncode == 0, (out.stdout[-800:], out.stderr[-400:])
