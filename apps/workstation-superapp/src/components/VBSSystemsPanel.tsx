@@ -25,7 +25,7 @@ interface DefectSummary { gates_run: number; defects_total: number; gate_failure
   // P3.30 (ledger v16 R1.12) - how many gates IN the rate were closed or failed on figures their caller typed
   attested_reverifications?: number; defects_closed_on_attestation?: number; attested_basis?: string;
   // W853 (FU-1038) - the two ways out that are not a re-verification, counted apart from `closed`
-  closed_source_retired?: number; not_reproducible?: number; open_from_retired_labels?: number; dispositions_basis?: string; closed_basis?: string }
+  closed_source_retired?: number; not_reproducible?: number; development_run?: number; open_from_retired_labels?: number; dispositions_basis?: string; closed_basis?: string }
 
 //  W983 (FU-399 part 15) - the test id is passed on. TypeScript does not check a hyphenated attribute against a
 //  component's props, so `data-testid` given to a Chip compiled and was dropped: the id a guard reads in this file
@@ -122,16 +122,23 @@ export const VBSSystemsPanel: React.FC = () => {
   // ── W853 (FU-1038; ruled 2026-10-12) - the two ways out of the loop that are not a re-verification ──
   const [disposeReason, setDisposeReason] = useState('');
   const [retiredRoute, setRetiredRoute] = useState('');
-  const disposeDefect = async (how: 'close-source-retired' | 'not-reproducible') => {
+  // W1133m (FU-1038; ruled 2026-11-20) - and the third: opened by a development run, not a delivery, with the evidence
+  const DISPOSED: Record<string, string> = {
+    'close-source-retired': 'closed — its source was retired', 'not-reproducible': 'reported not reproducible',
+    'development-run': 'closed — a development run opened it, not a delivery',
+    closed_source_retired: 'closed — its source was retired', not_reproducible: 'reported not reproducible',
+    development_run: 'closed — a development run opened it, not a delivery',
+  };
+  const disposeDefect = async (how: 'close-source-retired' | 'not-reproducible' | 'development-run') => {
     if (!selDefect) return;
     setBusy(how); setErr(''); setLoopResult('');
     try {
       const body = how === 'close-source-retired'
         ? { reason: disposeReason, ...(retiredRoute.trim() ? { retired_route: retiredRoute.trim() } : {}) }
-        : { tried: disposeReason };
+        : how === 'development-run' ? { evidence: disposeReason } : { tried: disposeReason };
       const d = await apiJson<{ basis?: string; source_check?: string }>(
         `/api/v1/vbs/qms/defects/${selDefect}/${how}`, { method: 'POST', body });
-      setLoopResult(`${how === 'close-source-retired' ? 'closed — its source was retired' : 'reported not reproducible'}: ${d.basis ?? ''}${d.source_check ? ` (${d.source_check})` : ''}`);
+      setLoopResult(`${DISPOSED[how]}: ${d.basis ?? ''}${d.source_check ? ` (${d.source_check})` : ''}`);
       loadAll();
     } catch (e) { setErr(errorMessage(e)); }
     setBusy('');
@@ -248,9 +255,10 @@ export const VBSSystemsPanel: React.FC = () => {
               )}
               <Chip tone={(defects.summary.open ?? 0) > 0 ? 'warn' : 'ok'}>{defects.summary.open ?? 0} open</Chip>
               <Chip tone="dim" title={defects.summary.closed_basis}>{defects.summary.closed ?? 0} closed</Chip>
-              {((defects.summary.closed_source_retired ?? 0) > 0 || (defects.summary.not_reproducible ?? 0) > 0) && (
+              {((defects.summary.closed_source_retired ?? 0) > 0 || (defects.summary.not_reproducible ?? 0) > 0
+                || (defects.summary.development_run ?? 0) > 0) && (
                 <Chip tone="dim" title={defects.summary.dispositions_basis}>
-                  {defects.summary.closed_source_retired ?? 0} closed: source retired · {defects.summary.not_reproducible ?? 0} not reproducible (neither re-verified)
+                  {defects.summary.closed_source_retired ?? 0} closed: source retired · {defects.summary.development_run ?? 0} closed: a development run opened it · {defects.summary.not_reproducible ?? 0} not reproducible (none re-verified)
                 </Chip>
               )}
               {(defects.summary.open_from_retired_labels ?? 0) > 0 && (
@@ -325,7 +333,7 @@ export const VBSSystemsPanel: React.FC = () => {
                   <p className="text-[9px] text-slate-500">Or take it out of the loop without a re-verification: your reason is kept on the defect, it is never a gate pass, and the rate does not move.</p>
                   <input value={disposeReason} onChange={e => setDisposeReason(e.target.value)} data-testid="defect-dispose-reason"
                     className="w-full text-[11px] bg-slate-900 border border-slate-800 rounded-lg p-2 text-slate-300"
-                    placeholder="why: the surface that was retired, or what you did to try to reproduce it…" />
+                    placeholder="why: the surface that was retired, the development run that opened it and how you know, or what you did to try to reproduce it…" />
                   {selRow.label_live !== false && (
                     <input value={retiredRoute} onChange={e => setRetiredRoute(e.target.value)} data-testid="defect-retired-route"
                       className="w-full text-[11px] bg-slate-900 border border-slate-800 rounded-lg p-2 text-slate-300"
@@ -340,12 +348,16 @@ export const VBSSystemsPanel: React.FC = () => {
                       data-testid="defect-not-reproducible" className="flex items-center gap-1.5 bg-slate-900 text-slate-300 text-[10px]">
                       {busy === 'not-reproducible' ? <Loader2 size={11} className="animate-spin" /> : <HelpCircle size={11} />} Not reproducible
                     </Button>
+                    <Button onClick={() => disposeDefect('development-run')} disabled={!!busy || disposeReason.trim().length < 12}
+                      data-testid="defect-development-run" className="flex items-center gap-1.5 bg-slate-900 text-slate-300 text-[10px]">
+                      {busy === 'development-run' ? <Loader2 size={11} className="animate-spin" /> : <Archive size={11} />} Opened by a development run
+                    </Button>
                   </div>
                 </div>
               )}
               {selRow.closure && (
                 <p className="text-[9px] text-slate-400" data-testid="defect-closure" title={selRow.closure.basis}>
-                  {selRow.closure.how === 'closed_source_retired' ? 'closed — its source was retired' : 'reported not reproducible'} by {selRow.closure.by}{selRow.closure.by_verified ? '' : ' (typed, sign-in off)'} at {selRow.closure.at}{selRow.closure.status_before ? ` (it was ${selRow.closure.status_before})` : ''}: {selRow.closure.reason}
+                  {DISPOSED[selRow.closure.how] ?? selRow.closure.how.replace(/_/g, ' ')} by {selRow.closure.by}{selRow.closure.by_verified ? '' : ' (typed, sign-in off)'} at {selRow.closure.at}{selRow.closure.status_before ? ` (it was ${selRow.closure.status_before})` : ''}: {selRow.closure.reason}
                   {selRow.closure.retired_route && <> · it came through {selRow.closure.retired_route}</>}
                   {selRow.closure.source_check && <> · {selRow.closure.source_check}</>}
                 </p>

@@ -92421,3 +92421,71 @@ def test_w1133l_fu1046_a_statute_term_is_a_word_and_multi_disciplinary_names_no_
         v = legal(subject)
         assert v["status"] == "review" and v["coverage"] == "vocabulary", (subject, v)
         assert f"STATUTORY_BREACH: {statute}" in v["reason"], (subject, v)
+
+
+def test_w1133m_fu1038_a_defect_a_development_run_opened_leaves_the_loop_saying_so_and_its_failure_stays_counted(client):
+    """FU-1038 (W1133m; the Owner's ruling of 2026-11-20). Read on the Owner's store in W1133l, all nineteen open
+    defects had been opened by development runs that wrote into it (a page sweep, W433's reproduction and guard, a
+    browser export probe), and the studio door fifteen of them carry is live, so closing them as 'source retired' would
+    have been false, and the route refuses it, as built. Ruled: a third way out, 'opened by a development run'. It keeps
+    the row and the evidence, re-verifies nothing, moves no count, and says that the gate failure that opened the defect
+    stays counted in the rate as it was recorded, because the rate is never recomputed."""
+    import asyncio as _a1133
+    import pathlib as _pl1133
+    from agentic_core.vbs.registry import qms as _q1133
+
+    def opened(label):
+        before = {d["id"] for d in _q1133.defects}
+        _a1133.run(_q1133.run_quality_gates({"coverage": 0.1}, label=label))
+        return next(d["id"] for d in _q1133.defects if d["id"] not in before)
+
+    base = "/api/v1/vbs/qms/defects"
+
+    def summary():
+        return client.get(base).json()["summary"]
+
+    studio, second = opened("studio"), opened("studio")            # a live label, as on the Owner's store
+    s0 = summary()
+    assert "development_run" in s0, ("the summary has no count for the third way out", sorted(s0))
+    ev = ("opened by W433's reproduction on 2026-09-01: three studio calls within a second carrying the guard's three "
+          "series, against a development server on this store")
+    #  the live door still refuses 'retired', as built; the third way out is the true one
+    assert client.post(f"{base}/{studio}/close-source-retired", json={"reason": ev}).status_code == 409
+    assert client.post(f"{base}/{studio}/development-run", json={"evidence": "a test run"}).status_code == 422
+    r = client.post(f"{base}/{studio}/development-run", json={"evidence": ev})
+    assert r.status_code == 200, r.text[:300]
+    j = r.json()
+    d = j["defect"]
+    assert d["status"] == "development_run" and d["reverified"] is False, d
+    cl = d["closure"]
+    assert (cl["how"], cl["reason"], cl["by"], cl["by_verified"], cl["status_before"]) == (
+        "development_run", ev, "owner", False, "open"), cl
+    assert j["measured"] is False and j["counted_in_rate"] is False, j
+    assert "not re-verified" in j["basis"] and "stays counted there as it was recorded" in j["basis"], j["basis"]
+
+    s1 = summary()
+    for k in ("gates_run", "gate_failures", "defects_total", "what_if_gates", "what_if_failures", "closed",
+              "closed_source_retired", "not_reproducible", "non_conformance_rate", "attested_reverifications"):
+        assert s1[k] == s0[k], ("taking a development run's defect out of the loop moved a count", k, s0[k], s1[k])
+    assert s1["development_run"] == s0["development_run"] + 1 and s1["open"] == s0["open"] - 1, s1
+    said = " ".join(s1["dispositions_basis"].split())
+    assert f"{s1['development_run']} defect(s) closed because a development run opened them" in said, said
+    assert "stay counted in the rate as they were recorded" in said, said
+    assert "because a development run opened it" in s1["closed_basis"], s1["closed_basis"]
+
+    #  out of the loop: not taken out again, not reported, not re-verified
+    for path, body in (("development-run", {"evidence": ev}), ("not-reproducible", {"tried": ev}),
+                       ("reverify", {"coverage": 0.99})):
+        assert client.post(f"{base}/{studio}/{path}", json=body).status_code == 404, path
+    #  a corrected defect can leave this way too, and says what it was before
+    assert client.post(f"{base}/{second}/correct", json={"correction": "nothing to correct: a development run"}
+                       ).status_code == 200
+    d2 = client.post(f"{base}/{second}/development-run", json={"evidence": ev}).json()["defect"]
+    assert (d2["status"], d2["closure"]["status_before"]) == ("development_run", "corrected"), d2
+
+    #  the panel offers it and names it on a closed row (rendered in VBSSystemsPanel.test.tsx on the route's answers)
+    page = _code_only((_pl1133.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+                       / "components" / "VBSSystemsPanel.tsx").read_bytes().decode("utf-8"))
+    for needle in ('data-testid="defect-development-run"', "disposeDefect('development-run')",
+                   "development_run: 'closed — a development run opened it, not a delivery'"):
+        assert needle in page, ("the panel does not offer or name the third way out", needle)

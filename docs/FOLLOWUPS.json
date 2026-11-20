@@ -20020,11 +20020,14 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1133m",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "already_satisfied",
+      "because_means": "measured as satisfied by an earlier round; nothing was built for it here",
+      "close_note": "Ruled by the Owner on 2026-11-20: closed as satisfied by the move. Measured on the Owner's machine (W1133l): the three June allocations (alloc-973e42b6 50,000; alloc-bf632e6c 4,975,000; alloc-7a1d633d 1,000 WST, to p1, p3 and p4, which are not entities) are held only in data/_moved_books_20261012-155706/capital_fund.json, moved with the old books on the Owner's word of 2026-10-12. The live store holds no fund record, so no page shows them and nothing live can be reversed. If the old books are ever restored, reverse each with POST /api/v1/fund/allocations/{allocation_id}/reverse (W861): a Change Control hold, its approval, then the same request again."
     },
     {
       "id": "FU-1006",
@@ -20708,11 +20711,14 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1133m",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Turned once, for real, on the Owner's store (W1133m, 2026-11-20). Read first (W1133l): the ruling's premise did not hold. The fifteen are labelled studio and the studio door is live (POST /api/v1/reactor/studio), so 'source retired' would have been false, and all nineteen had been opened by development runs that wrote into the store (the page sweep of 2026-09-01, W433's reproduction and guard in exact triplets, the w347 export probe, the owned-model journey measurement of 2026-08-30, a composition run in W433's window), except the genesis of Atmospheric Harvest Solutions, which the Owner named his own. Ruled 2026-11-20: a third way out, development_run (POST /api/v1/vbs/qms/defects/{id}/development-run, offered on the Cockpit's VBS panel): the row and its evidence are kept, nothing is re-verified, no count moves, and the summary says the gate failures that opened them stay counted in the rate as recorded. Applied: 18 defects left as development_run, each with its evidence; DEF-ba1f87a2 was corrected and re-verified measured_from_content on today's journey for the same problem (floor only, scratch store): coverage 1.0 of its 8 stored sections, no stub, closed. The store now reads 0 open, 1 closed, 18 development_run, gates run 74, gate failures 19, rate 0.2568. A copy of the store from before is kept outside the repository. Guard test_w1133m_fu1038, six blinds red; the panel's rendered test, its blind red."
     },
     {
       "id": "FU-1039",
