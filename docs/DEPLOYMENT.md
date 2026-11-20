@@ -39,8 +39,9 @@ Excellence page (`/operations`) surfaces the in-house rate.
 ## Docker / self-host (any container host) — COST-FREE by default
 
 A production [`Dockerfile`](../Dockerfile) (+ [`.dockerignore`](../.dockerignore)) and
-[`docker-compose.yml`](../docker-compose.yml) ship the **live backend only** (`_archive/`, the frontend,
-and tests are excluded). In-house-first, file persistence on a local volume, no paid services:
+[`docker-compose.yml`](../docker-compose.yml) ship the **live backend, the pages it serves, and what its routes read**
+(the pages are built inside the image; `_archive/`, the tests and every private folder are excluded; W1128).
+In-house-first, file persistence on a local volume, no paid services:
 
 ```bash
 docker compose up --build        # backend on :8000, persistent local volume — $0
@@ -87,6 +88,35 @@ fees). Nothing chargeable is triggered autonomously.
   workflow using Workload Identity Federation (no stored keys). Building it is a P4 item and needs the Owner's GCP
   project.
 - Build: root `apps/workstation-superapp` (npm workspace), `npm run build` → `dist` (Vite).
+
+## The dry run (P4.5), measured on 2026-11-20 (W1128)
+
+OWNER RULING 2026-11-19: the dry run is taken now; nothing is deployed and no account is touched. The image was
+built from this tree and booted on a round's machine, with the memory a free-tier machine has (a 1 GiB cap).
+
+- What it carries: the pages, built in a stage of its own the way CI builds them; the plan and the register
+  (`docs/`), the law corpus (`knowledge/`) and the product catalogue (`products/`), which routes read; and every
+  private folder left out of the build context.
+- What it installs: the pinned set without the GPU learning stack (torch, torchsde, triton and 18 CUDA libraries),
+  because the first deploy runs the floor only; the three modules that use torch guard its import. No system
+  package: every pin has a prebuilt wheel but docopt, which is pure Python.
+- Built in 206 seconds; the image is 2.28 GB.
+- Booted: healthy 8.3 seconds after it started, with 225 MiB of memory at idle and 253 MiB after the probes, under
+  the 1 GiB cap. The tree's own boot, with torch loaded, measured 711 MB.
+- Asked: `/` served the pages; `/health`, `/api/v1/plan`, `/api/v1/plan/followups`, `/api/v1/catalog/products`
+  and `/api/v1/law/bundle` answered 200 from the files the image carries.
+
+How it was built here: this environment reaches the internet only through an egress proxy that re-signs TLS and
+refuses the Debian package mirror. The image installs no system package, so the mirror is not needed; the two base
+images were local copies that trust the proxy's certificate, and the build ran on the host network with the proxy
+passed in. The Dockerfile is the one committed here, unchanged.
+
+Found by the dry run: the legal matter's folder is set in `agentic_core/legal/matter.json` as a path on the
+Owner's own Windows machine, so the image carries the path and `/api/v1/law/bundle` answers with it (FU-1282).
+
+Not yet done (FU-603): a secrets pattern with no stored keys, the data directory's behaviour on a machine whose
+disk is replaced, a rollback drill, and cost labels. The project, the billing and the deploy itself stay the
+Owner's.
 
 ## Payments & money safety (READ BEFORE LAUNCH)
 

@@ -21,7 +21,7 @@ anything. The deploy itself is plan item P4.5, and the switch is the Owner's.
 ## 2. Reproducible deployment
 
 - `requirements.txt` is exported from the lock, and the lock is made from `pyproject.toml`, so CI and a deploy install the same versions (W906). A fresh environment built only from it ran the whole suite (W907). [observed]
-- The production image does not yet serve the pages, nor carry the law corpus or the plan: row FU-1156. The Google Cloud path has no pre-flight: row FU-603. [observed]
+- The production image serves the pages and carries the plan, the law corpus and the product catalogue. It was built from this tree and booted in a dry run under a 1 GiB memory cap (W1128, 2026-11-20; recorded in `docs/DEPLOYMENT.md`). What the Google Cloud path still lacks before a deploy is row FU-603. [observed]
 - Done looks like this: an image built from a clean checkout of one commit serves `GET /health` and the pages, a dry run of the deploy steps in `docs/DEPLOYMENT.md` is recorded with its output, and a second person repeats it from the document alone. [inference]
 
 ## 3. Secrets and access

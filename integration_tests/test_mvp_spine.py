@@ -91991,3 +91991,79 @@ def test_w1127_fu849_an_entity_says_whether_it_consents_to_be_tended_and_one_fro
     p41 = flat[flat.index(" P4.1 AUTH_ENABLED on"):flat.index(" P4.2 SELF_SERVE_SIGNUP")]
     assert ("OWNER RULING 2026-11-19 (FU-849): an entity registered before the opt-in flag existed is read as opted in, "
             "and every new establishment records the flag explicitly") in p41
+
+
+def test_w1128_fu1156_the_image_carries_the_pages_what_the_routes_read_and_the_floor_and_keeps_out_every_private_folder():
+    """FU-1156 and FU-603 part 1 (W1128), P4.5's dry run. OWNER RULING 2026-11-19: the dry run is taken now - the image
+    carries the pages, the law corpus and the plan, and boots on a round's machine with a health probe; nothing is
+    deployed and no account is touched. The image copied the code alone: no pages, no plan, no corpus and no product
+    catalogue, though routes read all four, and .dockerignore's three patterns with a comment after them (apps/, data/,
+    integration_tests/) matched nothing, because Docker reads "#" as a comment only at the start of a line. Held here:
+    - the pages are built in a stage of their own, the way CI builds them, and the image that runs copies the built
+      pages to the folder the backend serves them from;
+    - the image copies what the routes read: docs/, knowledge/ and products/;
+    - the floor is installed without the GPU learning stack (torch, torchsde, triton and their CUDA libraries), exactly
+      the pins requirements.txt names for it, with --no-deps; no system package is installed, and the healthcheck asks
+      with Python;
+    - no .dockerignore line carries a comment after its pattern, and every private folder privacy_exposure names is left
+      out of the build context, while what the pages stage copies is not."""
+    import pathlib
+    import re
+    from agentic_core.privacy_exposure import PRIVATE_FOLDERS
+    root = pathlib.Path(__file__).resolve().parents[1]
+    df = (root / "Dockerfile").read_text(encoding="utf-8")
+    lines = [ln.strip() for ln in df.splitlines()]
+
+    #  the pages: a stage of their own, built as CI builds them, copied to where the backend serves them
+    assert "FROM node:20-slim AS pages" in lines, "the pages have no build stage"
+    assert "RUN npm ci --no-audit --no-fund && npm run build --workspace=apps/workstation-superapp" in lines
+    assert "npm run build --workspace=apps/workstation-superapp" in (root / ".github/workflows/spine.yml").read_text(encoding="utf-8")
+    assert "ENV ONNXRUNTIME_NODE_INSTALL_CUDA=skip" in lines
+    assert "COPY --from=pages /build/apps/workstation-superapp/dist ./apps/workstation-superapp/dist" in lines
+    app = (root / "agentic_core/app_mvp.py").read_text(encoding="utf-8")
+    assert '_FRONTEND_DIST = _Path(__file__).resolve().parent.parent / "apps" / "workstation-superapp" / "dist"' in app
+    assert lines.index("FROM node:20-slim AS pages") < lines.index("FROM python:3.12-slim")
+
+    #  what the routes read
+    for copied in ("COPY docs ./docs", "COPY knowledge ./knowledge", "COPY products ./products"):
+        assert copied in lines, copied
+
+    #  the floor, without the GPU learning stack, and no system package
+    gpu = re.compile(r"^(torch|torchsde|triton|nvidia-[a-z0-9-]+|cuda-[a-z0-9-]+)==")
+    pins = [ln for ln in (root / "requirements.txt").read_text(encoding="utf-8").splitlines() if "==" in ln]
+    left_out = [ln.split("==")[0] for ln in pins if gpu.match(ln)]
+    assert {"torch", "torchsde", "triton"} <= set(left_out) and len(left_out) == 21, left_out
+    assert ("RUN grep -v -E '^(torch|torchsde|triton|nvidia-[a-z0-9-]+|cuda-[a-z0-9-]+)==' requirements.txt > "
+            "requirements-floor.txt \\") in lines
+    assert "&& pip install --no-cache-dir --no-deps -r requirements-floor.txt" in lines
+    assert "apt-get" not in df and "build-essential" not in df and "curl " not in df, "the image installs system packages"
+    assert any(ln.startswith("CMD python -c \"import os, urllib.request;") for ln in lines), "the healthcheck is not Python's"
+
+    #  .dockerignore: patterns that match what they say, every private folder out, the pages' sources in
+    ignore = (root / ".dockerignore").read_text(encoding="utf-8").splitlines()
+    commented = [ln for ln in ignore if ln.strip() and not ln.lstrip().startswith("#") and "#" in ln]
+    assert commented == [], ("a pattern with a comment after it matches nothing in Docker", commented)
+    patterns = {ln.strip().rstrip("/") for ln in ignore if ln.strip() and not ln.lstrip().startswith("#")}
+    for private in PRIVATE_FOLDERS:
+        p = private.rstrip("/")
+        if p.split("/")[0] in ("knowledge", "products", "docs", "inputs", "outputs"):
+            assert p in patterns, ("a private folder would be in the build context", private)
+    for needed in ("apps", "apps/workstation-superapp", "packages", "package.json", "package-lock.json", "docs",
+                   "knowledge", "products", "requirements.txt"):
+        assert needed not in patterns, ("the build context leaves out what the image copies", needed)
+    for out in ("data", "integration_tests", "**/node_modules", "apps/workstation-superapp/dist", "docs/fidelity_runs"):
+        assert out in patterns, out
+
+    #  the dry run's record: measured, with how it was built here and what it did not do
+    import json
+    dep = " ".join((root / "docs/DEPLOYMENT.md").read_text(encoding="utf-8").split())
+    rec = dep.split("## The dry run (P4.5), measured on 2026-11-20 (W1128)", 1)[1].split("## ", 1)[0]
+    for said in ("healthy 8.3 seconds after it started", "225 MiB of memory at idle", "under the 1 GiB cap",
+                 "the image is 2.28 GB", "nothing is deployed and no account is touched",
+                 "The Dockerfile is the one committed here", "Not yet done (FU-603)"):
+        assert said in rec, said
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    found = [r for r in reg if r.get("title") == ("The image carries the legal matter's folder as a path on the Owner's own "
+                                                    "machine, and the bundle route answers with it")]
+    assert len(found) == 1 and found[0]["slot"] == "P4.5" and found[0]["source"].startswith("W1128 "), found
+    assert found[0]["id"] in rec, "the record does not name the row the dry run found"

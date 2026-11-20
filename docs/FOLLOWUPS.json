@@ -23224,11 +23224,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.5",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1128",
       "note": "",
       "slot_source": "the deploy dry-run item: the image is what P4.5 deploys",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1128 (P4.5's dry run): the Dockerfile builds the pages in a stage of its own and copies them, with docs/, knowledge/ and products/, so the image serves the pages and carries the plan, the register, the law corpus and the catalogue the routes read; .dockerignore names every private folder and no longer carries a pattern Docker cannot match. Built and booted on a round's machine under a 1 GiB cap: healthy in 8.3 seconds, 225 MiB at idle; the pages and five routes answered 200. test_w1128 holds it, with three blinds."
     },
     {
       "id": "FU-1157",
@@ -26018,6 +26021,25 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P5.16 clause 3 (FU-1057): the fee on the entity's page",
+      "tier": 2
+    },
+    {
+      "id": "FU-1282",
+      "title": "The image carries the legal matter's folder as a path on the Owner's own machine, and the bundle route answers with it",
+      "why": "Found by P4.5's dry run (W1128). agentic_core/legal/matter.json sets bundle_dir to a folder in the Owner's home folder on Windows, set at the Owner's instruction in W566 for the Owner's own machine. The file is committed, so every image carries the path, and GET /api/v1/law/bundle answers with it, as configured and absent, on any other machine. RECOMMENDED, as for the audit records (FU-1151): the folder is set on the machine that holds it, by an environment variable or a file in the data directory, and the committed file names no path; the Owner's machine sets it once, and the local-session notes say how.",
+      "source": "W1128 (P4.5's dry run: the image built and booted here)",
+      "found": "2026-11-20",
+      "files": [
+        "agentic_core/legal/matter.json",
+        "agentic_core/legal/bundle.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.5",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.5's dry run found it (W1128): the image carries the path",
       "tier": 2
     }
   ],
