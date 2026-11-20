@@ -25966,11 +25966,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.2",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1123",
       "note": "",
       "slot_source": "P5.2 is the price derived from the waterfall; ruled 2026-11-19 on FU-1185",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1123: agentic_core/api/pricing.py prices a deliverable by the formula the Owner ruled on 2026-11-19 (FU-1185) - the declared cost / (1 - the prudential reserve rate, read from the cycle's own default - a platform margin set once, 20%). 60 WST is priced at 100 WST; the answer carries the reserve, the distributable profit and its split by the waterfall, which does not move the price. test_w1123, with two blinds, and test_w939 hold it."
     },
     {
       "id": "FU-1280",

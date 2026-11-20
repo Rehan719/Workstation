@@ -79515,12 +79515,12 @@ def test_w939_p52_a_price_is_recomputed_on_read_and_is_null_while_an_input_is_ab
     prices; an absent input yields null and a reason, never a figure. Measured: no pricing module or route existed,
     no cost could be declared for a deliverable, and no ruling says what arithmetic turns a cost and a waterfall into
     a price. Driven here:
-    - a deliverable's price is null and names both absent inputs, the cost and the arithmetic; its waterfall input is
-      the one the waterfall page reads;
+    - a deliverable's price is null and names the absent cost (W1123: the arithmetic is ruled, so it is no longer
+      absent); its waterfall input is the one the waterfall page reads;
     - each short or wrong declaration of a cost is refused, with nothing written; a deliverable of another entity is
       not found;
-    - a declared cost is an input, with what it is made of, who declared it and when, and the price stays null on the
-      arithmetic alone; a later declaration supersedes an earlier one, which is kept;
+    - a declared cost is an input, with what it is made of, who declared it and when, and (W1123) the price is then the
+      ruled one; a later declaration supersedes an earlier one, which is kept;
     - the waterfall changed, the next read of the price carries the new one;
     - the arithmetic is put to the Owner: an open OWNER DECISION row with its recommendation, on the resume prompt's
       list of what is still with the Owner."""
@@ -79541,11 +79541,12 @@ def test_w939_p52_a_price_is_recomputed_on_read_and_is_null_while_an_input_is_ab
     vid, did = entity("W939 Priced")
     q = {"vsb_id": vid, "deliverable_id": did}
     a0 = client.get("/api/v1/economy/price", params=q).json()
-    assert a0["price_wst"] is None and [m["input"] for m in a0["missing"]] == ["cost", "arithmetic"], a0
+    #  W1123: the arithmetic is ruled (2026-11-19), so only the cost is missing
+    assert a0["price_wst"] is None and [m["input"] for m in a0["missing"]] == ["cost"], a0
     wf = client.get("/api/v1/economy/waterfall", params={"vsb_id": vid}).json()
     assert a0["inputs"]["waterfall"]["proportions"] == wf["waterfall"] and a0["inputs"]["waterfall"]["source"] == wf["source"]
     assert a0["inputs"]["cost"] is None and "never a default figure" in a0["basis"] and a0["currency"] == "WST (virtual)"
-    assert "does not set one" in a0["missing"][1]["says"]
+    assert a0["arithmetic"]["ruling"].startswith("OWNER RULING 2026-11-19 (FU-1185)") and a0["arithmetic"]["platform_margin"] == 0.2
 
     base = {**q, "cost_wst": 60, "made_of": "two days of one person's work, stated for this test"}
     _, other_did = entity("W939 Other")
@@ -79559,13 +79560,15 @@ def test_w939_p52_a_price_is_recomputed_on_read_and_is_null_while_an_input_is_ab
     d1 = client.post("/api/v1/economy/deliverable-cost", json=base)
     assert d1.status_code == 200, d1.text[:300]
     a1 = d1.json()["price_now"]
-    assert a1["price_wst"] is None and [m["input"] for m in a1["missing"]] == ["arithmetic"], a1["missing"]
+    assert a1["price_wst"] == 100.0 and a1["missing"] == [], a1
+    assert (a1["arithmetic"]["reserve_wst"], a1["arithmetic"]["distributable_profit_wst"]) == (20.0, 20.0), a1["arithmetic"]
     c = a1["inputs"]["cost"]
     assert (c["cost_wst"], c["made_of"], c["declared_by"]) == (60, base["made_of"], "single-user-mode") and c["declared_at"]
     assert client.post("/api/v1/economy/deliverable-cost", json={**base, "cost_wst": 75}).status_code == 200
     g = client.get("/api/v1/economy/deliverable-cost", params=q).json()
     assert g["cost"]["cost_wst"] == 75 and [x["cost_wst"] for x in g["superseded"]] == [60]
-    assert client.get("/api/v1/economy/price", params=q).json()["inputs"]["cost"]["cost_wst"] == 75
+    p75 = client.get("/api/v1/economy/price", params=q).json()
+    assert p75["inputs"]["cost"]["cost_wst"] == 75 and p75["price_wst"] == 125.0, p75
 
     #  the waterfall changed: the next read of the price carries the new one
     new = {"owner": 0.10, "self_investment": 0.25, "capital_fund": 0.20, "user_projects": 0.15, "charity": 0.30}
@@ -79574,15 +79577,18 @@ def test_w939_p52_a_price_is_recomputed_on_read_and_is_null_while_an_input_is_ab
     a2 = client.get("/api/v1/economy/price", params=q).json()
     assert a2["inputs"]["waterfall"]["proportions"] != a0["inputs"]["waterfall"]["proportions"]
     assert a2["inputs"]["waterfall"]["proportions"] == client.get("/api/v1/economy/waterfall", params={"vsb_id": vid}).json()["waterfall"]
-    assert a2["inputs"]["waterfall"]["source"] == "owner_override" and a2["price_wst"] is None
+    #  W1123: the waterfall splits the profit the price leaves; it does not move the price
+    assert a2["inputs"]["waterfall"]["source"] == "owner_override" and a2["price_wst"] == 125.0, a2
+    assert a2["arithmetic"]["split_of_distributable_wst"] == {s: round(25.0 * v, 2) for s, v in new.items()}, a2["arithmetic"]
 
     #  the arithmetic is the Owner's, put with the recommendation where the Owner reads
-    assert pricing.ARITHMETIC is None, "a price arithmetic was set without the Owner's ruling"
+    #  W1123: the ruled arithmetic, its reserve rate read from the cycle and its margin set once
+    assert pricing.PLATFORM_MARGIN == 0.2 and pricing.reserve_rate() == 0.2 and pricing.RULING.startswith("OWNER RULING 2026-11-19")
     reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
     row = next((r for r in reg if r.get("title") == (
         "OWNER DECISION: what arithmetic turns an entity's declared cost and its waterfall into a price?")), None)
     #  W1120: RULED on 2026-11-19 (the formula, as recommended): the row is closed with the ruling, and the price
-    #  module is the row it names; until that round no arithmetic is set, as above
+    #  module is the row it names (FU-1279), which W1123 built, as above
     assert row and (row["status"], row.get("closed_by")) == ("done", "W1120") and row["close_note"].startswith("OWNER RULED 2026-11-19 (his recommendation accepted): "), row
     assert "RECOMMENDED: price = the declared cost / (1 - the prudential reserve rate" in row["why"]
     prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
@@ -91671,3 +91677,50 @@ def test_w1122_fu1054_the_calibration_sets_last_two_sources_are_read_and_its_six
     assert keep(k06["shown"]) == keep(live), (keep(k06["shown"]), keep(live))
     assert "NICE NG97" in live["standard"] and "2026-11-19" in live["standard"] and live["sources"][0]["read"] is True
     assert cal.runnable(the_set, on="2026-11-19")["runnable"] is True and cal.runnable(the_set, on="2026-11-15")["runnable"] is False
+
+
+def test_w1123_fu1279_a_price_is_the_declared_cost_by_the_ruled_formula_and_the_waterfall_splits_what_it_leaves(client):
+    """FU-1279 (W1123), P5.2. The Owner ruled on 2026-11-19 (FU-1185, the recommendation accepted): price = the
+    declared cost / (1 - the prudential reserve rate - a platform margin set once, 20%). Held here:
+    - the arithmetic is the ruled one: the reserve rate is the cycle's own default, read from the cycle, and the margin
+      is set once;
+    - a deliverable that costs 60 WST is priced at 100 WST: 20 WST to the reserve and 20 WST of distributable profit,
+      which the entity's waterfall splits stage by stage; a cost of 45 WST is priced at 75 WST;
+    - a deliverable with no declared cost has no price and says so; changing the waterfall changes the split and not
+      the price;
+    - reading a price posts nothing: the entity's books are what they were."""
+    import inspect
+    from agentic_core.api import pricing
+    from agentic_core.economy.metabolism import EconomicMetabolism
+    assert pricing.reserve_rate() == inspect.signature(EconomicMetabolism.run_cycle).parameters["reserve_rate"].default == 0.2
+    assert pricing.PLATFORM_MARGIN == 0.2 and pricing.RULING.startswith("OWNER RULING 2026-11-19 (FU-1185)")
+
+    est = client.post("/api/v1/genesis/establish", json={"problem": "w1123 a priced report", "ship_output": False,
+                                                          "name": "W1123 Priced"})
+    assert est.status_code == 200, est.text[:300]
+    vid = est.json()["vsb_id"]
+    d = client.post("/api/v1/deliverables/produce", json={"vsb_id": vid, "type": "report", "title": "W1123 report",
+                                                           "brief": "w1123 a report whose price is asked"})
+    assert d.status_code == 200, d.text[:300]
+    q = {"vsb_id": vid, "deliverable_id": d.json()["id"]}
+    none = client.get("/api/v1/economy/price", params=q).json()
+    assert none["price_wst"] is None and [m["input"] for m in none["missing"]] == ["cost"], none
+
+    books = lambda: EconomicMetabolism(vid, none["inputs"]["waterfall"]["entity_type"]).ledger.balances()
+    before = books()
+    assert client.post("/api/v1/economy/deliverable-cost", json={**q, "cost_wst": 60,
+                                                                 "made_of": "two days of one person's work, made up"}).status_code == 200
+    p = client.get("/api/v1/economy/price", params=q).json()
+    a = p["arithmetic"]
+    assert (p["price_wst"], a["cost_wst"], a["reserve_wst"], a["distributable_profit_wst"]) == (100.0, 60.0, 20.0, 20.0), a
+    wf = p["inputs"]["waterfall"]["proportions"]
+    assert a["split_of_distributable_wst"] == {s: round(20.0 * v, 2) for s, v in wf.items()}, a
+    assert books() == before, "reading a price posted something"
+
+    new = {"owner": 0.10, "self_investment": 0.25, "capital_fund": 0.20, "user_projects": 0.15, "charity": 0.30}
+    assert client.post("/api/v1/economy/waterfall", json={"vsb_id": vid, "proportions": new}).status_code == 200
+    p2 = client.get("/api/v1/economy/price", params=q).json()
+    assert p2["price_wst"] == 100.0 and p2["arithmetic"]["split_of_distributable_wst"] == {s: round(20.0 * v, 2) for s, v in new.items()}
+    assert client.post("/api/v1/economy/deliverable-cost", json={**q, "cost_wst": 45,
+                                                                 "made_of": "a day and a half, made up"}).status_code == 200
+    assert client.get("/api/v1/economy/price", params=q).json()["price_wst"] == 75.0

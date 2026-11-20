@@ -14,9 +14,9 @@ THE INPUTS, each named in every answer:
   override when set, else the form's template);
 - the entity's declared cost for the deliverable: a person's statement in WST, with what it is made of, who declared
   it and when. A later declaration supersedes an earlier one, which is kept;
-- the arithmetic that turns a cost and a waterfall into a price. The waterfall splits a profit; it does not set one,
-  so a margin or a target is needed that no ruling states. The question is the Owner's (an OWNER DECISION row, with
-  its recommendation). Until it is ruled every price is null, and the answer says so.
+- the arithmetic, as the Owner ruled on 2026-11-19 (FU-1185): price = the declared cost / (1 - the prudential
+  reserve rate - a platform margin set once, 20%). The reserve rate is the one a cycle applies by default, read from
+  the cycle. The waterfall splits the distributable profit the price leaves; it does not set the price (W1123).
 
 WHAT IS NOT FOR SALE (P5.5, W940) is read here from its one register (agentic_core/economy/not_for_sale.py): a
 deliverable that names an excluded capability - the faith content, the Fitrah Spectrum, or anything needing a
@@ -39,11 +39,36 @@ from agentic_core.auth.core import get_current_user, user_can_access
 router = APIRouter(prefix="/api/v1/economy", tags=["economy-pricing"])
 
 STORE = "deliverable_costs.json"
-#  the Owner's ruling on the arithmetic of a price: none yet. Until there is one, no price is computed.
-ARITHMETIC = None
-ARITHMETIC_UNRULED = ("the arithmetic that turns a declared cost and the waterfall into a price is not ruled: the "
-                      "waterfall splits a profit and does not set one, so a margin or a target is needed that no ruling "
-                      "states. It waits on the Owner's decision, so no price is computed")
+#  W1123 (FU-1279) - OWNER RULING 2026-11-19 (FU-1185, the recommendation accepted): price = the declared cost /
+#  (1 - the prudential reserve rate - a platform margin set once). The reserve rate is the one a cycle applies by
+#  default, read from EconomicMetabolism.run_cycle itself so the two never drift; the margin is set once, here.
+PLATFORM_MARGIN = 0.20
+RULING = ("OWNER RULING 2026-11-19 (FU-1185): price = the declared cost / (1 - the prudential reserve rate - a "
+          "platform margin set once, 20%)")
+
+
+def reserve_rate() -> float:
+    """The prudential reserve rate a cycle applies by default, read from the cycle itself, never typed here."""
+    import inspect
+    from agentic_core.economy.metabolism import EconomicMetabolism
+    return float(inspect.signature(EconomicMetabolism.run_cycle).parameters["reserve_rate"].default)
+
+
+def ARITHMETIC(cost_wst: float, waterfall: Dict[str, Any]) -> Dict[str, Any]:
+    """The ruled arithmetic: the price, and what it is made of - the cost, the reserve and the distributable profit the
+    entity's waterfall splits. The waterfall does not move the price; it splits what the price leaves."""
+    r, m = reserve_rate(), PLATFORM_MARGIN
+    price = round(cost_wst / (1.0 - r - m), 2)
+    reserve = round(price * r, 2)
+    distributable = round(price - cost_wst - reserve, 2)
+    return {"price_wst": price, "ruling": RULING, "reserve_rate": r, "platform_margin": m,
+            "reserve_rate_source": "the rate a cycle applies by default (EconomicMetabolism.run_cycle's reserve_rate)",
+            "cost_wst": round(float(cost_wst), 2), "reserve_wst": reserve, "distributable_profit_wst": distributable,
+            "split_of_distributable_wst": {s: round(distributable * float(share), 2) for s, share in waterfall.items()},
+            "basis": ("the price is the declared cost divided by one less the reserve rate and the platform margin. The "
+                      "entity's waterfall splits the distributable profit the price leaves and does not move the price; "
+                      "a cycle whose energy reading raises its reserve does not reprice, since the price reads the "
+                      "default rate. Virtual WST; nothing is sold, charged or posted.")}
 BASIS = ("A price is recomputed on every read from the inputs named here, and is null while any input is absent - "
          "never a default figure. Virtual WST; nothing is sold, charged or posted.")
 
@@ -114,10 +139,11 @@ def price_of(vsb_id: str, deliverable_id: str) -> Dict[str, Any]:
         missing.append({"input": "cost", "says": (
             "no cost has been declared for this deliverable (POST /api/v1/economy/deliverable-cost), and a "
             "deliverable whose cost is missing has no price")})
-    if ARITHMETIC is None:
-        missing.append({"input": "arithmetic", "says": ARITHMETIC_UNRULED})
-    price = None if missing else ARITHMETIC(cost["cost_wst"], m.waterfall)
-    return {"vsb_id": vsb_id, "deliverable_id": deliverable_id, "price_wst": price, "currency": "WST (virtual)",
+    priced = None if missing else ARITHMETIC(cost["cost_wst"], dict(m.waterfall))
+    arithmetic = priced or {"ruling": RULING, "reserve_rate": reserve_rate(), "platform_margin": PLATFORM_MARGIN,
+                            "basis": "no price until a cost is declared; this is the arithmetic it will be priced by"}
+    return {"vsb_id": vsb_id, "deliverable_id": deliverable_id, "price_wst": priced["price_wst"] if priced else None,
+            "currency": "WST (virtual)", "arithmetic": arithmetic,
             "inputs": {"waterfall": {"proportions": dict(m.waterfall), "source": m.waterfall_source,
                                      "entity_type": entity_type, "entity_type_source": et_source},
                        "cost": cost},
