@@ -26736,6 +26736,34 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Done in W1173b: the browser smoke waits, up to 20 seconds, for a route's required sections before it judges the page, so a section drawn once the page's own read answers is not reported missing because the read was slow; each must still appear, and one that never does is reported as before. Run twice here against one built copy of the tree, with the wait and as it stood, the smoke gave the same result: /native-ai drew both sections either way, and six failures of this machine's own (the Quran pages' reads answer 503 here; the marketplace shows no listing) were the same in both."
+    },
+    {
+      "id": "FU-1817",
+      "title": "OWNER: one solicitor's engagement before anyone but you is invited - the Law pages before any public release, and where other people's data may be kept",
+      "why": "Two questions the plan leaves to you: P5.11 rules that a qualified person's view of the Law pages comes before any public release, and P4.5 that where another person's data may be kept - the free Google Cloud regions are in the United States - is a solicitor's question, answered before anyone else's data is stored there. RECOMMENDED (accepted 2026-11-20, evening): one engagement covering both, booked once the first deploy is up; nothing is public, and no one but you is invited, until it has answered.",
+      "source": "W1174 (the Owner's decisions of the evening of 2026-11-20, recommendation 3)",
+      "found": "2026-11-20",
+      "files": [],
+      "severity": "medium",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-1818",
+      "title": "OWNER: five to eight short interviews with teachers or tutors, using the drafted scripts, before the first offer is chosen",
+      "why": "P5.7's working papers lead with one hypothesis - lesson plans and feedback that a teacher or tutor checks before use - and which offer comes first is yours, after the interviews; the seventh investment gate is a first offer the interviews support, and no interview is recorded in the tree. RECOMMENDED (accepted 2026-11-20, evening): five to eight short interviews with the drafted scripts, then choose; every public draft stays DRAFT - NOT APPROVED FOR PUBLICATION until then.",
+      "source": "W1174 (the Owner's decisions of the evening of 2026-11-20, recommendation 5)",
+      "found": "2026-11-20",
+      "files": [],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
     }
   ],
   "routes": [

@@ -22897,14 +22897,15 @@ def test_w499_the_plan_projects_only_the_work_a_round_closes(client):
     #  W1147 (FU-284): the last open row on a P4 item was closed, so the live schedule holds no owner-switch item
     #  and the marker would be unreachable from it. The schedule's property is checked on the live register with
     #  one made-up open row on P4.4, made from FU-284's own fields, so it never depends on a switch row being open.
+    #  W1174: P4.4 is done as the boundary it is, so the made-up open row stands on P4.1, which stays open
     _stand_in = dict(next(r for r in _reg["items"] if r["id"] == "FU-284"), id="FU-99147", status="open",
-                     closed_by=None, title="made-up for test_w499: an open row on a switch item")
+                     closed_by=None, slot="P4.1", title="made-up for test_w499: an open row on a switch item")
     #  W1156: a live row can ride a P4 item as well (FU-1294 rides P4.5, found by the release's rule), so the
     #  made-up row is held to add P4.4, and nothing else, to the items the live register already gives the Owner
     _live_switch = [x["slot"] for x in _schedule(_reg, _text)["schedule"] if x.get("delivered_by") == "owner-switch"]
     _sc = _schedule(dict(_reg, items=list(_reg["items"]) + [_stand_in]), _text)
     _switch_slots = [x["slot"] for x in _sc["schedule"] if x.get("delivered_by") == "owner-switch"]
-    assert "P4.4" in _switch_slots and sorted(_switch_slots) == sorted(set(_live_switch) | {"P4.4"}), (
+    assert "P4.1" in _switch_slots and sorted(_switch_slots) == sorted(set(_live_switch) | {"P4.1"}), (
         "the made-up switch row is not scheduled as the Owner's, or it moved another item", _switch_slots, _live_switch)
     assert all(x.startswith("P4.") for x in _switch_slots), _switch_slots
     assert all(x.get("delivered_by") == "build" for x in _sc["schedule"]
@@ -92050,7 +92051,7 @@ def test_w1126_fu1280_the_cost_model_marks_each_of_the_seven_gates_from_what_the
     auth, model = read("agentic_core/auth/core.py"), read("agentic_core/ai/native/model_resource.py")
     reg = {r["id"]: r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"]}
     flat = " ".join(read("docs/FABLE_DELIVERY_PROMPT.md").split())
-    p44 = flat[flat.index(" P4.4 Managed Postgres"):flat.index(" P4.5 Production deploy")]
+    p44 = flat[flat.index(" P4.4 ✅ DONE W1174 Managed Postgres"):flat.index(" P4.5 Production deploy")]   # W1174
     interviews = [p for p in (root / "docs").rglob("*") if p.is_file() and re.search(r"interview", p.name, re.I)]
     met = {
         "P4.1 sign-in": 'os.getenv("AUTH_ENABLED", "false")' not in auth
@@ -93738,7 +93739,7 @@ def test_w1147_fu284_the_database_packages_held_for_p44_are_gone_and_p44_is_a_da
                 hits += [(str(f.relative_to(root)), m.group(0)) for m in url.finditer(text)]
     assert not hits, ("live code reaches a database the Owner deferred", hits[:10])
     p44 = flat("docs/FABLE_DELIVERY_PROMPT.md")
-    p44 = p44[p44.index(" P4.4 Managed Postgres"):p44.index(" P4.5 Production deploy")]
+    p44 = p44[p44.index(" P4.4 ✅ DONE W1174 Managed Postgres"):p44.index(" P4.5 Production deploy")]   # W1174
     assert "DEFERRED BY THE OWNER (2026-10-12) AND RECORDED AS A BOUNDARY" in p44, p44[:200]
     assert ("W1147 (2026-11-20, FU-284): removed - sqlalchemy, sqlmodel and psycopg2-binary, and greenlet, which only "
             "sqlalchemy brought (175 pins became 171)") in p44
@@ -96255,3 +96256,67 @@ def test_w1173b_the_browser_smoke_waits_for_a_routes_required_sections_before_it
     rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
     fu = [r for r in rows if r.get("title", "").startswith("The browser smoke judged each page 1.2 seconds after")]
     assert len(fu) == 1 and (fu[0]["status"], fu[0]["closed_by"], fu[0]["because"]) == ("done", "W1173b", "built"), fu
+
+
+def test_w1174_the_owners_five_decisions_of_the_evening_of_2026_11_20_are_recorded_and_no_switch_is_on():
+    """W1174: the five recommendations the Owner accepted on the evening of 2026-11-20, recorded where the work reads
+    them (the first, seven regulator sites allowed in the environment's network, is the environment's own). Held here:
+    1. P4.3 and P4.6 are recorded as dated boundaries in the plan and in the vision's section 18, and P4.4 is marked
+       done as the boundary W1147 recorded; the three are done by W1174, and P4.1, P4.2 and P4.5 stay open with their
+       rulings: sign-in and the invited stage only on the private deployed machine, the deploy the Owner's;
+    2. no switch is on in the tree: sign-in, self-serve sign-up and outside models read off unless set, and real money
+       is False;
+    3. the solicitor's engagement and the interviews are rows for the Owner, named in the local-session notes, and the
+       plan's items name them;
+    4. the children's gate stays closed at P5.12 and P5.21."""
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.economy import owner_payments as _op
+    from agentic_core import plan_followups as pf
+    root = Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")       # noqa: E731
+    R = "OWNER RULING 2026-11-20 (evening; the recommendation accepted)"
+    plan = read("docs/FABLE_DELIVERY_PROMPT.md")
+    items = {i["slot"]: i for i in pf.plan_items(plan)}
+    blocks = pf._item_blocks(pf.delivery_plan_body(plan) or plan)
+    said = lambda slot: " ".join(blocks[slot].split())                # noqa: E731
+
+    #  1. the switches the plan completes as boundaries, and those that stay open
+    for slot in ("P4.3", "P4.4", "P4.6"):
+        assert items[slot]["done"] and items[slot]["done_by"] == "W1174", (slot, items[slot].get("done_by"))
+    for slot in ("P4.1", "P4.2", "P4.5"):
+        assert not items[slot]["done"], (slot, "a switch only the Owner's machine can take is marked done")
+    for slot in ("P4.3", "P4.6"):
+        assert f"{R}: RECORDED AS A §18 BOUNDARY, dated in the vision's section 18." in said(slot), slot
+    assert f"{R}: P4.4 is marked done as the boundary it is" in said("P4.4")
+    assert f"{R}: sign-in is switched on only on the Owner's private deployed machine" in said("P4.1")
+    assert f"{R}: the invited stage opens only on the Owner's private deployed machine" in said("P4.2")
+    assert f"{R}: the deploy is the Owner's, whenever it suits; no build waits on it." in said("P4.5")
+    vision = " ".join(read("docs/WORKSTATION_IDBO_WHOLE_VISION.md").split())
+    for what in ("outside AI models are a BOUNDARY, not a switch waiting to be flipped.",
+                 "real money is a BOUNDARY, not a switch waiting to be flipped."):
+        assert f"**Recorded W1174 (2026-11-20, the Owner's decision that evening) - {what}**" in vision, what
+
+    #  2. nothing switched on in the tree
+    auth, model = read("agentic_core/auth/core.py"), read("agentic_core/ai/native/model_resource.py")
+    assert 'os.getenv("AUTH_ENABLED", "false")' in auth and 'os.getenv("SELF_SERVE_SIGNUP_ENABLED", "false")' in auth
+    assert 'os.getenv("AI_ALLOW_EXTERNAL", "false")' in model and "AI_ALLOW_EXTERNAL=false" in read("Dockerfile")
+    assert _op.REAL_MONEY_ENABLED is False
+
+    #  3. the two rows for the Owner
+    reg = json.loads(read("docs/FOLLOWUPS.json"))["items"]
+    notes = read("docs/RESUME_ON_MY_MACHINE.md")
+    for start, slot in (("OWNER: one solicitor's engagement before anyone but you is invited", "P4.5"),
+                        ("OWNER: five to eight short interviews with teachers or tutors", "P5.7")):
+        rows = [r for r in reg if r.get("title", "").startswith(start)]
+        assert len(rows) == 1, (start, len(rows))
+        r = rows[0]
+        assert (r["status"], r["slot"], r["owner_gated"]) == ("open", "OWNER", True), r
+        assert r["source"].startswith("W1174 ") and "RECOMMENDED (accepted 2026-11-20, evening)" in r["why"], r["id"]
+        assert re.search(re.escape(r["id"]) + r"(?!\d)", notes), (r["id"], "the local notes do not name it")
+        assert f"({r['id']})" in said(slot), (r["id"], slot, "the plan's item does not name it")
+
+    #  4. the children's gate
+    assert f"{R}: the children's gate stays closed." in said("P5.12")
+    assert f"{R}: the tools are built and held, as ruled; the gate stays closed" in said("P5.21")

@@ -1173,6 +1173,13 @@ DEFERRED it on 2026-10-12 until a measured need exists (delivery-plan P4.4): the
 what runs, and nothing measured calls for more. The three database packages held for it were removed (W1147),
 so no store, route or deploy step offers a database. A need that is measured later reopens it as a ruling of
 its own.
+**Recorded W1174 (2026-11-20, the Owner's decision that evening) - outside AI models are a BOUNDARY, not a switch
+waiting to be flipped.** AI_ALLOW_EXTERNAL stays off (delivery-plan P4.3). Its condition is the Owner's own key and
+the in-house-first order proven by test, with outside models as accelerants only; until the Owner rules again, the
+native floor and the owned model are what serve, and no round switches it on.
+**Recorded W1174 (2026-11-20, the Owner's decision that evening) - real money is a BOUNDARY, not a switch waiting
+to be flipped.** REAL_MONEY_ENABLED stays off (delivery-plan P4.6). Its condition is a compliance and KYC review by
+qualified people, which no agent stands in for; every economy figure stays virtual WST until then.
 
 *(The progress addenda formerly numbered §16.3 and §16.4 — the Rounds 11–12 reconciliation and the
 §6 architecture-vs-practice correction, W363–W380 — are preserved verbatim in git history and in

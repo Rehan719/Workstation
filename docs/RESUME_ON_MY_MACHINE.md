@@ -82,4 +82,9 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
   - At the first deploy, an uptime check on `/health` from your own cloud account, beside the billing alert
     (FU-1095).
   - What no round takes (ruling of 2026-11-19): the deploy on your Google Cloud project, the external-model key,
-    and real money, which stays off until a compliance and KYC review by qualified people.
+    and real money, which stays off until a compliance and KYC review by qualified people. On the evening of
+    2026-11-20 you recorded outside models and real money as dated boundaries (P4.3, P4.6), so P4 completes
+    without either being switched on.
+  - One solicitor's engagement before anyone but you is invited (FU-1817): the Law pages before any public
+    release, and where other people's data may be kept.
+  - Five to eight short interviews with teachers or tutors before the first offer is chosen (FU-1818).
