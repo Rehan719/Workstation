@@ -3,7 +3,7 @@
 When you want to continue locally, open Claude Code (Claude Opus 5.5) **in your local clone** (`~\Workstation`)
 and paste the block below as your first message. Nothing else is needed.
 
-Updated 2026-11-21 (W1131, W1164, W1184, W1187). The cloud session works in 8-hour cycles into December, until the plan's
+Updated 2026-11-21 (W1131, W1164, W1184, W1187, W1188). The cloud session works in 8-hour cycles into December, until the plan's
 build items are closed and the final audit has run (2026-12-31 at the latest), and pushes to `main-l1fsqo`. While
 it runs, the local session works on a branch of its own (step 1), so the two never push to the same branch.
 
@@ -37,17 +37,11 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
    FU-1005 were done here on 2026-11-20 (W1133l, W1133m), and are closed:
    - FU-1165: as I answered on 2026-11-20, register my two ventures, Atmospheric Harvest Solutions and Aerius
      Energy Harvest, fresh in the new books, then name each in Settings, Protected enterprises, once it exists.
-   - FU-1054: the Care reviewer's first calibration run, with the local model on (this machine's default). Start
-     the backend and read GET /api/v1/review/calibration/care-reviewer: it gives the server's date and the days
-     the set can be run (2026-11-19 through 2027-01-10 as the register stands). Then POST
-     /api/v1/review/calibration/agent-run with {"discipline": "care", "date": that date}. It asks the model
-     sixteen times, so give the request an hour; if the client gives up first, read the same GET once the server
-     has finished. Nothing made where no model serves is a run: if the floor answers any case, the route keeps
-     nothing, and a run typed through /calibration/run counts for nothing. Then run python
-     scripts/calibration_results.py export and then check, run test_w1184, and commit
-     docs/CARE_REVIEW_CALIBRATION_RESULTS.json on your branch and push it. Leave FU-1054 open: the cloud session
-     closes it from the committed file, with the run's id, date, model and build and its two rates with their
-     counts, whether or not it met the bar, and takes this step out of step 5 and the plan's list.
+   (FU-1054's step here was done on 2026-11-21 and the row is closed (W1188): the run, cal-8c7430765c, was
+   committed from this machine (c657e2a7) and merged in the cloud session at c76809a8. It left five cases
+   unanswered, so it calibrates nothing, and it did not meet the bar; the reviewer stays uncalibrated. As I
+   ruled that morning, the row closed on it all the same, and what it missed is FU-1831, which the cloud
+   session works on.)
    (FU-1286's step here was done on 2026-11-20 and the row is closed (W1180): venv/ was untracked (7afa4aa9), the
    folder kept on this disk, and merged in the cloud session at 07fb9817. The three one-off command permissions
    in .claude/settings.json that named my home folder were removed in the cloud session the same day, W1176.)
@@ -87,7 +81,7 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
 - **Still yours:**
   - Merge PR #466 when you are ready, or ask the cloud session to merge it once green, as you did for
     PR #463 and PR #465.
-  - The rows in step 5: FU-1165 and FU-1054, a step each there.
+  - The row in step 5: FU-1165, a step there.
   - One line in `.env` on your machine for the legal matter's folder (step 3 of the prompt), if the local
     session has not added it.
   - Sending the two permission letters in `docs/letters/` (FU-1188).
@@ -109,3 +103,8 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
   cloud session (W1176); the pinned fidelity ledgers and `_archive/` stay as they are; and the audit record
   (docs/fidelity_runs/ledger_v14_W639_375c5ffb.json) was edited in the cloud session on 2026-11-20, on your
   go-ahead naming it (W1175).
+- **Settled on 2026-11-21:** the Care reviewer's first calibration run (FU-1054, closed W1188), made on your
+  machine through the agent's own door with the local model (llama3.2): run cal-8c7430765c left five cases
+  unanswered, caught 5 of 10 planted cases and raised 4 false alarms in 6 clean ones, so it calibrates nothing
+  and the reviewer is uncalibrated. It was committed (c657e2a7) and merged at c76809a8, and what it missed is
+  FU-1831.

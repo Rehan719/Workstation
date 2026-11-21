@@ -92380,7 +92380,7 @@ def test_w1131_the_local_prompt_names_every_row_waiting_on_the_owner_and_keeps_o
     assert unnamed == [], ("a row waits on the Owner and the local notes do not name it", unnamed)
     #  the summary and the steps agree: each row the summary sends to step 5 is a step of its own there
     step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
-    sent = re.search(r"The rows in step 5: (.+?)\.", flat)
+    sent = re.search(r"The rows? in step 5: (.+?)\.", flat)   # W1188: one row is left
     assert sent, "the summary does not say which rows step 5 carries"
     ids = re.findall(r"FU-\d+", sent.group(1))
     #  W1164 - the rows step 5 names are open ones: four the local session did on 2026-11-20 stood there after
@@ -95424,7 +95424,7 @@ def test_w1164_the_owners_ten_decisions_of_2026_11_20_are_recorded_and_the_water
             "final audit has run (2026-12-31 at the latest)") in flat
     step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
     steps = re.findall(r"^   - (FU-\d+):", step5, re.M)
-    assert steps == ["FU-1165", "FU-1054"], steps   # W1180: FU-1286 closed; W1184: FU-1054's run is the Owner's
+    assert steps == ["FU-1165"], steps   # W1180: FU-1286 closed; W1188: FU-1054 closed on its first run
     assert all(reg[s]["status"] == "open" for s in steps), steps
     assert "register my two ventures, Atmospheric Harvest Solutions and Aerius Energy Harvest, fresh in the new books" \
            in " ".join(step5.split()), "step 5 does not carry the Owner's answer on the two ventures"
@@ -96748,9 +96748,10 @@ def test_w1180_fu1286_is_closed_once_each_of_its_five_places_is_settled():
     flat = " ".join(notes.split())
     step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
     #  W1184 - FU-1054's run joined step 5 once the row waited on the Owner's machine
-    assert re.findall(r"^   - (FU-\d+):", step5, re.M) == ["FU-1165", "FU-1054"] and "git rm -r --cached venv" not in step5
-    assert "The rows in step 5: FU-1165 and FU-1054, a step each there." in flat and "FU-1286" not in flat.split(
-        "The rows in step 5:", 1)[1].split(".", 1)[0]
+    #  W1188 - FU-1054 closed on its first run, and its step left step 5
+    assert re.findall(r"^   - (FU-\d+):", step5, re.M) == ["FU-1165"] and "git rm -r --cached venv" not in step5
+    assert "The row in step 5: FU-1165, a step there." in flat and "FU-1286" not in flat.split(
+        "The row in step 5:", 1)[1].split(".", 1)[0]
     assert ("**Settled on 2026-11-20:** the five places that named your Windows home folder (FU-1286, closed W1180)"
             in flat), "the notes do not say the row is closed"
     yours = flat.split("**Still yours:**", 1)[1].split("**Settled on 2026-11-20:**", 1)[0]
@@ -98106,3 +98107,177 @@ def test_w1187_the_owners_five_decisions_of_2026_11_21_are_recorded_and_the_cali
              fu["why"].split(R, 1)[1], reg["FU-1817"]["why"].split(R, 1)[1], also["title"], also["why"],
              still.split("(Five put on the morning of 2026-11-21", 1)[1][:1000]]
     assert [m.group(0) for t in texts for m in [word.search(t)] if m] == []
+
+
+def test_w1188_fu1054_is_closed_on_the_care_reviewers_first_run_and_what_it_missed_is_a_row(tmp_path, monkeypatch):
+    """W1188, as the Owner ruled on 2026-11-21: FU-1054 closes on the first run's results, pass or fail; a failing run
+    leaves the reviewer UNCALIBRATED with its rates shown, and its misses become a row. The first run, cal-8c7430765c,
+    was made on the Owner's machine that morning, committed (c657e2a7) and merged (c76809a8). Held here:
+    1. the results file holds that run, which check_results passes, made through the agent's own door with a model
+       serving on the set as it stands; score() gives it 5 of 10 planted cases caught and 4 of 6 clean ones flagged;
+    2. FU-1054 is closed by W1188 as built, and its close note says the run id, the date and times, the model and
+       build, the set, both rates with their counts as score() gives them, the five cases the run left unanswered and
+       that it so calibrates nothing, that the bar (in the run's own words) was not met, where the reviewer is
+       UNCALIBRATED and what a released machine's counting of it is, the commit and the merge, and the row its misses
+       became;
+    3. that row is open on P5.15 and what it says agrees with the run, read from the run: its title's counts, the cases
+       caught, missed and flagged though clean, the five answered in a form the reviewer does not read and which cases
+       reading them would have changed, the case flagged for the wrong reason, the case that answered 'FLAG: none'
+       beside seven reasons, the reason named on 15 of the 16 cases, and the clean case flagged for all nine; its NEXT
+       moves no bar and counts no line in another form;
+    4. FU-1819's condition no longer waits on FU-1054's run;
+    5. the run counts only on the machine whose own record holds it, and calibrates nothing there: with this machine's
+       record empty the reviewer is UNCALIBRATED, never run, and with the run in a machine's own record it is
+       UNCALIBRATED, the run having left five cases unanswered, with both rates and their counts;
+    6. the step left step 5 of the local notes and the plan's list of what is with the Owner, each saying it was done
+       and what the run did, with the merge it came in by, and the notes say it is settled."""
+    import datetime as _dt
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.api import _review_calibration as cal
+    root = Path(__file__).resolve().parents[1]
+    MERGE = "c76809a8"
+    WORD = {4: "four", 5: "five", 16: "sixteen"}
+    words = lambda ids: ", ".join(ids[:-1]) + " and " + ids[-1]
+
+    #  1. the run the tree holds
+    doc = json.loads((root / cal.RESULTS["care"]).read_bytes().decode("utf-8"))
+    assert cal.check_results(doc) == [], cal.check_results(doc)
+    run = next(r for r in doc["runs"] if r["run_id"] == "cal-8c7430765c")
+    the_set = cal.load_set("care")
+    assert (run["door"], run["configuration"], run["agent"], run["date"]) == (
+        cal.AGENT_DOOR, "model", "care-reviewer", "2026-11-21"), run["run_id"]
+    assert (run["set_version"], run["set_digest"]) == (the_set["version"], cal.set_digest(the_set)), "another set"
+    s = cal.score(the_set["cases"], run["flags"])
+    assert (s["caught"], s["planted_cases"], s["false_alarms"], s["clean_cases"], s["meets_bar"]) == (5, 10, 4, 6, False)
+    ident = run["served_identity"]
+    na = words(run["not_answered"])
+
+    #  2. FU-1054's close
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    fu = reg["FU-1054"]
+    assert (fu["status"], fu["closed_by"], fu.get("because")) == ("done", "W1188", "built"), fu["status"]
+    note = fu.get("close_note") or ""
+    for said in ("Closed on its first run's results, as the Owner ruled on 2026-11-21: run cal-8c7430765c",
+                 f"on {run['date']} ({run['started_at'][11:]} to {run['finished_at'][11:]})",
+                 "through the agent's own door (POST /api/v1/review/calibration/agent-run)",
+                 f"({run['model']}, serving {ident['model']}, build {ident['build_digest']}, on {ident['processor']})",
+                 f"on set {the_set['version']} ({s['planted_cases']} planted cases, {s['clean_cases']} clean)",
+                 f"Catch rate {s['caught']} of {s['planted_cases']} (50%); false-alarm rate {s['false_alarms']} of "
+                 f"{s['clean_cases']} (66.7%).",
+                 f"The run did not answer {na} with one of the set's reasons or 'FLAG: none', so it calibrates nothing, "
+                 f"and the bar, {run['score']['bar']}, was not met. On the machine whose own record holds the run the "
+                 "reviewer is UNCALIBRATED",
+                 "on a machine whose own record does not hold it the run counts for nothing, and whether a released "
+                 "machine counts it is part of release, the Owner's switch.",
+                 f"committed from that machine (c657e2a7) and merged at {MERGE};",
+                 "check_results finds nothing wrong with it."):
+        assert said in note, ("the close note does not say", said)
+    _w = cal.runnable_window(the_set)
+    assert _w and f"while the set can be run (through {_w['through']} as the register stands)" in note, note[:300]
+    m = re.search(r"What it missed is (FU-\d+)\.$", note)
+    assert m, note[-160:]
+    miss = reg[m.group(1)]
+
+    #  3. the row the misses became, held to the run
+    assert (miss["status"], miss["slot"], miss["owner_gated"]) == ("open", "P5.15", False) or miss["status"] == "done"
+    assert miss["title"] == (f"The Care reviewer's first calibration run did not meet the bar: "
+                             f"{WORD[len(s['missed'])]} planted cases missed and {WORD[s['false_alarms']]} clean ones "
+                             "flagged"), miss["title"]
+    why = miss["why"]
+    missed = [x["case"] for x in s["missed"]]
+    caught = sorted(c["id"] for c in the_set["cases"] if c.get("planted") and c["id"] not in missed)
+    assert f"caught {s['caught']} of {s['planted_cases']} planted cases ({words(caught)})" in why, why[:300]
+    alarms = s["false_alarm_cases"]
+    #  a clean case passed when the run answered it and flagged nothing; K06 was not answered at all
+    passed = [c["id"] for c in the_set["cases"] if not c.get("planted") and c["id"] not in alarms
+              and c["id"] not in run["not_answered"]]
+    assert len(passed) == 1, passed
+    assert f"flagged {s['false_alarms']} of {s['clean_cases']} clean ones ({words(alarms)}; {passed[0]} alone passed)" in why
+    assert f"Five cases ({na}) were answered with a bare 'FLAG:'" in why and len(run["not_answered"]) == 5
+    for cid in run["not_answered"]:
+        lines = run["per_case"][cid]["lines_not_read_as_flags"]
+        assert lines[0].strip() == "FLAG:" and all(ln.lstrip().startswith("- ") for ln in lines[1:]), (cid, lines)
+    #  what reading the bullets would have changed, counted here from the lines themselves
+    allowed = {c["must_flag"] for c in the_set["cases"] if c.get("must_flag")}
+    read = {cid: [ln.lstrip()[2:].strip().lower() for ln in run["per_case"][cid]["lines_not_read_as_flags"][1:]]
+            for cid in run["not_answered"]}
+    w = cal.score(the_set["cases"], {**run["flags"], **{cid: [r for r in rs if r in allowed] for cid, rs in read.items()}})
+    assert (w["caught"], w["false_alarms"], w["meets_bar"]) == (6, 5, False), w
+    gained = sorted({x["case"] for x in s["missed"]} - {x["case"] for x in w["missed"]})
+    new_alarms = sorted(set(w["false_alarm_cases"]) - set(alarms))
+    assert len(gained) == len(new_alarms) == 1, (gained, new_alarms)
+    assert (f"{gained[0]} would have been caught and {new_alarms[0]} would have been a false alarm, "
+            f"{w['caught']} of {w['planted_cases']} and {w['false_alarms']} of {w['clean_cases']}, still below the bar") in why
+    assert s["flagged_for_the_wrong_reason"] == ["C05"] and "C05 was flagged, but not for its own reason." in why
+    assert (run["per_case"]["C06"]["said_none"] is True and len(run["flags"]["C06"]) == 7 and "C06" in caught
+            and "C06, counted caught, answered 'FLAG: none' and seven of the set's reasons in the same reply." in why)
+    role = [cid for cid, x in run["per_case"].items() if "professional role claimed" in (run["flags"].get(cid) or [])
+            or any("professional role claimed" in str(ln).lower() for ln in x.get("lines_not_read_as_flags") or [])]
+    assert len(role) == 15 and len(run["per_case"]) == 16, len(role)
+    assert sorted(run["flags"]["K01"]) == sorted(allowed) and len(allowed) == 9, run["flags"]["K01"]
+    assert ("named 'professional role claimed' on 15 of the 16 cases and flagged all nine reasons on K01, a clean "
+            "case") in why
+    assert "(a bare 'FLAG:' line with bullets beneath it; 'FLAG: none' beside reasons)" in why
+    assert "Nothing here moves the bar, and no line in another form is counted." in why
+
+    #  4. FU-1819's condition
+    w1819 = reg["FU-1819"]["why"]
+    assert "until FU-1054's run calibrates the agent" not in w1819, "FU-1819 still waits on FU-1054's run"
+    assert ("nothing it writes counts until a run of the agent's own calibrates it: the first, FU-1054's "
+            f"(cal-8c7430765c), did not (W1188), and the next is {miss['id']}'s.") in w1819, w1819[-220:]
+
+    #  5. it counts only on the machine whose own record holds it, and calibrates nothing there
+    monkeypatch.setattr(cal, "_today", lambda: _dt.date.fromisoformat(_w["from"]))
+    empty = tmp_path / "here" / "review_calibration_runs.json"
+    empty.parent.mkdir()
+    monkeypatch.setattr(cal, "_runs_path", lambda: empty)
+    here = cal.calibration_statement("care-reviewer")
+    assert (here["calibrated"], here["reason"], here["label"], here["rates"]) == (False, "never_run", "Uncalibrated",
+                                                                                 None), here
+    theirs = tmp_path / "theirs" / "review_calibration_runs.json"
+    theirs.parent.mkdir()
+    theirs.write_text(json.dumps([{k: v for k, v in run.items() if k != "score"}], indent=1), encoding="utf-8")
+    monkeypatch.setattr(cal, "_runs_path", lambda: theirs)
+    there = cal.calibration_statement("care-reviewer")
+    assert (there["calibrated"], there["label"]) == (False, "Uncalibrated"), there
+    #  the run did not answer five cases, so the reason given is that; its rates are still shown, with their counts
+    assert there["reason"] == "not_answered" and there["rates"] and (
+        there["rates"]["caught"], there["rates"]["planted_cases"], there["rates"]["false_alarms"],
+        there["rates"]["clean_cases"]) == (5, 10, 4, 6), there
+
+    #  6. the local notes and the plan's list
+    notes = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
+    assert "   - FU-1054:" not in step5 and re.findall(r"^   - (FU-\d+):", step5, re.M) == ["FU-1165"], step5[:300]
+    flat = " ".join(notes.split())
+    for said in ("(FU-1054's step here was done on 2026-11-21 and the row is closed (W1188): the run, cal-8c7430765c, "
+                 f"was committed from this machine (c657e2a7) and merged in the cloud session at {MERGE}.",
+                 "It left five cases unanswered, so it calibrates nothing, and it did not meet the bar; the reviewer "
+                 "stays uncalibrated.",
+                 f"what it missed is {miss['id']}, which the cloud session works on.)",
+                 "The row in step 5: FU-1165, a step there.",
+                 "**Settled on 2026-11-21:** the Care reviewer's first calibration run (FU-1054, closed W1188), made on "
+                 "your machine through the agent's own door with the local model (llama3.2): run cal-8c7430765c left "
+                 f"five cases unanswered, caught {s['caught']} of {s['planted_cases']} planted cases and raised "
+                 f"{s['false_alarms']} false alarms in {s['clean_cases']} clean ones, so it calibrates nothing and the "
+                 "reviewer is uncalibrated.",
+                 f"It was committed (c657e2a7) and merged at {MERGE}, and what it missed is {miss['id']}."):
+        assert said in flat, ("the notes do not say", said[:90])
+    fable = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    still = " ".join(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0].split())
+    assert "FU-1054" not in still, "the plan's list still names the closed row"
+    for said in ("(The Care reviewer's first calibration run was made on your machine on 2026-11-21, with the local "
+                 f"model on, and its results committed (c657e2a7); the cloud session merged them ({MERGE}).",
+                 f"It left {WORD[len(run['not_answered'])]} of its {WORD[len(run['per_case'])]} cases unanswered, "
+                 f"caught {s['caught']} of {s['planted_cases']} planted cases and raised {s['false_alarms']} false "
+                 f"alarms in {s['clean_cases']} clean ones, so it calibrates nothing and the reviewer stays "
+                 "UNCALIBRATED.", "its row closed on that run (W1188)"):
+        assert said in still, ("the plan's list does not say", said[:90])
+
+    #  no new text gives the Owner a pronoun
+    word = re.compile(r"\b(?:he|his|him|himself)\b", re.I)
+    texts = [note, miss["title"], why, w1819, flat.split("(FU-1054's step here was done", 1)[1][:600],
+             flat.split("**Settled on 2026-11-21:**", 1)[1][:700], still.split("(The Care reviewer's first", 1)[1][:600]]
+    assert [m_.group(0) for t in texts for m_ in [word.search(t)] if m_] == []
