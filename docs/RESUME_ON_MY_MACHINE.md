@@ -3,7 +3,7 @@
 When you want to continue locally, open Claude Code (Claude Opus 5.5) **in your local clone** (`~\Workstation`)
 and paste the block below as your first message. Nothing else is needed.
 
-Updated 2026-11-21 (W1131, W1164, W1184, W1187, W1188). The cloud session works in 8-hour cycles into December, until the plan's
+Updated 2026-11-21 (W1131, W1164, W1184, W1187, W1188, W1190). The cloud session works in 8-hour cycles into December, until the plan's
 build items are closed and the final audit has run (2026-12-31 at the latest), and pushes to `main-l1fsqo`. While
 it runs, the local session works on a branch of its own (step 1), so the two never push to the same branch.
 
@@ -18,7 +18,8 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
    audit has run; 2026-12-31 at the latest) it may still be pushing to main-l1fsqo, so do not push there: work on a
    branch of your own named local-owner (if it exists, check it out and merge origin/main-l1fsqo into it;
    otherwise create it from origin/main-l1fsqo), push that branch, and open its own pull request.
-   Once the cycles have stopped: if the open pull request from main-l1fsqo (PR #466 from 2026-11-21) is merged,
+   Once the cycles have stopped: if the open pull request from main-l1fsqo (the one opened after PR #466 was
+   merged on 2026-11-21) is merged,
    work on main (git checkout main && git pull); otherwise git checkout main-l1fsqo && git pull origin
    main-l1fsqo, and keep pushing there. Never push to main without me.
 2. Read, in this order: docs/REMAINING_WORK_MEASURED.md (every open item, measured 2026-11-10),
@@ -40,8 +41,9 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
    (FU-1054's step here was done on 2026-11-21 and the row is closed (W1188): the run, cal-8c7430765c, was
    committed from this machine (c657e2a7) and merged in the cloud session at c76809a8. It left five cases
    unanswered, so it calibrates nothing, and it did not meet the bar; the reviewer stays uncalibrated. As I
-   ruled that morning, the row closed on it all the same, and what it missed is FU-1831, which the cloud
-   session works on.)
+   ruled that morning, the row closed on it all the same, and what it missed is FU-1831: the cloud session
+   makes its three fixes, and the second run is made from this machine before 2027-01-10, with a larger local
+   model, as I ruled that afternoon.)
    (FU-1286's step here was done on 2026-11-20 and the row is closed (W1180): venv/ was untracked (7afa4aa9), the
    folder kept on this disk, and merged in the cloud session at 07fb9817. The three one-off command permissions
    in .claude/settings.json that named my home folder were removed in the cloud session the same day, W1176.)
@@ -61,15 +63,16 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
 ## What the cloud session left (the short version)
 
 - **All work is in git.** PR #462 (rounds W785–W1118) was merged into `main` on 2026-11-19, PR #463 (rounds
-  W1119–W1175) on 2026-11-20 and PR #465 (rounds W1176–W1184) on 2026-11-21, each on your instruction; the cloud
-  session merged #463 and #465 at your request, each with all six checks green. Later rounds are on
-  `main-l1fsqo`, carried by **PR #466**.
+  W1119–W1175) on 2026-11-20, and PR #465 (rounds W1176–W1184) and PR #466 (rounds W1185–W1189) on 2026-11-21,
+  each on your instruction or decision; the cloud session merged #463, #465 and #466, each with all six checks
+  green. Later rounds are on `main-l1fsqo`, carried by the pull request opened after #466 was merged.
 - **The plan,** on 2026-11-20: 97 of 119 items done (P1 18/18 · P2 39/41 · P3 30/32 · P4 3/6 · P5 7/22). P2.40 and P2.41
   have every row closed, and close on the final audit. The current figures are the PLAN NOW block of
   `docs/FABLE_DELIVERY_PROMPT.md`.
 - **Measured remaining work,** on 2026-11-10: about 214–392 rounds across the 32 items then open, most of it in the
-  fifth phase (143–265). Much of that phase is ruled to come after sign-in (P4.1), which now proceeds without
-  waiting on you, and the final audit runs after it. Details per item in `docs/REMAINING_WORK_MEASURED.md`.
+  fifth phase (143–265). Much of that phase is ruled to come after sign-in (P4.1), which is your switch, made in
+  the release machine's own settings at its first deploy, together with its domain and HTTPS; the final audit
+  runs after the fifth phase and the sign-in readiness round. Details per item in `docs/REMAINING_WORK_MEASURED.md`.
 - **Owner rulings in force:** those recorded in the plan, including 2026-11-06 (five decisions taken as
   recommended), 2026-11-10 (decisions go with the recommendation; PR #461 merged), 2026-11-19 (twenty-two
   recommendations accepted; the six switches proceed in the ruled order, each once its pre-flight is built and
@@ -77,19 +80,35 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
   decisions put to you, each taken as recommended; among them, the cycles run into December) and 2026-11-21
   (five decisions taken as recommended: PR #465 merged once green; how the Care reviewer's calibration run
   counts, when FU-1054 closes, and that a case flagged for its own reason and others is caught; P5.18
-  clause 4's comparison of named finance products kept closed).
+  clause 4's comparison of named finance products kept closed; and that afternoon, six more taken as
+  recommended: the release machine to open a port to the internet only with its domain, HTTPS and sign-in on,
+  the domain bought before the first deploy and sign-in your switch; your second calibration run, with a larger
+  local model (seven to eight billion parameters if your machine has about 16 GB of memory), once the cloud
+  session's three fixes have landed and before 2027-01-10; the Care review item to close when its clauses are
+  built and its rows closed, calibrated or not; PR #466 merged by the cloud session once W1189's checks were
+  green; the four test-runner faults whose cause was never found to close as not reproduced after twenty
+  consecutive green CI runs; and your letters to be sent in the week from 21 November, the Quran platform item
+  carrying into January if no written permission for recordings has come by 15 December).
 - **Still yours:**
-  - Merge PR #466 when you are ready, or ask the cloud session to merge it once green, as you did for
-    PR #463 and PR #465.
+  - Merge the open pull request from `main-l1fsqo` when you are ready, or ask the cloud session to merge it
+    once green, as you did for PR #463, PR #465 and PR #466.
   - The row in step 5: FU-1165, a step there.
   - One line in `.env` on your machine for the legal matter's folder (step 3 of the prompt), if the local
     session has not added it.
-  - Sending the two permission letters in `docs/letters/` (FU-1188).
-  - Sending the request to the Quranic Audio Dataset's authors, also in `docs/letters/` (FU-1283).
+  - Sending the two permission letters in `docs/letters/` (FU-1188), in the week from 21 November.
+  - Sending the request to the Quranic Audio Dataset's authors, also in `docs/letters/` (FU-1283), in the week
+    from 21 November.
   - At the first deploy, restoring the data disk once from its snapshot, watching (FU-1288).
-  - Buying a domain for the release machine and pointing it at the machine's fixed address (FU-1289).
+  - Buying a domain for the release machine before the first deploy and pointing it at the machine's fixed
+    address (FU-1289): without it the machine is to publish no port (P4.1).
   - At the first deploy, an uptime check on `/health` from your own cloud account, beside the billing alert
     (FU-1095).
+  - At the first deploy, setting the admin password on the release machine and switching sign-in on in its own
+    settings (P4.1; the setting W1191 adds), so that it answers from its first boot with its domain, HTTPS and
+    sign-in on; the password and the signing secret stay on the machine, never in the repository.
+  - Your second calibration run of the Care reviewer, on your machine with a larger local model (seven to eight
+    billion parameters, such as llama3.1:8b, if your machine has about 16 GB of memory), when the cloud session
+    says its three fixes have landed, and before 2027-01-10 (FU-1831, P5.15).
   - What no round takes (ruling of 2026-11-19): the deploy on your Google Cloud project, the external-model key,
     and real money, which stays off until a compliance and KYC review by qualified people. On the evening of
     2026-11-20 you recorded outside models and real money as dated boundaries (P4.3, P4.6), so P4 completes
