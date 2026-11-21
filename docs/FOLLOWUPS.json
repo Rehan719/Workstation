@@ -26864,10 +26864,32 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.15",
+      "status": "done",
+      "closed_by": "W1185",
+      "note": "",
+      "slot_source": "P5.15: what the cloud can still do for it once FU-1054 waits on the Owner's machine (FU-1054's plan, W1184)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1185: one card on the Care page states the four Care tools' tiers of review together, each line its tool's answer from GET /api/v1/review-options in the server's words (its tier and basis, and the reviewer agent's calibration with its rates once it has a run), a failed read said on its own tool's line; and the safeguarding route's answer to a concern about a child or young person carries the tool's tier through review_said(), the one function every composed answer's tier now comes by, with no call said to have served it and nothing else of what it says or routes to changed. test_w1185 drives it, and CareHub.test.tsx renders each line, each failure and the answer's tier."
+    },
+    {
+      "id": "FU-1824",
+      "title": "Under a safeguarding answer the tier box and the provenance badge are drawn above the emergency line, the first thing a person reporting a concern is to read",
+      "why": "DomainTool (apps/workstation-superapp/src/components/DomainTool.tsx) draws an answer's provenance badge in its header and its tier of review (domain-review-tier) above its text, so under the safeguarding route's answer the 999 line is drawn after both. care.py types that line (IMMEDIATE_DANGER_FIRST, W676) as the first thing a person reporting a safeguarding concern reads. Since W1185 the answer to a concern about a child or young person carries the tool's tier, so the box is drawn above its emergency line too, as it already was above the adult answer's. NEXT: the emergency line is the first thing drawn under a safeguarding answer (the tier box after the text there), pinned by order in CareHub.test.tsx.",
+      "source": "W1185 (its review: the child-concern answer's tier box drawn above its emergency line)",
+      "found": "2026-11-21",
+      "files": [
+        "apps/workstation-superapp/src/components/DomainTool.tsx",
+        "apps/workstation-superapp/src/pages/domains/CareHub.tsx",
+        "apps/workstation-superapp/src/pages/domains/CareHub.test.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.13",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P5.15: what the cloud can still do for it once FU-1054 waits on the Owner's machine (FU-1054's plan, W1184)"
+      "slot_source": "P5.13: in Care the first line is the route to a person (W676, which typed the emergency line as the first thing a person reporting a safeguarding concern reads)"
     }
   ],
   "routes": [

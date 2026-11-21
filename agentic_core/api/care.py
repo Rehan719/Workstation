@@ -20,6 +20,7 @@ import functools
 from agentic_core.api._ai_provenance import (ai_text as _ai_text, person_said, disclaimer_for, MATERIAL_SLOT,
                                              one_line, person_material, material_cut_said)
 from agentic_core.api._ai_provenance import note_withheld      # the coverage figure follows the text returned
+from agentic_core.api._ai_provenance import no_reply_evidence, review_said   # W1185 - an answer nothing composed
 
 #  W637 (FU-597) — this router's domain, bound once. Every ai_text call below carries it, so the native floor
 #  prints the real domain instead of "the request named no domain".
@@ -380,7 +381,12 @@ async def safeguarding_triage(req: SafeguardingRequest):
             "composed": False,
             "composed_basis": ("a child's concern goes to the children's route; nothing about it was sent to a "
                                "composer and nothing was written about it"),
-            "ai_provenance": None,
+            #  W1185 (FU-1823, P5.15) - THE TOOL'S TIER OF REVIEW IS SAID UNDER THIS ANSWER, as under every Care
+            #  answer: it carried no provenance, so no tier was said under it. The tier comes by the one function
+            #  every Care answer's comes by (review_said). Nothing composed this answer, so no call served it and it
+            #  states no level. Nothing else of what it says or routes to is changed.
+            "ai_provenance": {"served_by": None, "is_external": False, "composed": False, **no_reply_evidence(),
+                              "review": review_said("care_safeguarding")},
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "disclaimer": "If a child is in immediate danger, call 999.",
         }

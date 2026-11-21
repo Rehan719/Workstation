@@ -14,6 +14,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AdaptiveUIProvider } from '../../components/AdaptiveUIProvider';
 import captured from './CareHub.fixture.json';
 import { CareHub } from './CareHub';
+import { toolsFor } from '../../lib/toolRegistry';
 
 type Reply = { status: number; body: unknown };
 const ok = (body: unknown): Reply => ({ status: 200, body });
@@ -22,13 +23,16 @@ const refused = (detail: string): Reply => ({ status: 503, body: { detail } });
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const clone = (x: any) => JSON.parse(JSON.stringify(x));
 
-function serve(a: { tools?: Reply; hazards?: Reply; review_handover?: Reply; review_risk?: Reply } = {}) {
+function serve(a: { tools?: Reply; hazards?: Reply; review_handover?: Reply; review_risk?: Reply; review_care_plan?: Reply;
+                    review_safeguarding?: Reply } = {}) {
   vi.stubGlobal('fetch', vi.fn(async (url: string) => {
     const reply = ({ status, body }: Reply) => ({ ok: status < 400, status, statusText: '', json: async () => body });
     if (url === '/api/v1/care/tools') return reply(a.tools ?? ok(captured.tools));
     if (url === '/api/v1/care/hazards') return reply(a.hazards ?? ok(captured.hazards));
     if (url === '/api/v1/review-options?endpoint=' + encodeURIComponent('/api/v1/care/handover')) return reply(a.review_handover ?? ok(captured.review_handover));
     if (url === '/api/v1/review-options?endpoint=' + encodeURIComponent('/api/v1/care/risk-assess')) return reply(a.review_risk ?? ok(captured.review_risk));
+    if (url === '/api/v1/review-options?endpoint=' + encodeURIComponent('/api/v1/care/care-plan')) return reply(a.review_care_plan ?? ok(captured.review_care_plan));
+    if (url === '/api/v1/review-options?endpoint=' + encodeURIComponent('/api/v1/care/safeguarding')) return reply(a.review_safeguarding ?? ok(captured.review_safeguarding));
     if (url === '/api/v1/native-ai/status') return reply(ok(captured.status));
     return reply({ status: 404, body: { detail: `not served in this test: ${url}` } });
   }));
@@ -222,6 +226,118 @@ describe('CareHub, rendered against the Care routes\' own answers', () => {
       `Reviewer agent (${r.agent}): ${r.label} — ${r.basis}.`));
     await waitFor(() => expect(screen.getByTestId('review-option-reviewer-rates').textContent).toBe(`${r.rates.basis}.`));
     expect(r.label).toBe('Uncalibrated');
+  });
+
+  // W1185 (FU-1823, P5.15) - every Care tool's tier of review in one place: the four together, each line its tool's
+  // answer from the options route in the server's words, and a failed read said on its own tool's line
+  const TIERS = [['clinical', 'review_handover'], ['care-plan', 'review_care_plan'], ['risk', 'review_risk'],
+                 ['safeguarding', 'review_safeguarding']] as const;
+  const T = toolsFor('/care');
+
+  it('the page states the tier each of the four Care tools has reached, together, in the server\'s words', async () => {
+    serve();
+    mount();
+    const card = await screen.findByTestId('care-tiers');
+    await waitFor(() => expect(within(card).getAllByTestId('care-tier-review')).toHaveLength(TIERS.length));
+    const lines = within(card).getAllByTestId('care-tier');
+    expect(lines).toHaveLength(TIERS.length);
+    TIERS.forEach(([tab, key], i) => {
+      const a = captured[key];
+      expect(within(lines[i]).getByTestId('care-tier-tool').textContent).toBe(`${T[tab].title} · ${a.tool}`);
+      expect(within(lines[i]).getByTestId('care-tier-review').textContent).toBe(`Review reached: ${a.review.label} — ${a.review.basis}.`);
+      expect(within(lines[i]).getByTestId('care-tier-reviewer').textContent).toBe(
+        `Reviewer agent (${a.reviewer.agent}): ${a.reviewer.label} — ${a.reviewer.basis}.`);
+      expect(within(lines[i]).queryByTestId('care-tier-reviewer-rates')).toBeNull();
+      expect(within(lines[i]).queryByTestId('care-tier-refusal')).toBeNull();
+    });
+    expect(new Set(TIERS.map(([, key]) => captured[key].tool)).size).toBe(TIERS.length);
+    // ...the card says its heading and the four lines, and nothing else
+    expect(card.textContent).toBe('The review each tool has reached' + TIERS.map(([tab, key]) => {
+      const a = captured[key];
+      return `${T[tab].title} · ${a.tool}Review reached: ${a.review.label} — ${a.review.basis}.`
+        + `Reviewer agent (${a.reviewer.agent}): ${a.reviewer.label} — ${a.reviewer.basis}.`;
+    }).join(''));
+    // ...and it stays, its four lines whole, whichever tool's tab is open
+    for (const name of ['Care Plan', 'Risk Assess', 'Safeguarding']) {
+      fireEvent.click(screen.getByRole('button', { name }));
+      expect(within(screen.getByTestId('care-tiers')).getAllByTestId('care-tier-review')).toHaveLength(TIERS.length);
+    }
+  });
+
+  it('once the reviewer has a run of its own, its two rates with their counts are on that tool\'s line', async () => {
+    serve({ review_risk: ok(captured.review_risk_made_up_run) });
+    mount();
+    const card = await screen.findByTestId('care-tiers');
+    const r = captured.review_risk_made_up_run.reviewer;
+    await waitFor(() => expect(within(card).getByTestId('care-tier-reviewer-rates').textContent).toBe(`${r.rates.basis}.`));
+    const risk = within(card).getAllByTestId('care-tier')[TIERS.findIndex(([tab]) => tab === 'risk')];
+    expect(within(risk).getByTestId('care-tier-reviewer').textContent).toBe(`Reviewer agent (${r.agent}): ${r.label} — ${r.basis}.`);
+    expect(within(risk).getByTestId('care-tier-reviewer-rates').textContent).toBe(`${r.rates.basis}.`);
+    expect(r.label).toBe('Uncalibrated');
+  });
+
+  for (const [tab, key] of TIERS) {
+    it(`a refused read of the ${tab} tool's tier is said on its own line, and no tier is shown there`, async () => {
+      const over: NonNullable<Parameters<typeof serve>[0]> = {};
+      over[key] = refused(`w1185 the options of ${tab} could not be read`);
+      serve(over);
+      mount();
+      const card = await screen.findByTestId('care-tiers');
+      await waitFor(() => {
+        expect(within(card).getAllByTestId('care-tier-refusal')).toHaveLength(1);
+        expect(within(card).getAllByTestId('care-tier-review')).toHaveLength(TIERS.length - 1);
+      });
+      const lines = within(card).getAllByTestId('care-tier');
+      TIERS.forEach(([other, k], i) => {
+        if (other === tab) {
+          expect(within(lines[i]).getByTestId('care-tier-refusal').textContent).toBe(
+            `The tier of review this tool has reached could not be read, so none is shown: Failed (HTTP 503): w1185 the options of ${tab} could not be read`);
+          expect(within(lines[i]).getByTestId('care-tier-tool').textContent).toBe(T[tab].title);
+          expect(within(lines[i]).queryByTestId('care-tier-review')).toBeNull();
+          expect(within(lines[i]).queryByTestId('care-tier-reviewer')).toBeNull();
+        } else {
+          expect(within(lines[i]).getByTestId('care-tier-review').textContent).toBe(
+            `Review reached: ${captured[k].review.label} — ${captured[k].review.basis}.`);
+        }
+      });
+    });
+  }
+
+  it('an answer that carries no tier is said on its line as one, and never shown as a tier', async () => {
+    serve({ review_care_plan: ok({ ...captured.review_care_plan, review: null }) });
+    mount();
+    const card = await screen.findByTestId('care-tiers');
+    await waitFor(() => expect(within(card).getByTestId('care-tier-refusal').textContent).toBe(
+      'The tier of review this tool has reached could not be read, so none is shown: the answer carried no tier of review'));
+    const plan = within(card).getAllByTestId('care-tier')[TIERS.findIndex(([tab]) => tab === 'care-plan')];
+    expect(within(plan).queryByTestId('care-tier-review')).toBeNull();
+    expect(within(plan).queryByTestId('care-tier-reviewer')).toBeNull();
+  });
+
+  // W1185 (FU-1823) - the answer to a concern about a child or young person says the safeguarding tool's tier under
+  // it, as every other Care answer says its tool's; the emergency line and the children's route are as they were, and
+  // nothing composed it
+  it('a concern about a child gets the children\'s route, with the safeguarding tool\'s tier under it', async () => {
+    serve();
+    const got = captured.safeguarding_child;
+    const post = vi.spyOn(axios, 'post').mockResolvedValue({ data: got } as never);
+    mount();
+    await screen.findAllByTestId('care-source-tool');
+    fireEvent.click(screen.getByRole('button', { name: 'Safeguarding' }));
+    fireEvent.change(await screen.findByLabelText('Who is the concern about?'), { target: { value: 'a child or young person' } });
+    fireEvent.change(screen.getByLabelText('Safeguarding concern'), { target: { value: 'w1185 a worker is worried about bruising on a child' } });
+    fireEvent.click(screen.getByRole('button', { name: /Set out the process/ }));
+    const review = got.ai_provenance.review;
+    await waitFor(() => expect(screen.getByTestId('domain-review-tier').textContent).toBe(`Review: ${review.label} — ${review.basis}.`));
+    expect(review).toEqual(captured.review_safeguarding.review);
+    expect(post.mock.calls[0][0]).toBe('/api/v1/care/safeguarding');
+    expect((post.mock.calls[0][1] as { concern_about: string }).concern_about).toBe('a child or young person');
+    expect(screen.getByText((_, el) => el?.tagName === 'PRE' && el.textContent === got.guidance)).toBeTruthy();
+    expect(screen.getByText(got.disclaimer)).toBeTruthy();
+    // the gap: with served_by null the badge says 'provenance not recorded', not 'no call served this'; W1186 gives it "none"
+    expect(screen.getByText('provenance not recorded')).toBeTruthy();
+    expect(screen.queryByTestId('domain-served-identity')).toBeNull();
+    expect(screen.queryByTestId('domain-floor-note')).toBeNull();
   });
 
   it('a partial NEWS2 says what is missing, that the total is a lower bound, and which keys it did not read', async () => {

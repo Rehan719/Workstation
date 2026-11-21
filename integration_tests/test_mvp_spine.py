@@ -80538,7 +80538,11 @@ def test_w950_p513_the_safeguarding_form_asks_who_the_concern_is_about_and_a_chi
     assert child.status_code == 200, child.text[:200]
     c = child.json()
     assert not sent, ("a child's concern was sent to a composer", sent)
-    assert c["composed"] is False and c["concern_about"] == "a child or young person" and c["ai_provenance"] is None
+    #  W1185 (FU-1823) - its tool's tier of review is said under it, as under every Care answer: nothing composed it,
+    #  so no call served it and it states no level (test_w1185 holds the tier itself)
+    assert c["composed"] is False and c["concern_about"] == "a child or young person", c
+    assert (c["ai_provenance"]["served_by"], c["ai_provenance"]["composed"], c["ai_provenance"]["evidence_level"]) == (
+        None, False, None) and c["ai_provenance"]["review"]["label"], c["ai_provenance"]
     assert c["guidance"].startswith(_care.IMMEDIATE_DANGER_FIRST), c["guidance"][:200]
     assert _care.CHILDRENS_ROUTE in c["guidance"] and "999" in c["guidance"] and "report-child-abuse" in c["guidance"]
     assert "w950" not in c["guidance"] and _care.ADULT_ROUTE_ONLY not in c["guidance"]
@@ -97488,3 +97492,186 @@ def test_w1184_fu1054_the_calibration_results_have_a_place_in_the_tree_and_the_r
         #  once the Owner's run closes it, its close note names a run the tree holds
         assert fu["status"] == "done" and doc["runs"], (fu["status"], len(doc["runs"]))
         assert any(str(r["run_id"]) in (fu.get("close_note") or "") for r in doc["runs"]), fu.get("close_note")
+
+
+def test_w1185_fu1823_every_care_tool_says_its_tier_in_one_place_and_the_child_concern_answer_carries_its_tier(
+        client, tmp_path, monkeypatch):
+    """FU-1823 (W1185); P5.15's ACCEPT asks that one discipline, Care, have every tool at a stated tier on its page.
+    Each Care tool's tier of review and its reviewer's calibration were said only by the options inside that tool's
+    tab, so no place on the page gave the four together; and the safeguarding route's answer to a concern about a
+    child or young person carried no provenance, so no tier was said under it. Held here:
+    T1. the child-concern answer carries the safeguarding tool's tier by the one function every Care answer's tier
+        comes from (review_said, which every composed answer's provenance takes through ai_text): the adult answer's
+        statement, a record of the tool's review shown in it, a failure to compute it said as a composed answer says
+        it. Nothing composed the answer: no call served it, it states no level, and no composer was asked. Nothing
+        else of what it says or routes to changed;
+    T2. one place on the Care page states the four tools' tiers, in the order of their tabs, each from its tool's
+        answer at the options route (every signed-in person's; the tier route is the administrator's): its tier and
+        basis and its reviewer's calibration, in the server's words. A failed read, or an answer with no tier, is
+        said on its tool's line and no tier is shown there. The page types no tier, read as code;
+    T3. the rendered test reads each line, the card's whole text, the card kept whole whichever tab is open, each
+        failure in its place and the child-concern answer's tier, from captured answers that are the routes' own
+        with the capture's day pinned; nothing is skipped;
+    T4. FU-1823 is closed by this round, as built, and what it leaves is registered on the Care item: the
+        emergency line drawn after the tier box under a safeguarding answer."""
+    import asyncio
+    import datetime as _dt
+    import json
+    import re
+    from pathlib import Path
+    import agentic_core.api.care as care
+    from agentic_core.api import _ai_provenance as ap
+    from agentic_core.api import _review_calibration as cal
+    from agentic_core.api import _review_tier as rt
+    from agentic_core.api.review_options import tool_at
+    root = Path(__file__).resolve().parents[1]
+    src = root / "apps" / "workstation-superapp" / "src"
+    D0 = _dt.date(2026, 11, 21)                      # the capture's day, as W1183's captures pinned it
+    monkeypatch.setattr(cal, "_today", lambda: D0)
+    monkeypatch.setattr(cal, "_runs_path", lambda: tmp_path / "w1185_calibration_runs.json")
+    monkeypatch.setattr(rt, "_path", lambda: tmp_path / "w1185_review_tier_records.json")
+    fx = json.loads((src / "pages/domains/CareHub.fixture.json").read_text(encoding="utf-8"))
+    asked = []
+
+    async def _counting(*a, **k):
+        asked.append(k.get("agent"))
+        return {"output": "## Immediate Safety\nw1185 composed", "served_by": "w1185-capture", "is_external": False}
+    monkeypatch.setattr(ap.gateway, "query_meta", _counting)
+
+    #  T1. the child-concern answer, its tier the tool's, by the one function
+    tool = tool_at(client.app, "/api/v1/care/safeguarding")
+    assert tool == "care_safeguarding", tool
+    child_body = {"concern_about": "a child or young person", "concern": "w1185 a worker is worried about bruising on a child",
+                  "setting": "community", "person_context": "", "jurisdiction": "England (Care Act 2014)"}
+    r = client.post("/api/v1/care/safeguarding", json=child_body)
+    assert r.status_code == 200, r.text[:300]
+    c = r.json()
+    assert asked == [], ("a child's concern was sent to a composer", asked)
+    assert sorted(c) == sorted(["triage_id", "setting", "jurisdiction", "concern_about", "guidance", "composed",
+                                "composed_basis", "ai_provenance", "generated_at", "disclaimer"]), sorted(c)
+    assert c["guidance"] == care.IMMEDIATE_DANGER_FIRST + "\n\n" + care.CHILD_CONCERN, c["guidance"][:300]
+    assert (c["composed"], c["concern_about"], c["setting"], c["jurisdiction"], c["disclaimer"]) == (
+        False, "a child or young person", "community", "England (Care Act 2014)", "If a child is in immediate danger, call 999.")
+    assert c["composed_basis"] == ("a child's concern goes to the children's route; nothing about it was sent to a "
+                                   "composer and nothing was written about it"), c["composed_basis"]
+    prov = c["ai_provenance"]
+    assert prov == {"served_by": None, "is_external": False, "composed": False, **ap.no_reply_evidence(),
+                    "review": rt.review_statement(tool)}, prov
+    assert (prov["review"]["tier"], prov["review"]["label"], prov["review"]["known"]) == ("unreviewed", "Unreviewed", True)
+    kept = fx["safeguarding_child"]
+    volatile = ("triage_id", "generated_at")
+    assert {k: v for k, v in c.items() if k not in volatile} == {k: v for k, v in kept.items() if k not in volatile}, (
+        "the captured child-concern answer is not the route's")
+    adult = client.post("/api/v1/care/safeguarding", json={**child_body, "concern_about": "an adult"})
+    assert adult.status_code == 200 and asked == ["care_safeguarding"], (adult.text[:200], asked)
+    assert adult.json()["ai_provenance"]["review"] == prov["review"], "the tool's two answers say different tiers"
+    #  ...a record of the tool's review is said in it: the tier is read, never written into the answer
+    rule = {"tool": "care_safeguarding", "tier": "checked_by_rule", "date": D0.isoformat(),
+            "rule": "w1185 a made-up rule for this guard", "test": "test_w1185"}
+    records = rt._records
+    monkeypatch.setattr(rt, "_records", lambda: [rule])
+    ruled = client.post("/api/v1/care/safeguarding", json=child_body).json()["ai_provenance"]["review"]
+    assert ruled["tier"] == "checked_by_rule" and ruled == rt.review_statement(tool), ruled
+    monkeypatch.setattr(rt, "_records", records)
+    #  ...and a failure to compute it is said, as a composed answer says it: the same function
+    real = rt.review_statement
+
+    def _boom(t, today=None):
+        raise RuntimeError("w1185 the store is gone")
+    monkeypatch.setattr(rt, "review_statement", _boom)
+    gone = client.post("/api/v1/care/safeguarding", json=child_body).json()["ai_provenance"]["review"]
+    assert gone == {"tier": "unreviewed", "label": "Unreviewed", "known": False,
+                    "basis": "the tier of review could not be computed (RuntimeError); it is treated as unreviewed"}, gone
+    _t, composed = asyncio.new_event_loop().run_until_complete(ap.ai_text("w1185 say something", "care_safeguarding"))
+    assert composed["review"] == gone, ("a composed answer and the child-concern answer say a failure differently",
+                                        composed["review"])
+    monkeypatch.setattr(rt, "review_statement", real)
+    code = _code_only((root / "agentic_core/api/care.py").read_text(encoding="utf-8"))
+    branch = code.split('if _about == "a child or young person":', 1)[1].split("_mat859 = _material(", 1)[0]
+    assert '"review": review_said("care_safeguarding")' in branch and "**no_reply_evidence()" in branch, branch[:900]
+    assert '"ai_provenance": None' not in branch and "await ai_text(" not in branch and "review_statement" not in code
+    prov_code = _code_only((root / "agentic_core/api/_ai_provenance.py").read_text(encoding="utf-8"))
+    assert 'provenance["review"] = review_said(agent)' in prov_code, "ai_text takes the tier by another path"
+    assert prov_code.count("review_statement(") == 1, "the tier is read by a second path in the provenance module"
+
+    #  T2. the page: the four tools' tiers in one place, each line its tool's answer, in the server's words
+    page = _code_only((src / "pages/domains/CareHub.tsx").read_text(encoding="utf-8"))
+    table = page.split("const REVIEWED", 1)[1].split("];", 1)[0]
+    pairs = re.findall(r"\['([a-z-]+)', '(/api/v1/care/[a-z-]+)'\]", table)
+    forms = re.findall(r"title=\{T\['([a-z-]+)'\]\.title\}\s+description=.*?endpoint=\"(/api/v1/care/[a-z-]+)\"", page, re.S)
+    assert len(pairs) == 4 and sorted(pairs) == sorted(forms), ("the lines are not the page's four tools", pairs, forms)
+    assert [t for t, _e in pairs] == ["clinical", "care-plan", "risk", "safeguarding"], pairs
+    assert sorted(tool_at(client.app, e) for _t2, e in pairs) == sorted(
+        fx[k]["tool"] for k in ("review_handover", "review_care_plan", "review_risk", "review_safeguarding"))
+    for line in ("REVIEWED.forEach(([tab, endpoint]) => {",
+                 "apiJson<any>(`/api/v1/review-options?endpoint=${encodeURIComponent(endpoint)}`)",
+                 "setTiers(t => ({ ...t, [tab]: a?.review?.label && a?.review?.basis",
+                 "? { said: a } : { error: 'the answer carried no tier of review' } }));",
+                 ".catch(e => { if (alive) setTiers(t => ({ ...t, [tab]: { error: errorMessage(e) } })); });",
+                 '<Card className="p-6" data-testid="care-tiers">', "{REVIEWED.map(([tab]) => {",
+                 '<li key={tab} data-testid="care-tier"', 'data-testid="care-tier-tool"',
+                 "{T[tab].title}{said ? ` · ${said.tool}` : ''}</p>",
+                 'data-testid="care-tier-refusal"', "could not be read, so none is shown: {got.error}</p>",
+                 'data-testid="care-tier-review"', "Review reached: {said.review.label}</span>", "{' — '}{said.review.basis}.",
+                 'data-testid="care-tier-reviewer"', "Reviewer agent ({said.reviewer.agent}): {said.reviewer.label}</span>",
+                 "{' — '}{said.reviewer.basis}.", "{said.reviewer && (", "{said.reviewer?.rates && (",
+                 'data-testid="care-tier-reviewer-rates"', "{said.reviewer.rates.basis}.</p>"):
+        assert line in page, ("the Care page does not say this", line)
+    panel = page.split('data-testid="care-tiers"', 1)[1].split("</Card>", 1)[0]
+    assert panel.index("{got?.error ? (") < panel.index("!said ? (") < panel.index('data-testid="care-tier-review"'), (
+        "a failed read is not said before anything is shown as a tier")
+    effect = page.split("const [tiers, setTiers]", 1)[1].split("}, []);", 1)[0]
+    for typed in ("Unreviewed", "Uncalibrated", "Calibrated", "Checked by rule", "Reviewed by", "Signed by",
+                  "catch rate", "false-alarm", "never run"):
+        assert typed not in panel and typed not in effect, ("the page types what the server states", typed)
+    assert "/api/v1/review/tier/" not in page, "the page reads the administrator's tier route"
+    app_code = (root / "agentic_core/app_mvp.py").read_text(encoding="utf-8")
+    assert "app.include_router(review_options_api.router, dependencies=[_Depends(_get_current_user)])" in app_code
+    assert "app.include_router(review_cell_api.router, dependencies=[_Depends(_require_admin)])" in app_code
+    #  ...from answers that are the route's own, with the capture's day pinned
+    for key, ep in (("review_handover", "/api/v1/care/handover"), ("review_care_plan", "/api/v1/care/care-plan"),
+                    ("review_risk", "/api/v1/care/risk-assess"), ("review_safeguarding", "/api/v1/care/safeguarding")):
+        live = client.get("/api/v1/review-options", params={"endpoint": ep})
+        assert live.status_code == 200 and live.json() == fx[key], (key, "the captured options are not the route's")
+    assert fx["review_safeguarding"]["review"] == kept["ai_provenance"]["review"], "the answer's tier is not the tool's"
+
+    #  T3. the rendered test
+    spec = _code_only((src / "pages/domains/CareHub.test.tsx").read_text(encoding="utf-8"))
+    for line in ("const TIERS = [['clinical', 'review_handover'], ['care-plan', 'review_care_plan'], ['risk', 'review_risk'],",
+                 "['safeguarding', 'review_safeguarding']] as const;",
+                 "await waitFor(() => expect(within(card).getAllByTestId('care-tier-review')).toHaveLength(TIERS.length));",
+                 "expect(within(lines[i]).getByTestId('care-tier-tool').textContent).toBe(`${T[tab].title} · ${a.tool}`);",
+                 "expect(within(lines[i]).getByTestId('care-tier-review').textContent).toBe(`Review reached: ${a.review.label} — ${a.review.basis}.`);",
+                 "`Reviewer agent (${a.reviewer.agent}): ${a.reviewer.label} — ${a.reviewer.basis}.`);",
+                 "expect(card.textContent).toBe('The review each tool has reached' + TIERS.map(([tab, key]) => {",
+                 "return `${T[tab].title} · ${a.tool}Review reached: ${a.review.label} — ${a.review.basis}.`",
+                 "+ `Reviewer agent (${a.reviewer.agent}): ${a.reviewer.label} — ${a.reviewer.basis}.`;",
+                 "}).join(''));",
+                 "for (const name of ['Care Plan', 'Risk Assess', 'Safeguarding']) {",
+                 "fireEvent.click(screen.getByRole('button', { name }));",
+                 "expect(within(screen.getByTestId('care-tiers')).getAllByTestId('care-tier-review')).toHaveLength(TIERS.length);",
+                 "await waitFor(() => expect(within(card).getByTestId('care-tier-reviewer-rates').textContent).toBe(`${r.rates.basis}.`));",
+                 "for (const [tab, key] of TIERS) {",
+                 "over[key] = refused(`w1185 the options of ${tab} could not be read`);",
+                 "`The tier of review this tool has reached could not be read, so none is shown: Failed (HTTP 503): w1185 the options of ${tab} could not be read`);",
+                 "expect(within(lines[i]).queryByTestId('care-tier-review')).toBeNull();",
+                 "serve({ review_care_plan: ok({ ...captured.review_care_plan, review: null }) });",
+                 "'The tier of review this tool has reached could not be read, so none is shown: the answer carried no tier of review'));",
+                 "const got = captured.safeguarding_child;",
+                 "fireEvent.change(await screen.findByLabelText('Who is the concern about?'), { target: { value: 'a child or young person' } });",
+                 "await waitFor(() => expect(screen.getByTestId('domain-review-tier').textContent).toBe(`Review: ${review.label} — ${review.basis}.`));",
+                 "expect(review).toEqual(captured.review_safeguarding.review);",
+                 "expect(screen.getByText((_, el) => el?.tagName === 'PRE' && el.textContent === got.guidance)).toBeTruthy();",
+                 "if (url === '/api/v1/review-options?endpoint=' + encodeURIComponent('/api/v1/care/care-plan')) return reply(a.review_care_plan ?? ok(captured.review_care_plan));",
+                 "if (url === '/api/v1/review-options?endpoint=' + encodeURIComponent('/api/v1/care/safeguarding')) return reply(a.review_safeguarding ?? ok(captured.review_safeguarding));"):
+        assert line in spec, ("the Care page's rendered test does not read this", line)
+    assert not re.search(r"\b(?:describe|it|test)\.(?:skip|only|todo)\(|\bx(?:it|describe)\(", spec), (
+        "a rendered test of the Care page is skipped")
+
+    #  T4. the row
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    done = [x for x in rows if x.get("title", "").startswith("Care states each tool's tier only while its tab is open")]
+    assert len(done) == 1 and (done[0]["status"], done[0]["closed_by"], done[0]["because"]) == ("done", "W1185", "built"), done
+    left = [x for x in rows if x.get("title", "").startswith("Under a safeguarding answer the tier box and the provenance badge")]
+    assert len(left) == 1 and (left[0]["slot"], left[0]["severity"]) == ("P5.13", "low") and left[0]["source"].startswith(
+        "W1185") and "the first thing drawn under a safeguarding answer" in left[0]["why"], left

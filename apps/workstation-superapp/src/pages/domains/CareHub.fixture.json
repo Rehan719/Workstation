@@ -942,5 +942,133 @@
     }
    }
   }
+ },
+ "review_care_plan": {
+  "endpoint": "/api/v1/care/care-plan",
+  "tool": "care_planner",
+  "discipline": "care",
+  "review": {
+   "tier": "unreviewed",
+   "label": "Unreviewed",
+   "known": true,
+   "records_counted": 0,
+   "records_not_counted": 0,
+   "of_tiers": [
+    "Checked by rule",
+    "Reviewed by Workstation's specialist agent",
+    "Signed by a qualified person"
+   ],
+   "basis": "no review of this tool is recorded: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed"
+  },
+  "person": {
+   "option": "A qualified person's review is an option for anything this tool gives. Workstation does not arrange one. When a person signs a review of this tool, it is recorded as the third tier, with their credential as they stated it.",
+   "warranted_when": "Before anything it gives is used in a person's direct care, a registered professional who knows that person checks it.",
+   "release": "Release is the Owner's switch. Even then, a clinical score used in someone's direct care keeps a qualified person.",
+   "kept_by_the_ruling": "a clinical score used in someone's direct care",
+   "basis": "The release sentence is the Owner's ruling of 2026-10-12 (P5.15). When a person is warranted is Workstation's own statement (W925): it claims no professional's role, and it does not say that any person has reviewed anything."
+  },
+  "reviewer": {
+   "agent": "care-reviewer",
+   "discipline": "care",
+   "calibrated": false,
+   "known": true,
+   "reason": "never_run",
+   "label": "Uncalibrated",
+   "basis": "never run on its calibration set (version 3-written: 10 planted cases, 6 clean), so it has no catch rate and no false-alarm rate, and no review by it raises a tool's tier",
+   "rates": null,
+   "run": null,
+   "bar": "every planted case flagged for its reason, and at most 1 false alarm in 6 clean cases",
+   "set": {
+    "version": "3-written",
+    "cases": 16,
+    "planted": 10,
+    "clean": 6,
+    "runnable_today": true,
+    "window": {
+     "from": "2026-11-19",
+     "through": "2027-01-10"
+    }
+   }
+  }
+ },
+ "review_safeguarding": {
+  "endpoint": "/api/v1/care/safeguarding",
+  "tool": "care_safeguarding",
+  "discipline": "care",
+  "review": {
+   "tier": "unreviewed",
+   "label": "Unreviewed",
+   "known": true,
+   "records_counted": 0,
+   "records_not_counted": 0,
+   "of_tiers": [
+    "Checked by rule",
+    "Reviewed by Workstation's specialist agent",
+    "Signed by a qualified person"
+   ],
+   "basis": "no review of this tool is recorded: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed"
+  },
+  "person": {
+   "option": "A qualified person's review is an option for anything this tool gives. Workstation does not arrange one. When a person signs a review of this tool, it is recorded as the third tier, with their credential as they stated it.",
+   "warranted_when": "Before anything it gives is used in a person's direct care, a registered professional who knows that person checks it.",
+   "release": "Release is the Owner's switch. Even then, a clinical score used in someone's direct care keeps a qualified person.",
+   "kept_by_the_ruling": "a clinical score used in someone's direct care",
+   "basis": "The release sentence is the Owner's ruling of 2026-10-12 (P5.15). When a person is warranted is Workstation's own statement (W925): it claims no professional's role, and it does not say that any person has reviewed anything."
+  },
+  "reviewer": {
+   "agent": "care-reviewer",
+   "discipline": "care",
+   "calibrated": false,
+   "known": true,
+   "reason": "never_run",
+   "label": "Uncalibrated",
+   "basis": "never run on its calibration set (version 3-written: 10 planted cases, 6 clean), so it has no catch rate and no false-alarm rate, and no review by it raises a tool's tier",
+   "rates": null,
+   "run": null,
+   "bar": "every planted case flagged for its reason, and at most 1 false alarm in 6 clean cases",
+   "set": {
+    "version": "3-written",
+    "cases": 16,
+    "planted": 10,
+    "clean": 6,
+    "runnable_today": true,
+    "window": {
+     "from": "2026-11-19",
+     "through": "2027-01-10"
+    }
+   }
+  }
+ },
+ "safeguarding_child": {
+  "triage_id": "05b12043a4",
+  "setting": "community",
+  "jurisdiction": "England (Care Act 2014)",
+  "concern_about": "a child or young person",
+  "guidance": "**If anyone is in immediate danger, call 999 now - before reading on and before recording anything.** Nothing below replaces that call. What follows is general process guidance, not a decision about this concern.\n\n**A concern about a child or young person is not set out here.** In England, contact the children's social care team at the child's local council, or call 999 if the child is at immediate risk (read at https://www.gov.uk/report-child-abuse on 2026-10-12). Nothing was composed: this platform holds no process for a child's safeguarding concern.",
+  "composed": false,
+  "composed_basis": "a child's concern goes to the children's route; nothing about it was sent to a composer and nothing was written about it",
+  "ai_provenance": {
+   "served_by": null,
+   "is_external": false,
+   "composed": false,
+   "evidence_level": null,
+   "evidence_level_number": null,
+   "evidence_basis": "NOT SERVED: no resource gave a reply for this - nothing was asked, or what was asked did not answer - so there is no behaviour to state and it carries no level",
+   "review": {
+    "tier": "unreviewed",
+    "label": "Unreviewed",
+    "known": true,
+    "records_counted": 0,
+    "records_not_counted": 0,
+    "of_tiers": [
+     "Checked by rule",
+     "Reviewed by Workstation's specialist agent",
+     "Signed by a qualified person"
+    ],
+    "basis": "no review of this tool is recorded: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed"
+   }
+  },
+  "generated_at": "2026-11-21T11:19:18Z",
+  "disclaimer": "If a child is in immediate danger, call 999."
  }
 }

@@ -247,6 +247,21 @@ def material_cut_said(provenance, what: str = "WHAT YOU SUPPLIED"):
             f"characters. Nothing here speaks for the rest.")
 
 
+def review_said(tool: str) -> Dict[str, Any]:
+    """W688, W1185 (FU-1823) - THE TIER OF REVIEW A TOOL'S ANSWER CARRIES, said one way for every answer: the one
+    tier function's statement for the tool (_review_tier), or, when it cannot be computed, said as not known and
+    treated as unreviewed - never left off and never read as reviewed. Every composed answer takes it on its
+    provenance through ai_text below. The safeguarding route's answer to a concern about a child or young person,
+    which nothing composes, takes it here, so the two cannot say a tier, or a failure to read one, differently."""
+    try:
+        from agentic_core.api._review_tier import review_statement
+        return review_statement(tool)
+    except Exception as _e_tier:                    # noqa: BLE001 - said, never swallowed into silence
+        return {"tier": "unreviewed", "label": "Unreviewed", "known": False,
+                "basis": f"the tier of review could not be computed ({type(_e_tier).__name__}); "
+                         "it is treated as unreviewed"}
+
+
 from agentic_core.api.operational_excellence import spans_run as _spans_run847
 
 
@@ -352,13 +367,8 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
     #  W688 (OWNER RULING 2026-10-12, the review cell's first clause) - THE TIER OF REVIEW THIS TOOL HAS REACHED,
     #  on the provenance every domain router returns, so no router can leave it out. With no record it says
     #  UNREVIEWED. A failure to read it is said as not known; it is never left off and never read as reviewed.
-    try:
-        from agentic_core.api._review_tier import review_statement
-        provenance["review"] = review_statement(agent)
-    except Exception as _e_tier:                    # noqa: BLE001 - said, never swallowed into silence
-        provenance["review"] = {"tier": "unreviewed", "label": "Unreviewed", "known": False,
-                                "basis": f"the tier of review could not be computed ({type(_e_tier).__name__}); "
-                                         "it is treated as unreviewed"}
+    #  W1185 - by review_said(), the one way, which an answer nothing composes takes too
+    provenance["review"] = review_said(agent)
     #  W627 (FU-536) - every domain tool's floor output said so only through a badge, while its headings
     #  ('Relevant Law', 'Who to Notify', 'Target Range') and a static "AI-generated" disclaimer described
     #  research, guidance and marking that did not happen. The note rides the provenance EVERY domain router
