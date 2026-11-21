@@ -26890,6 +26890,98 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P5.13: in Care the first line is the route to a person (W676, which typed the emergency line as the first thing a person reporting a safeguarding concern reads)"
+    },
+    {
+      "id": "FU-1825",
+      "title": "A composition reports every domain form that answers as failed: the fabric reads a form's provenance as the engines' count map",
+      "why": "_run_form (agentic_core/api/resource_fabric.py) passed a form's ai_provenance, ai_text's shape (served_by a string, is_external a bool, its own evidence level, the tier of review), to _intel_served, which reads the engines' shape (served_by a count map, any_external and call counts). 'native'.keys() raised, the handler's catch made it the row {\"error\": \"'str' object has no attribute 'keys'\"}, and every one of the 25 registered forms that ran to an answer through a composition was reported as raised, its output lost (measured over the registry on the floor, W1186). Read the old way, a form no call served would have claimed the first evidence level, and four forms' output was another field of the answer, not the text their page shows. The only guard (test_forms_a_composition_calls_a_domain_form_through_its_own_door) drives refusals.",
+      "source": "W1186 (found building W1185: the child-concern answer run through the fabric; measured over the registry)",
+      "found": "2026-11-21",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P3.32",
+      "status": "done",
+      "closed_by": "W1186",
+      "note": "",
+      "slot_source": "P3.32: the item FU-1037 rode, which registered the 25 domain forms and built the Owner's ruling of 2026-10-12 that the runner calls each through its own door (W682)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1186: a form's row says what served it from the form's own provenance (_form_served): its served_by string (\"none\" when the answer says no call served it), or None when it names nothing; its is_external; its own evidence level, or the refusal gate's, or the no-reply statement for an answer nothing served, never one assumed; no count, as none is stated; and its tier of review and the floor's note, carried whenever the answer carries them (the floor's note the answer's own before its provenance's). Its output is the field the form's page shows (result_key, held to the page's resultKey). A refusal by the platform's constitutional gate is returned as a refusal, phrased as the gate's; an answer no call served is phrased as one; a form whose every section the floor withheld is read as withheld. _intel_served is kept for the engines' count map, which its five other call sites pass. The safeguarding route's child-concern answer says \"none\", as the Law route's routed answers do. test_w1186 drives all 25 forms through the choke point, with a real gate refusal and the no-call, no-server, refusal-gate, unstated-level, external and count-map cases."
+    },
+    {
+      "id": "FU-1826",
+      "title": "The fabric page draws a form's answer without its tier or the floor's note, and the form row drops the rest of what the answer's provenance says",
+      "why": "Since W1186 a composition's form row carries the answer's tier of review and the floor's note whenever the answer carries them, but ResourceFabric.tsx draws the row's output with neither. The row also passes on none of the provenance's quality_assurance (the composition runs its own gate over the composed delivery, a different verdict), served_identity (the model and build that answered), the language and profile verdicts, model_tokens, or context_material (W958's record of how much of a task and rubric was read, which the row drops while it carries material). NEXT: the page draws the tier and the floor's note under a form's output, rendered from a captured composition run; each of the rest is carried, or said where it is left out.",
+      "source": "W1186 (found building W1185: the child-concern answer run through the fabric; measured over the registry)",
+      "found": "2026-11-21",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx",
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.32",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.32: the same item as FU-1825, which this row follows on from"
+    },
+    {
+      "id": "FU-1827",
+      "title": "The Law research route's answers routed before anything composes carry no tier of review",
+      "why": "A question about the person's own case (routed to people) and one on a subject that is regulated advice (routed to an authorised person) are answered by law_research with a provenance that says no model and no floor composed them and carries no review, so no tier is said under either answer, on the Law page or in a composition (measured in W1186). W688: the tier is never left off a domain answer, and W1185 gave the safeguarding route's child-concern answer its tier through review_said(). NEXT: the two routed answers carry the tool's tier through review_said, as every composed Law answer does.",
+      "source": "W1186 (found building W1185: the child-concern answer run through the fabric; measured over the registry)",
+      "found": "2026-11-21",
+      "files": [
+        "agentic_core/api/law.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.15",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.15: the tier said under every domain answer (W688, the review cell's first clause), as FU-1823 was for the Care child-concern answer"
+    },
+    {
+      "id": "FU-1828",
+      "title": "The fabric page and the domain pages draw a refusal by the constitutional gate with the in-house badge: provenanceBadge has no arm for the gate",
+      "why": "Since W1186 a composition's row for a form the platform's constitutional gate refused says refused, with the gate's phrase, and keeps served_by 'constitutional_policy_gate'. provenanceBadge (apps/workstation-superapp/src/lib/api.ts) has no arm for the gate, so ResourceFabric.tsx draws the emerald 'in-house · constitutional_policy_gate' badge beside 'refused', and DomainTool, which shares the helper, draws the same badge under the gate's refusal on every domain page. NEXT: provenanceBadge names the platform's constitutional gate and claims no model, with a rendered test on the fabric page and on a domain page.",
+      "source": "W1186 (found building W1185: the child-concern answer run through the fabric; measured over the registry)",
+      "found": "2026-11-21",
+      "files": [
+        "apps/workstation-superapp/src/lib/api.ts",
+        "apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx",
+        "apps/workstation-superapp/src/components/DomainTool.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.32",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.32: beside FU-1826, the fabric page's other open row"
+    },
+    {
+      "id": "FU-1829",
+      "title": "A form answer no call composed is counted as an engine run: its outcome word is produced, and the fabric page counts it under 'ran an engine' with the 'ran' chip",
+      "why": "The safeguarding route's child-concern answer and the Law research route's two routed answers carry served_by 'none': nothing was composed and no call served them. Since W1186 their composition rows are phrased so ('answered by the form's own route: nothing was composed and no call served it'), but the outcome word is still 'produced'. ResourceFabric.tsx counts every 'produced' row under 'N ran an engine' and draws the emerald 'ran' chip, and the stored run row and a plan binding's review keep the word. The row carries served_by 'none' but not the provenance's composed False. NEXT: an outcome word of its own for a form answer no call served (keyed on the row's served_by 'none', or on composed carried onto the row), its phrase in _OUTCOME_PHRASE, the page's count and a chip of its own before the emerald fallback, with a guard that its phrase never says an engine ran.",
+      "source": "W1186 (found building W1185: the child-concern answer run through the fabric; measured over the registry)",
+      "found": "2026-11-21",
+      "files": [
+        "agentic_core/api/resource_fabric.py",
+        "apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.32",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.32: beside FU-1826, the fabric page's other open row"
     }
   ],
   "routes": [

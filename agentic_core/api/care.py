@@ -385,7 +385,9 @@ async def safeguarding_triage(req: SafeguardingRequest):
             #  answer: it carried no provenance, so no tier was said under it. The tier comes by the one function
             #  every Care answer's comes by (review_said). Nothing composed this answer, so no call served it and it
             #  states no level. Nothing else of what it says or routes to is changed.
-            "ai_provenance": {"served_by": None, "is_external": False, "composed": False, **no_reply_evidence(),
+            #  W1186 - no call served it, said by the word the Law route's routed answers say it by ("none"): the
+            #  page's badge reads it as 'no call served this', and a composition's form row as no server
+            "ai_provenance": {"served_by": "none", "is_external": False, "composed": False, **no_reply_evidence(),
                               "review": review_said("care_safeguarding")},
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "disclaimer": "If a child is in immediate danger, call 999.",

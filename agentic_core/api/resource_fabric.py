@@ -26,7 +26,8 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence,      # W708
-                                             no_reply_evidence as _no_reply_evidence)
+                                             no_reply_evidence as _no_reply_evidence,
+                                             REFUSAL_GATE as _REFUSAL_GATE)        # W1186
 
 from agentic_core.auth.core import get_current_user, request_owner_id, user_can_access
 
@@ -483,6 +484,8 @@ _REGISTRY: List[Dict[str, Any]] = [
 #  refuses, withholds or gates for a person it refuses, withholds or gates for a composition.
 #  `material` names the fields that are a PERSON'S OWN (a document, a piece of work, observations): a stage may
 #  carry them only from the parameters the person gave the run. Nothing here composes one.
+#  W1186 - `result_key` names the field of a form's answer its page shows (the page's resultKey): a composition's
+#  output for the form is that text, and test_w1186 holds the two equal.
 _FORMS: List[Dict[str, Any]] = [
     {
         "id": "form_law_analyse",
@@ -492,6 +495,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "analyse_document",
         "model": "AnalyseRequest",
         "endpoint": "/api/v1/law/analyse",
+        "result_key": "analysis",
         "fields": {
             "document_text": "str",
             "document_type": "str (default 'contract')",
@@ -514,6 +518,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "legal_research",
         "model": "ResearchRequest",
         "endpoint": "/api/v1/law/research",
+        "result_key": "analysis",
         "fields": {
             "question": "str",
             "jurisdiction": "str (default 'England & Wales')",
@@ -537,6 +542,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "generate_document",
         "model": "GenerateRequest",
         "endpoint": "/api/v1/law/generate",
+        "result_key": "document",
         "fields": {
             "template_id": "str",
             "parties": "dict (default {})",
@@ -557,6 +563,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "design_curriculum",
         "model": "CurriculumRequest",
         "endpoint": "/api/v1/education/curriculum",
+        "result_key": "curriculum",
         "fields": {
             "subject": "str",
             "level": "str",
@@ -579,6 +586,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "generate_lesson_plan",
         "model": "LessonPlanRequest",
         "endpoint": "/api/v1/education/lesson-plan",
+        "result_key": "lesson_plan",
         "fields": {
             "subject": "str",
             "topic": "str",
@@ -607,6 +615,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "marking_feedback",
         "model": "FeedbackRequest",
         "endpoint": "/api/v1/education/feedback",
+        "result_key": "feedback",
         "fields": {
             "student_work": "str",
             "task": "str (default '')",
@@ -631,6 +640,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "create_assessment",
         "model": "AssessmentRequest",
         "endpoint": "/api/v1/education/assessment",
+        "result_key": "assessment",
         "fields": {
             "subject": "str",
             "topic": "str",
@@ -654,6 +664,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "generate_care_plan",
         "model": "CarePlanRequest",
         "endpoint": "/api/v1/care/care-plan",
+        "result_key": "care_plan",
         "fields": {
             "patient_profile": "dict (default {})",
             "care_needs": "list (default [])",
@@ -675,6 +686,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "risk_assessment",
         "model": "RiskAssessRequest",
         "endpoint": "/api/v1/care/risk-assess",
+        "result_key": "assessment",
         "fields": {
             "tool": "str (default 'news2')",
             "patient_data": "dict (default {})",
@@ -695,6 +707,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "safeguarding_triage",
         "model": "SafeguardingRequest",
         "endpoint": "/api/v1/care/safeguarding",
+        "result_key": "guidance",
         "fields": {
             "concern": "str",
             "setting": "str (default 'community')",
@@ -720,6 +733,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "generate_handover",
         "model": "HandoverRequest",
         "endpoint": "/api/v1/care/handover",
+        "result_key": "handover",
         "fields": {
             "patient_summary": "str",
             "current_situation": "str",
@@ -746,6 +760,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "synthesise_research",
         "model": "SynthesiseRequest",
         "endpoint": "/api/v1/science/synthesise",
+        "result_key": "report",
         "fields": {
             "research_question": "str",
             "domain": "str (default 'general')",
@@ -766,6 +781,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "generate_hypotheses",
         "model": "HypothesisRequest",
         "endpoint": "/api/v1/science/hypothesis",
+        "result_key": "hypotheses_text",
         "fields": {
             "research_question": "str",
             "domain": "str (default 'general')",
@@ -788,6 +804,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "experiment_design",
         "model": "ExperimentDesignRequest",
         "endpoint": "/api/v1/science/experiment-design",
+        "result_key": "design",
         "fields": {
             "hypothesis": "str",
             "domain": "str (default 'general')",
@@ -809,6 +826,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "literature_review_outline",
         "model": "LiteratureRequest",
         "endpoint": "/api/v1/science/literature",
+        "result_key": "outline",
         "fields": {
             "research_question": "str",
             "domain": "str (default 'general')",
@@ -829,6 +847,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "tailor_cv",
         "model": "CVRequest",
         "endpoint": "/api/v1/employment/cv",
+        "result_key": "cv",
         "fields": {
             "target_role": "str",
             "experience": "str",
@@ -852,6 +871,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "cover_letter",
         "model": "CoverLetterRequest",
         "endpoint": "/api/v1/employment/cover-letter",
+        "result_key": "cover_letter",
         "fields": {
             "target_role": "str",
             "company": "str (default '')",
@@ -872,6 +892,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "interview_prep",
         "model": "InterviewPrepRequest",
         "endpoint": "/api/v1/employment/interview-prep",
+        "result_key": "prep",
         "fields": {
             "target_role": "str",
             "seniority": "str (default 'mid')",
@@ -891,6 +912,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "career_path",
         "model": "CareerPathRequest",
         "endpoint": "/api/v1/employment/career-path",
+        "result_key": "roadmap",
         "fields": {
             "current_role": "str",
             "target_role": "str",
@@ -912,6 +934,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "salary_negotiation",
         "model": "SalaryNegotiationRequest",
         "endpoint": "/api/v1/employment/salary-negotiation",
+        "result_key": "plan",
         "fields": {
             "target_role": "str",
             "location": "str (default '')",
@@ -935,6 +958,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "application_support",
         "model": "ApplicationRequest",
         "endpoint": "/api/v1/employment/application",
+        "result_key": "statement",
         "fields": {
             "target_role": "str",
             "person_spec": "str (default '')",
@@ -959,6 +983,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "fatwa_research",
         "model": "FatwaResearchRequest",
         "endpoint": "/api/v1/religion/fatwa-research",
+        "result_key": "research",
         "fields": {
             "question": "str",
             "madhab": "str (default 'hanafi')",
@@ -982,6 +1007,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "hadith_study",
         "model": "HadithStudyRequest",
         "endpoint": "/api/v1/religion/hadith-study",
+        "result_key": "study",
         "fields": {
             "hadith": "str",
             "focus": "str (default 'authentication')",
@@ -1001,6 +1027,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "halal_pre_assessment",
         "model": "HalalReviewRequest",
         "endpoint": "/api/v1/religion/halal-review",
+        "result_key": "assessment",
         "fields": {
             "product_name": "str",
             "product_description": "str",
@@ -1025,6 +1052,7 @@ _FORMS: List[Dict[str, Any]] = [
         "handler": "quran_tafsir",
         "model": "QuranTafsirRequest",
         "endpoint": "/api/v1/religion/quran-tafsir",
+        "result_key": "tafsir",
         "fields": {
             "surah": "int",
             "ayah_start": "int",
@@ -1051,8 +1079,56 @@ _REGISTRY.extend(
     for f in _FORMS)
 
 
+#  W1186 - WHAT SERVED A DOMAIN FORM, AS THE FORM'S OWN PROVENANCE SAYS IT. A form answers through
+#  ai_text, whose provenance names ONE server as a string, says whether it was external, states its own evidence
+#  level (W698), carries the answer's tier of review (W688) and, when the floor served it, the floor's note of
+#  what it did not do (W627). _intel_served reads the engines' shape, a count map with its call counts. Read as
+#  one, the string raised ('str' object has no attribute 'keys'), so a composition reported every form that
+#  answered as failed, its output lost.
+_FORM_EVIDENCE_KEYS = ("evidence_level", "evidence_level_number", "evidence_basis")
+#  the provenance's own word for an answer no call served (the Law route's routed answers, the child concern)
+_FORM_NO_SERVER = "none"
+_FORM_NO_LEVEL_STATED = {
+    "evidence_level": None, "evidence_level_number": None,
+    "evidence_basis": ("NOT STATED: the form's answer names what served it and states no evidence level, so none "
+                       "is said here")}
+
+
+def _form_evidence(prov: Dict[str, Any], served: Optional[str]) -> Dict[str, Any]:
+    """W1186 - the evidence level a form's row says: the provenance's own statement. When it states none, the
+    refusal gate's for an answer the gate gave, the no-reply statement for one nothing served (no server named,
+    or the provenance's own word for none), and for a named server that states none, that none is stated -
+    never a level assumed."""
+    if all(k in prov for k in _FORM_EVIDENCE_KEYS):
+        return {k: prov[k] for k in _FORM_EVIDENCE_KEYS}
+    if served == _REFUSAL_GATE:
+        return _reply_evidence(_REFUSAL_GATE)
+    if served is None or served == _FORM_NO_SERVER:
+        return _no_reply_evidence()
+    return dict(_FORM_NO_LEVEL_STATED)
+
+
+def _form_served(prov: Any, out: Any = None) -> Dict[str, Any]:
+    """W1186 - the row's statement of what served a form. served_by is the provenance's own string ("none" when
+    it says no call served it), or None when it names nothing; is_external is the provenance's; the evidence is
+    _form_evidence's; no count is said, since the provenance states none. An engines' count map, should a form's
+    provenance carry one, is read by the engines' own reader. The tier and the floor's note ride the row when the
+    answer carries them: the floor's note is the answer's own (`out`, the note its page shows) before its
+    provenance's, as DomainTool reads them."""
+    prov = prov if isinstance(prov, dict) else {}
+    out = out if isinstance(out, dict) else {}
+    carried = {"review": prov.get("review"), "floor_note": out.get("floor_note") or prov.get("floor_note")}
+    sb = prov.get("served_by")
+    if isinstance(sb, dict):
+        return {**_intel_served(prov), **carried}
+    served = sb if isinstance(sb, str) and sb else None
+    return {**_form_evidence(prov, served), "served_by": served, "is_external": prov.get("is_external"), **carried}
+
+
 async def _run_form(form: Dict[str, Any], cfg: Dict[str, Any]) -> Dict[str, Any]:
-    """Call a form's own handler with its own request model. A refusal is returned AS a refusal."""
+    """Call a form's own handler with its own request model. A refusal is returned AS a refusal - the form's own,
+    and (W1186) the platform's constitutional gate's. W1186 - an answer says what served it from its own
+    provenance (_form_served), never from the engines' reader."""
     import importlib
     from fastapi import HTTPException as _HE
     from pydantic import ValidationError as _VE
@@ -1079,12 +1155,23 @@ async def _run_form(form: Dict[str, Any], cfg: Dict[str, Any]) -> Dict[str, Any]
                 "detail": e.detail if isinstance(e.detail, str) else json.dumps(e.detail)[:400], "output": None}
     out = out if isinstance(out, dict) else {}
     prov = out.get("ai_provenance") or {}
-    text = next((out[k] for k in out if isinstance(out.get(k), str) and len(out[k]) > 80
-                 and k not in ("disclaimer", "basis", "review_note")), "")
+    #  W1186 - THE OUTPUT IS THE FORM'S OWN TEXT: the field its page shows. The first long string of the answer was
+    #  taken, and for four forms it was another field (a framework's basis, a score's summary, the floor's note, a
+    #  source's name)
+    text = out.get(form["result_key"])
+    text = text if isinstance(text, str) else ""
+    served = _form_served(prov, out)
+    #  W1186 (its review) - A REFUSAL BY THE PLATFORM'S CONSTITUTIONAL GATE IS RETURNED AS A REFUSAL. The gate's
+    #  faith-ruling screen reads each form's own words, and its refusal comes back as the form's text. It is
+    #  recognised as religion._scholar_gated recognises it, by what the gate itself writes: nothing is offered as
+    #  the form's output, the gate's text is the reason, and the row keeps what served it and the gate's evidence
+    if prov.get("served_by") == _REFUSAL_GATE or text.startswith("[CONSTITUTIONAL REFUSAL]"):
+        return {"resource": form["id"], "ran": form["endpoint"], "refused": True, "detail": text,
+                "output": None, **served}
     return {"resource": form["id"], "ran": form["endpoint"], "refused": False,
             "withheld": list(out.get("sections_withheld") or []),
             "review_note": out.get("review_note"), "disclaimer": out.get("disclaimer"),
-            **_intel_served(prov), "material": prov.get("material"), "output": (text or "")[:600]}
+            **served, "material": prov.get("material"), "output": (text or "")[:600]}
 
 
 _BY_ID = {r["id"]: r for r in _REGISTRY}
@@ -2376,6 +2463,12 @@ _OUTCOME_PHRASE = {
     "specified": "composed a design blueprint from the catalogue — nothing was provisioned or activated",
     "narrated": "wrote a scenario narrative from a persona prompt — no simulator or engine ran, nothing was computed",
 }
+#  W1186 (its review) - two form rows whose shared phrases would be false, stamped in _run_real_resource: a form
+#  the platform's constitutional gate refused was not refused by the form's own rules, and a form's answer that no
+#  call served (its provenance's word "none") ran no engine
+_GATE_REFUSED_PHRASE = ("refused by the platform's constitutional gate before any resource was asked — nothing was "
+                        "composed; the gate's reason is in `detail`")
+_FORM_NOT_COMPOSED_PHRASE = "answered by the form's own route: nothing was composed and no call served it"
 _OUTCOME_FOR_KIND = {"status_read": "read", "query": "assessed", "blueprint": "specified", "narrative": "narrated",
                      "facility_run": "produced"}
 
@@ -2397,6 +2490,12 @@ def _resource_outcome(rid: str, r: Dict[str, Any]) -> str:
         return "refused"
     if rid in _FORM_BY_ID and not str(r.get("output") or "").strip():
         return "withheld"
+    #  W1186 (its review) - a form whose every section the floor withheld returns the floor's marker as its text
+    #  (form_rel_hadith, form_rel_tafsir on the floor): the marker is no output, and the withheld list says so
+    if rid in _FORM_BY_ID and r.get("withheld"):
+        from agentic_core.ai.native.engine import _MARKER as _floor_marker1186
+        if str(r.get("output") or "").strip() == _floor_marker1186.strip():
+            return "withheld"
     calls, failed = r.get("calls") or 0, r.get("failed_calls") or 0
     if calls and failed >= calls:
         return "no_calls_ran"
@@ -2426,6 +2525,14 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
     # kind_phrase describes the resource; on a failed attempt it must not describe an output
     r["kind_phrase"] = (_OUTCOME_PHRASE[outcome] if outcome in ("raised", "no_calls_ran", "refused", "withheld")
                         else _KIND_PHRASE[kind])
+    #  W1186 (its review) - as an engine that encoded nothing is not said to have produced its output, a form the
+    #  constitutional gate refused is not said to be refused by its own rules, and a form's answer no call served
+    #  is not said to have run an engine. That answer keeps the outcome word "produced" until the row W1186
+    #  registers gives it a word of its own, with the page's count and chip
+    if outcome == "refused" and r.get("served_by") == _REFUSAL_GATE:
+        r["outcome_phrase"] = r["kind_phrase"] = _GATE_REFUSED_PHRASE
+    elif rid in _FORM_BY_ID and outcome == "produced" and r.get("served_by") == _FORM_NO_SERVER:
+        r["outcome_phrase"] = r["kind_phrase"] = _FORM_NOT_COMPOSED_PHRASE
     r["invocation"] = "in_process"
     if rid in _READ_SIDE_EFFECTS:
         r["side_effect"] = _READ_SIDE_EFFECTS[rid]

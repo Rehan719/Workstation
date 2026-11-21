@@ -334,8 +334,9 @@ describe('CareHub, rendered against the Care routes\' own answers', () => {
     expect((post.mock.calls[0][1] as { concern_about: string }).concern_about).toBe('a child or young person');
     expect(screen.getByText((_, el) => el?.tagName === 'PRE' && el.textContent === got.guidance)).toBeTruthy();
     expect(screen.getByText(got.disclaimer)).toBeTruthy();
-    // the gap: with served_by null the badge says 'provenance not recorded', not 'no call served this'; W1186 gives it "none"
-    expect(screen.getByText('provenance not recorded')).toBeTruthy();
+    // W1186 - the answer says no call served it ("none"), and the badge under it says so
+    expect(screen.getByText('no call served this')).toBeTruthy();
+    expect(screen.queryByText('provenance not recorded')).toBeNull();
     expect(screen.queryByTestId('domain-served-identity')).toBeNull();
     expect(screen.queryByTestId('domain-floor-note')).toBeNull();
   });

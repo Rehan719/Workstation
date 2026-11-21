@@ -1040,7 +1040,7 @@
   }
  },
  "safeguarding_child": {
-  "triage_id": "05b12043a4",
+  "triage_id": "ca3119fa35",
   "setting": "community",
   "jurisdiction": "England (Care Act 2014)",
   "concern_about": "a child or young person",
@@ -1048,7 +1048,7 @@
   "composed": false,
   "composed_basis": "a child's concern goes to the children's route; nothing about it was sent to a composer and nothing was written about it",
   "ai_provenance": {
-   "served_by": null,
+   "served_by": "none",
    "is_external": false,
    "composed": false,
    "evidence_level": null,
@@ -1068,7 +1068,7 @@
     "basis": "no review of this tool is recorded: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed"
    }
   },
-  "generated_at": "2026-11-21T11:19:18Z",
+  "generated_at": "2026-11-21T13:00:44Z",
   "disclaimer": "If a child is in immediate danger, call 999."
  }
 }

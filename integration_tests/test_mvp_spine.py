@@ -80542,7 +80542,7 @@ def test_w950_p513_the_safeguarding_form_asks_who_the_concern_is_about_and_a_chi
     #  so no call served it and it states no level (test_w1185 holds the tier itself)
     assert c["composed"] is False and c["concern_about"] == "a child or young person", c
     assert (c["ai_provenance"]["served_by"], c["ai_provenance"]["composed"], c["ai_provenance"]["evidence_level"]) == (
-        None, False, None) and c["ai_provenance"]["review"]["label"], c["ai_provenance"]
+        "none", False, None) and c["ai_provenance"]["review"]["label"], c["ai_provenance"]
     assert c["guidance"].startswith(_care.IMMEDIATE_DANGER_FIRST), c["guidance"][:200]
     assert _care.CHILDRENS_ROUTE in c["guidance"] and "999" in c["guidance"] and "report-child-abuse" in c["guidance"]
     assert "w950" not in c["guidance"] and _care.ADULT_ROUTE_ONLY not in c["guidance"]
@@ -97555,7 +97555,8 @@ def test_w1185_fu1823_every_care_tool_says_its_tier_in_one_place_and_the_child_c
     assert c["composed_basis"] == ("a child's concern goes to the children's route; nothing about it was sent to a "
                                    "composer and nothing was written about it"), c["composed_basis"]
     prov = c["ai_provenance"]
-    assert prov == {"served_by": None, "is_external": False, "composed": False, **ap.no_reply_evidence(),
+    #  W1186 - no call served it, said by the Law route's routed answers' word for that
+    assert prov == {"served_by": "none", "is_external": False, "composed": False, **ap.no_reply_evidence(),
                     "review": rt.review_statement(tool)}, prov
     assert (prov["review"]["tier"], prov["review"]["label"], prov["review"]["known"]) == ("unreviewed", "Unreviewed", True)
     kept = fx["safeguarding_child"]
@@ -97675,3 +97676,232 @@ def test_w1185_fu1823_every_care_tool_says_its_tier_in_one_place_and_the_child_c
     left = [x for x in rows if x.get("title", "").startswith("Under a safeguarding answer the tier box and the provenance badge")]
     assert len(left) == 1 and (left[0]["slot"], left[0]["severity"]) == ("P5.13", "low") and left[0]["source"].startswith(
         "W1185") and "the first thing drawn under a safeguarding answer" in left[0]["why"], left
+
+
+def test_w1186_a_composition_says_what_served_each_domain_form_from_the_forms_own_provenance(client, monkeypatch):
+    """W1186, the row it registers and closes on P3.32; the Owner's ruling of 2026-10-12 that the autonomous runner
+    calls each of the 25 domain forms through its own door (W682). _run_form passed a form's provenance - ai_text's
+    shape: one server named as a string, whether it was external, its own evidence level, its tier of review - to
+    _intel_served, which reads the engines' count map. 'native'.keys() raised, the handler's catch made an error row
+    of it, and every form that ran to an answer through a composition was reported as raised, its output lost; four
+    forms' output, read the old way, was another field of the answer. The only guard drove refusals. Held here, over
+    the registry, so a form added later is covered:
+    F1. each registered form, given its required fields, runs through the choke point to an answer: no error; the
+        outcome produced, or withheld where the floor withheld every section and the text is only the floor's marker;
+        its output the form's own text (the field its page shows, which the registry names); and the row says the
+        provenance's own served_by, is_external and evidence level, carries the tier of review and the floor's note
+        the answer carries (the answer's own note before its provenance's), and states no count it does not;
+    F2. a refusal by the platform's constitutional gate, real and stood in, is returned as a refusal, phrased as the
+        gate's, while a form's own refusal keeps its own phrase; an answer nothing composed (the child-concern answer,
+        the Law route's two routed answers) says the provenance's own word for none and no level, and is phrased as
+        an answer no call served, never as an engine run; a provenance that names no server, or no provenance at all,
+        says no server and the no-reply statement; a named server stating no level says that none is stated; an
+        external server is said as one; an engines' count map is read by the engines' reader;
+    F3. read as code: the form branch builds its row with _form_served and never _intel_served, whose other call
+        sites pass the engines' count map; the defect's row is closed by this round and what it leaves is
+        registered, each found by its title;
+    F4. the Care page's rendered test reads the badge under the child-concern answer as no call served it."""
+    import asyncio
+    import importlib
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.ai.native.engine import _MARKER
+    from agentic_core.api import _ai_provenance as ap
+    from agentic_core.api import resource_fabric as fab
+    root = Path(__file__).resolve().parents[1]
+    EV = ("evidence_level", "evidence_level_number", "evidence_basis")
+    COUNTS = {"served_by_map", "calls", "floor_calls", "failed_calls"}
+    run = lambda rid, cfg: asyncio.new_event_loop().run_until_complete(  # noqa: E731
+        fab._run_real_resource(rid, cfg, "w1186 objective", "general"))
+    phrases = lambda r: (r["outcome_phrase"], r["kind_phrase"])  # noqa: E731
+
+    #  the field each form's page shows, read from the six domain pages: the registry names the same one
+    pages = root / "apps/workstation-superapp/src/pages/domains"
+    page_key = {}
+    for p in pages.glob("*.tsx"):
+        page_key.update(re.findall(r'endpoint="(/api/v1/[a-z_/-]+)"\s+resultKey="([a-z_]+)"', p.read_text(encoding="utf-8")))
+    assert len(fab._FORMS) >= 25 and {f["endpoint"]: f["result_key"] for f in fab._FORMS} == page_key, (
+        "a form's registered result_key is not the field its page shows")
+
+    #  a made-up value for each required field; a field added later gets one from its declared type
+    V = {"document_text": "w1186 a made-up contract: the supplier delivers the goods within 30 days of the order.",
+         "question": "w1186 what does a limitation of liability clause usually cover?", "template_id": "nda",
+         "subject": "biology", "level": "GCSE", "topic": "photosynthesis",
+         "student_work": "w1186 made-up work: plants make their food from light, water and air.",
+         "concern": "w1186 a worker is worried about bruising", "concern_about": "an adult",
+         "patient_summary": "w1186 84F", "current_situation": "fell at 0300",
+         "research_question": "does blue light change plant growth?", "hypothesis": "blue light increases plant growth",
+         "target_role": "ward nurse", "experience": "w1186 five years on a medical ward",
+         "current_role": "care assistant", "hadith": "w1186 a made-up text given for study",
+         "product_name": "w1186 biscuit", "product_description": "a made-up biscuit of wheat flour, sugar and oil",
+         "surah": 1, "ayah_start": 1}
+    EXTRA = {"form_care_plan": {"patient_profile": {"age": "80"}, "care_needs": ["falls prevention"]},
+             "form_care_risk_assess": {"tool": "news2", "patient_data": {"resp_rate": "18"}}}
+
+    def value(f, k):
+        if k in V:
+            return V[k]
+        kind = str(f["fields"].get(k, "str"))
+        return 1 if kind.startswith("int") else (["w1186 item"] if kind.startswith("list") else "w1186 made-up value")
+
+    def through(f, cfg):
+        """the choke point's row, and the very answer the form's own handler gave it"""
+        mod = importlib.import_module(f["module"])
+        real, got = getattr(mod, f["handler"]), {}
+
+        async def _keep(req):
+            got["out"] = await real(req)
+            return got["out"]
+        monkeypatch.setattr(mod, f["handler"], _keep)
+        try:
+            return run(f["id"], cfg), got.get("out")
+        finally:
+            monkeypatch.setattr(mod, f["handler"], real)
+
+    def own_note(out):
+        """the floor's note the answer carries, as its page reads it: its own, before its provenance's"""
+        return out.get("floor_note") or (out.get("ai_provenance") or {}).get("floor_note")
+
+    #  F1. every registered form, to an answer
+    withheld = set()
+    for f in fab._FORMS:
+        cfg = {k: value(f, k) for k in f["required"]}
+        cfg.update(EXTRA.get(f["id"], {}))
+        row, out = through(f, cfg)
+        assert isinstance(out, dict) and not row.get("error"), (f["id"], row.get("error"))
+        marker_only = str(out[f["result_key"]]).strip() == _MARKER.strip() and bool(out.get("sections_withheld"))
+        assert row["outcome"] == ("withheld" if marker_only else "produced"), (f["id"], row["outcome"], row.get("detail"))
+        withheld |= {f["id"]} if marker_only else set()
+        prov = out["ai_provenance"]
+        assert (row["served_by"], row["is_external"]) == (prov["served_by"], prov["is_external"]), (f["id"], row["served_by"])
+        assert {k: row[k] for k in EV} == {k: prov[k] for k in EV}, (f["id"], "the row's evidence is not its answer's")
+        assert row["review"] == prov["review"] and row["review"]["label"], (f["id"], "the row drops the answer's tier")
+        assert row["floor_note"] == own_note(out), (f["id"], "the row's floor note is not the one the answer carries")
+        assert not (COUNTS & set(row)), (f["id"], "a count is said that the provenance does not state", COUNTS & set(row))
+        assert row["output"] == str(out[f["result_key"]])[:600] and row["output"], (f["id"], "the output is not its text")
+    #  ...on the floor the two religion forms whose every section is withheld are the ones read as withheld, and
+    #  their row carries the note their page shows, not the provenance's
+    assert withheld == {"form_rel_hadith", "form_rel_tafsir"}, withheld
+    hadith, out = through(fab._FORM_BY_ID["form_rel_hadith"], {"hadith": V["hadith"]})
+    assert hadith["floor_note"] == out["floor_note"] != out["ai_provenance"]["floor_note"], hadith["floor_note"]
+
+    #  F2. a refusal by the platform's constitutional gate is returned as a refusal: a real one, through the choke
+    #  point, its gate's faith-ruling screen reading the form's own words
+    row, out = through(fab._FORM_BY_ID["form_rel_fiqh_research"],
+                       {"question": "Is it halal for me to take a mortgage in Islam?"})
+    assert out["ai_provenance"]["served_by"] == ap.REFUSAL_GATE, out["ai_provenance"].get("served_by")
+    assert (row["outcome"], row["refused"], row["output"], row["served_by"]) == ("refused", True, None, ap.REFUSAL_GATE), row
+    assert {k: row[k] for k in EV} == ap.reply_evidence(ap.REFUSAL_GATE), ("the gate's refusal evidence", row)
+    assert row["detail"].startswith("[CONSTITUTIONAL REFUSAL]") and row["detail"] == out["research"], row["detail"][:200]
+    assert phrases(row) == (fab._GATE_REFUSED_PHRASE,) * 2 and "constitutional gate" in row["outcome_phrase"], phrases(row)
+    assert not [x for x in phrases(row) if "produced" in x], ("a gate refusal is said to have produced", phrases(row))
+    #  ...and a form's own refusal keeps its own phrase
+    own = run("form_law_generate", {"template_id": "et1_claim", "details": {}})
+    assert own["outcome"] == "refused" and all("refused by the form's own rules" in x for x in phrases(own)), phrases(own)
+
+    #  ...an answer nothing composed, routed or routed to people: the provenance's own word for none, phrased as an
+    #  answer no call served. Its outcome word is the row W1186 registers on P3.32
+    gap = "the row W1186 registers on P3.32: a form answer no call composed keeps the outcome word 'produced'"
+    care = fab._FORM_BY_ID["form_care_safeguarding"]
+    law = fab._FORM_BY_ID["form_law_research"]
+    for f, cfg, method in ((care, {"concern": "w1186 bruising", "concern_about": "a child or young person"}, None),
+                           (law, {"question": "my employer sacked me yesterday, can I sue them?"},
+                            "routed to people - not answered"),
+                           (law, {"question": "how do I apply for British citizenship?"},
+                            "routed to an authorised person - not answered")):
+        row, out = through(f, cfg)
+        prov = out["ai_provenance"]
+        assert prov["served_by"] == "none" and prov["composed"] is False and out.get("method") == method, (f["id"], prov)
+        assert (row["served_by"], row["is_external"]) == ("none", False), (f["id"], row)
+        assert {k: row[k] for k in EV} == ap.no_reply_evidence() == {k: prov[k] for k in EV}, (f["id"], row)
+        assert row["floor_note"] == own_note(out), (f["id"], "the row's floor note is not the one the answer carries")
+        assert phrases(row) == (fab._FORM_NOT_COMPOSED_PHRASE,) * 2, (f["id"], phrases(row))
+        assert not [x for x in phrases(row) if "ran its engine" in x or "produced" in x], (f["id"], phrases(row))
+        assert row["outcome"] == "produced", (gap, f["id"], row["outcome"])
+        if f is care:
+            assert row["review"] == prov["review"] and row["review"]["label"], row.get("review")
+        else:
+            assert not row.get("review"), ("the row W1186 registers on P5.15 says this answer carries no tier", row)
+    #  ...the refusal gate's answer, the word for none with no level stated beside it, a server stating no level, an
+    #  external server and an engines' count map, each the answer of a stand-in for one form's handler
+    sci = fab._FORM_BY_ID["form_sci_hypothesis"]
+    mod = importlib.import_module(sci["module"])
+    tier = {"tier": "unreviewed", "label": "Unreviewed", "known": True, "basis": "w1186 the tier as given"}
+    said = "w1186 " + "the stand-in's text. " * 6
+
+    def answering(prov):
+        async def _h(req):
+            return {"hypotheses_text": said, **({} if prov is None else {"ai_provenance": prov})}
+        return _h
+    cases = [({"served_by": ap.REFUSAL_GATE, "is_external": False, "review": tier},
+              {**ap.reply_evidence(ap.REFUSAL_GATE), "served_by": ap.REFUSAL_GATE, "is_external": False,
+               "outcome": "refused", "output": None, "detail": said}),
+             ({"served_by": "none", "is_external": False, "review": tier},
+              {**ap.no_reply_evidence(), "served_by": "none", "is_external": False}),
+             ({"served_by": "w1186-a-server", "is_external": False, "review": tier},
+              {"evidence_level": None, "evidence_level_number": None, "served_by": "w1186-a-server"}),
+             ({"served_by": "w1186-external-model", "is_external": True, **ap.reply_evidence("w1186-external-model"),
+               "review": tier, "floor_note": None},
+              {**ap.reply_evidence("w1186-external-model"), "served_by": "w1186-external-model", "is_external": True,
+               "floor_note": None}),
+             ({"served_by": {"native": 2, "w1186-model": 1}, "any_external": False, "calls": 3, "floor_calls": 2,
+               "failed_calls": 0, "review": tier},
+              {"served_by": "native,w1186-model", "served_by_map": {"native": 2, "w1186-model": 1}, "calls": 3,
+               "floor_calls": 2, "failed_calls": 0, "is_external": False})]
+    for prov, want in cases:
+        monkeypatch.setattr(mod, sci["handler"], answering(prov))
+        row = run(sci["id"], {"research_question": "w1186 a stand-in question"})
+        assert not row.get("error") and {k: row.get(k) for k in want} == want, (prov.get("served_by"), row)
+        assert row["review"] == tier, ("the tier is dropped", prov.get("served_by"))
+        if prov["served_by"] == "w1186-a-server":
+            assert row["evidence_basis"].startswith("NOT STATED:"), ("a level is assumed for a server stating none", row)
+        if prov["served_by"] == ap.REFUSAL_GATE:
+            assert phrases(row) == (fab._GATE_REFUSED_PHRASE,) * 2, ("the gate's refusal is phrased as", phrases(row))
+    #  ...a provenance that names no server (no served_by, an empty one) and an answer with no provenance at all:
+    #  no server, never said external, and the no-reply statement - never the floor, never the first level
+    for prov in ({"is_external": False, "review": tier}, {"served_by": "", "is_external": False, "review": tier}, None):
+        monkeypatch.setattr(mod, sci["handler"], answering(prov))
+        row = run(sci["id"], {"research_question": "w1186 a stand-in question"})
+        assert not row.get("error") and row["served_by"] is None and row["is_external"] is not True, (prov, row)
+        assert {k: row[k] for k in EV} == ap.no_reply_evidence(), (prov, "an unnamed server is given a level", row)
+        assert row["floor_note"] is None, (prov, "a floor note is said that the answer does not carry", row)
+    monkeypatch.undo()
+
+    #  F3. the form branch's code
+    code = _code_only((root / "agentic_core/api/resource_fabric.py").read_text(encoding="utf-8"))
+    body = code.split("async def _run_form(", 1)[1].split("\n_BY_ID = ", 1)[0]
+    assert "served = _form_served(prov, out)" in body and "**served" in body and "_intel_served" not in body, (
+        "the form branch reads the engines' shape")
+    assert 'text = out.get(form["result_key"])' in body, "the output is not read from the field the page shows"
+    #  every other row _intel_served builds is passed an engine's own provenance (petri_dish's r.ai_provenance; mjm,
+    #  cognitive_cascade, bdp/spi/apie/ddpie and nexus's r.get("provenance")), and _form_served hands it a count map only
+    sites = re.findall(r"\*\*_intel_served\(([^)]*\)?)\)", code)
+    assert sorted(sites) == sorted(["r.ai_provenance"] + ['r.get("provenance")'] * 4 + ["prov"]), sites
+    helper = code.split("def _form_evidence(", 1)[1].split("\nasync def _run_form(", 1)[0]
+    assert "return {**_intel_served(prov), **carried}" in helper, helper[:600]
+    assert not re.search(r"(?<![a-z_])_reply_evidence\(\)", helper), "a form's row is given the first level by default"
+    assert "**_form_evidence(prov, served)" in helper and '"is_external": prov.get("is_external")' in helper
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    titled = lambda start: [r for r in rows if r.get("title", "").startswith(start)]  # noqa: E731
+    done = titled("A composition reports every domain form that answers")
+    assert len(done) == 1 and (done[0]["status"], done[0]["closed_by"], done[0]["because"], done[0]["slot"]) == (
+        "done", "W1186", "built", "P3.32"), done
+    page = titled("The fabric page draws a form's answer without its tier or the floor's note")
+    assert len(page) == 1 and done[0]["id"] in page[0]["slot_source"], ("it does not name the row it follows", page)
+    assert "context_material" in page[0]["why"], "the fabric page's row leaves out a key the form row drops"
+    for start, slot, severity, beside in (
+            ("The fabric page draws a form's answer without its tier or the floor's note", "P3.32", "medium", None),
+            ("The Law research route's answers routed before anything composes carry no tier", "P5.15", "medium", None),
+            ("The fabric page and the domain pages draw a refusal by the constitutional gate", "P3.32", "low", page),
+            ("A form answer no call composed is counted as an engine run", "P3.32", "medium", page)):
+        left = titled(start)
+        assert len(left) == 1 and (left[0]["slot"], left[0]["severity"]) == (slot, severity) and left[0][
+            "source"].startswith("W1186"), (start, left)
+        assert beside is None or beside[0]["id"] in left[0]["slot_source"], (start, "it does not name the row beside it")
+
+    #  F4. the Care page's rendered test: the badge under the child-concern answer says no call served it
+    spec = _code_only((root / "apps/workstation-superapp/src/pages/domains/CareHub.test.tsx").read_text(encoding="utf-8"))
+    case = spec.split("it('a concern about a child gets the children\\'s route", 1)[1].split("\n  it(", 1)[0]
+    assert "expect(screen.getByText('no call served this')).toBeTruthy();" in case, case[-900:]
+    assert "expect(screen.queryByText('provenance not recorded')).toBeNull();" in case, case[-900:]
