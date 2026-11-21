@@ -63642,14 +63642,27 @@ def test_w691_a_reviewer_agent_is_calibrated_by_its_recorded_run_and_never_by_a_
     assert client.post("/api/v1/review/calibration/run", json={**body, "configuration": "floor"}).status_code == 200
     assert cal.calibration_of("care-reviewer")["calibrated"] is False and "floor cannot review" in cal.calibration_of("care-reviewer")["why_not"]
     ok = client.post("/api/v1/review/calibration/run", json=body)
-    assert ok.status_code == 200 and ok.json()["score"]["meets_bar"] is True and ok.json()["agent_now"]["calibrated"] is True
+    #  W1183 - A TYPED RUN IS KEPT AND CALIBRATES NOTHING: it is a person's account of what was flagged. The arithmetic
+    #  below is over runs of the agent's OWN, so each kept run is marked as the agent's own door marks it (test_w1100
+    #  and test_w1183 drive that door itself)
+    assert ok.status_code == 200 and ok.json()["score"]["meets_bar"] is True and ok.json()["agent_now"]["calibrated"] is False
+    assert ok.json()["agent_now"]["reason"] == "typed_only", ok.json()["agent_now"]
+
+    def _its_own():
+        kept = json.loads(runs.read_text(encoding="utf-8"))
+        for _r in kept:
+            _r.update(door=cal.AGENT_DOOR, set_digest=cal.set_digest(runnable))
+        runs.write_text(json.dumps(kept), encoding="utf-8")
+    _its_own()
     got = client.get("/api/v1/review/calibration/care-reviewer").json()
     assert got["calibrated"] is True and (got["caught"], got["planted_cases"], got["false_alarms"], got["clean_cases"]) == (3, 3, 0, 6)
     #  THE STORED VERDICT IS NEVER TRUSTED: the flags are re-scored, so a later, worse run uncalibrates the agent
     later = (_dt.date.today() + _dt.timedelta(days=1)).isoformat()
     client.post("/api/v1/review/calibration/run", json={**body, "date": later, "flags": {"P0": ["reason-0"]}})
+    _its_own()
     assert cal.calibration_of("care-reviewer")["calibrated"] is False and "did not meet the bar" in cal.calibration_of("care-reviewer")["why_not"]
     client.post("/api/v1/review/calibration/run", json={**body, "date": (_dt.date.today() + _dt.timedelta(days=2)).isoformat()})
+    _its_own()
     assert cal.calibration_of("care-reviewer")["calibrated"] is True
     #  A RUN ON AN OLDER VERSION OF THE SET does not count for this one
     runnable["version"] = "t2"
@@ -90660,14 +90673,14 @@ def test_w1099_fu1054_the_care_calibration_set_is_written_out_and_run_only_when_
     """FU-1054 part 1 (W1099). The Care calibration set was sixteen cases described in a sentence each, with
     `"runnable": false` typed beside them, and the route and calibration_of read that flag: a claim stood where the
     module's own rule is a measurement. Held here:
-    - the set in the tree is written out: fifteen cases carry what a reviewer is shown, each taken from the tree (a
-      route's answer, a prompt, an entry of the catalogue's history), and every planted case says where the tree
-      had its defect; the sixteenth, K06, says why it is not written out yet; no `runnable` key stands in the file;
+    - the set in the tree is written out: its sixteen cases carry what a reviewer is shown, each taken from the tree
+      (a route's answer, a prompt, an entry of the catalogue's history), K06 once NICE NG97 was read (W1122), and
+      every planted case says where the tree had its defect; no `runnable` key stands in the file;
     - whether a set can be run is computed, and every rule drives it: a case not written out, a planted case with no
       `from`, a row not in the register, a row in another status, a current row not read within the review period
       of the run's date or read after it, and a part the row says was NOT READ - and each reason is said;
-    - on 2026-11-15 the set cannot be run for exactly two causes outside this machine: NEWS2's chart itself was not
-      read (C03, C10, K02) and NICE NG97 has not been read (K06, whose text waits on it);
+    - on 2026-11-15 the set cannot be run: its four cases that rely on NEWS2's chart (C03, C10, K02) and on NICE
+      NG97 (K06) rely on reads made on 2026-11-19, after that day (W1122); from 2026-11-19 it can be run;
     - the calibration route records a run only on a date the set can be run, and refuses one on the tree's set with
       those reasons, writing nothing; a flag in a set's file decides nothing either way."""
     import datetime as _dt
@@ -90837,7 +90850,8 @@ def test_w1100_fu1054_the_care_reviewer_is_a_different_checklist_over_the_source
     flo = asyncio.run(cr.review(case["shown"], the_set, case["relies_on"]))
     assert flo["reviewed"] is False and flo["flags"] is None and "the floor cannot review" in flo["why_not"], flo
 
-    #  THE RUN ROUTE. On the tree's set, which cannot be run, no model is asked and nothing is kept
+    #  THE RUN ROUTE. On the tree's set on a day it cannot be run (2026-11-15, before its last sources were read), no
+    #  model is asked and nothing is kept
     runs = tmp_path / "review_calibration_runs.json"
     monkeypatch.setattr(cal, "_runs_path", lambda: runs)
     monkeypatch.setattr(orchestrator, "complete", _model)
@@ -90914,7 +90928,10 @@ def test_w1101_fu1054_an_uncalibrated_agents_review_is_labelled_where_the_tier_i
     label = "an agent's review of this tool exists and does not raise its tier: w1101-reviewer has not been calibrated"
     alone = rt.review_statement(T)
     assert alone["tier"] == "unreviewed" and alone["uncalibrated_agent_review"] == label, alone
-    assert alone["basis"].startswith("no review of this tool counts:") and alone["basis"].endswith("; " + label), alone["basis"]
+    #  W1183 - and after the label, the agent's calibration as the options panel says it
+    never = "this agent has never been run on the calibration set"
+    assert alone["basis"].startswith("no review of this tool counts:") and alone["basis"].endswith(
+        "; " + label + f"; w1101-reviewer's calibration: {never}"), alone["basis"]
     #  where a person reads it: under the answer (and so in what they save), and before the form
     risk = client.post("/api/v1/care/risk-assess", json={"tool": "news2", "patient_data": {"respiratory_rate": 25}}).json()
     assert label in risk["ai_provenance"]["review"]["basis"], risk["ai_provenance"]["review"]
@@ -90927,7 +90944,8 @@ def test_w1101_fu1054_an_uncalibrated_agents_review_is_labelled_where_the_tier_i
     two = ("an agent's review of this tool exists and does not raise its tier: w1101-reviewer, w1101-second have not "
            "been calibrated")
     assert both["tier"] == "checked_by_rule" and both["basis"].startswith("the highest tier a record supports: checked by rule")
-    assert both["basis"].endswith("; " + two) and both["uncalibrated_agent_review"] == two, both["basis"]
+    assert both["basis"].endswith("; " + two + f"; w1101-reviewer's calibration: {never}; w1101-second's calibration: "
+                                  f"{never}") and both["uncalibrated_agent_review"] == two, both["basis"]
 
 
 def test_w1102_fu399_the_tier_of_review_is_rendered_where_it_is_read_with_an_uncalibrated_agents_label(client, tmp_path, monkeypatch):
@@ -90942,6 +90960,10 @@ def test_w1102_fu399_the_tier_of_review_is_rendered_where_it_is_read_with_an_unc
     from agentic_core.api import _review_tier as rt
     store = tmp_path / "review_tier_records.json"
     monkeypatch.setattr(rt, "_path", lambda: store)
+    #  W1183 - the tier's sentence now says the reviewer's calibration, which turns on whether the set can be run on
+    #  the day: the capture's day is pinned, as the capture pinned it
+    from agentic_core.api import _review_calibration as _cal1102
+    monkeypatch.setattr(_cal1102, "_today", lambda: _dt.date(2026, 11, 21))
     pages = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "domains"
     fx = json.loads((pages / "CareHub.fixture.json").read_text(encoding="utf-8"))
     today = _dt.date.today().isoformat()
@@ -90959,8 +90981,10 @@ def test_w1102_fu399_the_tier_of_review_is_rendered_where_it_is_read_with_an_unc
     kept = {"options": fx["review_handover_uncalibrated"]["review"],
             "answer": fx["handover_uncalibrated"]["ai_provenance"]["review"]}
     for where in ("options", "answer"):
-        assert (live[where]["label"], live[where]["basis"]) == (kept[where]["label"], kept[where]["basis"]), (
-            where, live[where], kept[where])
+        #  W1183 - and why each record of it does not count, which the page's captures carry too
+        assert (live[where]["label"], live[where]["basis"], live[where].get("not_counted")) == (
+            kept[where]["label"], kept[where]["basis"], kept[where].get("not_counted")), (
+            "the captured tier, or why a record of it does not count, is not the route's", where, live[where], kept[where])
         assert "w1102-made-up-reviewer has not been calibrated" in live[where]["basis"], live[where]
     spec = (pages / "CareHub.test.tsx").read_text(encoding="utf-8")
     for case in ("await screen.findByTestId('review-option-tier');", "await screen.findByTestId('domain-review-tier');",
@@ -96924,3 +96948,290 @@ def test_w1182_fu1077_the_fca_handbooks_credit_broking_guidance_and_consumer_cre
     assert hits == [], hits
     out = subprocess.run([sys.executable, "scripts/sources_check.py"], cwd=root, capture_output=True, text=True)
     assert out.returncode == 0, (out.stdout[-800:], out.stderr[-400:])
+
+
+def test_w1183_fu1054_the_care_reviewers_calibration_is_said_where_its_reviews_are_read_and_only_its_own_run_counts(
+        client, tmp_path, monkeypatch):
+    """FU-1054 part 5 (W1183); P5.15 clause 3: a reviewer agent's reviews count only after it is calibrated on planted
+    defects and clean answers, its catch rate and false-alarm rate are shown beside its reviews, and an uncalibrated
+    agent's review is labelled so. The Care forms said nothing of the reviewer before anything was typed; a run typed
+    through the record door calibrated the agent as fully as one it made itself; a run said to be of any day the set
+    could be run counted, and of two runs on one day either could stand; a case answered with no FLAG line counted as
+    clean, and one edited under the same version left the run counting; and the rates beside a review were those of
+    whichever agent's record came last. Held here:
+    L0. the four named kinds are planted cases taken from the tree, C01 to C04, each with its reason and where the tree
+        had it, on version 3-written;
+    L1. with no run, the reviewer's statement is UNCALIBRATED, with no rates and no run, in its own sentence; the days
+        the set can be run are computed, and it runs on both ends and on neither side; every Care form's options carry
+        the statement, a Law form's none, and the calibration route carries it with the window and the server's date;
+    L2. the options panel draws the reviewer, and its rates only when it has some; the Care page's rendered test reads
+        both, read as code (a commented-out or skipped line does not count), from captured answers that are the
+        routes' own with the capture's day pinned, a stand-in run's included; each captured reason an agent's review
+        does not count is the one counts() gives now;
+    L3. a run the agent made is kept whole, and its rates stand beside each review of it: below the bar its review is
+        labelled with them and raises nothing; at the bar it raises the tier with the counted agent's rates, and a
+        later record by another agent does not replace them;
+    L4. only its own run counts: a typed run is kept and calibrates nothing, as does a run kept with no door; a run is
+        dated the day it is made, and a run of another day, before or after, is refused before any model is asked; a
+        case answered with no FLAG line leaves the run uncalibrated and is named; a case or the checklist edited under
+        the same version voids the run. Each agent's calibration is said for the discipline of its record."""
+    import datetime as _dt
+    import importlib
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.api import _review_calibration as cal
+    from agentic_core.api import _review_tier as rt
+    from agentic_core.api import care_reviewer as cr
+    from agentic_core.ai.native import orchestrator
+    root = Path(__file__).resolve().parents[1]
+    src = root / "apps" / "workstation-superapp" / "src"
+    D0 = _dt.date(2026, 11, 21)                      # the capture's day, a day the tree's set can be run
+    monkeypatch.setattr(cal, "_today", lambda: D0)
+    runs = tmp_path / "review_calibration_runs.json"
+    monkeypatch.setattr(cal, "_runs_path", lambda: runs)
+    monkeypatch.setattr(rt, "_path", lambda: tmp_path / "review_tier_records.json")
+    gw = importlib.import_module("agentic_core.ai.gateway")
+    IDENT = {"model": "w1183-stand-in", "build_digest": "w1183standin" + "0" * 52, "processor": None,
+             "basis": "a stand-in made up for W1183: no model ran"}
+    _real_ident = gw.served_identity_of
+    monkeypatch.setattr(gw, "served_identity_of",
+                        lambda sb: dict(IDENT) if str(sb).startswith("ollama:w1183") else _real_ident(sb))
+
+    #  L0. the four named kinds, from the tree
+    the_set = cal.load_set("care")
+    cases = {c["id"]: c for c in the_set["cases"]}
+    assert the_set["version"] == "3-written" and len(cases) == 16, the_set["version"]
+    kinds = {"C01": "source not current", "C02": "emergency line not first", "C03": "score does not match the table",
+             "C04": "professional role claimed"}
+    for cid, reason in kinds.items():
+        c = cases[cid]
+        assert c.get("planted") and c["must_flag"] == reason and c.get("shown"), (cid, c.get("must_flag"))
+        assert re.search(r"\bW\d{3,4}\b|\b[0-9a-f]{8}\b", str(c["from"])), (cid, "names no round or commit", c["from"])
+    assert [(n["row"], n["status"]) for n in cases["C01"]["relies_on"]] == [("nice-cg161", "replaced")]
+
+    #  L1. no run: uncalibrated, no rates, in its own sentence; the window computed; before every Care form
+    st = cal.calibration_statement("care-reviewer")
+    never = ("never run on its calibration set (version 3-written: 10 planted cases, 6 clean), so it has no catch rate "
+             "and no false-alarm rate, and no review by it raises a tool's tier")
+    assert (st["calibrated"], st["label"], st["reason"], st["rates"], st["run"], st["basis"]) == (
+        False, "Uncalibrated", "never_run", None, None, never), st
+    assert cal.REVIEWER_OF["care"] == cr.AGENT == st["agent"] == "care-reviewer"
+    w = st["set"]["window"]
+    assert w and st["set"]["runnable_today"] is True and (st["set"]["planted"], st["set"]["clean"]) == (10, 6), st["set"]
+    lo, hi = _dt.date.fromisoformat(w["from"]), _dt.date.fromisoformat(w["through"])
+    assert lo <= D0 <= hi, w
+    one = _dt.timedelta(days=1)
+    for day, can in ((lo, True), (hi, True), (lo - one, False), (hi + one, False)):
+        assert cal.runnable(the_set, on=day)["runnable"] is can, (day, can)
+    #  whether it can be run TODAY is read from the one clock: the day after the window it cannot, and no agent is
+    #  calibrated on it, said in its own sentence with no rates and no run
+    monkeypatch.setattr(cal, "_today", lambda: hi + one)
+    assert cal.runnable(the_set)["runnable"] is False
+    gone = cal.calibration_statement("care-reviewer")
+    assert (gone["reason"], gone["label"], gone["rates"], gone["run"]) == ("set_cannot_run", "Uncalibrated", None, None), gone
+    assert gone["basis"].startswith("uncalibrated because the calibration set cannot be run today, so no agent is "
+                                    "calibrated on it: "), gone["basis"]
+    monkeypatch.setattr(cal, "_today", lambda: D0)
+    for ep in ("/api/v1/care/care-plan", "/api/v1/care/risk-assess", "/api/v1/care/safeguarding", "/api/v1/care/handover"):
+        o = client.get("/api/v1/review-options", params={"endpoint": ep})
+        assert o.status_code == 200 and o.json()["reviewer"] == st, (ep, o.text[:300])
+    law = client.get("/api/v1/review-options", params={"endpoint": "/api/v1/law/research"})
+    assert law.status_code == 200 and law.json()["reviewer"] is None, law.text[:300]
+    g = client.get("/api/v1/review/calibration/care-reviewer").json()
+    assert (g["statement"], g["window"], g["today"]) == (st, w, D0.isoformat()), g
+
+    #  L2. the page, and the captured answers it is rendered from
+    comp = _code_only((src / "components/ReviewOptions.tsx").read_text(encoding="utf-8"))
+    for line in ('data-testid="review-option-reviewer"', 'data-testid="review-option-reviewer-rates"',
+                 "{said.reviewer && (", "{said.reviewer?.rates && (",
+                 "Reviewer agent ({said.reviewer.agent}): {said.reviewer.label}</span>",
+                 "{' — '}{said.reviewer.basis}.", "{said.reviewer.rates.basis}.</p>"):
+        assert line in comp, ("the options panel does not draw this", line)
+    spec = _code_only((src / "pages/domains/CareHub.test.tsx").read_text(encoding="utf-8"))
+    for line in ("await screen.findByTestId('review-option-reviewer');", "const r = captured.review_handover.reviewer;",
+                 "const r = captured.review_risk_made_up_run.reviewer;",
+                 "expect(screen.queryByTestId('review-option-reviewer-rates')).toBeNull();",
+                 "`Reviewer agent (${r.agent}): ${r.label} — ${r.basis}.`));",
+                 "await waitFor(() => expect(screen.getByTestId('review-option-reviewer-rates').textContent).toBe(`${r.rates.basis}.`));",
+                 "serve({ review_risk: ok(captured.review_risk_made_up_run) });"):
+        assert line in spec, ("the Care page's rendered test does not read this", line)
+    assert not re.search(r"\b(?:describe|it|test)\.(?:skip|only|todo)\(", spec), "a rendered test of the Care page is skipped"
+    fx = json.loads((src / "pages/domains/CareHub.fixture.json").read_text(encoding="utf-8"))
+    assert fx["review_handover"]["reviewer"] == st == fx["review_risk"]["reviewer"] == (
+        fx["review_handover_uncalibrated"]["reviewer"]), "the captured reviewer is not the route's"
+    #  why W1102's made-up review of the handover does not count, as the page's two captures carry it: what counts()
+    #  says of that review now
+    w1102 = {"tool": "care_handover", "tier": "reviewed_by_workstation_agent", "date": D0.isoformat(),
+             "checklist": "care checklist v2", "tool_version": "care_handover as built today",
+             "sources_read": [{"source": "nice-ng249", "page": "recommendations 1.1 to 1.3", "read_on": D0.isoformat()}],
+             "model": "local-model", "agent": "w1102-made-up-reviewer",
+             "could_not_check": "nothing beyond the guideline's own text"}
+    why_now = rt.counts(w1102)["why_not"]
+    for k, review in (("review_handover_uncalibrated", fx["review_handover_uncalibrated"]["review"]),
+                      ("handover_uncalibrated", fx["handover_uncalibrated"]["ai_provenance"]["review"])):
+        assert [x["why_not"] for x in review["not_counted"]] == [why_now], (k, "a captured reason is not counts()'s now")
+    dtf = json.loads((src / "components/DomainTool.fixture.json").read_text(encoding="utf-8"))
+    assert dtf["care"]["body"]["reviewer"] == st == dtf["review_care_plan"]["body"]["reviewer"]
+    assert dtf["religion"]["body"]["reviewer"] is None and dtf["signed"]["body"]["reviewer"] is None
+    for r in json.loads((src / "pages/governance/ReviewRecords.fixture.json").read_text(encoding="utf-8"))["records"]["records"]:
+        if r.get("agent"):
+            now = rt.counts({k: v for k, v in r.items() if k not in ("counts", "why_not")})["why_not"]
+            assert r["why_not"] == now, (r["record_id"], r["why_not"], now)
+    #  the stand-in run the capture made, made again here through the agent's own door: the same statement
+    said = {"C01": "FLAG: source not current", "C02": "FLAG: emergency line not first",
+            "C03": "FLAG: score does not match the table", "C04": "FLAG: professional role claimed",
+            "C05": "FLAG: composed clinical content", "C06": "FLAG: jurisdiction or group wrong",
+            "C07": "FLAG: terms not read or not stated", "C08": "FLAG: unread described as read", "C09": "FLAG: none",
+            "C10": "FLAG: what could not be checked is not said", "K01": "FLAG: none", "K02": "FLAG: none",
+            "K03": "FLAG: none", "K04": "FLAG: terms not read or not stated", "K05": "FLAG: none", "K06": "FLAG: none"}
+
+    async def _stand_in(prompt, agent="assistant", **kw):
+        hit = [c["id"] for c in the_set["cases"] if c.get("shown") and cr.as_text(c["shown"]) in prompt]
+        assert len(hit) == 1, hit
+        return {"output": said[hit[0]], "served_by": "ollama:w1183-stand-in"}
+    monkeypatch.setattr(cal, "_runs_path", lambda: tmp_path / "w1183_stand_in_runs.json")
+    monkeypatch.setattr(orchestrator, "complete", _stand_in)
+    ran = client.post("/api/v1/review/calibration/agent-run", json={"discipline": "care", "date": D0.isoformat()})
+    assert ran.status_code == 200 and ran.json()["not_answered"] == [], ran.text[:300]
+    live = client.get("/api/v1/review-options", params={"endpoint": "/api/v1/care/risk-assess"}).json()["reviewer"]
+    kept = fx["review_risk_made_up_run"]["reviewer"]
+
+    def bare(s):
+        return {**s, "run": {**(s.get("run") or {}), "run_id": None}, "set": {**s["set"], "window": None}}
+    assert bare(live) == bare(kept), (live, kept)
+    assert (kept["label"], kept["reason"], kept["rates"]["basis"]) == ("Uncalibrated", "below_bar", (
+        "catch rate: 9 of 10 planted case(s) flagged for their own reason; false-alarm rate: 1 of 6 clean case(s) "
+        "flagged")), kept
+    monkeypatch.setattr(cal, "_runs_path", lambda: runs)
+
+    #  L3. a made-up set that can be run, as test_w1100 makes one
+    register = {"r-now": {"id": "r-now", "names": ["W1183 Made-Up Guide"], "status": "current",
+                          "read_on": (D0 - 10 * one).isoformat(), "says": "Read at its page."}}
+    monkeypatch.setattr(cal, "_register", lambda: (register, 90))
+    made_up = {"version": "w1183-t", "checklist": the_set["checklist"],
+               "cases": [{"id": f"P{i}", "planted": "made up", "must_flag": "source not current",
+                          "shown": f"w1183 made-up planted answer {i}", "from": "made up here", "relies_on": []}
+                         for i in range(2)]
+               + [{"id": f"K{i}", "planted": None, "shown": f"w1183 made-up clean answer {i} citing W1183 Made-Up Guide",
+                   "relies_on": [{"row": "r-now", "status": "current"}]} for i in range(6)]}
+    monkeypatch.setattr(cal, "load_set", lambda d: made_up if d == "care" else None)
+    assert cal.runnable_window(made_up) == {"from": (D0 - 10 * one).isoformat(), "through": (D0 + 80 * one).isoformat()}
+    unwritten = {**made_up, "cases": [{**made_up["cases"][0], "shown": ""}] + made_up["cases"][1:]}
+    assert cal.runnable_window(unwritten) is None, "a window is said for a set that cannot be run at either end"
+    asked = []
+
+    def saying(per_case):
+        async def _m(prompt, agent="assistant", **kw):
+            which = [c["id"] for c in made_up["cases"] if c["shown"] in prompt]
+            assert len(which) == 1, which
+            asked.append(which[0])
+            return {"output": per_case(which[0]), "served_by": "ollama:w1183-made-up"}
+        return _m
+    catches = saying(lambda cid: "FLAG: source not current" if cid.startswith("P") else "FLAG: none")
+    #  (a) a run that misses P1, kept whole
+    long_line = ("I read it twice, and found nothing else in it that the checklist asks about, " * 4).strip()
+    monkeypatch.setattr(orchestrator, "complete", saying(
+        lambda cid: f"FLAG: source not current\n{long_line}" if cid == "P0" else "FLAG: none"))
+    a = client.post("/api/v1/review/calibration/agent-run", json={"date": D0.isoformat()})
+    assert a.status_code == 200 and a.json()["not_answered"] == [], a.text[:300]
+    k = json.loads(runs.read_text(encoding="utf-8"))[-1]
+    assert (k["door"], k["set_digest"], k["not_answered"], k["date"]) == (
+        cal.AGENT_DOOR, cal.set_digest(made_up), [], D0.isoformat()), k
+    assert sorted(k["per_case"]) == sorted(c["id"] for c in made_up["cases"]), k["per_case"]
+    assert len(long_line) > 200 and k["per_case"]["P0"] == {
+        "said_none": False, "lines_not_read_as_flags": [long_line], "rows_shown": []}, k["per_case"]["P0"]
+    assert k["per_case"]["K0"]["said_none"] is True and k["per_case"]["K0"]["rows_shown"] == ["r-now"], k["per_case"]
+    assert k["served_identity"] == IDENT and k["started_at"] <= k["finished_at"], k
+    below = cal.calibration_statement("care-reviewer")
+    assert (below["reason"], below["label"]) == ("below_bar", "Uncalibrated"), below
+    assert tuple(below["rates"][x] for x in ("caught", "planted_cases", "false_alarms", "clean_cases")) == (1, 2, 0, 6)
+    assert below["basis"].startswith(f"its latest run, on {D0.isoformat()} with ollama:w1183-made-up (w1183-stand-in, "
+                                     "build w1183standin), did not meet the bar ("), below["basis"]
+    #  (b) its whole review of the risk tool stays unreviewed, labelled with its calibration and its rates
+    today = D0.isoformat()
+    rec = {"tool": "care_risk_assess", "tier": "reviewed_by_workstation_agent", "date": today,
+           "checklist": "care checklist v2", "agent": "care-reviewer", "model": "ollama:w1183-made-up",
+           "sources_read": [{"source": "nice-ng249", "page": "recommendations 1.1", "read_on": today}],
+           "tool_version": "the tree at W1183", "could_not_check": "nothing beyond the guideline's own text"}
+    made = client.post("/api/v1/review/record", json=rec)
+    assert made.status_code == 200 and made.json()["kept_though_not_counted"] is True, made.text[:300]
+    t1 = client.get("/api/v1/review/tier/care_risk_assess").json()
+    label = "an agent's review of this tool exists and does not raise its tier: care-reviewer has not been calibrated"
+    assert t1["tier"] == "unreviewed" and "agent_rates" not in t1, t1
+    assert t1["basis"].endswith(f"; {label}; care-reviewer's calibration: {below['basis']} ({below['rates']['basis']})"), t1["basis"]
+    assert t1["agent_calibrations"] == [below] and t1["agent_calibrations"][0]["rates"]["caught"] == 1
+    #  (c) a second run the same day catches both: the last one entered stands, and the tier is raised with its rates
+    monkeypatch.setattr(orchestrator, "complete", catches)
+    c2 = client.post("/api/v1/review/calibration/agent-run", json={"date": D0.isoformat()})
+    assert c2.status_code == 200 and c2.json()["agent_now"]["calibrated"] is True, c2.text[:300]
+    t2 = client.get("/api/v1/review/tier/care_risk_assess").json()
+    assert t2["tier"] == "reviewed_by_workstation_agent", t2
+    s2 = cal.calibration_statement("care-reviewer")
+    assert s2["basis"].startswith(f"calibrated by its run on {D0.isoformat()} with ollama:w1183-made-up"), s2["basis"]
+    assert f"; the reviewing agent's calibration (care-reviewer): {s2['basis']} ({s2['rates']['basis']})" in t2["basis"], (
+        t2["basis"])
+    assert (t2["agent_rates"]["agent"], t2["agent_rates"]["caught"]) == ("care-reviewer", 2), t2["agent_rates"]
+    assert cal.calibration_statement("care-reviewer")["label"] == "Calibrated"
+    #  (d) a later review by another agent, whose own run is below the bar, does not take the rates beside the tier
+    monkeypatch.setattr(cr, "AGENT", "w1183-other")
+    monkeypatch.setattr(orchestrator, "complete", saying(lambda cid: "FLAG: none"))
+    assert client.post("/api/v1/review/calibration/agent-run", json={"date": D0.isoformat()}).status_code == 200
+    monkeypatch.setattr(cr, "AGENT", "care-reviewer")
+    assert client.post("/api/v1/review/record", json={**rec, "agent": "w1183-other"}).json()["kept_though_not_counted"] is True
+    t3 = client.get("/api/v1/review/tier/care_risk_assess").json()
+    assert (t3["agent_rates"]["agent"], t3["agent_rates"]["caught"]) == ("care-reviewer", 2), t3["agent_rates"]
+    assert [s["agent"] for s in t3["agent_calibrations"]] == ["care-reviewer", "w1183-other"], t3["agent_calibrations"]
+    assert ("; w1183-other's calibration: its latest run, on 2026-11-21 with ollama:w1183-made-up (w1183-stand-in, build "
+            "w1183standin), did not meet the bar") in t3["basis"], t3["basis"]
+    assert "; care-reviewer's calibration:" not in t3["basis"], "a calibrated agent is said after the uncalibrated label"
+    #  ...and a review by the same agent in a discipline with no set is said for that discipline only
+    assert client.post("/api/v1/review/record", json={**rec, "discipline": "law"}).json()["kept_though_not_counted"] is True
+    t4 = client.get("/api/v1/review/tier/care_risk_assess").json()
+    assert "; care-reviewer's calibration: no calibration set exists for 'law'" in t4["basis"], t4["basis"]
+    assert f"; care-reviewer's calibration: {s2['basis']}" not in t4["basis"], "its calibration in Care is said as not"
+
+    #  L4. only its own run counts
+    #  (a) a typed run that meets the bar is kept, says its door, and calibrates nothing; nor does a run with no door
+    typed = tmp_path / "w1183_typed_runs.json"
+    monkeypatch.setattr(cal, "_runs_path", lambda: typed)
+    tr = client.post("/api/v1/review/calibration/run", json={
+        "agent": "care-reviewer", "model": "m", "configuration": "model", "date": D0.isoformat(),
+        "flags": {"P0": ["source not current"], "P1": ["source not current"]}})
+    assert tr.status_code == 200 and tr.json()["score"]["meets_bar"] is True, tr.text[:300]
+    assert json.loads(typed.read_text(encoding="utf-8"))[0]["door"] == cal.TYPED_DOOR
+    now = cal.calibration_statement("care-reviewer")
+    assert (now["reason"], now["calibrated"], now["label"], now["rates"]) == ("typed_only", False, "Uncalibrated", None), now
+    assert client.get("/api/v1/review/tier/care_risk_assess").json()["tier"] == "unreviewed"
+    passing = [r for r in json.loads(runs.read_text(encoding="utf-8")) if r["agent"] == "care-reviewer"][1]
+    typed.write_text(json.dumps([{k: v for k, v in passing.items() if k != "door"}]), encoding="utf-8")
+    assert cal.calibration_of("care-reviewer")["reason"] == "typed_only", "a run kept with no door counted"
+    #  (b) a run said to be of another day is refused, and no model is asked
+    before, n = typed.read_text(encoding="utf-8"), len(asked)
+    for y in ((D0 - one).isoformat(), (D0 + one).isoformat()):
+        late = client.post("/api/v1/review/calibration/agent-run", json={"date": y})
+        assert late.status_code == 422 and late.json()["detail"] == (
+            f"Not run: a run is dated the day it is made ({D0.isoformat()}), not {y}."), (y, late.text[:300])
+        assert typed.read_text(encoding="utf-8") == before and len(asked) == n, ("a run of another day was made or kept", y)
+    #  (c) a case answered with no FLAG line: the run is kept, names it, and calibrates nothing
+    monkeypatch.setattr(cal, "_runs_path", lambda: runs)
+    monkeypatch.setattr(orchestrator, "complete", saying(
+        lambda cid: "It looks fine to me." if cid == "K3" else ("FLAG: source not current" if cid.startswith("P") else "FLAG: none")))
+    d4 = client.post("/api/v1/review/calibration/agent-run", json={"date": D0.isoformat()})
+    assert d4.status_code == 200 and d4.json()["not_answered"] == ["K3"], d4.text[:300]
+    k = json.loads(runs.read_text(encoding="utf-8"))[-1]
+    assert k["not_answered"] == ["K3"] and k["per_case"]["K3"] == {
+        "said_none": False, "lines_not_read_as_flags": ["It looks fine to me."], "rows_shown": ["r-now"]}, k["per_case"]["K3"]
+    na = cal.calibration_statement("care-reviewer")
+    assert (na["reason"], na["calibrated"]) == ("not_answered", False), na
+    assert "did not answer K3 with one of the set's reasons or 'FLAG: none'" in na["basis"], na["basis"]
+    #  (d) a case edited under the same version voids the run
+    monkeypatch.setattr(orchestrator, "complete", catches)
+    assert client.post("/api/v1/review/calibration/agent-run", json={"date": D0.isoformat()}).json()["agent_now"]["calibrated"] is True
+    made_up["checklist"] = made_up["checklist"] + ["w1183 an item added after the run"]
+    assert cal.calibration_statement("care-reviewer")["reason"] == "set_changed", "a checklist edited under the version"
+    made_up["checklist"] = the_set["checklist"]
+    assert cal.calibration_statement("care-reviewer")["reason"] == "calibrated"
+    made_up["cases"][0]["shown"] = "w1183 made-up planted answer 0, edited after the run"
+    changed = cal.calibration_statement("care-reviewer")
+    assert (changed["reason"], changed["calibrated"], changed["label"]) == ("set_changed", False, "Uncalibrated"), changed

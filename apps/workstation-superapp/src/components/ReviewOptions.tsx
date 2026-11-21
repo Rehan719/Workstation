@@ -4,6 +4,8 @@
 // (GET /api/v1/review-options, which reads the tool the route declares and the one tier function every answer
 // passes through); this component types none of them. An endpoint that declares no tool shows the server's own
 // sentence saying so. A failure to read is said, never hidden and never shown as a tier.
+// W1183 (FU-1054) — and the discipline's reviewer agent, as the server states its calibration: UNCALIBRATED with no
+// rates until it has a run of its own, then its two rates with their counts. The component types no figure.
 import React, { useEffect, useState } from 'react';
 import { ApiError, apiJson, errorMessage } from '../lib/api';
 
@@ -12,6 +14,7 @@ interface ReviewOptionsAnswer {
   discipline: string | null;
   review: { label: string; basis: string; known?: boolean };
   person: { option: string; warranted_when: string | null; release: string; basis: string };
+  reviewer?: { agent: string; label: string; basis: string; rates: { basis: string } | null } | null;
 }
 
 export const ReviewOptions: React.FC<{ endpoint: string }> = ({ endpoint }) => {
@@ -55,6 +58,15 @@ export const ReviewOptions: React.FC<{ endpoint: string }> = ({ endpoint }) => {
             <span className="font-black uppercase tracking-widest text-[9px] text-slate-300">Review reached: {said.review.label}</span>
             {' — '}{said.review.basis}.
           </p>
+          {said.reviewer && (
+            <p data-testid="review-option-reviewer" className="text-[10px] text-slate-400 leading-relaxed">
+              <span className="font-black uppercase tracking-widest text-[9px] text-slate-300">Reviewer agent ({said.reviewer.agent}): {said.reviewer.label}</span>
+              {' — '}{said.reviewer.basis}.
+            </p>
+          )}
+          {said.reviewer?.rates && (
+            <p data-testid="review-option-reviewer-rates" className="text-[10px] text-slate-500 leading-relaxed">{said.reviewer.rates.basis}.</p>
+          )}
           <p data-testid="review-option-person" title={said.person.basis} className="text-[10px] text-slate-400 leading-relaxed">
             <span className="font-black uppercase tracking-widest text-[9px] text-slate-300">A qualified person</span>
             {' — '}{said.person.option}

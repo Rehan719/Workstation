@@ -17,6 +17,9 @@ WHAT THE DOOR REFUSES AND WHAT IT KEEPS
   and every answer says this platform did not verify it. Who entered it is recorded beside it.
 - Nothing here composes a review. An agent's review is recorded by whoever ran it, with the model that reviewed;
   Workstation's own Care reviewer (care_reviewer.py, W1100) is run over the calibration set by its own route.
+- W1183: only a run made by that route, dated the day it is made, calibrates the agent. A run typed through
+  /calibration/run is a person's account of what was flagged: it is kept, says which door it came by, and
+  calibrates nothing.
 
 No tier, record or sentence claims a professional's role for an agent.
 """
@@ -133,15 +136,17 @@ async def record_calibration_run(req: CalibrationRun, user: dict | None = Depend
     if unknown:
         raise HTTPException(status_code=422, detail=f"Not recorded: {unknown} are not cases of this set.")
     return _store_run(the_set, user, agent=req.agent.strip(), discipline=req.discipline, model=req.model.strip(),
-                      configuration=req.configuration, date=req.date, flags=req.flags)
+                      configuration=req.configuration, date=req.date, flags=req.flags, door=_cal.TYPED_DOOR)
 
 
 def _store_run(the_set: Dict[str, Any], user: Any, **fields: Any) -> Dict[str, Any]:
     """W1100 - the one way a run is kept, whoever entered its flags: with the set's version, who entered it and when,
-    and the rates computed here from the flags."""
+    and the rates computed here from the flags. W1183 - with the door it came by, and the digest of the set as it
+    stood, so a case edited under the same version voids it."""
     from agentic_core.api import _review_calibration as _cal
     from agentic_core.config import mutate_json
     run = {"run_id": f"cal-{uuid.uuid4().hex[:10]}", **fields, "set_version": the_set.get("version"),
+           "set_digest": _cal.set_digest(the_set),
            "entered_by": _entered_by(user), "entered_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
 
     def _add(existing):
@@ -176,7 +181,14 @@ async def run_reviewer_agent(req: AgentRun, user: dict | None = Depends(get_curr
     if not can["runnable"]:
         raise HTTPException(status_code=409, detail=(
             f"Not run: the calibration set cannot be run on {can['on']}: " + "; ".join(can["why_not"]) + "."))
+    #  W1183 - A RUN IS DATED THE DAY IT IS MADE: a run said to be of another day is refused before a model is asked
+    today = _cal._today()
+    if day != today:
+        raise HTTPException(status_code=422, detail=(
+            f"Not run: a run is dated the day it is made ({today.isoformat()}), not {day.isoformat()}."))
+    started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     got = await _cr.run_on_set(the_set)
+    finished = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     if got["floor_answered"]:
         raise HTTPException(status_code=409, detail=(
             f"Not recorded: no model served {len(got['floor_answered'])} of the set's case(s) "
@@ -185,15 +197,24 @@ async def run_reviewer_agent(req: AgentRun, user: dict | None = Depends(get_curr
         raise HTTPException(status_code=409, detail=(
             f"Not recorded: the cases were reviewed by {len(got['models'])} models "
             f"({', '.join(got['models']) or 'none'}); a run is one model's."))
+    #  W1183 - KEPT WHOLE: the door, what each case was answered with beyond its flags, the cases not answered, which
+    #  model and build reviewed, and when the run began and ended
+    from agentic_core.ai.gateway import served_identity_of
     out = _store_run(the_set, user, agent=_cr.AGENT, discipline="care", model=got["models"][0],
-                     configuration="model", date=day.isoformat(), flags=got["flags"])
-    return {**out, "lines_not_read_as_flags": got["lines_not_read_as_flags"]}
+                     configuration="model", date=day.isoformat(), flags=got["flags"], door=_cal.AGENT_DOOR,
+                     per_case=got["per_case"], not_answered=got["not_answered"],
+                     served_identity=served_identity_of(got["models"][0]), started_at=started, finished_at=finished)
+    return {**out, "lines_not_read_as_flags": got["lines_not_read_as_flags"], "not_answered": got["not_answered"]}
 
 
 @router.get("/calibration/{agent}")
 async def calibration_of_agent(agent: str, discipline: str = "care"):
     from agentic_core.api import _review_calibration as _cal
-    return {"agent": agent, "discipline": discipline, **_cal.calibration_of(agent, discipline)}
+    said = _cal.calibration_statement(agent, discipline)
+    #  W1183 - the statement every page reads, the days the set can be run, and the server's own date, so a run can
+    #  be asked for on the day the server will date it
+    return {"agent": agent, "discipline": discipline, **_cal.calibration_of(agent, discipline), "statement": said,
+            "window": said["set"]["window"], "today": _cal._today().isoformat()}
 
 
 @router.get("/tier/{tool}")

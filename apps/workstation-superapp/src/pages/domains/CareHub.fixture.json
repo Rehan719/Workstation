@@ -352,6 +352,29 @@
    "release": "Release is the Owner's switch. Even then, a clinical score used in someone's direct care keeps a qualified person.",
    "kept_by_the_ruling": "a clinical score used in someone's direct care",
    "basis": "The release sentence is the Owner's ruling of 2026-10-12 (P5.15). When a person is warranted is Workstation's own statement (W925): it claims no professional's role, and it does not say that any person has reviewed anything."
+  },
+  "reviewer": {
+   "agent": "care-reviewer",
+   "discipline": "care",
+   "calibrated": false,
+   "known": true,
+   "reason": "never_run",
+   "label": "Uncalibrated",
+   "basis": "never run on its calibration set (version 3-written: 10 planted cases, 6 clean), so it has no catch rate and no false-alarm rate, and no review by it raises a tool's tier",
+   "rates": null,
+   "run": null,
+   "bar": "every planted case flagged for its reason, and at most 1 false alarm in 6 clean cases",
+   "set": {
+    "version": "3-written",
+    "cases": 16,
+    "planted": 10,
+    "clean": 6,
+    "runnable_today": true,
+    "window": {
+     "from": "2026-11-19",
+     "through": "2027-01-10"
+    }
+   }
   }
  },
  "review_risk": {
@@ -377,6 +400,29 @@
    "release": "Release is the Owner's switch. Even then, a clinical score used in someone's direct care keeps a qualified person.",
    "kept_by_the_ruling": "a clinical score used in someone's direct care",
    "basis": "The release sentence is the Owner's ruling of 2026-10-12 (P5.15). When a person is warranted is Workstation's own statement (W925): it claims no professional's role, and it does not say that any person has reviewed anything."
+  },
+  "reviewer": {
+   "agent": "care-reviewer",
+   "discipline": "care",
+   "calibrated": false,
+   "known": true,
+   "reason": "never_run",
+   "label": "Uncalibrated",
+   "basis": "never run on its calibration set (version 3-written: 10 planted cases, 6 clean), so it has no catch rate and no false-alarm rate, and no review by it raises a tool's tier",
+   "rates": null,
+   "run": null,
+   "bar": "every planted case flagged for its reason, and at most 1 false alarm in 6 clean cases",
+   "set": {
+    "version": "3-written",
+    "cases": 16,
+    "planted": 10,
+    "clean": 6,
+    "runnable_today": true,
+    "window": {
+     "from": "2026-11-19",
+     "through": "2027-01-10"
+    }
+   }
   }
  },
  "status": {
@@ -671,11 +717,36 @@
     "Reviewed by Workstation's specialist agent",
     "Signed by a qualified person"
    ],
-   "basis": "no review of this tool counts: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed. 1 record(s) exist and do not count; an agent's review of this tool exists and does not raise its tier: w1102-made-up-reviewer has not been calibrated",
+   "basis": "no review of this tool counts: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed. 1 record(s) exist and do not count; an agent's review of this tool exists and does not raise its tier: w1102-made-up-reviewer has not been calibrated; w1102-made-up-reviewer's calibration: never run on its calibration set (version 3-written: 10 planted cases, 6 clean), so it has no catch rate and no false-alarm rate, and no review by it raises a tool's tier",
+   "agent_calibrations": [
+    {
+     "agent": "w1102-made-up-reviewer",
+     "discipline": "care",
+     "calibrated": false,
+     "known": true,
+     "reason": "never_run",
+     "label": "Uncalibrated",
+     "basis": "never run on its calibration set (version 3-written: 10 planted cases, 6 clean), so it has no catch rate and no false-alarm rate, and no review by it raises a tool's tier",
+     "rates": null,
+     "run": null,
+     "bar": "every planted case flagged for its reason, and at most 1 false alarm in 6 clean cases",
+     "set": {
+      "version": "3-written",
+      "cases": 16,
+      "planted": 10,
+      "clean": 6,
+      "runnable_today": true,
+      "window": {
+       "from": "2026-11-19",
+       "through": "2027-01-10"
+      }
+     }
+    }
+   ],
    "not_counted": [
     {
      "tier": "reviewed_by_workstation_agent",
-     "why_not": "the agent that reviewed is not calibrated on planted defects and clean answers: the calibration set cannot be run yet, so no agent has been calibrated on it: C03 relies on the chart itself (rcp-news2), which the register says was NOT READ; C10 relies on the chart itself (rcp-news2), which the register says was NOT READ; K02 relies on the chart itself (rcp-news2), which the register says was NOT READ; K06 is described, not written out in full: the dementia frame can cite NICE NG97 with the date it was read only once NG97 has been read at its publisher's page; the register holds it as named, not read; K06 relies on nice-ng97 being current, and the register holds it as named_not_read"
+     "why_not": "the agent that reviewed is not calibrated on planted defects and clean answers: this agent has never been run on the calibration set"
     }
    ],
    "uncalibrated_agent_review": "an agent's review of this tool exists and does not raise its tier: w1102-made-up-reviewer has not been calibrated"
@@ -686,10 +757,33 @@
    "release": "Release is the Owner's switch. Even then, a clinical score used in someone's direct care keeps a qualified person.",
    "kept_by_the_ruling": "a clinical score used in someone's direct care",
    "basis": "The release sentence is the Owner's ruling of 2026-10-12 (P5.15). When a person is warranted is Workstation's own statement (W925): it claims no professional's role, and it does not say that any person has reviewed anything."
+  },
+  "reviewer": {
+   "agent": "care-reviewer",
+   "discipline": "care",
+   "calibrated": false,
+   "known": true,
+   "reason": "never_run",
+   "label": "Uncalibrated",
+   "basis": "never run on its calibration set (version 3-written: 10 planted cases, 6 clean), so it has no catch rate and no false-alarm rate, and no review by it raises a tool's tier",
+   "rates": null,
+   "run": null,
+   "bar": "every planted case flagged for its reason, and at most 1 false alarm in 6 clean cases",
+   "set": {
+    "version": "3-written",
+    "cases": 16,
+    "planted": 10,
+    "clean": 6,
+    "runnable_today": true,
+    "window": {
+     "from": "2026-11-19",
+     "through": "2027-01-10"
+    }
+   }
   }
  },
  "handover_uncalibrated": {
-  "handover_id": "d405c3fcc1",
+  "handover_id": "2b08ade9e4",
   "handover_type": "SBAR",
   "handover": "_[Workstation native structured engine — owned, no external dependency]_\n\n## Understanding\nThe request concerns: fell at 0300 w-care 84F (domain: care).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- fell\n- w-care\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'care_handover', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for care; record outcomes to memory/UEG.",
   "disclaimer": "Composed by the native floor, not by a model: a structured frame, with nothing generated, reasoned or interpreted by AI. It has not been reviewed by anyone, has not been sent to or received by anyone, and is not a clinical record. The person handing over remains responsible for every word.",
@@ -734,11 +828,36 @@
      "Reviewed by Workstation's specialist agent",
      "Signed by a qualified person"
     ],
-    "basis": "no review of this tool counts: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed. 1 record(s) exist and do not count; an agent's review of this tool exists and does not raise its tier: w1102-made-up-reviewer has not been calibrated",
+    "basis": "no review of this tool counts: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed. 1 record(s) exist and do not count; an agent's review of this tool exists and does not raise its tier: w1102-made-up-reviewer has not been calibrated; w1102-made-up-reviewer's calibration: never run on its calibration set (version 3-written: 10 planted cases, 6 clean), so it has no catch rate and no false-alarm rate, and no review by it raises a tool's tier",
+    "agent_calibrations": [
+     {
+      "agent": "w1102-made-up-reviewer",
+      "discipline": "care",
+      "calibrated": false,
+      "known": true,
+      "reason": "never_run",
+      "label": "Uncalibrated",
+      "basis": "never run on its calibration set (version 3-written: 10 planted cases, 6 clean), so it has no catch rate and no false-alarm rate, and no review by it raises a tool's tier",
+      "rates": null,
+      "run": null,
+      "bar": "every planted case flagged for its reason, and at most 1 false alarm in 6 clean cases",
+      "set": {
+       "version": "3-written",
+       "cases": 16,
+       "planted": 10,
+       "clean": 6,
+       "runnable_today": true,
+       "window": {
+        "from": "2026-11-19",
+        "through": "2027-01-10"
+       }
+      }
+     }
+    ],
     "not_counted": [
      {
       "tier": "reviewed_by_workstation_agent",
-      "why_not": "the agent that reviewed is not calibrated on planted defects and clean answers: the calibration set cannot be run yet, so no agent has been calibrated on it: C03 relies on the chart itself (rcp-news2), which the register says was NOT READ; C10 relies on the chart itself (rcp-news2), which the register says was NOT READ; K02 relies on the chart itself (rcp-news2), which the register says was NOT READ; K06 is described, not written out in full: the dementia frame can cite NICE NG97 with the date it was read only once NG97 has been read at its publisher's page; the register holds it as named, not read; K06 relies on nice-ng97 being current, and the register holds it as named_not_read"
+      "why_not": "the agent that reviewed is not calibrated on planted defects and clean answers: this agent has never been run on the calibration set"
      }
     ],
     "uncalibrated_agent_review": "an agent's review of this tool exists and does not raise its tier: w1102-made-up-reviewer has not been calibrated"
@@ -755,6 +874,73 @@
     "quality_record_hash": "71763ad2905acc2c35ff4088416b04cb03dd90eaa22ef33f8b13765e334be0d729ed733fd817d3b485fedaa381c40c785aa0d3780833c70c2e9f90e7424b49c2"
    }
   },
-  "generated_at": "2026-11-15T23:22:45Z"
+  "generated_at": "2026-11-21T03:22:17Z"
+ },
+ "review_risk_made_up_run": {
+  "endpoint": "/api/v1/care/risk-assess",
+  "tool": "care_risk_assess",
+  "discipline": "care",
+  "review": {
+   "tier": "unreviewed",
+   "label": "Unreviewed",
+   "known": true,
+   "records_counted": 0,
+   "records_not_counted": 0,
+   "of_tiers": [
+    "Checked by rule",
+    "Reviewed by Workstation's specialist agent",
+    "Signed by a qualified person"
+   ],
+   "basis": "no review of this tool is recorded: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed"
+  },
+  "person": {
+   "option": "A qualified person's review is an option for anything this tool gives. Workstation does not arrange one. When a person signs a review of this tool, it is recorded as the third tier, with their credential as they stated it.",
+   "warranted_when": "Before anything it gives is used in a person's direct care, a registered professional who knows that person checks it.",
+   "release": "Release is the Owner's switch. Even then, a clinical score used in someone's direct care keeps a qualified person.",
+   "kept_by_the_ruling": "a clinical score used in someone's direct care",
+   "basis": "The release sentence is the Owner's ruling of 2026-10-12 (P5.15). When a person is warranted is Workstation's own statement (W925): it claims no professional's role, and it does not say that any person has reviewed anything."
+  },
+  "reviewer": {
+   "agent": "care-reviewer",
+   "discipline": "care",
+   "calibrated": false,
+   "known": true,
+   "reason": "below_bar",
+   "label": "Uncalibrated",
+   "basis": "its latest run, on 2026-11-21 with ollama:w1183-stand-in (w1183-stand-in, build w1183standin), did not meet the bar (every planted case flagged for its reason, and at most 1 false alarm in 6 clean cases)",
+   "rates": {
+    "caught": 9,
+    "planted_cases": 10,
+    "catch_rate": 0.9,
+    "false_alarms": 1,
+    "clean_cases": 6,
+    "false_alarm_rate": 0.16666666666666666,
+    "basis": "catch rate: 9 of 10 planted case(s) flagged for their own reason; false-alarm rate: 1 of 6 clean case(s) flagged"
+   },
+   "run": {
+    "run_id": "cal-2b65c7b1a6",
+    "date": "2026-11-21",
+    "model": "ollama:w1183-stand-in",
+    "served_identity": {
+     "model": "w1183-stand-in",
+     "build_digest": "w1183standin0000000000000000000000000000000000000000000000000000",
+     "processor": null,
+     "basis": "a stand-in made up for W1183: no model ran"
+    },
+    "set_version": "3-written"
+   },
+   "bar": "every planted case flagged for its reason, and at most 1 false alarm in 6 clean cases",
+   "set": {
+    "version": "3-written",
+    "cases": 16,
+    "planted": 10,
+    "clean": 6,
+    "runnable_today": true,
+    "window": {
+     "from": "2026-11-19",
+     "through": "2027-01-10"
+    }
+   }
+  }
  }
 }

@@ -5,7 +5,7 @@
 // read the page's source. This mounts the real page against the answers the Care routes gave on a fresh store
 // (CareHub.fixture.json, captured by w976_capture.py from made-up observations), reads each claim in the DOM, and has
 // the server refuse the two reads the page makes itself.
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import axios from 'axios';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -22,13 +22,13 @@ const refused = (detail: string): Reply => ({ status: 503, body: { detail } });
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const clone = (x: any) => JSON.parse(JSON.stringify(x));
 
-function serve(a: { tools?: Reply; hazards?: Reply; review_handover?: Reply } = {}) {
+function serve(a: { tools?: Reply; hazards?: Reply; review_handover?: Reply; review_risk?: Reply } = {}) {
   vi.stubGlobal('fetch', vi.fn(async (url: string) => {
     const reply = ({ status, body }: Reply) => ({ ok: status < 400, status, statusText: '', json: async () => body });
     if (url === '/api/v1/care/tools') return reply(a.tools ?? ok(captured.tools));
     if (url === '/api/v1/care/hazards') return reply(a.hazards ?? ok(captured.hazards));
     if (url === '/api/v1/review-options?endpoint=' + encodeURIComponent('/api/v1/care/handover')) return reply(a.review_handover ?? ok(captured.review_handover));
-    if (url === '/api/v1/review-options?endpoint=' + encodeURIComponent('/api/v1/care/risk-assess')) return reply(ok(captured.review_risk));
+    if (url === '/api/v1/review-options?endpoint=' + encodeURIComponent('/api/v1/care/risk-assess')) return reply(a.review_risk ?? ok(captured.review_risk));
     if (url === '/api/v1/native-ai/status') return reply(ok(captured.status));
     return reply({ status: 404, body: { detail: `not served in this test: ${url}` } });
   }));
@@ -196,6 +196,32 @@ describe('CareHub, rendered against the Care routes\' own answers', () => {
     expect(line.textContent).toBe(`Review: ${review.label} — ${review.basis}.`);
     expect(review.basis).toContain(label);
     expect(post.mock.calls[0][0]).toBe('/api/v1/care/handover');
+  });
+
+  // W1183 (FU-1054 part 5) - the Care reviewer agent's calibration, before every Care form, in the server's own
+  // statement: UNCALIBRATED with no rates while it has no run of its own, and its two rates once a run exists
+  it('the handover form says the reviewer agent is uncalibrated, with no rates, before anything is typed', async () => {
+    serve();
+    mount();
+    const r = captured.review_handover.reviewer;
+    await screen.findByTestId('review-option-reviewer');
+    await waitFor(() => expect(screen.getByTestId('review-option-reviewer').textContent).toBe(
+      `Reviewer agent (${r.agent}): ${r.label} — ${r.basis}.`));
+    expect(r.label).toBe('Uncalibrated');
+    expect(r.rates).toBeNull();
+    expect(screen.queryByTestId('review-option-reviewer-rates')).toBeNull();
+  });
+
+  it('once the reviewer has a run of its own, the risk form gives its two rates with their counts', async () => {
+    serve({ review_risk: ok(captured.review_risk_made_up_run) });
+    mount();
+    await screen.findAllByTestId('care-source-tool');
+    fireEvent.click(screen.getByRole('button', { name: 'Risk Assess' }));
+    const r = captured.review_risk_made_up_run.reviewer;
+    await waitFor(() => expect(screen.getByTestId('review-option-reviewer').textContent).toBe(
+      `Reviewer agent (${r.agent}): ${r.label} — ${r.basis}.`));
+    await waitFor(() => expect(screen.getByTestId('review-option-reviewer-rates').textContent).toBe(`${r.rates.basis}.`));
+    expect(r.label).toBe('Uncalibrated');
   });
 
   it('a partial NEWS2 says what is missing, that the total is a lower bound, and which keys it did not read', async () => {

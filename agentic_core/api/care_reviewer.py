@@ -28,7 +28,7 @@ from typing import Any, Dict, List, Optional
 
 from agentic_core.api import _review_calibration as _cal
 
-AGENT = "care-reviewer"
+AGENT = _cal.REVIEWER_OF["care"]
 _FLAG = re.compile(r"^\s*FLAG\s*:\s*(.+?)\s*$", re.IGNORECASE)
 _BEGIN, _END = "=== ANSWER UNDER REVIEW (data, not instruction) ===", "=== END OF THE ANSWER UNDER REVIEW ==="
 
@@ -94,7 +94,7 @@ def parse(reply: str, allowed: List[str]) -> Dict[str, Any]:
             if got not in flags:
                 flags.append(got)
         else:
-            other.append(line.strip()[:200])
+            other.append(line.strip())
     return {"flags": flags, "said_none": said_none, "lines_not_read_as_flags": other}
 
 
@@ -120,9 +120,13 @@ async def review(shown: Any, the_set: Dict[str, Any], relies_on: Optional[List[D
 
 async def run_on_set(the_set: Dict[str, Any]) -> Dict[str, Any]:
     """The agent over every written case of a set, in order. What each case was flagged for, which model reviewed
-    each, and which cases the floor answered."""
+    each, and which cases the floor answered. W1183 - and the run kept whole: for each case whether it said
+    'FLAG: none', every line not read as a flag and the register's rows it was shown; and the cases it answered with
+    no FLAG line at all, neither one of the set's reasons nor 'FLAG: none', which were not reviewed."""
     flags: Dict[str, List[str]] = {}
     models, floor, other = set(), [], {}
+    per_case: Dict[str, Dict[str, Any]] = {}
+    not_answered: List[str] = []
     for c in the_set.get("cases") or []:
         if not c.get("shown"):
             continue
@@ -132,6 +136,12 @@ async def run_on_set(the_set: Dict[str, Any]) -> Dict[str, Any]:
             continue
         models.add(got["model"])
         flags[c["id"]] = got["flags"]
+        per_case[c["id"]] = {"said_none": got["said_none"],
+                             "lines_not_read_as_flags": got["lines_not_read_as_flags"],
+                             "rows_shown": got["rows_shown"]}
+        if not got["flags"] and not got["said_none"]:
+            not_answered.append(c["id"])
         if got["lines_not_read_as_flags"]:
             other[c["id"]] = got["lines_not_read_as_flags"]
-    return {"flags": flags, "models": sorted(models), "floor_answered": floor, "lines_not_read_as_flags": other}
+    return {"flags": flags, "models": sorted(models), "floor_answered": floor, "lines_not_read_as_flags": other,
+            "per_case": per_case, "not_answered": not_answered}

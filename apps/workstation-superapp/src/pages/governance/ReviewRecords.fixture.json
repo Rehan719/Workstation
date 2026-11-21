@@ -63,7 +63,7 @@
     "entered_by": "single-user-mode",
     "entered_at": "2026-11-13T10:11:01Z",
     "counts": false,
-    "why_not": "the agent that reviewed is not calibrated on planted defects and clean answers: the calibration set cannot be run yet: its cases are described, not written out in full, so no agent has been calibrated on it"
+    "why_not": "the agent that reviewed is not calibrated on planted defects and clean answers: this agent has never been run on the calibration set"
    }
   ],
   "total": 4,
