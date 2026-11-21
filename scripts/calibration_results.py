@@ -27,8 +27,10 @@ DEFAULT = ROOT / cal.RESULTS["care"]
 
 
 def _write(path: pathlib.Path, doc) -> None:
+    #  W1189 - the bytes, not text: on Windows write_text turns each newline into CRLF, and the Owner's export of
+    #  2026-11-21 wrote the tracked file that way
     tmp = path.with_name(path.name + ".w1184tmp")
-    tmp.write_text(json.dumps(doc, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    tmp.write_bytes((json.dumps(doc, indent=1, ensure_ascii=False) + "\n").encode("utf-8"))
     os.replace(tmp, path)
 
 

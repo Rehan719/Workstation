@@ -10,6 +10,12 @@ import { useTab } from '../../lib/useTab';   // W1027 - the tab is in the addres
 import { apiJson, errorMessage } from '../../lib/api';     // W955 (P5.13 clause 1)
 
 const CARE_TABS = ['clinical', 'care-plan', 'risk', 'safeguarding'] as const;
+//  W1185 (FU-1823) - the four tools whose tiers the page states together, in the order of their tabs, each with the
+//  route its form sends to
+const REVIEWED: ReadonlyArray<readonly [(typeof CARE_TABS)[number], string]> = [
+  ['clinical', '/api/v1/care/handover'], ['care-plan', '/api/v1/care/care-plan'],
+  ['risk', '/api/v1/care/risk-assess'], ['safeguarding', '/api/v1/care/safeguarding'],
+];
 
 export const CareHub: React.FC = () => {
   const T = toolsFor('/care');   // W470 — the one tool registry the front doors count from
@@ -48,6 +54,27 @@ export const CareHub: React.FC = () => {
     let alive = true;
     apiJson<any>('/api/v1/care/hazards').then(d => { if (alive) setHazards(d); })
       .catch(e => { if (alive) setHazardsNote(`The open hazard log could not be read: ${errorMessage(e)}`); });
+    return () => { alive = false; };
+  }, []);
+
+  //  W1185 (FU-1823, P5.15) - EVERY CARE TOOL'S TIER OF REVIEW, IN ONE PLACE. Each tool's tier and its reviewer's
+  //  calibration were said only by the options inside its own tab, so no place on the page gave the four together.
+  //  Each line is its tool's answer from GET /api/v1/review-options: the answer the options before its form read, the
+  //  one tier function every answer passes through and the reviewer's calibration as the server states it. That route
+  //  is every signed-in person's; the tier route is the administrator's. The page types no tier, figure or sentence of
+  //  the tier's, and an answer that carries no tier is not shown as one.
+  const [tiers, setTiers] = useState<Record<string, { said?: any; error?: string }>>({});
+  useEffect(() => {
+    let alive = true;
+    REVIEWED.forEach(([tab, endpoint]) => {
+      apiJson<any>(`/api/v1/review-options?endpoint=${encodeURIComponent(endpoint)}`)
+        .then(a => {
+          if (!alive) return;
+          setTiers(t => ({ ...t, [tab]: a?.review?.label && a?.review?.basis
+            ? { said: a } : { error: 'the answer carried no tier of review' } }));
+        })
+        .catch(e => { if (alive) setTiers(t => ({ ...t, [tab]: { error: errorMessage(e) } })); });
+    });
     return () => { alive = false; };
   }, []);
 
@@ -195,6 +222,44 @@ export const CareHub: React.FC = () => {
               />
             )}
          </div>
+      </Card>
+      {/* W1185 (FU-1823, P5.15) - THE REVIEW EACH TOOL HAS REACHED, the four together, each line in the server's
+          words: its tool, the tier and its basis, and the reviewer agent's calibration, with its rates once it has a
+          run of its own. A failed read is said on its tool's line, and no tier is shown there. */}
+      <Card className="p-6" data-testid="care-tiers">
+        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">The review each tool has reached</h3>
+        <ul className="space-y-3">
+          {REVIEWED.map(([tab]) => {
+            const got = tiers[tab];
+            const said = got?.said;
+            return (
+              <li key={tab} data-testid="care-tier" className="text-[10px] text-slate-300 space-y-0.5">
+                <p data-testid="care-tier-tool" className="font-bold text-white">{T[tab].title}{said ? ` · ${said.tool}` : ''}</p>
+                {got?.error ? (
+                  <p data-testid="care-tier-refusal" className="text-amber-300 leading-relaxed">The tier of review this tool has reached could not be read, so none is shown: {got.error}</p>
+                ) : !said ? (
+                  <p className="text-slate-600">Reading the tier of review this tool has reached…</p>
+                ) : (
+                  <>
+                    <p data-testid="care-tier-review" className="text-slate-400 leading-relaxed">
+                      <span className="font-black uppercase tracking-widest text-[9px] text-slate-300">Review reached: {said.review.label}</span>
+                      {' — '}{said.review.basis}.
+                    </p>
+                    {said.reviewer && (
+                      <p data-testid="care-tier-reviewer" className="text-slate-400 leading-relaxed">
+                        <span className="font-black uppercase tracking-widest text-[9px] text-slate-300">Reviewer agent ({said.reviewer.agent}): {said.reviewer.label}</span>
+                        {' — '}{said.reviewer.basis}.
+                      </p>
+                    )}
+                    {said.reviewer?.rates && (
+                      <p data-testid="care-tier-reviewer-rates" className="text-slate-500 leading-relaxed">{said.reviewer.rates.basis}.</p>
+                    )}
+                  </>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       </Card>
       {/* W955 (P5.13 clause 1) - WHERE EACH TOOL'S STANDARD COMES FROM: the rows of the one register of sources each
           entry points at, in the server's sentences (status, the date read, whether within the review period) */}

@@ -80538,7 +80538,11 @@ def test_w950_p513_the_safeguarding_form_asks_who_the_concern_is_about_and_a_chi
     assert child.status_code == 200, child.text[:200]
     c = child.json()
     assert not sent, ("a child's concern was sent to a composer", sent)
-    assert c["composed"] is False and c["concern_about"] == "a child or young person" and c["ai_provenance"] is None
+    #  W1185 (FU-1823) - its tool's tier of review is said under it, as under every Care answer: nothing composed it,
+    #  so no call served it and it states no level (test_w1185 holds the tier itself)
+    assert c["composed"] is False and c["concern_about"] == "a child or young person", c
+    assert (c["ai_provenance"]["served_by"], c["ai_provenance"]["composed"], c["ai_provenance"]["evidence_level"]) == (
+        "none", False, None) and c["ai_provenance"]["review"]["label"], c["ai_provenance"]
     assert c["guidance"].startswith(_care.IMMEDIATE_DANGER_FIRST), c["guidance"][:200]
     assert _care.CHILDRENS_ROUTE in c["guidance"] and "999" in c["guidance"] and "report-child-abuse" in c["guidance"]
     assert "w950" not in c["guidance"] and _care.ADULT_ROUTE_ONLY not in c["guidance"]
@@ -92376,7 +92380,7 @@ def test_w1131_the_local_prompt_names_every_row_waiting_on_the_owner_and_keeps_o
     assert unnamed == [], ("a row waits on the Owner and the local notes do not name it", unnamed)
     #  the summary and the steps agree: each row the summary sends to step 5 is a step of its own there
     step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
-    sent = re.search(r"The rows in step 5: (.+?)\.", flat)
+    sent = re.search(r"The rows? in step 5: (.+?)\.", flat)   # W1188: one row is left
     assert sent, "the summary does not say which rows step 5 carries"
     ids = re.findall(r"FU-\d+", sent.group(1))
     #  W1164 - the rows step 5 names are open ones: four the local session did on 2026-11-20 stood there after
@@ -92387,7 +92391,7 @@ def test_w1131_the_local_prompt_names_every_row_waiting_on_the_owner_and_keeps_o
     for frag in ("it may still be pushing to main-l1fsqo, so do not push there",
                  "a branch of your own", "open its own pull request", "Never push to main without me"):
         assert frag in flat, (frag, "the notes would let a local session push beside the cloud session")
-    for merged in ("#462", "#463"):   # W1178: #463 merged on 2026-11-20
+    for merged in ("#462", "#463", "#465"):   # W1178: #463 merged on 2026-11-20; W1187: #465 on 2026-11-21
         assert f"Merge PR {merged}" not in notes and f"carried by **PR {merged}**" not in notes, (
             "a merged pull request is offered", merged)
 
@@ -95420,7 +95424,7 @@ def test_w1164_the_owners_ten_decisions_of_2026_11_20_are_recorded_and_the_water
             "final audit has run (2026-12-31 at the latest)") in flat
     step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
     steps = re.findall(r"^   - (FU-\d+):", step5, re.M)
-    assert steps == ["FU-1165", "FU-1054"], steps   # W1180: FU-1286 closed; W1184: FU-1054's run is the Owner's
+    assert steps == ["FU-1165"], steps   # W1180: FU-1286 closed; W1188: FU-1054 closed on its first run
     assert all(reg[s]["status"] == "open" for s in steps), steps
     assert "register my two ventures, Atmospheric Harvest Solutions and Aerius Energy Harvest, fresh in the new books" \
            in " ".join(step5.split()), "step 5 does not carry the Owner's answer on the two ventures"
@@ -96531,28 +96535,32 @@ def test_w1177_fu1077_the_six_rows_refused_to_w1148_are_read_whole_at_their_publ
 
 
 def test_w1178_the_local_notes_name_the_open_pull_request_and_say_pr463_was_merged():
-    """W1178. PR #463 was merged on the evening of 2026-11-20 by the cloud session, at the Owner's request, once all six
-    checks were green; PR #465 carries the later rounds. Held here:
-    1. the local-session notes offer no merged pull request: they name PR #465 as the one that carries the later
-       rounds, the one a local session watches for, and the one to merge, and say PR #463 was merged with its rounds;
-    2. the plan's list of what is with the Owner says PR #463 was merged, and names PR #465. (The notes' figures
-       were brought up to the plan's here; W1131's guard holds that they never say more than the plan.)"""
+    """W1178, brought up to date by W1187. PR #463 was merged on the evening of 2026-11-20, and PR #465 on the morning
+    of 2026-11-21, each by the cloud session at the Owner's request once all six checks were green; PR #466 was
+    opened for the later rounds. Held here:
+    1. the local-session notes offer no merged pull request: they name PR #466 as the one that carries the later
+       rounds, the one a local session watches for, and the one to merge, and say PR #463 and PR #465 were merged;
+    2. the plan's list of what is with the Owner says PR #463 was merged and that PR #465 then carried the later
+       rounds. (The notes' figures were brought up to the plan's in W1178; W1131's guard holds that they never say
+       more than the plan.)"""
     from pathlib import Path
     root = Path(__file__).resolve().parents[1]
     notes = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
     flat = " ".join(notes.split())
-    for said in ("if the open pull request from main-l1fsqo (PR #465 from 2026-11-20) is merged,",
-                 "PR #463 (rounds W1119–W1175) on 2026-11-20, each on your instruction",
-                 "Later rounds are on `main-l1fsqo`, carried by **PR #465**.",
-                 "Merge PR #465 when you are ready, or ask the cloud session to merge it once green"):
+    for said in ("if the open pull request from main-l1fsqo (PR #466 from 2026-11-21) is merged,",
+                 "PR #463 (rounds W1119–W1175) on 2026-11-20 and PR #465 (rounds W1176–W1184) on 2026-11-21, each "
+                 "on your instruction",
+                 "Later rounds are on `main-l1fsqo`, carried by **PR #466**.",
+                 "Merge PR #466 when you are ready, or ask the cloud session to merge it once green"):
         assert said in flat, ("the notes do not say", said)
-    for stale in ("Merge PR #463", "carried by **PR #463**", "(PR #463 on 2026-11-20) is merged"):
+    for stale in ("Merge PR #463", "carried by **PR #463**", "(PR #463 on 2026-11-20) is merged", "Merge PR #465 ",
+                  "carried by **PR #465**", "(PR #465 from 2026-11-20) is merged"):
         assert stale not in flat, ("the notes still offer a merged pull request", stale)
 
     fp = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
     plan = " ".join(fp.split())
     assert ("PR #463 merged by the Owner once green (that evening the Owner asked the cloud session to merge it, and it "
-            "was merged at 7744c530 with all six checks green; PR #465 carries the later rounds)") in plan
+            "was merged at 7744c530 with all six checks green; PR #465 then carried the later rounds)") in plan
 
 
 def test_w1179_p511_the_debt_and_claims_company_rows_read_their_regulators_own_page(client):
@@ -96740,9 +96748,10 @@ def test_w1180_fu1286_is_closed_once_each_of_its_five_places_is_settled():
     flat = " ".join(notes.split())
     step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
     #  W1184 - FU-1054's run joined step 5 once the row waited on the Owner's machine
-    assert re.findall(r"^   - (FU-\d+):", step5, re.M) == ["FU-1165", "FU-1054"] and "git rm -r --cached venv" not in step5
-    assert "The rows in step 5: FU-1165 and FU-1054, a step each there." in flat and "FU-1286" not in flat.split(
-        "The rows in step 5:", 1)[1].split(".", 1)[0]
+    #  W1188 - FU-1054 closed on its first run, and its step left step 5
+    assert re.findall(r"^   - (FU-\d+):", step5, re.M) == ["FU-1165"] and "git rm -r --cached venv" not in step5
+    assert "The row in step 5: FU-1165, a step there." in flat and "FU-1286" not in flat.split(
+        "The row in step 5:", 1)[1].split(".", 1)[0]
     assert ("**Settled on 2026-11-20:** the five places that named your Windows home folder (FU-1286, closed W1180)"
             in flat), "the notes do not say the row is closed"
     yours = flat.split("**Still yours:**", 1)[1].split("**Settled on 2026-11-20:**", 1)[0]
@@ -97488,3 +97497,934 @@ def test_w1184_fu1054_the_calibration_results_have_a_place_in_the_tree_and_the_r
         #  once the Owner's run closes it, its close note names a run the tree holds
         assert fu["status"] == "done" and doc["runs"], (fu["status"], len(doc["runs"]))
         assert any(str(r["run_id"]) in (fu.get("close_note") or "") for r in doc["runs"]), fu.get("close_note")
+
+
+def test_w1185_fu1823_every_care_tool_says_its_tier_in_one_place_and_the_child_concern_answer_carries_its_tier(
+        client, tmp_path, monkeypatch):
+    """FU-1823 (W1185); P5.15's ACCEPT asks that one discipline, Care, have every tool at a stated tier on its page.
+    Each Care tool's tier of review and its reviewer's calibration were said only by the options inside that tool's
+    tab, so no place on the page gave the four together; and the safeguarding route's answer to a concern about a
+    child or young person carried no provenance, so no tier was said under it. Held here:
+    T1. the child-concern answer carries the safeguarding tool's tier by the one function every Care answer's tier
+        comes from (review_said, which every composed answer's provenance takes through ai_text): the adult answer's
+        statement, a record of the tool's review shown in it, a failure to compute it said as a composed answer says
+        it. Nothing composed the answer: no call served it, it states no level, and no composer was asked. Nothing
+        else of what it says or routes to changed;
+    T2. one place on the Care page states the four tools' tiers, in the order of their tabs, each from its tool's
+        answer at the options route (every signed-in person's; the tier route is the administrator's): its tier and
+        basis and its reviewer's calibration, in the server's words. A failed read, or an answer with no tier, is
+        said on its tool's line and no tier is shown there. The page types no tier, read as code;
+    T3. the rendered test reads each line, the card's whole text, the card kept whole whichever tab is open, each
+        failure in its place and the child-concern answer's tier, from captured answers that are the routes' own
+        with the capture's day pinned; nothing is skipped;
+    T4. FU-1823 is closed by this round, as built, and what it leaves is registered on the Care item: the
+        emergency line drawn after the tier box under a safeguarding answer."""
+    import asyncio
+    import datetime as _dt
+    import json
+    import re
+    from pathlib import Path
+    import agentic_core.api.care as care
+    from agentic_core.api import _ai_provenance as ap
+    from agentic_core.api import _review_calibration as cal
+    from agentic_core.api import _review_tier as rt
+    from agentic_core.api.review_options import tool_at
+    root = Path(__file__).resolve().parents[1]
+    src = root / "apps" / "workstation-superapp" / "src"
+    D0 = _dt.date(2026, 11, 21)                      # the capture's day, as W1183's captures pinned it
+    monkeypatch.setattr(cal, "_today", lambda: D0)
+    monkeypatch.setattr(cal, "_runs_path", lambda: tmp_path / "w1185_calibration_runs.json")
+    monkeypatch.setattr(rt, "_path", lambda: tmp_path / "w1185_review_tier_records.json")
+    fx = json.loads((src / "pages/domains/CareHub.fixture.json").read_text(encoding="utf-8"))
+    asked = []
+
+    async def _counting(*a, **k):
+        asked.append(k.get("agent"))
+        return {"output": "## Immediate Safety\nw1185 composed", "served_by": "w1185-capture", "is_external": False}
+    monkeypatch.setattr(ap.gateway, "query_meta", _counting)
+
+    #  T1. the child-concern answer, its tier the tool's, by the one function
+    tool = tool_at(client.app, "/api/v1/care/safeguarding")
+    assert tool == "care_safeguarding", tool
+    child_body = {"concern_about": "a child or young person", "concern": "w1185 a worker is worried about bruising on a child",
+                  "setting": "community", "person_context": "", "jurisdiction": "England (Care Act 2014)"}
+    r = client.post("/api/v1/care/safeguarding", json=child_body)
+    assert r.status_code == 200, r.text[:300]
+    c = r.json()
+    assert asked == [], ("a child's concern was sent to a composer", asked)
+    assert sorted(c) == sorted(["triage_id", "setting", "jurisdiction", "concern_about", "guidance", "composed",
+                                "composed_basis", "ai_provenance", "generated_at", "disclaimer"]), sorted(c)
+    assert c["guidance"] == care.IMMEDIATE_DANGER_FIRST + "\n\n" + care.CHILD_CONCERN, c["guidance"][:300]
+    assert (c["composed"], c["concern_about"], c["setting"], c["jurisdiction"], c["disclaimer"]) == (
+        False, "a child or young person", "community", "England (Care Act 2014)", "If a child is in immediate danger, call 999.")
+    assert c["composed_basis"] == ("a child's concern goes to the children's route; nothing about it was sent to a "
+                                   "composer and nothing was written about it"), c["composed_basis"]
+    prov = c["ai_provenance"]
+    #  W1186 - no call served it, said by the Law route's routed answers' word for that
+    assert prov == {"served_by": "none", "is_external": False, "composed": False, **ap.no_reply_evidence(),
+                    "review": rt.review_statement(tool)}, prov
+    assert (prov["review"]["tier"], prov["review"]["label"], prov["review"]["known"]) == ("unreviewed", "Unreviewed", True)
+    kept = fx["safeguarding_child"]
+    volatile = ("triage_id", "generated_at")
+    assert {k: v for k, v in c.items() if k not in volatile} == {k: v for k, v in kept.items() if k not in volatile}, (
+        "the captured child-concern answer is not the route's")
+    adult = client.post("/api/v1/care/safeguarding", json={**child_body, "concern_about": "an adult"})
+    assert adult.status_code == 200 and asked == ["care_safeguarding"], (adult.text[:200], asked)
+    assert adult.json()["ai_provenance"]["review"] == prov["review"], "the tool's two answers say different tiers"
+    #  ...a record of the tool's review is said in it: the tier is read, never written into the answer
+    rule = {"tool": "care_safeguarding", "tier": "checked_by_rule", "date": D0.isoformat(),
+            "rule": "w1185 a made-up rule for this guard", "test": "test_w1185"}
+    records = rt._records
+    monkeypatch.setattr(rt, "_records", lambda: [rule])
+    ruled = client.post("/api/v1/care/safeguarding", json=child_body).json()["ai_provenance"]["review"]
+    assert ruled["tier"] == "checked_by_rule" and ruled == rt.review_statement(tool), ruled
+    monkeypatch.setattr(rt, "_records", records)
+    #  ...and a failure to compute it is said, as a composed answer says it: the same function
+    real = rt.review_statement
+
+    def _boom(t, today=None):
+        raise RuntimeError("w1185 the store is gone")
+    monkeypatch.setattr(rt, "review_statement", _boom)
+    gone = client.post("/api/v1/care/safeguarding", json=child_body).json()["ai_provenance"]["review"]
+    assert gone == {"tier": "unreviewed", "label": "Unreviewed", "known": False,
+                    "basis": "the tier of review could not be computed (RuntimeError); it is treated as unreviewed"}, gone
+    _t, composed = asyncio.new_event_loop().run_until_complete(ap.ai_text("w1185 say something", "care_safeguarding"))
+    assert composed["review"] == gone, ("a composed answer and the child-concern answer say a failure differently",
+                                        composed["review"])
+    monkeypatch.setattr(rt, "review_statement", real)
+    code = _code_only((root / "agentic_core/api/care.py").read_text(encoding="utf-8"))
+    branch = code.split('if _about == "a child or young person":', 1)[1].split("_mat859 = _material(", 1)[0]
+    assert '"review": review_said("care_safeguarding")' in branch and "**no_reply_evidence()" in branch, branch[:900]
+    assert '"ai_provenance": None' not in branch and "await ai_text(" not in branch and "review_statement" not in code
+    prov_code = _code_only((root / "agentic_core/api/_ai_provenance.py").read_text(encoding="utf-8"))
+    assert 'provenance["review"] = review_said(agent)' in prov_code, "ai_text takes the tier by another path"
+    assert prov_code.count("review_statement(") == 1, "the tier is read by a second path in the provenance module"
+
+    #  T2. the page: the four tools' tiers in one place, each line its tool's answer, in the server's words
+    page = _code_only((src / "pages/domains/CareHub.tsx").read_text(encoding="utf-8"))
+    table = page.split("const REVIEWED", 1)[1].split("];", 1)[0]
+    pairs = re.findall(r"\['([a-z-]+)', '(/api/v1/care/[a-z-]+)'\]", table)
+    forms = re.findall(r"title=\{T\['([a-z-]+)'\]\.title\}\s+description=.*?endpoint=\"(/api/v1/care/[a-z-]+)\"", page, re.S)
+    assert len(pairs) == 4 and sorted(pairs) == sorted(forms), ("the lines are not the page's four tools", pairs, forms)
+    assert [t for t, _e in pairs] == ["clinical", "care-plan", "risk", "safeguarding"], pairs
+    assert sorted(tool_at(client.app, e) for _t2, e in pairs) == sorted(
+        fx[k]["tool"] for k in ("review_handover", "review_care_plan", "review_risk", "review_safeguarding"))
+    for line in ("REVIEWED.forEach(([tab, endpoint]) => {",
+                 "apiJson<any>(`/api/v1/review-options?endpoint=${encodeURIComponent(endpoint)}`)",
+                 "setTiers(t => ({ ...t, [tab]: a?.review?.label && a?.review?.basis",
+                 "? { said: a } : { error: 'the answer carried no tier of review' } }));",
+                 ".catch(e => { if (alive) setTiers(t => ({ ...t, [tab]: { error: errorMessage(e) } })); });",
+                 '<Card className="p-6" data-testid="care-tiers">', "{REVIEWED.map(([tab]) => {",
+                 '<li key={tab} data-testid="care-tier"', 'data-testid="care-tier-tool"',
+                 "{T[tab].title}{said ? ` · ${said.tool}` : ''}</p>",
+                 'data-testid="care-tier-refusal"', "could not be read, so none is shown: {got.error}</p>",
+                 'data-testid="care-tier-review"', "Review reached: {said.review.label}</span>", "{' — '}{said.review.basis}.",
+                 'data-testid="care-tier-reviewer"', "Reviewer agent ({said.reviewer.agent}): {said.reviewer.label}</span>",
+                 "{' — '}{said.reviewer.basis}.", "{said.reviewer && (", "{said.reviewer?.rates && (",
+                 'data-testid="care-tier-reviewer-rates"', "{said.reviewer.rates.basis}.</p>"):
+        assert line in page, ("the Care page does not say this", line)
+    panel = page.split('data-testid="care-tiers"', 1)[1].split("</Card>", 1)[0]
+    assert panel.index("{got?.error ? (") < panel.index("!said ? (") < panel.index('data-testid="care-tier-review"'), (
+        "a failed read is not said before anything is shown as a tier")
+    effect = page.split("const [tiers, setTiers]", 1)[1].split("}, []);", 1)[0]
+    for typed in ("Unreviewed", "Uncalibrated", "Calibrated", "Checked by rule", "Reviewed by", "Signed by",
+                  "catch rate", "false-alarm", "never run"):
+        assert typed not in panel and typed not in effect, ("the page types what the server states", typed)
+    assert "/api/v1/review/tier/" not in page, "the page reads the administrator's tier route"
+    app_code = (root / "agentic_core/app_mvp.py").read_text(encoding="utf-8")
+    assert "app.include_router(review_options_api.router, dependencies=[_Depends(_get_current_user)])" in app_code
+    assert "app.include_router(review_cell_api.router, dependencies=[_Depends(_require_admin)])" in app_code
+    #  ...from answers that are the route's own, with the capture's day pinned
+    for key, ep in (("review_handover", "/api/v1/care/handover"), ("review_care_plan", "/api/v1/care/care-plan"),
+                    ("review_risk", "/api/v1/care/risk-assess"), ("review_safeguarding", "/api/v1/care/safeguarding")):
+        live = client.get("/api/v1/review-options", params={"endpoint": ep})
+        assert live.status_code == 200 and live.json() == fx[key], (key, "the captured options are not the route's")
+    assert fx["review_safeguarding"]["review"] == kept["ai_provenance"]["review"], "the answer's tier is not the tool's"
+
+    #  T3. the rendered test
+    spec = _code_only((src / "pages/domains/CareHub.test.tsx").read_text(encoding="utf-8"))
+    for line in ("const TIERS = [['clinical', 'review_handover'], ['care-plan', 'review_care_plan'], ['risk', 'review_risk'],",
+                 "['safeguarding', 'review_safeguarding']] as const;",
+                 "await waitFor(() => expect(within(card).getAllByTestId('care-tier-review')).toHaveLength(TIERS.length));",
+                 "expect(within(lines[i]).getByTestId('care-tier-tool').textContent).toBe(`${T[tab].title} · ${a.tool}`);",
+                 "expect(within(lines[i]).getByTestId('care-tier-review').textContent).toBe(`Review reached: ${a.review.label} — ${a.review.basis}.`);",
+                 "`Reviewer agent (${a.reviewer.agent}): ${a.reviewer.label} — ${a.reviewer.basis}.`);",
+                 "expect(card.textContent).toBe('The review each tool has reached' + TIERS.map(([tab, key]) => {",
+                 "return `${T[tab].title} · ${a.tool}Review reached: ${a.review.label} — ${a.review.basis}.`",
+                 "+ `Reviewer agent (${a.reviewer.agent}): ${a.reviewer.label} — ${a.reviewer.basis}.`;",
+                 "}).join(''));",
+                 "for (const name of ['Care Plan', 'Risk Assess', 'Safeguarding']) {",
+                 "fireEvent.click(screen.getByRole('button', { name }));",
+                 "expect(within(screen.getByTestId('care-tiers')).getAllByTestId('care-tier-review')).toHaveLength(TIERS.length);",
+                 "await waitFor(() => expect(within(card).getByTestId('care-tier-reviewer-rates').textContent).toBe(`${r.rates.basis}.`));",
+                 "for (const [tab, key] of TIERS) {",
+                 "over[key] = refused(`w1185 the options of ${tab} could not be read`);",
+                 "`The tier of review this tool has reached could not be read, so none is shown: Failed (HTTP 503): w1185 the options of ${tab} could not be read`);",
+                 "expect(within(lines[i]).queryByTestId('care-tier-review')).toBeNull();",
+                 "serve({ review_care_plan: ok({ ...captured.review_care_plan, review: null }) });",
+                 "'The tier of review this tool has reached could not be read, so none is shown: the answer carried no tier of review'));",
+                 "const got = captured.safeguarding_child;",
+                 "fireEvent.change(await screen.findByLabelText('Who is the concern about?'), { target: { value: 'a child or young person' } });",
+                 "await waitFor(() => expect(screen.getByTestId('domain-review-tier').textContent).toBe(`Review: ${review.label} — ${review.basis}.`));",
+                 "expect(review).toEqual(captured.review_safeguarding.review);",
+                 "expect(screen.getByText((_, el) => el?.tagName === 'PRE' && el.textContent === got.guidance)).toBeTruthy();",
+                 "if (url === '/api/v1/review-options?endpoint=' + encodeURIComponent('/api/v1/care/care-plan')) return reply(a.review_care_plan ?? ok(captured.review_care_plan));",
+                 "if (url === '/api/v1/review-options?endpoint=' + encodeURIComponent('/api/v1/care/safeguarding')) return reply(a.review_safeguarding ?? ok(captured.review_safeguarding));"):
+        assert line in spec, ("the Care page's rendered test does not read this", line)
+    assert not re.search(r"\b(?:describe|it|test)\.(?:skip|only|todo)\(|\bx(?:it|describe)\(", spec), (
+        "a rendered test of the Care page is skipped")
+
+    #  T4. the row
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    done = [x for x in rows if x.get("title", "").startswith("Care states each tool's tier only while its tab is open")]
+    assert len(done) == 1 and (done[0]["status"], done[0]["closed_by"], done[0]["because"]) == ("done", "W1185", "built"), done
+    left = [x for x in rows if x.get("title", "").startswith("Under a safeguarding answer the tier box and the provenance badge")]
+    assert len(left) == 1 and (left[0]["slot"], left[0]["severity"]) == ("P5.13", "low") and left[0]["source"].startswith(
+        "W1185") and "the first thing drawn under a safeguarding answer" in left[0]["why"], left
+
+
+def test_w1186_a_composition_says_what_served_each_domain_form_from_the_forms_own_provenance(client, monkeypatch):
+    """W1186, the row it registers and closes on P3.32; the Owner's ruling of 2026-10-12 that the autonomous runner
+    calls each of the 25 domain forms through its own door (W682). _run_form passed a form's provenance - ai_text's
+    shape: one server named as a string, whether it was external, its own evidence level, its tier of review - to
+    _intel_served, which reads the engines' count map. 'native'.keys() raised, the handler's catch made an error row
+    of it, and every form that ran to an answer through a composition was reported as raised, its output lost; four
+    forms' output, read the old way, was another field of the answer. The only guard drove refusals. Held here, over
+    the registry, so a form added later is covered:
+    F1. each registered form, given its required fields, runs through the choke point to an answer: no error; the
+        outcome produced, or withheld where the floor withheld every section and the text is only the floor's marker;
+        its output the form's own text (the field its page shows, which the registry names); and the row says the
+        provenance's own served_by, is_external and evidence level, carries the tier of review and the floor's note
+        the answer carries (the answer's own note before its provenance's), and states no count it does not;
+    F2. a refusal by the platform's constitutional gate, real and stood in, is returned as a refusal, phrased as the
+        gate's, while a form's own refusal keeps its own phrase; an answer nothing composed (the child-concern answer,
+        the Law route's two routed answers) says the provenance's own word for none and no level, and is phrased as
+        an answer no call served, never as an engine run; a provenance that names no server, or no provenance at all,
+        says no server and the no-reply statement; a named server stating no level says that none is stated; an
+        external server is said as one; an engines' count map is read by the engines' reader;
+    F3. read as code: the form branch builds its row with _form_served and never _intel_served, whose other call
+        sites pass the engines' count map; the defect's row is closed by this round and what it leaves is
+        registered, each found by its title;
+    F4. the Care page's rendered test reads the badge under the child-concern answer as no call served it."""
+    import asyncio
+    import importlib
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.ai.native.engine import _MARKER
+    from agentic_core.api import _ai_provenance as ap
+    from agentic_core.api import resource_fabric as fab
+    root = Path(__file__).resolve().parents[1]
+    EV = ("evidence_level", "evidence_level_number", "evidence_basis")
+    COUNTS = {"served_by_map", "calls", "floor_calls", "failed_calls"}
+    run = lambda rid, cfg: asyncio.new_event_loop().run_until_complete(  # noqa: E731
+        fab._run_real_resource(rid, cfg, "w1186 objective", "general"))
+    phrases = lambda r: (r["outcome_phrase"], r["kind_phrase"])  # noqa: E731
+
+    #  the field each form's page shows, read from the six domain pages: the registry names the same one
+    pages = root / "apps/workstation-superapp/src/pages/domains"
+    page_key = {}
+    for p in pages.glob("*.tsx"):
+        page_key.update(re.findall(r'endpoint="(/api/v1/[a-z_/-]+)"\s+resultKey="([a-z_]+)"', p.read_text(encoding="utf-8")))
+    assert len(fab._FORMS) >= 25 and {f["endpoint"]: f["result_key"] for f in fab._FORMS} == page_key, (
+        "a form's registered result_key is not the field its page shows")
+
+    #  a made-up value for each required field; a field added later gets one from its declared type
+    V = {"document_text": "w1186 a made-up contract: the supplier delivers the goods within 30 days of the order.",
+         "question": "w1186 what does a limitation of liability clause usually cover?", "template_id": "nda",
+         "subject": "biology", "level": "GCSE", "topic": "photosynthesis",
+         "student_work": "w1186 made-up work: plants make their food from light, water and air.",
+         "concern": "w1186 a worker is worried about bruising", "concern_about": "an adult",
+         "patient_summary": "w1186 84F", "current_situation": "fell at 0300",
+         "research_question": "does blue light change plant growth?", "hypothesis": "blue light increases plant growth",
+         "target_role": "ward nurse", "experience": "w1186 five years on a medical ward",
+         "current_role": "care assistant", "hadith": "w1186 a made-up text given for study",
+         "product_name": "w1186 biscuit", "product_description": "a made-up biscuit of wheat flour, sugar and oil",
+         "surah": 1, "ayah_start": 1}
+    EXTRA = {"form_care_plan": {"patient_profile": {"age": "80"}, "care_needs": ["falls prevention"]},
+             "form_care_risk_assess": {"tool": "news2", "patient_data": {"resp_rate": "18"}}}
+
+    def value(f, k):
+        if k in V:
+            return V[k]
+        kind = str(f["fields"].get(k, "str"))
+        return 1 if kind.startswith("int") else (["w1186 item"] if kind.startswith("list") else "w1186 made-up value")
+
+    def through(f, cfg):
+        """the choke point's row, and the very answer the form's own handler gave it"""
+        mod = importlib.import_module(f["module"])
+        real, got = getattr(mod, f["handler"]), {}
+
+        async def _keep(req):
+            got["out"] = await real(req)
+            return got["out"]
+        monkeypatch.setattr(mod, f["handler"], _keep)
+        try:
+            return run(f["id"], cfg), got.get("out")
+        finally:
+            monkeypatch.setattr(mod, f["handler"], real)
+
+    def own_note(out):
+        """the floor's note the answer carries, as its page reads it: its own, before its provenance's"""
+        return out.get("floor_note") or (out.get("ai_provenance") or {}).get("floor_note")
+
+    #  F1. every registered form, to an answer
+    withheld = set()
+    for f in fab._FORMS:
+        cfg = {k: value(f, k) for k in f["required"]}
+        cfg.update(EXTRA.get(f["id"], {}))
+        row, out = through(f, cfg)
+        assert isinstance(out, dict) and not row.get("error"), (f["id"], row.get("error"))
+        marker_only = str(out[f["result_key"]]).strip() == _MARKER.strip() and bool(out.get("sections_withheld"))
+        assert row["outcome"] == ("withheld" if marker_only else "produced"), (f["id"], row["outcome"], row.get("detail"))
+        withheld |= {f["id"]} if marker_only else set()
+        prov = out["ai_provenance"]
+        assert (row["served_by"], row["is_external"]) == (prov["served_by"], prov["is_external"]), (f["id"], row["served_by"])
+        assert {k: row[k] for k in EV} == {k: prov[k] for k in EV}, (f["id"], "the row's evidence is not its answer's")
+        assert row["review"] == prov["review"] and row["review"]["label"], (f["id"], "the row drops the answer's tier")
+        assert row["floor_note"] == own_note(out), (f["id"], "the row's floor note is not the one the answer carries")
+        assert not (COUNTS & set(row)), (f["id"], "a count is said that the provenance does not state", COUNTS & set(row))
+        assert row["output"] == str(out[f["result_key"]])[:600] and row["output"], (f["id"], "the output is not its text")
+    #  ...on the floor the two religion forms whose every section is withheld are the ones read as withheld, and
+    #  their row carries the note their page shows, not the provenance's
+    assert withheld == {"form_rel_hadith", "form_rel_tafsir"}, withheld
+    hadith, out = through(fab._FORM_BY_ID["form_rel_hadith"], {"hadith": V["hadith"]})
+    assert hadith["floor_note"] == out["floor_note"] != out["ai_provenance"]["floor_note"], hadith["floor_note"]
+
+    #  F2. a refusal by the platform's constitutional gate is returned as a refusal: a real one, through the choke
+    #  point, its gate's faith-ruling screen reading the form's own words
+    row, out = through(fab._FORM_BY_ID["form_rel_fiqh_research"],
+                       {"question": "Is it halal for me to take a mortgage in Islam?"})
+    assert out["ai_provenance"]["served_by"] == ap.REFUSAL_GATE, out["ai_provenance"].get("served_by")
+    assert (row["outcome"], row["refused"], row["output"], row["served_by"]) == ("refused", True, None, ap.REFUSAL_GATE), row
+    assert {k: row[k] for k in EV} == ap.reply_evidence(ap.REFUSAL_GATE), ("the gate's refusal evidence", row)
+    assert row["detail"].startswith("[CONSTITUTIONAL REFUSAL]") and row["detail"] == out["research"], row["detail"][:200]
+    assert phrases(row) == (fab._GATE_REFUSED_PHRASE,) * 2 and "constitutional gate" in row["outcome_phrase"], phrases(row)
+    assert not [x for x in phrases(row) if "produced" in x], ("a gate refusal is said to have produced", phrases(row))
+    #  ...and a form's own refusal keeps its own phrase
+    own = run("form_law_generate", {"template_id": "et1_claim", "details": {}})
+    assert own["outcome"] == "refused" and all("refused by the form's own rules" in x for x in phrases(own)), phrases(own)
+
+    #  ...an answer nothing composed, routed or routed to people: the provenance's own word for none, phrased as an
+    #  answer no call served. Its outcome word is the row W1186 registers on P3.32
+    gap = "the row W1186 registers on P3.32: a form answer no call composed keeps the outcome word 'produced'"
+    care = fab._FORM_BY_ID["form_care_safeguarding"]
+    law = fab._FORM_BY_ID["form_law_research"]
+    for f, cfg, method in ((care, {"concern": "w1186 bruising", "concern_about": "a child or young person"}, None),
+                           (law, {"question": "my employer sacked me yesterday, can I sue them?"},
+                            "routed to people - not answered"),
+                           (law, {"question": "how do I apply for British citizenship?"},
+                            "routed to an authorised person - not answered")):
+        row, out = through(f, cfg)
+        prov = out["ai_provenance"]
+        assert prov["served_by"] == "none" and prov["composed"] is False and out.get("method") == method, (f["id"], prov)
+        assert (row["served_by"], row["is_external"]) == ("none", False), (f["id"], row)
+        assert {k: row[k] for k in EV} == ap.no_reply_evidence() == {k: prov[k] for k in EV}, (f["id"], row)
+        assert row["floor_note"] == own_note(out), (f["id"], "the row's floor note is not the one the answer carries")
+        assert phrases(row) == (fab._FORM_NOT_COMPOSED_PHRASE,) * 2, (f["id"], phrases(row))
+        assert not [x for x in phrases(row) if "ran its engine" in x or "produced" in x], (f["id"], phrases(row))
+        assert row["outcome"] == "produced", (gap, f["id"], row["outcome"])
+        if f is care:
+            assert row["review"] == prov["review"] and row["review"]["label"], row.get("review")
+        else:
+            assert not row.get("review"), ("the row W1186 registers on P5.15 says this answer carries no tier", row)
+    #  ...the refusal gate's answer, the word for none with no level stated beside it, a server stating no level, an
+    #  external server and an engines' count map, each the answer of a stand-in for one form's handler
+    sci = fab._FORM_BY_ID["form_sci_hypothesis"]
+    mod = importlib.import_module(sci["module"])
+    tier = {"tier": "unreviewed", "label": "Unreviewed", "known": True, "basis": "w1186 the tier as given"}
+    said = "w1186 " + "the stand-in's text. " * 6
+
+    def answering(prov):
+        async def _h(req):
+            return {"hypotheses_text": said, **({} if prov is None else {"ai_provenance": prov})}
+        return _h
+    cases = [({"served_by": ap.REFUSAL_GATE, "is_external": False, "review": tier},
+              {**ap.reply_evidence(ap.REFUSAL_GATE), "served_by": ap.REFUSAL_GATE, "is_external": False,
+               "outcome": "refused", "output": None, "detail": said}),
+             ({"served_by": "none", "is_external": False, "review": tier},
+              {**ap.no_reply_evidence(), "served_by": "none", "is_external": False}),
+             ({"served_by": "w1186-a-server", "is_external": False, "review": tier},
+              {"evidence_level": None, "evidence_level_number": None, "served_by": "w1186-a-server"}),
+             ({"served_by": "w1186-external-model", "is_external": True, **ap.reply_evidence("w1186-external-model"),
+               "review": tier, "floor_note": None},
+              {**ap.reply_evidence("w1186-external-model"), "served_by": "w1186-external-model", "is_external": True,
+               "floor_note": None}),
+             ({"served_by": {"native": 2, "w1186-model": 1}, "any_external": False, "calls": 3, "floor_calls": 2,
+               "failed_calls": 0, "review": tier},
+              {"served_by": "native,w1186-model", "served_by_map": {"native": 2, "w1186-model": 1}, "calls": 3,
+               "floor_calls": 2, "failed_calls": 0, "is_external": False})]
+    for prov, want in cases:
+        monkeypatch.setattr(mod, sci["handler"], answering(prov))
+        row = run(sci["id"], {"research_question": "w1186 a stand-in question"})
+        assert not row.get("error") and {k: row.get(k) for k in want} == want, (prov.get("served_by"), row)
+        assert row["review"] == tier, ("the tier is dropped", prov.get("served_by"))
+        if prov["served_by"] == "w1186-a-server":
+            assert row["evidence_basis"].startswith("NOT STATED:"), ("a level is assumed for a server stating none", row)
+        if prov["served_by"] == ap.REFUSAL_GATE:
+            assert phrases(row) == (fab._GATE_REFUSED_PHRASE,) * 2, ("the gate's refusal is phrased as", phrases(row))
+    #  ...a provenance that names no server (no served_by, an empty one) and an answer with no provenance at all:
+    #  no server, never said external, and the no-reply statement - never the floor, never the first level
+    for prov in ({"is_external": False, "review": tier}, {"served_by": "", "is_external": False, "review": tier}, None):
+        monkeypatch.setattr(mod, sci["handler"], answering(prov))
+        row = run(sci["id"], {"research_question": "w1186 a stand-in question"})
+        assert not row.get("error") and row["served_by"] is None and row["is_external"] is not True, (prov, row)
+        assert {k: row[k] for k in EV} == ap.no_reply_evidence(), (prov, "an unnamed server is given a level", row)
+        assert row["floor_note"] is None, (prov, "a floor note is said that the answer does not carry", row)
+    monkeypatch.undo()
+
+    #  F3. the form branch's code
+    code = _code_only((root / "agentic_core/api/resource_fabric.py").read_text(encoding="utf-8"))
+    body = code.split("async def _run_form(", 1)[1].split("\n_BY_ID = ", 1)[0]
+    assert "served = _form_served(prov, out)" in body and "**served" in body and "_intel_served" not in body, (
+        "the form branch reads the engines' shape")
+    assert 'text = out.get(form["result_key"])' in body, "the output is not read from the field the page shows"
+    #  every other row _intel_served builds is passed an engine's own provenance (petri_dish's r.ai_provenance; mjm,
+    #  cognitive_cascade, bdp/spi/apie/ddpie and nexus's r.get("provenance")), and _form_served hands it a count map only
+    sites = re.findall(r"\*\*_intel_served\(([^)]*\)?)\)", code)
+    assert sorted(sites) == sorted(["r.ai_provenance"] + ['r.get("provenance")'] * 4 + ["prov"]), sites
+    helper = code.split("def _form_evidence(", 1)[1].split("\nasync def _run_form(", 1)[0]
+    assert "return {**_intel_served(prov), **carried}" in helper, helper[:600]
+    assert not re.search(r"(?<![a-z_])_reply_evidence\(\)", helper), "a form's row is given the first level by default"
+    assert "**_form_evidence(prov, served)" in helper and '"is_external": prov.get("is_external")' in helper
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    titled = lambda start: [r for r in rows if r.get("title", "").startswith(start)]  # noqa: E731
+    done = titled("A composition reports every domain form that answers")
+    assert len(done) == 1 and (done[0]["status"], done[0]["closed_by"], done[0]["because"], done[0]["slot"]) == (
+        "done", "W1186", "built", "P3.32"), done
+    page = titled("The fabric page draws a form's answer without its tier or the floor's note")
+    assert len(page) == 1 and done[0]["id"] in page[0]["slot_source"], ("it does not name the row it follows", page)
+    assert "context_material" in page[0]["why"], "the fabric page's row leaves out a key the form row drops"
+    for start, slot, severity, beside in (
+            ("The fabric page draws a form's answer without its tier or the floor's note", "P3.32", "medium", None),
+            ("The Law research route's answers routed before anything composes carry no tier", "P5.15", "medium", None),
+            ("The fabric page and the domain pages draw a refusal by the constitutional gate", "P3.32", "low", page),
+            ("A form answer no call composed is counted as an engine run", "P3.32", "medium", page)):
+        left = titled(start)
+        assert len(left) == 1 and (left[0]["slot"], left[0]["severity"]) == (slot, severity) and left[0][
+            "source"].startswith("W1186"), (start, left)
+        assert beside is None or beside[0]["id"] in left[0]["slot_source"], (start, "it does not name the row beside it")
+
+    #  F4. the Care page's rendered test: the badge under the child-concern answer says no call served it
+    spec = _code_only((root / "apps/workstation-superapp/src/pages/domains/CareHub.test.tsx").read_text(encoding="utf-8"))
+    case = spec.split("it('a concern about a child gets the children\\'s route", 1)[1].split("\n  it(", 1)[0]
+    assert "expect(screen.getByText('no call served this')).toBeTruthy();" in case, case[-900:]
+    assert "expect(screen.queryByText('provenance not recorded')).toBeNull();" in case, case[-900:]
+
+
+def test_w1187_the_owners_five_decisions_of_2026_11_21_are_recorded_and_the_calibration_holds_three_of_them(
+        client, tmp_path, monkeypatch):
+    """W1187. The five recommendations the Owner accepted on the morning of 2026-11-21, each where the work reads it:
+    1. PR #465 was merged once W1184 was green, by the cloud session at 534cf629 with all six checks green; PR #466
+       was opened for the later rounds, the local notes name it as the one to merge and say #465 was merged, and the
+       plan no longer says #465 carries the later rounds;
+    2. a calibration run committed to the tree is evidence for a person to read: the file holding it calibrates
+       nothing, the run calibrates the reviewer only on the machine whose own record holds it, and whether a released
+       machine counts it is part of release, the Owner's switch. Driven: with a results file holding a run that met the
+       bar and this machine's record holding none, the reviewer is UNCALIBRATED, never run;
+    3. FU-1054 closes on the first run's results, pass or fail: a failing run leaves the reviewer UNCALIBRATED with its
+       two rates and their sentence shown, and its misses become a row. Driven through the agent's own door with a
+       stand-in model;
+    4. a planted case flagged for its own reason and for others counts as caught; the other reasons are said beside it
+       once the row registered for it on P5.15 (found by its title) is built. Driven through the same door; the row
+       says what is and is not built, and what it says of the first committed run is read from the run;
+    5. P5.18 clause 4's comparison of named finance products stays closed: no named finance product is compared, and
+       if a comparison is ever wanted, whether showing named finance offers is credit broking goes to the solicitor's
+       engagement (FU-1817) first; what PERG 2 does not say is said as PERG 2's.
+    Each is said at the item it governs and in the plan's list of what is with the Owner; FU-1054's and FU-1817's rows
+    and the local notes say the ones they bear on, and test_w1131 counts #465 among the merged pull requests. None of
+    the new text gives the Owner a pronoun."""
+    import datetime as _dt
+    import importlib
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.api import _review_calibration as cal
+    from agentic_core.api import care_reviewer as cr
+    from agentic_core.ai.native import orchestrator
+    root = Path(__file__).resolve().parents[1]
+    R = "OWNER RULING 2026-11-21 (the recommendations accepted)"
+    fable = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    flat = " ".join(fable.split())
+    notes = " ".join((root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8").split())
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+
+    #  the row decision 4 left to build, found by its title, open on P5.15
+    also = [r for r in reg.values() if r["title"].startswith("A planted case flagged for its own reason and for others "
+                                                               "does not say the others")]
+    assert len(also) == 1, [r["id"] for r in also]
+    also = also[0]
+    assert also["title"].endswith("score() only counts it"), also["title"]
+    if also["status"] == "open":
+        assert (also["slot"], also["owner_gated"]) == ("P5.15", False), (also["slot"], also["owner_gated"])
+        assert "also_flagged" in also["why"] and "the counted fields are unchanged" in also["why"], also["why"]
+        assert ("gives only how many were caught, naming none" in also["why"]
+                and "they are only in the run's flags, which the run keeps whole and the results file copies"
+                in also["why"]), also["why"]
+    #  ...what it says of the first run, read from the run the results file holds
+    doc = json.loads((root / cal.RESULTS["care"]).read_bytes().decode("utf-8"))
+    first = next((r for r in doc.get("runs") or [] if r.get("run_id") == "cal-8c7430765c"), None)
+    if first is not None:
+        _set = cal.load_set("care")
+        _missed = {m["case"] for m in cal.score(_set["cases"], first["flags"])["missed"]}
+        _caught = [c for c in _set["cases"] if c.get("planted") and c["id"] not in _missed]
+        _more = [c["id"] for c in _caught if set(first["flags"].get(c["id"]) or []) - {c["must_flag"]}]
+        assert (len(_caught), len(_more)) == (5, 4), (len(_caught), _more)
+        assert ("(four of the five cases the first run, cal-8c7430765c, caught were flagged for other reasons too)"
+                in also["why"]), also["why"]
+
+    #  1. the pull requests
+    assert ("PR #463 (rounds W1119–W1175) on 2026-11-20 and PR #465 (rounds W1176–W1184) on 2026-11-21, each on your "
+            "instruction; the cloud session merged #463 and #465 at your request, each with all six checks green.") in notes
+    assert "carried by **PR #466**." in notes and "Merge PR #466 when you are ready" in notes, "the notes' open PR"
+    assert "(PR #466 from 2026-11-21) is merged," in notes and "Merge PR #465 " not in notes
+    assert "PR #465 carries the later rounds" not in flat and "PR #465 then carried the later rounds" in flat
+    still = " ".join(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0].split())
+    assert ("(Five put on the morning of 2026-11-21 were accepted the same day, each as recommended: PR #465 merged once "
+            "W1184 was green (the cloud session merged it at 534cf629 with all six checks green, and PR #466 was "
+            "opened for the later rounds);") in still, "the plan's list does not say #465 was merged"
+    for said in ("a calibration run committed to the tree is evidence, calibrating the reviewer only on the machine "
+                 "whose own record holds it, and whether a released machine counts it is part of release, the Owner's "
+                 "switch;", "the Care reviewer's calibration row to close on its first run's results, pass or fail, a "
+                 "failing run leaving the reviewer UNCALIBRATED with its rates shown and its misses becoming a row;",
+                 "a planted case flagged for its own reason and for others counted as caught, the others to be said "
+                 "beside it;"):
+        assert said in still, ("the plan's list does not say", said[:80])
+
+    #  2-4. at P5.15 and in FU-1054's row
+    p515 = flat.split(" P5.15 [chartered W679", 1)[1].split(" P5.16 ", 1)[0]
+    for said in (f"{R}: a calibration run committed to the tree is evidence for a person to read; the file holding it "
+                 "calibrates nothing, and the run calibrates the reviewer only on the machine whose own record holds it; "
+                 "whether a released machine counts it is part of release, the Owner's switch.",
+                 "FU-1054 closes on the first run's results, pass or fail: a failing run leaves the reviewer "
+                 "UNCALIBRATED with its rates shown, and its misses become a row.",
+                 "A planted case flagged for its own reason and for others counts as caught, as score() counts it; the "
+                 f"other reasons are said beside it once {also['id']} is built."):
+        assert said in p515, ("P5.15 does not say", said[:80])
+    fu = reg["FU-1054"]
+    for said in (f"{R}: a calibration run committed to the tree is evidence for a person to read; the file holding it "
+                 "calibrates nothing, and the run calibrates the reviewer only on the machine whose own record holds it;",
+                 "The row closes on the first run's results, pass or fail: a failing run leaves the reviewer "
+                 "UNCALIBRATED with its rates shown, and its misses become a row.",
+                 f"the others said beside it once {also['id']} is built."):
+        assert said in fu["why"], ("FU-1054 does not say", said[:80])
+
+    #  5. P5.18 clause 4, at the item, in the solicitor's row and in the notes
+    p518 = flat.split(" P5.18 [chartered W711", 1)[1].split(" P5.19 [chartered W711", 1)[0]
+    assert ("OWNER RULING 2026-11-21 (the recommendation accepted): clause 4's comparison of named finance products stays "
+            "closed: no named finance product is compared. PERG 2, read in W1182, does not say whether showing named "
+            "finance offers is effecting an introduction or presenting or offering an agreement; if a comparison is ever "
+            "wanted, that question goes to the solicitor's engagement (FU-1817) first.") in p518, "P5.18 clause 4"
+    assert "no named finance product is compared until the consumer-credit regime has been read at its publisher" in p518
+    assert ("P5.18 clause 4's comparison of named finance products stays closed: no named finance product is compared. "
+            "If a comparison is ever wanted, whether showing named finance offers is credit broking is put to this "
+            "engagement first: PERG 2, read in W1182, does not say whether it is effecting an introduction or "
+            "presenting or offering an agreement.") in reg["FU-1817"]["why"]
+    perg = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}[
+        "fca-handbook-perg-2-credit-broking"]
+    assert ("it does not say whether showing named finance offers is effecting an introduction or presenting or "
+            "offering an agreement") in perg["says"], "the row this rests on no longer says it"
+    assert "P5.18 clause 4's comparison of named finance products kept closed" in notes
+    assert "P5.18 clause 4's comparison of named finance products kept closed, the credit-broking question" in still
+
+    #  2-4 driven: the reviewer's own door with a stand-in model, on the first day the set can be run
+    _w = cal.runnable_window(cal.load_set("care"))
+    assert _w, "the tree's set cannot be run on any day as the register stands"
+    D0 = _dt.date.fromisoformat(_w["from"])
+    monkeypatch.setattr(cal, "_today", lambda: D0)
+    monkeypatch.setattr(importlib.import_module("agentic_core.ai.gateway"), "served_identity_of", lambda sb: {
+        "model": "w1187-stand-in", "build_digest": "w1187standin" + "0" * 52, "processor": None,
+        "basis": "a stand-in made up for W1187: no model ran"})
+    the_set = cal.load_set("care")
+    planted = [c for c in the_set["cases"] if c.get("planted")]
+    assert len(planted) >= 2 and all(c.get("must_flag") for c in planted), "the set has fewer than two planted cases"
+    other = next(c["must_flag"] for c in planted if c["must_flag"] != planted[0]["must_flag"])
+    said = {c["id"]: "FLAG: none" for c in the_set["cases"]}
+
+    async def _stand_in(prompt, agent="assistant", **kw):
+        hit = [c["id"] for c in cal.load_set("care")["cases"] if c.get("shown") and cr.as_text(c["shown"]) in prompt]
+        assert len(hit) == 1, hit
+        return {"output": said[hit[0]], "served_by": "ollama:w1187-stand-in"}
+    monkeypatch.setattr(orchestrator, "complete", _stand_in)
+
+    def run_into(record, answers):
+        said.clear()
+        said.update(answers)
+        monkeypatch.setattr(cal, "_runs_path", lambda: record)
+        got = client.post("/api/v1/review/calibration/agent-run", json={"discipline": "care", "date": D0.isoformat()})
+        assert got.status_code == 200, got.text[:300]
+        return got.json()
+
+    #  4. every planted case flagged for its reason, the first for another reason too: caught, all of them
+    passing = {c["id"]: (f"FLAG: {c['must_flag']}" if c.get("planted") else "FLAG: none") for c in the_set["cases"]}
+    passing[planted[0]["id"]] = f"FLAG: {planted[0]['must_flag']}\nFLAG: {other}"
+    record = tmp_path / "machine-a" / "review_calibration_runs.json"
+    record.parent.mkdir()
+    made = run_into(record, passing)
+    kept = json.loads(record.read_text(encoding="utf-8"))[-1]
+    assert sorted(kept["flags"][planted[0]["id"]]) == sorted([planted[0]["must_flag"], other]), "the run was not kept whole"
+    s = cal.score(the_set["cases"], kept["flags"])
+    assert (s["caught"], s["planted_cases"], s["meets_bar"]) == (len(planted), len(planted), True), s
+    assert planted[0]["id"] not in [m["case"] for m in s["missed"]] and not s["flagged_for_the_wrong_reason"], s
+    on_a = cal.calibration_statement("care-reviewer")
+    assert (on_a["calibrated"], on_a["reason"], on_a["label"]) == (True, "calibrated", "Calibrated"), on_a
+
+    #  2. that run, copied into a results file, calibrates nothing on a machine whose own record does not hold it
+    results = tmp_path / "results.json"
+    results.write_text(json.dumps(cal.results_for_tree(), indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    copied = json.loads(results.read_text(encoding="utf-8"))
+    assert [r["run_id"] for r in copied["runs"]] == [made["run_id"]] and copied["runs"][0]["score"]["meets_bar"], copied
+    monkeypatch.setattr(cal, "RESULTS", {**cal.RESULTS, "care": str(results)})
+    elsewhere = tmp_path / "machine-b" / "review_calibration_runs.json"
+    elsewhere.parent.mkdir()
+    monkeypatch.setattr(cal, "_runs_path", lambda: elsewhere)
+    on_b = cal.calibration_statement("care-reviewer")
+    assert (on_b["calibrated"], on_b["reason"], on_b["label"], on_b["rates"]) == (
+        False, "never_run", "Uncalibrated", None), ("a committed run calibrated another machine", on_b)
+
+    #  3. a first run that fails: UNCALIBRATED, with both rates, their counts and their sentence shown
+    missing = dict(passing)
+    missing[planted[-1]["id"]] = "FLAG: none"
+    record_c = tmp_path / "machine-c" / "review_calibration_runs.json"
+    record_c.parent.mkdir()
+    run_into(record_c, missing)
+    on_c = cal.calibration_statement("care-reviewer")
+    n, k = len(planted), len(the_set["cases"]) - len(planted)
+    assert (on_c["calibrated"], on_c["reason"], on_c["label"]) == (False, "below_bar", "Uncalibrated"), on_c
+    rates = on_c["rates"]
+    assert rates and (rates["caught"], rates["planted_cases"], rates["false_alarms"], rates["clean_cases"]) == (
+        n - 1, n, 0, k), rates
+    assert (rates["catch_rate"], rates["false_alarm_rate"]) == ((n - 1) / n, 0.0), rates
+    assert rates["basis"] == (f"catch rate: {n - 1} of {n} planted case(s) flagged for their own reason; "
+                              f"false-alarm rate: 0 of {k} clean case(s) flagged"), rates["basis"]
+    assert "did not meet the bar" in on_c["basis"], on_c["basis"]
+    missed = cal.score(the_set["cases"], json.loads(record_c.read_text(encoding="utf-8"))[-1]["flags"])["missed"]
+    assert [m["case"] for m in missed] == [planted[-1]["id"]], missed
+
+    #  no new text gives the Owner a pronoun
+    word = re.compile(r"\b(?:he|his|him|himself)\b", re.I)
+    texts = [p515.split(R, 1)[1][:800], p518.split("OWNER RULING 2026-11-21", 1)[1][:500],
+             fu["why"].split(R, 1)[1], reg["FU-1817"]["why"].split(R, 1)[1], also["title"], also["why"],
+             still.split("(Five put on the morning of 2026-11-21", 1)[1][:1000]]
+    assert [m.group(0) for t in texts for m in [word.search(t)] if m] == []
+
+
+def test_w1188_fu1054_is_closed_on_the_care_reviewers_first_run_and_what_it_missed_is_a_row(tmp_path, monkeypatch):
+    """W1188, as the Owner ruled on 2026-11-21: FU-1054 closes on the first run's results, pass or fail; a failing run
+    leaves the reviewer UNCALIBRATED with its rates shown, and its misses become a row. The first run, cal-8c7430765c,
+    was made on the Owner's machine that morning, committed (c657e2a7) and merged (c76809a8). Held here:
+    1. the results file holds that run, which check_results passes, made through the agent's own door with a model
+       serving on the set as it stands; score() gives it 5 of 10 planted cases caught and 4 of 6 clean ones flagged;
+    2. FU-1054 is closed by W1188 as built, and its close note says the run id, the date and times, the model and
+       build, the set, both rates with their counts as score() gives them, the five cases the run left unanswered and
+       that it so calibrates nothing, that the bar (in the run's own words) was not met, where the reviewer is
+       UNCALIBRATED and what a released machine's counting of it is, the commit and the merge, and the row its misses
+       became;
+    3. that row is open on P5.15 and what it says agrees with the run, read from the run: its title's counts, the cases
+       caught, missed and flagged though clean, the five answered in a form the reviewer does not read and which cases
+       reading them would have changed, the case flagged for the wrong reason, the case that answered 'FLAG: none'
+       beside seven reasons, the reason named on 15 of the 16 cases, and the clean case flagged for all nine; its NEXT
+       moves no bar and counts no line in another form;
+    4. FU-1819's condition no longer waits on FU-1054's run;
+    5. the run counts only on the machine whose own record holds it, and calibrates nothing there: with this machine's
+       record empty the reviewer is UNCALIBRATED, never run, and with the run in a machine's own record it is
+       UNCALIBRATED, the run having left five cases unanswered, with both rates and their counts;
+    6. the step left step 5 of the local notes and the plan's list of what is with the Owner, each saying it was done
+       and what the run did, with the merge it came in by, and the notes say it is settled."""
+    import datetime as _dt
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.api import _review_calibration as cal
+    root = Path(__file__).resolve().parents[1]
+    MERGE = "c76809a8"
+    WORD = {4: "four", 5: "five", 16: "sixteen"}
+    words = lambda ids: ", ".join(ids[:-1]) + " and " + ids[-1]
+
+    #  1. the run the tree holds
+    doc = json.loads((root / cal.RESULTS["care"]).read_bytes().decode("utf-8"))
+    assert cal.check_results(doc) == [], cal.check_results(doc)
+    run = next(r for r in doc["runs"] if r["run_id"] == "cal-8c7430765c")
+    the_set = cal.load_set("care")
+    assert (run["door"], run["configuration"], run["agent"], run["date"]) == (
+        cal.AGENT_DOOR, "model", "care-reviewer", "2026-11-21"), run["run_id"]
+    assert (run["set_version"], run["set_digest"]) == (the_set["version"], cal.set_digest(the_set)), "another set"
+    s = cal.score(the_set["cases"], run["flags"])
+    assert (s["caught"], s["planted_cases"], s["false_alarms"], s["clean_cases"], s["meets_bar"]) == (5, 10, 4, 6, False)
+    ident = run["served_identity"]
+    na = words(run["not_answered"])
+
+    #  2. FU-1054's close
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    fu = reg["FU-1054"]
+    assert (fu["status"], fu["closed_by"], fu.get("because")) == ("done", "W1188", "built"), fu["status"]
+    note = fu.get("close_note") or ""
+    for said in ("Closed on its first run's results, as the Owner ruled on 2026-11-21: run cal-8c7430765c",
+                 f"on {run['date']} ({run['started_at'][11:]} to {run['finished_at'][11:]})",
+                 "through the agent's own door (POST /api/v1/review/calibration/agent-run)",
+                 f"({run['model']}, serving {ident['model']}, build {ident['build_digest']}, on {ident['processor']})",
+                 f"on set {the_set['version']} ({s['planted_cases']} planted cases, {s['clean_cases']} clean)",
+                 f"Catch rate {s['caught']} of {s['planted_cases']} (50%); false-alarm rate {s['false_alarms']} of "
+                 f"{s['clean_cases']} (66.7%).",
+                 f"The run did not answer {na} with one of the set's reasons or 'FLAG: none', so it calibrates nothing, "
+                 f"and the bar, {run['score']['bar']}, was not met. On the machine whose own record holds the run the "
+                 "reviewer is UNCALIBRATED",
+                 "on a machine whose own record does not hold it the run counts for nothing, and whether a released "
+                 "machine counts it is part of release, the Owner's switch.",
+                 f"committed from that machine (c657e2a7) and merged at {MERGE};",
+                 "check_results finds nothing wrong with it."):
+        assert said in note, ("the close note does not say", said)
+    _w = cal.runnable_window(the_set)
+    assert _w and f"while the set can be run (through {_w['through']} as the register stands)" in note, note[:300]
+    m = re.search(r"What it missed is (FU-\d+)\.$", note)
+    assert m, note[-160:]
+    miss = reg[m.group(1)]
+
+    #  3. the row the misses became, held to the run
+    assert (miss["status"], miss["slot"], miss["owner_gated"]) == ("open", "P5.15", False) or miss["status"] == "done"
+    assert miss["title"] == (f"The Care reviewer's first calibration run did not meet the bar: "
+                             f"{WORD[len(s['missed'])]} planted cases missed and {WORD[s['false_alarms']]} clean ones "
+                             "flagged"), miss["title"]
+    why = miss["why"]
+    missed = [x["case"] for x in s["missed"]]
+    caught = sorted(c["id"] for c in the_set["cases"] if c.get("planted") and c["id"] not in missed)
+    assert f"caught {s['caught']} of {s['planted_cases']} planted cases ({words(caught)})" in why, why[:300]
+    alarms = s["false_alarm_cases"]
+    #  a clean case passed when the run answered it and flagged nothing; K06 was not answered at all
+    passed = [c["id"] for c in the_set["cases"] if not c.get("planted") and c["id"] not in alarms
+              and c["id"] not in run["not_answered"]]
+    assert len(passed) == 1, passed
+    assert f"flagged {s['false_alarms']} of {s['clean_cases']} clean ones ({words(alarms)}; {passed[0]} alone passed)" in why
+    assert f"Five cases ({na}) were answered with a bare 'FLAG:'" in why and len(run["not_answered"]) == 5
+    for cid in run["not_answered"]:
+        lines = run["per_case"][cid]["lines_not_read_as_flags"]
+        assert lines[0].strip() == "FLAG:" and all(ln.lstrip().startswith("- ") for ln in lines[1:]), (cid, lines)
+    #  what reading the bullets would have changed, counted here from the lines themselves
+    allowed = {c["must_flag"] for c in the_set["cases"] if c.get("must_flag")}
+    read = {cid: [ln.lstrip()[2:].strip().lower() for ln in run["per_case"][cid]["lines_not_read_as_flags"][1:]]
+            for cid in run["not_answered"]}
+    w = cal.score(the_set["cases"], {**run["flags"], **{cid: [r for r in rs if r in allowed] for cid, rs in read.items()}})
+    assert (w["caught"], w["false_alarms"], w["meets_bar"]) == (6, 5, False), w
+    gained = sorted({x["case"] for x in s["missed"]} - {x["case"] for x in w["missed"]})
+    new_alarms = sorted(set(w["false_alarm_cases"]) - set(alarms))
+    assert len(gained) == len(new_alarms) == 1, (gained, new_alarms)
+    assert (f"{gained[0]} would have been caught and {new_alarms[0]} would have been a false alarm, "
+            f"{w['caught']} of {w['planted_cases']} and {w['false_alarms']} of {w['clean_cases']}, still below the bar") in why
+    assert s["flagged_for_the_wrong_reason"] == ["C05"] and "C05 was flagged, but not for its own reason." in why
+    assert (run["per_case"]["C06"]["said_none"] is True and len(run["flags"]["C06"]) == 7 and "C06" in caught
+            and "C06, counted caught, answered 'FLAG: none' and seven of the set's reasons in the same reply." in why)
+    role = [cid for cid, x in run["per_case"].items() if "professional role claimed" in (run["flags"].get(cid) or [])
+            or any("professional role claimed" in str(ln).lower() for ln in x.get("lines_not_read_as_flags") or [])]
+    assert len(role) == 15 and len(run["per_case"]) == 16, len(role)
+    assert sorted(run["flags"]["K01"]) == sorted(allowed) and len(allowed) == 9, run["flags"]["K01"]
+    assert ("named 'professional role claimed' on 15 of the 16 cases and flagged all nine reasons on K01, a clean "
+            "case") in why
+    assert "(a bare 'FLAG:' line with bullets beneath it; 'FLAG: none' beside reasons)" in why
+    assert "Nothing here moves the bar, and no line in another form is counted." in why
+
+    #  4. FU-1819's condition
+    w1819 = reg["FU-1819"]["why"]
+    assert "until FU-1054's run calibrates the agent" not in w1819, "FU-1819 still waits on FU-1054's run"
+    assert ("nothing it writes counts until a run of the agent's own calibrates it: the first, FU-1054's "
+            f"(cal-8c7430765c), did not (W1188), and the next is {miss['id']}'s.") in w1819, w1819[-220:]
+
+    #  5. it counts only on the machine whose own record holds it, and calibrates nothing there
+    monkeypatch.setattr(cal, "_today", lambda: _dt.date.fromisoformat(_w["from"]))
+    empty = tmp_path / "here" / "review_calibration_runs.json"
+    empty.parent.mkdir()
+    monkeypatch.setattr(cal, "_runs_path", lambda: empty)
+    here = cal.calibration_statement("care-reviewer")
+    assert (here["calibrated"], here["reason"], here["label"], here["rates"]) == (False, "never_run", "Uncalibrated",
+                                                                                 None), here
+    theirs = tmp_path / "theirs" / "review_calibration_runs.json"
+    theirs.parent.mkdir()
+    theirs.write_text(json.dumps([{k: v for k, v in run.items() if k != "score"}], indent=1), encoding="utf-8")
+    monkeypatch.setattr(cal, "_runs_path", lambda: theirs)
+    there = cal.calibration_statement("care-reviewer")
+    assert (there["calibrated"], there["label"]) == (False, "Uncalibrated"), there
+    #  the run did not answer five cases, so the reason given is that; its rates are still shown, with their counts
+    assert there["reason"] == "not_answered" and there["rates"] and (
+        there["rates"]["caught"], there["rates"]["planted_cases"], there["rates"]["false_alarms"],
+        there["rates"]["clean_cases"]) == (5, 10, 4, 6), there
+
+    #  6. the local notes and the plan's list
+    notes = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
+    assert "   - FU-1054:" not in step5 and re.findall(r"^   - (FU-\d+):", step5, re.M) == ["FU-1165"], step5[:300]
+    flat = " ".join(notes.split())
+    for said in ("(FU-1054's step here was done on 2026-11-21 and the row is closed (W1188): the run, cal-8c7430765c, "
+                 f"was committed from this machine (c657e2a7) and merged in the cloud session at {MERGE}.",
+                 "It left five cases unanswered, so it calibrates nothing, and it did not meet the bar; the reviewer "
+                 "stays uncalibrated.",
+                 f"what it missed is {miss['id']}, which the cloud session works on.)",
+                 "The row in step 5: FU-1165, a step there.",
+                 "**Settled on 2026-11-21:** the Care reviewer's first calibration run (FU-1054, closed W1188), made on "
+                 "your machine through the agent's own door with the local model (llama3.2): run cal-8c7430765c left "
+                 f"five cases unanswered, caught {s['caught']} of {s['planted_cases']} planted cases and raised "
+                 f"{s['false_alarms']} false alarms in {s['clean_cases']} clean ones, so it calibrates nothing and the "
+                 "reviewer is uncalibrated.",
+                 f"It was committed (c657e2a7) and merged at {MERGE}, and what it missed is {miss['id']}."):
+        assert said in flat, ("the notes do not say", said[:90])
+    fable = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    still = " ".join(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0].split())
+    assert "FU-1054" not in still, "the plan's list still names the closed row"
+    for said in ("(The Care reviewer's first calibration run was made on your machine on 2026-11-21, with the local "
+                 f"model on, and its results committed (c657e2a7); the cloud session merged them ({MERGE}).",
+                 f"It left {WORD[len(run['not_answered'])]} of its {WORD[len(run['per_case'])]} cases unanswered, "
+                 f"caught {s['caught']} of {s['planted_cases']} planted cases and raised {s['false_alarms']} false "
+                 f"alarms in {s['clean_cases']} clean ones, so it calibrates nothing and the reviewer stays "
+                 "UNCALIBRATED.", "its row closed on that run (W1188)"):
+        assert said in still, ("the plan's list does not say", said[:90])
+
+    #  no new text gives the Owner a pronoun
+    word = re.compile(r"\b(?:he|his|him|himself)\b", re.I)
+    texts = [note, miss["title"], why, w1819, flat.split("(FU-1054's step here was done", 1)[1][:600],
+             flat.split("**Settled on 2026-11-21:**", 1)[1][:700], still.split("(The Care reviewer's first", 1)[1][:600]]
+    assert [m_.group(0) for t in texts for m_ in [word.search(t)] if m_] == []
+
+
+def test_w1189_the_calibration_export_the_import_baseline_and_the_soak_report_write_lf_on_every_machine(
+        tmp_path, monkeypatch, capsys):
+    """W1189. The calibration export wrote docs/CARE_REVIEW_CALIBRATION_RESULTS.json with CRLF line endings on the
+    Owner's machine (its _write used Path.write_text, which on Windows turns each newline into CRLF), and the import
+    integrity script's --write-baseline and the soak script's report wrote their files the same way. Held here:
+    1. the export's writer writes the document's own bytes, with LF, and the baseline writer writes the baseline's own
+       bytes, with LF, over a made-up tree: both driven here, and on the Windows CI job, where text mode would write
+       CRLF; the soak report is written as its JSON's bytes;
+    2. none of the three writes in text mode;
+    3. the results file is LF, its layout the export's own, and its check passes; the soak report of 2026-08-30 stays
+       as committed;
+    4. every other text-mode write the census reads in a tracked script under scripts/ (Path.write_text with no
+       newline argument; open, io.open or a .open method with a text write mode; open or io.open with a mode that is
+       not a literal) is pinned by the place its call names and its mode, and said with the place it writes by
+       default, so adding, removing or pointing one elsewhere in its call turns this red. Where a write lands at run
+       time, at a path given on the command line, no census can hold, and JSON a script prints for its caller to
+       redirect is not read;
+    5. the row is closed by W1189 as built."""
+    import ast
+    import importlib.util
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+
+    def load(name, rel):
+        spec = importlib.util.spec_from_file_location(name, root / rel)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
+    #  1. the export's writer, driven
+    export = load("calibration_results_w1189", "scripts/calibration_results.py")
+    doc = {"about": "made up for W1189", "runs": [{"run_id": "cal-w1189", "lines": ["one", "two\nthree"], "é": "’"}]}
+    out = tmp_path / "results.json"
+    export._write(out, doc)
+    got = out.read_bytes()
+    assert got == (json.dumps(doc, indent=1, ensure_ascii=False) + "\n").encode("utf-8"), got[:120]
+    assert b"\r" not in got and not list(tmp_path.glob("*.w1184tmp")), "the writer left CR or its temporary file"
+    #  ...and the baseline writer, driven over a made-up tree of two files with a dangling first-party import each
+    base = load("check_import_integrity_w1189", "scripts/check_import_integrity.py")
+    tree = tmp_path / "tree"
+    tree.mkdir()
+    (tree / "a.py").write_text("import agentic_core.not_a_module_w1189a\n", encoding="utf-8")
+    (tree / "b.py").write_text("import agentic_core.not_a_module_w1189b\n", encoding="utf-8")
+    monkeypatch.setattr(base, "ROOT", tree)
+    monkeypatch.setattr(base, "BASELINE", tree / "baseline.txt")
+    monkeypatch.setattr(sys, "argv", ["check_import_integrity.py", "--write-baseline"])
+    assert base.main() == 0, capsys.readouterr().out[-400:]
+    written = (tree / "baseline.txt").read_bytes()
+    assert written == ("# Files with pre-existing dangling first-party imports, recorded so that\n"
+                       "# scripts/check_import_integrity.py fails only on NEW breaks.\n"
+                       "# Removing a line here is how you assert a file has been fixed.\n"
+                       "a.py  # missing: agentic_core.not_a_module_w1189a\n"
+                       "b.py  # missing: agentic_core.not_a_module_w1189b\n").encode("utf-8"), written
+    soak_src = (root / "scripts/soak_organism.py").read_text(encoding="utf-8")
+    assert 'Path(out).write_bytes(json.dumps(report, indent=2).encode("utf-8"))' in soak_src, "the soak report's writer"
+
+    #  2-4. every text-mode write the census reads in a tracked script under scripts/
+    def text_writes(src: str):
+        found = []
+        for node in ast.walk(ast.parse(src)):
+            if not isinstance(node, ast.Call):
+                continue
+            f = node.func
+            kw = {k.arg: k.value for k in node.keywords}
+            nl = kw.get("newline")
+            nl_ok = isinstance(nl, ast.Constant) and nl.value in ("", "\n")
+            if isinstance(f, ast.Attribute) and f.attr == "write_text":
+                if not nl_ok:
+                    found.append(ast.unparse(f))           # the place it writes, as its call names it
+                continue
+            builtin = (isinstance(f, ast.Name) and f.id == "open") or (
+                isinstance(f, ast.Attribute) and f.attr == "open" and isinstance(f.value, ast.Name)
+                and f.value.id == "io")
+            if builtin:
+                mode = node.args[1] if len(node.args) > 1 else kw.get("mode")
+                if mode is None:
+                    continue                               # read, the default
+                target = ast.unparse(node.args[0]) if node.args else "?"
+                if not (isinstance(mode, ast.Constant) and isinstance(mode.value, str)):
+                    if not nl_ok:
+                        found.append(f"{ast.unparse(f)}({target}, {ast.unparse(mode)})")   # judged, never passed
+                    continue
+            elif isinstance(f, ast.Attribute) and f.attr == "open":
+                mode = node.args[0] if node.args and isinstance(node.args[0], ast.Constant) else kw.get("mode")
+                if not (isinstance(mode, ast.Constant) and isinstance(mode.value, str)):
+                    continue                               # a zip member or an os.open path, not a text file
+                target = ast.unparse(f.value)
+            else:
+                continue
+            m = mode.value
+            if "b" in m or not any(c in m for c in "wax+"):
+                continue
+            if not nl_ok:
+                found.append(f"{ast.unparse(f)}({target}, {m!r})" if builtin else f"{target}.open({m!r})")
+        return sorted(found)
+
+    left = {
+        "scripts/blind_sweep.py": {
+            "io.open(a.json, 'w')": "a report at the path given with --json",
+            "io.open(bl, 'w')": "a shard's blinds in its scratch copy",
+            "io.open(marker, 'w')": "its in-flight marker in its store"},
+        "scripts/boot_signin_check_backend.py": {
+            "(STORE / 'admin_password.txt').write_text": "the sign-in check's own store"},
+        "scripts/init_data.py": {"open(file_path, 'w')": "the data root's empty stores"},
+        "scripts/move_to_private_store.py": {
+            "(dest / f'MANIFEST_{n}.json').write_text": "a manifest in the private store"},
+        "scripts/purge_memory_contamination.py": {"mem.write_text": "the memory store, emptied"},
+        "scripts/reach_audit.py": {"Path(args.json).write_text": "a report at the path given with --json"},
+        "scripts/recovery_audit.py": {"Path(args.json_out).write_text": "a report at the path given with --json"},
+        "scripts/relocate_data_store.py": {"tmp.write_text": "a data store's merged copy, beside it"},
+    }
+    tracked = subprocess.run(["git", "ls-files", "scripts"], cwd=root, capture_output=True, text=True, check=True)
+    seen = {}
+    for rel in sorted(p for p in tracked.stdout.split() if p.endswith(".py")):
+        writes = text_writes((root / rel).read_text(encoding="utf-8"))
+        if writes:
+            seen[rel] = writes
+    for rel in ("scripts/calibration_results.py", "scripts/check_import_integrity.py", "scripts/soak_organism.py"):
+        assert rel not in seen, (rel, "writes its file in text mode", seen.get(rel))
+    assert seen == {rel: sorted(calls) for rel, calls in left.items()}, (
+        "a text-mode write in scripts/ is not named here, or one named is gone or points elsewhere", seen)
+    assert all(why for calls in left.values() for why in calls.values())
+
+    #  3. the results file, and the soak report as committed
+    raw = (root / "docs/CARE_REVIEW_CALIBRATION_RESULTS.json").read_bytes()
+    res = json.loads(raw.decode("utf-8"))
+    assert b"\r" not in raw and raw == (json.dumps(res, indent=1, ensure_ascii=False) + "\n").encode("utf-8")
+    from agentic_core.api import _review_calibration as cal
+    assert cal.check_results(res) == [], cal.check_results(res)
+    soak = (root / "docs/soak_report_2026-08-30.json").read_bytes()
+    assert soak.count(b"\r\n") == soak.count(b"\n") > 0 and json.loads(soak.decode("utf-8")), "the soak report moved"
+
+    #  5. the row
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    rows = [r for r in reg if r["title"].startswith("Three scripts the Owner's machine runs write their files in text "
+                                                   "mode")]
+    assert len(rows) == 1 and (rows[0]["status"], rows[0]["closed_by"], rows[0].get("because")) == (
+        "done", "W1189", "built"), rows
+    note = rows[0]["close_note"]
+    for said in ("test_w1189 drives the export's writer and the baseline's, which the Windows CI job runs too.",
+                 "the soak report of 2026-08-30 is left as committed", "no census can hold"):
+        assert said in note, ("the close note does not say", said)

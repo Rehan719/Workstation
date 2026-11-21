@@ -118,7 +118,8 @@ def main() -> int:
     assert os.getenv("DATA_DIR"), "refusing to soak without an ISOLATED DATA_DIR"
     report = asyncio.new_event_loop().run_until_complete(soak(args.minutes, args.cadence))
     out = args.out or str(Path(os.environ["DATA_DIR"]) / "soak_report.json")
-    Path(out).write_text(json.dumps(report, indent=2), encoding="utf-8")
+    #  W1189 - the bytes, with LF on every machine: a soak report has been committed as evidence
+    Path(out).write_bytes(json.dumps(report, indent=2).encode("utf-8"))
     print(json.dumps({k: report[k] for k in ("beats", "beat_ms", "profiles", "note")}, indent=2))
     print(f"full report: {out}")
     return 0

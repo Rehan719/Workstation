@@ -117,12 +117,13 @@ def main() -> int:
         print()
 
     if "--write-baseline" in sys.argv:
-        BASELINE.write_text(
+        #  W1189 - the bytes, with LF on every machine: the baseline is a tracked file
+        BASELINE.write_bytes((
             "# Files with pre-existing dangling first-party imports, recorded so that\n"
             "# scripts/check_import_integrity.py fails only on NEW breaks.\n"
             "# Removing a line here is how you assert a file has been fixed.\n"
-            + "\n".join(f"{f}  # missing: {', '.join(m)}" for f, m in sorted(found.items())) + "\n",
-            encoding="utf-8")
+            + "\n".join(f"{f}  # missing: {', '.join(m)}" for f, m in sorted(found.items())) + "\n"
+        ).encode("utf-8"))
         print(f"baseline written: {len(found)} files")
         return 0
 

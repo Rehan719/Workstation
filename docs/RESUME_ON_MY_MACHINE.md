@@ -3,7 +3,7 @@
 When you want to continue locally, open Claude Code (Claude Opus 5.5) **in your local clone** (`~\Workstation`)
 and paste the block below as your first message. Nothing else is needed.
 
-Updated 2026-11-21 (W1131, W1164, W1184). The cloud session works in 8-hour cycles into December, until the plan's
+Updated 2026-11-21 (W1131, W1164, W1184, W1187, W1188). The cloud session works in 8-hour cycles into December, until the plan's
 build items are closed and the final audit has run (2026-12-31 at the latest), and pushes to `main-l1fsqo`. While
 it runs, the local session works on a branch of its own (step 1), so the two never push to the same branch.
 
@@ -18,7 +18,7 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
    audit has run; 2026-12-31 at the latest) it may still be pushing to main-l1fsqo, so do not push there: work on a
    branch of your own named local-owner (if it exists, check it out and merge origin/main-l1fsqo into it;
    otherwise create it from origin/main-l1fsqo), push that branch, and open its own pull request.
-   Once the cycles have stopped: if the open pull request from main-l1fsqo (PR #465 from 2026-11-20) is merged,
+   Once the cycles have stopped: if the open pull request from main-l1fsqo (PR #466 from 2026-11-21) is merged,
    work on main (git checkout main && git pull); otherwise git checkout main-l1fsqo && git pull origin
    main-l1fsqo, and keep pushing there. Never push to main without me.
 2. Read, in this order: docs/REMAINING_WORK_MEASURED.md (every open item, measured 2026-11-10),
@@ -37,17 +37,11 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
    FU-1005 were done here on 2026-11-20 (W1133l, W1133m), and are closed:
    - FU-1165: as I answered on 2026-11-20, register my two ventures, Atmospheric Harvest Solutions and Aerius
      Energy Harvest, fresh in the new books, then name each in Settings, Protected enterprises, once it exists.
-   - FU-1054: the Care reviewer's first calibration run, with the local model on (this machine's default). Start
-     the backend and read GET /api/v1/review/calibration/care-reviewer: it gives the server's date and the days
-     the set can be run (2026-11-19 through 2027-01-10 as the register stands). Then POST
-     /api/v1/review/calibration/agent-run with {"discipline": "care", "date": that date}. It asks the model
-     sixteen times, so give the request an hour; if the client gives up first, read the same GET once the server
-     has finished. Nothing made where no model serves is a run: if the floor answers any case, the route keeps
-     nothing, and a run typed through /calibration/run counts for nothing. Then run python
-     scripts/calibration_results.py export and then check, run test_w1184, and commit
-     docs/CARE_REVIEW_CALIBRATION_RESULTS.json on your branch and push it. Leave FU-1054 open: the cloud session
-     closes it from the committed file, with the run's id, date, model and build and its two rates with their
-     counts, whether or not it met the bar, and takes this step out of step 5 and the plan's list.
+   (FU-1054's step here was done on 2026-11-21 and the row is closed (W1188): the run, cal-8c7430765c, was
+   committed from this machine (c657e2a7) and merged in the cloud session at c76809a8. It left five cases
+   unanswered, so it calibrates nothing, and it did not meet the bar; the reviewer stays uncalibrated. As I
+   ruled that morning, the row closed on it all the same, and what it missed is FU-1831, which the cloud
+   session works on.)
    (FU-1286's step here was done on 2026-11-20 and the row is closed (W1180): venv/ was untracked (7afa4aa9), the
    folder kept on this disk, and merged in the cloud session at 07fb9817. The three one-off command permissions
    in .claude/settings.json that named my home folder were removed in the cloud session the same day, W1176.)
@@ -66,9 +60,10 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
 
 ## What the cloud session left (the short version)
 
-- **All work is in git.** PR #462 (rounds W785–W1118) was merged into `main` on 2026-11-19, and PR #463 (rounds
-  W1119–W1175) on 2026-11-20, each on your instruction; the cloud session merged #463 at your request, with all
-  six checks green. Later rounds are on `main-l1fsqo`, carried by **PR #465**.
+- **All work is in git.** PR #462 (rounds W785–W1118) was merged into `main` on 2026-11-19, PR #463 (rounds
+  W1119–W1175) on 2026-11-20 and PR #465 (rounds W1176–W1184) on 2026-11-21, each on your instruction; the cloud
+  session merged #463 and #465 at your request, each with all six checks green. Later rounds are on
+  `main-l1fsqo`, carried by **PR #466**.
 - **The plan,** on 2026-11-20: 97 of 119 items done (P1 18/18 · P2 39/41 · P3 30/32 · P4 3/6 · P5 7/22). P2.40 and P2.41
   have every row closed, and close on the final audit. The current figures are the PLAN NOW block of
   `docs/FABLE_DELIVERY_PROMPT.md`.
@@ -78,11 +73,15 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
 - **Owner rulings in force:** those recorded in the plan, including 2026-11-06 (five decisions taken as
   recommended), 2026-11-10 (decisions go with the recommendation; PR #461 merged), 2026-11-19 (twenty-two
   recommendations accepted; the six switches proceed in the ruled order, each once its pre-flight is built and
-  measured; PR #462 merged) and 2026-11-20 (that day's recommendations accepted, and that afternoon the ten
-  decisions put to you, each taken as recommended; among them, the cycles run into December).
+  measured; PR #462 merged), 2026-11-20 (that day's recommendations accepted, and that afternoon the ten
+  decisions put to you, each taken as recommended; among them, the cycles run into December) and 2026-11-21
+  (five decisions taken as recommended: PR #465 merged once green; how the Care reviewer's calibration run
+  counts, when FU-1054 closes, and that a case flagged for its own reason and others is caught; P5.18
+  clause 4's comparison of named finance products kept closed).
 - **Still yours:**
-  - Merge PR #465 when you are ready, or ask the cloud session to merge it once green, as you did for PR #463.
-  - The rows in step 5: FU-1165 and FU-1054, a step each there.
+  - Merge PR #466 when you are ready, or ask the cloud session to merge it once green, as you did for
+    PR #463 and PR #465.
+  - The row in step 5: FU-1165, a step there.
   - One line in `.env` on your machine for the legal matter's folder (step 3 of the prompt), if the local
     session has not added it.
   - Sending the two permission letters in `docs/letters/` (FU-1188).
@@ -104,3 +103,8 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
   cloud session (W1176); the pinned fidelity ledgers and `_archive/` stay as they are; and the audit record
   (docs/fidelity_runs/ledger_v14_W639_375c5ffb.json) was edited in the cloud session on 2026-11-20, on your
   go-ahead naming it (W1175).
+- **Settled on 2026-11-21:** the Care reviewer's first calibration run (FU-1054, closed W1188), made on your
+  machine through the agent's own door with the local model (llama3.2): run cal-8c7430765c left five cases
+  unanswered, caught 5 of 10 planted cases and raised 4 false alarms in 6 clean ones, so it calibrates nothing
+  and the reviewer is uncalibrated. It was committed (c657e2a7) and merged at c76809a8, and what it missed is
+  FU-1831.
