@@ -98281,3 +98281,150 @@ def test_w1188_fu1054_is_closed_on_the_care_reviewers_first_run_and_what_it_miss
     texts = [note, miss["title"], why, w1819, flat.split("(FU-1054's step here was done", 1)[1][:600],
              flat.split("**Settled on 2026-11-21:**", 1)[1][:700], still.split("(The Care reviewer's first", 1)[1][:600]]
     assert [m_.group(0) for t in texts for m_ in [word.search(t)] if m_] == []
+
+
+def test_w1189_the_calibration_export_the_import_baseline_and_the_soak_report_write_lf_on_every_machine(
+        tmp_path, monkeypatch, capsys):
+    """W1189. The calibration export wrote docs/CARE_REVIEW_CALIBRATION_RESULTS.json with CRLF line endings on the
+    Owner's machine (its _write used Path.write_text, which on Windows turns each newline into CRLF), and the import
+    integrity script's --write-baseline and the soak script's report wrote their files the same way. Held here:
+    1. the export's writer writes the document's own bytes, with LF, and the baseline writer writes the baseline's own
+       bytes, with LF, over a made-up tree: both driven here, and on the Windows CI job, where text mode would write
+       CRLF; the soak report is written as its JSON's bytes;
+    2. none of the three writes in text mode;
+    3. the results file is LF, its layout the export's own, and its check passes; the soak report of 2026-08-30 stays
+       as committed;
+    4. every other text-mode write the census reads in a tracked script under scripts/ (Path.write_text with no
+       newline argument; open, io.open or a .open method with a text write mode; open or io.open with a mode that is
+       not a literal) is pinned by the place its call names and its mode, and said with the place it writes by
+       default, so adding, removing or pointing one elsewhere in its call turns this red. Where a write lands at run
+       time, at a path given on the command line, no census can hold, and JSON a script prints for its caller to
+       redirect is not read;
+    5. the row is closed by W1189 as built."""
+    import ast
+    import importlib.util
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+
+    def load(name, rel):
+        spec = importlib.util.spec_from_file_location(name, root / rel)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
+    #  1. the export's writer, driven
+    export = load("calibration_results_w1189", "scripts/calibration_results.py")
+    doc = {"about": "made up for W1189", "runs": [{"run_id": "cal-w1189", "lines": ["one", "two\nthree"], "é": "’"}]}
+    out = tmp_path / "results.json"
+    export._write(out, doc)
+    got = out.read_bytes()
+    assert got == (json.dumps(doc, indent=1, ensure_ascii=False) + "\n").encode("utf-8"), got[:120]
+    assert b"\r" not in got and not list(tmp_path.glob("*.w1184tmp")), "the writer left CR or its temporary file"
+    #  ...and the baseline writer, driven over a made-up tree of two files with a dangling first-party import each
+    base = load("check_import_integrity_w1189", "scripts/check_import_integrity.py")
+    tree = tmp_path / "tree"
+    tree.mkdir()
+    (tree / "a.py").write_text("import agentic_core.not_a_module_w1189a\n", encoding="utf-8")
+    (tree / "b.py").write_text("import agentic_core.not_a_module_w1189b\n", encoding="utf-8")
+    monkeypatch.setattr(base, "ROOT", tree)
+    monkeypatch.setattr(base, "BASELINE", tree / "baseline.txt")
+    monkeypatch.setattr(sys, "argv", ["check_import_integrity.py", "--write-baseline"])
+    assert base.main() == 0, capsys.readouterr().out[-400:]
+    written = (tree / "baseline.txt").read_bytes()
+    assert written == ("# Files with pre-existing dangling first-party imports, recorded so that\n"
+                       "# scripts/check_import_integrity.py fails only on NEW breaks.\n"
+                       "# Removing a line here is how you assert a file has been fixed.\n"
+                       "a.py  # missing: agentic_core.not_a_module_w1189a\n"
+                       "b.py  # missing: agentic_core.not_a_module_w1189b\n").encode("utf-8"), written
+    soak_src = (root / "scripts/soak_organism.py").read_text(encoding="utf-8")
+    assert 'Path(out).write_bytes(json.dumps(report, indent=2).encode("utf-8"))' in soak_src, "the soak report's writer"
+
+    #  2-4. every text-mode write the census reads in a tracked script under scripts/
+    def text_writes(src: str):
+        found = []
+        for node in ast.walk(ast.parse(src)):
+            if not isinstance(node, ast.Call):
+                continue
+            f = node.func
+            kw = {k.arg: k.value for k in node.keywords}
+            nl = kw.get("newline")
+            nl_ok = isinstance(nl, ast.Constant) and nl.value in ("", "\n")
+            if isinstance(f, ast.Attribute) and f.attr == "write_text":
+                if not nl_ok:
+                    found.append(ast.unparse(f))           # the place it writes, as its call names it
+                continue
+            builtin = (isinstance(f, ast.Name) and f.id == "open") or (
+                isinstance(f, ast.Attribute) and f.attr == "open" and isinstance(f.value, ast.Name)
+                and f.value.id == "io")
+            if builtin:
+                mode = node.args[1] if len(node.args) > 1 else kw.get("mode")
+                if mode is None:
+                    continue                               # read, the default
+                target = ast.unparse(node.args[0]) if node.args else "?"
+                if not (isinstance(mode, ast.Constant) and isinstance(mode.value, str)):
+                    if not nl_ok:
+                        found.append(f"{ast.unparse(f)}({target}, {ast.unparse(mode)})")   # judged, never passed
+                    continue
+            elif isinstance(f, ast.Attribute) and f.attr == "open":
+                mode = node.args[0] if node.args and isinstance(node.args[0], ast.Constant) else kw.get("mode")
+                if not (isinstance(mode, ast.Constant) and isinstance(mode.value, str)):
+                    continue                               # a zip member or an os.open path, not a text file
+                target = ast.unparse(f.value)
+            else:
+                continue
+            m = mode.value
+            if "b" in m or not any(c in m for c in "wax+"):
+                continue
+            if not nl_ok:
+                found.append(f"{ast.unparse(f)}({target}, {m!r})" if builtin else f"{target}.open({m!r})")
+        return sorted(found)
+
+    left = {
+        "scripts/blind_sweep.py": {
+            "io.open(a.json, 'w')": "a report at the path given with --json",
+            "io.open(bl, 'w')": "a shard's blinds in its scratch copy",
+            "io.open(marker, 'w')": "its in-flight marker in its store"},
+        "scripts/boot_signin_check_backend.py": {
+            "(STORE / 'admin_password.txt').write_text": "the sign-in check's own store"},
+        "scripts/init_data.py": {"open(file_path, 'w')": "the data root's empty stores"},
+        "scripts/move_to_private_store.py": {
+            "(dest / f'MANIFEST_{n}.json').write_text": "a manifest in the private store"},
+        "scripts/purge_memory_contamination.py": {"mem.write_text": "the memory store, emptied"},
+        "scripts/reach_audit.py": {"Path(args.json).write_text": "a report at the path given with --json"},
+        "scripts/recovery_audit.py": {"Path(args.json_out).write_text": "a report at the path given with --json"},
+        "scripts/relocate_data_store.py": {"tmp.write_text": "a data store's merged copy, beside it"},
+    }
+    tracked = subprocess.run(["git", "ls-files", "scripts"], cwd=root, capture_output=True, text=True, check=True)
+    seen = {}
+    for rel in sorted(p for p in tracked.stdout.split() if p.endswith(".py")):
+        writes = text_writes((root / rel).read_text(encoding="utf-8"))
+        if writes:
+            seen[rel] = writes
+    for rel in ("scripts/calibration_results.py", "scripts/check_import_integrity.py", "scripts/soak_organism.py"):
+        assert rel not in seen, (rel, "writes its file in text mode", seen.get(rel))
+    assert seen == {rel: sorted(calls) for rel, calls in left.items()}, (
+        "a text-mode write in scripts/ is not named here, or one named is gone or points elsewhere", seen)
+    assert all(why for calls in left.values() for why in calls.values())
+
+    #  3. the results file, and the soak report as committed
+    raw = (root / "docs/CARE_REVIEW_CALIBRATION_RESULTS.json").read_bytes()
+    res = json.loads(raw.decode("utf-8"))
+    assert b"\r" not in raw and raw == (json.dumps(res, indent=1, ensure_ascii=False) + "\n").encode("utf-8")
+    from agentic_core.api import _review_calibration as cal
+    assert cal.check_results(res) == [], cal.check_results(res)
+    soak = (root / "docs/soak_report_2026-08-30.json").read_bytes()
+    assert soak.count(b"\r\n") == soak.count(b"\n") > 0 and json.loads(soak.decode("utf-8")), "the soak report moved"
+
+    #  5. the row
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    rows = [r for r in reg if r["title"].startswith("Three scripts the Owner's machine runs write their files in text "
+                                                   "mode")]
+    assert len(rows) == 1 and (rows[0]["status"], rows[0]["closed_by"], rows[0].get("because")) == (
+        "done", "W1189", "built"), rows
+    note = rows[0]["close_note"]
+    for said in ("test_w1189 drives the export's writer and the baseline's, which the Windows CI job runs too.",
+                 "the soak report of 2026-08-30 is left as committed", "no census can hold"):
+        assert said in note, ("the close note does not say", said)

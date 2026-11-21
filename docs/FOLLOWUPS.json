@@ -27020,6 +27020,29 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P5.15: clause 3, the reviewer's calibration; the first run's misses, as the Owner ruled on 2026-11-21 (W1188)"
+    },
+    {
+      "id": "FU-1832",
+      "title": "Three scripts the Owner's machine runs write their files in text mode, so on Windows they come out with CRLF line endings",
+      "why": "scripts/calibration_results.py's _write (the export of FU-1054's run), scripts/check_import_integrity.py's --write-baseline and scripts/soak_organism.py's report write with Path.write_text, which on Windows turns each newline into CRLF. The Owner's export of 2026-11-21 (c657e2a7) changed docs/CARE_REVIEW_CALIBRATION_RESULTS.json from LF to CRLF, as the local session reported, and the soak report of 2026-08-30, docs/soak_report_2026-08-30.json, was committed with CRLF (a27f491b). The results file's JSON reads the same and no check failed, but once put back to LF it would be rewritten whole, as CRLF, by the next export on Windows. NEXT: the three write their bytes with LF on every machine, the results file is LF again with its JSON unchanged, and a census of scripts/ pins every other text-mode write it can read.",
+      "source": "W1189 (the Owner's local session's report of 2026-11-21 on the calibration export)",
+      "found": "2026-11-21",
+      "files": [
+        "scripts/calibration_results.py",
+        "scripts/check_import_integrity.py",
+        "scripts/soak_organism.py",
+        "docs/CARE_REVIEW_CALIBRATION_RESULTS.json"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.15",
+      "status": "done",
+      "closed_by": "W1189",
+      "note": "",
+      "slot_source": "P5.15: the calibration results' place in the tree (W1184); the export the Owner's machine runs",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1189: the three scripts write their bytes, the UTF-8 text with LF, on every machine; docs/CARE_REVIEW_CALIBRATION_RESULTS.json is LF again, its JSON unchanged and check_results passing; the soak report of 2026-08-30 is left as committed, as nothing rewrites it. test_w1189 drives the export's writer and the baseline's, which the Windows CI job runs too. It pins every other text-mode write it can read in a tracked script under scripts/ by the place its call names and its mode, each said with the place it writes by default, so adding, removing or pointing one elsewhere in its call turns it red. Where a write lands at run time, at a path given on the command line, no census can hold, and JSON a script prints for its caller to redirect is not read."
     }
   ],
   "routes": [
