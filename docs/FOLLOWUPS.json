@@ -21550,10 +21550,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1182",
       "note": "",
-      "slot_source": "chartered with the item in this round; it is the item's eighth clause"
+      "slot_source": "chartered with the item in this round; it is the item's eighth clause",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1182: the FCA Handbook's own pages, at handbook.fca.org.uk, were read whole on 2026-11-20, not through a summary: PERG 2 (Authorisation and regulated activities), which holds the FCA's perimeter guidance on credit broking, and the consumer-credit chapters CONC 2 (Conduct of business standards: general), CONC 3 (Financial promotions and communications with customers) and CONC 4 (Pre-contractual requirements). Each is a row of the register of sources that says what its page says, in its words and with its dates: fca-handbook-perg-2-credit-broking, fca-handbook-conc-2-5-credit-broking, fca-handbook-conc-3-promotions-comparisons and fca-handbook-conc-4-credit-brokers. A second reader checked the reading's 689 quotes against the saved pages and found each word for word at its line; the 34 quotes whose reading it found wrong are not used, nor are the four other statements of the CONC 4 reading that it found wrong. In this round each quote in the four rows was matched word for word to its saved page, and each date under a provision to the line under its number; every other statement was read against the page by a further reader and tried by another, and the 29 they agreed on were corrected, among them two claims of absence that did not hold (PERG 2 names article 36FA(4) as well as article 36E, and CONC 2 speaks of customers shopping around for credit outside CONC 2.5A). The rows cca-1974-credit-and-hire and rao-2001-credit-broking no longer say the FCA's site was refused; cca-1974-credit-and-hire names the four new rows, and rao-2001-credit-broking names fca-handbook-perg-2-credit-broking. Not read, and listed as not read in the rows: the Handbook Glossary's definitions of the terms the pages link to it (credit broking and credit broker among them); the rest of CONC (CONC 1 and CONC 5 to CONC 16, with its appendix, transitional provisions and schedules), including CONC 1.2.3G on appointed representatives, to which CONC 2 points; the rest of PERG, among it PERG 8 (Financial promotion and related activities); GEN 4 Annex 1 R; SUP 12; the decision tree of PERG 2 Annex 1, which its page gives as an image; and the articles of the Regulated Activities Order that give credit broking's exclusions and the exempt agreements. PERG 2 does not say whether showing named finance offers side by side is effecting an introduction or presenting or offering an agreement. Nothing was built for P5.18 clause 4 in this round."
     },
     {
       "id": "FU-1078",

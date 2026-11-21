@@ -93795,7 +93795,8 @@ def test_w1148_fu1077_the_legal_briefs_authorities_are_read_whole_at_their_publi
       corrected (the deeds section's "if, and only if" and its second way to sign; the lease page's dates);
     - the six whose sites this environment refused still say they rest on one reader's summary, and that the
       re-reading was refused;
-    - FU-1077 stays open and names those six, the FCA's rules and the sites to allow;
+    - FU-1077 names those six, the FCA's rules and the sites to allow; it stayed open until W1182 read the FCA
+      Handbook's pages and closed it;
     - the register's own check passes."""
     import json
     import pathlib
@@ -93859,7 +93860,7 @@ def test_w1148_fu1077_the_legal_briefs_authorities_are_read_whole_at_their_publi
     #  FU-1077 says what is left, and where the rows are
     reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
     fu = reg["FU-1077"]
-    assert fu["status"] == "open" and fu["slot"] == "P5.18", (fu["status"], fu["slot"])
+    assert (fu["status"], fu["closed_by"], fu["slot"]) == ("done", "W1182", "P5.18"), fu["status"]   # W1182 closed it
     for named in refused + ("www.handbook.fca.org.uk", "Owner's to approve"):   # W1177
         assert named in fu["why"], named
     assert all(day.fullmatch(rows[i]["read_on"]) for i in list(new) + list(reread) + list(refused))
@@ -96452,7 +96453,8 @@ def test_w1177_fu1077_the_six_rows_refused_to_w1148_are_read_whole_at_their_publ
     2. each says what its page says, with the page's own dates;
     3. the two sentences that came from a different page are out of what the row says and listed as not read: the
        ICO's toolkit on AI and data protection, and the FRC's factsheet on lease accounting for lessees;
-    4. FU-1077 stays open, on P5.18, for the FCA Handbook alone, naming its site and that allowing it is the Owner's."""
+    4. FU-1077 stayed open, on P5.18, for the FCA Handbook alone, naming its site and that allowing it was the
+       Owner's; W1182 read the Handbook's pages and closed it."""
     import json
     from pathlib import Path
     root = Path(__file__).resolve().parents[1]
@@ -96493,7 +96495,7 @@ def test_w1177_fu1077_the_six_rows_refused_to_w1148_are_read_whole_at_their_publ
 
     reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
     fu = reg["FU-1077"]
-    assert (fu["status"], fu["slot"]) == ("open", "P5.18"), fu
+    assert (fu["status"], fu["closed_by"], fu["slot"]) == ("done", "W1182", "P5.18"), fu   # W1182 closed it
     assert fu["title"].startswith("The FCA's own consumer-credit rules and its perimeter guidance on credit broking"), fu
     for named in ("www.handbook.fca.org.uk", "Owner's to approve", "W1177", "403 at the proxy on 2026-11-20"):
         assert named in fu["why"], (named, "FU-1077 does not say it")
@@ -96796,3 +96798,129 @@ def test_w1181_each_quoted_sentence_of_a_regulated_subject_says_the_page_it_is_f
     b = cap["boundary"]
     assert b["words_from"] and len(b["words_from"]) == len(b["words"]) and all(b["words_from"]), b.get("words_from")
     assert b["words_from"] == rows["immigration"]["words_from"], "the captured answer's pages are not the route's"
+
+
+def test_w1182_fu1077_the_fca_handbooks_credit_broking_guidance_and_consumer_credit_rules_are_read_at_its_own_pages():
+    """FU-1077 part 3 (W1182), P5.18 clauses 4 and 8: no named finance product is compared until the consumer-credit
+    regime has been read at its publisher; every statement of what the law requires names a row read at its publisher
+    and the date, and what was not read is listed as not read. The FCA's perimeter guidance on credit broking and its
+    consumer-credit rules are in the FCA Handbook, whose site the Owner allowed on the evening of 2026-11-20; four of
+    its chapters were read whole at the Handbook's own pages that evening. Held here:
+    1. PERG 2, CONC 2, CONC 3 and CONC 4 are each a row read whole at its page at handbook.fca.org.uk on 2026-11-20 by
+       W1182, not through a summary, with the page's own dates, its kind (PERG 2 guidance, each CONC chapter rules)
+       and the four nations;
+    2. each says in its page's words what a comparison of named finance products would meet: the six activities that
+       fall within credit broking (PERG 2.7.7E G), the comparison rule (CONC 3.3.1R(1B)), a credit broker's preference
+       for one lender's products (CONC 2.5.8R(13)), the ranking of results on a price comparison website for
+       high-cost short-term credit (CONC 2.5A) and the disclosure of commission (CONC 4.5.3R);
+    3. each says what its page does not say, PERG 2's that it does not say whether showing named finance offers is
+       effecting an introduction or presenting or offering an agreement; each lists what was not read;
+    4. the rows on the Consumer Credit Act 1974 and the Regulated Activities Order no longer say the FCA's site was
+       refused, and name the new rows;
+    5. FU-1077 is closed by W1182 as built, on P5.18, its close note naming the four rows and the host they were read
+       at, and saying that nothing was built for clause 4;
+    6. none of the new text carries a word the guard against unstated pronouns refuses, and the register's own check
+       passes."""
+    import json
+    import re
+    import subprocess
+    import sys
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    rows = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    nations = ["England", "Wales", "Scotland", "Northern Ireland"]
+
+    #  1-3. the four chapters, each as its page gives it
+    four = {
+        "fca-handbook-perg-2-credit-broking": (
+            "perg2", "PERG 2, Authorisation and regulated activities", "16 September 2026", "regulator guidance",
+            ("'There are six activities that fall within credit broking. These are:'",
+             "'effecting an introduction of an individual who wishes to enter into a credit agreement to another person, "
+             "with a view to that person entering as lender into a credit agreement by way of business;'",
+             "'presenting or offering an agreement which would (if entered into) be a credit agreement;'",
+             "carried on by a person for which that person does not receive a fee are excluded from credit broking.",
+             "it does not say whether showing named finance offers is effecting an introduction or presenting or "
+             "offering an agreement"),
+            ("the decision tree of PERG 2 Annex 1, which the page gives as an image",
+             "of which PERG 2.8.6C G names only article 36E (the page names article 36FA(4) only in PERG 2.7.19HA G, "
+             "as defining a registered social landlord)")),
+        "fca-handbook-conc-2-5-credit-broking": (
+            "conc2", "CONC 2, Conduct of business standards: general", "31 July 2026", "regulator rules",
+            ("'give preference to the credit products of a particular lender where the object of doing so is for, or can "
+             "reasonably be concluded as having been for, the personal gain of the firm or of a person acting on its "
+             "behalf, rather than in the best interests of the customer;'",
+             "'ranks those results in order of total amount payable in accordance with CONC 3.5.5R(2), with the loan "
+             "with the lowest total amount payable first and the highest last'",
+             "'is based (wholly or partly) on the firm’s commercial interests or its commercial relationship with any "
+             "person.'",
+             "'A firm must take reasonable steps to satisfy itself that any credit brokers with whom the firm deals are "
+             "authorised persons or appointed representatives.'"),
+            ("CONC 1.2.3G (appointed representatives)",)),
+        "fca-handbook-conc-3-promotions-comparisons": (
+            "conc3", "CONC 3, Financial promotions and communications with customers", "28 February 2025",
+            "regulator rules",
+            ("'A firm must ensure that, where a communication or financial promotion contains a comparison or contrast, "
+             "the comparison or contrast is presented in a fair and balanced way and is meaningful.'",
+             "'includes a favourable comparison relating to the credit, whether express or implied, with another person, "
+             "product or service; or'",
+             "indicate the extent of its powers and in particular whether it works exclusively with one or more lenders "
+             "or works independently.'",
+             "'A firm which is a credit broker and not a lender must ensure that any financial promotion states "
+             "prominently that the firm is a credit broker and that it is not a lender.'"),
+            ("PERG 8 (Financial promotion and related activities)",)),
+        "fca-handbook-conc-4-credit-brokers": (
+            "conc4", "CONC 4, Pre-contractual requirements", "31 July 2026", "regulator rules",
+            ("'A credit broker must prominently disclose to a customer in good time before a credit agreement or a "
+             "consumer hire agreement is entered into, the existence and nature of any commission or fee or other "
+             "remuneration payable to the credit broker by the lender or owner or a third party,",
+             "'A firm must disclose to the customer the fee, if any, payable by a customer to the firm for its services.'",
+             "'request, claim, demand, initiate or take payment of a charge from a customer"),
+            ("the Financial Services Register",)),
+    }
+    for rid, (page, chapter, updated, kind, says, unread) in four.items():
+        r = rows.get(rid)
+        assert r, (rid, "a chapter of the FCA Handbook read for FU-1077 is not a row")
+        assert (r["status"], r["page"], r["read_on"], r["kind"], r["nation"]) == (
+            "current", f"https://handbook.fca.org.uk/handbook/{page}", "2026-11-20", kind, nations), (rid, r["page"])
+        assert r["read_by"] == ("round W1182, the FCA Handbook's own page read whole on 2026-11-20, not through a "
+                                "summary"), (rid, r["read_by"])
+        assert r["says"].startswith(f"The FCA Handbook's chapter {chapter}, as its page gives it: viewed as of 20 "
+                                    f"November 2026 and last updated on {updated}"), (rid, r["says"][:160])
+        missing = [p for p in says if p not in r["says"]]
+        assert missing == [], (rid, "the row does not say what its page says", missing)
+        assert r["not_read"].startswith("the ") and "the Handbook Glossary's definitions" in r["not_read"], rid
+        assert all(u in r["not_read"] for u in unread), (rid, [u for u in unread if u not in r["not_read"]])
+    absent = {"fca-handbook-conc-2-5-credit-broking": "The provisions of CONC 2.5A are the page's only provisions on "
+                                                      "price comparison websites, and they are for high-cost short-term "
+                                                      "credit; outside CONC 2.5A, CONC 2.4.3G and 2.5.7G",
+              "fca-handbook-conc-3-promotions-comparisons": "The page has no rules written for comparison services or "
+                                                            "side-by-side displays of credit products",
+              "fca-handbook-conc-4-credit-brokers": "The page has no general rule on comparisons in a communication "
+                                                    "or financial promotion, though some of the information CONC "
+                                                    "4.2.15R requires compares"}
+    for rid, said in absent.items():
+        assert said in rows[rid]["says"], (rid, "the row does not say what its page does not")
+
+    #  4. the Act's row and the Order's row name the new rows, and no longer say the site was refused
+    for rid, named in (("cca-1974-credit-and-hire", tuple(four)), ("rao-2001-credit-broking",
+                                                                    ("fca-handbook-perg-2-credit-broking",))):
+        nr = rows[rid]["not_read"]
+        assert "refused" not in nr and "by round W1182" in nr, (rid, nr)
+        assert all(n in nr for n in named), (rid, [n for n in named if n not in nr])
+
+    #  5. FU-1077 is closed, and says what it closed on and what it did not build
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    fu = reg["FU-1077"]
+    assert (fu["status"], fu["closed_by"], fu.get("because"), fu["slot"]) == ("done", "W1182", "built", "P5.18"), fu
+    note = fu.get("close_note") or ""
+    assert all(i in note for i in four), [i for i in four if i not in note]
+    assert "handbook.fca.org.uk" in note and "Nothing was built for P5.18 clause 4 in this round." in note, note
+
+    #  6. no unstated pronoun in the new text; the register's own check passes
+    word = re.compile(r"\b(?:he|his|him|himself)\b", re.I)
+    texts = [rows[i][f] for i in four for f in ("says", "not_read")] + [
+        rows[i]["not_read"] for i in ("cca-1974-credit-and-hire", "rao-2001-credit-broking")] + [note]
+    hits = [m.group(0) for t in texts for m in [word.search(t)] if m]
+    assert hits == [], hits
+    out = subprocess.run([sys.executable, "scripts/sources_check.py"], cwd=root, capture_output=True, text=True)
+    assert out.returncode == 0, (out.stdout[-800:], out.stderr[-400:])
