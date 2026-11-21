@@ -21057,19 +21057,26 @@
     {
       "id": "FU-1054",
       "title": "The Care reviewer agent and its calibration set: planted defects it must catch and clean answers it must pass",
-      "why": "Clauses 2 to 4. Planted: a replaced guideline, a missing emergency line, a score with an altered boundary, a role claim. Its catch and false-alarm rates are shown beside its reviews.",
+      "why": "Clauses 2 to 4. Planted: a replaced guideline, a missing emergency line, a score with an altered boundary, a role claim. Its catch and false-alarm rates are shown beside its reviews. BUILT: the set written out from the tree and its runnable window computed (W1099, W1122); the reviewer agent and its own door (W1100); the uncalibrated label (W1101); its calibration said before every Care form and beside each agent review, UNCALIBRATED with no catch rate and no false-alarm rate while no run of its own exists; only a run the agent made through its own door, dated the day it was made, counts, kept whole (W1183); the results' place in the tree, with no run in it (W1184). The four kinds above are C01, C02 (the emergency line missing from the top, the form this repository had), C03 and C04 (in the care-plan prompt: no answer in the tree claims a role). LEFT, AND ONLY THE OWNER'S MACHINE CAN DO IT: with the local model serving, run care-reviewer once through POST /api/v1/review/calibration/agent-run on a day the set can be run (2026-11-19 through 2027-01-10 as the register stands), then python scripts/calibration_results.py export and check, and commit docs/CARE_REVIEW_CALIBRATION_RESULTS.json and push it, leaving this row open. The cloud session closes it from the committed file, on that run's results, the bar met or not, its close note naming the run id, date, model and build, and the two rates with their counts, and takes the step out of the local notes' step 5 and the plan's list. Nothing made where no model serves, and no typed run, is a run. RECOMMENDED: before 2027-01-10 (FU-1820).",
       "source": "W679 (the Owner's rulings of 2026-10-12; assessment section 29.4)",
       "found": "2026-10-12",
       "files": [
-        "agentic_core/api/care.py"
+        "agentic_core/api/_review_calibration.py",
+        "agentic_core/api/care_reviewer.py",
+        "agentic_core/api/review_cell.py",
+        "agentic_core/api/_review_tier.py",
+        "agentic_core/api/review_options.py",
+        "docs/CARE_REVIEW_CALIBRATION.json",
+        "docs/CARE_REVIEW_CALIBRATION_RESULTS.json",
+        "scripts/calibration_results.py"
       ],
       "severity": "medium",
-      "owner_gated": false,
-      "slot": "P5.15",
+      "owner_gated": true,
+      "slot": "OWNER",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "the Owner's rulings of 2026-10-12 chartered this item",
+      "slot_source": "OWNER (the Owner's machine): the row's last step is a run with the local model serving, which only the Owner's machine has (W1100, W1122); what the cloud can still do for P5.15 rides its own rows (W1184)",
       "tier": 2
     },
     {
@@ -21540,8 +21547,8 @@
     },
     {
       "id": "FU-1077",
-      "title": "Six sources the legal-operations brief names are still one reader's summary, and the FCA's own consumer-credit rules are unread: this environment's network refuses their sites",
-      "why": "W1148 (2026-11-20) read at the publisher, whole, the four authorities this row named as never read - the Companies Act 2006 execution rule (s.44, with ss.43 and 46), the Consumer Rights Act 2015 Part 2 and the Unfair Contract Terms Act 1977 Part I, the Lifting Operations and Lifting Equipment Regulations 1998, and the consumer-credit and regulated-hire statutes (Consumer Credit Act 1974 ss.8, 15 and 145, the Regulated Activities Order arts 36A and 60N, FSMA 2000 s.19) - and re-read eight of the fourteen rows of 2026-10-13, correcting two. Still read only through a summarising fetch: hse-puwer-overview, frc-frs-102-periodic-review-2024, ec-ai-omnibus-2026, lawcom-business-tenancies-renewal, ico-duaa-2025 and caa-drone-requirements, because this environment's network refuses www.hse.gov.uk, www.frc.org.uk, digital-strategy.ec.europa.eu, lawcom.gov.uk, ico.org.uk and www.caa.co.uk (403 at the proxy). The FCA's consumer-credit rules and its perimeter guidance on credit broking are unread for the same reason (www.fca.org.uk, handbook.fca.org.uk), so P5.18 clause 4's comparison of named finance products stays closed. Reading them needs those sites allowed in this environment, which is the Owner's to approve (recommended). No clause stating what the law requires may rest on a row in either state.",
+      "title": "The FCA's own consumer-credit rules and its perimeter guidance on credit broking are unread: they are in the FCA Handbook, whose site this environment's network refuses",
+      "why": "W1148 (2026-11-20) read at the publisher, whole, the four authorities this row named as never read - the Companies Act 2006 execution rule (s.44, with ss.43 and 46), the Consumer Rights Act 2015 Part 2 and the Unfair Contract Terms Act 1977 Part I, the Lifting Operations and Lifting Equipment Regulations 1998, and the consumer-credit and regulated-hire statutes (Consumer Credit Act 1974 ss.8, 15 and 145, the Regulated Activities Order arts 36A and 60N, FSMA 2000 s.19) - and re-read eight of the fourteen rows of 2026-10-13, correcting two. W1177 (the evening of 2026-11-20, once the Owner had allowed their sites) read the other six whole at their publishers - hse-puwer-overview, frc-frs-102-periodic-review-2024, ec-ai-omnibus-2026, lawcom-business-tenancies-renewal, ico-duaa-2025 and caa-drone-requirements - and took out of two of them a sentence that came from a different page. What is left: the FCA's consumer-credit rules and its perimeter guidance on credit broking are unread. Both are in the FCA Handbook, at www.handbook.fca.org.uk, which this environment's network refuses (403 at the proxy on 2026-11-20); www.fca.org.uk itself is allowed. So P5.18 clause 4's comparison of named finance products stays closed. Reading them needs www.handbook.fca.org.uk allowed in this environment, which is the Owner's to approve (recommended). No clause stating what the law requires may rest on a row that has not been read.",
       "source": "W711 (three external mandates on legal operations and embodied systems, assessed)",
       "found": "2026-10-13",
       "files": [
@@ -21550,10 +21557,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1182",
       "note": "",
-      "slot_source": "chartered with the item in this round; it is the item's eighth clause"
+      "slot_source": "chartered with the item in this round; it is the item's eighth clause",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1182: the FCA Handbook's own pages, at handbook.fca.org.uk, were read whole on 2026-11-20, not through a summary: PERG 2 (Authorisation and regulated activities), which holds the FCA's perimeter guidance on credit broking, and the consumer-credit chapters CONC 2 (Conduct of business standards: general), CONC 3 (Financial promotions and communications with customers) and CONC 4 (Pre-contractual requirements). Each is a row of the register of sources that says what its page says, in its words and with its dates: fca-handbook-perg-2-credit-broking, fca-handbook-conc-2-5-credit-broking, fca-handbook-conc-3-promotions-comparisons and fca-handbook-conc-4-credit-brokers. A second reader checked the reading's 689 quotes against the saved pages and found each word for word at its line; the 34 quotes whose reading it found wrong are not used, nor are the four other statements of the CONC 4 reading that it found wrong. In this round each quote in the four rows was matched word for word to its saved page, and each date under a provision to the line under its number; every other statement was read against the page by a further reader and tried by another, and the 29 they agreed on were corrected, among them two claims of absence that did not hold (PERG 2 names article 36FA(4) as well as article 36E, and CONC 2 speaks of customers shopping around for credit outside CONC 2.5A). The rows cca-1974-credit-and-hire and rao-2001-credit-broking no longer say the FCA's site was refused; cca-1974-credit-and-hire names the four new rows, and rao-2001-credit-broking names fca-handbook-perg-2-credit-broking. Not read, and listed as not read in the rows: the Handbook Glossary's definitions of the terms the pages link to it (credit broking and credit broker among them); the rest of CONC (CONC 1 and CONC 5 to CONC 16, with its appendix, transitional provisions and schedules), including CONC 1.2.3G on appointed representatives, to which CONC 2 points; the rest of PERG, among it PERG 8 (Financial promotion and related activities); GEN 4 Annex 1 R; SUP 12; the decision tree of PERG 2 Annex 1, which its page gives as an image; and the articles of the Regulated Activities Order that give credit broking's exclusions and the exempt agreements. PERG 2 does not say whether showing named finance offers side by side is effecting an introduction or presenting or offering an agreement. Nothing was built for P5.18 clause 4 in this round."
     },
     {
       "id": "FU-1078",
@@ -26145,16 +26155,19 @@
     {
       "id": "FU-1286",
       "title": "OWNER: five places still name your Windows home folder by its path",
-      "why": "W1135 made every other tracked file's path start at ~. These five are yours to decide. (1) One audit record under docs/fidelity_runs/ (ledger_v14_W639_375c5ffb.json), opened only on a go-ahead that names it. DONE W1175: your go-ahead of 2026-11-20 named it; its 8 home-folder paths now start at ~, and its 9 paths to the audit's data folder say what kind of place it was. RECOMMENDED (accepted 2026-11-20): let it be opened and its paths start at ~, as FU-1151 did for two others. (2) The pinned fidelity ledgers, docs/VISION_FIDELITY_LEDGER and its numbered editions: docs/LEDGER_BLOBS.json pins each byte for byte (P5.22, W972) so no edition changes after it is written. RECOMMENDED (accepted 2026-11-20): leave them as they are; no route reads them, and git history keeps every earlier text anyway. (3) venv/: a Windows virtual environment committed before .gitignore left venv/ out. Its files name your folder. RECOMMENDED (accepted 2026-11-20): on your machine, run git rm -r --cached venv and commit; the folder stays on your disk. Removing it here instead would delete those files from your copy when you pull. (4) .claude/settings.json: three one-off command permissions name your folder. RECOMMENDED (accepted 2026-11-20): remove those three entries on your machine; nothing else uses them. (5) _archive/: archived documents that name it. RECOMMENDED (accepted 2026-11-20): leave them as archived history; nothing reads them.",
+      "why": "W1135 made every other tracked file's path start at ~. These five are yours to decide. (1) One audit record under docs/fidelity_runs/ (ledger_v14_W639_375c5ffb.json), opened only on a go-ahead that names it. DONE W1175: your go-ahead of 2026-11-20 named it; its 8 home-folder paths now start at ~, and its 9 paths to the audit's data folder say what kind of place it was. RECOMMENDED (accepted 2026-11-20): let it be opened and its paths start at ~, as FU-1151 did for two others. (2) The pinned fidelity ledgers, docs/VISION_FIDELITY_LEDGER and its numbered editions: docs/LEDGER_BLOBS.json pins each byte for byte (P5.22, W972) so no edition changes after it is written. RECOMMENDED (accepted 2026-11-20): leave them as they are; no route reads them, and git history keeps every earlier text anyway. (3) venv/: a Windows virtual environment committed before .gitignore left venv/ out. Its files name your folder. DONE 7afa4aa9: your local session ran git rm -r --cached venv and committed it on 2026-11-20, its message saying the folder stays on your disk; merged into main-l1fsqo at 07fb9817, and recorded here by W1180. RECOMMENDED (accepted 2026-11-20): on your machine, run git rm -r --cached venv and commit; the folder stays on your disk. Removing it here instead would delete those files from your copy when you pull. (4) .claude/settings.json: three one-off command permissions named your folder. DONE W1176: removed in the cloud session on 2026-11-20, after you asked whether it could be done from there; a pull of that file deletes nothing. RECOMMENDED (accepted 2026-11-20): remove those three entries on your machine; nothing else uses them. (5) _archive/: archived documents that name it. RECOMMENDED (accepted 2026-11-20): leave them as archived history; nothing reads them.",
       "source": "W1135 (the four places that are the Owner's, each with a recommendation)",
       "found": "2026-11-20",
       "files": [],
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
-      "note": ""
+      "status": "done",
+      "closed_by": "W1180",
+      "note": "",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Each of the five places is settled as the Owner accepted on 2026-11-20. (1) The audit record docs/fidelity_runs/ledger_v14_W639_375c5ffb.json was opened on the go-ahead that named it; its home-folder paths start at ~ and its paths to the audit's data folder say what kind of place it was (W1175). (2) The pinned fidelity ledgers stay as they are: docs/LEDGER_BLOBS.json pins each byte for byte (P5.22). (3) venv/ was untracked on the Owner's machine by its local session (7afa4aa9, git rm -r --cached venv; its message says the folder stays on that disk) and merged into main-l1fsqo at 07fb9817; .gitignore already leaves venv/ out. (4) The three permissions in .claude/settings.json were removed in the cloud session (W1176). (5) _archive/ stays as archived history. W1180 built the last part: W1135's guard no longer leaves venv/ out."
     },
     {
       "id": "FU-1287",
@@ -26764,6 +26777,97 @@
       "status": "open",
       "closed_by": null,
       "note": ""
+    },
+    {
+      "id": "FU-1819",
+      "title": "Workstation's Care reviewer reviews no Care tool: nothing runs it over a tool's answers and writes the clause-2 record, so the reviews its rates stand beside exist only if an administrator types one",
+      "why": "care_reviewer.review is reached only through run_on_set, and run_on_set only through the calibration route (POST /api/v1/review/calibration/agent-run, run_reviewer_agent in agentic_core/api/review_cell.py), so the agent never reviews a Care tool's answers; a record of an agent's review exists only when an administrator types one through POST /api/v1/review/record. NEXT: an administrator's route that runs the reviewer over a Care tool's answers to fixed made-up inputs and writes one whole clause-2 record from what the run itself holds (the tool version reviewed, each source with its page and the date it was read, what it could not check), refused when the floor serves. It is built and driven with a stand-in; nothing it writes counts until FU-1054's run calibrates the agent.",
+      "source": "W1184 (FU-1054's plan for its last two rounds, measured at d038f9da; W1183 built its first half)",
+      "found": "2026-11-21",
+      "files": [
+        "agentic_core/api/review_cell.py",
+        "agentic_core/api/care_reviewer.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.15",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.15: what the cloud can still do for it once FU-1054 waits on the Owner's machine (FU-1054's plan, W1184)"
+    },
+    {
+      "id": "FU-1820",
+      "title": "The Care calibration set cannot be run after 2027-01-10: three rows four of its cases rely on were read on 2026-10-12",
+      "why": "gov-report-child-abuse (cases C02 and K01), bapen-must-toolkit (case C07) and nice-ng249 (case K03) were read on 2026-10-12, and the register's review period is 90 days, so from 2027-01-11 runnable() fails for those cases and calibration_of says no agent is calibrated, even one with a passing run; rcp-news2 and nice-ng97 (read 2026-11-19) lapse after 2027-02-17. NEXT: re-read the three rows at their publishers before 2027-01-10. A re-read moves the set's window, and test_w1183's captures were taken on its pinned day, 2026-11-21, so they must be taken again.",
+      "source": "W1184 (FU-1054's plan for its last two rounds, measured at d038f9da; W1183 built its first half)",
+      "found": "2026-11-21",
+      "files": [
+        "docs/SOURCES.json",
+        "docs/CARE_REVIEW_CALIBRATION.json"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.15",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.15: what the cloud can still do for it once FU-1054 waits on the Owner's machine (FU-1054's plan, W1184)"
+    },
+    {
+      "id": "FU-1821",
+      "title": "A reviewer agent is calibrated by its name alone",
+      "why": "calibration_of(agent) reads the agent's latest run of its own and never compares that run's model and build with the model a review record names, so a review by another model under a calibrated name counts; nor is a review dated before the run told apart from one after it (counts() in agentic_core/api/_review_tier.py); nor does a run record what the agent was shown (a digest of care_reviewer.prompt_for over a fixed probe), so a reviewer whose prompt has changed since keeps an earlier run's calibration. Nothing compares the reviewing model with the model that composed the answer reviewed (clause 4; the review record in agentic_core/api/review_cell.py). NEXT: an agent's review counts only when its model and build are the calibrated run's and it is dated on or after that run; a run carries that digest, and it counts only while the reviewer gives the same digest.",
+      "source": "W1184 (FU-1054's plan for its last two rounds, measured at d038f9da; W1183 built its first half)",
+      "found": "2026-11-21",
+      "files": [
+        "agentic_core/api/_review_tier.py",
+        "agentic_core/api/_review_calibration.py",
+        "agentic_core/api/care_reviewer.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.15",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.15: what the cloud can still do for it once FU-1054 waits on the Owner's machine (FU-1054's plan, W1184)"
+    },
+    {
+      "id": "FU-1822",
+      "title": "The reviewer is shown no published table, so C03 and C10 measure recall of NEWS2",
+      "why": "The reviewer is shown the register's rows and the answer, never the NEWS2 chart, so the two planted score cases, C03 and C10, test whether the model remembers the chart. The tree's NEWS2 table is held to the chart by test_w1122; whether it may be shown to the reviewer turns on the college's reuse terms in the rcp-news2 row (no copyright restriction provided the stated acknowledgement is given, the material is not modified, and the charts are reproduced in colour). NEXT: read those terms against showing the table to a model as text, and show it, with the acknowledgement, only if they allow it.",
+      "source": "W1184 (FU-1054's plan for its last two rounds, measured at d038f9da; W1183 built its first half)",
+      "found": "2026-11-21",
+      "files": [
+        "agentic_core/api/care_reviewer.py",
+        "docs/SOURCES.json"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.15",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.15: what the cloud can still do for it once FU-1054 waits on the Owner's machine (FU-1054's plan, W1184)"
+    },
+    {
+      "id": "FU-1823",
+      "title": "Care states each tool's tier only while its tab is open, and the child-concern answer carries none: no place on the Care page gives all four",
+      "why": "Each Care tool's tier of review and its reviewer's calibration are shown by ReviewOptions inside that tool's tab only (apps/workstation-superapp/src/pages/domains/CareHub.tsx), so no place on the page states the four together; and the safeguarding route's answer to a concern about a child or young person carries no provenance, so no tier is said under it (safeguarding_triage in agentic_core/api/care.py). P5.15's ACCEPT asks that Care have every tool at a stated tier on its page. NEXT: one place on the Care page that states each tool's tier, and a tier said under the child-concern answer.",
+      "source": "W1184 (FU-1054's plan for its last two rounds, measured at d038f9da; W1183 built its first half)",
+      "found": "2026-11-21",
+      "files": [
+        "apps/workstation-superapp/src/pages/domains/CareHub.tsx",
+        "agentic_core/api/care.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.15",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.15: what the cloud can still do for it once FU-1054 waits on the Owner's machine (FU-1054's plan, W1184)"
     }
   ],
   "routes": [

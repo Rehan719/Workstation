@@ -1,9 +1,6 @@
 {
   "permissions": {
     "allow": [
-      "Bash(c:/Users/rehan/Workstation/venv/Scripts/python.exe -c \"import agentic_core\")",
-      "Bash(c:/Users/rehan/AppData/Local/Microsoft/WindowsApps/PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0/python.exe -c \"import anthropic; print\\('anthropic', anthropic.__version__\\)\")",
-      "Bash(c:/Users/rehan/AppData/Local/Microsoft/WindowsApps/PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0/python.exe -m pip install anthropic --quiet)",
       "Bash(grep -v \"//\\\\|import\\\\|type\\\\|interface\")",
       "Bash(curl -s -X POST http://localhost:8000/api/v1/synthesis/stream -H 'Content-Type: application/json' -d '{\"content_ids\":[],\"output_type\":\"report\",\"instructions\":\"Write 2 sentences about AI.\"}' --max-time 20)",
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(p\\) for p in d['paths'] if 'synthesis' in p or 'avatar' in p or 'biometrics' in p]\")",

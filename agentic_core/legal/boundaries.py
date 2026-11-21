@@ -10,7 +10,10 @@ research question on either went to the composer like any other.
 Each boundary is a row: the subject, who regulates it as the pages read say, the pages' own words, the places they
 name for each nation, the pages read with the day each was read (NOT RECENTLY CHECKED ninety days on, by the one rule
 the time limits use), and its regulator's own page: read, with the day, or not read and why. Every sentence in `words`
-is a page's own, quoted as read whole at GOV.UK's content records on 2026-11-20; " ... " marks words left out.
+is a page's own, quoted as read whole on 2026-11-20 at GOV.UK's content records or, for the Financial Conduct
+Authority's pages, at the FCA's own site (W1179); " ... " marks words left out. Each says the page it is from (W1181):
+`words_from` names, for each sentence, the one page of the row whose reading in the register of sources holds it in
+order, word for word; a sentence no read page holds, or more than one, names none, and none is guessed.
 
 A question naming one of these subjects is recognised by its words and answered with the row, the urgent routes and
 the places a person can go; nothing composes an answer to it. THE RECOGNITION IS A SCREEN: it may route and it never
@@ -68,8 +71,8 @@ BOUNDARIES = (
                 {"nation": "Scotland", "name": "Debt Arrangement Scheme", "number": None,
                  "link": "https://www.aib.gov.uk/debt-arrangement-scheme"}),
      "sources": ("gov-uk-options-for-dealing-with-debts",),
-     "regulator": {"name": "the Financial Conduct Authority", "source": None,
-                   "why_not": "its site (www.fca.org.uk) is refused by this environment's network"},
+     #  W1179: the FCA's own page, read there once its site was allowed
+     "regulator": {"name": "the Financial Conduct Authority", "source": "fca-unauthorised-unsuitable-debt-advice"},
      #  a debt solution or a person's own debts, not the law of debt in general (an assignment, a guarantee)
      "match": (r"\b(?:debt (?:solutions?|management(?: plans?| compan(?:y|ies))?|relief orders?|advi[cs]e(?:rs?)?|"
                r"payment programmes?|arrangement scheme|consolidation)|dmp|dro|iva|individual voluntary arrangements?|"
@@ -79,17 +82,18 @@ BOUNDARIES = (
     {"id": "claims_management",
      "subject": "A claim managed for someone by a claims company",
      "asks": "having a claim managed by a claims company",
-     "regulated": ("No page read here says who regulates a claims company today: the GOV.UK guide for a person on it "
-                   "was published in June 2014 and has not been updated since, and names the Ministry of Justice’s "
-                   "Claims Management Regulator"),
+     #  W1179: who regulates it, from the FCA's own page; its "us" is said as the FCA, never quoted as this platform's
+     "regulated": ("The Financial Conduct Authority's page says a claims management company must be authorised by "
+                   "it to provide services for claims about financial services and products, personal injury, "
+                   "employment matters, criminal injury, housing disrepair and certain industrial injuries "
+                   "benefits, unless a legal regulator regulates it instead, and that such services on other "
+                   "claims, such as aviation, are not regulated by the FCA"),
      "words": ("Many organisations offer impartial advice with no fee or obligation. If you make a successful claim "
-               "without using a CMC, you’ll keep all the compensation yourself.",),
+               "without using a CMC, you’ll keep all the compensation yourself.",
+               "You don’t need to use a CMC to make a claim, it’s free and simple to do it yourself."),
      "places": (),
-     "sources": ("gov-uk-claim-compensation-cmc",),
-     "regulator": {"name": None, "source": None,
-                   "why_not": ("the Financial Conduct Authority’s site (www.fca.org.uk) is refused by this environment’s "
-                               "network, and the two GOV.UK records of 2019 and 2020 titled as its regulation of claims "
-                               "management companies were not read whole")},
+     "sources": ("gov-uk-claim-compensation-cmc", "fca-using-claims-management-companies"),
+     "regulator": {"name": "the Financial Conduct Authority", "source": "fca-using-claims-management-companies"},
      "match": r"\b(?:claims? management(?: compan(?:y|ies)| firms?)?|claims? compan(?:y|ies)|claims? firms?|cmcs?)\b"},
 )
 BASIS = ("Regulated advice is not given here: each subject is information in the words of the pages read, and a route "
@@ -112,12 +116,39 @@ def _regulator(r: Dict[str, Any], rows: Any) -> Dict[str, Any]:
     return {"name": r.get("name"), "read": False, "page": None, "why": r["why_not"]}
 
 
+def _words_from(b: Dict[str, Any], rows: Any) -> List[Optional[str]]:
+    """W1181 - the page each quoted sentence is from: the one of the row's pages that the register holds a reading
+    of, whose reading holds every part of the sentence in order and word for word (" ... " marks words left out; a
+    run of white space counts as one space). None when no such page holds it, when more than one does, or when the
+    register could not be read: a page is never guessed for a sentence."""
+    def flat(s: Any) -> str:
+        return " ".join(str(s).split())
+
+    def holds(reading: str, parts: List[str]) -> bool:
+        at = 0
+        for p in parts:
+            i = reading.find(p, at)
+            if i < 0:
+                return False
+            at = i + len(p)
+        return True
+
+    out: List[Optional[str]] = []
+    for w in b["words"]:
+        parts = [flat(p) for p in str(w).split(" ... ") if p.strip()]
+        hit = [sid for sid in b["sources"]
+               if parts and ((rows or {}).get(sid) or {}).get("read_on")
+               and holds(flat(((rows or {}).get(sid) or {}).get("says") or ""), parts)]
+        out.append(hit[0] if len(hit) == 1 else None)
+    return out
+
+
 def row(b: Dict[str, Any], rows: Any = None) -> Dict[str, Any]:
     """One boundary as it is said: its subject, who regulates it, the pages' words, the places, the pages read and the
     regulator's own page."""
     rows = _tl._register() if rows is None else rows
     return {"id": b["id"], "subject": b["subject"], "regulated": b["regulated"], "words": list(b["words"]),
-            "places": [_urg._place(dict(p)) for p in b["places"]],
+            "words_from": _words_from(b, rows), "places": [_urg._place(dict(p)) for p in b["places"]],
             "sources": _urg._sources(b["sources"], rows), "regulator": _regulator(b["regulator"], rows)}
 
 

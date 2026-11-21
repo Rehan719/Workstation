@@ -25,6 +25,10 @@ leaves with a person. The release sentences carry the Owner's four exceptions. W
 Workstation's own statement (W925): conservative, claiming no professional's role, and saying nothing about any
 person having looked at anything. A discipline with no statement is said to have none; nothing is guessed for it.
 
+THE REVIEWER (W1183, FU-1054). A discipline with a reviewer agent says it before every form: the agent's
+calibration as calibration_statement() states it - UNCALIBRATED, with no rates, until it has a run of its own, and
+its two rates with their counts once it has one. A discipline with none says null; nothing is guessed for it.
+
 This module reads and states. It records nothing, arranges no person, and releases nothing.
 """
 from __future__ import annotations
@@ -122,7 +126,11 @@ def options(tool: str, endpoint: str) -> Dict[str, Any]:
                       "discipline, so none is given here")}
     else:
         person = {"option": OPTION, **said, "basis": BASIS}
-    return {"endpoint": endpoint, "tool": tool, "discipline": d, "review": review_statement(tool), "person": person}
+    from agentic_core.api import _review_calibration as _cal
+    agent = _cal.REVIEWER_OF.get(d or "")
+    reviewer = _cal.calibration_statement(agent, d) if agent else None
+    return {"endpoint": endpoint, "tool": tool, "discipline": d, "review": review_statement(tool), "person": person,
+            "reviewer": reviewer}
 
 
 @router.get("")

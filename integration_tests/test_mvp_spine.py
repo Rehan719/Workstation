@@ -63642,14 +63642,27 @@ def test_w691_a_reviewer_agent_is_calibrated_by_its_recorded_run_and_never_by_a_
     assert client.post("/api/v1/review/calibration/run", json={**body, "configuration": "floor"}).status_code == 200
     assert cal.calibration_of("care-reviewer")["calibrated"] is False and "floor cannot review" in cal.calibration_of("care-reviewer")["why_not"]
     ok = client.post("/api/v1/review/calibration/run", json=body)
-    assert ok.status_code == 200 and ok.json()["score"]["meets_bar"] is True and ok.json()["agent_now"]["calibrated"] is True
+    #  W1183 - A TYPED RUN IS KEPT AND CALIBRATES NOTHING: it is a person's account of what was flagged. The arithmetic
+    #  below is over runs of the agent's OWN, so each kept run is marked as the agent's own door marks it (test_w1100
+    #  and test_w1183 drive that door itself)
+    assert ok.status_code == 200 and ok.json()["score"]["meets_bar"] is True and ok.json()["agent_now"]["calibrated"] is False
+    assert ok.json()["agent_now"]["reason"] == "typed_only", ok.json()["agent_now"]
+
+    def _its_own():
+        kept = json.loads(runs.read_text(encoding="utf-8"))
+        for _r in kept:
+            _r.update(door=cal.AGENT_DOOR, set_digest=cal.set_digest(runnable))
+        runs.write_text(json.dumps(kept), encoding="utf-8")
+    _its_own()
     got = client.get("/api/v1/review/calibration/care-reviewer").json()
     assert got["calibrated"] is True and (got["caught"], got["planted_cases"], got["false_alarms"], got["clean_cases"]) == (3, 3, 0, 6)
     #  THE STORED VERDICT IS NEVER TRUSTED: the flags are re-scored, so a later, worse run uncalibrates the agent
     later = (_dt.date.today() + _dt.timedelta(days=1)).isoformat()
     client.post("/api/v1/review/calibration/run", json={**body, "date": later, "flags": {"P0": ["reason-0"]}})
+    _its_own()
     assert cal.calibration_of("care-reviewer")["calibrated"] is False and "did not meet the bar" in cal.calibration_of("care-reviewer")["why_not"]
     client.post("/api/v1/review/calibration/run", json={**body, "date": (_dt.date.today() + _dt.timedelta(days=2)).isoformat()})
+    _its_own()
     assert cal.calibration_of("care-reviewer")["calibrated"] is True
     #  A RUN ON AN OLDER VERSION OF THE SET does not count for this one
     runnable["version"] = "t2"
@@ -65444,16 +65457,16 @@ def test_w711_the_two_chartered_items_keep_their_boundaries_and_every_source_say
         assert r["page"].startswith("https://") and re.fullmatch(r"\d{4}-\d{2}-\d{2}", r["read_on"]), rid
         assert len(r["says"]) > 40 and len(r["not_read"]) > 10, (rid, "a row must say what was read and what was not")
         #  W1148 (FU-1077): eight were re-read whole at their publishers and say so; the six whose sites this
-        #  environment refused still say they rest on one reader's summary, and that the re-reading was refused
+        #  environment refused then were read whole at their publishers by W1177, once the sites were allowed
         if rid in ("hse-puwer-overview", "frc-frs-102-periodic-review-2024", "ec-ai-omnibus-2026",
                    "lawcom-business-tenancies-renewal", "ico-duaa-2025", "caa-drone-requirements"):
-            assert "NOT re-read by a second reader" in r["read_by"] and "refused by this environment's network" in (
-                r["not_read"]), (rid, "one reader's summary is presented as more than that")
+            assert r["read_on"] == "2026-11-20" and r["read_by"].startswith("round W1177, ") and (
+                "not through a summary" in r["read_by"]), (rid, "one reader's summary is presented as more than that")
         else:
             assert r["read_on"] == "2026-11-20" and r["read_by"].startswith("round W1148, ") and "read whole" in (
                 r["read_by"]) and "not through a summary" in r["read_by"], (rid, r["read_by"])
     #  the date the external documents got wrong is recorded as the publisher gives it
-    assert "entered into force on 27 July 2026" in rows["ec-ai-omnibus-2026"]["says"]
+    assert "on 27 July 2026 the AI Omnibus enters into force" in rows["ec-ai-omnibus-2026"]["says"]   # W1177: as the page says
 
 
 # ══════════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -69617,7 +69630,9 @@ def test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_name
                     #  W972 (P5.22) - the ledger pins refuse when no edition is pinned
                     "scripts/ledger_blobs.py",
                     #  W973 (P5.22) - completeness refuses a record where no configuration ran a slice
-                    "scripts/audit_completeness.py"]
+                    "scripts/audit_completeness.py",
+                    #  W1184 (FU-1054) - the calibration results' export and check refuse when there is no run
+                    "scripts/calibration_results.py"]
 
     def _emitted(src):
         """The strings a module can print or return - its docstrings left out, since a docstring saying the tool
@@ -90660,14 +90675,14 @@ def test_w1099_fu1054_the_care_calibration_set_is_written_out_and_run_only_when_
     """FU-1054 part 1 (W1099). The Care calibration set was sixteen cases described in a sentence each, with
     `"runnable": false` typed beside them, and the route and calibration_of read that flag: a claim stood where the
     module's own rule is a measurement. Held here:
-    - the set in the tree is written out: fifteen cases carry what a reviewer is shown, each taken from the tree (a
-      route's answer, a prompt, an entry of the catalogue's history), and every planted case says where the tree
-      had its defect; the sixteenth, K06, says why it is not written out yet; no `runnable` key stands in the file;
+    - the set in the tree is written out: its sixteen cases carry what a reviewer is shown, each taken from the tree
+      (a route's answer, a prompt, an entry of the catalogue's history), K06 once NICE NG97 was read (W1122), and
+      every planted case says where the tree had its defect; no `runnable` key stands in the file;
     - whether a set can be run is computed, and every rule drives it: a case not written out, a planted case with no
       `from`, a row not in the register, a row in another status, a current row not read within the review period
       of the run's date or read after it, and a part the row says was NOT READ - and each reason is said;
-    - on 2026-11-15 the set cannot be run for exactly two causes outside this machine: NEWS2's chart itself was not
-      read (C03, C10, K02) and NICE NG97 has not been read (K06, whose text waits on it);
+    - on 2026-11-15 the set cannot be run: its four cases that rely on NEWS2's chart (C03, C10, K02) and on NICE
+      NG97 (K06) rely on reads made on 2026-11-19, after that day (W1122); from 2026-11-19 it can be run;
     - the calibration route records a run only on a date the set can be run, and refuses one on the tree's set with
       those reasons, writing nothing; a flag in a set's file decides nothing either way."""
     import datetime as _dt
@@ -90837,7 +90852,8 @@ def test_w1100_fu1054_the_care_reviewer_is_a_different_checklist_over_the_source
     flo = asyncio.run(cr.review(case["shown"], the_set, case["relies_on"]))
     assert flo["reviewed"] is False and flo["flags"] is None and "the floor cannot review" in flo["why_not"], flo
 
-    #  THE RUN ROUTE. On the tree's set, which cannot be run, no model is asked and nothing is kept
+    #  THE RUN ROUTE. On the tree's set on a day it cannot be run (2026-11-15, before its last sources were read), no
+    #  model is asked and nothing is kept
     runs = tmp_path / "review_calibration_runs.json"
     monkeypatch.setattr(cal, "_runs_path", lambda: runs)
     monkeypatch.setattr(orchestrator, "complete", _model)
@@ -90914,7 +90930,10 @@ def test_w1101_fu1054_an_uncalibrated_agents_review_is_labelled_where_the_tier_i
     label = "an agent's review of this tool exists and does not raise its tier: w1101-reviewer has not been calibrated"
     alone = rt.review_statement(T)
     assert alone["tier"] == "unreviewed" and alone["uncalibrated_agent_review"] == label, alone
-    assert alone["basis"].startswith("no review of this tool counts:") and alone["basis"].endswith("; " + label), alone["basis"]
+    #  W1183 - and after the label, the agent's calibration as the options panel says it
+    never = "this agent has never been run on the calibration set"
+    assert alone["basis"].startswith("no review of this tool counts:") and alone["basis"].endswith(
+        "; " + label + f"; w1101-reviewer's calibration: {never}"), alone["basis"]
     #  where a person reads it: under the answer (and so in what they save), and before the form
     risk = client.post("/api/v1/care/risk-assess", json={"tool": "news2", "patient_data": {"respiratory_rate": 25}}).json()
     assert label in risk["ai_provenance"]["review"]["basis"], risk["ai_provenance"]["review"]
@@ -90927,7 +90946,8 @@ def test_w1101_fu1054_an_uncalibrated_agents_review_is_labelled_where_the_tier_i
     two = ("an agent's review of this tool exists and does not raise its tier: w1101-reviewer, w1101-second have not "
            "been calibrated")
     assert both["tier"] == "checked_by_rule" and both["basis"].startswith("the highest tier a record supports: checked by rule")
-    assert both["basis"].endswith("; " + two) and both["uncalibrated_agent_review"] == two, both["basis"]
+    assert both["basis"].endswith("; " + two + f"; w1101-reviewer's calibration: {never}; w1101-second's calibration: "
+                                  f"{never}") and both["uncalibrated_agent_review"] == two, both["basis"]
 
 
 def test_w1102_fu399_the_tier_of_review_is_rendered_where_it_is_read_with_an_uncalibrated_agents_label(client, tmp_path, monkeypatch):
@@ -90942,6 +90962,10 @@ def test_w1102_fu399_the_tier_of_review_is_rendered_where_it_is_read_with_an_unc
     from agentic_core.api import _review_tier as rt
     store = tmp_path / "review_tier_records.json"
     monkeypatch.setattr(rt, "_path", lambda: store)
+    #  W1183 - the tier's sentence now says the reviewer's calibration, which turns on whether the set can be run on
+    #  the day: the capture's day is pinned, as the capture pinned it
+    from agentic_core.api import _review_calibration as _cal1102
+    monkeypatch.setattr(_cal1102, "_today", lambda: _dt.date(2026, 11, 21))
     pages = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "domains"
     fx = json.loads((pages / "CareHub.fixture.json").read_text(encoding="utf-8"))
     today = _dt.date.today().isoformat()
@@ -90959,8 +90983,10 @@ def test_w1102_fu399_the_tier_of_review_is_rendered_where_it_is_read_with_an_unc
     kept = {"options": fx["review_handover_uncalibrated"]["review"],
             "answer": fx["handover_uncalibrated"]["ai_provenance"]["review"]}
     for where in ("options", "answer"):
-        assert (live[where]["label"], live[where]["basis"]) == (kept[where]["label"], kept[where]["basis"]), (
-            where, live[where], kept[where])
+        #  W1183 - and why each record of it does not count, which the page's captures carry too
+        assert (live[where]["label"], live[where]["basis"], live[where].get("not_counted")) == (
+            kept[where]["label"], kept[where]["basis"], kept[where].get("not_counted")), (
+            "the captured tier, or why a record of it does not count, is not the route's", where, live[where], kept[where])
         assert "w1102-made-up-reviewer has not been calibrated" in live[where]["basis"], live[where]
     spec = (pages / "CareHub.test.tsx").read_text(encoding="utf-8")
     for case in ("await screen.findByTestId('review-option-tier');", "await screen.findByTestId('domain-review-tier');",
@@ -92361,7 +92387,9 @@ def test_w1131_the_local_prompt_names_every_row_waiting_on_the_owner_and_keeps_o
     for frag in ("it may still be pushing to main-l1fsqo, so do not push there",
                  "a branch of your own", "open its own pull request", "Never push to main without me"):
         assert frag in flat, (frag, "the notes would let a local session push beside the cloud session")
-    assert "Merge PR #462" not in notes and "carried by **PR #462**" not in notes, "a merged pull request is offered"
+    for merged in ("#462", "#463"):   # W1178: #463 merged on 2026-11-20
+        assert f"Merge PR {merged}" not in notes and f"carried by **PR {merged}**" not in notes, (
+            "a merged pull request is offered", merged)
 
     fp = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
     live = re.search(r"Done: (\d+) of (\d+) items — P1 (\d+)/(\d+) · P2 (\d+)/(\d+) · P3 (\d+)/(\d+) · "
@@ -92915,11 +92943,13 @@ def test_w1135_no_tracked_document_names_the_owners_windows_home_folder_by_its_p
     """W1135 (found 2026-11-20 while walking the Owner through the local session). The local-session notes' header,
     and more tracked files, named the Owner's Windows home folder by its full path, the user name in it.
     Held here:
-    - no tracked text file outside the five places the Owner decides names a Windows home folder by its path: a path
-      starts at ~ instead, the rest of it unchanged (the folder is found by its shape; no name is written here). The
-      pinned fidelity ledgers are among the five: P5.22 pins each byte for byte, so no round edits one;
-    - the five places are each named, with a recommendation, in one open owner-gated row, which the plan's list of
-      what is with the Owner and the local-session notes both name;
+    - no tracked text file names a Windows home folder by its path outside the places left as they are (the pinned
+      ledgers and _archive/) and docs/fidelity_runs/, whose files are opened only on a go-ahead that names one: a
+      path starts at ~ instead, the rest of it unchanged (the folder is found by its shape; no name is written
+      here). The pinned ledgers are left because P5.22 pins each byte for byte, so no round edits one;
+    - the five places are each named, with the recommendation the Owner accepted, in one owner-gated row, closed by
+      W1180 once each was settled: the plan's list of what is with the Owner no longer asks about it, and the
+      local-session notes say it is closed;
     - the local-session notes still say which folder to open: ~\\Workstation."""
     import json
     import pathlib
@@ -92927,7 +92957,7 @@ def test_w1135_no_tracked_document_names_the_owners_windows_home_folder_by_its_p
     import subprocess
     root = pathlib.Path(__file__).resolve().parents[1]
     home = re.compile(r"(?i)\b[a-z]:[\\/]+users[\\/]+[^\\/\s`'\"<>()|,;:*?]+")
-    left = ("_archive/", "docs/fidelity_runs/", "venv/", ".claude/", "docs/VISION_FIDELITY_LEDGER")
+    left = ("_archive/", "docs/fidelity_runs/", "docs/VISION_FIDELITY_LEDGER")   # .claude/ read from W1176, venv/ from W1180
     out = subprocess.run(["git", "ls-files", "-z"], cwd=root, capture_output=True, check=True).stdout
     files = [f for f in out.decode("utf-8").split("\0") if f]
     assert len(files) > 1000, ("git listed too few tracked files to mean anything", len(files))
@@ -92947,15 +92977,17 @@ def test_w1135_no_tracked_document_names_the_owners_windows_home_folder_by_its_p
     owner = [r for r in rows if r.get("title") == "OWNER: five places still name your Windows home folder by its path"]
     assert len(owner) == 1, owner
     row = owner[0]
-    assert row["status"] == "open" and row["owner_gated"] is True and row["slot"] == "OWNER", row
+    assert (row["status"], row["closed_by"], row["owner_gated"], row["slot"]) == ("done", "W1180", True, "OWNER"), row
     for place in ("docs/fidelity_runs/", "docs/VISION_FIDELITY_LEDGER", "docs/LEDGER_BLOBS.json", "venv/",
                   ".claude/settings.json", "_archive/"):
         assert place in row["why"], ("the Owner's row does not name a place this guard leaves out", place)
     assert row["why"].count("RECOMMENDED") == 5, "each of the five places carries a recommendation"
     fable = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
     resume = (root / "docs" / "RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
-    assert f"{row['id']} (W1135):" in fable, "the plan's list of what is with the Owner does not name the row"
-    assert f"({row['id']})" in resume, "the local-session notes do not name the row"
+    still = " ".join(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0].split())
+    assert row["id"] not in still and "The five places that named your Windows home folder are settled" in still, \
+        "the plan's list still asks about the row, or does not say the places are settled"   # W1180
+    assert f"({row['id']}, closed W1180)" in resume, "the local-session notes do not say the row is closed"
     assert "in your local clone** (`~\\Workstation`)" in resume, "the notes no longer say which folder to open"
     fixed = [r for r in rows if r.get("title") == ("Tracked documents name the Owner's Windows home folder by its "
                                                    "full path, the user name in it")]
@@ -93409,10 +93441,12 @@ def test_w1143_no_document_a_round_wrote_gives_the_owner_a_pronoun_the_owner_has
       guardrails' crisis-language patterns and the two blind files that copy them, the language code of Hebrew,
       and (W1160) the publisher's own description of the Employment Tribunals Extension of Jurisdiction (Scotland)
       Order 1994, in the words of 1994, which the statute reader's fixture keeps word for word;
-    - left out of the scan, as test_w1135 leaves them: the archive, the fidelity runs (never opened), the venv, the
-      Owner's .claude settings and the pinned ledger editions; and also the source texts of the knowledge folders,
+    - left out of the scan, as test_w1135 left them when W1143 was written (it has read .claude/ since W1176 and
+      venv/ since W1180): the archive, the fidelity runs (never opened), the venv, the Owner's .claude settings and
+      the pinned ledger editions; and also the source texts of the knowledge folders,
       the Owner's own inputs, and this spine, whose variables are named he, hers and his and whose crisis-language
-      tests quote the phrases they test;
+      tests quote the phrases they test; and (W1184) docs/CARE_REVIEW_CALIBRATION_RESULTS.json, which holds the
+      reviewer model's own words, kept as written, as the fidelity runs do;
     - the W1120 rows say whose recommendations they were."""
     import json
     import pathlib
@@ -93421,7 +93455,8 @@ def test_w1143_no_document_a_round_wrote_gives_the_owner_a_pronoun_the_owner_has
     root = pathlib.Path(__file__).resolve().parents[1]
     word = re.compile(r"\b(?:he|his|him|himself)\b", re.I)
     left = ("_archive/", "docs/fidelity_runs/", "venv/", ".claude/", "docs/VISION_FIDELITY_LEDGER", "knowledge/",
-            "docs/knowledge/", "inputs/", "integration_tests/test_mvp_spine.py")
+            "docs/knowledge/", "inputs/", "integration_tests/test_mvp_spine.py",
+            "docs/CARE_REVIEW_CALIBRATION_RESULTS.json")   # W1184: the reviewer model's own words, kept as written
     allowed = {
         "docs/FOLLOWUPS.json": ["Say: He is Allah, the One!"],
         "agentic_core/gaas/v5/horizon_guardrails.py": [r"(?:my|his|her|their|ones?|his\s+or\s+her)",
@@ -93788,7 +93823,8 @@ def test_w1148_fu1077_the_legal_briefs_authorities_are_read_whole_at_their_publi
       corrected (the deeds section's "if, and only if" and its second way to sign; the lease page's dates);
     - the six whose sites this environment refused still say they rest on one reader's summary, and that the
       re-reading was refused;
-    - FU-1077 stays open and names those six, the FCA's rules and the sites to allow;
+    - FU-1077 names those six, the FCA's rules and the sites to allow; it stayed open until W1182 read the FCA
+      Handbook's pages and closed it;
     - the register's own check passes."""
     import json
     import pathlib
@@ -93843,17 +93879,17 @@ def test_w1148_fu1077_the_legal_briefs_authorities_are_read_whole_at_their_publi
 
     refused = ("hse-puwer-overview", "frc-frs-102-periodic-review-2024", "ec-ai-omnibus-2026",
                "lawcom-business-tenancies-renewal", "ico-duaa-2025", "caa-drone-requirements")
-    for rid in refused:
+    for rid in refused:   # refused to W1148; read whole at their publishers by W1177, once their sites were allowed
         r = rows[rid]
-        assert r["read_on"] == "2026-10-13" and "NOT re-read by a second reader" in r["read_by"], (rid, r["read_by"])
-        assert ("A re-reading at the publisher in round W1148 (2026-11-20) was refused by this environment's network" in
-                r["not_read"] and "still rests on one reader's summary" in r["not_read"]), (rid, r["not_read"])
+        assert r["read_on"] == "2026-11-20" and r["read_by"].startswith("round W1177, ") and (
+            "not through a summary" in r["read_by"]), (rid, r["read_by"])
+        assert "refused by this environment's network" not in r["not_read"], (rid, r["not_read"])
 
     #  FU-1077 says what is left, and where the rows are
     reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
     fu = reg["FU-1077"]
-    assert fu["status"] == "open" and fu["slot"] == "P5.18", (fu["status"], fu["slot"])
-    for named in refused + ("www.fca.org.uk", "handbook.fca.org.uk", "Owner's to approve"):
+    assert (fu["status"], fu["closed_by"], fu["slot"]) == ("done", "W1182", "P5.18"), fu["status"]   # W1182 closed it
+    for named in refused + ("www.handbook.fca.org.uk", "Owner's to approve"):   # W1177
         assert named in fu["why"], named
     assert all(day.fullmatch(rows[i]["read_on"]) for i in list(new) + list(reread) + list(refused))
 
@@ -95358,7 +95394,8 @@ def test_w1164_the_owners_ten_decisions_of_2026_11_20_are_recorded_and_the_water
     #  2. the owner-gated rows say what was accepted or answered
     for rid, n in (("FU-1188", 1), ("FU-1288", 1), ("FU-1289", 1), ("FU-1286", 5)):
         r = reg[rid]
-        assert r["status"] == "open" and r["owner_gated"] is True, rid
+        #  W1180 - FU-1286 closed once each of its five places was settled
+        assert r["status"] == ("done" if rid == "FU-1286" else "open") and r["owner_gated"] is True, rid
         assert r["why"].count("RECOMMENDED (accepted 2026-11-20):") == n and "RECOMMENDED:" not in r["why"], rid
     assert "(ledger_v14_W639_375c5ffb.json), opened only on a go-ahead that names it. DONE W1175" \
            in reg["FU-1286"]["why"], "the audit record is not named"   # W1175
@@ -95383,7 +95420,7 @@ def test_w1164_the_owners_ten_decisions_of_2026_11_20_are_recorded_and_the_water
             "final audit has run (2026-12-31 at the latest)") in flat
     step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
     steps = re.findall(r"^   - (FU-\d+):", step5, re.M)
-    assert steps == ["FU-1165", "FU-1286"], steps
+    assert steps == ["FU-1165", "FU-1054"], steps   # W1180: FU-1286 closed; W1184: FU-1054's run is the Owner's
     assert all(reg[s]["status"] == "open" for s in steps), steps
     assert "register my two ventures, Atmospheric Harvest Solutions and Aerius Energy Harvest, fresh in the new books" \
            in " ".join(step5.split()), "step 5 does not carry the Owner's answer on the two ventures"
@@ -95604,8 +95641,9 @@ def test_w1167_p511_a_subject_that_is_regulated_advice_is_its_row_and_a_route_to
     went to the composer like any other. Held here:
     1. the three rows: each says who regulates it as the pages read say, quotes only sentences its register rows
        record, names its places for each nation, says each page read with the day, and says its regulator's own page:
-       the Immigration Advice Authority's, read on 2026-11-20; the Financial Conduct Authority's, not read, its site
-       refused here; for a claims company, no regulator's page - and NOT RECENTLY CHECKED ninety days on, by the one
+       the Immigration Advice Authority's, read on 2026-11-20; for a debt solution and a claims company, the Financial
+       Conduct Authority's, read at its own site by W1179 (refused here before) - and NOT RECENTLY CHECKED ninety
+       days on, by the one
        rule, and nothing said as read when the register cannot be read;
     2. GET /api/v1/law/boundaries serves them, composed by nothing;
     3. a research question naming one is answered by its row and the places a person can go, after the urgent routes,
@@ -95649,13 +95687,13 @@ def test_w1167_p511_a_subject_that_is_regulated_advice_is_its_row_and_a_route_to
     assert imm["regulator"]["page"]["id"] == "iaa-information-for-advice-seekers"
     assert imm["regulator"]["page"]["checked"] == "read on 20 November 2026"
     assert reg["iaa-information-for-advice-seekers"]["kind"] == "regulator guidance"
-    assert (debt["regulator"]["name"], debt["regulator"]["read"], debt["regulator"]["page"]) == (
-        "the Financial Conduct Authority", False, None), debt["regulator"]
-    assert "refused by this environment's network" in debt["regulator"]["why"]
-    assert (cmc["regulator"]["name"], cmc["regulator"]["read"], cmc["regulator"]["page"]) == (None, False, None)
-    assert "were not read whole" in cmc["regulator"]["why"] and "www.fca.org.uk" in cmc["regulator"]["why"]
-    assert cmc["regulated"].startswith("No page read here says who regulates a claims company today")
-    assert "June 2014" in cmc["regulated"] and cmc["places"] == []
+    #  W1179: both regulators read at the FCA's own pages once its site was allowed
+    for got, page in ((debt, "fca-unauthorised-unsuitable-debt-advice"), (cmc, "fca-using-claims-management-companies")):
+        assert (got["regulator"]["name"], got["regulator"]["read"], got["regulator"]["page"]["id"]) == (
+            "the Financial Conduct Authority", True, page), got["regulator"]
+        assert got["regulator"]["why"] is None and got["regulator"]["page"]["checked"] == "read on 20 November 2026"
+    assert cmc["regulated"].startswith("The Financial Conduct Authority's page says a claims management company")
+    assert "aviation" in cmc["regulated"] and cmc["places"] == []
     assert [p["nation"] for p in imm["places"]] == ["UK", "England and Wales", "Scotland", "Northern Ireland"]
     assert [p["nation"] for p in debt["places"]] == ["England and Wales", "Scotland"]
     assert all(p["own_site"] == _urg.NOT_OPENED for p in imm["places"] + debt["places"])
@@ -95772,7 +95810,8 @@ def test_w1167_p511_a_subject_that_is_regulated_advice_is_its_row_and_a_route_to
                        ("law-debt", "gov-uk-options-for-dealing-with-debts"),
                        ("law-claims-management", "gov-uk-claim-compensation-cmc")):
         c = cov[cid]
-        assert (c["state"], c["route"]) == ("route_only", route) and route in reg and c["today"].endswith("(W1167)"), c
+        assert (c["state"], c["route"]) == ("route_only", route) and route in reg and (
+            c["today"].endswith(("(W1167)", "(W1167, W1179)"))), c
         assert "excluded_by" not in c, c
     for cid in ("law-immigration", "law-debt-solutions"):
         assert cov[cid]["ruling"].startswith("Owner ruling 2026-10-12 (advice, 3)"), cov[cid]
@@ -96331,9 +96370,9 @@ def test_w1175_fu1286_the_audit_record_the_owner_named_names_no_place_on_a_machi
     2. each home-folder path starts at ~ with the rest of it unchanged, each data-folder path says what kind of place it
        was, and the record is still whole: six regions, each with its ten findings and ten verdicts;
     3. the three records the Owner allowed to be opened (editions 14, 15 and 16) all hold to the same;
-    4. FU-1286 stays open for the places that are the Owner's machine's: its first place says it is done and each of
-       the five still carries its accepted recommendation; the plan's list of what is with the Owner and the local
-       notes say the record was edited, and neither says it still waits on a go-ahead."""
+    4. FU-1286, closed by W1180 once each of its places was settled: its first place says it is done and each of the
+       five still carries its accepted recommendation; the plan's list of what is with the Owner and the local notes
+       say the record was edited, and neither says it still waits on a go-ahead."""
     import json
     import re
     from pathlib import Path
@@ -96366,7 +96405,7 @@ def test_w1175_fu1286_the_audit_record_the_owner_named_names_no_place_on_a_machi
     #  4. FU-1286, the plan's list and the local notes
     reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
     row = reg["FU-1286"]
-    assert (row["status"], row["owner_gated"], row["slot"]) == ("open", True, "OWNER"), row
+    assert (row["status"], row["owner_gated"], row["slot"]) == ("done", True, "OWNER"), row   # W1180 closed it
     assert ("(1) One audit record under docs/fidelity_runs/ (ledger_v14_W639_375c5ffb.json), opened only on a go-ahead "
             "that names it. DONE W1175: your go-ahead of 2026-11-20 named it;") in row["why"], "place 1 is not said done"
     assert row["why"].count("RECOMMENDED (accepted 2026-11-20):") == 5, "a place lost its accepted recommendation"
@@ -96379,3 +96418,1073 @@ def test_w1175_fu1286_the_audit_record_the_owner_named_names_no_place_on_a_machi
             "2026-11-20, on your go-ahead naming it (W1175).") in notes, "the local notes do not say the record was edited"
     for stale in ("opened once a go-ahead names it", "named no file", "not opened without your go-ahead"):
         assert stale not in plan and stale not in notes, ("still said to wait on a go-ahead", stale)
+
+
+def test_w1176_fu1286_the_project_settings_name_no_windows_home_folder_and_the_guard_reads_them():
+    """FU-1286, place 4 (W1176). Three one-off command permissions in .claude/settings.json named the Owner's Windows
+    home folder by its path; the Owner accepted their removal on 2026-11-20 and asked that evening whether the cloud
+    session could do it. Held here:
+    1. no file under .claude/ names a Windows home folder by its path, and the settings still parse with their
+       permissions in place;
+    2. W1135's guard no longer leaves .claude/ out, so an entry naming the folder fails it again;
+    3. FU-1286's fourth place says it is done and each of the five still carries its accepted recommendation, and the
+       plan's list of what is with the Owner and the local notes say the permissions were removed. (venv/ was
+       untracked on the Owner's machine that evening, and W1180 closed the row; step 5 no longer asks for it.)"""
+    import json
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    home = re.compile(r"(?i)\b[a-z]:[\\/]+users[\\/]+[^\\/\s`'\"<>()|,;:*?]+")
+
+    #  1. the settings
+    for f in sorted((root / ".claude").glob("*.json")):
+        text = f.read_text(encoding="utf-8")
+        assert not home.search(text), (f.name, "names a Windows home folder by its path")
+    cfg = json.loads((root / ".claude/settings.json").read_text(encoding="utf-8"))
+    allow = cfg["permissions"]["allow"]
+    assert isinstance(allow, list) and allow and all(isinstance(e, str) for e in allow), "the permissions are not whole"
+    assert not [e for e in allow if "WindowsApps" in e or "venv/Scripts/python.exe" in e], \
+        "a one-off permission for a Windows Python is back"
+
+    #  2. W1135's guard reads .claude/
+    spine = Path(__file__).read_text(encoding="utf-8")
+    body = spine.split("def test_w1135_no_tracked_document_names_the_owners_windows_home_folder_by_its_path", 1)[1]
+    body = body.split("\ndef test_", 1)[0]
+    left = re.search(r"^    left = \(([^)]*)\)", body, re.M)
+    assert left and '".claude/"' not in left.group(1), "W1135's guard still leaves .claude/ out"
+
+    #  3. FU-1286, the plan's list and the local notes
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    row = reg["FU-1286"]
+    assert (row["status"], row["owner_gated"], row["slot"]) == ("done", True, "OWNER"), row   # W1180 closed it
+    assert "(4) .claude/settings.json: three one-off command permissions named your folder. DONE W1176:" in row["why"]
+    assert row["why"].count("RECOMMENDED (accepted 2026-11-20):") == 5, "a place lost its accepted recommendation"
+    plan = " ".join((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8").split())
+    assert "The three permissions in .claude/settings.json were removed in the cloud session that evening (W1176)." \
+        in plan, "the plan's list does not say they were removed"
+    notes = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
+    #  W1180 - the row is closed: step 5 no longer asks for venv/, and says the permissions were removed
+    assert "   - FU-1286:" not in step5 and "remove the three" not in step5, "step 5 still asks for FU-1286"
+    assert "were removed in the cloud session the same day, W1176" in " ".join(step5.split()), step5
+    flat = " ".join(notes.split())
+    assert "the three permissions in `.claude/settings.json` were removed in the cloud session (W1176)" in flat
+
+
+def test_w1177_fu1077_the_six_rows_refused_to_w1148_are_read_whole_at_their_publishers():
+    """FU-1077 part 2 (W1177), P5.18 clause 8: every statement of what the law requires names a row read at its
+    publisher and the date, and what was not read is listed as not read. Six rows rested on one reader's summary of
+    2026-10-13 because this environment's network refused their sites; the Owner allowed the sites on the evening of
+    2026-11-20 and each page was read whole that evening. Held here:
+    1. each of the six says it was read whole at its publisher's own page on 2026-11-20 by W1177, not through a summary,
+       and no longer says it was refused or rests on one reader's summary;
+    2. each says what its page says, with the page's own dates;
+    3. the two sentences that came from a different page are out of what the row says and listed as not read: the
+       ICO's toolkit on AI and data protection, and the FRC's factsheet on lease accounting for lessees;
+    4. FU-1077 stayed open, on P5.18, for the FCA Handbook alone, naming its site and that allowing it was the
+       Owner's; W1182 read the Handbook's pages and closed it."""
+    import json
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    rows = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    said = {
+        "ico-duaa-2025": ("the ICO's", ("Royal Assent on 19 June 2025", "are now in force", "no date of its own", "12 February 2026")),
+        "hse-puwer-overview": ("the HSE's", ("Shown as updated 21 November 2024",
+                                             "own, operate or have control over work equipment",
+                                             "whether owned by them or not", "a business or organisation that uses work equipment",
+                                             "for others to use")),
+        "lawcom-business-tenancies-renewal": ("the Law Commission's", ("19 November 2024", "19 February 2025",
+                                                                       "June 2025", "16 June 2026", "16 September 2026",
+                                                                       "'in due course'", "the review has changed the law",
+                                                                       "'has been updated in the past'")),
+        "frc-frs-102-periodic-review-2024": ("the FRC's", ("completed in March 2024",
+                                                           "principal effective date of 1 January 2026",
+                                                           "27 March 2024", "1 January 2025", "1 January 2027")),
+        "caa-drone-requirements": ("the CAA's", ("Undated page", "100g or above", "250g or above", "18 or over",
+                                                 "from 1 January 2026", "UK0 to UK6", "31 December 2027")),
+        "ec-ai-omnibus-2026": ("the European Commission's", ("Published 27 July 2026", "last updated 31 July 2026",
+                                                              "2 December 2027", "2 August 2028",
+                                                              "19 November 2025")),
+    }
+    for rid, (whose, phrases) in said.items():
+        r = rows[rid]
+        assert r["status"] == "current" and r["read_on"] == "2026-11-20", (rid, r["read_on"])
+        assert r["read_by"].startswith(f"round W1177, {whose} own page read whole on 2026-11-20, not through a summary;"), (
+            rid, r["read_by"])
+        assert "first entered by a research reader of round W711" in r["read_by"] and "NOT re-read" not in r["read_by"]
+        for stale in ("refused by this environment's network", "one reader's summary"):
+            assert stale not in r["not_read"] and stale not in r["says"], (rid, stale)
+        missing = [p for p in phrases if p not in r["says"]]
+        assert missing == [], (rid, "the row does not say what its page says", missing)
+
+    ico, frc = rows["ico-duaa-2025"], rows["frc-frs-102-periodic-review-2024"]
+    assert "toolkit" not in ico["says"] and "toolkit on AI and data protection" in ico["not_read"], ico
+    assert "factsheet" not in frc["says"] and "factsheet on lease accounting for lessees" in frc["not_read"], frc
+
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    fu = reg["FU-1077"]
+    assert (fu["status"], fu["closed_by"], fu["slot"]) == ("done", "W1182", "P5.18"), fu   # W1182 closed it
+    assert fu["title"].startswith("The FCA's own consumer-credit rules and its perimeter guidance on credit broking"), fu
+    for named in ("www.handbook.fca.org.uk", "Owner's to approve", "W1177", "403 at the proxy on 2026-11-20"):
+        assert named in fu["why"], (named, "FU-1077 does not say it")
+    assert "still read only through a summarising fetch" not in fu["why"].lower(), fu["why"]
+
+
+def test_w1178_the_local_notes_name_the_open_pull_request_and_say_pr463_was_merged():
+    """W1178. PR #463 was merged on the evening of 2026-11-20 by the cloud session, at the Owner's request, once all six
+    checks were green; PR #465 carries the later rounds. Held here:
+    1. the local-session notes offer no merged pull request: they name PR #465 as the one that carries the later
+       rounds, the one a local session watches for, and the one to merge, and say PR #463 was merged with its rounds;
+    2. the plan's list of what is with the Owner says PR #463 was merged, and names PR #465. (The notes' figures
+       were brought up to the plan's here; W1131's guard holds that they never say more than the plan.)"""
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    notes = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    flat = " ".join(notes.split())
+    for said in ("if the open pull request from main-l1fsqo (PR #465 from 2026-11-20) is merged,",
+                 "PR #463 (rounds W1119–W1175) on 2026-11-20, each on your instruction",
+                 "Later rounds are on `main-l1fsqo`, carried by **PR #465**.",
+                 "Merge PR #465 when you are ready, or ask the cloud session to merge it once green"):
+        assert said in flat, ("the notes do not say", said)
+    for stale in ("Merge PR #463", "carried by **PR #463**", "(PR #463 on 2026-11-20) is merged"):
+        assert stale not in flat, ("the notes still offer a merged pull request", stale)
+
+    fp = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    plan = " ".join(fp.split())
+    assert ("PR #463 merged by the Owner once green (that evening the Owner asked the cloud session to merge it, and it "
+            "was merged at 7744c530 with all six checks green; PR #465 carries the later rounds)") in plan
+
+
+def test_w1179_p511_the_debt_and_claims_company_rows_read_their_regulators_own_page(client):
+    """P5.11 clause 7 (W1179): "the row says which regulator's page was read and when." W1167's debt-solution and
+    claims-company rows could not: the Financial Conduct Authority's site was refused by this environment's network.
+    With it allowed on the evening of 2026-11-20, the FCA's two consumer pages were read whole there. Held here:
+    1. each FCA page is a current row of the register of sources, read by W1179 on 2026-11-20 at www.fca.org.uk, saying
+       its own dates and the page's sentences, and listing the FCA Handbook as not read;
+    2. both boundary rows name the FCA as their regulator, read at its own page with the day, and say nothing of a
+       refusal; the claims-company row says, from the FCA's page, which claims a company must be authorised to handle,
+       that some are regulated by a legal regulator instead and that aviation claims are not regulated by the FCA,
+       and quotes the page that a person need not use one - never the FCA's "us" as if it were this platform's;
+    3. a question about a claims company for a flight delay is answered with that row, composed by nothing;
+    4. the coverage register's two rows say what each row now says."""
+    import json
+    from pathlib import Path
+    from agentic_core.legal import boundaries as _bnd
+    root = Path(__file__).resolve().parents[1]
+    reg = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+
+    #  1. the two pages
+    pages = {"fca-using-claims-management-companies": (
+                 "https://www.fca.org.uk/consumers/using-claims-management-companies",
+                 ("first published 7 March 2019 and last updated 12 May 2026",
+                  "'CMCs must be authorised by us if they provide services for claims concerning:'",
+                  "housing disrepair", "certain industrial injuries benefits", "the Law Society of Scotland",
+                  "(such as aviation), but those services aren't regulated by us.'",
+                  "'You don’t need to use a CMC to make a claim, it’s free and simple to do it yourself.'")),
+             "fca-unauthorised-unsuitable-debt-advice": (
+                 "https://www.fca.org.uk/consumers/unauthorised-unsuitable-debt-advice",
+                 ("first published 24 March 2025 and last updated 22 September 2026",
+                  "'Firms who give debt advice must be authorised by us and follow our rules.",
+                  "insolvency practitioners, also need to be licensed to advise on and administer IVAs.'"))}
+    for sid, (page, phrases) in pages.items():
+        r = reg[sid]
+        assert (r["status"], r["page"], r["read_on"], r["kind"]) == ("current", page, "2026-11-20", "regulator guidance"), r
+        assert r["read_by"].startswith("round W1179, the FCA's own page read whole on 2026-11-20, not through a summary")
+        assert [p for p in phrases if p not in r["says"]] == [], (sid, [p for p in phrases if p not in r["says"]])
+        assert "www.handbook.fca.org.uk" in r["not_read"] and r["used_by"] == ["agentic_core/legal/boundaries.py"], sid
+
+    #  2. the boundary rows
+    rows = {r["id"]: r for r in _bnd.rows()}
+    debt, cmc = rows["debt_solution"], rows["claims_management"]
+    for got, sid in ((debt, "fca-unauthorised-unsuitable-debt-advice"), (cmc, "fca-using-claims-management-companies")):
+        g = got["regulator"]
+        assert (g["name"], g["read"], g["why"], g["page"]["id"]) == ("the Financial Conduct Authority", True, None, sid), g
+        assert g["page"]["checked"] == "read on 20 November 2026" and "refused" not in json.dumps(got), got["id"]
+    said = cmc["regulated"]
+    for part in ("The Financial Conduct Authority's page says a claims management company must be authorised by it",
+                 "financial services and products", "personal injury", "employment matters", "criminal injury",
+                 "housing disrepair", "certain industrial injuries benefits",
+                 "unless a legal regulator regulates it instead", "such as aviation, are not regulated by the FCA"):
+        assert part in said, ("the row does not say", part)
+    assert " us" not in f" {said} " and not said.endswith("."), said
+    assert "You don’t need to use a CMC to make a claim, it’s free and simple to do it yourself." in cmc["words"]
+    assert all("by us" not in w for w in cmc["words"]), "the FCA's 'us' is quoted as if it were this platform's"
+    assert "fca-using-claims-management-companies" in [s["id"] for s in cmc["sources"]]
+
+    #  3. a flight-delay question is answered with the row
+    a = client.post("/api/v1/law/research", json={"question": "should I use a claims company for my flight delay?"}).json()
+    assert a["boundary"]["id"] == "claims_management" and a["ai_provenance"]["composed"] is False, a.get("method")
+    assert "such as aviation, are not regulated by the FCA" in a["analysis"], a["analysis"]
+
+    #  4. the coverage register
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    d, c = cov["law-debt-solutions"]["today"], cov["law-claims-management"]["today"]
+    assert "refused" not in d and "the Financial Conduct Authority's own page, read there on 2026-11-20" in d, d
+    assert "no page read here establishes who regulates" not in c and "such as aviation, are not regulated by the FCA" in c
+    assert d.endswith("(W1167, W1179)") and c.endswith("(W1167, W1179)"), (d[-40:], c[-40:])
+
+
+def test_w1179b_the_fca_rows_say_what_their_pages_say_and_name_no_handbook_a_page_does_not():
+    """W1179b corrects W1179 (P5.11 clause 7). W1179's rows were checked claim by claim against the saved FCA pages
+    on 2026-11-20. The claims-company row said the maximum fee depends on a claim's value, without the page's limit to
+    financial services claims. Both FCA rows said the FCA's rules are in its Handbook, which neither page says. The
+    claims-company row named GOV.UK records that its page does not name. The coverage register said "to handle" where
+    the page says "provide services for", and quoted GOV.UK's sentence as if it were the FCA's. Two GOV.UK rows still
+    said the FCA's site is refused after W1179 read it. Held here:
+    1. the claims-company row quotes the cap as the page gives it, for financial services claims, and dates the
+       value-based maximum to those claims;
+    2. each FCA row says the page names the FCA's rules but does not set them out or link them, quotes the page's
+       words, and says the Handbook's site was refused when the page was read; the claims-company row says whose the
+       two opinions are; the debt row's Firm Checker keeps "has the FCA's permission for the services";
+    3. no current row of the register says www.fca.org.uk is refused, and each GOV.UK row names the FCA page read
+       there later the same day;
+    4. the coverage row says what the page says, and whose each quoted sentence is."""
+    import json
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    reg = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    cmc, debt = reg["fca-using-claims-management-companies"], reg["fca-unauthorised-unsuitable-debt-advice"]
+
+    #  1. the fee cap
+    assert ("'To make sure you get fair value for money, we introduced a cap to the fees you can be charged for "
+            "financial services claims.' For those claims started on or after 1 March 2022, the maximum fee depends "
+            "on the value of the claim") in cmc["says"], cmc["says"]
+    assert "For claims started on or after" not in cmc["says"], "the cap is said for every claim"
+
+    #  2. what was not read
+    for r, words in ((cmc, "('CMCs that are authorised by us must follow our rules')"), (debt, "('follow our rules')")):
+        nr = r["not_read"]
+        assert "in its Handbook (www.handbook.fca.org.uk" not in nr, (r["id"], "says the page names the Handbook")
+        assert words in nr and "but does not set out or link" in nr, (r["id"], nr)
+        assert "(www.handbook.fca.org.uk) was refused by this environment's network when the page was read" in nr, nr
+    assert "a glossary entry at handbook.fca.org.uk, was not opened" in cmc["not_read"], cmc["not_read"]
+    assert "the two GOV.UK records" not in cmc["not_read"] and (
+        "the two opinions of the Regulatory Policy Committee, of 2019 and 2020, that the GOV.UK row "
+        "gov-uk-claim-compensation-cmc names by title, which this page does not name") in cmc["not_read"]
+    assert "opinions of the Regulatory Policy Committee of 2019 and 2020" in reg["gov-uk-claim-compensation-cmc"]["says"]
+    assert "the site's menu links the FCA's 'Handbook of rules and guidance', not opened" in debt["not_read"]
+    assert "to check that a firm is authorised and has the FCA's permission for the services it offers." in debt["says"]
+
+    #  3. the FCA's site is no longer said as refused
+    refuses = re.compile(r"www\.fca\.org\.uk\),? which this environment's network refuses")
+    assert [r["id"] for r in reg.values() if r.get("status") == "current"
+            and refuses.search(json.dumps(r, ensure_ascii=False))] == [], "a row still says the FCA's site is refused"
+    for sid, read in (("gov-uk-options-for-dealing-with-debts", "fca-unauthorised-unsuitable-debt-advice"),
+                      ("gov-uk-claim-compensation-cmc", "fca-using-claims-management-companies")):
+        nr = reg[sid]["not_read"]
+        assert "which this environment's network refused when this page was read" in nr and f"{read}, W1179" in nr, nr
+        assert reg[read]["status"] == "current" and reg[read]["read_on"] == reg[sid]["read_on"] == "2026-11-20", sid
+
+    #  4. the coverage row
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    c = cov["law-claims-management"]["today"]
+    assert "authorised by the FCA to provide services for," in c and "to handle" not in c, c
+    assert ("it quotes GOV.UK's guide that a person who makes a successful claim without one keeps all the "
+            "compensation, and the FCA's page that a person need not use one,") in c, c
+    assert c.endswith("(W1167, W1179)"), c[-40:]
+
+
+
+def test_w1180_fu1286_is_closed_once_each_of_its_five_places_is_settled():
+    """FU-1286 (W1180). Five places named the Owner's Windows home folder by its path, and the Owner accepted a
+    recommendation for each on 2026-11-20: (1) the audit record ledger_v14_W639_375c5ffb.json was opened on the
+    go-ahead that named it, and its home-folder paths start at ~ (W1175); (2) the pinned fidelity ledgers stay as they are; (3)
+    venv/ was untracked on the Owner's machine by its local session (7afa4aa9, git rm -r --cached, the folder kept on
+    that disk) and merged into main-l1fsqo at 07fb9817; (4) the three permissions in .claude/settings.json were removed
+    (W1176); (5) _archive/ stays as archived history. Held here:
+    1. git tracks nothing under venv/, .gitignore still leaves it out, and W1135's guard no longer leaves it out, so a
+       tracked file there that names a home folder fails that guard;
+    2. the row is closed by W1180, its third place says it is done, and its close note names each place;
+    3. the plan's list of what is with the Owner no longer asks about it and says the places are settled; the local
+       notes' step 5 and their summary no longer send the Owner to it, the Still-yours list does not name it, and the
+       notes say it is closed."""
+    import json
+    import re
+    import subprocess
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+
+    #  1. venv/
+    tracked = subprocess.run(["git", "ls-files", "-z", "--", "venv"], cwd=root, capture_output=True, check=True).stdout
+    assert tracked == b"", ("git still tracks files under venv/", tracked[:200])
+    assert "venv/" in (root / ".gitignore").read_text(encoding="utf-8").split(), ".gitignore no longer leaves venv/ out"
+    spine = Path(__file__).read_text(encoding="utf-8")
+    body = spine.split("def test_w1135_no_tracked_document_names_the_owners_windows_home_folder_by_its_path", 1)[1]
+    body = body.split("\ndef test_", 1)[0]
+    left = re.search(r"^    left = \(([^)]*)\)", body, re.M)
+    assert left and '"venv/"' not in left.group(1) and '".claude/"' not in left.group(1), "W1135's guard leaves one out"
+
+    #  2. the row
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    row = reg["FU-1286"]
+    assert (row["status"], row["closed_by"], row["because"], row["owner_gated"]) == ("done", "W1180", "built", True), row
+    assert ("Its files name your folder. DONE 7afa4aa9: your local session ran git rm -r --cached venv and committed it "
+            "on 2026-11-20, its message saying the folder stays on your disk; merged into main-l1fsqo at 07fb9817, and "
+            "recorded here by W1180.") in row["why"]
+    assert row["why"].count("RECOMMENDED (accepted 2026-11-20):") == 5, "a place lost its accepted recommendation"
+    note = " ".join(str(row.get("close_note") or "").split())
+    for said in ("(1) The audit record docs/fidelity_runs/ledger_v14_W639_375c5ffb.json", "docs/LEDGER_BLOBS.json",
+                 "(7afa4aa9, git rm -r --cached venv; its message says the folder stays on that disk)", "07fb9817",
+                 "(4) The three permissions in .claude/settings.json", "(5) _archive/ stays as archived history."):
+        assert said in note, ("the close note does not say", said)
+
+    #  3. the plan's list and the local notes
+    fable = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    still = " ".join(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0].split())
+    assert "FU-1286" not in still and "untracking venv/ stays yours" not in still, "the plan's list still asks for it"
+    assert ("(The five places that named your Windows home folder are settled, each as you accepted on 2026-11-20:"
+            in still and "Your local session untracked venv/ on your machine (7afa4aa9), the folder kept on your disk, "
+            "and the cloud session merged it (07fb9817)." in still), "the plan's list does not say the places are settled"
+    notes = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    flat = " ".join(notes.split())
+    step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
+    #  W1184 - FU-1054's run joined step 5 once the row waited on the Owner's machine
+    assert re.findall(r"^   - (FU-\d+):", step5, re.M) == ["FU-1165", "FU-1054"] and "git rm -r --cached venv" not in step5
+    assert "The rows in step 5: FU-1165 and FU-1054, a step each there." in flat and "FU-1286" not in flat.split(
+        "The rows in step 5:", 1)[1].split(".", 1)[0]
+    assert ("**Settled on 2026-11-20:** the five places that named your Windows home folder (FU-1286, closed W1180)"
+            in flat), "the notes do not say the row is closed"
+    yours = flat.split("**Still yours:**", 1)[1].split("**Settled on 2026-11-20:**", 1)[0]
+    assert "FU-1286" not in yours and "`venv/` is step 5" not in yours, "the Still-yours list still names the row"
+
+
+def test_w1181_each_quoted_sentence_of_a_regulated_subject_says_the_page_it_is_from(client, monkeypatch):
+    """P5.11 clause 7 (W1181). W1179b's check found the claims-company row quoting GOV.UK's guide and the FCA's page in
+    one list, the pages read named only after it, together: a reader could not tell whose words each quote is. Held
+    here:
+    1. every regulated subject's row names, for each quote, the one of its pages that the register holds a reading of
+       and whose reading holds the quote, and no other of the row's pages holds it;
+    2. the rule itself, on a register made here: one page names it; two pages, no page, a page with no reading and no
+       register name none; words left out are read across, in order and never out of it, white space as one;
+    3. the claims-company row's first quote (its two GOV.UK sentences) is GOV.UK's guide's and its second is the FCA's
+       page's; with the register unreadable, no page is named for any quote: none is guessed;
+    4. a research answer on a regulated subject carries the pages, and the Law page draws each quote with its page's
+       name, inside the quote's own item, as its rendered test reads it from the route's own captured answer: the
+       component and the rendered test are read as code, so a commented-out or skipped line does not count."""
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.legal import boundaries as _bnd
+    from agentic_core.legal import time_limits as _tl
+    root = Path(__file__).resolve().parents[1]
+    reg = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+
+    #  1. each quote's page is read and holds it, and no other of the row's pages does
+    rows = {r["id"]: r for r in _bnd.rows()}
+    assert set(rows) == {"immigration", "debt_solution", "claims_management"}, sorted(rows)
+    for rid, r in rows.items():
+        ids = [s["id"] for s in r["sources"]]
+        assert len(r["words_from"]) == len(r["words"]) and r["words"], rid
+        for w, sid in zip(r["words"], r["words_from"]):
+            assert sid in ids and reg[sid].get("read_on"), (rid, "a quote names no read page of its row", w[:60])
+            parts = [p for p in w.split(" ... ") if p.strip()]
+            assert all(p in reg[sid]["says"] for p in parts), (rid, sid, "the page's reading does not hold", w[:60])
+            others = [o for o in ids if o != sid and all(p in reg[o].get("says", "") for p in parts)]
+            assert others == [], (rid, "another page also holds", w[:60], others)
+
+    #  2. the rule, on a register made here
+    wf, on = _bnd._words_from, "2026-11-20"
+    one = {"p": {"read_on": on, "says": "'A said.' and more"}, "q": {"read_on": on, "says": "Other."}}
+    assert wf({"words": ("A said.",), "sources": ("p", "q")}, one) == ["p"], "a page that holds the quote is not named"
+    two = {"p": {"read_on": on, "says": "A said."}, "q": {"read_on": on, "says": "A   said."}}
+    assert wf({"words": ("A said.",), "sources": ("p", "q")}, two) == [None], "a quote two pages hold names one of them"
+    assert wf({"words": ("Not said.",), "sources": ("p", "q")}, one) == [None], "a quote no page holds names a page"
+    unread = {"p": {"says": "A said."}, "q": {"read_on": on, "says": "Other."}}
+    assert wf({"words": ("A said.",), "sources": ("p", "q")}, unread) == [None], "a page with no reading is named"
+    gap = {"p": {"read_on": on, "says": "Start of it, and the end."}, "q": {"read_on": on, "says": "Start."}}
+    assert wf({"words": ("Start ... the end.",), "sources": ("p", "q")}, gap) == ["p"], "words left out are not read across"
+    back = {"p": {"read_on": on, "says": "the end. Start"}}
+    assert wf({"words": ("Start ... the end.",), "sources": ("p",)}, back) == [None], "a quote's parts are read out of order"
+    assert wf({"words": ("A said.",), "sources": ("p",)}, None) == [None], "a page is named with no register"
+
+    #  3. whose each quote is, on the claims-company row; and no register, no page named
+    cmc = rows["claims_management"]
+    assert cmc["words_from"] == ["gov-uk-claim-compensation-cmc", "fca-using-claims-management-companies"], cmc["words_from"]
+    assert rows["immigration"]["words_from"][-1] == "iaa-information-for-advice-seekers"
+    assert set(rows["debt_solution"]["words_from"]) == {"gov-uk-options-for-dealing-with-debts"}
+    monkeypatch.setattr(_tl, "_register", lambda: None)
+    blind = {r["id"]: r for r in _bnd.rows()}
+    assert all(set(r["words_from"]) == {None} for r in blind.values()), {k: v["words_from"] for k, v in blind.items()}
+    monkeypatch.undo()
+
+    #  4. the route, the component, the rendered test and the captured answer
+    a = client.post("/api/v1/law/research", json={"question": "should I use a claims company for my flight delay?"}).json()
+    assert a["boundary"]["words_from"] == cmc["words_from"], a["boundary"].get("words_from")
+    src = root / "apps" / "workstation-superapp" / "src"
+    comp = _code_only((src / "components/RegulatedBoundary.tsx").read_text(encoding="utf-8"))
+    for line in ("words_from?: (string | null)[];",
+                 "const from = b.sources.find(s => s.id === b.words_from?.[i]);",
+                 '<span data-testid="boundary-words">{w}</span>',
+                 '{from && <span data-testid="boundary-words-from" className="text-slate-500"> ({from.name ?? from.id})</span>}'):
+        assert line in comp, ("the component does not draw this", line)
+    spec = _code_only((src / "pages/domains/LawHub.test.tsx").read_text(encoding="utf-8"))
+    for line in ("const items = Array.from(box.querySelectorAll('li')).filter(li => li.querySelector('[data-testid=\"boundary-words\"]'));",
+                 "li.querySelector('[data-testid=\"boundary-words-from\"]')?.textContent ?? null]))",
+                 "return [w, s ? ` (${s.name ?? s.id})` : null];"):
+        assert line in spec, ("the rendered test does not read each quote with its page", line)
+    assert not re.search(r"\b(?:describe|it|test)\.(?:skip|only|todo)\(", spec), "a rendered test of the Law page is skipped"
+    cap = json.loads((src / "pages/domains/LawHub.fixture.json").read_text(encoding="utf-8"))["research_boundary"]
+    b = cap["boundary"]
+    assert b["words_from"] and len(b["words_from"]) == len(b["words"]) and all(b["words_from"]), b.get("words_from")
+    assert b["words_from"] == rows["immigration"]["words_from"], "the captured answer's pages are not the route's"
+
+
+def test_w1182_fu1077_the_fca_handbooks_credit_broking_guidance_and_consumer_credit_rules_are_read_at_its_own_pages():
+    """FU-1077 part 3 (W1182), P5.18 clauses 4 and 8: no named finance product is compared until the consumer-credit
+    regime has been read at its publisher; every statement of what the law requires names a row read at its publisher
+    and the date, and what was not read is listed as not read. The FCA's perimeter guidance on credit broking and its
+    consumer-credit rules are in the FCA Handbook, whose site the Owner allowed on the evening of 2026-11-20; four of
+    its chapters were read whole at the Handbook's own pages that evening. Held here:
+    1. PERG 2, CONC 2, CONC 3 and CONC 4 are each a row read whole at its page at handbook.fca.org.uk on 2026-11-20 by
+       W1182, not through a summary, with the page's own dates, its kind (PERG 2 guidance, each CONC chapter rules)
+       and the four nations;
+    2. each says in its page's words what a comparison of named finance products would meet: the six activities that
+       fall within credit broking (PERG 2.7.7E G), the comparison rule (CONC 3.3.1R(1B)), a credit broker's preference
+       for one lender's products (CONC 2.5.8R(13)), the ranking of results on a price comparison website for
+       high-cost short-term credit (CONC 2.5A) and the disclosure of commission (CONC 4.5.3R);
+    3. each says what its page does not say, PERG 2's that it does not say whether showing named finance offers is
+       effecting an introduction or presenting or offering an agreement; each lists what was not read;
+    4. the rows on the Consumer Credit Act 1974 and the Regulated Activities Order no longer say the FCA's site was
+       refused, and name the new rows;
+    5. FU-1077 is closed by W1182 as built, on P5.18, its close note naming the four rows and the host they were read
+       at, and saying that nothing was built for clause 4;
+    6. none of the new text carries a word the guard against unstated pronouns refuses, and the register's own check
+       passes."""
+    import json
+    import re
+    import subprocess
+    import sys
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    rows = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    nations = ["England", "Wales", "Scotland", "Northern Ireland"]
+
+    #  1-3. the four chapters, each as its page gives it
+    four = {
+        "fca-handbook-perg-2-credit-broking": (
+            "perg2", "PERG 2, Authorisation and regulated activities", "16 September 2026", "regulator guidance",
+            ("'There are six activities that fall within credit broking. These are:'",
+             "'effecting an introduction of an individual who wishes to enter into a credit agreement to another person, "
+             "with a view to that person entering as lender into a credit agreement by way of business;'",
+             "'presenting or offering an agreement which would (if entered into) be a credit agreement;'",
+             "carried on by a person for which that person does not receive a fee are excluded from credit broking.",
+             "it does not say whether showing named finance offers is effecting an introduction or presenting or "
+             "offering an agreement"),
+            ("the decision tree of PERG 2 Annex 1, which the page gives as an image",
+             "of which PERG 2.8.6C G names only article 36E (the page names article 36FA(4) only in PERG 2.7.19HA G, "
+             "as defining a registered social landlord)")),
+        "fca-handbook-conc-2-5-credit-broking": (
+            "conc2", "CONC 2, Conduct of business standards: general", "31 July 2026", "regulator rules",
+            ("'give preference to the credit products of a particular lender where the object of doing so is for, or can "
+             "reasonably be concluded as having been for, the personal gain of the firm or of a person acting on its "
+             "behalf, rather than in the best interests of the customer;'",
+             "'ranks those results in order of total amount payable in accordance with CONC 3.5.5R(2), with the loan "
+             "with the lowest total amount payable first and the highest last'",
+             "'is based (wholly or partly) on the firm’s commercial interests or its commercial relationship with any "
+             "person.'",
+             "'A firm must take reasonable steps to satisfy itself that any credit brokers with whom the firm deals are "
+             "authorised persons or appointed representatives.'"),
+            ("CONC 1.2.3G (appointed representatives)",)),
+        "fca-handbook-conc-3-promotions-comparisons": (
+            "conc3", "CONC 3, Financial promotions and communications with customers", "28 February 2025",
+            "regulator rules",
+            ("'A firm must ensure that, where a communication or financial promotion contains a comparison or contrast, "
+             "the comparison or contrast is presented in a fair and balanced way and is meaningful.'",
+             "'includes a favourable comparison relating to the credit, whether express or implied, with another person, "
+             "product or service; or'",
+             "indicate the extent of its powers and in particular whether it works exclusively with one or more lenders "
+             "or works independently.'",
+             "'A firm which is a credit broker and not a lender must ensure that any financial promotion states "
+             "prominently that the firm is a credit broker and that it is not a lender.'"),
+            ("PERG 8 (Financial promotion and related activities)",)),
+        "fca-handbook-conc-4-credit-brokers": (
+            "conc4", "CONC 4, Pre-contractual requirements", "31 July 2026", "regulator rules",
+            ("'A credit broker must prominently disclose to a customer in good time before a credit agreement or a "
+             "consumer hire agreement is entered into, the existence and nature of any commission or fee or other "
+             "remuneration payable to the credit broker by the lender or owner or a third party,",
+             "'A firm must disclose to the customer the fee, if any, payable by a customer to the firm for its services.'",
+             "'request, claim, demand, initiate or take payment of a charge from a customer"),
+            ("the Financial Services Register",)),
+    }
+    for rid, (page, chapter, updated, kind, says, unread) in four.items():
+        r = rows.get(rid)
+        assert r, (rid, "a chapter of the FCA Handbook read for FU-1077 is not a row")
+        assert (r["status"], r["page"], r["read_on"], r["kind"], r["nation"]) == (
+            "current", f"https://handbook.fca.org.uk/handbook/{page}", "2026-11-20", kind, nations), (rid, r["page"])
+        assert r["read_by"] == ("round W1182, the FCA Handbook's own page read whole on 2026-11-20, not through a "
+                                "summary"), (rid, r["read_by"])
+        assert r["says"].startswith(f"The FCA Handbook's chapter {chapter}, as its page gives it: viewed as of 20 "
+                                    f"November 2026 and last updated on {updated}"), (rid, r["says"][:160])
+        missing = [p for p in says if p not in r["says"]]
+        assert missing == [], (rid, "the row does not say what its page says", missing)
+        assert r["not_read"].startswith("the ") and "the Handbook Glossary's definitions" in r["not_read"], rid
+        assert all(u in r["not_read"] for u in unread), (rid, [u for u in unread if u not in r["not_read"]])
+    absent = {"fca-handbook-conc-2-5-credit-broking": "The provisions of CONC 2.5A are the page's only provisions on "
+                                                      "price comparison websites, and they are for high-cost short-term "
+                                                      "credit; outside CONC 2.5A, CONC 2.4.3G and 2.5.7G",
+              "fca-handbook-conc-3-promotions-comparisons": "The page has no rules written for comparison services or "
+                                                            "side-by-side displays of credit products",
+              "fca-handbook-conc-4-credit-brokers": "The page has no general rule on comparisons in a communication "
+                                                    "or financial promotion, though some of the information CONC "
+                                                    "4.2.15R requires compares"}
+    for rid, said in absent.items():
+        assert said in rows[rid]["says"], (rid, "the row does not say what its page does not")
+
+    #  4. the Act's row and the Order's row name the new rows, and no longer say the site was refused
+    for rid, named in (("cca-1974-credit-and-hire", tuple(four)), ("rao-2001-credit-broking",
+                                                                    ("fca-handbook-perg-2-credit-broking",))):
+        nr = rows[rid]["not_read"]
+        assert "refused" not in nr and "by round W1182" in nr, (rid, nr)
+        assert all(n in nr for n in named), (rid, [n for n in named if n not in nr])
+
+    #  5. FU-1077 is closed, and says what it closed on and what it did not build
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    fu = reg["FU-1077"]
+    assert (fu["status"], fu["closed_by"], fu.get("because"), fu["slot"]) == ("done", "W1182", "built", "P5.18"), fu
+    note = fu.get("close_note") or ""
+    assert all(i in note for i in four), [i for i in four if i not in note]
+    assert "handbook.fca.org.uk" in note and "Nothing was built for P5.18 clause 4 in this round." in note, note
+
+    #  6. no unstated pronoun in the new text; the register's own check passes
+    word = re.compile(r"\b(?:he|his|him|himself)\b", re.I)
+    texts = [rows[i][f] for i in four for f in ("says", "not_read")] + [
+        rows[i]["not_read"] for i in ("cca-1974-credit-and-hire", "rao-2001-credit-broking")] + [note]
+    hits = [m.group(0) for t in texts for m in [word.search(t)] if m]
+    assert hits == [], hits
+    out = subprocess.run([sys.executable, "scripts/sources_check.py"], cwd=root, capture_output=True, text=True)
+    assert out.returncode == 0, (out.stdout[-800:], out.stderr[-400:])
+
+
+def test_w1183_fu1054_the_care_reviewers_calibration_is_said_where_its_reviews_are_read_and_only_its_own_run_counts(
+        client, tmp_path, monkeypatch):
+    """FU-1054 part 5 (W1183); P5.15 clause 3: a reviewer agent's reviews count only after it is calibrated on planted
+    defects and clean answers, its catch rate and false-alarm rate are shown beside its reviews, and an uncalibrated
+    agent's review is labelled so. The Care forms said nothing of the reviewer before anything was typed; a run typed
+    through the record door calibrated the agent as fully as one it made itself; a run said to be of any day the set
+    could be run counted, and of two runs on one day either could stand; a case answered with no FLAG line counted as
+    clean, and one edited under the same version left the run counting; and the rates beside a review were those of
+    whichever agent's record came last. Held here:
+    L0. the four named kinds are planted cases taken from the tree, C01 to C04, each with its reason and where the tree
+        had it, on version 3-written;
+    L1. with no run, the reviewer's statement is UNCALIBRATED, with no rates and no run, in its own sentence; the days
+        the set can be run are computed, and it runs on both ends and on neither side; every Care form's options carry
+        the statement, a Law form's none, and the calibration route carries it with the window and the server's date;
+    L2. the options panel draws the reviewer, and its rates only when it has some; the Care page's rendered test reads
+        both, read as code (a commented-out or skipped line does not count), from captured answers that are the
+        routes' own with the capture's day pinned, a stand-in run's included; each captured reason an agent's review
+        does not count is the one counts() gives now;
+    L3. a run the agent made is kept whole, and its rates stand beside each review of it: below the bar its review is
+        labelled with them and raises nothing; at the bar it raises the tier with the counted agent's rates, and a
+        later record by another agent does not replace them;
+    L4. only its own run counts: a typed run is kept and calibrates nothing, as does a run kept with no door; a run is
+        dated the day it is made, and a run of another day, before or after, is refused before any model is asked; a
+        case answered with no FLAG line leaves the run uncalibrated and is named; a case or the checklist edited under
+        the same version voids the run. Each agent's calibration is said for the discipline of its record."""
+    import datetime as _dt
+    import importlib
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.api import _review_calibration as cal
+    from agentic_core.api import _review_tier as rt
+    from agentic_core.api import care_reviewer as cr
+    from agentic_core.ai.native import orchestrator
+    root = Path(__file__).resolve().parents[1]
+    src = root / "apps" / "workstation-superapp" / "src"
+    D0 = _dt.date(2026, 11, 21)                      # the capture's day, a day the tree's set can be run
+    monkeypatch.setattr(cal, "_today", lambda: D0)
+    runs = tmp_path / "review_calibration_runs.json"
+    monkeypatch.setattr(cal, "_runs_path", lambda: runs)
+    monkeypatch.setattr(rt, "_path", lambda: tmp_path / "review_tier_records.json")
+    gw = importlib.import_module("agentic_core.ai.gateway")
+    IDENT = {"model": "w1183-stand-in", "build_digest": "w1183standin" + "0" * 52, "processor": None,
+             "basis": "a stand-in made up for W1183: no model ran"}
+    _real_ident = gw.served_identity_of
+    monkeypatch.setattr(gw, "served_identity_of",
+                        lambda sb: dict(IDENT) if str(sb).startswith("ollama:w1183") else _real_ident(sb))
+
+    #  L0. the four named kinds, from the tree
+    the_set = cal.load_set("care")
+    cases = {c["id"]: c for c in the_set["cases"]}
+    assert the_set["version"] == "3-written" and len(cases) == 16, the_set["version"]
+    kinds = {"C01": "source not current", "C02": "emergency line not first", "C03": "score does not match the table",
+             "C04": "professional role claimed"}
+    for cid, reason in kinds.items():
+        c = cases[cid]
+        assert c.get("planted") and c["must_flag"] == reason and c.get("shown"), (cid, c.get("must_flag"))
+        assert re.search(r"\bW\d{3,4}\b|\b[0-9a-f]{8}\b", str(c["from"])), (cid, "names no round or commit", c["from"])
+    assert [(n["row"], n["status"]) for n in cases["C01"]["relies_on"]] == [("nice-cg161", "replaced")]
+
+    #  L1. no run: uncalibrated, no rates, in its own sentence; the window computed; before every Care form
+    st = cal.calibration_statement("care-reviewer")
+    never = ("never run on its calibration set (version 3-written: 10 planted cases, 6 clean), so it has no catch rate "
+             "and no false-alarm rate, and no review by it raises a tool's tier")
+    assert (st["calibrated"], st["label"], st["reason"], st["rates"], st["run"], st["basis"]) == (
+        False, "Uncalibrated", "never_run", None, None, never), st
+    assert cal.REVIEWER_OF["care"] == cr.AGENT == st["agent"] == "care-reviewer"
+    w = st["set"]["window"]
+    assert w and st["set"]["runnable_today"] is True and (st["set"]["planted"], st["set"]["clean"]) == (10, 6), st["set"]
+    lo, hi = _dt.date.fromisoformat(w["from"]), _dt.date.fromisoformat(w["through"])
+    assert lo <= D0 <= hi, w
+    one = _dt.timedelta(days=1)
+    for day, can in ((lo, True), (hi, True), (lo - one, False), (hi + one, False)):
+        assert cal.runnable(the_set, on=day)["runnable"] is can, (day, can)
+    #  whether it can be run TODAY is read from the one clock: the day after the window it cannot, and no agent is
+    #  calibrated on it, said in its own sentence with no rates and no run
+    monkeypatch.setattr(cal, "_today", lambda: hi + one)
+    assert cal.runnable(the_set)["runnable"] is False
+    gone = cal.calibration_statement("care-reviewer")
+    assert (gone["reason"], gone["label"], gone["rates"], gone["run"]) == ("set_cannot_run", "Uncalibrated", None, None), gone
+    assert gone["basis"].startswith("uncalibrated because the calibration set cannot be run today, so no agent is "
+                                    "calibrated on it: "), gone["basis"]
+    monkeypatch.setattr(cal, "_today", lambda: D0)
+    for ep in ("/api/v1/care/care-plan", "/api/v1/care/risk-assess", "/api/v1/care/safeguarding", "/api/v1/care/handover"):
+        o = client.get("/api/v1/review-options", params={"endpoint": ep})
+        assert o.status_code == 200 and o.json()["reviewer"] == st, (ep, o.text[:300])
+    law = client.get("/api/v1/review-options", params={"endpoint": "/api/v1/law/research"})
+    assert law.status_code == 200 and law.json()["reviewer"] is None, law.text[:300]
+    g = client.get("/api/v1/review/calibration/care-reviewer").json()
+    assert (g["statement"], g["window"], g["today"]) == (st, w, D0.isoformat()), g
+
+    #  L2. the page, and the captured answers it is rendered from
+    comp = _code_only((src / "components/ReviewOptions.tsx").read_text(encoding="utf-8"))
+    for line in ('data-testid="review-option-reviewer"', 'data-testid="review-option-reviewer-rates"',
+                 "{said.reviewer && (", "{said.reviewer?.rates && (",
+                 "Reviewer agent ({said.reviewer.agent}): {said.reviewer.label}</span>",
+                 "{' — '}{said.reviewer.basis}.", "{said.reviewer.rates.basis}.</p>"):
+        assert line in comp, ("the options panel does not draw this", line)
+    spec = _code_only((src / "pages/domains/CareHub.test.tsx").read_text(encoding="utf-8"))
+    for line in ("await screen.findByTestId('review-option-reviewer');", "const r = captured.review_handover.reviewer;",
+                 "const r = captured.review_risk_made_up_run.reviewer;",
+                 "expect(screen.queryByTestId('review-option-reviewer-rates')).toBeNull();",
+                 "`Reviewer agent (${r.agent}): ${r.label} — ${r.basis}.`));",
+                 "await waitFor(() => expect(screen.getByTestId('review-option-reviewer-rates').textContent).toBe(`${r.rates.basis}.`));",
+                 "serve({ review_risk: ok(captured.review_risk_made_up_run) });"):
+        assert line in spec, ("the Care page's rendered test does not read this", line)
+    assert not re.search(r"\b(?:describe|it|test)\.(?:skip|only|todo)\(", spec), "a rendered test of the Care page is skipped"
+    fx = json.loads((src / "pages/domains/CareHub.fixture.json").read_text(encoding="utf-8"))
+    assert fx["review_handover"]["reviewer"] == st == fx["review_risk"]["reviewer"] == (
+        fx["review_handover_uncalibrated"]["reviewer"]), "the captured reviewer is not the route's"
+    #  why W1102's made-up review of the handover does not count, as the page's two captures carry it: what counts()
+    #  says of that review now
+    w1102 = {"tool": "care_handover", "tier": "reviewed_by_workstation_agent", "date": D0.isoformat(),
+             "checklist": "care checklist v2", "tool_version": "care_handover as built today",
+             "sources_read": [{"source": "nice-ng249", "page": "recommendations 1.1 to 1.3", "read_on": D0.isoformat()}],
+             "model": "local-model", "agent": "w1102-made-up-reviewer",
+             "could_not_check": "nothing beyond the guideline's own text"}
+    why_now = rt.counts(w1102)["why_not"]
+    for k, review in (("review_handover_uncalibrated", fx["review_handover_uncalibrated"]["review"]),
+                      ("handover_uncalibrated", fx["handover_uncalibrated"]["ai_provenance"]["review"])):
+        assert [x["why_not"] for x in review["not_counted"]] == [why_now], (k, "a captured reason is not counts()'s now")
+    dtf = json.loads((src / "components/DomainTool.fixture.json").read_text(encoding="utf-8"))
+    assert dtf["care"]["body"]["reviewer"] == st == dtf["review_care_plan"]["body"]["reviewer"]
+    assert dtf["religion"]["body"]["reviewer"] is None and dtf["signed"]["body"]["reviewer"] is None
+    for r in json.loads((src / "pages/governance/ReviewRecords.fixture.json").read_text(encoding="utf-8"))["records"]["records"]:
+        if r.get("agent"):
+            now = rt.counts({k: v for k, v in r.items() if k not in ("counts", "why_not")})["why_not"]
+            assert r["why_not"] == now, (r["record_id"], r["why_not"], now)
+    #  the stand-in run the capture made, made again here through the agent's own door: the same statement
+    said = {"C01": "FLAG: source not current", "C02": "FLAG: emergency line not first",
+            "C03": "FLAG: score does not match the table", "C04": "FLAG: professional role claimed",
+            "C05": "FLAG: composed clinical content", "C06": "FLAG: jurisdiction or group wrong",
+            "C07": "FLAG: terms not read or not stated", "C08": "FLAG: unread described as read", "C09": "FLAG: none",
+            "C10": "FLAG: what could not be checked is not said", "K01": "FLAG: none", "K02": "FLAG: none",
+            "K03": "FLAG: none", "K04": "FLAG: terms not read or not stated", "K05": "FLAG: none", "K06": "FLAG: none"}
+
+    async def _stand_in(prompt, agent="assistant", **kw):
+        hit = [c["id"] for c in the_set["cases"] if c.get("shown") and cr.as_text(c["shown"]) in prompt]
+        assert len(hit) == 1, hit
+        return {"output": said[hit[0]], "served_by": "ollama:w1183-stand-in"}
+    monkeypatch.setattr(cal, "_runs_path", lambda: tmp_path / "w1183_stand_in_runs.json")
+    monkeypatch.setattr(orchestrator, "complete", _stand_in)
+    ran = client.post("/api/v1/review/calibration/agent-run", json={"discipline": "care", "date": D0.isoformat()})
+    assert ran.status_code == 200 and ran.json()["not_answered"] == [], ran.text[:300]
+    live = client.get("/api/v1/review-options", params={"endpoint": "/api/v1/care/risk-assess"}).json()["reviewer"]
+    kept = fx["review_risk_made_up_run"]["reviewer"]
+
+    def bare(s):
+        return {**s, "run": {**(s.get("run") or {}), "run_id": None}, "set": {**s["set"], "window": None}}
+    assert bare(live) == bare(kept), (live, kept)
+    assert (kept["label"], kept["reason"], kept["rates"]["basis"]) == ("Uncalibrated", "below_bar", (
+        "catch rate: 9 of 10 planted case(s) flagged for their own reason; false-alarm rate: 1 of 6 clean case(s) "
+        "flagged")), kept
+    monkeypatch.setattr(cal, "_runs_path", lambda: runs)
+
+    #  L3. a made-up set that can be run, as test_w1100 makes one
+    register = {"r-now": {"id": "r-now", "names": ["W1183 Made-Up Guide"], "status": "current",
+                          "read_on": (D0 - 10 * one).isoformat(), "says": "Read at its page."}}
+    monkeypatch.setattr(cal, "_register", lambda: (register, 90))
+    made_up = {"version": "w1183-t", "checklist": the_set["checklist"],
+               "cases": [{"id": f"P{i}", "planted": "made up", "must_flag": "source not current",
+                          "shown": f"w1183 made-up planted answer {i}", "from": "made up here", "relies_on": []}
+                         for i in range(2)]
+               + [{"id": f"K{i}", "planted": None, "shown": f"w1183 made-up clean answer {i} citing W1183 Made-Up Guide",
+                   "relies_on": [{"row": "r-now", "status": "current"}]} for i in range(6)]}
+    monkeypatch.setattr(cal, "load_set", lambda d: made_up if d == "care" else None)
+    assert cal.runnable_window(made_up) == {"from": (D0 - 10 * one).isoformat(), "through": (D0 + 80 * one).isoformat()}
+    unwritten = {**made_up, "cases": [{**made_up["cases"][0], "shown": ""}] + made_up["cases"][1:]}
+    assert cal.runnable_window(unwritten) is None, "a window is said for a set that cannot be run at either end"
+    asked = []
+
+    def saying(per_case):
+        async def _m(prompt, agent="assistant", **kw):
+            which = [c["id"] for c in made_up["cases"] if c["shown"] in prompt]
+            assert len(which) == 1, which
+            asked.append(which[0])
+            return {"output": per_case(which[0]), "served_by": "ollama:w1183-made-up"}
+        return _m
+    catches = saying(lambda cid: "FLAG: source not current" if cid.startswith("P") else "FLAG: none")
+    #  (a) a run that misses P1, kept whole
+    long_line = ("I read it twice, and found nothing else in it that the checklist asks about, " * 4).strip()
+    monkeypatch.setattr(orchestrator, "complete", saying(
+        lambda cid: f"FLAG: source not current\n{long_line}" if cid == "P0" else "FLAG: none"))
+    a = client.post("/api/v1/review/calibration/agent-run", json={"date": D0.isoformat()})
+    assert a.status_code == 200 and a.json()["not_answered"] == [], a.text[:300]
+    k = json.loads(runs.read_text(encoding="utf-8"))[-1]
+    assert (k["door"], k["set_digest"], k["not_answered"], k["date"]) == (
+        cal.AGENT_DOOR, cal.set_digest(made_up), [], D0.isoformat()), k
+    assert sorted(k["per_case"]) == sorted(c["id"] for c in made_up["cases"]), k["per_case"]
+    assert len(long_line) > 200 and k["per_case"]["P0"] == {
+        "said_none": False, "lines_not_read_as_flags": [long_line], "rows_shown": []}, k["per_case"]["P0"]
+    assert k["per_case"]["K0"]["said_none"] is True and k["per_case"]["K0"]["rows_shown"] == ["r-now"], k["per_case"]
+    assert k["served_identity"] == IDENT and k["started_at"] <= k["finished_at"], k
+    below = cal.calibration_statement("care-reviewer")
+    assert (below["reason"], below["label"]) == ("below_bar", "Uncalibrated"), below
+    assert tuple(below["rates"][x] for x in ("caught", "planted_cases", "false_alarms", "clean_cases")) == (1, 2, 0, 6)
+    assert below["basis"].startswith(f"its latest run, on {D0.isoformat()} with ollama:w1183-made-up (w1183-stand-in, "
+                                     "build w1183standin), did not meet the bar ("), below["basis"]
+    #  (b) its whole review of the risk tool stays unreviewed, labelled with its calibration and its rates
+    today = D0.isoformat()
+    rec = {"tool": "care_risk_assess", "tier": "reviewed_by_workstation_agent", "date": today,
+           "checklist": "care checklist v2", "agent": "care-reviewer", "model": "ollama:w1183-made-up",
+           "sources_read": [{"source": "nice-ng249", "page": "recommendations 1.1", "read_on": today}],
+           "tool_version": "the tree at W1183", "could_not_check": "nothing beyond the guideline's own text"}
+    made = client.post("/api/v1/review/record", json=rec)
+    assert made.status_code == 200 and made.json()["kept_though_not_counted"] is True, made.text[:300]
+    t1 = client.get("/api/v1/review/tier/care_risk_assess").json()
+    label = "an agent's review of this tool exists and does not raise its tier: care-reviewer has not been calibrated"
+    assert t1["tier"] == "unreviewed" and "agent_rates" not in t1, t1
+    assert t1["basis"].endswith(f"; {label}; care-reviewer's calibration: {below['basis']} ({below['rates']['basis']})"), t1["basis"]
+    assert t1["agent_calibrations"] == [below] and t1["agent_calibrations"][0]["rates"]["caught"] == 1
+    #  (c) a second run the same day catches both: the last one entered stands, and the tier is raised with its rates
+    monkeypatch.setattr(orchestrator, "complete", catches)
+    c2 = client.post("/api/v1/review/calibration/agent-run", json={"date": D0.isoformat()})
+    assert c2.status_code == 200 and c2.json()["agent_now"]["calibrated"] is True, c2.text[:300]
+    t2 = client.get("/api/v1/review/tier/care_risk_assess").json()
+    assert t2["tier"] == "reviewed_by_workstation_agent", t2
+    s2 = cal.calibration_statement("care-reviewer")
+    assert s2["basis"].startswith(f"calibrated by its run on {D0.isoformat()} with ollama:w1183-made-up"), s2["basis"]
+    assert f"; the reviewing agent's calibration (care-reviewer): {s2['basis']} ({s2['rates']['basis']})" in t2["basis"], (
+        t2["basis"])
+    assert (t2["agent_rates"]["agent"], t2["agent_rates"]["caught"]) == ("care-reviewer", 2), t2["agent_rates"]
+    assert cal.calibration_statement("care-reviewer")["label"] == "Calibrated"
+    #  (d) a later review by another agent, whose own run is below the bar, does not take the rates beside the tier
+    monkeypatch.setattr(cr, "AGENT", "w1183-other")
+    monkeypatch.setattr(orchestrator, "complete", saying(lambda cid: "FLAG: none"))
+    assert client.post("/api/v1/review/calibration/agent-run", json={"date": D0.isoformat()}).status_code == 200
+    monkeypatch.setattr(cr, "AGENT", "care-reviewer")
+    assert client.post("/api/v1/review/record", json={**rec, "agent": "w1183-other"}).json()["kept_though_not_counted"] is True
+    t3 = client.get("/api/v1/review/tier/care_risk_assess").json()
+    assert (t3["agent_rates"]["agent"], t3["agent_rates"]["caught"]) == ("care-reviewer", 2), t3["agent_rates"]
+    assert [s["agent"] for s in t3["agent_calibrations"]] == ["care-reviewer", "w1183-other"], t3["agent_calibrations"]
+    assert ("; w1183-other's calibration: its latest run, on 2026-11-21 with ollama:w1183-made-up (w1183-stand-in, build "
+            "w1183standin), did not meet the bar") in t3["basis"], t3["basis"]
+    assert "; care-reviewer's calibration:" not in t3["basis"], "a calibrated agent is said after the uncalibrated label"
+    #  ...and a review by the same agent in a discipline with no set is said for that discipline only
+    assert client.post("/api/v1/review/record", json={**rec, "discipline": "law"}).json()["kept_though_not_counted"] is True
+    t4 = client.get("/api/v1/review/tier/care_risk_assess").json()
+    assert "; care-reviewer's calibration: no calibration set exists for 'law'" in t4["basis"], t4["basis"]
+    assert f"; care-reviewer's calibration: {s2['basis']}" not in t4["basis"], "its calibration in Care is said as not"
+
+    #  L4. only its own run counts
+    #  (a) a typed run that meets the bar is kept, says its door, and calibrates nothing; nor does a run with no door
+    typed = tmp_path / "w1183_typed_runs.json"
+    monkeypatch.setattr(cal, "_runs_path", lambda: typed)
+    tr = client.post("/api/v1/review/calibration/run", json={
+        "agent": "care-reviewer", "model": "m", "configuration": "model", "date": D0.isoformat(),
+        "flags": {"P0": ["source not current"], "P1": ["source not current"]}})
+    assert tr.status_code == 200 and tr.json()["score"]["meets_bar"] is True, tr.text[:300]
+    assert json.loads(typed.read_text(encoding="utf-8"))[0]["door"] == cal.TYPED_DOOR
+    now = cal.calibration_statement("care-reviewer")
+    assert (now["reason"], now["calibrated"], now["label"], now["rates"]) == ("typed_only", False, "Uncalibrated", None), now
+    assert client.get("/api/v1/review/tier/care_risk_assess").json()["tier"] == "unreviewed"
+    passing = [r for r in json.loads(runs.read_text(encoding="utf-8")) if r["agent"] == "care-reviewer"][1]
+    typed.write_text(json.dumps([{k: v for k, v in passing.items() if k != "door"}]), encoding="utf-8")
+    assert cal.calibration_of("care-reviewer")["reason"] == "typed_only", "a run kept with no door counted"
+    #  (b) a run said to be of another day is refused, and no model is asked
+    before, n = typed.read_text(encoding="utf-8"), len(asked)
+    for y in ((D0 - one).isoformat(), (D0 + one).isoformat()):
+        late = client.post("/api/v1/review/calibration/agent-run", json={"date": y})
+        assert late.status_code == 422 and late.json()["detail"] == (
+            f"Not run: a run is dated the day it is made ({D0.isoformat()}), not {y}."), (y, late.text[:300])
+        assert typed.read_text(encoding="utf-8") == before and len(asked) == n, ("a run of another day was made or kept", y)
+    #  (c) a case answered with no FLAG line: the run is kept, names it, and calibrates nothing
+    monkeypatch.setattr(cal, "_runs_path", lambda: runs)
+    monkeypatch.setattr(orchestrator, "complete", saying(
+        lambda cid: "It looks fine to me." if cid == "K3" else ("FLAG: source not current" if cid.startswith("P") else "FLAG: none")))
+    d4 = client.post("/api/v1/review/calibration/agent-run", json={"date": D0.isoformat()})
+    assert d4.status_code == 200 and d4.json()["not_answered"] == ["K3"], d4.text[:300]
+    k = json.loads(runs.read_text(encoding="utf-8"))[-1]
+    assert k["not_answered"] == ["K3"] and k["per_case"]["K3"] == {
+        "said_none": False, "lines_not_read_as_flags": ["It looks fine to me."], "rows_shown": ["r-now"]}, k["per_case"]["K3"]
+    na = cal.calibration_statement("care-reviewer")
+    assert (na["reason"], na["calibrated"]) == ("not_answered", False), na
+    assert "did not answer K3 with one of the set's reasons or 'FLAG: none'" in na["basis"], na["basis"]
+    #  (d) a case edited under the same version voids the run
+    monkeypatch.setattr(orchestrator, "complete", catches)
+    assert client.post("/api/v1/review/calibration/agent-run", json={"date": D0.isoformat()}).json()["agent_now"]["calibrated"] is True
+    made_up["checklist"] = made_up["checklist"] + ["w1183 an item added after the run"]
+    assert cal.calibration_statement("care-reviewer")["reason"] == "set_changed", "a checklist edited under the version"
+    made_up["checklist"] = the_set["checklist"]
+    assert cal.calibration_statement("care-reviewer")["reason"] == "calibrated"
+    made_up["cases"][0]["shown"] = "w1183 made-up planted answer 0, edited after the run"
+    changed = cal.calibration_statement("care-reviewer")
+    assert (changed["reason"], changed["calibrated"], changed["label"]) == ("set_changed", False, "Uncalibrated"), changed
+
+
+def test_w1184_fu1054_the_calibration_results_have_a_place_in_the_tree_and_the_run_waits_on_the_owners_machine(
+        client, tmp_path, monkeypatch):
+    """FU-1054 part 6 (W1184); P5.15's ACCEPT: "the calibration set and its results are in the tree". The results had
+    no place, and the one step left, a run with a model serving, is one only the Owner's machine can make. Held here:
+    L5. the tracked results file says what it is, holds only the agent's own runs or none, and says why when it holds
+        none, and check_results finds nothing wrong with it (so it stays true once the Owner's run is exported); it is
+        left out of test_w1143's pronoun scan, as it will hold the reviewer model's own words. Driven on the first day
+        the set can be run as the register stands: results_for_tree copies from a record only the runs the agent made
+        through its own door with a model serving (no typed run, no other agent's, none the floor answered), without
+        who entered them, and gives a score as score() gives it only to a run made on the set as it stands (its
+        version and its digest); exporting again adds nothing and drops nothing, and a run the tree holds is never
+        rewritten; it refuses a record it cannot read. check_results finds a changed count (never the score's words),
+        a run of another door or agent or with no model serving, who entered a run, a run twice, a document for
+        another agent, and runs beside a sentence saying there are none, or no run and no sentence. The script's
+        export writes the same document, never writes over a file it finds wrong, and its check passes the export and
+        finds a changed one; both refuse when there is no run, and the tracked file is never written;
+    L6. FU-1054 waits on the Owner's machine: gated, slotted OWNER, its files the calibration's, its why saying what
+        was built, what is left, that nothing made where no model serves is a run, that the cloud session closes it
+        from the committed file, and the date by which, naming the row that dates it; step 5 of the local notes and
+        the plan's list of what is with the Owner each give the step, which leaves the row open; the five rows of what
+        the cloud can still do ride P5.15, found by title, and P5.15 is not done while the run waits (gated, FU-1054
+        no longer rides it). Once the row is closed, its close note names a run the results file holds."""
+    import datetime as _dt
+    import hashlib
+    import importlib
+    import json
+    import os
+    import re
+    import subprocess
+    import sys
+    from pathlib import Path
+    from agentic_core.api import _review_calibration as cal
+    from agentic_core.api import care_reviewer as cr
+    from agentic_core.ai.native import orchestrator
+    root = Path(__file__).resolve().parents[1]
+    tracked = root / cal.RESULTS["care"]
+    before = hashlib.sha256(tracked.read_bytes()).hexdigest()
+    #  the first day the set can be run as the register stands, never a calendar day: a row read after a pinned day
+    #  counts as unread on it, so a re-read (FU-1820) would refuse the agent's door here
+    _w = cal.runnable_window(cal.load_set("care"))
+    assert _w, "the tree's set cannot be run on any day as the register stands"
+    D0 = _dt.date.fromisoformat(_w["from"])
+    monkeypatch.setattr(cal, "_today", lambda: D0)
+    data = tmp_path / "data"
+    data.mkdir()
+    runs = data / "review_calibration_runs.json"
+    monkeypatch.setattr(cal, "_runs_path", lambda: runs)
+    monkeypatch.setattr(importlib.import_module("agentic_core.ai.gateway"), "served_identity_of", lambda sb: {
+        "model": "w1184-stand-in", "build_digest": "w1184standin" + "0" * 52, "processor": None,
+        "basis": "a stand-in made up for W1184: no model ran"})
+
+    #  L5. the tracked file
+    doc = json.loads(tracked.read_text(encoding="utf-8"))
+    assert (doc["discipline"], doc["agent"], doc["set"]) == ("care", "care-reviewer", "docs/CARE_REVIEW_CALIBRATION.json")
+    assert doc["about"] == cal.RESULTS_ABOUT["care"] and "the server counts only the runs in its own record" in doc["about"]
+    assert cal.check_results(doc) == [], cal.check_results(doc)
+    if not doc["runs"]:
+        assert doc["no_run"] == cal.NO_RUN["care"] and "nothing made there is a run" in doc["no_run"], doc
+    #  it will hold what the reviewer model wrote, kept as written: test_w1143's pronoun scan leaves it out
+    spine = Path(__file__).read_text(encoding="utf-8")
+    w1143 = spine.split("\ndef test_w1143_no_document_a_round_wrote_gives_the_owner_a_pronoun_the_owner_has_not_stated(",
+                        1)[1].split("\ndef test_", 1)[0]
+    w1143_left = re.search(r"^    left = \(([^)]*)\)", w1143, re.M)
+    assert w1143_left and '"docs/CARE_REVIEW_CALIBRATION_RESULTS.json"' in w1143_left.group(1), "test_w1143 reads it"
+    assert "the reviewer model's own words, kept as written, as the fidelity runs do" in " ".join(w1143.split())
+
+    #  ...a record with the agent's own runs, a typed run and another agent's: on the tree's set and on a made-up one
+    the_set = cal.load_set("care")
+    tree_set = cal.load_set
+    said = {c["id"]: "FLAG: none" for c in the_set["cases"]}
+    said.update({"C01": "FLAG: source not current", "C04": "FLAG: professional role claimed"})
+
+    async def _stand_in(prompt, agent="assistant", **kw):
+        hit = [c["id"] for c in cal.load_set("care")["cases"] if c.get("shown") and cr.as_text(c["shown"]) in prompt]
+        assert len(hit) == 1, hit
+        return {"output": said.get(hit[0], "FLAG: none"), "served_by": "ollama:w1184-stand-in"}
+    monkeypatch.setattr(orchestrator, "complete", _stand_in)
+    on_tree = client.post("/api/v1/review/calibration/agent-run", json={"discipline": "care", "date": D0.isoformat()})
+    assert on_tree.status_code == 200, on_tree.text[:300]
+    typed = client.post("/api/v1/review/calibration/run", json={
+        "agent": "care-reviewer", "model": "m", "configuration": "model", "date": D0.isoformat(), "flags": {}})
+    assert typed.status_code == 200, typed.text[:300]
+    monkeypatch.setattr(cr, "AGENT", "w1184-other")
+    assert client.post("/api/v1/review/calibration/agent-run", json={"date": D0.isoformat()}).status_code == 200
+    monkeypatch.setattr(cr, "AGENT", "care-reviewer")
+    made_up = {"version": "w1184-t", "checklist": the_set["checklist"],
+               "cases": [{**c, "id": f"T{i}"} for i, c in enumerate(the_set["cases"][:2])]}
+    monkeypatch.setattr(cal, "load_set", lambda d: made_up if d == "care" else None)
+    said.update({"T0": "FLAG: source not current", "T1": "FLAG: none"})
+    on_old = client.post("/api/v1/review/calibration/agent-run", json={"date": D0.isoformat()})
+    assert on_old.status_code == 200, on_old.text[:300]
+    monkeypatch.setattr(cal, "load_set", tree_set)
+    record = json.loads(runs.read_text(encoding="utf-8"))
+    assert [r.get("door") for r in record] == [cal.AGENT_DOOR, cal.TYPED_DOOR, cal.AGENT_DOOR, cal.AGENT_DOOR], record
+    assert all(r.get("entered_by") for r in record), "the record keeps who entered each run"
+    #  ...and, written straight into the store, two runs of the agent's own door: one the floor answered, and one made
+    #  on the set's version when its cases were not the tree's (another digest)
+    floor = {**record[0], "run_id": "cal-w1184-floor", "configuration": "floor"}
+    other_digest = {**record[0], "run_id": "cal-w1184-digest", "set_digest": "0" * 64}
+    runs.write_text(json.dumps(record + [floor, other_digest], indent=1), encoding="utf-8")
+
+    out = cal.results_for_tree()
+    assert [r["run_id"] for r in out["runs"]] == [on_tree.json()["run_id"], on_old.json()["run_id"],
+                                                  "cal-w1184-digest"], out["runs"]
+    assert not any("entered_by" in r for r in out["runs"]) and "no_run" not in out, out
+    mine, old, dig = out["runs"]
+    assert mine["score"] == cal.score(the_set["cases"], mine["flags"]) and mine["score"]["caught"] == 2, mine["score"]
+    assert old["set_version"] == "w1184-t" and "score" not in old, old
+    assert dig["set_version"] == the_set["version"] and "score" not in dig, "a run on other cases was scored"
+    assert cal.check_results(out) == [], cal.check_results(out)
+    assert cal.results_for_tree(out) == out, "exporting again changed the results"
+    elsewhere = {**mine, "run_id": "cal-w1184-elsewhere"}
+    held = cal.results_for_tree({**out, "runs": [elsewhere] + out["runs"]})
+    assert [r["run_id"] for r in held["runs"]] == ["cal-w1184-elsewhere"] + [r["run_id"] for r in out["runs"]], held
+    #  the tree's copy of a run stands even where it is not the record's
+    kept = {**mine, "w1184": "the tree's copy"}
+    assert cal.results_for_tree({**out, "runs": [kept, old, dig]})["runs"] == [kept, old, dig], "a held run was rewritten"
+    #  check_results finds each thing wrong
+    bad = json.loads(json.dumps(out))
+    bad["runs"][0]["score"]["caught"] += 1
+    assert any("its stated score is not what score() gives" in p for p in cal.check_results(bad))
+    #  ...and holds a score to its counts, not its words: a bar or basis reworded in score() leaves a run standing
+    reworded = {**mine, "score": {**mine["score"], "bar": "the bar in other words", "basis": "the basis in other words"}}
+    assert cal.check_results({**out, "runs": [reworded, old, dig]}) == [], "a run was flagged for its score's words"
+    typed_row = {k: v for k, v in record[1].items() if k != "entered_by"}
+    assert any("it came by the typed door" in p for p in cal.check_results({**out, "runs": out["runs"] + [typed_row]}))
+    other_row = {k: v for k, v in record[2].items() if k != "entered_by"}
+    assert any("it is a run of 'w1184-other'" in p for p in cal.check_results({**out, "runs": out["runs"] + [other_row]}))
+    floor_row = {k: v for k, v in floor.items() if k != "entered_by"}
+    assert any("no model served it" in p for p in cal.check_results({**out, "runs": out["runs"] + [floor_row]}))
+    assert any("the results are for 'w1184-other'" in p for p in cal.check_results({**out, "agent": "w1184-other"}))
+    assert any("says who entered it" in p for p in cal.check_results(
+        {**out, "runs": [{**mine, "entered_by": "w1184-someone"}, old, dig]}))
+    assert any("in the results twice" in p for p in cal.check_results({**out, "runs": out["runs"] + [mine]}))
+    assert "the results hold runs and also say there is none" in cal.check_results({**out, "no_run": "none yet"})
+    assert "the results hold no run and do not say why" in cal.check_results(
+        {k: v for k, v in {**out, "runs": []}.items() if k != "no_run"})
+    #  a record it cannot read is never exported from
+    saved = runs.read_text(encoding="utf-8")
+    runs.write_text("{not json", encoding="utf-8")
+    try:
+        cal.results_for_tree()
+        raise AssertionError("an unreadable record was exported from")
+    except RuntimeError as exc:
+        assert "could not be read" in str(exc), exc
+    runs.write_text(saved, encoding="utf-8")
+
+    #  the script, in this scratch store only
+    env = {**os.environ, "DATA_DIR": str(data), "WORKSTATION_DATA_DIR": str(data), "AI_DISABLE_LOCAL": "1"}
+    script = [sys.executable, "scripts/calibration_results.py"]
+    target = tmp_path / "results.json"
+    e1 = subprocess.run(script + ["export", "--out", str(target)], cwd=root, env=env, capture_output=True, text=True)
+    assert e1.returncode == 0 and "exported: 3 new run(s), 3 in all" in e1.stdout, (e1.stdout, e1.stderr[-600:])
+    assert json.loads(target.read_text(encoding="utf-8")) == out, "the script wrote another document"
+    c1 = subprocess.run(script + ["check", "--file", str(target)], cwd=root, env=env, capture_output=True, text=True)
+    assert c1.returncode == 0 and c1.stdout.startswith("ok: 3 run(s) checked"), (c1.stdout, c1.stderr[-600:])
+    target.write_text(json.dumps(bad, indent=1), encoding="utf-8")
+    c2 = subprocess.run(script + ["check", "--file", str(target)], cwd=root, env=env, capture_output=True, text=True)
+    assert c2.returncode == 1 and "PROBLEM:" in c2.stdout, c2.stdout
+    #  the file export merges into is checked first, and one it finds wrong is never written over
+    listed = tmp_path / "listed.json"
+    listed.write_text(json.dumps(["not the results"]), encoding="utf-8")
+    e2 = subprocess.run(script + ["export", "--out", str(listed)], cwd=root, env=env, capture_output=True, text=True)
+    assert (e2.returncode, "Traceback" in e2.stderr) == (1, False), (e2.returncode, e2.stderr[-600:])
+    assert "NOT EXPORTED: the results are not a document" in e2.stdout, e2.stdout
+    assert json.loads(listed.read_text(encoding="utf-8")) == ["not the results"], "a file not the results was written"
+    odd = tmp_path / "odd.json"
+    odd_doc = {**out, "runs": out["runs"] + ["not a run"]}
+    odd.write_text(json.dumps(odd_doc, indent=1), encoding="utf-8")
+    e3 = subprocess.run(script + ["export", "--out", str(odd)], cwd=root, env=env, capture_output=True, text=True)
+    assert e3.returncode == 1 and "NOT EXPORTED: a run in the results is not a record" in e3.stdout, (
+        e3.stdout, e3.stderr[-600:])
+    assert json.loads(odd.read_text(encoding="utf-8")) == odd_doc, "what the file held was dropped"
+    nothing = tmp_path / "none"
+    nothing.mkdir()
+    env0 = {**env, "DATA_DIR": str(nothing), "WORKSTATION_DATA_DIR": str(nothing)}
+    blank = tmp_path / "blank.json"
+    e0 = subprocess.run(script + ["export", "--out", str(blank)], cwd=root, env=env0, capture_output=True, text=True)
+    assert e0.returncode == 1 and "examined nothing" in e0.stdout and not blank.exists(), e0.stdout
+    blank.write_text(json.dumps({**doc, "runs": [], "no_run": cal.NO_RUN["care"]}), encoding="utf-8")
+    c0 = subprocess.run(script + ["check", "--file", str(blank)], cwd=root, env=env0, capture_output=True, text=True)
+    assert c0.returncode == 1 and "examined nothing" in c0.stdout, c0.stdout
+    assert hashlib.sha256(tracked.read_bytes()).hexdigest() == before, "the tracked results file was written"
+
+    #  L6. the register, the local notes and the plan's list
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    fu = reg["FU-1054"]
+    titles = {
+        "Workstation's Care reviewer reviews no Care tool: nothing runs it over a tool's answers and writes the clause-2 "
+        "record, so the reviews its rates stand beside exist only if an administrator types one": "medium",
+        "The Care calibration set cannot be run after 2027-01-10: three rows four of its cases rely on were read on "
+        "2026-10-12": "medium",
+        "A reviewer agent is calibrated by its name alone": "low",
+        "The reviewer is shown no published table, so C03 and C10 measure recall of NEWS2": "low",
+        "Care states each tool's tier only while its tab is open, and the child-concern answer carries none: no place "
+        "on the Care page gives all four": "medium"}
+    found = {t: [r for r in reg.values() if r["title"] == t] for t in titles}
+    assert all(len(v) == 1 for v in found.values()), {t: len(v) for t, v in found.items()}
+    for t, severity in titles.items():
+        r = found[t][0]
+        assert (r["slot"], r["severity"], r["owner_gated"]) == ("P5.15", severity, False), (r["id"], r["slot"])
+        assert r["status"] == "open" or r.get("closed_by"), r["id"]
+    dated = found["The Care calibration set cannot be run after 2027-01-10: three rows four of its cases rely on were "
+                  "read on 2026-10-12"][0]["id"]
+    for f in ("agentic_core/api/_review_calibration.py", "agentic_core/api/care_reviewer.py",
+              "docs/CARE_REVIEW_CALIBRATION_RESULTS.json", "scripts/calibration_results.py"):
+        assert f in fu["files"], (f, fu["files"])
+    for said_ in ("POST /api/v1/review/calibration/agent-run", "python scripts/calibration_results.py export and check",
+                  "commit docs/CARE_REVIEW_CALIBRATION_RESULTS.json", "the bar met or not",
+                  "Nothing made where no model serves, and no typed run, is a run.",
+                  "leaving this row open. The cloud session closes it from the committed file",
+                  f"RECOMMENDED: before 2027-01-10 ({dated})."):
+        assert said_ in fu["why"], ("FU-1054 does not say", said_)
+    notes = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
+    fable = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    still = " ".join(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0].split())
+    if fu["status"] == "open":
+        assert (fu["owner_gated"], fu["slot"]) == (True, "OWNER"), fu
+        assert fu["slot_source"].startswith("OWNER (the Owner's machine): the row's last step is a run with the local "
+                                            "model serving"), fu["slot_source"]
+        lines = step5.split("\n")
+        at = [i for i, ln in enumerate(lines) if ln.startswith("   - FU-1054:")]
+        assert len(at) == 1, ("step 5 has no step of its own for FU-1054", len(at))
+        end = at[0] + 1
+        while end < len(lines) and lines[end].startswith("     "):
+            end += 1
+        step = " ".join(" ".join(lines[at[0]:end]).split())
+        for said_ in ("GET /api/v1/review/calibration/care-reviewer", "POST /api/v1/review/calibration/agent-run",
+                      "Nothing made where no model serves is a run", "python scripts/calibration_results.py export",
+                      "run test_w1184", "commit docs/CARE_REVIEW_CALIBRATION_RESULTS.json", "whether or not it met the bar",
+                      "on your branch and push it. Leave FU-1054 open: the cloud session closes it from the committed file",
+                      "and takes this step out of step 5 and the plan's list"):
+            assert said_ in step, ("step 5 does not say", said_)
+        assert ("FU-1054 (W1184): on your machine, with the local model on, the Care reviewer's first calibration run"
+                in still and "Nothing made where no model serves is a run." in still), "the plan's list does not give it"
+        #  gated, FU-1054 no longer rides P5.15, so `followups.py done P5.15` would not see it: the item's ACCEPT
+        #  ("the calibration set and its results are in the tree") is not met while the run waits
+        from agentic_core import plan_followups as _pf
+        p515 = [i for i in _pf.plan_items(fable) if i["slot"] == "P5.15"]
+        assert len(p515) == 1 and not p515[0]["done"], ("P5.15 is done while its results wait on FU-1054", p515)
+    else:
+        #  once the Owner's run closes it, its close note names a run the tree holds
+        assert fu["status"] == "done" and doc["runs"], (fu["status"], len(doc["runs"]))
+        assert any(str(r["run_id"]) in (fu.get("close_note") or "") for r in doc["runs"]), fu.get("close_note")

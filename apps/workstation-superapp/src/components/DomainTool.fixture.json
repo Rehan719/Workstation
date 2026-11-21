@@ -87,6 +87,29 @@
     "release": "Release is the Owner's switch. Even then, a clinical score used in someone's direct care keeps a qualified person.",
     "kept_by_the_ruling": "a clinical score used in someone's direct care",
     "basis": "The release sentence is the Owner's ruling of 2026-10-12 (P5.15). When a person is warranted is Workstation's own statement (W925): it claims no professional's role, and it does not say that any person has reviewed anything."
+   },
+   "reviewer": {
+    "agent": "care-reviewer",
+    "discipline": "care",
+    "calibrated": false,
+    "known": true,
+    "reason": "never_run",
+    "label": "Uncalibrated",
+    "basis": "never run on its calibration set (version 3-written: 10 planted cases, 6 clean), so it has no catch rate and no false-alarm rate, and no review by it raises a tool's tier",
+    "rates": null,
+    "run": null,
+    "bar": "every planted case flagged for its reason, and at most 1 false alarm in 6 clean cases",
+    "set": {
+     "version": "3-written",
+     "cases": 16,
+     "planted": 10,
+     "clean": 6,
+     "runnable_today": true,
+     "window": {
+      "from": "2026-11-19",
+      "through": "2027-01-10"
+     }
+    }
    }
   }
  },
@@ -116,7 +139,8 @@
     "release": "Release is the Owner's switch. Even then, model-written religious text keeps a named scholar's approval.",
     "kept_by_the_ruling": "religious content: a named scholar approves model-written text",
     "basis": "The release sentence is the Owner's ruling of 2026-10-12 (P5.15). When a person is warranted is Workstation's own statement (W925): it claims no professional's role, and it does not say that any person has reviewed anything."
-   }
+   },
+   "reviewer": null
   }
  },
  "signed": {
@@ -145,7 +169,8 @@
     "release": "Release is the Owner's switch. A released tool may answer on the review of Workstation's calibrated specialist agent alone, and each answer then says that no qualified person reviewed it.",
     "kept_by_the_ruling": null,
     "basis": "The release sentence is the Owner's ruling of 2026-10-12 (P5.15). When a person is warranted is Workstation's own statement (W925): it claims no professional's role, and it does not say that any person has reviewed anything."
-   }
+   },
+   "reviewer": null
   }
  },
  "none": {
@@ -181,6 +206,29 @@
     "release": "Release is the Owner's switch. Even then, a clinical score used in someone's direct care keeps a qualified person.",
     "kept_by_the_ruling": "a clinical score used in someone's direct care",
     "basis": "The release sentence is the Owner's ruling of 2026-10-12 (P5.15). When a person is warranted is Workstation's own statement (W925): it claims no professional's role, and it does not say that any person has reviewed anything."
+   },
+   "reviewer": {
+    "agent": "care-reviewer",
+    "discipline": "care",
+    "calibrated": false,
+    "known": true,
+    "reason": "never_run",
+    "label": "Uncalibrated",
+    "basis": "never run on its calibration set (version 3-written: 10 planted cases, 6 clean), so it has no catch rate and no false-alarm rate, and no review by it raises a tool's tier",
+    "rates": null,
+    "run": null,
+    "bar": "every planted case flagged for its reason, and at most 1 false alarm in 6 clean cases",
+    "set": {
+     "version": "3-written",
+     "cases": 16,
+     "planted": 10,
+     "clean": 6,
+     "runnable_today": true,
+     "window": {
+      "from": "2026-11-19",
+      "through": "2027-01-10"
+     }
+    }
    }
   }
  },

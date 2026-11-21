@@ -1,0 +1,8 @@
+{
+ "about": "The Care reviewer agent's calibration runs, copied into the tree from the record of the machine that made them (python scripts/calibration_results.py export, then check). This copy is evidence for a person to read: the server counts only the runs in its own record, never this file. A run is copied only when the agent made it through its own door (POST /api/v1/review/calibration/agent-run) with a model serving; who entered it is not copied, and a run already here is never dropped or rewritten. A run made on the set as it stands carries its score as score() gives it from the run's own flags.",
+ "discipline": "care",
+ "agent": "care-reviewer",
+ "set": "docs/CARE_REVIEW_CALIBRATION.json",
+ "runs": [],
+ "no_run": "No run of care-reviewer with a model serving has been made. No model serves where the cloud rounds run, and nothing made there is a run; the first is made on the Owner's machine with the local model on (FU-1054)."
+}

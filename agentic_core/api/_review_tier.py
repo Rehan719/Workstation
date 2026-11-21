@@ -4,14 +4,14 @@ OWNER RULING 2026-10-12 (the review cell, first clause): every tool states the H
 reached - checked by rule, reviewed by Workstation's specialist agent, signed by a qualified person - and
 nothing reads as a higher tier than its record shows; a tool with no record says UNREVIEWED.
 
-THIS MODULE READS AND STATES. It writes no record: the doors by which a review is recorded (an agent's review
-with its checklist and sources, a person's signature with their stated credential) are the next clauses' work.
-So today every tool says UNREVIEWED, and that is the true statement. What is here is the one function every
+THIS MODULE READS AND STATES. It writes no record: the review cell's door writes them (review_cell.py, the
+administrator's), and a tool with no record that counts says UNREVIEWED. What is here is the one function every
 answer passes through, and the rules by which a stored record does or does not count:
 
   - a record names the tool it is for, the tier it claims, and the date;
-  - an agent's review counts only when it names its checklist and the sources it read, and the agent is marked
-    CALIBRATED - an uncalibrated agent's review is reported, labelled, and does not raise the tier;
+  - an agent's review counts only when it names its checklist and the sources it read, and the agent is
+    CALIBRATED, read from a run of its own on the calibration set (W691, W1183), never from a mark - an
+    uncalibrated agent's review is reported, labelled with its calibration, and does not raise the tier;
   - W921 (clause 2): and only when it is a whole record - the tool version it reviewed, each source read as a row of
     the register of sources with its page and the date it was read, and what it could not check;
   - a person's signature counts only when it carries a name, a credential AS STATED (this platform verifies no
@@ -181,17 +181,27 @@ def review_statement(tool: str, today: Optional[_dt.date] = None) -> Dict[str, A
         out["basis"] = (f"the highest tier a record supports: {LABEL[tier].lower()}, dated {str(top.get('date'))[:10]}"
                         + (f", by {top['name']} ({top['credential_as_stated']} - as stated; {NOT_VERIFIED})"
                            + f", until {str(top['lapses_on'])[:10]}" if tier == SIGNED_BY_PERSON else ""))
-    #  the reviewing agent's two rates, WITH their counts, beside its review (clause 3) - when it has a run
-    for r, v in judged:
-        cal = v.get("calibration") or {}
-        if r.get("tier") == REVIEWED_BY_AGENT and cal.get("catch_rate") is not None:
-            out["agent_rates"] = {"agent": r.get("agent"), "calibrated": bool(cal.get("calibrated")),
+    #  W1183 (P5.15 clause 3) - EACH AGENT THAT REVIEWED THIS TOOL, WITH ITS CALIBRATION, in the one statement the
+    #  options panel reads too; and the two rates WITH their counts beside the review that set the tier: the rates of
+    #  the agent whose record counts, never of whichever agent's record came last
+    from agentic_core.api._review_calibration import calibration_statement
+    _agents = sorted({(str(r.get("agent")), str(r.get("discipline") or "care")) for r in mine
+                      if r.get("tier") == REVIEWED_BY_AGENT and str(r.get("agent") or "").strip()})
+    stated = {a: calibration_statement(*a) for a in _agents}
+    if stated:
+        out["agent_calibrations"] = [stated[a] for a in _agents]
+    if tier == REVIEWED_BY_AGENT:
+        counted = (str(top.get("agent")), str(top.get("discipline") or "care"))
+        st = stated.get(counted) or calibration_statement(*counted)
+        cal = next((v.get("calibration") or {} for r, v in judged if r is top), {})
+        if st.get("rates"):
+            out["agent_rates"] = {"agent": st["agent"], "calibrated": st["calibrated"],
                                   "caught": cal.get("caught"), "planted_cases": cal.get("planted_cases"),
                                   "false_alarms": cal.get("false_alarms"), "clean_cases": cal.get("clean_cases"),
                                   "basis": cal.get("rates_basis"), "bar": cal.get("bar")}
-    if tier == REVIEWED_BY_AGENT and out.get("agent_rates", {}).get("basis"):
         #  the rates travel IN the sentence every page and download already shows, not only beside it
-        out["basis"] += f"; the reviewing agent's calibration: {out['agent_rates']['basis']}"
+        out["basis"] += (f"; the reviewing agent's calibration ({st['agent']}): {st['basis']}"
+                         + (f" ({st['rates']['basis']})" if st.get("rates") else ""))
     if not_counted:
         out["not_counted"] = not_counted[:5]
         _uncal = sorted({str(_r.get("agent")) for _r, v in judged if v.get("uncalibrated_agent_review")})
@@ -202,4 +212,14 @@ def review_statement(tool: str, today: Optional[_dt.date] = None) -> Dict[str, A
             #  W1101 (P5.15 clause 3) - LABELLED where it is read: in the sentence every answer, saved text and
             #  options panel already says, as the reviewing agent's rates are
             out["basis"] += "; " + out["uncalibrated_agent_review"]
+            #  W1183 - and each such agent's calibration as the options panel says it: why it is not calibrated, and
+            #  its two rates with their counts once it has a run of its own. Keyed by agent AND discipline: an agent
+            #  calibrated in one discipline whose record in another does not count is said for that one only
+            _pairs = {(str(_r.get("agent")), str(_r.get("discipline") or "care")) for _r, v in judged
+                      if v.get("uncalibrated_agent_review")}
+            for a, d in _agents:
+                if (a, d) in _pairs:
+                    s = stated[(a, d)]
+                    out["basis"] += (f"; {a}'s calibration: {s['basis']}"
+                                     + (f" ({s['rates']['basis']})" if s.get("rates") else ""))
     return out

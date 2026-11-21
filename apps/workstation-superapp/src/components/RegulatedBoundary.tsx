@@ -1,12 +1,13 @@
 //  W1167 (P5.11 clause 7) - A SUBJECT THAT IS REGULATED ADVICE, as its row says it: who regulates it, the pages' own
 //  words, the places they name for each nation, the pages read with the day each was read, and its regulator's own
 //  page: read, with the day, or not read and why. Every word is the server's but the heading and the joining ones;
-//  nothing here is said as advice.
+//  nothing here is said as advice. W1181 - each quoted sentence says the page it is from, the one the route named for it.
 import React from 'react';
 import { UrgentPlace, UrgentSource, urgentPlaceSaid, urgentSourceSaid } from './UrgentRoutes';
 
 export type Boundary = {
-  id: string; subject: string; regulated: string; words: string[]; places: UrgentPlace[]; sources: UrgentSource[];
+  id: string; subject: string; regulated: string; words: string[]; words_from?: (string | null)[]; places: UrgentPlace[];
+  sources: UrgentSource[];
   regulator: { name: string | null; read: boolean; page: UrgentSource | null; why: string | null };
 };
 
@@ -25,7 +26,16 @@ export default function RegulatedBoundary({ b }: { b: Boundary }) {
       <p data-testid="boundary-regulated" className="text-[10px] text-slate-300">{b.regulated}.</p>
       {b.words.length > 0 && (
         <ul className="list-disc ml-5 text-[10px] text-slate-300 space-y-0.5">
-          {b.words.map(w => <li key={w} data-testid="boundary-words">{w}</li>)}
+          {/* W1181 - each quote, then the page the route named for it; no page is named that the route did not */}
+          {b.words.map((w, i) => {
+            const from = b.sources.find(s => s.id === b.words_from?.[i]);
+            return (
+              <li key={w}>
+                <span data-testid="boundary-words">{w}</span>
+                {from && <span data-testid="boundary-words-from" className="text-slate-500"> ({from.name ?? from.id})</span>}
+              </li>
+            );
+          })}
         </ul>
       )}
       {b.places.length > 0 && (
