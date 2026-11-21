@@ -3,7 +3,7 @@
 When you want to continue locally, open Claude Code (Claude Opus 5.5) **in your local clone** (`~\Workstation`)
 and paste the block below as your first message. Nothing else is needed.
 
-Updated 2026-11-21 (W1131, W1164, W1184). The cloud session works in 8-hour cycles into December, until the plan's
+Updated 2026-11-21 (W1131, W1164, W1184, W1187). The cloud session works in 8-hour cycles into December, until the plan's
 build items are closed and the final audit has run (2026-12-31 at the latest), and pushes to `main-l1fsqo`. While
 it runs, the local session works on a branch of its own (step 1), so the two never push to the same branch.
 
@@ -18,7 +18,7 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
    audit has run; 2026-12-31 at the latest) it may still be pushing to main-l1fsqo, so do not push there: work on a
    branch of your own named local-owner (if it exists, check it out and merge origin/main-l1fsqo into it;
    otherwise create it from origin/main-l1fsqo), push that branch, and open its own pull request.
-   Once the cycles have stopped: if the open pull request from main-l1fsqo (PR #465 from 2026-11-20) is merged,
+   Once the cycles have stopped: if the open pull request from main-l1fsqo (PR #466 from 2026-11-21) is merged,
    work on main (git checkout main && git pull); otherwise git checkout main-l1fsqo && git pull origin
    main-l1fsqo, and keep pushing there. Never push to main without me.
 2. Read, in this order: docs/REMAINING_WORK_MEASURED.md (every open item, measured 2026-11-10),
@@ -66,9 +66,10 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
 
 ## What the cloud session left (the short version)
 
-- **All work is in git.** PR #462 (rounds W785–W1118) was merged into `main` on 2026-11-19, and PR #463 (rounds
-  W1119–W1175) on 2026-11-20, each on your instruction; the cloud session merged #463 at your request, with all
-  six checks green. Later rounds are on `main-l1fsqo`, carried by **PR #465**.
+- **All work is in git.** PR #462 (rounds W785–W1118) was merged into `main` on 2026-11-19, PR #463 (rounds
+  W1119–W1175) on 2026-11-20 and PR #465 (rounds W1176–W1184) on 2026-11-21, each on your instruction; the cloud
+  session merged #463 and #465 at your request, each with all six checks green. Later rounds are on
+  `main-l1fsqo`, carried by **PR #466**.
 - **The plan,** on 2026-11-20: 97 of 119 items done (P1 18/18 · P2 39/41 · P3 30/32 · P4 3/6 · P5 7/22). P2.40 and P2.41
   have every row closed, and close on the final audit. The current figures are the PLAN NOW block of
   `docs/FABLE_DELIVERY_PROMPT.md`.
@@ -78,10 +79,14 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
 - **Owner rulings in force:** those recorded in the plan, including 2026-11-06 (five decisions taken as
   recommended), 2026-11-10 (decisions go with the recommendation; PR #461 merged), 2026-11-19 (twenty-two
   recommendations accepted; the six switches proceed in the ruled order, each once its pre-flight is built and
-  measured; PR #462 merged) and 2026-11-20 (that day's recommendations accepted, and that afternoon the ten
-  decisions put to you, each taken as recommended; among them, the cycles run into December).
+  measured; PR #462 merged), 2026-11-20 (that day's recommendations accepted, and that afternoon the ten
+  decisions put to you, each taken as recommended; among them, the cycles run into December) and 2026-11-21
+  (five decisions taken as recommended: PR #465 merged once green; how the Care reviewer's calibration run
+  counts, when FU-1054 closes, and that a case flagged for its own reason and others is caught; P5.18
+  clause 4's comparison of named finance products kept closed).
 - **Still yours:**
-  - Merge PR #465 when you are ready, or ask the cloud session to merge it once green, as you did for PR #463.
+  - Merge PR #466 when you are ready, or ask the cloud session to merge it once green, as you did for
+    PR #463 and PR #465.
   - The rows in step 5: FU-1165 and FU-1054, a step each there.
   - One line in `.env` on your machine for the legal matter's folder (step 3 of the prompt), if the local
     session has not added it.

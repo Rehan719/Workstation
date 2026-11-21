@@ -21057,7 +21057,7 @@
     {
       "id": "FU-1054",
       "title": "The Care reviewer agent and its calibration set: planted defects it must catch and clean answers it must pass",
-      "why": "Clauses 2 to 4. Planted: a replaced guideline, a missing emergency line, a score with an altered boundary, a role claim. Its catch and false-alarm rates are shown beside its reviews. BUILT: the set written out from the tree and its runnable window computed (W1099, W1122); the reviewer agent and its own door (W1100); the uncalibrated label (W1101); its calibration said before every Care form and beside each agent review, UNCALIBRATED with no catch rate and no false-alarm rate while no run of its own exists; only a run the agent made through its own door, dated the day it was made, counts, kept whole (W1183); the results' place in the tree, with no run in it (W1184). The four kinds above are C01, C02 (the emergency line missing from the top, the form this repository had), C03 and C04 (in the care-plan prompt: no answer in the tree claims a role). LEFT, AND ONLY THE OWNER'S MACHINE CAN DO IT: with the local model serving, run care-reviewer once through POST /api/v1/review/calibration/agent-run on a day the set can be run (2026-11-19 through 2027-01-10 as the register stands), then python scripts/calibration_results.py export and check, and commit docs/CARE_REVIEW_CALIBRATION_RESULTS.json and push it, leaving this row open. The cloud session closes it from the committed file, on that run's results, the bar met or not, its close note naming the run id, date, model and build, and the two rates with their counts, and takes the step out of the local notes' step 5 and the plan's list. Nothing made where no model serves, and no typed run, is a run. RECOMMENDED: before 2027-01-10 (FU-1820).",
+      "why": "Clauses 2 to 4. Planted: a replaced guideline, a missing emergency line, a score with an altered boundary, a role claim. Its catch and false-alarm rates are shown beside its reviews. BUILT: the set written out from the tree and its runnable window computed (W1099, W1122); the reviewer agent and its own door (W1100); the uncalibrated label (W1101); its calibration said before every Care form and beside each agent review, UNCALIBRATED with no catch rate and no false-alarm rate while no run of its own exists; only a run the agent made through its own door, dated the day it was made, counts, kept whole (W1183); the results' place in the tree, with no run in it (W1184). The four kinds above are C01, C02 (the emergency line missing from the top, the form this repository had), C03 and C04 (in the care-plan prompt: no answer in the tree claims a role). LEFT, AND ONLY THE OWNER'S MACHINE CAN DO IT: with the local model serving, run care-reviewer once through POST /api/v1/review/calibration/agent-run on a day the set can be run (2026-11-19 through 2027-01-10 as the register stands), then python scripts/calibration_results.py export and check, and commit docs/CARE_REVIEW_CALIBRATION_RESULTS.json and push it, leaving this row open. The cloud session closes it from the committed file, on that run's results, the bar met or not, its close note naming the run id, date, model and build, and the two rates with their counts, and takes the step out of the local notes' step 5 and the plan's list. Nothing made where no model serves, and no typed run, is a run. RECOMMENDED: before 2027-01-10 (FU-1820). OWNER RULING 2026-11-21 (the recommendations accepted): a calibration run committed to the tree is evidence for a person to read; the file holding it calibrates nothing, and the run calibrates the reviewer only on the machine whose own record holds it; whether a released machine counts it is part of release, the Owner's switch. The row closes on the first run's results, pass or fail: a failing run leaves the reviewer UNCALIBRATED with its rates shown, and its misses become a row. A planted case flagged for its own reason and for others counts as caught, the others said beside it once FU-1830 is built.",
       "source": "W679 (the Owner's rulings of 2026-10-12; assessment section 29.4)",
       "found": "2026-10-12",
       "files": [
@@ -26753,7 +26753,7 @@
     {
       "id": "FU-1817",
       "title": "OWNER: one solicitor's engagement before anyone but you is invited - the Law pages before any public release, and where other people's data may be kept",
-      "why": "Two questions the plan leaves to you: P5.11 rules that a qualified person's view of the Law pages comes before any public release, and P4.5 that where another person's data may be kept - the free Google Cloud regions are in the United States - is a solicitor's question, answered before anyone else's data is stored there. RECOMMENDED (accepted 2026-11-20, evening): one engagement covering both, booked once the first deploy is up; nothing is public, and no one but you is invited, until it has answered.",
+      "why": "Two questions the plan leaves to you: P5.11 rules that a qualified person's view of the Law pages comes before any public release, and P4.5 that where another person's data may be kept - the free Google Cloud regions are in the United States - is a solicitor's question, answered before anyone else's data is stored there. RECOMMENDED (accepted 2026-11-20, evening): one engagement covering both, booked once the first deploy is up; nothing is public, and no one but you is invited, until it has answered. OWNER RULING 2026-11-21 (the recommendations accepted): P5.18 clause 4's comparison of named finance products stays closed: no named finance product is compared. If a comparison is ever wanted, whether showing named finance offers is credit broking is put to this engagement first: PERG 2, read in W1182, does not say whether it is effecting an introduction or presenting or offering an agreement.",
       "source": "W1174 (the Owner's decisions of the evening of 2026-11-20, recommendation 3)",
       "found": "2026-11-20",
       "files": [],
@@ -26982,6 +26982,23 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P3.32: beside FU-1826, the fabric page's other open row"
+    },
+    {
+      "id": "FU-1830",
+      "title": "A planted case flagged for its own reason and for others does not say the others: score() only counts it",
+      "why": "score() in agentic_core/api/_review_calibration.py counts a planted case as caught when its own reason is among the reasons the agent flagged, as the Owner ruled on 2026-11-21, and gives only how many were caught, naming none, so a run's score does not say the other reasons a caught case was flagged for: they are only in the run's flags, which the run keeps whole and the results file copies (four of the five cases the first run, cal-8c7430765c, caught were flagged for other reasons too). NEXT: score() says, beside each planted case caught, the other reasons it was flagged for (also_flagged); the counted fields are unchanged, so a run already exported checks as it did, and a run the results file already holds keeps the score it was exported with, since a held run is never rewritten.",
+      "source": "W1187 (the Owner's decisions of the morning of 2026-11-21, decision 4)",
+      "found": "2026-11-21",
+      "files": [
+        "agentic_core/api/_review_calibration.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.15",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.15: clause 3, the reviewer's rates; the Owner's ruling of 2026-11-21 on a case flagged for more than its own reason (W1187)"
     }
   ],
   "routes": [

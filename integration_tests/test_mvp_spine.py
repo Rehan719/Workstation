@@ -92391,7 +92391,7 @@ def test_w1131_the_local_prompt_names_every_row_waiting_on_the_owner_and_keeps_o
     for frag in ("it may still be pushing to main-l1fsqo, so do not push there",
                  "a branch of your own", "open its own pull request", "Never push to main without me"):
         assert frag in flat, (frag, "the notes would let a local session push beside the cloud session")
-    for merged in ("#462", "#463"):   # W1178: #463 merged on 2026-11-20
+    for merged in ("#462", "#463", "#465"):   # W1178: #463 merged on 2026-11-20; W1187: #465 on 2026-11-21
         assert f"Merge PR {merged}" not in notes and f"carried by **PR {merged}**" not in notes, (
             "a merged pull request is offered", merged)
 
@@ -96535,28 +96535,32 @@ def test_w1177_fu1077_the_six_rows_refused_to_w1148_are_read_whole_at_their_publ
 
 
 def test_w1178_the_local_notes_name_the_open_pull_request_and_say_pr463_was_merged():
-    """W1178. PR #463 was merged on the evening of 2026-11-20 by the cloud session, at the Owner's request, once all six
-    checks were green; PR #465 carries the later rounds. Held here:
-    1. the local-session notes offer no merged pull request: they name PR #465 as the one that carries the later
-       rounds, the one a local session watches for, and the one to merge, and say PR #463 was merged with its rounds;
-    2. the plan's list of what is with the Owner says PR #463 was merged, and names PR #465. (The notes' figures
-       were brought up to the plan's here; W1131's guard holds that they never say more than the plan.)"""
+    """W1178, brought up to date by W1187. PR #463 was merged on the evening of 2026-11-20, and PR #465 on the morning
+    of 2026-11-21, each by the cloud session at the Owner's request once all six checks were green; PR #466 was
+    opened for the later rounds. Held here:
+    1. the local-session notes offer no merged pull request: they name PR #466 as the one that carries the later
+       rounds, the one a local session watches for, and the one to merge, and say PR #463 and PR #465 were merged;
+    2. the plan's list of what is with the Owner says PR #463 was merged and that PR #465 then carried the later
+       rounds. (The notes' figures were brought up to the plan's in W1178; W1131's guard holds that they never say
+       more than the plan.)"""
     from pathlib import Path
     root = Path(__file__).resolve().parents[1]
     notes = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
     flat = " ".join(notes.split())
-    for said in ("if the open pull request from main-l1fsqo (PR #465 from 2026-11-20) is merged,",
-                 "PR #463 (rounds W1119–W1175) on 2026-11-20, each on your instruction",
-                 "Later rounds are on `main-l1fsqo`, carried by **PR #465**.",
-                 "Merge PR #465 when you are ready, or ask the cloud session to merge it once green"):
+    for said in ("if the open pull request from main-l1fsqo (PR #466 from 2026-11-21) is merged,",
+                 "PR #463 (rounds W1119–W1175) on 2026-11-20 and PR #465 (rounds W1176–W1184) on 2026-11-21, each "
+                 "on your instruction",
+                 "Later rounds are on `main-l1fsqo`, carried by **PR #466**.",
+                 "Merge PR #466 when you are ready, or ask the cloud session to merge it once green"):
         assert said in flat, ("the notes do not say", said)
-    for stale in ("Merge PR #463", "carried by **PR #463**", "(PR #463 on 2026-11-20) is merged"):
+    for stale in ("Merge PR #463", "carried by **PR #463**", "(PR #463 on 2026-11-20) is merged", "Merge PR #465 ",
+                  "carried by **PR #465**", "(PR #465 from 2026-11-20) is merged"):
         assert stale not in flat, ("the notes still offer a merged pull request", stale)
 
     fp = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
     plan = " ".join(fp.split())
     assert ("PR #463 merged by the Owner once green (that evening the Owner asked the cloud session to merge it, and it "
-            "was merged at 7744c530 with all six checks green; PR #465 carries the later rounds)") in plan
+            "was merged at 7744c530 with all six checks green; PR #465 then carried the later rounds)") in plan
 
 
 def test_w1179_p511_the_debt_and_claims_company_rows_read_their_regulators_own_page(client):
@@ -97905,3 +97909,200 @@ def test_w1186_a_composition_says_what_served_each_domain_form_from_the_forms_ow
     case = spec.split("it('a concern about a child gets the children\\'s route", 1)[1].split("\n  it(", 1)[0]
     assert "expect(screen.getByText('no call served this')).toBeTruthy();" in case, case[-900:]
     assert "expect(screen.queryByText('provenance not recorded')).toBeNull();" in case, case[-900:]
+
+
+def test_w1187_the_owners_five_decisions_of_2026_11_21_are_recorded_and_the_calibration_holds_three_of_them(
+        client, tmp_path, monkeypatch):
+    """W1187. The five recommendations the Owner accepted on the morning of 2026-11-21, each where the work reads it:
+    1. PR #465 was merged once W1184 was green, by the cloud session at 534cf629 with all six checks green; PR #466
+       was opened for the later rounds, the local notes name it as the one to merge and say #465 was merged, and the
+       plan no longer says #465 carries the later rounds;
+    2. a calibration run committed to the tree is evidence for a person to read: the file holding it calibrates
+       nothing, the run calibrates the reviewer only on the machine whose own record holds it, and whether a released
+       machine counts it is part of release, the Owner's switch. Driven: with a results file holding a run that met the
+       bar and this machine's record holding none, the reviewer is UNCALIBRATED, never run;
+    3. FU-1054 closes on the first run's results, pass or fail: a failing run leaves the reviewer UNCALIBRATED with its
+       two rates and their sentence shown, and its misses become a row. Driven through the agent's own door with a
+       stand-in model;
+    4. a planted case flagged for its own reason and for others counts as caught; the other reasons are said beside it
+       once the row registered for it on P5.15 (found by its title) is built. Driven through the same door; the row
+       says what is and is not built, and what it says of the first committed run is read from the run;
+    5. P5.18 clause 4's comparison of named finance products stays closed: no named finance product is compared, and
+       if a comparison is ever wanted, whether showing named finance offers is credit broking goes to the solicitor's
+       engagement (FU-1817) first; what PERG 2 does not say is said as PERG 2's.
+    Each is said at the item it governs and in the plan's list of what is with the Owner; FU-1054's and FU-1817's rows
+    and the local notes say the ones they bear on, and test_w1131 counts #465 among the merged pull requests. None of
+    the new text gives the Owner a pronoun."""
+    import datetime as _dt
+    import importlib
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.api import _review_calibration as cal
+    from agentic_core.api import care_reviewer as cr
+    from agentic_core.ai.native import orchestrator
+    root = Path(__file__).resolve().parents[1]
+    R = "OWNER RULING 2026-11-21 (the recommendations accepted)"
+    fable = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    flat = " ".join(fable.split())
+    notes = " ".join((root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8").split())
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+
+    #  the row decision 4 left to build, found by its title, open on P5.15
+    also = [r for r in reg.values() if r["title"].startswith("A planted case flagged for its own reason and for others "
+                                                               "does not say the others")]
+    assert len(also) == 1, [r["id"] for r in also]
+    also = also[0]
+    assert also["title"].endswith("score() only counts it"), also["title"]
+    if also["status"] == "open":
+        assert (also["slot"], also["owner_gated"]) == ("P5.15", False), (also["slot"], also["owner_gated"])
+        assert "also_flagged" in also["why"] and "the counted fields are unchanged" in also["why"], also["why"]
+        assert ("gives only how many were caught, naming none" in also["why"]
+                and "they are only in the run's flags, which the run keeps whole and the results file copies"
+                in also["why"]), also["why"]
+    #  ...what it says of the first run, read from the run the results file holds
+    doc = json.loads((root / cal.RESULTS["care"]).read_bytes().decode("utf-8"))
+    first = next((r for r in doc.get("runs") or [] if r.get("run_id") == "cal-8c7430765c"), None)
+    if first is not None:
+        _set = cal.load_set("care")
+        _missed = {m["case"] for m in cal.score(_set["cases"], first["flags"])["missed"]}
+        _caught = [c for c in _set["cases"] if c.get("planted") and c["id"] not in _missed]
+        _more = [c["id"] for c in _caught if set(first["flags"].get(c["id"]) or []) - {c["must_flag"]}]
+        assert (len(_caught), len(_more)) == (5, 4), (len(_caught), _more)
+        assert ("(four of the five cases the first run, cal-8c7430765c, caught were flagged for other reasons too)"
+                in also["why"]), also["why"]
+
+    #  1. the pull requests
+    assert ("PR #463 (rounds W1119–W1175) on 2026-11-20 and PR #465 (rounds W1176–W1184) on 2026-11-21, each on your "
+            "instruction; the cloud session merged #463 and #465 at your request, each with all six checks green.") in notes
+    assert "carried by **PR #466**." in notes and "Merge PR #466 when you are ready" in notes, "the notes' open PR"
+    assert "(PR #466 from 2026-11-21) is merged," in notes and "Merge PR #465 " not in notes
+    assert "PR #465 carries the later rounds" not in flat and "PR #465 then carried the later rounds" in flat
+    still = " ".join(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0].split())
+    assert ("(Five put on the morning of 2026-11-21 were accepted the same day, each as recommended: PR #465 merged once "
+            "W1184 was green (the cloud session merged it at 534cf629 with all six checks green, and PR #466 was "
+            "opened for the later rounds);") in still, "the plan's list does not say #465 was merged"
+    for said in ("a calibration run committed to the tree is evidence, calibrating the reviewer only on the machine "
+                 "whose own record holds it, and whether a released machine counts it is part of release, the Owner's "
+                 "switch;", "the Care reviewer's calibration row to close on its first run's results, pass or fail, a "
+                 "failing run leaving the reviewer UNCALIBRATED with its rates shown and its misses becoming a row;",
+                 "a planted case flagged for its own reason and for others counted as caught, the others to be said "
+                 "beside it;"):
+        assert said in still, ("the plan's list does not say", said[:80])
+
+    #  2-4. at P5.15 and in FU-1054's row
+    p515 = flat.split(" P5.15 [chartered W679", 1)[1].split(" P5.16 ", 1)[0]
+    for said in (f"{R}: a calibration run committed to the tree is evidence for a person to read; the file holding it "
+                 "calibrates nothing, and the run calibrates the reviewer only on the machine whose own record holds it; "
+                 "whether a released machine counts it is part of release, the Owner's switch.",
+                 "FU-1054 closes on the first run's results, pass or fail: a failing run leaves the reviewer "
+                 "UNCALIBRATED with its rates shown, and its misses become a row.",
+                 "A planted case flagged for its own reason and for others counts as caught, as score() counts it; the "
+                 f"other reasons are said beside it once {also['id']} is built."):
+        assert said in p515, ("P5.15 does not say", said[:80])
+    fu = reg["FU-1054"]
+    for said in (f"{R}: a calibration run committed to the tree is evidence for a person to read; the file holding it "
+                 "calibrates nothing, and the run calibrates the reviewer only on the machine whose own record holds it;",
+                 "The row closes on the first run's results, pass or fail: a failing run leaves the reviewer "
+                 "UNCALIBRATED with its rates shown, and its misses become a row.",
+                 f"the others said beside it once {also['id']} is built."):
+        assert said in fu["why"], ("FU-1054 does not say", said[:80])
+
+    #  5. P5.18 clause 4, at the item, in the solicitor's row and in the notes
+    p518 = flat.split(" P5.18 [chartered W711", 1)[1].split(" P5.19 [chartered W711", 1)[0]
+    assert ("OWNER RULING 2026-11-21 (the recommendation accepted): clause 4's comparison of named finance products stays "
+            "closed: no named finance product is compared. PERG 2, read in W1182, does not say whether showing named "
+            "finance offers is effecting an introduction or presenting or offering an agreement; if a comparison is ever "
+            "wanted, that question goes to the solicitor's engagement (FU-1817) first.") in p518, "P5.18 clause 4"
+    assert "no named finance product is compared until the consumer-credit regime has been read at its publisher" in p518
+    assert ("P5.18 clause 4's comparison of named finance products stays closed: no named finance product is compared. "
+            "If a comparison is ever wanted, whether showing named finance offers is credit broking is put to this "
+            "engagement first: PERG 2, read in W1182, does not say whether it is effecting an introduction or "
+            "presenting or offering an agreement.") in reg["FU-1817"]["why"]
+    perg = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}[
+        "fca-handbook-perg-2-credit-broking"]
+    assert ("it does not say whether showing named finance offers is effecting an introduction or presenting or "
+            "offering an agreement") in perg["says"], "the row this rests on no longer says it"
+    assert "P5.18 clause 4's comparison of named finance products kept closed" in notes
+    assert "P5.18 clause 4's comparison of named finance products kept closed, the credit-broking question" in still
+
+    #  2-4 driven: the reviewer's own door with a stand-in model, on the first day the set can be run
+    _w = cal.runnable_window(cal.load_set("care"))
+    assert _w, "the tree's set cannot be run on any day as the register stands"
+    D0 = _dt.date.fromisoformat(_w["from"])
+    monkeypatch.setattr(cal, "_today", lambda: D0)
+    monkeypatch.setattr(importlib.import_module("agentic_core.ai.gateway"), "served_identity_of", lambda sb: {
+        "model": "w1187-stand-in", "build_digest": "w1187standin" + "0" * 52, "processor": None,
+        "basis": "a stand-in made up for W1187: no model ran"})
+    the_set = cal.load_set("care")
+    planted = [c for c in the_set["cases"] if c.get("planted")]
+    assert len(planted) >= 2 and all(c.get("must_flag") for c in planted), "the set has fewer than two planted cases"
+    other = next(c["must_flag"] for c in planted if c["must_flag"] != planted[0]["must_flag"])
+    said = {c["id"]: "FLAG: none" for c in the_set["cases"]}
+
+    async def _stand_in(prompt, agent="assistant", **kw):
+        hit = [c["id"] for c in cal.load_set("care")["cases"] if c.get("shown") and cr.as_text(c["shown"]) in prompt]
+        assert len(hit) == 1, hit
+        return {"output": said[hit[0]], "served_by": "ollama:w1187-stand-in"}
+    monkeypatch.setattr(orchestrator, "complete", _stand_in)
+
+    def run_into(record, answers):
+        said.clear()
+        said.update(answers)
+        monkeypatch.setattr(cal, "_runs_path", lambda: record)
+        got = client.post("/api/v1/review/calibration/agent-run", json={"discipline": "care", "date": D0.isoformat()})
+        assert got.status_code == 200, got.text[:300]
+        return got.json()
+
+    #  4. every planted case flagged for its reason, the first for another reason too: caught, all of them
+    passing = {c["id"]: (f"FLAG: {c['must_flag']}" if c.get("planted") else "FLAG: none") for c in the_set["cases"]}
+    passing[planted[0]["id"]] = f"FLAG: {planted[0]['must_flag']}\nFLAG: {other}"
+    record = tmp_path / "machine-a" / "review_calibration_runs.json"
+    record.parent.mkdir()
+    made = run_into(record, passing)
+    kept = json.loads(record.read_text(encoding="utf-8"))[-1]
+    assert sorted(kept["flags"][planted[0]["id"]]) == sorted([planted[0]["must_flag"], other]), "the run was not kept whole"
+    s = cal.score(the_set["cases"], kept["flags"])
+    assert (s["caught"], s["planted_cases"], s["meets_bar"]) == (len(planted), len(planted), True), s
+    assert planted[0]["id"] not in [m["case"] for m in s["missed"]] and not s["flagged_for_the_wrong_reason"], s
+    on_a = cal.calibration_statement("care-reviewer")
+    assert (on_a["calibrated"], on_a["reason"], on_a["label"]) == (True, "calibrated", "Calibrated"), on_a
+
+    #  2. that run, copied into a results file, calibrates nothing on a machine whose own record does not hold it
+    results = tmp_path / "results.json"
+    results.write_text(json.dumps(cal.results_for_tree(), indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    copied = json.loads(results.read_text(encoding="utf-8"))
+    assert [r["run_id"] for r in copied["runs"]] == [made["run_id"]] and copied["runs"][0]["score"]["meets_bar"], copied
+    monkeypatch.setattr(cal, "RESULTS", {**cal.RESULTS, "care": str(results)})
+    elsewhere = tmp_path / "machine-b" / "review_calibration_runs.json"
+    elsewhere.parent.mkdir()
+    monkeypatch.setattr(cal, "_runs_path", lambda: elsewhere)
+    on_b = cal.calibration_statement("care-reviewer")
+    assert (on_b["calibrated"], on_b["reason"], on_b["label"], on_b["rates"]) == (
+        False, "never_run", "Uncalibrated", None), ("a committed run calibrated another machine", on_b)
+
+    #  3. a first run that fails: UNCALIBRATED, with both rates, their counts and their sentence shown
+    missing = dict(passing)
+    missing[planted[-1]["id"]] = "FLAG: none"
+    record_c = tmp_path / "machine-c" / "review_calibration_runs.json"
+    record_c.parent.mkdir()
+    run_into(record_c, missing)
+    on_c = cal.calibration_statement("care-reviewer")
+    n, k = len(planted), len(the_set["cases"]) - len(planted)
+    assert (on_c["calibrated"], on_c["reason"], on_c["label"]) == (False, "below_bar", "Uncalibrated"), on_c
+    rates = on_c["rates"]
+    assert rates and (rates["caught"], rates["planted_cases"], rates["false_alarms"], rates["clean_cases"]) == (
+        n - 1, n, 0, k), rates
+    assert (rates["catch_rate"], rates["false_alarm_rate"]) == ((n - 1) / n, 0.0), rates
+    assert rates["basis"] == (f"catch rate: {n - 1} of {n} planted case(s) flagged for their own reason; "
+                              f"false-alarm rate: 0 of {k} clean case(s) flagged"), rates["basis"]
+    assert "did not meet the bar" in on_c["basis"], on_c["basis"]
+    missed = cal.score(the_set["cases"], json.loads(record_c.read_text(encoding="utf-8"))[-1]["flags"])["missed"]
+    assert [m["case"] for m in missed] == [planted[-1]["id"]], missed
+
+    #  no new text gives the Owner a pronoun
+    word = re.compile(r"\b(?:he|his|him|himself)\b", re.I)
+    texts = [p515.split(R, 1)[1][:800], p518.split("OWNER RULING 2026-11-21", 1)[1][:500],
+             fu["why"].split(R, 1)[1], reg["FU-1817"]["why"].split(R, 1)[1], also["title"], also["why"],
+             still.split("(Five put on the morning of 2026-11-21", 1)[1][:1000]]
+    assert [m.group(0) for t in texts for m in [word.search(t)] if m] == []
