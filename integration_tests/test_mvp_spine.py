@@ -92391,7 +92391,7 @@ def test_w1131_the_local_prompt_names_every_row_waiting_on_the_owner_and_keeps_o
     for frag in ("it may still be pushing to main-l1fsqo, so do not push there",
                  "a branch of your own", "open its own pull request", "Never push to main without me"):
         assert frag in flat, (frag, "the notes would let a local session push beside the cloud session")
-    for merged in ("#462", "#463", "#465"):   # W1178: #463 merged on 2026-11-20; W1187: #465 on 2026-11-21
+    for merged in ("#462", "#463", "#465", "#466"):   # W1178: #463 on 2026-11-20; W1187: #465, W1190: #466 on 2026-11-21
         assert f"Merge PR {merged}" not in notes and f"carried by **PR {merged}**" not in notes, (
             "a merged pull request is offered", merged)
 
@@ -96535,11 +96535,12 @@ def test_w1177_fu1077_the_six_rows_refused_to_w1148_are_read_whole_at_their_publ
 
 
 def test_w1178_the_local_notes_name_the_open_pull_request_and_say_pr463_was_merged():
-    """W1178, brought up to date by W1187. PR #463 was merged on the evening of 2026-11-20, and PR #465 on the morning
-    of 2026-11-21, each by the cloud session at the Owner's request once all six checks were green; PR #466 was
-    opened for the later rounds. Held here:
-    1. the local-session notes offer no merged pull request: they name PR #466 as the one that carries the later
-       rounds, the one a local session watches for, and the one to merge, and say PR #463 and PR #465 were merged;
+    """W1178, brought up to date by W1187 and W1190. PR #463 was merged on the evening of 2026-11-20, PR #465 on the
+    morning of 2026-11-21 and PR #466 that afternoon, each by the cloud session once all six checks were green, on the
+    Owner's request or decision; the pull request opened after #466 carries the later rounds. Held here:
+    1. the local-session notes offer no merged pull request: they name the one opened after #466 as the one that
+       carries the later rounds, the one a local session watches for and the one to merge, and say PR #463, PR #465
+       and PR #466 were merged;
     2. the plan's list of what is with the Owner says PR #463 was merged and that PR #465 then carried the later
        rounds. (The notes' figures were brought up to the plan's in W1178; W1131's guard holds that they never say
        more than the plan.)"""
@@ -96547,14 +96548,17 @@ def test_w1178_the_local_notes_name_the_open_pull_request_and_say_pr463_was_merg
     root = Path(__file__).resolve().parents[1]
     notes = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
     flat = " ".join(notes.split())
-    for said in ("if the open pull request from main-l1fsqo (PR #466 from 2026-11-21) is merged,",
-                 "PR #463 (rounds W1119–W1175) on 2026-11-20 and PR #465 (rounds W1176–W1184) on 2026-11-21, each "
-                 "on your instruction",
-                 "Later rounds are on `main-l1fsqo`, carried by **PR #466**.",
-                 "Merge PR #466 when you are ready, or ask the cloud session to merge it once green"):
+    for said in ("if the open pull request from main-l1fsqo (the one opened after PR #466 was merged on 2026-11-21) is "
+                 "merged,",
+                 "PR #463 (rounds W1119–W1175) on 2026-11-20, and PR #465 (rounds W1176–W1184) and PR #466 (rounds "
+                 "W1185–W1189) on 2026-11-21, each on your instruction or decision",
+                 "Later rounds are on `main-l1fsqo`, carried by the pull request opened after #466 was merged.",
+                 "Merge the open pull request from `main-l1fsqo` when you are ready, or ask the cloud session to "
+                 "merge it once green"):
         assert said in flat, ("the notes do not say", said)
     for stale in ("Merge PR #463", "carried by **PR #463**", "(PR #463 on 2026-11-20) is merged", "Merge PR #465 ",
-                  "carried by **PR #465**", "(PR #465 from 2026-11-20) is merged"):
+                  "carried by **PR #465**", "(PR #465 from 2026-11-20) is merged", "Merge PR #466 ",
+                  "carried by **PR #466**", "(PR #466 from 2026-11-21) is merged"):
         assert stale not in flat, ("the notes still offer a merged pull request", stale)
 
     fp = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
@@ -97916,8 +97920,8 @@ def test_w1187_the_owners_five_decisions_of_2026_11_21_are_recorded_and_the_cali
         client, tmp_path, monkeypatch):
     """W1187. The five recommendations the Owner accepted on the morning of 2026-11-21, each where the work reads it:
     1. PR #465 was merged once W1184 was green, by the cloud session at 534cf629 with all six checks green; PR #466
-       was opened for the later rounds, the local notes name it as the one to merge and say #465 was merged, and the
-       plan no longer says #465 carries the later rounds;
+       was opened for the later rounds and, as W1190 records, merged that afternoon, so the local notes say #465 and
+       #466 were merged and offer neither, and the plan no longer says #465 carries the later rounds;
     2. a calibration run committed to the tree is evidence for a person to read: the file holding it calibrates
        nothing, the run calibrates the reviewer only on the machine whose own record holds it, and whether a released
        machine counts it is part of release, the Owner's switch. Driven: with a results file holding a run that met the
@@ -97974,10 +97978,12 @@ def test_w1187_the_owners_five_decisions_of_2026_11_21_are_recorded_and_the_cali
                 in also["why"]), also["why"]
 
     #  1. the pull requests
-    assert ("PR #463 (rounds W1119–W1175) on 2026-11-20 and PR #465 (rounds W1176–W1184) on 2026-11-21, each on your "
-            "instruction; the cloud session merged #463 and #465 at your request, each with all six checks green.") in notes
-    assert "carried by **PR #466**." in notes and "Merge PR #466 when you are ready" in notes, "the notes' open PR"
-    assert "(PR #466 from 2026-11-21) is merged," in notes and "Merge PR #465 " not in notes
+    assert ("PR #463 (rounds W1119–W1175) on 2026-11-20, and PR #465 (rounds W1176–W1184) and PR #466 (rounds "
+            "W1185–W1189) on 2026-11-21, each on your instruction or decision; the cloud session merged #463, #465 "
+            "and #466, each with all six checks green.") in notes   # W1190: #466 merged that afternoon
+    #  W1190: PR #466 was merged on the afternoon of 2026-11-21, so the notes say so and no longer offer it
+    assert "PR #466 (rounds W1185–W1189) on 2026-11-21" in notes and "Merge PR #466 " not in notes, "the notes' PRs"
+    assert "(the one opened after PR #466 was merged on 2026-11-21) is merged," in notes and "Merge PR #465 " not in notes
     assert "PR #465 carries the later rounds" not in flat and "PR #465 then carried the later rounds" in flat
     still = " ".join(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0].split())
     assert ("(Five put on the morning of 2026-11-21 were accepted the same day, each as recommended: PR #465 merged once "
@@ -98256,7 +98262,8 @@ def test_w1188_fu1054_is_closed_on_the_care_reviewers_first_run_and_what_it_miss
                  f"was committed from this machine (c657e2a7) and merged in the cloud session at {MERGE}.",
                  "It left five cases unanswered, so it calibrates nothing, and it did not meet the bar; the reviewer "
                  "stays uncalibrated.",
-                 f"what it missed is {miss['id']}, which the cloud session works on.)",
+                 f"what it missed is {miss['id']}: the cloud session makes its three fixes, and the second run is "
+                 "made from this machine before 2027-01-10, with a larger local model, as I ruled that afternoon.)",  # W1190
                  "The row in step 5: FU-1165, a step there.",
                  "**Settled on 2026-11-21:** the Care reviewer's first calibration run (FU-1054, closed W1188), made on "
                  "your machine through the agent's own door with the local model (llama3.2): run cal-8c7430765c left "
@@ -98428,3 +98435,225 @@ def test_w1189_the_calibration_export_the_import_baseline_and_the_soak_report_wr
     for said in ("test_w1189 drives the export's writer and the baseline's, which the Windows CI job runs too.",
                  "the soak report of 2026-08-30 is left as committed", "no census can hold"):
         assert said in note, ("the close note does not say", said)
+
+
+def test_w1190_the_owners_six_decisions_of_the_afternoon_of_2026_11_21_are_recorded_where_the_work_reads_them():
+    """W1190. The six recommendations the Owner accepted on the afternoon of 2026-11-21, after the plan was measured,
+    each recorded in the accepted words inside the item it governs (between that item's line and the next item's),
+    in the plan's list of what is with the Owner, in the rows each bears on and in the local notes:
+    1. the release machine opens a port to the internet only once it has its domain, with HTTPS and sign-in on; its
+       startup script is to refuse otherwise (W1191 changes it; as W1190 found it, the script starts the platform
+       with sign-in off with or without a domain, reads no setting that could switch it on, and publishes port 80 with
+       no domain); sign-in is the Owner's switch, to be made in the machine's own settings, never in the tree; with no
+       domain the platform is to publish no port; the password and signing secret are kept on the machine; the domain
+       is bought before the first deploy, its A record still pointing at the machine first (P4.1, P4.5, FU-1289 and
+       its line in the list, and the notes, which put sign-in at the first deploy together with HTTPS);
+    2. the second calibration run is the Owner's, before 2027-01-10, with a larger local model (seven to eight
+       billion parameters such as llama3.1:8b if the machine has about 16 GB of memory), once the stricter reply form
+       (the misses row, found by its title), the agent's digest (FU-1821) and the re-read (FU-1820) have landed; the
+       bar does not move; the misses row closes on that run's results, pass or fail; and FU-1822, which changes what
+       the reviewer is shown, says (as a note, not a ruling) that it is settled before that run; and the notes give
+       the Owner the run, in what is still theirs and in step 5;
+    3. P5.15 closes when its clauses are built and its rows closed, calibrated or not;
+    4. PR #466 was merged by the cloud session once W1189's checks were green: the list says so, and the notes say it
+       merged and no longer offer it (test_w1178, test_w1187 and test_w1131 are brought up to date to match);
+    5. the four test-runner faults whose cause was never found (FU-417, FU-1071, FU-1072, FU-1085) each close as not
+       reproduced after twenty consecutive green CI runs, closed as performed_not_assessable with the runs named, and
+       reopen the day they recur; the parallel suite's stall (FU-301) is diagnosed instead;
+    6. the letters (FU-1188, FU-1283) are to be sent in the week from 2026-11-21, and if no written permission for
+       lawful recordings has come by 2026-12-15, P5.17 carries into January with FU-1067 open.
+    The list's paragraph names no row, as the morning's does, and no new sentence gives the Owner a gendered pronoun
+    (they, them and their where the Owner is named just before, as W1143 allows)."""
+    import json
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    R = "OWNER RULING 2026-11-21 (afternoon; the recommendation accepted)"
+    RS = "OWNER RULING 2026-11-21 (afternoon; the recommendations accepted)"
+    fable = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    notes = " ".join((root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8").split())
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+
+    def item(pid, nxt):
+        start = fable.index(f"\n {pid} ")
+        end = fable.index(f"\n {nxt} ", start)
+        return " ".join(fable[start:end].split())
+
+    def titled(start):
+        hits = [r for r in reg.values() if r["title"].startswith(start)]
+        assert len(hits) == 1, (start, [r["id"] for r in hits])
+        return hits[0]
+
+    miss = titled("The Care reviewer's first calibration run did not meet the bar")["id"]
+    said = []
+
+    def row_says(rid, s, slot):
+        r = reg[rid]
+        assert s in r["why"], (rid, "does not say", s[:100])
+        assert r["slot"] == slot, (rid, r["slot"], slot)
+        said.append(s)
+
+    #  1. the release machine, at P4.1, at P4.5, in FU-1289 and in its line of the list
+    p41 = item("P4.1", "P4.2")
+    s = (f"{R}: the release machine opens a port to the internet only once it has its domain, and then only with HTTPS "
+         "and sign-in on; its startup script is to refuse to open one otherwise (W1191 changes it: as W1190 found it, the "
+         "script starts the platform with sign-in off whether or not the machine has a domain, reads no setting that "
+         "could switch sign-in on, and publishes port 80 when the machine has no domain). Sign-in is the Owner's switch, "
+         "to be made in the machine's own settings, so no round switches it on in the tree; with no domain the platform "
+         "is to publish no port, and the Owner reaches it through an SSH tunnel. The password and the signing secret are "
+         "kept on the machine, never in the repository.")
+    assert s in p41, "P4.1 does not carry the ruling on the release machine"
+    assert p41.index("No round switches it on in the tree.") < p41.index(s), "the ruling is not after the evening's"
+    said.append(s)
+    p45 = item("P4.5", "P4.6")
+    s = (f"{R}: the domain (FU-1289) is bought before the first deploy, so that, with the startup script changed as "
+         "P4.1's ruling of the same day sets, the first request the platform answers from the internet comes over HTTPS "
+         "with sign-in on.")
+    assert s in p45, "P4.5 does not say the domain comes first"
+    said.append(s)
+    row_says("FU-1289", f" {R}: the domain is bought before the first deploy; with no domain the machine is to publish "
+                        "no port, the Owner reaching it through an SSH tunnel, so that, once the startup script is "
+                        "changed to match (P4.1), the machine's first answer to the internet comes over HTTPS with "
+                        "sign-in on. That replaces 'serves plain HTTP until it has one' above: the machine answers the "
+                        "internet only once its domain is set. Its A record still points at the machine's fixed address "
+                        "before the domain is set, since Caddy needs it for the certificate (step 12).", "OWNER")
+    still = " ".join(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0].split())
+    s = ("(docs/DEPLOYMENT.md, step 12). Ruled on the afternoon of 2026-11-21: it is bought before the first deploy, and "
+         "without it the machine is to publish no port and is reached only through an SSH tunnel (P4.1).")
+    assert s in still and "until then the machine serves plain HTTP and no person signs in" not in still, "FU-1289's line"
+    said.append(s)
+
+    #  2 and 3. the Care reviewer, at P5.15 and in its rows
+    p515 = item("P5.15", "P5.16")
+    s = (f"{RS}: the item closes when its clauses are built and its rows closed, whether or not the reviewer is "
+         "calibrated; a calibrated reviewer is not a precondition of the item. The second calibration run is the "
+         "Owner's, on their own machine, before 2027-01-10, once three things have landed: the stricter reply form "
+         f"({miss}), the agent's digest (FU-1821) and the re-read of the three rows four of the set's cases rely on "
+         "(FU-1820). It is run with a larger local model than the first run's, of seven to eight billion parameters "
+         "such as llama3.1:8b if the machine has about 16 GB of memory; the reviewer's reviews then run on that model, "
+         "and the bar does not move. If it fails too, the reviewer stays UNCALIBRATED and no round goes into "
+         f"calibrating it until a qualified person is engaged. {miss} closes on that run's results, pass or fail, as "
+         "FU-1054 closed on the first's.")
+    assert s in p515, "P5.15 does not carry the closing rule and the second run's terms"
+    said.append(s)
+    row_says(miss, f" {RS}: the second run is the Owner's, on their own machine, before 2027-01-10, once the reply form "
+                   "here, the agent's digest (FU-1821) and the re-read of FU-1820 have landed; it is run with a larger "
+                   "local model than the first run's, of seven to eight billion parameters such as llama3.1:8b if the "
+                   "Owner's machine has about 16 GB of memory, and the reviewer's reviews then run on that model; the "
+                   "bar does not move. If it fails too, the reviewer stays UNCALIBRATED and no round goes into "
+                   "calibrating it until a qualified person is engaged; P5.15 closes when its clauses are built and its "
+                   "rows closed, calibrated or not. This row closes on the second run's results, pass or fail, as "
+                   "FU-1054 closed on the first's.", "P5.15")
+    assert "make the reply's form harder to get wrong" in reg[miss]["why"], "the misses row lost its reply-form NEXT"
+    row_says("FU-1820", f" {R}: re-read before the Owner's second calibration run, which waits on it ({miss}).", "P5.15")
+    row_says("FU-1821", f" {R}: its digest is built before the Owner's second calibration run, which waits on it "
+                        f"({miss}).", "P5.15")
+    row_says("FU-1822", " W1190, a note and not a ruling: what the reviewer is shown is part of the agent's digest "
+                        f"(FU-1821), so this row is settled before the Owner's second calibration run ({miss}), or a "
+                        "pass on that run would stop counting when it lands.", "P5.15")
+    assert "OWNER RULING" not in reg["FU-1822"]["why"], "FU-1822's note is written as a ruling"
+
+    #  5. the four faults and the stall, at P5.1 and in the five rows
+    p51 = item("P5.1", "P5.2")
+    s = (f"{R}: FU-417, FU-1071, FU-1072 and FU-1085, the four test-runner faults whose cause was never found, each close "
+         "as not reproduced after twenty consecutive green CI runs, the close note naming the runs, and each reopens "
+         "the day it recurs. That replaces FU-417's instruction not to close it on another green suite. The register "
+         "has no 'not reproduced' kind of close, so each is closed as performed_not_assessable, its note beginning 'not "
+         "reproduced' and naming the runs. The parallel suite's stall (FU-301), seen about one run in three, is not "
+         "waited out: it is diagnosed.")
+    assert s in p51, "P5.1 does not carry the rule for the four faults"
+    said.append(s)
+    close = (f" {R}: this row closes as not reproduced after twenty consecutive green CI runs, its close note naming the "
+             "runs, and reopens the day it recurs")
+    for rid, tail in (("FU-417", "; that replaces the instruction above not to close it on another green suite."),
+                      ("FU-1071", "."), ("FU-1072", "; the bisection above is for a recurrence."), ("FU-1085", ".")):
+        row_says(rid, close + tail, "P5.1")
+    row_says("FU-301", f" {R}: this stall is diagnosed, not waited out: it happens about one run in three, so it is no "
+                       "fault seen once.", "P5.1")
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("followups_w1190", root / "scripts/followups.py")
+    fu = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(fu)
+    assert "performed_not_assessable" in fu.CLOSE_KINDS and "not_reproduced" not in fu.CLOSE_KINDS, (
+        "the close kind the ruling names is not the register's", sorted(fu.CLOSE_KINDS))
+
+    #  6. the letters and the listening test, at P5.17 and in the three rows
+    p517 = item("P5.17", "P5.18")
+    s = (f"{R}: the letters asking for written permission (FU-1188, FU-1283) are to be sent in the week from 2026-11-21. "
+         "If no written permission for lawful recordings has come by 2026-12-15, the item carries into January with "
+         "FU-1067 open: clause 3's private test is never run on recordings whose terms were not granted, and the item "
+         "does not close on a test that was not run.")
+    assert s in p517, "P5.17 does not carry the date the item carries over on"
+    said.append(s)
+    row_says("FU-1067", f" {R}: if no written permission for lawful recordings has come by 2026-12-15, this row stays "
+                        "open into January, and P5.17 with it; the test is never run on recordings whose terms were not "
+                        "granted.", "P5.17")
+    for rid in ("FU-1188", "FU-1283"):
+        row_says(rid, f" {R}: to be sent in the week from 2026-11-21, as drafted; if no written permission for lawful "
+                      "recordings has come by 2026-12-15, P5.17 carries into January with FU-1067 open.", "OWNER")
+
+    #  4 and all six: the list's paragraph, after the morning's, naming no row
+    para = still[still.index("(Six put on the afternoon of 2026-11-21"):]
+    para = para[:para.index(")", para.index("Each is recorded at the item it governs.")) + 1]
+    assert still.index("(Five put on the morning of 2026-11-21") < still.index(para), "the list's order"
+    for part in ("were accepted the same day, each as recommended:",
+                 "the release machine to open a port to the internet only with its domain, HTTPS and sign-in on, its "
+                 "startup script to refuse otherwise and to publish no port before the domain, sign-in being the Owner's "
+                 "switch, made in the machine's own settings and never in the tree;",
+                 "the Care reviewer's second calibration run to be the Owner's, before 2027-01-10, with a larger local "
+                 "model, once a stricter reply form, the agent's digest and the re-read of three rows have landed, the "
+                 "bar unchanged, the misses row closing on its results, pass or fail, and no further round spent "
+                 "calibrating the reviewer if it fails, until a qualified person is engaged;",
+                 "the Care review item to close when its clauses are built and its rows closed, calibrated or not;",
+                 "PR #466 to be merged by the cloud session once W1189's checks were green, as #465 was, which it was at "
+                 "696bec0a;",
+                 "the four test-runner faults whose cause was never found to close as not reproduced after twenty "
+                 "consecutive green CI runs, each reopening the day it recurs, and the parallel suite's stall to be "
+                 "diagnosed instead;",
+                 "and the letters to be sent in the week from 2026-11-21, the Quran platform item carrying into January "
+                 "with its listening test's row open if no written permission for lawful recordings has come by "
+                 "2026-12-15."):
+        assert part in para, ("the plan's list does not say", part[:80])
+    assert not re.search(r"\bFU-\d+\b", para), ("the list's paragraph names a row", re.findall(r"FU-\d+", para))
+    said.append(para)
+
+    #  the local notes: the rulings, the merged pull request, and what stays the Owner's
+    assert "Updated 2026-11-21 (W1131, W1164, W1184, W1187, W1188, W1190)." in notes
+    for s in ("and that afternoon, six more taken as recommended: the release machine to open a port to the internet "
+              "only with its domain, HTTPS and sign-in on, the domain bought before the first deploy and sign-in your "
+              "switch; your second calibration run, with a larger local model (seven to eight billion parameters if "
+              "your machine has about 16 GB of memory), once the cloud session's three fixes have landed and before "
+              "2027-01-10; the Care review item to close when its clauses are built and its rows closed, calibrated or "
+              "not; PR #466 merged by the cloud session once W1189's checks were green; the four test-runner faults "
+              "whose cause was never found to close as not reproduced after twenty consecutive green CI runs; and your "
+              "letters to be sent in the week from 21 November, the Quran platform item carrying into January if no "
+              "written permission for recordings has come by 15 December).",
+              "PR #463 (rounds W1119–W1175) on 2026-11-20, and PR #465 (rounds W1176–W1184) and PR #466 (rounds "
+              "W1185–W1189) on 2026-11-21, each on your instruction or decision; the cloud session merged #463, #465 "
+              "and #466, each with all six checks green. Later rounds are on `main-l1fsqo`, carried by the pull request "
+              "opened after #466 was merged.",
+              "Much of that phase is ruled to come after sign-in (P4.1), which is your switch, made in the release "
+              "machine's own settings at its first deploy, together with its domain and HTTPS; the final audit runs "
+              "after the fifth phase and the sign-in readiness round.",
+              "Buying a domain for the release machine before the first deploy and pointing it at the machine's fixed "
+              "address (FU-1289): without it the machine is to publish no port (P4.1).",
+              "At the first deploy, setting the admin password on the release machine and switching sign-in on in its "
+              "own settings (P4.1; the setting W1191 adds), so that it answers from its first boot with its domain, "
+              "HTTPS and sign-in on; the password and the signing secret stay on the machine, never in the repository.",
+              "Your second calibration run of the Care reviewer, on your machine with a larger local model (seven to "
+              "eight billion parameters, such as llama3.1:8b, if your machine has about 16 GB of memory), when the cloud "
+              f"session says its three fixes have landed, and before 2027-01-10 ({miss}, P5.15).",
+              f"and what it missed is {miss}: the cloud session makes its three fixes, and the second run is made from "
+              "this machine before 2027-01-10, with a larger local model, as I ruled that afternoon.)",
+              "Sending the two permission letters in `docs/letters/` (FU-1188), in the week from 21 November.",
+              "(FU-1283), in the week from 21 November."):
+        assert s in notes, ("the local notes do not say", s[:90])
+        said.append(s)
+    for stale in ("which now proceeds without waiting on you", "Merge PR #466 ", "carried by **PR #466**",
+                  "(PR #466 from 2026-11-21) is merged", "which the cloud session works on.)",
+                  "once its domain and HTTPS are live"):
+        assert stale not in notes, ("the notes still say", stale)
+
+    #  no new sentence gives the Owner a gendered pronoun
+    for text in said:
+        assert not re.search(r"\b(he|him|his|she|her|hers)\b", text, re.I), ("a gendered pronoun", text[:90])
