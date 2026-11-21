@@ -3,9 +3,9 @@
 When you want to continue locally, open Claude Code (Claude Opus 5.5) **in your local clone** (`~\Workstation`)
 and paste the block below as your first message. Nothing else is needed.
 
-Updated 2026-11-20 (W1131, W1164). The cloud session works in 8-hour cycles into December, until the plan's build
-items are closed and the final audit has run (2026-12-31 at the latest), and pushes to `main-l1fsqo`. While it
-runs, the local session works on a branch of its own (step 1), so the two never push to the same branch.
+Updated 2026-11-21 (W1131, W1164, W1184). The cloud session works in 8-hour cycles into December, until the plan's
+build items are closed and the final audit has run (2026-12-31 at the latest), and pushes to `main-l1fsqo`. While
+it runs, the local session works on a branch of its own (step 1), so the two never push to the same branch.
 
 ---
 
@@ -37,6 +37,17 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
    FU-1005 were done here on 2026-11-20 (W1133l, W1133m), and are closed:
    - FU-1165: as I answered on 2026-11-20, register my two ventures, Atmospheric Harvest Solutions and Aerius
      Energy Harvest, fresh in the new books, then name each in Settings, Protected enterprises, once it exists.
+   - FU-1054: the Care reviewer's first calibration run, with the local model on (this machine's default). Start
+     the backend and read GET /api/v1/review/calibration/care-reviewer: it gives the server's date and the days
+     the set can be run (2026-11-19 through 2027-01-10 as the register stands). Then POST
+     /api/v1/review/calibration/agent-run with {"discipline": "care", "date": that date}. It asks the model
+     sixteen times, so give the request an hour; if the client gives up first, read the same GET once the server
+     has finished. Nothing made where no model serves is a run: if the floor answers any case, the route keeps
+     nothing, and a run typed through /calibration/run counts for nothing. Then run python
+     scripts/calibration_results.py export and then check, run test_w1184, and commit
+     docs/CARE_REVIEW_CALIBRATION_RESULTS.json on your branch and push it. Leave FU-1054 open: the cloud session
+     closes it from the committed file, with the run's id, date, model and build and its two rates with their
+     counts, whether or not it met the bar, and takes this step out of step 5 and the plan's list.
    (FU-1286's step here was done on 2026-11-20 and the row is closed (W1180): venv/ was untracked (7afa4aa9), the
    folder kept on this disk, and merged in the cloud session at 07fb9817. The three one-off command permissions
    in .claude/settings.json that named my home folder were removed in the cloud session the same day, W1176.)
@@ -71,7 +82,7 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
   decisions put to you, each taken as recommended; among them, the cycles run into December).
 - **Still yours:**
   - Merge PR #465 when you are ready, or ask the cloud session to merge it once green, as you did for PR #463.
-  - The rows in step 5: FU-1165, a step there.
+  - The rows in step 5: FU-1165 and FU-1054, a step each there.
   - One line in `.env` on your machine for the legal matter's folder (step 3 of the prompt), if the local
     session has not added it.
   - Sending the two permission letters in `docs/letters/` (FU-1188).

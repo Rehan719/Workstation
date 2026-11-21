@@ -21057,19 +21057,26 @@
     {
       "id": "FU-1054",
       "title": "The Care reviewer agent and its calibration set: planted defects it must catch and clean answers it must pass",
-      "why": "Clauses 2 to 4. Planted: a replaced guideline, a missing emergency line, a score with an altered boundary, a role claim. Its catch and false-alarm rates are shown beside its reviews.",
+      "why": "Clauses 2 to 4. Planted: a replaced guideline, a missing emergency line, a score with an altered boundary, a role claim. Its catch and false-alarm rates are shown beside its reviews. BUILT: the set written out from the tree and its runnable window computed (W1099, W1122); the reviewer agent and its own door (W1100); the uncalibrated label (W1101); its calibration said before every Care form and beside each agent review, UNCALIBRATED with no catch rate and no false-alarm rate while no run of its own exists; only a run the agent made through its own door, dated the day it was made, counts, kept whole (W1183); the results' place in the tree, with no run in it (W1184). The four kinds above are C01, C02 (the emergency line missing from the top, the form this repository had), C03 and C04 (in the care-plan prompt: no answer in the tree claims a role). LEFT, AND ONLY THE OWNER'S MACHINE CAN DO IT: with the local model serving, run care-reviewer once through POST /api/v1/review/calibration/agent-run on a day the set can be run (2026-11-19 through 2027-01-10 as the register stands), then python scripts/calibration_results.py export and check, and commit docs/CARE_REVIEW_CALIBRATION_RESULTS.json and push it, leaving this row open. The cloud session closes it from the committed file, on that run's results, the bar met or not, its close note naming the run id, date, model and build, and the two rates with their counts, and takes the step out of the local notes' step 5 and the plan's list. Nothing made where no model serves, and no typed run, is a run. RECOMMENDED: before 2027-01-10 (FU-1820).",
       "source": "W679 (the Owner's rulings of 2026-10-12; assessment section 29.4)",
       "found": "2026-10-12",
       "files": [
-        "agentic_core/api/care.py"
+        "agentic_core/api/_review_calibration.py",
+        "agentic_core/api/care_reviewer.py",
+        "agentic_core/api/review_cell.py",
+        "agentic_core/api/_review_tier.py",
+        "agentic_core/api/review_options.py",
+        "docs/CARE_REVIEW_CALIBRATION.json",
+        "docs/CARE_REVIEW_CALIBRATION_RESULTS.json",
+        "scripts/calibration_results.py"
       ],
       "severity": "medium",
-      "owner_gated": false,
-      "slot": "P5.15",
+      "owner_gated": true,
+      "slot": "OWNER",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "the Owner's rulings of 2026-10-12 chartered this item",
+      "slot_source": "OWNER (the Owner's machine): the row's last step is a run with the local model serving, which only the Owner's machine has (W1100, W1122); what the cloud can still do for P5.15 rides its own rows (W1184)",
       "tier": 2
     },
     {
@@ -26770,6 +26777,97 @@
       "status": "open",
       "closed_by": null,
       "note": ""
+    },
+    {
+      "id": "FU-1819",
+      "title": "Workstation's Care reviewer reviews no Care tool: nothing runs it over a tool's answers and writes the clause-2 record, so the reviews its rates stand beside exist only if an administrator types one",
+      "why": "care_reviewer.review is reached only through run_on_set, and run_on_set only through the calibration route (POST /api/v1/review/calibration/agent-run, run_reviewer_agent in agentic_core/api/review_cell.py), so the agent never reviews a Care tool's answers; a record of an agent's review exists only when an administrator types one through POST /api/v1/review/record. NEXT: an administrator's route that runs the reviewer over a Care tool's answers to fixed made-up inputs and writes one whole clause-2 record from what the run itself holds (the tool version reviewed, each source with its page and the date it was read, what it could not check), refused when the floor serves. It is built and driven with a stand-in; nothing it writes counts until FU-1054's run calibrates the agent.",
+      "source": "W1184 (FU-1054's plan for its last two rounds, measured at d038f9da; W1183 built its first half)",
+      "found": "2026-11-21",
+      "files": [
+        "agentic_core/api/review_cell.py",
+        "agentic_core/api/care_reviewer.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.15",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.15: what the cloud can still do for it once FU-1054 waits on the Owner's machine (FU-1054's plan, W1184)"
+    },
+    {
+      "id": "FU-1820",
+      "title": "The Care calibration set cannot be run after 2027-01-10: three rows four of its cases rely on were read on 2026-10-12",
+      "why": "gov-report-child-abuse (cases C02 and K01), bapen-must-toolkit (case C07) and nice-ng249 (case K03) were read on 2026-10-12, and the register's review period is 90 days, so from 2027-01-11 runnable() fails for those cases and calibration_of says no agent is calibrated, even one with a passing run; rcp-news2 and nice-ng97 (read 2026-11-19) lapse after 2027-02-17. NEXT: re-read the three rows at their publishers before 2027-01-10. A re-read moves the set's window, and test_w1183's captures were taken on its pinned day, 2026-11-21, so they must be taken again.",
+      "source": "W1184 (FU-1054's plan for its last two rounds, measured at d038f9da; W1183 built its first half)",
+      "found": "2026-11-21",
+      "files": [
+        "docs/SOURCES.json",
+        "docs/CARE_REVIEW_CALIBRATION.json"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.15",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.15: what the cloud can still do for it once FU-1054 waits on the Owner's machine (FU-1054's plan, W1184)"
+    },
+    {
+      "id": "FU-1821",
+      "title": "A reviewer agent is calibrated by its name alone",
+      "why": "calibration_of(agent) reads the agent's latest run of its own and never compares that run's model and build with the model a review record names, so a review by another model under a calibrated name counts; nor is a review dated before the run told apart from one after it (counts() in agentic_core/api/_review_tier.py); nor does a run record what the agent was shown (a digest of care_reviewer.prompt_for over a fixed probe), so a reviewer whose prompt has changed since keeps an earlier run's calibration. Nothing compares the reviewing model with the model that composed the answer reviewed (clause 4; the review record in agentic_core/api/review_cell.py). NEXT: an agent's review counts only when its model and build are the calibrated run's and it is dated on or after that run; a run carries that digest, and it counts only while the reviewer gives the same digest.",
+      "source": "W1184 (FU-1054's plan for its last two rounds, measured at d038f9da; W1183 built its first half)",
+      "found": "2026-11-21",
+      "files": [
+        "agentic_core/api/_review_tier.py",
+        "agentic_core/api/_review_calibration.py",
+        "agentic_core/api/care_reviewer.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.15",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.15: what the cloud can still do for it once FU-1054 waits on the Owner's machine (FU-1054's plan, W1184)"
+    },
+    {
+      "id": "FU-1822",
+      "title": "The reviewer is shown no published table, so C03 and C10 measure recall of NEWS2",
+      "why": "The reviewer is shown the register's rows and the answer, never the NEWS2 chart, so the two planted score cases, C03 and C10, test whether the model remembers the chart. The tree's NEWS2 table is held to the chart by test_w1122; whether it may be shown to the reviewer turns on the college's reuse terms in the rcp-news2 row (no copyright restriction provided the stated acknowledgement is given, the material is not modified, and the charts are reproduced in colour). NEXT: read those terms against showing the table to a model as text, and show it, with the acknowledgement, only if they allow it.",
+      "source": "W1184 (FU-1054's plan for its last two rounds, measured at d038f9da; W1183 built its first half)",
+      "found": "2026-11-21",
+      "files": [
+        "agentic_core/api/care_reviewer.py",
+        "docs/SOURCES.json"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.15",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.15: what the cloud can still do for it once FU-1054 waits on the Owner's machine (FU-1054's plan, W1184)"
+    },
+    {
+      "id": "FU-1823",
+      "title": "Care states each tool's tier only while its tab is open, and the child-concern answer carries none: no place on the Care page gives all four",
+      "why": "Each Care tool's tier of review and its reviewer's calibration are shown by ReviewOptions inside that tool's tab only (apps/workstation-superapp/src/pages/domains/CareHub.tsx), so no place on the page states the four together; and the safeguarding route's answer to a concern about a child or young person carries no provenance, so no tier is said under it (safeguarding_triage in agentic_core/api/care.py). P5.15's ACCEPT asks that Care have every tool at a stated tier on its page. NEXT: one place on the Care page that states each tool's tier, and a tier said under the child-concern answer.",
+      "source": "W1184 (FU-1054's plan for its last two rounds, measured at d038f9da; W1183 built its first half)",
+      "found": "2026-11-21",
+      "files": [
+        "apps/workstation-superapp/src/pages/domains/CareHub.tsx",
+        "agentic_core/api/care.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.15",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.15: what the cloud can still do for it once FU-1054 waits on the Owner's machine (FU-1054's plan, W1184)"
     }
   ],
   "routes": [

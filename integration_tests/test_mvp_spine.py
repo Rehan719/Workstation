@@ -69630,7 +69630,9 @@ def test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_name
                     #  W972 (P5.22) - the ledger pins refuse when no edition is pinned
                     "scripts/ledger_blobs.py",
                     #  W973 (P5.22) - completeness refuses a record where no configuration ran a slice
-                    "scripts/audit_completeness.py"]
+                    "scripts/audit_completeness.py",
+                    #  W1184 (FU-1054) - the calibration results' export and check refuse when there is no run
+                    "scripts/calibration_results.py"]
 
     def _emitted(src):
         """The strings a module can print or return - its docstrings left out, since a docstring saying the tool
@@ -93443,7 +93445,8 @@ def test_w1143_no_document_a_round_wrote_gives_the_owner_a_pronoun_the_owner_has
       venv/ since W1180): the archive, the fidelity runs (never opened), the venv, the Owner's .claude settings and
       the pinned ledger editions; and also the source texts of the knowledge folders,
       the Owner's own inputs, and this spine, whose variables are named he, hers and his and whose crisis-language
-      tests quote the phrases they test;
+      tests quote the phrases they test; and (W1184) docs/CARE_REVIEW_CALIBRATION_RESULTS.json, which holds the
+      reviewer model's own words, kept as written, as the fidelity runs do;
     - the W1120 rows say whose recommendations they were."""
     import json
     import pathlib
@@ -93452,7 +93455,8 @@ def test_w1143_no_document_a_round_wrote_gives_the_owner_a_pronoun_the_owner_has
     root = pathlib.Path(__file__).resolve().parents[1]
     word = re.compile(r"\b(?:he|his|him|himself)\b", re.I)
     left = ("_archive/", "docs/fidelity_runs/", "venv/", ".claude/", "docs/VISION_FIDELITY_LEDGER", "knowledge/",
-            "docs/knowledge/", "inputs/", "integration_tests/test_mvp_spine.py")
+            "docs/knowledge/", "inputs/", "integration_tests/test_mvp_spine.py",
+            "docs/CARE_REVIEW_CALIBRATION_RESULTS.json")   # W1184: the reviewer model's own words, kept as written
     allowed = {
         "docs/FOLLOWUPS.json": ["Say: He is Allah, the One!"],
         "agentic_core/gaas/v5/horizon_guardrails.py": [r"(?:my|his|her|their|ones?|his\s+or\s+her)",
@@ -95416,7 +95420,7 @@ def test_w1164_the_owners_ten_decisions_of_2026_11_20_are_recorded_and_the_water
             "final audit has run (2026-12-31 at the latest)") in flat
     step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
     steps = re.findall(r"^   - (FU-\d+):", step5, re.M)
-    assert steps == ["FU-1165"], steps   # W1180: FU-1286 closed
+    assert steps == ["FU-1165", "FU-1054"], steps   # W1180: FU-1286 closed; W1184: FU-1054's run is the Owner's
     assert all(reg[s]["status"] == "open" for s in steps), steps
     assert "register my two ventures, Atmospheric Harvest Solutions and Aerius Energy Harvest, fresh in the new books" \
            in " ".join(step5.split()), "step 5 does not carry the Owner's answer on the two ventures"
@@ -96735,8 +96739,10 @@ def test_w1180_fu1286_is_closed_once_each_of_its_five_places_is_settled():
     notes = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
     flat = " ".join(notes.split())
     step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
-    assert re.findall(r"^   - (FU-\d+):", step5, re.M) == ["FU-1165"] and "git rm -r --cached venv" not in step5
-    assert "The rows in step 5: FU-1165, a step there." in flat and "FU-1165 and FU-1286" not in flat
+    #  W1184 - FU-1054's run joined step 5 once the row waited on the Owner's machine
+    assert re.findall(r"^   - (FU-\d+):", step5, re.M) == ["FU-1165", "FU-1054"] and "git rm -r --cached venv" not in step5
+    assert "The rows in step 5: FU-1165 and FU-1054, a step each there." in flat and "FU-1286" not in flat.split(
+        "The rows in step 5:", 1)[1].split(".", 1)[0]
     assert ("**Settled on 2026-11-20:** the five places that named your Windows home folder (FU-1286, closed W1180)"
             in flat), "the notes do not say the row is closed"
     yours = flat.split("**Still yours:**", 1)[1].split("**Settled on 2026-11-20:**", 1)[0]
@@ -97235,3 +97241,250 @@ def test_w1183_fu1054_the_care_reviewers_calibration_is_said_where_its_reviews_a
     made_up["cases"][0]["shown"] = "w1183 made-up planted answer 0, edited after the run"
     changed = cal.calibration_statement("care-reviewer")
     assert (changed["reason"], changed["calibrated"], changed["label"]) == ("set_changed", False, "Uncalibrated"), changed
+
+
+def test_w1184_fu1054_the_calibration_results_have_a_place_in_the_tree_and_the_run_waits_on_the_owners_machine(
+        client, tmp_path, monkeypatch):
+    """FU-1054 part 6 (W1184); P5.15's ACCEPT: "the calibration set and its results are in the tree". The results had
+    no place, and the one step left, a run with a model serving, is one only the Owner's machine can make. Held here:
+    L5. the tracked results file says what it is, holds only the agent's own runs or none, and says why when it holds
+        none, and check_results finds nothing wrong with it (so it stays true once the Owner's run is exported); it is
+        left out of test_w1143's pronoun scan, as it will hold the reviewer model's own words. Driven on the first day
+        the set can be run as the register stands: results_for_tree copies from a record only the runs the agent made
+        through its own door with a model serving (no typed run, no other agent's, none the floor answered), without
+        who entered them, and gives a score as score() gives it only to a run made on the set as it stands (its
+        version and its digest); exporting again adds nothing and drops nothing, and a run the tree holds is never
+        rewritten; it refuses a record it cannot read. check_results finds a changed count (never the score's words),
+        a run of another door or agent or with no model serving, who entered a run, a run twice, a document for
+        another agent, and runs beside a sentence saying there are none, or no run and no sentence. The script's
+        export writes the same document, never writes over a file it finds wrong, and its check passes the export and
+        finds a changed one; both refuse when there is no run, and the tracked file is never written;
+    L6. FU-1054 waits on the Owner's machine: gated, slotted OWNER, its files the calibration's, its why saying what
+        was built, what is left, that nothing made where no model serves is a run, that the cloud session closes it
+        from the committed file, and the date by which, naming the row that dates it; step 5 of the local notes and
+        the plan's list of what is with the Owner each give the step, which leaves the row open; the five rows of what
+        the cloud can still do ride P5.15, found by title, and P5.15 is not done while the run waits (gated, FU-1054
+        no longer rides it). Once the row is closed, its close note names a run the results file holds."""
+    import datetime as _dt
+    import hashlib
+    import importlib
+    import json
+    import os
+    import re
+    import subprocess
+    import sys
+    from pathlib import Path
+    from agentic_core.api import _review_calibration as cal
+    from agentic_core.api import care_reviewer as cr
+    from agentic_core.ai.native import orchestrator
+    root = Path(__file__).resolve().parents[1]
+    tracked = root / cal.RESULTS["care"]
+    before = hashlib.sha256(tracked.read_bytes()).hexdigest()
+    #  the first day the set can be run as the register stands, never a calendar day: a row read after a pinned day
+    #  counts as unread on it, so a re-read (FU-1820) would refuse the agent's door here
+    _w = cal.runnable_window(cal.load_set("care"))
+    assert _w, "the tree's set cannot be run on any day as the register stands"
+    D0 = _dt.date.fromisoformat(_w["from"])
+    monkeypatch.setattr(cal, "_today", lambda: D0)
+    data = tmp_path / "data"
+    data.mkdir()
+    runs = data / "review_calibration_runs.json"
+    monkeypatch.setattr(cal, "_runs_path", lambda: runs)
+    monkeypatch.setattr(importlib.import_module("agentic_core.ai.gateway"), "served_identity_of", lambda sb: {
+        "model": "w1184-stand-in", "build_digest": "w1184standin" + "0" * 52, "processor": None,
+        "basis": "a stand-in made up for W1184: no model ran"})
+
+    #  L5. the tracked file
+    doc = json.loads(tracked.read_text(encoding="utf-8"))
+    assert (doc["discipline"], doc["agent"], doc["set"]) == ("care", "care-reviewer", "docs/CARE_REVIEW_CALIBRATION.json")
+    assert doc["about"] == cal.RESULTS_ABOUT["care"] and "the server counts only the runs in its own record" in doc["about"]
+    assert cal.check_results(doc) == [], cal.check_results(doc)
+    if not doc["runs"]:
+        assert doc["no_run"] == cal.NO_RUN["care"] and "nothing made there is a run" in doc["no_run"], doc
+    #  it will hold what the reviewer model wrote, kept as written: test_w1143's pronoun scan leaves it out
+    spine = Path(__file__).read_text(encoding="utf-8")
+    w1143 = spine.split("\ndef test_w1143_no_document_a_round_wrote_gives_the_owner_a_pronoun_the_owner_has_not_stated(",
+                        1)[1].split("\ndef test_", 1)[0]
+    w1143_left = re.search(r"^    left = \(([^)]*)\)", w1143, re.M)
+    assert w1143_left and '"docs/CARE_REVIEW_CALIBRATION_RESULTS.json"' in w1143_left.group(1), "test_w1143 reads it"
+    assert "the reviewer model's own words, kept as written, as the fidelity runs do" in " ".join(w1143.split())
+
+    #  ...a record with the agent's own runs, a typed run and another agent's: on the tree's set and on a made-up one
+    the_set = cal.load_set("care")
+    tree_set = cal.load_set
+    said = {c["id"]: "FLAG: none" for c in the_set["cases"]}
+    said.update({"C01": "FLAG: source not current", "C04": "FLAG: professional role claimed"})
+
+    async def _stand_in(prompt, agent="assistant", **kw):
+        hit = [c["id"] for c in cal.load_set("care")["cases"] if c.get("shown") and cr.as_text(c["shown"]) in prompt]
+        assert len(hit) == 1, hit
+        return {"output": said.get(hit[0], "FLAG: none"), "served_by": "ollama:w1184-stand-in"}
+    monkeypatch.setattr(orchestrator, "complete", _stand_in)
+    on_tree = client.post("/api/v1/review/calibration/agent-run", json={"discipline": "care", "date": D0.isoformat()})
+    assert on_tree.status_code == 200, on_tree.text[:300]
+    typed = client.post("/api/v1/review/calibration/run", json={
+        "agent": "care-reviewer", "model": "m", "configuration": "model", "date": D0.isoformat(), "flags": {}})
+    assert typed.status_code == 200, typed.text[:300]
+    monkeypatch.setattr(cr, "AGENT", "w1184-other")
+    assert client.post("/api/v1/review/calibration/agent-run", json={"date": D0.isoformat()}).status_code == 200
+    monkeypatch.setattr(cr, "AGENT", "care-reviewer")
+    made_up = {"version": "w1184-t", "checklist": the_set["checklist"],
+               "cases": [{**c, "id": f"T{i}"} for i, c in enumerate(the_set["cases"][:2])]}
+    monkeypatch.setattr(cal, "load_set", lambda d: made_up if d == "care" else None)
+    said.update({"T0": "FLAG: source not current", "T1": "FLAG: none"})
+    on_old = client.post("/api/v1/review/calibration/agent-run", json={"date": D0.isoformat()})
+    assert on_old.status_code == 200, on_old.text[:300]
+    monkeypatch.setattr(cal, "load_set", tree_set)
+    record = json.loads(runs.read_text(encoding="utf-8"))
+    assert [r.get("door") for r in record] == [cal.AGENT_DOOR, cal.TYPED_DOOR, cal.AGENT_DOOR, cal.AGENT_DOOR], record
+    assert all(r.get("entered_by") for r in record), "the record keeps who entered each run"
+    #  ...and, written straight into the store, two runs of the agent's own door: one the floor answered, and one made
+    #  on the set's version when its cases were not the tree's (another digest)
+    floor = {**record[0], "run_id": "cal-w1184-floor", "configuration": "floor"}
+    other_digest = {**record[0], "run_id": "cal-w1184-digest", "set_digest": "0" * 64}
+    runs.write_text(json.dumps(record + [floor, other_digest], indent=1), encoding="utf-8")
+
+    out = cal.results_for_tree()
+    assert [r["run_id"] for r in out["runs"]] == [on_tree.json()["run_id"], on_old.json()["run_id"],
+                                                  "cal-w1184-digest"], out["runs"]
+    assert not any("entered_by" in r for r in out["runs"]) and "no_run" not in out, out
+    mine, old, dig = out["runs"]
+    assert mine["score"] == cal.score(the_set["cases"], mine["flags"]) and mine["score"]["caught"] == 2, mine["score"]
+    assert old["set_version"] == "w1184-t" and "score" not in old, old
+    assert dig["set_version"] == the_set["version"] and "score" not in dig, "a run on other cases was scored"
+    assert cal.check_results(out) == [], cal.check_results(out)
+    assert cal.results_for_tree(out) == out, "exporting again changed the results"
+    elsewhere = {**mine, "run_id": "cal-w1184-elsewhere"}
+    held = cal.results_for_tree({**out, "runs": [elsewhere] + out["runs"]})
+    assert [r["run_id"] for r in held["runs"]] == ["cal-w1184-elsewhere"] + [r["run_id"] for r in out["runs"]], held
+    #  the tree's copy of a run stands even where it is not the record's
+    kept = {**mine, "w1184": "the tree's copy"}
+    assert cal.results_for_tree({**out, "runs": [kept, old, dig]})["runs"] == [kept, old, dig], "a held run was rewritten"
+    #  check_results finds each thing wrong
+    bad = json.loads(json.dumps(out))
+    bad["runs"][0]["score"]["caught"] += 1
+    assert any("its stated score is not what score() gives" in p for p in cal.check_results(bad))
+    #  ...and holds a score to its counts, not its words: a bar or basis reworded in score() leaves a run standing
+    reworded = {**mine, "score": {**mine["score"], "bar": "the bar in other words", "basis": "the basis in other words"}}
+    assert cal.check_results({**out, "runs": [reworded, old, dig]}) == [], "a run was flagged for its score's words"
+    typed_row = {k: v for k, v in record[1].items() if k != "entered_by"}
+    assert any("it came by the typed door" in p for p in cal.check_results({**out, "runs": out["runs"] + [typed_row]}))
+    other_row = {k: v for k, v in record[2].items() if k != "entered_by"}
+    assert any("it is a run of 'w1184-other'" in p for p in cal.check_results({**out, "runs": out["runs"] + [other_row]}))
+    floor_row = {k: v for k, v in floor.items() if k != "entered_by"}
+    assert any("no model served it" in p for p in cal.check_results({**out, "runs": out["runs"] + [floor_row]}))
+    assert any("the results are for 'w1184-other'" in p for p in cal.check_results({**out, "agent": "w1184-other"}))
+    assert any("says who entered it" in p for p in cal.check_results(
+        {**out, "runs": [{**mine, "entered_by": "w1184-someone"}, old, dig]}))
+    assert any("in the results twice" in p for p in cal.check_results({**out, "runs": out["runs"] + [mine]}))
+    assert "the results hold runs and also say there is none" in cal.check_results({**out, "no_run": "none yet"})
+    assert "the results hold no run and do not say why" in cal.check_results(
+        {k: v for k, v in {**out, "runs": []}.items() if k != "no_run"})
+    #  a record it cannot read is never exported from
+    saved = runs.read_text(encoding="utf-8")
+    runs.write_text("{not json", encoding="utf-8")
+    try:
+        cal.results_for_tree()
+        raise AssertionError("an unreadable record was exported from")
+    except RuntimeError as exc:
+        assert "could not be read" in str(exc), exc
+    runs.write_text(saved, encoding="utf-8")
+
+    #  the script, in this scratch store only
+    env = {**os.environ, "DATA_DIR": str(data), "WORKSTATION_DATA_DIR": str(data), "AI_DISABLE_LOCAL": "1"}
+    script = [sys.executable, "scripts/calibration_results.py"]
+    target = tmp_path / "results.json"
+    e1 = subprocess.run(script + ["export", "--out", str(target)], cwd=root, env=env, capture_output=True, text=True)
+    assert e1.returncode == 0 and "exported: 3 new run(s), 3 in all" in e1.stdout, (e1.stdout, e1.stderr[-600:])
+    assert json.loads(target.read_text(encoding="utf-8")) == out, "the script wrote another document"
+    c1 = subprocess.run(script + ["check", "--file", str(target)], cwd=root, env=env, capture_output=True, text=True)
+    assert c1.returncode == 0 and c1.stdout.startswith("ok: 3 run(s) checked"), (c1.stdout, c1.stderr[-600:])
+    target.write_text(json.dumps(bad, indent=1), encoding="utf-8")
+    c2 = subprocess.run(script + ["check", "--file", str(target)], cwd=root, env=env, capture_output=True, text=True)
+    assert c2.returncode == 1 and "PROBLEM:" in c2.stdout, c2.stdout
+    #  the file export merges into is checked first, and one it finds wrong is never written over
+    listed = tmp_path / "listed.json"
+    listed.write_text(json.dumps(["not the results"]), encoding="utf-8")
+    e2 = subprocess.run(script + ["export", "--out", str(listed)], cwd=root, env=env, capture_output=True, text=True)
+    assert (e2.returncode, "Traceback" in e2.stderr) == (1, False), (e2.returncode, e2.stderr[-600:])
+    assert "NOT EXPORTED: the results are not a document" in e2.stdout, e2.stdout
+    assert json.loads(listed.read_text(encoding="utf-8")) == ["not the results"], "a file not the results was written"
+    odd = tmp_path / "odd.json"
+    odd_doc = {**out, "runs": out["runs"] + ["not a run"]}
+    odd.write_text(json.dumps(odd_doc, indent=1), encoding="utf-8")
+    e3 = subprocess.run(script + ["export", "--out", str(odd)], cwd=root, env=env, capture_output=True, text=True)
+    assert e3.returncode == 1 and "NOT EXPORTED: a run in the results is not a record" in e3.stdout, (
+        e3.stdout, e3.stderr[-600:])
+    assert json.loads(odd.read_text(encoding="utf-8")) == odd_doc, "what the file held was dropped"
+    nothing = tmp_path / "none"
+    nothing.mkdir()
+    env0 = {**env, "DATA_DIR": str(nothing), "WORKSTATION_DATA_DIR": str(nothing)}
+    blank = tmp_path / "blank.json"
+    e0 = subprocess.run(script + ["export", "--out", str(blank)], cwd=root, env=env0, capture_output=True, text=True)
+    assert e0.returncode == 1 and "examined nothing" in e0.stdout and not blank.exists(), e0.stdout
+    blank.write_text(json.dumps({**doc, "runs": [], "no_run": cal.NO_RUN["care"]}), encoding="utf-8")
+    c0 = subprocess.run(script + ["check", "--file", str(blank)], cwd=root, env=env0, capture_output=True, text=True)
+    assert c0.returncode == 1 and "examined nothing" in c0.stdout, c0.stdout
+    assert hashlib.sha256(tracked.read_bytes()).hexdigest() == before, "the tracked results file was written"
+
+    #  L6. the register, the local notes and the plan's list
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    fu = reg["FU-1054"]
+    titles = {
+        "Workstation's Care reviewer reviews no Care tool: nothing runs it over a tool's answers and writes the clause-2 "
+        "record, so the reviews its rates stand beside exist only if an administrator types one": "medium",
+        "The Care calibration set cannot be run after 2027-01-10: three rows four of its cases rely on were read on "
+        "2026-10-12": "medium",
+        "A reviewer agent is calibrated by its name alone": "low",
+        "The reviewer is shown no published table, so C03 and C10 measure recall of NEWS2": "low",
+        "Care states each tool's tier only while its tab is open, and the child-concern answer carries none: no place "
+        "on the Care page gives all four": "medium"}
+    found = {t: [r for r in reg.values() if r["title"] == t] for t in titles}
+    assert all(len(v) == 1 for v in found.values()), {t: len(v) for t, v in found.items()}
+    for t, severity in titles.items():
+        r = found[t][0]
+        assert (r["slot"], r["severity"], r["owner_gated"]) == ("P5.15", severity, False), (r["id"], r["slot"])
+        assert r["status"] == "open" or r.get("closed_by"), r["id"]
+    dated = found["The Care calibration set cannot be run after 2027-01-10: three rows four of its cases rely on were "
+                  "read on 2026-10-12"][0]["id"]
+    for f in ("agentic_core/api/_review_calibration.py", "agentic_core/api/care_reviewer.py",
+              "docs/CARE_REVIEW_CALIBRATION_RESULTS.json", "scripts/calibration_results.py"):
+        assert f in fu["files"], (f, fu["files"])
+    for said_ in ("POST /api/v1/review/calibration/agent-run", "python scripts/calibration_results.py export and check",
+                  "commit docs/CARE_REVIEW_CALIBRATION_RESULTS.json", "the bar met or not",
+                  "Nothing made where no model serves, and no typed run, is a run.",
+                  "leaving this row open. The cloud session closes it from the committed file",
+                  f"RECOMMENDED: before 2027-01-10 ({dated})."):
+        assert said_ in fu["why"], ("FU-1054 does not say", said_)
+    notes = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
+    fable = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    still = " ".join(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0].split())
+    if fu["status"] == "open":
+        assert (fu["owner_gated"], fu["slot"]) == (True, "OWNER"), fu
+        assert fu["slot_source"].startswith("OWNER (the Owner's machine): the row's last step is a run with the local "
+                                            "model serving"), fu["slot_source"]
+        lines = step5.split("\n")
+        at = [i for i, ln in enumerate(lines) if ln.startswith("   - FU-1054:")]
+        assert len(at) == 1, ("step 5 has no step of its own for FU-1054", len(at))
+        end = at[0] + 1
+        while end < len(lines) and lines[end].startswith("     "):
+            end += 1
+        step = " ".join(" ".join(lines[at[0]:end]).split())
+        for said_ in ("GET /api/v1/review/calibration/care-reviewer", "POST /api/v1/review/calibration/agent-run",
+                      "Nothing made where no model serves is a run", "python scripts/calibration_results.py export",
+                      "run test_w1184", "commit docs/CARE_REVIEW_CALIBRATION_RESULTS.json", "whether or not it met the bar",
+                      "on your branch and push it. Leave FU-1054 open: the cloud session closes it from the committed file",
+                      "and takes this step out of step 5 and the plan's list"):
+            assert said_ in step, ("step 5 does not say", said_)
+        assert ("FU-1054 (W1184): on your machine, with the local model on, the Care reviewer's first calibration run"
+                in still and "Nothing made where no model serves is a run." in still), "the plan's list does not give it"
+        #  gated, FU-1054 no longer rides P5.15, so `followups.py done P5.15` would not see it: the item's ACCEPT
+        #  ("the calibration set and its results are in the tree") is not met while the run waits
+        from agentic_core import plan_followups as _pf
+        p515 = [i for i in _pf.plan_items(fable) if i["slot"] == "P5.15"]
+        assert len(p515) == 1 and not p515[0]["done"], ("P5.15 is done while its results wait on FU-1054", p515)
+    else:
+        #  once the Owner's run closes it, its close note names a run the tree holds
+        assert fu["status"] == "done" and doc["runs"], (fu["status"], len(doc["runs"]))
+        assert any(str(r["run_id"]) in (fu.get("close_note") or "") for r in doc["runs"]), fu.get("close_note")

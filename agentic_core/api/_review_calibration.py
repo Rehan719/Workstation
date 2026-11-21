@@ -337,3 +337,113 @@ def calibration_statement(agent: str, discipline: str = "care") -> Dict[str, Any
             "set": {"version": the_set.get("version"), "cases": len(cases), "planted": planted,
                     "clean": len(cases) - planted, "runnable_today": bool(can.get("runnable")),
                     "window": runnable_window(the_set) if the_set else None}}
+
+
+#  W1184 (FU-1054, S6) - THE RESULTS' PLACE IN THE TREE. A copy of the runs the agent made through its own door, taken
+#  from the record of the machine that made them (scripts/calibration_results.py export). The copy is evidence for a
+#  person to read; calibration_of reads only the machine's own record, never this file.
+RESULTS = {"care": "docs/CARE_REVIEW_CALIBRATION_RESULTS.json"}
+RESULTS_ABOUT = {"care": (
+    "The Care reviewer agent's calibration runs, copied into the tree from the record of the machine that made them "
+    "(python scripts/calibration_results.py export, then check). This copy is evidence for a person to read: the server "
+    "counts only the runs in its own record, never this file. A run is copied only when the agent made it through its "
+    "own door (POST /api/v1/review/calibration/agent-run) with a model serving; who entered it is not copied, and a run "
+    "already here is never dropped or rewritten. A run made on the set as it stands carries its score as score() gives "
+    "it from the run's own flags.")}
+NO_RUN = {"care": (
+    "No run of care-reviewer with a model serving has been made. No model serves where the cloud rounds run, and "
+    "nothing made there is a run; the first is made on the Owner's machine with the local model on (FU-1054).")}
+
+
+def results_for_tree(existing: Optional[Dict[str, Any]] = None, discipline: str = "care") -> Dict[str, Any]:
+    """W1184 - the runs this machine's record holds, as the tree keeps them: only a run the agent made through its own
+    door with a model serving, without who entered it, and with its score when it was made on the set as it stands.
+    Merged by run id into what the tree already holds, never dropping or rewriting a run the tree holds. Raises when
+    the record cannot be read: nothing is exported from a record that could not be read."""
+    runs = _runs()
+    if runs is None:
+        raise RuntimeError("the record of calibration runs could not be read, so nothing is exported from it")
+    the_set = load_set(discipline) or {}
+    agent = REVIEWER_OF.get(discipline)
+    doc: Dict[str, Any] = {"about": RESULTS_ABOUT.get(discipline), "discipline": discipline, "agent": agent,
+                           "set": SETS.get(discipline), **(existing or {})}
+    held = [dict(r) for r in (doc.get("runs") or []) if isinstance(r, dict)]
+    have = {str(r.get("run_id")) for r in held}
+    for r in runs:
+        if r.get("door") != AGENT_DOOR or r.get("configuration") != "model":
+            continue
+        if str(r.get("agent") or "") != agent or r.get("discipline") != discipline:
+            continue
+        if str(r.get("run_id")) in have:
+            continue                         # the tree's copy stands: never rewritten
+        row = {k: v for k, v in r.items() if k != "entered_by"}
+        if row.get("set_version") == the_set.get("version") and row.get("set_digest") == set_digest(the_set):
+            row["score"] = score(the_set.get("cases") or [], row.get("flags") or {})
+        held.append(row)
+        have.add(str(row.get("run_id")))
+    doc["runs"] = held
+    if held:
+        doc.pop("no_run", None)
+    else:
+        doc["no_run"] = NO_RUN.get(discipline)
+    return doc
+
+
+#  W1184 - what a run's stated score is held to: its counts and the cases they name. The bar's and the basis's words,
+#  and the two rates (fractions of these counts), are left out, so rewording them in score() leaves a committed run
+#  standing; a change to what is counted does not.
+_COUNTED = ("planted_cases", "caught", "clean_cases", "false_alarms", "meets_bar")
+
+
+def _counted(s: Any) -> Optional[Dict[str, Any]]:
+    if not isinstance(s, dict):
+        return None
+    out: Dict[str, Any] = {k: s.get(k) for k in _COUNTED}
+    fa, missed = s.get("false_alarm_cases"), s.get("missed")
+    out["false_alarm_cases"] = sorted(str(x) for x in fa) if isinstance(fa, list) else fa
+    out["missed"] = (sorted(str(m.get("case")) if isinstance(m, dict) else str(m) for m in missed)
+                     if isinstance(missed, list) else missed)
+    return out
+
+
+def check_results(doc: Any, discipline: str = "care") -> List[str]:
+    """W1184 - what is wrong with the tree's copy of the results, as a list, empty when nothing is: a run that came by
+    another door, with no model serving or of another agent; a run that says who entered it; a run id twice; for a run
+    made on the set as it stands, stated counts that are not what score() counts now from the run's own flags (its
+    words are not compared); runs beside a sentence saying there are none, or no run and no sentence saying why; and
+    a document for another agent or discipline."""
+    if not isinstance(doc, dict):
+        return ["the results are not a document"]
+    agent = REVIEWER_OF.get(discipline)
+    out: List[str] = []
+    if doc.get("discipline") != discipline or doc.get("agent") != agent:
+        out.append(f"the results are for {doc.get('agent')!r} in {doc.get('discipline')!r}, not {agent} in {discipline}")
+    runs = doc.get("runs")
+    if not isinstance(runs, list):
+        return out + ["the results hold no list of runs"]
+    the_set = load_set(discipline) or {}
+    seen = set()
+    for r in runs:
+        if not isinstance(r, dict):
+            out.append("a run in the results is not a record")
+            continue
+        rid = str(r.get("run_id"))
+        if r.get("door") != AGENT_DOOR:
+            out.append(f"{rid}: it came by the {r.get('door') or 'unnamed'} door, not the agent's own")
+        if r.get("configuration") != "model":
+            out.append(f"{rid}: no model served it ({r.get('configuration')!r})")
+        if str(r.get("agent") or "") != agent:
+            out.append(f"{rid}: it is a run of {r.get('agent')!r}, not of {agent}")
+        if "entered_by" in r:
+            out.append(f"{rid}: it says who entered it, which the tree does not keep")
+        if rid in seen:
+            out.append(f"{rid}: the run is in the results twice")
+        seen.add(rid)
+        if r.get("set_version") == the_set.get("version") and r.get("set_digest") == set_digest(the_set):
+            if _counted(r.get("score")) != _counted(score(the_set.get("cases") or [], r.get("flags") or {})):
+                out.append(f"{rid}: its stated score is not what score() gives from its flags now")
+    if runs and doc.get("no_run"):
+        out.append("the results hold runs and also say there is none")
+    if not runs and not str(doc.get("no_run") or "").strip():
+        out.append("the results hold no run and do not say why")
+    return out
