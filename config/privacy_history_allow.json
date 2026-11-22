@@ -1,0 +1,4 @@
+{
+  "about": "W1208 (FU-1864): allowances for the privacy screen's read-only history mode, python scripts/privacy_check.py --history. Each entry of allowed is an object with commit (the commit a finding names: a full id of 40 hex digits, 64 in a SHA-256 repository, or an abbreviation of at least seven), path (the path the finding names at that commit), kind (credential), line (the line the finding names) and reason (why the finding is not a credential). Each entry allows that one finding only. An entry without a reason or a line is not honoured, and nothing here allows anything in the tree, which is config/privacy_allow.json. A real credential is never allowed here: it is revoked at its provider by the Owner (runbook step 3; the values W729 redacted are FU-1837).",
+  "allowed": []
+}

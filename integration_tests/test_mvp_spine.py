@@ -104084,3 +104084,306 @@ def test_w1233_a_signed_out_visitor_is_sent_to_the_sign_in_page_not_shown_the_sh
                  "never redirects a session that is not known: a refusal or an unreachable server",
                  "does not redirect on a 401 from a sign-in call"):
         assert "expect(assign).not.toHaveBeenCalled();" in body(name), name
+
+
+def test_w1208_the_privacy_screen_reads_history_for_credentials_and_says_where_its_walk_stopped(tmp_path, monkeypatch,
+                                                                                                capsys):
+    """FU-1864 (W1208, design key B9), P4.5. The privacy screen read only the current tree, and its report hard-coded
+    history_scanned False, so a credential removed from the tree in an earlier round was reported nowhere. The history
+    mode reads every blob in history once and whole, for credentials, and only reads. Every repository here is a
+    temporary one, and every value is a made-up one built at run time. Held here:
+    H1. HISTORY IS READ: commit 1 adds notes/k.txt holding a key-shaped value and commit 2 removes it. The tree scan
+        finds nothing; scan_history finds one credential finding, naming commit 1, notes/k.txt and line 2. A file
+        renamed after the value came in is dated to the commit that brought it, at its first path, with every path it
+        had. A value across the edge of a reading window is found once, at its line. The walk changes nothing: every
+        file under .git is byte for byte the same after it and the CLI. A refs option it does not walk is refused
+        before git runs, and a blob git cannot read stops the walk;
+    H2. NO VALUE TRAVELS: no eight-character piece of a value is in the report's JSON or the CLI's output;
+    H3. COVERAGE IS SAID: the full walk says history was scanned, with its refs, its commit and blob counts, and that
+        it covers the refs the clone holds. On a --depth 1 clone made over file:// (git ignores --depth on a plain
+        path), the report says it was not, and its basis names the boundary commit; a shallow clone whose boundary
+        holds the value names that commit as where the walk stopped. A grafts file makes the walk partial; a replace
+        ref hides nothing; a partial clone is refused, and nothing is fetched into it;
+    H4. ALLOWANCES BY COMMIT: an entry (commit, path, kind, line) with a reason allows only that finding, one of two in
+        the same blob; one with no reason or no line, another commit, path, kind or line, or an abbreviation under
+        seven digits is not honoured; load_allowed reads nothing from the history file, so a history allowance clears
+        nothing in the tree;
+    H5. THE CLI: --history exits 1 with the finding, 0 once it is allowed, 2 with 'examined nothing' on a repository
+        with no commits, 2 when it could not run (git missing included), and 2 on a shallow clone, said as partial; a
+        path with control characters is printed escaped. The default mode is unchanged: the tree report and its 'NOT
+        SCANNED: git history was NOT scanned' line (test_w732's pins);
+    H6. THE TREE AND THE REGISTER: config/privacy_history_allow.json holds an allowed list in its format, each entry
+        honoured; the runbook's step 6 says the mode reads and changes nothing, a shallow clone stops it, and the full
+        run is on a mirror clone; FU-1837 names the history run as a later step, after the host's secret-scanning alert
+        list, and no row is registered for it; FU-1864 is on P4.5, low, open or closed by W1208 as built."""
+    import hashlib
+    import importlib.util
+    import json
+    import pathlib
+    import random
+    import re
+    import string
+    import subprocess
+    from agentic_core import privacy_exposure as pe
+    root = pathlib.Path(__file__).resolve().parents[1]
+    monkeypatch.setenv("WORKSTATION_PRIVATE_MARKERS", str(tmp_path / "no_marker_list_here.txt"))
+
+    def git(repo, *a):
+        r = subprocess.run(["git", "-C", str(repo), "-c", "user.email=w1208@example.invalid", "-c", "user.name=w1208",
+                            "-c", "commit.gpgsign=false", "-c", "init.defaultBranch=main", *a],
+                           capture_output=True, text=True)
+        assert r.returncode == 0, (a[:3], r.stderr[-400:])
+        return r.stdout.strip()
+
+    def commit(repo, msg):
+        git(repo, "commit", "-q", "--no-verify", "-m", msg)
+        return git(repo, "rev-parse", "HEAD")
+
+    def snapshot(repo):
+        """Every file under .git, by its bytes: the walk is to leave each as it was."""
+        return {str(p.relative_to(repo)): hashlib.sha256(p.read_bytes()).hexdigest()
+                for p in sorted((repo / ".git").rglob("*")) if p.is_file()}
+
+    #  made-up, obviously fake keys of the Google API key's shape, built here so no file holds one whole
+    rng = random.Random(1208)
+
+    def fake():
+        return "AIza" + "FAKEw1208" + "".join(rng.choice(string.ascii_letters + string.digits) for _ in range(26))
+    value, other, third = fake(), fake(), fake()
+    assert [f["kind"] for f in pe.scan_one("v.txt", value.encode())] == ["credential"], "the made-up value is no key"
+    pieces = [v[i:i + 8] for v in (value, other, third) for i in range(len(v) - 7)]
+
+    def leaks(text):
+        return [p for p in pieces if p in text]
+
+    def fresh(name):
+        repo = tmp_path / name
+        repo.mkdir()
+        git(repo, "init", "-q")
+        return repo
+
+    repo = fresh("repo")
+    (repo / "notes").mkdir()
+    (repo / "notes" / "k.txt").write_text(f"x\nkey={value}\n", encoding="utf-8")
+    (repo / "notes" / "readme.txt").write_text("nothing private here\n", encoding="utf-8")
+    git(repo, "add", "notes")
+    c1 = commit(repo, "one")
+    git(repo, "rm", "-q", "notes/k.txt")
+    c2 = commit(repo, "two")
+    git(repo, "branch", "early", c1)
+    git(repo, "config", "uploadpack.allowFilter", "true")
+
+    #  H1. HISTORY IS READ, and nothing is written
+    tree = pe.scan(repo)
+    assert tree["findings"] == [] and tree["files_read"] == 1 and tree["history_scanned"] is False, tree["findings"]
+    before = snapshot(repo)
+    h = pe.scan_history(repo)
+    assert [(f["commit"], f["path"], f["paths"], f["kind"], f["line"], f["at_boundary"]) for f in h["findings"]] == [
+        (c1, "notes/k.txt", ["notes/k.txt"], "credential", 2, False)], [(f["commit"], f["path"]) for f in h["findings"]]
+    assert h["findings"][0]["what"] == "a Google API key" and h["count"] == 1 and h["allowed_count"] == 0
+    assert h["checked"] == ["credential"] and "credential" not in h["not_checked"], h["checked"]
+    assert snapshot(repo) == before, "the history walk changed the repository"
+    #     a rename after the value came in: dated to the commit that brought it, at its first path
+    moved = fresh("moved")
+    (moved / "a").mkdir()
+    (moved / "a" / "k.txt").write_text(f"key={value}\n", encoding="utf-8")
+    git(moved, "add", "a")
+    m1 = commit(moved, "in")
+    git(moved, "mv", "a/k.txt", "a/z.txt")
+    commit(moved, "renamed")
+    mv = pe.scan_history(moved)
+    assert [(f["commit"], f["path"], f["paths"]) for f in mv["findings"]] == [
+        (m1, "a/k.txt", ["a/k.txt", "a/z.txt"])], [(f["commit"], f["path"]) for f in mv["findings"]]
+    #     a value across a reading window's edge is read, once, at its own line
+    big = fresh("big")
+    (big / "big.txt").write_text(("p" * 9 + "\n") * 99 + f"key={value}\n" + ("q" * 9 + "\n") * 30, encoding="utf-8")
+    git(big, "add", "big.txt")
+    b1 = commit(big, "big")
+    monkeypatch.setattr(pe, "HISTORY_WINDOW", 100)
+    monkeypatch.setattr(pe, "HISTORY_OVERLAP", 60)
+    w = pe.scan_history(big)
+    assert [(f["commit"], f["line"]) for f in w["findings"]] == [(b1, 100)], [(f["line"]) for f in w["findings"]]
+    monkeypatch.undo()
+    monkeypatch.setenv("WORKSTATION_PRIVATE_MARKERS", str(tmp_path / "no_marker_list_here.txt"))
+    #     a refs option it does not walk is refused before git runs; a blob git cannot read stops the walk
+    for bad_refs in ("--output=" + str(tmp_path / "written.txt"), "--not", ""):
+        try:
+            pe.scan_history(repo, refs=bad_refs)
+            raise AssertionError(("a refs option was walked", bad_refs[:9]))
+        except RuntimeError:
+            pass
+    assert not (tmp_path / "written.txt").exists(), "a refs option wrote a file"
+    try:
+        list(pe._blobs_scanned(repo, ["0" * 40]))
+        raise AssertionError("a blob git could not read was passed over")
+    except RuntimeError:
+        pass
+
+    #  H2. NO VALUE TRAVELS
+    assert leaks(json.dumps(h)) == [] and leaks(json.dumps(tree)) == [], "a report carries a piece of the value"
+    assert leaks(json.dumps(mv)) == [] and leaks(json.dumps(w)) == []
+
+    #  H3. COVERAGE IS SAID: the full walk ...
+    assert (h["history_scanned"], h["shallow"], h["boundary_commits"], h["refs"]) == (True, False, [], ["--all"]), h
+    assert (h["commits_walked"], h["blobs_read"], h["grafted"]) == (2, 2, False), (h["commits_walked"], h["blobs_read"])
+    assert ("git history was scanned for credentials" in h["history_basis"] and "--all" in h["history_basis"]
+            and "2 commit(s), 2 distinct blob(s)" in h["history_basis"]), h["history_basis"]
+    assert "the refs this clone holds" in h["history_basis"] and "mirror clone" in h["history_basis"]
+    assert "changes no commit, ref, object or file" in h["read_only"]
+    #     ... and a --depth 1 clone over file://, checked to be shallow (on a plain path git would clone it whole)
+    shallow = tmp_path / "shallow"
+    git(tmp_path, "clone", "-q", "--depth", "1", repo.resolve().as_uri(), str(shallow))
+    assert git(shallow, "rev-parse", "--is-shallow-repository") == "true", "the clone is not shallow"
+    s = pe.scan_history(shallow)
+    assert (s["history_scanned"], s["shallow"], s["boundary_commits"], s["findings"]) == (False, True, [c2], []), s
+    assert "NOT scanned in full" in s["history_basis"] and c2[:12] in s["history_basis"], s["history_basis"]
+    assert "never a pass" in s["history_basis"] and s["commits_walked"] == 1, s["history_basis"]
+    early = tmp_path / "early"
+    git(tmp_path, "clone", "-q", "--depth", "1", "--branch", "early", repo.resolve().as_uri(), str(early))
+    e = pe.scan_history(early)
+    assert [(f["commit"], f["path"], f["at_boundary"]) for f in e["findings"]] == [(c1, "notes/k.txt", True)], e
+    assert e["history_scanned"] is False and c1[:12] in e["history_basis"], e["history_basis"]
+    #     a partial clone is refused, and nothing is fetched into it
+    partial = tmp_path / "partial"
+    git(tmp_path, "clone", "-q", "--filter=blob:none", "--no-checkout", repo.resolve().as_uri(), str(partial))
+    held = snapshot(partial)
+    try:
+        pe.scan_history(partial)
+        raise AssertionError("a partial clone was walked")
+    except RuntimeError as exc:
+        assert "partial clone" in str(exc), str(exc)
+    assert snapshot(partial) == held, "reading a partial clone fetched into it"
+
+    #  H4. ALLOWANCES BY COMMIT, path, kind and line, each with a reason
+    cfg = repo / "config"
+    cfg.mkdir()
+
+    def allow_file(where, *entries):
+        (where / "config").mkdir(exist_ok=True)
+        (where / "config" / "privacy_history_allow.json").write_text(json.dumps({"allowed": list(entries)}),
+                                                                     encoding="utf-8")
+        return pe.load_history_allowed(where)
+
+    why = "a made-up value this guard plants"
+    entry = {"commit": c1, "path": "notes/k.txt", "kind": "credential", "line": 2, "reason": why}
+    assert allow_file(repo, entry) == [(c1, "notes/k.txt", "credential", 2)]
+    ok = pe.scan_history(repo, allowed=pe.load_history_allowed(repo))
+    assert (ok["findings"], ok["allowed_count"], ok["count"]) == ([], 1, 0), ok["findings"]
+    assert pe.scan_history(repo, allowed=allow_file(repo, dict(entry, commit=c1[:7])))["findings"] == []
+    for bad in (dict(entry, reason=""), dict(entry, reason="  "), {k: v for k, v in entry.items() if k != "reason"},
+                {k: v for k, v in entry.items() if k != "line"}, dict(entry, line=0), dict(entry, line="2"),
+                dict(entry, line=True), dict(entry, commit=c1[:6])):
+        assert allow_file(repo, bad) == [], ("an allowance that should not be honoured was read", sorted(bad))
+    for wrong in (dict(entry, commit=c2), dict(entry, path="notes/other.txt"), dict(entry, kind="case_number"),
+                  dict(entry, line=1)):
+        got = pe.scan_history(repo, allowed=allow_file(repo, wrong))
+        assert len(got["findings"]) == 1 and got["allowed_count"] == 0, ("an allowance cleared another finding",
+                                                                         sorted(wrong))
+    #     two values in one blob: an allowance for one leaves the other; a path with control characters is kept whole
+    two = fresh("two")
+    (two / "demo.txt").write_text(f"a={other}\nx\nb={third}\n", encoding="utf-8")
+    odd = "odd\x1b[2J\nname.txt"
+    (two / odd).write_text(f"k={value}\n", encoding="utf-8")
+    git(two, "add", "-A")
+    t1 = commit(two, "two values")
+    got = pe.scan_history(two, allowed=allow_file(two, {"commit": t1, "path": "demo.txt", "kind": "credential",
+                                                        "line": 1, "reason": why}))
+    assert sorted((f["path"], f["line"]) for f in got["findings"]) == [("demo.txt", 3), (odd, 1)], got["findings"]
+    assert got["allowed_count"] == 1 and leaks(json.dumps(got)) == []
+    #     the tree's allowances are the tree's alone: a history allowance clears nothing there
+    (cfg / "privacy_allow.json").write_text(json.dumps([{"path": "tree.txt", "kind": "credential",
+                                                         "reason": "a tree fixture"}]), encoding="utf-8")
+    allow_file(repo, entry)
+    assert pe.load_allowed(repo) == [("tree.txt", "credential")], pe.load_allowed(repo)
+    planted = pe.scan(repo, files=[("notes/k.txt", f"key={value}\n".encode())], allowed=pe.load_allowed(repo))
+    assert [(f["path"], f["kind"]) for f in planted["findings"]] == [("notes/k.txt", "credential")], planted["findings"]
+
+    #  H5. THE CLI, driven against the temporary repositories
+    spec = importlib.util.spec_from_file_location("_w1208_pc", root / "scripts" / "privacy_check.py")
+    pc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pc)
+
+    def run(where, *argv):
+        monkeypatch.setattr(pc, "ROOT", where)
+        rc = pc.main(list(argv))
+        return rc, capsys.readouterr().out
+
+    (cfg / "privacy_history_allow.json").unlink()
+    rc, out = run(repo, "--history")
+    assert rc == 1 and f"credential         {c1[:12]} notes/k.txt:2" in out and "STOP:" in out, (rc, out[-600:])
+    assert "git history was scanned for credentials" in out and "READ-ONLY:" in out, out[-600:]
+    assert leaks(out) == [], "the CLI's output carries a piece of the value"
+    allow_file(repo, entry)
+    rc, out = run(repo, "--history")
+    assert rc == 0 and "0 finding(s) over 2 blob(s) in 2 commit(s)" in out and "1 allowed" in out, (rc, out[-600:])
+    rc, out = run(shallow, "--history")
+    assert rc == 2 and "PARTIAL:" in out and "not a pass" in out and c2[:12] in out, (rc, out[-600:])
+    rc, out = run(early, "--history")
+    assert rc == 1 and "the walk stopped at this commit" in out and leaks(out) == [], (rc, out[-600:])
+    rc, out = run(two, "--history")
+    assert rc == 1 and "odd\\x1b[2J\\x0aname.txt:1" in out and "\x1b" not in out and leaks(out) == [], (rc, out[-600:])
+    rc, out = run(partial, "--history")
+    assert rc == 2 and "COULD NOT RUN" in out and "partial clone" in out, (rc, out[-400:])
+    empty = fresh("empty")
+    rc, out = run(empty, "--history")
+    assert rc == 2 and "PRIVACY CHECK REFUSING: examined nothing" in out, (rc, out)
+    rc, out = run(tmp_path / "no_repo_here", "--history")
+    assert rc == 2 and "COULD NOT RUN" in out, (rc, out)
+    rc, out = run(repo, "--history", "--staged")
+    assert rc == 2 and "COULD NOT RUN" in out, (rc, out)
+    #     the default mode is as it was: the tree, and history said as not scanned
+    assert snapshot(repo) == before, "the CLI changed the repository"
+    rc, out = run(repo)
+    assert rc == 0 and "privacy check: 0 finding(s) over 1 tracked file(s)" in out, (rc, out)
+    assert "NOT SCANNED: git history was NOT scanned" in out, out
+
+    #  H3 (continued). A replace ref hides nothing; a grafts file makes the walk partial
+    clean = git(repo, "commit-tree", git(repo, "rev-parse", f"{c2}^{{tree}}"), "-m", "clean")
+    git(repo, "replace", c1, clean)
+    rp = pe.scan_history(repo)
+    assert [(f["commit"], f["path"]) for f in rp["findings"]] == [(c1, "notes/k.txt")], "a replace ref hid a commit"
+    assert rp["replace_refs_ignored"] == 1 and rp["history_scanned"] is True, rp["history_basis"]
+    git(repo, "replace", "-d", c1)
+    (repo / ".git" / "info").mkdir(exist_ok=True)
+    (repo / ".git" / "info" / "grafts").write_text(c2 + "\n", encoding="utf-8")
+    gr = pe.scan_history(repo)
+    assert gr["grafted"] is True and gr["history_scanned"] is False, gr["history_basis"]
+    assert "grafts file" in gr["history_basis"] and "never a pass" in gr["history_basis"], gr["history_basis"]
+    rc, out = run(repo, "--history")
+    assert rc in (1, 2) and rc != 0, (rc, out[-400:])
+    (repo / ".git" / "info" / "grafts").unlink()
+    #     git missing: could not run, exit 2, never the exit of a finding
+    (tmp_path / "no_bin").mkdir()
+    monkeypatch.setenv("PATH", str(tmp_path / "no_bin"))
+    rc, out = run(repo, "--history")
+    assert rc == 2 and "COULD NOT RUN" in out, (rc, out[-300:])
+    monkeypatch.undo()
+
+    #  H6. THE TREE AND THE REGISTER
+    doc = json.loads((root / "config" / "privacy_history_allow.json").read_text(encoding="utf-8"))
+    assert isinstance(doc.get("allowed"), list), "the history allowances are not a list"
+    for ent in doc["allowed"]:
+        assert (isinstance(ent, dict) and pe._COMMIT_ID.fullmatch(str(ent.get("commit", ""))) and ent.get("path")
+                and ent.get("kind") in pe.HISTORY_KINDS and isinstance(ent.get("line"), int) and ent["line"] >= 1
+                and str(ent.get("reason") or "").strip()), ("an allowance is not in the file's format", sorted(ent))
+    assert len(pe.load_history_allowed(root)) == len(doc["allowed"]), "a written allowance is not honoured"
+    assert all(w in doc["about"] for w in ("commit", "path", "kind", "line", "reason", "not honoured")), doc["about"]
+    flat = lambda t: " ".join(t.split())  # noqa: E731
+    book = flat((root / pe.RUNBOOK).read_text(encoding="utf-8").split("6. **History:**", 1)[1].split("\n7. ", 1)[0])
+    assert ("`python scripts/privacy_check.py --history` reads every blob in history for credentials and changes "
+            "nothing (no commit, ref or file); on a shallow clone it names the boundary commits it stopped at and is "
+            "never a pass") in book and "`git clone --mirror`" in book, book
+    reg = {r["id"]: r for r in json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    why = flat(reg["FU-1837"]["why"])
+    said = ("W1208 (2026-11-22, FU-1864): the privacy screen's read-only history mode, python scripts/privacy_check.py "
+            "--history, is a later step, after the repository host's secret-scanning alert list.")
+    assert said in why and why.index("beginning with the repository host's secret-scanning alert list") < why.index(
+        said), "FU-1837 does not name the history run as a later step"
+    assert "A finding there that these values already cover is recorded under this row, not as a new row." in why
+    assert reg["FU-1837"]["status"] == "open" or reg["FU-1837"].get("closed_by") != "W1208", "the Owner's row closed"
+    assert not [r["id"] for r in reg.values() if str(r.get("source", "")).startswith("W1208")], "W1208 registered a row"
+    fu = reg["FU-1864"]
+    assert (fu["slot"], fu["severity"]) == ("P4.5", "low"), (fu["slot"], fu["severity"])
+    assert fu["status"] == "open" or (fu["status"], fu.get("closed_by"), fu.get("because")) == (
+        "done", "W1208", "built"), (fu["status"], fu.get("closed_by"))
+    assert not re.search(r"\b(he|his|him|she|her|hers)\b", doc["about"] + book + said, re.I)
