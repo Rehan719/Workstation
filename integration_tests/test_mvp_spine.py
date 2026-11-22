@@ -63628,8 +63628,10 @@ def test_w691_a_reviewer_agent_is_calibrated_by_its_recorded_run_and_never_by_a_
     #  THE SET IN THE TREE says it cannot be run yet, so NO agent is calibrated - and a run on it is refused
     the_set = cal.load_set("care")
     assert the_set and len(the_set["cases"]) == 16   # W1099: computed
-    #  W1122: its last two sources were read on 2026-11-19, so it can be run from that day and could not before
-    assert cal.runnable(the_set, on="2026-11-15")["runnable"] is False and cal.runnable(the_set, on="2026-11-19")["runnable"] is True
+    #  W1122: its last two sources were read on 2026-11-19, so it could not be run before that day. W1195d: it
+    #  can be run from its window's first day, the latest read of a row its cases rely on (FU-1820)
+    assert cal.runnable(the_set, on="2026-11-15")["runnable"] is False and cal.runnable(
+        the_set, on=cal.runnable_window(the_set)["from"])["runnable"] is True
     assert sum(1 for c in the_set["cases"] if c.get("planted")) == 10
     runs = tmp_path / "review_calibration_runs.json"
     monkeypatch.setattr(cal, "_runs_path", lambda: runs)
@@ -90763,8 +90765,10 @@ def test_w1099_fu1054_the_care_calibration_set_is_written_out_and_run_only_when_
     - whether a set can be run is computed, and every rule drives it: a case not written out, a planted case with no
       `from`, a row not in the register, a row in another status, a current row not read within the review period
       of the run's date or read after it, and a part the row says was NOT READ - and each reason is said;
-    - on 2026-11-15 the set cannot be run: its four cases that rely on NEWS2's chart (C03, C10, K02) and on NICE
-      NG97 (K06) rely on reads made on 2026-11-19, after that day (W1122); from 2026-11-19 it can be run;
+    - on 2026-11-15 the set cannot be run: its eight cases that rely on a current row rely on reads made after
+      that day, NEWS2's chart (C03, C10, K02) and NICE NG97 (K06) on 2026-11-19 (W1122), and the children's
+      route (C02, K01), the MUST terms (C07) and NICE NG249 (K03) when they were read again (W1195d); from its
+      window's first day it can be run;
     - the calibration route records a run only on a date the set can be run, and refuses one on the tree's set with
       those reasons, writing nothing; a flag in a set's file decides nothing either way."""
     import datetime as _dt
@@ -90786,14 +90790,18 @@ def test_w1099_fu1054_the_care_calibration_set_is_written_out_and_run_only_when_
             assert c.get("must_flag") and len(str(c.get("from") or "")) > 40, (cid, c.get("from"))
         assert isinstance(c.get("relies_on"), list), cid
     assert "NICE NG97" in cases["K06"]["shown"]["standard"] and "verified against clinical guidance" in cases["C08"]["described_before"]
-    #  W1122: the two causes outside this machine were read on 2026-11-19, so on that day the set can be run, and
-    #  on 2026-11-15 it could not: its four cases that rely on them rely on reads made after that date
-    assert cal.runnable(raw, on="2026-11-19") == {"runnable": True, "on": "2026-11-19", "why_not": []}
+    #  W1122: the two causes outside this machine were read on 2026-11-19; W1195d: three more rows were read again
+    #  since (FU-1820), so the set can be run from its window's first day, the latest of those reads, and on
+    #  2026-11-15 it could not: its eight cases that rely on a current row rely on reads made after that date
+    day = cal.runnable_window(raw)["from"]
+    assert cal.runnable(raw, on=day) == {"runnable": True, "on": day, "why_not": []}
     on = cal.runnable(raw, on="2026-11-15")
     late = "which was not read within the register's 90-day review period before 2026-11-15"
     assert on["runnable"] is False and sorted(on["why_not"]) == sorted([
-        f"C03 relies on rcp-news2, {late}", f"C10 relies on rcp-news2, {late}", f"K02 relies on rcp-news2, {late}",
-        f"K06 relies on nice-ng97, {late}"]), on["why_not"]
+        f"C02 relies on gov-report-child-abuse, {late}", f"C03 relies on rcp-news2, {late}",
+        f"C07 relies on bapen-must-toolkit, {late}", f"C10 relies on rcp-news2, {late}",
+        f"K01 relies on gov-report-child-abuse, {late}", f"K02 relies on rcp-news2, {late}",
+        f"K03 relies on nice-ng249, {late}", f"K06 relies on nice-ng97, {late}"]), on["why_not"]
 
     #  ...and the route refuses a run on it with those reasons, writing nothing; no agent is calibrated on it
     runs = tmp_path / "review_calibration_runs.json"
@@ -90805,7 +90813,8 @@ def test_w1099_fu1054_the_care_calibration_set_is_written_out_and_run_only_when_
         "Not recorded: the calibration set cannot be run on 2026-11-15: " + "; ".join(on["why_not"]) + "."), refused.text[:400]
     assert not runs.exists(), "a refused run wrote the store"
     now = cal.calibration_of("w1099-reviewer")
-    #  W1122: read on today's date - the set can be run from 2026-11-19 until a source passes its review period
+    #  W1122: read on today's date - the set can be run from its window's first day (W1195d) until a source
+    #  passes its review period
     assert now["calibrated"] is False and ("cannot be run yet" in now["why_not"] if cal.runnable(raw)["runnable"] is False
                                            else now["why_not"] == "this agent has never been run on the calibration set"), now
 
@@ -91056,7 +91065,7 @@ def test_w1102_fu399_the_tier_of_review_is_rendered_where_it_is_read_with_an_unc
     #  W1183 - the tier's sentence now says the reviewer's calibration, which turns on whether the set can be run on
     #  the day: the capture's day is pinned, as the capture pinned it
     from agentic_core.api import _review_calibration as _cal1102
-    monkeypatch.setattr(_cal1102, "_today", lambda: _dt.date(2026, 11, 21))
+    monkeypatch.setattr(_cal1102, "_today", lambda: _dt.date(2026, 11, 22))
     pages = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "domains"
     fx = json.loads((pages / "CareHub.fixture.json").read_text(encoding="utf-8"))
     today = _dt.date.today().isoformat()
@@ -91909,7 +91918,8 @@ def test_w1122_fu1054_the_calibration_sets_last_two_sources_are_read_and_its_six
     - every band of Chart 1 and every threshold of Chart 2 is the one the tree's NEWS2 scoring applies, at each
       boundary the chart draws;
     - the sixteenth case is the dementia entry as the tools route gives it now, citing NG97 with the date it was
-      read; the set can be run on 2026-11-19 and could not be on 2026-11-15, before the reads."""
+      read; nothing W1122 read is a reason the set cannot be run on 2026-11-19, both were reasons on 2026-11-15,
+      before the reads, and the set can be run from its window's first day (W1195d)."""
     import json
     from pathlib import Path
     from agentic_core.api import _review_calibration as cal
@@ -91954,7 +91964,14 @@ def test_w1122_fu1054_the_calibration_sets_last_two_sources_are_read_and_its_six
         "sources": [{k: s[k] for k in ("id", "status", "page", "read_on", "read")} for s in e["sources"]]}
     assert keep(k06["shown"]) == keep(live), (keep(k06["shown"]), keep(live))
     assert "NICE NG97" in live["standard"] and "2026-11-19" in live["standard"] and live["sources"][0]["read"] is True
-    assert cal.runnable(the_set, on="2026-11-19")["runnable"] is True and cal.runnable(the_set, on="2026-11-15")["runnable"] is False
+    #  W1195d: three more rows were read again since (FU-1820), so 2026-11-19 is before the window: what W1122 read
+    #  is no reason on that day, both were reasons before it, and the set can be run from the window's first day
+    w1122 = ("rcp-news2", "nice-ng97")
+    assert not [x for x in cal.runnable(the_set, on="2026-11-19")["why_not"] if any(r in x for r in w1122)]
+    before = cal.runnable(the_set, on="2026-11-15")
+    assert before["runnable"] is False and all(any(r in x for x in before["why_not"]) for r in w1122), (
+        before["why_not"])
+    assert cal.runnable(the_set, on=cal.runnable_window(the_set)["from"])["runnable"] is True
 
 
 def test_w1123_fu1279_a_price_is_the_declared_cost_by_the_ruled_formula_and_the_waterfall_splits_what_it_leaves(client):
@@ -97104,7 +97121,7 @@ def test_w1183_fu1054_the_care_reviewers_calibration_is_said_where_its_reviews_a
     from agentic_core.ai.native import orchestrator
     root = Path(__file__).resolve().parents[1]
     src = root / "apps" / "workstation-superapp" / "src"
-    D0 = _dt.date(2026, 11, 21)                      # the capture's day, a day the tree's set can be run
+    D0 = _dt.date(2026, 11, 22)                      # the capture's day, a day the tree's set can be run
     monkeypatch.setattr(cal, "_today", lambda: D0)
     runs = tmp_path / "review_calibration_runs.json"
     monkeypatch.setattr(cal, "_runs_path", lambda: runs)
@@ -97306,7 +97323,7 @@ def test_w1183_fu1054_the_care_reviewers_calibration_is_said_where_its_reviews_a
     t3 = client.get("/api/v1/review/tier/care_risk_assess").json()
     assert (t3["agent_rates"]["agent"], t3["agent_rates"]["caught"]) == ("care-reviewer", 2), t3["agent_rates"]
     assert [s["agent"] for s in t3["agent_calibrations"]] == ["care-reviewer", "w1183-other"], t3["agent_calibrations"]
-    assert ("; w1183-other's calibration: its latest run, on 2026-11-21 with ollama:w1183-made-up (w1183-stand-in, build "
+    assert (f"; w1183-other's calibration: its latest run, on {D0.isoformat()} with ollama:w1183-made-up (w1183-stand-in, build "
             "w1183standin), did not meet the bar") in t3["basis"], t3["basis"]
     assert "; care-reviewer's calibration:" not in t3["basis"], "a calibrated agent is said after the uncalibrated label"
     #  ...and a review by the same agent in a discipline with no set is said for that discipline only
@@ -97644,7 +97661,7 @@ def test_w1185_fu1823_every_care_tool_says_its_tier_in_one_place_and_the_child_c
     from agentic_core.api.review_options import tool_at
     root = Path(__file__).resolve().parents[1]
     src = root / "apps" / "workstation-superapp" / "src"
-    D0 = _dt.date(2026, 11, 21)                      # the capture's day, as W1183's captures pinned it
+    D0 = _dt.date(2026, 11, 22)                      # the capture's day, as W1183's captures pinned it
     monkeypatch.setattr(cal, "_today", lambda: D0)
     monkeypatch.setattr(cal, "_runs_path", lambda: tmp_path / "w1185_calibration_runs.json")
     monkeypatch.setattr(rt, "_path", lambda: tmp_path / "w1185_review_tier_records.json")
@@ -98294,7 +98311,10 @@ def test_w1188_fu1054_is_closed_on_the_care_reviewers_first_run_and_what_it_miss
                  "check_results finds nothing wrong with it."):
         assert said in note, ("the close note does not say", said)
     _w = cal.runnable_window(the_set)
-    assert _w and f"while the set can be run (through {_w['through']} as the register stands)" in note, note[:300]
+    #  W1195d (FU-1820) - the close note is FU-1054's history as written on 2026-11-21, when the set could be run
+    #  through 2027-01-10; the three rows read again since moved the window on, so the note is held to its own
+    #  words, and the window is read below
+    assert _w and "while the set can be run (through 2027-01-10 as the register stands)" in note, note[:300]
     m = re.search(r"What it missed is (FU-\d+)\.$", note)
     assert m, note[-160:]
     miss = reg[m.group(1)]
@@ -102777,3 +102797,283 @@ def test_w1207_the_archive_index_uses_no_embedding_and_every_entity_route_with_a
 
     #  B5. no call in the test answered 500
     assert not [c for c in seen if c[3] >= 500], [c for c in seen if c[3] >= 500]
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1195d (FU-1820, P5.15) - the three rows four of the Care calibration cases rely on are read again at their
+#  publishers, so the set can be run through 2027-02-17 as the register stood then, and the captures are taken again
+#  inside the new window.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1195d_fu1820_the_three_rows_four_cases_rely_on_are_read_again_and_the_captures_are_taken_in_the_new_window(
+        client, tmp_path, monkeypatch):
+    """FU-1820, as the Owner ruled on 2026-11-21: the three rows are read again before the second calibration run.
+    gov-report-child-abuse (cases C02 and K01), bapen-must-toolkit (C07, and C08 by its NOT READ part) and nice-ng249
+    (K03) were read on 2026-10-12, and the register's review period is 90 days, so from 2027-01-11 the set could not be
+    run and no agent could be calibrated on it. Held here:
+    1. each row was read again at its publisher's page, whole and not through a summary, and says so with the day; it
+       keeps its first read, the date C02, K01 and K03 print, and what it said was not read, and the re-read adds no
+       NOT READ part;
+    2. each re-read holds, in the page's words, what its cases rely on: the children's route at the local council and
+       999 at immediate risk (C02, K01), free non-commercial use and the commercial licence (C07), recommendation 1.1.1
+       and the guideline's date (K03); and the reuse terms each page states that the row never recorded: GOV.UK's Open
+       Government Licence, the wording BAPEN requires wherever MUST is used, and NICE's terms;
+    3. the window is worked out from the register: from the latest read of a current row a case relies on (the re-read
+       day or later) through the earliest such read plus the review period (2027-02-17 as the register stood at
+       W1195d), so past 2027-01-10, where it lapsed before; the set can be run at both ends, and on the day after the
+       end exactly the cases whose rows lapse first are named; on 2026-11-21 (the old capture day) the three rows'
+       cases are named; on 2026-11-15 every case whose relies_on names a current row is named;
+    4. the set is the one the first run was made on: its content is unchanged and its digest is the run's;
+    5. through the routes: the agent's door runs the set on the window's first and last days, its reviewer shown each
+       re-read row with its first read, and refuses it on the day after the end with the cases whose rows lapsed,
+       asking no model and keeping nothing; the calibration route, on the machine that holds the first run, gives its
+       rates and the window on its last day, and from the day after says the set cannot be run and gives none;
+    6. every captured reviewer statement carries the window as it stands and none the old one; the Care page's list of
+       tools gives the two re-read rows their day, every row as the register holds it; the made-up run was made on the
+       day test_w1183, test_w1185 and test_w1102 pin, the three pin one day, and the set can be run on it;
+    7. FU-1820 is closed by this round as built, its close note naming the row it registered: the typed copies of the
+       old read date, on P5.13 with its slot_source; FU-1831 and P5.15 say the re-read is done, and the ruled date,
+       before 2027-01-10, is unchanged."""
+    import datetime as _dt
+    import hashlib
+    import importlib
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.api import _review_calibration as cal
+    from agentic_core.api import care_reviewer as cr
+    from agentic_core.ai.native import model_resource as mr
+    from agentic_core.ai.native import orchestrator
+    root = Path(__file__).resolve().parents[1]
+    src = root / "apps" / "workstation-superapp" / "src"
+    one = _dt.timedelta(days=1)
+    TYPED = ("Five Care texts type a source row's read date instead of reading it from the register, so a "
+             "re-read leaves them saying the earlier date")
+    #  each row, the round that first read it, and the cases that rely on it (C08 by the MUST row's NOT READ part)
+    THREE = {"gov-report-child-abuse": ("W677", ("C02", "K01")), "bapen-must-toolkit": ("W678", ("C07", "C08")),
+             "nice-ng249": ("W676", ("K03",))}
+    NOT_READ = {"gov-report-child-abuse": ["the local-authority pages it links to"],
+                "bapen-must-toolkit": ["the tool's own scoring pages"], "nice-ng249": []}
+    reg = json.loads((root / "docs" / "SOURCES.json").read_text(encoding="utf-8"))
+    rows = {r["id"]: r for r in reg["rows"]}
+    assert int(reg["review_days"]) == 90, reg["review_days"]
+
+    #  1. each row read again, its first read and what was not read kept
+    again = {}
+    for rid, (first_round, _cases) in THREE.items():
+        r = rows[rid]
+        assert r["status"] == "current" and _dt.date.fromisoformat(r["read_on"]) > _dt.date(2026, 11, 19), (
+            rid, r["status"], r["read_on"])
+        assert r["read_by"].startswith(f"round {first_round}, in a browser; read again by round W1195d, "), (
+            rid, r["read_by"])
+        assert "read whole" in r["read_by"] and "not through a summary" in r["read_by"], (rid, "a summary said as a read")
+        mark = f"READ AGAIN {r['read_on']} (W1195d): "
+        first = f"FIRST READ 2026-10-12 ({first_round}). "
+        assert r["says"].count(first) == 1 and r["says"].count(mark) == 1, (rid, r["says"][:300])
+        assert r["says"].index(first) < r["says"].index(mark), (rid, "the re-read is said before the first read")
+        assert cal._not_read(r) == NOT_READ[rid] and r["says"].count("NOT READ:") == len(NOT_READ[rid]), (
+            rid, cal._not_read(r))
+        #  the page's words, its curly apostrophes and quotation marks read as straight ones
+        again[rid] = " ".join(r["says"].split(mark, 1)[1].replace("’", "'").replace("‘", "'").split())
+
+    #  2. each re-read holds, in the page's words, what its cases rely on, and the reuse terms the row never recorded
+    the_set = cal.load_set("care")
+    cases = {c["id"]: c for c in the_set["cases"]}
+    route = ("contact the children's social care team at the child's local council, or call 999 if the child is at "
+             "immediate risk (read at https://www.gov.uk/report-child-abuse on 2026-10-12)")
+    for cid in ("C02", "K01"):
+        assert route in cases[cid]["shown"]["guidance"], (cid, "the case no longer shows the children's route")
+    g = again["gov-report-child-abuse"]
+    for said in ("contact the children's social care team at their local council.'",
+                 "'Call 999 if the child is at immediate risk.'", "no notice that it is withdrawn",
+                 "'All content is available under the Open Government Licence v3.0, except where otherwise stated'"):
+        assert said in g, ("the children's re-read does not say", said, g[:400])
+    assert "for non-commercial purposes only" in cases["C07"]["planted"], cases["C07"]["planted"]
+    b = again["bapen-must-toolkit"]
+    for said in ("'The 'MUST' is freely available to use for non-commercial purposes.'",
+                 "permission must be sought, a licence agreement signed & a licence fee paid",
+                 "copies of adapted and commercial materials go to the BAPEN Office",
+                 "'The 'Malnutrition Universal Screening Tool' ('MUST') is reproduced here with the kind permission of "
+                 "BAPEN (British Association for Parenteral and Enteral Nutrition).'"):
+        assert said in b, ("the MUST re-read does not say", said, b[:400])
+    #  C08 is shown the MUST row, and its planted defect rests on the part the row says was not read
+    c08 = cr.as_text(cases["C08"]["shown"])
+    assert "bapen-must-toolkit" in cr.rows_for(c08, rows, cases["C08"].get("relies_on")) and (
+        cases["C08"]["must_flag"] == "unread described as read"), "C08 is no longer shown the MUST row"
+    rec = "do not use falls risk prediction tools to predict a person's risk of falling"
+    assert rec in cases["K03"]["shown"]["detail"], "K03 no longer shows recommendation 1.1.1"
+    n = again["nice-ng249"]
+    for said in ("'Reference number: NG249'", "'Published: 29 April 2025'", "no notice that it is withdrawn or replaced",
+                 "recommendation 1.1.1 reads: 'Do not use falls risk prediction tools to predict a person's risk of "
+                 "falling.'", "Do not distribute or publish any material from this site without first obtaining "
+                 "NICE's permission."):
+        assert said in n, ("the NICE re-read does not say", said, n[:400])
+    assert (rows["nice-cg161"]["status"], rows["nice-cg161"]["replaced_by"]) == ("replaced", "nice-ng249")
+
+    #  3. the window, worked out from the register: a later re-read of any row moves it, and this leg follows
+    D = max(_dt.date.fromisoformat(rows[rid]["read_on"]) for rid in THREE)
+    current = sorted({(c["id"], n["row"]) for c in the_set["cases"] for n in c.get("relies_on") or []
+                      if n.get("status") == "current" and rows[n["row"]]["status"] == "current"})
+    reads = {rid: _dt.date.fromisoformat(rows[rid]["read_on"]) for _, rid in current}
+    start, end = max(reads.values()), min(reads.values()) + _dt.timedelta(days=int(reg["review_days"]))
+    w = cal.runnable_window(the_set)
+    assert w == {"from": start.isoformat(), "through": end.isoformat()} and start >= D, (w, start, end)
+    assert end > _dt.date(2027, 1, 10), ("the set lapses where it did before the re-read", end)
+    for day in (start, end):
+        assert cal.runnable(the_set, on=day)["runnable"] is True, (day, cal.runnable(the_set, on=day)["why_not"])
+
+    def named(day):
+        return sorted(x.split(",")[0] for x in cal.runnable(the_set, on=day)["why_not"])
+    after = end + one
+    lapsed = sorted(f"{cid} relies on {rid}" for cid, rid in current if reads[rid] + _dt.timedelta(
+        days=int(reg["review_days"])) < after)
+    assert lapsed and named(after.isoformat()) == lapsed, (named(after.isoformat()), lapsed)
+    assert {f"{cid} relies on {rid}" for cid, rid in current if rid in THREE} <= set(named("2026-11-21")), (
+        named("2026-11-21"))
+    assert [x.split(" ")[0] for x in named("2026-11-15")] == sorted(cid for cid, _ in current), named("2026-11-15")
+
+    #  4. the set is the one the first run was made on (its content, read as JSON, so line endings do not count)
+    content = json.loads((root / "docs" / "CARE_REVIEW_CALIBRATION.json").read_text(encoding="utf-8"))
+    assert hashlib.sha256(json.dumps(content, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest() == (
+        "4f322991c9bbe34d3383f02ab1b8764a6d4098d958815336f33147a2542f5e2b"), (
+        "the calibration set changed: it is frozen, and a change to it is the Owner's")
+    doc = json.loads((root / cal.RESULTS["care"]).read_text(encoding="utf-8"))
+    run1 = next(r for r in doc["runs"] if r["run_id"] == "cal-8c7430765c")
+    assert (the_set["version"], cal.set_digest(the_set)) == (run1["set_version"], run1["set_digest"]), "the set moved"
+
+    #  5. through the routes: the agent's door, with a stand-in model, its identity and its context
+    IDENT = {"model": "w1195d-stand-in", "build_digest": "1195d" + "0" * 59, "processor": None,
+             "basis": "a stand-in made up for W1195d: no model ran"}
+    monkeypatch.setattr(importlib.import_module("agentic_core.ai.gateway"), "served_identity_of", lambda sb: dict(IDENT))
+    monkeypatch.setattr(mr, "context_given", lambda sb: {"model": IDENT["model"], "context_length": 1 << 20,
+                                                         "basis": "a stand-in made up for W1195d: no runtime was asked"})
+    said_by_case, shown = {c["id"]: ("FLAG: none" if not c.get("planted") else f"FLAG: {c['must_flag']}")
+                           for c in the_set["cases"]}, {}
+
+    async def _stand_in(prompt, agent="assistant", **kw):
+        hit = [c["id"] for c in the_set["cases"] if c.get("shown") and cr.as_text(c["shown"]) in prompt]
+        assert len(hit) == 1, hit
+        shown.setdefault(hit[0], []).append(prompt)
+        return {"output": said_by_case[hit[0]], "served_by": "ollama:w1195d-stand-in"}
+    monkeypatch.setattr(orchestrator, "complete", _stand_in)
+    runs = tmp_path / "w1195d_runs.json"
+    monkeypatch.setattr(cal, "_runs_path", lambda: runs)
+    for day in (start, end):
+        monkeypatch.setattr(cal, "_today", lambda day=day: day)
+        r = client.post("/api/v1/review/calibration/agent-run", json={"discipline": "care", "date": day.isoformat()})
+        assert r.status_code == 200 and r.json()["not_answered"] == [], (day, r.text[:400])
+        kept = json.loads(runs.read_text(encoding="utf-8"))[-1]
+        assert kept["date"] == day.isoformat() and kept["door"] == cal.AGENT_DOOR, kept["date"]
+    #  ...its reviewer shown each re-read row with its first read, the date the clean cases print
+    for cid, rid in (("K01", "gov-report-child-abuse"), ("C07", "bapen-must-toolkit"), ("K03", "nice-ng249")):
+        row = cr._row_said(rows[rid])
+        assert all(row in p for p in shown[cid]) and "FIRST READ 2026-10-12" in row and "READ AGAIN" in row, (cid, rid)
+    n_kept, n_asked = len(json.loads(runs.read_text(encoding="utf-8"))), sum(len(v) for v in shown.values())
+    late = after
+    monkeypatch.setattr(cal, "_today", lambda: late)
+    r = client.post("/api/v1/review/calibration/agent-run", json={"discipline": "care", "date": late.isoformat()})
+    assert r.status_code == 409 and r.json()["detail"].startswith(
+        f"Not run: the calibration set cannot be run on {late.isoformat()}: "), r.text[:400]
+    assert sorted(x.split(",")[0] for x in r.json()["detail"].split(f"{late.isoformat()}: ", 1)[1].rstrip(".").split(
+        "; ")) == lapsed, r.json()["detail"]
+    assert (len(json.loads(runs.read_text(encoding="utf-8"))), sum(len(v) for v in shown.values())) == (
+        n_kept, n_asked), "a model was asked, or a run kept, on a day the set cannot be run"
+    #  ...and the calibration route, on the machine whose own record holds the first run
+    store = tmp_path / "w1195d_first_run.json"
+    store.write_text(json.dumps([{k: v for k, v in run1.items() if k != "score"}]), encoding="utf-8")
+    monkeypatch.setattr(cal, "_runs_path", lambda: store)
+    for day in (end, late):
+        monkeypatch.setattr(cal, "_today", lambda day=day: day)
+        got = client.get("/api/v1/review/calibration/care-reviewer").json()
+        assert got["today"] == day.isoformat() and got["window"] == w == got["statement"]["set"]["window"], (day, got)
+        if day < late:
+            assert (got["reason"], got["caught"], got["planted_cases"], got["false_alarms"], got["clean_cases"]) == (
+                "not_answered", 5, 10, 4, 6), (day, got["reason"])
+            assert got["statement"]["rates"]["caught"] == 5 and got["statement"]["set"]["runnable_today"] is True
+        else:
+            assert got["reason"] == "set_cannot_run" and got.get("caught") is None, (day, got)
+            assert got["statement"]["rates"] is None and got["statement"]["set"]["runnable_today"] is False
+
+    #  6. the captures carry the window as it stands; the Care tools' rows are read now; the three tests pin one day
+    def windows(x, at=""):
+        if isinstance(x, dict):
+            if isinstance(x.get("set"), dict) and "window" in x["set"]:
+                yield at, x["set"]["window"]
+            for k, v in x.items():
+                yield from windows(v, f"{at}/{k}")
+        elif isinstance(x, list):
+            for i, v in enumerate(x):
+                yield from windows(v, f"{at}[{i}]")
+    seen = 0
+    for rel in ("pages/domains/CareHub.fixture.json", "components/DomainTool.fixture.json"):
+        text = (src / rel).read_text(encoding="utf-8")
+        assert '"through": "2027-01-10"' not in text, (rel, "a capture still carries the window before the re-read")
+        for at, got in windows(json.loads(text)):
+            assert got == w, (rel, at, got, w)
+            seen += 1
+    assert seen >= 10, ("the reviewer statements W1183 and W1185 captured are not all there", seen)
+    fx = json.loads((src / "pages/domains/CareHub.fixture.json").read_text(encoding="utf-8"))
+    for t in fx["tools"]["tools"]:
+        for s in t["sources"]:
+            row = rows.get(s["id"]) or {}
+            assert (s["status"], s.get("page"), s["read_on"]) == (row.get("status"), row.get("page"), row.get(
+                "read_on")), (t["id"], s["id"], "the Care page's list of tools is not the register as it stands")
+    said = {s["id"]: s for t in fx["tools"]["tools"] for s in t["sources"]}
+    for rid in ("bapen-must-toolkit", "nice-ng249"):
+        assert f"its publisher's page was read on {rows[rid]['read_on']}" in said[rid]["status_said"], said[rid]
+    ran = fx["review_risk_made_up_run"]["reviewer"]["run"]["date"]
+    assert f"its latest run, on {ran} with " in fx["review_risk_made_up_run"]["reviewer"]["basis"], (
+        "the made-up run's sentence is of another day")
+    spine = Path(__file__).read_text(encoding="utf-8")
+
+    def body(name):
+        return spine.split(f"\ndef {name}(", 1)[1].split("\ndef test_", 1)[0]
+    pins = []
+    day_re = r"_dt\.date\((\d{4}), (\d{1,2}), (\d{1,2})\)"
+    for name, pat in (
+            ("test_w1183_fu1054_the_care_reviewers_calibration_is_said_where_its_reviews_are_read_and_only_its_own_run_counts",
+             r"\n    D0 = " + day_re + r" +# the capture's day"),
+            ("test_w1185_fu1823_every_care_tool_says_its_tier_in_one_place_and_the_child_concern_answer_carries_its_tier",
+             r"\n    D0 = " + day_re + r" +# the capture's day"),
+            ("test_w1102_fu399_the_tier_of_review_is_rendered_where_it_is_read_with_an_uncalibrated_agents_label",
+             r'monkeypatch\.setattr\(_cal1102, "_today", lambda: ' + day_re + r"\)")):
+        found = re.findall(pat, body(name))
+        assert len(found) == 1, (name, "pins no capture day, or more than one", found)
+        pins.append(_dt.date(*(int(x) for x in found[0])).isoformat())
+    assert len(set(pins)) == 1 and pins[0] == ran, ("the three tests and the made-up run are not of one day", pins, ran)
+    assert w["from"] <= ran <= w["through"] and cal.runnable(the_set, on=ran)["runnable"] is True, (ran, w)
+
+    #  7. the register and the plan
+    items = {r["id"]: r for r in json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    typed = [r for r in items.values() if r.get("title") == TYPED]
+    #  open, or closed by a later round that fixes it (as W1195c's guard reads its rows)
+    assert len(typed) == 1 and (typed[0]["slot"], typed[0]["severity"]) == ("P5.13", "low") and (
+        typed[0]["status"] == "open" or typed[0].get("closed_by") not in (None, "W1195d")), (
+        [(r["id"], r["slot"], r["status"]) for r in typed])
+    assert typed[0]["source"].startswith("W1195d") and (typed[0].get("slot_source") or "").startswith(
+        "P5.13 clause 1: "), (typed[0]["id"], "names no source or slot_source")
+    for said in ("CHILDRENS_ROUTE", "FALLS_RETIRED", "WITHHELD_ON_TERMS", "the dementia entry's standard",
+                 "C02, K01, K03 and K06", "frozen", f"beside its row read on {rows['bapen-must-toolkit']['read_on']}"):
+        assert said in typed[0]["why"], ("the typed copies' row does not say", said)
+    fu = items["FU-1820"]
+    assert fu["title"].startswith("The Care calibration set cannot be run after 2027-01-10") and fu["slot"] == "P5.15"
+    assert (fu["status"], fu.get("closed_by"), fu.get("because")) == ("done", "W1195d", "built"), (
+        fu["status"], fu.get("closed_by"))
+    for said in (f"on {D.isoformat()}, each page once, whole and not through a summary",
+                 "bapen-must-toolkit (C07, and C08 by its NOT READ part)", "through 2027-02-17 as the register stands",
+                 f"The Care texts that type these rows' read dates are {typed[0]['id']}.", "test_w1188"):
+        assert said in fu["close_note"], ("FU-1820's close note does not say", said)
+    miss = items["FU-1831"]
+    note = miss["why"].split(" W1195d, a note: ", 1)
+    #  FU-1831 closes on the second run's results, by a later round; never by this one
+    assert (miss["status"] == "open" or miss.get("closed_by") not in (None, "W1195d")) and len(note) == 2, (
+        "FU-1831 does not say the re-read is done", miss["why"][-300:])
+    for said in (D.isoformat(), "2027-02-17", "The ruled date, before 2027-01-10, is unchanged.",
+                 "whether the run waits on it is the Owner's to say"):
+        assert said in note[1], ("FU-1831's note does not say", said, note[1][:400])
+    assert "the second run is the Owner's, on their own machine, before 2027-01-10" in miss["why"], "the ruled date moved"
+    plan = " ".join((root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8").split())
+    p515 = plan.split(" P5.15 [chartered W679", 1)[1].split(" P5.16 ", 1)[0]
+    line = re.findall(r"UPDATED \d{4}-\d{2}-\d{2} \(W1195d\): (.*)", p515)
+    assert len(line) == 1 and D.isoformat() in line[0] and "2027-02-17" in line[0], p515[-700:]
+    assert "The ruled date, before 2027-01-10, is unchanged." in line[0] and "before 2027-01-10" in p515.split(
+        "(W1195d)", 1)[0], "P5.15 no longer gives the ruled date"
