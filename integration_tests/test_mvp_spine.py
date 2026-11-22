@@ -63356,8 +63356,13 @@ def test_w688_a_tool_states_the_highest_tier_its_records_support_and_unreviewed_
     #  W691 - whether an agent is calibrated is READ FROM ITS RECORDED RUN, not from the record. These legs
     #  drive both states by naming two agents and fixing what their runs say, in this process only.
     from agentic_core.api import _review_calibration as _cal691
+    #  W1195c (FU-1821) - a review counts only by the model and build of the run that calibrated its agent, on or
+    #  after that run's date, so the calibrated agent's run names them and its review names the same
     monkeypatch.setattr(_cal691, "calibration_of", lambda agent, discipline="care": (
-        {"calibrated": True, "known": True, "why_not": None} if agent == "reviewer-cal" else
+        {"calibrated": True, "known": True, "why_not": None,
+         "run": {"run_id": "cal-w688", "date": "2026-10-01",
+                 "served_identity": {"model": "w688-model", "build_digest": "w688build" + "0" * 55}}}
+        if agent == "reviewer-cal" else
         {"calibrated": False, "known": True, "why_not": "this agent has never been run on the calibration set"}))
     today = _dt.date(2026, 10, 13)
     T = "care_risk_assess"
@@ -63378,7 +63383,8 @@ def test_w688_a_tool_states_the_highest_tier_its_records_support_and_unreviewed_
     assert say([{**rule, "test": ""}])["tier"] == "unreviewed"
     agent = {"tool": T, "tier": "reviewed_by_workstation_agent", "date": "2026-10-05", "checklist": "care checklist v1",
              "sources_read": [{"source": "nice-ng249", "page": "recommendations 1.1", "read_on": "2026-10-05"}],
-             "agent": "reviewer-cal", "tool_version": "the tree at W921", "could_not_check": "nothing beyond the guideline's own text"}
+             "agent": "reviewer-cal", "tool_version": "the tree at W921", "could_not_check": "nothing beyond the guideline's own text",
+             "model": "w688-model", "build": "w688build" + "0" * 55}
     assert say([rule, agent])["tier"] == "reviewed_by_workstation_agent"
     uncal = say([rule, {**agent, "agent": "reviewer-new"}])
     assert uncal["tier"] == "checked_by_rule", "an uncalibrated agent's review raised the tier"
@@ -63464,8 +63470,13 @@ def test_w689_a_review_is_recorded_through_one_door_and_a_short_record_is_refuse
     #  W691 - whether an agent is calibrated is READ FROM ITS RECORDED RUN, not from the record. These legs
     #  drive both states by naming two agents and fixing what their runs say, in this process only.
     from agentic_core.api import _review_calibration as _cal691
+    #  W1195c (FU-1821) - a review counts only by the model and build of the run that calibrated its agent, on or
+    #  after that run's date, so the calibrated agent's run names them and its review names the same
     monkeypatch.setattr(_cal691, "calibration_of", lambda agent, discipline="care": (
-        {"calibrated": True, "known": True, "why_not": None} if agent == "reviewer-cal" else
+        {"calibrated": True, "known": True, "why_not": None,
+         "run": {"run_id": "cal-w689", "date": "2026-10-01",
+                 "served_identity": {"model": "local-model", "build_digest": "w689build" + "0" * 55}}}
+        if agent == "reviewer-cal" else
         {"calibrated": False, "known": True, "why_not": "this agent has never been run on the calibration set"}))
     tool = "care_risk_assess"
     ahead = (_dt.date.today() + _dt.timedelta(days=200)).isoformat()
@@ -63488,7 +63499,8 @@ def test_w689_a_review_is_recorded_through_one_door_and_a_short_record_is_refuse
     #  an agent's review that names no model is refused too; an unknown field is refused, never dropped
     agent = {"tool": tool, "tier": "reviewed_by_workstation_agent", "date": today, "checklist": "care checklist v1",
              "sources_read": [{"source": "nice-ng249", "page": "recommendations 1.1", "read_on": today}],
-             "agent": "reviewer-cal", "model": "local-model", "tool_version": "the tree at W921", "could_not_check": "nothing beyond the guideline's own text"}
+             "agent": "reviewer-cal", "model": "local-model", "tool_version": "the tree at W921", "could_not_check": "nothing beyond the guideline's own text",
+             "build": "w689build" + "0" * 55}
     assert client.post("/api/v1/review/record", json={k: v for k, v in agent.items() if k != "model"}).status_code == 422
     assert client.post("/api/v1/review/record", json={**agent, "score": 9}).status_code == 422
     assert not store.exists()
@@ -63592,6 +63604,7 @@ def test_w691_a_reviewer_agent_is_calibrated_by_its_recorded_run_and_never_by_a_
     import datetime as _dt
     from agentic_core.api import _review_calibration as cal
     from agentic_core.api import _review_tier as rt
+    from agentic_core.api import care_reviewer as cr
     #  THE ARITHMETIC, on a small set made here: 3 planted, 6 clean
     cases = ([{"id": f"P{i}", "planted": "x", "must_flag": f"reason-{i}"} for i in range(3)]
              + [{"id": f"K{i}", "planted": None} for i in range(6)])
@@ -63652,7 +63665,11 @@ def test_w691_a_reviewer_agent_is_calibrated_by_its_recorded_run_and_never_by_a_
     def _its_own():
         kept = json.loads(runs.read_text(encoding="utf-8"))
         for _r in kept:
-            _r.update(door=cal.AGENT_DOOR, set_digest=cal.set_digest(runnable))
+            #  W1195c (FU-1821) - and as that door records it: what its reviewer was shown, and the model and build
+            #  that reviewed
+            _r.update(door=cal.AGENT_DOOR, set_digest=cal.set_digest(runnable),
+                      shown_digest=cr.shown_digest(runnable),
+                      served_identity={"model": "m", "build_digest": "w691build" + "0" * 55})
         runs.write_text(json.dumps(kept), encoding="utf-8")
     _its_own()
     got = client.get("/api/v1/review/calibration/care-reviewer").json()
@@ -63675,8 +63692,12 @@ def test_w691_a_reviewer_agent_is_calibrated_by_its_recorded_run_and_never_by_a_
     #  with nothing on the record saying which
     store = tmp_path / "review_tier_records.json"
     monkeypatch.setattr(rt, "_path", lambda: store)
-    rec = {"tool": "care_risk_assess", "tier": "reviewed_by_workstation_agent", "date": today, "checklist": "care checklist v1",
+    #  W1195c (FU-1821) - a review counts only by the model and build of the run that calibrated its agent, dated on
+    #  or after that run: the latest run is dated two days ahead
+    rec = {"tool": "care_risk_assess", "tier": "reviewed_by_workstation_agent",
+           "date": (_dt.date.today() + _dt.timedelta(days=2)).isoformat(), "checklist": "care checklist v1",
            "sources_read": [{"source": "nice-ng249", "page": "recommendations 1.1", "read_on": today}], "model": "m",
+           "build": "w691build" + "0" * 55,
            "tool_version": "the tree at W921", "could_not_check": "nothing beyond the guideline's own text"}
     assert client.post("/api/v1/review/record", json={**rec, "agent": "care-reviewer"}).json()["tool_now_says"]["tier"] == "reviewed_by_workstation_agent"
     said = client.get("/api/v1/review/tier/care_risk_assess").json()
@@ -78480,8 +78501,13 @@ def test_w921_p515_clause2_an_agents_review_counts_only_as_a_whole_record(client
     from agentic_core.api import _review_calibration as cal
     store = tmp_path / "review_tier_records.json"
     monkeypatch.setattr(rt, "_path", lambda: store)
+    #  W1195c (FU-1821) - a review counts only by the model and build of the run that calibrated its agent, on or
+    #  after that run's date
     monkeypatch.setattr(cal, "calibration_of", lambda agent, discipline="care": (
-        {"calibrated": True, "known": True, "why_not": None} if agent == "w921-reviewer" else
+        {"calibrated": True, "known": True, "why_not": None,
+         "run": {"run_id": "cal-w921", "date": "2026-10-01",
+                 "served_identity": {"model": "local-model", "build_digest": "w921build" + "0" * 55}}}
+        if agent == "w921-reviewer" else
         {"calibrated": False, "known": True, "why_not": "never run on the calibration set"}))
     today = _dt.date.today().isoformat()
     later = (_dt.date.today() + _dt.timedelta(days=3)).isoformat()
@@ -78492,7 +78518,8 @@ def test_w921_p515_clause2_an_agents_review_counts_only_as_a_whole_record(client
     read = {"source": current, "page": "the recommendations section", "read_on": today}
     whole = {"tool": "care_risk_assess", "tier": "reviewed_by_workstation_agent", "date": today,
              "checklist": "care checklist v2", "tool_version": "care_risk_assess as at W921", "sources_read": [read],
-             "model": "local-model", "agent": "w921-reviewer", "could_not_check": "nothing beyond the source's own text"}
+             "model": "local-model", "agent": "w921-reviewer", "could_not_check": "nothing beyond the source's own text",
+             "build": "w921build" + "0" * 55}
 
     #  every short record is refused in its own words, and nothing is written
     for short, said in (
@@ -90894,10 +90921,14 @@ def test_w1100_fu1054_the_care_reviewer_is_a_different_checklist_over_the_source
                 ("care", "law", "education", "science", "employment", "career", "religion")], imported
 
     #  only the set's own reasons are flags; every other line is kept and counted
-    assert got["reviewed"] is True and got["model"] == "ollama:w1100-made-up" and got["flags"] == ["source not current"]
-    assert got["lines_not_read_as_flags"] == ["FLAG: a reason the set does not have", "I think it is fine."]
+    #  W1195c (FU-1831) - and a reply holding either is not in the one form, so none of its lines is read
+    assert got["reviewed"] is True and got["model"] == "ollama:w1100-made-up" and got["flags"] == []
+    assert got["lines_not_read_as_flags"] == ["FLAG: source not current", "FLAG: a reason the set does not have",
+                                              "I think it is fine."]
+    assert (got["in_form"], got["not_in_form"]) == (False, ["a line that is not a FLAG line",
+                                                            "a FLAG line whose reason is not one of the set's"]), got
     none = cr.parse("FLAG: none", cr.reasons(the_set))
-    assert none == {"flags": [], "said_none": True, "lines_not_read_as_flags": []}
+    assert none == {"flags": [], "said_none": True, "lines_not_read_as_flags": [], "in_form": True, "not_in_form": []}
 
     #  the floor cannot review
     async def _floor(prompt, agent="assistant", **kw):
@@ -90911,6 +90942,11 @@ def test_w1100_fu1054_the_care_reviewer_is_a_different_checklist_over_the_source
     runs = tmp_path / "review_calibration_runs.json"
     monkeypatch.setattr(cal, "_runs_path", lambda: runs)
     monkeypatch.setattr(orchestrator, "complete", _model)
+    import importlib
+    #  W1195c (FU-1831) - and the context the runtime gives the stand-in's model, long enough for every prompt
+    monkeypatch.setattr(importlib.import_module("agentic_core.ai.native.model_resource"), "context_given",
+                        lambda sb: {"model": "w1100-made-up", "context_length": 1 << 20,
+                                    "basis": "a stand-in made up for W1100: no runtime was asked"})
     n_asked = len(asked)
     r = client.post("/api/v1/review/calibration/agent-run", json={"date": "2026-11-15"})
     assert r.status_code == 409 and r.json()["detail"].startswith("Not run: the calibration set cannot be run on 2026-11-15"), r.text[:300]
@@ -97078,6 +97114,10 @@ def test_w1183_fu1054_the_care_reviewers_calibration_is_said_where_its_reviews_a
     _real_ident = gw.served_identity_of
     monkeypatch.setattr(gw, "served_identity_of",
                         lambda sb: dict(IDENT) if str(sb).startswith("ollama:w1183") else _real_ident(sb))
+    #  W1195c (FU-1831) - and the context the runtime gives the stand-in's model, long enough for every prompt
+    monkeypatch.setattr(importlib.import_module("agentic_core.ai.native.model_resource"), "context_given",
+                        lambda sb: {"model": IDENT["model"], "context_length": 1 << 20,
+                                    "basis": "a stand-in made up for W1183: no runtime was asked"})
 
     #  L0. the four named kinds, from the tree
     the_set = cal.load_set("care")
@@ -97210,18 +97250,18 @@ def test_w1183_fu1054_the_care_reviewers_calibration_is_said_where_its_reviews_a
             return {"output": per_case(which[0]), "served_by": "ollama:w1183-made-up"}
         return _m
     catches = saying(lambda cid: "FLAG: source not current" if cid.startswith("P") else "FLAG: none")
-    #  (a) a run that misses P1, kept whole
-    long_line = ("I read it twice, and found nothing else in it that the checklist asks about, " * 4).strip()
+    #  (a) a run that misses P1, kept whole. W1195c (FU-1831) - a FLAG line with prose beside it is not in the one
+    #  form, so P0 answers in the form; that a line not read is kept whole is test_w1195c's
     monkeypatch.setattr(orchestrator, "complete", saying(
-        lambda cid: f"FLAG: source not current\n{long_line}" if cid == "P0" else "FLAG: none"))
+        lambda cid: "FLAG: source not current" if cid == "P0" else "FLAG: none"))
     a = client.post("/api/v1/review/calibration/agent-run", json={"date": D0.isoformat()})
     assert a.status_code == 200 and a.json()["not_answered"] == [], a.text[:300]
     k = json.loads(runs.read_text(encoding="utf-8"))[-1]
     assert (k["door"], k["set_digest"], k["not_answered"], k["date"]) == (
         cal.AGENT_DOOR, cal.set_digest(made_up), [], D0.isoformat()), k
     assert sorted(k["per_case"]) == sorted(c["id"] for c in made_up["cases"]), k["per_case"]
-    assert len(long_line) > 200 and k["per_case"]["P0"] == {
-        "said_none": False, "lines_not_read_as_flags": [long_line], "rows_shown": []}, k["per_case"]["P0"]
+    assert k["per_case"]["P0"] == {
+        "said_none": False, "lines_not_read_as_flags": [], "rows_shown": []}, k["per_case"]["P0"]
     assert k["per_case"]["K0"]["said_none"] is True and k["per_case"]["K0"]["rows_shown"] == ["r-now"], k["per_case"]
     assert k["served_identity"] == IDENT and k["started_at"] <= k["finished_at"], k
     below = cal.calibration_statement("care-reviewer")
@@ -97232,7 +97272,9 @@ def test_w1183_fu1054_the_care_reviewers_calibration_is_said_where_its_reviews_a
     #  (b) its whole review of the risk tool stays unreviewed, labelled with its calibration and its rates
     today = D0.isoformat()
     rec = {"tool": "care_risk_assess", "tier": "reviewed_by_workstation_agent", "date": today,
-           "checklist": "care checklist v2", "agent": "care-reviewer", "model": "ollama:w1183-made-up",
+           "checklist": "care checklist v2", "agent": "care-reviewer",
+           #  W1195c (FU-1821) - the model and build of the run that calibrates it, as a review counts only by those
+           "model": IDENT["model"], "build": IDENT["build_digest"],
            "sources_read": [{"source": "nice-ng249", "page": "recommendations 1.1", "read_on": today}],
            "tool_version": "the tree at W1183", "could_not_check": "nothing beyond the guideline's own text"}
     made = client.post("/api/v1/review/record", json=rec)
@@ -97368,6 +97410,10 @@ def test_w1184_fu1054_the_calibration_results_have_a_place_in_the_tree_and_the_r
     monkeypatch.setattr(importlib.import_module("agentic_core.ai.gateway"), "served_identity_of", lambda sb: {
         "model": "w1184-stand-in", "build_digest": "w1184standin" + "0" * 52, "processor": None,
         "basis": "a stand-in made up for W1184: no model ran"})
+    #  W1195c (FU-1831) - and the context the runtime gives the stand-in's model, long enough for every prompt
+    monkeypatch.setattr(importlib.import_module("agentic_core.ai.native.model_resource"), "context_given",
+                        lambda sb: {"model": "w1184-stand-in", "context_length": 1 << 20,
+                                    "basis": "a stand-in made up for W1184: no runtime was asked"})
 
     #  L5. the tracked file
     doc = json.loads(tracked.read_text(encoding="utf-8"))
@@ -98103,6 +98149,10 @@ def test_w1187_the_owners_five_decisions_of_2026_11_21_are_recorded_and_the_cali
     monkeypatch.setattr(importlib.import_module("agentic_core.ai.gateway"), "served_identity_of", lambda sb: {
         "model": "w1187-stand-in", "build_digest": "w1187standin" + "0" * 52, "processor": None,
         "basis": "a stand-in made up for W1187: no model ran"})
+    #  W1195c (FU-1831) - and the context the runtime gives the stand-in's model, long enough for every prompt
+    monkeypatch.setattr(importlib.import_module("agentic_core.ai.native.model_resource"), "context_given",
+                        lambda sb: {"model": "w1187-stand-in", "context_length": 1 << 20,
+                                    "basis": "a stand-in made up for W1187: no runtime was asked"})
     the_set = cal.load_set("care")
     planted = [c for c in the_set["cases"] if c.get("planted")]
     assert len(planted) >= 2 and all(c.get("must_flag") for c in planted), "the set has fewer than two planted cases"
@@ -101759,3 +101809,549 @@ def test_w1197_fu1841_the_composition_preview_computes_its_verdict_and_records_n
     row = next(x for x in reg if x.get("id") == "FU-1841")
     assert row["slot"] == "P3.30" and (row["status"] == "open" or (row["status"], row.get("closed_by"), row.get(
         "because")) == ("done", "W1197", "built")), (row["status"], row.get("closed_by"), row.get("because"))
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1195c (P5.15; FU-1821, and FU-1831's build) - a calibration run records what its reviewer was shown and counts
+#  only while the reviewer gives the same, it starts only when its model's context holds every prompt, a review counts
+#  only by the run that calibrated its agent, and a reply in another form than the one the prompt states is not
+#  reviewed.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1195c_p515_a_run_is_held_to_what_its_reviewer_is_shown_and_a_reply_in_another_form_is_not_reviewed(
+        client, tmp_path, monkeypatch):
+    """FU-1821, and FU-1831's build part, as the Owner ruled on 2026-11-21 (afternoon): the reply form and the agent's
+    digest are built before the Owner's second calibration run, which waits on them and on FU-1820's re-read. A
+    reviewer agent was calibrated by its name alone, a run did not say what its reviewer was shown, and a reply in
+    another form was read in part: the first run, cal-8c7430765c, answered five cases with a bare 'FLAG:' line and the
+    reasons as a list beneath it, and C06 with 'FLAG: none' beside seven reasons, which was counted caught. Held here:
+    1. the reviewer's prompt states the one form, each reason as the whole line a reply writes and never as a list
+       item, and asks for it again after the answer; the set's cases and checklist are the ones the first run read;
+    2. a reply is read only in the one form: the first run's own C01, C04 and C06 replies, a long line of prose, an
+       unknown reason, an empty reply and marked-up lines are each out of the form, nothing in them is a flag, every
+       line is kept whole and what put the reply out of the form is said; the one form, with its case, space and
+       full-stop variants, is read as before, and a run of spaces inside a reason as one;
+    3. the first run keeps its record exactly: it holds no digest and no form, check_results passes on the tracked
+       file, and in a machine's own record it is UNCALIBRATED, having left five cases unanswered, with its rates, and
+       is said as made before a run recorded what its reviewer was shown (not_answered is read before the digest);
+    4. the probe: its answers are of every type a case's is, drawn through as_text, and its rows are listed out of
+       sorted order and carry every field a row can show, so how an answer is drawn and the order rows are drawn in
+       are in the digest (each moves it); each line of every case's prompt, other than its answer and its rows, is a
+       line of the probe's prompts, and every row a case is shown is drawn as its fields alone, whatever its status;
+       which rows a case is shown, and what a row's own fields say, are not in the digest; the digest does not move
+       when a row is read again, and moves with the checklist; the longest prompt is counted in bytes, with the reply
+       that flags each reason once;
+    5. a run through the agent's door keeps each case answered in another form, with what put it out, scores it as
+       not flagged and calibrates nothing, says so with the cases and their forms, and records the digest beside the
+       model and build that reviewed, and the context its runtime gave the model; the results copy it and check it;
+       the run does not start, and no model is asked, while the context the runtime reports for its model is shorter
+       than the longest prompt and reply, or while it reports none; context_given reads the runtime's own row once its
+       load request has loaded the model;
+    6. a run counts only while the reviewer gives its digest: calibrated at the bar, and not once what the reviewer is
+       shown changes, its rates still shown; GET /api/v1/review/calibration/care-reviewer gives both digests as
+       `shown`; a run that recorded no digest is read as made before runs did;
+    7. a review counts only when the model and build it names are the calibrated run's (the runtime's twelve-character
+       short id of the build is that build) and it is dated on or after that run; one that is not is kept, labelled
+       with its own reason as not held to the run, never as an uncalibrated agent's, and raises nothing; an answer at
+       the second tier says it was reviewed by Workstation's specialist agent and not by a qualified person; a run
+       that does not say its model or its build holds no review, and the tier's sentence says why;
+    8. FU-1821 is closed by this round; its last sentence (clause 4) and the review records page's two gaps are rows
+       of their own on P5.15, each with a slot_source; FU-1831 stays open for the second run with a note of what was
+       built; FU-1822 and FU-1819 carry a note each; and P5.15 says what was built."""
+    import datetime as _dt
+    import hashlib
+    import importlib
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.api import _review_calibration as cal
+    from agentic_core.api import _review_tier as rt
+    from agentic_core.api import care_reviewer as cr
+    from agentic_core.ai.native import model_resource as mr
+    from agentic_core.ai.native import orchestrator
+    root = Path(__file__).resolve().parents[1]
+    one = _dt.timedelta(days=1)
+    tracked = root / cal.RESULTS["care"]
+    before = hashlib.sha256(tracked.read_bytes()).hexdigest()
+    doc = json.loads(tracked.read_bytes().decode("utf-8"))
+    first = next(r for r in doc["runs"] if r["run_id"] == "cal-8c7430765c")
+    the_set = cal.load_set("care")
+    allowed = cr.reasons(the_set)
+    rows_now, _days = cal._register()
+    tree_register = cal._register
+    real_context_given = mr.context_given
+    _w = cal.runnable_window(the_set)
+    assert _w, "the tree's set cannot be run on any day as the register stands"
+    D0 = _dt.date.fromisoformat(_w["from"])          # never a calendar day: a re-read (FU-1820) moves the window
+    monkeypatch.setattr(cal, "_today", lambda: D0)
+
+    def need_of(s):
+        """what a run's context must hold, counted here on its own: each case's prompt in bytes, and the longest
+        reply in the one form"""
+        rows_ = cal._register()[0]
+        sizes = {c["id"]: len(cr.prompt_for(s, cr.as_text(c["shown"]), cr.rows_for(cr.as_text(c["shown"]), rows_,
+                                                                                      c.get("relies_on")))
+                              .encode("utf-8")) for c in s["cases"] if c.get("shown")}
+        case = max(sizes, key=lambda k: sizes[k])
+        reply = len("\n".join(f"FLAG: {r}" for r in cr.reasons(s)).encode("utf-8"))
+        return {"case": case, "prompt_bytes": sizes[case], "reply_bytes": reply, "needs": sizes[case] + reply}
+
+    #  1. the one form, stated; the set is the one the first run read
+    assert (the_set["version"], cal.set_digest(the_set)) == (first["set_version"], first["set_digest"]), "the set moved"
+    for c in the_set["cases"]:
+        t = cr.as_text(c["shown"])
+        p = cr.prompt_for(the_set, t, cr.rows_for(t, rows_now, c.get("relies_on")))
+        head, tail = p.split(cr._BEGIN, 1)[0], p.split(cr._END, 1)[1]
+        assert f"THE ONE FORM OF YOUR REPLY\n{cr.FORM}\n" in head and cr.FORM_RULES in head, (c["id"], "no form stated")
+        assert all(f"\nFLAG: {r}\n" in head for r in allowed), (c["id"], "a reason is not shown as the line a reply writes")
+        assert not [ln for ln in head.split("\n") if ln[:2] in ("- ", "* ") and ln[2:].strip() in allowed], (
+            c["id"], "a reason is shown as a list item, the form the first run copied")
+        assert tail == f"\n{cr.AFTER}\n", (c["id"], "the form is not asked for again after the answer", tail[:80])
+    for said in ("Never write FLAG: on a line by itself", "never write FLAG: none beside a reason",
+                 "no code block and no bold or other markup",
+                 "A reply in any other form is not read, and the answer counts as not reviewed."):
+        assert said in cr.FORM_RULES, said
+
+    #  2. a reply is read only in the one form: the first run's own replies, rebuilt from its record, and others
+    pc = first["per_case"]
+    assert pc["C01"]["lines_not_read_as_flags"][0] == "FLAG:", "C01 is not the bare form the first run wrote"
+    c01 = "\n".join(pc["C01"]["lines_not_read_as_flags"])
+    c06 = "\n".join(["FLAG: none"] + [f"FLAG: {f}" for f in first["flags"]["C06"]])
+    c04 = "\n".join([f"FLAG: {f}" for f in first["flags"]["C04"]] + pc["C04"]["lines_not_read_as_flags"])
+    long_line = ("I read it twice, and found nothing else in it that the checklist asks about, " * 4).strip()
+    assert len(long_line) > 200
+    out_of_form = {
+        c01: ["a bare 'FLAG:' line", "a line that is not a FLAG line"],
+        c06: ["'FLAG: none' beside another line"],
+        c04: ["a line that is not a FLAG line"],
+        f"FLAG: source not current\n{long_line}": ["a line that is not a FLAG line"],
+        "FLAG: source not current\nFLAG: a reason the set does not have": [
+            "a FLAG line whose reason is not one of the set's"],
+        "": ["no line at all"],
+        "- FLAG: none": ["a line that is not a FLAG line"],
+        "**FLAG:** none": ["a line that is not a FLAG line"],
+        "```\nFLAG: none\n```": ["a line that is not a FLAG line", "'FLAG: none' beside another line"],
+        "FLAG: none\nFLAG: none": ["'FLAG: none' beside another line"]}
+    for reply, why in out_of_form.items():
+        got = cr.parse(reply, allowed)
+        assert (got["in_form"], got["flags"], got["said_none"], got["not_in_form"]) == (False, [], False, why), (
+            reply[:70], got)
+        assert got["lines_not_read_as_flags"] == [ln.strip() for ln in reply.splitlines() if ln.strip()], (
+            reply[:70], "a line of a reply in another form was dropped or cut")
+    for reply, flags, none in (("FLAG: none", [], True), ("flag : None.", [], True),
+                               ("FLAG: source not current", ["source not current"], False),
+                               ("FLAG: Source Not Current.\n\n  flag : professional role claimed  ",
+                                ["source not current", "professional role claimed"], False),
+                               ("FLAG: source  not   current", ["source not current"], False),
+                               ("FLAG: source not current\nFLAG: source not current", ["source not current"], False)):
+        got = cr.parse(reply, allowed)
+        assert got == {"flags": flags, "said_none": none, "lines_not_read_as_flags": [], "in_form": True,
+                       "not_in_form": []}, (reply, got)
+    #  read the strict way, the first run's sixteen replies, rebuilt from its record: seven out of the form
+    rebuilt = {cid: "\n".join([f"FLAG: {f}" for f in first["flags"].get(cid) or []]
+                              + (["FLAG: none"] if x["said_none"] else []) + x["lines_not_read_as_flags"])
+               for cid, x in pc.items()}
+    out7 = sorted(cid for cid, reply in rebuilt.items() if not cr.parse(reply, allowed)["in_form"])
+    assert out7 == ["C01", "C02", "C03", "C04", "C06", "C08", "K06"], out7
+
+    #  3. the first run keeps its record exactly, and is read as made before a run recorded what its reviewer was shown
+    assert "shown_digest" not in first and "not_in_form" not in first, "the first run was given a field it never had"
+    assert cal.check_results(doc) == [], cal.check_results(doc)
+    theirs = tmp_path / "theirs" / "review_calibration_runs.json"
+    theirs.parent.mkdir()
+    theirs.write_text(json.dumps([{k: v for k, v in first.items() if k != "score"}], indent=1), encoding="utf-8")
+    monkeypatch.setattr(cal, "_runs_path", lambda: theirs)
+    old = cal.calibration_statement("care-reviewer")
+    assert (old["calibrated"], old["reason"], old["label"]) == (False, "not_answered", "Uncalibrated"), old
+    assert tuple(old["rates"][k] for k in ("caught", "planted_cases", "false_alarms", "clean_cases")) == (5, 10, 4, 6)
+    assert old["basis"].endswith(f"did not answer {', '.join(first['not_answered'])} with one of the set's reasons or "
+                                 "'FLAG: none', so those were not reviewed and the run calibrates nothing; it was made "
+                                 "before a run recorded what its reviewer was shown"), old["basis"]
+    assert cal.calibration_of("care-reviewer")["shown"] == {"run": None, "now": cr.shown_digest(the_set)}
+
+    #  4. the probe sees everything the reviewer is shown, and is fixed
+    def frame(prompt, shown_rows):
+        said = {cr._row_said(r) for r in shown_rows.values()}
+        head, rest = prompt.split(cr._BEGIN, 1)
+        return [ln for ln in (head + rest.split(cr._END, 1)[1]).split("\n") if ln not in said]
+    probe, named = set(), []
+    for a in cr.PROBE_ANSWERS:
+        pr = cr.rows_for(cr.as_text(a), cr.PROBE_ROWS)
+        named.append(len(pr))
+        probe.update(frame(cr.prompt_for(the_set, cr.as_text(a), pr), pr))
+    assert len(cr.PROBE_ROWS) >= 3 and named == [len(cr.PROBE_ROWS), 0, 0], (
+        "the probe does not name every probe row in one answer and none in the others", named)
+    assert {type(c["shown"]) for c in the_set["cases"]} <= {type(a) for a in cr.PROBE_ANSWERS}, (
+        "a case's answer is of a type no probe answer is, so how it is drawn is not in the digest")
+    assert list(cr.PROBE_ROWS) != sorted(cr.PROBE_ROWS), "the probe's rows are in sorted order: the sort is not in it"
+    assert all(any(r.get(f) is not None for r in cr.PROBE_ROWS.values()) for f in cr.ROW_FIELDS), (
+        "a field the reviewer can be shown of a row is in no row of the probe")
+    shown_status = set()
+    for c in the_set["cases"]:
+        t = cr.as_text(c["shown"])
+        mine = cr.rows_for(t, rows_now, c.get("relies_on"))
+        shown_status |= {r.get("status") for r in mine.values()}
+        p = cr.prompt_for(the_set, t, mine)
+        extra = [ln for ln in frame(p, mine) if ln not in probe]
+        assert not extra, (c["id"], "the reviewer is shown a line the probe does not show", extra[:3])
+        #  a row is drawn as its fields alone, whatever its status: a status the probe has no row in draws nothing new
+        for r in mine.values():
+            assert json.dumps({k: r[k] for k in cr.ROW_FIELDS if r.get(k) is not None}, ensure_ascii=False) in (
+                p.split("\n")), (c["id"], r["id"], "a row is drawn otherwise than as its fields")
+    assert {"current", "replaced"} <= shown_status, ("the cases show too few kinds of row to test", shown_status)
+    assert set(cal.SHOWN_BY) == set(cal.SETS), "a discipline's reviewer prompt is not known"
+    d_tree = cr.shown_digest(the_set)
+    assert cal.shown_now("care", the_set) == d_tree and len(d_tree) == 64
+    monkeypatch.setattr(cal, "_register", lambda: (
+        {k: {**v, "read_on": (D0 + one).isoformat()} for k, v in rows_now.items()}, 90))
+    assert cr.shown_digest(the_set) == d_tree, "a row read again moved the digest: it is not over the fixed probe"
+    monkeypatch.setattr(cal, "_register", tree_register)
+    assert cr.shown_digest({**the_set, "checklist": the_set["checklist"] + ["w1195c an item added"]}) != d_tree
+    #  ...and how an answer is drawn, and the order rows are drawn in, each move it
+    real_prompt_for = cr.prompt_for
+
+    def rows_unsorted(s_, text, rows):
+        got_ = real_prompt_for(s_, text, rows)
+        return got_.replace("\n".join(cr._row_said(rows[k]) for k in sorted(rows)),
+                            "\n".join(cr._row_said(rows[k]) for k in rows), 1) if rows else got_
+    for attr, other_way in (
+            ("as_text", lambda s_: s_ if isinstance(s_, str) else json.dumps(s_, indent=2, ensure_ascii=False)),
+            ("as_text", lambda s_: s_ if isinstance(s_, str) else json.dumps(s_, indent=1, ensure_ascii=True)),
+            ("as_text", lambda s_: s_ if isinstance(s_, str) else json.dumps(s_, indent=1, ensure_ascii=False,
+                                                                             sort_keys=True)),
+            ("prompt_for", rows_unsorted)):
+        with monkeypatch.context() as m:
+            m.setattr(cr, attr, other_way)
+            assert cr.shown_digest(the_set) != d_tree, ("drawn another way, the probe's prompt gives the same digest",
+                                                        attr)
+    tree_need = need_of(the_set)
+    assert cr.longest_prompt(the_set) == tree_need, (cr.longest_prompt(the_set), tree_need)
+
+    #  5. a run through the agent's door keeps each case answered in another form, and says so
+    IDENT = {"model": "w1195c-stand-in", "build_digest": "1195c0de" + "0" * 56, "processor": None,
+             "basis": "a stand-in made up for W1195c: no model ran"}
+    gw = importlib.import_module("agentic_core.ai.gateway")
+    monkeypatch.setattr(gw, "served_identity_of", lambda sb: dict(IDENT))
+    given = {"model": IDENT["model"], "context_length": 1 << 20, "basis": "a stand-in made up for W1195c"}
+    monkeypatch.setattr(mr, "context_given", lambda sb: dict(given))
+    runs = tmp_path / "w1195c_runs.json"
+    monkeypatch.setattr(cal, "_runs_path", lambda: runs)
+    monkeypatch.setattr(rt, "_path", lambda: tmp_path / "w1195c_review_records.json")
+    register = {"r-now": {"id": "r-now", "names": ["W1195c Made-Up Guide"], "status": "current",
+                          "read_on": (D0 - 10 * one).isoformat(), "says": "Read at its page."}}
+    monkeypatch.setattr(cal, "_register", lambda: (register, 90))
+    made_up = {"version": "w1195c-t", "checklist": the_set["checklist"],
+               "cases": [{"id": f"P{i}", "planted": "made up", "must_flag": "source not current",
+                          "shown": f"w1195c made-up planted answer {i}", "from": "made up here", "relies_on": []}
+                         for i in range(2)]
+               + [{"id": f"K{i}", "planted": None, "shown": f"w1195c made-up clean answer {i} citing W1195c Made-Up "
+                                                            "Guide", "relies_on": [{"row": "r-now", "status": "current"}]}
+                  for i in range(6)]}
+    monkeypatch.setattr(cal, "load_set", lambda d: made_up if d == "care" else None)
+    answers, asked = {}, []
+
+    async def _stand_in(prompt, agent="assistant", **kw):
+        hit = [c["id"] for c in made_up["cases"] if c["shown"] in prompt]
+        assert len(hit) == 1, hit
+        asked.append(hit[0])
+        return {"output": answers[hit[0]], "served_by": "ollama:w1195c-stand-in"}
+    monkeypatch.setattr(orchestrator, "complete", _stand_in)
+
+    def run(per_case):
+        answers.clear()
+        answers.update(per_case)
+        r = client.post("/api/v1/review/calibration/agent-run", json={"discipline": "care", "date": D0.isoformat()})
+        assert r.status_code == 200, r.text[:300]
+        return r.json(), json.loads(runs.read_text(encoding="utf-8"))[-1]
+    catches = {**{f"P{i}": "FLAG: source not current" for i in range(2)}, **{f"K{i}": "FLAG: none" for i in range(6)}}
+    a, kept = run({**catches, "P1": "FLAG:\n- source not current", "K2": "FLAG: none\nFLAG: source not current"})
+    form = {"P1": ["a bare 'FLAG:' line", "a line that is not a FLAG line"], "K2": ["'FLAG: none' beside another line"]}
+    assert (a["not_answered"], a["not_in_form"]) == (["P1", "K2"], form), a
+    assert (kept["not_answered"], kept["not_in_form"], kept["flags"]["P1"], kept["flags"]["K2"]) == (
+        ["P1", "K2"], form, [], []), kept
+    assert kept["per_case"]["P1"] == {"said_none": False, "lines_not_read_as_flags": ["FLAG:", "- source not current"],
+                                      "rows_shown": []}, kept["per_case"]["P1"]
+    assert kept["per_case"]["K2"]["lines_not_read_as_flags"] == ["FLAG: none", "FLAG: source not current"]
+    assert (kept["shown_digest"], kept["served_identity"]) == (cr.shown_digest(made_up), IDENT), kept
+    need = need_of(made_up)
+    assert cr.longest_prompt(made_up) == need, (cr.longest_prompt(made_up), need)
+    assert kept["runtime_context"] == {
+        "model": IDENT["model"], "context_length": 1 << 20, "basis": given["basis"], "runtime_version": None,
+        "needs": need["needs"],
+        "longest_case": need["case"], "longest_prompt_bytes": need["prompt_bytes"],
+        "longest_reply_bytes": need["reply_bytes"]}, kept.get("runtime_context")
+    s = cal.score(made_up["cases"], kept["flags"])
+    assert (s["caught"], s["false_alarms"], s["meets_bar"]) == (1, 0, False), s
+    st = cal.calibration_statement("care-reviewer")
+    assert (st["reason"], st["calibrated"], st["label"]) == ("not_answered", False, "Uncalibrated"), st
+    assert ("did not answer P1, K2 with one of the set's reasons or 'FLAG: none' in the one form asked for (P1: a bare "
+            "'FLAG:' line, a line that is not a FLAG line; K2: 'FLAG: none' beside another line), so those were not "
+            "reviewed and the run calibrates nothing") in st["basis"], st["basis"]
+    assert st["basis"].endswith("the run calibrates nothing"), ("a run with its digest said as made before", st["basis"])
+    assert st["rates"]["basis"].endswith("; P1, K2 were not reviewed and are counted here as not flagged"), st["rates"]
+    res = cal.results_for_tree()
+    copied = next(r for r in res["runs"] if r["run_id"] == kept["run_id"])
+    assert (copied["not_in_form"], copied["shown_digest"], copied["score"]["caught"]) == (form, kept["shown_digest"], 1)
+    assert copied["runtime_context"] == kept["runtime_context"] and cal.check_results(res) == [], cal.check_results(res)
+    #  ...and it does not start, and no model is asked, while its model's context is shorter than the set needs or the
+    #  runtime reports none; a context of exactly what it needs is enough
+    n_kept, n_asked = len(json.loads(runs.read_text(encoding="utf-8"))), len(asked)
+    holds = (f"a context of at least {need['needs']} tokens: the bytes of the longest prompt the set sends "
+             f"({need['case']}, {need['prompt_bytes']} bytes) and of the reply that flags each of the set's reasons once "
+             f"({need['reply_bytes']} bytes), since no token is shorter than one byte; the prompt's own token count is "
+             "not read here")
+    for ctx, said in (
+            ({"context_length": need["needs"] - 1},
+             f"Not run: the local runtime gives {IDENT['model']} a context of {need['needs'] - 1} tokens, and a run "
+             f"starts only with {holds}. Give the model a longer context"),
+            ({"context_length": None, "basis": "the w1195c stand-in runtime reports no context for it"},
+             "Not run: the w1195c stand-in runtime reports no context for it. A run starts only when the runtime "
+             f"reports, for its model, {holds}; nothing was asked of it.")):
+        given.update(ctx)
+        r = client.post("/api/v1/review/calibration/agent-run", json={"discipline": "care", "date": D0.isoformat()})
+        assert r.status_code == 409 and r.json()["detail"].startswith(said), (ctx, r.text[:500])
+        assert (len(json.loads(runs.read_text(encoding="utf-8"))), len(asked)) == (n_kept, n_asked), (
+            "a run started, or was kept, with a context that does not hold every prompt", ctx)
+    given.update(context_length=need["needs"], basis="a stand-in made up for W1195c")
+    run(catches)
+    given.update(context_length=1 << 20)
+    #  ...and what context_given reads: the runtime's own row for the model, once its load request has loaded it
+    httpx = importlib.import_module("httpx")
+    with monkeypatch.context() as m:
+        sent = []
+
+        class _Loaded:
+            status_code = 200
+
+        def _post(url, json=None, timeout=None, **k):
+            sent.append((url, dict(json or {})))
+            return _Loaded()
+        m.setattr(httpx, "post", _post)
+        m.delenv("AI_DISABLE_LOCAL", raising=False)
+        m.setattr(mr, "local_runtime_version", lambda: "0.0-w1195c")
+        reads = []
+        _ps = [{"name": "w1195c-stand-in:latest", "digest": "1195c0de", "context_length": 8192}]
+        m.setattr(mr, "_running_models", lambda: reads.append(1) or list(_ps))
+        got = real_context_given("ollama:w1195c-stand-in")
+        assert (got["model"], got["context_length"], got["runtime_version"], len(reads)) == (
+            "w1195c-stand-in", 8192, "0.0-w1195c", 1), (got, "the loaded models are read once", len(reads))
+        m.setattr(mr, "_running_models", lambda: [{"name": "w1195c-other:latest", "context_length": 1 << 20}])
+        other_only = real_context_given("ollama:w1195c-stand-in")
+        assert other_only["context_length"] is None and "does not list it as loaded" in other_only["basis"], (
+            "another loaded model's context was read as this one's", other_only)
+        m.setattr(mr, "_running_models", lambda: [{"name": "w1195c-stand-in:latest", "digest": "1195c0de",
+                                                   "context_length": 8192}])
+        got = real_context_given("ollama:w1195c-stand-in")
+        assert (got["model"], got["context_length"]) == ("w1195c-stand-in", 8192), got
+        assert sent and sent[-1][0].endswith("/api/generate") and sent[-1][1].get("model") == "w1195c-stand-in" and (
+            not sent[-1][1].get("prompt")), ("the context was read without the runtime's load request", sent)
+        m.setattr(mr, "_running_models", lambda: [{"name": "w1195c-stand-in", "digest": "1195c0de"}])
+        bare = real_context_given("ollama:w1195c-stand-in")
+        assert bare["context_length"] is None and "reports no context for it" in bare["basis"] and (
+            "update it" in bare["basis"]), bare
+        m.setattr(mr, "_running_models", lambda: None)
+        unread = real_context_given("ollama:w1195c-stand-in")
+        assert unread["context_length"] is None and "its list of loaded models could not be read" in unread["basis"], (
+            unread)
+        _err = {"error": "model 'w1195c-stand-in' not found, try pulling it first"}
+        m.setattr(httpx, "post", lambda url, json=None, timeout=None, **k: type(
+            "_No", (), {"status_code": 404, "json": lambda self: _err})())
+        no = real_context_given("ollama:w1195c-stand-in")
+        assert no["context_length"] is None and (
+            "refused to load w1195c-stand-in (HTTP 404: model 'w1195c-stand-in' not found, try pulling it first)") in (
+            no["basis"]), ("the runtime's own error was dropped", no)
+
+        def _unreachable(url, json=None, timeout=None, **k):
+            raise httpx.ConnectError("w1195c: connection refused")
+        m.setattr(httpx, "post", _unreachable)
+        gone = real_context_given("ollama:w1195c-stand-in")
+        assert gone["context_length"] is None and "could not be reached (ConnectError)" in gone["basis"] and (
+            "was not asked to load w1195c-stand-in") in gone["basis"], gone
+        m.setenv("AI_DISABLE_LOCAL", "1")
+        off = real_context_given("ollama:w1195c-stand-in")
+        assert off["context_length"] is None and "switched off on this process" in off["basis"], off
+        assert real_context_given("native")["context_length"] is None
+
+    #  6. a run counts only while the reviewer gives the digest it recorded
+    b, kept_b = run(catches)
+    assert b["agent_now"]["calibrated"] is True, b["agent_now"]
+    assert b["agent_now"]["shown"] == {"run": kept_b["shown_digest"], "now": cr.shown_digest(made_up)}, b["agent_now"]
+    g = client.get("/api/v1/review/calibration/care-reviewer")
+    assert g.status_code == 200 and g.json()["shown"] == {"run": kept_b["shown_digest"], "now": cr.shown_digest(made_up)}, (
+        g.text[:400])
+    assert (g.json()["statement"]["reason"], g.json()["statement"]["label"]) == ("calibrated", "Calibrated"), g.json()
+    after = cr.AFTER
+    monkeypatch.setattr(cr, "AFTER", after + " (W1195c: what the reviewer is shown, changed)")
+    ch = cal.calibration_statement("care-reviewer")
+    assert (ch["reason"], ch["calibrated"], ch["label"], ch["rates"]["caught"]) == (
+        "shown_changed", False, "Uncalibrated", 2), ch
+    assert ch["basis"].startswith(f"what its reviewer is shown has changed since its latest run, on {D0.isoformat()} "
+                                  ), ch["basis"]
+    assert ch["basis"].endswith(f"; by its own flags it met the bar ({ch['bar']})"), ch["basis"]
+    #  ...and a review by it is said as not calibrated for the reviewer as it is now, never as never calibrated
+    store = tmp_path / "w1195c_review_records.json"
+    store.write_text(json.dumps([{
+        "tool": "care_risk_assess", "tier": "reviewed_by_workstation_agent", "date": D0.isoformat(),
+        "checklist": "care checklist v2", "agent": "care-reviewer", "model": IDENT["model"],
+        "build": IDENT["build_digest"],
+        "sources_read": [{"source": "nice-ng249", "page": "recommendations 1.1", "read_on": D0.isoformat()}],
+        "tool_version": "the tree at W1195c", "could_not_check": "nothing beyond the guideline's own text"}]),
+        encoding="utf-8")
+    t6 = rt.review_statement("care_risk_assess")
+    assert ("an agent's review of this tool exists and does not raise its tier: care-reviewer is not calibrated for "
+            "the reviewer as it is now") in t6["basis"] and "has not been calibrated" not in t6["basis"], t6["basis"]
+    store.unlink()
+    gc = client.get("/api/v1/review/calibration/care-reviewer").json()
+    assert gc["shown"]["run"] == kept_b["shown_digest"] != gc["shown"]["now"] and gc["reason"] == "shown_changed", gc
+    monkeypatch.setattr(cr, "AFTER", after)
+    assert cal.calibration_statement("care-reviewer")["reason"] == "calibrated", "the same prompt again did not count"
+    kept_all = json.loads(runs.read_text(encoding="utf-8"))
+    runs.write_text(json.dumps(kept_all[:-1] + [{k: v for k, v in kept_all[-1].items() if k != "shown_digest"}]),
+                    encoding="utf-8")
+    nd = cal.calibration_statement("care-reviewer")
+    assert (nd["reason"], nd["calibrated"]) == ("shown_not_recorded", False), nd
+    assert nd["basis"].startswith(f"its latest run, on {D0.isoformat()} with ") and (
+        "was made before a run recorded what its reviewer was shown, so it cannot be held to the reviewer as it is now "
+        "and calibrates nothing; by its own flags it met the bar") in nd["basis"], nd["basis"]
+
+    #  7. a review counts only when the calibrated run's model and build are the ones it names, on or after that run
+    _, by = run(catches)
+    assert cal.calibration_of("care-reviewer")["calibrated"] is True
+    whole = {"tool": "care_risk_assess", "tier": "reviewed_by_workstation_agent", "date": D0.isoformat(),
+             "checklist": "care checklist v2", "agent": "care-reviewer", "model": IDENT["model"],
+             "build": IDENT["build_digest"],
+             "sources_read": [{"source": "nice-ng249", "page": "recommendations 1.1", "read_on": D0.isoformat()}],
+             "tool_version": "the tree at W1195c", "could_not_check": "nothing beyond the guideline's own text"}
+    assert rt.counts(whole)["counts"] is True, rt.counts(whole)
+    short = IDENT["build_digest"][:12]
+    for same in ({"model": "ollama:" + IDENT["model"]}, {"model": IDENT["model"] + ":latest"},
+                 {"build": "sha256:" + IDENT["build_digest"].upper()}, {"build": short},
+                 {"build": "sha256:" + short.upper()}, {"date": (D0 + one).isoformat()}):
+        assert rt.counts({**whole, **same})["counts"] is True, (same, rt.counts({**whole, **same}))
+    for change, said in (
+            ({"model": "w1195c-another"},
+             f"it names the model 'w1195c-another', and the run that calibrated the agent, {by['run_id']}, was made by "
+             f"{IDENT['model']}"),
+            ({"build": "f" * 64}, f"it names the build ffffffffffff of {IDENT['model']}, and the run that calibrated the "
+                                  f"agent was made with build {short}"),
+            ({"build": short[:11]}, f"it names the build {short[:11]} of {IDENT['model']}"),
+            ({"build": None}, f"it does not name the build of {IDENT['model']} that reviewed, and the run that "
+                              f"calibrated the agent was made with build {short}"),
+            ({"date": (D0 - one).isoformat()},
+             f"it is dated {(D0 - one).isoformat()}, before the run that calibrated the agent, made on {D0.isoformat()}")):
+        v = rt.counts({k: x for k, x in {**whole, **change}.items() if x is not None})
+        assert (v["counts"], v.get("not_held_to_run"), v.get("uncalibrated_agent_review")) == (False, True, None), (
+            change, v)
+        assert v["why_not"] == "the review is not held to the run that calibrated its agent: " + v["not_held_because"] and (
+            v["not_held_because"].startswith(said)), (change, v["why_not"])
+    apart = (f"care-reviewer's review is not held to the run that calibrated it (it names the model 'w1195c-another', "
+             f"and the run that calibrated the agent, {by['run_id']}, was made by {IDENT['model']})")
+    other = client.post("/api/v1/review/record", json={**whole, "model": "w1195c-another"})
+    assert other.status_code == 200 and other.json()["kept_though_not_counted"] is True, other.text[:300]
+    assert other.json()["kept_basis"] == (
+        "the review of a calibrated agent that is not held to the run that calibrated it (it names the model "
+        f"'w1195c-another', and the run that calibrated the agent, {by['run_id']}, was made by {IDENT['model']}) is "
+        "kept and shown, labelled, and does not raise the tool's tier"), other.json()
+    t = client.get("/api/v1/review/tier/care_risk_assess").json()
+    assert t["tier"] == "unreviewed" and t["basis"].startswith(
+        "no review of this tool counts: no rule check, no review by a calibrated agent that is held to the run that "
+        "calibrated it and no qualified person's signature."), t["basis"]
+    assert t["review_not_held_to_run"] == "an agent's review of this tool exists and does not raise its tier: " + apart, t
+    assert t["basis"].endswith("; an agent's review of this tool exists and does not raise its tier: " + apart), t["basis"]
+    assert "has not been calibrated" not in t["basis"] and "uncalibrated_agent_review" not in t, (
+        "a calibrated agent's review said as an uncalibrated one's", t["basis"])
+    ok = client.post("/api/v1/review/record", json=whole)
+    assert ok.status_code == 200 and ok.json()["counts"] is True, ok.text[:300]
+    raised = ok.json()["tool_now_says"]
+    assert raised["tier"] == "reviewed_by_workstation_agent", raised
+    assert raised["basis"].startswith(
+        f"the highest tier a record supports: reviewed by workstation's specialist agent, dated {D0.isoformat()}; it was "
+        "reviewed by Workstation's specialist agent and not by a qualified person; the reviewing agent's calibration "
+        "(care-reviewer): calibrated by its run"), raised["basis"]
+    assert "; an agent's review of this tool exists and does not raise its tier: " + apart in raised["basis"], raised
+    monkeypatch.setattr(gw, "served_identity_of", lambda sb: {**IDENT, "build_digest": None})
+    run(catches)
+    assert cal.calibration_of("care-reviewer")["calibrated"] is True
+    nb = rt.counts(whole)
+    nobuild = (f"the run that calibrated the agent does not say which build of {IDENT['model']} reviewed, so no review "
+               "can be held to it")
+    assert (nb["counts"], nb.get("not_held_because")) == (False, nobuild), nb
+    snb = cal.calibration_statement("care-reviewer")
+    assert snb["label"] == "Calibrated" and snb["basis"].endswith(
+        "; its run does not say which model and build reviewed, so no review by it can be held to that run and none "
+        "raises a tool's tier"), snb["basis"]
+    tn = client.get("/api/v1/review/tier/care_risk_assess").json()
+    assert tn["tier"] == "unreviewed" and (
+        f"care-reviewer's review is not held to the run that calibrated it ({nobuild})") in tn["basis"], tn["basis"]
+    monkeypatch.setattr(gw, "served_identity_of", lambda sb: {**IDENT, "model": None, "build_digest": None})
+    run(catches)
+    nm = rt.counts(whole)
+    nomodel = "the run that calibrated the agent does not say which model reviewed, so no review can be held to it"
+    assert (nm["counts"], nm.get("not_held_because")) == (False, nomodel), nm
+    #  a run naming its build and no model holds no review, not even one that names no model either
+    monkeypatch.setattr(gw, "served_identity_of", lambda sb: {**IDENT, "model": None})
+    run(catches)
+    nm2 = rt.counts({k: v for k, v in whole.items() if k != "model"})
+    assert (nm2["counts"], nm2.get("not_held_because")) == (False, nomodel), nm2
+
+    #  8. the register and the plan
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    fu = reg["FU-1821"]
+    assert (fu["status"], fu["closed_by"], fu.get("because")) == ("done", "W1195c", "built"), (
+        fu["status"], fu.get("closed_by"))
+
+    def titled(start):
+        hits = [r for r in reg.values() if r["title"].startswith(start)]
+        assert len(hits) == 1, (start, [r["id"] for r in hits])
+        return hits[0]
+    c4 = titled("A review record does not say whether the model that reviewed is the model that composed")
+    page = titled("The review records page cannot send a review's build")
+    for r_ in (c4, page):
+        assert (r_["slot"], r_["severity"], r_["owner_gated"]) == ("P5.15", "low", False), (r_["id"], r_["slot"])
+        assert (r_.get("slot_source") or "").strip().startswith("P5.15: "), (r_["id"], "names no slot_source")
+        assert r_["source"].startswith("W1195c (") and (r_["status"] == "open" or r_.get("closed_by") != "W1195c"), (
+            r_["id"], "this round closed a row it registered")
+    for said in ("clause 4", "FU-1819's route", "Clause 4 bars only an unaided review by the same model",
+                 "the reviewer runs on the local default model, as ruled for the second run"):
+        assert said in c4["why"], ("the clause-4 row does not say", said)
+    for said in ("ReviewRecords.tsx", "test_w690 and test_w921", "the agent's catch rate and false-alarm rate",
+                 "GET /api/v1/review/records"):
+        assert said in page["why"], ("the page's row does not say", said)
+    for said in ("cal-8c7430765c", c4["id"], page["id"], "test_w1195c", "and not by a qualified person",
+                 "which rows rows_for picks for a case, and what a row's own fields say, are not in the digest",
+                 "how an answer is drawn and the order rows are drawn in each move the digest"):
+        assert said in fu["close_note"], ("FU-1821's close note does not say", said)
+    miss = titled("The Care reviewer's first calibration run did not meet the bar")
+    assert miss["status"] == "open" or miss.get("closed_by") != "W1195c", "FU-1831 closes on the second run, not here"
+    for said in (" W1195c, a note and not a ruling: the reply's form and the agent's digest are built",
+                 "the first run would have had seven cases out of the form: C01, C02, C03, C08 and K06",
+                 "starts only when the context the local runtime reports for its model holds the longest prompt",
+                 "OLLAMA_CONTEXT_LENGTH",
+                 "The second run's step goes into step 5 of the local notes in a later round, once the Owner has "
+                 "answered whether the run also waits for FU-1822.",
+                 "two of the three things the Owner's ruling of 2026-11-21 names for the second run",
+                 "whatever the meets_bar of its exported score says",
+                 "Nothing here moves the bar, and no line in another form is counted."):
+        assert said in miss["why"], ("FU-1831 does not say", said)
+    assert " W1195c, a note: the digest is taken over a fixed probe" in reg["FU-1822"]["why"]
+    assert ("Which rows rows_for picks for a case, and what a row's own fields say, are not in the digest."
+            in reg["FU-1822"]["why"])
+    assert "OWNER RULING" not in reg["FU-1822"]["why"], "FU-1822's note is written as a ruling"
+    for said in (" W1195c, a note: a review counts only when the model and build it names",
+                 "a reply out of the one form (in_form false) is no review, though review() says a model served it",
+                 "the route checks the context as the agent's door does"):
+        assert said in reg["FU-1819"]["why"], ("FU-1819 does not say", said)
+    assert "never carried in a register row's says" in reg["FU-1822"]["why"], reg["FU-1822"]["why"][-500:]
+    plan = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    #  found with or without the DONE marker P5.15 gains when it closes
+    p515 = " ".join(re.split(r"\n P5\.15 (?:✅ DONE W\d+[a-z]? )?\[chartered W679", plan, maxsplit=1)[1].split(
+        "\n P5.16 ", 1)[0].split())
+    assert ("UPDATED 2026-11-22 (W1195c): two of the three things the Owner's ruling of 2026-11-21 names for the second "
+            "run are built.") in p515, (
+        p515[-900:])
+    for said in (c4["id"], page["id"], "cal-8c7430765c", "not by a qualified person",
+                 "starts only when the context the local runtime reports for its model holds the longest prompt"):
+        assert said in p515, ("P5.15 does not name", said)
+    texts = [fu["close_note"], c4["title"], c4["why"], page["title"], page["why"], miss["why"], reg["FU-1822"]["why"],
+             reg["FU-1819"]["why"], p515.split("UPDATED 2026-11-22 (W1195c)", 1)[1]]
+    assert [m_.group(0) for t_ in texts for m_ in [re.search(r"\b(?:he|his|him|himself)\b", t_, re.I)] if m_] == []
+    assert hashlib.sha256(tracked.read_bytes()).hexdigest() == before, "the tracked results file was written"

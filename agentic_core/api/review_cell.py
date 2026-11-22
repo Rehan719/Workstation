@@ -11,8 +11,9 @@ WHAT THE DOOR REFUSES AND WHAT IT KEEPS
 - A record that falls short of its tier's rule is REFUSED, in the rule's own words, and nothing is stored: a rule
   check naming no test, an agent's review naming no checklist or source, a signature with no name, no credential
   as stated, no statement of what was reviewed, or no lapse date that is still ahead.
-- ONE record that does not count IS kept: the review of an agent that has not been calibrated. The ruling asks
-  that such a review be labelled, not hidden - so it is stored, reported beside the tool, and raises nothing.
+- TWO KINDS of record that do not count ARE kept: the review of an agent that has not been calibrated, and
+  (W1195c) a calibrated agent's review that the run calibrating it does not hold. The ruling asks that such a review
+  be labelled, not hidden - so it is stored, reported beside the tool with its reason, and raises nothing.
 - A signature is entered by the administrator and is the PERSON'S statement: the credential is stored as stated
   and every answer says this platform did not verify it. Who entered it is recorded beside it.
 - Nothing here composes a review. An agent's review is recorded by whoever ran it, with the model that reviewed;
@@ -20,6 +21,10 @@ WHAT THE DOOR REFUSES AND WHAT IT KEEPS
 - W1183: only a run made by that route, dated the day it is made, calibrates the agent. A run typed through
   /calibration/run is a person's account of what was flagged: it is kept, says which door it came by, and
   calibrates nothing.
+- W1195c: a run made by that route records the digest of what its reviewer was shown, and each case answered in
+  another form than the one asked for; it starts only when the context the local runtime reports for its model holds
+  the longest prompt the set sends. An agent's review counts only when the model and build it names are those of
+  the run that calibrated it, and it is dated on or after that run.
 
 No tier, record or sentence claims a professional's role for an agent.
 """
@@ -53,6 +58,9 @@ class ReviewRecord(BaseModel):
     sources_read: Optional[List[Any]] = None
     tool_version: Optional[str] = None
     model: Optional[str] = None
+    #  W1195c (FU-1821) - the build of the model that reviewed, as its runtime reports it: a review counts only when its
+    #  model and build are those of the run that calibrated its agent
+    build: Optional[str] = None
     #  W691 - the agent is NAMED; whether it is calibrated is read from its recorded run, never sent here
     agent: Optional[str] = None
     discipline: Optional[str] = None
@@ -76,7 +84,8 @@ async def record_review(req: ReviewRecord, user: dict | None = Depends(get_curre
         raise HTTPException(status_code=422, detail="a record names the tool it is for")
     rec = {k: v for k, v in req.model_dump().items() if v is not None}
     verdict = _rt.counts(rec)
-    kept_though_not_counted = bool(verdict.get("uncalibrated_agent_review"))
+    #  W1195c (FU-1821) - and a calibrated agent's review that its calibrated run does not hold is kept the same way
+    kept_though_not_counted = bool(verdict.get("uncalibrated_agent_review") or verdict.get("not_held_to_run"))
     if not verdict["counts"] and not kept_though_not_counted:
         #  refused where the caller receives it, before anything is written
         raise HTTPException(status_code=422, detail=(
@@ -97,8 +106,11 @@ async def record_review(req: ReviewRecord, user: dict | None = Depends(get_curre
     return {"recorded": True, "record_id": rec["record_id"], "counts": verdict["counts"],
             "why_not": verdict.get("why_not"),
             "kept_though_not_counted": kept_though_not_counted,
-            "kept_basis": ("the review of an agent that has not been calibrated is kept and shown, labelled, and "
-                           "does not raise the tool's tier") if kept_though_not_counted else None,
+            "kept_basis": (("the review of an agent that has not been calibrated is kept and shown, labelled, and "
+                            "does not raise the tool's tier") if verdict.get("uncalibrated_agent_review") else
+                           (f"the review of a calibrated agent that is not held to the run that calibrated it "
+                            f"({verdict.get('not_held_because')}) is kept and shown, labelled, and does not raise the "
+                            f"tool's tier") if kept_though_not_counted else None),
             "tool_now_says": _rt.review_statement(rec["tool"])}
 
 
@@ -158,6 +170,23 @@ def _store_run(the_set: Dict[str, Any], user: Any, **fields: Any) -> Dict[str, A
             "agent_now": _cal.calibration_of(run["agent"], fields["discipline"])}
 
 
+def _context_refusal(ctx: Dict[str, Any], longest: Dict[str, Any]) -> str:
+    """W1195c (FU-1831) - why a run does not start, in the words its caller receives: what the runtime reported of the
+    context it gives the run's model, and the rule a run starts by. The rule is a bound, not a size: the figure is
+    bytes, and the prompt is fewer tokens than that."""
+    needs = (f"a context of at least {longest.get('needs')} tokens: the bytes of the longest prompt the set sends "
+             f"({longest.get('case')}, {longest.get('prompt_bytes')} bytes) and of the reply that flags each of the "
+             f"set's reasons once ({longest.get('reply_bytes')} bytes), since no token is shorter than one byte; the "
+             "prompt's own token count is not read here")
+    n = ctx.get("context_length")
+    if isinstance(n, int) and not isinstance(n, bool):
+        return (f"Not run: the local runtime gives {ctx.get('model')} a context of {n} tokens, and a run starts only "
+                f"with {needs}. Give the model a longer context (with Ollama, OLLAMA_CONTEXT_LENGTH) and run again; "
+                "nothing was asked of it.")
+    return (f"Not run: {ctx.get('basis')}. A run starts only when the runtime reports, for its model, {needs}; "
+            "nothing was asked of it.")
+
+
 class AgentRun(BaseModel):
     model_config = {"extra": "forbid"}
     discipline: str = "care"
@@ -186,7 +215,22 @@ async def run_reviewer_agent(req: AgentRun, user: dict | None = Depends(get_curr
     if day != today:
         raise HTTPException(status_code=422, detail=(
             f"Not run: a run is dated the day it is made ({today.isoformat()}), not {day.isoformat()}."))
+    #  W1195c (FU-1831) - THE RUN STARTS ONLY WHEN ITS MODEL'S CONTEXT HOLDS EVERY PROMPT. The context the local runtime
+    #  gives the model the reviewer is served by (the runtime's default, as the orchestrator resolves it) is read as the
+    #  runtime reports it, before any model is asked. The run is refused while that context is shorter than the longest
+    #  prompt the set sends with the reply that flags each reason once, counted in bytes (no token is shorter than a
+    #  byte, so the figure is a bound and not the prompt's size), or while the runtime reports none: a prompt cut to fit
+    #  would leave the run saying what its reviewer was shown while it read less
+    import asyncio
+    from agentic_core.ai.native import model_resource as _mr
+    longest = _cr.longest_prompt(the_set)
+    ctx = await asyncio.to_thread(_mr.context_given, "ollama")
+    n_ctx = ctx.get("context_length")
+    if not isinstance(n_ctx, int) or isinstance(n_ctx, bool) or n_ctx < longest["needs"]:
+        raise HTTPException(status_code=409, detail=_context_refusal(ctx, longest))
     started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    #  W1195c (FU-1821) - what the reviewer is shown, over its fixed probe, taken before any model is asked
+    shown = _cr.shown_digest(the_set)
     got = await _cr.run_on_set(the_set)
     finished = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     if got["floor_answered"]:
@@ -203,8 +247,16 @@ async def run_reviewer_agent(req: AgentRun, user: dict | None = Depends(get_curr
     out = _store_run(the_set, user, agent=_cr.AGENT, discipline="care", model=got["models"][0],
                      configuration="model", date=day.isoformat(), flags=got["flags"], door=_cal.AGENT_DOOR,
                      per_case=got["per_case"], not_answered=got["not_answered"],
-                     served_identity=served_identity_of(got["models"][0]), started_at=started, finished_at=finished)
-    return {**out, "lines_not_read_as_flags": got["lines_not_read_as_flags"], "not_answered": got["not_answered"]}
+                     not_in_form=got["not_in_form"], shown_digest=shown,
+                     served_identity=served_identity_of(got["models"][0]),
+                     runtime_context={"model": ctx.get("model"), "context_length": n_ctx, "basis": ctx.get("basis"),
+                                      "runtime_version": ctx.get("runtime_version"),
+                                      "needs": longest["needs"], "longest_case": longest["case"],
+                                      "longest_prompt_bytes": longest["prompt_bytes"],
+                                      "longest_reply_bytes": longest["reply_bytes"]},
+                     started_at=started, finished_at=finished)
+    return {**out, "lines_not_read_as_flags": got["lines_not_read_as_flags"], "not_answered": got["not_answered"],
+            "not_in_form": got["not_in_form"]}
 
 
 @router.get("/calibration/{agent}")
