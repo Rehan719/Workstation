@@ -70,6 +70,8 @@ Net profit (after legally-required reserves) flows through an ordered, configura
 
 All proportions are **adjustable by the Owner** (via the Chief/Board) and **bounded by the entity template** (e.g. a Charity form forces Stage 5 high; a Waqf preserves capital so Stage 3 is endowment). Every cycle's split is logged to the UEG.
 
+> **Recorded 2026-11-22 (W1192), the words above kept:** by the Owner's rulings of 2026-10-12 (P5.16 clause 3; P5.9, the payee is the entity's owner record), each generated entity pays the platform 25% of its profit first, for updates and maintenance, after Stage 0; the stages above split what remains, and the first share (Stage 1's 20%, the table's "payment to you (the repo owner)") goes to each entity's own owner.
+
 ## 5. Charitable-Giving Intelligence (Stage 5)
 
 Donations are **intelligently allocated**, not arbitrary:
@@ -85,6 +87,7 @@ Donations are **intelligently allocated**, not arbitrary:
 
 ## 7. Owner Payments (Stage 1)
 - An **adjustable** proportion of profit accrues to you, on a schedule you set (e.g. monthly), as **virtual ledger credits** by default.
+- **Recorded 2026-11-22 (W1192), the words above kept:** by the Owner's rulings of 2026-10-12 (P5.16 clause 3; P5.9, the payee is the entity's owner record), the proportion above is paid from what remains after the platform's 25% of each generated entity's profit, taken first, and it accrues to each entity's own owner.
 - **Real-money payout** (bank/processor) is **out of scope until you explicitly authorise it** and a compliance/KYC review is passed (ruled 2026-06-21 — UNDERSTANDING §9.2, §9.6: virtual WST now, Stripe later). The design keeps a clean seam so real rails can be added later behind that gate.
 - **The owner-payments store (as built, W465 — `agentic_core/economy/owner_payments.py`, register FU-016).** Every accrual and payout changes the store under its lock with an atomic write, and the payout's balance check runs inside that lock, so two payouts cannot both spend one balance. Reading an account writes nothing. A store that cannot be read whole (not valid UTF-8, not JSON, the wrong shape) is refused, never read as empty and overwritten: `GET /api/v1/economy/owner-payments` and the payout answer 503 ("no payout was recorded"), and the board pack reports the owner section `available: false`. A cycle whose owner accrual fails says so in its report (`owner_accrual`: `accrued: false`, the error, and `ueg_logged` — whether the `economy.owner_accrual_failed` event landed); the Owner's balance is then short by that amount, and nothing re-applies it yet (registered). The page shows a refusal as a refusal, never as 0 WST.
 

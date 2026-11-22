@@ -599,6 +599,11 @@ in users; donates intelligently to causes by real-world urgency (WATER · Orphan
 Dawah; 100%-donation-only). **Virtual/simulated money until the Owner directs real rails**; built to
 launch-ready standard. (Full design in `VSB_ECONOMIC_LEGAL_MODEL.md`.)
 
+**Recorded 2026-11-22 (W1192), the words above kept:** by the Owner's rulings of 2026-10-12 (P5.16
+clause 3; P5.9, the payee is the entity's owner record), each generated entity pays the platform 25% of
+its profit first, for updates and maintenance, and the adjustable profit share above, paid from what
+remains, goes to each entity's own owner.
+
 **Recorded W446 — what the Owner approved (2026-06-21, re-approved 2026-06-29; built W215–W221 and
 hardened through W442; `agentic_core/economy/entities.py`):** **nine selectable legal forms** (Sole
 Holder · Ltd · PLC · Trust · Waqf · Multinational Group · Non-profit · Charity · **Waqf-Ltd Hybrid,
@@ -611,6 +616,11 @@ Stripe real-money later behind compliance/KYC** (`REAL_MONEY_ENABLED` stays Fals
 flips it); the four causes with a **100%-donation-only screen** and Owner-set directives (inclusions /
 exclusions honoured); the live charity-signals seam **Owner-gated**; double-entry books with period
 close and CFO statements.
+
+**Recorded 2026-11-22 (W1192), the words above kept:** by the Owner's rulings of 2026-10-12 (P5.16
+clause 3; P5.9, the payee is the entity's owner record), each generated entity pays the platform 25% of
+its profit first, for updates and maintenance, after the Stage 0 reserves; the split above applies to
+what remains, and its first share (written "Owner 20" above) goes to each entity's own owner.
 
 ## 13. What the Output *is* (every deliverable is alive)
 

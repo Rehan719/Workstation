@@ -3,7 +3,7 @@
 When you want to continue locally, open Claude Code (Claude Opus 5.5) **in your local clone** (`~\Workstation`)
 and paste the block below as your first message. Nothing else is needed.
 
-Updated 2026-11-21 (W1131, W1164, W1184, W1187, W1188, W1190). The cloud session works in 8-hour cycles into December, until the plan's
+Updated 2026-11-22 (W1131, W1164, W1184, W1187, W1188, W1190, W1191, W1192). The cloud session works in 8-hour cycles into December, until the plan's
 build items are closed and the final audit has run (2026-12-31 at the latest), and pushes to `main-l1fsqo`. While
 it runs, the local session works on a branch of its own (step 1), so the two never push to the same branch.
 
@@ -38,6 +38,9 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
    FU-1005 were done here on 2026-11-20 (W1133l, W1133m), and are closed:
    - FU-1165: as I answered on 2026-11-20, register my two ventures, Atmospheric Harvest Solutions and Aerius
      Energy Harvest, fresh in the new books, then name each in Settings, Protected enterprises, once it exists.
+   - FU-1840: as I ruled on 2026-11-22, read your notes on this machine and list each lesson derived since W677, the
+     round it cites and your recommendation: add it to the batch, or say why not. I ratify the batch in one sitting;
+     nothing enters the method until I have ratified the batch.
    (FU-1054's step here was done on 2026-11-21 and the row is closed (W1188): the run, cal-8c7430765c, was
    committed from this machine (c657e2a7) and merged in the cloud session at c76809a8. It left five cases
    unanswered, so it calibrates nothing, and it did not meet the bar; the reviewer stays uncalibrated. As I
@@ -66,6 +69,7 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
   W1119–W1175) on 2026-11-20, and PR #465 (rounds W1176–W1184) and PR #466 (rounds W1185–W1189) on 2026-11-21,
   each on your instruction or decision; the cloud session merged #463, #465 and #466, each with all six checks
   green. Later rounds are on `main-l1fsqo`, carried by the pull request opened after #466 was merged.
+  PR #33 (opened 2026-03-12, before the plan) was closed unmerged on 2026-11-22, on your word; its branch is left.
 - **The plan,** on 2026-11-20: 97 of 119 items done (P1 18/18 · P2 39/41 · P3 30/32 · P4 3/6 · P5 7/22). P2.40 and P2.41
   have every row closed, and close on the final audit. The current figures are the PLAN NOW block of
   `docs/FABLE_DELIVERY_PROMPT.md`.
@@ -89,10 +93,30 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
   green; the four test-runner faults whose cause was never found to close as not reproduced after twenty
   consecutive green CI runs; and your letters to be sent in the week from 21 November, the Quran platform item
   carrying into January if no written permission for recordings has come by 15 December).
+- **Ruled on 2026-11-22:** twenty recommendations, each taken as recommended: revoking the W729 credentials that
+  day, with no branch deleted or changed without your explicit word (FU-1837); an entity's people and its money
+  (P5.8, P5.9) to be built now and driven with sign-in on in a test process, a person's own record of their week
+  with no health field until a data protection impact assessment that you and the solicitor review, and invoices
+  naming outside parties and real payroll held; the avatar and upload memory to be retired; a model to be made the
+  serving default only with its licence read, with no override; the work budget's readers on the platform's total
+  until a second person runs work; a founder's own Chief, Board and budget figure with sign-in on, for their own
+  entities only; a deletion drill to be built now, the retention
+  periods yours once the solicitor answers; the canvas amended on your word for the platform's fee and the owner's
+  share, its earlier words kept (the vision's section 12 and the economic model's sections 4 and 7 were given
+  dated records of your rulings of 2026-10-12, which that day's word did not cover); the solicitor's engagement to
+  carry the licence, title and investment questions (FU-1817); the deferred measures and the canvas's first tests
+  put on your list (FU-1839); a teacher shown both outputs at the end of an interview, labelled, and the first
+  offer's gate evidenced at five recorded interviews and your recorded choice (FU-1818); the generation credit to
+  be carried forward against later fees; no valuation material yet; PR #33 closed unmerged; a scholar or trusted
+  institute asked for now (FU-1838); the lessons since W677 ratified in one sitting (FU-1840, step 5), the 8-hour
+  cycles replacing the three-stretch rule and the six working rules going into the method; and the tajwid
+  companion to be built and held, its examples said as not available until a recording source permits them. The
+  standing answer for the outside "digital mitochondria" prompts is to be recorded with the assessment's next
+  section (a later round).
 - **Still yours:**
   - Merge the open pull request from `main-l1fsqo` when you are ready, or ask the cloud session to merge it
     once green, as you did for PR #463, PR #465 and PR #466.
-  - The row in step 5: FU-1165, a step there.
+  - The rows in step 5: FU-1165 and FU-1840, each a step there.
   - One line in `.env` on your machine for the legal matter's folder (step 3 of the prompt), if the local
     session has not added it.
   - Sending the two permission letters in `docs/letters/` (FU-1188), in the week from 21 November.
@@ -115,8 +139,11 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
     2026-11-20 you recorded outside models and real money as dated boundaries (P4.3, P4.6), so P4 completes
     without either being switched on.
   - One solicitor's engagement before anyone but you is invited (FU-1817): the Law pages before any public
-    release, and where other people's data may be kept.
-  - Five to eight short interviews with teachers or tutors before the first offer is chosen (FU-1818).
+    release, and where other people's data may be kept. As you ruled on 2026-11-22, it also carries written
+    questions on the project's licence and title and on the investment-side perimeter, and is to review with you
+    the data protection impact assessment to be drafted before any health-related wellbeing entry.
+  - Five to eight short interviews with teachers or tutors before the first offer is chosen (FU-1818). Each ends
+    by showing both outputs, labelled, as you ruled on 2026-11-22.
   - Revoking at their providers the credentials W729 redacted from three archived files in the repository, or
     confirming that each no longer works (FU-1837; the plan's list names each by its kind), and with them two earlier
     Stripe values, a live secret key and a webhook signing secret, that the March copies hold and W729 never
@@ -124,7 +151,13 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
     March 2026, and most of its other branches still carry unredacted copies. And the key in the openQuran archive's
     .env on your machine, which was never in the repository. Read the repository host's secret-scanning alert list
     first, and tell the cloud session the date once it is done. Added to your list at your request on 2026-11-21, to
-    be done soon.
+    be done soon. On 2026-11-22 you accepted doing it that day. The cloud session may list stale branches for deletion; no
+    branch is deleted or changed without the Owner's explicit word.
+  - Asking a scholar or a trusted institute to review what the religious tools hold back for one (FU-1838), as you
+    ruled on 2026-11-22.
+  - After the first deploy, the channel test and the price test the canvas names first, each your act; the same
+    row carries three measures the metrics document defers, not yet scheduled (FU-1839).
+  - Ratifying in one sitting the lessons a local session lists from this machine's notes (FU-1840, step 5).
 - **Settled on 2026-11-20:** the five places that named your Windows home folder (FU-1286, closed W1180), each
   as you accepted that day: `venv/` was untracked on your machine (7afa4aa9, merged into `main-l1fsqo` at
   07fb9817), the folder kept on your disk; the three permissions in `.claude/settings.json` were removed in the

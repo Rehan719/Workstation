@@ -45,6 +45,7 @@ Every amount of money below is virtual WST: no real-money rail is enabled, and t
 - The output quality rate covers only the runs a quality gate assessed. Text the floor composes is not assessable, so on a floor-only deployment the rate is over few runs or none. [observed]
 - Tokens are counted only where a serving model reports them; the floor counts none. [observed]
 - Building what would measure each missing metric is a later item for the Owner to schedule; this item builds no telemetry. [plan item P5.6]
+- On 2026-11-22 the Owner put the measures this document defers on their list (row FU-1839): the return measurement (one sign-in day per person) is built before the invited stage of plan item P4.2; the channel and price tests come after the first deploy, each the Owner's act; learners across the platform, a person completing a task and time to a first useful output are carried by that row, not yet scheduled. [owner-defined, 2026-11-22]
 
 ## What this document does not do
 

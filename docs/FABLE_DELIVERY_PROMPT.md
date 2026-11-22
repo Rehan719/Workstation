@@ -219,6 +219,11 @@ STILL WITH THE OWNER (the plan marks each "OWNER RULING" — do not choose for t
     test that scores nothing. Fill in your name and address, read it through, and send it from your own
     address. Nothing from the dataset is downloaded or used until a written answer grants it. Recommended:
     send it as drafted.
+    FU-1838 (W1192): ask a scholar or a trusted institute, as you ruled on 2026-11-22, to review the withheld
+    adult curriculum and tajweed items, the attestation wording of the Quran platform's teaching clause, and the
+    children's tools' tajwid rules, reflection prompts and approval pack. The children's gate stays closed
+    until the four learner-facing headings are built and an independent safeguarding review is done. The row
+    closes on a dated record of the engagement, or on a ruling that defers it.
     (The five places that named your Windows home folder are settled, each as you accepted on 2026-11-20: the
     audit record is ledger_v14_W639_375c5ffb.json, opened on the go-ahead that named it the same day: its
     home-folder paths start at ~, and its paths to the audit's data folder say what kind of place it was (W1175).
@@ -239,9 +244,16 @@ STILL WITH THE OWNER (the plan marks each "OWNER RULING" — do not choose for t
     Law pages before any public release (P5.11) and where other people's data may be kept (P4.5).
     Recommended, and accepted on the evening of 2026-11-20: one engagement covering both, booked once the
     first deploy is up; nothing is public, and no one but you is invited, until it has answered.
+    Ruled on 2026-11-22: it also carries written questions on the project's licence and title and on the
+    investment-side perimeter, and is to review with you the data protection impact assessment to be drafted before
+    any health-related wellbeing entry (P5.8).
     FU-1818 (W1174): five to eight short interviews with teachers or tutors, using the drafted scripts, before
     the first offer is chosen (P5.7). Recommended, and accepted on the evening of 2026-11-20: every public
     draft stays DRAFT - NOT APPROVED FOR PUBLICATION until then.
+    Ruled on 2026-11-22: each interview ends by showing the floor's output and the local model's on the same
+    invented sample, each labelled with what served it, the notes recording which the teacher judged; the first
+    offer's gate is evidenced once at least five interviews are recorded and your choice is recorded with its
+    reasons.
     FU-1837 (W1191): revoke at their providers the credentials W729 (2026-10-14) redacted from three archived copies
     of one pasted text file, or confirm that each no longer works: an AI provider key, a Google sign-in client
     secret, a Firebase key and a speech-to-text key; two reCAPTCHA secrets and two sign-in token secrets; two
@@ -255,6 +267,16 @@ STILL WITH THE OWNER (the plan marks each "OWNER RULING" — do not choose for t
     secret-scanning alert list; then revoke or rotate each at its provider; then tell the session the date, which a
     later round records beside the Stripe line at the head of this list. Added to your list at your request on
     2026-11-21, to be done soon.
+    On 2026-11-22 you accepted doing it that day. The cloud session may list stale branches for deletion; no branch
+    is deleted or changed without the Owner's explicit word.
+    FU-1839 (W1192): after the first deploy, the channel test (the group's leader is shown the product) and the price
+    test (three to five would-be founders are shown the £99 as set and not charged, and nothing is sold), each your
+    act, as you scheduled on 2026-11-22; the return measurement, built before the invited stage (P4.2), is a
+    round's. Learners across the platform, a person completing a task and time to a first useful output are carried
+    by this row, not yet scheduled.
+    FU-1840 (W1192): ratify, in one sitting, the batch of lessons derived since W677: a local session on your machine
+    lists each, from the assistant's notes there, with a recommendation (step 5 of docs/RESUME_ON_MY_MACHINE.md).
+    Ruled on 2026-11-22.
     (Ten put to the Owner on the afternoon of 2026-11-20 were accepted the same day, each as recommended: the
     advice sites allowed; letsencrypt.org allowed for the Waterlow score's terms, whose owner's address now serves
     a parking page, so the score stays withheld (FU-1033, closed as not assessable); the domain; the deploy with
@@ -291,6 +313,25 @@ STILL WITH THE OWNER (the plan marks each "OWNER RULING" — do not choose for t
     suite's stall to be diagnosed instead; and the letters to be sent in the week from 2026-11-21, the Quran
     platform item carrying into January with its listening test's row open if no written permission for
     lawful recordings has come by 2026-12-15. Each is recorded at the item it governs.)
+    (Twenty put in the early hours of 2026-11-22 were accepted at once, each as recommended: the credentials W729
+    redacted to be revoked that day, no branch to be deleted or changed without the Owner's explicit word; an
+    entity's people and its money (P5.8, P5.9) to be built now, driven with sign-in on in a test process, a person's
+    own record of their week with no health field until a data protection impact assessment, and invoices naming
+    outside parties and real payroll held; the avatar and upload memory to be retired; a model to be made the
+    serving default only with its licence read, with no override; the work budget's readers on the platform's total
+    until a second person runs work; a founder's own Chief, Board and budget figure with sign-in on, for their own
+    entities only; a deletion drill to be built now, the retention periods the Owner's once the solicitor answers;
+    the canvas amended on the Owner's word for the platform's fee and the owner's share, its earlier words kept (the
+    vision's section 12 and the economic model's sections 4 and 7 were given dated records of the Owner's rulings of
+    2026-10-12, which that day's word did not cover); the solicitor's engagement to carry the licence, title and
+    investment questions; the deferred measures and the canvas's first tests put on the Owner's list; a teacher
+    shown both outputs at the end of an interview, labelled; the first offer's gate evidenced at five recorded
+    interviews and the Owner's recorded choice; the generation credit to be carried forward against later fees; no
+    valuation material yet; PR #33 closed unmerged; a scholar or trusted institute asked for now; the lessons since
+    W677 ratified in one sitting, the 8-hour cycles replacing the three-stretch rule and the six working rules going
+    into the method; and the tajwid companion to be built and held without its examples. Each is recorded at the
+    item it governs, and the standing answer for the outside "digital mitochondria" prompts is to be recorded with
+    the assessment's next section (a later round).)
     (Six that stood here were RULED on 2026-11-19, the Owner accepting each recommendation: no birth is refused
     on the carrying capacity; streamlit, plotly and pandas's direct declaration are removed; a provider's
     published price may be cited, labelled observed; the price formula; CRITICAL, as built, for a claim that an
@@ -1148,10 +1189,10 @@ every register change (add · close · drop · reslot · route · done · render
     P5.15 7/14 · P5.17 1/5 · P5.18 0/5 · P5.19 1/3 · P5.20 1/4 · P5.21 0/0 · P5.22 1/1
   Done: 97 of 119 items — P1 18/18 · P2 39/41 · P3 30/32 · P4 3/6 · P5 7/22.
   Follow-up completion weighted by priority — P2: 100.0% of its rows' priority closed (613 of 613 rows); every phase's rows: 99.3% (the retired pre-plan queue left out).
-  Follow-ups: 39 open — 30 ride a plan item (1 high), 0 unscheduled, 9 awaiting the Owner; 1276 done, 19 dropped.
+  Follow-ups: 42 open — 30 ride a plan item (1 high), 0 unscheduled, 12 awaiting the Owner; 1276 done, 19 dropped.
 <!-- plannow:end -->
 <!-- pace:begin (generated by scripts/followups.py render - never edit by hand) -->
-WHERE THIS IS GOING (generated — 97 of 119 plan entries done, 39 open rows)
+WHERE THIS IS GOING (generated — 97 of 119 plan entries done, 42 open rows)
   PACE, over the last 6 round(s) that closed anything (W1182, W1185, W1186, W1188, W1189, W1191): 1.0 rows closed per round, 2.17 found, net -1.17.
   RATE USED: 1.0 rows/round — steady (one-time intakes excluded).
   NO PROJECTION: the backlog is not shrinking: the last 6 build rounds closed 1.0 rows each and registered 2.17, a net of -1.17 per round. No completion is projected at this rate.
@@ -1169,7 +1210,7 @@ the same commit (python scripts/followups.py add routes it to the plan item that
 rides the next open item) or slotted OWNER (waits on an Owner decision; never scheduled). A round that
 finishes an item marks it with python scripts/followups.py done P1.13 --by W### — its rows move along the
 routes or are closed first; the suite fails on a row left on a finished item.
-Open 39 (30 scheduled, 1 high · 0 unscheduled · 9 awaiting the Owner) · done 1276 · dropped 19.
+Open 42 (30 scheduled, 1 high · 0 unscheduled · 12 awaiting the Owner) · done 1276 · dropped 19.
   P3.30 — 
     FU-1297 [low] [p 1.5] Each block of the genome ledger holds the genome as one dictionary shared with every later block, so the blocks do not say the genome as it stood and the ledger grows with the square of the commits — Found in W1158. GenomicRegistry.commit_mutation() appends a block whose genotype is the registry's current genome itself, not a copy, so every block written in one process, and the last block it read, show the genome as it is at the next save. The hash each block carries of the one before was taken before later mutations changed that block, so from the third commit in a process it no longer matches what is written; nothing checks the chain. And the ledger is written whole on each commit with the whole genome in every block, so it grows with the square of the commits: in the checkout W1158 ran in, the suite's, written there until W1158, came to 23.9 MB. Only the spawn door commits, and it answers 410 on a release (W695), so this is the suite's and the kept door's. Next: each block records what its mutation changed, the genome is the blocks replayed, and the chain is checked when the ledger is read. (found W1158 (the genome ledger moved under the data root; the registry read))
   P3.32 — [chartered W640 · OWNER asked 2026-10-10 for a Latent Cell; the brief is assessed in
@@ -1212,15 +1253,18 @@ Open 39 (30 scheduled, 1 high · 0 unscheduled · 9 awaiting the Owner) · done 
   P5.22 — THE FINAL AUDIT — UNCAPPED,
     FU-1086 [high] [p 4.5] OWNER DECISION: the uncapped, census-partitioned final audit has no item that builds or runs it — The Owner ruled on 2026-10-12 that the final audit is uncapped and census-partitioned, its instrument built and guarded in its own round and calibrated first, and run after Phase 5 and the authentication-readiness round. The ruling lives only as a sentence in P2.40's order, and P5.10's calibration clause is the only other trace; no item, acceptance clause or open row owns building or running it, and once P2.40 closes the sentence sits on a closed item. Recommended: charter it as its own item, run in both the floor and the local-model configuration, with seven properties each driven red by a planted fault: every census surface in exactly one slice or a stated overlap, the union equals the census, no region capped, a failed or empty region blocks completeness, the measured commit reported, earlier ledgers byte-identical. (found W747)
   AWAITING THE OWNER — recorded, never scheduled into a round without the Owner's instruction:
-    FU-1837 [high] OWNER: revoke at their providers the credentials W729 redacted from three archived files, which this public repository has held, most of them since March 2026, or confirm each is dead, and record the date — W729 (50abf919, 2026-10-14) replaced real-looking values in three archived copies of one pasted text file in the tree. Its message says "The values are to be revoked at their providers by the Owner - redaction does not remove them from history". No row ever recorded this, and the Owner's Stripe key roll of 2026-10-09 covers none of these values. What they are, by provider and kind only: an AI provider key, a Google sign-in client secret, a Firebase key and a speech-to-text key; two reCAPTCHA secrets and two sign-in token secrets; two database addresses carrying a username and password, a database password and an e-mail password. With them goes the key in the openQuran archive's .env on the Owner's machine, never in the repository, which FU-268's ruling (closed by W505) left to the Owner: "The Owner rotates that key separately; the platform never reads it." Measured in W1191 by blob and by count, never by value: copies carrying most of the same values were uploaded to the repository on 2026-03-05, earlier than the June that W729's message gives, and most of the repository's other branches still carry unredacted copies, since W729 redacted only the tree's own copies; removing them there would not undo their exposure, which only revoking does. W729 also redacted two Stripe lines that held only templates; in the March copies those two lines hold earlier values that W729 never redacted, a Stripe live secret key and a Stripe webhook signing secret: revoke those too, or confirm they no longer work, since nothing records whether the key roll of 2026-10-09 retired them. The steps: read the repository host's secret-scanning alert list; revoke or rotate each item at its provider, or confirm that it no longer works; then tell the session the date, which a later round records beside the Stripe line at the head of the plan's Owner list. Added to the Owner's list at the Owner's request on 2026-11-21, to be done soon; in the Owner's words: "add to list of items for me, I will do this soon". (found W1191 (the Owner's request of 2026-11-21, late evening))
+    FU-1837 [high] OWNER: revoke at their providers the credentials W729 redacted from three archived files, which this public repository has held, most of them since March 2026, or confirm each is dead, and record the date — W729 (50abf919, 2026-10-14) replaced real-looking values in three archived copies of one pasted text file in the tree. Its message says "The values are to be revoked at their providers by the Owner - redaction does not remove them from history". No row ever recorded this, and the Owner's Stripe key roll of 2026-10-09 covers none of these values. What they are, by provider and kind only: an AI provider key, a Google sign-in client secret, a Firebase key and a speech-to-text key; two reCAPTCHA secrets and two sign-in token secrets; two database addresses carrying a username and password, a database password and an e-mail password. With them goes the key in the openQuran archive's .env on the Owner's machine, never in the repository, which FU-268's ruling (closed by W505) left to the Owner: "The Owner rotates that key separately; the platform never reads it." Measured in W1191 by blob and by count, never by value: copies carrying most of the same values were uploaded to the repository on 2026-03-05, earlier than the June that W729's message gives, and most of the repository's other branches still carry unredacted copies, since W729 redacted only the tree's own copies; removing them there would not undo their exposure, which only revoking does. W729 also redacted two Stripe lines that held only templates; in the March copies those two lines hold earlier values that W729 never redacted, a Stripe live secret key and a Stripe webhook signing secret: revoke those too, or confirm they no longer work, since nothing records whether the key roll of 2026-10-09 retired them. The steps: read the repository host's secret-scanning alert list; revoke or rotate each item at its provider, or confirm that it no longer works; then tell the session the date, which a later round records beside the Stripe line at the head of the plan's Owner list. Added to the Owner's list at the Owner's request on 2026-11-21, to be done soon; in the Owner's words: "add to list of items for me, I will do this soon". OWNER RULING 2026-11-22 (the recommendation accepted): the revocation is to be done on 2026-11-22, beginning with the repository host's secret-scanning alert list. The cloud session may list stale branches for deletion; no branch is deleted or changed without the Owner's explicit word. (found W1191 (the Owner's request of 2026-11-21, late evening))
     FU-1095 [medium] A failure on the first deployment reaches no person: failures are recorded and shown only on a page someone must open — P3.25 records every route failure in the outcome ledger and the event chain and shows them on one page; nothing sends a failure to anyone, and README.md still lists error monitoring as not built, which is half true. The first deploy is private to the Owner, so the cost is an outage nobody sees. Smallest addition, in the deploy pre-flight: an uptime check on /health from OUTSIDE the machine (a boot failure cannot report itself), e-mailing the Owner from their own cloud account beside the billing alert; it is named in the dry run and driven once at the deploy with the Owner watching; /health returns a fixed body, so the check sees only a dead process, and the runbook says so. The README line becomes: failures recorded, not alerted. ACCEPTED 2026-11-20 (the Owner's ten decisions, recommendation 4): set up at the first deploy, soon after the domain (FU-1289), with the restore of FU-1288 the day after. W1191 moved step 10 after step 12: until step 12 gives the machine its domain and turns sign-in on, the machine publishes no public port, so the outside check can only see it then; step 10 now has the Owner set it up after step 12, over HTTPS. (found W747)
     FU-1289 [medium] OWNER: buy a domain for the release machine and point it at the machine's fixed address — W1140 wrote HTTPS into the deploy (docs/DEPLOYMENT.md, step 12): Caddy obtains a publicly trusted certificate only for a domain, never for an IP address, so the release machine serves plain HTTP until it has one, and no person signs in until then. The domain is yours to buy, at any registrar, with its A record naming the machine's fixed address (step 12's first command). RECOMMENDED (accepted 2026-11-20): a short name you already hold or buy now; once its A record points at the machine, set the machine's domain (step 12) and watch the first HTTPS answer, with the uptime check of step 10 moved to HTTPS. OWNER RULING 2026-11-21 (afternoon; the recommendation accepted): the domain is bought before the first deploy; with no domain the machine is to publish no port, the Owner reaching it through an SSH tunnel, so that, once the startup script is changed to match (P4.1), the machine's first answer to the internet comes over HTTPS with sign-in on. That replaces 'serves plain HTTP until it has one' above: the machine answers the internet only once its domain is set. Its A record still points at the machine's fixed address before the domain is set, since Caddy needs it for the certificate (step 12). W1191 changed the startup script to match: with no domain it publishes no public port: the platform listens only on the machine's own 127.0.0.1:8000, reached through an SSH tunnel (docs/DEPLOYMENT.md, step 7), and a domain starts the public front only when the machine's own metadata turns sign-in on, the two set together at step 12 (`--metadata=domain=DOMAIN,auth-enabled=true`). Since the Owner's ruling of 2026-11-21 (late evening; P4.1), the Owner may sign in through the SSH tunnel before the domain, and no one else signs in until step 12. (found W1140 (FU-1284: HTTPS in front of the release machine))
-    FU-1817 [medium] OWNER: one solicitor's engagement before anyone but you is invited - the Law pages before any public release, and where other people's data may be kept — Two questions the plan leaves to you: P5.11 rules that a qualified person's view of the Law pages comes before any public release, and P4.5 that where another person's data may be kept - the free Google Cloud regions are in the United States - is a solicitor's question, answered before anyone else's data is stored there. RECOMMENDED (accepted 2026-11-20, evening): one engagement covering both, booked once the first deploy is up; nothing is public, and no one but you is invited, until it has answered. OWNER RULING 2026-11-21 (the recommendations accepted): P5.18 clause 4's comparison of named finance products stays closed: no named finance product is compared. If a comparison is ever wanted, whether showing named finance offers is credit broking is put to this engagement first: PERG 2, read in W1182, does not say whether it is effecting an introduction or presenting or offering an agreement. (found W1174 (the Owner's decisions of the evening of 2026-11-20, recommendation 3))
+    FU-1817 [medium] OWNER: one solicitor's engagement before anyone but you is invited - the Law pages before any public release, and where other people's data may be kept — Two questions the plan leaves to you: P5.11 rules that a qualified person's view of the Law pages comes before any public release, and P4.5 that where another person's data may be kept - the free Google Cloud regions are in the United States - is a solicitor's question, answered before anyone else's data is stored there. RECOMMENDED (accepted 2026-11-20, evening): one engagement covering both, booked once the first deploy is up; nothing is public, and no one but you is invited, until it has answered. OWNER RULING 2026-11-21 (the recommendations accepted): P5.18 clause 4's comparison of named finance products stays closed: no named finance product is compared. If a comparison is ever wanted, whether showing named finance offers is credit broking is put to this engagement first: PERG 2, read in W1182, does not say whether it is effecting an introduction or presenting or offering an agreement. OWNER RULING 2026-11-22 (the recommendations accepted): the engagement also carries written questions on the project's licence and title - who holds the copyright LICENSE names ("Virtual Sovereign Business", which is not a legal person), what the public Apache-2.0 grant already permits, what a contributor grants with no agreement, and on what terms a founder receives an entity repository - and on the investment-side perimeter: whether the capital fund, the profit shares or any valuation would be a financial promotion or a collective investment scheme. Both are among docs/business/FORMATION_WORKPACK.md's questions for a solicitor. It is also to review, with the Owner, the data protection impact assessment a round is to draft before any health-related wellbeing entry (P5.8). (found W1174 (the Owner's decisions of the evening of 2026-11-20, recommendation 3))
+    FU-1838 [medium] OWNER: ask a scholar or a trusted institute now to review what the religious tools hold back for a named scholar — P5.17 clause 7 puts it with the Owner: "a named scholar or trusted institute, on which clauses 2 to 5 each wait in part". The plan waits on one in more places: the review store's roster is empty until the Owner engages one; a composed religious answer is withheld until a named scholar approves its exact text; P5.20's clause 8 waits on a named scholar; and P5.21's tools open only on a scholar's decision on the current pack. The letters in the same clause had rows (FU-1188, FU-1283), and the scholar had none. OWNER RULING 2026-11-22 (the recommendation accepted): ask a scholar or a trusted institute now. The request covers the withheld adult curriculum and tajweed items, P5.17 clause 4's attestation wording, and P5.21's tajwid rules, reflection prompts and approval pack. The children's gate stays closed until P5.12's four learner-facing headings are built and an independent safeguarding review is done (ruling of 2026-11-20). This row closes only with a dated plan record of the engagement, or with a ruling that defers it, never on the review store's roster. (found W1192 (the Owner's decisions of 2026-11-22; found by the assessment of the inherited v40 prompt's body on 2026-11-21))
     FU-1165 [low] OWNER: name your own two protected entities (Settings, Protected enterprises) — Your ruling of 2026-10-11 protects your own two entities and the apex. The shipped rule names the apex; it cannot name your two, because their ids are not in the repository and these rounds do not read the data directory. Until you name them (the Settings page's Protected enterprises, which calls PUT /api/v1/economy/protected-entities), the named-in-a-ruling rule stays not assessable and every removal stays refused. The restore route your ruling asked for before any removal was built in W833. ANSWERED 2026-11-20: the Owner's two are Atmospheric Harvest Solutions and Aerius Energy Harvest, the two atmospheric harvesting ventures, registered fresh in the new books on the Owner's machine and named there once each exists. (found W833 (the other half of FU-869))
     FU-1188 [low] OWNER: send the two letters asking written permission for the Quranic Universal Library's data and the King Fahd Complex's recitations and fonts — FU-1066 (W948) drafted both letters in docs/letters/: QUL_DATA_PERMISSION_REQUEST.md asks the Quranic Universal Library for its page layouts, similar-verse lists and word timings, whose data carries no licence on any page read; KFGQPC_PERMISSION_REQUEST.md asks the King Fahd Glorious Qur'an Printing Complex for its recitations and fonts, whose site could not be opened from this machine. Sending is outward-facing and in your name. RECOMMENDED (accepted 2026-11-20): fill in your name and address, read each through, and send both as drafted. Nothing from either source is used until a written answer grants it, and the source check fails if any code reaches them. OWNER RULING 2026-11-21 (afternoon; the recommendation accepted): to be sent in the week from 2026-11-21, as drafted; if no written permission for lawful recordings has come by 2026-12-15, P5.17 carries into January with FU-1067 open. (found W948 (FU-1066: the letters are drafted by a round and sent by the Owner))
     FU-1283 [low] OWNER: send the request to the Quranic Audio Dataset's authors, drafted in docs/letters/ — FU-1067's private test needs lawful recordings of ordinary adult reciters. Of the three datasets read at their own pages on 2026-11-19, the Quranic Audio Dataset is the closest fit; its card states no licence for the recordings and cannot rule children out. W1132 drafted docs/letters/QURANIC_AUDIO_DATASET_REQUEST.md, asking its licence, whether every participant was an adult who consented to reuse, and whether recordings of adults may be used for a private test that scores nothing. Sending is outward-facing and in your name. RECOMMENDED (accepted 2026-11-20): fill in your name and address, read it through, and send it as drafted. Nothing from the dataset is used until a written answer grants it, and the source check fails if any code reaches its address. OWNER RULING 2026-11-21 (afternoon; the recommendation accepted): to be sent in the week from 2026-11-21, as drafted; if no written permission for lawful recordings has come by 2026-12-15, P5.17 carries into January with FU-1067 open. (found W1132 (FU-1067's next step; the Owner accepted the recommendation on 2026-11-20))
     FU-1288 [low] OWNER: at the first deploy, restore the data disk once from its snapshot, watching — W1137 drilled the restore and the rollback on this machine with Docker, and wrote the Google Cloud restore into docs/DEPLOYMENT.md (step 9) from Google's own references. A restore from a real snapshot can only be driven in your project. RECOMMENDED (accepted 2026-11-20): the day after the first deploy, once the schedule has taken a snapshot, run step 9 with the platform's address open, see the made-up project you wrote before it still there, and delete the old disk. It is the restore FU-1095's uptime drill pairs with. (found W1137 (FU-603 part 3: the restore and rollback drilled on this machine))
-    FU-1818 [low] OWNER: five to eight short interviews with teachers or tutors, using the drafted scripts, before the first offer is chosen — P5.7's working papers lead with one hypothesis - lesson plans and feedback that a teacher or tutor checks before use - and which offer comes first is yours, after the interviews; the seventh investment gate is a first offer the interviews support, and no interview is recorded in the tree. RECOMMENDED (accepted 2026-11-20, evening): five to eight short interviews with the drafted scripts, then choose; every public draft stays DRAFT - NOT APPROVED FOR PUBLICATION until then. (found W1174 (the Owner's decisions of the evening of 2026-11-20, recommendation 5))
+    FU-1818 [low] OWNER: five to eight short interviews with teachers or tutors, using the drafted scripts, before the first offer is chosen — P5.7's working papers lead with one hypothesis - lesson plans and feedback that a teacher or tutor checks before use - and which offer comes first is yours, after the interviews; the seventh investment gate is a first offer the interviews support, and no interview is recorded in the tree. RECOMMENDED (accepted 2026-11-20, evening): five to eight short interviews with the drafted scripts, then choose; every public draft stays DRAFT - NOT APPROVED FOR PUBLICATION until then. OWNER RULING 2026-11-22 (the recommendations accepted): at the end of each interview the teacher is shown the floor's output and the local model's output on the same invented sample, each labelled with what served it, and the notes record which one the teacher judged; the first offer's gate (the seventh investment gate) is evidenced when at least five interviews are recorded in the notes template and the Owner's choice is recorded with its reasons. (found W1174 (the Owner's decisions of the evening of 2026-11-20, recommendation 5))
+    FU-1839 [low] OWNER: after the first deploy, the channel test and the price test the canvas names first, each your act — P5.6 left building what would measure each metric for the Owner to schedule (its BOUNDARY; docs/business/METRICS_MEASURED.md), and the ratified canvas names three hypotheses to test first: the return (block 1), the channel (block 3) and the price (block 5). No row held them, though the plan's list of what is with the Owner said it was the whole list. OWNER RULING 2026-11-22 (the recommendation accepted): they are on the Owner's list now, in this row. The return measurement (one sign-in day per person) is built as a pre-flight of the invited stage (P4.2), a round's work. After the first deploy come the channel test (the group's leader is shown the product) and the price test (three to five would-be founders are shown the £99 as set and not charged, and nothing is sold), each the Owner's act. Learners across the platform, a person completing a task and time to a first useful output are carried by this row, not yet scheduled. (found W1192 (the Owner's decisions of 2026-11-22))
+    FU-1840 [low] OWNER: ratify, in one sitting, the batch of lessons derived since W677, each listed with a recommendation by a local session on your machine — P5.14's ACCEPT holds that the notes keep no lesson citing a round later than the method's data, or each such lesson has a stated reason; the method's latest lessons are W677's, and the assistant's notes, which hold the later ones, are on the Owner's machine, not in the tree. OWNER RULING 2026-11-22 (the recommendation accepted): the Owner ratifies the batch of lessons derived since W677 in one sitting; a local session on the Owner's machine lists each, adding it to the batch with a recommendation or stating why not. The 8-hour work cycles replace the rule that long stretches continue automatically at most three times before stopping for review, and the six rules of how the work is done go into the method, in a later round of P5.14. (found W1192 (the Owner's decisions of 2026-11-22))
 <!-- followups:end -->
 
 PHASE P1 — TRUTH FIRST (Tier 1; delivered_by: build; ESTIMATED ~14 rounds, ACTUAL 48 (W449—W496, 18 items); plus P1.15 and P1.16 added W469; no P2–P4 item ships until these do)
@@ -2783,6 +2827,10 @@ PHASE P2 — REACH AND DISCLOSURE (Tier 2; delivered_by: build; ESTIMATED ~9 rou
         reachable switches on behaviour that has never once fired, and the ATP name is retired or relabelled.
         Highest priority of the twelve: it unblocks Vision 8.0's Thrust A and makes a RUNNING instrument
         honest rather than adding a new one.
+        OWNER RULING 2026-11-22 (the recommendation accepted): once the throttle is switched on, admission and every
+        other reader of the energy figure are to read the platform's total until a second person runs work, and
+        then each run's own chain (platform, owner, VSB); every reading of the platform's total is to say it is
+        the platform's figure.
       · S18.2 WHAT AN ENTITY MAY BE SELECTED ON - ruled: ON RECORD, THROUGH THE GATE THAT ALREADY EXISTS.
         shadow -> canary -> acceptance gate -> promote-or-roll-back IS a fitness function, and genome.py has
         variation and inheritance and no selection. So selection asks whether delivered work passed its own
@@ -6723,6 +6771,13 @@ PHASE P3 — CAPABILITY (Tier 3; delivered_by: build; ESTIMATED ~11 rounds — N
       read whole. The page's evidence, baseline, installed and candidate blocks no longer sit inside the
       lifecycle card, and a failed lifecycle read is shown; viewing the page with that read failing is still
       owed.
+      OWNER RULING 2026-11-22 (the recommendations accepted): (1) the avatar and upload memory is to be retired;
+      today memory_v01 (agentic_core/ai/ceo/memory_v01.py) is written by the avatar chat and by uploads, read by no
+      production caller and held in this process only, and its first use fetches an 83 MB embedding model from an
+      outside host; if conversation memory is wanted later, it is to be built after sign-in, with a retention period
+      and with no outside download. (2) A model is to be made the serving default only when its licence text was
+      read from the runtime; with no licence read, promotion is to be refused, with no administrator override (not
+      built yet: the route checks discovery, digest and a recorded evaluation only).
  MILESTONE M3: fidelity workflow re-run → zero STUB/MISSING/DOC_OVERCLAIM; every PARTIAL
    disclosed; the then-current ledger holds only the ratified boundaries. (Reworded on the Owner's ruling of
    2026-10-09: this line named "ledger v6", an edition seven editions old.)
@@ -6778,6 +6833,14 @@ PHASE P4 — THE OWNER'S HAND (Tier 4; delivered_by: owner-switch; pre-flights b
       advice, real money).
       OWNER RULING 2026-11-20 (evening; the recommendation accepted): the invited stage opens only on the Owner's private deployed machine, once sign-in is on there,
       and only after the one solicitor's engagement (FU-1817) has answered.
+      OWNER RULING 2026-11-22 (the recommendations accepted): (1) with sign-in on, a founder who is not an
+      administrator may instruct their own entity's Chief, read their entity's Board and see their entity's own
+      work-budget figure, for the entities they own only (not built yet: the Board's routes, the Chief's among them,
+      require an administrator); scope "workstation", ratifications (FU-012) and material economy decisions (FU-014)
+      stay the Owner's; it is built and driven in a test process before the invited stage. (2) A round builds the
+      deletion drill now, on made-up accounts, as a pre-flight of the invited stage, with a retention register
+      listing each store as "not decided: the Owner's"; the Owner sets the periods once FU-1817 answers; S18.6's
+      retained record of a dead entity is to keep its economics, with the person's identifying fields removed.
  P4.3 ✅ DONE W1174 AI_ALLOW_EXTERNAL + a key, as accelerants only — the in-house-first order proven by test.
       OWNER RULING 2026-11-20 (evening; the recommendation accepted): RECORDED AS A §18 BOUNDARY, dated in the vision's section 18. Outside models stay off. Their
       condition is the Owner's own key and the accelerants-only order proven by test; until the Owner rules
@@ -6913,6 +6976,12 @@ PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST (Tier 5; delivered_by: 
       it is a later item for the Owner to schedule); no legal form is decided; no switch is touched.
       OWNER RULING 2026-11-19 (FU-1176): the founder's guide may state a provider's published price, cited with its page
       and the date it was read and labelled observed; it promises no zero bill.
+      OWNER RULING 2026-11-22 (the recommendation accepted): what this item left for the Owner to schedule, and the
+      canvas's three first tests, are put on the Owner's list now (FU-1839). The return measurement (one sign-in day
+      per person) is built as a pre-flight of the invited stage (P4.2). After the first deploy come the channel test
+      (the group's leader is shown the product) and the price test (three to five would-be founders are shown the
+      £99 as set and not charged, and nothing is sold), each the Owner's act. Learners across the platform, a person
+      completing a task and time to a first useful output are carried by that row, not yet scheduled.
  P5.7 ✅ DONE W1153 [chartered W666 · OWNER asked 2026-10-11 that the work in four external commercialisation prompts be
       verified and added to the plan; they are assessed in docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md section 17]
       THE WORKING PAPERS OF A FIRST SALE, EVERY ONE A DRAFT, NOTHING SENT. MEASURED FIRST: the business is
@@ -6948,6 +7017,10 @@ PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST (Tier 5; delivered_by: 
       switches of the Owner's hand, P4.1 to P4.6, and a first offer the interviews support.
       OWNER RULING 2026-11-20 (evening; the recommendation accepted): the first offer is chosen after five to eight short interviews with teachers or tutors,
       using the drafted scripts (FU-1818); nothing is published until then.
+      OWNER RULING 2026-11-22 (the recommendations accepted): the seventh gate is evidenced when at least five
+      interviews are recorded in the notes template and the Owner's choice is recorded with its reasons; each
+      interview ends by showing the floor's and the local model's outputs, each labelled; no valuation or
+      investor-facing material is made yet (FU-1818; docs/business/COST_MODEL.md).
  P5.8 [chartered W672 · OWNER RULING 2026-10-11, amending the ruling of 2026-10-09 (evening) against a registry
       of real people: staff records, payroll and wellbeing are wanted within and for Workstation and its
       entities; the external brief that prompted it is assessed in docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md
@@ -6977,6 +7050,13 @@ PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST (Tier 5; delivered_by: 
       advice). SEQUENCE (ruled 2026-10-11): after the fifth phase's first seven items. The readiness round it
       sat beside was brought forward on 2026-10-12, and this item keeps records about people, so it is built
       AFTER sign-in.
+      OWNER RULING 2026-11-22 (the recommendations accepted): "built AFTER sign-in" reads as after the sign-in
+      readiness work, which is done: the thirteen rows of P4.1's readiness round are all closed (the rows W1191
+      opened on P4.1 since are not the readiness round's). The item is to be built now and driven with sign-in on in
+      a test process only, as P5.18 and P5.19 were, and it may start before P5.1 and P5.2 close. Clause 3 is to be
+      built with no health field: health-related wellbeing entries wait for a data protection impact assessment,
+      which a round drafts for the Owner and the solicitor (FU-1817) to review. Real payroll stays behind the
+      real-money boundary (P4.6).
  P5.9 [chartered W673 · the OWNER supplied five external documents on 2026-10-12 asking for a finance, tax,
       invoice, funding and capital-stewardship capability; they are assessed in
       docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md section 20, and their vocabulary, autonomy levels and phases
@@ -7043,6 +7123,10 @@ PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST (Tier 5; delivered_by: 
       second item of this phase does), does not pay a person (the item before this one does), and does not
       allocate from the capital fund. SEQUENCE (ruled): after the item before this one, beside the
       readiness round; the rows found while reading for it are closed first.
+      OWNER RULING 2026-11-22 (the recommendation accepted): P5.8's reading of "after sign-in" holds here: this item
+      is to be built now, driven with sign-in on in a test process only, and may start before P5.1, P5.2 and P5.8
+      close. Invoices naming any party outside the Owner's own registered entities still wait for sign-in on, as its
+      BOUNDARY and ruling 6 of 2026-10-12 hold.
  P5.10 [chartered W676 · the OWNER supplied eight external documents on 2026-10-12 asking for an integrated
       quality, R&D and production capability; they are assessed in docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md
       section 22; their vocabulary, modes, risk classes and control states are NOT adopted; CHARTERED on the
@@ -7300,6 +7384,12 @@ PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST (Tier 5; delivered_by: 
       people are the Owner's; decisions are put once per round, at its end, as confirmations and decisions;
       each report carries one proof a person can check in a minute; long stretches continue automatically
       at most three times before stopping for review; agents are used only for work that is independent.
+      OWNER RULING 2026-11-22 (the recommendation accepted): the Owner ratifies the batch of lessons derived
+      since W677 in one sitting (FU-1840), a local session on the Owner's machine listing each with a
+      recommendation; the 8-hour work cycles (the Owner's instruction of 2026-11-10, extended on 2026-11-20 into
+      December) replace "long stretches continue automatically at most three times before stopping for
+      review", each cycle's report being the review point; and the six rules of how the work is done (above, as
+      the 8-hour cycles amend the fifth) go into the method, in a later round of this item.
  P5.15 [chartered W679 · the OWNER ruled on 2026-10-12 that the review a qualified person would give is to be
       done as far as it honestly can be by Workstation's own specialist agents, labelled as such, until people
       are engaged; assessment section 29;] THE REVIEW CELL. No engine is added: it stands on the register of
@@ -7391,6 +7481,9 @@ PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST (Tier 5; delivered_by: 
       test_w1117_fu399_the_price_panel_says_what_generating_an_entity_costs_in_the_routes_words, and clause 6's
       specialists are a declared cost, test_w933_p515_clause6_the_roster_is_on_the_entitys_page_and_a_generated_entity_is_recommended_a_specialist.
       Clause 2's three conditions and clause 7's three views wait on the Owner, before anything is charged.
+      OWNER RULING 2026-11-22 (the recommendation accepted): the £99 credit is to carry forward against later fees
+      until it is used up, with no conversion while money is virtual; the unit it is held in goes to the
+      accountant (docs/business/FORMATION_WORKPACK.md, question 3 for an accountant).
  P5.17 [chartered W683 · the OWNER asked on 2026-10-12 that their five earlier Quran-platform repositories be
       read for lessons and salvage, said that recitation, memorisation and competitions are wanted beside
       learning and teaching, and ruled twice that night on their shapes; assessment section 30;] THE QURAN
@@ -7435,6 +7528,12 @@ PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST (Tier 5; delivered_by: 
       recordings has come by 2026-12-15, the item carries into January with FU-1067 open: clause 3's private test
       is never run on recordings whose terms were not granted, and the item does not close on a test that was not
       run.
+      OWNER RULING 2026-11-22 (the recommendation accepted): clause 7's scholar is to be asked for now (FU-1838): the
+      Owner is to ask a scholar or a trusted institute to review the withheld adult curriculum and tajweed items,
+      clause 4's attestation wording, and P5.21's tajwid rules, reflection prompts and approval pack. The children's
+      gate stays closed until P5.12's four learner-facing headings are built and an independent safeguarding review
+      is done (ruling of 2026-11-20). The row closes only on a dated plan record of the engagement, or on a ruling
+      that defers it, never on the review store's roster.
  P5.18 [chartered W711 · the OWNER asked on 2026-10-13 that seven external documents on legal operations,
       contracts, premises and asset finance be critiqued, verified and added to the plan; assessment
       section 31;] THE ENTERPRISE'S OWN AGREEMENTS, AS RECORDS THAT SAY ONLY WHAT IS TRUE OF THEM.
@@ -7579,6 +7678,10 @@ PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST (Tier 5; delivered_by: 
       the pack; each clause driven red.
       OWNER RULING 2026-11-20 (evening; the recommendation accepted): the tools are built and held, as ruled; the gate stays closed until P5.12's four learner-facing
       headings are built and an independent safeguarding review.
+      OWNER RULING 2026-11-22 (the recommendation accepted): the TAJWID COMPANION is to be built and held with each
+      rule's example shown as not available until a recitation source's terms permit it; the item closes when its
+      tools are built, the companion's examples not waiting for it; the examples wait on the recordings request
+      (FU-1283).
  P5.22 [chartered W754 · OWNER RULING 2026-11-06, accepting FU-1086's recommendation] THE FINAL AUDIT — UNCAPPED,
       CENSUS-PARTITIONED. The Owner's ruling of 2026-10-12 (the final audit is uncapped and census-partitioned; its
       instrument is built, guarded and calibrated in its own round; it runs after Phase 5 and the sign-in readiness

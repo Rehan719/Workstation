@@ -65904,7 +65904,13 @@ def test_w725_the_ratified_documents_name_the_platform_and_claim_no_protection_t
         assert ("no mark or domain is held" in flat) or ("no mark has been applied for, and no domain is held" in flat), rel
         #  a ratified text was changed: the document says so, when, on whose word, and where
         opening = " ".join(text.split("\n## ", 1)[0].split())
-        assert f"Changed once since, with the Owner's word, on 2026-10-14: the line on the name, {where}." in opening, opening[-200:]
+        #  W1192: the canvas was changed a second time, on the Owner's word of 2026-11-22 (the platform's fee and
+        #  the owner's share); that word was for the canvas only, so the business plan still says it changed once
+        if rel.endswith("BUSINESS_MODEL_CANVAS.md"):
+            assert (f"Changed twice since, with the Owner's word: on 2026-10-14, the line on the name, {where}; and "
+                    "on 2026-11-22, the platform's fee and the owner's share,") in opening, opening[-260:]
+        else:
+            assert f"Changed once since, with the Owner's word, on 2026-10-14: the line on the name, {where}." in opening, opening[-200:]
         assert "**Ratified by the Owner on 2026-10-13**" in opening
         #  nothing is claimed that is not held, and the stale sentence is gone
         low = flat.lower()
@@ -95430,7 +95436,8 @@ def test_w1164_the_owners_ten_decisions_of_2026_11_20_are_recorded_and_the_water
             "final audit has run (2026-12-31 at the latest)") in flat
     step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
     steps = re.findall(r"^   - (FU-\d+):", step5, re.M)
-    assert steps == ["FU-1165"], steps   # W1180: FU-1286 closed; W1188: FU-1054 closed on its first run
+    #  W1180: FU-1286 closed; W1188: FU-1054 closed on its first run; W1192: the lessons sitting joined, after it
+    assert steps[:1] == ["FU-1165"], steps
     assert all(reg[s]["status"] == "open" for s in steps), steps
     assert "register my two ventures, Atmospheric Harvest Solutions and Aerius Energy Harvest, fresh in the new books" \
            in " ".join(step5.split()), "step 5 does not carry the Owner's answer on the two ventures"
@@ -96759,9 +96766,10 @@ def test_w1180_fu1286_is_closed_once_each_of_its_five_places_is_settled():
     step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
     #  W1184 - FU-1054's run joined step 5 once the row waited on the Owner's machine
     #  W1188 - FU-1054 closed on its first run, and its step left step 5
-    assert re.findall(r"^   - (FU-\d+):", step5, re.M) == ["FU-1165"] and "git rm -r --cached venv" not in step5
-    assert "The row in step 5: FU-1165, a step there." in flat and "FU-1286" not in flat.split(
-        "The row in step 5:", 1)[1].split(".", 1)[0]
+    #  W1192: the lessons sitting joined step 5 after FU-1165, so the summary names two rows
+    assert "FU-1286" not in re.findall(r"^   - (FU-\d+):", step5, re.M) and "git rm -r --cached venv" not in step5
+    assert "The rows in step 5: FU-1165 and " in flat and "FU-1286" not in flat.split(
+        "The rows in step 5:", 1)[1].split(".", 1)[0]
     assert ("**Settled on 2026-11-20:** the five places that named your Windows home folder (FU-1286, closed W1180)"
             in flat), "the notes do not say the row is closed"
     yours = flat.split("**Still yours:**", 1)[1].split("**Settled on 2026-11-20:**", 1)[0]
@@ -98262,7 +98270,8 @@ def test_w1188_fu1054_is_closed_on_the_care_reviewers_first_run_and_what_it_miss
     #  6. the local notes and the plan's list
     notes = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
     step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
-    assert "   - FU-1054:" not in step5 and re.findall(r"^   - (FU-\d+):", step5, re.M) == ["FU-1165"], step5[:300]
+    #  W1192: the lessons sitting joined step 5 after FU-1165
+    assert "   - FU-1054:" not in step5 and re.findall(r"^   - (FU-\d+):", step5, re.M)[:1] == ["FU-1165"], step5[:300]
     flat = " ".join(notes.split())
     for said in ("(FU-1054's step here was done on 2026-11-21 and the row is closed (W1188): the run, cal-8c7430765c, "
                  f"was committed from this machine (c657e2a7) and merged in the cloud session at {MERGE}.",
@@ -98270,7 +98279,7 @@ def test_w1188_fu1054_is_closed_on_the_care_reviewers_first_run_and_what_it_miss
                  "stays uncalibrated.",
                  f"what it missed is {miss['id']}: the cloud session makes its three fixes, and the second run is "
                  "made from this machine before 2027-01-10, with a larger local model, as I ruled that afternoon.)",  # W1190
-                 "The row in step 5: FU-1165, a step there.",
+                 "The rows in step 5: FU-1165 and ",   # W1192: the lessons sitting joined step 5
                  "**Settled on 2026-11-21:** the Care reviewer's first calibration run (FU-1054, closed W1188), made on "
                  "your machine through the agent's own door with the local model (llama3.2): run cal-8c7430765c left "
                  f"five cases unanswered, caught {s['caught']} of {s['planted_cases']} planted cases and raised "
@@ -98624,7 +98633,8 @@ def test_w1190_the_owners_six_decisions_of_the_afternoon_of_2026_11_21_are_recor
     said.append(para)
 
     #  the local notes: the rulings, the merged pull request, and what stays the Owner's
-    assert "Updated 2026-11-21 (W1131, W1164, W1184, W1187, W1188, W1190)." in notes
+    #  W1192: the notes were brought up to date again for the decisions of 2026-11-22 (W1191 had edited them too)
+    assert "Updated 2026-11-22 (W1131, W1164, W1184, W1187, W1188, W1190, W1191, W1192)." in notes
     for s in ("and that afternoon, six more taken as recommended: the release machine to open a port to the internet "
               "only with its domain, HTTPS and sign-in on, the domain bought before the first deploy and sign-in your "
               "switch; your second calibration run, with a larger local model (seven to eight billion parameters if "
@@ -99355,3 +99365,419 @@ fi
     appended = "Since W1191 the domain and sign-in are set together (docs/DEPLOYMENT.md, step 12)."
     assert " ".join(plan.split()).count("with FU-1095's uptime check and FU-1288's restore the day after. " + appended) == 1
     assert ("the password and the signing secret stay on the machine, never in the repository. " + appended) in notes
+
+
+def test_w1192_the_owners_twenty_decisions_of_2026_11_22_are_recorded_where_the_work_reads_them():
+    """W1192. The twenty recommendations the Owner accepted in the early hours of 2026-11-22 ("I accept all your
+    recommendations, proceed"), each recorded in the accepted words where the work reads it, and each written as the
+    rule to be built where the work is not built. Held here:
+    1. P5.8: "built AFTER sign-in" reads as after the sign-in readiness work, whose thirteen rows, named here, are all
+       closed; the item is to be built now and driven with sign-in on in a test process only, and may start before
+       P5.1 and P5.2 close; clause 3 is to be built with no health field until a data protection impact assessment
+       the Owner and the solicitor review; real payroll stays behind P4.6;
+    2. P5.9: the same reading; it is to be built now and may start before P5.1, P5.2 and P5.8 close; invoices naming
+       outside parties wait;
+    3. P3.32: the avatar and upload memory is to be retired, beside what writes it today; a model is to be made the
+       default only with its licence read, no override, said as not built yet;
+    4. S18.1: the work budget's readers on the platform's total until a second person runs work, then each run's chain;
+    5. P4.2: a founder's own Chief, Board and budget figure with sign-in on, said as not built yet; the deletion drill now,
+       periods the Owner's;
+    6. the canvas, on the Owner's word: the 25% fee taken first and the split's 20 to each entity's own owner, a dated
+       amendment with the earlier words kept, the canvas saying it has changed twice (test_w725 brought up to date:
+       the business plan, which that word did not cover, still says it changed once); the vision's section 12 (CRLF
+       kept) and the economic model's sections 4 and 7 given dated records of the rulings of 2026-10-12 at each claim
+       site, the words above each kept;
+    7. FU-1817 and the workpack: the licence, title and investment-perimeter questions; the DPIA reviewed with the Owner;
+    8. P5.6, the metrics document and an OWNER row: the deferred measures and the canvas's first tests on the Owner's
+       list, three measures carried by the row and not yet scheduled;
+    9. FU-1818, P5.7, the interview guide and its notes template: both outputs, each labelled; the cost model and P5.7:
+       the seventh gate's bar and no valuation or investor-facing material yet;
+    10. P5.16 and the workpack: the generation credit carried forward, its unit put to the accountant;
+    11. PR #33 closed unmerged, in the local notes and the plan's list;
+    12. P5.17: a scholar or trusted institute to be asked for now, an OWNER row listed beside the letters, closing only
+        on a dated record of the engagement or a ruling, never on the roster;
+    13. P5.14: the lessons since W677 ratified in one sitting, an OWNER row of the Owner's machine whose step is in
+        step 5 of the local notes (test_w1164, test_w1180 and test_w1188 brought up to date); the 8-hour cycles replace
+        the three-stretch rule; the six working rules go into the method later;
+    14. P5.21: the tajwid companion to be built and held, its examples said as not available;
+    15. FU-1837: the revocation to be done that day; the cloud session may list stale branches for deletion, and no
+        branch is deleted or changed without the Owner's explicit word;
+    and the plan's list carries the twenty in one paragraph naming no row, its lines in order; the local notes carry
+    the twenty in one bullet, held whole, and their updated line (test_w1190 brought up to date); and none of these,
+    each read from the tree, gives the Owner a gendered pronoun: the three new rows' why, title, source and slot note,
+    the list's paragraph, step 5's new entry, the three new Still-yours bullets and the notes' bullet of the day."""
+    import json
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    R = "OWNER RULING 2026-11-22 (the recommendation accepted)"
+    RS = "OWNER RULING 2026-11-22 (the recommendations accepted)"
+    BRANCHES = ("The cloud session may list stale branches for deletion; no branch is deleted or changed without the "
+                "Owner's explicit word.")
+    PRONOUN = re.compile(r"\b(he|him|his|himself|she|her|hers|herself)\b", re.I)
+    flat = lambda t: " ".join(t.split())   # noqa: E731
+    read = lambda p: (root / p).read_text(encoding="utf-8")   # noqa: E731
+    fable = read("docs/FABLE_DELIVERY_PROMPT.md")
+    reg = {r["id"]: r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"]}
+
+    def no_pronoun(text, where):
+        hit = PRONOUN.search(text)
+        assert not hit, (where, "gives the Owner a gendered pronoun", text[max(0, hit.start() - 60):hit.end() + 20])
+
+    def item(pid, nxt):
+        start = fable.index(f"\n {pid} ")
+        return flat(fable[start:fable.index(f"\n {nxt} ", start)])
+
+    def holds(text, s, where):
+        assert s in text, (where, "does not say", s[:110])
+
+    def titled(start):
+        hits = [r for r in reg.values() if r["title"].startswith(start)]
+        assert len(hits) == 1, (start, [r["id"] for r in hits])
+        return hits[0]
+
+    #  the three new rows: open, the Owner's, each saying its ruling; each whole why read for a pronoun first
+    sch = titled("OWNER: ask a scholar or a trusted institute now to review what the religious tools hold back")
+    tst = titled("OWNER: after the first deploy, the channel test and the price test the canvas names first")
+    lsn = titled("OWNER: ratify, in one sitting, the batch of lessons derived since W677")
+    for row in (sch, tst, lsn):
+        for field in ("why", "title", "source", "slot_source"):
+            no_pronoun(row.get(field) or "", (row["id"], field))
+    for row, sev, parts in (
+            (sch, "medium", (f"{R}: ask a scholar or a trusted institute now.",
+                             "The request covers the withheld adult curriculum and tajweed items, P5.17 clause 4's "
+                             "attestation wording, and P5.21's tajwid rules, reflection prompts and approval pack.",
+                             "This row closes only with a dated plan record of the engagement, or with a ruling that "
+                             "defers it, never on the review store's roster.")),
+            (tst, "low", (f"{R}: they are on the Owner's list now, in this row.",
+                          "After the first deploy come the channel test (the group's leader is shown the product) and the "
+                          "price test (three to five would-be founders are shown the £99 as set and not charged, and "
+                          "nothing is sold), each the Owner's act.",
+                          "Learners across the platform, a person completing a task and time to a first useful output "
+                          "are carried by this row, not yet scheduled.")),
+            (lsn, "low", (f"{R}: the Owner ratifies the batch of lessons derived since W677 in one sitting; a local "
+                          "session on the Owner's machine lists each, adding it to the batch with a recommendation or "
+                          "stating why not.",
+                          "The 8-hour work cycles replace the rule that long stretches continue automatically at most "
+                          "three times before stopping for review"))):
+        assert (row["status"], row["slot"], row["owner_gated"], row["severity"]) == ("open", "OWNER", True, sev), row
+        assert row["source"].startswith("W1192 (the Owner's decisions of 2026-11-22"), row["source"]
+        for s in parts:
+            holds(row["why"], s, row["id"])
+    #  the scholar row ends at its rule: the roster is data a test can fill, so it gives no reason drawn from one
+    assert sch["why"].endswith("or with a ruling that defers it, never on the review store's roster."), sch["why"][-90:]
+    #  the lessons row asks only what the Owner accepted: no question of its own about section 27
+    assert "section 27" not in lsn["why"], "the lessons row carries a question the Owner was not asked"
+    assert lsn.get("slot_source", "").startswith("OWNER (the Owner's machine):"), lsn.get("slot_source")
+    S, T, L = sch["id"], tst["id"], lsn["id"]
+
+    #  the rows the day's rulings bear on, each after its earlier ruling
+    for rid, before, s in (
+            ("FU-1817", "OWNER RULING 2026-11-21 (the recommendations accepted)",
+             f" {RS}: the engagement also carries written questions on the project's licence and title - who holds the "
+             "copyright LICENSE names (\"Virtual Sovereign Business\", which is not a legal person), what the public "
+             "Apache-2.0 grant already permits, what a contributor grants with no agreement, and on what terms a founder "
+             "receives an entity repository - and on the investment-side perimeter: whether the capital fund, the profit "
+             "shares or any valuation would be a financial promotion or a collective investment scheme. Both are among "
+             "docs/business/FORMATION_WORKPACK.md's questions for a solicitor. It is also to review, with the Owner, the "
+             "data protection impact assessment a round is to draft before any health-related wellbeing entry (P5.8)."),
+            ("FU-1818", "RECOMMENDED (accepted 2026-11-20, evening)",
+             f" {RS}: at the end of each interview the teacher is shown the floor's output and the local model's output "
+             "on the same invented sample, each labelled with what served it, and the notes record which one the teacher "
+             "judged; the first offer's gate (the seventh investment gate) is evidenced when at least five interviews "
+             "are recorded in the notes template and the Owner's choice is recorded with its reasons."),
+            ("FU-1837", "Added to the Owner's list at the Owner's request on 2026-11-21, to be done soon",
+             f" {R}: the revocation is to be done on 2026-11-22, beginning with the repository host's secret-scanning "
+             f"alert list. {BRANCHES}")):
+        why = reg[rid]["why"]
+        holds(why, s, rid)
+        assert why.index(before) < why.index(s), (rid, "the day's ruling is not after the earlier one")
+        assert reg[rid]["status"] == "open", (rid, reg[rid]["status"])
+
+    #  each ruling at the item it governs, written as the rule to be built where the work is not built
+    s18 = flat(fable[fable.index("· S18.1 THE METABOLIC BUDGET'S UNIT"):fable.index("· S18.2 WHAT AN ENTITY MAY BE")])
+    holds(s18, f"{R}: once the throttle is switched on, admission and every other reader of the energy figure are to "
+               "read the platform's total until a second person runs work, and then each run's own chain (platform, "
+               "owner, VSB); every reading of the platform's total is to say it is the platform's figure.", "S18.1")
+    p332 = item("P3.32", "P4.1")
+    s = (f"{RS}: (1) the avatar and upload memory is to be retired; today memory_v01 (agentic_core/ai/ceo/memory_v01.py) "
+         "is written by the avatar chat and by uploads, read by no production caller and held in this process only, and "
+         "its first use fetches an 83 MB embedding model from an outside host; if conversation memory is wanted later, "
+         "it is to be built after sign-in, with a retention period and with no outside download. (2) A model is to be "
+         "made the serving default only when its licence text was read from the runtime; with no licence read, "
+         "promotion is to be refused, with no administrator override (not built yet: the route checks discovery, digest "
+         "and a recorded evaluation only).")
+    holds(p332, s, "P3.32")
+    assert p332.index(s) < p332.index("MILESTONE M3:"), "P3.32's ruling is not inside the item"
+    holds(item("P4.2", "P4.3"),
+          f"{RS}: (1) with sign-in on, a founder who is not an administrator may instruct their own entity's Chief, read "
+          "their entity's Board and see their entity's own work-budget figure, for the entities they own only (not built "
+          "yet: the Board's routes, the Chief's among them, require an administrator); scope \"workstation\", "
+          "ratifications (FU-012) and material economy decisions (FU-014) stay the Owner's; it is built "
+          "and driven in a test process before the invited stage. (2) A round builds the deletion drill now, on made-up "
+          "accounts, as a pre-flight of the invited stage, with a retention register listing each store as \"not "
+          "decided: the Owner's\"; the Owner sets the periods once FU-1817 answers; S18.6's retained record of a dead "
+          "entity is to keep its economics, with the person's identifying fields removed.", "P4.2")
+    holds(item("P5.6", "P5.7"),
+          f"{R}: what this item left for the Owner to schedule, and the canvas's three first tests, are put on the "
+          f"Owner's list now ({T}). The return measurement (one sign-in day per person) is built as a pre-flight of the "
+          "invited stage (P4.2). After the first deploy come the channel test (the group's leader is shown the product) "
+          "and the price test (three to five would-be founders are shown the £99 as set and not charged, and nothing is "
+          "sold), each the Owner's act. Learners across the platform, a person completing a task and time to a first "
+          "useful output are carried by that row, not yet scheduled.", "P5.6")
+    p57 = item("P5.7", "P5.8")
+    s = (f"{RS}: the seventh gate is evidenced when at least five interviews are recorded in the notes template and the "
+         "Owner's choice is recorded with its reasons; each interview ends by showing the floor's and the local model's "
+         "outputs, each labelled; no valuation or investor-facing material is made yet (FU-1818; "
+         "docs/business/COST_MODEL.md).")
+    holds(p57, s, "P5.7")
+    assert p57.index("OWNER RULING 2026-11-20 (evening; the recommendation accepted)") < p57.index(s), "P5.7's order"
+    p58 = item("P5.8", "P5.9")
+    s = (f"{RS}: \"built AFTER sign-in\" reads as after the sign-in readiness work, which is done: the thirteen rows of "
+         "P4.1's readiness round are all closed (the rows W1191 opened on P4.1 since are not the readiness round's). The "
+         "item is to be built now and driven with sign-in on in a test process only, as P5.18 and P5.19 were, and it may "
+         "start before P5.1 and P5.2 close. Clause 3 is to be built with no health field: health-related wellbeing "
+         "entries wait for a data protection impact assessment, which a round drafts for the Owner and the solicitor "
+         "(FU-1817) to review. Real payroll stays behind the real-money boundary (P4.6).")
+    holds(p58, s, "P5.8")
+    assert p58.index("so it is built AFTER sign-in.") < p58.index(s), "P5.8's ruling is not after its sequence"
+    #  the readiness round P5.8's reading names: its thirteen rows, each closed on P4.1
+    for rid in ("FU-845", "FU-846", "FU-847", "FU-848", "FU-849", "FU-850", "FU-1061", "FU-1062", "FU-1063", "FU-1089",
+                "FU-1120", "FU-1152", "FU-1171"):
+        assert (reg[rid]["slot"], reg[rid]["status"]) == ("P4.1", "done"), (rid, reg[rid]["slot"], reg[rid]["status"])
+    holds(item("P5.9", "P5.10"),
+          f"{R}: P5.8's reading of \"after sign-in\" holds here: this item is to be built now, driven with sign-in on in a "
+          "test process only, and may start before P5.1, P5.2 and P5.8 close. Invoices naming any party outside the "
+          "Owner's own registered entities still wait for sign-in on, as its BOUNDARY and ruling 6 of 2026-10-12 hold.",
+          "P5.9")
+    holds(item("P5.14", "P5.15"),
+          f"{R}: the Owner ratifies the batch of lessons derived since W677 in one sitting ({L}), a local session on the "
+          "Owner's machine listing each with a recommendation; the 8-hour work cycles (the Owner's instruction of "
+          "2026-11-10, extended on 2026-11-20 into December) replace \"long stretches continue automatically at most "
+          "three times before stopping for review\", each cycle's report being the review point; and the six rules of "
+          "how the work is done (above, as the 8-hour cycles amend the fifth) go into the method, in a later round of "
+          "this item.", "P5.14")
+    holds(item("P5.16", "P5.17"),
+          f"{R}: the £99 credit is to carry forward against later fees until it is used up, with no conversion while money "
+          "is virtual; the unit it is held in goes to the accountant (docs/business/FORMATION_WORKPACK.md, question 3 "
+          "for an accountant).", "P5.16")
+    holds(item("P5.17", "P5.18"),
+          f"{R}: clause 7's scholar is to be asked for now ({S}): the Owner is to ask a scholar or a trusted institute to "
+          "review the withheld adult curriculum and tajweed items, clause 4's attestation wording, and P5.21's tajwid "
+          "rules, reflection prompts and approval pack. The children's gate stays closed until P5.12's four learner-facing "
+          "headings are built and an independent safeguarding review is done (ruling of 2026-11-20). The row closes "
+          "only on a dated plan record of the engagement, or on a ruling that defers it, never on the review store's "
+          "roster.", "P5.17")
+    holds(item("P5.21", "P5.22"),
+          f"{R}: the TAJWID COMPANION is to be built and held with each rule's example shown as not available until a "
+          "recitation source's terms permit it; the item closes when its tools are built, the companion's examples not "
+          "waiting for it; the examples wait on the recordings request (FU-1283).", "P5.21")
+
+    #  the plan's list of what is with the Owner: the three new rows in their places, three rows' lines, the twenty
+    still = flat(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0])
+    for s in (f"{S} (W1192): ask a scholar or a trusted institute, as you ruled on 2026-11-22, to review the withheld "
+              "adult curriculum and tajweed items, the attestation wording of the Quran platform's teaching clause, and "
+              "the children's tools' tajwid rules, reflection prompts and approval pack. The children's gate stays closed "
+              "until the four learner-facing headings are built and an independent safeguarding review is done. The row "
+              "closes on a dated record of the engagement, or on a ruling that defers it.",
+              f"{T} (W1192): after the first deploy, the channel test (the group's leader is shown the product) and the "
+              "price test (three to five would-be founders are shown the £99 as set and not charged, and nothing is "
+              "sold), each your act, as you scheduled on 2026-11-22; the return measurement, built before the invited "
+              "stage (P4.2), is a round's. Learners across the platform, a person completing a task and time to a first "
+              "useful output are carried by this row, not yet scheduled.",
+              f"{L} (W1192): ratify, in one sitting, the batch of lessons derived since W677: a local session on your "
+              "machine lists each, from the assistant's notes there, with a recommendation (step 5 of "
+              "docs/RESUME_ON_MY_MACHINE.md). Ruled on 2026-11-22.",
+              "Ruled on 2026-11-22: it also carries written questions on the project's licence and title and on the "
+              "investment-side perimeter, and is to review with you the data protection impact assessment to be drafted "
+              "before any health-related wellbeing entry (P5.8).",
+              "Ruled on 2026-11-22: each interview ends by showing the floor's output and the local model's on the same "
+              "invented sample, each labelled with what served it, the notes recording which the teacher judged; the "
+              "first offer's gate is evidenced once at least five interviews are recorded and your choice is recorded "
+              "with its reasons.",
+              f"On 2026-11-22 you accepted doing it that day. {BRANCHES}"):
+        holds(still, s, "the plan's list")
+    assert still.index("FU-1283 (W1132):") < still.index(f"{S} (W1192):") < still.index("(The five places"), "the scholar"
+    assert (still.index("FU-1817 (W1174):") < still.index("Ruled on 2026-11-22: it also carries")
+            < still.index("FU-1818 (W1174):") < still.index("Ruled on 2026-11-22: each interview ends")
+            < still.index("FU-1837 (W1191):")), "a ruling of the day is not under its own row"
+    assert (still.index("FU-1837 (W1191):") < still.index("On 2026-11-22 you accepted doing it that day.")
+            < still.index(f"{T} (W1192):") < still.index(f"{L} (W1192):")
+            < still.index("(Ten put to the Owner on the afternoon of 2026-11-20")), "the lines after FU-1837"
+    para = still[still.index("(Twenty put in the early hours of 2026-11-22"):]
+    para = para[:para.index(".)", para.index("Each is recorded at the item it governs")) + 2]
+    no_pronoun(para, "the plan's list")
+    assert still.index("(Six put on the afternoon of 2026-11-21") < still.index(para), "the list's order"
+    for part in ("were accepted at once, each as recommended: the credentials W729 redacted to be revoked that day, no "
+                 "branch to be deleted or changed without the Owner's explicit word;",
+                 "an entity's people and its money (P5.8, P5.9) to be built now, driven with sign-in on in a test "
+                 "process, a person's own record of their week with no health field until a data protection impact "
+                 "assessment, and invoices naming outside parties and real payroll held;",
+                 "the avatar and upload memory to be retired; a model to be made the serving default only with its "
+                 "licence read, with no override;",
+                 "the work budget's readers on the platform's total until a second person runs work;",
+                 "a founder's own Chief, Board and budget figure with sign-in on, for their own entities only;",
+                 "a deletion drill to be built now, the retention periods the Owner's once the solicitor answers;",
+                 "the canvas amended on the Owner's word for the platform's fee and the owner's share, its earlier words "
+                 "kept (the vision's section 12 and the economic model's sections 4 and 7 were given dated records of the "
+                 "Owner's rulings of 2026-10-12, which that day's word did not cover);",
+                 "the solicitor's engagement to carry the licence, title and investment questions;",
+                 "the deferred measures and the canvas's first tests put on the Owner's list;",
+                 "a teacher shown both outputs at the end of an interview, labelled;",
+                 "the first offer's gate evidenced at five recorded interviews and the Owner's recorded choice;",
+                 "the generation credit to be carried forward against later fees; no valuation material yet; PR #33 "
+                 "closed unmerged; a scholar or trusted institute asked for now;",
+                 "the lessons since W677 ratified in one sitting, the 8-hour cycles replacing the three-stretch rule and "
+                 "the six working rules going into the method;",
+                 "and the tajwid companion to be built and held without its examples.",
+                 "the standing answer for the outside \"digital mitochondria\" prompts is to be recorded with the "
+                 "assessment's next section (a later round).)"):
+        assert part in para, ("the plan's list does not say", part[:80])
+    assert not re.search(r"\bFU-\d+\b", para), ("the list's paragraph names a row", re.findall(r"FU-\d+", para))
+
+    #  the canvas, amended on the Owner's word with its earlier words kept
+    canvas = flat(read("docs/business/BUSINESS_MODEL_CANVAS.md"))
+    for s in ("Changed twice since, with the Owner's word: on 2026-10-14, the line on the name, under Key resources; and "
+              "on 2026-11-22, the platform's fee and the owner's share, in the one page and under Revenue, the earlier "
+              "words kept beside each.",
+              "Each enterprise then pays the platform 25% of its profit first, and shares what remains by a fixed split "
+              "that includes its own owner, its own growth and charity [owner-defined: the vision, section 12; rulings "
+              "of 2026-10-12 and 2026-10-13; amended by the Owner on 2026-11-22]. Before 2026-11-22 this read: \"Each "
+              "enterprise then shares its profit by a fixed split that includes the Owner, its own growth and charity.\"",
+              "- After reserves, each enterprise pays the platform 25% of its profit first, for updates and maintenance, "
+              "and shares what remains, in parts of a hundred: its own owner 20, its own growth 30, a capital fund 20, the "
+              "projects of its users 15, and charity 15 [owner-defined: the vision, section 12; ruling of 2026-10-12; "
+              "amended by the Owner on 2026-11-22]. Before 2026-11-22 this read: \"Each enterprise shares what it can "
+              "distribute, in parts of a hundred: the Owner 20, its own growth 30, a capital fund 20, the projects of its "
+              "users 15, and charity 15, after reserves.\""):
+        holds(canvas, s, "the canvas")
+    assert "Changed once since" not in canvas, "the canvas still says it changed once"
+    #  the vision and the economic model: dated records of the rulings of 2026-10-12, the words above each kept
+    raw = (root / "docs/WORKSTATION_IDBO_WHOLE_VISION.md").read_bytes()
+    assert raw.count(b"\r\n") == raw.count(b"\n"), "the vision lost its CRLF line endings"
+    vision = raw.decode("utf-8")
+    s12 = flat(vision[vision.index("## 12. The Economic Organism"):vision.index("## 13. What the Output")])
+    rec = ("**Recorded 2026-11-22 (W1192), the words above kept:** by the Owner's rulings of 2026-10-12 (P5.16 clause 3; "
+           "P5.9, the payee is the entity's owner record), each generated entity pays the platform 25% of its profit "
+           "first, for updates and maintenance, ")
+    for s, after in ((rec + "and the adjustable profit share above, paid from what remains, goes to each entity's own "
+                      "owner.", "pays the Owner an adjustable profit share"),
+                     (rec + "after the Stage 0 reserves; the split above applies to what remains, and its first share "
+                      "(written \"Owner 20\" above) goes to each entity's own owner.", "**Owner 20 · Self-investment 30")):
+        holds(s12, s, "the vision")
+        assert after in s12 and s12.index(after) < s12.index(s), ("the vision's words are not kept above", after)
+    econ = read("docs/VSB_ECONOMIC_LEGAL_MODEL.md")
+    s4 = flat(econ[econ.index("## 4. Profit-Distribution Waterfall"):econ.index("## 5. Charitable-Giving")])
+    holds(s4, "> **Recorded 2026-11-22 (W1192), the words above kept:** by the Owner's rulings of 2026-10-12 (P5.16 "
+              "clause 3; P5.9, the payee is the entity's owner record), each generated entity pays the platform 25% of "
+              "its profit first, for updates and maintenance, after Stage 0; the stages above split what remains, and "
+              "the first share (Stage 1's 20%, the table's \"payment to you (the repo owner)\") goes to each entity's own "
+              "owner.", "the economic model's section 4")
+    assert "| **1** | **Owner payment** | **20%** |" in s4, "the economic model's table was not kept"
+    s7 = flat(econ[econ.index("## 7. Owner Payments (Stage 1)"):econ.index("## 8. Governance")])
+    holds(s7, "- **Recorded 2026-11-22 (W1192), the words above kept:** by the Owner's rulings of 2026-10-12 (P5.16 "
+              "clause 3; P5.9, the payee is the entity's owner record), the proportion above is paid from what remains "
+              "after the platform's 25% of each generated entity's profit, taken first, and it accrues to each entity's "
+              "own owner.", "the economic model's section 7")
+    assert "- An **adjustable** proportion of profit accrues to you, on a schedule you set" in s7, "section 7's words"
+
+    work = flat(read("docs/business/FORMATION_WORKPACK.md"))
+    for s in ("3. How would the platform's fee, taken first in each cycle, and an entity's split be treated in real "
+              "accounts if real money is ever switched on? And in what unit is the credit for the generation price held, "
+              "which the Owner ruled on 2026-11-22 carries forward against later fees until it is used up? [owner decision]",
+              "6. Who holds the copyright that LICENSE names (\"Virtual Sovereign Business\", which is not a legal "
+              "person), what does the public Apache-2.0 grant already permit, what does a contributor grant with no "
+              "agreement, and on what terms does a founder receive an entity repository? [owner decision]",
+              "7. Would the capital fund, the profit shares or any valuation be a financial promotion or a collective "
+              "investment scheme, and what would either require? [owner decision]",
+              "- Questions 6 and 7 were added on the Owner's ruling of 2026-11-22, for the one solicitor's engagement. "
+              "[owner-defined, 2026-11-22]"):
+        holds(work, s, "the workpack")
+    offer = flat(read("docs/business/FIRST_OFFER_CANDIDATES.md"))
+    for s in ("- Show nothing until the end, and then the floor's output and the local model's output on the same invented "
+              "sample, each labelled with what served it, asking \"What would you change before you used this?\" The "
+              "Owner ruled this on 2026-11-22; before that the guide showed only the floor's output. "
+              "[owner-defined, 2026-11-22]",
+              "- Which output the teacher judged, the floor's or the local model's, as each was labelled. "
+              "[owner-defined, 2026-11-22]"):
+        holds(offer, s, "the interview guide")
+    assert "and then only the floor's output on invented data" not in offer, "the guide still shows the floor's alone"
+    cost = flat(read("docs/business/COST_MODEL.md").split("## The seven investment gates", 1)[1])
+    for s in (f"- {R}: the first offer's gate is evidenced when at least five interviews are recorded in the notes "
+              "template and the Owner's choice of offer is recorded with its reasons. [owner-defined, 2026-11-22]",
+              f"- {R}: no valuation or investor-facing material is made until P5.1's measured walk, the interviews, the "
+              "first deploy, a chosen legal form and the solicitor's answer on the licence and title exist, and no range "
+              "from the outside commercial package the Owner supplied for assessment is ever recorded as the Owner's own "
+              "figure. [owner-defined, 2026-11-22]"):
+        holds(cost, s, "the cost model")
+    holds(flat(read("docs/business/METRICS_MEASURED.md")),
+          f"- On 2026-11-22 the Owner put the measures this document defers on their list (row {T}): the return "
+          "measurement (one sign-in day per person) is built before the invited stage of plan item P4.2; the channel and "
+          "price tests come after the first deploy, each the Owner's act; learners across the platform, a person "
+          "completing a task and time to a first useful output are carried by that row, not yet scheduled. "
+          "[owner-defined, 2026-11-22]", "the metrics document")
+
+    #  the local notes: the updated line, step 5, what is still the Owner's, PR #33 and the day's bullet, held whole
+    notes_raw = read("docs/RESUME_ON_MY_MACHINE.md")
+    notes = flat(notes_raw)
+    assert "Updated 2026-11-22 (W1131, W1164, W1184, W1187, W1188, W1190, W1191, W1192)." in notes
+    step5 = notes_raw.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
+    assert re.findall(r"^   - (FU-\d+):", step5, re.M) == ["FU-1165", L], re.findall(r"^   - (FU-\d+):", step5, re.M)
+    step = flat(f"- {L}:" + step5.split(f"   - {L}:", 1)[1].split("\n   (", 1)[0])
+    no_pronoun(step, "step 5")
+    assert step == (f"- {L}: as I ruled on 2026-11-22, read your notes on this machine and list each lesson derived since "
+                    "W677, the round it cites and your recommendation: add it to the batch, or say why not. I ratify the "
+                    "batch in one sitting; nothing enters the method until I have ratified the batch."), step
+    yours_raw = notes_raw.split("- **Still yours:**", 1)[1].split("- **Settled on 2026-11-20:**", 1)[0]
+    for start, whole in (
+            ("  - Asking a scholar", f"- Asking a scholar or a trusted institute to review what the religious tools "
+                                     f"hold back for one ({S}), as you ruled on 2026-11-22."),
+            ("  - After the first deploy,", "- After the first deploy, the channel test and the price test the canvas "
+                                            "names first, each your act; the same row carries three measures the "
+                                            f"metrics document defers, not yet scheduled ({T})."),
+            ("  - Ratifying in one sitting", f"- Ratifying in one sitting the lessons a local session lists from this "
+                                             f"machine's notes ({L}, step 5).")):
+        assert yours_raw.count(start) == 1, (start, yours_raw.count(start))
+        bullet = flat(yours_raw[yours_raw.index(start):].split("\n  - ", 1)[0].split("\n- **", 1)[0])
+        no_pronoun(bullet, "the notes' Still-yours list")
+        assert bullet == whole, ("the notes' Still-yours list", bullet[:120])
+    yours = flat(yours_raw)
+    for s in (f"The rows in step 5: FU-1165 and {L}, each a step there.",
+              "release, and where other people's data may be kept. As you ruled on 2026-11-22, it also carries written "
+              "questions on the project's licence and title and on the investment-side perimeter, and is to review with "
+              "you the data protection impact assessment to be drafted before any health-related wellbeing entry.",
+              "before the first offer is chosen (FU-1818). Each ends by showing both outputs, labelled, as you ruled on "
+              "2026-11-22.",
+              f"On 2026-11-22 you accepted doing it that day. {BRANCHES}"):
+        holds(yours, s, "the notes' Still-yours list")
+    assert (yours.index("(FU-1837;")
+            < yours.index("On 2026-11-22 you accepted doing it that day.") < yours.index("- Asking a scholar")
+            < yours.index("- After the first deploy,") < yours.index("- Ratifying in one sitting")), "the notes' order"
+    holds(notes, "carried by the pull request opened after #466 was merged. PR #33 (opened 2026-03-12, before the plan) "
+                 "was closed unmerged on 2026-11-22, on your word; its branch is left.", "the local notes")
+    assert notes_raw.count("- **Ruled on 2026-11-22:**") == 1, notes_raw.count("- **Ruled on 2026-11-22:**")
+    ruled = flat("- **Ruled on 2026-11-22:**" + notes_raw.split("- **Ruled on 2026-11-22:**", 1)[1].split("\n- **", 1)[0])
+    no_pronoun(ruled, "the notes' bullet of 2026-11-22")
+    assert ruled == (
+        "- **Ruled on 2026-11-22:** twenty recommendations, each taken as recommended: revoking the W729 credentials "
+        "that day, with no branch deleted or changed without your explicit word (FU-1837); an entity's people and its "
+        "money (P5.8, P5.9) to be built now and driven with sign-in on in a test process, a person's own record of their "
+        "week with no health field until a data protection impact assessment that you and the solicitor review, and "
+        "invoices naming outside parties and real payroll held; the avatar and upload memory to be retired; a model to "
+        "be made the serving default only with its licence read, with no override; the work budget's readers on the "
+        "platform's total until a second person runs work; a founder's own Chief, Board and budget figure with sign-in "
+        "on, for their own entities only; a deletion drill to be built now, the retention periods yours once the "
+        "solicitor answers; the canvas amended on your word for the platform's fee and the owner's share, its earlier "
+        "words kept (the vision's section 12 and the economic model's sections 4 and 7 were given dated records of your "
+        "rulings of 2026-10-12, which that day's word did not cover); the solicitor's engagement to "
+        f"carry the licence, title and investment questions (FU-1817); the deferred measures and the canvas's first "
+        f"tests put on your list ({T}); a teacher shown both outputs at the end of an interview, labelled, and the first "
+        f"offer's gate evidenced at five recorded interviews and your recorded choice (FU-1818); the generation credit to "
+        f"be carried forward against later fees; no valuation material yet; PR #33 closed unmerged; a scholar or trusted "
+        f"institute asked for now ({S}); the lessons since W677 ratified in one sitting ({L}, step 5), the 8-hour cycles "
+        "replacing the three-stretch rule and the six working rules going into the method; and the tajwid companion to "
+        "be built and held, its examples said as not available until a recording source permits them. The standing "
+        "answer for the outside \"digital mitochondria\" prompts is to be recorded with the assessment's next section "
+        "(a later round)."), ruled[:200]
+    assert notes.index("- **Owner rulings in force:**") < notes.index("- **Ruled on 2026-11-22:**") < notes.index(
+        "- **Still yours:**"), "the notes' order"

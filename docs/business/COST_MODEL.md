@@ -62,6 +62,7 @@ only beside the Owner's ruling. It promises no zero bill.
 
 - Plan item P5.7 asks for the seven investment gates and which one is evidenced today. The founder playbook the clause was chartered from was not received, so the gates are the ones the Owner ruled. [observed: `docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md`]
 - OWNER RULING 2026-11-19 (FU-1191): the seven gates are the six switches of plan items P4.1 to P4.6, and a first offer the interviews support. [owner-defined, 2026-11-19]
+- OWNER RULING 2026-11-22 (the recommendation accepted): the first offer's gate is evidenced when at least five interviews are recorded in the notes template and the Owner's choice of offer is recorded with its reasons. [owner-defined, 2026-11-22]
 - A switch's gate is evidenced when its pre-flight has been measured and the switch reads on where the platform runs; the first offer's is evidenced when interviews recorded in the notes template of `docs/business/FIRST_OFFER_CANDIDATES.md` support it. Each row below is marked from what this tree shows, and none is invented. [owner-defined, 2026-11-19]
 
 | Gate | What this tree shows | Evidenced |
@@ -75,3 +76,4 @@ only beside the Owner's ruling. It promises no zero bill.
 | A first offer the interviews support | the interview guide and notes template exist; no interview is recorded in this tree | no |
 
 - So no gate is evidenced today. [observed]
+- OWNER RULING 2026-11-22 (the recommendation accepted): no valuation or investor-facing material is made until P5.1's measured walk, the interviews, the first deploy, a chosen legal form and the solicitor's answer on the licence and title exist, and no range from the outside commercial package the Owner supplied for assessment is ever recorded as the Owner's own figure. [owner-defined, 2026-11-22]
