@@ -179,8 +179,8 @@ only with its domain, HTTPS and sign-in on, and is reached through an SSH tunnel
 founder's own Chief, Board and budget figure is built and driven with sign-in on in a test process before the
 invited stage, a drill deleting a made-up person's data is built now as its pre-flight, and an entity's people and
 money records are built now, driven with sign-in on in a test process (2026-11-22). No round switches sign-in on in
-the tree. The remaining work was measured on 2026-11-10 at 214–392 rounds (`docs/REMAINING_WORK_MEASURED.md`). These
-figures are dated; the generated block is the current one.
+the tree. The remaining work, re-measured on 2026-11-22, is 147.75–288.5 rounds (`docs/REMAINING_WORK_MEASURED.md`).
+These figures are dated; the generated block is the current one.
 
 ---
 

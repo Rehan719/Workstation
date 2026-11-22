@@ -22,7 +22,7 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
    merged on 2026-11-21) is merged,
    work on main (git checkout main && git pull); otherwise git checkout main-l1fsqo && git pull origin
    main-l1fsqo, and keep pushing there. Never push to main without me.
-2. Read, in this order: docs/REMAINING_WORK_MEASURED.md (every open item, measured 2026-11-10),
+2. Read, in this order: docs/REMAINING_WORK_MEASURED.md (every open item, measured 2026-11-22),
    docs/HANDOVER_W626.md section 3 (the round discipline - follow it exactly), then docs/FABLE_DELIVERY_PROMPT.md.
 3. Set up once if needed: a Python 3.12 venv with
    pip install -r requirements.txt pytest pytest-xdist==3.8.0, then npm install at the repo root.
@@ -73,10 +73,12 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
 - **The plan,** on 2026-11-20: 97 of 119 items done (P1 18/18 · P2 39/41 · P3 30/32 · P4 3/6 · P5 7/22). P2.40 and P2.41
   have every row closed, and close on the final audit. The current figures are the PLAN NOW block of
   `docs/FABLE_DELIVERY_PROMPT.md`.
-- **Measured remaining work,** on 2026-11-10: about 214–392 rounds across the 32 items then open, most of it in the
-  fifth phase (143–265). Much of that phase is ruled to come after sign-in (P4.1), which is your switch, made in
-  the release machine's own settings at its first deploy, together with its domain and HTTPS; the final audit
-  runs after the fifth phase and the sign-in readiness round. Details per item in `docs/REMAINING_WORK_MEASURED.md`.
+- **Measured remaining work,** on 2026-11-22: about 147.75–288.5 rounds across the 22 items open, most of it in the
+  fifth phase (105.75–213). Much of that phase is ruled to come after sign-in (P4.1), which is your switch, made in
+  the release machine's own settings at its first deploy, together with its domain and HTTPS; the final audit runs
+  after the fifth phase and the sign-in readiness round. By your rulings of 2026-11-22, P5.8 and P5.9 are to be
+  built now, driven with sign-in on in a test process.
+  Details per item in `docs/REMAINING_WORK_MEASURED.md`.
 - **Owner rulings in force:** those recorded in the plan, including 2026-11-06 (five decisions taken as
   recommended), 2026-11-10 (decisions go with the recommendation; PR #461 merged), 2026-11-19 (twenty-two
   recommendations accepted; the six switches proceed in the ruled order, each once its pre-flight is built and

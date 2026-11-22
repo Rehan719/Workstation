@@ -100115,3 +100115,107 @@ def test_w1193_section_35_and_the_rows_the_v44_assessment_keeps_are_recorded_and
     assert found == [], [(f["path"], f["line"], f["kind"]) for f in found]
     assert not re.search(r"W1192 amends the canvas, the business plan|business plan (?:was|is) amended", prep)
     assert "`docs/V44_ROUNDS_PREP.md`" in sec, "section 35 does not name its working plan"
+
+
+def test_w1193b_the_remaining_work_is_remeasured_with_every_open_item_and_the_rows_open_on_it():
+    """W1193b - docs/REMAINING_WORK_MEASURED.md is re-measured on 2026-11-22. test_w787 holds that it adds up and names
+    only plan items; this holds that it is a measurement of the plan and the register at the commit it names, and stays
+    true as the work moves on: each of the 22 items open at that commit has its section (an item chartered later is not
+    asked for); no item it shows was done before it was measured (an item closed later, by W1193c or any round after
+    W1193b, may stay until the next re-measurement); every row open on a plan item and registered up to the id the page
+    states is named on an item's open-rows line, whose count is its ids; where git holds the commit the page names, that
+    commit's register holds that id and none after it; P5.22's instrument is said as built (W970, W972, W973 and W977),
+    not as missing; the final audit's open question - whether 'after Phase 5' means its build items or every row, with
+    the 2026-12-31 deadline - is carried under P5.22's Owner part and in the timeline beneath the total, as a
+    recommendation and not a ruling; and the README and the local notes give this measurement's date and total.
+    Moving a row registered up to the stated id onto a plan item, or reopening one, changes what was measured: it needs
+    a re-measurement, and this test fails until one is made."""
+    import json
+    import pathlib
+    import re
+    import subprocess
+    doc = pathlib.Path("docs/REMAINING_WORK_MEASURED.md").read_text(encoding="utf-8")
+    plan = pathlib.Path("docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    reg = json.loads(pathlib.Path("docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    rows = reg["items"] if isinstance(reg, dict) else reg
+    head = re.match(r"# Remaining work, measured — 2026-11-22 \(HEAD ([0-9a-f]{7,})\)", doc)
+    assert head, doc[:80]
+    top = re.search(r"registered up to\s+FU-(\d+);", doc)
+    assert top, "the page does not say up to which row of the register it measured"
+    top = int(top.group(1))
+    parts = re.split(r"(?m)^## (P[1-5]\.\d+) — [^\n]*\n", doc)
+    sections = {parts[i]: parts[i + 1] for i in range(1, len(parts), 2)}
+    items = {}
+    for line in plan.split("\n"):
+        m = re.match(r"^ (P[1-5]\.\d+) (.*)", line)
+        if m and m.group(1) not in items:
+            items[m.group(1)] = m.group(2)
+    #  each item open at the measured commit has its section
+    measured = ["P2.40", "P2.41", "P3.30", "P3.32", "P4.1", "P4.2", "P4.5", "P5.1", "P5.2", "P5.8", "P5.9", "P5.10",
+                "P5.12", "P5.13", "P5.14", "P5.15", "P5.17", "P5.18", "P5.19", "P5.20", "P5.21", "P5.22"]
+    missing = [i for i in measured if i not in sections]
+    assert not missing, ("an item open at the measured commit has no measurement", missing)
+    #  no item shown was done before this measurement: a closing round after W1193b, its suffix read in order
+    for iid in sections:
+        assert iid in items, (iid, "is not a plan item")
+        if items[iid].startswith("✅ DONE"):
+            d = re.match(r"✅ DONE W(\d+)([a-z]?)", items[iid])
+            assert d and (int(d.group(1)), d.group(2)) > (1193, "b"), (
+                iid, "is measured as open but was done before", items[iid][:30])
+    #  every row open on a plan item, up to the stated id, is named on an open-rows line, and each count is its ids
+    named = set()
+    for iid, sec in sections.items():
+        line = re.search(r"^- \*\*Open rows:\*\* count: (\d+)(?: \(([^)\n]*)\))?$", sec, re.M)
+        assert line, (iid, "has no open-rows line")
+        listed = [x.strip() for x in (line.group(2) or "").split(",") if x.strip()]
+        assert int(line.group(1)) == len(listed), (iid, line.group(0))
+        named.update(listed)
+    unnamed = sorted(r["id"] for r in rows
+                     if r.get("status") == "open" and r.get("slot") in items and re.fullmatch(r"FU-\d+", r["id"])
+                     and int(r["id"][3:]) <= top and r["id"] not in named)
+    assert not unnamed, ("rows open on a plan item are not named on any open-rows line", unnamed)
+    #  where git holds the commit the page names, its register is the one measured: the stated id, and none after it
+    try:
+        shallow = subprocess.run(["git", "rev-parse", "--is-shallow-repository"], capture_output=True, text=True,
+                                 timeout=60)
+        have = subprocess.run(["git", "cat-file", "-e", f"{head.group(1)}^{{commit}}"], capture_output=True, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        shallow = have = None
+    if shallow is not None and shallow.returncode == 0:
+        if have.returncode == 0:
+            shown = subprocess.run(["git", "show", f"{head.group(1)}:docs/FOLLOWUPS.json"], capture_output=True,
+                                   timeout=120)
+            assert shown.returncode == 0, (head.group(1), "has no register")
+            then = json.loads(shown.stdout.decode("utf-8"))
+            ids_then = {r["id"] for r in (then["items"] if isinstance(then, dict) else then)}
+            assert f"FU-{top}" in ids_then and f"FU-{top + 1}" not in ids_then, (
+                head.group(1), "the commit the page names does not hold the register it measured")
+        else:
+            assert shallow.stdout.strip() == "true", (head.group(1), "the commit the page names is not in this repository")
+    #  P5.22's instrument is said as built, not as missing
+    assert "No such instrument exists" not in doc
+    assert ("Its instrument is built: W970, W972, W973 and W977" in sections.get("P5.22", "")
+            ), "P5.22's section does not say what built its instrument"
+    total = re.search(r"\*\*All open items: (\d+(?:\.\d+)?)–(\d+(?:\.\d+)?) rounds\*\*", doc)
+    assert total
+    #  the final audit's open question is carried in the reading's words, undecided, under P5.22's Owner part and in
+    #  the timeline beneath the total
+    q = "whether 'after Phase 5' means its build items or every row"
+    owner522 = sections.get("P5.22", "").split("- **Only the Owner can:**", 1)
+    assert len(owner522) == 2 and q in owner522[1], "P5.22's Owner part does not carry the final audit's question"
+    assert ("Open: put to the Owner on 2026-11-22, and not decided here. Recommended: its build items" in owner522[1]
+            ), "P5.22's Owner part does not leave the question open beside its recommendation"
+    timeline = doc[total.end():doc.index("\n## P", total.end())]
+    assert q in timeline and "2026-12-31" in timeline and "Recommended: its build items" in timeline, (
+        "the timeline does not carry the final audit's question")
+    #  the README and the local notes give this measurement (read with their lines joined, so that a later round may
+    #  fill a paragraph again)
+    readme = " ".join(pathlib.Path("README.md").read_text(encoding="utf-8").split())
+    assert (f"The remaining work, re-measured on 2026-11-22, is {total.group(1)}–{total.group(2)} rounds "
+            "(`docs/REMAINING_WORK_MEASURED.md`)." in readme), "the README does not give this measurement"
+    assert "214–392" not in readme, "the README still gives the measurement of 2026-11-10"
+    notes = " ".join(pathlib.Path("docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8").split())
+    assert "docs/REMAINING_WORK_MEASURED.md (every open item, measured 2026-11-22)," in notes
+    assert (f"- **Measured remaining work,** on 2026-11-22: about {total.group(1)}–{total.group(2)} rounds across the"
+            in notes), "the local notes do not give this measurement"
+    assert "214–392" not in notes, "the local notes still give the measurement of 2026-11-10"
