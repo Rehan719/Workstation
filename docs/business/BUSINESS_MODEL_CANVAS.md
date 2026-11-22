@@ -3,9 +3,10 @@
 **Ratified by the Owner on 2026-10-13**, whole and without change. It is written from the whole vision
 (`docs/WORKSTATION_IDBO_WHOLE_VISION.md`), which is the Owner's own canon, so that it reads as one story.
 A change to this text from here on needs the Owner's word. Ratifying it did not enter it into the product's own
-plan; the Owner enters that through the plan's own edit page (ruling of 2026-10-10). Changed twice since, with
-the Owner's word: on 2026-10-14, the line on the name, under Key resources; and on 2026-11-22, the platform's
-fee and the owner's share, in the one page and under Revenue, the earlier words kept beside each.
+plan; the Owner enters that through the plan's own edit page (ruling of 2026-10-10). Changed three times since,
+with the Owner's word: on 2026-10-14, the line on the name, under Key resources; on 2026-11-22, the platform's
+fee and the owner's share, in the one page and under Revenue, the earlier words kept beside each; and again on
+2026-11-22, a dated note on the credit for the generation price, under Revenue, the line it notes kept as it was.
 
 **How to read the tags.** Each statement ends with one tag in square brackets:
 [owner-defined] the Owner said it, in the vision or in a ruling ·
@@ -99,6 +100,9 @@ Today it runs on the Owner's machine, with its own AI, in virtual money, with no
 - GBP 99 once for generating an enterprise, credited against its first profit share, and waived for a
   charitable or non-distributing one [owner-defined, 2026-10-13; the statement is at
   `agentic_core/economy/generation_price.py`].
+- Noted on 2026-11-22, on the Owner's word, the line above kept as it was ratified: since 2026-11-22 the credit
+  carries forward against later fees until it is used up, with no conversion while money is virtual, and the unit it
+  is held in is a question for an accountant [owner-defined, 2026-11-22].
 - After reserves, each enterprise pays the platform 25% of its profit first, for updates and maintenance, and
   shares what remains, in parts of a hundred: its own owner 20, its own growth 30, a capital fund 20, the
   projects of its users 15, and charity 15 [owner-defined: the vision, section 12; ruling of 2026-10-12;

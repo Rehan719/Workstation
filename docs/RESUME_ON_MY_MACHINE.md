@@ -3,7 +3,7 @@
 When you want to continue locally, open Claude Code (Claude Opus 5.5) **in your local clone** (`~\Workstation`)
 and paste the block below as your first message. Nothing else is needed.
 
-Updated 2026-11-22 (W1131, W1164, W1184, W1187, W1188, W1190, W1191, W1192, W1193). The cloud session works in 8-hour cycles into December, until the plan's
+Updated 2026-11-22 (W1131, W1164, W1184, W1187, W1188, W1190, W1191, W1192, W1193, W1193b, W1193c). The cloud session works in 8-hour cycles into December, until the plan's
 build items are closed and the final audit has run (2026-12-31 at the latest), and pushes to `main-l1fsqo`. While
 it runs, the local session works on a branch of its own (step 1), so the two never push to the same branch.
 
@@ -22,6 +22,9 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
    merged on 2026-11-21) is merged,
    work on main (git checkout main && git pull); otherwise git checkout main-l1fsqo && git pull origin
    main-l1fsqo, and keep pushing there. Never push to main without me.
+   The pull request this step means is PR #467 until it is merged: on the morning of 2026-11-22 I told the cloud
+   session to merge it once W1193c has landed and CI is green, as I did for #463, #465 and #466, and then to open a
+   fresh one for the build rounds, which this step means from then on.
 2. Read, in this order: docs/REMAINING_WORK_MEASURED.md (every open item, measured 2026-11-22),
    docs/HANDOVER_W626.md section 3 (the round discipline - follow it exactly), then docs/FABLE_DELIVERY_PROMPT.md.
 3. Set up once if needed: a Python 3.12 venv with
@@ -70,6 +73,9 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
   each on your instruction or decision; the cloud session merged #463, #465 and #466, each with all six checks
   green. Later rounds are on `main-l1fsqo`, carried by the pull request opened after #466 was merged.
   PR #33 (opened 2026-03-12, before the plan) was closed unmerged on 2026-11-22, on your word; its branch is left.
+  On the morning of 2026-11-22 you told the cloud session to merge the pull request opened after #466 was merged, PR
+  #467, once W1193c has landed and CI is green, as it merged #463, #465 and #466, and then to open a fresh pull
+  request for the build rounds, which carries the later rounds from then on.
 - **The plan,** on 2026-11-20: 97 of 119 items done (P1 18/18 · P2 39/41 · P3 30/32 · P4 3/6 · P5 7/22). P2.40 and P2.41
   have every row closed, and close on the final audit. The current figures are the PLAN NOW block of
   `docs/FABLE_DELIVERY_PROMPT.md`.
@@ -116,9 +122,30 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
   standing answer for the outside "digital mitochondria" prompts is to be recorded with the assessment's next
   section (a later round). W1193 recorded that standing answer in section 35 of
   docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md.
+- **Ruled on the morning of 2026-11-22:** six recommendations put in the early hours and three put that morning,
+  each taken as recommended: chromadb to be removed from the dependency list once the retired memory is removed, the
+  same way the unused streamlit, plotly and pandas packages were taken out, with a full test run on a fresh install
+  (round W1230, no longer held); the two legal-form descriptions to be reworded to say what each template models,
+  the nine names kept and the old words kept in a dated note (round W1231, no longer held); the solicitor also to be
+  asked in writing about retention and erasure, and you to approve a record of processing once the solicitor has
+  answered (FU-1817), the deletion-drill rounds going ahead either way, every retention period marked "not decided:
+  the Owner's"; the ratified canvas's credit line given a dated note for your carry-forward ruling, its old words
+  kept; the business plan given the dated note the canvas was given for the platform's fee and the owner's share,
+  saying the platform's 25% fee comes first and 20 parts in a hundred of what remains go to each entity's own owner,
+  its old words kept; "after Phase 5" meaning after its build items close, so the final audit runs in December, the
+  rows still waiting on you (the letters and the second Care calibration) listed in its record as open and carrying
+  into January without holding it back (FU-1086); the three exchange lessons you already ratified to keep the
+  section 27 counts their defects quote, as dated quotations of what was measured at the time, the section 27 totals
+  staying in the assessment; PR #467 to be merged by the cloud session once W1193c has landed and CI is green, and a
+  fresh pull request then opened for the build rounds; and, once you have revoked the leaked keys, the two earlier
+  Stripe values among them, the stale branches that hold them listed for you to check, main, main-l1fsqo,
+  local-owner and anything else you name kept, and none deleted without your explicit word (FU-1837). W1193c
+  recorded each where the work reads it.
 - **Still yours:**
   - Merge the open pull request from `main-l1fsqo` when you are ready, or ask the cloud session to merge it
     once green, as you did for PR #463, PR #465 and PR #466.
+    On the morning of 2026-11-22 you told it to merge PR #467 once W1193c has landed and CI is green; the fresh pull
+    request it then opens carries the build rounds.
   - The rows in step 5: FU-1165 and FU-1840, each a step there.
   - One line in `.env` on your machine for the legal matter's folder (step 3 of the prompt), if the local
     session has not added it.
@@ -145,6 +172,9 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
     release, and where other people's data may be kept. As you ruled on 2026-11-22, it also carries written
     questions on the project's licence and title and on the investment-side perimeter, and is to review with you
     the data protection impact assessment to be drafted before any health-related wellbeing entry.
+    As you ruled on the morning of 2026-11-22, the solicitor is also to be asked in writing about retention and
+    erasure, and you are to approve a record of processing once the solicitor has answered; the deletion-drill
+    rounds go ahead either way, with every retention period marked "not decided: the Owner's".
   - Five to eight short interviews with teachers or tutors before the first offer is chosen (FU-1818). Each ends
     by showing both outputs, labelled, as you ruled on 2026-11-22.
   - Revoking at their providers the credentials W729 redacted from three archived files in the repository, or
@@ -156,6 +186,9 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
     first, and tell the cloud session the date once it is done. Added to your list at your request on 2026-11-21, to
     be done soon. On 2026-11-22 you accepted doing it that day. The cloud session may list stale branches for deletion; no
     branch is deleted or changed without the Owner's explicit word.
+    Ruled on the morning of 2026-11-22: you revoke the leaked keys first; then the cloud session lists the stale
+    branches that hold them for you to check, keeping main, main-l1fsqo, local-owner and anything else you name, and
+    deletes only on your explicit word.
   - Asking a scholar or a trusted institute to review what the religious tools hold back for one (FU-1838), as you
     ruled on 2026-11-22.
   - After the first deploy, the channel test and the price test the canvas names first, each your act; the same

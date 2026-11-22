@@ -24,7 +24,9 @@ HOW IT WAS MEASURED: by read-only agents, at three commits, each named here, and
   at 1.5 rounds and C1 at 1.25 (W1202, W1214, W1216, W1217 and W1194; the design's own sums). That schedule is a
   floor (its refuters found about two missed demands in each plan), so the top of each range allows half again. Its
   three HELD rounds are not counted: W1230 and W1231 are named under the Owner on the items they ride, and W1232
-  (the ratified canvas's credit line) rides the Owner's list, not an item.
+  (the ratified canvas's credit line) rides the Owner's list, not an item. The Owner answered all three on the
+  morning of 2026-11-22, after this page was measured (recorded here by W1193c): W1230 and W1231 are no longer held
+  on the Owner, and W1193c made W1232's canvas note in its place; none of the three is counted in this page's sizes.
 - Three rows registered after the fifteen items were read, which no scheduled round closes, are sized from the code
   as pieces of their items, as the seven items' pieces are: FU-1834 (M) and FU-1855 (S) on P4.1, FU-1851 (M) on
   P5.10. Where text read at 89c25eed no longer holds at the commit in the title (W1191 landed; rows the readings
@@ -55,14 +57,15 @@ between none and 108 rounds landed a day (3 to 108 on the days rounds ran), coun
 of ours is about one to four weeks, to about 2026-12-21 at the slow end. The items that wait on the Owner's acts set
 the end, not the count: 12.5–26 of these rounds can start only once the Owner has acted.
 
-The final audit (P5.22) comes last: by the Owner's rulings it runs after Phase 5 and the sign-in readiness round,
-by 2026-12-31 at the latest, and its calibration (FU-993, on P5.10) comes first. The plan does not say
-whether 'after Phase 5' means its build items or every row, and two Phase 5 rows the Owner allowed into January
-may still be open on 2026-12-31: FU-1067 on P5.17 if written permission has not come by 2026-12-15, and FU-1831
-on P5.15, which waits on the Owner's second calibration run before 2027-01-10. The ruling is the Owner's: it was
-put to the Owner on 2026-11-22 and is open on this page (P5.22, under the Owner). Recommended: its build items, so
-the audit runs in December, and its record lists the open Owner-gated rows with their reasons, which carry into
-January.
+The final audit (P5.22) comes last: by the Owner's rulings it runs after Phase 5 and the sign-in readiness round, by
+2026-12-31 at the latest, and its calibration (FU-993, on P5.10) comes first. The plan did not say whether 'after
+Phase 5' means its build items or every row, and two Phase 5 rows the Owner allowed into January may still be open
+on 2026-12-31: FU-1067 on P5.17 if written permission has not come by 2026-12-15, and FU-1831 on P5.15, which waits
+on the Owner's second calibration run before 2027-01-10. It was put to the Owner on 2026-11-22 and ruled that
+morning, after this page was measured (recorded here by W1193c): OWNER RULING 2026-11-22 (morning; the
+recommendation accepted): 'after Phase 5' means after its build items close, so the audit is to run in December, and
+the rows still waiting on the Owner (the letters and the second Care calibration) are to be listed in its record as
+open; they carry into January without holding it back.
 
 ## P2.40 — THE FIFTEENTH TRUTH PASS (M1 re-run, ledger v17 tier-1 x20, 12 agents)
 
@@ -78,7 +81,7 @@ January.
   - Scheduled by the round design (docs/V44_ROUNDS_PREP.md): W1200 (C3, C4, D-FU1086) (half: its other half is counted on another item): The plan says what is held and what was built: PLAN NOW names the hold on P5.22, a test holds the optimiser's queue disclosure, FU-1086 says what remains, and P5.22 records W970-W977
 - **Only the Owner can:** Nothing of its own.
   - Through P5.22: the local-model run on the Owner's machine, or the record's stated reason it did not run.
-  - HELD on the Owner's answer, and not counted in the size: W1230 (A3b): HELD - chromadb's direct declaration, which brings onnxruntime, is dropped once nothing imports it.
+  - HELD on the Owner's answer, and not counted in the size: W1230 (A3b): HELD - chromadb's direct declaration, which brings onnxruntime, is dropped once nothing imports it. The Owner answered yes on the morning of 2026-11-22, after this page was measured (recorded here by W1193c): W1230 is no longer held on the Owner (it still follows W1196), and it is not counted here.
 
 ## P2.41 — THE INVISIBLE SHORTFALLS, TENTH PASS (M2 re-run, ledger v17 tier-2 x33, 12 agents)
 
@@ -434,14 +437,14 @@ January.
   - [M, 1–2] Clause 6: acts that cannot be undone. Resource Fabric's composition retire, Native AI's cascade retire, and Settings' 'Delete profile' and 'Clear preferences & history' go through AskPerson and wait for the name to be typed back. Their routes, and the other irreversible deletes (marketplace listing, a learner's QEP record), ask for the name as W971's project route does. Widen test_w968's census from window.confirm to every control that calls an irreversible route. Add rendered tests. Drive and record blinds for test_w968, AskPerson.test.tsx and test_w971, since W968 and W971 recorded none.
   - [M, 1–2] Clause 6: the decision cards. The proposal vote, the review gates (Cockpit and Genesis journey), scholar review, the children's approval pack and the catalogue's curate and decline all say, through the one shape, what each option does, what undoing it costs, which option is recommended (or that none is, and why), and whether it is a confirmation or a decision. Rendered tests; blinds.
   - [M, 1–2] Clause 7, designed only. Write a design document of the method's disciplines offered to a person's own project (what was found and not done; the bar a stage must meet), naming what it would keep about a person and that this waits for sign-in. Build nothing. A text guard holds its sections and checks that no route serves it yet.
-  - [S, 0.5–1] The constraints that no guard holds. A census guard checks that no route or store keeps a measure of how a person works (timings, counts of their messages or of recommendations they took, implicit signals) and that no section 27 total is computed in the product. Put the two confirmations to the Owner at the round's end (A22, A27).
+  - [S, 0.5–1] The constraints that no guard holds. A census guard checks that no route or store keeps a measure of how a person works (timings, counts of their messages or of recommendations they took, implicit signals) and that no section 27 total is computed in the product. Put the two confirmations to the Owner at the round's end (A22, A27). A22 was answered on the morning of 2026-11-22, after this page was measured (recorded here by W1193c).
   - [S, 0.5–1] The completion record. Once the pieces above land, write P5.14's COMPLETION RECORD naming each clause's guard and the round in which its blinds were seen red, and mark the item done.
   - [S, 0.5–1] A16, the 2026-11-21 critic's addition: the method page's NOT ASSESSABLE state ('How current the method is could not be read here.') rendered in DeliveryMethod.test.tsx from a captured answer in which the method's currency could not be read, beside the numeric case the page test already renders, with vitest blinds recorded.
   - [M, 1–2] A10, the 2026-11-21 critic's addition: a census guard for the one list (GET /api/v1/waiting), under which every store whose records wait on a person is read by agentic_core/api/waiting.py or named in its NOT_READ_YET with the reason, so that a store added later fails it; and the question whether an agreement drafted or reviewed and waiting for its approval belongs on the list (waiting.py's _agreements reads only obligations falling due) is decided in that round, its reason recorded, and built if it belongs. Blinds red.
   - The critic of 2026-11-21: No finish step records 'derived' or 'nothing new was learned' (A4). The batch door asks for no closed register row, and none of the 16 ratified lessons names one; derived_from is null on all 117 lessons (A3). No clause 7 design exists (A14). Four irreversible acts run on one click, and W968 and W971 recorded no blinds (A12, A13). The first words are never rendered (A8). PATCH /api/v1/marketplace/listings/{id} drops undeclared fields (A11). A18 and A27 wait on the Owner. Remaining work: piece 2 (L) is oversized and mis-scoped. The clause asks that the lessons held in the assistant's notes enter as one batch, and that the notes hold none later than the method's data without a stated reason. Clause 1 only requires the method to state how far it trails, and UNMET is a valid stated state. Re-deriving lessons from the commit messages of W678 to W1185 is not required. Rescope it to the notes (a local session on the Owner's machine) plus the six working rules, about M. Add: render the NOT ASSESSABLE state on the method page with vitest blinds recorded (A16); a census guard for the one list, and a decision on whether agreements awaiting approval belong on it (A10).
 - **Only the Owner can:**
   - Ratify the lessons since W677 in one sitting on the Owner's machine, each listed there with a recommendation by a local session (FU-1840).
-  - The section 27 counts question (A22) stays open.
+  - The section 27 counts question (A22) was answered on the morning of 2026-11-22, after this page was measured (recorded here by W1193c): the three exchange lessons the Owner already ratified whose defects quote section 27's counts keep them, as dated quotations of what was measured at the time, and the section 27 totals stay in the assessment.
   - Whatever clause 7 would keep about a person waits for sign-in.
 
 ## P5.15 — The review cell
@@ -531,8 +534,8 @@ January.
 - **Only the Owner can:**
   - The qualified person's view before any public release (FU-1817).
   - Lifting the deed hold needs a qualified person's reading.
-  - The answer on the two approved legal-form descriptions, on which W1231 is HELD.
-  - HELD on the Owner's answer, and not counted in the size: W1231 (C5b): HELD - the two approved legal-form descriptions say what each template models.
+  - The answer on the two approved legal-form descriptions, on which W1231 was HELD: the Owner gave it on the morning of 2026-11-22, after this page was measured (recorded here by W1193c), and it was yes: the two to be reworded to say what each template models, the nine names kept and the old words kept in a dated note.
+  - HELD on the Owner's answer, and not counted in the size: W1231 (C5b): HELD - the two approved legal-form descriptions say what each template models. Since the Owner's answer of the morning of 2026-11-22 W1231 is no longer held on the Owner (it still follows W1216), and it is not counted here.
 
 ## P5.19 — Physical assets as records and evidence - nothing connected, nothing controlled
 
@@ -618,5 +621,5 @@ January.
   - Scheduled by the round design (docs/V44_ROUNDS_PREP.md): W1200 (C3, C4, D-FU1086) (half: its other half is counted on another item): The plan says what is held and what was built: PLAN NOW names the hold on P5.22, a test holds the optimiser's queue disclosure, FU-1086 says what remains, and P5.22 records W970-W977
 - **Only the Owner can:**
   - The local-model configuration's run on the Owner's machine, or accepting the record's stated reason that it did not run.
-  - A ruling if the 2026-12-31 deadline for the final audit arrives while Phase 5 rows the Owner allowed into January are still open: FU-1067 on P5.17 if written permission has not come by 2026-12-15, and FU-1831 on P5.15, which waits on the Owner's second calibration run before 2027-01-10. The plan does not say whether 'after Phase 5' means its build items or every row. Open: put to the Owner on 2026-11-22, and not decided here. Recommended: its build items, so the audit runs in December, and its record lists the open Owner-gated rows with their reasons, which carry into January.
+  - A ruling if the 2026-12-31 deadline for the final audit arrives while Phase 5 rows the Owner allowed into January are still open: FU-1067 on P5.17 if written permission has not come by 2026-12-15, and FU-1831 on P5.15, which waits on the Owner's second calibration run before 2027-01-10. The plan did not say whether 'after Phase 5' means its build items or every row. It was put to the Owner on 2026-11-22 and ruled that morning, after this page was measured (recorded here by W1193c): OWNER RULING 2026-11-22 (morning; the recommendation accepted): 'after Phase 5' means after its build items close, so the audit is to run in December, and the rows still waiting on the Owner (the letters and the second Care calibration) are to be listed in its record as open; they carry into January without holding it back.
   - Possibly a word on the agent budget: up to 116 agents for both configurations.

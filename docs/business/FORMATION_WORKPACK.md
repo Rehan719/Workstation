@@ -88,7 +88,9 @@ entered only when the Owner chooses a route, on the form that route requires.
 5. Where may a person's data be kept, given that the release machine's free regions are in the United States? [owner decision]
 6. Who holds the copyright that LICENSE names ("Virtual Sovereign Business", which is not a legal person), what does the public Apache-2.0 grant already permit, what does a contributor grant with no agreement, and on what terms does a founder receive an entity repository? [owner decision]
 7. Would the capital fund, the profit shares or any valuation be a financial promotion or a collective investment scheme, and what would either require? [owner decision]
+8. For how long may each store that holds a person's data keep it, and how is a person's data to be erased when they ask, so that the Owner can approve a record of processing once this is answered? [owner decision]
 - Questions 6 and 7 were added on the Owner's ruling of 2026-11-22, for the one solicitor's engagement. [owner-defined, 2026-11-22]
+- Question 8 was added on the Owner's ruling of the morning of 2026-11-22 that the solicitor also be asked in writing about retention and erasure, and that the Owner approves a record of processing once the solicitor has answered. [owner-defined, 2026-11-22]
 
 ## Sources, each read on 2026-11-20
 

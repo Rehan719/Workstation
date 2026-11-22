@@ -2712,3 +2712,14 @@ a ruling.
 - **The v40 body was read**, as the Owner asked on 2026-11-21: 177 claims and 150 listed demands, with six new gaps,
   all of size S.
 - **PR #33** was closed unmerged on 2026-11-22, on the Owner's word (recorded by W1192).
+- **Answered on the morning of 2026-11-22.** The Owner accepted the six recommendations as they were put in chat at
+  03:04 UTC ("I accept all six recommendations, proceed", 07:25 UTC): the five above, worded for the chat, and a
+  sixth, on when the final audit runs: "after Phase 5" means after its build items close, so the audit is to run in
+  December, and the rows still waiting on the Owner (the letters and the second Care calibration) are to be listed
+  in its record as open, carrying into January without holding it back. The words put in chat govern where they
+  differ from the five above: the second also keeps the old words in a dated note; the third has the solicitor asked
+  in writing, and the deletion-drill rounds go ahead either way, with every retention period marked "not decided:
+  the Owner's"; and the fifth's dated note also says the 20% goes to each entity's own owner. W1193c recorded each
+  where the work reads it: on the Owner's word the business plan's Concept bullet now says the platform's 25% fee
+  comes first and 20 parts in a hundred of what remains go to each entity's own owner, its earlier words kept, and
+  its header says it has changed twice; the canvas's credit line gained a dated note, its words kept.

@@ -47,12 +47,15 @@ describe('RatifiedPlanEntry, the Owner\'s ratified plan entered by one action, r
 
   it('nothing is read until asked; the preview says the document, its ratification, every field and what is not entered', async () => {
     const a = captured.preview_admin.body;
+    //  W1193c: the document has changed more than once since it was ratified, and the page says every change
+    expect(a.changes.length).toBeGreaterThan(1);
     const sent = serve([captured.preview_admin]);
     const entered = mount();
     expect(sent).toEqual([]);
     fireEvent.click(screen.getByTestId('ratified-preview'));
     await waitFor(() => expect(screen.getByTestId('ratified-document').textContent).toBe(
-      `${a.document} · ratified by the Owner on ${a.ratified_on} · changed on ${a.changed_since.on}: ${a.changed_since.what}`));
+      `${a.document} · ratified by the Owner on ${a.ratified_on}`
+      + a.changes.map(c => ` · changed on ${c.on}: ${c.what}`).join('')));
     for (const [k, v] of Object.entries(a.fields)) {
       expect(screen.getByText(k.replace('_', ' ')).nextElementSibling?.textContent).toBe(v);
     }
@@ -64,6 +67,27 @@ describe('RatifiedPlanEntry, the Owner\'s ratified plan entered by one action, r
     expect(screen.queryByTestId('ratified-preview')).toBeNull();
     expect(sent).toEqual([{ url: PREVIEW, method: 'GET', body: undefined }]);
     expect(entered).not.toHaveBeenCalled();
+  });
+
+  //  W1193c: a preview whose changes could not be read says so, never that the document did not change
+  it('a preview with no changes to give says they could not be read', async () => {
+    const a = captured.preview_admin.body;
+    const body: Record<string, unknown> = { ...a };
+    delete body.changes;
+    serve([{ status: 200, body }]);
+    mount();
+    fireEvent.click(screen.getByTestId('ratified-preview'));
+    await waitFor(() => expect(screen.getByTestId('ratified-document').textContent).toBe(
+      `${a.document} · ratified by the Owner on ${a.ratified_on} · its changes since ratification could not be read`));
+  });
+
+  it('a preview whose changes are null says they could not be read', async () => {
+    const a = captured.preview_admin.body;
+    serve([{ status: 200, body: { ...a, changes: null, changed_since: null } }]);
+    mount();
+    fireEvent.click(screen.getByTestId('ratified-preview'));
+    await waitFor(() => expect(screen.getByTestId('ratified-document').textContent).toBe(
+      `${a.document} · ratified by the Owner on ${a.ratified_on} · its changes since ratification could not be read`));
   });
 
   it('entering sends the fingerprint of the document shown, says the basis and what was added, and reads the preview again', async () => {

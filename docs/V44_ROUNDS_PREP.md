@@ -4,6 +4,8 @@ Dated 2026-11-22, written by W1193 from a read-only design pass made the same da
 
 The pass had four planners, one for each group of rounds, a refuter for each planner, and one agent that bundled and ordered the rounds. READ EACH ROUND'S REFUTATION BEFORE BUILDING IT: three of the thirty-six verdicts were SOUND; 33 designs are printed below (the two record-round plans and D-CANVAS are not), each as its planner wrote it, followed by what its refuter found and the fixes it asked for. The schedule and each round's heading already carry the lead's rulings on those fixes; the plan text beneath them does not.
 
+ANSWERED ON THE MORNING OF 2026-11-22 (W1193c), the text below kept as it was written: the Owner accepted the six recommendations as they were put in chat at 03:04 UTC ("I accept all six recommendations, proceed", 07:25 UTC): the five listed under What goes to the Owner in chat, worded for the chat, and a sixth, from the re-measurement of the remaining work, on when the final audit runs. Where the words put in chat differ from the five below, the words put in chat govern, and W1193c recorded those: chromadb is to be removed from the dependency list once the retired memory is removed, the same way the unused streamlit, plotly and pandas packages were taken out, with a full test run on a fresh install, and the re-checks of test_w583 L5 and test_w907 stay this plan's notes, not the ruling; the two legal-form descriptions are to be reworded to say what each template models, the nine names kept and the old words kept in a dated note, and the example wordings and the note's place in section 2 stay this plan's proposal, not the ruling; and the business plan's dated note also says that the 20% goes to each entity's own owner. The answers are recorded at P3.32 (chromadb), P5.18 and FU-1868 (the two descriptions), P4.2 and FU-1817 (retention and erasure), in the canvas (its credit line's note), in the business plan (the fee and the owner's share, under Concept) and at P5.22 and FU-1086 (the final audit). W1230 (A3b) and W1231 (C5b) are no longer held on the Owner (W1230 still follows W1196, W1231 W1216); W1193c made W1232's canvas note and the business plan's dated amendment, which no round held, so W1232 is not to be built. W1200 is to keep FU-1086's ruling of the morning of 2026-11-22, and P5.22's BUILT line is to say the audit runs in December; and W1216 leaves FU-1868 open, which W1231 closes.
+
 ## Honest status of this document
 
 | fact | value |
@@ -11,17 +13,17 @@ The pass had four planners, one for each group of rounds, a refuter for each pla
 | Dated | 2026-11-22, by W1193, against the tree as W1192 left it: W1191 landed as 7b93affe, and W1192 after it. |
 | Read at | The design read the tree at 89c25eed (W1190), read-only: no suite, container or network was run. Every line number and state verdict below is as read there. W1191 changed the release machine's startup script, the deploy guide and the sign-in module, and W1192 the plan, the register and nine documents, so re-read each cited line before building on it. |
 | Numbering | W1192 is the round that recorded the Owner's twenty decisions of 2026-11-22. That moved the record round to W1193, its rows to FU-1841 onward and the builds to W1194. Where a plan below says W1192 registers a row, read W1193, and the row id given in the round's heading. |
-| The business plan | Unamended. W1192 amended only the ratified canvas, on the Owner's word, and gave the vision's section 12 and the economic model dated notes; whether the business plan's Concept bullet, which already names each enterprise's own owner, gains the platform's 25% of profit, taken first, is put to the Owner in chat. Where a plan below says W1192 amends the business plan, it did not. |
+| The business plan | Unamended. W1192 amended only the ratified canvas, on the Owner's word, and gave the vision's section 12 and the economic model dated notes; whether the business plan's Concept bullet, which already names each enterprise's own owner, gains the platform's 25% of profit, taken first, is put to the Owner in chat. Where a plan below says W1192 amends the business plan, it did not. Answered on the morning of 2026-11-22 (W1193c): on the Owner's word the business plan's Concept bullet gained a dated note, its earlier words kept: the platform's 25% fee comes first, and 20 parts in a hundred of what remains go to each entity's own owner. |
 | Rounds planned | 35 by the four planners: A 12, B 9, C 9, D 4, plus the record round, which all four planned in parts. The bundled schedule holds 43 designs. Nine were added from the refutations and the bundle: A3b, B5b, B10, D-RETURN, D-GATE, D-CREDIT, D-TERMS, C5b and CANVAS-CREDIT. One was superseded: D-CANVAS, which W1192 already does. |
 | Plans judged sound by their refuter | 3 of 36 verdicts: A4, A12 and B4. 31 NEEDS_FIXES. 2 UNSOUND, both re-planned here: A3, and the record round as cluster D planned it. |
 | Wrong state verdicts found | 33 listed by the refuters (A 11, B 10, C 6, D 6). 32 hold. The one that does not is cluster D's 'W1191's W729 row is unconfirmed': the working tree has it as FU-1837 (OWNER, high). |
 | Guard legs that could not fail | 13 legs, in 12 findings. Another 8 legs would fail on a correct change. 3 legs hold a state that the Owner's rulings of 2026-11-22 replaced: A3's legs 3 and 4, and the record round's leg D. |
 | Bar demands the plans missed | 69: A 21, B 19, C 17, D 12. The refuters also named 10 missing rounds: A 1, B 2, C 2 (both folded into C1 and C5), D 5. |
 | Sum of the estimates | The planners sized the work at 38.5 rounds. Their refuters re-sized the same work to about 40: B1, B3, C5 and C6 at 1.5; B5 at 2; C1 at 1.25; C4 batched into C3. With the nine added designs, and without D-CANVAS, it is about 44.5. |
-| Bundled schedule | 40 numbered rounds, W1193 to W1232, after W1192: 37 unheld (W1193-W1229) and 3 HELD (W1230-W1232). Four numbers carry bundles, each checked disjoint in code and page files: W1200, W1201, W1204 and W1207. C8, B7 and B8 take two numbers each. This is a floor, not a forecast: B1, B3, C5 and C6 were re-sized to 1.5 rounds but hold one number each. |
-| Rounds HELD on the Owner | 3: A3b (chromadb's declaration), C5b (the two approved legal-form descriptions) and CANVAS-CREDIT (the ratified canvas's credit line). |
+| Bundled schedule | 40 numbered rounds, W1193 to W1232, after W1192: 37 unheld (W1193-W1229) and 3 HELD (W1230-W1232). Four numbers carry bundles, each checked disjoint in code and page files: W1200, W1201, W1204 and W1207. C8, B7 and B8 take two numbers each. This is a floor, not a forecast: B1, B3, C5 and C6 were re-sized to 1.5 rounds but hold one number each. Answered on the morning of 2026-11-22 (W1193c): W1230 and W1231 are no longer held, and W1232 is not to be built (W1193c made its note). |
+| Rounds HELD on the Owner | 3: A3b (chromadb's declaration), C5b (the two approved legal-form descriptions) and CANVAS-CREDIT (the ratified canvas's credit line). Answered on the morning of 2026-11-22 (W1193c): none is held on the Owner now; W1230 still follows W1196 and W1231 W1216, and W1232 is not built (W1193c made the note). |
 | Rows the record round registered | 49. The bundle's 43, FU-1841 to FU-1883: one of them the Owner's (FU-1882, the Quran Foundation developer account), and one, the round protocol (FU-1877), registered and closed by W1193. And six found by the completeness critic of the re-measurement of the fifteen open plan items, FU-1884 to FU-1889, each checked at 89c25eed before it was registered; they have no round here yet. Four of the bundle's rows have no closing round in this schedule: the unlocked-write census (FU-1851), the local platform's CORS default (FU-1855), the DPIA draft (FU-1883, P5.8's own rounds) and the developer account (the Owner's act). |
-| Owner questions | None from before is open: the Owner answered the fourteen of 2026-11-21 and the v40 questions on 2026-11-22, and W1192 recorded the answers. No OWNER question row is registered. Five questions go to the Owner in chat, listed below. |
+| Owner questions | None from before is open: the Owner answered the fourteen of 2026-11-21 and the v40 questions on 2026-11-22, and W1192 recorded the answers. No OWNER question row is registered. Five questions go to the Owner in chat, listed below. Answered on the morning of 2026-11-22 (W1193c): the Owner accepted them as put in chat, with a sixth on the final audit (the note at the head says where the words differ). |
 
 THE ROUND COUNT IS A FLOOR, NOT A FORECAST. Four refuters re-sized their rounds upward, and each round's own refutation below is the size to build from.
 
@@ -70,9 +72,9 @@ THE ROUND COUNT IS A FLOOR, NOT A FORECAST. Four refuters re-sized their rounds 
 | W1227 | B8 | An administrator's erasure of one made-up person (part 1: erase() and the command over SSH) | W1226, W1198 |
 | W1228 | B8 | The erasure driven end to end and read back (part 2), and the brief's part 8 restated | W1227 |
 | W1229 | A12 | TopologyDefense reports no repair it did not make: simplicial_repair is deleted, as its ledger rule says, and _interrupt_agent is recorded as latent | Ordered last by the lead ruling |
-| W1230 | A3b | HELD - chromadb's direct declaration, which brings onnxruntime, is dropped once nothing imports it | The Owner's answer to the chromadb question (in chat), and W1196 |
-| W1231 | C5b | HELD - the two approved legal-form descriptions say what each template models | The Owner's answer to the template question (in chat), and W1216 |
-| W1232 | CANVAS-CREDIT | HELD - the ratified canvas's credit line gains a dated note for the carry-forward ruling, the earlier words kept | The Owner's answer to the canvas question (in chat) |
+| W1230 | A3b | HELD - chromadb's direct declaration, which brings onnxruntime, is dropped once nothing imports it | The Owner's answer to the chromadb question (in chat), and W1196. Answered on the morning of 2026-11-22 (W1193c): no longer held; still after W1196 |
+| W1231 | C5b | HELD - the two approved legal-form descriptions say what each template models | The Owner's answer to the template question (in chat), and W1216. Answered on the morning of 2026-11-22 (W1193c): no longer held; still after W1216 |
+| W1232 | CANVAS-CREDIT | HELD - the ratified canvas's credit line gains a dated note for the carry-forward ruling, the earlier words kept | The Owner's answer to the canvas question (in chat). Answered on the morning of 2026-11-22 (W1193c). Not built: W1193c made the note |
 
 Each round's files, `-k` selector, rows and design follow, in order.
 
@@ -1187,8 +1189,8 @@ D-FU1086:
   - W970 built properties 1-2 (exactly one slice, union equals census); W972 built 6 (earlier ledgers pinned); W973 built 3, 4, 5 and 7 (nothing capped, a failed or empty slice blocking completeness, the measured commit, both configurations); W977 built the workflow;
   - what remains: calibration first (P5.10 clause 5, FU-993), the local-model configuration on the Owner's machine (FU-1036), then both runs, on which P2.40 and P2.41 close;
   - a 'RETITLED' note quoting the old title.
-  Severity high, slot P5.22, source W747 and not gated: all kept. Then render.
-- docs/FABLE_DELIVERY_PROMPT.md: P5.22, after ACCEPT (7): 'BUILT (W970–W977, 2026-11-13): (1)-(2) W970 (scripts/audit_surface_census.py); (6) W972; (3), (4), (5), (7) W973 (scripts/audit_completeness.py); the workflow W977 (scripts/workflows/fidelity_audit_final.js). NOT YET: calibration against planted defects (P5.10 clause 5) and the two runs, after Phase 5 and the sign-in readiness round.' It names no FU id but FU-1086.
+  Severity high, slot P5.22, source W747 and not gated: all kept. Then render. Answered on the morning of 2026-11-22 (W1193c): the why also keeps FU-1086's ruling of the morning of 2026-11-22.
+- docs/FABLE_DELIVERY_PROMPT.md: P5.22, after ACCEPT (7): 'BUILT (W970–W977, 2026-11-13): (1)-(2) W970 (scripts/audit_surface_census.py); (6) W972; (3), (4), (5), (7) W973 (scripts/audit_completeness.py); the workflow W977 (scripts/workflows/fidelity_audit_final.js). NOT YET: calibration against planted defects (P5.10 clause 5) and the two runs, after Phase 5 and the sign-in readiness round.' It names no FU id but FU-1086. Answered on the morning of 2026-11-22 (W1193c): the BUILT line is also to say the audit runs in December.
 - docs/WORKSTATION_IDBO_LIVING_PLAN.md: Re-rendered, keeping CRLF.
 - integration_tests/test_mvp_spine.py: test_w747: change the expected title (:67104). Replace the startswith('OWNER DECISION:') assertion (:67126) with 'not owner_gated, and the title does not say no item builds or runs it', and add a comment saying why. Append the new test.
 
@@ -3252,7 +3254,7 @@ This may need a second number.
 
 **Rows it closes:**
 
-- The first row, closed as built. The OWNER row stays open.
+- The first row, closed as built. The OWNER row stays open. Answered on the morning of 2026-11-22 (W1193c): FU-1868 stays open until W1231 has landed; W1216 does not close it.
 
 **Changes:**
 
@@ -3266,7 +3268,7 @@ This may need a second number.
 - apps/workstation-superapp/src/pages/enterprise/VSBSpawnStudio.tsx: Draw it under the Economy line.
 - apps/workstation-superapp/src/pages/{synthesis/GenesisJourney,enterprise/VSBEconomy,enterprise/VSBCockpit,enterprise/VSBSpawnStudio}.fixture.json: The new field captured from the routes by their capture scripts.
 - apps/workstation-superapp/src/pages/... four .test.tsx files: New cases V1-V4.
-- docs/FABLE_DELIVERY_PROMPT.md and docs/FOLLOWUPS.json: A P5.18 UPDATED line for clause 1's sentence. Close the first row.
+- docs/FABLE_DELIVERY_PROMPT.md and docs/FOLLOWUPS.json: A P5.18 UPDATED line for clause 1's sentence. Close the first row. Answered on the morning of 2026-11-22 (W1193c): leave FU-1868 open; W1231 closes it.
 - integration_tests/test_mvp_spine.py: The new guard.
 
 **Guard:** test_wXXXX_p518_wherever_a_form_is_chosen_or_shown_it_is_said_that_no_company_is_formed
@@ -4498,7 +4500,7 @@ SOUND as planned. One optional addition, by the ledger's own rule ('an unreached
 
 **Owning item:** P2.40 (the dependency route: requirements.txt and pyproject.toml route there)
 
-**Held on:** The Owner's answer to the chromadb question (in chat), and W1196
+**Held on:** The Owner's answer to the chromadb question (in chat), and W1196. Answered on the morning of 2026-11-22 (W1193c): no longer held; still after W1196. The Owner's answer is recorded at P3.32.
 
 **Rows:** none of its own; see its notes.
 
@@ -4518,7 +4520,7 @@ Uses W1141's method (FU-1174, FU-1277): re-make the lock, export requirements.tx
 
 **Owning item:** P5.18 clause 1
 
-**Held on:** The Owner's answer to the template question (in chat), and W1216
+**Held on:** The Owner's answer to the template question (in chat), and W1216. Answered on the morning of 2026-11-22 (W1193c): no longer held; still after W1216. The Owner's answer is recorded at P5.18 and in FU-1868.
 
 **Rows:** none of its own; see its notes.
 
@@ -4538,7 +4540,7 @@ The nine names are kept.
 
 **Owning item:** OWNER (a ratified text)
 
-**Held on:** The Owner's answer to the canvas question (in chat)
+**Held on:** The Owner's answer to the canvas question (in chat). Answered on the morning of 2026-11-22 (W1193c). Not built: W1193c made the note.
 
 **Rows:** none of its own; see its notes.
 
@@ -4575,12 +4577,12 @@ The opening's change line becomes 'Changed three times since'. That changes test
 
 ## Plans held or re-planned
 
-- A3 (UNSOUND): re-planned, not held. The Owner retired the memory on 2026-11-22, and W1192 records this at P3.32. A3 (W1196) therefore removes MemoryV01 and its two writers instead of keeping the store in process and capped. Its two OWNER rows become one build row (the retirement) and one question in chat (chromadb's declaration); A3b (W1230) is HELD on that answer.
+- A3 (UNSOUND): re-planned, not held. The Owner retired the memory on 2026-11-22, and W1192 records this at P3.32. A3 (W1196) therefore removes MemoryV01 and its two writers instead of keeping the store in process and capped. Its two OWNER rows become one build row (the retirement) and one question in chat (chromadb's declaration); A3b (W1230) is HELD on that answer. Answered on the morning of 2026-11-22 (W1193c): no longer held on the Owner; still after W1196.
 - The record round as cluster D planned it (UNSOUND): re-planned as W1193, because W1192 is the round that records the Owner's decisions. It registers no OWNER question row. It drops what W1192 already does: the canvas amendment, FU-1817's widening, workpack questions 6 and 7, and FU-1838 to FU-1840 with their lines. It adds the standing answer, the developer-account OWNER row, the build rows the 2026-11-22 rulings create, and the corrections W1192 leaves. Legs D and E are rewritten, and leg C recomputes the adjusted parts from the listed moves.
-- D-CANVAS: superseded, not built. W1192 amends the canvas on the Owner's word and gives the vision's section 12 and the economic model's section 4 dated notes (the business plan is not amended); the cluster D refuter read this as still to do. The residue, block 5's 'credited against its first profit share', goes to the Owner in chat, with CANVAS-CREDIT (W1232) HELD on the answer.
+- D-CANVAS: superseded, not built. W1192 amends the canvas on the Owner's word and gives the vision's section 12 and the economic model's section 4 dated notes (the business plan is not amended); the cluster D refuter read this as still to do. The residue, block 5's 'credited against its first profit share', goes to the Owner in chat, with CANVAS-CREDIT (W1232) HELD on the answer. Answered on the morning of 2026-11-22 (W1193c): on the Owner's word the business plan's Concept bullet gained a dated note, and W1193c made the canvas's credit note, so W1232 is not built.
 - B5 as planned built only the Chief, against the Owner's P4.2 ruling of 2026-11-22. It is split into B5a (W1218, the Chief) and B5b (W1219, the Board and the entity's own budget figure). Neither is held.
-- Three planned OWNER rows are not registered. B3's and B7's are already answered by the rulings of 2026-11-22. C5's becomes a question in chat, with C5b (W1231) HELD on the answer.
-- HELD on the Owner: A3b (W1230), C5b (W1231) and CANVAS-CREDIT (W1232), each built only after its answer. If the Owner answers sooner, a held round may take an earlier number, provided its files do not collide with the rounds around it.
+- Three planned OWNER rows are not registered. B3's and B7's are already answered by the rulings of 2026-11-22. C5's becomes a question in chat, with C5b (W1231) HELD on the answer. Answered on the morning of 2026-11-22 (W1193c): no longer held on the Owner; still after W1216.
+- HELD on the Owner: A3b (W1230), C5b (W1231) and CANVAS-CREDIT (W1232), each built only after its answer. If the Owner answers sooner, a held round may take an earlier number, provided its files do not collide with the rounds around it. Answered on the morning of 2026-11-22 (W1193c): none is held on the Owner now; W1230 still follows W1196 and W1231 W1216, and W1232 is not built (W1193c made the note).
 
 ## Completeness
 
@@ -4593,7 +4595,7 @@ The opening's change line becomes 'Changed three times since'. That changes test
   - 9: W1196.
   - 10 (code half): W1207.
   - 12: W1201.
-  - 13: W1192, with block 5's credit residue in W1232 (HELD).
+  - 13: W1192, with block 5's credit residue in W1232 (HELD). Answered on the morning of 2026-11-22 (W1193c): W1193c made the note, so W1232 is not built.
   - 14: W1192 (FU-1817 and workpack questions 6 and 7) and W1193 (the brand screen's LICENSE quote).
   - 15: W1229.
   - 16: W1216.

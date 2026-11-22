@@ -65905,12 +65905,15 @@ def test_w725_the_ratified_documents_name_the_platform_and_claim_no_protection_t
         #  a ratified text was changed: the document says so, when, on whose word, and where
         opening = " ".join(text.split("\n## ", 1)[0].split())
         #  W1192: the canvas was changed a second time, on the Owner's word of 2026-11-22 (the platform's fee and
-        #  the owner's share); that word was for the canvas only, so the business plan still says it changed once
+        #  the owner's share). W1193c: on the Owner's word of the morning of 2026-11-22 the canvas changed a third
+        #  time (a dated note on the generation price's credit) and the business plan a second (the platform's fee
+        #  and the owner's share). The counts are held here and nowhere else
         if rel.endswith("BUSINESS_MODEL_CANVAS.md"):
-            assert (f"Changed twice since, with the Owner's word: on 2026-10-14, the line on the name, {where}; and "
-                    "on 2026-11-22, the platform's fee and the owner's share,") in opening, opening[-260:]
+            assert (f"Changed three times since, with the Owner's word: on 2026-10-14, the line on the name, {where}; "
+                    "on 2026-11-22, the platform's fee and the owner's share,") in opening, opening[-320:]
         else:
-            assert f"Changed once since, with the Owner's word, on 2026-10-14: the line on the name, {where}." in opening, opening[-200:]
+            assert (f"Changed twice since, with the Owner's word: on 2026-10-14, the line on the name, {where}; and on "
+                    "2026-11-22, the platform's fee and the owner's share, under Concept,") in opening, opening[-260:]
         assert "**Ratified by the Owner on 2026-10-13**" in opening
         #  nothing is claimed that is not held, and the stale sentence is gone
         low = flat.lower()
@@ -66080,6 +66083,12 @@ def test_w726_one_action_enters_the_ratified_plan_and_the_record_says_how(client
     #  1. THE DOCUMENT AS READ: the Owner's words, section for section; an unmeasured objective carries no measure
     shown = _rp.preview(root)
     assert shown["ratified_on"] == "2026-10-13" and shown["document_faults"] == [], shown["document_faults"]
+    #  W1193c: every change since ratification is read whole, oldest first, and the latest is the one said as
+    #  changed_since
+    assert shown["changes"][:2] == [{"on": "2026-10-14", "what": "the line on the name, under Risks"},
+                                    {"on": "2026-11-22", "what": "the platform's fee and the owner's share, "
+                                                                "under Concept, the earlier words kept beside it"}], shown["changes"]
+    assert shown["changed_since"] == shown["changes"][-1], shown["changed_since"]
     assert set(shown["fields"]) == {"executive_summary", "concept", "vision", "mission", "strategy"}
     assert all(len(v) > 80 for v in shown["fields"].values())
     assert "held privately" in shown["fields"]["mission"] and "is not published here" in shown["fields"]["mission"]
@@ -66104,6 +66113,33 @@ def test_w726_one_action_enters_the_ratified_plan_and_the_record_says_how(client
     assert made["ratified_on"] is None and any("ratified" in f for f in made["document_faults"]), made["document_faults"]
     (tmp / _rp.DOCUMENT).write_text(real.replace("## Vision", "## Outlook"), encoding="utf-8")
     assert any("'Vision'" in f for f in _rp.preview(tmp)["document_faults"])
+    #  W1193c: the change line read in each of its forms, and one that cannot be read whole said as unread, with a
+    #  document fault, never as a document that did not change
+    start = real.index("Changed ")
+    change_line = real[start:real.index(".\n", start) + 1]
+
+    def _read(said):
+        (tmp / _rp.DOCUMENT).write_text(real.replace(change_line, said), encoding="utf-8")
+        return _rp.preview(tmp)
+    got = _read("Changed once since, with the Owner's word, on 2026-10-14: the line on the name, under Risks.")
+    assert got["changes"] == [{"on": "2026-10-14", "what": "the line on the name, under Risks"}], got["changes"]
+    assert got["changed_since"] == got["changes"][0] and got["document_faults"] == [], got["document_faults"]
+    got = _read("Changed three times since, with the Owner's word: on 2026-10-14, A, under Risks; on 2026-11-22, B, "
+                "under Concept; and again on 2026-11-22, C, under Aims.")
+    assert [c["on"] for c in got["changes"]] == ["2026-10-14", "2026-11-22", "2026-11-22"], got["changes"]
+    assert got["changed_since"] == {"on": "2026-11-22", "what": "C, under Aims"} and got["document_faults"] == []
+    got = _read("Changed twice since, with the Owner's word: on 2026-10-14, A; and on 2026-11-22, the fee (e.g. 25%), "
+                "under Concept.")
+    assert got["changes"] and got["changes"][-1]["what"] == "the fee (e.g. 25%), under Concept", got["changes"]
+    got = _read("")
+    assert got["changes"] == [] and got["changed_since"] is None and got["document_faults"] == [], got["changes"]
+    for bad in ("Changed 2 times since, with the Owner's word: on 2026-10-14, A; and on 2026-11-22, B.",
+                "Changed twice since, with the Owner's word: on 2026-10-14 the line; and on 2026-11-22, B.",
+                "Changed three times since, with the Owner's word: on 2026-10-14, A; and on 2026-11-22, B.",
+                "Changed twice since, with the Owner's word: on 2026-11-22, A; and on 2026-10-14, B."):
+        got = _read(bad)
+        assert got["changes"] is None and got["changed_since"] is None, (bad, got["changes"])
+        assert any(f.startswith("the document's change line") for f in got["document_faults"]), (bad, got["document_faults"])
 
     #  3. SIGN-IN OFF: the preview says why not, and entering writes nothing
     assert auth_core.auth_enabled() is False
@@ -66155,6 +66191,9 @@ def test_w726_one_action_enters_the_ratified_plan_and_the_record_says_how(client
         assert len(mine) == len(shown["objectives"]) and all(not _bp.is_seeded_draft(o) for o in mine)
         stamp = plan["entered_from_ratified_document"]
         assert stamp["sha256"] == shown["sha256"] and stamp["ratified_on"] == "2026-10-13" and stamp["by_verified"] is True
+        #  W1193c: the stamp keeps every change since ratification beside the latest
+        assert stamp["changes_since_ratification"] == shown["changes"], stamp.get("changes_since_ratification")
+        assert [c["on"] for c in stamp["changes_since_ratification"]][:2] == ["2026-10-14", "2026-11-22"]
         assert stamp["entered_by"] == "w726-admin" and "was not typed field by field" in stamp["basis"]
         assert "has no place for it" in stamp["canvas"] and "Risks" in stamp["not_entered"]
         #  entering twice adds nothing twice and moves no timestamp
@@ -66188,6 +66227,10 @@ def test_w726_the_page_shows_the_preview_first_and_enters_only_what_was_shown():
     for drawn in ("{shown.not_entered.join(', ')}", "{shown.canvas}", "{shown.already_entered.basis}", "{refusal}",
                   "ratified by the Owner on ${shown.ratified_on}", "'NOT ratified'"):
         assert drawn in flat, drawn
+    #  W1193c: every change since ratification is drawn, not only the latest, and changes it could not read are
+    #  said as unread, never as no change
+    assert ("{Array.isArray(shown.changes) ? shown.changes.map(c => ` · changed on ${c.on}: ${c.what}`).join('') : "
+            "' · its changes since ratification could not be read'}") in flat, "the page draws one change, or none as unread"
     opening_src = _code_only((root / "apps/workstation-superapp/src/components/PlanOpening.tsx").read_text(encoding="utf-8"))
     assert "{scope === 'workstation' && <RatifiedPlanEntry onEntered={onSaved} />}" in " ".join(opening_src.split()), \
         "the entry is offered on a plan that is not the platform's own"
@@ -91143,6 +91186,10 @@ def test_w1105_fu399_the_ratified_plan_entry_is_rendered_previewed_first_and_ent
     lb = live.json()
     assert lb["can_enter"] is False and lb["cannot_because"] == off["body"]["cannot_because"]
     assert lb["document"] == off["body"]["document"] == "docs/business/BUSINESS_PLAN.md"
+    #  W1193c: the fixture was captured from the document as it stands, so an edit to the ratified document fails
+    #  here until the fixture is captured again; and the reader reads it as it did when it was captured
+    assert lb["sha256"] == off["body"]["sha256"], "the document changed after the fixture was captured: capture it again"
+    assert (lb["changes"], lb["changed_since"]) == (off["body"]["changes"], off["body"]["changed_since"]), lb["changes"]
     assert set(lb) - {"edited_since", "edited_since_basis"} == set(off["body"]) - {"edited_since", "edited_since_basis"}
     assert set(lb["fields"]) == set(admin["body"]["fields"])
 
@@ -98634,8 +98681,10 @@ def test_w1190_the_owners_six_decisions_of_the_afternoon_of_2026_11_21_are_recor
 
     #  the local notes: the rulings, the merged pull request, and what stays the Owner's
     #  W1192: the notes were brought up to date again for the decisions of 2026-11-22 (W1191 had edited them too)
-    #  W1193: the notes were brought up to date again for the record round (the developer account, the answer)
-    assert "Updated 2026-11-22 (W1131, W1164, W1184, W1187, W1188, W1190, W1191, W1192, W1193)." in notes
+    #  W1193: the notes were brought up to date again for the record round (the developer account, the answer);
+    #  a later round adding itself, or a later date, leaves this green (W1193c)
+    upd = re.search(r"Updated (20\d\d-\d\d-\d\d) \(([^)]*)\)\.", notes)
+    assert upd and upd.group(1) >= "2026-11-22" and "W1190" in upd.group(2).split(", "), "the notes' updated line"
     for s in ("and that afternoon, six more taken as recommended: the release machine to open a port to the internet "
               "only with its domain, HTTPS and sign-in on, the domain bought before the first deploy and sign-in your "
               "switch; your second calibration run, with a larger local model (seven to eight billion parameters if "
@@ -99638,9 +99687,9 @@ def test_w1192_the_owners_twenty_decisions_of_2026_11_22_are_recorded_where_the_
 
     #  the canvas, amended on the Owner's word with its earlier words kept
     canvas = flat(read("docs/business/BUSINESS_MODEL_CANVAS.md"))
-    for s in ("Changed twice since, with the Owner's word: on 2026-10-14, the line on the name, under Key resources; and "
-              "on 2026-11-22, the platform's fee and the owner's share, in the one page and under Revenue, the earlier "
-              "words kept beside each.",
+    #  W1193c: the canvas changed again on the Owner's word of the morning of 2026-11-22; its count is test_w725's
+    for s in ("on 2026-11-22, the platform's fee and the owner's share, in the one page and under Revenue, the earlier "
+              "words kept beside each",
               "Each enterprise then pays the platform 25% of its profit first, and shares what remains by a fixed split "
               "that includes its own owner, its own growth and charity [owner-defined: the vision, section 12; rulings "
               "of 2026-10-12 and 2026-10-13; amended by the Owner on 2026-11-22]. Before 2026-11-22 this read: \"Each "
@@ -99724,8 +99773,9 @@ def test_w1192_the_owners_twenty_decisions_of_2026_11_22_are_recorded_where_the_
     #  the local notes: the updated line, step 5, what is still the Owner's, PR #33 and the day's bullet, held whole
     notes_raw = read("docs/RESUME_ON_MY_MACHINE.md")
     notes = flat(notes_raw)
-    #  W1193: the record round edited the notes too
-    assert "Updated 2026-11-22 (W1131, W1164, W1184, W1187, W1188, W1190, W1191, W1192, W1193)." in notes
+    #  W1193: the record round edited the notes too; a later round adding itself, or a later date, leaves this green
+    upd = re.search(r"Updated (20\d\d-\d\d-\d\d) \(([^)]*)\)\.", notes)
+    assert upd and upd.group(1) >= "2026-11-22" and "W1192" in upd.group(2).split(", "), "the notes' updated line"
     step5 = notes_raw.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
     assert re.findall(r"^   - (FU-\d+):", step5, re.M) == ["FU-1165", L], re.findall(r"^   - (FU-\d+):", step5, re.M)
     step = flat(f"- {L}:" + step5.split(f"   - {L}:", 1)[1].split("\n   (", 1)[0])
@@ -99821,7 +99871,8 @@ def test_w1193_section_35_and_the_rows_the_v44_assessment_keeps_are_recorded_and
       W1194 to W1232 in order, each round's heading naming the rows whose source names that round, and every open
       row with no round from W1194 on listed as one; it names no upload, session work file or credential setting,
       gives no one a pronoun, carries nothing the privacy screen finds, has no "interview" in its name and is in no
-      row's files; and it does not say the business plan was amended."""
+      row's files; and it does not say that W1192 or W1193 amended the business plan (W1193c amended it on the
+      Owner's word)."""
     import json
     import pathlib
     import re
@@ -99913,7 +99964,9 @@ def test_w1193_section_35_and_the_rows_the_v44_assessment_keeps_are_recorded_and
     #  the business plan is said as unamended, the five questions put in chat, the developer account a row
     owner = flat(sec.split("### For the Owner", 1)[1])
     assert "left the business plan unchanged" in owner and "the business plan was left unchanged" in s35
-    assert not re.search(r"amended (?:the canvas, )?the business plan|business plan (?:was|is) amended", s35)
+    #  W1193c amended the business plan on the Owner's word; what stays false is that W1192 or W1193 did
+    assert not re.search(r"W119[23] amends the canvas, the business plan|W119[23] amended (?:the canvas, )?the "
+                         r"business plan|business plan (?:was|is) amended by W119[23]\b", s35)
     asked = owner.split("Put to the Owner in chat, each with a recommendation:**", 1)[1].split("**The v40 body", 1)[0]
     assert len(re.findall(r"\(recommended: yes", asked)) == 5, asked
 
@@ -99964,7 +100017,9 @@ def test_w1193_section_35_and_the_rows_the_v44_assessment_keeps_are_recorded_and
         assert acct["id"] not in still, "the closed developer account is still put to the Owner"
     assert "W1193 recorded that standing answer in section 35" in flat(still)
     nflat = flat(notes)
-    assert "Updated 2026-11-22 (W1131, W1164, W1184, W1187, W1188, W1190, W1191, W1192, W1193)." in nflat
+    #  W1193c: a later round adding itself, or a later date, leaves this green
+    upd = re.search(r"Updated (20\d\d-\d\d-\d\d) \(([^)]*)\)\.", nflat)
+    assert upd and upd.group(1) >= "2026-11-22" and "W1193" in upd.group(2).split(", "), "the notes' updated line"
     assert ("is to be recorded with the assessment's next section (a later round). W1193 recorded that standing answer "
             "in section 35 of docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md.") in nflat, "the notes do not say it is recorded"
 
@@ -100113,7 +100168,8 @@ def test_w1193_section_35_and_the_rows_the_v44_assessment_keeps_are_recorded_and
     assert not re.search(r"(?i)uploads?/[^\s]+|\.docx\b", prep), "an upload is named"
     found = _pe.scan(root, files=[("docs/V44_ROUNDS_PREP.md", prep.encode("utf-8"))], markers=[])["findings"]
     assert found == [], [(f["path"], f["line"], f["kind"]) for f in found]
-    assert not re.search(r"W1192 amends the canvas, the business plan|business plan (?:was|is) amended", prep)
+    assert not re.search(r"W119[23] amends the canvas, the business plan|W119[23] amended (?:the canvas, )?the "
+                         r"business plan|business plan (?:was|is) amended by W119[23]\b", prep)
     assert "`docs/V44_ROUNDS_PREP.md`" in sec, "section 35 does not name its working plan"
 
 
@@ -100127,7 +100183,8 @@ def test_w1193b_the_remaining_work_is_remeasured_with_every_open_item_and_the_ro
     commit's register holds that id and none after it; P5.22's instrument is said as built (W970, W972, W973 and W977),
     not as missing; the final audit's open question - whether 'after Phase 5' means its build items or every row, with
     the 2026-12-31 deadline - is carried under P5.22's Owner part and in the timeline beneath the total, as a
-    recommendation and not a ruling; and the README and the local notes give this measurement's date and total.
+    recommendation and not a ruling (since W1193c, as the Owner's ruling of the morning of 2026-11-22, given after
+    the measurement); and the README and the local notes give this measurement's date and total.
     Moving a row registered up to the stated id onto a plan item, or reopening one, changes what was measured: it needs
     a re-measurement, and this test fails until one is made."""
     import json
@@ -100203,11 +100260,17 @@ def test_w1193b_the_remaining_work_is_remeasured_with_every_open_item_and_the_ro
     q = "whether 'after Phase 5' means its build items or every row"
     owner522 = sections.get("P5.22", "").split("- **Only the Owner can:**", 1)
     assert len(owner522) == 2 and q in owner522[1], "P5.22's Owner part does not carry the final audit's question"
-    assert ("Open: put to the Owner on 2026-11-22, and not decided here. Recommended: its build items" in owner522[1]
-            ), "P5.22's Owner part does not leave the question open beside its recommendation"
-    timeline = doc[total.end():doc.index("\n## P", total.end())]
-    assert q in timeline and "2026-12-31" in timeline and "Recommended: its build items" in timeline, (
-        "the timeline does not carry the final audit's question")
+    #  W1193c: the Owner ruled on the morning of 2026-11-22, after the measurement, as recommended; the page says
+    #  the ruling where it put the question, and no longer says it is open
+    ruled = ("OWNER RULING 2026-11-22 (morning; the recommendation accepted): 'after Phase 5' means after its "
+             "build items close")
+    assert ruled in owner522[1] and "not decided here" not in owner522[1], (
+        "P5.22's Owner part does not say the Owner's ruling")
+    #  read with its lines joined, so that a later round may fill the paragraph again
+    timeline = " ".join(doc[total.end():doc.index("\n## P", total.end())].split())
+    assert q in timeline and "2026-12-31" in timeline and ruled in timeline, (
+        "the timeline does not carry the final audit's question and its ruling")
+    assert "Recommended: its build items" not in timeline, "the timeline still leaves the question open"
     #  the README and the local notes give this measurement (read with their lines joined, so that a later round may
     #  fill a paragraph again)
     readme = " ".join(pathlib.Path("README.md").read_text(encoding="utf-8").split())
@@ -100219,3 +100282,455 @@ def test_w1193b_the_remaining_work_is_remeasured_with_every_open_item_and_the_ro
     assert (f"- **Measured remaining work,** on 2026-11-22: about {total.group(1)}–{total.group(2)} rounds across the"
             in notes), "the local notes do not give this measurement"
     assert "214–392" not in notes, "the local notes still give the measurement of 2026-11-10"
+
+
+def test_w1193c_the_owners_nine_decisions_of_the_morning_of_2026_11_22_are_recorded_where_the_work_reads_them():
+    """W1193c. The nine recommendations the Owner accepted on the morning of 2026-11-22: six put in chat at 03:04 UTC
+    ("I accept all six recommendations, proceed", 07:25 UTC) and three put at 07:32 UTC ("I accept all three
+    recommendations, proceed", 07:40 UTC). Each ruling sentence says what was accepted, in ruling tense where the work
+    is not built; what the round design adds follows it, marked "Proposed by the round design, not ruled". Held here:
+    1. P3.32: chromadb removed from the dependency list once the retired memory is removed (W1196), the same way the
+       unused streamlit, plotly and pandas packages were taken out, with a full test run on a fresh install; W1230 no
+       longer held; the declaration, the lock and the two re-checks only as the design's proposal; no row named;
+    2. P5.18 and FU-1868: the two legal-form descriptions reworded to say what each template models, the nine names
+       kept and the old words kept in a dated note; the example wordings and the note's place only as the design's
+       proposal; FU-1868 stays open until W1231 has landed;
+    3. FU-1817, P4.2, the workpack's question 8, the plan's list and the notes: the solicitor also asked in writing
+       about retention and erasure, and the Owner approving a record of processing once the solicitor has answered;
+       the deletion-drill rounds go ahead either way, every retention period marked "not decided: the Owner's";
+    4. the canvas, on the Owner's word: a dated note under block 5's credit line, the line kept as it was ratified, and
+       the change named in its opening (the count of changes is test_w725's);
+    5. the business plan, on the Owner's word: its Concept bullet says the platform's 25% fee comes first and 20 parts
+       in a hundred of what remains go to each entity's own owner, its earlier words kept, and its opening names the
+       change (the count is test_w725's; the reader reading every change, or saying it could not, and the entry's
+       stamp keeping them all are test_w726's; the entry's fixture being the document as it stands is test_w1105's);
+    6. P5.22 and FU-1086: "after Phase 5" means after its build items close; the audit then runs in December; the rows
+       still waiting on the Owner (the letters and the second Care calibration) listed in its record as open, carrying
+       into January without holding it back; which rows are meant only as the design's proposal (at P5.22 the letter
+       rows by id, the two rows of other items by their area);
+    7. P5.14: the three exchange lessons the Owner already ratified whose defects quote section 27's counts keep them,
+       as dated quotations of what was measured at the time; the totals stay in the assessment, beneath the RULED line;
+    8. PR #467: merged by the cloud session once W1193c has landed and CI is green, then a fresh pull request for the
+       build rounds - in the notes' step 1 while it names PR #467, their record of the pull requests, their Still-yours
+       list while its merge line is there, and the plan's list - in words that stay true once it is merged: no state of
+       the pull request is pinned;
+    9. FU-1837: the leaked keys revoked first, then the stale branches listed for the Owner to check, main,
+       main-l1fsqo, local-owner and anything else the Owner names kept, and none deleted without the Owner's explicit
+       word - in its why, its line on the plan's list and in the notes, each after W1192's sentence, which stays;
+    and the plan's list carries the nine in a paragraph of its own naming no row; the notes carry them in a bullet of
+    their own after W1192's, and their updated line names this round; the working plan's head says in which words the
+    six were accepted and its status rows, schedule rows and held lines say what the answers changed; section 35's For
+    the Owner says so once, still counting five put in chat; while docs/REMAINING_WORK_MEASURED.md is the measurement
+    of 2026-11-22 at a4b96954, it says each answer where it put the question, as given after it was measured; and none
+    of the new words gives anyone a gendered pronoun. A row's line on the plan's list or in the notes is held while the
+    row is open: a later round closing it may remove the line (W594's rule)."""
+    import json
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    RM = "OWNER RULING 2026-11-22 (morning; the recommendation accepted)"
+    PROP = "Proposed by the round design, not ruled:"
+    PRONOUN = re.compile(r"\b(he|him|his|himself|she|her|hers|herself)\b", re.I)
+    flat = lambda t: " ".join(t.split())   # noqa: E731
+    read = lambda p: (root / p).read_text(encoding="utf-8")   # noqa: E731
+    fable = read("docs/FABLE_DELIVERY_PROMPT.md")
+    reg = {r["id"]: r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"]}
+    said = []   # every passage this round wrote, read for a pronoun at the end
+    MARKED = "with every retention period marked \"not decided: the Owner's\""
+    FORMS = ("are to be reworded to say what each template models; the nine names are kept, and the old words are kept "
+             "in a dated note.")
+    FORMS_PROPOSED = (f"{PROP} wordings such as \"A template modelled on a private limited company's profit split\" and "
+                      "\"A template modelled on a charity's allocation: maximal charitable allocation\", and the dated "
+                      "note in section 2 of docs/VSB_ECONOMIC_LEGAL_MODEL.md.")
+    AUDIT = ("\"after Phase 5\" means after its build items close; the audit is then to run in December. The rows still "
+             "waiting on the Owner (the letters and the second Care calibration) are to be listed in its record as "
+             "open, and they carry into January without holding it back.")
+    BRANCH_YOU = ("you revoke the leaked keys first; then the cloud session lists the stale branches that hold them for "
+                  "you to check, keeping main, main-l1fsqo, local-owner and anything else you name, and deletes only on "
+                  "your explicit word.")
+
+    def holds(text, s, where):
+        assert s in text, (where, "does not say", s[:110])
+        said.append(s)
+
+    def item(pid, nxt):
+        start = fable.index(f"\n {pid} ")
+        return flat(fable[start:fable.index(f"\n {nxt} ", start)])
+
+    #  the four rows the rulings bear on: each gains its dated sentence after its earlier words
+    for rid, before, s in (
+            ("FU-1817", "W1193 (2026-11-22): the recommendation the Owner accepted for these questions",
+             f" {RM}: the solicitor is also to be asked in writing about retention and erasure, and the Owner is to "
+             "approve a record of processing once the solicitor has answered. The deletion-drill rounds go ahead either "
+             f"way, {MARKED}."),
+            ("FU-1868", "The only statement that an entity is no person in law is agreements.NOT_AN_ENTITY",
+             f" {RM}: the two template descriptions this row quotes {FORMS} Round W1231 (docs/V44_ROUNDS_PREP.md) "
+             f"builds it, and is no longer held. {FORMS_PROPOSED} W1193c: this row stays open until W1231 has landed, so "
+             "W1216 does not close it."),
+            ("FU-1086", "Recommended: charter it as its own item",
+             f" {RM}: {AUDIT} {PROP} the rows meant are the letter rows FU-1188 and FU-1283 while they are open, P5.17's "
+             "FU-1067 if written permission has not come by 2026-12-15, and P5.15's FU-1831, which waits on the Owner's "
+             "second calibration run before 2027-01-10."),
+            ("FU-1837", "The cloud session may list stale branches for deletion; no branch is deleted or changed without "
+                        "the Owner's explicit word.",
+             f" {RM}: the Owner revokes the leaked keys first; then the cloud session lists the stale branches that hold "
+             "them for the Owner to check, keeping main, main-l1fsqo, local-owner and anything else the Owner names, and "
+             "deletes only on the Owner's explicit word.")):
+        why = reg[rid]["why"]
+        holds(why, s, rid)
+        assert before in why, (rid, "the earlier words the ruling follows are gone")
+        assert why.index(before) < why.index(s), (rid, "the morning's ruling is not after the earlier words")
+    #  FU-1868 stays open until W1231 has landed: closed while the template still says it is a company, it is red here
+    if reg["FU-1868"]["status"] != "open":
+        entities = read("agentic_core/economy/entities.py")
+        code = "\n".join(ln for ln in entities.splitlines() if not ln.lstrip().startswith("#"))
+        assert "Default commercial company, limited liability." not in code, (
+            "FU-1868 was closed while the template still says it is a company")
+
+    #  each ruling at the item it governs, as the rule to be built, and what the design adds after it, marked so
+    p332 = item("P3.32", "P4.1")
+    r1 = (f"{RM}: once the retired memory is removed (W1196), chromadb, which nothing then uses, is to be removed from "
+          "the dependency list, the same way the unused streamlit, plotly and pandas packages were taken out, with a full "
+          "test run on a fresh install. Round W1230 (docs/V44_ROUNDS_PREP.md) builds it, and is no longer held. "
+          f"{PROP} the declaration removed is chromadb's in pyproject.toml, with onnxruntime, the extra runtime it pulls "
+          "in, if nothing else requires it; the lock is re-made and requirements.txt exported, as W1141 did; and "
+          "test_w583 L5's opentelemetry pins and test_w907's sympy rule are re-checked.")
+    holds(p332, r1, "P3.32")
+    assert ("OWNER RULING 2026-11-22 (the recommendations accepted): (1) the avatar and upload memory is to be retired"
+            in p332 and "MILESTONE M3:" in p332), "P3.32's earlier ruling or its milestone moved"
+    assert (p332.index("OWNER RULING 2026-11-22 (the recommendations accepted): (1) the avatar and upload memory is to be "
+                       "retired") < p332.index(r1) < p332.index("MILESTONE M3:")), "P3.32's ruling is not in its place"
+    assert not re.search(r"\bFU-\d+", p332.split("MILESTONE M3", 1)[0]), "P3.32 names a row"
+    p42 = item("P4.2", "P4.3")
+    r3 = (f"{RM}: the solicitor (the engagement of FU-1817) is also to be asked in writing about retention and erasure, "
+          "and the Owner is to approve a record of processing once the solicitor has answered. The deletion-drill rounds "
+          f"(W1225 to W1228, docs/V44_ROUNDS_PREP.md) go ahead either way, {MARKED}.")
+    holds(p42, r3, "P4.2")
+    assert "the Owner sets the periods once FU-1817 answers" in p42, "P4.2's earlier ruling moved"
+    assert p42.index("the Owner sets the periods once FU-1817 answers") < p42.index(r3), "P4.2's order"
+    p514 = item("P5.14", "P5.15")
+    r7 = (f"{RM}: the three exchange lessons the Owner already ratified whose defects quote section 27's counts "
+          "(M-EXCH-01, M-EXCH-02 and M-EXCH-04, in docs/DELIVERY_METHOD.json) keep them, as dated quotations of what was "
+          "measured at the time; the section 27 totals stay in the assessment, as the Owner ruled on 2026-10-12 (the "
+          "RULED line above).")
+    holds(p514, r7, "P5.14")
+    assert "RULED (OWNER 2026-10-12):" in p514 and "the totals of section 27 stay in the assessment." in p514, (
+        "P5.14's RULED line no longer keeps the section 27 totals in the assessment")
+    assert (p514.index("RULED (OWNER 2026-10-12):") < p514.index("the totals of section 27 stay in the assessment.")
+            < p514.index(r7)), "P5.14's ruling is not beneath the RULED line it cites"
+    lessons = {l["id"]: l for l in json.loads(read("docs/DELIVERY_METHOD.json"))["lessons"]}
+    for lid, count in (("M-EXCH-01", "of 1,229 messages the Owner typed"), ("M-EXCH-02", "ten of the Owner's messages"),
+                       ("M-EXCH-04", "52 of 56 decisions were accepted in one sentence")):
+        lesson = lessons.get(lid) or {}
+        assert lesson.get("group") == "exchange" and lesson.get("ratified"), (lid, "is not a ratified exchange lesson")
+        assert count in lesson["defect"], (lid, "no longer keeps the section 27 count its defect quotes")
+    s27 = flat(read("docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md").split("\n## 27. ", 1)[1].split("\n## 28. ", 1)[0])
+    for total in ("holding 1,229 messages typed by the Owner", "One word - \"proceed\" - is 301 of them",
+                  "52 were accepted as recommended in one sentence"):
+        assert total in s27, (total, "a section 27 total is no longer in the assessment")
+    p518 = item("P5.18", "P5.19")
+    r2 = (f"{RM}: clause 1's two legal-form descriptions, \"Default commercial company, limited liability\" and "
+          f"\"Registered charitable purpose\", {FORMS} Round W1231 (docs/V44_ROUNDS_PREP.md) builds it, and is no longer "
+          f"held. {FORMS_PROPOSED}")
+    holds(p518, r2, "P5.18")
+    assert "OWNER RULING 2026-11-21 (the recommendation accepted)" in p518, "P5.18's earlier ruling moved"
+    assert p518.index("OWNER RULING 2026-11-21 (the recommendation accepted)") < p518.index(r2), "P5.18's order"
+    p522 = item("P5.22", "COMPLETE")
+    r6 = (f"{RM}: {AUDIT} {PROP} the rows meant are the letter rows FU-1188 and FU-1283 while they are open, P5.17's row "
+          "for the private listening test if written permission has not come by 2026-12-15, and P5.15's row for the Care "
+          "reviewer's first calibration run, which waits on the Owner's second calibration run before 2027-01-10.")
+    holds(p522, r6, "P5.22")
+    assert "(7) both configurations ran" in p522, "P5.22's seventh property moved"
+    assert p522.index("(7) both configurations ran") < p522.index(r6), "P5.22's order"
+
+    #  the plan's list: FU-1817's and FU-1837's lines under their own entries while each row is open, and the nine
+    raw_list = fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
+    still = flat(raw_list)
+
+    def under(rid, head, prior, line):
+        if reg[rid]["status"] != "open":
+            return
+        holds(still, line, "the plan's list")
+        seg = still[still.index(head) + len(head):still.index(line)]
+        assert prior in seg and not re.search(r"FU-\d+ \(W\d+\):", seg), (rid, "the line is not under its own entry")
+
+    under("FU-1817", "FU-1817 (W1174):", "Ruled on 2026-11-22: it also carries written questions on the project's licence",
+          "Ruled on the morning of 2026-11-22: the solicitor is also to be asked in writing about retention and erasure, "
+          "and you are to approve a record of processing once the solicitor has answered; the deletion-drill rounds go "
+          f"ahead either way, {MARKED} (P4.2).")
+    under("FU-1837", "FU-1837 (W1191):", "On 2026-11-22 you accepted doing it that day. The cloud session may list stale "
+          "branches for deletion; no branch is deleted or changed without the Owner's explicit word.",
+          f"Ruled on the morning of 2026-11-22: {BRANCH_YOU}")
+    #  the nine, as a paragraph of its own: read from its opening to its closing ".)", so that a later round may change
+    #  its closing words or put a paragraph after it
+    opener = "(Six put in the early hours of 2026-11-22 and three put that morning"
+    assert still.count(opener) == 1, ("the list does not carry the nine once", still.count(opener))
+    i = raw_list.index("(Six put in the early hours of 2026-11-22")
+    nine = flat(raw_list[i:raw_list.index(".)\n", i) + 2])
+    assert "(Twenty put in the early hours of 2026-11-22" in still, "the list's paragraph of the early hours is gone"
+    assert nine.startswith(opener) and still.index("(Twenty put in the early hours of 2026-11-22") < still.index(opener)
+    for part in ("were accepted the same morning, each as recommended: chromadb to be removed from the dependency list "
+                 "once the retired memory is removed, the same way the unused streamlit, plotly and pandas packages were "
+                 "taken out, with a full test run on a fresh install;",
+                 "the two legal-form descriptions to be reworded to say what each template models, the nine names kept "
+                 "and the old words kept in a dated note;",
+                 "the solicitor also to be asked in writing about retention and erasure, the Owner approving a record of "
+                 "processing once the solicitor has answered, and the deletion-drill rounds going ahead either way, every "
+                 "retention period marked \"not decided: the Owner's\";",
+                 "the ratified canvas's credit line given a dated note for the carry-forward ruling, its old words kept;",
+                 "the business plan given the dated note the canvas was given for the platform's fee and the owner's "
+                 "share, saying the platform's 25% fee comes first and 20 parts in a hundred of what remains go to each "
+                 "entity's own owner, its old words kept;",
+                 "\"after Phase 5\" meaning after its build items close, so the final audit runs in December, the rows "
+                 "still waiting on the Owner (the letters and the second Care calibration) listed in its record as open "
+                 "and carrying into January without holding it back;",
+                 "the three exchange lessons the Owner already ratified to keep the section 27 counts their defects "
+                 "quote, as dated quotations of what was measured at the time, the section 27 totals staying in the "
+                 "assessment;",
+                 "PR #467 to be merged by the cloud session once W1193c has landed and CI is green, as #463, #465 and "
+                 "#466 were",
+                 "a fresh pull request then opened for the build rounds",
+                 "once the Owner has revoked the leaked keys, the two earlier Stripe values among them, the stale branches that "
+                 "hold them listed for the Owner to check, main, main-l1fsqo, local-owner and anything else the Owner "
+                 "names kept, and none deleted without the Owner's explicit word"):
+        assert part in nine, ("the list's paragraph does not say", part[:80])
+    assert not re.search(r"\bFU-\d+\b", nine), ("the list's paragraph names a row", re.findall(r"FU-\d+", nine))
+    said.append(nine)
+
+    #  the local notes: the updated line names this round; the nine in a bullet of their own, held whole; the lines
+    #  that say which pull request is meant, true before and after it is merged
+    notes_raw = read("docs/RESUME_ON_MY_MACHINE.md")
+    notes = flat(notes_raw)
+    upd = re.search(r"Updated (20\d\d-\d\d-\d\d) \(([^)]*)\)\.", notes)
+    assert upd and upd.group(1) >= "2026-11-22" and "W1193c" in upd.group(2).split(", "), "the notes' updated line"
+    head = "- **Ruled on the morning of 2026-11-22:**"
+    assert notes_raw.count(head) == 1, notes_raw.count(head)
+    ruled = flat(head + notes_raw.split(head, 1)[1].split("\n- **", 1)[0])
+    assert ruled == (
+        "- **Ruled on the morning of 2026-11-22:** six recommendations put in the early hours and three put that "
+        "morning, each taken as recommended: chromadb to be removed from the dependency list once the retired memory is "
+        "removed, the same way the unused streamlit, plotly and pandas packages were taken out, with a full test run on "
+        "a fresh install (round W1230, no longer held); the two legal-form descriptions to be reworded to say what each "
+        "template models, the nine names kept and the old words kept in a dated note (round W1231, no longer held); the "
+        "solicitor also to be asked in writing about retention and erasure, and you to approve a record of processing "
+        "once the solicitor has answered (FU-1817), the deletion-drill rounds going ahead either way, every retention "
+        "period marked \"not decided: the Owner's\"; the ratified canvas's credit line given a dated note for your "
+        "carry-forward ruling, its old words kept; the business plan given the dated note the canvas was given for the "
+        "platform's fee and the owner's share, saying the platform's 25% fee comes first and 20 parts in a hundred of "
+        "what remains go to each entity's own owner, its old words kept; \"after Phase 5\" meaning after its build items "
+        "close, so the final audit runs in December, the rows still waiting on you (the letters and the second Care "
+        "calibration) listed in its record as open and carrying into January without holding it back (FU-1086); the "
+        "three exchange lessons you already ratified to keep the section 27 counts their defects quote, as dated "
+        "quotations of what was measured at the time, the section 27 totals staying in the assessment; PR #467 to be "
+        "merged by the cloud session once W1193c has landed and CI is green, and a fresh pull request then opened for "
+        "the build rounds; and, once you have revoked the leaked keys, the two earlier Stripe values among them, the "
+        "stale branches that hold them listed for you to check, main, main-l1fsqo, local-owner and anything else you "
+        "name kept, and none deleted without your explicit word (FU-1837). W1193c recorded each where the work reads "
+        "it."), ruled[:200]
+    said.append(ruled)
+    assert "- **Ruled on 2026-11-22:**" in notes and "- **Still yours:**" in notes, "W1192's bullet or Still yours is gone"
+    assert notes.index("- **Ruled on 2026-11-22:**") < notes.index(head) < notes.index("- **Still yours:**"), "the order"
+    #  step 1 says which pull request it means; while that is PR #467, it says what happens once it is merged
+    step1 = flat(notes_raw.split("1. Sync first", 1)[1].split("\n2. Read, in this order", 1)[0])
+    m = re.search(r"The pull request this step means is PR #(\d+) until it is merged", step1)
+    assert m, "step 1 does not say which pull request it means"
+    if m.group(1) == "467":
+        holds(step1, "The pull request this step means is PR #467 until it is merged: on the morning of 2026-11-22 I told "
+                     "the cloud session to merge it once W1193c has landed and CI is green, as I did for #463, #465 and "
+                     "#466, and then to open a fresh one for the build rounds, which this step means from then on.",
+              "step 1")
+    git = flat(notes_raw.split("- **All work is in git.**", 1)[1].split("\n- **", 1)[0])
+    g = ("On the morning of 2026-11-22 you told the cloud session to merge the pull request opened after #466 was merged, "
+         "PR #467, once W1193c has landed and CI is green, as it merged #463, #465 and #466, and then to open a fresh "
+         "pull request for the build rounds, which carries the later rounds from then on")
+    holds(git, g, "the notes' record of the pull requests")
+    assert "PR #33" in git, "the notes' record of PR #33 is gone"
+    assert git.index("PR #33") < git.index(g), "the record of PR #467 is not after PR #33's"
+    yours_raw = notes_raw.split("- **Still yours:**", 1)[1].split("\n- **", 1)[0]
+    yours = flat(yours_raw)
+    merge_line = "Merge the open pull request from `main-l1fsqo`"
+    if merge_line in yours:      # a later round may reword or remove the merge line once the cycles end
+        merge = ("On the morning of 2026-11-22 you told it to merge PR #467 once W1193c has landed and CI is green; the "
+                 "fresh pull request it then opens carries the build rounds.")
+        holds(yours, merge, "the notes' Still-yours list")
+        assert yours.index(merge_line) < yours.index(merge), "the Still-yours merge line's order"
+    subs = [flat(b) for b in yours_raw.split("\n  - ")]
+    if reg["FU-1817"]["status"] == "open":
+        hits = [b for b in subs if b.startswith("One solicitor's engagement before anyone but you is invited (FU-1817)")]
+        holds(" ".join(hits), "before any health-related wellbeing entry. As you ruled on the morning of 2026-11-22, the "
+                              "solicitor is also to be asked in writing about retention and erasure, and you are to "
+                              "approve a record of processing once the solicitor has answered; the deletion-drill rounds "
+                              f"go ahead either way, {MARKED}.", "the notes' FU-1817 line")
+    if reg["FU-1837"]["status"] == "open":
+        hits = [b for b in subs if b.startswith("Revoking at their providers")]
+        holds(" ".join(hits), "The cloud session may list stale branches for deletion; no branch is deleted or changed "
+                              f"without the Owner's explicit word. Ruled on the morning of 2026-11-22: {BRANCH_YOU}",
+              "the notes' FU-1837 line")
+
+    #  the canvas, on the Owner's word: a dated note under block 5's credit line, which is kept as it was ratified
+    canvas_raw = read("docs/business/BUSINESS_MODEL_CANVAS.md")
+    holds(flat(canvas_raw.split("\n## ", 1)[0]), "on 2026-11-22, a dated note on the credit for the generation price, "
+          "under Revenue, the line it notes kept as it was", "the canvas's opening")
+    revenue = flat(canvas_raw.split("## 5. Revenue", 1)[1].split("\n## ", 1)[0])
+    credit = ("- GBP 99 once for generating an enterprise, credited against its first profit share, and waived for a "
+              "charitable or non-distributing one [owner-defined, 2026-10-13; the statement is at "
+              "`agentic_core/economy/generation_price.py`].")
+    note = ("- Noted on 2026-11-22, on the Owner's word, the line above kept as it was ratified: since 2026-11-22 the "
+            "credit carries forward against later fees until it is used up, with no conversion while money is virtual, "
+            "and the unit it is held in is a question for an accountant [owner-defined, 2026-11-22].")
+    assert revenue.count(credit) == 1, "the credit line is not kept as it was ratified"
+    holds(revenue, note, "the canvas's note on its credit line")
+    between = revenue[revenue.index(credit) + len(credit):revenue.index(note)]
+    assert all(b.startswith("Noted on") for b in between.split("- ") if b.strip()), "the note is not under its line"
+
+    #  the business plan, on the Owner's word: the Concept bullet amended, its earlier words kept
+    bplan_raw = read("docs/business/BUSINESS_PLAN.md")
+    holds(flat(bplan_raw.split("\n## ", 1)[0]), "on 2026-11-22, the platform's fee and the owner's share, under Concept, "
+          "the earlier words kept beside it", "the business plan's opening")
+    concept = flat(bplan_raw.split("\n## Concept\n", 1)[1].split("\n## ", 1)[0])
+    holds(concept, "- **Each enterprise is an economic organism**: it pays the platform 25% of its profit first, for "
+                   "updates and maintenance, and from what remains it pays its own owner 20 parts in a hundred, "
+                   "reinvests in itself and gives to causes, in virtual money until the Owner directs real rails "
+                   "[owner-defined: the vision, section 12; ruling of 2026-10-12; amended by the Owner on 2026-11-22]. "
+                   "Before 2026-11-22 this read: \"it pays its owner a share, reinvests in itself and gives to causes, in "
+                   "virtual money until the Owner directs real rails.\"", "the business plan's Concept")
+
+    #  the workpack: the eighth question for the one solicitor's engagement
+    sol = flat(read("docs/business/FORMATION_WORKPACK.md").split("## Questions for a solicitor", 1)[1].split("\n## ", 1)[0])
+    q8 = ("8. For how long may each store that holds a person's data keep it, and how is a person's data to be erased "
+          "when they ask, so that the Owner can approve a record of processing once this is answered?")
+    holds(sol, q8, "the workpack")
+    holds(sol, "- Question 8 was added on the Owner's ruling of the morning of 2026-11-22 that the solicitor also be asked "
+               "in writing about retention and erasure, and that the Owner approves a record of processing once the "
+               "solicitor has answered. [owner-defined, 2026-11-22]", "the workpack")
+    assert "7. Would the capital fund" in sol, "the workpack's seventh question is gone"
+    assert sol.index("7. Would the capital fund") < sol.index(q8), "the workpack's order"
+
+    #  the working plan: its head says in which words the six were accepted; its rows say what the answers changed
+    prep = read("docs/V44_ROUNDS_PREP.md")
+    holds(flat(prep.split("\n## Honest status", 1)[0]),
+          "ANSWERED ON THE MORNING OF 2026-11-22 (W1193c), the text below kept as it was written: the Owner accepted the "
+          "six recommendations as they were put in chat at 03:04 UTC (\"I accept all six recommendations, proceed\", "
+          "07:25 UTC): the five listed under What goes to the Owner in chat, worded for the chat, and a sixth, from the "
+          "re-measurement of the remaining work, on when the final audit runs. Where the words put in chat differ from "
+          "the five below, the words put in chat govern, and W1193c recorded those: chromadb is to be removed from the "
+          "dependency list once the retired memory is removed, the same way the unused streamlit, plotly and pandas "
+          "packages were taken out, with a full test run on a fresh install, and the re-checks of test_w583 L5 and "
+          "test_w907 stay this plan's notes, not the ruling; the two legal-form descriptions are to be reworded to say "
+          "what each template models, the nine names kept and the old words kept in a dated note, and the example "
+          "wordings and the note's place in section 2 stay this plan's proposal, not the ruling; and the business plan's "
+          "dated note also says that the 20% goes to each entity's own owner. The answers are recorded at P3.32 "
+          "(chromadb), P5.18 and FU-1868 (the two descriptions), P4.2 and FU-1817 (retention and erasure), in the canvas "
+          "(its credit line's note), in the business plan (the fee and the owner's share, under Concept) and at P5.22 "
+          "and FU-1086 (the final audit). W1230 (A3b) and W1231 (C5b) are no longer held on the Owner (W1230 still "
+          "follows W1196, W1231 W1216); W1193c made W1232's canvas note and the business plan's dated amendment, which "
+          "no round held, so W1232 is not to be built. W1200 is to keep FU-1086's ruling of the morning of 2026-11-22, "
+          "and P5.22's BUILT line is to say the audit runs in December; and W1216 leaves FU-1868 open, which W1231 "
+          "closes.", "the working plan's head")
+    ans = "Answered on the morning of 2026-11-22 (W1193c)"
+    for start, s in (
+            ("| The business plan | ", f"{ans}: on the Owner's word the business plan's Concept bullet gained a dated "
+             "note, its earlier words kept: the platform's 25% fee comes first, and 20 parts in a hundred of what remains "
+             "go to each entity's own owner."),
+            ("| Bundled schedule | ", f"{ans}: W1230 and W1231 are no longer held, and W1232 is not to be built "
+             "(W1193c made its note)."),
+            ("| Rounds HELD on the Owner | ", f"{ans}: none is held on the Owner now; W1230 still follows W1196 and W1231 "
+             "W1216, and W1232 is not built (W1193c made the note)."),
+            ("| Owner questions | ", f"{ans}: the Owner accepted them as put in chat, with a sixth on the final audit "
+             "(the note at the head says where the words differ)."),
+            ("| W1230 | A3b | HELD", f"{ans}: no longer held; still after W1196"),
+            ("| W1231 | C5b | HELD", f"{ans}: no longer held; still after W1216"),
+            ("| W1232 | CANVAS-CREDIT | HELD", f"{ans}. Not built: W1193c made the note"),
+            ("**Held on:** The Owner's answer to the chromadb question (in chat)", f"{ans}: no longer held; still after "
+             "W1196. The Owner's answer is recorded at P3.32."),
+            ("**Held on:** The Owner's answer to the template question (in chat)", f"{ans}: no longer held; still after "
+             "W1216. The Owner's answer is recorded at P5.18 and in FU-1868."),
+            ("**Held on:** The Owner's answer to the canvas question (in chat)", f"{ans}. Not built: W1193c made the "
+             "note."),
+            ("- A3 (UNSOUND): re-planned, not held.", f"{ans}: no longer held on the Owner; still after W1196."),
+            ("- D-CANVAS: superseded, not built.", f"{ans}: on the Owner's word the business plan's Concept bullet gained "
+             "a dated note, and W1193c made the canvas's credit note, so W1232 is not built."),
+            ("- Three planned OWNER rows are not registered.", f"{ans}: no longer held on the Owner; still after W1216."),
+            ("- HELD on the Owner: ", f"{ans}: none is held on the Owner now; W1230 still follows W1196 and W1231 W1216, "
+             "and W1232 is not built (W1193c made the note)."),
+            ("  - 13: W1192, with block 5's credit residue in W1232 (HELD).", f"{ans}: W1193c made the note, so W1232 is "
+             "not built."),
+            ("- The first row, closed as built. The OWNER row stays open.", f"{ans}: FU-1868 stays open until W1231 has "
+             "landed; W1216 does not close it."),
+            ("- docs/FABLE_DELIVERY_PROMPT.md and docs/FOLLOWUPS.json: A P5.18 UPDATED line for clause 1's sentence. "
+             "Close the first row.", f"{ans}: leave FU-1868 open; W1231 closes it."),
+            ("  Severity high, slot P5.22, source W747 and not gated: all kept. Then render.", f"{ans}: the why also keeps "
+             "FU-1086's ruling of the morning of 2026-11-22."),
+            ("- docs/FABLE_DELIVERY_PROMPT.md: P5.22, after ACCEPT (7): ", f"{ans}: the BUILT line is also to say the "
+             "audit runs in December.")):
+        lines = [ln for ln in prep.split("\n") if ln.startswith(start)]
+        assert len(lines) <= 1, (start, len(lines))
+        if lines:        # a later round may restate a row or a held line once its round is built
+            holds(lines[0], s, start)
+
+    #  section 35's For the Owner: the answer, once, after the five put in chat, whose count stays five
+    sec = read("docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md").split("\n## 35. Addendum (W1193)", 1)[1]
+    owner = flat(sec.split("### For the Owner", 1)[1])
+    line = ("- **Answered on the morning of 2026-11-22.** The Owner accepted the six recommendations as they were put in "
+            "chat at 03:04 UTC (\"I accept all six recommendations, proceed\", 07:25 UTC): the five above, worded for the "
+            "chat, and a sixth, on when the final audit runs: \"after Phase 5\" means after its build items close, so the "
+            "audit is to run in December, and the rows still waiting on the Owner (the letters and the second Care "
+            "calibration) are to be listed in its record as open, carrying into January without holding it back. The "
+            "words put in chat govern where they differ from the five above: the second also keeps the old words in a "
+            "dated note; the third has the solicitor asked in writing, and the deletion-drill rounds go ahead either "
+            "way, with every retention period marked \"not decided: the Owner's\"; and the fifth's dated note also says "
+            "the 20% goes to each entity's own owner. W1193c recorded each where the work reads it: on the Owner's word "
+            "the business plan's Concept bullet now says the platform's 25% fee comes first and 20 parts in a hundred of "
+            "what remains go to each entity's own owner, its earlier words kept, and its header says it has changed "
+            "twice; the canvas's credit line gained a dated note, its words kept.")
+    holds(owner, line, "section 35")
+    assert owner.count("**Answered on the morning of 2026-11-22.**") == 1, "section 35 says the answer more than once"
+    asked = owner.split("Put to the Owner in chat, each with a recommendation:**", 1)[1].split("**The v40 body", 1)[0]
+    assert "**The v40 body" in owner, "section 35's v40 line is gone"
+    assert len(re.findall(r"\(recommended: yes", asked)) == 5 and owner.index("**The v40 body") < owner.index(line)
+
+    #  the remaining-work page, while it is the measurement of 2026-11-22 at a4b96954: each answer where it put the
+    #  question, as given after it was measured
+    page = read("docs/REMAINING_WORK_MEASURED.md")
+    if page.startswith("# Remaining work, measured — 2026-11-22 (HEAD a4b96954)"):
+        after = "after this page was measured (recorded here by W1193c)"
+        ruled_audit = (f"{RM}: 'after Phase 5' means after its build items close, so the audit is to run in December, "
+                       "and the rows still waiting on the Owner (the letters and the second Care calibration) are to be "
+                       "listed in its record as open; they carry into January without holding it back.")
+        parts = re.split(r"(?m)^## (P[1-5]\.\d+) — [^\n]*\n", page)
+        sections = {parts[i]: flat(parts[i + 1]) for i in range(1, len(parts), 2)}
+        own = lambda iid: sections[iid].split("- **Only the Owner can:**", 1)[1]   # noqa: E731
+        holds(own("P5.22"), "The plan did not say whether 'after Phase 5' means its build items or every row. It was put "
+                            f"to the Owner on 2026-11-22 and ruled that morning, {after}: {ruled_audit}",
+              "P5.22's Owner part")
+        assert "not decided here" not in own("P5.22"), "P5.22's Owner part still leaves the question open"
+        top = flat(page.split("\n## P", 1)[0])
+        holds(top, "on P5.15, which waits on the Owner's second calibration run before 2027-01-10. It was put to the Owner "
+                   f"on 2026-11-22 and ruled that morning, {after}: {ruled_audit}", "the timeline")
+        assert "Recommended: its build items" not in top, "the timeline still leaves the question open"
+        holds(own("P5.14"), f"The section 27 counts question (A22) was answered on the morning of 2026-11-22, {after}: the "
+                            "three exchange lessons the Owner already ratified whose defects quote section 27's counts keep "
+                            "them, as dated quotations of what was measured at the time, and the section 27 totals stay in "
+                            "the assessment.", "P5.14's Owner part")
+        assert "(A22) stays open" not in page, "P5.14's Owner part still leaves A22 open"
+        holds(sections["P5.14"], "Put the two confirmations to the Owner at the round's end (A22, A27). A22 was answered "
+                                 f"on the morning of 2026-11-22, {after}.", "P5.14's piece")
+        holds(own("P2.40"), "is dropped once nothing imports it. The Owner answered yes on the morning of 2026-11-22, "
+                            f"{after}: W1230 is no longer held on the Owner (it still follows W1196), and it is not counted "
+                            "here.", "P2.40's Owner part")
+        holds(own("P5.18"), "The answer on the two approved legal-form descriptions, on which W1231 was HELD: the Owner "
+                            f"gave it on the morning of 2026-11-22, {after}, and it was yes: the two to be reworded to say what "
+                            "each template models, the nine names kept and the old words kept in a dated note.",
+              "P5.18's Owner part")
+        holds(own("P5.18"), "say what each template models. Since the Owner's answer of the morning of 2026-11-22 W1231 is "
+                            "no longer held on the Owner (it still follows W1216), and it is not counted here.",
+              "P5.18's held round")
+        holds(top, "(the ratified canvas's credit line) rides the Owner's list, not an item. The Owner answered all three "
+                   f"on the morning of 2026-11-22, {after}: W1230 and W1231 are no longer held on the Owner, and W1193c "
+                   "made W1232's canvas note in its place; none of the three is counted in this page's sizes.",
+              "the page's head")
+
+    #  nothing this round wrote gives anyone a gendered pronoun
+    for text in said:
+        hit = PRONOUN.search(text)
+        assert not hit, ("a gendered pronoun", text[max(0, hit.start() - 60):hit.end() + 20])
