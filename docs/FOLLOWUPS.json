@@ -28081,10 +28081,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P4.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1198b",
       "note": "",
-      "slot_source": "P4.1: sign-in on, whose tokens carry only the account's name, found when the command that removes an account was built (W1198)"
+      "slot_source": "P4.1: sign-in on, whose tokens carry only the account's name, found when the command that removes an account was built (W1198)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1198b: login and the refresh route put the account's user_id (uid) in both the access and the refresh token they issue, and get_current_user and the refresh route refuse a token whose uid is missing or is not the user_id of the account its name finds. So a token issued before a removal, its refresh token included, is refused by an account later given the name (401 User not found), and every token issued before W1198b carries no uid, so it is refused on every request until it expires, before any account is looked up and with its own reason: whoever was signed in signs in once more. An account with no user_id, which only a hand-made store holds, is matched by its missing id. The request-user middleware (agentic_core/app_mvp.py) sets no user for such a token and still never fails a request. API keys live in the account record and go with it. W1198's command and step 12 no longer say a token signs in to a reused name; a removed name is still given to no other person, since a person's records stay under it (the records row, open). test_w1198b drives it through the real routes."
     },
     {
       "id": "FU-1891",
@@ -28115,10 +28118,101 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P4.1",
+      "status": "done",
+      "closed_by": "W1198b",
+      "note": "",
+      "slot_source": "P4.1: sign-in on, whose bearer check takes a token of any type, found when the token code was read in W1198's review",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1198b: get_current_user refuses a token whose type is not access with 401 Not an access token, so a refresh token sent as the bearer is refused and a sign-in's bearer lasts ACCESS_TOKEN_TTL; the refresh route still takes only a refresh token. The request-user middleware skips a token that is not an access token and sets no user, and still never fails a request. test_w1198b drives it through the real routes."
+    },
+    {
+      "id": "FU-1893",
+      "title": "A self-serve signup under a name with a blank edge, such as ' admin', was filed under that name but signed in as the account of the stripped name",
+      "why": "Measured in W1198b on 250a7b20 with W1198, in a test process with sign-in and self-serve sign-up on: self_serve_signup checks and keys the record by the name as sent but stores the stripped name as its username, and a token names the username. A stranger who signed up as ' admin' signed in with its own password and was answered as the admin on the admin-only GET /api/v1/auth/users (200). W1198b's uid check refuses that token (the admin's id is not the record's), and signup now refuses a name with a blank edge with 422, creating nothing.",
+      "source": "W1198b (the round's security review, measured)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/auth/core.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "done",
+      "closed_by": "W1198b",
+      "note": "",
+      "slot_source": "P4.1: sign-in on, whose signup filed a name under itself but signed it in as the stripped name (W1198b's review)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1198b: self-serve signup refuses with 422 a name that differs from its stripped form, after W864's reserved-name check, and creates nothing; and a token from such a record names an account whose id is not the record's, so the uid check refuses it. test_w1198b holds both."
+    },
+    {
+      "id": "FU-1894",
+      "title": "A sign-in for a name no account holds answers sooner than one with a wrong password, so its timing says which names are held",
+      "why": "Found in W1198b's security review: login checks a password hash only when the name has an account (agentic_core/auth/core.py, login), so a refused sign-in for a name no account holds skips the hash's cost. The fix: check the password against a fixed dummy hash when the name has no account, so both refusals take the same time.",
+      "source": "W1198b (the round's security review)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/auth/core.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.1",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P4.1: sign-in on, whose bearer check takes a token of any type, found when the token code was read in W1198's review"
+      "slot_source": "P4.1: sign-in on, whose sign-in refusal times differ by whether the name is held (W1198b's review)"
+    },
+    {
+      "id": "FU-1895",
+      "title": "With self-serve sign-up on, a signup refused as already existing is not counted toward the address limit, so names can be probed",
+      "why": "Found in W1198b's security review: self_serve_signup counts only the accounts it creates against the address limit (agentic_core/auth/core.py), so its 409 for a name already held can be asked again and again. The fix: count the 409 already-exists answer toward the address, and no other refusal, which W865 says is not counted.",
+      "source": "W1198b (the round's security review)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/auth/core.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.1: sign-in on, whose signup answers which names are held without a limit (W1198b's review)"
+    },
+    {
+      "id": "FU-1896",
+      "title": "The stream socket takes no sign-in token even with sign-in on, so once the domain answers anyone can read its broadcasts",
+      "why": "Found in W1198b's security review: /api/v154/ws/streams (agentic_core/app_mvp.py) checks no token, so W1198b's binding of tokens to accounts never reaches it. The fix: with sign-in on, take an access token in Sec-WebSocket-Protocol, not a query parameter that the front's access log would keep, check it as get_current_user does (type access, the account's id) and otherwise close with 1008; the Shell, which opens the socket with no token, then sends it.",
+      "source": "W1198b (the round's security review)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/app_mvp.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.1: sign-in on, whose stream socket asks for no token (W1198b's review)"
+    },
+    {
+      "id": "FU-1897",
+      "title": "A refresh token is never retired and no session can be ended, so a copied refresh token keeps working and a password change leaves every token valid",
+      "why": "Found in W1198b's security review: the refresh route issues a new refresh token without retiring the one it was given, nothing on the server ends a session, and set_password leaves the tokens already issued valid (agentic_core/auth/core.py). The fix: an issued-at claim checked against the account's password_set_at, which set_password already stamps, ends old tokens on a password change; a per-account token version, checked against the account record and bumped by a sign-out-everywhere route, ends them on request; and a refresh token used twice is detected.",
+      "source": "W1198b (the round's security review)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/auth/core.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.1: sign-in on, whose sessions cannot be ended (W1198b's review)"
     }
   ],
   "routes": [

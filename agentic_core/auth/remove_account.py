@@ -19,8 +19,9 @@ removed. A lock another writer keeps past the lock's wait, and a store that cann
 sentence. Nothing else is written: no event, and no file of the command's own. The person's records in the
 platform's other stores are not touched.
 
-Those records stay under the account's name, and a sign-in token carries only the name, so a removed name is given
-to no other person: the command says so when it is done.
+Those records stay under the account's name, so a removed name is given to no other person: the command says so when
+it is done. A sign-in token carries the account's id (W1198b), so a token issued before the removal is refused by an
+account given the name later.
 """
 from __future__ import annotations
 
@@ -30,8 +31,7 @@ import sys
 
 ADMIN = "admin"
 RULE = ("Give this name to no other person: the person's records in the platform's other stores are still kept under "
-        "that name, so an account given it would be shown them, and a sign-in token issued before this removal would "
-        "sign in to that account.")
+        "that name, so an account given it would be shown them.")
 
 
 class _Said(str):

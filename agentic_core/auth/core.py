@@ -202,6 +202,32 @@ def _decode_token(token: str) -> dict:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+
+def _claims(user: dict, kind: str) -> dict:
+    """W1198b - what a token carries: the account's name (sub), its user_id (uid) and its kind; an access token its
+    role too. The uid binds the token to the account it was issued to (_same_account)."""
+    claims = {"sub": user["username"], "uid": user.get("user_id"), "type": kind}
+    if kind == "access":
+        claims["role"] = user["role"]
+    return claims
+
+
+def _same_account(payload: dict, user: dict) -> bool:
+    """W1198b - a token admits only the account it was issued to. It carries that account's user_id (uid), so a token
+    issued before a removal is refused by an account later given the name, and a token with no uid, as every token
+    before W1198b was, is refused, so whoever was signed in signs in again. An account with no user_id, which only a
+    hand-made store holds, is matched by its missing id."""
+    return "uid" in payload and payload["uid"] == user.get("user_id")
+
+
+def _refuse_a_token_from_before_ids(payload: dict) -> None:
+    """W1198b - a token with no uid was issued before tokens carried the account's id. It is refused before any
+    account is looked up, so the answer says nothing about whether its name is held now, and on every request until
+    it expires: whoever holds it signs in once more."""
+    if "uid" not in payload:
+        raise HTTPException(status_code=401, detail=("This sign-in was issued before tokens carried the account's "
+                                                     "id: sign in again."), headers={"WWW-Authenticate": "Bearer"})
+
 # ── Dependency: current user ──────────────────────────────────────────────────
 
 API_KEY_MARK = "wstn_"
@@ -269,13 +295,17 @@ async def get_current_user(token: Optional[str] = Depends(_oauth2_scheme), reque
         return user
 
     payload = _decode_token(token)
+    if payload.get("type") != "access":
+        #  W1198b - a refresh token is not a bearer: it would last REFRESH_TOKEN_TTL, not ACCESS_TOKEN_TTL
+        raise HTTPException(status_code=401, detail="Not an access token.", headers={"WWW-Authenticate": "Bearer"})
+    _refuse_a_token_from_before_ids(payload)         # W1198b - before any account is looked up
 
     sub = payload.get("sub")
     if not sub:
         raise HTTPException(status_code=401, detail="Token missing subject.")
 
     user = _get_user(sub)
-    if not user:
+    if not user or not _same_account(payload, user):        # W1198b - only the account it was issued to
         raise HTTPException(status_code=401, detail="User not found.")
 
     _refuse_a_write_by_a_reader(user, request)
@@ -419,8 +449,8 @@ async def login(request: Request, form: OAuth2PasswordRequestForm = Depends()):
             headers={"WWW-Authenticate": "Bearer"},
         )
     _ATTEMPTS.pop(_name865, None)                 # W865 - a successful sign-in clears its name's count
-    access = _make_token({"sub": user["username"], "role": user["role"], "type": "access"}, _ACCESS_TTL)
-    refresh = _make_token({"sub": user["username"], "type": "refresh"}, _REFRESH_TTL)
+    access = _make_token(_claims(user, "access"), _ACCESS_TTL)          # W1198b - each carries the account's id
+    refresh = _make_token(_claims(user, "refresh"), _REFRESH_TTL)
     return TokenResponse(access_token=access, refresh_token=refresh, expires_in=_ACCESS_TTL * 60)
 
 
@@ -429,12 +459,13 @@ async def refresh(req: RefreshRequest):
     payload = _decode_token(req.refresh_token)
     if payload.get("type") != "refresh":
         raise HTTPException(status_code=400, detail="Not a refresh token.")
+    _refuse_a_token_from_before_ids(payload)         # W1198b - the refresh token's too
     username = payload.get("sub")
     user = _get_user(username)
-    if not user:
+    if not user or not _same_account(payload, user):        # W1198b - a refresh token is its account's alone
         raise HTTPException(status_code=401, detail="User not found.")
-    access = _make_token({"sub": user["username"], "role": user["role"], "type": "access"}, _ACCESS_TTL)
-    new_refresh = _make_token({"sub": user["username"], "type": "refresh"}, _REFRESH_TTL)
+    access = _make_token(_claims(user, "access"), _ACCESS_TTL)
+    new_refresh = _make_token(_claims(user, "refresh"), _REFRESH_TTL)
     return TokenResponse(access_token=access, refresh_token=new_refresh, expires_in=_ACCESS_TTL * 60)
 
 
@@ -526,6 +557,10 @@ async def self_serve_signup(req: SignupRequest, request: Request = None):
     _why864 = _reserved_name_refusal(req.username, admin_register=False)
     if _why864:
         raise HTTPException(status_code=409, detail=_why864)
+    if req.username != req.username.strip():
+        #  W1198b - filed under itself, such a name signed in as the account of the stripped name
+        raise HTTPException(status_code=422, detail="A name cannot begin or end with a blank: nothing was "
+                                                    "created.")
     with _users_mutation():                      # W369
         users = _load_users()
         if req.username in users:

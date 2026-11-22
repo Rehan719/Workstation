@@ -101326,3 +101326,223 @@ def test_w1198_fu1836_an_account_is_removed_with_remove_account_which_reads_the_
                                     "Then the accounts are checked again", "--metadata=domain=DOMAIN,auth-enabled=true")]
     assert at == sorted(at), ("step 12's order: the rule, the accounts' check, the way forward, the command, the check "
                               "again, and then the domain", at)
+
+
+def test_w1198b_a_sign_in_token_admits_only_the_account_it_was_issued_to_and_only_an_access_token_is_the_bearer(
+        client, tmp_path, monkeypatch):
+    """W1198b, P4.1: two of W1198's rows. A sign-in token carried only its account's name, so after a removal the
+    account's tokens signed in to a new account given that name, and by refreshing kept doing so; and a refresh token
+    was taken as the bearer, so a sign-in's bearer lasted REFRESH_TOKEN_TTL. Now each token carries the account's id
+    (uid), and only an access token is the bearer. Held here, through the real routes with sign-in on in this process,
+    on a made-up store:
+    L1. once the name is given to a new account, the old account's access token (GET /api/v1/auth/me) and its refresh
+        token (POST /api/v1/auth/refresh) are refused with 401 'User not found.', and the new account signs in;
+    L2. a refresh token sent as the bearer on /me is refused with 401 'Not an access token.', and an access token sent
+        to the refresh route with 400 'Not a refresh token.';
+    L3. a token with no uid, as every token before W1198b was, is refused with its own reason, access and refresh
+        alike, even for an account with no user_id (only a hand-made store holds one), which still signs in with what
+        it is issued;
+    L4. the Owner's sign-in, refresh and /me still work, and each token they hand out carries the account's id and its
+        kind, a refreshed one included;
+    L5. the request-user middleware never fails a request: a refresh token, a token with no uid, the old account's
+        token and a value that is no token each pass /health with no user set, and an access token of the account the
+        name holds sets that user;
+    L7. a name with a blank edge: a hand-made record filed under ' admin' whose username is 'admin', as self-serve
+        signup made before W1198b, signs in, but its tokens are refused on the admin-only GET /api/v1/auth/users, /me
+        and the refresh route and set no user; and signup now refuses a name with a blank edge with 422, creating
+        nothing, while an ordinary name still signs up;
+    L6. what is said: the command's output, its docstring and step 12 no longer say a token signs in to a reused name
+        and say a token carries the account's id, a removed name is still given to no other person, the token row and
+        the refresh-as-bearer row are closed by W1198b as built while the records row stays open, and the rows the
+        round's security review found are registered: the signup row closed as built, four open on P4.1."""
+    import json
+    import pathlib
+    from agentic_core import config as _config
+    from agentic_core.auth import core
+    from agentic_core.auth import remove_account as rm
+    from agentic_core.api import _ai_provenance as _prov
+    from agentic_core import app_mvp as _app
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")  # noqa: E731
+    store = tmp_path / "users.json"
+    monkeypatch.setattr(_config, "data_path", lambda *parts: tmp_path.joinpath(*parts))   # the command's store...
+    monkeypatch.setattr(core, "_USER_STORE", store)                                    # ...is the routes' store
+    monkeypatch.setattr(core, "_ATTEMPTS", {})          # failed sign-ins other tests counted are not this test's
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    password = "w1198b a made-up password"
+    hashed = core._pwd_ctx.hash(password)
+
+    def account(name, role, with_id=True):
+        rec = {"user_id": f"w1198b-{name}", "username": name, "hashed_password": hashed, "role": role,
+               "created_at": "2026-11-22T10:00:00Z", "api_keys": []}
+        if not with_id:
+            rec.pop("user_id")
+        return rec
+    store.write_text(json.dumps({"admin": account("admin", "admin"), "alice": account("alice", "user"),
+                                 "carol": account("carol", "user", with_id=False)}), encoding="utf-8")
+    bearer = lambda t: {"Authorization": f"Bearer {t}"}  # noqa: E731
+
+    def signed_in(name, pw=password):
+        got = client.post("/api/v1/auth/token", data={"username": name, "password": pw})
+        assert got.status_code == 200, (name, got.status_code, got.text[:200])
+        return got.json()
+
+    def refused(answer, detail, what):
+        assert (answer.status_code, answer.json().get("detail")) == (401, detail), (what, answer.status_code,
+                                                                                     answer.text[:200])
+
+    #  L4. THE OWNER'S OWN USE: sign-in, /me and refresh, each token carrying the account's id and its kind
+    owner = signed_in("admin")
+    for tok, kind in ((owner["access_token"], "access"), (owner["refresh_token"], "refresh")):
+        claims = core._decode_token(tok)
+        assert (claims.get("sub"), claims.get("uid"), claims.get("type")) == ("admin", "w1198b-admin", kind), claims
+    me = client.get("/api/v1/auth/me", headers=bearer(owner["access_token"]))
+    assert me.status_code == 200 and (me.json()["username"], me.json()["role"]) == ("admin", "admin"), me.text[:200]
+    again = client.post("/api/v1/auth/refresh", json={"refresh_token": owner["refresh_token"]})
+    assert again.status_code == 200, again.text[:200]
+    for tok, kind in ((again.json()["access_token"], "access"), (again.json()["refresh_token"], "refresh")):
+        claims = core._decode_token(tok)
+        assert (claims.get("sub"), claims.get("uid"), claims.get("type")) == ("admin", "w1198b-admin", kind), claims
+    assert client.get("/api/v1/auth/me", headers=bearer(again.json()["access_token"])).json()["username"] == "admin"
+    assert client.post("/api/v1/auth/refresh", json={"refresh_token": again.json()["refresh_token"]}).status_code == 200
+    admin_access = again.json()["access_token"]
+    #  ...and an account with no user_id signs in with what it is issued (read through a route that names the caller;
+    #  /me itself answers only an account that has a user_id)
+    carol = signed_in("carol")
+    ws = client.get("/api/v1/user/workspace", headers=bearer(carol["access_token"]))
+    assert ws.status_code == 200 and ws.json().get("owner_id") == "carol", (ws.status_code, ws.text[:200])
+
+    #  L2. A REFRESH TOKEN IS NOT A BEARER
+    refused(client.get("/api/v1/auth/me", headers=bearer(owner["refresh_token"])), "Not an access token.",
+            "a refresh token sent as the bearer")
+    sent = client.post("/api/v1/auth/refresh", json={"refresh_token": owner["access_token"]})
+    assert (sent.status_code, sent.json().get("detail")) == (400, "Not a refresh token."), (sent.status_code,
+                                                                                            sent.text[:200])
+
+    #  L3. A TOKEN WITH NO UID, as every token before W1198b was, is refused with its own reason, with or without an id
+    before = "This sign-in was issued before tokens carried the account's id: sign in again."
+    for name, role, route in (("admin", "admin", "/api/v1/auth/me"), ("carol", "user", "/api/v1/user/workspace")):
+        old_access = core._make_token({"sub": name, "role": role, "type": "access"}, 5)
+        old_refresh = core._make_token({"sub": name, "type": "refresh"}, 5)
+        refused(client.get(route, headers=bearer(old_access)), before, (name, "access, no uid"))
+        refused(client.post("/api/v1/auth/refresh", json={"refresh_token": old_refresh}), before,
+                (name, "refresh, no uid"))
+
+    #  L1. THE NAME GIVEN TO A NEW ACCOUNT: the old account's tokens are refused, and the new account signs in
+    alice = signed_in("alice")
+    monkeypatch.setattr("builtins.input", lambda prompt="": "alice")
+    assert rm.main(["alice"]) == 0
+    held = json.loads(store.read_text(encoding="utf-8"))
+    assert "alice" not in held, "the command did not remove the account"
+    held["alice"] = dict(account("alice", "user"), user_id="w1198b-alice-the-second",
+                         hashed_password=core._pwd_ctx.hash("w1198b another person"))
+    store.write_text(json.dumps(held), encoding="utf-8")
+    refused(client.get("/api/v1/auth/me", headers=bearer(alice["access_token"])), "User not found.",
+            "the old account's access token on the new account")
+    refused(client.post("/api/v1/auth/refresh", json={"refresh_token": alice["refresh_token"]}), "User not found.",
+            "the old account's refresh token on the new account")
+    new = signed_in("alice", "w1198b another person")
+    me = client.get("/api/v1/auth/me", headers=bearer(new["access_token"])).json()
+    assert me["username"] == "alice" and me["user_id"] != "w1198b-alice", me
+
+    #  L5. THE MIDDLEWARE NEVER FAILS A REQUEST, and sets a user only for an access token of the account the name holds
+    seen = []
+    monkeypatch.setattr(_prov, "set_request_user", lambda name: seen.append(name))
+    if hasattr(_app, "set_request_user"):           # a name app_mvp binds itself would bypass the patch above
+        monkeypatch.setattr(_app, "set_request_user", lambda name: seen.append(name))
+    for what, tok, user in (
+            ("the new account's access token", new["access_token"], "alice"),
+            ("a refresh token", new["refresh_token"], None),
+            ("a token with no uid", core._make_token({"sub": "admin", "role": "admin", "type": "access"}, 5), None),
+            ("a token with no uid for an account with no id",
+             core._make_token({"sub": "carol", "role": "user", "type": "access"}, 5), None),
+            ("the old account's access token", alice["access_token"], None),
+            ("a value that is no token", "w1198b-not-a-token", None)):
+        seen.clear()
+        got = client.get("/health", headers=bearer(tok))
+        assert got.status_code == 200, (what, got.status_code)
+        assert [n for n in seen if n] == ([user] if user else []), (what, seen)
+
+    #  L7. A NAME WITH A BLANK EDGE: a record filed under ' admin' named 'admin' signs in, and is no admin
+    held = json.loads(store.read_text(encoding="utf-8"))
+    held[" admin"] = dict(account("admin", "user"), user_id="w1198b-stranger",
+                          hashed_password=core._pwd_ctx.hash("w1198b a stranger"))
+    store.write_text(json.dumps(held), encoding="utf-8")
+    stranger = signed_in(" admin", "w1198b a stranger")
+    assert core._decode_token(stranger["access_token"]).get("sub") == "admin"   # the takeover W1198b's review measured
+    refused(client.get("/api/v1/auth/users", headers=bearer(stranger["access_token"])), "User not found.",
+            "a blank-edged record's token on the admin-only list")
+    refused(client.get("/api/v1/auth/me", headers=bearer(stranger["access_token"])), "User not found.",
+            "a blank-edged record's token on /me")
+    refused(client.post("/api/v1/auth/refresh", json={"refresh_token": stranger["refresh_token"]}), "User not found.",
+            "a blank-edged record's refresh token")
+    seen.clear()
+    assert client.get("/health", headers=bearer(stranger["access_token"])).status_code == 200
+    assert [n for n in seen if n] == [], ("the middleware set a user for a blank-edged record's token", seen)
+    assert client.get("/api/v1/auth/users", headers=bearer(admin_access)).status_code == 200   # the admin still is
+    monkeypatch.setenv("SELF_SERVE_SIGNUP_ENABLED", "true")
+    for name in (" w1198b-bob", "w1198b-bob ", " admin "):
+        got = client.post("/api/v1/auth/signup", json={"username": name, "password": "w1198b a password"})
+        assert (got.status_code, got.json().get("detail")) == (
+            422, "A name cannot begin or end with a blank: nothing was created."), (repr(name), got.status_code,
+                                                                                    got.text[:200])
+    assert not [k for k in json.loads(store.read_text(encoding="utf-8")) if "bob" in k], "a refused signup created one"
+    got = client.post("/api/v1/auth/signup", json={"username": "w1198b-dave", "password": "w1198b a password"})
+    assert got.status_code == 200, (got.status_code, got.text[:200])
+
+    #  L6. WHAT IS SAID: the command, step 12 and the register
+    assert "token" not in rm.RULE.lower(), ("the command's rule still speaks of tokens", rm.RULE)
+    doc = " ".join((rm.__doc__ or "").split())
+    assert ("A sign-in token carries the account's id (W1198b), so a token issued before the removal is refused by an "
+            "account given the name later.") in doc, "the command's docstring does not say a token carries the id"
+    assert "would sign in to that account" not in read("agentic_core/auth/remove_account.py"), (
+        "the command still says a token signs in to a reused name")
+    rows = {r.get("id"): r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"] if isinstance(r, dict)}
+
+    def titled(title):
+        found = [r for r in rows.values() if r.get("title") == title]
+        assert len(found) == 1, (title[:80], len(found))
+        return found[0]
+    token = titled("A sign-in token carries only its account's name, so a token issued to a removed account signs in to "
+                   "a new account given that name, and by refreshing keeps signing in to it for as long as it exists")
+    as_bearer = titled("get_current_user accepts a refresh token as the bearer, so a sign-in's bearer lasts "
+                       "REFRESH_TOKEN_TTL, not ACCESS_TOKEN_TTL")
+    records = titled("A person's records are owned by their account's name, so after a removal without an erasure, an "
+                     "account given that name is shown them")
+    if records["status"] == "open":
+        assert rm.RULE == ("Give this name to no other person: the person's records in the platform's other stores are "
+                           "still kept under that name, so an account given it would be shown them."), rm.RULE
+    for row, said in ((token, "every token issued before W1198b carries no uid, so it is refused on every request "
+                              "until it expires"),
+                      (as_bearer, "a refresh token sent as the bearer is refused")):
+        assert (row["status"], row.get("closed_by"), row.get("because")) == ("done", "W1198b", "built"), row["id"]
+        assert row.get("close_note", "").startswith("Built in W1198b: ") and said in row["close_note"], row["id"]
+    assert records["status"] == "open" or records.get("closed_by") not in (None, "W1198b"), (
+        "W1198b closed the records row, which binding tokens does not fix")
+    sec = read("docs/DEPLOYMENT.md").split("## The Google Cloud deploy, step by step (P4.5)", 1)[1].split("\n## ", 1)[0]
+    twelve = " ".join(sec.split("**Step 12. ", 1)[1].split())
+    said = ("A sign-in token carries the account's id (W1198b), so a token issued before the removal is refused by any "
+            "account given the name later.")
+    assert twelve.count(said) == 1, ("step 12 does not say, once", said)
+    assert "refused once" not in twelve, "step 12 says an old token is refused once, not until it expires"
+    if records["status"] == "open":
+        assert twelve.count(f"A removed name is given to no other person: the person's records in the platform's other "
+                            f"stores stay under that name, so an account given it would be shown them "
+                            f"({records['id']}).") == 1
+    assert "would sign in to that account" not in twelve, "step 12 still says a token signs in to a reused name"
+    #  the rows the round's security review found: the signup row built and closed, four registered open on P4.1
+    signup = titled("A self-serve signup under a name with a blank edge, such as ' admin', was filed under that name but "
+                    "signed in as the account of the stripped name")
+    assert (signup["status"], signup.get("closed_by"), signup.get("because")) == ("done", "W1198b", "built"), signup["id"]
+    for title in ("A sign-in for a name no account holds answers sooner than one with a wrong password, so its timing "
+                  "says which names are held",
+                  "With self-serve sign-up on, a signup refused as already existing is not counted toward the address "
+                  "limit, so names can be probed",
+                  "The stream socket takes no sign-in token even with sign-in on, so once the domain answers anyone can "
+                  "read its broadcasts",
+                  "A refresh token is never retired and no session can be ended, so a copied refresh token keeps working "
+                  "and a password change leaves every token valid"):
+        row = titled(title)
+        assert row.get("source") == "W1198b (the round's security review)", row["id"]
+        assert row["status"] == "open" or row.get("closed_by") not in (None, "W1198b"), (
+            row["id"], "W1198b closed a row it registered open")

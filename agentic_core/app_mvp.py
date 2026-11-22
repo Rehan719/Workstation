@@ -154,6 +154,7 @@ async def _horizon_observe(request, call_next):
         _authz = request.headers.get("authorization") or ""
         if _authz.lower().startswith("bearer "):
             from agentic_core.auth.core import auth_enabled as _ae619, _decode_token as _dt619, _get_user as _gu619
+            from agentic_core.auth.core import _same_account as _same619
             if _ae619():
                 _tok619 = _authz.split(" ", 1)[1].strip()
                 #  W683 - an issued key is resolved by the same function the route's own dependency uses, so a
@@ -162,8 +163,12 @@ async def _horizon_observe(request, call_next):
                 if _tok619.startswith(_km683):
                     _u = _uk683(_tok619)
                 else:
-                    _sub = (_dt619(_tok619) or {}).get("sub")
+                    #  W1198b - only an access token issued to the account the name now holds sets a user
+                    _pl = _dt619(_tok619) or {}
+                    _sub = _pl.get("sub")
                     _u = _gu619(_sub) if _sub else None
+                    if _u and (_pl.get("type") != "access" or not _same619(_pl, _u)):
+                        _u = None
                 if _u and _u.get("username"):
                     set_request_user(_u["username"])
     except Exception:          # noqa: BLE001 - an invalid token is the route's 401 to give, not this layer's
