@@ -1,6 +1,6 @@
 // W1117 (FU-399 part 106) — WHAT GENERATING AN ENTITY COSTS, rendered against the price route's own answers.
 //
-// The Genesis journey's price panel says the price the Owner set, that it is credited against the first profit share,
+// The Genesis journey's price panel says the price the Owner set, that it is credited against the platform's fees,
 // and that nothing is charged until three things exist, each said as existing or not. The Genesis page's test serves
 // the price, so the panel was drawn there, but no test read what it said. This mounts the real panel against what the
 // route answered on a fresh store (GenerationPrice.fixture.json, captured by w1117_capture.py): the standing price,

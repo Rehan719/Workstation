@@ -120,19 +120,21 @@ PLATFORM_FEE_MEMO = "platform fee (P5.16 clause 3): 25% of the cycle's profit, t
 
 
 def _generation_credit() -> Dict[str, Any]:
-    """P5.16 clause 2: the price of generating an entity is credited against the first share of profit the platform
-    receives, once it has been charged. Nothing is charged for generating an entity, so nothing is credited."""
+    """P5.16 clause 2: the price of generating an entity, once it has been charged, is credited against the
+    platform's fees as they fall due, from the first, and carried forward until it is used up, with no conversion
+    while money is virtual (OWNER RULING 2026-11-22; W1204, FU-1881): the rule is generation_price.CREDIT_RULE, said
+    once. Nothing is charged for generating an entity, so nothing is credited."""
     try:
-        from .generation_price import PRICE_GBP, conditions_met
+        from .generation_price import CREDIT_RULE, CREDIT_RULED_ON, PRICE_GBP, conditions_met
         conds = conditions_met()
     except Exception as e:                       # noqa: BLE001 - said, never assumed
         return {"applied_wst": 0.0, "basis": (f"whether the price of generating this entity was charged could not "
                                                f"be read ({type(e).__name__}), so nothing is credited")}
     held = sum(1 for c in conds if c.get("met"))
     return {"applied_wst": 0.0, "basis": (
-        f"the price of generating an entity ({PRICE_GBP} pounds, P5.16 clause 2) is credited against the first fee "
-        f"once it has been charged. It has not been: nothing is charged for generating an entity until "
-        f"{len(conds)} things exist, and {held} of them exist today. Nothing is credited")}
+        f"the price of generating an entity ({PRICE_GBP} pounds, P5.16 clause 2), once it has been charged, is "
+        f"{CREDIT_RULE} (ruled by the Owner on {CREDIT_RULED_ON}). It has not been charged: nothing is charged for "
+        f"generating an entity until {len(conds)} things exist, and {held} of them exist today. Nothing is credited")}
 
 
 def platform_fee_of(vsb_id: str, template: Dict[str, Any], profit: float) -> Dict[str, Any]:

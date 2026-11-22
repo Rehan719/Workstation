@@ -5,6 +5,12 @@ credited against the first profit share; waived for a charitable or non-distribu
 CHARGED until three things exist - a named reviewer's pass on what is generated, a solicitor's view on whether a
 founder buying this is a consumer, and the real-money switch, which is the Owner's and last.
 
+OWNER RULING 2026-11-22 (P5.16, the recommendation accepted): the credit is to carry forward against later fees
+until it is used up, with no conversion while money is virtual; the unit it is held in goes to the accountant
+(docs/business/FORMATION_WORKPACK.md, question 3 for an accountant). W1204 (FU-1881) says so where the credit is
+read: CREDIT_RULE is the one statement of it, which this answer's credit_basis (the sentence the price panel
+draws) and the cycle's fee (metabolism.py) each take.
+
 This module states the price and why it is not charged. It posts nothing and calls no payment provider. Every
 sentence a page shows about the price is built here, from these constants, so the figure is written once.
 """
@@ -15,6 +21,12 @@ from typing import Any, Dict, List
 PRICE_GBP = 99
 RULED_ON = "2026-10-13"
 CREDITED_AGAINST_FIRST_PROFIT_SHARE = True
+#  W1204 (FU-1881) - the flag above and the answer's field credited_against_first_profit_share keep their names,
+#  which the price panel and three guards read: each says whether the price is credited at all. CREDIT_RULE says
+#  how, as the Owner ruled on 2026-11-22: carried forward against the fees until it is used up.
+CREDIT_RULED_ON = "2026-11-22"
+CREDIT_RULE = ("credited against the platform's fees as they fall due, from the first, and carried forward until "
+               "it is used up, with no conversion while money is virtual")
 WAIVED_FOR_NON_DISTRIBUTING = True
 
 #  the three things that must exist before anything is charged; each is read, never assumed
@@ -55,8 +67,8 @@ def statement(non_distributing: bool = False) -> Dict[str, Any]:
         "price_basis": (f"set by the Owner on {RULED_ON} from comparable prices read at their publishers' pages: "
                         f"{PRICE_GBP} pounds, once"),
         "credited_against_first_profit_share": CREDITED_AGAINST_FIRST_PROFIT_SHARE and not waived,
-        "credit_basis": ("the price is taken off the first share of profit the platform would receive, so an "
-                         "entity that earns pays nothing extra"),
+        "credit_basis": (f"the price, once charged, is {CREDIT_RULE} (ruled by the Owner on {CREDIT_RULED_ON}); the "
+                         f"unit the credit is held in is a question for an accountant"),
         "waived": waived,
         "waived_basis": ("a charitable or non-distributing entity pays no price and no share; a stated gift, "
                          "decided on the fund's written criteria") if waived else None,

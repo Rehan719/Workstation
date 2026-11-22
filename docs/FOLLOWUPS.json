@@ -27915,10 +27915,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1204",
       "note": "",
-      "slot_source": "P5.4, the handover, is done"
+      "slot_source": "P5.4, the handover, is done",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1204: the README the repository builder writes (agentic_core/api/vsb.py, _build_repo_files) ends with a Terms section, so a handed-over entity repository says that no terms and no licence have been chosen for it, that until terms are chosen nothing in it grants a licence, and that the terms on which a founder receives an entity repository are a question for a solicitor, not yet answered (FU-1817; question 6 for a solicitor in docs/business/FORMATION_WORKPACK.md). No licence file is written and no licence is named. test_w1204 builds the README for a made-up record and drives a made-up entity's repository through the route, reading the README the platform serves and the one in the archive a founder downloads."
     },
     {
       "id": "FU-1881",
@@ -27934,10 +27937,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1204",
       "note": "",
-      "slot_source": "P5.16 is done"
+      "slot_source": "P5.16 is done",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1204: agentic_core/economy/generation_price.py holds the credit's rule once (CREDIT_RULE, ruled on 2026-11-22): once charged, the price is credited against the platform's fees as they fall due, from the first, and carried forward until it is used up, with no conversion while money is virtual. The price's answer says it in credit_basis, which the price panel draws, with the unit the credit is held in a question for an accountant; the cycle's fee (agentic_core/economy/metabolism.py) says it from the same constant and credits nothing, since nothing is charged. The module's docstring keeps the ruling of 2026-10-13 and gives the ruling of 2026-11-22 after it. The flag and the field credited_against_first_profit_share keep their names, which the panel and three guards read. The price panel's fixture, the Genesis journey's captured price and the economy page's and the cockpit's captured fees carry the routes' new words, and no backend module, page or page fixture says the credit comes off the first share of profit or the first fee, beyond the 2026-10-13 ruling the price module's docstring keeps as ruled. W1193c gave the ratified canvas's credit line its dated note; this round wrote none. test_w1204 holds each."
     },
     {
       "id": "FU-1882",
