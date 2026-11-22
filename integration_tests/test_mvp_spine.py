@@ -76734,21 +76734,26 @@ def test_w892_no_caller_sleeps_holding_the_limiters_lock_and_the_lock_belongs_to
     assert seen["loop_blocked_s"] < 0.6, ("the caller's wait blocked the event loop", seen)
 
     # 2. three callers at once are spaced a slot apart: none is let through in another's slot
+    #  W1207b - caller k is not let through before k slots have passed: sorted, the k-th wake is at least k tenths
+    #  of a second after the start, less 0.03, so lateness passes and an early pass does not. The gaps between wakes
+    #  were asserted, and on Windows, where the clock and the event loop tick at about 15.6 ms, one caller woken late
+    #  shrank the next gap below 0.07 with no slot shared (PR #469: 0.109, 0.25, 0.312). The limiter keeps no slot
+    #  per caller, so the wake is read, with perf_counter (W1210's clock for a duration), from a start read before
+    #  the bucket is drained. The limiter's _last stays on its own clock.
     lim = _gw892._RateLimiter(600)                      # a slot every tenth of a second
+    t0 = time.perf_counter()
     lim._tokens, lim._last = 0.0, time.monotonic()
     done = []
 
     async def _three_at_once():
-        t0 = time.monotonic()
-
         async def _call():
             await lim.acquire()
-            done.append(time.monotonic() - t0)
+            done.append(time.perf_counter() - t0)
         await asyncio.gather(_call(), _call(), _call())
     asyncio.run(_three_at_once())
     done.sort()
     assert lim.stats()["waited"] == 3 and lim.stats()["calls"] == 3, lim.stats()
-    assert done[1] - done[0] >= 0.07 and done[2] - done[1] >= 0.07, ("two callers were let through in one slot", done)
+    assert all(done[k - 1] >= k * 0.1 - 0.03 for k in (1, 2, 3)), ("two callers were let through in one slot", done)
 
     # 3. the lock belongs to no event loop: two threads, each with its own loop, contend for one limiter
     lim = _gw892._RateLimiter(600)
@@ -103404,3 +103409,76 @@ def test_w1200_plan_now_says_an_item_held_for_the_final_audit_a_queued_allocatio
             assert said in built[0], ("P5.22's BUILT line does not say", said)
     assert [(s, it["hold_problem"]) for s, it in items.items() if it["hold_problem"]] == []
     assert all(it["held_until"] in items and it["held_until"] != s for s, it in items.items() if it["held_until"])
+
+
+def test_w1207b_the_limiter_leg_of_w892_asserts_the_slot_given_not_the_gap_between_wakes():
+    """W1207b: test_w892's leg 2 failed on PR #469's Windows job with ('two callers were let through in one slot',
+    [0.109, 0.25, 0.312]): it asserted the gaps between wake times, and one caller woken late on a clock and an event
+    loop that tick at about 15.6 ms shrank the next gap below 0.07 with no slot shared. Held on the leg's source:
+    L1. the start and each wake are read with time.perf_counter, the start before the bucket is drained; the only
+        time.monotonic in the leg sets the limiter's own _last;
+    L2. no difference of two wake times is asserted;
+    L3. the assert that carries the message, run on its own: the Windows job's wakes, wakes on time and late wakes
+        pass; two callers in one slot, a first caller let through at once and any wake more than 0.03 before its
+        slot fail;
+    L4. the stats assert is kept."""
+    import ast
+    import pathlib
+    import textwrap
+
+    src = (pathlib.Path(__file__).resolve().parent / "test_mvp_spine.py").read_text(encoding="utf-8")
+    fn = src.split("\ndef test_w892_no_caller_sleeps_holding_the_limiters_lock", 1)[1].split("\ndef ", 1)[0]
+    leg = fn.split("    # 2. three callers at once", 1)[1].split("    # 3. the lock", 1)[0]
+    tree = ast.parse(textwrap.dedent("    # 2." + leg))
+
+    def _is(node, mod, attr):
+        return (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == attr
+                and isinstance(node.func.value, ast.Name) and node.func.value.id == mod)
+
+    # L1. the clock
+    starts = [n for n in ast.walk(tree) if isinstance(n, ast.Assign) and any(isinstance(x, ast.Name) and x.id == "t0"
+                                                                            for x in n.targets)]
+    assert len(starts) == 1 and _is(starts[0].value, "time", "perf_counter"), (
+        "L1: the leg's start is not one read of time.perf_counter", [ast.unparse(s) for s in starts])
+    drain = [n for n in tree.body if isinstance(n, ast.Assign) and "lim._last" in ast.unparse(n)]
+    assert len(drain) == 1 and tree.body.index(drain[0]) > tree.body.index(starts[0]), (
+        "L1: the start is not read before the bucket is drained")
+    wakes = [n for n in ast.walk(tree) if isinstance(n, ast.Call) and ast.unparse(n.func) == "done.append"]
+    assert len(wakes) == 1 and isinstance(wakes[0].args[0], ast.BinOp) and _is(wakes[0].args[0].left, "time",
+                                                                               "perf_counter"), (
+        "L1: a wake is not read with time.perf_counter", [ast.unparse(w) for w in wakes])
+    mono = [n for n in ast.walk(tree) if _is(n, "time", "monotonic")]
+    assert len(mono) == 1 and mono[0] in list(ast.walk(drain[0])), (
+        "L1: the leg reads time.monotonic for something other than the limiter's own _last", len(mono))
+
+    # L2. no gap between wakes
+    gaps = [ast.unparse(n) for n in ast.walk(tree) if isinstance(n, ast.BinOp) and isinstance(n.op, ast.Sub)
+            and all(isinstance(s, ast.Subscript) and ast.unparse(s.value) == "done" for s in (n.left, n.right))]
+    assert not gaps, ("L2: the leg still asserts a gap between two wakes", gaps)
+
+    # L3. the slot assert, run on its own
+    msg = "two callers were let through in one slot"
+    slot = [n for n in ast.walk(tree) if isinstance(n, ast.Assert) and n.msg is not None and msg in ast.unparse(n.msg)]
+    assert len(slot) == 1, ("L3: the leg has no single assert carrying its message", len(slot))
+    ns: dict = {}
+    exec(compile("def _slot(done):\n    " + ast.unparse(slot[0]) + "\n", "w892_leg2", "exec"), ns)
+
+    def _passes(done):
+        try:
+            ns["_slot"](sorted(done))
+        except AssertionError:
+            return False
+        return True
+    for done in ([0.10900000000003729, 0.25, 0.3120000000000118], [0.1, 0.2, 0.3], [0.071, 0.171, 0.271],
+                 [0.15, 0.4, 0.55]):
+        assert _passes(done), ("L3: wakes on time or late fail the leg", done)
+    for done, why in (([0.1, 0.2, 0.2], "two callers in one slot"), ([0.1, 0.1, 0.3], "two callers in one slot"),
+                      ([0.0, 0.1, 0.2], "a first caller let through at once"),
+                      ([0.06, 0.2, 0.3], "a first wake early"), ([0.1, 0.16, 0.3], "a second wake early"),
+                      ([0.1, 0.2, 0.26], "a third wake early")):
+        assert not _passes(done), ("L3: the leg lets an early pass through", why, done)
+
+    # L4. the stats assert is kept
+    assert any(isinstance(n, ast.Assert) and ast.unparse(n) == ast.unparse(ast.parse(
+        "assert lim.stats()['waited'] == 3 and lim.stats()['calls'] == 3, lim.stats()").body[0])
+        for n in tree.body), "L4: the leg's stats assert is gone or changed"
