@@ -27190,10 +27190,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1197",
       "note": "",
-      "slot_source": "resource_fabric.py is in an area retired with P2.18, as for FU-1108"
+      "slot_source": "resource_fabric.py is in an area retired with P2.18, as for FU-1108",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1197: assure_delivery gains the keyword record, default True. With record=False the stub screen, the compliance screen, the gate decision and the bar are computed and returned as before, and nothing is recorded: control_document is not called, so no version of qms_record:composition is sealed and no controlled document counted (quality_record_hash None, document_controlled False, and document_control_basis saying nothing was recorded); no compliance.screen UEG event is logged; nothing is filed with the immune system or routed to Change Control; and no cognitive signal is fired. Immune still contributes its value from immune.status(); Nervous and Endocrine, which a record's own fire_signal engages, are said to be not engaged on that call, in the allowed state implemented_not_on_this_path with a basis naming the preview, and layers_note is computed per record. record=False is accepted only for floor- or template-served content or sections by construction; any other call is refused with ValueError before anything is recorded, content that declares no sections included, though its gate would not run, because only those exempt a call from a gate run that records what it found (W489); the docstring restates W449's 'the record is still sealed' for record=False. The composition preview (POST /api/v1/resources/compose/simulate) passes it through _simulate_configuration(preview=True), its basis names POST /compose and PUT /compositions/{cid}, which gate and seal the same text, and its docstring and note say the verdict was computed and nothing recorded; POST /compose and PUT /compositions/{cid} are unchanged and still seal, log, file and fire. The lifecycle basis that a simulation stores nothing is now true, and homeostasis no longer concedes that the preview may change other state. test_w1197 drives a fail preview and an escalation preview, with spies that call through, and holds six counters still across them, one of each on a commit (the UEG event found by its hash in GET /api/v1/gaas/ueg/events) and one version on a save; it drives a model-served record=False call refused with the QMS's gates and defects unmoved. Twenty blinds turn it red."
     },
     {
       "id": "FU-1842",

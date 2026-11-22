@@ -2906,7 +2906,8 @@ def test_resource_compose(client):
 
 def test_resource_compose_model_and_simulate_before_commit(client):
     # §7 — the platform MODELS + SIMULATES a configuration BEFORE commit (user design control), gated by
-    # the living QMS; nothing is saved by the preview, and usage-area incompatibility blocks commit.
+    # the living QMS; nothing is saved by the preview, nor recorded since W1197 (FU-1841, held by test_w1197), and
+    # usage-area incompatibility blocks commit.
     sim = client.post("/api/v1/resources/compose/simulate",
                       json={"name": "concept-rig", "resource_ids": ["bdp", "ddpie", "genesis"],
                             "usage_area": "design"}).json()
@@ -2927,7 +2928,7 @@ def test_resource_compose_model_and_simulate_before_commit(client):
                             "config": {"bdp": {"challenge": "reduce food waste"}}}).json()
     assert "challenge" not in (cfg["model"]["unset_params"].get("bdp") or [])
     assert cfg["resources"][0]["config"]["challenge"] == "reduce food waste"
-    # the preview saved nothing; empty/unknown selections are rejected
+    # the preview saved nothing and recorded nothing (W1197); empty/unknown selections are rejected
     assert client.post("/api/v1/resources/compose/simulate", json={"name": "x", "resource_ids": []}).status_code == 400
     assert client.post("/api/v1/resources/compose/simulate", json={"name": "x", "resource_ids": ["nope"]}).status_code == 400
 
@@ -101546,3 +101547,215 @@ def test_w1198b_a_sign_in_token_admits_only_the_account_it_was_issued_to_and_onl
         assert row.get("source") == "W1198b (the round's security review)", row["id"]
         assert row["status"] == "open" or row.get("closed_by") not in (None, "W1198b"), (
             row["id"], "W1198b closed a row it registered open")
+
+
+def test_w1197_fu1841_the_composition_preview_computes_its_verdict_and_records_nothing(client, monkeypatch):
+    """FU-1841 (W1197), P3.30. POST /api/v1/resources/compose/simulate said 'Nothing is saved.' and, through
+    assure_delivery(label='composition', served_by='template'), sealed a version of qms_record:composition, counted a
+    controlled document, logged a compliance.screen UEG event, fired a cognitive 'qms.composition' signal and, on a
+    compliance fail or an escalation, recorded with the immune system. assure_delivery(record=False) now computes the
+    verdict and records none of it; the preview passes it, and POST /compose and PUT /compositions/{cid} still seal.
+    Held here, with spies that call through (UEGLogger.log on the class, fire_signal and immune.record on the
+    singletons), so the real ledger, bus and immune system still receive what is sent:
+    L1. a preview whose name carries W287's fail wording answers 200 with the verdict computed (compliance fail,
+        sharia_halal fail), the gate not assessable (qms_gate_passed None, W449), the bar measured, saved False,
+        quality_record_hash None and document_controlled False, with a basis that says nothing was recorded and
+        names POST /compose and PUT /compositions/{cid};
+    L2. across that preview and a second whose name carries only an escalation term (computed: ethical:value), six
+        counters do not move: the versions of qms_record:composition in the DCMS in memory and in a fresh instance
+        read from its store, the QMS's controlled documents, compliance:composition filings with the immune system
+        (in the spy, and among the events it keeps), compliance.screen events labelled composition, and
+        ('cognitive', 'qms.composition') signals;
+    L3. on each preview the Nervous and Endocrine layers are said to be not engaged on the call, in one of
+        test_w506's six states with a basis naming the preview, and the note lists neither as engaged; Immune
+        still contributes its value;
+    L4. POST /compose with the same body adds exactly one of each: a version (in memory and in a fresh instance), a
+        controlled document, a compliance.screen event labelled composition (in the spy, and by its hash in GET
+        /api/v1/gaas/ueg/events), a compliance_fail filing kept by the immune system and a 'qms.composition'
+        signal; it answers document_controlled True, and its layers say Nervous and Endocrine were engaged;
+    L5. PUT /compositions/{cid} on it adds exactly one version and one controlled document, and answers
+        document_controlled True;
+    L6. record=False on content the gate could assess (model-served, and failing) is refused with ValueError, and
+        the QMS's gates run, its defects and every counter above do not move (W489: a gate that runs records what
+        it found);
+    L7. the words: the preview's note and the route's docstring say the verdict was computed and nothing recorded,
+        and the note still says NOTHING WAS RUN and never 'simulated'; assure_delivery's docstring restates W449's
+        'the record is still sealed' for record=False; homeostasis no longer concedes that the preview may change
+        other state; and FU-1841 is open, or closed by W1197 as built."""
+    import inspect
+    import json
+    import pathlib
+    import pytest
+    from agentic_core.ai.native import homeostasis as _hm
+    from agentic_core.api import resource_fabric as _rf
+    from agentic_core.gaas.v5 import UEGLogger
+    from agentic_core.organism.biobus import biobus
+    from agentic_core.organism.immune import immune
+    from agentic_core.vbs import quality as Q
+    from agentic_core.vbs.dcms import DocumentControlManagementSystem
+    from agentic_core.vbs.registry import dcms, qms
+    root = pathlib.Path(__file__).resolve().parents[1]
+    flat = lambda s: " ".join((s or "").split())  # noqa: E731
+    KEY = "qms_record:composition"
+
+    screens, signals, filed = [], [], []
+    _log, _fire, _record = UEGLogger.log, biobus.fire_signal, immune.record
+
+    def _spy_log(self, event_data, *a, **k):
+        h = _log(self, event_data, *a, **k)
+        if isinstance(event_data, dict) and event_data.get("type") == "compliance.screen":
+            screens.append((event_data.get("label"), event_data.get("overall"), h))
+        return h
+
+    def _spy_fire(signal_type, source, *a, **k):
+        signals.append((signal_type, source))
+        return _fire(signal_type, source, *a, **k)
+
+    def _spy_record(endpoint, *a, **k):
+        filed.append((endpoint, a[0] if a else k.get("error_type")))
+        return _record(endpoint, *a, **k)
+    monkeypatch.setattr(UEGLogger, "log", _spy_log)
+    monkeypatch.setattr(biobus, "fire_signal", _spy_fire)
+    monkeypatch.setattr(immune, "record", _spy_record)
+
+    def counts():
+        return {"versions": len(dcms.registry.get(KEY) or []),
+                "versions_stored": len(DocumentControlManagementSystem("vbs").registry.get(KEY) or []),
+                "controlled": qms.controlled_documents,
+                "filed": sum(1 for e, _t in filed if e == "compliance:composition"),
+                "screens": sum(1 for lab, _o, _h in screens if lab == "composition"),
+                "signals": signals.count(("cognitive", "qms.composition"))}
+
+    def kept():
+        """The immune system's own compliance:composition events, by their monotonic stamps (old ones age out)."""
+        with immune._lock:
+            return {(e.ts, e.error_type) for e in immune._events if e.endpoint == "compliance:composition"}
+
+    def clause(note, head):
+        """The layers a note's clause names, or none when the clause is not there."""
+        if head not in note:
+            return set()
+        return {x.strip() for x in note.split(head, 1)[1].split(".", 1)[0].split(",") if x.strip()}
+    pair = {"Nervous", "Endocrine"}
+    allowed = {"engaged_with_value", "engaged_no_value", "implemented_not_on_this_path",
+               "measurement_under_this_name", "code_exists_unreached", "code_unloadable"}   # test_w506's six
+    body = {"name": "w1197 alcohol sales and gambling revenue", "resource_ids": ["bdp", "ddpie", "genesis"],
+            "usage_area": "design"}
+
+    #  L1. the preview computes the verdict and answers that nothing was recorded
+    before, kept_before = counts(), kept()
+    r = client.post("/api/v1/resources/compose/simulate", json=body)
+    assert r.status_code == 200, r.text[:300]
+    sim = r.json()
+    q = sim["simulation"]["quality"]
+    assert (q["compliance"]["overall"], q["qms_gate_passed"], sim["saved"]) == ("fail", None, False), (
+        q.get("compliance", {}).get("overall"), q.get("qms_gate_passed"), sim.get("saved"))
+    assert {v["framework"]: v["status"] for v in q["compliance"]["verdicts"]}.get("sharia_halal") == "fail", q["compliance"]
+    assert "not assessable" in q["qms_basis"] and q["bar"] == Q.SOLUTION_QUALITY_BAR and q["bar_measured"], q["qms_basis"]
+    assert q["stub_screen_basis"] and "qms_error" not in q, q.get("qms_error")
+    assert (q["quality_record_hash"], q["document_controlled"]) == (None, False), (
+        "the preview sealed a quality record", q.get("quality_record_hash"), q.get("document_controlled"))
+    basis = q["document_control_basis"]
+    assert basis.startswith("not recorded: a preview keeps no record") and basis.endswith(
+        "; POST /compose and PUT /compositions/{cid} gate and seal the same text"), basis
+
+    #  L2. an escalation preview, and neither moves a counter
+    esc = client.post("/api/v1/resources/compose/simulate", json={**body, "name": "w1197 predatory pricing rig"})
+    assert esc.status_code == 200, esc.text[:300]
+    eq = esc.json()["simulation"]["quality"]
+    assert eq["compliance"]["overall"] != "fail" and "ethical:value" in (eq.get("compliance_escalations") or []), (
+        "the second preview is not an escalation alone, so it proves nothing", eq["compliance"]["overall"],
+        eq.get("compliance_escalations"))
+    assert (eq["quality_record_hash"], eq["document_controlled"]) == (None, False), eq.get("quality_record_hash")
+    assert eq["document_control_basis"].startswith("not recorded: a preview keeps no record") and eq[
+        "document_control_basis"].endswith("; POST /compose and PUT /compositions/{cid} gate and seal the same text"), (
+        eq.get("document_control_basis"))
+    after = counts()
+    assert after == before, ("a preview recorded something", before, after)
+    assert kept() <= kept_before, ("a preview filed with the immune system", kept() - kept_before)
+
+    #  L3. the preview's layers claim no engagement it did not have
+    for out in (sim, esc.json()):
+        bio = out["simulation"]["biomimetic"]
+        st, bs, note = bio["layer_states"], bio["layer_basis"], bio["layers_note"]
+        assert set(st) == set(Q.BIOMIMETIC_LAYERS) and set(st.values()) <= allowed, st
+        assert (st["Nervous"], st["Endocrine"]) == ("implemented_not_on_this_path",) * 2, st
+        for layer in ("Nervous", "Endocrine"):
+            assert "not engaged on this call: a preview keeps no record" in bs[layer], bs[layer]
+        assert not pair & clause(note, "Engaged on this path without contributing a value:"), note
+        assert pair <= clause(note, "Not engaged on this call, a preview that records nothing and fires no signal:"), note
+        assert not pair & clause(note, "Implemented and reachable, but not on this path:"), note
+        assert "Immune" in bio["layers"] and not pair & set(bio["layers"]) and isinstance(bio.get("immune"), dict), (
+            bio["layers"])
+
+    #  L4. a commit of the same body still seals, logs, files and fires, once each
+    k_commit = kept()
+    c = client.post("/api/v1/resources/compose", json=body)
+    assert c.status_code == 200, c.text[:300]
+    comp = c.json()
+    cid = comp["id"]
+    try:
+        cq = comp["quality_assurance"]["quality"]
+        assert cq["document_controlled"] is True and isinstance(cq.get("quality_record_hash"), str), (
+            cq.get("document_controlled"), cq.get("quality_record_hash"), cq.get("qms_error"))
+        assert "document_control_basis" not in cq and cq["compliance"]["overall"] == "fail", cq.get("document_control_basis")
+        sealed = counts()
+        assert {k: sealed[k] - after[k] for k in sealed} == dict.fromkeys(sealed, 1), ("a commit did not record once",
+                                                                                     after, sealed)
+        label, overall, h = [s for s in screens if s[0] == "composition"][-1]
+        assert overall == "fail" and isinstance(h, str), (label, overall, h)
+        ev = client.get("/api/v1/gaas/ueg/events?limit=500").json()["events"]
+        hit = [e for e in ev if e.get("hash") == h]
+        assert len(hit) == 1 and (hit[0]["data"]["type"], hit[0]["data"]["label"]) == ("compliance.screen",
+                                                                                      "composition"), hit
+        assert [x for x in filed if x[0] == "compliance:composition"][-1] == ("compliance:composition", "compliance_fail")
+        added = kept() - k_commit
+        assert len(added) == 1 and next(iter(added))[1] == "compliance_fail", added
+        cbio = comp["quality_assurance"]["biomimetic"]
+        assert (cbio["layer_states"]["Nervous"], cbio["layer_states"]["Endocrine"]) == ("engaged_no_value",) * 2
+        assert pair <= clause(cbio["layers_note"], "Engaged on this path without contributing a value:"), (
+            cbio["layers_note"])
+        assert "Not engaged on this call" not in cbio["layers_note"] and cbio["layer_basis"]["Nervous"] == (
+            Q.LAYER_STATE["Nervous"]["basis"])
+
+        #  L5. a save of the composition seals its re-simulation
+        p = client.put(f"/api/v1/resources/compositions/{cid}", json={})
+        assert p.status_code == 200, p.text[:300]
+        saved = counts()
+        assert (saved["versions"] - sealed["versions"], saved["versions_stored"] - sealed["versions_stored"],
+                saved["controlled"] - sealed["controlled"]) == (1, 1, 1), ("a save did not seal once", sealed, saved)
+        assert p.json()["quality_assurance"]["quality"]["document_controlled"] is True
+    finally:
+        client.delete(f"/api/v1/resources/compositions/{cid}")
+
+    #  L6. record=False where the gate could run is refused, and nothing moves (W489)
+    assert Q.floor_served("ollama:w1197-probe") is False and not Q.floor_served(None)
+    gates, defects, c6, k6 = qms.defect_summary()["gates_run"], len(qms.defects), counts(), kept()
+    spied = (len(screens), len(signals), len(filed))
+    with pytest.raises(ValueError) as refused:
+        _ensure_loop().run_until_complete(Q.assure_delivery(
+            "## Section\n" + "w1197 a model's draft of this section, TODO finish it. " * 6, ["Section"],
+            label="w1197-refused", served_by="ollama:w1197-probe", record=False))
+    assert "record=False" in str(refused.value) and "nothing was recorded" in str(refused.value), refused.value
+    assert (qms.defect_summary()["gates_run"], len(qms.defects)) == (gates, defects), "the refused call ran the gate"
+    assert "qms_record:w1197-refused" not in dcms.registry and counts() == c6 and kept() <= k6
+    assert (len(screens), len(signals), len(filed)) == spied, (screens[-1:], signals[-1:], filed[-1:])
+
+    #  L7. the words say what the code does
+    note = flat(sim["note"])
+    assert ("not saved, and nothing recorded: the gate's verdict and the compliance screen were computed, and no "
+            "quality record was sealed, no event logged, no signal fired and nothing filed with the immune system; "
+            "POST /compose and PUT /compositions/{cid} gate and seal the same text.") in note, note
+    assert "NOTHING WAS RUN" in note and "simulated" not in note.lower(), note
+    doc = flat(inspect.getdoc(_rf.simulate_composition))
+    assert "Nothing is saved, and nothing is recorded (W1197, FU-1841)" in doc and "gate and seal the same text" in doc, doc
+    adoc = flat(inspect.getdoc(Q.assure_delivery))
+    assert "the record is still sealed (unless ``record=False``, below)" in adoc, adoc[:500]
+    assert "A record=False call never opens a defect" in adoc and "refused with ValueError" in adoc, adoc
+    assert "Never raises but for that refusal" in adoc and "Never raises:" not in adoc, adoc
+    hdoc = flat(inspect.getdoc(_hm.HomeostaticController.assess))
+    assert "changes no ATP or reflex state." in hdoc and "composition preview may still change" not in hdoc, hdoc
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    row = next(x for x in reg if x.get("id") == "FU-1841")
+    assert row["slot"] == "P3.30" and (row["status"] == "open" or (row["status"], row.get("closed_by"), row.get(
+        "because")) == ("done", "W1197", "built")), (row["status"], row.get("closed_by"), row.get("because"))

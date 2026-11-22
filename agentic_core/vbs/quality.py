@@ -91,6 +91,25 @@ LAYER_STATE: Dict[str, Dict[str, str]] = {
                              "TriadIntegrator, which is what code_exists_unreached is meant to mean"},
 }
 
+#  W1197 (FU-1841) - A PREVIEW KEEPS NO RECORD. The composition preview called this gate as a delivery: every call
+#  sealed a version of qms_record:composition, counted a controlled document, logged a compliance.screen event, fired a
+#  cognitive signal and, on a fail or an escalation, recorded with the immune system, while the route said nothing was
+#  saved. assure_delivery(record=False) computes the same verdict and records none of it, and the record's Nervous and
+#  Endocrine layers, which its own fire_signal engages, are then said to be not engaged on that call.
+NOT_RECORDED_BASIS = ("not recorded: a preview keeps no record (record=False), so no quality record was sealed or "
+                      "counted, no compliance.screen event was logged, nothing was filed with the immune system and "
+                      "no signal was fired")
+PREVIEW_LAYER_STATE: Dict[str, Dict[str, str]] = {
+    "Nervous": {"state": "implemented_not_on_this_path",
+                "basis": "agentic_core/organism/nervous.py — not engaged on this call: a preview keeps no record "
+                         "(record=False) and fires no signal, so nothing reached the NervousSystem; a recorded "
+                         "delivery's fire_signal does"},
+    "Endocrine": {"state": "implemented_not_on_this_path",
+                  "basis": "agentic_core/organism/biobus.py — not engaged on this call: a preview keeps no record "
+                           "(record=False) and fires no signal on the bus; a recorded delivery's fire_signal "
+                           "travels on it"},
+}
+
 _STUB_RE = re.compile(r"\b(TODO|TBD|FIXME|lorem ipsum|placeholder|coming soon|as an ai)\b", re.I)
 _MIN_SUBSTANTIVE = 200  # chars — below this a "delivery" is treated as an empty / stub shell.
 
@@ -375,19 +394,31 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
                           served_by: Any = None,
                           withheld: Optional[Dict[str, str]] = None,
                           sections_by_construction: Optional[str] = None,
-                          echoed_text: Optional[str] = None) -> Dict[str, Any]:
+                          echoed_text: Optional[str] = None,
+                          *, record: bool = True) -> Dict[str, Any]:
     """Subject an operational delivery to the living QMS + §10 bar + §8 organism.
 
     ``served_by`` (W449) is who produced the content — the orchestrator's served_by string, a
     provenance count map, or a list per agent. When every producer is the deterministic floor the
     gate does NOT run: ``qms_gate_passed`` is None, ``qms_basis`` says why, and the two
-    coverage-derived bar criteria are ``met: None`` — the record is still sealed, so the DCMS holds
-    the not-assessable verdict rather than nothing. ``withheld`` names bar criteria the caller
-    declines to attest, with reasons.
+    coverage-derived bar criteria are ``met: None`` — the record is still sealed (unless
+    ``record=False``, below), so the DCMS holds the not-assessable verdict rather than nothing.
+    ``withheld`` names bar criteria the caller declines to attest, with reasons.
+
+    ``record`` (W1197, FU-1841) is False only for a preview, which keeps no record: the stub screen,
+    the compliance screen, the gate decision and the bar are computed and returned as for any
+    delivery, and none of it is recorded. No quality record is sealed or counted
+    (``quality_record_hash`` None, ``document_controlled`` False, ``document_control_basis`` saying
+    why), no compliance.screen event is logged, nothing is filed with the immune system or routed to
+    Change Control, and no signal is fired, so the record says its Nervous and Endocrine layers were
+    not engaged. A record=False call never opens a defect: unless the content is floor- or
+    template-served or its sections are by construction, it is refused with ValueError before
+    anything is recorded, because only those exempt it from a gate run that records what it found
+    (W489); content that declares no sections is refused too, though its gate would not run.
 
     Returns ``{"quality": {...}, "biomimetic": {...}}`` — honest and real (no fabricated numbers).
-    Never raises: a QMS / organism hiccup is captured as an ``*_error`` field so a delivery is never
-    lost to a quality-system fault.
+    Never raises but for that refusal: a QMS / organism hiccup is captured as an ``*_error`` field so
+    a delivery is never lost to a quality-system fault.
     """
     coverage = _delivery_coverage(content, required_sections)
     stub = bool(_STUB_RE.search(content or "")) or len((content or "").strip()) < _MIN_SUBSTANTIVE
@@ -405,6 +436,13 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
     #  record says why. The caller states the reason; the gate cannot discover that a heading is templated.
     _floor_real = floor_served(served_by)
     _floor = _floor_real or bool(sections_by_construction)
+    #  W1197 (FU-1841) - record=False only for floor- or template-served content or sections by construction. A gate
+    #  that runs records what it found: W489's refutation rules that excluding a run from the rate and refusing to
+    #  record it are different things. Any other record=False call is refused here, before anything is recorded,
+    #  content that declares no sections included, though its gate would not run (the narrower rule).
+    if not record and not _floor:
+        raise ValueError("record=False is accepted only for floor- or template-served content or sections by "
+                         "construction; this call is refused and nothing was recorded (W489)")
     #  both can be true at once, and then both are said: neither reason is a substitute for the other
     _na_basis = "; and ".join(
         ([NOT_ASSESSABLE_BASIS] if _floor_real or not sections_by_construction else [])
@@ -537,25 +575,29 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
                                                qms.min_coverage, _comp, evidence,
                                                floor_served=_floor, withheld=withheld,
                                                not_assessable_basis=_na_basis)
-        # The QMS document-controls the quality record through its OWNED DCMS (QMS ⊃ DCMS, ISO 9001 §7.5):
-        # the gate verdict becomes a versioned, SHA3-512-sealed controlled document — W287: the §11
-        # verdicts are IN the sealed payload now (the §13 repo's 'compliance + quality record').
-        quality["quality_record_hash"] = await qms.control_document(
-            f"qms_record:{label}",
-            {"label": label, "delivery_coverage": coverage, "stub_found": stub,
-             "qms_gate_passed": quality["qms_gate_passed"], "bar": SOLUTION_QUALITY_BAR,
-             # W449 — the seal is PER DELIVERY: the content hash and the server are in the sealed
-             # payload (163 of 176 historical records shared one hash because it sealed only the
-             # verdict shape, so one seal certified a scaffold and a real document alike).
-             "content_sha3": _ref["content_sha3"], "served_by": _served_label,
-             "qms_basis": quality["qms_basis"],
-             "bar_measured": quality["bar_measured"],
-             "compliance": {"overall": _comp.get("overall"),
-                            "verdicts": _comp.get("verdicts"),
-                            "coverage_gaps": _comp.get("coverage_gaps") or [],
-                            "assessed_by": _comp.get("assessed_by") or []}},
-            actor="QMS")
-        quality["document_controlled"] = True
+        if not record:      # W1197 (FU-1841) - a preview keeps no record: the verdict above is computed, sealed nowhere
+            quality.update({"quality_record_hash": None, "document_controlled": False,
+                            "document_control_basis": NOT_RECORDED_BASIS})
+        else:
+            # The QMS document-controls the quality record through its OWNED DCMS (QMS ⊃ DCMS, ISO 9001 §7.5):
+            # the gate verdict becomes a versioned, SHA3-512-sealed controlled document — W287: the §11
+            # verdicts are IN the sealed payload now (the §13 repo's 'compliance + quality record').
+            quality["quality_record_hash"] = await qms.control_document(
+                f"qms_record:{label}",
+                {"label": label, "delivery_coverage": coverage, "stub_found": stub,
+                 "qms_gate_passed": quality["qms_gate_passed"], "bar": SOLUTION_QUALITY_BAR,
+                 # W449 — the seal is PER DELIVERY: the content hash and the server are in the sealed
+                 # payload (163 of 176 historical records shared one hash because it sealed only the
+                 # verdict shape, so one seal certified a scaffold and a real document alike).
+                 "content_sha3": _ref["content_sha3"], "served_by": _served_label,
+                 "qms_basis": quality["qms_basis"],
+                 "bar_measured": quality["bar_measured"],
+                 "compliance": {"overall": _comp.get("overall"),
+                                "verdicts": _comp.get("verdicts"),
+                                "coverage_gaps": _comp.get("coverage_gaps") or [],
+                                "assessed_by": _comp.get("assessed_by") or []}},
+                actor="QMS")
+            quality["document_controlled"] = True
     except Exception as exc:  # never break a delivery on a QMS hiccup
         quality["qms_error"] = str(exc)
 
@@ -570,15 +612,16 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
                            for d in (v.get("escalate") or [])})
     if _escalations:
         quality["compliance_escalations"] = _escalations
-    try:
-        from agentic_core.gaas.v5 import UEGLogger
-        UEGLogger().log({"type": "compliance.screen", "label": label,
-                         "overall": _comp.get("overall"),
-                         "coverage_gaps": _comp.get("coverage_gaps") or [],
-                         "escalations": _escalations,
-                         "verdicts": {v["framework"]: v["status"] for v in (_comp.get("verdicts") or [])}})
-    except Exception:
-        pass
+    if record:          # W1197 (FU-1841) - a preview logs no screen event
+        try:
+            from agentic_core.gaas.v5 import UEGLogger
+            UEGLogger().log({"type": "compliance.screen", "label": label,
+                             "overall": _comp.get("overall"),
+                             "coverage_gaps": _comp.get("coverage_gaps") or [],
+                             "escalations": _escalations,
+                             "verdicts": {v["framework"]: v["status"] for v in (_comp.get("verdicts") or [])}})
+        except Exception:
+            pass
     # W483 (refutation) — AN ESCALATION MUST REACH A HUMAN. The severe-harm and extractive lexicon
     # hits used to produce a 'fail', and a fail did three things: it recorded with the immune system,
     # it routed a material delivery to the arms-length Change Control Agency, and it was visible as a
@@ -587,7 +630,7 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
     # road as the fail it replaced; what changed is the WORDS (a flag for a human, not a finding of
     # harm), not whether anyone is told.
     _escalated = bool(_escalations)
-    if _comp.get("overall") == "fail" or _escalated:
+    if record and (_comp.get("overall") == "fail" or _escalated):   # W1197 (FU-1841) - a preview files nothing
         try:
             from agentic_core.organism.immune import immune
             immune.record(f"compliance:{label}",
@@ -666,9 +709,12 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
         biomimetic["immune"] = immune.status()
         biomimetic["circadian"] = _circadian_cycle()
         biomimetic["layers"].append("Immune")   # the only layer that contributes a measured value
-        # The organism senses every quality outcome (homeostatic feedback).
-        biobus.fire_signal("cognitive", f"qms.{label}",
-                           f"QMS structure gate {gate_word(quality.get('qms_gate_passed')).upper()} (cov={coverage})", 0.6)
+        # The organism senses every recorded quality outcome (homeostatic feedback). W1197 (FU-1841) - a preview
+        # records nothing and fires nothing, and its Nervous and Endocrine layers say so below.
+        if record:
+            biobus.fire_signal("cognitive", f"qms.{label}",
+                               f"QMS structure gate {gate_word(quality.get('qms_gate_passed')).upper()} "
+                               f"(cov={coverage})", 0.6)
     except Exception as exc:
         biomimetic["error"] = str(exc)
 
@@ -681,25 +727,32 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
     # overclaim and this round reproduced: the Endocrine regulator has NO importer and exists in two copies,
     # and the Respiratory TriadIntegrator has no importer either. A file is not an implementation if nothing
     # calls it. Four states, because two cannot tell those cases apart.
-    biomimetic["layer_states"] = {l: LAYER_STATE[l]["state"] for l in BIOMIMETIC_LAYERS}
-    biomimetic["layer_basis"] = {l: LAYER_STATE[l]["basis"] for l in BIOMIMETIC_LAYERS}
+    #  W1197 (FU-1841) - AND PER RECORD. Nervous and Endocrine are engaged by this record's own fire_signal, and a
+    #  preview (record=False) fires none: on that call both are said to be not engaged, in their states, their bases
+    #  and the note, so a preview's answer claims no engagement it did not have.
+    _layer = {l: (PREVIEW_LAYER_STATE[l] if not record and l in PREVIEW_LAYER_STATE else LAYER_STATE[l])
+              for l in BIOMIMETIC_LAYERS}
+    _unfired = [l for l in BIOMIMETIC_LAYERS if _layer[l] is not LAYER_STATE[l]]
+    biomimetic["layer_states"] = {l: _layer[l]["state"] for l in BIOMIMETIC_LAYERS}
+    biomimetic["layer_basis"] = {l: _layer[l]["basis"] for l in BIOMIMETIC_LAYERS}
     _engaged = [l for l in BIOMIMETIC_LAYERS if l in biomimetic["layers"]]
+    _no_value = [l for l in BIOMIMETIC_LAYERS if _layer[l]["state"] == "engaged_no_value"]
     _reachable = [l for l in BIOMIMETIC_LAYERS
-                  if LAYER_STATE[l]["state"] == "implemented_not_on_this_path"]
-    _unreached = [l for l in BIOMIMETIC_LAYERS if LAYER_STATE[l]["state"] == "code_exists_unreached"]
+                  if _layer[l]["state"] == "implemented_not_on_this_path" and l not in _unfired]
+    _unreached = [l for l in BIOMIMETIC_LAYERS if _layer[l]["state"] == "code_exists_unreached"]
     #  W574 (M1 R4.6) — a layer whose module CANNOT BE IMPORTED is reported separately from one that
     #  merely has no importer. Collapsing them is how "holds a real TriadIntegrator" survived on a
     #  reached surface: `code_exists_unreached` promises real code one wiring away, and that module
     #  raises ModuleNotFoundError. A reader who is told a layer is unreached will ask what it would
     #  take to reach it; this one cannot be reached at all.
-    _unloadable = [l for l in BIOMIMETIC_LAYERS if LAYER_STATE[l]["state"] == "code_unloadable"]
-    _relabelled = [l for l in BIOMIMETIC_LAYERS if LAYER_STATE[l]["state"] == "measurement_under_this_name"]
+    _unloadable = [l for l in BIOMIMETIC_LAYERS if _layer[l]["state"] == "code_unloadable"]
+    _relabelled = [l for l in BIOMIMETIC_LAYERS if _layer[l]["state"] == "measurement_under_this_name"]
     biomimetic["layers_note"] = (
         f"{len(biomimetic['layers'])} of {len(BIOMIMETIC_LAYERS)} declared layers contributed a value to this "
         f"record: {', '.join(_engaged) or 'none'}. "
-        + (f"Engaged on this path without contributing a value: "
-           f"{', '.join(l for l in BIOMIMETIC_LAYERS if LAYER_STATE[l]['state'] == 'engaged_no_value')}. "
-           if any(LAYER_STATE[l]['state'] == 'engaged_no_value' for l in BIOMIMETIC_LAYERS) else "")
+        + (f"Engaged on this path without contributing a value: {', '.join(_no_value)}. " if _no_value else "")
+        + (f"Not engaged on this call, a preview that records nothing and fires no signal: {', '.join(_unfired)}. "
+           if _unfired else "")
         + (f"Implemented and reachable, but not on this path: {', '.join(_reachable)}. " if _reachable else "")
         + (f"A measurement published under this anatomical name, not an organ: {', '.join(_relabelled)}. "
            if _relabelled else "")
