@@ -2906,7 +2906,8 @@ def test_resource_compose(client):
 
 def test_resource_compose_model_and_simulate_before_commit(client):
     # §7 — the platform MODELS + SIMULATES a configuration BEFORE commit (user design control), gated by
-    # the living QMS; nothing is saved by the preview, and usage-area incompatibility blocks commit.
+    # the living QMS; nothing is saved by the preview, nor recorded since W1197 (FU-1841, held by test_w1197), and
+    # usage-area incompatibility blocks commit.
     sim = client.post("/api/v1/resources/compose/simulate",
                       json={"name": "concept-rig", "resource_ids": ["bdp", "ddpie", "genesis"],
                             "usage_area": "design"}).json()
@@ -2927,7 +2928,7 @@ def test_resource_compose_model_and_simulate_before_commit(client):
                             "config": {"bdp": {"challenge": "reduce food waste"}}}).json()
     assert "challenge" not in (cfg["model"]["unset_params"].get("bdp") or [])
     assert cfg["resources"][0]["config"]["challenge"] == "reduce food waste"
-    # the preview saved nothing; empty/unknown selections are rejected
+    # the preview saved nothing and recorded nothing (W1197); empty/unknown selections are rejected
     assert client.post("/api/v1/resources/compose/simulate", json={"name": "x", "resource_ids": []}).status_code == 400
     assert client.post("/api/v1/resources/compose/simulate", json={"name": "x", "resource_ids": ["nope"]}).status_code == 400
 
@@ -63355,8 +63356,13 @@ def test_w688_a_tool_states_the_highest_tier_its_records_support_and_unreviewed_
     #  W691 - whether an agent is calibrated is READ FROM ITS RECORDED RUN, not from the record. These legs
     #  drive both states by naming two agents and fixing what their runs say, in this process only.
     from agentic_core.api import _review_calibration as _cal691
+    #  W1195c (FU-1821) - a review counts only by the model and build of the run that calibrated its agent, on or
+    #  after that run's date, so the calibrated agent's run names them and its review names the same
     monkeypatch.setattr(_cal691, "calibration_of", lambda agent, discipline="care": (
-        {"calibrated": True, "known": True, "why_not": None} if agent == "reviewer-cal" else
+        {"calibrated": True, "known": True, "why_not": None,
+         "run": {"run_id": "cal-w688", "date": "2026-10-01",
+                 "served_identity": {"model": "w688-model", "build_digest": "w688build" + "0" * 55}}}
+        if agent == "reviewer-cal" else
         {"calibrated": False, "known": True, "why_not": "this agent has never been run on the calibration set"}))
     today = _dt.date(2026, 10, 13)
     T = "care_risk_assess"
@@ -63377,7 +63383,8 @@ def test_w688_a_tool_states_the_highest_tier_its_records_support_and_unreviewed_
     assert say([{**rule, "test": ""}])["tier"] == "unreviewed"
     agent = {"tool": T, "tier": "reviewed_by_workstation_agent", "date": "2026-10-05", "checklist": "care checklist v1",
              "sources_read": [{"source": "nice-ng249", "page": "recommendations 1.1", "read_on": "2026-10-05"}],
-             "agent": "reviewer-cal", "tool_version": "the tree at W921", "could_not_check": "nothing beyond the guideline's own text"}
+             "agent": "reviewer-cal", "tool_version": "the tree at W921", "could_not_check": "nothing beyond the guideline's own text",
+             "model": "w688-model", "build": "w688build" + "0" * 55}
     assert say([rule, agent])["tier"] == "reviewed_by_workstation_agent"
     uncal = say([rule, {**agent, "agent": "reviewer-new"}])
     assert uncal["tier"] == "checked_by_rule", "an uncalibrated agent's review raised the tier"
@@ -63463,8 +63470,13 @@ def test_w689_a_review_is_recorded_through_one_door_and_a_short_record_is_refuse
     #  W691 - whether an agent is calibrated is READ FROM ITS RECORDED RUN, not from the record. These legs
     #  drive both states by naming two agents and fixing what their runs say, in this process only.
     from agentic_core.api import _review_calibration as _cal691
+    #  W1195c (FU-1821) - a review counts only by the model and build of the run that calibrated its agent, on or
+    #  after that run's date, so the calibrated agent's run names them and its review names the same
     monkeypatch.setattr(_cal691, "calibration_of", lambda agent, discipline="care": (
-        {"calibrated": True, "known": True, "why_not": None} if agent == "reviewer-cal" else
+        {"calibrated": True, "known": True, "why_not": None,
+         "run": {"run_id": "cal-w689", "date": "2026-10-01",
+                 "served_identity": {"model": "local-model", "build_digest": "w689build" + "0" * 55}}}
+        if agent == "reviewer-cal" else
         {"calibrated": False, "known": True, "why_not": "this agent has never been run on the calibration set"}))
     tool = "care_risk_assess"
     ahead = (_dt.date.today() + _dt.timedelta(days=200)).isoformat()
@@ -63487,7 +63499,8 @@ def test_w689_a_review_is_recorded_through_one_door_and_a_short_record_is_refuse
     #  an agent's review that names no model is refused too; an unknown field is refused, never dropped
     agent = {"tool": tool, "tier": "reviewed_by_workstation_agent", "date": today, "checklist": "care checklist v1",
              "sources_read": [{"source": "nice-ng249", "page": "recommendations 1.1", "read_on": today}],
-             "agent": "reviewer-cal", "model": "local-model", "tool_version": "the tree at W921", "could_not_check": "nothing beyond the guideline's own text"}
+             "agent": "reviewer-cal", "model": "local-model", "tool_version": "the tree at W921", "could_not_check": "nothing beyond the guideline's own text",
+             "build": "w689build" + "0" * 55}
     assert client.post("/api/v1/review/record", json={k: v for k, v in agent.items() if k != "model"}).status_code == 422
     assert client.post("/api/v1/review/record", json={**agent, "score": 9}).status_code == 422
     assert not store.exists()
@@ -63591,6 +63604,7 @@ def test_w691_a_reviewer_agent_is_calibrated_by_its_recorded_run_and_never_by_a_
     import datetime as _dt
     from agentic_core.api import _review_calibration as cal
     from agentic_core.api import _review_tier as rt
+    from agentic_core.api import care_reviewer as cr
     #  THE ARITHMETIC, on a small set made here: 3 planted, 6 clean
     cases = ([{"id": f"P{i}", "planted": "x", "must_flag": f"reason-{i}"} for i in range(3)]
              + [{"id": f"K{i}", "planted": None} for i in range(6)])
@@ -63651,7 +63665,11 @@ def test_w691_a_reviewer_agent_is_calibrated_by_its_recorded_run_and_never_by_a_
     def _its_own():
         kept = json.loads(runs.read_text(encoding="utf-8"))
         for _r in kept:
-            _r.update(door=cal.AGENT_DOOR, set_digest=cal.set_digest(runnable))
+            #  W1195c (FU-1821) - and as that door records it: what its reviewer was shown, and the model and build
+            #  that reviewed
+            _r.update(door=cal.AGENT_DOOR, set_digest=cal.set_digest(runnable),
+                      shown_digest=cr.shown_digest(runnable),
+                      served_identity={"model": "m", "build_digest": "w691build" + "0" * 55})
         runs.write_text(json.dumps(kept), encoding="utf-8")
     _its_own()
     got = client.get("/api/v1/review/calibration/care-reviewer").json()
@@ -63674,8 +63692,12 @@ def test_w691_a_reviewer_agent_is_calibrated_by_its_recorded_run_and_never_by_a_
     #  with nothing on the record saying which
     store = tmp_path / "review_tier_records.json"
     monkeypatch.setattr(rt, "_path", lambda: store)
-    rec = {"tool": "care_risk_assess", "tier": "reviewed_by_workstation_agent", "date": today, "checklist": "care checklist v1",
+    #  W1195c (FU-1821) - a review counts only by the model and build of the run that calibrated its agent, dated on
+    #  or after that run: the latest run is dated two days ahead
+    rec = {"tool": "care_risk_assess", "tier": "reviewed_by_workstation_agent",
+           "date": (_dt.date.today() + _dt.timedelta(days=2)).isoformat(), "checklist": "care checklist v1",
            "sources_read": [{"source": "nice-ng249", "page": "recommendations 1.1", "read_on": today}], "model": "m",
+           "build": "w691build" + "0" * 55,
            "tool_version": "the tree at W921", "could_not_check": "nothing beyond the guideline's own text"}
     assert client.post("/api/v1/review/record", json={**rec, "agent": "care-reviewer"}).json()["tool_now_says"]["tier"] == "reviewed_by_workstation_agent"
     said = client.get("/api/v1/review/tier/care_risk_assess").json()
@@ -78479,8 +78501,13 @@ def test_w921_p515_clause2_an_agents_review_counts_only_as_a_whole_record(client
     from agentic_core.api import _review_calibration as cal
     store = tmp_path / "review_tier_records.json"
     monkeypatch.setattr(rt, "_path", lambda: store)
+    #  W1195c (FU-1821) - a review counts only by the model and build of the run that calibrated its agent, on or
+    #  after that run's date
     monkeypatch.setattr(cal, "calibration_of", lambda agent, discipline="care": (
-        {"calibrated": True, "known": True, "why_not": None} if agent == "w921-reviewer" else
+        {"calibrated": True, "known": True, "why_not": None,
+         "run": {"run_id": "cal-w921", "date": "2026-10-01",
+                 "served_identity": {"model": "local-model", "build_digest": "w921build" + "0" * 55}}}
+        if agent == "w921-reviewer" else
         {"calibrated": False, "known": True, "why_not": "never run on the calibration set"}))
     today = _dt.date.today().isoformat()
     later = (_dt.date.today() + _dt.timedelta(days=3)).isoformat()
@@ -78491,7 +78518,8 @@ def test_w921_p515_clause2_an_agents_review_counts_only_as_a_whole_record(client
     read = {"source": current, "page": "the recommendations section", "read_on": today}
     whole = {"tool": "care_risk_assess", "tier": "reviewed_by_workstation_agent", "date": today,
              "checklist": "care checklist v2", "tool_version": "care_risk_assess as at W921", "sources_read": [read],
-             "model": "local-model", "agent": "w921-reviewer", "could_not_check": "nothing beyond the source's own text"}
+             "model": "local-model", "agent": "w921-reviewer", "could_not_check": "nothing beyond the source's own text",
+             "build": "w921build" + "0" * 55}
 
     #  every short record is refused in its own words, and nothing is written
     for short, said in (
@@ -90893,10 +90921,14 @@ def test_w1100_fu1054_the_care_reviewer_is_a_different_checklist_over_the_source
                 ("care", "law", "education", "science", "employment", "career", "religion")], imported
 
     #  only the set's own reasons are flags; every other line is kept and counted
-    assert got["reviewed"] is True and got["model"] == "ollama:w1100-made-up" and got["flags"] == ["source not current"]
-    assert got["lines_not_read_as_flags"] == ["FLAG: a reason the set does not have", "I think it is fine."]
+    #  W1195c (FU-1831) - and a reply holding either is not in the one form, so none of its lines is read
+    assert got["reviewed"] is True and got["model"] == "ollama:w1100-made-up" and got["flags"] == []
+    assert got["lines_not_read_as_flags"] == ["FLAG: source not current", "FLAG: a reason the set does not have",
+                                              "I think it is fine."]
+    assert (got["in_form"], got["not_in_form"]) == (False, ["a line that is not a FLAG line",
+                                                            "a FLAG line whose reason is not one of the set's"]), got
     none = cr.parse("FLAG: none", cr.reasons(the_set))
-    assert none == {"flags": [], "said_none": True, "lines_not_read_as_flags": []}
+    assert none == {"flags": [], "said_none": True, "lines_not_read_as_flags": [], "in_form": True, "not_in_form": []}
 
     #  the floor cannot review
     async def _floor(prompt, agent="assistant", **kw):
@@ -90910,6 +90942,11 @@ def test_w1100_fu1054_the_care_reviewer_is_a_different_checklist_over_the_source
     runs = tmp_path / "review_calibration_runs.json"
     monkeypatch.setattr(cal, "_runs_path", lambda: runs)
     monkeypatch.setattr(orchestrator, "complete", _model)
+    import importlib
+    #  W1195c (FU-1831) - and the context the runtime gives the stand-in's model, long enough for every prompt
+    monkeypatch.setattr(importlib.import_module("agentic_core.ai.native.model_resource"), "context_given",
+                        lambda sb: {"model": "w1100-made-up", "context_length": 1 << 20,
+                                    "basis": "a stand-in made up for W1100: no runtime was asked"})
     n_asked = len(asked)
     r = client.post("/api/v1/review/calibration/agent-run", json={"date": "2026-11-15"})
     assert r.status_code == 409 and r.json()["detail"].startswith("Not run: the calibration set cannot be run on 2026-11-15"), r.text[:300]
@@ -97077,6 +97114,10 @@ def test_w1183_fu1054_the_care_reviewers_calibration_is_said_where_its_reviews_a
     _real_ident = gw.served_identity_of
     monkeypatch.setattr(gw, "served_identity_of",
                         lambda sb: dict(IDENT) if str(sb).startswith("ollama:w1183") else _real_ident(sb))
+    #  W1195c (FU-1831) - and the context the runtime gives the stand-in's model, long enough for every prompt
+    monkeypatch.setattr(importlib.import_module("agentic_core.ai.native.model_resource"), "context_given",
+                        lambda sb: {"model": IDENT["model"], "context_length": 1 << 20,
+                                    "basis": "a stand-in made up for W1183: no runtime was asked"})
 
     #  L0. the four named kinds, from the tree
     the_set = cal.load_set("care")
@@ -97209,18 +97250,18 @@ def test_w1183_fu1054_the_care_reviewers_calibration_is_said_where_its_reviews_a
             return {"output": per_case(which[0]), "served_by": "ollama:w1183-made-up"}
         return _m
     catches = saying(lambda cid: "FLAG: source not current" if cid.startswith("P") else "FLAG: none")
-    #  (a) a run that misses P1, kept whole
-    long_line = ("I read it twice, and found nothing else in it that the checklist asks about, " * 4).strip()
+    #  (a) a run that misses P1, kept whole. W1195c (FU-1831) - a FLAG line with prose beside it is not in the one
+    #  form, so P0 answers in the form; that a line not read is kept whole is test_w1195c's
     monkeypatch.setattr(orchestrator, "complete", saying(
-        lambda cid: f"FLAG: source not current\n{long_line}" if cid == "P0" else "FLAG: none"))
+        lambda cid: "FLAG: source not current" if cid == "P0" else "FLAG: none"))
     a = client.post("/api/v1/review/calibration/agent-run", json={"date": D0.isoformat()})
     assert a.status_code == 200 and a.json()["not_answered"] == [], a.text[:300]
     k = json.loads(runs.read_text(encoding="utf-8"))[-1]
     assert (k["door"], k["set_digest"], k["not_answered"], k["date"]) == (
         cal.AGENT_DOOR, cal.set_digest(made_up), [], D0.isoformat()), k
     assert sorted(k["per_case"]) == sorted(c["id"] for c in made_up["cases"]), k["per_case"]
-    assert len(long_line) > 200 and k["per_case"]["P0"] == {
-        "said_none": False, "lines_not_read_as_flags": [long_line], "rows_shown": []}, k["per_case"]["P0"]
+    assert k["per_case"]["P0"] == {
+        "said_none": False, "lines_not_read_as_flags": [], "rows_shown": []}, k["per_case"]["P0"]
     assert k["per_case"]["K0"]["said_none"] is True and k["per_case"]["K0"]["rows_shown"] == ["r-now"], k["per_case"]
     assert k["served_identity"] == IDENT and k["started_at"] <= k["finished_at"], k
     below = cal.calibration_statement("care-reviewer")
@@ -97231,7 +97272,9 @@ def test_w1183_fu1054_the_care_reviewers_calibration_is_said_where_its_reviews_a
     #  (b) its whole review of the risk tool stays unreviewed, labelled with its calibration and its rates
     today = D0.isoformat()
     rec = {"tool": "care_risk_assess", "tier": "reviewed_by_workstation_agent", "date": today,
-           "checklist": "care checklist v2", "agent": "care-reviewer", "model": "ollama:w1183-made-up",
+           "checklist": "care checklist v2", "agent": "care-reviewer",
+           #  W1195c (FU-1821) - the model and build of the run that calibrates it, as a review counts only by those
+           "model": IDENT["model"], "build": IDENT["build_digest"],
            "sources_read": [{"source": "nice-ng249", "page": "recommendations 1.1", "read_on": today}],
            "tool_version": "the tree at W1183", "could_not_check": "nothing beyond the guideline's own text"}
     made = client.post("/api/v1/review/record", json=rec)
@@ -97367,6 +97410,10 @@ def test_w1184_fu1054_the_calibration_results_have_a_place_in_the_tree_and_the_r
     monkeypatch.setattr(importlib.import_module("agentic_core.ai.gateway"), "served_identity_of", lambda sb: {
         "model": "w1184-stand-in", "build_digest": "w1184standin" + "0" * 52, "processor": None,
         "basis": "a stand-in made up for W1184: no model ran"})
+    #  W1195c (FU-1831) - and the context the runtime gives the stand-in's model, long enough for every prompt
+    monkeypatch.setattr(importlib.import_module("agentic_core.ai.native.model_resource"), "context_given",
+                        lambda sb: {"model": "w1184-stand-in", "context_length": 1 << 20,
+                                    "basis": "a stand-in made up for W1184: no runtime was asked"})
 
     #  L5. the tracked file
     doc = json.loads(tracked.read_text(encoding="utf-8"))
@@ -98102,6 +98149,10 @@ def test_w1187_the_owners_five_decisions_of_2026_11_21_are_recorded_and_the_cali
     monkeypatch.setattr(importlib.import_module("agentic_core.ai.gateway"), "served_identity_of", lambda sb: {
         "model": "w1187-stand-in", "build_digest": "w1187standin" + "0" * 52, "processor": None,
         "basis": "a stand-in made up for W1187: no model ran"})
+    #  W1195c (FU-1831) - and the context the runtime gives the stand-in's model, long enough for every prompt
+    monkeypatch.setattr(importlib.import_module("agentic_core.ai.native.model_resource"), "context_given",
+                        lambda sb: {"model": "w1187-stand-in", "context_length": 1 << 20,
+                                    "basis": "a stand-in made up for W1187: no runtime was asked"})
     the_set = cal.load_set("care")
     planted = [c for c in the_set["cases"] if c.get("planted")]
     assert len(planted) >= 2 and all(c.get("must_flag") for c in planted), "the set has fewer than two planted cases"
@@ -98761,12 +98812,13 @@ def test_w1191_the_release_machine_serves_publicly_only_with_its_domain_https_an
         12 creating the rule, checking the accounts (each one's name, role and creation time, never a hash, driven
         here), setting the domain and sign-in together and sending the reader back to step 10; the steps keep their
         numbers;
-    S5. the round's row is closed on P4.5 in the Owner's recorded words, W1190's quoted as W1190 recorded them; three
-        rows are left open on P4.1; the W729 credentials are an OWNER row of high severity, on the plan's Owner list
-        and in the local notes; FU-1289 and FU-1095, still open and the Owner's, each say in one sentence what W1191
-        changed, FU-1289's after the Owner's ruling W1190 recorded there and before the dated note of the late
-        evening; P4.1 carries that evening's ruling right after the ruling of 2026-11-20 and, last, that W1191 changed
-        the script; and the plan's list and the local notes say the domain and sign-in are set together."""
+    S5. the round's row is closed on P4.5 in the Owner's recorded words, W1190's quoted as W1190 recorded them;
+        three rows are left open on P4.1 (FU-1836 since closed by W1198 as built); the W729 credentials are an OWNER
+        row of high severity, on the plan's Owner list and in the local notes; FU-1289 and FU-1095, still open and
+        the Owner's, each say in one sentence what W1191 changed, FU-1289's after the Owner's ruling W1190 recorded
+        there and before the dated note of the late evening; P4.1 carries that evening's ruling right after the
+        ruling of 2026-11-20 and, last, that W1191 changed the script; and the plan's list and the local notes say
+        the domain and sign-in are set together."""
     import json
     import os
     import pathlib
@@ -99317,6 +99369,10 @@ fi
     remove = titled("No command removes an account from the users store, so an unwanted one is removed only by editing "
                     "users.json by hand")
     for r in (left, origin, remove):
+        if r is remove and r["status"] == "done":        # W1198 closed it as built; test_w1198 holds the command
+            assert (r.get("closed_by"), r.get("because"), r["slot"], bool(r.get("owner_gated"))) == (
+                "W1198", "built", "P4.1", False), r
+            continue
         assert (r["status"], r["slot"], bool(r.get("owner_gated"))) == ("open", "P4.1", False), r
     for said in ("At every boot, importing agentic_core/auth/core.py runs _create_default_admin()", "read_json_strict",
                  "create the admin only when the file does not exist"):
@@ -100734,3 +100790,1568 @@ def test_w1193c_the_owners_nine_decisions_of_the_morning_of_2026_11_22_are_recor
     for text in said:
         hit = PRONOUN.search(text)
         assert not hit, ("a gendered pronoun", text[max(0, hit.start() - 60):hit.end() + 20])
+
+
+def test_w1198_fu1836_an_account_is_removed_with_remove_account_which_reads_the_store_whole_and_never_by_hand(
+        tmp_path, monkeypatch, capsys):
+    """FU-1836 (W1198), P4.1. W1191's step 12 checks the users store's accounts before the domain is set, and nothing
+    in the tree removed one but an edit of users.json by hand, which risks the store the platform's boot replaces when
+    it cannot read it (FU-1834). `python -m agentic_core.auth.remove_account NAME` now removes one, over SSH on the
+    machine, on set_password's pattern; it was reworked after the round's review. Held here:
+    R1. DRIVEN in its own process, as step 12 runs it, on a made-up store of admin, alice (one API key) and bob: alice,
+        typed again, is taken out with that key; admin and bob are as they were; nothing else in the data folder
+        changes, so no event and no file of the command's own is written; and what it prints names the account, its
+        role and how many API keys went, says the person's records in the other stores are not touched and that the
+        name is given to no other person, in the clauses of the rows still open, and claims nothing more: the records
+        clause while the records row is open, the token clause while the token row is open, gone once it closes;
+    R2. refused in its own process, each with its reason and the data folder left byte for byte: no name, two names, a
+        flag, the admin (typed again), a name the store does not hold, a name typed again that differs, and none typed;
+    R3. a store that is not there, or is cut mid-JSON, is refused in its own process with that reason: the store is
+        read strictly before core is imported, so no store is made and the cut one is not replaced by one holding only
+        the admin, by the command and by remove() called first in a process; and a lock another writer keeps while core
+        is imported is refused in a sentence;
+    R4. DRIVEN in this process: the store is read whole again under its lock, so an account another writer adds while
+        the name is asked (dave) is kept, and a key made meanwhile goes with the account and is counted; a different
+        account holding the name by then, told by its id, or by when it was made when it has no id, is refused with
+        the store as it was; a lock kept past its wait at the removal is refused with core's own 503 detail; so are a
+        store that cannot be written, one the command's user may not read (said as permission denied on POSIX), one
+        another user owns (before the prompt and again under the lock), one that holds no admin account (before the
+        prompt and again under the lock), an entry that is not an account, and a platform whose users store is not the
+        one read; a name that starts with '-' or is blank is taken after --; the removal itself never takes the admin;
+        set_password refuses the same three stores; and the source reads the store before it imports core and again
+        inside the lock before it writes, and, docstrings and comments aside, writes, logs and reads nothing else;
+    R5. the effect, with sign-in on in this process and tokens issued by POST /api/v1/auth/token: alice's token,
+        refresh token and API key, each issued before the removal, are refused after it (401), and bob's still answers;
+    R6. the register: FU-1836 is closed by this round, as built, once the command is in git's index (the round's close
+        step closes it before that); and the three rows this round found are on P4.1, low, in the order registered: a
+        token carries only its account's name, a person's records are owned by it, and a refresh token is taken as the
+        bearer; the token lives they state are core's defaults, which the release machine does not change;
+    R7. the guide: step 12 gives the command once, in its own block, after the accounts' check and W1191's way forward
+        for an account the Owner did not make, kept whole, and before the domain; it says what the command shows,
+        refuses and leaves, that the accounts are checked again, that a store it refuses as not read whole, unreadable
+        or another user's is not edited and, while FU-1834 is open, that the platform is not restarted on it, and that a
+        removed name is given to no other person, in the clauses of the rows still open, each naming its row: the
+        token clause is gone once the token row closes; no block writes users.json; the steps W1198's text cites keep
+        their numbers."""
+    import ast
+    import errno
+    import json
+    import os
+    import pathlib
+    import re
+    import subprocess
+    import sys
+    from fastapi import HTTPException
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")  # noqa: E731
+    from agentic_core.auth import core
+
+    #  the rows this round registered, read first: each never-reuse sentence is made of the clauses of the rows still
+    #  open (a person's records stay under the name while the records row is open; an old token signs in to an
+    #  account given it while the token row is open)
+    rows = {r.get("id"): r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"] if isinstance(r, dict)}
+
+    def titled(title):
+        found = [r for r in rows.values() if r.get("title") == title]
+        assert len(found) == 1, (title[:80], len(found))
+        return found[0]
+    token = titled("A sign-in token carries only its account's name, so a token issued to a removed account signs in to "
+                   "a new account given that name, and by refreshing keeps signing in to it for as long as it exists")
+    records = titled("A person's records are owned by their account's name, so after a removal without an erasure, an "
+                     "account given that name is shown them")
+    bearer = titled("get_current_user accepts a refresh token as the bearer, so a sign-in's bearer lasts "
+                    "REFRESH_TOKEN_TTL, not ACCESS_TOKEN_TTL")
+
+    def never(lead, records_clause, token_clause):
+        """The never-reuse sentence, made of the clauses of the rows still open, or None when both are closed."""
+        said = ([records_clause] if records["status"] == "open" else []) + (
+            [token_clause] if token["status"] == "open" else [])
+        return f"{lead}{', and '.join(said)}." if said else None
+    made_up = "w1198 a made-up hash, never a password's"
+
+    def account(name, role, made, keys=()):
+        return {"user_id": f"w1198-{name}", "username": name, "hashed_password": made_up, "role": role,
+                "created_at": made, "api_keys": list(keys)}
+    key_rec = {"key_id": "w1198k01", "key_prefix": "wstn_w1198ab", "hashed_key": made_up,
+               "created_at": "2026-11-22T09:06:00Z"}
+    users = {"admin": account("admin", "admin", "2026-11-22T09:00:00Z"),
+             "alice": account("alice", "user", "2026-11-22T09:05:00Z", [key_rec]),
+             "bob": account("bob", "viewer", "2026-11-22T09:07:00Z")}
+    raw = (json.dumps(users, indent=2) + "\n").encode("utf-8")
+    shown = "alice: role user, made 2026-11-22T09:05:00Z, 1 API key. Type its name again to remove it: "
+    head = ("Removed alice (role user) from the users store on the data disk, with 1 API key. Its sign-in tokens and "
+            "API keys are refused from their next request. The person's records in the platform's other stores are not "
+            "touched.")
+    rule = never("Give this name to no other person: ", "the person's records in the platform's other stores are still "
+                 "kept under that name, so an account given it would be shown them", "a sign-in token issued before "
+                 "this removal would sign in to that account")
+
+    def said_right(out):
+        """What the command prints when it is done: the never-reuse rule made of the clauses of the rows still open, and
+        nothing more, so the token clause is gone once the token row closes; once both rows are closed, the round
+        that closes the last says what replaces the rule."""
+        if token["status"] != "open" and "would sign in to that account" in out:
+            return False
+        return out == f"{head} {rule}\n" if rule else out.startswith(head)
+
+    #  R1. THE COMMAND AS THE OWNER RUNS IT, in its own process (no terminal, so input() reads what it is given; a
+    #  terminal is what `docker exec -it` gives the Owner), on a made-up store in a data folder of its own
+    data = tmp_path / "w1198-data"
+    data.mkdir()
+    store = data / "users.json"
+    env = dict(os.environ, DATA_DIR=str(data), WORKSTATION_DATA_DIR=str(data), PYTHONPATH=str(root),
+               WORKSTATION_UEG_PATH=str(data / "ueg.json"), PROJECTS_DIR=str(data / "projects"), AI_DISABLE_LOCAL="1",
+               PYTHONIOENCODING="utf-8")          # core's refusal carries an em dash, on every machine's console
+    for name in ("ADMIN_PASSWORD", "JWT_SECRET", "AUTH_ENABLED", "ACCESS_TOKEN_TTL", "REFRESH_TOKEN_TTL"):
+        env.pop(name, None)
+
+    def own_process(*argv, typed=None, short_lock=False, code=None):
+        run = ["-m", "agentic_core.auth.remove_account"]
+        if short_lock:            # the same command, with the store lock's own wait cut short so a held lock answers now
+            run = ["-c", "import runpy, agentic_core.config as c; real = c.store_lock; c.store_lock = lambda p: "
+                   "real(p, timeout=0.2); runpy.run_module('agentic_core.auth.remove_account', run_name='__main__', "
+                   "alter_sys=True)"]
+        if code:
+            run = ["-c", code]
+        return subprocess.run([sys.executable, *run, *argv], input="" if typed is None else typed + "\n",
+                              capture_output=True, encoding="utf-8", env=env, cwd=str(root), timeout=120,
+                              start_new_session=True)
+
+    def folder():
+        return {p.relative_to(data).as_posix(): p.read_bytes() for p in sorted(data.rglob("*")) if p.is_file()}
+    store.write_bytes(raw)
+    (data / "jwt_secret.key").write_text("w1198 a made-up signing secret", encoding="utf-8")   # the first boot's
+    before = folder()
+    r = own_process("alice", typed="alice")
+    assert r.returncode == 0 and r.stdout.startswith(shown) and said_right(r.stdout[len(shown):]), (
+        r.returncode, r.stdout[-700:], r.stderr[-700:])
+    after = folder()
+    assert sorted(after) == sorted(before), ("the command wrote an event or a file of its own",
+                                            sorted(set(after) ^ set(before)))
+    assert [k for k in after if after[k] != before[k]] == ["users.json"], "something beside the users store changed"
+    assert json.loads(store.read_text(encoding="utf-8")) == {"admin": users["admin"], "bob": users["bob"]}, (
+        "another account changed, or alice or the key is still there")
+
+    #  R2. EACH REFUSAL SAYS WHY AND CHANGES NOTHING. The name is typed each time, so a refusal that let the command go
+    #  on would remove an account
+    kept = folder()
+    usage = "usage: python -m agentic_core.auth.remove_account [--] USERNAME"
+    for argv, typed, rc, why in (
+            ((), "bob", 2, usage),
+            (("bob", "admin"), "bob", 2, usage),
+            (("--all",), "--all", 2, usage),
+            (("admin",), "admin", 1, "refused: the admin account is never removed: it is the account the Owner signs "
+                                     "in with, so nothing was changed"),
+            (("carol",), "carol", 1, "refused: the users store holds no account named 'carol', so nothing was changed"),
+            (("bob",), "alice", 1, "refused: the name typed again is not the account's, so nothing was changed"),
+            (("bob",), None, 1, "refused: the name was not typed again, so nothing was changed")):
+        r = own_process(*argv, typed=typed)
+        assert r.returncode == rc and why in r.stderr, (argv, typed, r.returncode, r.stderr[-500:])
+        assert folder() == kept, (argv, typed, "a refusal changed the data folder")
+        assert "Removed" not in r.stdout, (argv, typed, r.stdout[-300:])
+
+    #  R3. A STORE THAT IS NOT THERE OR CANNOT BE READ WHOLE: importing core first would make one holding only the
+    #  admin where none was, and put one in place of the cut one
+    first = ("import sys; from agentic_core.auth import remove_account as rm; print(rm.remove('bob')); "
+             "print('core imported' if 'agentic_core.auth.core' in sys.modules else 'core not imported')")
+    store.unlink()
+    r = own_process("bob", typed="bob")
+    assert r.returncode == 1 and "refused: there is no users store on the data disk, so nothing was changed" in r.stderr, (
+        r.returncode, r.stderr[-500:])
+    assert not store.exists(), "the command, or an import it made first, made a users store"
+    r = own_process(code=first)          # remove() called first in a process, as B8 may call it
+    assert r.returncode == 0 and "there is no users store on the data disk" in r.stdout and (
+        "core not imported" in r.stdout), (r.stdout[-500:], r.stderr[-500:])
+    assert not store.exists(), "remove(), called first in a process, made a users store"
+    torn = b'{"admin": {"user_id": "w1198-admin", "username": "admin", "role": "admin"}, "bob": {"username": "b'
+    store.write_bytes(torn)
+    for run in (lambda: own_process("bob", typed="bob"), lambda: own_process(code=first)):
+        r = run()
+        said = r.stderr if r.returncode == 1 else r.stdout
+        assert "the users store could not be read whole (not valid JSON" in said, (r.returncode, said[-500:])
+        assert store.read_bytes() == torn, "a store that could not be read whole was replaced"
+    #  ...and a lock another writer keeps while core is imported (its import takes the lock to make the first account)
+    store.write_bytes(raw)
+    lock = data / "users.json.lock"
+    lock.write_bytes(b"")
+    try:
+        held = folder()
+        r = own_process("bob", typed="bob", short_lock=True)
+        assert r.returncode == 1 and "refused: the users store stayed locked by another writer (" in r.stderr and (
+            "), so nothing was changed" in r.stderr), (r.returncode, r.stderr[-700:])
+        assert folder() == held, "a store locked by another writer was written"
+        r = own_process(code="import agentic_core.config as c; real = c.store_lock; c.store_lock = lambda p: real(p, "
+                        "timeout=0.2); " + first)            # remove() called first, the same lock held
+        assert r.returncode == 0 and "(None, 'the users store stayed locked by another writer (" in r.stdout and (
+            "core not imported" in r.stdout), (r.returncode, r.stdout[-500:], r.stderr[-500:])
+        assert folder() == held, "remove(), called first, wrote a store locked by another writer"
+    finally:
+        lock.unlink()
+
+    #  R4. IN THIS PROCESS: the store read first is the one written, and is read whole again under its lock
+    from agentic_core import config as _config
+    from agentic_core.auth import remove_account as rm
+    from agentic_core.auth import set_password as sp
+    here = tmp_path / "w1198-here"
+    here.mkdir()
+    mine = here / "users.json"
+    monkeypatch.setattr(_config, "data_path", lambda *parts: here.joinpath(*parts))   # the store read first...
+    monkeypatch.setattr(core, "_USER_STORE", mine)                                    # ...is the one written
+    assert _config.data_path("users.json") == mine
+    monkeypatch.setattr(sp.getpass, "getpass", lambda prompt="": (_ for _ in ()).throw(AssertionError(
+        "set_password asked for a password before it refused")))
+    mine.write_bytes(raw)
+    dave = account("dave", "user", "2026-11-22T09:10:00Z")
+    asked = []
+
+    def racing(prompt=""):
+        asked.append(prompt)
+        later = json.loads(mine.read_text(encoding="utf-8"))
+        later["dave"] = dave                     # another writer adds an account while the name is asked
+        mine.write_text(json.dumps(later), encoding="utf-8")
+        return "alice"
+    monkeypatch.setattr("builtins.input", racing)
+    assert rm.main(["alice"]) == 0 and asked == [shown], asked
+    out = capsys.readouterr()
+    assert said_right(out.out) and "refused" not in out.err, out
+    assert json.loads(mine.read_text(encoding="utf-8")) == {"admin": users["admin"], "bob": users["bob"], "dave": dave}, (
+        "an account written while the name was asked was lost, or another account changed")
+    #  ...the account shown is the one removed: a different one holding the name by the lock is refused, and a key made
+    #  meanwhile is not a different account (it goes with the account, and is counted)
+    left = []
+
+    def changing(field, value):
+        def answer(prompt=""):
+            later = json.loads(mine.read_text(encoding="utf-8"))
+            if field == "api_keys":
+                later["alice"]["api_keys"] = later["alice"]["api_keys"] + [dict(key_rec, key_id="w1198k02")]
+            else:
+                later["alice"][field] = value
+            mine.write_text(json.dumps(later), encoding="utf-8")
+            left.append(mine.read_bytes())
+            return "alice"
+        return answer
+    no_id = dict(users, alice={k: v for k, v in users["alice"].items() if k != "user_id"})
+    for start, field, value, why in (
+            (users, "user_id", "w1198-alice-again", "(id w1198-alice-again, not w1198-alice)"),
+            (no_id, "created_at", "2026-11-22T09:30:00Z", "(made 2026-11-22T09:30:00Z, not 2026-11-22T09:05:00Z)")):
+        mine.write_text(json.dumps(start), encoding="utf-8")
+        monkeypatch.setattr("builtins.input", changing(field, value))
+        assert rm.main(["alice"]) == 1, field
+        out = capsys.readouterr()
+        assert (f"refused: a different account now holds the name {why}, so nothing was changed: run the command "
+                "again\n") in out.err and "Removed" not in out.out, (field, out)
+        assert mine.read_bytes() == left[-1], (field, "the store was written after a different account took the name")
+    mine.write_bytes(raw)
+    monkeypatch.setattr("builtins.input", changing("api_keys", None))
+    assert rm.main(["alice"]) == 0
+    out = capsys.readouterr()
+    assert out.out.startswith("Removed alice (role user) from the users store on the data disk, with 2 API keys."), out
+    assert sorted(json.loads(mine.read_text(encoding="utf-8"))) == ["admin", "bob"]
+    #  ...a lock kept past its wait at the removal: core._users_mutation answers 503, and the command says core's detail
+    mine.write_bytes(raw)
+    real_lock = _config.store_lock
+    monkeypatch.setattr(_config, "store_lock", lambda path: real_lock(path, timeout=0.2))
+    monkeypatch.setattr("builtins.input", lambda prompt="": "bob")
+    held = mine.read_bytes()
+    here_lock = here / "users.json.lock"
+    here_lock.write_bytes(b"")
+    try:
+        try:
+            with core._users_mutation():
+                busy = None
+        except HTTPException as exc:
+            busy = exc.detail
+        got = rm.main(["bob"])
+    finally:
+        here_lock.unlink()
+    out = capsys.readouterr()
+    assert busy, "a held lock did not make core's 503, so this leg would be idle"
+    assert got == 1 and (f"refused: the users store stayed locked by another writer ({busy}), so nothing was "
+                         "changed") in out.err and "Removed" not in out.out, (got, out)
+    assert mine.read_bytes() == held, "a store locked by another writer was written"
+    monkeypatch.setattr(_config, "store_lock", real_lock)
+    #  ...a store that cannot be written (a full disk) is said, and is as it was
+    real_save = core._save_users
+
+    def full(_users):
+        raise OSError(errno.ENOSPC, "No space left on device")
+    monkeypatch.setattr(core, "_save_users", full)
+    assert rm.main(["bob"]) == 1
+    out = capsys.readouterr()
+    assert (f"refused: the users store could not be written (OSError: [Errno {errno.ENOSPC}] No space left on device); "
+            "it is as it was, so nothing was changed") in out.err, out
+    assert mine.read_bytes() == held
+    monkeypatch.setattr(core, "_save_users", real_save)
+    #  ...a store the command's user may not read is said on POSIX by both uids, not as a lock, with what to do if the
+    #  command did run as the platform's user; a store that cannot even be looked at gets the plain words (and so
+    #  does set_password)
+    real_strict = _config.read_json_strict
+
+    def denied(path, missing, expect=None):
+        try:
+            raise PermissionError(errno.EACCES, "Permission denied")
+        except PermissionError as e:              # read_json_strict's own refusal of a file the OS would not hand over
+            raise _config.StoreUnavailable(path, f"stayed locked by another process ({e.__class__.__name__})") from e
+
+    def denied_and_gone(path, missing, expect=None):
+        pathlib.Path(path).unlink()
+        denied(path, missing, expect)
+    if os.name == "posix":
+        real_euid, owner = os.geteuid, mine.stat().st_uid
+        monkeypatch.setattr(os, "geteuid", lambda: owner + 1)
+    for entry, argv in ((rm.main, ["bob"]), (sp.main, ["admin"])):
+        monkeypatch.setattr(_config, "read_json_strict", denied)
+        assert entry(argv) == 1, entry.__module__
+        out = capsys.readouterr()
+        if os.name == "posix":
+            assert (f"refused: the users store could not be read whole: it belongs to uid {owner} and the command "
+                    f"runs as uid {owner + 1}, which may not read it (permission denied), so nothing was changed: run "
+                    "it as the platform's user, as docker exec does by default; if it ran so, the store is not the "
+                    "platform's own: restore the data disk (step 9)\n") in out.err, out
+        else:
+            assert "refused: the users store could not be read whole (stayed locked by another process" in out.err, out
+        monkeypatch.setattr(_config, "read_json_strict", denied_and_gone)
+        assert entry(argv) == 1, entry.__module__
+        out = capsys.readouterr()
+        if os.name == "posix":
+            assert ("refused: the command's user may not read the users store (permission denied), so nothing was "
+                    "changed: run it as the platform's user, as docker exec does by default\n") in out.err, out
+        mine.write_bytes(held)
+    if os.name == "posix":
+        monkeypatch.setattr(os, "geteuid", real_euid)
+    monkeypatch.setattr(_config, "read_json_strict", real_strict)
+    #  ...a store another user owns is not written: as that user, the platform could no longer read it
+    if os.name == "posix":
+        real_euid, owner = os.geteuid, mine.stat().st_uid
+        another = (f"refused: the users store belongs to uid {owner}, not to the command's uid {owner + 1}, so nothing "
+                   "was changed: run it as the platform's user, as docker exec does by default; if it ran so, the "
+                   "store is not the platform's own: restore the data disk (step 9)\n")
+        monkeypatch.setattr(os, "geteuid", lambda: owner + 1)
+        for entry, argv in ((rm.main, ["bob"]), (sp.main, ["admin"])):
+            assert entry(argv) == 1, entry.__module__
+            out = capsys.readouterr()
+            assert another in out.err, out
+        monkeypatch.setattr(os, "geteuid", real_euid)
+
+        def turning(prompt=""):                   # ...and again under the lock: the user changes while the name is asked
+            monkeypatch.setattr(os, "geteuid", lambda: owner + 1)
+            return "bob"
+        monkeypatch.setattr("builtins.input", turning)
+        assert rm.main(["bob"]) == 1
+        monkeypatch.setattr(os, "geteuid", real_euid)
+        out = capsys.readouterr()
+        assert another in out.err, out
+        assert mine.read_bytes() == held
+    #  ...a store that holds no admin account is not the platform's: refused before the prompt and again under the lock
+    mine.write_text(json.dumps({"alice": users["alice"], "bob": users["bob"]}), encoding="utf-8")
+    no_admin = mine.read_bytes()
+    monkeypatch.setattr("builtins.input", lambda prompt="": (_ for _ in ()).throw(AssertionError("asked")))
+    assert rm.main(["bob"]) == 1
+    out = capsys.readouterr()
+    unowned = ("refused: the users store holds no admin account, so it is not the platform's, and nothing was changed: "
+               "restore the data disk (step 9)\n")
+    assert unowned in out.err and mine.read_bytes() == no_admin, out
+    mine.write_bytes(raw)
+
+    def dropping(prompt=""):
+        later = json.loads(mine.read_text(encoding="utf-8"))
+        later.pop("admin")
+        mine.write_text(json.dumps(later), encoding="utf-8")
+        left.append(mine.read_bytes())
+        return "bob"
+    monkeypatch.setattr("builtins.input", dropping)
+    assert rm.main(["bob"]) == 1
+    out = capsys.readouterr()
+    assert unowned in out.err and mine.read_bytes() == left[-1], out
+    #  ...an entry that is not an account is said as that (and by set_password)
+    mine.write_text(json.dumps({"admin": users["admin"], "carol": "w1198 not an account"}), encoding="utf-8")
+    assert rm.main(["carol"]) == 1
+    out = capsys.readouterr()
+    assert "refused: the users store's entry for 'carol' is not an account, so nothing was changed" in out.err, out
+    mine.write_text(json.dumps({"admin": "w1198 not an account"}), encoding="utf-8")
+    assert sp.main(["admin"]) == 1
+    out = capsys.readouterr()
+    assert "refused: the users store's entry for 'admin' is not an account, so nothing was changed" in out.err, out
+    #  ...a name that itself says nothing was changed is still told so: a reason is marked by its type, not its words
+    mine.write_bytes(raw)
+    for entry in (rm.main, sp.main):
+        assert entry(["w1198 nothing was changed"]) == 1, entry.__module__
+        out = capsys.readouterr()
+        assert ("refused: the users store holds no account named 'w1198 nothing was changed', so nothing was "
+                "changed\n") in out.err, out
+    #  ...a name that starts with '-', or is blank, is taken after --
+    mine.write_text(json.dumps({"admin": users["admin"], "-bob": account("-bob", "user", "2026-11-22T09:11:00Z"),
+                                " ": account(" ", "user", "2026-11-22T09:12:00Z")}), encoding="utf-8")
+    assert rm.main(["-bob"]) == 2 and rm.main([" "]) == 2 and rm.main(["--"]) == 2 and rm.main(["--", "a", "b"]) == 2
+    for name in ("-bob", " "):
+        monkeypatch.setattr("builtins.input", lambda prompt="", typed=name: typed)
+        assert rm.main(["--", name]) == 0, repr(name)
+    capsys.readouterr()
+    assert json.loads(mine.read_text(encoding="utf-8")) == {"admin": users["admin"]}
+    #  ...a platform whose users store is not the one read
+    mine.write_bytes(raw)
+    other = tmp_path / "w1198-elsewhere" / "users.json"
+    other.parent.mkdir()
+    other.write_bytes(raw)
+    monkeypatch.setattr(core, "_USER_STORE", other)
+    monkeypatch.setattr("builtins.input", lambda prompt="": "bob")
+    both = (mine.read_bytes(), other.read_bytes())
+    assert rm.main(["bob"]) == 1
+    out = capsys.readouterr()
+    assert "refused: the platform's users store is not the one that was read, so nothing was changed" in out.err, out
+    assert (mine.read_bytes(), other.read_bytes()) == both, "a store was written that was not the one read"
+    monkeypatch.setattr(core, "_USER_STORE", mine)
+    #  ...the removal itself never takes the admin, whoever calls it
+    assert rm.remove("admin") == (None, "the admin account is never removed: it is the account the Owner signs in with")
+    assert mine.read_bytes() == raw
+    #  ...and read as code: the store read strictly before core is imported, and again inside the lock before it writes
+    source = read("agentic_core/auth/remove_account.py")
+    code = _code_only(source.split('"""', 2)[2])
+    entry_code = code.split("\ndef main(", 1)[1]
+    assert entry_code.index("_removable(store, username)") < entry_code.index("from agentic_core.auth import core"), (
+        "the store is not read whole before core is imported")
+    part = code.split("\ndef remove(", 1)[1].split("\ndef ", 1)[0]
+    assert part.index("with core._users_mutation():") < part.index("_removable(core._USER_STORE, username)") < part.index(
+        "core._save_users(users)"), "the store is not read again, and written, inside its lock"
+    assert "read_json_strict(store, None, dict)" in code and code.count("core._save_users(") == 1, (
+        "the store is not read strictly, or is written in more than one place")
+    tree = ast.parse(source)
+    for node in ast.walk(tree):                   # docstrings blanked: what is left is what the module does
+        body = getattr(node, "body", None)
+        if (isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and body
+                and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant)
+                and isinstance(body[0].value.value, str)):
+            body[0].value.value = ""
+    bare = ast.unparse(tree)
+    for leak in ("open(", "write_text", "write_bytes", "UEG", "logging", "environ", "getenv", "json.load"):
+        assert leak not in bare, ("the command writes, logs, reads tolerantly or reads beyond the users store", leak)
+
+    #  R5. THE EFFECT, with sign-in on in this process: what was issued to alice before the removal is refused after it.
+    #  The tokens are the sign-in route's own, so this holds what happens, not what a token carries
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    password = "w1198 a made-up password"
+    hashed = core._pwd_ctx.hash(password)
+    mine.write_text(json.dumps({name: dict(account(name, role, made), hashed_password=hashed) for name, role, made in (
+        ("admin", "admin", "2026-11-22T09:00:00Z"), ("alice", "user", "2026-11-22T09:05:00Z"),
+        ("bob", "viewer", "2026-11-22T09:07:00Z"))}), encoding="utf-8")
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    monkeypatch.setattr(core, "_ATTEMPTS", {})          # failed sign-ins other tests counted are not this leg's
+    app = FastAPI()
+    app.include_router(core.router)
+    bearer_of = lambda t: {"Authorization": f"Bearer {t}"}  # noqa: E731
+    with TestClient(app) as tc:
+        def signed_in(name):
+            got = tc.post("/api/v1/auth/token", data={"username": name, "password": password})
+            assert got.status_code == 200, (name, got.status_code, got.text[:200])
+            return got.json()
+        alice, bob = signed_in("alice"), signed_in("bob")
+        access, refresh = alice["access_token"], alice["refresh_token"]
+        assert tc.get("/api/v1/auth/me", headers=bearer_of(access)).json().get("username") == "alice"
+        issued = tc.post("/api/v1/auth/api-key", headers=bearer_of(access))
+        assert issued.status_code == 200, issued.text[:300]
+        key = issued.json()["api_key"]
+        assert tc.get("/api/v1/auth/me", headers=bearer_of(key)).json().get("username") == "alice"
+        monkeypatch.setattr("builtins.input", lambda prompt="": "alice")
+        assert rm.main(["alice"]) == 0
+        out = capsys.readouterr()
+        assert out.out.startswith("Removed alice (role user) from the users store on the data disk, with 1 API key."), out
+        for what, answer, detail in (
+                ("its token", tc.get("/api/v1/auth/me", headers=bearer_of(access)), "User not found."),
+                ("its API key", tc.get("/api/v1/auth/me", headers=bearer_of(key)), "API key not recognised."),
+                ("its refresh token", tc.post("/api/v1/auth/refresh", json={"refresh_token": refresh}), "User not found.")):
+            assert (answer.status_code, answer.json().get("detail")) == (401, detail), (
+                what, "still signs in to the removed account", answer.status_code, answer.text[:200])
+        assert tc.get("/api/v1/auth/me", headers=bearer_of(bob["access_token"])).json().get("username") == "bob", (
+            "bob's sign-in was lost")
+
+    #  R6. THE REGISTER: FU-1836 closed by this round as built, and the three rows it found open on P4.1
+    fu = rows["FU-1836"]
+    assert (fu["title"], fu["slot"]) == ("No command removes an account from the users store, so an unwanted one is "
+                                         "removed only by editing users.json by hand", "P4.1"), fu["title"]
+    listed = subprocess.run(["git", "-C", str(root), "ls-files", "--", "agentic_core/auth/remove_account.py"],
+                            capture_output=True, text=True)
+    assert listed.returncode == 0, ("git could not list the index", listed.stderr[-300:])
+    if (fu["status"], fu.get("closed_by"), fu.get("because")) == ("done", "W1198", "built"):
+        note = fu.get("close_note") or ""
+        assert note.startswith("Built in W1198: ") and "python -m agentic_core.auth.remove_account NAME" in note, note[:300]
+    else:
+        assert fu["status"] == "open" and not fu.get("closed_by"), (
+            "FU-1836 was closed, and not by this round as built", fu["status"], fu.get("closed_by"))
+        assert not listed.stdout.strip(), (
+            "the command is in git's index and FU-1836 is still open: the round's close step did not run")
+    for row, measured in (
+            (token, ("the old access token answered GET /api/v1/auth/me as the new account",
+                     "the old refresh token was exchanged for new tokens (200)",
+                     "a refresh token past its own expiry was refused (401) while the one it had been exchanged for was "
+                     "accepted (200)", "carry the account's user_id in each token",
+                     "an old access token of a user account answered the admin-only GET /api/v1/auth/users (200) once "
+                     "the name was given to an admin account")),
+            (records, ("the new account read the first account's workspace, its history and preferences included "
+                       "(GET /api/v1/user/workspace, 200)", "B8's planned erasure (FU-1863)",
+                       "refuse them at register and signup through W864's _reserved_name_refusal (409)",
+                       "own records by the account's user_id", "so B8 would not erase someone this command has "
+                       "already removed", "a stranger who did so read the removed person's workspace (200)",
+                       "So this row is fixed before self-serve sign-up is switched on.",
+                       "with a way for the admin to give a removed name back to the same person")),
+            (bearer, ("sent as the bearer, answered GET /api/v1/auth/me as the account (200)",
+                      "get_current_user refuses a token whose payload's type is not access, with 401",
+                      "never fails a request"))):
+        assert (row["slot"], row["severity"], row["files"], row["owner_gated"]) == (
+            "P4.1", "low", ["agentic_core/auth/core.py"], False), (row["id"], row["slot"], row["severity"], row["files"])
+        assert row["status"] == "open" or row.get("closed_by") not in (None, "W1198"), ("W1198 closed a row it found",
+                                                                                     row["id"])
+        for said in measured:
+            assert said in row["why"], (row["id"], "does not say", said)
+    assert records["slot_source"].endswith("; fixed before self-serve sign-up (P4.2) is switched on"), (
+        records["slot_source"])
+    assert int(token["id"][3:]) < int(records["id"][3:]) < int(bearer["id"][3:]), (
+        "the three rows are not in the order registered", token["id"], records["id"], bearer["id"])
+    #  ...the token lives the token and bearer rows state are core's defaults, which the release machine does not
+    #  change, while either row is open
+    if token["status"] == "open" or bearer["status"] == "open":
+        core_src = read("agentic_core/auth/core.py")
+        for default in (r'os\.getenv\(\s*"ACCESS_TOKEN_TTL"\s*,\s*"60"\s*\)',
+                        r'os\.getenv\(\s*"REFRESH_TOKEN_TTL"\s*,\s*"10080"\s*\)'):
+            assert re.search(default, core_src), ("core's token life is not what the rows say", default)
+        for rel in ("deploy/gcp/startup.sh", "Dockerfile"):
+            assert "TOKEN_TTL" not in read(rel), (rel, "the release machine sets a token's life")
+
+    #  R7. THE GUIDE: step 12, between the accounts' check and the domain, keeping W1191's way forward whole
+    sec = read("docs/DEPLOYMENT.md").split("## The Google Cloud deploy, step by step (P4.5)", 1)[1].split("\n## ", 1)[0]
+    numbers = [int(n) for n in re.findall(r"^\*\*Step (\d+)\. ", sec, re.M)]
+    assert numbers[:12] == list(range(1, 13)), ("the steps W1198's text cites were renumbered", numbers)
+    twelve = " ".join(re.split(r"^\*\*Step \d+\. ", sec, flags=re.M)[12].split())
+    blocks = [" ".join(b.replace("\\\n", " ").split()) for b in re.findall(r"```bash\n(.*?)```", sec, re.S)]
+    command = "sudo docker exec -it workstation python -m agentic_core.auth.remove_account NAME"
+    users_cmd = ("sudo docker exec workstation python -c \"import json; [print(n, u.get('role'), u.get('created_at', "
+                 "'-')) for n, u in sorted(json.load(open('/app/data/users.json')).items())]\"")
+    assert blocks.count(command) == 1 and f"```bash {command} ```" in twelve, (
+        "step 12 does not give the command once, in its own block")
+    assert [b for b in blocks if "users.json" in b] == [users_cmd], (
+        "a command in the deploy writes users.json, or the accounts' check is gone",
+        [b[:90] for b in blocks if "users.json" in b])
+    for kept_here in ("It prints admin's line, and one for each account the Owner made.",
+                      "Any account the Owner did not make is a reason to stop, and one made before sign-in was turned on "
+                      "is the kind to distrust",
+                      "Then the domain is not set.",
+                      "The data disk is restored from a snapshot taken before that account (step 9; the snapshots are "
+                      "daily, so on the first day there may be none)",
+                      "or, before any record matters, the platform starts again on a blank data disk",
+                      "and what reached the forwarded port is found before a tunnel is opened again."):
+        assert twelve.count(kept_here) == 1, ("W1191's way forward for an account the Owner did not make is not kept "
+                                              "whole", kept_here)
+    said_here = [
+        "An account the Owner made and no longer wants is removed with a command, never by editing users.json by hand "
+        "(W1198).",
+        "It is not for an account the Owner did not make: whatever made that one may have done more than make an "
+        "account, so the data disk is restored, as above.",
+        "The command is run on the machine, NAME being the account's name:",
+        "It shows the account's role, when it was made and how many API keys it holds, and asks for the name again. It "
+        "removes the account only when the two names match.",
+        "It refuses the admin account and a name the store does not hold. It refuses a users store that is not there, "
+        "cannot be read whole or holds no admin account.",
+        "It takes the account and its API keys out of the users store, and nothing else: the person's records in the "
+        "platform's other stores are not touched.",
+        "The account's sign-in tokens are refused from their next request.",
+        "Then the accounts are checked again, as above.",
+        "A users store the command refuses as not read whole, unreadable or another user's is not edited."]
+    guide_never = never("A removed name is given to no other person: ", f"the person's records in the platform's "
+                        f"other stores stay under that name, so an account given it would be shown them "
+                        f"({records['id']})", f"a sign-in token issued before the removal would sign in to that "
+                        f"account ({token['id']})")
+    if guide_never:
+        said_here.append(guide_never)
+    if token["status"] != "open":
+        assert "would sign in to that account" not in twelve and f"({token['id']})" not in twelve, (
+            "step 12 still says an old token signs in to an account given a removed name")
+    if rows["FU-1834"]["status"] == "open":
+        said_here.append("The platform is not restarted on it before the data disk is restored (step 9): its boot "
+                         "replaces a store it cannot read with one holding only the admin account (FU-1834).")
+    for said in said_here:
+        assert twelve.count(said) == 1, ("step 12 does not say, once", said)
+    at = [twelve.index(s) for s in ("Create step 6's rule now", "GET /api/v1/auth/users", users_cmd,
+                                    "Then the domain is not set.", "a tunnel is opened again.",
+                                    "An account the Owner made and no longer wants", command,
+                                    "Then the accounts are checked again", "--metadata=domain=DOMAIN,auth-enabled=true")]
+    assert at == sorted(at), ("step 12's order: the rule, the accounts' check, the way forward, the command, the check "
+                              "again, and then the domain", at)
+
+
+def test_w1198b_a_sign_in_token_admits_only_the_account_it_was_issued_to_and_only_an_access_token_is_the_bearer(
+        client, tmp_path, monkeypatch):
+    """W1198b, P4.1: two of W1198's rows. A sign-in token carried only its account's name, so after a removal the
+    account's tokens signed in to a new account given that name, and by refreshing kept doing so; and a refresh token
+    was taken as the bearer, so a sign-in's bearer lasted REFRESH_TOKEN_TTL. Now each token carries the account's id
+    (uid), and only an access token is the bearer. Held here, through the real routes with sign-in on in this process,
+    on a made-up store:
+    L1. once the name is given to a new account, the old account's access token (GET /api/v1/auth/me) and its refresh
+        token (POST /api/v1/auth/refresh) are refused with 401 'User not found.', and the new account signs in;
+    L2. a refresh token sent as the bearer on /me is refused with 401 'Not an access token.', and an access token sent
+        to the refresh route with 400 'Not a refresh token.';
+    L3. a token with no uid, as every token before W1198b was, is refused with its own reason, access and refresh
+        alike, even for an account with no user_id (only a hand-made store holds one), which still signs in with what
+        it is issued;
+    L4. the Owner's sign-in, refresh and /me still work, and each token they hand out carries the account's id and its
+        kind, a refreshed one included;
+    L5. the request-user middleware never fails a request: a refresh token, a token with no uid, the old account's
+        token and a value that is no token each pass /health with no user set, and an access token of the account the
+        name holds sets that user;
+    L7. a name with a blank edge: a hand-made record filed under ' admin' whose username is 'admin', as self-serve
+        signup made before W1198b, signs in, but its tokens are refused on the admin-only GET /api/v1/auth/users, /me
+        and the refresh route and set no user; and signup now refuses a name with a blank edge with 422, creating
+        nothing, while an ordinary name still signs up;
+    L6. what is said: the command's output, its docstring and step 12 no longer say a token signs in to a reused name
+        and say a token carries the account's id, a removed name is still given to no other person, the token row and
+        the refresh-as-bearer row are closed by W1198b as built while the records row stays open, and the rows the
+        round's security review found are registered: the signup row closed as built, four open on P4.1."""
+    import json
+    import pathlib
+    from agentic_core import config as _config
+    from agentic_core.auth import core
+    from agentic_core.auth import remove_account as rm
+    from agentic_core.api import _ai_provenance as _prov
+    from agentic_core import app_mvp as _app
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")  # noqa: E731
+    store = tmp_path / "users.json"
+    monkeypatch.setattr(_config, "data_path", lambda *parts: tmp_path.joinpath(*parts))   # the command's store...
+    monkeypatch.setattr(core, "_USER_STORE", store)                                    # ...is the routes' store
+    monkeypatch.setattr(core, "_ATTEMPTS", {})          # failed sign-ins other tests counted are not this test's
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    password = "w1198b a made-up password"
+    hashed = core._pwd_ctx.hash(password)
+
+    def account(name, role, with_id=True):
+        rec = {"user_id": f"w1198b-{name}", "username": name, "hashed_password": hashed, "role": role,
+               "created_at": "2026-11-22T10:00:00Z", "api_keys": []}
+        if not with_id:
+            rec.pop("user_id")
+        return rec
+    store.write_text(json.dumps({"admin": account("admin", "admin"), "alice": account("alice", "user"),
+                                 "carol": account("carol", "user", with_id=False)}), encoding="utf-8")
+    bearer = lambda t: {"Authorization": f"Bearer {t}"}  # noqa: E731
+
+    def signed_in(name, pw=password):
+        got = client.post("/api/v1/auth/token", data={"username": name, "password": pw})
+        assert got.status_code == 200, (name, got.status_code, got.text[:200])
+        return got.json()
+
+    def refused(answer, detail, what):
+        assert (answer.status_code, answer.json().get("detail")) == (401, detail), (what, answer.status_code,
+                                                                                     answer.text[:200])
+
+    #  L4. THE OWNER'S OWN USE: sign-in, /me and refresh, each token carrying the account's id and its kind
+    owner = signed_in("admin")
+    for tok, kind in ((owner["access_token"], "access"), (owner["refresh_token"], "refresh")):
+        claims = core._decode_token(tok)
+        assert (claims.get("sub"), claims.get("uid"), claims.get("type")) == ("admin", "w1198b-admin", kind), claims
+    me = client.get("/api/v1/auth/me", headers=bearer(owner["access_token"]))
+    assert me.status_code == 200 and (me.json()["username"], me.json()["role"]) == ("admin", "admin"), me.text[:200]
+    again = client.post("/api/v1/auth/refresh", json={"refresh_token": owner["refresh_token"]})
+    assert again.status_code == 200, again.text[:200]
+    for tok, kind in ((again.json()["access_token"], "access"), (again.json()["refresh_token"], "refresh")):
+        claims = core._decode_token(tok)
+        assert (claims.get("sub"), claims.get("uid"), claims.get("type")) == ("admin", "w1198b-admin", kind), claims
+    assert client.get("/api/v1/auth/me", headers=bearer(again.json()["access_token"])).json()["username"] == "admin"
+    assert client.post("/api/v1/auth/refresh", json={"refresh_token": again.json()["refresh_token"]}).status_code == 200
+    admin_access = again.json()["access_token"]
+    #  ...and an account with no user_id signs in with what it is issued (read through a route that names the caller;
+    #  /me itself answers only an account that has a user_id)
+    carol = signed_in("carol")
+    ws = client.get("/api/v1/user/workspace", headers=bearer(carol["access_token"]))
+    assert ws.status_code == 200 and ws.json().get("owner_id") == "carol", (ws.status_code, ws.text[:200])
+
+    #  L2. A REFRESH TOKEN IS NOT A BEARER
+    refused(client.get("/api/v1/auth/me", headers=bearer(owner["refresh_token"])), "Not an access token.",
+            "a refresh token sent as the bearer")
+    sent = client.post("/api/v1/auth/refresh", json={"refresh_token": owner["access_token"]})
+    assert (sent.status_code, sent.json().get("detail")) == (400, "Not a refresh token."), (sent.status_code,
+                                                                                            sent.text[:200])
+
+    #  L3. A TOKEN WITH NO UID, as every token before W1198b was, is refused with its own reason, with or without an id
+    before = "This sign-in was issued before tokens carried the account's id: sign in again."
+    for name, role, route in (("admin", "admin", "/api/v1/auth/me"), ("carol", "user", "/api/v1/user/workspace")):
+        old_access = core._make_token({"sub": name, "role": role, "type": "access"}, 5)
+        old_refresh = core._make_token({"sub": name, "type": "refresh"}, 5)
+        refused(client.get(route, headers=bearer(old_access)), before, (name, "access, no uid"))
+        refused(client.post("/api/v1/auth/refresh", json={"refresh_token": old_refresh}), before,
+                (name, "refresh, no uid"))
+
+    #  L1. THE NAME GIVEN TO A NEW ACCOUNT: the old account's tokens are refused, and the new account signs in
+    alice = signed_in("alice")
+    monkeypatch.setattr("builtins.input", lambda prompt="": "alice")
+    assert rm.main(["alice"]) == 0
+    held = json.loads(store.read_text(encoding="utf-8"))
+    assert "alice" not in held, "the command did not remove the account"
+    held["alice"] = dict(account("alice", "user"), user_id="w1198b-alice-the-second",
+                         hashed_password=core._pwd_ctx.hash("w1198b another person"))
+    store.write_text(json.dumps(held), encoding="utf-8")
+    refused(client.get("/api/v1/auth/me", headers=bearer(alice["access_token"])), "User not found.",
+            "the old account's access token on the new account")
+    refused(client.post("/api/v1/auth/refresh", json={"refresh_token": alice["refresh_token"]}), "User not found.",
+            "the old account's refresh token on the new account")
+    new = signed_in("alice", "w1198b another person")
+    me = client.get("/api/v1/auth/me", headers=bearer(new["access_token"])).json()
+    assert me["username"] == "alice" and me["user_id"] != "w1198b-alice", me
+
+    #  L5. THE MIDDLEWARE NEVER FAILS A REQUEST, and sets a user only for an access token of the account the name holds
+    seen = []
+    monkeypatch.setattr(_prov, "set_request_user", lambda name: seen.append(name))
+    if hasattr(_app, "set_request_user"):           # a name app_mvp binds itself would bypass the patch above
+        monkeypatch.setattr(_app, "set_request_user", lambda name: seen.append(name))
+    for what, tok, user in (
+            ("the new account's access token", new["access_token"], "alice"),
+            ("a refresh token", new["refresh_token"], None),
+            ("a token with no uid", core._make_token({"sub": "admin", "role": "admin", "type": "access"}, 5), None),
+            ("a token with no uid for an account with no id",
+             core._make_token({"sub": "carol", "role": "user", "type": "access"}, 5), None),
+            ("the old account's access token", alice["access_token"], None),
+            ("a value that is no token", "w1198b-not-a-token", None)):
+        seen.clear()
+        got = client.get("/health", headers=bearer(tok))
+        assert got.status_code == 200, (what, got.status_code)
+        assert [n for n in seen if n] == ([user] if user else []), (what, seen)
+
+    #  L7. A NAME WITH A BLANK EDGE: a record filed under ' admin' named 'admin' signs in, and is no admin
+    held = json.loads(store.read_text(encoding="utf-8"))
+    held[" admin"] = dict(account("admin", "user"), user_id="w1198b-stranger",
+                          hashed_password=core._pwd_ctx.hash("w1198b a stranger"))
+    store.write_text(json.dumps(held), encoding="utf-8")
+    stranger = signed_in(" admin", "w1198b a stranger")
+    assert core._decode_token(stranger["access_token"]).get("sub") == "admin"   # the takeover W1198b's review measured
+    refused(client.get("/api/v1/auth/users", headers=bearer(stranger["access_token"])), "User not found.",
+            "a blank-edged record's token on the admin-only list")
+    refused(client.get("/api/v1/auth/me", headers=bearer(stranger["access_token"])), "User not found.",
+            "a blank-edged record's token on /me")
+    refused(client.post("/api/v1/auth/refresh", json={"refresh_token": stranger["refresh_token"]}), "User not found.",
+            "a blank-edged record's refresh token")
+    seen.clear()
+    assert client.get("/health", headers=bearer(stranger["access_token"])).status_code == 200
+    assert [n for n in seen if n] == [], ("the middleware set a user for a blank-edged record's token", seen)
+    assert client.get("/api/v1/auth/users", headers=bearer(admin_access)).status_code == 200   # the admin still is
+    monkeypatch.setenv("SELF_SERVE_SIGNUP_ENABLED", "true")
+    for name in (" w1198b-bob", "w1198b-bob ", " admin "):
+        got = client.post("/api/v1/auth/signup", json={"username": name, "password": "w1198b a password"})
+        assert (got.status_code, got.json().get("detail")) == (
+            422, "A name cannot begin or end with a blank: nothing was created."), (repr(name), got.status_code,
+                                                                                    got.text[:200])
+    assert not [k for k in json.loads(store.read_text(encoding="utf-8")) if "bob" in k], "a refused signup created one"
+    got = client.post("/api/v1/auth/signup", json={"username": "w1198b-dave", "password": "w1198b a password"})
+    assert got.status_code == 200, (got.status_code, got.text[:200])
+
+    #  L6. WHAT IS SAID: the command, step 12 and the register
+    assert "token" not in rm.RULE.lower(), ("the command's rule still speaks of tokens", rm.RULE)
+    doc = " ".join((rm.__doc__ or "").split())
+    assert ("A sign-in token carries the account's id (W1198b), so a token issued before the removal is refused by an "
+            "account given the name later.") in doc, "the command's docstring does not say a token carries the id"
+    assert "would sign in to that account" not in read("agentic_core/auth/remove_account.py"), (
+        "the command still says a token signs in to a reused name")
+    rows = {r.get("id"): r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"] if isinstance(r, dict)}
+
+    def titled(title):
+        found = [r for r in rows.values() if r.get("title") == title]
+        assert len(found) == 1, (title[:80], len(found))
+        return found[0]
+    token = titled("A sign-in token carries only its account's name, so a token issued to a removed account signs in to "
+                   "a new account given that name, and by refreshing keeps signing in to it for as long as it exists")
+    as_bearer = titled("get_current_user accepts a refresh token as the bearer, so a sign-in's bearer lasts "
+                       "REFRESH_TOKEN_TTL, not ACCESS_TOKEN_TTL")
+    records = titled("A person's records are owned by their account's name, so after a removal without an erasure, an "
+                     "account given that name is shown them")
+    if records["status"] == "open":
+        assert rm.RULE == ("Give this name to no other person: the person's records in the platform's other stores are "
+                           "still kept under that name, so an account given it would be shown them."), rm.RULE
+    for row, said in ((token, "every token issued before W1198b carries no uid, so it is refused on every request "
+                              "until it expires"),
+                      (as_bearer, "a refresh token sent as the bearer is refused")):
+        assert (row["status"], row.get("closed_by"), row.get("because")) == ("done", "W1198b", "built"), row["id"]
+        assert row.get("close_note", "").startswith("Built in W1198b: ") and said in row["close_note"], row["id"]
+    assert records["status"] == "open" or records.get("closed_by") not in (None, "W1198b"), (
+        "W1198b closed the records row, which binding tokens does not fix")
+    sec = read("docs/DEPLOYMENT.md").split("## The Google Cloud deploy, step by step (P4.5)", 1)[1].split("\n## ", 1)[0]
+    twelve = " ".join(sec.split("**Step 12. ", 1)[1].split())
+    said = ("A sign-in token carries the account's id (W1198b), so a token issued before the removal is refused by any "
+            "account given the name later.")
+    assert twelve.count(said) == 1, ("step 12 does not say, once", said)
+    assert "refused once" not in twelve, "step 12 says an old token is refused once, not until it expires"
+    if records["status"] == "open":
+        assert twelve.count(f"A removed name is given to no other person: the person's records in the platform's other "
+                            f"stores stay under that name, so an account given it would be shown them "
+                            f"({records['id']}).") == 1
+    assert "would sign in to that account" not in twelve, "step 12 still says a token signs in to a reused name"
+    #  the rows the round's security review found: the signup row built and closed, four registered open on P4.1
+    signup = titled("A self-serve signup under a name with a blank edge, such as ' admin', was filed under that name but "
+                    "signed in as the account of the stripped name")
+    assert (signup["status"], signup.get("closed_by"), signup.get("because")) == ("done", "W1198b", "built"), signup["id"]
+    for title in ("A sign-in for a name no account holds answers sooner than one with a wrong password, so its timing "
+                  "says which names are held",
+                  "With self-serve sign-up on, a signup refused as already existing is not counted toward the address "
+                  "limit, so names can be probed",
+                  "The stream socket takes no sign-in token even with sign-in on, so once the domain answers anyone can "
+                  "read its broadcasts",
+                  "A refresh token is never retired and no session can be ended, so a copied refresh token keeps working "
+                  "and a password change leaves every token valid"):
+        row = titled(title)
+        assert row.get("source") == "W1198b (the round's security review)", row["id"]
+        assert row["status"] == "open" or row.get("closed_by") not in (None, "W1198b"), (
+            row["id"], "W1198b closed a row it registered open")
+
+
+def test_w1197_fu1841_the_composition_preview_computes_its_verdict_and_records_nothing(client, monkeypatch):
+    """FU-1841 (W1197), P3.30. POST /api/v1/resources/compose/simulate said 'Nothing is saved.' and, through
+    assure_delivery(label='composition', served_by='template'), sealed a version of qms_record:composition, counted a
+    controlled document, logged a compliance.screen UEG event, fired a cognitive 'qms.composition' signal and, on a
+    compliance fail or an escalation, recorded with the immune system. assure_delivery(record=False) now computes the
+    verdict and records none of it; the preview passes it, and POST /compose and PUT /compositions/{cid} still seal.
+    Held here, with spies that call through (UEGLogger.log on the class, fire_signal and immune.record on the
+    singletons), so the real ledger, bus and immune system still receive what is sent:
+    L1. a preview whose name carries W287's fail wording answers 200 with the verdict computed (compliance fail,
+        sharia_halal fail), the gate not assessable (qms_gate_passed None, W449), the bar measured, saved False,
+        quality_record_hash None and document_controlled False, with a basis that says nothing was recorded and
+        names POST /compose and PUT /compositions/{cid};
+    L2. across that preview and a second whose name carries only an escalation term (computed: ethical:value), six
+        counters do not move: the versions of qms_record:composition in the DCMS in memory and in a fresh instance
+        read from its store, the QMS's controlled documents, compliance:composition filings with the immune system
+        (in the spy, and among the events it keeps), compliance.screen events labelled composition, and
+        ('cognitive', 'qms.composition') signals;
+    L3. on each preview the Nervous and Endocrine layers are said to be not engaged on the call, in one of
+        test_w506's six states with a basis naming the preview, and the note lists neither as engaged; Immune
+        still contributes its value;
+    L4. POST /compose with the same body adds exactly one of each: a version (in memory and in a fresh instance), a
+        controlled document, a compliance.screen event labelled composition (in the spy, and by its hash in GET
+        /api/v1/gaas/ueg/events), a compliance_fail filing kept by the immune system and a 'qms.composition'
+        signal; it answers document_controlled True, and its layers say Nervous and Endocrine were engaged;
+    L5. PUT /compositions/{cid} on it adds exactly one version and one controlled document, and answers
+        document_controlled True;
+    L6. record=False on content the gate could assess (model-served, and failing) is refused with ValueError, and
+        the QMS's gates run, its defects and every counter above do not move (W489: a gate that runs records what
+        it found);
+    L7. the words: the preview's note and the route's docstring say the verdict was computed and nothing recorded,
+        and the note still says NOTHING WAS RUN and never 'simulated'; assure_delivery's docstring restates W449's
+        'the record is still sealed' for record=False; homeostasis no longer concedes that the preview may change
+        other state; and FU-1841 is open, or closed by W1197 as built."""
+    import inspect
+    import json
+    import pathlib
+    import pytest
+    from agentic_core.ai.native import homeostasis as _hm
+    from agentic_core.api import resource_fabric as _rf
+    from agentic_core.gaas.v5 import UEGLogger
+    from agentic_core.organism.biobus import biobus
+    from agentic_core.organism.immune import immune
+    from agentic_core.vbs import quality as Q
+    from agentic_core.vbs.dcms import DocumentControlManagementSystem
+    from agentic_core.vbs.registry import dcms, qms
+    root = pathlib.Path(__file__).resolve().parents[1]
+    flat = lambda s: " ".join((s or "").split())  # noqa: E731
+    KEY = "qms_record:composition"
+
+    screens, signals, filed = [], [], []
+    _log, _fire, _record = UEGLogger.log, biobus.fire_signal, immune.record
+
+    def _spy_log(self, event_data, *a, **k):
+        h = _log(self, event_data, *a, **k)
+        if isinstance(event_data, dict) and event_data.get("type") == "compliance.screen":
+            screens.append((event_data.get("label"), event_data.get("overall"), h))
+        return h
+
+    def _spy_fire(signal_type, source, *a, **k):
+        signals.append((signal_type, source))
+        return _fire(signal_type, source, *a, **k)
+
+    def _spy_record(endpoint, *a, **k):
+        filed.append((endpoint, a[0] if a else k.get("error_type")))
+        return _record(endpoint, *a, **k)
+    monkeypatch.setattr(UEGLogger, "log", _spy_log)
+    monkeypatch.setattr(biobus, "fire_signal", _spy_fire)
+    monkeypatch.setattr(immune, "record", _spy_record)
+
+    def counts():
+        return {"versions": len(dcms.registry.get(KEY) or []),
+                "versions_stored": len(DocumentControlManagementSystem("vbs").registry.get(KEY) or []),
+                "controlled": qms.controlled_documents,
+                "filed": sum(1 for e, _t in filed if e == "compliance:composition"),
+                "screens": sum(1 for lab, _o, _h in screens if lab == "composition"),
+                "signals": signals.count(("cognitive", "qms.composition"))}
+
+    def kept():
+        """The immune system's own compliance:composition events, by their monotonic stamps (old ones age out)."""
+        with immune._lock:
+            return {(e.ts, e.error_type) for e in immune._events if e.endpoint == "compliance:composition"}
+
+    def clause(note, head):
+        """The layers a note's clause names, or none when the clause is not there."""
+        if head not in note:
+            return set()
+        return {x.strip() for x in note.split(head, 1)[1].split(".", 1)[0].split(",") if x.strip()}
+    pair = {"Nervous", "Endocrine"}
+    allowed = {"engaged_with_value", "engaged_no_value", "implemented_not_on_this_path",
+               "measurement_under_this_name", "code_exists_unreached", "code_unloadable"}   # test_w506's six
+    body = {"name": "w1197 alcohol sales and gambling revenue", "resource_ids": ["bdp", "ddpie", "genesis"],
+            "usage_area": "design"}
+
+    #  L1. the preview computes the verdict and answers that nothing was recorded
+    before, kept_before = counts(), kept()
+    r = client.post("/api/v1/resources/compose/simulate", json=body)
+    assert r.status_code == 200, r.text[:300]
+    sim = r.json()
+    q = sim["simulation"]["quality"]
+    assert (q["compliance"]["overall"], q["qms_gate_passed"], sim["saved"]) == ("fail", None, False), (
+        q.get("compliance", {}).get("overall"), q.get("qms_gate_passed"), sim.get("saved"))
+    assert {v["framework"]: v["status"] for v in q["compliance"]["verdicts"]}.get("sharia_halal") == "fail", q["compliance"]
+    assert "not assessable" in q["qms_basis"] and q["bar"] == Q.SOLUTION_QUALITY_BAR and q["bar_measured"], q["qms_basis"]
+    assert q["stub_screen_basis"] and "qms_error" not in q, q.get("qms_error")
+    assert (q["quality_record_hash"], q["document_controlled"]) == (None, False), (
+        "the preview sealed a quality record", q.get("quality_record_hash"), q.get("document_controlled"))
+    basis = q["document_control_basis"]
+    assert basis.startswith("not recorded: a preview keeps no record") and basis.endswith(
+        "; POST /compose and PUT /compositions/{cid} gate and seal the same text"), basis
+
+    #  L2. an escalation preview, and neither moves a counter
+    esc = client.post("/api/v1/resources/compose/simulate", json={**body, "name": "w1197 predatory pricing rig"})
+    assert esc.status_code == 200, esc.text[:300]
+    eq = esc.json()["simulation"]["quality"]
+    assert eq["compliance"]["overall"] != "fail" and "ethical:value" in (eq.get("compliance_escalations") or []), (
+        "the second preview is not an escalation alone, so it proves nothing", eq["compliance"]["overall"],
+        eq.get("compliance_escalations"))
+    assert (eq["quality_record_hash"], eq["document_controlled"]) == (None, False), eq.get("quality_record_hash")
+    assert eq["document_control_basis"].startswith("not recorded: a preview keeps no record") and eq[
+        "document_control_basis"].endswith("; POST /compose and PUT /compositions/{cid} gate and seal the same text"), (
+        eq.get("document_control_basis"))
+    after = counts()
+    assert after == before, ("a preview recorded something", before, after)
+    assert kept() <= kept_before, ("a preview filed with the immune system", kept() - kept_before)
+
+    #  L3. the preview's layers claim no engagement it did not have
+    for out in (sim, esc.json()):
+        bio = out["simulation"]["biomimetic"]
+        st, bs, note = bio["layer_states"], bio["layer_basis"], bio["layers_note"]
+        assert set(st) == set(Q.BIOMIMETIC_LAYERS) and set(st.values()) <= allowed, st
+        assert (st["Nervous"], st["Endocrine"]) == ("implemented_not_on_this_path",) * 2, st
+        for layer in ("Nervous", "Endocrine"):
+            assert "not engaged on this call: a preview keeps no record" in bs[layer], bs[layer]
+        assert not pair & clause(note, "Engaged on this path without contributing a value:"), note
+        assert pair <= clause(note, "Not engaged on this call, a preview that records nothing and fires no signal:"), note
+        assert not pair & clause(note, "Implemented and reachable, but not on this path:"), note
+        assert "Immune" in bio["layers"] and not pair & set(bio["layers"]) and isinstance(bio.get("immune"), dict), (
+            bio["layers"])
+
+    #  L4. a commit of the same body still seals, logs, files and fires, once each
+    k_commit = kept()
+    c = client.post("/api/v1/resources/compose", json=body)
+    assert c.status_code == 200, c.text[:300]
+    comp = c.json()
+    cid = comp["id"]
+    try:
+        cq = comp["quality_assurance"]["quality"]
+        assert cq["document_controlled"] is True and isinstance(cq.get("quality_record_hash"), str), (
+            cq.get("document_controlled"), cq.get("quality_record_hash"), cq.get("qms_error"))
+        assert "document_control_basis" not in cq and cq["compliance"]["overall"] == "fail", cq.get("document_control_basis")
+        sealed = counts()
+        assert {k: sealed[k] - after[k] for k in sealed} == dict.fromkeys(sealed, 1), ("a commit did not record once",
+                                                                                     after, sealed)
+        label, overall, h = [s for s in screens if s[0] == "composition"][-1]
+        assert overall == "fail" and isinstance(h, str), (label, overall, h)
+        ev = client.get("/api/v1/gaas/ueg/events?limit=500").json()["events"]
+        hit = [e for e in ev if e.get("hash") == h]
+        assert len(hit) == 1 and (hit[0]["data"]["type"], hit[0]["data"]["label"]) == ("compliance.screen",
+                                                                                      "composition"), hit
+        assert [x for x in filed if x[0] == "compliance:composition"][-1] == ("compliance:composition", "compliance_fail")
+        added = kept() - k_commit
+        assert len(added) == 1 and next(iter(added))[1] == "compliance_fail", added
+        cbio = comp["quality_assurance"]["biomimetic"]
+        assert (cbio["layer_states"]["Nervous"], cbio["layer_states"]["Endocrine"]) == ("engaged_no_value",) * 2
+        assert pair <= clause(cbio["layers_note"], "Engaged on this path without contributing a value:"), (
+            cbio["layers_note"])
+        assert "Not engaged on this call" not in cbio["layers_note"] and cbio["layer_basis"]["Nervous"] == (
+            Q.LAYER_STATE["Nervous"]["basis"])
+
+        #  L5. a save of the composition seals its re-simulation
+        p = client.put(f"/api/v1/resources/compositions/{cid}", json={})
+        assert p.status_code == 200, p.text[:300]
+        saved = counts()
+        assert (saved["versions"] - sealed["versions"], saved["versions_stored"] - sealed["versions_stored"],
+                saved["controlled"] - sealed["controlled"]) == (1, 1, 1), ("a save did not seal once", sealed, saved)
+        assert p.json()["quality_assurance"]["quality"]["document_controlled"] is True
+    finally:
+        client.delete(f"/api/v1/resources/compositions/{cid}")
+
+    #  L6. record=False where the gate could run is refused, and nothing moves (W489)
+    assert Q.floor_served("ollama:w1197-probe") is False and not Q.floor_served(None)
+    gates, defects, c6, k6 = qms.defect_summary()["gates_run"], len(qms.defects), counts(), kept()
+    spied = (len(screens), len(signals), len(filed))
+    with pytest.raises(ValueError) as refused:
+        _ensure_loop().run_until_complete(Q.assure_delivery(
+            "## Section\n" + "w1197 a model's draft of this section, TODO finish it. " * 6, ["Section"],
+            label="w1197-refused", served_by="ollama:w1197-probe", record=False))
+    assert "record=False" in str(refused.value) and "nothing was recorded" in str(refused.value), refused.value
+    assert (qms.defect_summary()["gates_run"], len(qms.defects)) == (gates, defects), "the refused call ran the gate"
+    assert "qms_record:w1197-refused" not in dcms.registry and counts() == c6 and kept() <= k6
+    assert (len(screens), len(signals), len(filed)) == spied, (screens[-1:], signals[-1:], filed[-1:])
+
+    #  L7. the words say what the code does
+    note = flat(sim["note"])
+    assert ("not saved, and nothing recorded: the gate's verdict and the compliance screen were computed, and no "
+            "quality record was sealed, no event logged, no signal fired and nothing filed with the immune system; "
+            "POST /compose and PUT /compositions/{cid} gate and seal the same text.") in note, note
+    assert "NOTHING WAS RUN" in note and "simulated" not in note.lower(), note
+    doc = flat(inspect.getdoc(_rf.simulate_composition))
+    assert "Nothing is saved, and nothing is recorded (W1197, FU-1841)" in doc and "gate and seal the same text" in doc, doc
+    adoc = flat(inspect.getdoc(Q.assure_delivery))
+    assert "the record is still sealed (unless ``record=False``, below)" in adoc, adoc[:500]
+    assert "A record=False call never opens a defect" in adoc and "refused with ValueError" in adoc, adoc
+    assert "Never raises but for that refusal" in adoc and "Never raises:" not in adoc, adoc
+    hdoc = flat(inspect.getdoc(_hm.HomeostaticController.assess))
+    assert "changes no ATP or reflex state." in hdoc and "composition preview may still change" not in hdoc, hdoc
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    row = next(x for x in reg if x.get("id") == "FU-1841")
+    assert row["slot"] == "P3.30" and (row["status"] == "open" or (row["status"], row.get("closed_by"), row.get(
+        "because")) == ("done", "W1197", "built")), (row["status"], row.get("closed_by"), row.get("because"))
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1195c (P5.15; FU-1821, and FU-1831's build) - a calibration run records what its reviewer was shown and counts
+#  only while the reviewer gives the same, it starts only when its model's context holds every prompt, a review counts
+#  only by the run that calibrated its agent, and a reply in another form than the one the prompt states is not
+#  reviewed.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1195c_p515_a_run_is_held_to_what_its_reviewer_is_shown_and_a_reply_in_another_form_is_not_reviewed(
+        client, tmp_path, monkeypatch):
+    """FU-1821, and FU-1831's build part, as the Owner ruled on 2026-11-21 (afternoon): the reply form and the agent's
+    digest are built before the Owner's second calibration run, which waits on them and on FU-1820's re-read. A
+    reviewer agent was calibrated by its name alone, a run did not say what its reviewer was shown, and a reply in
+    another form was read in part: the first run, cal-8c7430765c, answered five cases with a bare 'FLAG:' line and the
+    reasons as a list beneath it, and C06 with 'FLAG: none' beside seven reasons, which was counted caught. Held here:
+    1. the reviewer's prompt states the one form, each reason as the whole line a reply writes and never as a list
+       item, and asks for it again after the answer; the set's cases and checklist are the ones the first run read;
+    2. a reply is read only in the one form: the first run's own C01, C04 and C06 replies, a long line of prose, an
+       unknown reason, an empty reply and marked-up lines are each out of the form, nothing in them is a flag, every
+       line is kept whole and what put the reply out of the form is said; the one form, with its case, space and
+       full-stop variants, is read as before, and a run of spaces inside a reason as one;
+    3. the first run keeps its record exactly: it holds no digest and no form, check_results passes on the tracked
+       file, and in a machine's own record it is UNCALIBRATED, having left five cases unanswered, with its rates, and
+       is said as made before a run recorded what its reviewer was shown (not_answered is read before the digest);
+    4. the probe: its answers are of every type a case's is, drawn through as_text, and its rows are listed out of
+       sorted order and carry every field a row can show, so how an answer is drawn and the order rows are drawn in
+       are in the digest (each moves it); each line of every case's prompt, other than its answer and its rows, is a
+       line of the probe's prompts, and every row a case is shown is drawn as its fields alone, whatever its status;
+       which rows a case is shown, and what a row's own fields say, are not in the digest; the digest does not move
+       when a row is read again, and moves with the checklist; the longest prompt is counted in bytes, with the reply
+       that flags each reason once;
+    5. a run through the agent's door keeps each case answered in another form, with what put it out, scores it as
+       not flagged and calibrates nothing, says so with the cases and their forms, and records the digest beside the
+       model and build that reviewed, and the context its runtime gave the model; the results copy it and check it;
+       the run does not start, and no model is asked, while the context the runtime reports for its model is shorter
+       than the longest prompt and reply, or while it reports none; context_given reads the runtime's own row once its
+       load request has loaded the model;
+    6. a run counts only while the reviewer gives its digest: calibrated at the bar, and not once what the reviewer is
+       shown changes, its rates still shown; GET /api/v1/review/calibration/care-reviewer gives both digests as
+       `shown`; a run that recorded no digest is read as made before runs did;
+    7. a review counts only when the model and build it names are the calibrated run's (the runtime's twelve-character
+       short id of the build is that build) and it is dated on or after that run; one that is not is kept, labelled
+       with its own reason as not held to the run, never as an uncalibrated agent's, and raises nothing; an answer at
+       the second tier says it was reviewed by Workstation's specialist agent and not by a qualified person; a run
+       that does not say its model or its build holds no review, and the tier's sentence says why;
+    8. FU-1821 is closed by this round; its last sentence (clause 4) and the review records page's two gaps are rows
+       of their own on P5.15, each with a slot_source; FU-1831 stays open for the second run with a note of what was
+       built; FU-1822 and FU-1819 carry a note each; and P5.15 says what was built."""
+    import datetime as _dt
+    import hashlib
+    import importlib
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.api import _review_calibration as cal
+    from agentic_core.api import _review_tier as rt
+    from agentic_core.api import care_reviewer as cr
+    from agentic_core.ai.native import model_resource as mr
+    from agentic_core.ai.native import orchestrator
+    root = Path(__file__).resolve().parents[1]
+    one = _dt.timedelta(days=1)
+    tracked = root / cal.RESULTS["care"]
+    before = hashlib.sha256(tracked.read_bytes()).hexdigest()
+    doc = json.loads(tracked.read_bytes().decode("utf-8"))
+    first = next(r for r in doc["runs"] if r["run_id"] == "cal-8c7430765c")
+    the_set = cal.load_set("care")
+    allowed = cr.reasons(the_set)
+    rows_now, _days = cal._register()
+    tree_register = cal._register
+    real_context_given = mr.context_given
+    _w = cal.runnable_window(the_set)
+    assert _w, "the tree's set cannot be run on any day as the register stands"
+    D0 = _dt.date.fromisoformat(_w["from"])          # never a calendar day: a re-read (FU-1820) moves the window
+    monkeypatch.setattr(cal, "_today", lambda: D0)
+
+    def need_of(s):
+        """what a run's context must hold, counted here on its own: each case's prompt in bytes, and the longest
+        reply in the one form"""
+        rows_ = cal._register()[0]
+        sizes = {c["id"]: len(cr.prompt_for(s, cr.as_text(c["shown"]), cr.rows_for(cr.as_text(c["shown"]), rows_,
+                                                                                      c.get("relies_on")))
+                              .encode("utf-8")) for c in s["cases"] if c.get("shown")}
+        case = max(sizes, key=lambda k: sizes[k])
+        reply = len("\n".join(f"FLAG: {r}" for r in cr.reasons(s)).encode("utf-8"))
+        return {"case": case, "prompt_bytes": sizes[case], "reply_bytes": reply, "needs": sizes[case] + reply}
+
+    #  1. the one form, stated; the set is the one the first run read
+    assert (the_set["version"], cal.set_digest(the_set)) == (first["set_version"], first["set_digest"]), "the set moved"
+    for c in the_set["cases"]:
+        t = cr.as_text(c["shown"])
+        p = cr.prompt_for(the_set, t, cr.rows_for(t, rows_now, c.get("relies_on")))
+        head, tail = p.split(cr._BEGIN, 1)[0], p.split(cr._END, 1)[1]
+        assert f"THE ONE FORM OF YOUR REPLY\n{cr.FORM}\n" in head and cr.FORM_RULES in head, (c["id"], "no form stated")
+        assert all(f"\nFLAG: {r}\n" in head for r in allowed), (c["id"], "a reason is not shown as the line a reply writes")
+        assert not [ln for ln in head.split("\n") if ln[:2] in ("- ", "* ") and ln[2:].strip() in allowed], (
+            c["id"], "a reason is shown as a list item, the form the first run copied")
+        assert tail == f"\n{cr.AFTER}\n", (c["id"], "the form is not asked for again after the answer", tail[:80])
+    for said in ("Never write FLAG: on a line by itself", "never write FLAG: none beside a reason",
+                 "no code block and no bold or other markup",
+                 "A reply in any other form is not read, and the answer counts as not reviewed."):
+        assert said in cr.FORM_RULES, said
+
+    #  2. a reply is read only in the one form: the first run's own replies, rebuilt from its record, and others
+    pc = first["per_case"]
+    assert pc["C01"]["lines_not_read_as_flags"][0] == "FLAG:", "C01 is not the bare form the first run wrote"
+    c01 = "\n".join(pc["C01"]["lines_not_read_as_flags"])
+    c06 = "\n".join(["FLAG: none"] + [f"FLAG: {f}" for f in first["flags"]["C06"]])
+    c04 = "\n".join([f"FLAG: {f}" for f in first["flags"]["C04"]] + pc["C04"]["lines_not_read_as_flags"])
+    long_line = ("I read it twice, and found nothing else in it that the checklist asks about, " * 4).strip()
+    assert len(long_line) > 200
+    out_of_form = {
+        c01: ["a bare 'FLAG:' line", "a line that is not a FLAG line"],
+        c06: ["'FLAG: none' beside another line"],
+        c04: ["a line that is not a FLAG line"],
+        f"FLAG: source not current\n{long_line}": ["a line that is not a FLAG line"],
+        "FLAG: source not current\nFLAG: a reason the set does not have": [
+            "a FLAG line whose reason is not one of the set's"],
+        "": ["no line at all"],
+        "- FLAG: none": ["a line that is not a FLAG line"],
+        "**FLAG:** none": ["a line that is not a FLAG line"],
+        "```\nFLAG: none\n```": ["a line that is not a FLAG line", "'FLAG: none' beside another line"],
+        "FLAG: none\nFLAG: none": ["'FLAG: none' beside another line"]}
+    for reply, why in out_of_form.items():
+        got = cr.parse(reply, allowed)
+        assert (got["in_form"], got["flags"], got["said_none"], got["not_in_form"]) == (False, [], False, why), (
+            reply[:70], got)
+        assert got["lines_not_read_as_flags"] == [ln.strip() for ln in reply.splitlines() if ln.strip()], (
+            reply[:70], "a line of a reply in another form was dropped or cut")
+    for reply, flags, none in (("FLAG: none", [], True), ("flag : None.", [], True),
+                               ("FLAG: source not current", ["source not current"], False),
+                               ("FLAG: Source Not Current.\n\n  flag : professional role claimed  ",
+                                ["source not current", "professional role claimed"], False),
+                               ("FLAG: source  not   current", ["source not current"], False),
+                               ("FLAG: source not current\nFLAG: source not current", ["source not current"], False)):
+        got = cr.parse(reply, allowed)
+        assert got == {"flags": flags, "said_none": none, "lines_not_read_as_flags": [], "in_form": True,
+                       "not_in_form": []}, (reply, got)
+    #  read the strict way, the first run's sixteen replies, rebuilt from its record: seven out of the form
+    rebuilt = {cid: "\n".join([f"FLAG: {f}" for f in first["flags"].get(cid) or []]
+                              + (["FLAG: none"] if x["said_none"] else []) + x["lines_not_read_as_flags"])
+               for cid, x in pc.items()}
+    out7 = sorted(cid for cid, reply in rebuilt.items() if not cr.parse(reply, allowed)["in_form"])
+    assert out7 == ["C01", "C02", "C03", "C04", "C06", "C08", "K06"], out7
+
+    #  3. the first run keeps its record exactly, and is read as made before a run recorded what its reviewer was shown
+    assert "shown_digest" not in first and "not_in_form" not in first, "the first run was given a field it never had"
+    assert cal.check_results(doc) == [], cal.check_results(doc)
+    theirs = tmp_path / "theirs" / "review_calibration_runs.json"
+    theirs.parent.mkdir()
+    theirs.write_text(json.dumps([{k: v for k, v in first.items() if k != "score"}], indent=1), encoding="utf-8")
+    monkeypatch.setattr(cal, "_runs_path", lambda: theirs)
+    old = cal.calibration_statement("care-reviewer")
+    assert (old["calibrated"], old["reason"], old["label"]) == (False, "not_answered", "Uncalibrated"), old
+    assert tuple(old["rates"][k] for k in ("caught", "planted_cases", "false_alarms", "clean_cases")) == (5, 10, 4, 6)
+    assert old["basis"].endswith(f"did not answer {', '.join(first['not_answered'])} with one of the set's reasons or "
+                                 "'FLAG: none', so those were not reviewed and the run calibrates nothing; it was made "
+                                 "before a run recorded what its reviewer was shown"), old["basis"]
+    assert cal.calibration_of("care-reviewer")["shown"] == {"run": None, "now": cr.shown_digest(the_set)}
+
+    #  4. the probe sees everything the reviewer is shown, and is fixed
+    def frame(prompt, shown_rows):
+        said = {cr._row_said(r) for r in shown_rows.values()}
+        head, rest = prompt.split(cr._BEGIN, 1)
+        return [ln for ln in (head + rest.split(cr._END, 1)[1]).split("\n") if ln not in said]
+    probe, named = set(), []
+    for a in cr.PROBE_ANSWERS:
+        pr = cr.rows_for(cr.as_text(a), cr.PROBE_ROWS)
+        named.append(len(pr))
+        probe.update(frame(cr.prompt_for(the_set, cr.as_text(a), pr), pr))
+    assert len(cr.PROBE_ROWS) >= 3 and named == [len(cr.PROBE_ROWS), 0, 0], (
+        "the probe does not name every probe row in one answer and none in the others", named)
+    assert {type(c["shown"]) for c in the_set["cases"]} <= {type(a) for a in cr.PROBE_ANSWERS}, (
+        "a case's answer is of a type no probe answer is, so how it is drawn is not in the digest")
+    assert list(cr.PROBE_ROWS) != sorted(cr.PROBE_ROWS), "the probe's rows are in sorted order: the sort is not in it"
+    assert all(any(r.get(f) is not None for r in cr.PROBE_ROWS.values()) for f in cr.ROW_FIELDS), (
+        "a field the reviewer can be shown of a row is in no row of the probe")
+    shown_status = set()
+    for c in the_set["cases"]:
+        t = cr.as_text(c["shown"])
+        mine = cr.rows_for(t, rows_now, c.get("relies_on"))
+        shown_status |= {r.get("status") for r in mine.values()}
+        p = cr.prompt_for(the_set, t, mine)
+        extra = [ln for ln in frame(p, mine) if ln not in probe]
+        assert not extra, (c["id"], "the reviewer is shown a line the probe does not show", extra[:3])
+        #  a row is drawn as its fields alone, whatever its status: a status the probe has no row in draws nothing new
+        for r in mine.values():
+            assert json.dumps({k: r[k] for k in cr.ROW_FIELDS if r.get(k) is not None}, ensure_ascii=False) in (
+                p.split("\n")), (c["id"], r["id"], "a row is drawn otherwise than as its fields")
+    assert {"current", "replaced"} <= shown_status, ("the cases show too few kinds of row to test", shown_status)
+    assert set(cal.SHOWN_BY) == set(cal.SETS), "a discipline's reviewer prompt is not known"
+    d_tree = cr.shown_digest(the_set)
+    assert cal.shown_now("care", the_set) == d_tree and len(d_tree) == 64
+    monkeypatch.setattr(cal, "_register", lambda: (
+        {k: {**v, "read_on": (D0 + one).isoformat()} for k, v in rows_now.items()}, 90))
+    assert cr.shown_digest(the_set) == d_tree, "a row read again moved the digest: it is not over the fixed probe"
+    monkeypatch.setattr(cal, "_register", tree_register)
+    assert cr.shown_digest({**the_set, "checklist": the_set["checklist"] + ["w1195c an item added"]}) != d_tree
+    #  ...and how an answer is drawn, and the order rows are drawn in, each move it
+    real_prompt_for = cr.prompt_for
+
+    def rows_unsorted(s_, text, rows):
+        got_ = real_prompt_for(s_, text, rows)
+        return got_.replace("\n".join(cr._row_said(rows[k]) for k in sorted(rows)),
+                            "\n".join(cr._row_said(rows[k]) for k in rows), 1) if rows else got_
+    for attr, other_way in (
+            ("as_text", lambda s_: s_ if isinstance(s_, str) else json.dumps(s_, indent=2, ensure_ascii=False)),
+            ("as_text", lambda s_: s_ if isinstance(s_, str) else json.dumps(s_, indent=1, ensure_ascii=True)),
+            ("as_text", lambda s_: s_ if isinstance(s_, str) else json.dumps(s_, indent=1, ensure_ascii=False,
+                                                                             sort_keys=True)),
+            ("prompt_for", rows_unsorted)):
+        with monkeypatch.context() as m:
+            m.setattr(cr, attr, other_way)
+            assert cr.shown_digest(the_set) != d_tree, ("drawn another way, the probe's prompt gives the same digest",
+                                                        attr)
+    tree_need = need_of(the_set)
+    assert cr.longest_prompt(the_set) == tree_need, (cr.longest_prompt(the_set), tree_need)
+
+    #  5. a run through the agent's door keeps each case answered in another form, and says so
+    IDENT = {"model": "w1195c-stand-in", "build_digest": "1195c0de" + "0" * 56, "processor": None,
+             "basis": "a stand-in made up for W1195c: no model ran"}
+    gw = importlib.import_module("agentic_core.ai.gateway")
+    monkeypatch.setattr(gw, "served_identity_of", lambda sb: dict(IDENT))
+    given = {"model": IDENT["model"], "context_length": 1 << 20, "basis": "a stand-in made up for W1195c"}
+    monkeypatch.setattr(mr, "context_given", lambda sb: dict(given))
+    runs = tmp_path / "w1195c_runs.json"
+    monkeypatch.setattr(cal, "_runs_path", lambda: runs)
+    monkeypatch.setattr(rt, "_path", lambda: tmp_path / "w1195c_review_records.json")
+    register = {"r-now": {"id": "r-now", "names": ["W1195c Made-Up Guide"], "status": "current",
+                          "read_on": (D0 - 10 * one).isoformat(), "says": "Read at its page."}}
+    monkeypatch.setattr(cal, "_register", lambda: (register, 90))
+    made_up = {"version": "w1195c-t", "checklist": the_set["checklist"],
+               "cases": [{"id": f"P{i}", "planted": "made up", "must_flag": "source not current",
+                          "shown": f"w1195c made-up planted answer {i}", "from": "made up here", "relies_on": []}
+                         for i in range(2)]
+               + [{"id": f"K{i}", "planted": None, "shown": f"w1195c made-up clean answer {i} citing W1195c Made-Up "
+                                                            "Guide", "relies_on": [{"row": "r-now", "status": "current"}]}
+                  for i in range(6)]}
+    monkeypatch.setattr(cal, "load_set", lambda d: made_up if d == "care" else None)
+    answers, asked = {}, []
+
+    async def _stand_in(prompt, agent="assistant", **kw):
+        hit = [c["id"] for c in made_up["cases"] if c["shown"] in prompt]
+        assert len(hit) == 1, hit
+        asked.append(hit[0])
+        return {"output": answers[hit[0]], "served_by": "ollama:w1195c-stand-in"}
+    monkeypatch.setattr(orchestrator, "complete", _stand_in)
+
+    def run(per_case):
+        answers.clear()
+        answers.update(per_case)
+        r = client.post("/api/v1/review/calibration/agent-run", json={"discipline": "care", "date": D0.isoformat()})
+        assert r.status_code == 200, r.text[:300]
+        return r.json(), json.loads(runs.read_text(encoding="utf-8"))[-1]
+    catches = {**{f"P{i}": "FLAG: source not current" for i in range(2)}, **{f"K{i}": "FLAG: none" for i in range(6)}}
+    a, kept = run({**catches, "P1": "FLAG:\n- source not current", "K2": "FLAG: none\nFLAG: source not current"})
+    form = {"P1": ["a bare 'FLAG:' line", "a line that is not a FLAG line"], "K2": ["'FLAG: none' beside another line"]}
+    assert (a["not_answered"], a["not_in_form"]) == (["P1", "K2"], form), a
+    assert (kept["not_answered"], kept["not_in_form"], kept["flags"]["P1"], kept["flags"]["K2"]) == (
+        ["P1", "K2"], form, [], []), kept
+    assert kept["per_case"]["P1"] == {"said_none": False, "lines_not_read_as_flags": ["FLAG:", "- source not current"],
+                                      "rows_shown": []}, kept["per_case"]["P1"]
+    assert kept["per_case"]["K2"]["lines_not_read_as_flags"] == ["FLAG: none", "FLAG: source not current"]
+    assert (kept["shown_digest"], kept["served_identity"]) == (cr.shown_digest(made_up), IDENT), kept
+    need = need_of(made_up)
+    assert cr.longest_prompt(made_up) == need, (cr.longest_prompt(made_up), need)
+    assert kept["runtime_context"] == {
+        "model": IDENT["model"], "context_length": 1 << 20, "basis": given["basis"], "runtime_version": None,
+        "needs": need["needs"],
+        "longest_case": need["case"], "longest_prompt_bytes": need["prompt_bytes"],
+        "longest_reply_bytes": need["reply_bytes"]}, kept.get("runtime_context")
+    s = cal.score(made_up["cases"], kept["flags"])
+    assert (s["caught"], s["false_alarms"], s["meets_bar"]) == (1, 0, False), s
+    st = cal.calibration_statement("care-reviewer")
+    assert (st["reason"], st["calibrated"], st["label"]) == ("not_answered", False, "Uncalibrated"), st
+    assert ("did not answer P1, K2 with one of the set's reasons or 'FLAG: none' in the one form asked for (P1: a bare "
+            "'FLAG:' line, a line that is not a FLAG line; K2: 'FLAG: none' beside another line), so those were not "
+            "reviewed and the run calibrates nothing") in st["basis"], st["basis"]
+    assert st["basis"].endswith("the run calibrates nothing"), ("a run with its digest said as made before", st["basis"])
+    assert st["rates"]["basis"].endswith("; P1, K2 were not reviewed and are counted here as not flagged"), st["rates"]
+    res = cal.results_for_tree()
+    copied = next(r for r in res["runs"] if r["run_id"] == kept["run_id"])
+    assert (copied["not_in_form"], copied["shown_digest"], copied["score"]["caught"]) == (form, kept["shown_digest"], 1)
+    assert copied["runtime_context"] == kept["runtime_context"] and cal.check_results(res) == [], cal.check_results(res)
+    #  ...and it does not start, and no model is asked, while its model's context is shorter than the set needs or the
+    #  runtime reports none; a context of exactly what it needs is enough
+    n_kept, n_asked = len(json.loads(runs.read_text(encoding="utf-8"))), len(asked)
+    holds = (f"a context of at least {need['needs']} tokens: the bytes of the longest prompt the set sends "
+             f"({need['case']}, {need['prompt_bytes']} bytes) and of the reply that flags each of the set's reasons once "
+             f"({need['reply_bytes']} bytes), since no token is shorter than one byte; the prompt's own token count is "
+             "not read here")
+    for ctx, said in (
+            ({"context_length": need["needs"] - 1},
+             f"Not run: the local runtime gives {IDENT['model']} a context of {need['needs'] - 1} tokens, and a run "
+             f"starts only with {holds}. Give the model a longer context"),
+            ({"context_length": None, "basis": "the w1195c stand-in runtime reports no context for it"},
+             "Not run: the w1195c stand-in runtime reports no context for it. A run starts only when the runtime "
+             f"reports, for its model, {holds}; nothing was asked of it.")):
+        given.update(ctx)
+        r = client.post("/api/v1/review/calibration/agent-run", json={"discipline": "care", "date": D0.isoformat()})
+        assert r.status_code == 409 and r.json()["detail"].startswith(said), (ctx, r.text[:500])
+        assert (len(json.loads(runs.read_text(encoding="utf-8"))), len(asked)) == (n_kept, n_asked), (
+            "a run started, or was kept, with a context that does not hold every prompt", ctx)
+    given.update(context_length=need["needs"], basis="a stand-in made up for W1195c")
+    run(catches)
+    given.update(context_length=1 << 20)
+    #  ...and what context_given reads: the runtime's own row for the model, once its load request has loaded it
+    httpx = importlib.import_module("httpx")
+    with monkeypatch.context() as m:
+        sent = []
+
+        class _Loaded:
+            status_code = 200
+
+        def _post(url, json=None, timeout=None, **k):
+            sent.append((url, dict(json or {})))
+            return _Loaded()
+        m.setattr(httpx, "post", _post)
+        m.delenv("AI_DISABLE_LOCAL", raising=False)
+        m.setattr(mr, "local_runtime_version", lambda: "0.0-w1195c")
+        reads = []
+        _ps = [{"name": "w1195c-stand-in:latest", "digest": "1195c0de", "context_length": 8192}]
+        m.setattr(mr, "_running_models", lambda: reads.append(1) or list(_ps))
+        got = real_context_given("ollama:w1195c-stand-in")
+        assert (got["model"], got["context_length"], got["runtime_version"], len(reads)) == (
+            "w1195c-stand-in", 8192, "0.0-w1195c", 1), (got, "the loaded models are read once", len(reads))
+        m.setattr(mr, "_running_models", lambda: [{"name": "w1195c-other:latest", "context_length": 1 << 20}])
+        other_only = real_context_given("ollama:w1195c-stand-in")
+        assert other_only["context_length"] is None and "does not list it as loaded" in other_only["basis"], (
+            "another loaded model's context was read as this one's", other_only)
+        m.setattr(mr, "_running_models", lambda: [{"name": "w1195c-stand-in:latest", "digest": "1195c0de",
+                                                   "context_length": 8192}])
+        got = real_context_given("ollama:w1195c-stand-in")
+        assert (got["model"], got["context_length"]) == ("w1195c-stand-in", 8192), got
+        assert sent and sent[-1][0].endswith("/api/generate") and sent[-1][1].get("model") == "w1195c-stand-in" and (
+            not sent[-1][1].get("prompt")), ("the context was read without the runtime's load request", sent)
+        m.setattr(mr, "_running_models", lambda: [{"name": "w1195c-stand-in", "digest": "1195c0de"}])
+        bare = real_context_given("ollama:w1195c-stand-in")
+        assert bare["context_length"] is None and "reports no context for it" in bare["basis"] and (
+            "update it" in bare["basis"]), bare
+        m.setattr(mr, "_running_models", lambda: None)
+        unread = real_context_given("ollama:w1195c-stand-in")
+        assert unread["context_length"] is None and "its list of loaded models could not be read" in unread["basis"], (
+            unread)
+        _err = {"error": "model 'w1195c-stand-in' not found, try pulling it first"}
+        m.setattr(httpx, "post", lambda url, json=None, timeout=None, **k: type(
+            "_No", (), {"status_code": 404, "json": lambda self: _err})())
+        no = real_context_given("ollama:w1195c-stand-in")
+        assert no["context_length"] is None and (
+            "refused to load w1195c-stand-in (HTTP 404: model 'w1195c-stand-in' not found, try pulling it first)") in (
+            no["basis"]), ("the runtime's own error was dropped", no)
+
+        def _unreachable(url, json=None, timeout=None, **k):
+            raise httpx.ConnectError("w1195c: connection refused")
+        m.setattr(httpx, "post", _unreachable)
+        gone = real_context_given("ollama:w1195c-stand-in")
+        assert gone["context_length"] is None and "could not be reached (ConnectError)" in gone["basis"] and (
+            "was not asked to load w1195c-stand-in") in gone["basis"], gone
+        m.setenv("AI_DISABLE_LOCAL", "1")
+        off = real_context_given("ollama:w1195c-stand-in")
+        assert off["context_length"] is None and "switched off on this process" in off["basis"], off
+        assert real_context_given("native")["context_length"] is None
+
+    #  6. a run counts only while the reviewer gives the digest it recorded
+    b, kept_b = run(catches)
+    assert b["agent_now"]["calibrated"] is True, b["agent_now"]
+    assert b["agent_now"]["shown"] == {"run": kept_b["shown_digest"], "now": cr.shown_digest(made_up)}, b["agent_now"]
+    g = client.get("/api/v1/review/calibration/care-reviewer")
+    assert g.status_code == 200 and g.json()["shown"] == {"run": kept_b["shown_digest"], "now": cr.shown_digest(made_up)}, (
+        g.text[:400])
+    assert (g.json()["statement"]["reason"], g.json()["statement"]["label"]) == ("calibrated", "Calibrated"), g.json()
+    after = cr.AFTER
+    monkeypatch.setattr(cr, "AFTER", after + " (W1195c: what the reviewer is shown, changed)")
+    ch = cal.calibration_statement("care-reviewer")
+    assert (ch["reason"], ch["calibrated"], ch["label"], ch["rates"]["caught"]) == (
+        "shown_changed", False, "Uncalibrated", 2), ch
+    assert ch["basis"].startswith(f"what its reviewer is shown has changed since its latest run, on {D0.isoformat()} "
+                                  ), ch["basis"]
+    assert ch["basis"].endswith(f"; by its own flags it met the bar ({ch['bar']})"), ch["basis"]
+    #  ...and a review by it is said as not calibrated for the reviewer as it is now, never as never calibrated
+    store = tmp_path / "w1195c_review_records.json"
+    store.write_text(json.dumps([{
+        "tool": "care_risk_assess", "tier": "reviewed_by_workstation_agent", "date": D0.isoformat(),
+        "checklist": "care checklist v2", "agent": "care-reviewer", "model": IDENT["model"],
+        "build": IDENT["build_digest"],
+        "sources_read": [{"source": "nice-ng249", "page": "recommendations 1.1", "read_on": D0.isoformat()}],
+        "tool_version": "the tree at W1195c", "could_not_check": "nothing beyond the guideline's own text"}]),
+        encoding="utf-8")
+    t6 = rt.review_statement("care_risk_assess")
+    assert ("an agent's review of this tool exists and does not raise its tier: care-reviewer is not calibrated for "
+            "the reviewer as it is now") in t6["basis"] and "has not been calibrated" not in t6["basis"], t6["basis"]
+    store.unlink()
+    gc = client.get("/api/v1/review/calibration/care-reviewer").json()
+    assert gc["shown"]["run"] == kept_b["shown_digest"] != gc["shown"]["now"] and gc["reason"] == "shown_changed", gc
+    monkeypatch.setattr(cr, "AFTER", after)
+    assert cal.calibration_statement("care-reviewer")["reason"] == "calibrated", "the same prompt again did not count"
+    kept_all = json.loads(runs.read_text(encoding="utf-8"))
+    runs.write_text(json.dumps(kept_all[:-1] + [{k: v for k, v in kept_all[-1].items() if k != "shown_digest"}]),
+                    encoding="utf-8")
+    nd = cal.calibration_statement("care-reviewer")
+    assert (nd["reason"], nd["calibrated"]) == ("shown_not_recorded", False), nd
+    assert nd["basis"].startswith(f"its latest run, on {D0.isoformat()} with ") and (
+        "was made before a run recorded what its reviewer was shown, so it cannot be held to the reviewer as it is now "
+        "and calibrates nothing; by its own flags it met the bar") in nd["basis"], nd["basis"]
+
+    #  7. a review counts only when the calibrated run's model and build are the ones it names, on or after that run
+    _, by = run(catches)
+    assert cal.calibration_of("care-reviewer")["calibrated"] is True
+    whole = {"tool": "care_risk_assess", "tier": "reviewed_by_workstation_agent", "date": D0.isoformat(),
+             "checklist": "care checklist v2", "agent": "care-reviewer", "model": IDENT["model"],
+             "build": IDENT["build_digest"],
+             "sources_read": [{"source": "nice-ng249", "page": "recommendations 1.1", "read_on": D0.isoformat()}],
+             "tool_version": "the tree at W1195c", "could_not_check": "nothing beyond the guideline's own text"}
+    assert rt.counts(whole)["counts"] is True, rt.counts(whole)
+    short = IDENT["build_digest"][:12]
+    for same in ({"model": "ollama:" + IDENT["model"]}, {"model": IDENT["model"] + ":latest"},
+                 {"build": "sha256:" + IDENT["build_digest"].upper()}, {"build": short},
+                 {"build": "sha256:" + short.upper()}, {"date": (D0 + one).isoformat()}):
+        assert rt.counts({**whole, **same})["counts"] is True, (same, rt.counts({**whole, **same}))
+    for change, said in (
+            ({"model": "w1195c-another"},
+             f"it names the model 'w1195c-another', and the run that calibrated the agent, {by['run_id']}, was made by "
+             f"{IDENT['model']}"),
+            ({"build": "f" * 64}, f"it names the build ffffffffffff of {IDENT['model']}, and the run that calibrated the "
+                                  f"agent was made with build {short}"),
+            ({"build": short[:11]}, f"it names the build {short[:11]} of {IDENT['model']}"),
+            ({"build": None}, f"it does not name the build of {IDENT['model']} that reviewed, and the run that "
+                              f"calibrated the agent was made with build {short}"),
+            ({"date": (D0 - one).isoformat()},
+             f"it is dated {(D0 - one).isoformat()}, before the run that calibrated the agent, made on {D0.isoformat()}")):
+        v = rt.counts({k: x for k, x in {**whole, **change}.items() if x is not None})
+        assert (v["counts"], v.get("not_held_to_run"), v.get("uncalibrated_agent_review")) == (False, True, None), (
+            change, v)
+        assert v["why_not"] == "the review is not held to the run that calibrated its agent: " + v["not_held_because"] and (
+            v["not_held_because"].startswith(said)), (change, v["why_not"])
+    apart = (f"care-reviewer's review is not held to the run that calibrated it (it names the model 'w1195c-another', "
+             f"and the run that calibrated the agent, {by['run_id']}, was made by {IDENT['model']})")
+    other = client.post("/api/v1/review/record", json={**whole, "model": "w1195c-another"})
+    assert other.status_code == 200 and other.json()["kept_though_not_counted"] is True, other.text[:300]
+    assert other.json()["kept_basis"] == (
+        "the review of a calibrated agent that is not held to the run that calibrated it (it names the model "
+        f"'w1195c-another', and the run that calibrated the agent, {by['run_id']}, was made by {IDENT['model']}) is "
+        "kept and shown, labelled, and does not raise the tool's tier"), other.json()
+    t = client.get("/api/v1/review/tier/care_risk_assess").json()
+    assert t["tier"] == "unreviewed" and t["basis"].startswith(
+        "no review of this tool counts: no rule check, no review by a calibrated agent that is held to the run that "
+        "calibrated it and no qualified person's signature."), t["basis"]
+    assert t["review_not_held_to_run"] == "an agent's review of this tool exists and does not raise its tier: " + apart, t
+    assert t["basis"].endswith("; an agent's review of this tool exists and does not raise its tier: " + apart), t["basis"]
+    assert "has not been calibrated" not in t["basis"] and "uncalibrated_agent_review" not in t, (
+        "a calibrated agent's review said as an uncalibrated one's", t["basis"])
+    ok = client.post("/api/v1/review/record", json=whole)
+    assert ok.status_code == 200 and ok.json()["counts"] is True, ok.text[:300]
+    raised = ok.json()["tool_now_says"]
+    assert raised["tier"] == "reviewed_by_workstation_agent", raised
+    assert raised["basis"].startswith(
+        f"the highest tier a record supports: reviewed by workstation's specialist agent, dated {D0.isoformat()}; it was "
+        "reviewed by Workstation's specialist agent and not by a qualified person; the reviewing agent's calibration "
+        "(care-reviewer): calibrated by its run"), raised["basis"]
+    assert "; an agent's review of this tool exists and does not raise its tier: " + apart in raised["basis"], raised
+    monkeypatch.setattr(gw, "served_identity_of", lambda sb: {**IDENT, "build_digest": None})
+    run(catches)
+    assert cal.calibration_of("care-reviewer")["calibrated"] is True
+    nb = rt.counts(whole)
+    nobuild = (f"the run that calibrated the agent does not say which build of {IDENT['model']} reviewed, so no review "
+               "can be held to it")
+    assert (nb["counts"], nb.get("not_held_because")) == (False, nobuild), nb
+    snb = cal.calibration_statement("care-reviewer")
+    assert snb["label"] == "Calibrated" and snb["basis"].endswith(
+        "; its run does not say which model and build reviewed, so no review by it can be held to that run and none "
+        "raises a tool's tier"), snb["basis"]
+    tn = client.get("/api/v1/review/tier/care_risk_assess").json()
+    assert tn["tier"] == "unreviewed" and (
+        f"care-reviewer's review is not held to the run that calibrated it ({nobuild})") in tn["basis"], tn["basis"]
+    monkeypatch.setattr(gw, "served_identity_of", lambda sb: {**IDENT, "model": None, "build_digest": None})
+    run(catches)
+    nm = rt.counts(whole)
+    nomodel = "the run that calibrated the agent does not say which model reviewed, so no review can be held to it"
+    assert (nm["counts"], nm.get("not_held_because")) == (False, nomodel), nm
+    #  a run naming its build and no model holds no review, not even one that names no model either
+    monkeypatch.setattr(gw, "served_identity_of", lambda sb: {**IDENT, "model": None})
+    run(catches)
+    nm2 = rt.counts({k: v for k, v in whole.items() if k != "model"})
+    assert (nm2["counts"], nm2.get("not_held_because")) == (False, nomodel), nm2
+
+    #  8. the register and the plan
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    fu = reg["FU-1821"]
+    assert (fu["status"], fu["closed_by"], fu.get("because")) == ("done", "W1195c", "built"), (
+        fu["status"], fu.get("closed_by"))
+
+    def titled(start):
+        hits = [r for r in reg.values() if r["title"].startswith(start)]
+        assert len(hits) == 1, (start, [r["id"] for r in hits])
+        return hits[0]
+    c4 = titled("A review record does not say whether the model that reviewed is the model that composed")
+    page = titled("The review records page cannot send a review's build")
+    for r_ in (c4, page):
+        assert (r_["slot"], r_["severity"], r_["owner_gated"]) == ("P5.15", "low", False), (r_["id"], r_["slot"])
+        assert (r_.get("slot_source") or "").strip().startswith("P5.15: "), (r_["id"], "names no slot_source")
+        assert r_["source"].startswith("W1195c (") and (r_["status"] == "open" or r_.get("closed_by") != "W1195c"), (
+            r_["id"], "this round closed a row it registered")
+    for said in ("clause 4", "FU-1819's route", "Clause 4 bars only an unaided review by the same model",
+                 "the reviewer runs on the local default model, as ruled for the second run"):
+        assert said in c4["why"], ("the clause-4 row does not say", said)
+    for said in ("ReviewRecords.tsx", "test_w690 and test_w921", "the agent's catch rate and false-alarm rate",
+                 "GET /api/v1/review/records"):
+        assert said in page["why"], ("the page's row does not say", said)
+    for said in ("cal-8c7430765c", c4["id"], page["id"], "test_w1195c", "and not by a qualified person",
+                 "which rows rows_for picks for a case, and what a row's own fields say, are not in the digest",
+                 "how an answer is drawn and the order rows are drawn in each move the digest"):
+        assert said in fu["close_note"], ("FU-1821's close note does not say", said)
+    miss = titled("The Care reviewer's first calibration run did not meet the bar")
+    assert miss["status"] == "open" or miss.get("closed_by") != "W1195c", "FU-1831 closes on the second run, not here"
+    for said in (" W1195c, a note and not a ruling: the reply's form and the agent's digest are built",
+                 "the first run would have had seven cases out of the form: C01, C02, C03, C08 and K06",
+                 "starts only when the context the local runtime reports for its model holds the longest prompt",
+                 "OLLAMA_CONTEXT_LENGTH",
+                 "The second run's step goes into step 5 of the local notes in a later round, once the Owner has "
+                 "answered whether the run also waits for FU-1822.",
+                 "two of the three things the Owner's ruling of 2026-11-21 names for the second run",
+                 "whatever the meets_bar of its exported score says",
+                 "Nothing here moves the bar, and no line in another form is counted."):
+        assert said in miss["why"], ("FU-1831 does not say", said)
+    assert " W1195c, a note: the digest is taken over a fixed probe" in reg["FU-1822"]["why"]
+    assert ("Which rows rows_for picks for a case, and what a row's own fields say, are not in the digest."
+            in reg["FU-1822"]["why"])
+    assert "OWNER RULING" not in reg["FU-1822"]["why"], "FU-1822's note is written as a ruling"
+    for said in (" W1195c, a note: a review counts only when the model and build it names",
+                 "a reply out of the one form (in_form false) is no review, though review() says a model served it",
+                 "the route checks the context as the agent's door does"):
+        assert said in reg["FU-1819"]["why"], ("FU-1819 does not say", said)
+    assert "never carried in a register row's says" in reg["FU-1822"]["why"], reg["FU-1822"]["why"][-500:]
+    plan = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    #  found with or without the DONE marker P5.15 gains when it closes
+    p515 = " ".join(re.split(r"\n P5\.15 (?:✅ DONE W\d+[a-z]? )?\[chartered W679", plan, maxsplit=1)[1].split(
+        "\n P5.16 ", 1)[0].split())
+    assert ("UPDATED 2026-11-22 (W1195c): two of the three things the Owner's ruling of 2026-11-21 names for the second "
+            "run are built.") in p515, (
+        p515[-900:])
+    for said in (c4["id"], page["id"], "cal-8c7430765c", "not by a qualified person",
+                 "starts only when the context the local runtime reports for its model holds the longest prompt"):
+        assert said in p515, ("P5.15 does not name", said)
+    texts = [fu["close_note"], c4["title"], c4["why"], page["title"], page["why"], miss["why"], reg["FU-1822"]["why"],
+             reg["FU-1819"]["why"], p515.split("UPDATED 2026-11-22 (W1195c)", 1)[1]]
+    assert [m_.group(0) for t_ in texts for m_ in [re.search(r"\b(?:he|his|him|himself)\b", t_, re.I)] if m_] == []
+    assert hashlib.sha256(tracked.read_bytes()).hexdigest() == before, "the tracked results file was written"

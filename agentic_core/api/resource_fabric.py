@@ -3862,20 +3862,28 @@ def _model_configuration(resource_ids: List[str], usage_area: str,
 
 
 async def _simulate_configuration(name: str, resource_ids: List[str], usage_area: str,
-                                  config: Dict[str, Dict[str, Any]]):
+                                  config: Dict[str, Dict[str, Any]], *, preview: bool = False):
     """MODEL + SIMULATE a configuration before commit (§7): the config plan is gated by the living QMS
     (held to the §10 bar, recorded within the §8 organism). W449: the plan text is a deterministic
     TEMPLATE built from the resource names it is then measured against, so the gate records it "not
     assessable" (served_by="template") rather than "pass". commit_ready iff the gate did not FAIL
     (a not-assessable verdict neither blocks nor certifies) AND every selected resource supports the
-    chosen usage area."""
+    chosen usage area.
+
+    W1197 (FU-1841) - preview=True is the preview's own call (POST /compose/simulate): the gate's verdict, the
+    compliance screen and the bar are computed and nothing is recorded (assure_delivery's record=False). POST
+    /compose and PUT /compositions/{cid} call it as a save, and gate and seal the same text."""
     resolved, model = _model_configuration(resource_ids, usage_area, config)
     n = len(resolved)
     plan_text = (f"Configuration '{name}' for usage area '{usage_area}', composing {n} resources: "
                  + ", ".join(model["pipeline"]) + ". Combined capabilities: "
                  + ", ".join(model["combined_capabilities"][:24]) + ".") if n else ""
     qa = await assure_delivery(plan_text, [r["name"] for r in resolved], label="composition",
-                               served_by="template")
+                               served_by="template", record=not preview)
+    if preview:     # W1197 (FU-1841) - the preview names the doors that do seal this text
+        _q1197 = qa["quality"]
+        _q1197["document_control_basis"] = (str(_q1197.get("document_control_basis") or "not recorded")
+                                            + "; POST /compose and PUT /compositions/{cid} gate and seal the same text")
     # W475 (ledger v4 R4.2) — tri-state: True (gate passed, areas supported) · False (gate failed or an area
     # unsupported) · None (the gate could NOT assess — a template/floor-served simulation is not 'ready').
     _gate = qa["quality"].get("qms_gate_passed")
@@ -3904,7 +3912,10 @@ def _refuse_spawners(resource_ids: List[str]) -> None:
 @router.post("/compose/simulate")
 async def simulate_composition(req: ComposeRequest):
     """§7 — MODEL + SIMULATE a configuration BEFORE commit. Returns the modelled structure + a living-QMS
-    simulation (gate + §10 bar + §8 organism) + commit-readiness. Nothing is saved."""
+    simulation (gate + §10 bar + §8 organism) + commit-readiness. Nothing is saved, and nothing is recorded
+    (W1197, FU-1841): the gate's verdict and the compliance screen are computed, and no quality record is sealed,
+    no event logged, no signal fired and nothing filed with the immune system. POST /compose and PUT
+    /compositions/{cid} gate and seal the same text."""
     unknown = [rid for rid in req.resource_ids if rid not in _BY_ID]
     if unknown:
         raise HTTPException(status_code=400, detail=f"Unknown resource ids: {unknown}")
@@ -3912,13 +3923,17 @@ async def simulate_composition(req: ComposeRequest):
         raise HTTPException(status_code=400, detail="Select at least one resource to model.")
     _refuse_spawners(req.resource_ids)          # W810 (FU-900)
     resolved, model, qa, commit_ready = await _simulate_configuration(
-        req.name or "(unnamed)", req.resource_ids, req.usage_area, req.config)
+        req.name or "(unnamed)", req.resource_ids, req.usage_area, req.config, preview=True)   # W1197 (FU-1841)
     return {"name": req.name, "usage_area": req.usage_area, "resources": resolved,
             "model": model, "simulation": qa, "commit_ready": commit_ready, "saved": False,
             "needs_with_this_configuration": _per_run_needs(                       # W763 (FU-899)
                 [(rid, {**(_BY_ID[rid].get("reconfigurable_params") or {}), **(req.config.get(rid) or {})})
                  for rid in req.resource_ids]),
-            "note": ("Modelled before commit (§7) — not saved. NOTHING WAS RUN: no resource was executed or "
+            "note": ("Modelled before commit (§7) — not saved, and nothing recorded: the gate's verdict and the "
+                     "compliance screen were computed, and no quality record was sealed, no event logged, no "
+                     "signal fired and nothing filed with the immune system; POST /compose and PUT "
+                     "/compositions/{cid} gate and seal the same text. NOTHING WAS RUN: no resource was "
+                     "executed or "
                      "dry-run; this is a static reading of the selection plus a quality gate over a one-"
                      "sentence description of it. Adjust the design, then compose.")}
 

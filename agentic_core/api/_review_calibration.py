@@ -21,6 +21,13 @@ its own door (POST /calibration/agent-run), dated the day it was made, on the se
 cases hashed, so a case edited under the same version voids it), with every case answered by a FLAG line. What is
 said of an agent's calibration wherever its reviews are read is calibration_statement(): with no run of its own
 there are no rates, and none is said as nought.
+
+A RUN IS HELD TO WHAT ITS REVIEWER IS SHOWN, AND A REVIEW TO ITS RUN (W1195c, FU-1821). A run records the digest of
+what its reviewer is shown (care_reviewer.shown_digest, over a fixed probe), and counts only while the reviewer gives
+the same digest; a run that recorded none was made before runs did, as the first run, cal-8c7430765c, was, and is
+read so. An agent's review counts only when the model and build it names are those of the run that calibrated the
+agent, and it is dated on or after that run (review_held_to_run). A case answered in another form than the one the
+prompt states is not answered, and the run says what put it out of the form (W1195c, FU-1831).
 """
 from __future__ import annotations
 
@@ -36,6 +43,8 @@ FALSE_ALARMS_ALLOWED_PER_CLEAN = (1, 6)          # at most one in six clean case
 CONFIGURATIONS = ("model", "floor")
 #  W1183 (FU-1054) - each discipline's one reviewer agent, and the two doors a run comes in by
 REVIEWER_OF = {"care": "care-reviewer"}
+#  W1195c (FU-1821) - the module that builds each discipline's reviewer prompt: a run is held to its shown_digest()
+SHOWN_BY = {"care": "agentic_core.api.care_reviewer"}
 AGENT_DOOR = "agent-run"          # the agent over the set, through its own route: evidence of what it catches
 TYPED_DOOR = "typed"              # flags a person typed through the record door: kept, and calibrating nothing
 
@@ -218,7 +227,9 @@ def calibration_of(agent: str, discipline: str = "care") -> Dict[str, Any]:
     """Whether `agent` is calibrated for a discipline NOW: its latest run of its OWN (W1183: made through its own door,
     in the MODEL configuration), on the set as it stands, re-scored here from the run's own flags. A stored verdict is
     never trusted - the flags are. Every answer carries `reason`, one of: no_set, set_cannot_run, store_unreadable,
-    never_run, floor_only, typed_only, older_version, set_changed, not_answered, below_bar, calibrated."""
+    never_run, floor_only, typed_only, older_version, set_changed, not_answered, shown_not_recorded, shown_changed,
+    below_bar, calibrated. W1195c - a scored run's answer carries `shown`: the digest of what its reviewer was shown
+    (None for a run made before runs recorded it) beside the digest of what the reviewer is shown now."""
     the_set = load_set(discipline)
     if not the_set:
         return {"calibrated": False, "known": True, "reason": "no_set",
@@ -271,14 +282,113 @@ def calibration_of(agent: str, discipline: str = "care") -> Dict[str, Any]:
            "catch_rate": s["catch_rate"], "caught": s["caught"], "planted_cases": s["planted_cases"],
            "false_alarm_rate": s["false_alarm_rate"], "false_alarms": s["false_alarms"], "clean_cases": s["clean_cases"],
            "rates_basis": s["basis"], "bar": s["bar"]}
-    #  W1183 - A CASE THE AGENT ANSWERED WITH NO FLAG LINE was not reviewed, so the run calibrates nothing
+    #  W1195c (FU-1821) - what the run's reviewer was shown, beside what the reviewer is shown now
+    out["shown"] = {"run": latest.get("shown_digest"), "now": shown_now(discipline, the_set)}
+    #  W1183 - A CASE THE AGENT ANSWERED WITH NO FLAG LINE was not reviewed, so the run calibrates nothing. W1195c
+    #  (FU-1831) - nor was a case answered in another form than the one asked for, and the run says what it was
     unanswered = [str(x) for x in latest.get("not_answered") or []]
+    form = latest.get("not_in_form") if isinstance(latest.get("not_in_form"), dict) else None
     if unanswered:
-        return {**out, "calibrated": False, "reason": "not_answered", "not_answered": unanswered,
+        return {**out, "calibrated": False, "reason": "not_answered", "not_answered": unanswered, "not_in_form": form,
                 "why_not": (f"its latest run did not answer {', '.join(unanswered)} with one of the set's reasons or "
-                            f"'FLAG: none', so those were not reviewed and the run calibrates nothing")}
+                            f"'FLAG: none'" + _in_form_said(form, unanswered)
+                            + ", so those were not reviewed and the run calibrates nothing" + _shown_said(out["shown"]))}
+    #  W1195c (FU-1821) - A RUN IS HELD TO WHAT ITS REVIEWER IS SHOWN: it counts only while the reviewer gives the
+    #  digest the run recorded. A run that recorded none was made before runs did, and is read so, never as another's
+    if not latest.get("shown_digest"):
+        return {**out, "calibrated": False, "reason": "shown_not_recorded", "meets_bar": bool(s["meets_bar"]),
+                "why_not": SHOWN_NOT_RECORDED}
+    if latest.get("shown_digest") != out["shown"]["now"]:
+        return {**out, "calibrated": False, "reason": "shown_changed", "meets_bar": bool(s["meets_bar"]),
+                "why_not": SHOWN_CHANGED}
     return {**out, "calibrated": bool(s["meets_bar"]), "reason": "calibrated" if s["meets_bar"] else "below_bar",
             "why_not": None if s["meets_bar"] else f"its latest run did not meet the bar: {s['basis']}"}
+
+
+SHOWN_NOT_RECORDED = ("its latest run was made before a run recorded what its reviewer was shown, so it cannot be held "
+                      "to the reviewer as it is now and calibrates nothing")
+SHOWN_CHANGED = ("what its reviewer is shown has changed since its latest run, so that run calibrates nothing for the "
+                 "reviewer as it is now")
+
+
+def shown_now(discipline: str, the_set: Dict[str, Any]) -> Optional[str]:
+    """W1195c (FU-1821) - the digest of what the discipline's reviewer is shown now, over its fixed probe; None when no
+    reviewer's prompt is known for the discipline."""
+    import importlib
+    name = SHOWN_BY.get(str(discipline or ""))
+    return importlib.import_module(name).shown_digest(the_set) if name else None
+
+
+def _in_form_said(form: Any, cases: List[str]) -> str:
+    """W1195c (FU-1831) - what put each case out of the one form, as its run kept it; nothing for a run made before
+    runs kept it."""
+    said = [f"{c}: {', '.join(str(x) for x in form[c])}" for c in cases
+            if isinstance(form, dict) and isinstance(form.get(c), list) and form.get(c)]
+    return f" in the one form asked for ({'; '.join(said)})" if said else ""
+
+
+def _shown_said(shown: Any) -> str:
+    """W1195c (FU-1821) - after a run that calibrates nothing for another reason, what is true of its digest."""
+    if not isinstance(shown, dict) or "run" not in shown:
+        return ""
+    if not shown.get("run"):
+        return "; it was made before a run recorded what its reviewer was shown"
+    return "; what its reviewer is shown has changed since" if shown.get("run") != shown.get("now") else ""
+
+
+def _model_name(s: Any) -> str:
+    """W1195c (FU-1821) - a model as a review or a run names it: the runtime's 'ollama:' prefix and the ':latest' tag
+    name the same model."""
+    s = str(s or "").strip()
+    s = s[len("ollama:"):] if s.startswith("ollama:") else s
+    return s[:-len(":latest")] if s.endswith(":latest") else s
+
+
+def _build_name(s: Any) -> str:
+    """W1195c (FU-1821) - a build as a review or a run names it: the 'sha256:' prefix and the letters' case aside."""
+    s = str(s or "").strip().lower()
+    return s[len("sha256:"):] if s.startswith("sha256:") else s
+
+
+#  W1195c (FU-1821) - the runtime's own short id of a build is its digest's first twelve characters, as its list of
+#  models prints it and as the statement says it: a review that names at least that much of the run's digest names it
+SHORT_BUILD = 12
+
+
+def review_held_to_run(record: Dict[str, Any], cal: Dict[str, Any]) -> Optional[str]:
+    """W1195c (FU-1821) - why an agent's review is not held to the run that calibrated its agent, or None when it is.
+    A review is held to that run only when the model and build it names are the run's, as the runtime reported them,
+    and it is dated on or after the run. Each reason is one sentence, true of the state it names."""
+    import datetime as _dt
+    import re as _re
+    run = cal.get("run") or {}
+    ident = run.get("served_identity") or {}
+    model, build = _model_name(ident.get("model")), _build_name(ident.get("build_digest"))
+    if not model:
+        return "the run that calibrated the agent does not say which model reviewed, so no review can be held to it"
+    if not build:
+        return (f"the run that calibrated the agent does not say which build of {model} reviewed, so no review can be "
+                "held to it")
+    said = _model_name(record.get("model"))
+    if said != model:
+        return ((f"it names the model {str(record.get('model'))!r}" if said else "it does not name the model that reviewed")
+                + f", and the run that calibrated the agent, {run.get('run_id')}, was made by {model}")
+    named = _build_name(record.get("build"))
+    if not named:
+        return (f"it does not name the build of {model} that reviewed, and the run that calibrated the agent was made "
+                f"with build {build[:SHORT_BUILD]}")
+    if not (named == build or (len(named) >= SHORT_BUILD and _re.fullmatch(r"[0-9a-f]+", named)
+                               and build.startswith(named))):
+        return (f"it names the build {named[:SHORT_BUILD]} of {model}, and the run that calibrated the agent was made "
+                f"with build {build[:SHORT_BUILD]}")
+    try:
+        on = _dt.date.fromisoformat(str(record.get("date"))[:10])
+        ran = _dt.date.fromisoformat(str(run.get("date"))[:10])
+    except ValueError:
+        return "it, or the run that calibrated the agent, carries no date it can be held to"
+    if on < ran:
+        return f"it is dated {on.isoformat()}, before the run that calibrated the agent, made on {ran.isoformat()}"
+    return None
 
 
 def _model_said(run: Dict[str, Any]) -> str:
@@ -314,11 +424,25 @@ def calibration_statement(agent: str, discipline: str = "care") -> Dict[str, Any
                  + "; ".join(cal.get("set_cannot_run") or []))
     elif reason == "calibrated" and on:
         basis = f"calibrated by its run {on}, which met the bar ({bar})"
+        #  W1195c (FU-1821) - a run that names no model or no build holds no review to it: said where it is read
+        _ident = (run or {}).get("served_identity") or {}
+        if not (_model_name(_ident.get("model")) and _build_name(_ident.get("build_digest"))):
+            basis += ("; its run does not say which model and build reviewed, so no review by it can be held to that "
+                      "run and none raises a tool's tier")
     elif reason == "below_bar" and on:
         basis = f"its latest run, {on}, did not meet the bar ({bar})"
     elif reason == "not_answered" and on:
-        basis = (f"its latest run, {on}, did not answer {', '.join(cal.get('not_answered') or [])} with one of the "
-                 f"set's reasons or 'FLAG: none', so those were not reviewed and the run calibrates nothing")
+        _na = cal.get("not_answered") or []
+        basis = (f"its latest run, {on}, did not answer {', '.join(_na)} with one of the set's reasons or 'FLAG: none'"
+                 + _in_form_said(cal.get("not_in_form"), _na)
+                 + ", so those were not reviewed and the run calibrates nothing" + _shown_said(cal.get("shown")))
+    elif reason in ("shown_not_recorded", "shown_changed") and on:
+        #  W1195c (FU-1821) - a run held to a reviewer it was not made with, and what its own flags gave
+        basis = ((f"its latest run, {on}, was made before a run recorded what its reviewer was shown, so it cannot be "
+                  "held to the reviewer as it is now and calibrates nothing") if reason == "shown_not_recorded" else
+                 (f"what its reviewer is shown has changed since its latest run, {on}, so that run calibrates nothing "
+                  "for the reviewer as it is now"))
+        basis += f"; by its own flags it {'met' if cal.get('meets_bar') else 'did not meet'} the bar ({bar})"
     else:
         basis = str(cal.get("why_not") or ("calibrated" if cal.get("calibrated") else "not calibrated"))
     rates = None
@@ -328,6 +452,11 @@ def calibration_statement(agent: str, discipline: str = "care") -> Dict[str, Any
         rates["basis"] = (f"catch rate: {cal['caught']} of {cal['planted_cases']} planted case(s) flagged for their "
                           f"own reason; false-alarm rate: {cal['false_alarms']} of {cal['clean_cases']} clean case(s) "
                           f"flagged")
+        #  W1195c (FU-1831) - a case not answered in the one form is counted as not flagged: said beside the rates
+        _unread = [str(x) for x in cal.get("not_answered") or []] if reason == "not_answered" else []
+        if _unread:
+            rates["basis"] += (f"; {', '.join(_unread)} {'was' if len(_unread) == 1 else 'were'} not reviewed and "
+                               f"{'is' if len(_unread) == 1 else 'are'} counted here as not flagged")
     can = runnable(the_set) if the_set else {"runnable": False}
     label = ("Calibrated" if cal.get("calibrated") else
              "Calibration not known" if cal.get("known") is False else "Uncalibrated")

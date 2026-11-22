@@ -165,10 +165,11 @@ def _running_models() -> Optional[List[Dict[str, Any]]]:
         return None
 
 
-def _running_row(name: str) -> Optional[Dict[str, Any]]:
+#  W1195c - `rows`, when the caller has read the loaded models already, so one answer is matched in one read
+def _running_row(name: str, rows: Optional[List[Dict[str, Any]]] = None) -> Optional[Dict[str, Any]]:
     """The runtime's own row for a loaded model, matched by its name with or without the ':latest' tag."""
     want = {name, name[:-len(":latest")] if name.endswith(":latest") else f"{name}:latest"}
-    for m in _running_models() or []:
+    for m in (rows if rows is not None else _running_models()) or []:
         if str(m.get("name") or m.get("model") or "") in want:
             return m
     return None
@@ -185,6 +186,69 @@ def _processor_of(row: Dict[str, Any]) -> Optional[str]:
         return "100% GPU"
     gpu = round(100 * vram / size)
     return f"{100 - gpu}%/{gpu}% CPU/GPU"
+
+
+def context_given(served_by: Any) -> Dict[str, Any]:
+    """W1195c (FU-1831) - THE CONTEXT THE LOCAL RUNTIME GIVES A MODEL, in tokens, as the runtime reports it: the
+    context_length of the model's own row in its list of loaded models (/api/ps). The model is loaded first by the
+    runtime's own load request, a generation request naming it with no prompt and the options a generation sends
+    (LOCAL_REQUEST_OPTIONS), so the row read is the one a generation with those options runs on; nothing is generated.
+    Never raises: context_length is None, with why, when the local runtime is switched off here, does not load the
+    model, or reports no context for it."""
+    sb = str(served_by or "")
+    if sb != "ollama" and not sb.startswith("ollama:"):
+        return {"model": None, "context_length": None,
+                "basis": f"{sb or 'no server'} is not the local runtime, so no context is read for it"}
+    #  the same resolution the orchestrator's _run_model makes for the bare runtime name
+    name = (sb.split(":", 1)[1].strip() if ":" in sb else (effective_default_local() or configured_default_local()))
+    if not name:
+        return {"model": None, "context_length": None,
+                "basis": "the local runtime was named and no local model is its default, so no context is read"}
+    if os.getenv("AI_DISABLE_LOCAL", "").lower() in ("1", "true", "yes"):
+        return {"model": name, "context_length": None,
+                "basis": ("the local runtime is switched off on this process (AI_DISABLE_LOCAL is set), so it was not "
+                          f"asked what context it gives {name}")}
+    version = local_runtime_version()
+
+    def _said(n, basis):
+        return {"model": name, "context_length": n, "runtime_version": version, "basis": basis}
+    try:
+        import httpx
+        from agentic_core.ai.native.orchestrator import LOCAL_REQUEST_OPTIONS
+    except Exception as e:                           # noqa: BLE001 - said, never read as a context
+        return _said(None, f"the local runtime could not be asked ({type(e).__name__}), so the context is not known")
+    try:
+        r = httpx.post(f"{_ollama_base()}/api/generate",
+                       json={"model": name, "stream": False,
+                             **({"options": dict(LOCAL_REQUEST_OPTIONS)} if LOCAL_REQUEST_OPTIONS else {})},
+                       timeout=180.0)
+    except (httpx.ConnectError, httpx.ConnectTimeout) as e:
+        return _said(None, (f"the local runtime at {_ollama_base()} could not be reached ({type(e).__name__}), so it "
+                            f"was not asked to load {name} and the context it gives the model is not known"))
+    except Exception as e:                           # noqa: BLE001 - said, never read as a context
+        return _said(None, (f"the local runtime did not load {name} ({type(e).__name__}: {str(e)[:80]}), so the "
+                            "context it gives the model is not known"))
+    if r.status_code != 200:
+        try:
+            err = (r.json() or {}).get("error")
+        except Exception:                            # noqa: BLE001 - a body that is not JSON says nothing more
+            err = None
+        return _said(None, (f"the local runtime refused to load {name} (HTTP {r.status_code}"
+                            + (f": {str(err)[:160]}" if err else "") + "), so the context it gives the model is not known"))
+    #  one read of the loaded models: the row is matched in what was read, never in a second read
+    loaded = _running_models()
+    if loaded is None:
+        return _said(None, (f"the local runtime loaded {name}, and its list of loaded models could not be read, so the "
+                            "context it gives the model is not known"))
+    row = _running_row(name, loaded)
+    got = row.get("context_length") if row else None
+    if not isinstance(got, int) or isinstance(got, bool) or got <= 0:
+        return _said(None, (f"the local runtime loaded {name} and "
+                            + ("does not list it as loaded" if not row else
+                               "reports no context for it in its list of loaded models (an older runtime does not "
+                               "report one; a recent one does, so update it)")
+                            + ", so the context it gives the model is not known"))
+    return _said(got, f"the context the local runtime reports for {name} in its list of loaded models, once loaded")
 
 
 def served_identity(served_by: Any) -> Dict[str, Any]:

@@ -61,8 +61,8 @@ class HomeostaticController:
         homeostatic headroom. Returns the admitted `max_parallel`, a `posture`, and the live organism state.
 
         W742 — `read_only=True` is a projection: the organism is read WITHOUT advancing the ATP simulator
-        and no reflex signal is fired, so the projection changes no ATP or reflex state (a caller such as the
-        composition preview may still change other state). `atp_mode` says which mode was asked for.
+        and no reflex signal is fired, so the projection changes no ATP or reflex state. `atp_mode` says which
+        mode was asked for.
         """
         # WRITE side: cognitive demand → metabolic load (0.2 floor; grows with the agent count, capped 1.0).
         load = max(0.2, min(1.0, 0.2 + max(0, demand_nodes) * 0.08))

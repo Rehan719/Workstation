@@ -481,8 +481,31 @@ acted as the administrator for whatever reached it. Then the domain is not set. 
 snapshot taken before that
 account (step 9; the snapshots are daily, so on the first day there may be none), or, before any record matters,
 the platform starts again on a blank data disk; and what reached the forwarded port is found before a tunnel is
-opened again. Then, with the admin's password set (step 7), the machine is told its domain and that sign-in is
-on, together, and its startup script is run again as in step 8:
+opened again.
+
+An account the Owner made and no longer wants is removed with a command, never by editing users.json by hand
+(W1198). It is not for an account the Owner did not make: whatever made that one may have done more than make an
+account, so the data disk is restored, as above. The command is run on the machine, NAME being the account's name:
+
+```bash
+sudo docker exec -it workstation python -m agentic_core.auth.remove_account NAME
+```
+
+It shows the account's role, when it was made and how many API keys it holds, and asks for the name again. It
+removes the account only when the two names match. It refuses the admin account and a name the store does not hold.
+It refuses a users store that is not there, cannot be read whole or holds no admin account. It takes the account and
+its API keys out of the users store, and nothing else: the person's records in the platform's other stores are not
+touched.
+
+The account's sign-in tokens are refused from their next request. A sign-in token carries the account's id (W1198b),
+so a token issued before the removal is refused by any account given the name later. A removed name is given to no
+other person: the person's records in the platform's other stores stay under that name, so an account given it would
+be shown them (FU-1891). Then the accounts are checked again, as above. A users store the command refuses as not
+read whole, unreadable or another user's is not edited. The platform is not restarted on it before the data disk is
+restored (step 9): its boot replaces a store it cannot read with one holding only the admin account (FU-1834).
+
+Then, with the admin's password set (step 7), the machine is told its domain and that sign-in is on, together, and
+its startup script is run again as in step 8:
 
 ```bash
 gcloud compute instances add-metadata workstation --zone=us-central1-a --metadata=domain=DOMAIN,auth-enabled=true

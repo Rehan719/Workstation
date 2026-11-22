@@ -14,6 +14,10 @@ answer passes through, and the rules by which a stored record does or does not c
     uncalibrated agent's review is reported, labelled with its calibration, and does not raise the tier;
   - W921 (clause 2): and only when it is a whole record - the tool version it reviewed, each source read as a row of
     the register of sources with its page and the date it was read, and what it could not check;
+  - W1195c (FU-1821): and only when the model and build it names are those of the run that calibrated the agent, and
+    it is dated on or after that run - one that is not is kept, labelled with its own reason, and does not raise the
+    tier; an answer at that tier says it was reviewed by Workstation's specialist agent and not by a qualified person,
+    as the RELEASE ruling of 2026-10-12 asks of every answer at it;
   - a person's signature counts only when it carries a name, a credential AS STATED (this platform verifies no
     credential, and says so), what was reviewed, and a date on which it lapses that has not passed;
   - a record that does not meet its tier's rule is counted as not meeting it, never read down to a lower tier.
@@ -130,12 +134,19 @@ def counts(record: Dict[str, Any], today: Optional[_dt.date] = None) -> Dict[str
         #  ignored.
         if not str(record.get("agent") or "").strip():
             return {"counts": False, "why_not": "it does not name the agent that reviewed"}
-        from agentic_core.api._review_calibration import calibration_of
+        from agentic_core.api._review_calibration import calibration_of, review_held_to_run
         cal = calibration_of(str(record["agent"]), str(record.get("discipline") or "care"))
         if not cal.get("calibrated"):
             return {"counts": False, "uncalibrated_agent_review": True, "calibration": cal,
                     "why_not": ("the agent that reviewed is not calibrated on planted defects and clean answers: "
                                 + str(cal.get("why_not")))}
+        #  W1195c (FU-1821) - A CALIBRATED NAME IS NOT ENOUGH: the review is held to the run that calibrated its agent,
+        #  made by that run's model and build and dated on or after it. One that is not is kept, labelled with its own
+        #  reason, and raises nothing, as an uncalibrated agent's is
+        _apart = review_held_to_run(record, cal)
+        if _apart:
+            return {"counts": False, "not_held_to_run": True, "not_held_because": _apart, "calibration": cal,
+                    "why_not": "the review is not held to the run that calibrated its agent: " + _apart}
         return {"counts": True, "why_not": None, "calibration": cal}
     elif tier == SIGNED_BY_PERSON:
         if not str(record.get("name") or "").strip() or not str(record.get("credential_as_stated") or "").strip():
@@ -170,17 +181,26 @@ def review_statement(tool: str, today: Optional[_dt.date] = None) -> Dict[str, A
         "records_counted": len(good), "records_not_counted": len(not_counted),
         "of_tiers": [LABEL[t] for t in ORDER[1:]],
     }
+    #  W1195c (FU-1821) - each calibrated agent's review that the run calibrating it does not hold, with its own reason
+    _apart = list(dict.fromkeys((str(_r.get("agent")), str(v.get("not_held_because"))) for _r, v in judged
+                                if v.get("not_held_to_run")))
     if tier == UNREVIEWED:
         #  W1101 - a tool whose records do not count has a record: what is true of it is that none of them counts
         out["basis"] = (f"no review of this tool {'counts' if not_counted else 'is recorded'}: no rule check, no "
-                        "review by a calibrated agent and no "
-                        "qualified person's signature. Treat what it returns as unreviewed"
+                        "review by a calibrated agent"
+                        #  W1195c - one exists that its run does not hold, so the sentence says which there is none of
+                        + (" that is held to the run that calibrated it" if _apart else "")
+                        + " and no qualified person's signature. Treat what it returns as unreviewed"
                         + (f". {len(not_counted)} record(s) exist and do not count" if not_counted else ""))
     else:
         top = max((r for r in good if r["tier"] == tier), key=lambda r: str(r.get("date")))
         out["basis"] = (f"the highest tier a record supports: {LABEL[tier].lower()}, dated {str(top.get('date'))[:10]}"
                         + (f", by {top['name']} ({top['credential_as_stated']} - as stated; {NOT_VERIFIED})"
-                           + f", until {str(top['lapses_on'])[:10]}" if tier == SIGNED_BY_PERSON else ""))
+                           + f", until {str(top['lapses_on'])[:10]}" if tier == SIGNED_BY_PERSON else "")
+                        #  W1195c (the RELEASE ruling of 2026-10-12, P5.15) - every answer at the second tier says
+                        #  who reviewed it and who did not
+                        + ("; it was reviewed by Workstation's specialist agent and not by a qualified person"
+                           if tier == REVIEWED_BY_AGENT else ""))
     #  W1183 (P5.15 clause 3) - EACH AGENT THAT REVIEWED THIS TOOL, WITH ITS CALIBRATION, in the one statement the
     #  options panel reads too; and the two rates WITH their counts beside the review that set the tier: the rates of
     #  the agent whose record counts, never of whichever agent's record came last
@@ -206,9 +226,17 @@ def review_statement(tool: str, today: Optional[_dt.date] = None) -> Dict[str, A
         out["not_counted"] = not_counted[:5]
         _uncal = sorted({str(_r.get("agent")) for _r, v in judged if v.get("uncalibrated_agent_review")})
         if _uncal:
+            #  W1195c (FU-1821) - an agent whose run was held to another prompt, or to none recorded, is not
+            #  calibrated for the reviewer as it is now, which is not the same as never calibrated
+            _now = sorted({str(_r.get("agent")) for _r, v in judged if v.get("uncalibrated_agent_review")
+                           and (v.get("calibration") or {}).get("reason") in ("shown_changed", "shown_not_recorded")})
+            _never = [a for a in _uncal if a not in _now]
             out["uncalibrated_agent_review"] = (
-                "an agent's review of this tool exists and does not raise its tier: "
-                + ", ".join(_uncal) + (" has" if len(_uncal) == 1 else " have") + " not been calibrated")
+                "an agent's review of this tool exists and does not raise its tier: " + "; ".join(
+                    ([", ".join(_never) + (" has" if len(_never) == 1 else " have") + " not been calibrated"]
+                     if _never else [])
+                    + ([", ".join(_now) + (" is" if len(_now) == 1 else " are")
+                        + " not calibrated for the reviewer as it is now"] if _now else [])))
             #  W1101 (P5.15 clause 3) - LABELLED where it is read: in the sentence every answer, saved text and
             #  options panel already says, as the reviewing agent's rates are
             out["basis"] += "; " + out["uncalibrated_agent_review"]
@@ -222,4 +250,12 @@ def review_statement(tool: str, today: Optional[_dt.date] = None) -> Dict[str, A
                     s = stated[(a, d)]
                     out["basis"] += (f"; {a}'s calibration: {s['basis']}"
                                      + (f" ({s['rates']['basis']})" if s.get("rates") else ""))
+        #  W1195c (FU-1821) - A CALIBRATED AGENT'S REVIEW THAT ITS CALIBRATED RUN DOES NOT HOLD: made by another model or
+        #  build, before that run, or under a run that names no build. Said with its own reason, and never as an
+        #  uncalibrated agent's
+        if _apart:
+            out["review_not_held_to_run"] = (
+                "an agent's review of this tool exists and does not raise its tier: "
+                + "; ".join(f"{a}'s review is not held to the run that calibrated it ({why})" for a, why in _apart))
+            out["basis"] += "; " + out["review_not_held_to_run"]
     return out
