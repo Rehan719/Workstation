@@ -92874,7 +92874,9 @@ def test_w1134_fu603_the_google_cloud_deploy_is_written_from_googles_pages_and_n
     data_dir = re.search(r"\bDATA_DIR=(\S+)", df).group(1)
     port = re.search(r"\bPORT=(\d+)", df).group(1)
     assert f'--volume="$MNT":{data_dir} ' in script, ("the records are not mounted where the image keeps them", data_dir)
-    assert f"--publish=80:{port} " in script, ("the platform's port is not the image's", port)
+    #  W1191: without a domain the platform's own port is published on the machine's 127.0.0.1 only
+    assert f"--publish=127.0.0.1:{port}:{port} " in script and f"--publish=80:{port}" not in script, (
+        "the platform's port is not the image's, or it is public", port)
     assert 'DISK="${WORKSTATION_DISK:-/dev/disk/by-id/google-' + disk["device-name"] + '}"' in script, (
         "the script looks for the data disk under another name than the steps give it")
     assert 'metadata instance/attributes/image-tag' in script and 'metadata project/project-id' in script
@@ -93289,7 +93291,9 @@ def test_w1140_fu1284_https_is_caddy_in_front_of_the_platform_and_no_one_signs_i
     lower, check = main.index("tr 'A-Z' 'a-z'"), main.index('! valid_domain "$domain"')
     pull, stop = main.index('docker pull "$CADDY_IMAGE"'), main.index("docker stop")
     assert lower < check < stop and pull < stop, "the domain is checked, or the front's image pulled, after the stop"
-    assert 'start_front "$image" "$tag" "$domain"' in main and "--publish=80:8000 " in main, main
+    #  W1191: the front takes the machine's own sign-in value, and without a domain no port is public
+    assert 'start_front "$image" "$tag" "$domain" "$auth"' in main and "--publish=127.0.0.1:8000:8000 " in main, main
+    assert "--publish=80:8000" not in main, main
 
     #  the steps, their prices and their pages
     sec = read("docs/DEPLOYMENT.md").split("## The Google Cloud deploy, step by step (P4.5)", 1)[1].split("\n## ", 1)[0]
@@ -93298,8 +93302,10 @@ def test_w1140_fu1284_https_is_caddy_in_front_of_the_platform_and_no_one_signs_i
     promote = [b for b in blocks if "gcloud compute addresses create" in b]
     assert promote == ["gcloud compute addresses create workstation-ip --addresses=EXTERNAL_IP --region=us-central1"], promote
     told = [b for b in blocks if "--metadata=domain=" in b]
+    #  W1191: the domain and sign-in are set together, on the machine
     assert len(told) == 1 and told[0] == ("gcloud compute instances add-metadata workstation --zone=us-central1-a "
-                                          "--metadata=domain=DOMAIN sudo google_metadata_script_runner startup"), told
+                                          "--metadata=domain=DOMAIN,auth-enabled=true "
+                                          "sudo google_metadata_script_runner startup"), told
     fw = [b for b in blocks if "gcloud compute firewall-rules create" in b]
     assert len(fw) == 1 and "--rules=tcp:80,tcp:443" in fw[0], fw
     assert "$0.025 an hour, about $18.25 a month [network-pricing]" in flat and round(0.025 * 730, 2) == 18.25
@@ -98657,3 +98663,695 @@ def test_w1190_the_owners_six_decisions_of_the_afternoon_of_2026_11_21_are_recor
     #  no new sentence gives the Owner a gendered pronoun
     for text in said:
         assert not re.search(r"\b(he|him|his|she|her|hers)\b", text, re.I), ("a gendered pronoun", text[:90])
+
+
+def test_w1191_the_release_machine_serves_publicly_only_with_its_domain_https_and_sign_in_on(tmp_path, monkeypatch, capsys):
+    """W1191 (P4.5); the Owner's decision of 2026-11-21 (afternoon, 1 of 6), P4.1's ruling of 2026-11-20 and the Owner's
+    two decisions of the late evening of 2026-11-21. As W1134 and W1140 left it, the release machine with no domain ran
+    the platform on port 80 with sign-in off - an open platform on the public internet. Now it serves publicly only with
+    its domain, HTTPS and sign-in on, and without a domain publishes no public port. Reworked twice after the round's
+    reviews and checked once more. Held here:
+    S1. DRIVEN: the startup script, sourced as test_w1134 sources it, its main() and its front run with docker, the
+        metadata server and the host's firewall stood in for:
+        - no domain: the platform is published on the machine's 127.0.0.1 only (never 0.0.0.0, a bare port, -P or a
+          network of the host's), Caddy is not started, sign-in follows the metadata (off unset or false, on with
+          true) from exactly one setting, and the run is given CORS_ORIGINS for the tunnel's origin alone;
+        - the metadata's keys are listed once: a list, or a listed key, that cannot be read stops the script before
+          any docker call, and so does an auth-enabled that is neither true nor false, with a domain or without; the
+          script's own metadata(), driven once through a stand-in curl, stops when the list cannot be read although
+          every key would answer;
+        - a domain without sign-in on: nothing public starts, the refusal is logged in a sentence, and no docker
+          call is made at all;
+        - a domain with sign-in on: the front starts, the platform behind it with exactly one sign-in setting, true,
+          CORS_ORIGINS for the domain alone and no port of its own; and the front on its own refuses unless told true;
+    S2. nothing that deploys the release machine sets AUTH_ENABLED=true: there, sign-in comes only from the machine's
+        own metadata key auth-enabled. The tree's two sign-in harnesses and the HTTPS drill start a local platform with
+        it on, to test it. Walking the tracked tree, nothing else outside the tests sets it (a shell default and a
+        front told true included), no command sets the machine's auth-enabled to true outside the Markdown documents
+        and the records under docs/, where the guide gives the Owner the commands and the plan and register quote them,
+        and no config file sets ADMIN_PASSWORD or JWT_SECRET to a value; the tree's own settings say off;
+    S3. DRIVEN: the set-password command reads the users store strictly before core is imported, so a store that is
+        not there or cannot be read whole is refused and left byte for byte, in its own process as the guide runs it;
+        it reads the password twice, refuses a short or mismatched one, one given on the command line and an account
+        the store does not hold, stores only the hash, marked as set by the Owner, and keeps an account written while
+        the password was asked; and the production warning names the command, never ADMIN_PASSWORD;
+    S4. the guide says what is true now: the domain first; step 6's rule created at step 12; step 7 a plain SSH session
+        for the password and (the Owner accepted it on 2026-11-21) sign-in, then the tunnel on port 8800, and what
+        CORS_ORIGINS does and does not stop; where the secrets are; the uptime check only once step 12 is done; and step
+        12 creating the rule, checking the accounts (each one's name, role and creation time, never a hash, driven
+        here), setting the domain and sign-in together and sending the reader back to step 10; the steps keep their
+        numbers;
+    S5. the round's row is closed on P4.5 in the Owner's recorded words, W1190's quoted as W1190 recorded them; three
+        rows are left open on P4.1; the W729 credentials are an OWNER row of high severity, on the plan's Owner list
+        and in the local notes; FU-1289 and FU-1095, still open and the Owner's, each say in one sentence what W1191
+        changed, FU-1289's after the Owner's ruling W1190 recorded there and before the dated note of the late
+        evening; P4.1 carries that evening's ruling right after the ruling of 2026-11-20 and, last, that W1191 changed
+        the script; and the plan's list and the local notes say the domain and sign-in are set together."""
+    import json
+    import os
+    import pathlib
+    import re
+    import shutil
+    import subprocess
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")  # noqa: E731
+    script_path = root / "deploy" / "gcp" / "startup.sh"
+    raw = script_path.read_bytes()
+    assert b"\r" not in raw and "deploy/gcp/startup.sh text eol=lf" in read(".gitattributes").splitlines()
+    script = raw.decode("utf-8")
+    image = "us-central1-docker.pkg.dev/w1191-project/workstation/workstation:w1191-tag"
+
+    #  S1. THE STARTUP SCRIPT, DRIVEN
+    driver = r'''
+source "$1"
+docker() {
+    local a
+    for a in "$@"; do printf '%s\037' "$a"; done >> "$W1191_LOG"
+    printf '\n' >> "$W1191_LOG"
+    case "$1 ${2:-}" in "network inspect"|"image inspect") return 1 ;; esac
+    return 0
+}
+docker-credential-gcr() { return 0; }
+iptables() { return 0; }
+mount() { return 0; }
+chown() { return 0; }
+prepare_disk() { return 0; }
+if [ -z "${W1191_REAL_METADATA:-}" ]; then
+metadata() {
+    case "$1" in
+        project/project-id) echo w1191-project ;;
+        instance/attributes/image-tag) echo w1191-tag ;;
+        instance/attributes/)
+            [ "${W1191_FAIL:-}" = "list" ] && return 22
+            echo image-tag
+            [ -n "${W1191_DOMAIN:-}" ] && echo domain
+            [ -n "${W1191_AUTH:-}" ] && echo auth-enabled
+            echo startup-script
+            return 0 ;;
+        instance/attributes/domain)
+            [ "${W1191_FAIL:-}" = "domain" ] && return 22
+            [ -n "${W1191_DOMAIN:-}" ] || return 22
+            printf '%s' "$W1191_DOMAIN" ;;
+        instance/attributes/auth-enabled)
+            [ "${W1191_FAIL:-}" = "auth-enabled" ] && return 22
+            [ -n "${W1191_AUTH:-}" ] || return 22
+            printf '%s' "$W1191_AUTH" ;;
+        *) return 22 ;;
+    esac
+}
+fi
+if [ -n "${W1191_FRONT+set}" ]; then
+    start_front "$W1191_IMAGE" w1191-tag app.example.com ${W1191_FRONT:+"$W1191_FRONT"}
+else
+    main
+fi
+'''
+    bash = shutil.which("bash")
+    if sys.platform.startswith("linux"):
+        assert bash, "the round's own machine must drive the startup script"
+    if os.name != "nt" and bash:
+        boots = []
+        #  the metadata server, stood in for at curl itself: the list is refused, and every key would answer
+        stub_dir = tmp_path / "w1191-bin"
+        stub_dir.mkdir()
+        curl_log = tmp_path / "curl.log"
+        (stub_dir / "curl").write_text(
+            f"#!{bash}\n"
+            "for a in \"$@\"; do case \"$a\" in http://*) url=$a ;; esac; done\n"
+            "printf '%s\\n' \"$*\" >> \"$W1191_CURL_LOG\"\n"
+            "case \"${url:-}\" in\n"
+            "    */computeMetadata/v1/instance/attributes/) exit 22 ;;\n"
+            "    */computeMetadata/v1/project/project-id) printf '%s' w1191-project ;;\n"
+            "    */computeMetadata/v1/instance/attributes/image-tag) printf '%s' w1191-tag ;;\n"
+            "    */computeMetadata/v1/instance/attributes/domain) printf '%s' app.example.com ;;\n"
+            "    */computeMetadata/v1/instance/attributes/auth-enabled) printf '%s' true ;;\n"
+            "    *) exit 22 ;;\n"
+            "esac\n", encoding="utf-8")
+        os.chmod(stub_dir / "curl", 0o755)
+
+        def boot(domain=None, auth=None, fail=None, front=None, real=False):
+            log = tmp_path / f"docker-{len(boots)}.log"
+            env = {k: v for k, v in os.environ.items() if not k.startswith("W1191_")}
+            env.update(WORKSTATION_STARTUP_SOURCED="1", WORKSTATION_MNT=str(tmp_path / "mnt"), W1191_LOG=str(log),
+                       W1191_IMAGE=image)
+            env.update({k: v for k, v in (("W1191_DOMAIN", domain), ("W1191_AUTH", auth), ("W1191_FAIL", fail),
+                                          ("W1191_FRONT", front)) if v is not None})
+            if real:
+                env.update(W1191_REAL_METADATA="1", W1191_CURL_LOG=str(curl_log),
+                           PATH=str(stub_dir) + os.pathsep + env.get("PATH", ""))
+            r = subprocess.run([bash, "-c", driver, "bash", str(script_path)], capture_output=True, text=True,
+                               env=env, timeout=60, stdin=subprocess.DEVNULL)
+            calls = [ln.split("\x1f")[:-1] for ln in log.read_text(encoding="utf-8").splitlines()] if log.exists() else []
+            boots.append(calls)
+            return r, calls
+
+        def runs(calls):
+            return [c for c in calls if c[:1] == ["run"]]
+
+        def public(calls):
+            return [a for c in calls for a in c if "0.0.0.0" in a or re.fullmatch(r"(--publish=|-p)?(80|443|8000)(:\d+)?", a)]
+
+        def setting(run, name):       # every argument of the run that sets NAME, and any file of settings
+            return [a for a in run if name in a or a.startswith("--env-file")]
+
+        #  ...no domain: the machine's 127.0.0.1 only, sign-in from the metadata, the tunnel's origin, no Caddy
+        for auth, on in ((None, "false"), ("false", "false"), ("TRUE", "true")):
+            r, calls = boot(auth=auth)
+            assert r.returncode == 0, (auth, r.stdout[-600:], r.stderr[-600:])
+            (run,) = runs(calls)
+            assert run[1:4] == ["--name=workstation", "--restart=always", "--detach"] and run[-1] == image, run
+            assert [a for a in run if a.startswith(("--publish", "-p", "-P"))] == ["--publish=127.0.0.1:8000:8000"], run
+            assert not [a for a in run if a.startswith(("--network", "--net"))] and not public(calls), (auth, run)
+            assert setting(run, "AUTH_ENABLED") == [f"--env=AUTH_ENABLED={on}"], (auth, run)
+            assert setting(run, "CORS_ORIGINS") == ["--env=CORS_ORIGINS=http://localhost:8800"], (auth, run)
+            assert not [c for c in calls if any("caddy" in a and c[0] in ("run", "pull") for a in c)], calls
+            assert ["stop", "caddy", "workstation"] in calls and ["rm", "caddy", "workstation"] in calls, calls
+        #  ...what cannot be read, or is neither true nor false, stops the script before any docker call
+        for kw, sentence in ((dict(auth="yes"), "the machine's auth-enabled is neither true nor false: not started"),
+                             (dict(auth="true", fail="list"), "the machine's metadata could not be listed: not started"),
+                             (dict(auth="true", fail="auth-enabled"),
+                              "the machine's auth-enabled could not be read: not started"),
+                             (dict(domain="app.example.com", auth="true", fail="domain"),
+                              "the machine's domain could not be read: not started")):
+            r, calls = boot(**kw)
+            assert r.returncode == 1 and calls == [] and f"workstation-startup: {sentence}" in r.stdout, (
+                kw, r.stdout, calls)
+        #  ...and the script's own metadata(), through curl: the list refused stops it, though every key would answer
+        r, calls = boot(real=True)
+        asked = curl_log.read_text(encoding="utf-8").splitlines() if curl_log.exists() else []
+        assert r.returncode == 1 and calls == [], (r.stdout[-400:], r.stderr[-400:], calls)
+        assert "workstation-startup: the machine's metadata could not be listed: not started" in r.stdout, r.stdout
+        assert ("-fsS http://metadata.google.internal/computeMetadata/v1/instance/attributes/ -H Metadata-Flavor: "
+                "Google") in asked, ("the script's own metadata() did not ask the metadata server for the list", asked)
+        assert not [a for a in asked if a.split()[1].endswith(("/domain", "/auth-enabled"))], (
+            "a key was read although the list it belongs to was not", asked)
+        #  ...a domain without sign-in on, or with a value that is neither: refused, and no docker call at all
+        refused = ("the machine has a domain but its metadata does not turn sign-in on (auth-enabled=true): nothing public "
+                   "is started, and what is running, the front included if one runs, is left as it was")
+        for auth, sentence in ((None, refused), ("false", refused), ("yes", "the machine's auth-enabled is neither true "
+                               "nor false: not started, and the running platform is left as it was")):
+            r, calls = boot(domain="app.example.com", auth=auth)
+            assert r.returncode == 1 and f"workstation-startup: {sentence}" in r.stdout.splitlines(), (auth, r.stdout)
+            assert calls == [], (auth, calls)
+        r, calls = boot(domain="203.0.113.7", auth="true")
+        assert r.returncode == 1 and "is not a host name" in r.stdout and calls == [], (r.stdout, calls)
+        #  ...a domain with sign-in on: the front, the platform behind it with sign-in on and the domain's origin
+        r, calls = boot(domain="app.example.com", auth="true")
+        assert r.returncode == 0, (r.stdout[-600:], r.stderr[-600:])
+        platform, caddy = runs(calls)
+        assert "--name=workstation" in platform and "--network=workstation-front" in platform and platform[-1] == image
+        assert setting(platform, "AUTH_ENABLED") == ["--env=AUTH_ENABLED=true"], platform
+        assert setting(platform, "CORS_ORIGINS") == ["--env=CORS_ORIGINS=https://app.example.com"], platform
+        assert not [a for a in platform if a.startswith(("--publish", "-p", "-P"))] and not public([platform]), platform
+        assert "--name=caddy" in caddy and "--publish=80:80" in caddy and "--publish=443:443" in caddy, caddy
+        assert caddy[-6:] == ["caddy", "reverse-proxy", "--from", "app.example.com", "--to", "workstation:8000"], caddy
+        #  ...and the front on its own: told anything but true, or nothing, it starts nothing
+        for front in ("", "false", "TRUE"):
+            r, calls = boot(front=front)
+            assert r.returncode == 1 and calls == [] and "the front starts only with sign-in on" in r.stdout, (
+                front, r.stdout, calls)
+        r, calls = boot(front="true")
+        assert r.returncode == 0 and len(runs(calls)) == 2, (r.stdout[-400:], calls)
+        assert setting(runs(calls)[0], "AUTH_ENABLED") == ["--env=AUTH_ENABLED=true"], calls
+        assert len(boots) == 17, len(boots)
+    #  ...and read as code: one list, each key read only when listed, the value the metadata's, the front's own check
+    main = script.split("\nmain() {\n", 1)[1].split("\n}\n", 1)[0]
+    assert main.count("attrs=$(metadata instance/attributes/)") == 1 and "listed auth-enabled" in main, main[:400]
+    assert "auth-enabled 2>/dev/null" not in main and "domain 2>/dev/null" not in main, "a read's failure is hidden"
+    assert main.index("auth-enabled") < main.index("docker stop") and main.count('--env=AUTH_ENABLED="$auth"') == 1
+    assert 'start_front "$image" "$tag" "$domain" "$auth"' in main
+    front = script.split("start_front() {", 1)[1].split("\n}\n", 1)[0]
+    assert front.index('[ "${4:-}" != "true" ]') < front.index("docker ") and '--env=AUTH_ENABLED="$4" ' in front
+    assert '--env=CORS_ORIGINS="https://$3"' in front, front[:600]
+    assert 'start_front "$IMG" drill "$DOM" true ' in read("deploy/https_drill.sh"), "the drill's front is told false"
+    said_in_script = " ".join(script.replace("#", " ").split())
+    assert ("CORS_ORIGINS stops a page from another site reading its ordinary answers, not sending it requests"
+            in said_in_script), "the script's comment says CORS keeps the pages of other sites out"
+    assert ("Nothing that deploys the release machine turns sign-in on: the machine's own metadata does, the Owner's "
+            "switch (the Owner's ruling of 2026-11-21)") in said_in_script
+
+    #  S2. NOTHING THAT DEPLOYS THE RELEASE MACHINE SETS AUTH_ENABLED=true: there, sign-in comes only from the machine's
+    #  own metadata key auth-enabled. The tree's two sign-in harnesses and the HTTPS drill start a local platform with it
+    #  on, to test it; walking the tracked tree, no other file outside the tests sets it or calls the front, no command
+    #  sets the machine's auth-enabled to true outside the Markdown documents and the records under docs/, where the
+    #  guide gives the Owner the commands and the plan and register quote them, and no config file sets the password or
+    #  the signing secret
+    import ast
+    harnesses = {"scripts/run_auth_backend.py": "starts a local backend on 127.0.0.1 with sign-in on, to check it",
+                 "scripts/boot_signin_check_backend.py": "boots a backend in a throwaway store for the sign-in check",
+                 "deploy/https_drill.sh": ("starts the release front on this machine for the HTTPS drill, with sign-in "
+                                           "on, in a test process")}
+    skip = {".git", "node_modules", "data", "logs", "__pycache__", "dist", "build", ".venv", "venv", "fidelity_runs",
+            "_archive", ".pytest_cache", "integration_tests", "tests", "__tests__", "e2e", "test-results", "coverage"}
+    setting_on = re.compile(r"\bAUTH_ENABLED\b[\"']?\s*[=:]\s*[\"']?\s*true\b", re.I)
+    docker_env = re.compile(r"^\s*ENV\s+.*\bAUTH_ENABLED\s+[\"']?true\b", re.I | re.M)
+    key_value = re.compile(r"key:\s*[\"']?AUTH_ENABLED[\"']?\s*\n\s*value:\s*[\"']?true\b", re.I)
+    shell_default = re.compile(r"\$\{AUTH_ENABLED:?[-=]\s*[\"']?true\b", re.I)
+    switch_on = re.compile(r"--metadata(?:-from-file)?[= ]\S*\bauth-enabled=true\b", re.I)
+    front_true = re.compile(r"\bstart_front\b(?:\s+\S+){3}\s+[\"']?true\b")      # the front told that sign-in is on
+    front_call = re.compile(r"\bstart_front\b(?!\s*\(\s*\))")                     # any call of the front, not its definition
+    secret_set = re.compile(r"^[ \t]*(?:export[ \t]+|-[ \t]+[\"']?|ENV[ \t]+)?(?:ADMIN_PASSWORD|JWT_SECRET)"
+                            r"(?:[ \t]*[=:][ \t]*|[ \t]+)[\"']?[^\s\"'#$]", re.M)
+    secret_kv = re.compile(r"key:[ \t]*[\"']?(?:ADMIN_PASSWORD|JWT_SECRET)[\"']?[ \t]*\n[ \t]*value:")
+    secret_default = re.compile(r"\$\{(?:ADMIN_PASSWORD|JWT_SECRET):?[-=][^}\s]")
+    secret_flag = re.compile(r"(?:--env(?:=|[ \t]+)|-e[ \t]+)[\"']?(?:ADMIN_PASSWORD|JWT_SECRET)=[\"']?[^\s\"'$]")
+    secret_env = re.compile(r"^[ \t]*ENV[ \t].*\b(?:ADMIN_PASSWORD|JWT_SECRET)=[\"']?[^\s\"'$]", re.M)
+    secret_json = re.compile(r"\"(?:ADMIN_PASSWORD|JWT_SECRET)\"\s*:\s*\"[^\"$\s]")
+
+    def py_sets(src):
+        text = lambda n: isinstance(n, ast.Constant) and isinstance(n.value, str)  # noqa: E731
+        on = lambda n: text(n) and n.value.strip().lower() == "true"  # noqa: E731
+        named = lambda n: text(n) and n.value == "AUTH_ENABLED"  # noqa: E731
+        try:
+            tree = ast.parse(src)
+        except SyntaxError:
+            return False
+        for n in ast.walk(tree):
+            if isinstance(n, ast.Call) and ((len(n.args) >= 2 and named(n.args[0]) and on(n.args[1])) or any(
+                    k.arg == "AUTH_ENABLED" and on(k.value) for k in n.keywords)):
+                return True
+            if isinstance(n, ast.Dict) and any(k is not None and named(k) and on(v) for k, v in zip(n.keys, n.values)):
+                return True
+            if isinstance(n, ast.Assign) and on(n.value) and any(
+                    isinstance(t, ast.Subscript) and named(t.slice) for t in n.targets):
+                return True
+        return False
+
+    def uncommented(t):
+        return "\n".join("" if ln.lstrip().startswith("#") else ln.split(" #", 1)[0] for ln in t.splitlines())
+
+    #  the pattern for the front is the drill's call, and neither the release machine's own call nor the guide's words
+    assert len(front_true.findall(uncommented(read("deploy/https_drill.sh")))) == 1, "the drill's front is not told true"
+    for rel in ("deploy/gcp/startup.sh", "deploy/drill.sh", "docs/DEPLOYMENT.md"):
+        assert not front_true.search(uncommented(read(rel))), (rel, "would be read as telling the front sign-in is on")
+    listed = subprocess.run(["git", "-C", str(root), "ls-files", "-z"], capture_output=True)
+    tracked = [r for r in listed.stdout.decode("utf-8", "replace").split("\0") if r] if listed.returncode == 0 else []
+    assert tracked, ("the tracked files could not be listed, so nothing was scanned", listed.returncode)
+    sets, switches, secrets_set, scanned = set(), set(), set(), 0
+    for rel in tracked:
+        parts = rel.split("/")
+        if any(part in skip for part in parts[:-1]):
+            continue
+        fn = parts[-1]
+        p = root / rel
+        if (fn.startswith("test_") or fn.endswith("_test.py") or fn == "conftest.py" or ".test." in fn
+                or ".spec." in fn or fn.endswith(".fixture.json")):
+            continue
+        suf = p.suffix.lower()
+        if not (suf in (".py", ".sh", ".bash", ".env", ".yml", ".yaml", ".toml", ".ini", ".cfg", ".conf", ".json",
+                        ".ts", ".tsx", ".js", ".mjs", ".cjs", ".md", ".bat", ".cmd", ".ps1")
+                or fn.startswith((".env", "Dockerfile"))):
+            continue
+        try:
+            t = p.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        scanned += 1
+        if suf == ".py":
+            hit, switch = py_sets(t), bool(switch_on.search(t))
+        elif suf == ".md":            # the guide gives the Owner the switch's commands: they are the Owner's to run
+            hit = any(setting_on.search(uncommented(b)) for b in re.findall(r"```[a-z]*\n(.*?)```", t, re.S))
+            switch = False
+        elif suf == ".json":          # the register and the docs' records quote the guide's commands
+            hit = not rel.startswith("docs/") and bool(setting_on.search(t))
+            switch = not rel.startswith("docs/") and bool(switch_on.search(t))
+            if not rel.startswith("docs/") and secret_json.search(t):
+                secrets_set.add(rel)
+        elif suf in (".ts", ".tsx", ".js", ".mjs", ".cjs"):
+            code = re.sub(r"//[^\n]*", "", _slash_star_restored(re.sub(r"/\*.*?\*/", "", _slash_star_masked(t), flags=re.S)))
+            hit, switch = bool(setting_on.search(code)), bool(switch_on.search(code))
+        else:
+            u = uncommented(t)
+            hit = bool(setting_on.search(u) or docker_env.search(u) or key_value.search(u) or shell_default.search(u)
+                       or front_true.search(u) or (rel != "deploy/gcp/startup.sh" and front_call.search(u)))
+            switch = bool(switch_on.search(u))
+            if (secret_set.search(u) or secret_kv.search(u) or secret_default.search(u) or secret_flag.search(u)
+                    or secret_env.search(u)):
+                secrets_set.add(rel)
+        if hit:
+            sets.add(rel)
+        if switch:
+            switches.add(rel)
+    assert scanned > 500, ("the scan read almost nothing, so it would pass on an empty tree", scanned)
+    assert sets == set(harnesses), ("a file outside the tests turns sign-in on", sorted(sets - set(harnesses)),
+                                   "or a harness no longer does", sorted(set(harnesses) - sets))
+    assert not switches, ("a file in the tree sets the machine's own sign-in switch", sorted(switches))
+    assert not secrets_set, ("a config file in the tree sets ADMIN_PASSWORD or JWT_SECRET", sorted(secrets_set))
+    assert re.search(r"(?m)^AUTH_ENABLED=false\b", read(".env.example")), "the example environment turns sign-in on"
+    assert re.search(r'key: AUTH_ENABLED\n\s+value: "false"', read("render.yaml")), "the blueprint turns sign-in on"
+    for rel in ("agentic_core/auth/core.py", "agentic_core/config.py"):
+        assert 'os.getenv("AUTH_ENABLED", "false").lower() == "true"' in read(rel), (rel, "its default is not off")
+
+    #  S3. THE SET-PASSWORD COMMAND, DRIVEN: the store read whole first, two answers, only the hash kept
+    from agentic_core import config as _config
+    from agentic_core.auth import core
+    from agentic_core.auth import set_password as sp
+    store = tmp_path / "users.json"
+    monkeypatch.setattr(_config, "data_path", lambda *parts: tmp_path.joinpath(*parts))   # the store read first...
+    monkeypatch.setattr(core, "_USER_STORE", store)                                       # ...is the one written
+    assert _config.data_path("users.json") == store
+    stand_in = core._pwd_ctx.hash("w1191 a random stand-in password")
+    store.write_text(json.dumps({"admin": {"user_id": "w1191", "username": "admin", "hashed_password": stand_in,
+                                           "password_source": "random-unset", "role": "admin", "api_keys": []}}),
+                     encoding="utf-8")
+    password = "w1191 correct horse battery staple"
+
+    def answered(*given):
+        it = iter(given)
+        monkeypatch.setattr(sp.getpass, "getpass", lambda prompt="": next(it))
+
+    def refused(argv, said, *given, rc=1):
+        before = store.read_bytes() if store.exists() else None
+        answered(*given)
+        got = sp.main(argv)
+        out = capsys.readouterr()
+        assert got == rc and said in out.err, (argv[:1], got, out.err)
+        assert (store.read_bytes() if store.exists() else None) == before, (argv[:1], "the store changed")
+        assert not [g for g in (*given, *argv[1:]) if g and (g in out.out or g in out.err)], "a password was shown"
+    refused(["admin"], "the two passwords differ", password, password + "z")
+    refused(["admin"], "shorter than 12 characters", "w1191 short")
+    refused(["nobody"], "holds no account named 'nobody'")
+    refused(["admin", password], "usage:", rc=2)                 # never taken from the command line, nothing asked
+    #  ...set, while another writer adds an account between the first read and the write: the store is read again,
+    #  whole, under its lock, so that account is kept
+    asked, kept_hash = [], "w1191 another account's hash, kept as it was"
+
+    def racing(prompt=""):
+        asked.append(prompt)
+        if len(asked) == 2:
+            users = json.loads(store.read_text(encoding="utf-8"))
+            users["w1191-other"] = {"user_id": "w1191-other", "username": "w1191-other", "hashed_password": kept_hash,
+                                    "role": "user", "api_keys": []}
+            store.write_text(json.dumps(users), encoding="utf-8")
+        return password
+    monkeypatch.setattr(sp.getpass, "getpass", racing)
+    assert sp.main(["admin"]) == 0 and len(asked) == 2, asked
+    out = capsys.readouterr()
+    assert "The password for admin is set" in out.out and password not in out.out + out.err, out
+    users = json.loads(store.read_text(encoding="utf-8"))
+    admin = users["admin"]
+    assert core._pwd_ctx.verify(password, admin["hashed_password"]) and admin["password_source"] == "owner-set", admin
+    assert not core._pwd_ctx.verify("w1191 a random stand-in password", admin["hashed_password"])
+    assert users.get("w1191-other", {}).get("hashed_password") == kept_hash, (
+        "an account written while the password was asked was lost", sorted(users))
+    assert not [f for f in tmp_path.rglob("*") if f.is_file() and password.encode() in f.read_bytes()], (
+        "the password itself is kept in a file")
+    kept = store.read_bytes()
+    store.write_text('{"admin": {"username": "admin"', encoding="utf-8")
+    refused(["admin"], "the users store could not be read whole", password, password)
+    store.unlink()
+    refused(["admin"], "there is no users store", password, password)
+    assert not store.exists(), "the command made a users store"
+    store.write_bytes(kept)
+    #  ...and as the Owner runs it, as a module in its own process (no terminal, so getpass reads the input it is
+    #  given; a terminal is what `docker exec -it` gives the Owner): importing core there would replace a store it
+    #  could not read, so the command must refuse before it imports core
+    if os.name != "nt":
+        data = tmp_path / "w1191-data"
+        env = dict(os.environ, DATA_DIR=str(data), WORKSTATION_DATA_DIR=str(data), PYTHONPATH=str(root),
+                   WORKSTATION_UEG_PATH=str(data / "ueg.json"), PROJECTS_DIR=str(data / "projects"), AI_DISABLE_LOCAL="1")
+        for name in ("ADMIN_PASSWORD", "JWT_SECRET", "AUTH_ENABLED"):
+            env.pop(name, None)
+
+        def own_process(*argv, answers=f"{password}\n" * 2):
+            return subprocess.run([sys.executable, *argv], input=answers, capture_output=True, text=True, env=env,
+                                  cwd=str(root), timeout=120, start_new_session=True)
+        r = own_process("-m", "agentic_core.auth.set_password", "admin")
+        assert r.returncode == 1 and "there is no users store" in r.stderr, (r.returncode, r.stderr[-400:])
+        assert not (data / "users.json").exists(), "the command, or the import it makes, made a users store"
+        made = own_process("-c", "import agentic_core.auth.core")        # the platform's first boot makes it
+        assert made.returncode == 0 and (data / "users.json").exists(), made.stderr[-400:]
+        first_boot = (data / "users.json").read_bytes()
+        (data / "users.json").write_text('{"admin": {"username": "admin"', encoding="utf-8")
+        torn = (data / "users.json").read_bytes()
+        r = own_process("-m", "agentic_core.auth.set_password", "admin")
+        assert r.returncode == 1 and "could not be read whole" in r.stderr, (r.returncode, r.stderr[-400:])
+        assert (data / "users.json").read_bytes() == torn, "a store that could not be read was replaced"
+        (data / "users.json").write_bytes(first_boot)
+        r = own_process("-m", "agentic_core.auth.set_password", "admin")
+        assert r.returncode == 0 and password not in r.stdout + r.stderr, (r.returncode, r.stdout[-400:], r.stderr[-400:])
+        on_disk = json.loads((data / "users.json").read_text(encoding="utf-8"))["admin"]
+        assert core._pwd_ctx.verify(password, on_disk["hashed_password"]) and on_disk["password_source"] == "owner-set"
+        assert (data / "jwt_secret.key").exists(), "the signing secret is not where the guide says it is"
+        assert not [f for f in data.rglob("*") if f.is_file() and password.encode() in f.read_bytes()]
+    code = _code_only(read("agentic_core/auth/set_password.py").split('"""', 2)[2])
+    assert "getpass.getpass(" in code and "core._pwd_ctx.hash(first)" in code and "with core._users_mutation():" in code
+    assert code.index("_account(store, username)") < code.index("from agentic_core.auth import core"), (
+        "the store is not read whole before core is imported")
+    assert code.index("with core._users_mutation():") < code.index("_account(core._USER_STORE, username)") < code.index(
+        "core._save_users(users)"), "the store is not read again and written inside its lock"
+    for leak in ("print(first", "print(second", "environ", "getenv", "write_text", "logging", "open("):
+        assert leak not in code, ("the command can keep or show the password", leak)
+    #  ...and the production warning names the command, never the variable the release machine does not hold
+    with monkeypatch.context() as m:
+        m.setenv("ENVIRONMENT", "production")
+        m.setenv("AUTH_ENABLED", "true")
+        m.delenv("ADMIN_PASSWORD", raising=False)
+        warned = [w for w in _config.Settings().validate() if "admin" in w.lower()]
+    assert len(warned) == 1 and warned[0] == (
+        "Sign-in is on in production: the admin's password is the one set on the machine with `python -m "
+        "agentic_core.auth.set_password admin`; until it is set, the bootstrap admin's is random and no one is told "
+        "it."), warned
+    assert "ADMIN_PASSWORD" not in warned[0], warned
+
+    #  S4. THE GUIDE
+    sec = read("docs/DEPLOYMENT.md").split("## The Google Cloud deploy, step by step (P4.5)", 1)[1].split("\n## ", 1)[0]
+    flat = " ".join(sec.split())
+    numbers = [int(n) for n in re.findall(r"^\*\*Step (\d+)\. ", sec, re.M)]
+    assert numbers == list(range(1, 13)), ("the steps were renumbered", numbers)
+    steps = dict(zip(numbers, re.split(r"^\*\*Step \d+\. ", sec, flags=re.M)[1:]))
+    blocks = [" ".join(b.replace("\\\n", " ").split()) for b in re.findall(r"```bash\n(.*?)```", sec, re.S)]
+    users_cmd = ("sudo docker exec workstation python -c \"import json; [print(n, u.get('role'), u.get('created_at', "
+                 "'-')) for n, u in sorted(json.load(open('/app/data/users.json')).items())]\"")
+    for cmd in ("gcloud compute ssh workstation --zone=us-central1-a",
+                "gcloud compute ssh workstation --zone=us-central1-a -- -L 8800:127.0.0.1:8000",
+                "sudo docker exec -it workstation python -m agentic_core.auth.set_password admin",
+                "gcloud compute instances add-metadata workstation --zone=us-central1-a --metadata=auth-enabled=true "
+                "sudo google_metadata_script_runner startup", users_cmd):
+        assert blocks.count(cmd) == 1, ("the guide does not give this command once", cmd)
+    assert ("**Step 12. HTTPS, before anyone signs in other than the Owner: a fixed address, the Owner's domain, and "
+            "Caddy in front (FU-1284)**") in sec, "step 12's heading leaves out the Owner's sign-in through the tunnel"
+    head = " ".join(sec.split("**Step 1. ", 1)[0].split())
+    assert ("The domain comes first: it \"is bought before the first deploy\" (P4.5, the Owner's ruling of 2026-11-21 as "
+            "W1190 recorded it), and the machine is told it at step 12, together with sign-in (W1191).") in head, head[-400:]
+    six = " ".join(steps[6].split())
+    assert six.index("Run at step 12, just before the machine is given its domain (W1191): until then nothing needs it: "
+                     "the tunnel is SSH") < six.index("gcloud compute firewall-rules create"), six[:300]
+    seven = " ".join(steps[7].split())
+    origin_id = [r["id"] for r in json.loads(read("docs/FOLLOWUPS.json"))["items"] if r.get("title") == (
+        "With sign-in off, any page in the Owner's browser can act on the platform through the SSH tunnel: nothing "
+        "checks a request's Origin or Host")]
+    assert len(origin_id) == 1, origin_id
+    origin_id = origin_id[0]
+    from agentic_core.auth import core as _core_limits
+    assert (_core_limits.SIGNIN_FAILS_PER_NAME, _core_limits.ATTEMPT_WINDOW_S) == (5, 15 * 60), (
+        "the guide's five failed sign-ins for one name over 15 minutes is not what the sign-in route counts")
+    assert (root / "docs" / "PUBLIC_ROUTES.json").is_file(), "the guide names a record of the public routes the tree lacks"
+    for said in ("until step 12 the startup script publishes no public port", "http://localhost:8800",
+                 "NOT READ HERE: gcloud's ssh reference", "Port 8800, not 8000",
+                 "While the tunnel is open and sign-in is off, anything on the Owner's computer that opens the "
+                 "forwarded port acts as the platform's administrator", "(CORS_ORIGINS)",
+                 "(CORS_ORIGINS) stops a page from another site reading the platform's ordinary answers, not sending it "
+                 "requests: while sign-in is off the platform acts on those requests as for the administrator, making an "
+                 "account included, and its stream socket and a host name rebound to 127.0.0.1 on the Owner's computer, "
+                 "where the tunnel listens, are outside that setting.",
+                 "With sign-in on, every route except those docs/PUBLIC_ROUTES.json makes public on purpose acts only on "
+                 "a request that carries a token, which a page from another site does not hold.",
+                 "Such a page can still send failed sign-ins, and five for one name block that name's sign-in for up to "
+                 f"15 minutes; the stream socket still answers it ({origin_id}).",
+                 "`jwt_secret.key` under DATA_DIR", "Nothing sets it", "only its hash is stored",
+                 "The password is never kept in a file of its own; the signing secret's own file is on the data disk",
+                 "A users store that is not there, or cannot be read whole, is refused",
+                 "SIGN-IN, RIGHT AFTER (recommended, W1191)", "nothing that deploys the machine turns it on (P4.1)",
+                 "This is earlier than P4.1's ruling of 2026-11-20, which has sign-in switched on once the domain and "
+                 "HTTPS are live, and the Owner accepted it on 2026-11-21 (P4.1): the Owner may sign in through the "
+                 "tunnel before the domain, and no one else signs in until step 12.",
+                 "Through the tunnel the password crosses the internet only inside SSH."):
+        assert said in seven, ("step 7 does not say", said)
+    plain = seven.index("SSH session, with no tunnel yet: ```bash gcloud compute ssh workstation --zone=us-central1-a ```")
+    assert plain < seven.index("set_password admin") < seven.index("--metadata=auth-enabled=true") < seven.index(
+        "THEN THE TUNNEL, for the browser") < seven.index("-- -L 8800:127.0.0.1:8000"), (
+        "step 7's order: a plain SSH session, the password, sign-in, and only then the tunnel")
+    for gone in ("Only the Owner's signed-in SSH", "or a file of their own", "-L 8000:localhost:8000",
+                 "so a page from another site cannot read", "it is the Owner's to choose", "the tree never turns it on",
+                 "this guide's recommendation", "rebound to the machine are outside", "carries the admin's token"):
+        assert gone not in flat, ("the guide still says", gone)
+    ten = " ".join(steps[10].split())
+    assert ten.startswith("The uptime check") and "Set up once step 12 is done (W1191)" in ten and "protocol HTTPS" in ten
+    assert "protocol HTTP," not in ten and "the machine's address as the host" not in ten, ten[:400]
+    twelve = " ".join(steps[12].split())
+    for said in ("As steps 1 to 11 leave it, the machine publishes no public port",
+                 "but for the Owner, through that tunnel once step 7 has turned sign-in on (the Owner's ruling of "
+                 "2026-11-21, late evening), no person signs in (P4.1) until this step is done",
+                 "Create step 6's rule now", "GET /api/v1/auth/users lists them, admin-only once sign-in is on",
+                 "each with its role and the time it was made, never its password's hash",
+                 "It prints admin's line, and one for each account the Owner made. Any account the Owner did not make "
+                 "is a reason to stop, and one made before sign-in was turned on is the kind to distrust",
+                 "The data disk is restored from a snapshot taken before that account (step 9; the snapshots are daily, "
+                 "so on the first day there may be none)", "the platform starts again on a blank data disk",
+                 "what reached the forwarded port is found before a tunnel is opened again",
+                 "--metadata=domain=DOMAIN,auth-enabled=true", "a domain without sign-in on (auth-enabled=true): "
+                 "nothing public starts, and the running platform is left as it was",
+                 "the Owner's switch (the Owner's ruling of 2026-11-21), never by what deploys the machine (W1191)",
+                 "Then step 10: the uptime check over HTTPS on the domain, and its drill (FU-1095)."):
+        assert said in twelve, ("step 12 does not say", said)
+    assert "It prints ['admin']" not in twelve and "It prints one line, admin's." not in twelve
+    assert "hashed_password" not in users_cmd, "the accounts' check shows a hash"
+    assert twelve.index("Create step 6's rule now") < twelve.index("GET /api/v1/auth/users") < twelve.index(
+        "--metadata=domain=DOMAIN,auth-enabled=true"), "step 12's order: the rule, the accounts, then the domain"
+    #  ...and step 12's check of the accounts, run on a store as the guide runs it: a name, a role and when it was made
+    sample = tmp_path / "w1191-users.json"
+    sample.write_text(json.dumps({"admin": {"username": "admin", "role": "admin", "created_at": "2026-11-22T09:00:00Z",
+                                            "hashed_password": stand_in},
+                                  "w1191-other": {"username": "w1191-other", "role": "admin",
+                                                  "hashed_password": stand_in}}), encoding="utf-8")
+    snippet = users_cmd.split('python -c "', 1)[1][:-1].replace("/app/data/users.json", sample.as_posix())
+    shown = subprocess.run([sys.executable, "-c", snippet], capture_output=True, text=True, timeout=60)
+    assert shown.returncode == 0 and shown.stdout.splitlines() == ["admin admin 2026-11-22T09:00:00Z",
+                                                                   "w1191-other admin -"], (shown.stdout, shown.stderr)
+    assert stand_in not in shown.stdout + shown.stderr, "the accounts' check printed a password's hash"
+    for old in ("serves plain HTTP", "the machine serves plain HTTP at its address"):
+        assert old not in flat and old not in script, old
+
+    #  S5. THE REGISTER AND THE PLAN
+    rows = json.loads(read("docs/FOLLOWUPS.json"))["items"]
+    reg = {r.get("id"): r for r in rows}
+    plan = read("docs/FABLE_DELIVERY_PROMPT.md")
+    p41 = " ".join(plan[plan.index("\n P4.1 "):plan.index("\n P4.2 ")].split())
+    p45 = " ".join(plan[plan.index("\n P4.5 "):plan.index("\n P4.6 ")].split())
+    assert "is bought before the first deploy" in p45, "the guide quotes P4.5 in words it does not hold"
+
+    def titled(title):
+        hits = [r for r in rows if r.get("title") == title]
+        assert len(hits) == 1, (title, len(hits))
+        return hits[0]
+    done = titled("The release machine's startup script serves the platform to the whole internet on port 80 with "
+                  "sign-in off until a domain is set")
+    assert (done["status"], done["closed_by"], done["because"], done["slot"]) == ("done", "W1191", "built", "P4.5"), done
+    assert "--publish=80:8000" in done["why"] and "no auth required \u2014 all endpoints open" in done["why"]
+    assert "no auth required \u2014 all endpoints open" in read("agentic_core/auth/core.py"), "core.py's words moved"
+    assert ("the domain bought before the first deploy, so that the machine's first answer to the internet comes over "
+            "HTTPS with sign-in on") in done["why"] and "first boot" not in done["why"], done["why"][-600:]
+    #  ...W1190's words quoted as W1190 recorded them at P4.1, and none quoted that it did not record
+    for quoted in ("its startup script is to refuse to open one otherwise",
+                   "with no domain the platform is to publish no port, and the Owner reaches it through an SSH tunnel",
+                   "kept on the machine, never in the repository"):
+        assert f"\"{quoted}\"" in done["why"] and quoted in p41, ("not quoted as W1190 recorded it", quoted)
+    assert "without both" not in done["why"] and "no port opened" not in done["why"]
+    assert not re.search(r"never in the repo\b", done["why"]), "a word is quoted that W1190 did not record"
+    assert ("P4.1's ruling of 2026-11-20 stands with it: sign-in is switched on only on the Owner's private deployed "
+            "machine, once its domain and HTTPS are live") in done["why"]
+    assert ("On 2026-11-21 (late evening) the Owner accepted that its timing moves for the Owner's own sign-in only"
+            in done["why"]) and "the timing the Owner accepted on 2026-11-21" in done["close_note"], done["close_note"]
+    assert ("Without a domain it publishes no public port: the platform listens only on the machine's own "
+            "127.0.0.1:8000") in done["close_note"] and "is published on the machine's 127.0.0.1:8000 only" not in (
+        done["close_note"])
+    assert ("Nothing that deploys the release machine sets AUTH_ENABLED=true: there, sign-in comes only from the "
+            "machine's own metadata key auth-enabled; the tree's two sign-in harnesses and the HTTPS drill start a local "
+            "platform with it on, to test it.") in done["close_note"]
+    #  ...the three rows left open on P4.1
+    left = titled("A users store that cannot be read is replaced at boot by a new one that holds only the admin")
+    origin = titled("With sign-in off, any page in the Owner's browser can act on the platform through the SSH tunnel: "
+                    "nothing checks a request's Origin or Host")
+    remove = titled("No command removes an account from the users store, so an unwanted one is removed only by editing "
+                    "users.json by hand")
+    for r in (left, origin, remove):
+        assert (r["status"], r["slot"], bool(r.get("owner_gated"))) == ("open", "P4.1", False), r
+    for said in ("At every boot, importing agentic_core/auth/core.py runs _create_default_admin()", "read_json_strict",
+                 "create the admin only when the file does not exist"):
+        assert said in left["why"], ("the row left open does not say", said)
+    for said in ("Starlette's CORSMiddleware (0.52.1) runs the app for a simple request from any Origin",
+                 "parses a body sent with no Content-Type as JSON", "POST /api/v1/heartbeat/stop takes no body",
+                 "require_admin returns a stand-in admin", "Nothing checks the Host header",
+                 "/api/v154/ws/streams checks no Origin", "an Origin check on unsafe methods, a Host allowlist "
+                 "(localhost, 127.0.0.1 and the machine's domain) and an Origin check on /api/v154/ws/streams"):
+        assert said in origin["why"], ("the Origin row does not say", said)
+    assert f"that {left['id']} records" in remove["why"] and "under core._users_mutation()" in remove["why"], remove["why"]
+    #  ...the W729 credentials: an OWNER row of high severity, by provider and kind only, on the Owner's list and notes
+    owner = titled("OWNER: revoke at their providers the credentials W729 redacted from three archived files, which this "
+                   "public repository has held, most of them since March 2026, or confirm each is dead, and record the "
+                   "date")
+    assert (owner["status"], owner["slot"], owner.get("owner_gated"), owner["severity"]) == (
+        "open", "OWNER", True, "high"), owner
+    for said in ("W729 (50abf919, 2026-10-14) replaced real-looking values in three archived copies of one pasted text "
+                 "file", "\"The values are to be revoked at their providers by the Owner - redaction does not remove them "
+                 "from history\"", "No row ever recorded this", "the Owner's Stripe key roll of 2026-10-09 covers none of "
+                 "these values", "an AI provider key, a Google sign-in client secret, a Firebase key and a speech-to-text "
+                 "key", "two reCAPTCHA secrets and two sign-in token secrets", "two database addresses carrying a "
+                 "username and password, a database password and an e-mail password", "the key in the openQuran "
+                 "archive's .env", "\"The Owner rotates that key separately; the platform never reads it.\"",
+                 "read the repository host's secret-scanning alert list", "beside the Stripe line",
+                 "Added to the Owner's list at the Owner's request on 2026-11-21, to be done soon",
+                 "\"add to list of items for me, I will do this soon\"", "copies carrying most of the same values",
+                 "most of the repository's other branches still carry unredacted copies",
+                 "in the March copies those two lines hold earlier values that W729 never redacted, a Stripe live secret "
+                 "key and a Stripe webhook signing secret: revoke those too, or confirm they no longer work"):
+        assert said in owner["why"], ("the OWNER row does not say", said)
+    assert "carry them whole" not in owner["why"] and "copies carrying the same values" not in owner["why"]
+    assert "The Owner rotates that key separately; the platform never reads it." in reg["FU-268"]["note"]
+    still = " ".join(plan.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0].split())
+    entry = still.split(f"{owner['id']} (W1191): ", 1)
+    assert len(entry) == 2 and still.count(f"{owner['id']} (W1191): ") == 1, "the Owner's list does not name the row once"
+    for said in ("revoke at their providers the credentials W729 (2026-10-14) redacted", "a Stripe live secret key and "
+                 "a Stripe webhook signing secret: revoke those too, or confirm they no longer work",
+                 "Redaction does not remove the redacted values from history: the repository has held most of them since "
+                 "March 2026, and most of its other branches still carry unredacted copies. And the key in the openQuran "
+                 "archive's .env on your machine, which was never in the repository",
+                 "First read the repository host's secret-scanning alert list",
+                 "beside the Stripe line at the head of this list", "Added to your list at your request on 2026-11-21, "
+                 "to be done soon."):
+        assert said in entry[1][:2000], ("the Owner's list does not say", said)
+    assert still.index("FU-1818 (W1174):") < still.index(f"{owner['id']} (W1191):"), "the row's line is not after FU-1818's"
+    assert "(The Stripe key roll that stood here is DONE: the Owner rotated the keys and expired the old ones, 2026-10-09.)" in still
+    notes = " ".join(read("docs/RESUME_ON_MY_MACHINE.md").split())
+    yours = notes.split("**Still yours:**", 1)[1].split("**Settled on 2026-11-20:**", 1)[0]
+    assert (f"({owner['id']}; the plan's list names each by its kind)" in yours
+            and "Added to your list at your request on 2026-11-21, to be done soon." in yours), yours[-600:]
+    for said in ("two earlier Stripe values, a live secret key and a webhook signing secret, that the March copies hold "
+                 "and W729 never redacted", "the repository has held most of them since March 2026, and most of its other "
+                 "branches still carry unredacted copies", "the openQuran archive's .env on your machine, which was "
+                 "never in the repository"):
+        assert said in yours, ("the local notes do not say", said)
+    #  ...FU-1289 and FU-1095, still the Owner's, each say once what W1191 changed
+    ruling = "OWNER RULING 2026-11-21 (afternoon"          # the Owner's decision, as W1190 recorded it
+    changed_by = {
+        "FU-1289": (" W1191 changed the startup script to match: with no domain it publishes no public port: the platform "
+                    "listens only on the machine's own 127.0.0.1:8000, reached through an SSH tunnel (docs/DEPLOYMENT.md, "
+                    "step 7), and a domain starts the public front only when the machine's own metadata turns sign-in "
+                    "on, the two set together at step 12 (`--metadata=domain=DOMAIN,auth-enabled=true`)."),
+        "FU-1095": (" W1191 moved step 10 after step 12: until step 12 gives the machine its domain and turns sign-in on, "
+                    "the machine publishes no public port, so the outside check can only see it then; step 10 now has "
+                    "the Owner set it up after step 12, over HTTPS."),
+    }
+    for rid, said in changed_by.items():
+        why = reg[rid]["why"]
+        assert reg[rid]["status"] == "open" and reg[rid]["owner_gated"] is True, (rid, reg[rid]["status"])
+        assert why.count(said) == 1, (rid, "does not say once what W1191 changed")
+        assert "W1191 built it" not in why, (rid, "says W1191 built what is the Owner's")
+    assert reg["FU-1289"]["why"].find(ruling) != -1, "FU-1289 does not carry the Owner's ruling (W1190 lands first)"
+    assert reg["FU-1289"]["why"].rindex(ruling) < reg["FU-1289"]["why"].index(changed_by["FU-1289"]), (
+        "FU-1289 says what W1191 changed before the Owner's ruling")
+    assert reg["FU-1289"]["why"].endswith(changed_by["FU-1289"] + " Since the Owner's ruling of 2026-11-21 (late evening; "
+                                          "P4.1), the Owner may sign in through the SSH tunnel before the domain, and no "
+                                          "one else signs in until step 12."), "FU-1289 does not end with the dated note"
+    #  ...P4.1: the late evening's ruling right after the ruling of 2026-11-20, and W1191's sentence last
+    late = ("OWNER RULING 2026-11-21 (late evening; the recommendation accepted): on the release machine the Owner may "
+            "switch sign-in on at step 7, over SSH, before the domain, and sign in through the SSH tunnel. This moves the "
+            "timing of the 2026-11-20 ruling (\"once its domain and HTTPS are live\") for the Owner's own sign-in through "
+            "the tunnel only. No one else signs in until step 12, with the domain and HTTPS. The rest of that ruling "
+            "stands.")
+    assert p41.count(late) == 1, "P4.1 does not carry the Owner's ruling of the late evening of 2026-11-21"
+    assert ("stands in. No round switches it on in the tree. " + late) in p41, (
+        "the late evening's ruling is not right after the ruling of 2026-11-20 whose timing it moves")
+    changed = ("W1191 changed the startup script accordingly: with no domain it publishes no public port: the platform "
+               "listens only on the machine's own 127.0.0.1:8000, reached through an SSH tunnel; with one it starts the "
+               "public front only when the machine's own metadata turns sign-in on (auth-enabled=true), refusing "
+               "otherwise and leaving the running platform as it was; test_w1191 holds it.")
+    assert p41.count(changed) == 1 and ruling in p41, "P4.1 does not say once that W1191 changed the script"
+    assert p41.rindex(ruling) < p41.index(changed) and p41.index(late) < p41.index(changed), (
+        "P4.1 says W1191 changed the script before the Owner's rulings")
+    #  ...and the plan's list and the local notes say the domain and sign-in are set together
+    appended = "Since W1191 the domain and sign-in are set together (docs/DEPLOYMENT.md, step 12)."
+    assert " ".join(plan.split()).count("with FU-1095's uptime check and FU-1288's restore the day after. " + appended) == 1
+    assert ("the password and the signing secret stay on the machine, never in the repository. " + appended) in notes

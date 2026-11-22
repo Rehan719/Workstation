@@ -105,7 +105,8 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
     (FU-1095).
   - At the first deploy, setting the admin password on the release machine and switching sign-in on in its own
     settings (P4.1; the setting W1191 adds), so that it answers from its first boot with its domain, HTTPS and
-    sign-in on; the password and the signing secret stay on the machine, never in the repository.
+    sign-in on; the password and the signing secret stay on the machine, never in the repository. Since W1191 the
+    domain and sign-in are set together (docs/DEPLOYMENT.md, step 12).
   - Your second calibration run of the Care reviewer, on your machine with a larger local model (seven to eight
     billion parameters, such as llama3.1:8b, if your machine has about 16 GB of memory), when the cloud session
     says its three fixes have landed, and before 2027-01-10 (FU-1831, P5.15).
@@ -116,6 +117,14 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
   - One solicitor's engagement before anyone but you is invited (FU-1817): the Law pages before any public
     release, and where other people's data may be kept.
   - Five to eight short interviews with teachers or tutors before the first offer is chosen (FU-1818).
+  - Revoking at their providers the credentials W729 redacted from three archived files in the repository, or
+    confirming that each no longer works (FU-1837; the plan's list names each by its kind), and with them two earlier
+    Stripe values, a live secret key and a webhook signing secret, that the March copies hold and W729 never
+    redacted. Redaction does not remove the redacted values from history: the repository has held most of them since
+    March 2026, and most of its other branches still carry unredacted copies. And the key in the openQuran archive's
+    .env on your machine, which was never in the repository. Read the repository host's secret-scanning alert list
+    first, and tell the cloud session the date once it is done. Added to your list at your request on 2026-11-21, to
+    be done soon.
 - **Settled on 2026-11-20:** the five places that named your Windows home folder (FU-1286, closed W1180), each
   as you accepted that day: `venv/` was untracked on your machine (7afa4aa9, merged into `main-l1fsqo` at
   07fb9817), the folder kept on your disk; the three permissions in `.claude/settings.json` were removed in the

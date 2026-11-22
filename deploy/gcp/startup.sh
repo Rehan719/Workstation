@@ -14,9 +14,15 @@
 # A RELEASE OR A ROLLBACK is a change to the machine's metadata key image-tag followed by a re-run of this script
 # (docs/DEPLOYMENT.md, step 8): the tag names the image the platform is started from.
 #
-# HTTPS (W1140, FU-1284): with a domain in the machine's metadata (key domain, docs/DEPLOYMENT.md step 12), Caddy
-# answers on ports 80 and 443 in front of the platform and obtains the domain's certificate itself. With none, the
-# platform serves plain HTTP on port 80, and no person signs in until a domain is set.
+# HTTPS AND SIGN-IN (W1140, FU-1284; W1191): the platform is served publicly only with its domain, HTTPS and sign-in
+# on. With a domain in the machine's metadata (key domain, docs/DEPLOYMENT.md step 12) and sign-in turned on there
+# (key auth-enabled, set to true by the Owner on the machine), Caddy answers on ports 80 and 443 in front of the
+# platform and obtains the domain's certificate itself. A domain without sign-in turned on is refused: nothing
+# public starts, and what runs is left as it was. With no domain, the platform publishes no public port: it
+# listens on the machine's own 127.0.0.1:8000, which the Owner reaches through an SSH tunnel (step 7), with
+# sign-in as the metadata sets it. A key the metadata server lists but does not hand over is never taken as unset:
+# nothing is started. Nothing that deploys the release machine turns sign-in on: the machine's own metadata does,
+# the Owner's switch (the Owner's ruling of 2026-11-21), with a domain or without one.
 
 set -u
 
@@ -77,12 +83,20 @@ CADDY_IMAGE="caddy:2.11.9@sha256:4851e54a46b206517c574821bb5cc67f170d2156041e9fb
 FRONT_NET=workstation-front
 FRONT_IP=172.30.0.2
 
-start_front() {    # IMAGE TAG DOMAIN
+start_front() {    # IMAGE TAG DOMAIN SIGN-IN
+    #  W1191 - the front opens ports 80 and 443 to the internet, so it starts only with sign-in on: its fourth
+    #  argument is exactly true, whoever calls it, and the platform behind it is given that value, so the release
+    #  machine's sign-in comes from its metadata, never from this script (P4.1)
+    if [ "${4:-}" != "true" ]; then
+        log "the front starts only with sign-in on (its fourth argument true): not started"
+        return 1
+    fi
     docker network inspect "$FRONT_NET" >/dev/null 2>&1 \
         || docker network create --subnet=172.30.0.0/24 --ip-range=172.30.0.128/25 --gateway=172.30.0.1 "$FRONT_NET" \
         || return 1
     docker run --name=workstation --restart=always --detach --network="$FRONT_NET" \
-        --env=FORWARDED_ALLOW_IPS="$FRONT_IP" --volume="$MNT":/app/data \
+        --env=FORWARDED_ALLOW_IPS="$FRONT_IP" --env=AUTH_ENABLED="$4" --env=CORS_ORIGINS="https://$3" \
+        --volume="$MNT":/app/data \
         --log-opt max-size=10m --log-opt max-file=3 \
         --label=app=workstation --label=image-tag="$2" \
         "$1" || return 1
@@ -96,24 +110,59 @@ metadata() {
     curl -fsS "http://metadata.google.internal/computeMetadata/v1/$1" -H "Metadata-Flavor: Google"
 }
 
+#  W1191 - whether the machine's metadata lists KEY among its attributes: main() reads the list once, into attrs
+listed() {
+    printf '%s\n' "${attrs:-}" | grep -qxF -- "$1"
+}
+
 main() {
     prepare_disk "$DISK" || exit 1
     mkdir -p "$MNT"
     grep -qs " $MNT " /proc/mounts || mount -o discard,defaults "$DISK" "$MNT" || exit 1
     chown 1000:1000 "$MNT"    # the image's user, app, is uid 1000 (measured W1134)
 
-    # This OS refuses incoming traffic by default. The VPC firewall rule (step 6) is what admits ports 80 and 443
-    # alone; 443 is answered once the machine has a domain (step 12).
+    # This OS refuses incoming traffic by default. The VPC firewall rule (step 6, created at step 12) is what admits
+    # ports 80 and 443 alone, and nothing answers on either until the machine has a domain and sign-in on (W1191).
     iptables -A INPUT -j ACCEPT
     iptables -A FORWARD -j ACCEPT
 
-    local project tag image domain
+    local project tag image attrs domain="" auth=false
     project=$(metadata project/project-id) || exit 1
     tag=$(metadata instance/attributes/image-tag) || { log "no image-tag in the machine's metadata: not started"; exit 1; }
     image="$REGION-docker.pkg.dev/$project/workstation/workstation:$tag"
-    domain=$(metadata instance/attributes/domain 2>/dev/null | tr 'A-Z' 'a-z')    # none: plain HTTP (W1140)
+    #  W1191 - "not set" is told apart from "not read": the keys are listed once, a key the list does not hold is
+    #  unset, and a key it holds is read or the script stops, so a lost answer is never taken for "no domain" or
+    #  for "sign-in off"
+    attrs=$(metadata instance/attributes/) || { log "the machine's metadata could not be listed: not started, and" \
+        "the running platform is left as it was"; exit 1; }
+    if listed domain; then
+        domain=$(metadata instance/attributes/domain) || { log "the machine's domain could not be read: not" \
+            "started, and the running platform is left as it was"; exit 1; }
+        domain=$(printf '%s' "$domain" | tr 'A-Z' 'a-z')    # none: no public port (W1191)
+    fi
     if [ -n "$domain" ] && ! valid_domain "$domain"; then
         log "the machine's domain is not a host name: not started, and the running platform is left as it was"
+        exit 1
+    fi
+    #  W1191 - SIGN-IN COMES FROM THE MACHINE'S OWN METADATA (key auth-enabled), never from the tree: true turns it
+    #  on, unset or false leaves it off, and anything else is refused rather than guessed, with a domain or without
+    if listed auth-enabled; then
+        auth=$(metadata instance/attributes/auth-enabled) || { log "the machine's auth-enabled could not be read:" \
+            "not started, and the running platform is left as it was"; exit 1; }
+        auth=$(printf '%s' "$auth" | tr 'A-Z' 'a-z')
+    fi
+    case "$auth" in
+        true) ;;
+        ""|false) auth=false ;;
+        *) log "the machine's auth-enabled is neither true nor false: not started, and the running platform is" \
+               "left as it was"
+           exit 1 ;;
+    esac
+    #  ...and the platform is served publicly only with its domain, HTTPS and sign-in on: a domain alone is refused,
+    #  and an earlier front, if one runs, is left running as it was
+    if [ -n "$domain" ] && [ "$auth" != "true" ]; then
+        log "the machine has a domain but its metadata does not turn sign-in on (auth-enabled=true): nothing public is" \
+            "started, and what is running, the front included if one runs, is left as it was"
         exit 1
     fi
 
@@ -127,18 +176,23 @@ main() {
     docker stop caddy workstation || true
     docker rm caddy workstation || true
     if [ -n "$domain" ]; then
-        start_front "$image" "$tag" "$domain"
+        start_front "$image" "$tag" "$domain" "$auth"
         return
     fi
+    #  W1191 - NO DOMAIN, NO PUBLIC PORT: the platform listens on the machine's own 127.0.0.1 only, reached through
+    #  an SSH tunnel from the Owner's port 8800 (docs/DEPLOYMENT.md, step 7). CORS_ORIGINS stops a page from another
+    #  site reading its ordinary answers, not sending it requests. Sign-in follows the metadata here too.
     docker run --name=workstation --restart=always --detach \
-        --publish=80:8000 --volume="$MNT":/app/data \
+        --publish=127.0.0.1:8000:8000 --env=AUTH_ENABLED="$auth" --env=CORS_ORIGINS=http://localhost:8800 \
+        --volume="$MNT":/app/data \
         --log-opt max-size=10m --log-opt max-file=3 \
         --label=app=workstation --label=image-tag="$tag" \
         "$image"
 }
 
 # Run, it starts the platform. Sourced (as test_w1134 does, with WORKSTATION_STARTUP_SOURCED=1), it only defines
-# the steps above, so the disk step can be driven on its own against disk images.
+# the steps above, so the disk step can be driven on its own against disk images, and main() and the front with
+# docker, the metadata server and the host's firewall stood in for (test_w1191).
 if [ "${WORKSTATION_STARTUP_SOURCED:-}" != "1" ] && [ "${BASH_SOURCE[0]}" = "$0" ]; then
     main "$@"
 fi

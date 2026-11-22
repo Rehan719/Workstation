@@ -21916,7 +21916,7 @@
     {
       "id": "FU-1095",
       "title": "A failure on the first deployment reaches no person: failures are recorded and shown only on a page someone must open",
-      "why": "P3.25 records every route failure in the outcome ledger and the event chain and shows them on one page; nothing sends a failure to anyone, and README.md still lists error monitoring as not built, which is half true. The first deploy is private to the Owner, so the cost is an outage nobody sees. Smallest addition, in the deploy pre-flight: an uptime check on /health from OUTSIDE the machine (a boot failure cannot report itself), e-mailing the Owner from their own cloud account beside the billing alert; it is named in the dry run and driven once at the deploy with the Owner watching; /health returns a fixed body, so the check sees only a dead process, and the runbook says so. The README line becomes: failures recorded, not alerted. ACCEPTED 2026-11-20 (the Owner's ten decisions, recommendation 4): set up at the first deploy, soon after the domain (FU-1289), with the restore of FU-1288 the day after.",
+      "why": "P3.25 records every route failure in the outcome ledger and the event chain and shows them on one page; nothing sends a failure to anyone, and README.md still lists error monitoring as not built, which is half true. The first deploy is private to the Owner, so the cost is an outage nobody sees. Smallest addition, in the deploy pre-flight: an uptime check on /health from OUTSIDE the machine (a boot failure cannot report itself), e-mailing the Owner from their own cloud account beside the billing alert; it is named in the dry run and driven once at the deploy with the Owner watching; /health returns a fixed body, so the check sees only a dead process, and the runbook says so. The README line becomes: failures recorded, not alerted. ACCEPTED 2026-11-20 (the Owner's ten decisions, recommendation 4): set up at the first deploy, soon after the domain (FU-1289), with the restore of FU-1288 the day after. W1191 moved step 10 after step 12: until step 12 gives the machine its domain and turns sign-in on, the machine publishes no public port, so the outside check can only see it then; step 10 now has the Owner set it up after step 12, over HTTPS.",
       "source": "W747",
       "found": "2026-10-16",
       "files": [
@@ -26210,7 +26210,7 @@
     {
       "id": "FU-1289",
       "title": "OWNER: buy a domain for the release machine and point it at the machine's fixed address",
-      "why": "W1140 wrote HTTPS into the deploy (docs/DEPLOYMENT.md, step 12): Caddy obtains a publicly trusted certificate only for a domain, never for an IP address, so the release machine serves plain HTTP until it has one, and no person signs in until then. The domain is yours to buy, at any registrar, with its A record naming the machine's fixed address (step 12's first command). RECOMMENDED (accepted 2026-11-20): a short name you already hold or buy now; once its A record points at the machine, set the machine's domain (step 12) and watch the first HTTPS answer, with the uptime check of step 10 moved to HTTPS. OWNER RULING 2026-11-21 (afternoon; the recommendation accepted): the domain is bought before the first deploy; with no domain the machine is to publish no port, the Owner reaching it through an SSH tunnel, so that, once the startup script is changed to match (P4.1), the machine's first answer to the internet comes over HTTPS with sign-in on. That replaces 'serves plain HTTP until it has one' above: the machine answers the internet only once its domain is set. Its A record still points at the machine's fixed address before the domain is set, since Caddy needs it for the certificate (step 12).",
+      "why": "W1140 wrote HTTPS into the deploy (docs/DEPLOYMENT.md, step 12): Caddy obtains a publicly trusted certificate only for a domain, never for an IP address, so the release machine serves plain HTTP until it has one, and no person signs in until then. The domain is yours to buy, at any registrar, with its A record naming the machine's fixed address (step 12's first command). RECOMMENDED (accepted 2026-11-20): a short name you already hold or buy now; once its A record points at the machine, set the machine's domain (step 12) and watch the first HTTPS answer, with the uptime check of step 10 moved to HTTPS. OWNER RULING 2026-11-21 (afternoon; the recommendation accepted): the domain is bought before the first deploy; with no domain the machine is to publish no port, the Owner reaching it through an SSH tunnel, so that, once the startup script is changed to match (P4.1), the machine's first answer to the internet comes over HTTPS with sign-in on. That replaces 'serves plain HTTP until it has one' above: the machine answers the internet only once its domain is set. Its A record still points at the machine's fixed address before the domain is set, since Caddy needs it for the certificate (step 12). W1191 changed the startup script to match: with no domain it publishes no public port: the platform listens only on the machine's own 127.0.0.1:8000, reached through an SSH tunnel (docs/DEPLOYMENT.md, step 7), and a domain starts the public front only when the machine's own metadata turns sign-in on, the two set together at step 12 (`--metadata=domain=DOMAIN,auth-enabled=true`). Since the Owner's ruling of 2026-11-21 (late evening; P4.1), the Owner may sign in through the SSH tunnel before the domain, and no one else signs in until step 12.",
       "source": "W1140 (FU-1284: HTTPS in front of the release machine)",
       "found": "2026-11-20",
       "files": [],
@@ -27043,6 +27043,92 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in W1189: the three scripts write their bytes, the UTF-8 text with LF, on every machine; docs/CARE_REVIEW_CALIBRATION_RESULTS.json is LF again, its JSON unchanged and check_results passing; the soak report of 2026-08-30 is left as committed, as nothing rewrites it. test_w1189 drives the export's writer and the baseline's, which the Windows CI job runs too. It pins every other text-mode write it can read in a tracked script under scripts/ by the place its call names and its mode, each said with the place it writes by default, so adding, removing or pointing one elsewhere in its call turns it red. Where a write lands at run time, at a path given on the command line, no census can hold, and JSON a script prints for its caller to redirect is not read."
+    },
+    {
+      "id": "FU-1833",
+      "title": "The release machine's startup script serves the platform to the whole internet on port 80 with sign-in off until a domain is set",
+      "why": "Measured at 349f11fe: deploy/gcp/startup.sh's main(), with no domain in the machine's metadata, ran the platform with `docker run ... --publish=80:8000` and no AUTH_ENABLED, so its default (false) held, and agentic_core/auth/core.py says that single-user mode is \"no auth required — all endpoints open\". Step 6 of docs/DEPLOYMENT.md admits tcp 80 and 443 from 0.0.0.0/0, and step 12, the domain, comes last. As written, the first deploy would have been an open platform on the public internet until a domain was set: every route, every record and every action, to anyone who found the address. Nothing is deployed yet. The Owner's decision of 2026-11-21 (afternoon, 1 of 6): the domain bought before the first deploy, so that the machine's first answer to the internet comes over HTTPS with sign-in on; and, in the words W1190 recorded at P4.1, \"its startup script is to refuse to open one otherwise\", \"with no domain the platform is to publish no port, and the Owner reaches it through an SSH tunnel\", and the password and the signing secret are \"kept on the machine, never in the repository\". P4.1's ruling of 2026-11-20 stands with it: sign-in is switched on only on the Owner's private deployed machine, once its domain and HTTPS are live, and no round switches it on in the tree. On 2026-11-21 (late evening) the Owner accepted that its timing moves for the Owner's own sign-in only: sign-in may be switched on at step 7, over SSH, before the domain, the Owner signing in through the SSH tunnel, and no one else signs in until step 12, with the domain and HTTPS.",
+      "source": "W1191 (the Owner's decision of 2026-11-21, 1 of 6, measured at 349f11fe)",
+      "found": "2026-11-22",
+      "files": [
+        "deploy/gcp/startup.sh",
+        "docs/DEPLOYMENT.md"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P4.5",
+      "status": "done",
+      "closed_by": "W1191",
+      "note": "",
+      "slot_source": "P4.5: the production deploy on Google Cloud, whose startup script and steps this row is about (the Owner's decision of 2026-11-21, 1 of 6)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W1191: deploy/gcp/startup.sh lists the machine's metadata once and reads a key only when the list holds it, stopping when a read fails, so a lost answer is never taken for no domain or sign-in off. Sign-in is the machine's own key auth-enabled: true turns it on, unset or false leaves it off, anything else is refused before anything is stopped. With a domain the public front (Caddy on 80 and 443) starts only with sign-in on, and start_front itself refuses unless its fourth argument is true; a domain without sign-in on is refused in a logged sentence, the running platform left as it was. Without a domain it publishes no public port: the platform listens only on the machine's own 127.0.0.1:8000, reached through `gcloud compute ssh ... -- -L 8800:127.0.0.1:8000`, and each run is given CORS_ORIGINS for its one origin. Nothing that deploys the release machine sets AUTH_ENABLED=true: there, sign-in comes only from the machine's own metadata key auth-enabled; the tree's two sign-in harnesses and the HTTPS drill start a local platform with it on, to test it. The admin's password is set over SSH with `python -m agentic_core.auth.set_password admin`, which reads the users store strictly before core is imported, reads the password twice, refuses it given on the command line, short or mismatched, and stores only its hash; config.py's production warning names that command, not ADMIN_PASSWORD. docs/DEPLOYMENT.md's steps 6, 7, 10 and 12 say so, their numbers unchanged: step 6's rule is created at step 12, step 7 sets the password and (recommended, the timing the Owner accepted on 2026-11-21) sign-in over a plain SSH session before the tunnel is opened, and step 12 checks the accounts before the domain and sends the reader back to step 10. FU-1289 and FU-1095 each say in one sentence what W1191 changed, and P4.1 that W1191 changed the script. test_w1191 drives the script, the front and the command, and scans the tracked tree for a switch, a sign-in setting or a password set in it."
+    },
+    {
+      "id": "FU-1834",
+      "title": "A users store that cannot be read is replaced at boot by a new one that holds only the admin",
+      "why": "Measured in W1191's review at 89c25eed. At every boot, importing agentic_core/auth/core.py runs _create_default_admin(), which reads users.json with _load_users(): a store that is missing, empty, not JSON or unreadable is answered as no accounts, and on no accounts it writes a new store holding only admin, with a random password no one is told. So a boot that finds users.json corrupt (a torn copy, a bad restore, a hand edit) replaces it, and every other account, its role and its API keys are gone, with nothing said; any other process that imports core does the same. W1191's set-password command reads the store strictly before it imports core, so it refuses such a store instead of setting off the replacement; the platform's own boot still replaces it. The fix: read the store strictly (agentic_core.config.read_json_strict, which raises StoreUnavailable for a store that exists but cannot be read whole) and create the admin only when the file does not exist; a store that cannot be read is refused at boot and said, never replaced.",
+      "source": "W1191 (the round's review, finding 2, measured at 89c25eed)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/auth/core.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.1: sign-in on, whose users store the platform's boot replaces when it cannot read it (W1191's review, finding 2)"
+    },
+    {
+      "id": "FU-1835",
+      "title": "With sign-in off, any page in the Owner's browser can act on the platform through the SSH tunnel: nothing checks a request's Origin or Host",
+      "why": "Measured in W1191's second review at 89c25eed, on the platform as the startup script runs it with no domain and sign-in off, reached through step 7's tunnel at http://localhost:8800. CORS_ORIGINS does not stop a request: Starlette's CORSMiddleware (0.52.1) runs the app for a simple request from any Origin and withholds only the Access-Control-Allow-Origin header, and FastAPI (0.129.2) parses a body sent with no Content-Type as JSON, so a page can POST one with no preflight. POST /api/v1/heartbeat/stop takes no body at all. While sign-in is off, require_admin returns a stand-in admin, so POST /api/v1/auth/register makes an administrator. Nothing checks the Host header, so a page whose host name is rebound to 127.0.0.1 is same-origin, and the stream socket /api/v154/ws/streams checks no Origin. The guide now has sign-in turned on before the tunnel is opened (its token is a bearer value, which another site's page does not hold), but with sign-in off any page open in the Owner's browser while the tunnel is up acts as the administrator. The fix: an Origin check on unsafe methods, a Host allowlist (localhost, 127.0.0.1 and the machine's domain) and an Origin check on /api/v154/ws/streams, so that no page in the Owner's browser acts through the tunnel while sign-in is off.",
+      "source": "W1191 (the round's second review, measured at 89c25eed)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/app_mvp.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.1: sign-in on, without which the tunnel's port acts as the administrator for any page in the Owner's browser (W1191's second review)"
+    },
+    {
+      "id": "FU-1836",
+      "title": "No command removes an account from the users store, so an unwanted one is removed only by editing users.json by hand",
+      "why": "Found in W1191's second review. Step 12 of docs/DEPLOYMENT.md checks the users store's accounts before the domain is set, and an account the Owner did not make (one registered through the tunnel while sign-in was off is the kind to distrust) is a reason to stop. Nothing in the tree removes one: no route and no command, so the only way is to edit users.json by hand, which risks the store that cannot be read whole that FU-1834 records (it is replaced at boot by one holding only the admin). The guide's way forward until then is to restore the data disk from a snapshot taken before that account, or to start again on a blank data disk before any record matters. The fix: a command like agentic_core/auth/set_password.py that reads the store whole, refuses the admin itself and removes the named account under core._users_mutation(), so the Owner never edits users.json by hand.",
+      "source": "W1191 (the round's second review)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/auth/core.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.1: sign-in on, whose accounts step 12 checks before the domain is set (W1191's second review)"
+    },
+    {
+      "id": "FU-1837",
+      "title": "OWNER: revoke at their providers the credentials W729 redacted from three archived files, which this public repository has held, most of them since March 2026, or confirm each is dead, and record the date",
+      "why": "W729 (50abf919, 2026-10-14) replaced real-looking values in three archived copies of one pasted text file in the tree. Its message says \"The values are to be revoked at their providers by the Owner - redaction does not remove them from history\". No row ever recorded this, and the Owner's Stripe key roll of 2026-10-09 covers none of these values. What they are, by provider and kind only: an AI provider key, a Google sign-in client secret, a Firebase key and a speech-to-text key; two reCAPTCHA secrets and two sign-in token secrets; two database addresses carrying a username and password, a database password and an e-mail password. With them goes the key in the openQuran archive's .env on the Owner's machine, never in the repository, which FU-268's ruling (closed by W505) left to the Owner: \"The Owner rotates that key separately; the platform never reads it.\" Measured in W1191 by blob and by count, never by value: copies carrying most of the same values were uploaded to the repository on 2026-03-05, earlier than the June that W729's message gives, and most of the repository's other branches still carry unredacted copies, since W729 redacted only the tree's own copies; removing them there would not undo their exposure, which only revoking does. W729 also redacted two Stripe lines that held only templates; in the March copies those two lines hold earlier values that W729 never redacted, a Stripe live secret key and a Stripe webhook signing secret: revoke those too, or confirm they no longer work, since nothing records whether the key roll of 2026-10-09 retired them. The steps: read the repository host's secret-scanning alert list; revoke or rotate each item at its provider, or confirm that it no longer works; then tell the session the date, which a later round records beside the Stripe line at the head of the plan's Owner list. Added to the Owner's list at the Owner's request on 2026-11-21, to be done soon; in the Owner's words: \"add to list of items for me, I will do this soon\".",
+      "source": "W1191 (the Owner's request of 2026-11-21, late evening)",
+      "found": "2026-11-22",
+      "files": [],
+      "severity": "high",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
     }
   ],
   "routes": [
