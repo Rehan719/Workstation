@@ -104018,3 +104018,69 @@ def test_w1195_p518_an_explicit_ask_for_a_reserved_instrument_is_refused_at_the_
                  "expect(await screen.findByText(refusal.detail)).toBeTruthy();",
                  "expect(post.mock.calls[0][0]).toBe('/api/v1/law/generate');"):
         assert line in vt, ("the rendered test no longer reads this", line)
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1233 - with sign-in on, a signed-out visitor at / is sent to the sign-in page, not shown the Command Center
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1233_a_signed_out_visitor_is_sent_to_the_sign_in_page_not_shown_the_shell():
+    """W1233. Found on the live site with sign-in on: a visitor with no token at / saw the Command Center shell
+    ("Welcome, Founder", the avatar box, "Failed (HTTP 401)" banners, every API call answered 401) instead of
+    the sign-in page. installAuth()'s on401 redirected only when a token was held, so a visitor who never signed in
+    was never sent to /login. Held here:
+    1. on401 no longer asks for a token: a 401 from an /api call that is not a sign-in call (/auth/) sends the page to
+       /login unless it is /login already, clearing a held token first; both the fetch and the axios path take that
+       one filter;
+    2. sendSignedOutToLogin(), the boot probe, reads whoami() and redirects only an 'anonymous' session away from a
+       page that is not /login; 'auth-off' and 'unknown' never redirect, and no next address is added (the login page
+       reads none);
+    3. App.tsx calls the probe at module level right after installAuth();
+    4. lib/auth.test.ts drives each case, and still imports whoami as W930's guard reads it."""
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    auth = _code_only((src / "lib/auth.ts").read_text(encoding="utf-8")) + "\n"
+    #  1. on401: no token asked for, a held one cleared, the login page exempt
+    on = auth[auth.index("  const on401 = () => {"):]
+    on = on[:on.index("\n  };\n") + 5]
+    assert "getToken() &&" not in on, "on401 redirects only a session that held a token"
+    assert "    if (window.location.pathname !== '/login') {" in on and "      if (getToken()) clearToken();" in on
+    assert on.count("window.location.assign('/login');") == 1
+    assert "  const fires401 = (url: string) => url.startsWith('/api') && !url.includes('/auth/');" in auth
+    assert "if (err?.response?.status === 401 && fires401(String(err?.config?.url ?? ''))) on401();" in auth
+    assert "if (res.status === 401 && fires401(url)) on401();" in auth
+    assert auth.count("on401();") == 2, "a 401 reaches on401 by some path that is not filtered"
+    #  2. the boot probe redirects on 'anonymous' alone
+    pr = auth[auth.index("export async function sendSignedOutToLogin(): Promise<void> {"):]
+    pr = pr[:pr.index("\n}\n") + 3]
+    assert "  const who = await whoami();" in pr
+    assert "    if (getToken()) clearToken();" in pr, "the probe leaves a token the server no longer takes"
+    assert "  if (who.mode === 'anonymous' && window.location.pathname !== '/login') {" in pr
+    assert pr.count("window.location.assign('/login');") == 1 and "auth-off" not in pr and "unknown" not in pr
+    assert "next" not in pr, "the probe adds a next address the login page does not read"
+    login = (src / "pages/Login.tsx").read_text(encoding="utf-8")
+    assert "get('next')" not in login and "'next'" not in login, (
+        "the login page now reads a next address: the probe may keep the address the visitor asked for")
+    #  3. App.tsx: the probe runs at boot, after the token layer is installed
+    app = _code_only((src / "App.tsx").read_text(encoding="utf-8"))
+    assert "import { installAuth, sendSignedOutToLogin } from './lib/auth';" in app
+    assert app.count("\nvoid sendSignedOutToLogin();\n") == 1 and app.count("\ninstallAuth();\n") == 1
+    assert app.index("\ninstallAuth();\n") < app.index("\nvoid sendSignedOutToLogin();\n") < app.index("function App()")
+    #  4. the rendered test
+    t = (src / "lib/auth.test.ts").read_text(encoding="utf-8")
+    assert "import { whoami } from './auth';" in t
+    for name in ("sends an anonymous visitor at / to /login", "leaves an anonymous visitor on /login where they are",
+                 "never redirects with sign-in off",
+                 "never redirects a session that is not known: a refusal or an unreachable server",
+                 "sends a visitor with no token to /login on a 401 from an /api data call",
+                 "does not redirect on a 401 from a sign-in call"):
+        assert t.count(f"  it('{name}', async () => {{") == 1, name
+    def body(name):
+        s = t.index(f"  it('{name}', async () => {{")
+        return t[s:t.index("\n  });\n", s)]
+    for name in ("sends an anonymous visitor at / to /login",
+                 "sends a visitor with no token to /login on a 401 from an /api data call"):
+        assert "expect(assign).toHaveBeenCalledWith('/login');" in body(name), name
+    for name in ("leaves an anonymous visitor on /login where they are", "never redirects with sign-in off",
+                 "never redirects a session that is not known: a refusal or an unreachable server",
+                 "does not redirect on a 401 from a sign-in call"):
+        assert "expect(assign).not.toHaveBeenCalled();" in body(name), name

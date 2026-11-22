@@ -105,12 +105,14 @@ import { Support } from './pages/support/Support';
 import { HorizonGuardrails } from './pages/governance/HorizonGuardrails';
 import { HorizonCompanion } from './pages/governance/HorizonCompanion';
 import { Login } from './pages/Login';
-import { installAuth } from './lib/auth';
+import { installAuth, sendSignedOutToLogin } from './lib/auth';
 import { syncWorkspaceFromServer } from './lib/outputHistory';
 import { applyDocumentDirection } from './lib/i18n';
 
 // W296 - the bearer token rides on every /api call app-wide (honest no-op when auth is off)
 installAuth();
+// W1233 - with sign-in on, a signed-out visitor is sent to /login at boot instead of the shell
+void sendSignedOutToLogin();
 
 function App() {
   // §2/§9 (W-tour) — the first-run onboarding was permanently dead (run={false}, no setter). Now:
