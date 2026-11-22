@@ -14,11 +14,13 @@ of its own or put in an environment variable. An account the store does not hold
 the platform, not here), and so is a store that is not there or cannot be read whole: the store is read strictly
 BEFORE agentic_core.auth.core is imported, because importing it makes the first account from a tolerant read, and
 would replace a store it could not read with one holding only the admin. Nothing is ever written over a store that
-was not read whole.
+was not read whole, or over one another user owns: written by the command's user, it would become one the
+platform could no longer read (W1198).
 """
 from __future__ import annotations
 
 import getpass
+import os
 import pathlib
 import sys
 import time
@@ -27,8 +29,21 @@ MIN_LENGTH = 12
 SET_BY_OWNER = "owner-set"
 
 
+class _Said(str):
+    """A reason that already says nothing was changed, with what to do after it: _refuse prints it as it is."""
+
+
+def _owner(store):
+    """The uid that owns the store, or None when it cannot be looked at (stat needs no read permission)."""
+    try:
+        return pathlib.Path(store).stat().st_uid
+    except OSError:
+        return None
+
+
 def _refuse(why: str) -> int:
-    print(f"refused: {why}, so nothing was changed", file=sys.stderr)
+    said = why if isinstance(why, _Said) else f"{why}, so nothing was changed"
+    print(f"refused: {said}", file=sys.stderr)
     return 1
 
 
@@ -39,9 +54,27 @@ def _account(store, username: str):
     try:
         users = read_json_strict(store, None, dict)
     except StoreUnavailable as exc:
+        if os.name == "posix" and isinstance(exc.__cause__, PermissionError):     # W1198: not a lock on Linux
+            owner = _owner(store)
+            if owner is None:                       # the store could not even be looked at: the plain words
+                return None, None, _Said("the command's user may not read the users store (permission denied), so "
+                                         "nothing was changed: run it as the platform's user, as docker exec does by "
+                                         "default")
+            return None, None, _Said(f"the users store could not be read whole: it belongs to uid {owner} and the "
+                                     f"command runs as uid {os.geteuid()}, which may not read it (permission denied), "
+                                     "so nothing was changed: run it as the platform's user, as docker exec does by "
+                                     "default; if it ran so, the store is not the platform's own: restore the data "
+                                     "disk (step 9)")
         return None, None, f"the users store could not be read whole ({exc.problem})"
     if users is None:
         return None, None, "there is no users store on the data disk: the platform makes it at its first boot"
+    owner = _owner(store) if os.name == "posix" else None
+    if owner is not None and owner != os.geteuid():                                # W1198: another user's store
+        return None, None, _Said(f"the users store belongs to uid {owner}, not to the command's uid {os.geteuid()}, so "
+                                 "nothing was changed: run it as the platform's user, as docker exec does by default; "
+                                 "if it ran so, the store is not the platform's own: restore the data disk (step 9)")
+    if username in users and not isinstance(users[username], dict):
+        return None, None, f"the users store's entry for {username!r} is not an account"
     if not isinstance(users.get(username), dict):
         return None, None, f"the users store holds no account named {username!r}"
     return users, users[username], None

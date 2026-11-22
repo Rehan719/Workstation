@@ -27111,10 +27111,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P4.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1198",
       "note": "",
-      "slot_source": "P4.1: sign-in on, whose accounts step 12 checks before the domain is set (W1191's second review)"
+      "slot_source": "P4.1: sign-in on, whose accounts step 12 checks before the domain is set (W1191's second review)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1198: python -m agentic_core.auth.remove_account NAME, run over SSH on the machine inside the platform's container, removes one account from the users store, so an unwanted account is never removed by editing users.json by hand. Before anything is read it refuses no name, two names or a flag, takes a name that starts with '-' or is blank only after --, and never removes admin. It reads the store strictly before it imports agentic_core.auth.core, so a store that is not there or cannot be read whole is refused, left byte for byte and never replaced by one holding only the admin; it also refuses a store the command's user may not read and one another user owns, each said with both uids and what to do if the command did run as the platform's user, one that holds no admin account, an entry that is not an account and a name the store does not hold. It shows the account's role, when it was made and how many API keys it holds, asks for the name again and refuses a mismatch or no answer. Under core._users_mutation() it reads the store whole again with the same refusals, refuses a different account now holding the name (told by its id, or by when it was made), takes the account out with its API keys and writes the store with core._save_users, so an account another writer adds meanwhile is kept; a lock kept past its wait, at core's import or at the removal (core's 503), and a store that cannot be written are refused in a sentence, and so is a platform whose users store is not the one read. It prints the name, the role and how many API keys went, that its tokens are refused, that the person's records in the platform's other stores are not touched, and that the name is given to no other person; it writes nothing else, no event and no file of its own. remove(username, shown=None), which B8 reuses, reads the store strictly itself when it is called first in a process. set_password refuses the same three stores. Step 12 of docs/DEPLOYMENT.md gives the command once, in its own block, for an account the Owner made and no longer wants: after W1191's accounts' check and its way forward for an account the Owner did not make, which it keeps whole, and before the domain. It says what the command shows, refuses and leaves, that a removed name is given to no other person, that the accounts are checked again, and that a store the command refuses as not read whole, unreadable or another user's is not edited and the platform not restarted on it before the data disk is restored (FU-1834, open). Found while building and reviewing it, and registered open on P4.1, low while the admin makes every account and the guide's rule holds: a sign-in token carries only its account's name, so a removed account's tokens sign in to a new account given the name and, by refreshing, keep doing so; a person's records are owned by the account's name, so after a removal without an erasure (FU-1863) an account given it is shown them, which self-serve sign-up (P4.2) would open to anyone, so that row is fixed before it is switched on; and a refresh token is accepted as the bearer, so a sign-in's bearer lasts REFRESH_TOKEN_TTL. test_w1198 drives the command in its own process and in the test, on made-up stores."
     },
     {
       "id": "FU-1837",
@@ -28065,6 +28068,57 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P5.17 clause 6 (every source a row with its terms); it bears on P5.20's translations too"
+    },
+    {
+      "id": "FU-1890",
+      "title": "A sign-in token carries only its account's name, so a token issued to a removed account signs in to a new account given that name, and by refreshing keeps signing in to it for as long as it exists",
+      "why": "Measured in W1198 on 250a7b20 with the new command, in a test process with sign-in on. _make_token signs only the account's name (sub), with its role and the token's type, and get_current_user and the refresh route find the account by that name alone (agentic_core/auth/core.py). After remove_account took out a made-up account, its access token, its refresh token and its API key were each refused (401). Once the admin registered a new account under the same name, the old access token answered GET /api/v1/auth/me as the new account and the old refresh token was exchanged for new tokens (200). Each refresh issues a new refresh token: a refresh token past its own expiry was refused (401) while the one it had been exchanged for was accepted (200), and the tokens the old refresh token was exchanged for on the new account were exchanged again (200). So once an account holds the name, whoever holds the removed account's refresh token stays signed in to that account by refreshing, for as long as it exists, with its role and records: an old access token of a user account answered the admin-only GET /api/v1/auth/users (200) once the name was given to an admin account, and the old refresh token was exchanged for an access token with the admin role. An access token lasts ACCESS_TOKEN_TTL (60 minutes by default) and a refresh token REFRESH_TOKEN_TTL (7 days by default), and the release machine changes neither. The command and step 12 of docs/DEPLOYMENT.md tell the Owner to give a removed name to no other person. The fix: carry the account's user_id in each token and admit it only when the account found by the name has that id, in get_current_user and in the refresh route; the request-user middleware (agentic_core/app_mvp.py) also finds the account by the name, but grants nothing once those check the id.",
+      "source": "W1198 (measured while building the command that removes an account)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/auth/core.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.1: sign-in on, whose tokens carry only the account's name, found when the command that removes an account was built (W1198)"
+    },
+    {
+      "id": "FU-1891",
+      "title": "A person's records are owned by their account's name, so after a removal without an erasure, an account given that name is shown them",
+      "why": "Measured in W1198 on 250a7b20 with the new command, in a test process with sign-in on. Records are stamped and checked by the account's name: request_owner_id stamps the signed-in username, and user_can_access compares a record's owner with it (agentic_core/auth/core.py, as W864's comment on _reserved_name_refusal says). A made-up account saved a workspace; remove_account took the account out of the users store and, as it says, touched nothing else; the admin registered a new account under the same name with another password; signed in with that password, the new account read the first account's workspace, its history and preferences included (GET /api/v1/user/workspace, 200). Binding tokens to the account's id (the token row) would not help: the new account's own token reads the records. B8's planned erasure (FU-1863) empties the person's stores and gives the records the rules keep an erasure token in place of the owner, so this follows a removal without an erasure, which is what step 12 gives. As planned, B8's erase_person refuses a person the users store does not hold, and erase() ends with remove(), which refuses such a name too, so B8 would not erase someone this command has already removed: for such a name the exposure lasts until this row is fixed, or until B8 takes such names. Until a fix, the command and step 12 tell the Owner to give a removed name to no other person. That rule holds only while the admin makes every account: with self-serve sign-up on (SELF_SERVE_SIGNUP_ENABLED, the Owner's switch, P4.2), anyone may sign up under a removed name, and in a test process a stranger who did so read the removed person's workspace (200). So this row is fixed before self-serve sign-up is switched on. The fix, one of: keep a list of removed names beside the users store and refuse them at register and signup through W864's _reserved_name_refusal (409), with a way for the admin to give a removed name back to the same person, as W864's helper already lets the admin's register hold a name signup may not (reusing the name is the only way a returning person gets their records back), not as a record inside users.json, which login, refresh, list_users, _user_for_api_key, the step-12 print, set_password and remove_account all read and would each have to skip; or own records by the account's user_id, carrying a returning person's records to their new account.",
+      "source": "W1198 (the round's review, measured on the new command)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/auth/core.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.1: sign-in on, whose records are owned by the account's name, found when the command that removes an account was reviewed (W1198); an erasure (FU-1863) ends it for an erased person; fixed before self-serve sign-up (P4.2) is switched on"
+    },
+    {
+      "id": "FU-1892",
+      "title": "get_current_user accepts a refresh token as the bearer, so a sign-in's bearer lasts REFRESH_TOKEN_TTL, not ACCESS_TOKEN_TTL",
+      "why": "Measured in W1198 on 250a7b20, in a test process with sign-in on: the refresh token POST /api/v1/auth/token issued, sent as the bearer, answered GET /api/v1/auth/me as the account (200). get_current_user decodes the token and finds its account with no check of the token's type; only the refresh route checks it (agentic_core/auth/core.py). So the bearer a sign-in hands out lasts REFRESH_TOKEN_TTL (7 days by default), not ACCESS_TOKEN_TTL (60 minutes by default), and the release machine changes neither. The fix: get_current_user refuses a token whose payload's type is not access, with 401. The request-user middleware (agentic_core/app_mvp.py) never fails a request; at most it skips a token that is not an access token. W1198b is to bind tokens to the account's user_id and add this check, closing the token row and this one.",
+      "source": "W1198 (the round's review, measured)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/auth/core.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.1: sign-in on, whose bearer check takes a token of any type, found when the token code was read in W1198's review"
     }
   ],
   "routes": [

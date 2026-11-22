@@ -98761,12 +98761,13 @@ def test_w1191_the_release_machine_serves_publicly_only_with_its_domain_https_an
         12 creating the rule, checking the accounts (each one's name, role and creation time, never a hash, driven
         here), setting the domain and sign-in together and sending the reader back to step 10; the steps keep their
         numbers;
-    S5. the round's row is closed on P4.5 in the Owner's recorded words, W1190's quoted as W1190 recorded them; three
-        rows are left open on P4.1; the W729 credentials are an OWNER row of high severity, on the plan's Owner list
-        and in the local notes; FU-1289 and FU-1095, still open and the Owner's, each say in one sentence what W1191
-        changed, FU-1289's after the Owner's ruling W1190 recorded there and before the dated note of the late
-        evening; P4.1 carries that evening's ruling right after the ruling of 2026-11-20 and, last, that W1191 changed
-        the script; and the plan's list and the local notes say the domain and sign-in are set together."""
+    S5. the round's row is closed on P4.5 in the Owner's recorded words, W1190's quoted as W1190 recorded them;
+        three rows are left open on P4.1 (FU-1836 since closed by W1198 as built); the W729 credentials are an OWNER
+        row of high severity, on the plan's Owner list and in the local notes; FU-1289 and FU-1095, still open and
+        the Owner's, each say in one sentence what W1191 changed, FU-1289's after the Owner's ruling W1190 recorded
+        there and before the dated note of the late evening; P4.1 carries that evening's ruling right after the
+        ruling of 2026-11-20 and, last, that W1191 changed the script; and the plan's list and the local notes say
+        the domain and sign-in are set together."""
     import json
     import os
     import pathlib
@@ -99317,6 +99318,10 @@ fi
     remove = titled("No command removes an account from the users store, so an unwanted one is removed only by editing "
                     "users.json by hand")
     for r in (left, origin, remove):
+        if r is remove and r["status"] == "done":        # W1198 closed it as built; test_w1198 holds the command
+            assert (r.get("closed_by"), r.get("because"), r["slot"], bool(r.get("owner_gated"))) == (
+                "W1198", "built", "P4.1", False), r
+            continue
         assert (r["status"], r["slot"], bool(r.get("owner_gated"))) == ("open", "P4.1", False), r
     for said in ("At every boot, importing agentic_core/auth/core.py runs _create_default_admin()", "read_json_strict",
                  "create the admin only when the file does not exist"):
@@ -100734,3 +100739,590 @@ def test_w1193c_the_owners_nine_decisions_of_the_morning_of_2026_11_22_are_recor
     for text in said:
         hit = PRONOUN.search(text)
         assert not hit, ("a gendered pronoun", text[max(0, hit.start() - 60):hit.end() + 20])
+
+
+def test_w1198_fu1836_an_account_is_removed_with_remove_account_which_reads_the_store_whole_and_never_by_hand(
+        tmp_path, monkeypatch, capsys):
+    """FU-1836 (W1198), P4.1. W1191's step 12 checks the users store's accounts before the domain is set, and nothing
+    in the tree removed one but an edit of users.json by hand, which risks the store the platform's boot replaces when
+    it cannot read it (FU-1834). `python -m agentic_core.auth.remove_account NAME` now removes one, over SSH on the
+    machine, on set_password's pattern; it was reworked after the round's review. Held here:
+    R1. DRIVEN in its own process, as step 12 runs it, on a made-up store of admin, alice (one API key) and bob: alice,
+        typed again, is taken out with that key; admin and bob are as they were; nothing else in the data folder
+        changes, so no event and no file of the command's own is written; and what it prints names the account, its
+        role and how many API keys went, says the person's records in the other stores are not touched and that the
+        name is given to no other person, in the clauses of the rows still open, and claims nothing more: the records
+        clause while the records row is open, the token clause while the token row is open, gone once it closes;
+    R2. refused in its own process, each with its reason and the data folder left byte for byte: no name, two names, a
+        flag, the admin (typed again), a name the store does not hold, a name typed again that differs, and none typed;
+    R3. a store that is not there, or is cut mid-JSON, is refused in its own process with that reason: the store is
+        read strictly before core is imported, so no store is made and the cut one is not replaced by one holding only
+        the admin, by the command and by remove() called first in a process; and a lock another writer keeps while core
+        is imported is refused in a sentence;
+    R4. DRIVEN in this process: the store is read whole again under its lock, so an account another writer adds while
+        the name is asked (dave) is kept, and a key made meanwhile goes with the account and is counted; a different
+        account holding the name by then, told by its id, or by when it was made when it has no id, is refused with
+        the store as it was; a lock kept past its wait at the removal is refused with core's own 503 detail; so are a
+        store that cannot be written, one the command's user may not read (said as permission denied on POSIX), one
+        another user owns (before the prompt and again under the lock), one that holds no admin account (before the
+        prompt and again under the lock), an entry that is not an account, and a platform whose users store is not the
+        one read; a name that starts with '-' or is blank is taken after --; the removal itself never takes the admin;
+        set_password refuses the same three stores; and the source reads the store before it imports core and again
+        inside the lock before it writes, and, docstrings and comments aside, writes, logs and reads nothing else;
+    R5. the effect, with sign-in on in this process and tokens issued by POST /api/v1/auth/token: alice's token,
+        refresh token and API key, each issued before the removal, are refused after it (401), and bob's still answers;
+    R6. the register: FU-1836 is closed by this round, as built, once the command is in git's index (the round's close
+        step closes it before that); and the three rows this round found are on P4.1, low, in the order registered: a
+        token carries only its account's name, a person's records are owned by it, and a refresh token is taken as the
+        bearer; the token lives they state are core's defaults, which the release machine does not change;
+    R7. the guide: step 12 gives the command once, in its own block, after the accounts' check and W1191's way forward
+        for an account the Owner did not make, kept whole, and before the domain; it says what the command shows,
+        refuses and leaves, that the accounts are checked again, that a store it refuses as not read whole, unreadable
+        or another user's is not edited and, while FU-1834 is open, that the platform is not restarted on it, and that a
+        removed name is given to no other person, in the clauses of the rows still open, each naming its row: the
+        token clause is gone once the token row closes; no block writes users.json; the steps W1198's text cites keep
+        their numbers."""
+    import ast
+    import errno
+    import json
+    import os
+    import pathlib
+    import re
+    import subprocess
+    import sys
+    from fastapi import HTTPException
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")  # noqa: E731
+    from agentic_core.auth import core
+
+    #  the rows this round registered, read first: each never-reuse sentence is made of the clauses of the rows still
+    #  open (a person's records stay under the name while the records row is open; an old token signs in to an
+    #  account given it while the token row is open)
+    rows = {r.get("id"): r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"] if isinstance(r, dict)}
+
+    def titled(title):
+        found = [r for r in rows.values() if r.get("title") == title]
+        assert len(found) == 1, (title[:80], len(found))
+        return found[0]
+    token = titled("A sign-in token carries only its account's name, so a token issued to a removed account signs in to "
+                   "a new account given that name, and by refreshing keeps signing in to it for as long as it exists")
+    records = titled("A person's records are owned by their account's name, so after a removal without an erasure, an "
+                     "account given that name is shown them")
+    bearer = titled("get_current_user accepts a refresh token as the bearer, so a sign-in's bearer lasts "
+                    "REFRESH_TOKEN_TTL, not ACCESS_TOKEN_TTL")
+
+    def never(lead, records_clause, token_clause):
+        """The never-reuse sentence, made of the clauses of the rows still open, or None when both are closed."""
+        said = ([records_clause] if records["status"] == "open" else []) + (
+            [token_clause] if token["status"] == "open" else [])
+        return f"{lead}{', and '.join(said)}." if said else None
+    made_up = "w1198 a made-up hash, never a password's"
+
+    def account(name, role, made, keys=()):
+        return {"user_id": f"w1198-{name}", "username": name, "hashed_password": made_up, "role": role,
+                "created_at": made, "api_keys": list(keys)}
+    key_rec = {"key_id": "w1198k01", "key_prefix": "wstn_w1198ab", "hashed_key": made_up,
+               "created_at": "2026-11-22T09:06:00Z"}
+    users = {"admin": account("admin", "admin", "2026-11-22T09:00:00Z"),
+             "alice": account("alice", "user", "2026-11-22T09:05:00Z", [key_rec]),
+             "bob": account("bob", "viewer", "2026-11-22T09:07:00Z")}
+    raw = (json.dumps(users, indent=2) + "\n").encode("utf-8")
+    shown = "alice: role user, made 2026-11-22T09:05:00Z, 1 API key. Type its name again to remove it: "
+    head = ("Removed alice (role user) from the users store on the data disk, with 1 API key. Its sign-in tokens and "
+            "API keys are refused from their next request. The person's records in the platform's other stores are not "
+            "touched.")
+    rule = never("Give this name to no other person: ", "the person's records in the platform's other stores are still "
+                 "kept under that name, so an account given it would be shown them", "a sign-in token issued before "
+                 "this removal would sign in to that account")
+
+    def said_right(out):
+        """What the command prints when it is done: the never-reuse rule made of the clauses of the rows still open, and
+        nothing more, so the token clause is gone once the token row closes; once both rows are closed, the round
+        that closes the last says what replaces the rule."""
+        if token["status"] != "open" and "would sign in to that account" in out:
+            return False
+        return out == f"{head} {rule}\n" if rule else out.startswith(head)
+
+    #  R1. THE COMMAND AS THE OWNER RUNS IT, in its own process (no terminal, so input() reads what it is given; a
+    #  terminal is what `docker exec -it` gives the Owner), on a made-up store in a data folder of its own
+    data = tmp_path / "w1198-data"
+    data.mkdir()
+    store = data / "users.json"
+    env = dict(os.environ, DATA_DIR=str(data), WORKSTATION_DATA_DIR=str(data), PYTHONPATH=str(root),
+               WORKSTATION_UEG_PATH=str(data / "ueg.json"), PROJECTS_DIR=str(data / "projects"), AI_DISABLE_LOCAL="1",
+               PYTHONIOENCODING="utf-8")          # core's refusal carries an em dash, on every machine's console
+    for name in ("ADMIN_PASSWORD", "JWT_SECRET", "AUTH_ENABLED", "ACCESS_TOKEN_TTL", "REFRESH_TOKEN_TTL"):
+        env.pop(name, None)
+
+    def own_process(*argv, typed=None, short_lock=False, code=None):
+        run = ["-m", "agentic_core.auth.remove_account"]
+        if short_lock:            # the same command, with the store lock's own wait cut short so a held lock answers now
+            run = ["-c", "import runpy, agentic_core.config as c; real = c.store_lock; c.store_lock = lambda p: "
+                   "real(p, timeout=0.2); runpy.run_module('agentic_core.auth.remove_account', run_name='__main__', "
+                   "alter_sys=True)"]
+        if code:
+            run = ["-c", code]
+        return subprocess.run([sys.executable, *run, *argv], input="" if typed is None else typed + "\n",
+                              capture_output=True, encoding="utf-8", env=env, cwd=str(root), timeout=120,
+                              start_new_session=True)
+
+    def folder():
+        return {p.relative_to(data).as_posix(): p.read_bytes() for p in sorted(data.rglob("*")) if p.is_file()}
+    store.write_bytes(raw)
+    (data / "jwt_secret.key").write_text("w1198 a made-up signing secret", encoding="utf-8")   # the first boot's
+    before = folder()
+    r = own_process("alice", typed="alice")
+    assert r.returncode == 0 and r.stdout.startswith(shown) and said_right(r.stdout[len(shown):]), (
+        r.returncode, r.stdout[-700:], r.stderr[-700:])
+    after = folder()
+    assert sorted(after) == sorted(before), ("the command wrote an event or a file of its own",
+                                            sorted(set(after) ^ set(before)))
+    assert [k for k in after if after[k] != before[k]] == ["users.json"], "something beside the users store changed"
+    assert json.loads(store.read_text(encoding="utf-8")) == {"admin": users["admin"], "bob": users["bob"]}, (
+        "another account changed, or alice or the key is still there")
+
+    #  R2. EACH REFUSAL SAYS WHY AND CHANGES NOTHING. The name is typed each time, so a refusal that let the command go
+    #  on would remove an account
+    kept = folder()
+    usage = "usage: python -m agentic_core.auth.remove_account [--] USERNAME"
+    for argv, typed, rc, why in (
+            ((), "bob", 2, usage),
+            (("bob", "admin"), "bob", 2, usage),
+            (("--all",), "--all", 2, usage),
+            (("admin",), "admin", 1, "refused: the admin account is never removed: it is the account the Owner signs "
+                                     "in with, so nothing was changed"),
+            (("carol",), "carol", 1, "refused: the users store holds no account named 'carol', so nothing was changed"),
+            (("bob",), "alice", 1, "refused: the name typed again is not the account's, so nothing was changed"),
+            (("bob",), None, 1, "refused: the name was not typed again, so nothing was changed")):
+        r = own_process(*argv, typed=typed)
+        assert r.returncode == rc and why in r.stderr, (argv, typed, r.returncode, r.stderr[-500:])
+        assert folder() == kept, (argv, typed, "a refusal changed the data folder")
+        assert "Removed" not in r.stdout, (argv, typed, r.stdout[-300:])
+
+    #  R3. A STORE THAT IS NOT THERE OR CANNOT BE READ WHOLE: importing core first would make one holding only the
+    #  admin where none was, and put one in place of the cut one
+    first = ("import sys; from agentic_core.auth import remove_account as rm; print(rm.remove('bob')); "
+             "print('core imported' if 'agentic_core.auth.core' in sys.modules else 'core not imported')")
+    store.unlink()
+    r = own_process("bob", typed="bob")
+    assert r.returncode == 1 and "refused: there is no users store on the data disk, so nothing was changed" in r.stderr, (
+        r.returncode, r.stderr[-500:])
+    assert not store.exists(), "the command, or an import it made first, made a users store"
+    r = own_process(code=first)          # remove() called first in a process, as B8 may call it
+    assert r.returncode == 0 and "there is no users store on the data disk" in r.stdout and (
+        "core not imported" in r.stdout), (r.stdout[-500:], r.stderr[-500:])
+    assert not store.exists(), "remove(), called first in a process, made a users store"
+    torn = b'{"admin": {"user_id": "w1198-admin", "username": "admin", "role": "admin"}, "bob": {"username": "b'
+    store.write_bytes(torn)
+    for run in (lambda: own_process("bob", typed="bob"), lambda: own_process(code=first)):
+        r = run()
+        said = r.stderr if r.returncode == 1 else r.stdout
+        assert "the users store could not be read whole (not valid JSON" in said, (r.returncode, said[-500:])
+        assert store.read_bytes() == torn, "a store that could not be read whole was replaced"
+    #  ...and a lock another writer keeps while core is imported (its import takes the lock to make the first account)
+    store.write_bytes(raw)
+    lock = data / "users.json.lock"
+    lock.write_bytes(b"")
+    try:
+        held = folder()
+        r = own_process("bob", typed="bob", short_lock=True)
+        assert r.returncode == 1 and "refused: the users store stayed locked by another writer (" in r.stderr and (
+            "), so nothing was changed" in r.stderr), (r.returncode, r.stderr[-700:])
+        assert folder() == held, "a store locked by another writer was written"
+        r = own_process(code="import agentic_core.config as c; real = c.store_lock; c.store_lock = lambda p: real(p, "
+                        "timeout=0.2); " + first)            # remove() called first, the same lock held
+        assert r.returncode == 0 and "(None, 'the users store stayed locked by another writer (" in r.stdout and (
+            "core not imported" in r.stdout), (r.returncode, r.stdout[-500:], r.stderr[-500:])
+        assert folder() == held, "remove(), called first, wrote a store locked by another writer"
+    finally:
+        lock.unlink()
+
+    #  R4. IN THIS PROCESS: the store read first is the one written, and is read whole again under its lock
+    from agentic_core import config as _config
+    from agentic_core.auth import remove_account as rm
+    from agentic_core.auth import set_password as sp
+    here = tmp_path / "w1198-here"
+    here.mkdir()
+    mine = here / "users.json"
+    monkeypatch.setattr(_config, "data_path", lambda *parts: here.joinpath(*parts))   # the store read first...
+    monkeypatch.setattr(core, "_USER_STORE", mine)                                    # ...is the one written
+    assert _config.data_path("users.json") == mine
+    monkeypatch.setattr(sp.getpass, "getpass", lambda prompt="": (_ for _ in ()).throw(AssertionError(
+        "set_password asked for a password before it refused")))
+    mine.write_bytes(raw)
+    dave = account("dave", "user", "2026-11-22T09:10:00Z")
+    asked = []
+
+    def racing(prompt=""):
+        asked.append(prompt)
+        later = json.loads(mine.read_text(encoding="utf-8"))
+        later["dave"] = dave                     # another writer adds an account while the name is asked
+        mine.write_text(json.dumps(later), encoding="utf-8")
+        return "alice"
+    monkeypatch.setattr("builtins.input", racing)
+    assert rm.main(["alice"]) == 0 and asked == [shown], asked
+    out = capsys.readouterr()
+    assert said_right(out.out) and "refused" not in out.err, out
+    assert json.loads(mine.read_text(encoding="utf-8")) == {"admin": users["admin"], "bob": users["bob"], "dave": dave}, (
+        "an account written while the name was asked was lost, or another account changed")
+    #  ...the account shown is the one removed: a different one holding the name by the lock is refused, and a key made
+    #  meanwhile is not a different account (it goes with the account, and is counted)
+    left = []
+
+    def changing(field, value):
+        def answer(prompt=""):
+            later = json.loads(mine.read_text(encoding="utf-8"))
+            if field == "api_keys":
+                later["alice"]["api_keys"] = later["alice"]["api_keys"] + [dict(key_rec, key_id="w1198k02")]
+            else:
+                later["alice"][field] = value
+            mine.write_text(json.dumps(later), encoding="utf-8")
+            left.append(mine.read_bytes())
+            return "alice"
+        return answer
+    no_id = dict(users, alice={k: v for k, v in users["alice"].items() if k != "user_id"})
+    for start, field, value, why in (
+            (users, "user_id", "w1198-alice-again", "(id w1198-alice-again, not w1198-alice)"),
+            (no_id, "created_at", "2026-11-22T09:30:00Z", "(made 2026-11-22T09:30:00Z, not 2026-11-22T09:05:00Z)")):
+        mine.write_text(json.dumps(start), encoding="utf-8")
+        monkeypatch.setattr("builtins.input", changing(field, value))
+        assert rm.main(["alice"]) == 1, field
+        out = capsys.readouterr()
+        assert (f"refused: a different account now holds the name {why}, so nothing was changed: run the command "
+                "again\n") in out.err and "Removed" not in out.out, (field, out)
+        assert mine.read_bytes() == left[-1], (field, "the store was written after a different account took the name")
+    mine.write_bytes(raw)
+    monkeypatch.setattr("builtins.input", changing("api_keys", None))
+    assert rm.main(["alice"]) == 0
+    out = capsys.readouterr()
+    assert out.out.startswith("Removed alice (role user) from the users store on the data disk, with 2 API keys."), out
+    assert sorted(json.loads(mine.read_text(encoding="utf-8"))) == ["admin", "bob"]
+    #  ...a lock kept past its wait at the removal: core._users_mutation answers 503, and the command says core's detail
+    mine.write_bytes(raw)
+    real_lock = _config.store_lock
+    monkeypatch.setattr(_config, "store_lock", lambda path: real_lock(path, timeout=0.2))
+    monkeypatch.setattr("builtins.input", lambda prompt="": "bob")
+    held = mine.read_bytes()
+    here_lock = here / "users.json.lock"
+    here_lock.write_bytes(b"")
+    try:
+        try:
+            with core._users_mutation():
+                busy = None
+        except HTTPException as exc:
+            busy = exc.detail
+        got = rm.main(["bob"])
+    finally:
+        here_lock.unlink()
+    out = capsys.readouterr()
+    assert busy, "a held lock did not make core's 503, so this leg would be idle"
+    assert got == 1 and (f"refused: the users store stayed locked by another writer ({busy}), so nothing was "
+                         "changed") in out.err and "Removed" not in out.out, (got, out)
+    assert mine.read_bytes() == held, "a store locked by another writer was written"
+    monkeypatch.setattr(_config, "store_lock", real_lock)
+    #  ...a store that cannot be written (a full disk) is said, and is as it was
+    real_save = core._save_users
+
+    def full(_users):
+        raise OSError(errno.ENOSPC, "No space left on device")
+    monkeypatch.setattr(core, "_save_users", full)
+    assert rm.main(["bob"]) == 1
+    out = capsys.readouterr()
+    assert (f"refused: the users store could not be written (OSError: [Errno {errno.ENOSPC}] No space left on device); "
+            "it is as it was, so nothing was changed") in out.err, out
+    assert mine.read_bytes() == held
+    monkeypatch.setattr(core, "_save_users", real_save)
+    #  ...a store the command's user may not read is said on POSIX by both uids, not as a lock, with what to do if the
+    #  command did run as the platform's user; a store that cannot even be looked at gets the plain words (and so
+    #  does set_password)
+    real_strict = _config.read_json_strict
+
+    def denied(path, missing, expect=None):
+        try:
+            raise PermissionError(errno.EACCES, "Permission denied")
+        except PermissionError as e:              # read_json_strict's own refusal of a file the OS would not hand over
+            raise _config.StoreUnavailable(path, f"stayed locked by another process ({e.__class__.__name__})") from e
+
+    def denied_and_gone(path, missing, expect=None):
+        pathlib.Path(path).unlink()
+        denied(path, missing, expect)
+    if os.name == "posix":
+        real_euid, owner = os.geteuid, mine.stat().st_uid
+        monkeypatch.setattr(os, "geteuid", lambda: owner + 1)
+    for entry, argv in ((rm.main, ["bob"]), (sp.main, ["admin"])):
+        monkeypatch.setattr(_config, "read_json_strict", denied)
+        assert entry(argv) == 1, entry.__module__
+        out = capsys.readouterr()
+        if os.name == "posix":
+            assert (f"refused: the users store could not be read whole: it belongs to uid {owner} and the command "
+                    f"runs as uid {owner + 1}, which may not read it (permission denied), so nothing was changed: run "
+                    "it as the platform's user, as docker exec does by default; if it ran so, the store is not the "
+                    "platform's own: restore the data disk (step 9)\n") in out.err, out
+        else:
+            assert "refused: the users store could not be read whole (stayed locked by another process" in out.err, out
+        monkeypatch.setattr(_config, "read_json_strict", denied_and_gone)
+        assert entry(argv) == 1, entry.__module__
+        out = capsys.readouterr()
+        if os.name == "posix":
+            assert ("refused: the command's user may not read the users store (permission denied), so nothing was "
+                    "changed: run it as the platform's user, as docker exec does by default\n") in out.err, out
+        mine.write_bytes(held)
+    if os.name == "posix":
+        monkeypatch.setattr(os, "geteuid", real_euid)
+    monkeypatch.setattr(_config, "read_json_strict", real_strict)
+    #  ...a store another user owns is not written: as that user, the platform could no longer read it
+    if os.name == "posix":
+        real_euid, owner = os.geteuid, mine.stat().st_uid
+        another = (f"refused: the users store belongs to uid {owner}, not to the command's uid {owner + 1}, so nothing "
+                   "was changed: run it as the platform's user, as docker exec does by default; if it ran so, the "
+                   "store is not the platform's own: restore the data disk (step 9)\n")
+        monkeypatch.setattr(os, "geteuid", lambda: owner + 1)
+        for entry, argv in ((rm.main, ["bob"]), (sp.main, ["admin"])):
+            assert entry(argv) == 1, entry.__module__
+            out = capsys.readouterr()
+            assert another in out.err, out
+        monkeypatch.setattr(os, "geteuid", real_euid)
+
+        def turning(prompt=""):                   # ...and again under the lock: the user changes while the name is asked
+            monkeypatch.setattr(os, "geteuid", lambda: owner + 1)
+            return "bob"
+        monkeypatch.setattr("builtins.input", turning)
+        assert rm.main(["bob"]) == 1
+        monkeypatch.setattr(os, "geteuid", real_euid)
+        out = capsys.readouterr()
+        assert another in out.err, out
+        assert mine.read_bytes() == held
+    #  ...a store that holds no admin account is not the platform's: refused before the prompt and again under the lock
+    mine.write_text(json.dumps({"alice": users["alice"], "bob": users["bob"]}), encoding="utf-8")
+    no_admin = mine.read_bytes()
+    monkeypatch.setattr("builtins.input", lambda prompt="": (_ for _ in ()).throw(AssertionError("asked")))
+    assert rm.main(["bob"]) == 1
+    out = capsys.readouterr()
+    unowned = ("refused: the users store holds no admin account, so it is not the platform's, and nothing was changed: "
+               "restore the data disk (step 9)\n")
+    assert unowned in out.err and mine.read_bytes() == no_admin, out
+    mine.write_bytes(raw)
+
+    def dropping(prompt=""):
+        later = json.loads(mine.read_text(encoding="utf-8"))
+        later.pop("admin")
+        mine.write_text(json.dumps(later), encoding="utf-8")
+        left.append(mine.read_bytes())
+        return "bob"
+    monkeypatch.setattr("builtins.input", dropping)
+    assert rm.main(["bob"]) == 1
+    out = capsys.readouterr()
+    assert unowned in out.err and mine.read_bytes() == left[-1], out
+    #  ...an entry that is not an account is said as that (and by set_password)
+    mine.write_text(json.dumps({"admin": users["admin"], "carol": "w1198 not an account"}), encoding="utf-8")
+    assert rm.main(["carol"]) == 1
+    out = capsys.readouterr()
+    assert "refused: the users store's entry for 'carol' is not an account, so nothing was changed" in out.err, out
+    mine.write_text(json.dumps({"admin": "w1198 not an account"}), encoding="utf-8")
+    assert sp.main(["admin"]) == 1
+    out = capsys.readouterr()
+    assert "refused: the users store's entry for 'admin' is not an account, so nothing was changed" in out.err, out
+    #  ...a name that itself says nothing was changed is still told so: a reason is marked by its type, not its words
+    mine.write_bytes(raw)
+    for entry in (rm.main, sp.main):
+        assert entry(["w1198 nothing was changed"]) == 1, entry.__module__
+        out = capsys.readouterr()
+        assert ("refused: the users store holds no account named 'w1198 nothing was changed', so nothing was "
+                "changed\n") in out.err, out
+    #  ...a name that starts with '-', or is blank, is taken after --
+    mine.write_text(json.dumps({"admin": users["admin"], "-bob": account("-bob", "user", "2026-11-22T09:11:00Z"),
+                                " ": account(" ", "user", "2026-11-22T09:12:00Z")}), encoding="utf-8")
+    assert rm.main(["-bob"]) == 2 and rm.main([" "]) == 2 and rm.main(["--"]) == 2 and rm.main(["--", "a", "b"]) == 2
+    for name in ("-bob", " "):
+        monkeypatch.setattr("builtins.input", lambda prompt="", typed=name: typed)
+        assert rm.main(["--", name]) == 0, repr(name)
+    capsys.readouterr()
+    assert json.loads(mine.read_text(encoding="utf-8")) == {"admin": users["admin"]}
+    #  ...a platform whose users store is not the one read
+    mine.write_bytes(raw)
+    other = tmp_path / "w1198-elsewhere" / "users.json"
+    other.parent.mkdir()
+    other.write_bytes(raw)
+    monkeypatch.setattr(core, "_USER_STORE", other)
+    monkeypatch.setattr("builtins.input", lambda prompt="": "bob")
+    both = (mine.read_bytes(), other.read_bytes())
+    assert rm.main(["bob"]) == 1
+    out = capsys.readouterr()
+    assert "refused: the platform's users store is not the one that was read, so nothing was changed" in out.err, out
+    assert (mine.read_bytes(), other.read_bytes()) == both, "a store was written that was not the one read"
+    monkeypatch.setattr(core, "_USER_STORE", mine)
+    #  ...the removal itself never takes the admin, whoever calls it
+    assert rm.remove("admin") == (None, "the admin account is never removed: it is the account the Owner signs in with")
+    assert mine.read_bytes() == raw
+    #  ...and read as code: the store read strictly before core is imported, and again inside the lock before it writes
+    source = read("agentic_core/auth/remove_account.py")
+    code = _code_only(source.split('"""', 2)[2])
+    entry_code = code.split("\ndef main(", 1)[1]
+    assert entry_code.index("_removable(store, username)") < entry_code.index("from agentic_core.auth import core"), (
+        "the store is not read whole before core is imported")
+    part = code.split("\ndef remove(", 1)[1].split("\ndef ", 1)[0]
+    assert part.index("with core._users_mutation():") < part.index("_removable(core._USER_STORE, username)") < part.index(
+        "core._save_users(users)"), "the store is not read again, and written, inside its lock"
+    assert "read_json_strict(store, None, dict)" in code and code.count("core._save_users(") == 1, (
+        "the store is not read strictly, or is written in more than one place")
+    tree = ast.parse(source)
+    for node in ast.walk(tree):                   # docstrings blanked: what is left is what the module does
+        body = getattr(node, "body", None)
+        if (isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and body
+                and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant)
+                and isinstance(body[0].value.value, str)):
+            body[0].value.value = ""
+    bare = ast.unparse(tree)
+    for leak in ("open(", "write_text", "write_bytes", "UEG", "logging", "environ", "getenv", "json.load"):
+        assert leak not in bare, ("the command writes, logs, reads tolerantly or reads beyond the users store", leak)
+
+    #  R5. THE EFFECT, with sign-in on in this process: what was issued to alice before the removal is refused after it.
+    #  The tokens are the sign-in route's own, so this holds what happens, not what a token carries
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    password = "w1198 a made-up password"
+    hashed = core._pwd_ctx.hash(password)
+    mine.write_text(json.dumps({name: dict(account(name, role, made), hashed_password=hashed) for name, role, made in (
+        ("admin", "admin", "2026-11-22T09:00:00Z"), ("alice", "user", "2026-11-22T09:05:00Z"),
+        ("bob", "viewer", "2026-11-22T09:07:00Z"))}), encoding="utf-8")
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    monkeypatch.setattr(core, "_ATTEMPTS", {})          # failed sign-ins other tests counted are not this leg's
+    app = FastAPI()
+    app.include_router(core.router)
+    bearer_of = lambda t: {"Authorization": f"Bearer {t}"}  # noqa: E731
+    with TestClient(app) as tc:
+        def signed_in(name):
+            got = tc.post("/api/v1/auth/token", data={"username": name, "password": password})
+            assert got.status_code == 200, (name, got.status_code, got.text[:200])
+            return got.json()
+        alice, bob = signed_in("alice"), signed_in("bob")
+        access, refresh = alice["access_token"], alice["refresh_token"]
+        assert tc.get("/api/v1/auth/me", headers=bearer_of(access)).json().get("username") == "alice"
+        issued = tc.post("/api/v1/auth/api-key", headers=bearer_of(access))
+        assert issued.status_code == 200, issued.text[:300]
+        key = issued.json()["api_key"]
+        assert tc.get("/api/v1/auth/me", headers=bearer_of(key)).json().get("username") == "alice"
+        monkeypatch.setattr("builtins.input", lambda prompt="": "alice")
+        assert rm.main(["alice"]) == 0
+        out = capsys.readouterr()
+        assert out.out.startswith("Removed alice (role user) from the users store on the data disk, with 1 API key."), out
+        for what, answer, detail in (
+                ("its token", tc.get("/api/v1/auth/me", headers=bearer_of(access)), "User not found."),
+                ("its API key", tc.get("/api/v1/auth/me", headers=bearer_of(key)), "API key not recognised."),
+                ("its refresh token", tc.post("/api/v1/auth/refresh", json={"refresh_token": refresh}), "User not found.")):
+            assert (answer.status_code, answer.json().get("detail")) == (401, detail), (
+                what, "still signs in to the removed account", answer.status_code, answer.text[:200])
+        assert tc.get("/api/v1/auth/me", headers=bearer_of(bob["access_token"])).json().get("username") == "bob", (
+            "bob's sign-in was lost")
+
+    #  R6. THE REGISTER: FU-1836 closed by this round as built, and the three rows it found open on P4.1
+    fu = rows["FU-1836"]
+    assert (fu["title"], fu["slot"]) == ("No command removes an account from the users store, so an unwanted one is "
+                                         "removed only by editing users.json by hand", "P4.1"), fu["title"]
+    listed = subprocess.run(["git", "-C", str(root), "ls-files", "--", "agentic_core/auth/remove_account.py"],
+                            capture_output=True, text=True)
+    assert listed.returncode == 0, ("git could not list the index", listed.stderr[-300:])
+    if (fu["status"], fu.get("closed_by"), fu.get("because")) == ("done", "W1198", "built"):
+        note = fu.get("close_note") or ""
+        assert note.startswith("Built in W1198: ") and "python -m agentic_core.auth.remove_account NAME" in note, note[:300]
+    else:
+        assert fu["status"] == "open" and not fu.get("closed_by"), (
+            "FU-1836 was closed, and not by this round as built", fu["status"], fu.get("closed_by"))
+        assert not listed.stdout.strip(), (
+            "the command is in git's index and FU-1836 is still open: the round's close step did not run")
+    for row, measured in (
+            (token, ("the old access token answered GET /api/v1/auth/me as the new account",
+                     "the old refresh token was exchanged for new tokens (200)",
+                     "a refresh token past its own expiry was refused (401) while the one it had been exchanged for was "
+                     "accepted (200)", "carry the account's user_id in each token",
+                     "an old access token of a user account answered the admin-only GET /api/v1/auth/users (200) once "
+                     "the name was given to an admin account")),
+            (records, ("the new account read the first account's workspace, its history and preferences included "
+                       "(GET /api/v1/user/workspace, 200)", "B8's planned erasure (FU-1863)",
+                       "refuse them at register and signup through W864's _reserved_name_refusal (409)",
+                       "own records by the account's user_id", "so B8 would not erase someone this command has "
+                       "already removed", "a stranger who did so read the removed person's workspace (200)",
+                       "So this row is fixed before self-serve sign-up is switched on.",
+                       "with a way for the admin to give a removed name back to the same person")),
+            (bearer, ("sent as the bearer, answered GET /api/v1/auth/me as the account (200)",
+                      "get_current_user refuses a token whose payload's type is not access, with 401",
+                      "never fails a request"))):
+        assert (row["slot"], row["severity"], row["files"], row["owner_gated"]) == (
+            "P4.1", "low", ["agentic_core/auth/core.py"], False), (row["id"], row["slot"], row["severity"], row["files"])
+        assert row["status"] == "open" or row.get("closed_by") not in (None, "W1198"), ("W1198 closed a row it found",
+                                                                                     row["id"])
+        for said in measured:
+            assert said in row["why"], (row["id"], "does not say", said)
+    assert records["slot_source"].endswith("; fixed before self-serve sign-up (P4.2) is switched on"), (
+        records["slot_source"])
+    assert int(token["id"][3:]) < int(records["id"][3:]) < int(bearer["id"][3:]), (
+        "the three rows are not in the order registered", token["id"], records["id"], bearer["id"])
+    #  ...the token lives the token and bearer rows state are core's defaults, which the release machine does not
+    #  change, while either row is open
+    if token["status"] == "open" or bearer["status"] == "open":
+        core_src = read("agentic_core/auth/core.py")
+        for default in (r'os\.getenv\(\s*"ACCESS_TOKEN_TTL"\s*,\s*"60"\s*\)',
+                        r'os\.getenv\(\s*"REFRESH_TOKEN_TTL"\s*,\s*"10080"\s*\)'):
+            assert re.search(default, core_src), ("core's token life is not what the rows say", default)
+        for rel in ("deploy/gcp/startup.sh", "Dockerfile"):
+            assert "TOKEN_TTL" not in read(rel), (rel, "the release machine sets a token's life")
+
+    #  R7. THE GUIDE: step 12, between the accounts' check and the domain, keeping W1191's way forward whole
+    sec = read("docs/DEPLOYMENT.md").split("## The Google Cloud deploy, step by step (P4.5)", 1)[1].split("\n## ", 1)[0]
+    numbers = [int(n) for n in re.findall(r"^\*\*Step (\d+)\. ", sec, re.M)]
+    assert numbers[:12] == list(range(1, 13)), ("the steps W1198's text cites were renumbered", numbers)
+    twelve = " ".join(re.split(r"^\*\*Step \d+\. ", sec, flags=re.M)[12].split())
+    blocks = [" ".join(b.replace("\\\n", " ").split()) for b in re.findall(r"```bash\n(.*?)```", sec, re.S)]
+    command = "sudo docker exec -it workstation python -m agentic_core.auth.remove_account NAME"
+    users_cmd = ("sudo docker exec workstation python -c \"import json; [print(n, u.get('role'), u.get('created_at', "
+                 "'-')) for n, u in sorted(json.load(open('/app/data/users.json')).items())]\"")
+    assert blocks.count(command) == 1 and f"```bash {command} ```" in twelve, (
+        "step 12 does not give the command once, in its own block")
+    assert [b for b in blocks if "users.json" in b] == [users_cmd], (
+        "a command in the deploy writes users.json, or the accounts' check is gone",
+        [b[:90] for b in blocks if "users.json" in b])
+    for kept_here in ("It prints admin's line, and one for each account the Owner made.",
+                      "Any account the Owner did not make is a reason to stop, and one made before sign-in was turned on "
+                      "is the kind to distrust",
+                      "Then the domain is not set.",
+                      "The data disk is restored from a snapshot taken before that account (step 9; the snapshots are "
+                      "daily, so on the first day there may be none)",
+                      "or, before any record matters, the platform starts again on a blank data disk",
+                      "and what reached the forwarded port is found before a tunnel is opened again."):
+        assert twelve.count(kept_here) == 1, ("W1191's way forward for an account the Owner did not make is not kept "
+                                              "whole", kept_here)
+    said_here = [
+        "An account the Owner made and no longer wants is removed with a command, never by editing users.json by hand "
+        "(W1198).",
+        "It is not for an account the Owner did not make: whatever made that one may have done more than make an "
+        "account, so the data disk is restored, as above.",
+        "The command is run on the machine, NAME being the account's name:",
+        "It shows the account's role, when it was made and how many API keys it holds, and asks for the name again. It "
+        "removes the account only when the two names match.",
+        "It refuses the admin account and a name the store does not hold. It refuses a users store that is not there, "
+        "cannot be read whole or holds no admin account.",
+        "It takes the account and its API keys out of the users store, and nothing else: the person's records in the "
+        "platform's other stores are not touched.",
+        "The account's sign-in tokens are refused from their next request.",
+        "Then the accounts are checked again, as above.",
+        "A users store the command refuses as not read whole, unreadable or another user's is not edited."]
+    guide_never = never("A removed name is given to no other person: ", f"the person's records in the platform's "
+                        f"other stores stay under that name, so an account given it would be shown them "
+                        f"({records['id']})", f"a sign-in token issued before the removal would sign in to that "
+                        f"account ({token['id']})")
+    if guide_never:
+        said_here.append(guide_never)
+    if token["status"] != "open":
+        assert "would sign in to that account" not in twelve and f"({token['id']})" not in twelve, (
+            "step 12 still says an old token signs in to an account given a removed name")
+    if rows["FU-1834"]["status"] == "open":
+        said_here.append("The platform is not restarted on it before the data disk is restored (step 9): its boot "
+                         "replaces a store it cannot read with one holding only the admin account (FU-1834).")
+    for said in said_here:
+        assert twelve.count(said) == 1, ("step 12 does not say, once", said)
+    at = [twelve.index(s) for s in ("Create step 6's rule now", "GET /api/v1/auth/users", users_cmd,
+                                    "Then the domain is not set.", "a tunnel is opened again.",
+                                    "An account the Owner made and no longer wants", command,
+                                    "Then the accounts are checked again", "--metadata=domain=DOMAIN,auth-enabled=true")]
+    assert at == sorted(at), ("step 12's order: the rule, the accounts' check, the way forward, the command, the check "
+                              "again, and then the domain", at)
