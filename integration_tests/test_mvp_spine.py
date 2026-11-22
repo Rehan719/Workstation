@@ -90594,9 +90594,10 @@ def test_w1096_fu1272_the_decisions_the_one_list_names_are_held_by_their_own_rou
 
 
 def test_w1097_fu1274_every_route_the_entity_walk_passes_over_is_named_and_held(client, monkeypatch):
-    """FU-1274 (W1097). W1075's walk drives every route that takes an entity's id as a second person, and passes over
-    every route whose path names something else, so an entity named in such a route's body was never driven: that is
-    how the curate route passed it (FU-1271). Held here:
+    """FU-1274 (W1097). W1075's walk drives as a second person every route whose path names only entities, other
+    than its streams, and passes over every route whose path names something else, so an entity named in such a
+    route's body was never driven: that is how the curate route passed it (FU-1271). A route whose path names an
+    entity and something else is driven as a second person by test_w1207 (FU-1858). Held here:
     - every route the walk passes over that names an entity in its query or its body is named, with the test that
       holds it, so a new one is said rather than taken as held;
     - each of the four this test holds is driven as the second person against the first person's entity and
@@ -102521,3 +102522,258 @@ def test_w1204_an_entity_repository_says_no_terms_have_been_chosen_and_the_gener
         assert (r["slot"], r["severity"], bool(r.get("owner_gated"))) == ("P3.30", "low", False) and words in r["title"], r
         assert r["status"] == "open" or (r["status"], r.get("closed_by"), r.get("because")) == ("done", "W1204", "built"), (
             rid, r["status"], r.get("closed_by"), r.get("because"))
+
+
+def test_w1207_the_archive_index_uses_no_embedding_and_every_entity_route_with_a_second_path_parameter_answers_a_second_person_as_no_entity(
+        client, monkeypatch, tmp_path):
+    """FU-1844 (W1207, key A4), P3.30; and FU-1858 (W1207, key B4), P5.1.
+    A4. The archive's search basis and the Horizon page said no embedding backend is installed, while chromadb and its
+    ONNX runtime are (requirements.txt). What is true is that this index computes no embedding, and that is what they
+    say now: the basis says this index uses no embedding model, and the page draws `embeddings: none used by this
+    index` with the server's basis beside it. Held here:
+    A1. a scan of a made-up inbox, read back through GET /api/v1/horizon/archive: no embedding backend, 'no embedding'
+        in the search basis and nothing said about what is installed; the search's own basis still says it is not
+        semantic recall and claims nothing installed either;
+    A2. no .py module under agentic_core and no .ts, .tsx, .js, .jsx or .json file of the app under
+        apps/workstation-superapp/src carries the old words, read also where a sentence is split across lines (a
+        Python string carried on, a comment's next line);
+    A3. the captured fixtures the rendered tests serve carry the live manifest's search basis;
+    A4. the page draws the new words in the testid test_w599 reads, its rendered test expects them and the server's
+        basis beside them, and P3.22 of the plan carries the dated note, its clause's words kept, as do the
+        rows of docs/HORIZON_INTEGRATION.md and docs/NATIVE_AI_FABRIC_ROADMAP.md that said the surface reports
+        `embeddings: none installed`.
+    B4. W1075's census skips every route with a path parameter that is not an entity's, so the eight entity routes with
+    a second path parameter were driven for no second person with sign-in on. Held here, with sign-in on in this
+    process and two made-up people:
+    B1. the census of the class: the mounted routes with an entity path parameter and another path parameter are
+        exactly HELD's eight, each named with the test that holds it, and each of those tests is in the suite;
+    B2. the first person establishes an entity, generates its website, web app and phone app, attaches a specialist,
+        produces a deliverable, writes its design section and gates the design stage; each of the eight, and the phone
+        app's trailing-slash address, is driven as the second person with values the route accepts and a body that
+        passes validation, and answers exactly as an id that names no entity does (status and normalised body), never
+        with the first person's canary or name;
+    B3. nothing of the first person's changed under the second person's calls: the specialist still holds a place,
+        no signature is recorded, the design gate has no decision and the design section is the first person's;
+    B4. the first person is answered last, as the positive control: 200 on every one, the generated pages carrying
+        the canary, and each write recorded;
+    B5. no call in the test answered 500."""
+    import datetime as dt
+    import json
+    import pathlib
+    import re
+    import uuid
+    from fastapi.routing import APIRoute
+    import agentic_core.auth.core as _ac
+    from agentic_core.api import entity_specialists as _es
+    from agentic_core.api import vsb as _vs
+    from agentic_core.horizon import archive as _ar
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")  # noqa: E731
+    rows = {r.get("id"): r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"] if isinstance(r, dict)}
+    for rid, slot in (("FU-1844", "P3.30"), ("FU-1858", "P5.1")):
+        r = rows[rid]
+        assert r["slot"] == slot and (r["status"] == "open" or (r["status"], r.get("closed_by"), r.get("because")) == (
+            "done", "W1207", "built")), (rid, r["status"], r.get("closed_by"), r["slot"])
+
+    #  A1. the manifest a scan writes, read back through the route, and the search's own basis
+    box = tmp_path / "w1207-inbox"
+    box.mkdir()
+    (box / "w1207-note.md").write_text("# a made-up note\nthe w1207lexical word, read into the index\n", encoding="utf-8")
+    monkeypatch.setattr(_ar, "_inbox", lambda: str(box))
+    monkeypatch.setattr(_ar, "_store", lambda: tmp_path / "w1207-asset_index.json")
+    scanned = client.post("/api/v1/horizon/archive/scan")
+    assert scanned.status_code == 200 and scanned.json()["counts"]["INDEXED"] == 1, scanned.text[:300]
+    got = client.get("/api/v1/horizon/archive")
+    assert got.status_code == 200, got.text[:300]
+    man = got.json()["manifest"]
+    basis = man["search_basis"]
+    assert man["embedding_backend"] is None and "no embedding" in basis.lower(), basis
+    assert "installed" not in basis.lower(), ("the search basis says what is installed, not what this index uses", basis)
+    assert "this index uses no embedding model" in basis and "not semantic recall" in basis, basis
+    hit = client.get("/api/v1/horizon/archive/search", params={"term": "w1207lexical"})
+    assert hit.status_code == 200 and hit.json()["passages_matched"] == 1, hit.text[:300]
+    assert hit.json()["embedding_backend"] is None and "not semantic recall" in hit.json()["basis"], hit.json()["basis"]
+    assert "installed" not in hit.json()["basis"].lower(), hit.json()["basis"]
+
+    #  A2. the old words nowhere in the backend or the app, read also across a line break
+    OLD = ("no embedding backend installed", "embedding backend installed", "no embeddings are installed",
+           "embeddings: none installed", "'none installed'")   # the old drawn words and the page's old literal
+
+    def joined(text):
+        """The text as one line: a Python string carried on to the next line, and a comment's next line, joined."""
+        t = re.sub(r"([\"'])\s*\n\s*(?:f|r|b|rb|fr)?\1", " ", text)
+        t = re.sub(r"\n\s*(?://+|#+|\*+(?!/))?", " ", t)
+        return " ".join(t.split()).lower()
+    src = root / "apps/workstation-superapp/src"
+    scanned_files = sorted((root / "agentic_core").rglob("*.py")) + sorted(
+        p for p in src.rglob("*") if p.suffix in (".ts", ".tsx", ".js", ".jsx", ".json") and "node_modules" not in p.parts)
+    assert len(scanned_files) > 500, len(scanned_files)
+    said = sorted({(p.relative_to(root).as_posix(), w) for p in scanned_files
+                   for w in OLD if w in joined(p.read_text(encoding="utf-8", errors="replace"))})
+    assert said == [], ("a module or the app still says what is installed, not what this index uses", said)
+
+    #  A3. the fixtures the rendered tests serve carry the live manifest's basis
+    page_dir, comp_dir = src / "pages/governance", src / "components"
+    fx_page = json.loads((page_dir / "HorizonCompanion.fixture.json").read_text(encoding="utf-8"))
+    fx_panel = json.loads((comp_dir / "ArchiveSearchPanel.fixture.json").read_text(encoding="utf-8"))
+    assert fx_page["archive_scanned"]["manifest"]["search_basis"] == basis, "HorizonCompanion.fixture.json is stale"
+    assert fx_panel["scan"]["body"]["search_basis"] == basis == scanned.json()["search_basis"], (
+        "ArchiveSearchPanel.fixture.json is stale")
+
+    #  A4. the page, its rendered test and the plan's dated note
+    page = (page_dir / "HorizonCompanion.tsx").read_text(encoding="utf-8")
+    assert page.count('data-testid="horizon-archive-embeddings"') == 1
+    assert "? 'none used by this index' : String(archive.manifest.embedding_backend)}" in page
+    spec = (page_dir / "HorizonCompanion.test.tsx").read_text(encoding="utf-8")
+    assert ("expect(within(panel).getByTestId('horizon-archive-embeddings').textContent).toBe('embeddings: none used "
+            "by this index');") in spec
+    assert "expect(within(panel).getByTestId('horizon-archive-embeddings-basis').textContent).toBe(m.search_basis);" in spec
+    plan = read("docs/FABLE_DELIVERY_PROMPT.md")
+    p322 = " ".join(plan.split("\n P3.22 ", 1)[1].split("\n P3.23 ", 1)[0].split())
+    assert "the surface states `embeddings: none installed` rather than implying semantic recall" in p322
+    assert ("W1207 (2026-11-22), built (row FU-1844): the archive's search basis says that this index uses no embedding "
+            "model, and the Horizon page draws `embeddings: none used by this index` with that basis beside it") in p322
+    note = ("W1207 (2026-11-22, FU-1844): the surface draws `embeddings: none used by this index`; chromadb and "
+            "onnxruntime are installed for another module (FU-1843), so this index, not the machine, uses no embedding.")
+    for rel, row_words in (("docs/HORIZON_INTEGRATION.md", "reports `embeddings: none installed` rather than implying"),
+                           ("docs/NATIVE_AI_FABRIC_ROADMAP.md", "report `embeddings: none installed`, and never imply"),
+                           ("docs/NATIVE_AI_FABRIC_ROADMAP.md", "`embeddings: none installed` stated rather than implied.")):
+        row = [ln for ln in read(rel).splitlines() if row_words in ln]
+        assert len(row) == 1 and row[0].count(note) == 1, (rel, row_words, "the row does not carry W1207's dated note")
+
+    #  B1. THE CENSUS OF THE CLASS W1075's walk passes over: an entity path parameter beside another one
+    ENTITY = {"vsb_id", "entity_id", "twin_id", "scope", "vid", "from_vsb", "to_vsb", "parent_id", "target_vsb",
+              "vsb", "entity", "parent_vsb", "child_vsb", "source_vsb", "target_id", "client_vsb", "provider_vsb"}
+
+    def entityish(n):
+        return n in ENTITY or "vsb" in n or n.endswith("entity_id")
+    mounted, mixed = set(), set()
+    for route in client.app.routes:
+        if not isinstance(route, APIRoute):
+            continue
+        mounted.update((m, route.path) for m in (route.methods or ()))
+        pn = [p.name for p in route.dependant.path_params]
+        if [n for n in pn if entityish(n)] and [n for n in pn if not entityish(n)]:
+            mixed.update((m, route.path) for m in (route.methods or ()))
+    V, ES = "/api/v1/vsb/{vsb_id}", "/api/v1/entity-specialists/{vsb_id}/{specialist_id}"
+    HELD = {("GET", V + "/website/page/{name}"): ("test_w1207",),
+            ("GET", V + "/webapp/page/{name}"): ("test_w1207",),
+            ("GET", V + "/mobile/page/{name}"): ("test_w1207",),
+            ("POST", V + "/body/{section}"): ("test_w1207",),
+            ("GET", V + "/review-gates/{stage}"): ("test_w1207",),
+            ("POST", V + "/review-gates/{stage}/decision"): ("test_w1207",),
+            ("POST", ES + "/retire"): ("test_w1207",),
+            ("POST", ES + "/sign"): ("test_w934", "test_w1207")}
+    assert mixed == set(HELD), ("an entity route with a second path parameter is not named with the test that holds "
+                                "it, or a named one is gone", sorted(mixed ^ set(HELD)))
+    suite = pathlib.Path(__file__).read_text(encoding="utf-8")
+    assert all(f"\ndef {t}_" in suite for ts in HELD.values() for t in ts), "a test named for a route is not in the suite"
+    SLASH = ("GET", V + "/mobile/page/")                 # the phone app's own address: no second parameter, same handler
+    assert SLASH in mounted and SLASH not in mixed
+
+    #  B2. two made-up people, sign-in on in this process; the roster and the signatures in stores of this test's own
+    monkeypatch.setattr(_es, "_path", lambda: tmp_path / "w1207-entity_specialists.json")
+    monkeypatch.setattr(_es, "_signed_path", lambda: tmp_path / "w1207-entity_signatures.json")
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    tag, canary = uuid.uuid4().hex[:6], uuid.uuid4().hex[:12]
+    who = {k: f"w1207-{k}-{tag}" for k in ("one", "two")}
+    users = _ac._load_users()
+    for name in who.values():
+        users[name] = {"user_id": name, "username": name, "hashed_password": _ac._pwd_ctx.hash("pw12345678"),
+                       "role": "user", "created_at": "2026-11-22T00:00:00Z", "api_keys": []}
+    _ac._save_users(users)
+    H = {}
+    for k, name in who.items():
+        tok = client.post("/api/v1/auth/token", data={"username": name, "password": "pw12345678"})
+        assert tok.status_code == 200, tok.text[:200]
+        H[k] = {"Authorization": "Bearer " + tok.json()["access_token"]}
+    seen = []
+
+    def post(path, k, body=None):
+        r = client.post(path, headers=H[k], json=body)
+        seen.append(("POST", path, k, r.status_code))
+        return r
+    est = post("/api/v1/genesis/establish", "one", {"problem": f"w1207 canary mission {canary}", "ship_output": False,
+                                                    "name": f"W1207 Canary {canary}"})
+    assert est.status_code == 200, est.text[:300]
+    vid, missing = est.json()["vsb_id"], f"w1207-no-entity-{tag}"
+    for kind in ("website", "webapp", "mobile"):                   # before the gate, which holds the generators
+        r = post(f"/api/v1/vsb/{vid}/{kind}", "one")
+        assert r.status_code == 200, (kind, r.status_code, r.text[:300])
+    day = lambda n: (dt.date.today() + dt.timedelta(days=n)).isoformat()   # noqa: E731
+    spec_r = post(f"/api/v1/entity-specialists/{vid}", "one", {
+        "name": "A. Example (a made-up record)", "discipline": _es.DISCIPLINES[0], "credential_as_stated":
+        "stated for this test", "reviews": "the entity's reports", "lapses_on": day(200)})
+    assert spec_r.status_code == 200, spec_r.text[:300]
+    sid = spec_r.json()["specialist"]["specialist_id"]
+    made = post("/api/v1/deliverables/produce", "one", {"vsb_id": vid, "type": "report", "title": f"W1207 report {canary}",
+                                                       "brief": "w1207 a made-up report to be signed"})
+    assert made.status_code == 200, made.text[:300]
+    did = made.json()["id"]
+    ours = f"w1207 the first person's own design section {canary}"
+    assert post(f"/api/v1/vsb/{vid}/body/design", "one", {"text": ours}).status_code == 200
+    gated = post(f"/api/v1/vsb/{vid}/review-gates", "one", {"stages": ["design"]})
+    assert gated.status_code == 200 and gated.json()["stages"] == ["design"], gated.text[:300]
+    later = "w1207 a made-up design section, written last"
+    signing = {"deliverable_id": did, "reviewed": "the report's recommendations", "date": day(0), "lapses_on": day(100)}
+    DRIVE = {("GET", V + "/website/page/{name}"): ({"name": "index"}, None),
+             ("GET", V + "/webapp/page/{name}"): ({"name": "index"}, None),
+             ("GET", V + "/mobile/page/{name}"): ({"name": "index"}, None),
+             ("GET", V + "/review-gates/{stage}"): ({"stage": "design"}, None),
+             ("POST", V + "/body/{section}"): ({"section": "design"}, {"text": later}),
+             ("POST", ES + "/sign"): ({"specialist_id": sid}, signing),
+             ("POST", V + "/review-gates/{stage}/decision"): ({"stage": "design"}, {"decision": "approve"}),
+             ("POST", ES + "/retire"): ({"specialist_id": sid}, {"reason": "w1207 a made-up reason"})}
+    assert set(DRIVE) == set(HELD), "a held route is not driven"
+    DRIVE = {SLASH: ({}, None), **DRIVE}            # the writes last, so the owner's approve and retire come last
+    VOLATILE = re.compile(r'"(timestamp|generated_at|read_at|checked_at|measured_at|at|now|ts|elapsed_ms|duration_ms|'
+                          r'took_ms|run_id|request_id|id|session_id|transformation_id|cca_id)"\s*:\s*'
+                          r'("[^"]*"|-?[0-9.eE+-]+|null)')
+
+    def norm(text, eid):                            # W1075's: the id and the per-call fields read out of the answer
+        return VOLATILE.sub(r'"\1": "~"', text.replace(eid, "<ID>"))
+
+    def call(key, eid, k):
+        (method, tmpl), (fills, body) = key, DRIVE[key]
+        path = tmpl.replace("{vsb_id}", eid)
+        for n, v in fills.items():
+            path = path.replace("{" + n + "}", v)
+        r = client.request(method, path, headers=H[k], json=body)
+        seen.append((method, path, k, r.status_code))
+        return r
+    wrong = []
+    for key in DRIVE:
+        r2, rm = call(key, vid, "two"), call(key, missing, "two")
+        if (r2.status_code, norm(r2.text, vid)) != (rm.status_code, norm(rm.text, missing)):
+            wrong.append((key, "another person's entity", r2.status_code, r2.text[:160], "no entity", rm.status_code,
+                          rm.text[:160]))
+        elif r2.status_code < 400:
+            wrong.append((key, "answered the second person", r2.status_code, r2.text[:160]))
+        if canary in r2.text or who["one"] in r2.text:
+            wrong.append((key, "the second person was answered with the first person's canary or name"))
+    assert wrong == [], wrong
+
+    #  B3. nothing of the first person's changed under the second person's calls
+    rec = _vs._load_vsb(vid)
+    assert not ((rec.get("review_gates") or {}).get("decisions") or {}).get("design"), rec.get("review_gates")
+    assert (rec.get("genesis_blueprint") or {}).get("design") == ours, "the second person wrote the design section"
+    roster = client.get(f"/api/v1/entity-specialists/{vid}", headers=H["one"]).json()
+    assert [s["specialist_id"] for s in roster["active"]] == [sid] and roster["retired"] == [], roster
+    assert not _es._read_signed().get(vid), "a signature was recorded for the second person"
+
+    #  B4. THE POSITIVE CONTROL, last: the first person is answered on each, and each write is recorded
+    for key in DRIVE:
+        r = call(key, vid, "one")
+        assert r.status_code == 200, (key, r.status_code, r.text[:300])
+        if "/page/" in key[1]:
+            assert canary in r.text, (key, "the generated page does not carry the canary the second person's legs read")
+    rec = _vs._load_vsb(vid)
+    assert rec["genesis_blueprint"]["design"] == later and rec["review_gates"]["decisions"]["design"]["decision"] == "approve"
+    assert rec["review_gates"]["decisions"]["design"]["decided_by"] == who["one"]
+    signed = _es._read_signed().get(vid) or []
+    assert [(s["specialist_id"], s["entered_by"]) for s in signed] == [(sid, who["one"])], signed
+    assert [s["specialist_id"] for s in client.get(f"/api/v1/entity-specialists/{vid}",
+                                                   headers=H["one"]).json()["retired"]] == [sid]
+
+    #  B5. no call in the test answered 500
+    assert not [c for c in seen if c[3] >= 500], [c for c in seen if c[3] >= 500]

@@ -7,7 +7,7 @@ type Dict = Record<string, any>;
 /**
  * FU-462 (P3.23) — a SEARCH over the owned index, on a page. Located passages show their document and line;
  * a passage that exists but cannot be cited says so (not_citable, citation_basis); files the search could not
- * look inside are named. Lexical only: no embeddings are installed, and the result says what it searched.
+ * look inside are named. Lexical only: this index uses no embedding, and the result says what it searched.
  */
 export const ArchiveSearchPanel: React.FC = () => {
   const [term, setTerm] = useState('');

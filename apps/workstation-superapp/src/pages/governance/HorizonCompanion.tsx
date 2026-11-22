@@ -133,9 +133,10 @@ export const HorizonCompanion: React.FC = () => {
   const [d, setD] = useState<Records | null>(null);
   const [consumption, setConsumption] = useState<Record<string, Consumption>>({});
   const [err, setErr] = useState('');
-  // P3.22 — the owned knowledge index, SHOWN. Its clause says "the surface states `embeddings: none
-  // installed` rather than implying semantic recall", and measured W598: no page read the archive at all,
-  // so the statement was true in the payload and absent from every screen (the FU-420 class).
+  // P3.22 — the owned knowledge index, SHOWN. Its clause asks the surface to state that this index uses no
+  // embedding rather than imply semantic recall (drawn `embeddings: none used by this index` since W1207, the
+  // dated note at P3.22), and measured W598: no page read the archive at all, so the statement was in the
+  // payload and absent from every screen (the FU-420 class).
   const [archive, setArchive] = useState<any | null>(null);
   //  W978 - a read of what each run consumed that FAILED is said on each card. It was dropped, so every card said
   //  "No ConsumptionRecord was joined to this run" about records nothing had read.
@@ -326,9 +327,9 @@ export const HorizonCompanion: React.FC = () => {
         <p className="text-slate-500 text-xs font-bold leading-relaxed">{d.basis}</p>
       )}
 
-      {/* P3.22 — THE OWNED KNOWLEDGE INDEX, ON A SURFACE. The clause asks for the surface to state
-          `embeddings: none installed` rather than implying semantic recall, and until now no page read the
-          archive at all: the statement was true in the payload and absent from every screen. What a reader
+      {/* P3.22 — THE OWNED KNOWLEDGE INDEX, ON A SURFACE. The clause asks for the surface to state that
+          this index uses no embedding rather than implying semantic recall, and until now no page read the
+          archive at all: the statement was in the payload and absent from every screen. What a reader
           needs is here together — what was indexed, what was NOT read and why, the caps, and the plain
           statement that this is lexical matching and not semantic recall. */}
       <section data-testid="horizon-archive-index" className="rounded-2xl border border-slate-800 bg-slate-950 p-5">
@@ -358,10 +359,11 @@ export const HorizonCompanion: React.FC = () => {
             <p data-testid="horizon-archive-recount" className="text-[9px] text-slate-500 mt-1 leading-relaxed">
               {archive.recount?.basis}
             </p>
-            {/* embeddings: none installed — the clause's own words, and the server's reason beside it */}
+            {/* embeddings: none used by this index — what this index uses, not what the machine has (W1207,
+                FU-1844), and the server's reason beside it */}
             <p data-testid="horizon-archive-embeddings" className="text-[10px] text-amber-400/80 mt-2 leading-relaxed font-bold">
               embeddings: {archive.manifest.embedding_backend === null || archive.manifest.embedding_backend === undefined
-                ? 'none installed' : String(archive.manifest.embedding_backend)}
+                ? 'none used by this index' : String(archive.manifest.embedding_backend)}
             </p>
             <p data-testid="horizon-archive-embeddings-basis" className="text-[9px] text-slate-500 mt-1 leading-relaxed">
               {archive.manifest.search_basis}

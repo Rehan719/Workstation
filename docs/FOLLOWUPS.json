@@ -27251,10 +27251,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1207",
       "note": "",
-      "slot_source": "P3.30: a DOC_OVERCLAIM restated, under its ACCEPT (1)"
+      "slot_source": "P3.30: a DOC_OVERCLAIM restated, under its ACCEPT (1)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1207: the archive's module docstring and its manifest's search_basis say that this index uses no embedding model, so it is not semantic recall, and no longer that no embedding backend is installed (chromadb and onnxruntime are installed, for another module, FU-1843); embedding_backend stays None and search()'s own basis is unchanged. The Horizon page draws 'embeddings: none used by this index' in the element test_w599 reads, with the server's basis beside it; the comment at that element, the panel's section comment and the comment that quoted P3.22's clause across two lines are restated; its rendered test expects the new words; both captured fixtures carry the live manifest's basis; ArchiveSearchPanel's comment says this index uses no embedding; and P3.22 of the plan carries a dated note, its clause's words kept, as do the rows of docs/HORIZON_INTEGRATION.md and docs/NATIVE_AI_FABRIC_ROADMAP.md that told the surface to report the old words. test_w1207 holds it: a scan of a made-up inbox, read back through the route, says no embedding and nothing about what is installed; no .py module under agentic_core and no .ts, .tsx, .js, .jsx or .json file of the app carries the old words, read also across a line break; the fixtures equal the live manifest; and the page, its rendered test and the dated notes carry the new words."
     },
     {
       "id": "FU-1845",
@@ -27517,10 +27520,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1207",
       "note": "",
-      "slot_source": "P5.1, beside FU-1262, FU-1263 and FU-1274, whose census this extends"
+      "slot_source": "P5.1, beside FU-1262, FU-1263 and FU-1274, whose census this extends",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1207: test_w1207 holds the class W1075's census passes over. The mounted routes with an entity path parameter beside another path parameter are exactly eight, each named with the test that holds it (the signature with test_w934 too): the website, web app and phone app pages, the body section, the review gate's status and its decision, and a specialist's retirement and signature. With sign-in on in a test process, the first of two made-up people establishes an entity, generates its website, web app and phone app, attaches a specialist, produces a deliverable, writes its design section and gates the design stage. Each of the eight, and the phone app's trailing-slash address, driven as the second person with values the route accepts and a body that passes validation, answers exactly as an id that names no entity (status and normalised body), never with the first person's canary or name, and changes nothing of the first person's: the specialist still holds a place, no signature is recorded, the design gate has no decision and the design section is the first person's. The first person is answered on each, last, as the positive control, and no call answers 500. No handler answered the second person past its access check, so none changed. test_w1097's docstring names the class test_w1207 now holds."
     },
     {
       "id": "FU-1859",

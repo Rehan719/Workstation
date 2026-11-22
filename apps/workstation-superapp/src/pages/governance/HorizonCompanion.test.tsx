@@ -128,7 +128,7 @@ describe('HorizonCompanion, rendered against the horizon routes\' own answers', 
     expect(screen.queryAllByTestId('companion-record')).toHaveLength(0);
   });
 
-  it('a scanned index shows its counts, its recount, that no embedding is installed, its caps and what it did not read', async () => {
+  it('a scanned index shows its counts, its recount, that this index uses no embedding, its caps and what it did not read', async () => {
     serve();
     render(<HorizonCompanion />);
     const m = captured.archive_scanned.manifest;
@@ -136,7 +136,7 @@ describe('HorizonCompanion, rendered against the horizon routes\' own answers', 
     await waitFor(() => expect(within(panel).getByTestId('horizon-archive-counts').textContent).toBe(
       `${m.counts.INDEXED} file(s) indexed · ${m.counts.NOT_READ} not read · ${m.counts.EXCLUDED} excluded by a secret rule.`));
     expect(within(panel).getByTestId('horizon-archive-recount').textContent).toBe(captured.archive_scanned.recount.basis);
-    expect(within(panel).getByTestId('horizon-archive-embeddings').textContent).toBe('embeddings: none installed');
+    expect(within(panel).getByTestId('horizon-archive-embeddings').textContent).toBe('embeddings: none used by this index');
     expect(within(panel).getByTestId('horizon-archive-embeddings-basis').textContent).toBe(m.search_basis);
     expect(within(panel).getByTestId('horizon-archive-bounds').textContent).toContain(
       `Bounds: at most ${m.bounds.max_files} file(s), ${m.bounds.max_bytes} byte(s) per file, ` +
