@@ -61,8 +61,8 @@ and the open rows that stand between it and being relied on.
   [observed].
 - The Owner's rulings are recorded with their dates in `docs/FABLE_DELIVERY_PROMPT.md`, and a ruling the Owner has not
   made is never assumed [observed].
-- Between this step and being relied on: row FU-1086 (the uncapped final audit has no item that builds or runs it)
-  [owner decision].
+- Between this step and being relied on: row FU-1086, the final audit still to be calibrated and run, open on plan item
+  P5.22 [observed: `docs/FOLLOWUPS.json`].
 
 ## 5. Apply
 
@@ -74,8 +74,8 @@ and the open rows that stand between it and being relied on.
   [observed].
 - The heartbeat performs the beat-driven steps (`agentic_core/organism/heartbeat.py`), read through
   `GET /api/v1/heartbeat/status` (`agentic_core/api/heartbeat.py`). Driven by test_heartbeat_status [observed].
-- Between this step and being relied on: row FU-849 (the opt-in default for an entity registered before the
-  auto-economy flag existed is the Owner's to rule) [owner decision].
+- Between this step and being relied on: row FU-417 and row FU-1072, both open on plan item P5.1, each to close as not
+  reproduced after twenty consecutive green CI runs, as the Owner ruled on 2026-11-21 [observed: `docs/FOLLOWUPS.json`].
 
 ## 6. Record
 
@@ -87,9 +87,7 @@ and the open rows that stand between it and being relied on.
   close with the round that closed it [observed: `docs/FOLLOWUPS.json`].
 - Whether a ratified method amendment was carried out can be read, driven by
   test_w827_whether_a_ratified_method_amendment_was_carried_out_can_be_read [observed].
-- Between this step and being relied on: row FU-1151 (two committed audit run records carry text of a private kind in
-  the public tree) and row FU-1040 (a test double's rows in the Owner's own store, which only the Owner's machine can
-  move aside) [owner decision].
+- Between this step and being relied on: no open row in the register [observed: `docs/FOLLOWUPS.json`].
 
 ## What this map does not do
 

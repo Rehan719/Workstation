@@ -4914,7 +4914,7 @@
       "slot": "P4.4",
       "status": "dropped",
       "closed_by": null,
-      "note": "PREMISE FALSIFIED by verifying before acting (W500). The row said ten dependencies are pinned and imported by nothing, so the gap is wiring. The measurement 'no file imports them' was right; the INFERENCE was wrong. pip show reports opentelemetry-api and -sdk as Required-by: chromadb, and chromadb is LIVE - agentic_core/ai/ceo/memory_v01.py imports it lazily, and memory_v01 is imported by api/v138/ceo.py and avatars/api.py, the same two recall callers FU-280 is about. asyncpg is Required-by: prefect. requirements.txt is a 298-line lock that CI and the Dockerfile both install from, so it carries transitive dependencies by design: removing one would break the install, not tidy it. The Owner had ratified 'retire them', and the retirement was cancelled BEFORE any edit. The two halves went elsewhere: the error-capture gap (app_mvp.py handles RequestValidationError and nothing else, so an uncaught 500 leaves no record) is now P3.25's whole subject, with the retirement removed from it; and the manifest question is re-registered with a proper measurement, because the real figure is about DIRECT declarations, not transitive pins.",
+      "note": "PREMISE FALSIFIED by verifying before acting (W500). The row said ten dependencies are pinned and imported by nothing, so the gap is wiring. The measurement 'no file imports them' was right; the INFERENCE was wrong. pip show reports opentelemetry-api and -sdk as Required-by: chromadb, and chromadb is LIVE - agentic_core/ai/ceo/memory_v01.py imports it lazily, and memory_v01 is imported by api/v138/ceo.py and avatars/api.py, the same two recall callers FU-280 is about. asyncpg is Required-by: prefect. requirements.txt is a 298-line lock that CI and the Dockerfile both install from, so it carries transitive dependencies by design: removing one would break the install, not tidy it. The Owner had ratified 'retire them', and the retirement was cancelled BEFORE any edit. The two halves went elsewhere: the error-capture gap (app_mvp.py handles RequestValidationError and nothing else, so an uncaught 500 leaves no record) is now P3.25's whole subject, with the retirement removed from it; and the manifest question is re-registered with a proper measurement, because the real figure is about DIRECT declarations, not transitive pins. CORRECTED W1193 (2026-11-22): memory_v01 has no production reader - avatars/api.py and ingestion/api.py write to it and nothing calls its query - and the Owner ruled on 2026-11-22 that it is retired (P3.32); its removal is row FU-1843.",
       "tier": 3,
       "slot_source": "W499: the three database pins are P4.4's own pre-flight material, so the row rides the switch they belong to"
     },
@@ -21545,7 +21545,7 @@
       "slot_source": "chartered with the item in this round; it is the item's fourth clause met in existing code",
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
-      "close_note": "The Owner ruled the cautious course on 2026-10-13 and it is built: the generator refuses the listed partnership deed and any id naming a deed, and says it is a hold and not a finding (round W714, merged). The reading of Schedule 2 by a qualified person is still to be made; the hold's own reason says so and it is the condition for lifting it.",
+      "close_note": "The Owner ruled the cautious course on 2026-10-13 and it is built: the generator refuses the listed partnership deed and any id naming a deed, and says it is a hold and not a finding (round W714, merged). The reading of Schedule 2 by a qualified person is still to be made; the hold's own reason says so and it is the condition for lifting it. CORRECTED W1193 (2026-11-22): P5.18 clause 4 was met here only for the deed. Two other doors still draft a reserved instrument: any template id the generator does not list, and a listed template's instructions, parties or the clerk's label; they are rows FU-1866 and FU-1867.",
       "reachability_check": "test_w714_a_deed_is_held_until_a_qualified_person_has_read_the_schedule"
     },
     {
@@ -21760,7 +21760,7 @@
       "tier": 2,
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
-      "close_note": "The hypothesis held when driven (an installed model with no evaluation was promoted) and is fixed: a model is made the serving default only on a recorded evaluation of THIS build on the pinned probe set - one in the lifecycle record that the model served, whose control it passed, run on the probe-set version and digest pinned now, and whose serving identity is the digest the runtime reports for the name now. The digest is kept with the default, and a promotion that recorded its build holds only while that build is installed: a re-pulled build under the same name is not served as the promoted default until it is evaluated and promoted again; /lifecycle says whether the promoted default still holds. A promotion made before this round recorded no build; it keeps serving and is said to be tied to no build. The decision reads the lifecycle's own evaluations and never the on-demand baseline runs, as P3.32 round 8 requires. The Native AI page says '(promoted)' only of the model the promotion serves (it said so whenever any promotion existed, so a fallen-back default read as promoted) and says when a promoted default no longer holds. Guard test_w841, 4 blinds red."
+      "close_note": "The hypothesis held when driven (an installed model with no evaluation was promoted) and is fixed: a model is made the serving default only on a recorded evaluation of THIS build on the pinned probe set - one in the lifecycle record that the model served, whose control it passed, run on the probe-set version and digest pinned now, and whose serving identity is the digest the runtime reports for the name now. The digest is kept with the default, and a promotion that recorded its build holds only while that build is installed: a re-pulled build under the same name is not served as the promoted default until it is evaluated and promoted again; /lifecycle says whether the promoted default still holds. A promotion made before this round recorded no build; it keeps serving and is said to be tied to no build. The decision reads the lifecycle's own evaluations and never the on-demand baseline runs, as P3.32 round 8 requires. The Native AI page says '(promoted)' only of the model the promotion serves (it said so whenever any promotion existed, so a fallen-back default read as promoted) and says when a promoted default no longer holds. Guard test_w841, 4 blinds red. CORRECTED W1193 (2026-11-22): W841 built the evaluation and digest checks, not the licence refusal this row's why named; a model is still promoted with no licence read, which is row FU-1852, under the Owner's ruling of 2026-11-22 that there is no override."
     },
     {
       "id": "FU-1088",
@@ -22706,7 +22706,7 @@
       "slot": "OWNER",
       "status": "dropped",
       "closed_by": null,
-      "note": "Owner ruling 2026-11-06 (W754): download no model candidate for now; when one is wanted, the smallest Apache-2.0 multimodal lead first, once its tag and size are confirmed against the machine's memory",
+      "note": "Owner ruling 2026-11-06 (W754): download no model candidate for now; when one is wanted, the smallest Apache-2.0 multimodal lead first, once its tag and size are confirmed against the machine's memory. CORRECTED W1193 (2026-11-22): the why's \"nothing in the platform pulls a model\" was not so: chromadb's default embedding, which memory_v01 uses, fetches all-MiniLM-L6-v2 from an outside host on first use. The Owner ruled memory_v01 retired on 2026-11-22; its removal is row FU-1843.",
       "slot_source": "OWNER DECISION (M-EXEC-07): downloading a model is the Owner's; W745 registers the leads and downloads nothing"
     },
     {
@@ -25665,7 +25665,7 @@
       "tier": 1,
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
-      "close_note": "Built in the round that registered it: every route that takes an entity id answers a second person as it answers an id that names no entity, never with the entity, its owner or a reply grounded in it; six routes that read or record an id naming no entity (the cycles; a defect, a change, an outcome, a deliverable, a cascade) refuse another person's entity as not found, naming nobody. test_w1075 holds it as a census over every such route (46 GET, 53 POST), with 17 blinds."
+      "close_note": "Built in the round that registered it: every route that takes an entity id answers a second person as it answers an id that names no entity, never with the entity, its owner or a reply grounded in it; six routes that read or record an id naming no entity (the cycles; a defect, a change, an outcome, a deliverable, a cascade) refuse another person's entity as not found, naming nobody. test_w1075 holds it as a census over every such route (46 GET, 53 POST), with 17 blinds. CORRECTED W1193 (2026-11-22): the census passed over the eight entity routes with a second path parameter, which no second person was driven against; they are row FU-1858."
     },
     {
       "id": "FU-1263",
@@ -26756,7 +26756,7 @@
     {
       "id": "FU-1817",
       "title": "OWNER: one solicitor's engagement before anyone but you is invited - the Law pages before any public release, and where other people's data may be kept",
-      "why": "Two questions the plan leaves to you: P5.11 rules that a qualified person's view of the Law pages comes before any public release, and P4.5 that where another person's data may be kept - the free Google Cloud regions are in the United States - is a solicitor's question, answered before anyone else's data is stored there. RECOMMENDED (accepted 2026-11-20, evening): one engagement covering both, booked once the first deploy is up; nothing is public, and no one but you is invited, until it has answered. OWNER RULING 2026-11-21 (the recommendations accepted): P5.18 clause 4's comparison of named finance products stays closed: no named finance product is compared. If a comparison is ever wanted, whether showing named finance offers is credit broking is put to this engagement first: PERG 2, read in W1182, does not say whether it is effecting an introduction or presenting or offering an agreement. OWNER RULING 2026-11-22 (the recommendations accepted): the engagement also carries written questions on the project's licence and title - who holds the copyright LICENSE names (\"Virtual Sovereign Business\", which is not a legal person), what the public Apache-2.0 grant already permits, what a contributor grants with no agreement, and on what terms a founder receives an entity repository - and on the investment-side perimeter: whether the capital fund, the profit shares or any valuation would be a financial promotion or a collective investment scheme. Both are among docs/business/FORMATION_WORKPACK.md's questions for a solicitor. It is also to review, with the Owner, the data protection impact assessment a round is to draft before any health-related wellbeing entry (P5.8).",
+      "why": "Two questions the plan leaves to you: P5.11 rules that a qualified person's view of the Law pages comes before any public release, and P4.5 that where another person's data may be kept - the free Google Cloud regions are in the United States - is a solicitor's question, answered before anyone else's data is stored there. RECOMMENDED (accepted 2026-11-20, evening): one engagement covering both, booked once the first deploy is up; nothing is public, and no one but you is invited, until it has answered. OWNER RULING 2026-11-21 (the recommendations accepted): P5.18 clause 4's comparison of named finance products stays closed: no named finance product is compared. If a comparison is ever wanted, whether showing named finance offers is credit broking is put to this engagement first: PERG 2, read in W1182, does not say whether it is effecting an introduction or presenting or offering an agreement. OWNER RULING 2026-11-22 (the recommendations accepted): the engagement also carries written questions on the project's licence and title - who holds the copyright LICENSE names (\"Virtual Sovereign Business\", which is not a legal person), what the public Apache-2.0 grant already permits, what a contributor grants with no agreement, and on what terms a founder receives an entity repository - and on the investment-side perimeter: whether the capital fund, the profit shares or any valuation would be a financial promotion or a collective investment scheme. Both are among docs/business/FORMATION_WORKPACK.md's questions for a solicitor. It is also to review, with the Owner, the data protection impact assessment a round is to draft before any health-related wellbeing entry (P5.8). W1193 (2026-11-22): the recommendation the Owner accepted for these questions also holds an interim: until the solicitor answers, each entity repository's README says that no terms have been chosen; building it is row FU-1880.",
       "source": "W1174 (the Owner's decisions of the evening of 2026-11-20, recommendation 3)",
       "found": "2026-11-20",
       "files": [],
@@ -27172,6 +27172,899 @@
       "closed_by": null,
       "note": "",
       "slot_source": "OWNER (the Owner's machine): the lessons are in the assistant's notes on the Owner's machine, which the cloud session never sees"
+    },
+    {
+      "id": "FU-1841",
+      "title": "The composition preview seals a quality record, logs a UEG screen event, fires a cognitive signal and, on a compliance fail or escalation, records with the immune system, while it says nothing is saved",
+      "why": "simulate_composition says 'Nothing is saved.' (agentic_core/api/resource_fabric.py:3907; 'not saved' at :3921), yet its assure_delivery(label='composition', served_by='template') call does four things: it seals a version of qms_record:composition (agentic_core/vbs/quality.py:543 into dcms.py:52-67); it logs compliance.screen (quality.py:575); it fires 'qms.composition' (:670); and on a fail or an escalation it records with the immune system (:589-597). FU-1108's close note named this residue and opened no row.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1197 (A1)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/api/resource_fabric.py",
+        "agentic_core/vbs/quality.py",
+        "agentic_core/vbs/dcms.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "resource_fabric.py is in an area retired with P2.18, as for FU-1108"
+    },
+    {
+      "id": "FU-1842",
+      "title": "The fabric preview draws 'over capacity' in amber for a composition that runs one stage at a time, and says nothing of what the org cascade is granted",
+      "why": "The chip (apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx:667-676, reading fits_current_capacity and admitted_max_parallel) compares the resource count with the cap for four parallel nodes (resource_fabric.py:3858; homeostasis.py:198-219). But a composition's stages run in sequence (orchestrator.py:1088-1117), and only the org cascade runs officer pairs at once, under its own grant (swarm.py:662-673, :881-891).",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1209 (A2)",
+      "found": "2026-11-22",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx",
+        "agentic_core/api/resource_fabric.py",
+        "agentic_core/ai/native/homeostasis.py",
+        "agentic_core/api/swarm.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.32",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "beside FU-1826 and FU-1829"
+    },
+    {
+      "id": "FU-1843",
+      "title": "The avatar and upload memory the Owner ruled retired on 2026-11-22 is still written by every avatar message and extracted upload, embeds each with chromadb's default model fetched from an outside host on first use, and says it is persisted",
+      "why": "memory_v01 (agentic_core/ai/ceo/memory_v01.py) opens a chromadb collection with no embedding function, so in chromadb 1.5.5 every add embeds with all-MiniLM-L6-v2, downloaded into the user's home on first use (as cluster A read the installed source). The client is not persistent, though :4-6 says 'genuinely persisted'. avatars/api.py:648 and ingestion/api.py:159 write it and no production caller reads it. The Owner retired it on 2026-11-22, recorded at P3.32.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1196 (A3)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/ai/ceo/memory_v01.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.32",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the ruling's item; the word 'avatar' would otherwise route the row to P2.40"
+    },
+    {
+      "id": "FU-1844",
+      "title": "The archive's search basis and the Horizon page say no embedding backend is installed, while chromadb and its ONNX runtime are",
+      "why": "agentic_core/horizon/archive.py:29 and :252-254, and HorizonCompanion.tsx:361-364 ('embeddings: none installed'), state an installation fact that requirements.txt:16 and :92 contradict. What is true is that this index computes no embedding.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1207 (A4)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/horizon/archive.py",
+        "apps/workstation-superapp/src/pages/governance/HorizonCompanion.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30: a DOC_OVERCLAIM restated, under its ACCEPT (1)"
+    },
+    {
+      "id": "FU-1845",
+      "title": "The document-control registry is rewritten whole on every gated answer, grows without bound in memory and on disk, takes an unreadable store as its next write base, and a version that failed to write still reads as document-controlled",
+      "why": "dcms.py:52-67 appends each version to one in-memory registry, and _persist (:45-50) rewrites the whole file under a bare except. _load (:28-43) answers an unreadable store with {} or its prefix and sets _store_incomplete, which nothing reads. qms.control_document (qms.py:372-377) returns the hash either way, so quality.py:558 says document_controlled True. Besides every assure_delivery, six other call sites write the registry: three call the DCMS directly (agentic_core/ai/native/orchestrator.py:868, swarm.py:1237, vbs_systems.py:318), and three go through qms.control_document as assure_delivery does (vsb.py:2357, :3084, :3134).",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1205 (A5)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/vbs/dcms.py",
+        "agentic_core/vbs/qms.py",
+        "agentic_core/vbs/quality.py",
+        "agentic_core/api/swarm.py",
+        "agentic_core/api/vbs_systems.py",
+        "agentic_core/api/vsb.py",
+        "agentic_core/ai/native/orchestrator.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, as FU-1297 was: the same whole-file ledger class"
+    },
+    {
+      "id": "FU-1846",
+      "title": "FU-395's class returns through an attribute: the QMS reads its store tolerantly into self._state and writes it whole from another method, which W577's per-function guard cannot see",
+      "why": "qms.py:87-95 fills self._state from read_json_reported, so an unreadable store yields its prefix or the defaults. _save_state (:97-100) writes that whole at every gate run, whatever _store_unreadable says. W577's guard checks one function at a time. auth/core.py:117-123's except-default loader (FU-1834) is a third door. This is a new row rather than FU-395 reopened, because scripts/followups.py has no reopen and FU-395's ten write paths still hold.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1206 (A6)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/vbs/qms.py",
+        "agentic_core/auth/core.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.10 clause 1"
+    },
+    {
+      "id": "FU-1847",
+      "title": "About thirty-four durations are taken from the settable wall clock, ten of them reaching record_outcome and the work budget",
+      "why": "time.time() differences reach duration_ms and record_outcome in two groups. Direct: resource_fabric.py:2943/:2995 and :3709, gateway.py:778, swarm.py:155 and :743, board.py:170 and :182, deliverables.py:311, transformation_orchestration.py:613 and avatars/api.py:327. Through an alias: native_ai.py:638 and :843. Meanwhile the request seam (app_mvp.py:172-174) uses a monotonic clock and host_observation.py:67 uses perf_counter.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1210 (A7)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/api/resource_fabric.py",
+        "agentic_core/ai/gateway.py",
+        "agentic_core/api/swarm.py",
+        "agentic_core/api/board.py",
+        "agentic_core/api/deliverables.py",
+        "agentic_core/api/transformation_orchestration.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, as FU-1121; its avatars/ files would otherwise route it to P2.40"
+    },
+    {
+      "id": "FU-1848",
+      "title": "A stream the caller closes, or a model attempt whose task is cancelled, records no outcome and spends nothing",
+      "why": "gateway.py records each attempt on success or in except Exception (:849-851, :887-889, :920-922), and the floor records after its loop (:925-937). orchestrator.py:429-456 catches only ResourceSkipped and Exception. GeneratorExit and CancelledError are BaseException, so they skip every record path.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1211 (A8)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/ai/gateway.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, as FU-1103 (W772) and FU-1121 (W847) were"
+    },
+    {
+      "id": "FU-1849",
+      "title": "The Learning Loop says it shows the outcomes of every run and the runs listing says every run persists, but a run whose process ends before it returns leaves no row and spends nothing",
+      "why": "The run row (resource_fabric.py:3201-3256) and its record_outcome (:2985-3001) are written only after the pipeline returns. Yet OperationalExcellence.tsx:93 says 'every run', resource_fabric.py:1496-1499 says 'every run persists', and the spend basis (work_budget.py:348-354) is silent. The run's model attempts stay in the store as unattributed model_attempt rows (orchestrator.py:58-71).",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1212 (A9)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/api/resource_fabric.py",
+        "apps/workstation-superapp/src/pages/OperationalExcellence.tsx",
+        "agentic_core/molecular/work_budget.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30: the run history's, the Learning Loop's and the work budget's own sentences, restated"
+    },
+    {
+      "id": "FU-1850",
+      "title": "The completed composition run's history row is written by a read-modify-write of composition_runs.json without the store's lock, so two runs finishing together in two processes or threads can drop one",
+      "why": "resource_fabric.py reads composition_runs.json strictly (:3209), appends, and writes it (:3256) with no store_lock, unlike the refused-run path at :2955-2966. There is no await between the read and the write, so the loss needs a second process or thread.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1213 (A10)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30 for this site; the same class in other files is a P5.10 row"
+    },
+    {
+      "id": "FU-1851",
+      "title": "Three functions read a shared store strictly and write it back with no lock around the write; the org cascade's two tier stores lose an update inside one process when two cascades overlap",
+      "why": "swarm.py's cascade_orchestration reads tier_development.json and tier_identity.json at :688 and :699 and writes them back at :1211 and :1212, after every awaited tier call. integration_surface.py spawn_twin (:627-633) and organism/heartbeat.py screen_living_vsb (:164) have no await between their read and write, so they race only across processes or threads. agent_hub.py's :279 and :418 write new per-message files, and its registry read-modify-writes are under store_lock (:287-291, :394-408).",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: none in this schedule (open; each site to be read)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/api/swarm.py",
+        "agentic_core/api/integration_surface.py",
+        "agentic_core/organism/heartbeat.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.10 clause 1; measured by syntax, read for swarm.py"
+    },
+    {
+      "id": "FU-1852",
+      "title": "A model is made the serving default with no licence read: W841 built FU-1087's evaluation and digest checks but not the licence refusal it proposed",
+      "why": "promote_model (agentic_core/api/native_ai.py:1271-1310) checks discovery, digest and a recorded evaluation, and reads no licence, though describe_installed already reads each build's licence (model_resource.py:428-436). The Owner ruled on 2026-11-22 (P3.32) that a model is made the default only when its licence text was read, with no override.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1203 (A11)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/api/native_ai.py",
+        "agentic_core/ai/native/model_resource.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.32",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.32, the licence half of model promotion, which FU-1087 rode"
+    },
+    {
+      "id": "FU-1853",
+      "title": "With sign-in on, any signed-in person can promote, retire, reinstate or evaluate a local model, or run or reproduce a baseline: the lifecycle's writes sit behind get_current_user, not the administrator perimeter",
+      "why": "The native-ai router is mounted with get_current_user only (app_mvp.py:565). Its six writes (native_ai.py:616, :874, :960, :1271, :1314, :1333) take no administrator check. Yet the serving default governs the platform, which is the W505 perimeter's reason for mounting the board behind require_admin (app_mvp.py:519).",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1203 (A11)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/app_mvp.py",
+        "agentic_core/api/native_ai.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.1, the perimeter: its readiness instrument reads each route's mounted dependency"
+    },
+    {
+      "id": "FU-1854",
+      "title": "TopologyDefense.simplicial_repair returns HEALED and seals a repair event for a repair it never makes, and the class docstring claims simplicial repair",
+      "why": "defense.py:113-132 sets success True, simplices_added 2 and status HEALED after an emulated step, and logs simplicial_repair_complete; :12 claims simplicial repair. Its only caller is under _archive, and the ledger's rule is 'perform or delete, never report' (NATIVE_PRIMITIVE_DEFECT_LEDGER.md:290-293).",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1229 (A12)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/topology/defense.py",
+        "docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, tier 3, as FU-1125 (W779) and FU-1158 (W792) were"
+    },
+    {
+      "id": "FU-1855",
+      "title": "With CORS_ORIGINS unset, or set by a .env copied from .env.example, the Owner's own local platform takes a write from a page of any site while sign-in is off",
+      "why": "CORS_ORIGINS is '*' unless set (config.py:38-41). python-dotenv reads .env.example:40's value as that line's own trailing comment (parser.py:24, :125-127). W1202's guard acts only where the release machine names its origins. So a simple request from any Origin still runs on localhost:8000, where require_admin returns a stand-in admin while sign-in is off (auth/core.py:285-286).",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: none in this schedule (open; a round must keep every localhost origin working)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/config.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.1: the local platform's CORS default is part of sign-in's perimeter, and a round must keep every localhost origin working"
+    },
+    {
+      "id": "FU-1856",
+      "title": "The hardening brief lists the work budget as a live limit, and the deploy guide names neither the work budget nor self-serve sign-up, nor what the release machine and its image set",
+      "why": "PRODUCTION_HARDENING_BRIEF.md:53 labels the work budget [observed] as a limit, though it ships off (work_budget.py:27-35). The guide's only settings table (DEPLOYMENT.md:26-34, in the Render section) omits WORKSTATION_WORK_BUDGET and SELF_SERVE_SIGNUP_ENABLED. The release machine passes only AUTH_ENABLED, CORS_ORIGINS and FORWARDED_ALLOW_IPS (deploy/gcp/startup.sh:98, :186), beside the image's own ENV (Dockerfile:63-67).",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1214 (B3)",
+      "found": "2026-11-22",
+      "files": [
+        "docs/business/PRODUCTION_HARDENING_BRIEF.md",
+        "agentic_core/molecular/work_budget.py",
+        "docs/DEPLOYMENT.md",
+        "deploy/gcp/startup.sh"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.5",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.5 and P2.41 share one guard; this half is the deploy's documents"
+    },
+    {
+      "id": "FU-1857",
+      "title": "With the work budget on, every reader of its energy figure reads the platform's total, and neither the figure, the switch's report, six pages nor the cockpit say whose figure it is",
+      "why": "energy() divides the platform total by the stated capacity, and its basis names no scope (work_budget.py:366-385). The reserve raise (metabolism.py:341-364), the fund caution (capital_fund.py:563-575) and the homeostasis route (organism_status.py:616-660) all read it. Six pages print it (test_w902's list), and so does the cockpit's cycle figure (VSBCockpit.tsx:1502). The Owner ruled on 2026-11-22 (S18.1) that every reading of the platform's total says it is the platform's figure.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1214 (B3)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/molecular/work_budget.py",
+        "agentic_core/economy/metabolism.py",
+        "agentic_core/api/capital_fund.py",
+        "agentic_core/api/organism_status.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P2.41 and P4.5 share one guard; this half is the work budget's readers"
+    },
+    {
+      "id": "FU-1858",
+      "title": "W1075's census passes over every entity route with a second path parameter, so eight routes are driven for no second person with sign-in on",
+      "why": "test_mvp_spine.py:88010 skips any route with a non-entity path parameter. That leaves vsb.py:1435, :1669, :1828, :2031, :3098 and :3108, and entity_specialists.py:230 and :338. Only sign is driven for a second person (test_w934), while FU-1262's close note calls the census 'every such route'.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1207 (B4)",
+      "found": "2026-11-22",
+      "files": [
+        "integration_tests/test_mvp_spine.py",
+        "agentic_core/api/vsb.py",
+        "agentic_core/api/entity_specialists.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.1, beside FU-1262, FU-1263 and FU-1274, whose census this extends"
+    },
+    {
+      "id": "FU-1859",
+      "title": "With sign-in on, a founder who is not an administrator is refused their own entity's Chief",
+      "why": "The Cockpit's Chief tab posts /api/v1/board/chief/instruct (VSBCockpit.tsx:565-570). The board router is mounted behind require_admin (app_mvp.py:519), which refuses role 'user'. Yet the Owner ruled on 2026-11-22 (P4.2) that a founder may instruct their own entity's Chief.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1218 (B5a)",
+      "found": "2026-11-22",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx",
+        "agentic_core/app_mvp.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.2, the Owner's ruling of 2026-11-22: a pre-flight of the invited stage"
+    },
+    {
+      "id": "FU-1860",
+      "title": "With sign-in on, a founder who is not an administrator cannot read their entity's Board, and no route serves an entity's own work-budget figure",
+      "why": "board_status(scope=<vsb_id>) (board.py:472-505) serves an entity's board only behind require_admin, and work_budget.entity_state (work_budget.py:289) has no route. Yet the Owner ruled on 2026-11-22 (P4.2) that a founder may read their entity's Board and see its own work-budget figure, for their own entities only.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1219 (B5b)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/api/board.py",
+        "agentic_core/molecular/work_budget.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.2, the Owner's ruling of 2026-11-22: a pre-flight of the invited stage"
+    },
+    {
+      "id": "FU-1861",
+      "title": "Nothing has measured the platform under the release machine's caps: no peak memory for its heaviest route, no time per route under the e2-micro's CPU share, no point where it refuses work, and nothing separates the gateway's pacing from a run's time",
+      "why": "The brief's part 7 says so (PRODUCTION_HARDENING_BRIEF.md:54-56). W1128 measured idle and probe memory under --memory=1g with no CPU cap (DEPLOYMENT.md:95-110). Every gateway call waits on GATEWAY_RPM, 20 a minute unless set (config.py:48), and the suite raises that to 6000 because the limiter slept for a measured share of every run (conftest.py:21-25).",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1223 (B6)",
+      "found": "2026-11-22",
+      "files": [
+        "docs/business/PRODUCTION_HARDENING_BRIEF.md",
+        "docs/DEPLOYMENT.md",
+        "agentic_core/config.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.5",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.5: a pre-flight measurement that gates no deploy"
+    },
+    {
+      "id": "FU-1862",
+      "title": "No store says whether it holds a person's data, what of it is kept by rule, or how long it is kept",
+      "why": "PRODUCTION_HARDENING_BRIEF.md:60 says so, labelled [observed]. agentic_core writes data_path stores and computed paths, DATA_DIR joins, store_paths.py's constants, the UEG ledger, and roots that PROJECTS_DIR, SYNTHESIS_OUTPUT_DIR, PROPOSALS_DIR and LISTINGS_DIR can move (projects/api.py:46, :227, :259; marketplace.py:37). The Owner ruled on 2026-11-22 (P4.2) that a retention register lists each store as 'not decided: the Owner's'.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1225-W1226 (B7)",
+      "found": "2026-11-22",
+      "files": [
+        "docs/business/PRODUCTION_HARDENING_BRIEF.md",
+        "agentic_core/store_paths.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.2, the Owner's ruling of 2026-11-22: the retention register, a pre-flight of the invited stage"
+    },
+    {
+      "id": "FU-1863",
+      "title": "No person's erasure has been carried through every store a person's data reaches",
+      "why": "Only per-item deletes exist (user_workspace.py:175, :268; projects/api.py:500; ingestion/api.py:257; avatars/api.py:703; religious_domain/api.py:989). None takes a person, and none reaches the interaction log (a plain SQLite file, ai/logger.py) or the memory store. The Owner ruled on 2026-11-22 (P4.2) that a round builds the deletion drill now, on made-up accounts.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1227-W1228 (B8)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/api/user_workspace.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.2, the Owner's ruling of 2026-11-22: the deletion drill, a pre-flight of the invited stage"
+    },
+    {
+      "id": "FU-1864",
+      "title": "The privacy screen reads only the current tree: nothing reads git history for a credential",
+      "why": "privacy_exposure.py:209-212 hard-codes history_scanned False, and test_w732 asserts it. The Owner revokes W729's values under FU-1837, whose first step is the host's secret-scanning alert list, and nothing in the tree checks history for itself.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1208 (B9)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/privacy_exposure.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.5",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "it rides the deploy's pre-flights; history never ships in the image"
+    },
+    {
+      "id": "FU-1865",
+      "title": "With the throttle on, admission and every reader of the energy figure keep reading the platform's total after a second person runs work, where the Owner ruled each run's own chain",
+      "why": "gate() and energy() read the platform total (work_budget.py:366-385, :422-438), and each entity's figure is 'REPORTED, NOT ENFORCED' (work_budget.py:44-45). The Owner ruled on 2026-11-22 (S18.1) that, once the throttle is on, these readers read the platform's total until a second person runs work and then each run's own chain (platform, owner, VSB). The switch stays off.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1215 (B10)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/molecular/work_budget.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, where gap 17's admission mechanism sits"
+    },
+    {
+      "id": "FU-1866",
+      "title": "A reserved instrument is drafted under any template id the generator does not list",
+      "why": "law.py:403-407 composes any unlisted template_id from a generic prompt. So an instrument of transfer or charge of land, or a contract for the sale of land, is drafted by the floor or the local model, though P5.18 clause 4 reserves it (docs/SOURCES.json row lsa-2007-sch2, read on 2026-11-20). FU-1076 recorded the clause as met when only a deed was held.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1194 (C1)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/api/law.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.18 clause 4"
+    },
+    {
+      "id": "FU-1867",
+      "title": "A reserved instrument asked for in a listed template's instructions or parties is drafted, and the clerk labels an artefact with any template id",
+      "why": "The Law page offers a template select beside free 'parties' and 'custom_instructions' fields (LawHub.tsx:241-246). law.py:409-424 sends those to the composer unscreened, and specialist.assemble (legal/specialist.py:149-184) labels and stores an artefact under any id.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1195 (C7)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/api/law.py",
+        "agentic_core/legal/specialist.py",
+        "apps/workstation-superapp/src/pages/domains/LawHub.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.18 clause 4, and its ACCEPT that a refusal comes through the route a person would use"
+    },
+    {
+      "id": "FU-1868",
+      "title": "Where a founder chooses or sees an entity's legal form, nothing says that no company is formed",
+      "why": "GET /api/v1/economy/entity-types serves 'Default commercial company, limited liability.' and 'Registered charitable purpose' (entities.py:33, :68) on Genesis, the Economy page, the Cockpit and the Spawn Studio, and the establishment stream's 'Living Economy Initialised' event names the form (genesis.py:1877). The only statement that an entity is no person in law is agreements.NOT_AN_ENTITY (agreements.py:55-57).",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1216 (C5)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/economy/entities.py",
+        "agentic_core/api/genesis.py",
+        "agentic_core/api/agreements.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.18 clause 1: an entity's template form is never shown as an incorporation"
+    },
+    {
+      "id": "FU-1869",
+      "title": "Establishing twice from one journey record makes a second entity, and the page's own fallback does it after a cut stream",
+      "why": "genesis.py mints a fresh id on each establish (:1518, :1799), and nothing marks the journey used. GenesisJourney.tsx:401-444 re-posts the same body to /establish when the stream ends without its last frame, and that frame comes after the entity is saved (genesis.py:1908, :1997).",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1217 (C6)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/api/genesis.py",
+        "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.1: one person's journey, driven and read back from its stores"
+    },
+    {
+      "id": "FU-1870",
+      "title": "No census holds a read to writing nothing: a reader is refused by method alone, six reads advance the energy simulator, one rewrites its store and two run a model",
+      "why": "READING_METHODS (auth/core.py:229) lets the read-only role call every GET. GET /api/v1/organism/status, /health-summary and /lifecycle, GET /api/v1/economy/board-pack, GET /api/v1/cca/impact/{cca_id} and GET /api/v1/fund/status advance the ATP simulator through organism_context()'s default (organism_status.py:386; economy.py:2257; capital_fund.py:260). GET /api/v1/qep/adaptation/registry saves on every read (qep_intelligence.py:451-459). P5.10 clause 1 asks for the guard at the mechanism.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1220-W1221 (C8)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/api/organism_status.py",
+        "agentic_core/api/economy.py",
+        "agentic_core/api/capital_fund.py",
+        "agentic_core/api/qep_intelligence.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.10 clause 1"
+    },
+    {
+      "id": "FU-1871",
+      "title": "Two reading routes run a model, so a reader's call records a checkpoint, an outcome and a work-budget spend",
+      "why": "GET /api/v1/cca/impact/{cca_id} (change_control.py:2484-2514) and GET /api/v1/intelligence/forecasts (products.py:916-967) compose through gateway.query_meta, and the forecast also writes a cache. P4.1's readiness work promised that the read-only role is refused every write.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1222 (C9)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/api/change_control.py",
+        "agentic_core/api/products.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.1: the read-only role is refused every write; P5.10's census holds it"
+    },
+    {
+      "id": "FU-1872",
+      "title": "The business documents' guard checks only that a named row exists, so two documents named closed rows as standing between a step and being relied on",
+      "why": "_w703_faults checks existence only (test_mvp_spine.py:64848-64850). LIVING_STRATEGY_MAP.md named three done rows on its 'Between' lines (FU-849, FU-1151, FU-1040) and labelled FU-1086 [owner decision]. COST_MODEL.md's P4.1 cell said the readiness rows are open, with all thirteen done.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1201 (C2)",
+      "found": "2026-11-22",
+      "files": [
+        "integration_tests/test_mvp_spine.py",
+        "docs/business/LIVING_STRATEGY_MAP.md",
+        "docs/business/COST_MODEL.md"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.10 clause 1; integration_tests/ is a retired area"
+    },
+    {
+      "id": "FU-1873",
+      "title": "The business documents' guard counts a money figure only when the currency comes first",
+      "why": "The pattern at test_mvp_spine.py:64872, and its copy in test_w923 (:78566-78568), match only a code or symbol before a digit, so '750,000 GBP' or 'two million pounds' would stand with no ruling.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1201 (C2)",
+      "found": "2026-11-22",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.10 clause 2, a guard that holds its property over the whole document"
+    },
+    {
+      "id": "FU-1874",
+      "title": "PLAN NOW names P2.40 as next and says neither that it closes only on the final audit nor that its rows can be worked now",
+      "why": "The generated Next line says P2.40 'closes on its ACCEPT clause', while P2.40 and P2.41 close only on P5.22 (their W786 lines) and P3.30's ACCEPT (5) waits on the same audit. render_plan_now (plan_followups.py:1415-1437) reads no hold.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1200 (C3)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/plan_followups.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.22",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.22's hold; plan_followups.py is in a retired area"
+    },
+    {
+      "id": "FU-1875",
+      "title": "No test holds the optimiser's statement that nothing drains its queue",
+      "why": "scheduler.py:19-30 returns pending False and a basis saying nothing drains the queue, but test_w492 (test_mvp_spine.py:20968-20972) checks only the status word. Removing the two disclosure spreads (:53, :58) turns nothing red. The row routes to P2.40 by its file, agentic_core/optimizer/.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1200 (C4)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/optimizer/scheduler.py",
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.40",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-1876",
+      "title": "The first-offer papers present a free Domain tool as something people pay for, and the drafts' cost answer says a price may come",
+      "why": "FIRST_OFFER_CANDIDATES.md:40 says teachers 'will use, and pay for' the tool. FIRST_OFFER_DRAFTS.md:59 answers 'No price is set; a price is the Owner's to set'. Both contradict P5.16 clause 1 (every Domain free, ruled 2026-10-12), and both are in the scripts FU-1818's interviews will use.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1201 (D-FIRST-OFFER)",
+      "found": "2026-11-22",
+      "files": [
+        "docs/business/FIRST_OFFER_CANDIDATES.md",
+        "docs/business/public/FIRST_OFFER_DRAFTS.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, a document restated so it no longer claims what a ruling refutes; P5.7 and P5.16 are done"
+    },
+    {
+      "id": "FU-1877",
+      "title": "The plan's round protocol names docs/AUTONOMOUS_PROGRESS.md as each round's record, though its last round is W502 and each round's record is its commit message",
+      "why": "V6 ('V6 RECORD — AUTONOMOUS_PROGRESS.md entry') and the rhythm ('append to docs/AUTONOMOUS_PROGRESS.md') name the log. Its last heading is W502 (docs/AUTONOMOUS_PROGRESS.md:8401), and README.md:156-157 says each round's record is its commit message. docs/README.md:12, the living plan's development-timeline line and scripts/_w557_probe.mjs:1 still point to the log.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1193 (registered and closed as built)",
+      "found": "2026-11-22",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md",
+        "docs/AUTONOMOUS_PROGRESS.md",
+        "docs/README.md",
+        "docs/WORKSTATION_IDBO_LIVING_PLAN.md",
+        "scripts/_w557_probe.mjs"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.5",
+      "status": "done",
+      "closed_by": "W1193",
+      "note": "",
+      "slot_source": "the production image carries docs/, W1128",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "built in W1193: the plan's round protocol names each round's commit message as its record (V6 and the rhythm), the protocol's list of documents gives the progress log's range as W1 to W502, not written since, and the log's head, docs/README.md, the living plan's development-timeline line and the W557 probe's first line say the same; test_w1193 holds each."
+    },
+    {
+      "id": "FU-1878",
+      "title": "The return measurement the Owner scheduled on 2026-11-22 as a pre-flight of the invited stage is not built: nothing counts how many people come back",
+      "why": "METRICS_MEASURED.md marks 'A person returning' NOT MEASURED ('sign-in events per person per day, which exist only with sign-in on'). The Owner ruled on 2026-11-22 (P5.6, recorded by W1192) that the return measurement, one sign-in day per person, is built as a pre-flight of P4.2 and is a round's work. It keeps something about a person, so it counts across people only.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1224 (D-RETURN)",
+      "found": "2026-11-22",
+      "files": [
+        "docs/business/METRICS_MEASURED.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.2, the Owner's ruling of 2026-11-22: the return measurement, a pre-flight of the invited stage"
+    },
+    {
+      "id": "FU-1879",
+      "title": "The seventh investment gate is computed as evidenced when any docs file is named 'interview', where the Owner ruled on 2026-11-22 that it needs five recorded interviews and the Owner's recorded choice",
+      "why": "test_w1126 counts any file under docs/ whose name contains 'interview' as evidence for the first offer's gate. The Owner's ruling of 2026-11-22, recorded in COST_MODEL.md by W1192, sets the bar at five interviews in the notes template plus the Owner's choice recorded with its reasons.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1201 (D-GATE)",
+      "found": "2026-11-22",
+      "files": [
+        "docs/business/COST_MODEL.md"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the gate's guard; P5.7 is done"
+    },
+    {
+      "id": "FU-1880",
+      "title": "A handed-over entity repository says nothing about its terms, where the Owner accepted on 2026-11-22 that its README says no terms have been chosen",
+      "why": "The repository builder writes README.md (agentic_core/api/vsb.py:170), and nothing in a handed-over repository states its terms. The option the Owner accepted for the licence questions on 2026-11-22 included that, until the solicitor answers (FU-1817), the entity repository's README says no terms have been chosen.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1204 (D-TERMS)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.4, the handover, is done"
+    },
+    {
+      "id": "FU-1881",
+      "title": "The generation credit is said to come off the first share or the first fee only, where the Owner ruled on 2026-11-22 that it carries forward against later fees until it is used up",
+      "why": "metabolism.py:133 says the price 'is credited against the first fee'. generation_price.py:58-59 says it 'is taken off the first share of profit', and the price panel draws that text (GenerationPrice.tsx:29). The Owner's ruling of 2026-11-22 at P5.16 carries the credit forward until it is used up.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: W1204 (D-CREDIT)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/economy/metabolism.py",
+        "agentic_core/economy/generation_price.py",
+        "apps/workstation-superapp/src/components/GenerationPrice.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.16 is done"
+    },
+    {
+      "id": "FU-1882",
+      "title": "OWNER: open a developer account at the Quran Foundation, whose terms P5.17 clause 7 leaves with you, after reading them whole",
+      "why": "P5.17 clause 7 leaves 'a developer account at the foundation whose terms were read' with the Owner. The reading side has never called its two content paths with real credentials, and it defaults to pre-production because production use needs the publisher's approval (agentic_core/religious_domain/quran_foundation.py:1-22). docs/SOURCES.json's row quran-foundation-developer-terms was read on 2026-10-12, but 'the terms' full text' was not. No register row names the account, while the Owner's list says it is the whole list. RECOMMENDED: read the terms whole first; then open a pre-production account, keep its credentials only on the machine that runs the platform and never in the repository, and tell the cloud session the date. A round then calls the two content paths once and records what they answer; production use waits for the publisher's approval.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: none (the Owner's act; the row closes on the Owner's dated word)",
+      "found": "2026-11-22",
+      "files": [],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-1883",
+      "title": "A data protection impact assessment is to be drafted before any health-related wellbeing entry, as the Owner ruled on 2026-11-22, and no row holds the draft",
+      "why": "The Owner ruled on 2026-11-22 (P5.8, recorded by W1192) that clause 3 is built with no health field until a DPIA, which a round drafts for the Owner and the solicitor (FU-1817) to review. FU-1817's why says the engagement reviews that draft, but no row holds the draft itself.",
+      "source": "W1193 (section 35: the assessment of the v44 and v43 prompts, their v42 and v41 supplements, the inherited v40 body and a nine-document commercial package, read 2026-11-21; its rounds designed and refuted on 2026-11-22; measured at 89c25eed); its round: none in this schedule (P5.8's own rounds)",
+      "found": "2026-11-22",
+      "files": [],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.8",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.8, the Owner's ruling of 2026-11-22: clause 3 waits on this draft"
+    },
+    {
+      "id": "FU-1884",
+      "title": "Three served texts call a management system ISO 9001- or ISO 14001-aligned and the systems registry maps clauses of ISO 9001, against P5.10's BOUNDARY that nothing is called certified, compliant or aligned and no clause of any standard is mapped",
+      "why": "P5.10's BOUNDARY says nothing is called certified, compliant or aligned, and no clause of any standard is mapped. The systems registry serves 'ISO-9001-aligned quality gates' through /api/v1/vbs/systems (agentic_core/vbs/registry.py:40) and maps §8.7, §10.2 and §7.5 (:26, :41, :43, :53); management_systems.py says 'ISO 9001-aligned' and 'ISO 14001-aligned' in its route descriptions (:10, :94, :317); synthesis_studio.py's prompt heads a section 'ISO 9001-aligned framework' (:152); and vbs_systems.py maps §8.7, §10.2 and §7.5 in its comments (:86, :326). The same module's own disclaimer (management_systems.py:62) says nothing is aligned to a standard.",
+      "source": "W1193 (the completeness critic of the re-measurement of the fifteen open plan items, 2026-11-22, each checked at 89c25eed before it was registered); its round: no round in docs/V44_ROUNDS_PREP.md yet: found by the re-measurement after the round design; the item's own rounds",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/vbs/registry.py",
+        "agentic_core/api/management_systems.py",
+        "agentic_core/api/synthesis_studio.py",
+        "agentic_core/api/vbs_systems.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.10's BOUNDARY, which these texts breach"
+    },
+    {
+      "id": "FU-1885",
+      "title": "The statute panel's fidelity check says the text shown was compared character for character with the text read from the publisher, but it compares the parsed text with a hash taken from that same parse, so it can never fail",
+      "why": "statute.parse() takes sha256 of shown_text(parts) (agentic_core/legal/statute.py:124, :136), and provision() (:150) then calls fidelity(out['parts'], out['sha256']) (:172), which hashes shown_text(parts) again and compares (:84). The two can only match, yet the basis tells the reader the text 'was compared character for character with the text read from the publisher for this request' (:86-88), and the refusal at :173-174 can never fire. A check that cannot disagree with what it checks says more than it did.",
+      "source": "W1193 (the completeness critic of the re-measurement of the fifteen open plan items, 2026-11-22, each checked at 89c25eed before it was registered); its round: no round in docs/V44_ROUNDS_PREP.md yet: found by the re-measurement after the round design; the item's own rounds",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/legal/statute.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.20",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.20, whose statute panel quotes and does not compose"
+    },
+    {
+      "id": "FU-1886",
+      "title": "The Care risk door asks a model for a clinical interpretation, prioritised actions with urgency, escalation triggers and current clinical guidelines, and composes the catalogue's safeguarding entry with none of the safeguarding form's checks",
+      "why": "P5.13 rules that nothing is composed that only a clinician may say, and that no health information about a condition, a medicine or a treatment is composed. The risk route's prompt (agentic_core/api/care.py:296-304) asks the composer, for NEWS2 and for the four frame entries, for '## Clinical Interpretation', '## Recommended Actions (prioritised, with urgency, ...)', '## Escalation Triggers' and to 'Reference current clinical guidelines'. The catalogue's 'safeguarding' entry is one of those frames (care.py:74-75), so /risk-assess composes it under the generic prompt with no emergency line, no adult-only line and no check of who the concern is about or of the jurisdiction, all of which the safeguarding form holds (care.py:354-430). Found beside it: the handover's composed text does not carry the not-reviewed sentence (NOT_REVIEWED, care.py:160) that the risk and safeguarding texts carry; only its disclaimer field says it is unreviewed (care.py:455-487).",
+      "source": "W1193 (the completeness critic of the re-measurement of the fifteen open plan items, 2026-11-22, each checked at 89c25eed before it was registered); its round: no round in docs/V44_ROUNDS_PREP.md yet: found by the re-measurement after the round design; the item's own rounds",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/api/care.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.13",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.13, its rulings that nothing only a clinician may say is composed"
+    },
+    {
+      "id": "FU-1887",
+      "title": "Nothing holds a person for a clinical score used in someone's direct care: NEWS2's score and band are returned to any caller at the unreviewed tier, though the review options name that exception",
+      "why": "review_options names four exceptions that keep a qualified person, among them 'a clinical score used in someone's direct care' (agentic_core/api/review_options.py), and test_w925 holds that the routes say so. But the Care risk tool computes and returns NEWS2's score and band to any caller at the unreviewed tier (agentic_core/api/care.py:248-352), and nothing in agentic_core holds a person for direct-care use. The other three exceptions are enforced: religious content (test_rel_...), regulated advice (W1167) and real money (P4.6). The hold's form may need the Owner's word, as P4.2 opens self-serve only once the four exceptions of P5.15's RELEASE ruling are enforced.",
+      "source": "W1193 (the completeness critic of the re-measurement of the fifteen open plan items, 2026-11-22, each checked at 89c25eed before it was registered); its round: no round in docs/V44_ROUNDS_PREP.md yet: found by the re-measurement after the round design; the item's own rounds",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/api/care.py",
+        "agentic_core/api/review_options.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.2: self-serve waits on the four exceptions (P5.15's RELEASE ruling) being enforced"
+    },
+    {
+      "id": "FU-1888",
+      "title": "The simulated device rows carry no simulated label: GET /api/v290/iot/devices serves the retired frontier store's rows with only an id, a type and a status",
+      "why": "P5.19 clause 4 holds that the simulated device rows stay labelled simulated. GET /api/v290/iot/devices (agentic_core/api/integration_surface.py:656-669) serves rows from the retired frontier store with id, type and status ('active', 'configured') and no label that they are simulated, and the only test drives total == len(devices). The telemetry route beside it does say so (simulated_bpm, 'no physical wearable connected'), and nothing reads it.",
+      "source": "W1193 (the completeness critic of the re-measurement of the fifteen open plan items, 2026-11-22, each checked at 89c25eed before it was registered); its round: no round in docs/V44_ROUNDS_PREP.md yet: found by the re-measurement after the round design; the item's own rounds",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/api/integration_surface.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.19 clause 4"
+    },
+    {
+      "id": "FU-1889",
+      "title": "The Pickthall translation the Quran platform serves has no row in the register of sources: its public-domain basis is written only in the route's own code",
+      "why": "GET /api/v1/qep/translation serves 'en.pickthall' (agentic_core/religious_domain/api.py:634-648, :717) with a licence basis written in the code (public domain: the translator died in 1936; first published in the United States in 1930). docs/SOURCES.json, the one register of sources, holds no Pickthall row, so the basis is read by no check and carries no date it was read on. Every other text the Quran pages serve has its row (the register's tanzil and quran-foundation rows). The fix is a row read at its source, its terms said.",
+      "source": "W1193 (the completeness critic of the re-measurement of the fifteen open plan items, 2026-11-22, each checked at 89c25eed before it was registered); its round: no round in docs/V44_ROUNDS_PREP.md yet: found by the re-measurement after the round design; the item's own rounds",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/religious_domain/api.py",
+        "docs/SOURCES.json"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.17 clause 6 (every source a row with its terms); it bears on P5.20's translations too"
     }
   ],
   "routes": [

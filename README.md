@@ -135,7 +135,7 @@ apps/workstation-superapp/  — Vite + React 18 + TypeScript frontend
                          + domain hubs + all product pages
 ```
 
-> Verified in CI on every push: backend boots clean; **1,260 integration tests passing / 16 skipped** (the full suite run before W1129's commit, 2026-11-20; the whole suite runs on the build server on Linux AND on Windows on every push, both required, and the local full run is retired by the Owner's ruling of 2026-10-13; the figures above it are recomputed by `scripts/readme_figures.py` and asserted by the suite, so they cannot drift again — this one is dated because a test count is only true of a tree); production
+> Verified in CI on every push: backend boots clean; **1,330 integration tests passing / 16 skipped** (the full suite run before W1192's commit, 2026-11-22; the whole suite runs on the build server on Linux AND on Windows on every push, both required, and the local full run is retired by the Owner's ruling of 2026-10-13; the figures above it are recomputed by `scripts/readme_figures.py` and asserted by the suite, so they cannot drift again — this one is dated because a test count is only true of a tree); production
 > build (`tsc && vite build`) succeeds.
 
 Data persists under `data/` as atomically-written JSON files.
@@ -157,22 +157,30 @@ The live, authoritative roadmap is the **Living Plan** (`docs/WORKSTATION_IDBO_L
 its commit message; `docs/AUTONOMOUS_PROGRESS.md` is the cycle log up to 2026-10-03, and the older `ACTION_PLAN.md`
 is archived under `_archive/docs/`.
 
-Where it stood on 2026-11-20, from that generated block: **89 of 119 plan items done.**
+Where it stood on 2026-11-22, from that generated block: **97 of 119 plan items done.**
 
 | Phase | Done | Left |
 |---|---|---|
 | P1 | 18 of 18 | 0 open |
 | P2 Reach and disclosure | 39 of 41 | 2 open |
 | P3 Capability | 30 of 32 | 2 open |
-| P4 The Owner's switches | 0 of 6 | 6 open |
-| P5 Commercialisation, rehearsed on virtual WST | 2 of 22 | 20 open |
+| P4 The Owner's switches | 3 of 6 | 3 open |
+| P5 Commercialisation, rehearsed on virtual WST | 7 of 22 | 15 open |
 
 The fourth phase is the Owner's six switches: sign-in, self-serve sign-up, external models, managed Postgres, the
-production deploy and real money. By the Owner's ruling of 2026-11-19 they proceed in order, each once its pre-flight
-is built and measured, with AI agents standing in for invited people; the deploy, the external-model key and real
-money stay the Owner's, and real money stays off until a compliance and KYC review by qualified people. The
-remaining work was measured on 2026-11-10 at 214–392 rounds (`docs/REMAINING_WORK_MEASURED.md`). These figures are
-dated; the generated block is the current one.
+production deploy and real money. Three of them, external models (P4.3), managed Postgres (P4.4) and real money
+(P4.6), are done as dated boundaries in the vision's section 18, with their switches off and nothing deployed. By
+the Owner's ruling of 2026-11-19 the switches proceed in order, each once its pre-flight is built and measured, with
+AI agents standing in for invited people; the deploy, the external-model key and real money stay the Owner's, and
+real money stays off until a compliance and KYC review by qualified people. The Owner has ruled since that sign-in
+is switched on only on the Owner's own deployed machine, and that the invited stage opens only there, after one
+solicitor's engagement has answered (2026-11-20, evening); that the release machine opens a port to the internet
+only with its domain, HTTPS and sign-in on, and is reached through an SSH tunnel until then (2026-11-21); and that a
+founder's own Chief, Board and budget figure is built and driven with sign-in on in a test process before the
+invited stage, a drill deleting a made-up person's data is built now as its pre-flight, and an entity's people and
+money records are built now, driven with sign-in on in a test process (2026-11-22). No round switches sign-in on in
+the tree. The remaining work was measured on 2026-11-10 at 214–392 rounds (`docs/REMAINING_WORK_MEASURED.md`). These
+figures are dated; the generated block is the current one.
 
 ---
 

@@ -7,6 +7,9 @@
 
 # Autonomous Progress Log — 2026-06-21 (Owner away)
 
+> **Not written since W502** (noted 2026-11-22, W1193). This log holds rounds W1 to W502. Each later round's record is
+> its commit message, as the README's roadmap and the plan's round protocol (V6) say.
+
 > **Mandate:** run continuous **plan → execute → review → document** cycles on the non-gated
 > transformation work until the Owner returns to stop. Commit verified increments to the
 > branch `feat/idbo-living-organism-integration`. **Do not push. Do not touch gated items**

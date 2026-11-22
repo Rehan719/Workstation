@@ -1,4 +1,4 @@
-// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W557 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W557 drove (its record is that round's commit message; docs/AUTONOMOUS_PROGRESS.md ends at W502). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W557 (P2.16) — the companion surface: the three states must be REACHABLE ON THE PAGE, and nothing on
 // it may claim an alignment the kernel did not evaluate.
 //

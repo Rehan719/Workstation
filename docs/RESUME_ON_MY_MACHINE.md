@@ -3,7 +3,7 @@
 When you want to continue locally, open Claude Code (Claude Opus 5.5) **in your local clone** (`~\Workstation`)
 and paste the block below as your first message. Nothing else is needed.
 
-Updated 2026-11-22 (W1131, W1164, W1184, W1187, W1188, W1190, W1191, W1192). The cloud session works in 8-hour cycles into December, until the plan's
+Updated 2026-11-22 (W1131, W1164, W1184, W1187, W1188, W1190, W1191, W1192, W1193). The cloud session works in 8-hour cycles into December, until the plan's
 build items are closed and the final audit has run (2026-12-31 at the latest), and pushes to `main-l1fsqo`. While
 it runs, the local session works on a branch of its own (step 1), so the two never push to the same branch.
 
@@ -112,7 +112,8 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
   cycles replacing the three-stretch rule and the six working rules going into the method; and the tajwid
   companion to be built and held, its examples said as not available until a recording source permits them. The
   standing answer for the outside "digital mitochondria" prompts is to be recorded with the assessment's next
-  section (a later round).
+  section (a later round). W1193 recorded that standing answer in section 35 of
+  docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md.
 - **Still yours:**
   - Merge the open pull request from `main-l1fsqo` when you are ready, or ask the cloud session to merge it
     once green, as you did for PR #463, PR #465 and PR #466.
@@ -158,6 +159,9 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
   - After the first deploy, the channel test and the price test the canvas names first, each your act; the same
     row carries three measures the metrics document defers, not yet scheduled (FU-1839).
   - Ratifying in one sitting the lessons a local session lists from this machine's notes (FU-1840, step 5).
+  - Opening a developer account at the Quran Foundation (FU-1882), after reading its developer terms whole; its
+    credentials stay on the machine that runs the platform, never in the repository, and production use waits for
+    the publisher's approval. Tell the cloud session the date it is open.
 - **Settled on 2026-11-20:** the five places that named your Windows home folder (FU-1286, closed W1180), each
   as you accepted that day: `venv/` was untracked on your machine (7afa4aa9, merged into `main-l1fsqo` at
   07fb9817), the folder kept on your disk; the three permissions in `.claude/settings.json` were removed in the

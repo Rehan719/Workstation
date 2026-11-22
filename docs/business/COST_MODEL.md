@@ -49,9 +49,10 @@ only beside the Owner's ruling. It promises no zero bill.
 ## Unit economics, as formulas
 
 - What is charged is the Owner's ruling (plan item P5.16): the Quran platform and every Domain are free, for individuals and for institutions; generating an entity is charged once; and each generated entity pays a quarter of its profit for updates and maintenance, taken before its own split. [owner-defined, 2026-10-12]
-- The once-only price is ninety-nine pounds, credited against the entity's first profit share and waived for a charitable or non-distributing entity. It is shown as set and not charged until a named reviewer's pass, a solicitor's view and the real-money switch all exist (plan item P5.16). [owner-defined, 2026-10-13]
+- The once-only price is ninety-nine pounds, waived for a charitable or non-distributing entity. It is shown as set and not charged until a named reviewer's pass, a solicitor's view and the real-money switch all exist (plan item P5.16). The Owner set it on 2026-10-13, credited against the entity's first profit share. [owner-defined, 2026-10-13]
+- By the Owner's ruling of 2026-11-22, the price, once charged, is credited against the platform's fees as they fall due, from the first, and carried forward until it is used up, with no conversion while money is virtual (plan item P5.16). [owner-defined, 2026-11-22]
 - Contribution per entity generated = the once-only price − the cost of generating one entity. The cost is NOT MEASURED. [inference]
-- The platform's share from an entity in a cycle = a quarter × the entity's profit for the cycle, where profit is revenue less declared costs less the prudential reserve, never below zero; the first share is reduced by the once-only price it was credited against. NOT MEASURED for any entity. [inference]
+- The platform's share from an entity in a cycle = a quarter × the entity's profit for the cycle, where profit is revenue less declared costs less the prudential reserve, never below zero; once the price has been charged, each share is reduced by what remains of its credit until the credit is used up (the Owner's ruling of 2026-11-22). NOT MEASURED for any entity. [inference]
 - Break-even entities generated in a period = (the fixed cost for the period − the platform's share received in the period) ÷ contribution per entity generated. NOT MEASURED. [inference]
 - Months to recover what was spent to win a founder = that spend ÷ the platform's share from that founder's entity per month. NOT MEASURED. [inference]
 - Gross margin = (revenue − the cost of delivering it) ÷ revenue. NOT MEASURED. [inference]
@@ -67,7 +68,7 @@ only beside the Owner's ruling. It promises no zero bill.
 
 | Gate | What this tree shows | Evidenced |
 |---|---|---|
-| P4.1 sign-in | AUTH_ENABLED reads false unless it is set (`agentic_core/auth/core.py`), and the committed deploy file sets it false (`render.yaml`); the readiness round's rows are open | no |
+| P4.1 sign-in | AUTH_ENABLED reads false unless it is set (`agentic_core/auth/core.py`), and the committed Render file sets it false (`render.yaml`); on the release machine the startup script (`deploy/gcp/startup.sh`) takes it from the machine's own auth-enabled setting, the Owner's switch, and publishes no public port without a domain, HTTPS and sign-in; the readiness round's thirteen rows are closed | no |
 | P4.2 self-serve sign-up | SELF_SERVE_SIGNUP_ENABLED reads false unless it is set (`agentic_core/auth/core.py`); the invited stage before it has not been run | no |
 | P4.3 external models | AI_ALLOW_EXTERNAL reads false unless it is set, and the image sets it false (`Dockerfile`); no key is held | no |
 | P4.4 managed Postgres | deferred by the Owner on 2026-10-12 and recorded as a boundary; the file store is what runs | no |

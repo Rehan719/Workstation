@@ -1744,8 +1744,10 @@ the exact text approved, so an edit afterwards falls back to withheld rather tha
 It replaced a mechanism that had the SHAPE of this audit and verified nothing — `QEPAuthoringReactor`
 approved on a trust score the CALLER supplied about itself, kept its queue in memory, and was consulted by
 nothing in the learner path. SCOPE: the gate covers the learner/curriculum path. Whether it should also
-cover the five Religion research tools is FU-448, an open Owner decision — those five already withhold on
-the floor and already refer the reader to a qualified scholar.*
+cover the five Religion research tools was FU-448: the Owner ruled on 2026-10-06 that the gate does not extend
+to the five research tools (closed in W598), and on 2026-10-11 that what a model composes there is withheld
+until a named scholar approves that exact text — those five already withhold on the floor and already refer
+the reader to a qualified scholar.*
 
 **A.12.4 Fitrah Spectrum — RULED 2026-10-05b: DEFERRED, and recorded as a BOUNDARY, not a backlog
 row.** The 99 aspects were never enumerated in any source. The ruling asked was whether it proceeds as a

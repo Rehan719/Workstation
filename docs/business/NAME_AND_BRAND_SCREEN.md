@@ -34,6 +34,7 @@ document gives all three. A search of a register is not legal clearance, and not
 
 - The chosen name, with no mark applied for or registered for it. [owner-defined, 2026-10-14]
 - No company or other legal form: the formation workpack compares four routes and chooses none. [observed: `docs/business/FORMATION_WORKPACK.md`]
+- The project's licence names its copyright holder in the line "Copyright 2026 Virtual Sovereign Business"; no company or other legal form is held under that name, and who holds the copyright is question 6 for a solicitor in `docs/business/FORMATION_WORKPACK.md`. [observed: `LICENSE`]
 - No domain: the release machine needs one before anyone signs in over HTTPS, and buying it is the Owner's (row FU-1289). [observed: `docs/DEPLOYMENT.md`]
 - No cloud project for the release yet: the deploy is written step by step, nothing in it has been run against a Google account, and the project and its billing are the Owner's. [observed: `docs/DEPLOYMENT.md`]
 - The platform's source, in this repository, and the machine it runs on now, the Owner's own, with a local model. [observed: `docs/business/BUSINESS_MODEL_CANVAS.md`]

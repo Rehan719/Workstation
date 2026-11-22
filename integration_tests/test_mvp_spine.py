@@ -98634,7 +98634,8 @@ def test_w1190_the_owners_six_decisions_of_the_afternoon_of_2026_11_21_are_recor
 
     #  the local notes: the rulings, the merged pull request, and what stays the Owner's
     #  W1192: the notes were brought up to date again for the decisions of 2026-11-22 (W1191 had edited them too)
-    assert "Updated 2026-11-22 (W1131, W1164, W1184, W1187, W1188, W1190, W1191, W1192)." in notes
+    #  W1193: the notes were brought up to date again for the record round (the developer account, the answer)
+    assert "Updated 2026-11-22 (W1131, W1164, W1184, W1187, W1188, W1190, W1191, W1192, W1193)." in notes
     for s in ("and that afternoon, six more taken as recommended: the release machine to open a port to the internet "
               "only with its domain, HTTPS and sign-in on, the domain bought before the first deploy and sign-in your "
               "switch; your second calibration run, with a larger local model (seven to eight billion parameters if "
@@ -99684,7 +99685,10 @@ def test_w1192_the_owners_twenty_decisions_of_2026_11_22_are_recorded_where_the_
     work = flat(read("docs/business/FORMATION_WORKPACK.md"))
     for s in ("3. How would the platform's fee, taken first in each cycle, and an entity's split be treated in real "
               "accounts if real money is ever switched on? And in what unit is the credit for the generation price held, "
-              "which the Owner ruled on 2026-11-22 carries forward against later fees until it is used up? [owner decision]",
+              "which the Owner ruled on 2026-11-22 carries forward against later fees until it is used up, "
+              #  W1193: the question also names the per-cycle fee, with no loss carried between cycles
+              "when each cycle's fee is taken from that cycle's own profit, with no loss carried from one "
+              "cycle to the next? [owner decision]",
               "6. Who holds the copyright that LICENSE names (\"Virtual Sovereign Business\", which is not a legal "
               "person), what does the public Apache-2.0 grant already permit, what does a contributor grant with no "
               "agreement, and on what terms does a founder receive an entity repository? [owner decision]",
@@ -99720,7 +99724,8 @@ def test_w1192_the_owners_twenty_decisions_of_2026_11_22_are_recorded_where_the_
     #  the local notes: the updated line, step 5, what is still the Owner's, PR #33 and the day's bullet, held whole
     notes_raw = read("docs/RESUME_ON_MY_MACHINE.md")
     notes = flat(notes_raw)
-    assert "Updated 2026-11-22 (W1131, W1164, W1184, W1187, W1188, W1190, W1191, W1192)." in notes
+    #  W1193: the record round edited the notes too
+    assert "Updated 2026-11-22 (W1131, W1164, W1184, W1187, W1188, W1190, W1191, W1192, W1193)." in notes
     step5 = notes_raw.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
     assert re.findall(r"^   - (FU-\d+):", step5, re.M) == ["FU-1165", L], re.findall(r"^   - (FU-\d+):", step5, re.M)
     step = flat(f"- {L}:" + step5.split(f"   - {L}:", 1)[1].split("\n   (", 1)[0])
@@ -99778,6 +99783,335 @@ def test_w1192_the_owners_twenty_decisions_of_2026_11_22_are_recorded_where_the_
         "replacing the three-stretch rule and the six working rules going into the method; and the tajwid companion to "
         "be built and held, its examples said as not available until a recording source permits them. The standing "
         "answer for the outside \"digital mitochondria\" prompts is to be recorded with the assessment's next section "
-        "(a later round)."), ruled[:200]
+        "(a later round). W1193 recorded that standing answer in section 35 of "   # W1193: the answer is recorded
+        "docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md."), ruled[:200]
     assert notes.index("- **Owner rulings in force:**") < notes.index("- **Ruled on 2026-11-22:**") < notes.index(
         "- **Still yours:**"), "the notes' order"
+
+
+def test_w1193_section_35_and_the_rows_the_v44_assessment_keeps_are_recorded_and_its_working_plan_says_what_it_is():
+    """W1193, the assessment's record round. The Owner supplied the v44 and v43 prompts of the "digital mitochondria"
+    line, their v42 and v41 supplements, the v40 body they carry and a nine-document commercial package (2026-11-21);
+    they were read against the tree, every gap of the seven readings refuted twice and each of the v40 body's once,
+    and the rounds designed and refuted on 2026-11-22. W1192 recorded the Owner's twenty decisions of that day. Held
+    here:
+    - section 35 follows section 34, in section 33's parts, with the standing answer the Owner accepted for later
+      prompts in the line as its own part; each row of its count table sums to its total, the seven readings sum to
+      the row "as read", and the synthesis moves no total; it says the 21 of 283 and the four false claims and
+      restates no count line; every path it backticks is in the tree, and it names no upload and gives no one a
+      pronoun; the standing answer names the source of each decline a ruling makes (S18.1's is the CPU-seconds unit,
+      not containment per attempt) and says the S18.1 readers are not built yet, and the three declines no ruling
+      makes are among what is deliberately not proposed, with this assessment's reasons;
+    - the 49 rows it keeps follow W1192's last row: the bundle's 43, each naming its round or that it has none, the
+      round protocol's row closed as built here (the only row this round closes) and the Quran Foundation developer
+      account the one Owner row; and the six the completeness critic found, each on the item it names. No row is an
+      Owner question. While the developer account is open, its line is on the plan's list before the ten put to the
+      Owner on the afternoon of 2026-11-20 (and after W1192's FU-1840 line while that line is there), with its six
+      phrases, and it is in the local notes' Still-yours list; once a later round closes it, the list no longer
+      names it (W594's rule). A later round closing any of the 49 leaves this guard green;
+    - the corrections: the README's dated status (2026-11-22 or later, never behind 97 items done; the totals are
+      test_w1130's), its paragraph on the switches and a landed round's dated full-suite count; the workpack's
+      question 2 and 3; LICENSE's holder in the brand screen; the strategy map naming only open rows; the cost
+      model's sign-in cell and the credit carried forward; the vision's FU-448 sentence; the round protocol, the
+      progress log's head, the docs index, the living plan and the W557 probe saying the commit message is a round's
+      record and the log ends at W502; the plan's dated notes at P2.13, P3.22 and P3.26 naming the row that holds
+      what each found, and at P3.32 pointing to the working plan; six register rows' dated notes, each naming its
+      row; and the local notes' updated line and the standing answer's record;
+    - docs/V44_ROUNDS_PREP.md says it is a working plan, dated, with its honest-status table and a schedule from
+      W1194 to W1232 in order, each round's heading naming the rows whose source names that round, and every open
+      row with no round from W1194 on listed as one; it names no upload, session work file or credential setting,
+      gives no one a pronoun, carries nothing the privacy screen finds, has no "interview" in its name and is in no
+      row's files; and it does not say the business plan was amended."""
+    import json
+    import pathlib
+    import re
+    from agentic_core import privacy_exposure as _pe
+    from agentic_core import plan_followups as _fu
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda p: (root / p).read_text(encoding="utf-8")
+    flat = lambda t: " ".join(t.split())
+    pron = re.compile(r"\b(?:he|his|him|himself)\b", re.I)
+    home = re.compile(r"(?i)\b[a-z]:[\\/]+users[\\/]+[^\\/\s`'\"<>()|,;:*?]+|/root/|/home/[a-z]")
+    reg = json.loads(read("docs/FOLLOWUPS.json"))["items"]
+    rows = {r["id"]: r for r in reg}
+    plan = read("docs/FABLE_DELIVERY_PROMPT.md")
+    slots = {i["slot"] for i in _fu.plan_items(plan)}
+
+    #  1. SECTION 35, after 34, in section 33's parts and order
+    doc = read("docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md")
+    assert doc.count("\n## 35. Addendum (W1193)") == 1 and doc.index("\n## 34. ") < doc.index("\n## 35. ")
+    sec = doc.split("\n## 35. Addendum (W1193)", 1)[1]
+    assert "\n## 36." not in sec, "something follows section 35"
+    parts = ["### How they were read", "### The counts", "### What they get wrong about this platform",
+             "### What they get right that the tree did not yet carry", "### What follows",
+             "### The standing answer for later prompts in this line", "### What is deliberately not proposed",
+             "### For the Owner"]
+    at = [sec.index("\n" + p) for p in parts]
+    assert at == sorted(at), "section 35's parts are not in section 33's order"
+    s35 = flat(sec)
+    #  the count table: every row sums, the seven sum to "as read", and synthesis moves no total
+    table = re.findall(r"^\| ([^|]+?) \| (\d+) = (\d+) / (\d+) / (\d+) / (\d+) / (\d+) \| (?:(\d+)|(\d+) listed of about "
+                       r"\d+) = (\d+) / (\d+) / (\d+) / (\d+) / (\d+) / (\d+) \|$", sec, re.M)
+    assert len(table) == 10, len(table)
+    got = {}
+    for t in table:
+        name, claims, demands = t[0], [int(x) for x in t[1:7]], int(t[7] or t[8])
+        dparts = [int(x) for x in t[9:15]]
+        assert claims[0] == sum(claims[1:]), (name, "claims do not sum", claims)
+        assert demands == sum(dparts), (name, "demands do not sum", demands, dparts)
+        got[name] = (claims, [demands] + dparts)
+    seven = ["v44", "v43", "v42 and v41", "the commercial package", "its companion papers", "its VSB entity design",
+             "its valuation note"]
+    as_read, after = got["the seven, as read"], got["the seven, after synthesis"]
+    for k in range(6):
+        assert sum(got[n][0][k] for n in seven) == as_read[0][k], ("the seven's claims do not sum to as read", k)
+    for k in range(7):
+        assert sum(got[n][1][k] for n in seven) == as_read[1][k], ("the seven's demands do not sum to as read", k)
+    assert as_read[0][0] == after[0][0] == 230 and as_read[1][0] == after[1][0] == 283, "the synthesis moved a total"
+    assert after[0] == [230, 166, 29, 12, 19, 4] and after[1] == [283, 170, 50, 2, 27, 13, 21], after
+    assert got["the v40 body, in four slices"] == ([177, 144, 7, 11, 3, 12], [150, 104, 8, 0, 10, 20, 8])
+    assert "(21 of 283)" in s35 and "Four of the 230 claims are false after synthesis" in s35
+    #  the standing answer, as its own part
+    stand = flat(sec.split("### The standing answer for later prompts in this line", 1)[1].split("\n### ", 1)[0])
+    assert "On 2026-11-22 the Owner accepted a standing answer for the \"digital mitochondria\" line" in stand
+    assert "only for the claims and matrix rows this answer does not cover" in stand
+    for f in ("agentic_core/molecular/work_budget.py", "agentic_core/organism/host_observation.py",
+              "agentic_core/ai/native/homeostasis.py", "agentic_core/api/instrument_cell.py",
+              "agentic_core/ai/native/tiers.py"):
+        assert f"`{f}`" in stand and (root / f).exists(), f
+    declined = stand.split("Declined by a standing ruling:", 1)[1]
+    for d, source in (("a second scheduler, registry, telemetry stack or control plane", "section 33's list"),
+                      ("a birth refused on capacity (FU-1166)", "FU-1166"),
+                      ("a numeric route score", "the Owner's ruling of 2026-09-30"),
+                      ("a CPU-seconds unit per task (S18.1)", "(S18.1)")):
+        assert d in declined and source in declined, (d, "is not declined with its source")
+    #  S18.1 rules the unit and the inert throttle, and no ruling declines containment per attempt: it is this
+    #  assessment's decline, with its reason
+    assert declined.count(" Leases, reservations or a settlement ledger,") == 1, "the declines no ruling makes are not apart"
+    ruled, unruled = declined.split(" Leases, reservations or a settlement ledger,", 1)
+    assert "containment" not in ruled, "containment per attempt is said to be declined by a ruling"
+    assert ("containment per attempt (model work runs in the local runtime's own process, so a per-attempt limit on the "
+            "server would contain nothing) are declined by this assessment, below, not by a ruling.") in unruled
+    assert "not yet built (rounds W1214 and W1215, behind the switch)" in stand, "the S18.1 readers read as built"
+    assert "books each run that names its owner to that owner" in stand and "only while the window's stated capacity" in stand
+    notprop = flat(sec.split("### What is deliberately not proposed", 1)[1].split("\n### ", 1)[0])
+    for d in ("Leases, reservations, an atomic slot store or a settlement ledger: nothing is reserved, so nothing "
+              "settles. This assessment declines them; no ruling does.", "A Cell tree, a Cell profile per entity, or the "
+              "Growing Tip, OGE/HAIRMS and \"Quality Finance\" vocabulary: the function is the Instrument Cell (P3.31)",
+              "CPU seconds as the unit, or a per-attempt CPU or peak-memory record (S18.1). The load test is kept",
+              "Containment per attempt: model work runs in the local runtime's own process, so a per-attempt limit on "
+              "the server would contain nothing. This assessment declines it; no ruling does."):
+        assert d in notprop, (d[:50], "is not among what is deliberately not proposed, with its reason")
+    #  every backticked path is in the tree; no upload is named; nobody is given a pronoun; no home path
+    ticked = re.findall(r"`([^`\s]+)`", sec)
+    paths = [x for x in ticked if "/" in x or re.search(r"\.(?:py|json|md|sh|tsx|mjs)$", x)]
+    assert len(paths) >= 20 and all((root / p).exists() for p in paths), [p for p in paths if not (root / p).exists()]
+    assert not re.search(r"(?i)uploads?/|\.docx\b|\.pdf\b", sec) and not re.search(r"\bv4[0-4][\w-]*\.(?:md|txt)\b", sec), (
+        "an upload is named")
+    assert not pron.search(sec) and not home.search(sec)
+    assert "## 35." in doc and "THE COUNT:" not in sec, "section 35 restates section 34's count line"
+    #  the business plan is said as unamended, the five questions put in chat, the developer account a row
+    owner = flat(sec.split("### For the Owner", 1)[1])
+    assert "left the business plan unchanged" in owner and "the business plan was left unchanged" in s35
+    assert not re.search(r"amended (?:the canvas, )?the business plan|business plan (?:was|is) amended", s35)
+    asked = owner.split("Put to the Owner in chat, each with a recommendation:**", 1)[1].split("**The v40 body", 1)[0]
+    assert len(re.findall(r"\(recommended: yes", asked)) == 5, asked
+
+    #  2. THE ROWS: 49 after W1192's last, in order, each on its item, naming its round
+    mine = [r for r in reg if str(r.get("source", "")).startswith("W1193 (")]
+    assert len(mine) == 49, len(mine)
+    n0 = max(int(rows[i]["id"].split("-")[1]) for i in ("FU-1838", "FU-1839", "FU-1840")) + 1
+    assert [r["id"] for r in mine] == [f"FU-{n0 + i}" for i in range(49)], [r["id"] for r in mine][:3]
+    design = [r for r in mine if "section 35:" in r["source"]]
+    critic = [r for r in mine if "the completeness critic of the re-measurement" in r["source"]]
+    assert len(design) == 43 and len(critic) == 6 and mine == design + critic
+    for r in mine:
+        assert r["slot"] == "OWNER" or r["slot"] in slots, (r["id"], r["slot"])
+        assert r["severity"] in ("high", "medium", "low") and "its round: " in r["source"], r["id"]
+        assert not pron.search(r["title"] + r["why"]), r["id"]
+        assert not r["title"].startswith("OWNER DECISION"), ("an Owner question was registered", r["id"])
+        assert "V44_ROUNDS_PREP" not in " ".join(r.get("files") or []), r["id"]
+    gated = [r for r in mine if r["owner_gated"]]
+    assert len(gated) == 1 and gated[0]["slot"] == "OWNER", gated
+    acct = gated[0]
+    assert acct["title"].startswith("OWNER: open a developer account at the Quran Foundation") and "RECOMMENDED" in acct["why"]
+    assert acct["status"] == "open" or acct.get("closed_by") != "W1193", "the Owner's act was closed by this round"
+    proto = next(r for r in mine if r["title"].startswith("The plan's round protocol names docs/AUTONOMOUS_PROGRESS.md"))
+    assert (proto["status"], proto.get("closed_by"), proto.get("because")) == ("done", "W1193", "built"), proto["id"]
+    assert [r["id"] for r in mine if r.get("closed_by") == "W1193"] == [proto["id"]], "this round closed another row"
+    assert {r["slot"] for r in critic} == {"P5.10", "P5.20", "P5.13", "P4.2", "P5.19", "P5.17"}
+    high = [r for r in mine if r["severity"] == "high"]
+    assert len(high) == 1 and high[0]["slot"] == "P5.10" and high[0].get("slot_source"), high
+    #  while the developer account is open: its line on the plan's list before the ten of 2026-11-20, after W1192's
+    #  FU-1840 line while that line is there, and in the local notes' Still-yours list; once a later round closes it,
+    #  the list no longer names it (W594's rule), as test_w890 holds FU-1040
+    still = plan.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
+    notes = read("docs/RESUME_ON_MY_MACHINE.md")
+    if acct["status"] == "open":
+        at = still.index(f"{acct['id']} (W1193):")
+        assert at < still.index("(Ten put to the Owner on the afternoon of 2026-11-20"), "the account is not before the ten"
+        if "FU-1840 (W1192):" in still:
+            assert still.index("FU-1840 (W1192):") < at, "the account is not after W1192's lines"
+        line = flat(still[at:].split("(Ten put", 1)[0])
+        for s in ("developer account at the Quran Foundation", "P5.17 clause 7", "read its developer terms whole",
+                  "never in the repository", "the publisher's approval", "Recommended:"):
+            assert s in line, s
+        yours = notes.split("- **Still yours:**", 1)[1].split("\n- **", 1)[0]
+        bullet = [b for b in yours.split("\n  - ") if f"({acct['id']})" in b]
+        assert len(bullet) == 1 and "Quran Foundation" in bullet[0] and "never in the repository" in bullet[0], (
+            "the developer account is not one bullet of the notes' Still-yours list", bullet)
+    else:
+        assert acct["id"] not in still, "the closed developer account is still put to the Owner"
+    assert "W1193 recorded that standing answer in section 35" in flat(still)
+    nflat = flat(notes)
+    assert "Updated 2026-11-22 (W1131, W1164, W1184, W1187, W1188, W1190, W1191, W1192, W1193)." in nflat
+    assert ("is to be recorded with the assessment's next section (a later round). W1193 recorded that standing answer "
+            "in section 35 of docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md.") in nflat, "the notes do not say it is recorded"
+
+    #  3. THE CORRECTIONS
+    rd = read("README.md")
+    rflat = flat(rd)
+    cm = re.search(r"\*\*[\d,]+ integration tests passing / \d+ skipped\*\* \(the full suite run before "
+                   r"W(\d+)'s commit, (\d{4}-\d{2}-\d{2});", rd)
+    assert cm and int(cm.group(1)) >= 1191 and cm.group(2) >= "2026-11-22", "the README's count predates this round"
+    #  the date and the lower bounds only: the totals are test_w1130's, which holds them to the plan's Done line
+    st = re.search(r"Where it stood on (\d{4}-\d{2}-\d{2}), from that generated block: \*\*(\d+) of (\d+) plan items "
+                   r"done\.\*\*", rd)
+    assert st and st.group(1) >= "2026-11-22" and int(st.group(2)) >= 97, "the README's dated status predates this round"
+    phase = dict(re.findall(r"^\| (P\d)[^|]* \| (\d+) of \d+ \| \d+ open \|$", rd, re.M))
+    assert int(phase["P4"]) >= 3 and int(phase["P5"]) >= 7, phase
+    for s in ("Three of them, external models (P4.3), managed Postgres (P4.4) and real money (P4.6), are done as dated "
+              "boundaries in the vision's section 18, with their switches off and nothing deployed.",
+              "(2026-11-20, evening)", "(2026-11-21)", "(2026-11-22)", "No round switches sign-in on in the tree.",
+              "`docs/AUTONOMOUS_PROGRESS.md` is the cycle log up to 2026-10-03"):
+        assert s in rflat, s
+    para = rflat.split("The fourth phase is the Owner's six switches:", 1)[1].split("the generated block is the current one.", 1)[0]
+    assert "Stripe" not in para and "(P4.3)" in para, "the roadmap's paragraph names a provider or drops a boundary"
+    work = flat(read("docs/business/FORMATION_WORKPACK.md"))
+    assert ("allow the fee the Owner ruled on 2026-10-12 (P5.16 clause 3) and released for a made-up entity on "
+            "2026-11-19, and the split it leaves? [owner decision]") in work
+    assert ("when each cycle's fee is taken from that cycle's own profit, with no loss carried from one cycle to the "
+            "next? [owner decision]") in work and "the fee the Owner ruled on 2026-11-19," not in work
+    brand = flat(read("docs/business/NAME_AND_BRAND_SCREEN.md").split("## 2. What the Owner holds", 1)[1].split("\n## ", 1)[0])
+    assert "Copyright 2026 Virtual Sovereign Business" in read("LICENSE")
+    assert ("\"Copyright 2026 Virtual Sovereign Business\"; no company or other legal form is held under that name, and "
+            "who holds the copyright is question 6 for a solicitor") in brand
+    assert "6. Who holds the copyright that LICENSE names" in work
+    smap = read("docs/business/LIVING_STRATEGY_MAP.md")
+    between = [b for b in smap.split("\n- ") if b.startswith("Between this step and being relied on")]
+    assert len(between) == 6, len(between)
+    named = [rid for b in between for rid in re.findall(r"row (FU-\d+)", b)]
+    assert named and all(rows[rid]["status"] == "open" for rid in named), [(r, rows[r]["status"]) for r in named]
+    assert "no open row in the register" in flat(between[5]) and {"FU-417", "FU-1072", "FU-1086"} <= set(named)
+    cost = read("docs/business/COST_MODEL.md")
+    cell = next(ln for ln in cost.splitlines() if ln.startswith("| P4.1 sign-in |"))
+    assert "`deploy/gcp/startup.sh`" in cell and "the readiness round's thirteen rows are closed" in cell and cell.endswith("| no |")
+    readiness = ("FU-845", "FU-846", "FU-847", "FU-848", "FU-849", "FU-850", "FU-1061", "FU-1062", "FU-1063", "FU-1089",
+                 "FU-1120", "FU-1152", "FU-1171")
+    assert all(rows[r]["slot"] == "P4.1" and rows[r]["status"] == "done" for r in readiness), "a readiness row is open"
+    cflat = flat(cost)
+    assert ("the price, once charged, is credited against the platform's fees as they fall due, from the first, and "
+            "carried forward until it is used up") in cflat and "[owner-defined, 2026-11-22]" in cflat
+    assert "the first share is reduced by the once-only price it was credited against" not in cflat
+    vision = flat(read("docs/WORKSTATION_IDBO_WHOLE_VISION.md"))
+    assert ("was FU-448: the Owner ruled on 2026-10-06 that the gate does not extend to the five research tools "
+            "(closed in W598), and on 2026-10-11 that what a model composes there is withheld until a named scholar "
+            "approves that exact text") in vision and "is FU-448, an open Owner decision" not in vision
+    assert rows["FU-448"]["status"] == "done" and rows["FU-448"]["closed_by"] == "W598"
+    assert (root / "docs/WORKSTATION_IDBO_WHOLE_VISION.md").read_bytes().count(b"\r\n") == \
+        (root / "docs/WORKSTATION_IDBO_WHOLE_VISION.md").read_bytes().count(b"\n"), "the vision's CRLF was lost"
+    #  the round protocol and every pointer to the progress log
+    log = read("docs/AUTONOMOUS_PROGRESS.md")
+    last = max(int(m) for m in re.findall(r"^#{2,3} W(\d+)\b", log, re.M))
+    assert last == 502 and "**Not written since W502**" in log.split("\n## ", 1)[0], last
+    pflat = flat(plan)
+    assert "`AUTONOMOUS_PROGRESS.md` (W1→W502, not written since)" in pflat and "(W1→W486)" not in pflat
+    assert "V6 RECORD — the commit message, which is the round's record" in pflat and "AUTONOMOUS_PROGRESS.md entry" not in pflat
+    assert ("the honest note in the commit message) → close the round's rows and mark a finished item DONE → commit "
+            "with a message") in pflat and "append to docs/AUTONOMOUS_PROGRESS.md" not in pflat
+    for rel in ("docs/README.md", "docs/WORKSTATION_IDBO_LIVING_PLAN.md"):
+        t = flat(read(rel))
+        assert "is the cycle log of rounds W1–W502, and each later round's record is its commit message" in t, rel
+        assert "the ongoing record is" not in t, rel
+    probe = read("scripts/_w557_probe.mjs").split("\n", 1)[0]
+    assert "HISTORY (W811, FU-924)" in probe and "W557" in probe and "its record is that round's commit message" in probe
+    #  the plan's dated notes: at P2.13, P3.22 and P3.26 each names the row that holds what it found; P3.32's points
+    #  to the working plan, because that item names no row
+    memory = next(r for r in design if r["title"].startswith("The avatar and upload memory the Owner ruled retired"))
+    archive = next(r for r in design if r["title"].startswith("The archive's search basis and the Horizon page say"))
+    p213 = flat(plan.split("\n P2.13 ", 1)[1].split("\n P2.14 ", 1)[0])
+    assert p213.count("CORRECTED W1193 (2026-11-22)") == 2 and f"its removal is row {memory['id']}" in p213
+    p322 = flat(plan.split("\n P3.22 ", 1)[1].split("\n P3.23 ", 1)[0])
+    assert "CORRECTED W1193 (2026-11-22), the words above kept: chromadb 1.5.5 and onnxruntime are installed" in p322
+    assert memory["id"] in p322 and archive["id"] in p322 and "neither of which exists here." in p322
+    p332 = flat(plan.split("\n P3.32 [", 1)[1].split("\n MILESTONE M3", 1)[0])
+    assert "CORRECTED W1193 (2026-11-22), the words of the plan kept: chromadb 1.5.5 and onnxruntime" in p332
+    assert "its removal is scheduled in docs/V44_ROUNDS_PREP.md" in p332 and not re.search(r"\bFU-\d+", p332)
+    p326 = flat(plan.split("\n P3.26 ", 1)[1].split("\n P3.27 ", 1)[0])
+    admission = next(r for r in design if r["title"].startswith("With the throttle on, admission and every reader"))
+    assert "FU-1116 closed at W839 on births alone" in p326 and f"building that is row {admission['id']}" in p326
+    #  the register's dated notes
+    by = lambda prefix: next(r for r in design if r["title"].startswith(prefix))
+    notes_said = {
+        "FU-282": ("note", [memory["id"], "no production reader"]),
+        "FU-1076": ("close_note", [by("A reserved instrument is drafted under any template id")["id"],
+                                   by("A reserved instrument asked for in a listed template")["id"]]),
+        "FU-1087": ("close_note", [by("A model is made the serving default with no licence read")["id"]]),
+        "FU-1130": ("note", [memory["id"], "all-MiniLM-L6-v2"]),
+        "FU-1262": ("close_note", [by("W1075's census passes over every entity route")["id"]]),
+        "FU-1817": ("why", [by("A handed-over entity repository says nothing about its terms")["id"],
+                            "RECOMMENDED (accepted 2026-11-20, evening)"]),
+    }
+    for rid, (field, said) in notes_said.items():
+        text = rows[rid][field]
+        tail = text.split(" W1193 (2026-11-22)", 1)[-1] if field == "why" else text.split("CORRECTED W1193 (2026-11-22):", 1)[-1]
+        assert "W1193 (2026-11-22)" in text, (rid, "has no dated note")
+        for s in said:
+            assert s in text, (rid, s)
+        assert not pron.search(tail), rid
+
+    #  4. THE WORKING PLAN
+    prep_path = root / "docs/V44_ROUNDS_PREP.md"
+    prep = prep_path.read_text(encoding="utf-8")
+    assert "interview" not in prep_path.name.lower(), "the working plan's name would read as an interview record"
+    head = flat(prep.split("\n## Honest status", 1)[0])
+    assert "A WORKING PLAN, not a claim the work is done" in head and "Dated 2026-11-22" in head
+    assert "stay the authority" in head
+    status = prep.split("## Honest status of this document", 1)[1].split("\n## ", 1)[0]
+    facts = [m.group(1) for m in re.finditer(r"^\| ([^|]+?) \| ", status, re.M)]
+    for f in ("Dated", "Read at", "Numbering", "The business plan", "Plans judged sound by their refuter",
+              "Rounds HELD on the Owner", "Rows the record round registered"):
+        assert f in facts, f
+    assert "moved the record round to W1193" in flat(status) and "W1192 amended only the ratified canvas" in flat(status)
+    sched = prep.split("## The schedule", 1)[1].split("\n## ", 1)[0]
+    rounds = [int(x) for x in re.findall(r"^\| W(\d{4}) \|", sched, re.M)]
+    assert rounds == list(range(1194, 1233)), rounds
+    heads = {int(m.group(1)): m.start() for m in re.finditer(r"^## W(\d{4}) - ", prep, re.M)}
+    assert sorted(heads) == rounds, "a scheduled round has no section of its own"
+    ends = sorted(heads.values()) + [prep.index("\n## Rows with no round in this schedule")]
+    for w, start in heads.items():
+        body = prep[start:ends[ends.index(start) + 1]]
+        listed = re.findall(r"^- (FU-\d+) \(", body.split("**Rows:**", 1)[1].split("\n\n**", 1)[0], re.M) \
+            if "**Rows:**\n" in body else []
+        for rid in listed:
+            assert rid in rows and f"W{w}" in rows[rid]["source"].split("its round: ", 1)[1], (w, rid)
+    for r in design:
+        rnd = [int(x) for x in re.findall(r"W(\d{4})", r["source"].split("its round: ", 1)[1])]
+        if rnd and rnd[0] >= 1194:
+            assert f"- {r['id']} (" in prep[heads[rnd[0]]:], (r["id"], "is not under its round")
+    pre = prep.split("\n## Rows with no round in this schedule", 1)[1].split("\n## ", 1)[0]
+    roundless = [r for r in mine if r["status"] == "open" and not any(
+        int(x) >= 1194 for x in re.findall(r"W(\d{4})", r["source"].split("its round: ", 1)[1]))]
+    for r in roundless:
+        assert f"- {r['id']} (" in pre, (r["id"], "a row with no round is not listed as one")
+    assert not pron.search(prep) and not home.search(prep), "the working plan gives a pronoun or names a home folder"
+    assert not re.search(r"/home/|/tmp/|/root/|scratchpad|\.claude/|docs/fidelity_runs/", prep)
+    work = re.compile(r"w\d{3,4}_(?:apply|test|notes)\.|msg\d+\.txt|cluster_[A-D]\.json|section35_inputs|"
+                      r"adjudication_v44|v40_synthesis")
+    assert not work.search(prep), ("the working plan names a session work file", work.search(prep).group(0))
+    assert not re.search(r"\b[A-Z][A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD)[A-Z0-9_]*\b", prep), "a credential setting"
+    assert not re.search(r"(?i)uploads?/[^\s]+|\.docx\b", prep), "an upload is named"
+    found = _pe.scan(root, files=[("docs/V44_ROUNDS_PREP.md", prep.encode("utf-8"))], markers=[])["findings"]
+    assert found == [], [(f["path"], f["line"], f["kind"]) for f in found]
+    assert not re.search(r"W1192 amends the canvas, the business plan|business plan (?:was|is) amended", prep)
+    assert "`docs/V44_ROUNDS_PREP.md`" in sec, "section 35 does not name its working plan"
