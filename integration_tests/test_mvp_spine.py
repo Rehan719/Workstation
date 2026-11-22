@@ -65608,14 +65608,21 @@ def test_w714_a_deed_is_held_until_a_qualified_person_has_read_the_schedule(clie
         assert r.status_code == 409, (tid, r.status_code, r.text[:200])
         d = r.json()["detail"]
         assert isinstance(d, str) and "is held and is not generated here" in d and "Schedule 2" in d, d
-        assert "says nothing about whether" in d and "A solicitor can prepare one" in d and "Nothing here is legal advice" in d, d
+        #  W1194 (review m6) changed this on purpose: the reason no longer says who may prepare one; the refusal
+        #  says where help from a person is
+        assert "says nothing about whether" in d and "For help from a person, see" in d and "Nothing here is legal advice" in d, d
     assert sent == [], "a prompt was sent for a held deed"
-    #  2. the hold is on the kind, never on a substring: an ordinary template still generates
+    #  2. the hold is on the kind, never on a substring: an ordinary template still generates.
+    #     W1194 (P5.18 clause 4) changed this leg on purpose: the draft form drafts only the templates it lists, so
+    #     'indeed_agreement', which it does not list, is refused as unlisted (404) - and still not as held, which is
+    #     the property this leg holds. One prompt is sent, for nda, where two were.
     for tid in ("nda", "indeed_agreement"):
         assert _sp.held_for_a_qualified_read(tid) is False, tid
-        r = client.post("/api/v1/law/generate", json={"template_id": tid})
-        assert r.status_code == 200 and r.json()["document"] == "w714 captured", (tid, r.text[:200])
-    assert sent == ["law_generator", "law_generator"], sent
+    r = client.post("/api/v1/law/generate", json={"template_id": "nda"})
+    assert r.status_code == 200 and r.json()["document"] == "w714 captured", r.text[:200]
+    r = client.post("/api/v1/law/generate", json={"template_id": "indeed_agreement"})
+    assert r.status_code == 404 and "is held and is not generated here" not in r.json()["detail"], r.text[:300]
+    assert sent == ["law_generator"], sent
     #  3. the list says which it refuses and why, beside the rows
     held = client.get("/api/v1/law/templates").json()["held"]
     assert held["templates"] == ["partnership_deed"] and held["reason"] == _sp.HELD_REASON, held
@@ -103482,3 +103489,181 @@ def test_w1207b_the_limiter_leg_of_w892_asserts_the_slot_given_not_the_gap_betwe
     assert any(isinstance(n, ast.Assert) and ast.unparse(n) == ast.unparse(ast.parse(
         "assert lim.stats()['waited'] == 3 and lim.stats()['calls'] == 3, lim.stats()").body[0])
         for n in tree.body), "L4: the leg's stats assert is gone or changed"
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1194 (P5.18 clause 4) - the Law draft form drafts only the templates it lists; any other id, a reserved
+#  instrument among them, is refused before anything is composed and routed to where help from a person is.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1194_p518_an_unlisted_template_id_is_refused_at_the_draft_form_before_anything_is_composed(client, monkeypatch):
+    """P5.18 clause 4 (W1194): "an instrument of transfer or charge of land, an instrument for land registration, a
+    contract for the sale or other disposition of land beyond a short lease, and a deed for registration are reserved
+    to authorised persons and are refused and routed". POST /api/v1/law/generate composed any id it did not list from
+    a generic prompt, so 'tr1' or 'contract_for_sale_of_land' was drafted by the floor or a model; only a deed was
+    held (W714). Held here:
+    0. the reserved sentence is the register of sources' row lsa-2007-sch2 - its name, page, the day it was read,
+       whose reading it was (this platform's, not a qualified person's) and what it did not read, never its summary -
+       with the four kinds in the clause's words, what the draft form refuses, where help is (the list of where help
+       is, by its place on the page) and, last, that nothing here is legal advice; it says preparing these is a
+       reserved instrument activity, names no one as entitled, never says what the platform never does, and never
+       ends with the clerk's own statement;
+    1. each reserved kind posted as a template id is refused with 404 before any prompt is sent, saying the templates
+       the generator drafts and the reserved sentence;
+    2. an ordinary id it does not list, or a made-up one, is refused the same way and never as held, and the unlisted
+       sentence says nothing of what the id is; the deed hold keeps W714's reason, which no longer says who may
+       prepare a deed, and says where help is;
+    3. every listed template that is neither filing-shaped nor held still drafts, those with no prompt of their own
+       among them;
+    4. the fabric's form meets the route's own refusal, and nothing is offered as its output;
+    5. the templates answer carries the reserved block beside the held one, read from the register when asked, with
+       the help route for API readers: another reading is followed by the list and the refusal alike, and a register
+       that cannot be read is said as unread;
+    6. the sentence names no Act that resolves against no held source, and says what was not read;
+    7. the coverage register's row routes to where help is and is guarded by this test; the checker refuses a guard
+       that is not a test in the suite, and a guard named by a row that is not a refusal;
+    8. P5.18 says the draft form's template-id door is closed and the draft form still holds a deed, names this
+       guard and says what is still open."""
+    import asyncio
+    import importlib.util
+    import inspect
+    import pathlib
+
+    import agentic_core.api.law as _law
+    from agentic_core.api import resource_fabric as _fab
+    from agentic_core.legal import authorities as _au, specialist as _sp, time_limits as _tl
+    root = pathlib.Path(__file__).resolve().parents[1]
+    me = inspect.currentframe().f_code.co_name
+    row = _tl._register()["lsa-2007-sch2"]
+    sent = []
+
+    async def _capture(prompt, agent, **kw):
+        sent.append(agent)
+        return "w1194 captured", {"served_by": "native", "floor_note": "w1194: captured, nothing composed"}
+    monkeypatch.setattr(_law, "ai_text", _capture)
+
+    #  0. the sentence is the row's, said whole, and never its summary
+    reason = _sp.reserved_reason()
+    by = row["read_by"].split(",")[0].strip()
+    assert by.startswith("round W"), row["read_by"]
+    for part in (row["names"][0], row["page"], row["read_on"], "not read: " + row["not_read"],
+                 f"read by this platform ({by}), not by a qualified person, at {row['page']} on {row['read_on']}",
+                 "The Law draft form refuses any template id it does not list, and it lists none of these. ",
+                 "For help from a person, see the list of where help is ('Where to get help from a person' on the Law "
+                 "page, and the support page).", *_sp.RESERVED_INSTRUMENTS):
+        assert part in reason, (part, reason)
+    assert reason.startswith("Preparing any of these four documents is a reserved instrument activity: "), reason
+    assert reason.endswith(" Nothing here is legal advice."), reason       # never the clerk's statement (review M4)
+    for never in ("othing here composes", "A solicitor can", "GET /api/v1/law/help", "reserved to authorised persons",
+                  "as a clerk would"):
+        assert never not in reason, (never, reason)
+    assert _sp.RESERVED_INSTRUMENTS == (
+        "an instrument of transfer or charge of land", "an instrument for land registration",
+        "a contract for the sale or other disposition of land beyond a short lease", "a deed for registration")
+    assert row["says"][:60] not in reason, "the row's summary is shown"
+    drafted = [t for t in _law._TEMPLATES if t["id"] not in _sp.FILING_SHAPED and not _sp.held_for_a_qualified_read(t["id"])]
+    #  at least the seven drafted today: a later round may list another (review G6)
+    assert [t["id"] for t in _law.drafted_templates()] == [t["id"] for t in drafted] and len(drafted) >= 7, drafted
+
+    #  1. each reserved kind posted as an id is refused, before anything is composed
+    for tid in ("transfer_of_registered_land", "tr1", "legal_charge_over_land", "contract_for_sale_of_land",
+                "land_registry_application"):
+        r = client.post("/api/v1/law/generate", json={"template_id": tid, "parties": {"a": "A Person"},
+                                                      "custom_instructions": "w1194"})
+        assert r.status_code == 404, (tid, r.status_code, r.text[:200])
+        d = r.json()["detail"]
+        assert d.startswith(f"'{tid}' is not a template this generator drafts") and reason in d, d
+        assert f"It drafts only these {len(drafted)}: " in d and all(t["name"] in d for t in drafted), d
+    assert sent == [], ("a prompt was sent for an id the generator does not list", sent)
+
+    #  2. any id it does not list, the same way and never as held; the unlisted sentence says nothing of the id's kind
+    for tid in ("indeed_agreement", "w1194_made_up"):
+        assert _sp.held_for_a_qualified_read(tid) is False, tid
+        r = client.post("/api/v1/law/generate", json={"template_id": tid})
+        assert r.status_code == 404 and reason in r.json()["detail"], (tid, r.status_code, r.text[:200])
+        d = r.json()["detail"]
+        assert "is held and is not generated here" not in d and "reserved" not in d.split(reason)[0], d
+    assert sent == []
+    #  the deed hold (W714) keeps its own reason, which no longer says who may prepare one (review m6), and says where
+    #  help is (review R6)
+    assert "A solicitor can" not in _sp.HELD_REASON and _sp.HELD_REASON.endswith("deed is reserved."), _sp.HELD_REASON
+    r = client.post("/api/v1/law/generate", json={"template_id": "partnership_deed"})
+    assert r.status_code == 409 and _sp.HELD_REASON in r.json()["detail"], r.text[:300]
+    assert f"For help from a person, see {_sp.HELP_PLACES}. Nothing here is legal advice." in r.json()["detail"], r.text
+    assert sent == []
+
+    #  3. every listed template the generator drafts still drafts, those with no prompt of their own among them
+    no_prompt = [t["id"] for t in drafted if t["id"] not in _law._TEMPLATE_PROMPTS]
+    assert no_prompt, "every drafted template has a prompt of its own, so this leg could not tell the list from them"
+    for t in drafted:
+        r = client.post("/api/v1/law/generate", json={"template_id": t["id"]})
+        assert r.status_code == 200 and r.json()["document"] == "w1194 captured", (t["id"], r.text[:200])
+    assert sent == ["law_generator"] * len(drafted), sent
+
+    #  4. the fabric's form: the route's own refusal, and no output
+    g = asyncio.new_event_loop().run_until_complete(
+        _fab._run_real_resource_handler("form_law_generate", {"template_id": "tr1"}, "objective", "general"))
+    p = client.post("/api/v1/law/generate", json={"template_id": "tr1"})
+    assert g["refused"] is True and g["status"] == p.status_code == 404 and g["detail"] == p.json()["detail"], g
+    assert g["output"] is None and len(sent) == len(drafted), (g, sent)
+
+    #  5. the templates answer: the reserved block beside the held one, read from the register when asked
+    tpl = client.get("/api/v1/law/templates").json()
+    res = tpl["reserved"]
+    assert res["kinds"] == list(_sp.RESERVED_INSTRUMENTS) and res["reason"] == reason, res
+    assert res["help_route"] == "GET /api/v1/law/help" and res["source"]["read_by"] == row["read_by"], res
+    assert (res["source"]["id"], res["source"]["read"], res["source"]["read_on"], res["source"]["not_read"]) == (
+        "lsa-2007-sch2", True, row["read_on"], row["not_read"]), res["source"]
+    assert tpl["held"]["templates"] == ["partnership_deed"] and tpl["held"]["reason"] == _sp.HELD_REASON, tpl["held"]
+    real = _tl._register
+
+    def _reread():
+        rows = real()
+        rows["lsa-2007-sch2"] = {**rows["lsa-2007-sch2"], "read_on": "2031-01-02"}
+        return rows
+    monkeypatch.setattr(_tl, "_register", _reread)
+    again = client.get("/api/v1/law/templates").json()["reserved"]
+    assert " on 2031-01-02; not read: " in again["reason"] and again["source"]["read_on"] == "2031-01-02", again
+    assert " on 2031-01-02; not read: " in client.post("/api/v1/law/generate", json={"template_id": "tr1"}).json()["detail"]
+    monkeypatch.setattr(_tl, "_register", lambda: None)
+    unread = client.get("/api/v1/law/templates").json()["reserved"]
+    assert unread["source"] == {"id": "lsa-2007-sch2", "read": False, "basis": "the register of sources could not be read"}
+    assert "lsa-2007-sch2: the register of sources could not be read, so the reading this rests on is not shown" in \
+        unread["reason"] and row["read_on"] not in unread["reason"], unread["reason"]
+    monkeypatch.setattr(_tl, "_register", real)
+    assert sent == ["law_generator"] * len(drafted), sent
+
+    #  6. no Act named that resolves against no held source; what was not read is said
+    shown, named = _au.screen(reason)
+    assert shown == reason and named["withheld"] == [] and named["shown"], named
+    assert "; not read: " + row["not_read"] + ")" in reason, reason
+
+    #  7. the coverage register's row, and the checker's new field
+    _s = importlib.util.spec_from_file_location("w1194_coverage_register", root / "scripts" / "coverage_register.py")
+    cov = importlib.util.module_from_spec(_s)
+    _s.loader.exec_module(cov)
+    reg = cov.load()
+    crow = next(r for r in reg["rows"] if r["id"] == "law-reserved-instruments")
+    assert (crow["domain"], crow["state"]) == ("Law", "route_only") and me in crow["guarded_by"], crow
+    assert all(p in crow["subject"] for p in _sp.RESERVED_INSTRUMENTS), crow["subject"]      # the clause's four (PW7)
+    assert crow["route"] in _tl._register() and "driven_by" not in crow, crow
+    assert cov.check(reg)["problems"] == [], cov.check(reg)["problems"]
+    base = {"domain": "D", "subject": "s", "nation": "England", "today": "t"}
+    bad = {"rows": [{**base, "id": "x", "state": "route_only", "route": "r", "guarded_by": "test_not_there"},
+                    {**base, "id": "y", "state": "frame", "guarded_by": "test_real_one"},
+                    {**base, "id": "z", "state": "excluded", "excluded_by": "a ruling", "guarded_by": "test_real_one"},
+                    {**base, "id": "w", "state": "route_only", "route": "r", "guarded_by": ["test_real_one"]},
+                    {**base, "id": "v", "state": "route_only", "route": "r", "guarded_by": ["test_real_one", "test_gone"]},
+                    {**base, "id": "u", "state": "route_only", "route": "r", "guarded_by": 5}]}
+    got = cov.check(bad, {"test_real_one"})["problems"]
+    assert got == ["x: is guarded by test_not_there, which is not a test in the suite",
+                   "y: is 'frame' and names a guard - only a refusal (route_only or excluded) is guarded",
+                   "v: is guarded by test_gone, which is not a test in the suite",
+                   "u: names its guard as neither a test nor a list of tests"], got
+
+    #  8. P5.18 says the draft form's template-id door is closed (review m1), names this guard and says what is open
+    plan = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    p518 = " ".join(plan.split("\n P5.18 [chartered W711", 1)[1].split("\n P5.19 [chartered W711", 1)[0].split())
+    assert "UPDATED 2026-11-22 (W1194): the draft form's template-id door is closed." in p518, p518[-900:]
+    assert "the draft form still holds a deed (W714)" in p518, p518[-900:]
+    assert f"row law-reserved-instruments is guarded by {me}." in p518, p518[-900:]
+    assert "Still open: the instructions and parties of a listed template, and the label the clerk stores" in p518

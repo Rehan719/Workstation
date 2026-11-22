@@ -137,6 +137,18 @@
    "today": "a form returns an outline of headings filled with the request's own words; nothing is researched, checked or assessed"
   },
   {
+   "id": "law-reserved-instruments",
+   "domain": "Law",
+   "subject": "A document whose preparation is a reserved instrument activity: an instrument of transfer or charge of land, an instrument for land registration, a contract for the sale or other disposition of land beyond a short lease, a deed for registration",
+   "nation": "England and Wales",
+   "state": "route_only",
+   "today": "the draft form drafts only the templates it lists; any other id, one of the reserved documents among them, is refused before anything is composed, saying the templates it drafts and the reserved documents (read from the register of sources' row lsa-2007-sch2 by this platform, not by a qualified person, with the day it was read and what it did not read) and where help is, and the fabric's form meets the same refusal; the draft form holds a deed (W714), and its refusal says where help is; the instructions and parties of a listed template, and the clerk's label, are not yet screened (W1194)",
+   "route": "help-gov-find-legal-advice",
+   "guarded_by": [
+    "test_w1194_p518_an_unlisted_template_id_is_refused_at_the_draft_form_before_anything_is_composed"
+   ]
+  },
+  {
    "id": "law-analyse",
    "domain": "Law",
    "subject": "A contract or legal document analysed",

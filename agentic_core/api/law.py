@@ -81,6 +81,12 @@ _TEMPLATE_PROMPTS: dict[str, str] = {
 }
 
 
+def drafted_templates() -> list:
+    """W1194 - the listed templates this generator drafts: not the filing-shaped (the clerk's) and not the held."""
+    from agentic_core.legal.specialist import FILING_SHAPED as _fs, held_for_a_qualified_read as _held
+    return [t for t in _TEMPLATES if t["id"] not in _fs and not _held(t["id"])]
+
+
 class ParticularSpec(BaseModel):
     """P3.30 (ledger v16 R5.12) - ONE PARTICULAR: what it is called and the words a bundle line must carry.
     The field was an untyped list, so a particular sent as plain text reached the specialist's `.get()` and
@@ -131,9 +137,13 @@ async def matter_bundle():
 async def list_templates():
     """Return available legal document templates."""
     from agentic_core.legal.specialist import HELD_REASON as _held_reason, held_for_a_qualified_read as _held
+    from agentic_core.legal import specialist as _sp1194
     return {"templates": _TEMPLATES, "total": len(_TEMPLATES),
             #  W714 - which of these the generator refuses, and why, said beside the list and not inside a row
             "held": {"templates": [t["id"] for t in _TEMPLATES if _held(t["id"])], "reason": _held_reason},
+            #  W1194 (P5.18 clause 4) - the reserved documents, read from the register of sources when asked
+            "reserved": {"kinds": list(_sp1194.RESERVED_INSTRUMENTS), "reason": _sp1194.reserved_reason(),
+                         "source": _sp1194.reserved_source(), "help_route": _sp1194.HELP_ROUTE},
             #  Each template's own `jurisdiction` says what that template is FOR, which is legitimately
             #  per-template. THE MATTER's jurisdiction is a different fact with one home and a basis,
             #  published here so a reader can see which is which and where the second came from.
@@ -396,10 +406,21 @@ async def generate_document(req: GenerateRequest):
     #  W714 (OWNER RULING 2026-10-13) - a deed is held until a qualified person has read the Schedule. Refused
     #  here, before anything is composed, so the page and the resource runner receive the same answer.
     from agentic_core.legal.specialist import HELD_REASON as _held_reason, held_for_a_qualified_read as _held
+    from agentic_core.legal.specialist import HELP_PLACES as _help1194
     if _held(req.template_id):
+        #  W1194 (review R6) - the hold says where help is, as the reserved refusal does; its reason is W714's
         raise HTTPException(status_code=409, detail=(
             f"'{req.template_id}' is held and is not generated here: {_held_reason} "
-            f"Nothing here is legal advice."))
+            f"For help from a person, see {_help1194}. Nothing here is legal advice."))
+    #  W1194 (P5.18 clause 4) - THE DRAFT FORM DRAFTS ONLY THE TEMPLATES IT LISTS. Any other id was composed from
+    #  the generic prompt below, so a land transfer or a contract for the sale of land,
+    #  was drafted though preparing it is a reserved instrument activity. Refused here, before any prompt is
+    #  built, with the templates it drafts and, apart, the reserved documents - never that the id is one of those.
+    if req.template_id not in {t["id"] for t in _TEMPLATES}:
+        from agentic_core.legal.specialist import reserved_reason as _reserved, unlisted_reason as _unlisted
+        _drafted = [t["name"] for t in drafted_templates()]
+        raise HTTPException(status_code=404, detail=f"{_unlisted(req.template_id, _drafted)} {_reserved()}")
+    #  a listed template with no prompt of its own drafts from the generic one (W1194: only a listed id gets here)
     base_prompt = _TEMPLATE_PROMPTS.get(
         req.template_id,
         f"Draft a comprehensive {req.template_id.replace('_', ' ')} agreement under {req.jurisdiction} law. "

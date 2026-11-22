@@ -29,16 +29,73 @@ HELD_FOR_A_QUALIFIED_READ = ("partnership_deed",)
 HELD_REASON = ("it is a deed, and preparing certain instruments is reserved to authorised persons by the "
                "Legal Services Act 2007 (section 12 and Schedule 2). No qualified person has yet read that Schedule "
                "for this platform, so no deed is composed here. This is a hold, and says nothing about whether "
-               "this particular deed is reserved. A solicitor can prepare one.")
+               "this particular deed is reserved.")
 
 
 def held_for_a_qualified_read(template_id: Any) -> bool:
-    """True for a template named as held, and for ANY id that names a deed - the generator composes a
-    document for an id it has never seen, so the hold is on the kind and never only on one spelling."""
+    """True for a template named as held, and for ANY id that names a deed: the hold is on the kind and never
+    only on one spelling (before W1194 the generator composed a document for any id it had never seen)."""
     tid = str(template_id or "").strip().lower()
     return tid in HELD_FOR_A_QUALIFIED_READ or "deed" in re.split(r"[^a-z]+", tid)
 NOT_LEGAL_ADVICE = ("Nothing here is legal advice. This platform assembles and cites as a clerk would; it is "
                     "never counsel, and it never forecasts an outcome.")
+#  W1194 (P5.18 clause 4) - THE RESERVED DOCUMENTS: the four whose preparation is a reserved instrument activity,
+#  in the clause's own words. What the law reserves is said only from the register of sources' row for the Schedule,
+#  read when asked: its name, its page, the day it was read, whose reading it was and what it did not read (clause 8);
+#  never its summary, which names Acts this platform holds no row for (P5.11 clause 6). The sentence says what the
+#  draft form refuses, not what the platform never does, and apart from what was asked: it never says that the id
+#  asked for is one of these, and it names no one as entitled (section 13 was not read). Help is the list of where
+#  help is, by its place on the page, and never a statement of who may prepare one; the route is kept for API
+#  readers. It ends "Nothing here is legal advice.": the clerk's own statement (NOT_LEGAL_ADVICE) describes the
+#  clerk, not the draft form, which composes the whole document (review M4). A deed stays held (W714).
+RESERVED_SOURCE = "lsa-2007-sch2"
+RESERVED_INSTRUMENTS = ("an instrument of transfer or charge of land", "an instrument for land registration",
+                        "a contract for the sale or other disposition of land beyond a short lease",
+                        "a deed for registration")
+HELP_ROUTE = "GET /api/v1/law/help"      # the one page of where help is (W953), for API readers
+HELP_PLACES = ("the list of where help is ('Where to get help from a person' on the Law page, and the support "
+               "page)")
+
+
+def reserved_source() -> Dict[str, Any]:
+    """The row the reserved documents are read from, through the reader the time limits use (W1162): its name,
+    page, the day it was read, whose reading it was and what was not read; or, where it cannot be read, why."""
+    from agentic_core.legal import time_limits as _tl
+    rows = _tl._register()
+    r = (rows or {}).get(RESERVED_SOURCE)
+    if r is None or not r.get("read_on"):
+        return {"id": RESERVED_SOURCE, "read": False,
+                "basis": ("the register of sources could not be read" if rows is None else
+                          "the register of sources holds no reading of it")}
+    return {"id": RESERVED_SOURCE, "read": True, "name": (r.get("names") or [RESERVED_SOURCE])[0],
+            "page": r.get("page"), "read_on": r["read_on"], "read_by": r.get("read_by") or "",
+            "not_read": r.get("not_read") or "nothing is listed as not read"}
+
+
+def reserved_source_said() -> str:
+    """The reading the reserved documents rest on, said as whose it is, where and when it was made and what it did
+    not read; or why it is not shown."""
+    s = reserved_source()
+    if not s["read"]:
+        return f"{RESERVED_SOURCE}: {s['basis']}, so the reading this rests on is not shown"
+    by = str(s.get("read_by") or "").split(",")[0].strip()
+    return (f"{s['name']}, read by this platform{f' ({by})' if by else ''}, not by a qualified person, at "
+            f"{s['page']} on {s['read_on']}; not read: {s['not_read']}")
+
+
+def reserved_reason() -> str:
+    """The reserved documents, with the reading they rest on, what the draft form refuses, and where help is."""
+    return (f"Preparing any of these four documents is a reserved instrument activity: {'; '.join(RESERVED_INSTRUMENTS)} "
+            f"({reserved_source_said()}). The Law draft form refuses any template id it does not list, and it lists "
+            f"none of these. For help from a person, see {HELP_PLACES}. Nothing here is legal advice.")
+
+
+def unlisted_reason(template_id: Any, drafted: List[str]) -> str:
+    """An id the generator does not list: the templates it drafts. It says nothing else about the id asked for."""
+    return (f"'{template_id}' is not a template this generator drafts, and nothing is composed for an id it does "
+            f"not list. It drafts only these {len(drafted)}: {'; '.join(drafted)}.")
+
+
 _CORPUS = pathlib.Path(__file__).resolve().parents[2] / "knowledge" / "Law" / "EmploymentTribunal"
 
 

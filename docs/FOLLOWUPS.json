@@ -27667,10 +27667,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1194",
       "note": "",
-      "slot_source": "P5.18 clause 4"
+      "slot_source": "P5.18 clause 4",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1194: the Law draft form drafts only the templates it lists. An id it does not list, an instrument of transfer or charge of land or a contract for the sale of land among them, is refused with 404 after the filing-shaped and deed checks and before any prompt is built. The answer says the templates the generator drafts and, in a sentence of its own that never says what the id is, that preparing any of the four reserved documents is a reserved instrument activity, and that the Law draft form refuses any template id it does not list and lists none of these (W1195, chained right after, rewrote that sentence to add its screen: the Law draft form and the clerk refuse a request whose words the screen reads as asking to prepare one of them, and the draft form any template id it does not list). That sentence is read when asked from the register of sources' row lsa-2007-sch2: its name, page and the day it was read, that the reading was this platform's and not a qualified person's, and what it did not read, never its summary. It says where help is (the list of where help is: 'Where to get help from a person' on the Law page, and the support page), then that nothing here is legal advice. The fabric's form meets the same refusal. The draft form still holds a deed (W714): its reason no longer says who may prepare one, and its refusal now says where help is. GET /api/v1/law/templates says the reserved kinds beside the held deed, with the help route for API readers. The coverage register's row law-reserved-instruments, its subject the clause's four, routes to where help is and names test_w1194 as its guard, a field the checker now reads. The instructions and parties of a listed template and the clerk's label are the row W1193 registered for W1195. test_w1194 holds it, with thirty-five blinds."
     },
     {
       "id": "FU-1867",

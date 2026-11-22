@@ -13,7 +13,11 @@ person can do here TODAY, and the state it is in:
     excluded       not built on purpose - the row names the ruling
 
 The check FAILS on a row that claims a journey or arithmetic and names no test, or a test that is not in the suite;
-on an excluded row with no ruling; on a state that is not one of the six. It counts by state, never as a
+on an excluded row with no ruling; on a state that is not one of the six. A refusal row (route_only or excluded)
+may name the suite test, or tests, that GUARD the refusal (guarded_by) - a guard drives no journey, so it is
+never driven_by; the check fails on a guard that is not a test in the suite, on one named by a row of any other
+state, and on one that is neither a test's name nor a list of them (W1194: P5.18's ACCEPT asks each built
+clause for a row naming its test). It counts by state, never as a
 percentage "covered": a frame is not coverage, and the count of journeys is the only figure that may be called
 what a person can do. It REFUSES when it examined nothing.
 """
@@ -27,6 +31,7 @@ REGISTER = ROOT / "docs" / "COVERAGE_REGISTER.json"
 SUITE = ROOT / "integration_tests" / "test_mvp_spine.py"
 STATES = ("journey", "arithmetic", "frame", "route_only", "nothing_built", "excluded")
 PROVEN = ("journey", "arithmetic")
+GUARDED = ("route_only", "excluded")      # W1194 - the refusals, which may name the test that guards them
 
 
 def load(path=None):
@@ -66,6 +71,15 @@ def check(d, suite_tests=None):
             problems.append(f"{i}: is excluded and names no ruling")
         if st == "route_only" and not r.get("route"):
             problems.append(f"{i}: is a route and names none")
+        g = r.get("guarded_by")
+        if g is not None:
+            gs = [g] if isinstance(g, str) else g
+            if not isinstance(gs, list) or not gs or not all(isinstance(x, str) and x for x in gs):
+                problems.append(f"{i}: names its guard as neither a test nor a list of tests")
+            elif st not in GUARDED:
+                problems.append(f"{i}: is '{st}' and names a guard - only a refusal (route_only or excluded) is guarded")
+            else:
+                problems.extend(f"{i}: is guarded by {x}, which is not a test in the suite" for x in gs if x not in tests)
     by = {}
     for r in d["rows"]:
         if r.get("state") in STATES:
