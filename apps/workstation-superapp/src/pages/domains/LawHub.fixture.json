@@ -67,7 +67,27 @@
    "templates": [
     "partnership_deed"
    ],
-   "reason": "it is a deed, and preparing certain instruments is reserved to authorised persons by the Legal Services Act 2007 (section 12 and Schedule 2). No qualified person has yet read that Schedule for this platform, so no deed is composed here. This is a hold, and says nothing about whether this particular deed is reserved. A solicitor can prepare one."
+   "reason": "it is a deed, and preparing certain instruments is reserved to authorised persons by the Legal Services Act 2007 (section 12 and Schedule 2). No qualified person has yet read that Schedule for this platform, so no deed is composed here. This is a hold, and says nothing about whether this particular deed is reserved."
+  },
+  "reserved": {
+   "kinds": [
+    "an instrument of transfer or charge of land",
+    "an instrument for land registration",
+    "a contract for the sale or other disposition of land beyond a short lease",
+    "a deed for registration"
+   ],
+   "reason": "Preparing any of these four documents is a reserved instrument activity: an instrument of transfer or charge of land; an instrument for land registration; a contract for the sale or other disposition of land beyond a short lease; a deed for registration (Legal Services Act 2007 Schedule 2, read by this platform (round W1148), not by a qualified person, at https://www.legislation.gov.uk/ukpga/2007/29/schedule/2 on 2026-11-20; not read: Schedule 3 (exempt persons); who is entitled, under section 13). The Law draft form and the clerk refuse a request whose words the screen reads as asking to prepare one of them, and the draft form any template id it does not list. For help from a person, see the list of where help is ('Where to get help from a person' on the Law page, and the support page). Nothing here is legal advice.",
+   "source": {
+    "id": "lsa-2007-sch2",
+    "read": true,
+    "name": "Legal Services Act 2007 Schedule 2",
+    "page": "https://www.legislation.gov.uk/ukpga/2007/29/schedule/2",
+    "read_on": "2026-11-20",
+    "read_by": "round W1148, the publisher's own text read whole (its data file at legislation.gov.uk), not through a summary, with section 14; first entered by a research reader of round W711 through a fetch that summarised the page",
+    "not_read": "Schedule 3 (exempt persons); who is entitled, under section 13"
+   },
+   "help_route": "GET /api/v1/law/help",
+   "screen_basis": "The screen reads only an explicit ask to prepare one of the reserved documents, in the words it knows: a drafting verb (draft, prepare, write, draw up, do, complete, fill in, make, produce or create) standing as an ask, or I need or I want, for the form TR1, TP1, AS1, CH1, AP1 or FR1, a transfer deed or a transfer of a house, a flat or land, a legal charge or a mortgage deed, a contract for the sale of land, or a lease of land for more than three years; or one of those named at a sentence's start and then please, with nothing after the please but thanks, asap or by (\"TP1 please\"), the one ask the screen reads with no ask word; or a request whose document is one of those. It reads the draft form's words (each party's label and details, the instructions and the jurisdiction) for such an ask, and the template id the clerk is given for the document it names. A request or an id it reads so is refused before anything is composed or stored. A mention with no ask word is not refused, but a request about one of these documents, phrased as an ask (\"I need my TR1 checked by a solicitor\"), can still be refused: the screen reads words, not what is asked for. It misses most other ways of asking: a request it does not read as one, whatever it asks for, is drafted as before, and that is not a clearance. Schedule 2 paragraph 5(1)(c), as this platform read it, also reaches any other instrument relating to real or personal estate, or to court proceedings, other than a will, an agreement not intended to be executed as a deed, a letter or power of attorney, or a transfer of stock with no trust or limitation. The screen reads none of those (a declaration of trust, an easement, an assignment made as a deed, a partnership deed), and whether the clerk's own templates are instruments relating to court proceedings has not been read; the draft form and the clerk hold a template whose id names a deed all the same. Whether this platform may prepare any of these is a question for the solicitor whose reading of the Law pages comes before any public release. The platform's other free-text generators are not screened, among them the Generator page's POST /api/v1/generator/produce and the Synthesis Studio page's POST /api/v1/synthesis/generate and /stream."
   },
   "matter_jurisdiction": "England & Wales",
   "matter_jurisdiction_basis": "INFERRED FROM THIS REPOSITORY'S OWN CONTENT AND CONFIRMED BY THE OWNER on 2026-10-03, not asserted by either alone. (a) knowledge/Law/EmploymentTribunal/ontology/uk_employment_law_v9.json declares domain UK_EMPLOYMENT_LAW and names ACAS Conciliation 26 times — ACAS covers GREAT BRITAIN, so Northern Ireland is ruled out by the content itself, as NI uses the Labour Relations Agency. (b) the same corpus says 'Employment Tribunal', not 'Industrial Tribunal', which is again GB and not NI. (c) it names the Equality Act 2010, which is GB. (d) agentic_core/api/law.py already carried 'England & Wales' in ten document templates including the ET1 claim, so this is what the deployed code already assumed. WHAT THIS DOES NOT ESTABLISH: England & Wales versus SCOTLAND. Both use the Employment Tribunal and the ACAS Code and the evidence above does not separate them; the Owner accepted England & Wales and a correction to Scotland changes procedure only, so nothing built on the tribunal or the Code is wasted either way."
@@ -1237,5 +1257,17 @@
   ],
   "basis": "Each list is in the words of the page it names, with the part of the page each item is in and the day the page was read, and is said as not recently checked ninety days on. A list says nothing about whether a claim will succeed, what it is worth, or whether a time limit has passed. Nothing here is legal advice.",
   "composed": false
+ },
+ "generate_refused": {
+  "request": {
+   "template_id": "service_agreement",
+   "parties": {
+    "party_a": "Alpha Ltd",
+    "party_b": "Beta Ltd"
+   },
+   "custom_instructions": "draft the TR1 for my flat"
+  },
+  "status": 409,
+  "detail": "'service_agreement' is not drafted: the words \"draft the TR1\" in the instructions were read as asking to prepare a transfer or legal charge of land, a house or a flat, which would fall under \"an instrument of transfer or charge of land\", one of the reserved documents, so nothing was composed. The screen reads words, not what a document is. Preparing any of these four documents is a reserved instrument activity: an instrument of transfer or charge of land; an instrument for land registration; a contract for the sale or other disposition of land beyond a short lease; a deed for registration (Legal Services Act 2007 Schedule 2, read by this platform (round W1148), not by a qualified person, at https://www.legislation.gov.uk/ukpga/2007/29/schedule/2 on 2026-11-20; not read: Schedule 3 (exempt persons); who is entitled, under section 13). The Law draft form and the clerk refuse a request whose words the screen reads as asking to prepare one of them, and the draft form any template id it does not list. For help from a person, see the list of where help is ('Where to get help from a person' on the Law page, and the support page). Nothing here is legal advice."
  }
 }

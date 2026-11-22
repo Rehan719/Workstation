@@ -37,6 +37,8 @@ export const LawHub: React.FC = () => {
   const [templates, setTemplates] = useState<string[] | null>(null);
   const [templateNames, setTemplateNames] = useState<Record<string, string>>({});
   const [templatesHeld, setTemplatesHeld] = useState<{ templates?: string[]; reason?: string } | null>(null);
+  // W1195 (P5.18 clause 4) - the reserved documents, and what the screen of a request's words reads
+  const [templatesReserved, setTemplatesReserved] = useState<{ kinds?: string[]; reason?: string; screen_basis?: string } | null>(null);
   const [templatesNote, setTemplatesNote] = useState('');
   useEffect(() => {
     let alive = true;
@@ -49,9 +51,10 @@ export const LawHub: React.FC = () => {
         if (ids.length === 0) throw new Error('the list came back empty');
         const names: Record<string, string> = {};
         list.forEach((t: any) => { if (t?.id && t?.name) names[String(t.id)] = String(t.name); });
-        setTemplates(ids); setTemplateNames(names); setTemplatesHeld(d?.held ?? null); setTemplatesNote('');
+        setTemplates(ids); setTemplateNames(names); setTemplatesHeld(d?.held ?? null);
+        setTemplatesReserved(d?.reserved ?? null); setTemplatesNote('');
       })
-      .catch(e => { if (alive) { setTemplates(null); setTemplatesNote(`The template list could not be read (${readFailure(e)}), so the templates typed on this page are offered and which is held is not known.`); } });
+      .catch(e => { if (alive) { setTemplates(null); setTemplatesNote(`The template list could not be read (${readFailure(e)}), so the templates typed on this page are offered, and which is held and which documents this form refuses are not known.`); } });
     return () => { alive = false; };
   }, []);
   // W866 (FU-1013) - WHAT THIS MACHINE DOES IN LAW, said before any form: the server's list of the tools that call
@@ -234,6 +237,11 @@ export const LawHub: React.FC = () => {
                   {(templatesHeld?.templates ?? []).length > 0 && (
                     <span className="block text-[10px] text-amber-400 mt-1" data-testid="law-templates-held">
                       Held for a qualified read: {(templatesHeld!.templates ?? []).map(t => templateNames[t] ?? t).join(', ')} - {templatesHeld!.reason}
+                    </span>
+                  )}
+                  {templatesReserved?.reason && (
+                    <span className="block text-[10px] text-amber-400 mt-1" data-testid="law-templates-reserved">
+                      {templatesReserved!.reason} {templatesReserved!.screen_basis ?? ''}
                     </span>
                   )}
                   {templatesNote && <span className="block text-[10px] text-amber-400 mt-1" data-testid="law-templates-note">{templatesNote}</span>}</>}

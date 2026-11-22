@@ -27689,10 +27689,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1195",
       "note": "",
-      "slot_source": "P5.18 clause 4, and its ACCEPT that a refusal comes through the route a person would use"
+      "slot_source": "P5.18 clause 4, and its ACCEPT that a refusal comes through the route a person would use",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1195: at the Law draft form and the clerk, an explicit ask to prepare a reserved instrument, in the words the screen knows, is refused before anything is composed or stored. The draft form reads each party label and each party value of a listed template on its own, its instructions and its jurisdiction; the clerk reads the template id it is given for the document it names, and holds an id that names a deed, as the draft form does. An ask is a drafting verb standing as one, I need or I want, the document is, or - the one ask with no ask word - a document named at its sentence's start and then please, the please ending the sentence or followed by thanks, asap or by ('TP1 please'); the documents are the forms TR1, TP1, AS1, CH1, AP1 or FR1, a transfer deed or a transfer of a house, a flat or land, a legal charge or a mortgage deed, a contract for the sale of land, a lease of land for more than three years, and the clause's own words. The ask's reach ends at a word that turns to another subject or at the first noun of a document it does not reserve (an NDA, an agreement, a letter, a schedule, a summary, a copy). A request read so is refused with 409: the words, in that field, were read as asking to prepare the kind, with the clause's words it would fall under, never saying the person's document is reserved. A mention with no ask word is not refused, but a request about one of the documents phrased as an ask ('I need my TR1 checked by a solicitor') can be: the screen reads words, not what is asked for. The screen gives up recall for precision because the word screen first built here recognised 7 of the red team's 50 blind reserved asks and refused 16 of 20 property-sector drafts: in-sample, the cases seen while it was written, through the draft form it now refuses 1 of those 50 and none of the 70 ordinary or 20 property-sector drafts, and on the corpus written for this round, which it was fixed against, 27 of 87 reserved asks and none of 116 ordinary requests; out of sample, on the final check's 80 ordinary drafts and 15 explicit asks, none of the 80 is refused and all 15 are read, and precision on unseen requests written near its patterns is not measured. Most other ways of asking are drafted, which is not a clearance, so P5.18 clause 4's ACCEPT is not met. A screen that reads what a request asks for is registered as an open row on P5.18, and so are the platform's other free-text generators, which are not screened. Paragraph 5(1)(c)'s other instruments are not read, a question for the solicitor whose reading of the Law pages comes before any public release. Its 332 phrasings and its 131 stated limits are labelled in scripts/screen_phrasings.py, the seventh screen there. A field of 100,000 characters is read in well under a second. The Law page says the reserved documents beside the held deed, and its rendered test drives the refusal through the Draft tab. test_w1195 holds it, with eighty-three blinds and four on the rendered test."
     },
     {
       "id": "FU-1868",
@@ -28316,6 +28319,42 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P5.22's hold, which PLAN NOW says since W1200; the page's file is routed to no item"
+    },
+    {
+      "id": "FU-1902",
+      "title": "A reserved instrument asked for in another free-text generator's words is composed, among them the Generator's and the Synthesis Studio's: none reads a request for the four kinds",
+      "why": "P5.18 clause 4's ACCEPT says the reserved documents are refused through the route a person would use. W1195 screens the words of the Law draft form and of the clerk only, and only for an explicit ask. At least three other free-text generators compose a reserved instrument when asked, among them: the Generator, POST /api/v1/generator/produce (agentic_core/api/products.py:270), whose free 'spec' run_generator (:253) sends to the composer, reached from the Generator page (pages/developers/Generator.tsx:63) and from a fabric composition that runs the Artefact Generator (api/resource_fabric.py:2225); the Synthesis Studio, POST /api/v1/synthesis/generate and POST /api/v1/synthesis/stream (agentic_core/synthesis/api.py:487 and :496), whose free 'instructions' are read only for a faith ruling (W659's refuse_faith_ruling), reached from the Synthesis Studio page (pages/synthesis/SynthesisStudio.tsx:263-277); and the in-house completion, POST /api/v1/native-ai/complete (agentic_core/api/native_ai.py:1536), reached from the Native AI page and the in-house assistant panel (pages/developers/NativeAI.tsx:615, components/NativeAgentPanel.tsx:109). Probed on the tree W1195 built, with no model, the floor answering: 'Draft the TR1 transfer of my flat to my son' was refused with 409 by POST /api/v1/law/generate and answered 200 with composed text by the Generator, by both Synthesis Studio routes and by the in-house completion. The Human Synthesis Studio's cascade, POST /api/v1/studio/synthesise (agentic_core/api/synthesis_studio.py:278), is retired (W672, STUDIO_SYNTHESISE_RETIRED at :271) and answers 410 before composing; its kept code reads the challenge for none of the four, so restoring it needs the screen first. Medium, as FU-1867 was: the same harm, reached from pages a person uses. test_w1195 holds this row open on the Generator, the Synthesis Studio and the fabric's Generator; the census may give the in-house completion and the other conversational routes a row of their own. THE WORK: first a census of every free-text composer a page reaches (W1195b's design is taking it); then, in each, W1195's screen over the route's free words - legal/specialist.reserved_match, which reads only an explicit ask and says the words that asked (reserved_kind gives the kind alone), its phrasings labelled in scripts/screen_phrasings.py (RESERVED) - refusing before anything is composed or saved, with a sentence that names the route that refused and the reserved documents (from reserved_match and reserved_source_said; the reserved reason, W1194's in W1195's words, to take the door's name), never the Law draft form's sentence as it stands: in run_generator, so that a composition running the Generator meets the same refusal, and beside W659's ruling check in the Synthesis Studio's routes, before the stream starts; then the Law page's screen_basis and the coverage row law-reserved-instruments say which are screened, keeping among them for the rest.",
+      "source": "W1195 (found while P5.18 clause 4's screen of a request's words was built, design key C7; left for a later round)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/api/products.py",
+        "agentic_core/synthesis/api.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.18 clause 4's ACCEPT: the reserved documents are refused through the route a person would use, and other free-text generators' routes, among them the Generator's and the Synthesis Studio's, are such routes"
+    },
+    {
+      "id": "FU-1903",
+      "title": "A reserved document asked for in other words is drafted: the screen reads only an explicit ask in the words it knows, not what a request asks for",
+      "why": "W1195's screen reads only an explicit ask to prepare one of the reserved documents, in the words it knows (a drafting verb, I need, can you, please or the document is, asking for a form TR1, TP1, AS1, CH1, AP1 or FR1, a transfer deed or a transfer of a house, a flat or land, a legal charge or a mortgage deed, a contract for the sale of land, or a lease of land for more than three years), because the word screen it replaced did not generalise: on the second review's red team's 120 blind cases (2026-11-22) it recognised 7 of 50 reserved asks (7 of the 40 in scope) and refused 2 of 70 ordinary drafts and 16 of 20 property-sector ones, and a field of 1,000 sentences opening 'A letter' answered 500. The explicit-ask screen's figures are in-sample, the cases seen while it was written: through the draft form it refuses 1 of the red team's 50 and none of the 70 or the 20; 10 of the 50 are refused before it reads them (an unlisted id, or a held or filing-shaped template) and 39 are drafted; on the corpus written for this round (2026-11-22, kept outside the tree), which it was fixed against, it recognises 27 of 87 reserved asks and refuses none of 116 ordinary requests; on its labelled list it reads 33 of 164 asks, every other one a stated limit. Out of sample, the final check's 80 ordinary drafts and 15 explicit asks: none of the 80 refused, all 15 read; precision on unseen requests written near its patterns is not measured. So most reserved documents asked for in other words - 'put the house into both our names', 'sign the farm over to my son', 'the paperwork for the sale', a declaration of trust, an easement, a surrender - are drafted, and P5.18 clause 4's ACCEPT is not met by W1195. Medium, as FU-1867 was. THE WORK: a reading of what a request asks for - the document it wants made, whatever its words - that refuses a reserved document asked for at every door (the draft form, the clerk, and the free-text generators of FU-1902) without refusing a mention, measured blind on a new set written by someone who has not seen it, with precision on ordinary drafts held at none refused and the figure said where the coverage row and P5.18 say what is screened; until then the explicit-ask screen stands, with its stated limits.",
+      "source": "W1195 (registered when the second review's red team measured the word screen on blind cases, design key C7; left for a later round)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/legal/specialist.py",
+        "scripts/screen_phrasings.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.18 clause 4's ACCEPT: the reserved documents are refused through the route a person would use, and most ways a person asks for one are not an explicit ask in the words the screen knows"
     }
   ],
   "routes": [

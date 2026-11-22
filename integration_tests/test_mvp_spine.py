@@ -93599,6 +93599,8 @@ def test_w1143_no_document_a_round_wrote_gives_the_owner_a_pronoun_the_owner_has
                                             r"|his\\s+|her\\s+|their\\s+)", "'took his own life'"],
         "scripts/blinds_p212_routes.json": [r"|his\\s+|her\\s+|their\\s+)"],
         "apps/workstation-superapp/src/lib/i18n.tsx": ["'fa', 'he']"],
+        #  W1195 - the reserved-instrument screen's determiners, a regex: it gives no person a pronoun
+        "agentic_core/legal/specialist.py": ["|our|his|her|their|"],
         #  W1160 - the publisher's data file for article 7 of the Scotland Order 1994, kept word for word: its
         #  description of the Order, as the publisher gives it
         "integration_tests/fixtures/statute_order_article_unapplied.xml": [
@@ -103547,7 +103549,8 @@ def test_w1194_p518_an_unlisted_template_id_is_refused_at_the_draft_form_before_
     assert by.startswith("round W"), row["read_by"]
     for part in (row["names"][0], row["page"], row["read_on"], "not read: " + row["not_read"],
                  f"read by this platform ({by}), not by a qualified person, at {row['page']} on {row['read_on']}",
-                 "The Law draft form refuses any template id it does not list, and it lists none of these. ",
+                 #  W1195 says the draft form and the clerk refuse an explicit ask as well; the door stays
+                 "and the draft form any template id it does not list. ",
                  "For help from a person, see the list of where help is ('Where to get help from a person' on the Law "
                  "page, and the support page).", *_sp.RESERVED_INSTRUMENTS):
         assert part in reason, (part, reason)
@@ -103667,3 +103670,351 @@ def test_w1194_p518_an_unlisted_template_id_is_refused_at_the_draft_form_before_
     assert "the draft form still holds a deed (W714)" in p518, p518[-900:]
     assert f"row law-reserved-instruments is guarded by {me}." in p518, p518[-900:]
     assert "Still open: the instructions and parties of a listed template, and the label the clerk stores" in p518
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1195 (P5.18 clause 4, its ACCEPT) - an explicit ask to prepare a reserved instrument, in the words the screen
+#  knows, is refused at the draft form and the clerk, before anything is composed or stored; a mention never is.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1195_p518_an_explicit_ask_for_a_reserved_instrument_is_refused_at_the_draft_form_and_the_clerk(client, monkeypatch):
+    """P5.18 clause 4 and its ACCEPT: "the reserved documents are refused through the route a person would use". On the
+    Law page that route is a listed template with typed parties and instructions: after W1194 those words still reached
+    the composer, so a service agreement with "draft the TR1 for my flat" was composed, and the clerk stored an
+    artefact under 'tr1_transfer'. The second review's red team found the word screen first built here recognised 7 of
+    50 blind reserved asks while refusing 16 of 20 property-sector ordinary drafts, so the screen reads only an explicit
+    ask. Held here:
+    1. the screen agrees with its labelled phrasings (scripts/screen_phrasings.py's RESERVED) but for its stated limits
+       (RESERVED_LIMITS: every "for" phrasing that is not an explicit ask in the words it knows), each held to the
+       opposite of its label so a fix shows; the clause's own four and every kind's own name, asked for, are read,
+       each kind as itself; a word alone, asked for or not, is never read; reserved_match says the words that asked, as
+       typed, and reserved_kind keeps its answer; RESERVED_SCREEN says what is read, that a mention is not refused,
+       that most ways of asking are missed, the paragraph 5(1)(c) scope it does not read, and the other generators;
+    2. each phrasing it is for, but its stated limits, as a listed template's instructions, is refused with 409 before
+       any prompt is sent, saying what the screen read, where, and what it took it as asking for, then the reason;
+    3. each phrasing it is not for drafts, and its answer says the screen read no ask, which is not a clearance;
+    4. each party label and each party value is read on its own - a tab or a nested value as well - and the
+       jurisdiction, for an explicit ask, a mention in a party drafting; an address that shares a form's letters
+       drafts; a field of 100,000 characters is answered in under two seconds, an ask at its end read, and one that
+       is an ask in every sentence asking for nothing drafted; the fabric's
+       form meets the route's own refusal;
+    5. the clerk holds an id that names a deed, as the draft form does, refuses an id that names a reserved document,
+       saying what it read, and stores nothing; nda, witness_statement and et1_claim still assemble;
+    6. the coverage register's row is guarded by this test after W1194's, its subject names the clause's four, its
+       today the measured figures, and P5.18 says the two doors are screened for an explicit ask only and that the
+       ACCEPT is not met;
+    7. the gap this round found and the screen it should have had are rows of their own, open on P5.18: the
+       Generator, the Synthesis Studio's /generate and /stream and the fabric's Generator compose the words the draft
+       form refuses, seen by a recorder on the composer each goes through or by a composed answer, and while any does
+       the gap stays open and the screen's sentence and the coverage row name that route as not screened;
+    8. the templates answer says what the screen reads; the Law page draws the reserved line beside the held one from
+       the captured answer, which is the route's own, as is the captured refusal; its rendered test reads the line and
+       drives the refusal through the Draft tab."""
+    import asyncio
+    import importlib.util
+    import inspect
+    import json
+    import pathlib
+    import re
+    import time
+
+    import agentic_core.api.law as _law
+    from agentic_core.api import resource_fabric as _fab
+    from agentic_core.config import read_json_strict
+    from agentic_core.legal import specialist as _sp
+    root = pathlib.Path(__file__).resolve().parents[1]
+    me = inspect.currentframe().f_code.co_name
+    g1194 = "test_w1194_p518_an_unlisted_template_id_is_refused_at_the_draft_form_before_anything_is_composed"
+    sent = []
+
+    async def _capture(prompt, agent, **kw):
+        sent.append(prompt)
+        return "w1195 captured", {"served_by": "native", "floor_note": "w1195: captured, nothing composed"}
+    monkeypatch.setattr(_law, "ai_text", _capture)
+    reason = _sp.reserved_reason()
+    assert reason.startswith("Preparing any of these four documents is a reserved instrument activity: "), reason
+    assert (" The Law draft form and the clerk refuse a request whose words the screen reads as asking to prepare one of "
+            "them, and the draft form any template id it does not list. ") in reason and \
+        reason.endswith(" Nothing here is legal advice."), reason
+
+    #  1. the screen and its labelled phrasings, and its stated limits
+    spec = importlib.util.spec_from_file_location("_sp1195", root / "scripts" / "screen_phrasings.py")
+    drv = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(drv)
+    labels, limits = dict(drv.RESERVED), drv.RESERVED_LIMITS
+    assert len(labels) == len(drv.RESERVED), "a phrasing is labelled twice"
+    fors = [t for t, lab in drv.RESERVED if lab == "for"]
+    nots = [t for t, lab in drv.RESERVED if lab == "not-for"]
+    assert len(fors) >= 120 and len(nots) >= 120 and len(drv.RESERVED) == len(fors) + len(nots), (len(fors), len(nots))
+    assert limits and set(limits) <= set(fors) and all(isinstance(w, str) and w for w in limits.values()), limits
+    wrong = [(lab, t) for t, lab in drv.RESERVED if (_sp.reserved_kind(t) is not None) != (lab == "for") and t not in limits]
+    assert not wrong, ("the screen and its labelled list disagree", wrong)
+    held = [t for t in limits if (_sp.reserved_kind(t) is not None) == (labels[t] == "for")]
+    assert not held, ("a stated limit the screen now agrees with: take it off the list", held)
+    for said in ("The screen reads only an explicit ask to prepare one of the reserved documents, in the words it knows",
+                 "A mention with no ask word is not refused, but a request about one of these documents, phrased as an "
+                 "ask (\"I need my TR1 checked by a solicitor\"), can still be refused: the screen reads words, not what "
+                 "is asked for.",
+                 "the one ask the screen reads with no ask word", "It misses most other ways of asking: a request it does not "
+                 "read as one, whatever it asks for, is drafted as before, and that is not a clearance.",
+                 "Schedule 2 paragraph 5(1)(c), as this platform read it, also reaches any other instrument relating to "
+                 "real or personal estate, or to court proceedings",
+                 "the draft form and the clerk hold a template whose id names a deed all the same",
+                 "Whether this platform may prepare any of these is a question for the solicitor whose reading of the "
+                 "Law pages comes before any public release."):
+        assert said in _sp.RESERVED_SCREEN, ("the screen's sentence does not say", said)
+    assert _sp.held_for_a_qualified_read("partnership_deed") and _sp.held_for_a_qualified_read("ip_assignment_deed")
+    kinds = [k["id"] for k in _sp.RESERVED_KINDS]
+    assert kinds == ["transfer_or_charge", "land_registration", "sale_of_land", "lease_by_deed"], kinds
+    assert {_sp.reserved_kind(t)["id"] for t in fors if t not in limits} == set(kinds), "a kind no labelled phrasing reaches"
+    for k in _sp.RESERVED_KINDS:          # each kind's own name, asked for, is read as itself under the clause's words
+        m = _sp.reserved_match("Please draft " + k["said"])
+        assert m and m["id"] == k["id"] and m["clause"] in _sp.RESERVED_INSTRUMENTS, (k["said"], m)
+    for phrase in _sp.RESERVED_INSTRUMENTS:   # and so is each of the clause's own four, asked for (review R2)
+        assert _sp.reserved_kind("draft " + phrase) is not None, ("the clause's own words are not read", phrase)
+    for t in fors:
+        m = _sp.reserved_match(t)
+        if m:
+            assert m["words"] and m["words"] in " ".join(t.split()) and m["clause"] in _sp.RESERVED_INSTRUMENTS, (t, m)
+            assert _sp.reserved_kind(t) == {"id": m["id"], "said": m["said"]}, t
+    #  the words that asked are quoted as typed, never folded (second review m4)
+    assert _sp.reserved_match("Please DRAFT the TR1 for my flat")["words"] == "Please DRAFT the TR1"
+    #  ... from the ask's own first word, never the word before it or past the please (the final check, F5)
+    for said, words in (("Hello, please draft the TR1", "please draft the TR1"), ("TR1 pls thanks", "TR1 pls"),
+                        ("I am not asking for it, so please draft the TR1 anyway.", "please draft the TR1"),
+                        ("We are a busy firm, please draft the TR1", "please draft the TR1")):
+        assert _sp.reserved_match(said)["words"] == words, (said, _sp.reserved_match(said))
+    #  only a listed id reaches the draft form's screen, which no longer reads it: none may name a reserved document
+    #  (the final check, F4)
+    named = [x["id"] for x in _law._TEMPLATES if _sp.reserved_match(x["id"], as_id=True)]
+    assert not named, ("a listed template id names a reserved document, and the draft form does not read ids", named)
+    for word in ("property", "land", "house", "flat", "mortgage", "transfer", "lease", "deed", "charge", "registry",
+                 "title", "gift", "sale", "easement", "tenancy", "form"):
+        for asked in (word, "draft the " + word):
+            assert _sp.reserved_kind(asked) is None, ("a word alone is read", asked)
+    drv_src = _code_only((root / "scripts" / "screen_phrasings.py").read_text(encoding="utf-8"))
+    assert 'results.append(_table("legal.reserved", RESERVED, lambda t: _specialist.reserved_kind(t) is not None))' in drv_src
+
+    #  2. each phrasing it is for, as a listed template's instructions: refused before anything is composed
+    for t in fors:
+        if t in limits:
+            continue
+        r = client.post("/api/v1/law/generate", json={"template_id": "service_agreement", "custom_instructions": t})
+        assert r.status_code == 409, (t, r.status_code, r.text[:200])
+        d, m = r.json()["detail"], _sp.reserved_match(t)
+        assert d.startswith(f"'service_agreement' is not drafted: the words \"{m['words']}\" in the instructions were "
+                            f"read as asking to prepare {m['said']}, which would fall under \"{m['clause']}\", one of the reserved "
+                            "documents, so nothing was composed. The screen reads words, not what a document is. ") and \
+            d.endswith(reason), d
+    assert sent == [], ("a prompt was sent for an explicit ask for a reserved document", len(sent))
+
+    #  3. each phrasing it is not for drafts, and the answer says that reading no ask is not a clearance
+    for t in nots:
+        r = client.post("/api/v1/law/generate", json={"template_id": "service_agreement", "custom_instructions": t})
+        assert r.status_code == 200 and r.json()["document"] == "w1195 captured", (t, r.status_code, r.text[:200])
+        assert r.json()["reserved_screen"] == {
+            "recognised": False, "coverage": _sp.RESERVED_SCREEN,
+            "basis": "the screen read no explicit ask to prepare one of the reserved documents, which is not a "
+                     "clearance"}, r.json()["reserved_screen"]
+    assert len(sent) == len(nots) and all(t in p for t, p in zip(nots, sent)), "a phrasing it is not for was not drafted"
+
+    #  4. each party label and value on its own (review R5), and the jurisdiction, for an explicit ask; a field of any
+    #     length read in time; the fabric's form, the same refusal
+    n = len(sent)
+    for body, where in (({"parties": {"party_a": "Alpha Ltd", "note": "please draft the TR1 for my flat"}}, "the parties"),
+                        ({"parties": {"please draft a contract for the sale of my house": "yes"}}, "the parties"),
+                        ({"parties": {"subject": "draft a transfer of my house"}}, "the parties"),
+                        ({"parties": {"subject": "draft a legal\tcharge"}}, "the parties"),
+                        ({"parties": {"details": {"note": ["draft a transfer of my house to my son"]}}}, "the parties"),
+                        ({"jurisdiction": "draft a 10 year lease of the shop"}, "the jurisdiction field")):
+        r = client.post("/api/v1/law/generate", json={"template_id": "nda", **body})
+        d = r.json()["detail"] if r.status_code == 409 else ""
+        assert d.startswith("'nda' is not drafted: the words \"") and f"\" in {where} were read as asking to prepare " in d, (
+            body, r.status_code, r.text[:200])
+    assert len(sent) == n, "a prompt was sent for parties or a jurisdiction that ask for a reserved document"
+    for parties in ({"party_a": "Kernow Ltd, Lemon Street, Truro TR1 2LS"},
+                    {"lender": "Penbury Home Finance Ltd - the CH1 legal charge over our flat"}):
+        r = client.post("/api/v1/law/generate", json={"template_id": "nda", "parties": parties})
+        assert r.status_code == 200, ("a mention or an address in the parties read as an ask", parties, r.text[:200])
+    assert len(sent) == n + 2
+    n = len(sent)
+    for text, status in (("A letter to the agent. " * 4400 + "Draft the TR1 for my flat.", 409),
+                         (("We share your details with lenders to arrange a mortgage on your home. " * 1400)[:100000], 200),
+                         (("Do it. " * 14286)[:100000], 200)):     # an ask in every sentence
+        t0 = time.monotonic()
+        r = client.post("/api/v1/law/generate", json={"template_id": "service_agreement", "custom_instructions": text})
+        took = time.monotonic() - t0
+        assert len(text) >= 99000 and r.status_code == status and took < 2.0, (len(text), r.status_code, took)
+    assert len(sent) == n + 2, "the long ask was drafted, or a long ordinary request was refused"
+    n = len(sent)
+    asked = {"template_id": "nda", "custom_instructions": "draft the TR1 for my flat"}
+    g = asyncio.new_event_loop().run_until_complete(
+        _fab._run_real_resource_handler("form_law_generate", asked, "objective", "general"))
+    p = client.post("/api/v1/law/generate", json=asked)
+    assert g["refused"] is True and g["status"] == p.status_code == 409 and g["detail"] == p.json()["detail"], g
+    assert g["output"] is None and len(sent) == n, (g, len(sent))
+
+    #  5. the clerk: an id that names a deed is held, an id that names a reserved document is refused, nothing stored
+    def _stored():
+        return len(read_json_strict(_sp._store(), missing={"artefacts": {}}, expect=dict).get("artefacts", {}))
+    before = _stored()
+    for tid in ("tr1_transfer", "contract_for_sale_of_land", "legal_charge", "first_registration", "transfer_of_equity",
+                "sale_contract"):           # the last two named only as an id: a label, not a request
+        r = client.post("/api/v1/law/matter/assemble", json={"template_id": tid})
+        assert r.status_code == 409, (tid, r.status_code, r.text[:200])
+        d, m = r.json()["detail"], _sp.reserved_match(tid, as_id=True)
+        assert d.startswith(f"'{tid}' is not assembled: the words \"{m['words']}\" in the template id it was "
+                            f"given were read as naming {m['said']}, which would fall under \"{m['clause']}\""), d
+        assert "so nothing was stored. " in d and d.endswith(reason), d
+    for tid in ("partnership_deed", "lease_deed", "deed_of_trust", "transfer_deed"):  # held first, as the draft form
+        #  holds a deed (second review S5)
+        r = client.post("/api/v1/law/matter/assemble", json={"template_id": tid})
+        assert r.status_code == 409 and r.json()["detail"] == (
+            f"'{tid}' is held and is not assembled here: {_sp.HELD_REASON} For help from a person, see "
+            f"{_sp.HELP_PLACES}. Nothing here is legal advice."), (tid, r.status_code, r.text[:300])
+    assert _stored() == before, "an artefact was stored under an id that names a reserved document or a deed"
+    for tid in ("nda", "witness_statement", "et1_claim"):
+        r = client.post("/api/v1/law/matter/assemble", json={"template_id": tid})
+        assert r.status_code == 200 and r.json()["template_id"] == tid, (tid, r.status_code, r.text[:200])
+    assert _stored() == before + 3
+
+    #  6. the coverage register's row, and the plan (a later round may add its guard and its round after these)
+    cov = {r["id"]: r for r in json.loads((root / "docs" / "COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    crow = cov["law-reserved-instruments"]
+    assert crow["guarded_by"][:2] == [g1194, me], crow
+    assert crow["state"] == "route_only" and "(W1194, W1195" in crow["today"], crow
+    assert all(p in crow["subject"] for p in _sp.RESERVED_INSTRUMENTS), crow["subject"]
+    for said in ("are read for an explicit ask to prepare one of the reserved documents", "which is not a clearance",
+                 "a request or an id it reads so is refused before anything is composed or stored",
+                 "a mention with no ask word is not refused, but a request about one of the documents phrased as an ask",
+                 "the screen misses most other ways of asking", "This screen's own figures are in-sample",
+                 "Out of sample, the final check's 80 ordinary drafts and 15 explicit asks",
+                 "Measured on 2026-11-22: on the red team's 120 blind cases the word screen this replaced recognised 7 "
+                 "of 50 reserved asks"):
+        assert said in crow["today"], said
+    plan = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    p518 = " ".join(plan.split("\n P5.18 [chartered W711", 1)[1].split("\n P5.19 [chartered W711", 1)[0].split())
+    #  W1195's own line, up to any later round's (second review G9)
+    line = p518.split("UPDATED 2026-11-22 (W1195): ", 1)[1].split(" UPDATED ", 1)[0]
+    assert line.startswith("the two doors W1194 left open, a listed template's words and the clerk's template id, are "
+                           "screened for an explicit ask only."), line[:200]
+    assert f"The row law-reserved-instruments is guarded as well by {me}." in line, line[-600:]
+    assert "the screen misses most other ways of asking" in line and "P5.18 clause 4's ACCEPT is not met by W1195" in line
+    assert "which are not screened" in line, line
+    #  its number of stated limits, whatever a later round makes it (second review G5)
+    assert re.search(r"Its phrasings and its \d+ stated limits are labelled in scripts/screen_phrasings\.py", line), line
+    assert "doors are closed" not in line and "othing here composes" not in p518, line
+
+    #  7. the gap and the screen this round should have had, rows of their own; the other free-text generators compose
+    #     the words the draft form refuses. A route composes when a recorder on the composer it goes through saw the
+    #     words, or when it answered with text
+    ask = "Draft the TR1 transfer of my flat to my son"
+    r = client.post("/api/v1/law/generate", json={"template_id": "nda", "custom_instructions": ask})
+    assert r.status_code == 409 and len(sent) == n, (r.status_code, r.text[:200], len(sent))
+    rows = json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    gap = [x for x in rows if x["title"].startswith(
+        "A reserved instrument asked for in another free-text generator's words is composed, among them")]
+    asks = [x for x in rows if x["title"].startswith("A reserved document asked for in other words is drafted")]
+    assert len(gap) == 1 and len(asks) == 1, ("each is not one row of the register", [x["id"] for x in gap + asks])
+    gap, asks = gap[0], asks[0]
+    for x in (gap, asks):
+        assert (x["slot"], x["severity"], x["owner_gated"]) == ("P5.18", "medium", False), x
+        assert x["source"].startswith("W1195 (") and x.get("closed_by") != "W1195", ("this round closed its row", x)
+    assert gap["files"] == ["agentic_core/api/products.py", "agentic_core/synthesis/api.py"], gap["files"]
+    for said in ("At least three other free-text generators compose a reserved instrument when asked, among them",
+                 "POST /api/v1/generator/produce", "POST /api/v1/synthesis/generate", "POST /api/v1/synthesis/stream",
+                 "POST /api/v1/native-ai/complete", "was refused with 409 by POST /api/v1/law/generate",
+                 "is retired (W672, STUDIO_SYNTHESISE_RETIRED at :271) and answers 410 before composing",
+                 "test_w1195 holds this row open on the Generator, the Synthesis Studio and the fabric's Generator",
+                 "THE WORK: first a census of every free-text composer a page reaches", "legal/specialist.reserved_match",
+                 "scripts/screen_phrasings.py (RESERVED)", "never the Law draft form's sentence as it stands",
+                 "keeping among them for the rest"):
+        assert said in gap["why"], ("the gap's why does not say", said)
+    for said in ("recognised 7 of 50 reserved asks", "none of the 70 or the 20", "is not met by",
+                 "THE WORK: a reading of what a request asks for", gap["id"]):
+        assert said in asks["why"], ("the ask row's why does not say", said)
+    assert (f"is {asks['id']}, and the platform's other free-text generators, which are not screened, are {gap['id']}; "
+            "both are registered here and left for a later round.") in line, line[-900:]
+    from agentic_core.ai.gateway import ModelGateway as _gw
+    from agentic_core.ai.native.orchestrator import NativeOrchestrator as _orch
+    heard = []
+    _complete, _query, _stream = _orch.complete, _gw.query_meta, _gw.stream_meta
+
+    def _asked(prompt, kw):
+        return ask in str(prompt) or ask in str(kw.get("user_text") or "")
+
+    async def _hear_complete(self, prompt, *a, **kw):
+        if _asked(prompt, kw):
+            heard.append("complete")
+        return await _complete(self, prompt, *a, **kw)
+
+    async def _hear_query(self, prompt, *a, **kw):
+        if _asked(prompt, kw):
+            heard.append("query_meta")
+        return await _query(self, prompt, *a, **kw)
+
+    async def _hear_stream(self, prompt, *a, **kw):
+        if _asked(prompt, kw):
+            heard.append("stream_meta")
+        async for ev in _stream(self, prompt, *a, **kw):
+            yield ev
+    monkeypatch.setattr(_orch, "complete", _hear_complete)
+    monkeypatch.setattr(_gw, "query_meta", _hear_query)
+    monkeypatch.setattr(_gw, "stream_meta", _hear_stream)
+
+    def _composes(call):
+        was = len(heard)
+        text = call()
+        return len(heard) > was or bool(text)
+    composing = []
+    if _composes(lambda: (lambda g: g.status_code == 200 and (g.json().get("output") or "").strip())(
+            client.post("/api/v1/generator/produce", json={"artefact_type": "content", "spec": ask}))):
+        composing.append("POST /api/v1/generator/produce")
+    if _composes(lambda: (lambda s: s.status_code == 200 and (s.json().get("content") or "").strip())(
+            client.post("/api/v1/synthesis/generate", json={"content_ids": [], "output_type": "report",
+                                                            "instructions": ask}))):
+        composing.append("POST /api/v1/synthesis/generate")
+
+    def _streamed():
+        with client.stream("POST", "/api/v1/synthesis/stream",
+                           json={"content_ids": [], "output_type": "report", "instructions": ask}) as st:
+            frames = [ln for ln in "".join(st.iter_text()).splitlines() if ln.startswith("data: ") and '"token"' in ln]
+        return st.status_code == 200 and frames
+    if _composes(_streamed):
+        composing.append("/stream")
+    if _composes(lambda: (asyncio.new_event_loop().run_until_complete(_fab._run_real_resource_handler(
+            "generator", {"artefact_type": "content", "spec": ask}, ask, "general")) or {}).get("output")):
+        composing.append("POST /api/v1/generator/produce")       # the fabric's Artefact Generator runs run_generator
+    if composing:     # while any composes them, the register and what the page says never call the gap closed
+        assert gap["status"] == "open", (gap["id"], gap["status"], composing)
+        for said in (_sp.RESERVED_SCREEN, crow["today"]):
+            assert "other free-text generators are not screened, among them" in said, said
+            assert all(c in said for c in composing), (composing, said)
+
+    #  8. the templates answer, the Law page, its captured answers and its rendered test (read through _code_only)
+    tpl = client.get("/api/v1/law/templates").json()
+    assert tpl["reserved"]["screen_basis"] == _sp.RESERVED_SCREEN and tpl["reserved"]["reason"] == reason, tpl["reserved"]
+    src = root / "apps" / "workstation-superapp" / "src" / "pages" / "domains"
+    fx = json.loads((src / "LawHub.fixture.json").read_text(encoding="utf-8"))
+    assert fx["templates"] == tpl, ("the Law page's captured templates answer is not the route's: capture it again from "
+                                    "GET /api/v1/law/templates on an isolated store with no model",
+                                    sorted(k for k in set(fx["templates"]) | set(tpl) if fx["templates"].get(k) != tpl.get(k)))
+    ref = fx["generate_refused"]
+    r = client.post("/api/v1/law/generate", json=ref["request"])
+    assert (r.status_code, r.json()["detail"]) == (ref["status"], ref["detail"]) and ref["status"] == 409, (
+        "the Law page's captured refusal is not the route's", r.status_code)
+    assert ref["request"]["template_id"] in {x["id"] for x in tpl["templates"]}, ref["request"]
+    page = _code_only((src / "LawHub.tsx").read_text(encoding="utf-8"))
+    for line in ("setTemplatesReserved(d?.reserved ?? null);",
+                 '<span className="block text-[10px] text-amber-400 mt-1" data-testid="law-templates-reserved">',
+                 "{templatesReserved!.reason} {templatesReserved!.screen_basis ?? ''}",
+                 "and which is held and which documents this form refuses are not known."):
+        assert line in page, ("the Law page no longer draws this", line)
+    assert (page.index('data-testid="law-templates-held"') < page.index('data-testid="law-templates-reserved"')
+            < page.index('data-testid="law-templates-note"')), "the reserved line is not beside the held one"
+    vt = _code_only((src / "LawHub.test.tsx").read_text(encoding="utf-8"))
+    for line in ("it('the reserved documents are said on the draft tab, with what the screen of a request reads'",
+                 "await waitFor(() => expect(screen.getByTestId('law-templates-reserved').textContent).toContain(reserved.reason));",
+                 "expect(screen.getByTestId('law-templates-reserved').textContent).toContain(reserved.screen_basis);",
+                 "it('a reserved document asked for in a listed template\\'s words is refused, in the route\\'s own words'",
+                 "const refusal = captured.generate_refused;",
+                 "expect(await screen.findByText(refusal.detail)).toBeTruthy();",
+                 "expect(post.mock.calls[0][0]).toBe('/api/v1/law/generate');"):
+        assert line in vt, ("the rendered test no longer reads this", line)
