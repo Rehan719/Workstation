@@ -67173,8 +67173,9 @@ def test_w747_the_external_prompts_review_is_recorded_and_its_gaps_are_registere
     #  each gap that survived is an open row, with its slot, entered by this round
     reg = {r["title"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
     expected = [
-        #  W754 - ruled 2026-11-06: the row left OWNER for P5.22, the item that builds and runs the final audit
-        ('OWNER DECISION: the uncapped, census-partitioned final audit has no item that builds or runs it', 'P5.22'),
+        #  W754 - ruled 2026-11-06: the row left OWNER for P5.22, the item that builds and runs the final audit;
+        #  W1200 retitled it to say what remains, once W970, W972, W973 and W977 had built the instrument
+        ("The final audit's instrument is built (W970-W977); it is not yet calibrated or run", 'P5.22'),
         ('HYPOTHESIS: a model is made the serving default after one check, that it is installed', 'P3.32'),
         ("The Owner's ruled routing tie-break order is encoded nowhere, so the ruling cannot fail", 'P4.3'),
         ('HYPOTHESIS: sign-in and signup have no limit on attempts', 'P4.1'),
@@ -67194,9 +67195,12 @@ def test_w747_the_external_prompts_review_is_recorded_and_its_gaps_are_registere
         r = reg.get(title)
         assert r is not None, ("a surviving gap is not in the register", title)
         assert r["source"] == "W747" and r["slot"] == slot, (title, r.get("source"), r.get("slot"))
-    #  W754 - the Owner ruled it, so it is ungated and rides the item chartered for it
+    #  W754 - the Owner ruled it (2026-11-06), so it is ungated and rides the item chartered for it. W1200: its title
+    #  no longer opens OWNER DECISION, since the Owner has ruled and W970-W977 built the instrument; it must never
+    #  again say that nothing builds or runs the audit
     ruled = [reg[t] for t, s in expected if s == "P5.22"]
-    assert len(ruled) == 1 and not ruled[0].get("owner_gated") and ruled[0]["title"].startswith("OWNER DECISION:"), ruled
+    assert len(ruled) == 1 and not ruled[0].get("owner_gated") and (
+        "no item that builds or runs it" not in ruled[0]["title"]), ruled
     #  a row read from code says so in its title until it is driven
     for title, _slot in expected:
         if "Read from code" in reg[title]["why"]:
@@ -103077,3 +103081,326 @@ def test_w1195d_fu1820_the_three_rows_four_cases_rely_on_are_read_again_and_the_
     assert len(line) == 1 and D.isoformat() in line[0] and "2027-02-17" in line[0], p515[-700:]
     assert "The ruled date, before 2027-01-10, is unchanged." in line[0] and "before 2027-01-10" in p515.split(
         "(W1195d)", 1)[0], "P5.15 no longer gives the ruled date"
+
+
+def test_w1200_plan_now_says_an_item_held_for_the_final_audit_a_queued_allocation_says_nothing_drains_it_and_fu1086_says_what_remains():
+    """W1200 (C3, C4, D-FU1086): the plan says what is held and what was built. FU-1874 (P5.22) and FU-1875 (P2.40)
+    are closed by this round, as built, through its close step; FU-1086 stays open on P5.22 until the audit has run.
+    Held here:
+    H1. a fixture plan of two build items held until a third, an owner-switch item, a free build item whose prose
+        says HELD UNTIL mid-line, a hold line under a milestone line (no item's), and the named item last, whose
+        first sentence ends in a comma. plan_now gives each open item held_until and held, and next_unheld is the
+        free build item, never the owner-switch item. The Next line opens with the first held item, says its riders,
+        that its rows can be worked now and that it closes only on the named item, whose title is quoted without the
+        comma, and not that it closes on its ACCEPT clause; the line after it names the free build item as the first
+        open build item a round can close, with its riders; 'Then, in order' marks the second held item and no free
+        one;
+    H2. the same fixture with the named item marked done: nothing is held and nothing is said held, and the block is
+        what it was before holds were read;
+    H3. a held item with no open rider says only that it closes on the named item, an unexamined one still says
+        UNEXAMINED, and when every open build item is held the line says none can close;
+    H4. check() reports a hold naming no plan item, the item itself, a hold line in another form (no colon, five
+        spaces, lower case), a second hold, and a cycle of holds of two items and of three; the fixture's mentions in
+        prose are not holds and are not reported, a line that starts 'held until such' among them;
+    H5. the real plan: while P5.22 is open, P2.40, P2.41 and P3.30 each, while open, carry one hold line naming P5.22
+        in their own block, P2.40's and P2.41's right after their W786 lines, and are held; both documents' PLAN NOW
+        blocks are the render, and while the next item is held their Next line says the hold and the next line names
+        next_unheld, the first open build item not held; FU-1874 is open on P5.22 or closed by W1200 as built; the row
+        this round registered (the Transformation page's Next line) is on P5.22, low, while open;
+    Q1. the handler of POST /api/v1/optimizer/allocate (test_w492 drives its HTTP door), with an undeclared tier and
+        with the declared queued tier, answers QUEUED with pending False, a queue depth of one and the basis that
+        nothing drains the queue, the work NOT scheduled and nothing pending; so does the scheduler called directly
+        with no monitor;
+    Q2. the scheduler called with a monitor past its threshold answers REJECTED (CIRCUIT_BREAKER_ACTIVE), as its next
+        call already did, with pending False, puts nothing on the queue (depth 0) and says so: its basis opens 'put on
+        no queue' and says the task was neither run nor queued, NOT scheduled and nothing pending, and never that it
+        was queued;
+    Q3. the fabric's resource_optimizer stage with an undeclared tier is not executed, and its error carries the
+        basis; a declared tier that runs answers SUCCESS with no pending, queue depth or basis, through the handler
+        and the fabric; FU-1875 is open on P2.40 or closed by W1200 as built;
+    F1. FU-1086 is open on P5.22, high, not gated, source W747, tier 2, its title the new one: it says the instrument
+        is built and is not yet calibrated or run, and neither opens OWNER DECISION nor says no item builds or runs it;
+    F2. its why, before its RETITLED note, carries each of P5.22's seven properties by its own words ('no region
+        capped', not 'uncapped'), names the four rounds and what remains (P5.10 clause 5, FU-993, FU-1036, December,
+        P2.40 and P2.41); the note quotes the old title, and the earlier words follow it, the Owner's ruling of the
+        morning of 2026-11-22 among them; it never says 'Read from code'; 'P5.10 clause 5, FU-993' is required only
+        while FU-993 is open;
+    F3. P5.22's block has one BUILT line, after property (7) and after the morning's ruling: it names at least W970,
+        W972, W973 and W977, each with a P5.22 guard in this file, every file it names is tracked, it says the audit
+        has not run and runs in December, and while FU-993 is open that the calibration is NOT YET done, and it names
+        no FU id but FU-1086; and no item of the real plan carries a hold problem (test_w462 holds the whole check)."""
+    import asyncio
+    import json
+    import re
+    import subprocess
+    from pathlib import Path
+    from agentic_core import plan_followups as fu
+    root = Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")  # noqa: E731
+
+    #  H1. A FIXTURE PLAN: P8.1 and P8.2 held until P10.2, P9.1 an owner switch, P10.1 free, P10.2 the named item last
+    fixture = "\n".join([
+        "<delivery_plan>",
+        "PHASE P8 — HELD WORK (delivered_by: build)",
+        " P8.1 [chartered W1200] THE FIRST HELD ITEM. Its rows can be worked now.",
+        "      UPDATED 2026-11-22 (W1200): a line of its block before its hold.",
+        "      HELD UNTIL P10.2: this item closes only on P10.2.",
+        " P8.2 THE SECOND HELD ITEM",
+        "      HELD UNTIL P10.2: so does this one.",
+        "PHASE P9 — THE OWNER'S HAND (delivered_by: owner-switch)",
+        " P9.1 AN OWNER SWITCH",
+        "PHASE P10 — MORE WORK (delivered_by: build)",
+        " P10.1 A FREE BUILD ITEM. Its first line says HELD UNTIL P8.2: in its prose, which holds nothing.",
+        "      A line of its block says, mid-sentence, HELD UNTIL P8.1: and that holds nothing either, and the next",
+        "      held until such a check runs, which names no item, is prose and holds nothing.",
+        " MILESTONE M10: a milestone line, which ends the free item's block.",
+        "      HELD UNTIL P8.2: under a milestone line, this is no item's hold.",
+        " P10.2 THE NAMED ITEM — AUDITED LAST,",
+        "</delivery_plan>", ""])
+
+    def row(rid, slot, status="open"):
+        return {"id": rid, "title": f"a made-up row {rid}", "why": "w1200", "source": "W1200", "found": "2026-11-22",
+                "files": [], "severity": "low", "owner_gated": False, "slot": slot, "status": status,
+                "closed_by": "W1200" if status == "done" else None, "note": ""}
+    fx_reg = {"items": [row("FU-9201", "P8.1"), row("FU-9202", "P8.1", "done"), row("FU-9203", "P9.1"),
+                        row("FU-9204", "P10.1"), row("FU-9205", "P10.1", "done")], "routes": []}
+    hold = " HELD UNTIL P10.2 (THE NAMED ITEM — AUDITED LAST): "
+
+    def lines_of(text):
+        out = text.splitlines()
+        nxt = [ln for ln in out if ln.startswith("  Next: ")]
+        assert len(nxt) == 1, out
+        first = [ln for ln in out if ln.startswith("  The first open build item a round can close: ")]
+        then = " ".join(" ".join(out).split("  Then, in order (the follow-ups riding each): ", 1)[1].split("  Done:")[0]
+                        .split("  Highest priority")[0].split())
+        return nxt[0], first, [part.strip() for part in then.split(" · ")]
+    p = fu.plan_now(fx_reg, fixture)
+    by = {o["slot"]: o for o in p["open_items"]}
+    assert [(s, by[s]["held_until"], by[s]["held"]) for s in ("P8.1", "P8.2", "P9.1", "P10.1", "P10.2")] == [
+        ("P8.1", "P10.2", True), ("P8.2", "P10.2", True), ("P9.1", None, False), ("P10.1", None, False),
+        ("P10.2", None, False)], "the holds were read wrongly: from prose, from the wrong block, or not at all"
+    assert p["next"]["slot"] == "P8.1" and p["next_unheld"]["slot"] == "P10.1", (
+        "the first open build item not held is not the free build item", p["next"]["slot"], p["next_unheld"])
+    nxt, first, then = lines_of(fu.render_plan_now(fx_reg, fixture))
+    assert nxt == ("  Next: P8.1 THE FIRST HELD ITEM — 1 follow-up ride it (2 ever)." + hold
+                   + "its rows can be worked now; the item itself closes only on P10.2."), nxt
+    assert "closes on its ACCEPT clause" not in nxt, "a held item is still said to close on its ACCEPT clause"
+    assert first == ["  The first open build item a round can close: P10.1 — 1 follow-up ride it (2 ever)."], first
+    assert then == ["P8.2 0/0 held until P10.2", "P9.1 1/1", "P10.1 1/2", "P10.2 0/0"], (
+        "'Then, in order' does not mark each held item, or marks a free one", then)
+    assert not any(re.match(r"^ P\d+\.\d+", ln) for ln in fu.render_plan_now(fx_reg, fixture).splitlines())
+
+    #  H2. the named item done: the holds are history and hold nothing
+    named_done = fixture.replace(" P10.2 THE NAMED ITEM", " P10.2 ✅ DONE W1200 THE NAMED ITEM", 1)
+    pd = fu.plan_now(fx_reg, named_done)
+    assert not any(o["held"] for o in pd["open_items"]) and pd["next_unheld"]["slot"] == "P8.1", (
+        "an item is held whatever state the named item is in")
+    rendered_done = fu.render_plan_now(fx_reg, named_done)
+    nxt, first, then = lines_of(rendered_done)
+    assert nxt == "  Next: P8.1 THE FIRST HELD ITEM — 1 follow-up ride it (2 ever)." and first == [], (nxt, first)
+    assert "HELD UNTIL" not in rendered_done and "held until" not in rendered_done, rendered_done
+
+    #  H3. a held item with no open rider; an unexamined held item; every open build item held
+    no_rider = {"items": [dict(r, status="done", closed_by="W1200") if r["id"] == "FU-9201" else r
+                          for r in fx_reg["items"]], "routes": []}
+    nxt, first, _ = lines_of(fu.render_plan_now(no_rider, fixture))
+    assert nxt == ("  Next: P8.1 THE FIRST HELD ITEM — no OPEN follow-up rides it, and 2 have — every row closed, which "
+                   "is NOT the same as the item being done." + hold + "the item itself closes only on P10.2."), nxt
+    unexamined = fixture.replace(" P8.1 [chartered W1200]", " P8.1 ✅ DONE W1200 [chartered W1200]", 1)
+    nxt, first, then = lines_of(fu.render_plan_now({"items": [], "routes": []}, unexamined))
+    assert nxt == ("  Next: P8.2 THE SECOND HELD ITEM — no follow-up has ever ridden it, so it is UNEXAMINED rather than "
+                   "nearly done." + hold + "the item itself closes only on P10.2."), nxt
+    all_held = "\n".join(["<delivery_plan>", "PHASE P8 — HELD WORK (delivered_by: build)", " P8.1 A HELD ITEM",
+                          "      HELD UNTIL P9.1: it closes only on the switch.",
+                          "PHASE P9 — THE OWNER'S HAND (delivered_by: owner-switch)", " P9.1 AN OWNER SWITCH",
+                          "</delivery_plan>", ""])
+    nxt, first, _ = lines_of(fu.render_plan_now({"items": [], "routes": []}, all_held))
+    assert first == ["  The first open build item a round can close: none: every open build item is held."], first
+
+    #  H4. a mistyped hold is reported, never silently holding nothing; prose is not a hold
+    def hold_problems(text):
+        return [s for s in fu.check({"items": [], "routes": []}, text)
+                if s.startswith("plan item") and ("hold" in s or "held until" in s)]
+    assert hold_problems(fixture) == [], hold_problems(fixture)
+    bad = {"names no plan item": (fixture.replace("HELD UNTIL P10.2: so does", "HELD UNTIL P99.9: so does", 1),
+                                  "plan item P8.2 is held until P99.9, which is not a delivery-plan item"),
+           "names itself": (fixture.replace("HELD UNTIL P10.2: so does", "HELD UNTIL P8.2: so does", 1),
+                            "plan item P8.2 is held until itself"),
+           "has no colon": (fixture.replace("HELD UNTIL P10.2: so does", "HELD UNTIL P10.2 so does", 1),
+                            "plan item P8.2 carries a hold line not in the form"),
+           "has five spaces": (fixture.replace("      HELD UNTIL P10.2: so does", "     HELD UNTIL P10.2: so does", 1),
+                               "plan item P8.2 carries a hold line not in the form"),
+           "is a second": (fixture.replace("      HELD UNTIL P10.2: so does this one.",
+                                           "      HELD UNTIL P10.2: so does this one.\n      HELD UNTIL P9.1: again.", 1),
+                           "plan item P8.2 carries a second hold line"),
+           "is lower case": (fixture.replace("      HELD UNTIL P10.2: so does", "      held until P10.2: so does", 1),
+                             "plan item P8.2 carries a hold line not in the form"),
+           "is a cycle of two": (fixture.replace("HELD UNTIL P10.2: this item closes only on P10.2.",
+                                                 "HELD UNTIL P8.2: this item closes only on P8.2.", 1)
+                                 .replace("HELD UNTIL P10.2: so does", "HELD UNTIL P8.1: so does", 1),
+                                 "plan item P8.1 is held in a cycle of holds (P8.1 → P8.2 → P8.1)"),
+           "is a cycle of three": (fixture.replace("HELD UNTIL P10.2: this item closes only on P10.2.",
+                                                   "HELD UNTIL P8.2: this item closes only on P8.2.", 1)
+                                   .replace(" P10.2 THE NAMED ITEM — AUDITED LAST,",
+                                            " P10.2 THE NAMED ITEM — AUDITED LAST,\n      HELD UNTIL P8.1: back to the first.", 1),
+                                   "plan item P8.1 is held in a cycle of holds (P8.1 → P8.2 → P10.2 → P8.1)")}
+    for case, (text, said) in bad.items():
+        assert text != fixture and any(s.startswith(said) for s in hold_problems(text)), (case, hold_problems(text))
+
+    #  H5. THE REAL PLAN AND REGISTER
+    fable = read("docs/FABLE_DELIVERY_PROMPT.md")
+    living = (root / "docs/WORKSTATION_IDBO_LIVING_PLAN.md").read_bytes().decode("utf-8")
+    reg = json.loads(read("docs/FOLLOWUPS.json"))
+    rows = {r["id"]: r for r in reg["items"]}
+    #  the row this round registered: the Transformation page's Next line says nothing of the hold
+    page = [r for r in reg["items"] if r["title"].startswith("The Transformation page's Next line does not say that the "
+                                                                "next item is held until the final audit")]
+    assert len(page) == 1 and page[0]["files"] == ["apps/workstation-superapp/src/pages/TransformationDashboard.tsx"]
+    if page[0]["status"] == "open":
+        assert (page[0]["slot"], page[0]["severity"], page[0]["owner_gated"]) == ("P5.22", "low", False), page[0]
+    items = {i["slot"]: i for i in fu.plan_items(fable)}
+    blocks = fu._item_blocks(fu.delivery_plan_body(fable))
+    lines = fable.split("\n")
+    real = fu.plan_now(reg, fable)
+    held = {o["slot"]: o for o in real["open_items"]}
+    if not items["P5.22"]["done"]:
+        for slot, says in (("P2.40", "this item closes only on the final audit"),
+                           ("P2.41", "this item closes only on the final audit"),
+                           ("P3.30", "ACCEPT (5)'s re-run of M3 with M1 and M2 is the final audit")):
+            if items[slot]["done"]:
+                continue
+            mine = [ln for ln in blocks[slot].split("\n") if ln.startswith("      HELD UNTIL ")]
+            assert len(mine) == 1 and mine[0].startswith(f"      HELD UNTIL P5.22: {says}"), (slot, mine)
+            assert "its rows can still be closed by rounds." in mine[0], (slot, "does not say its rows can be worked")
+            assert items[slot]["held_until"] == "P5.22" and held[slot]["held"], (slot, held[slot])
+            if slot != "P3.30":         # test_w786 pins i+1; the hold is i+2
+                i = next(n for n, ln in enumerate(lines) if ln.startswith(f" {slot} [MILESTONE M"))
+                assert lines[i + 1].startswith("      UPDATED 2026-11-10 (W786)") and lines[i + 2] == mine[0], slot
+    now = fu.render_plan_now(reg, fable)
+    assert fu._block(fable, fu.PLAN_BEGIN, fu.PLAN_END) == now == fu._block(living, fu.PLAN_BEGIN, fu.PLAN_END), (
+        "a plan document was not re-rendered")
+    nx = real["next"]
+    if not items["P2.40"]["done"] and not items["P5.22"]["done"]:
+        assert nx["slot"] == "P2.40" and nx["held"] and nx["held_until"] == "P5.22", nx
+    if nx and nx["held"]:
+        line = next(ln for ln in now.splitlines() if ln.startswith(f"  Next: {nx['slot']} "))
+        assert f"HELD UNTIL {nx['held_until']} (" in line and line.endswith(
+            f"the item itself closes only on {nx['held_until']}."), line
+        assert "closes on its ACCEPT clause" not in line and (("its rows can be worked now" in line) == bool(nx["followups"]))
+        if nx["held_until"] == "P5.22":
+            assert "HELD UNTIL P5.22 (THE FINAL AUDIT — UNCAPPED): " in line, line
+        nu = real["next_unheld"]
+        assert nu and items[nu["slot"]]["delivered_by"] == "build" and not nu["held"], nu
+        before = real["open_items"][:[o["slot"] for o in real["open_items"]].index(nu["slot"])]
+        assert all(o["held"] or items[o["slot"]]["delivered_by"] != "build" for o in before), before
+        assert f"\n  The first open build item a round can close: {nu['slot']} — " in now, now[:900]
+    for rid, slot in (("FU-1874", "P5.22"), ("FU-1875", "P2.40")):
+        r = rows[rid]
+        assert r["slot"] == slot and not r["owner_gated"], r
+        if r["status"] != "open":
+            assert (r["status"], r.get("closed_by"), r.get("because")) == ("done", "W1200", "built"), (rid, r["status"])
+
+    #  Q1. THE OPTIMISER'S QUEUE: an undeclared tier and the declared queued tier, through the route
+    from agentic_core.api.optimizer import AllocateRequest, allocate
+    from agentic_core.optimizer.scheduler import CostAwareScheduler
+
+    def post(tier):     # the route's own handler, as POST /api/v1/optimizer/allocate calls it
+        return asyncio.run(allocate(AllocateRequest(domain="science", requirements={"CPU": 2, "RAM": 512}, tier=tier)))
+    QUEUED_ON = ("queued on this request's own in-process queue, which nothing drains and which is discarded when the "
+                 "response returns - the work was NOT scheduled for later execution and nothing is pending")
+    for tier in ("a-tier-w1200-does-not-declare", "free"):
+        al = post(tier)
+        assert al["status"] == "QUEUED" and al["tier_recognised"] is (tier == "free"), al
+        assert al["pending"] is False and al["queue_depth"] == 1 and al["queue_basis"] == QUEUED_ON, al
+        assert "nothing drains" in al["queue_basis"] and "NOT scheduled" in al["queue_basis"], al["queue_basis"]
+    direct = CostAwareScheduler()
+    q = asyncio.run(direct.schedule_task({"id": "w1200-a"}, "free", queued=True))
+    assert (q["status"], q["pending"], q["queue_depth"], q["queue_basis"], direct.queue.qsize()) == (
+        "QUEUED", False, 1, QUEUED_ON, 1), q
+
+    #  Q2. the circuit-open path: past the threshold nothing is put on the queue, and the basis says so
+    class _PastThreshold:
+        def get_current_usage(self):
+            return {"api_quota_remaining": 0.05}
+    tripped = CostAwareScheduler(monitor=_PastThreshold())
+    c = asyncio.run(tripped.schedule_task({"id": "w1200-b"}, "free", queued=True))
+    assert (c["status"], c.get("reason")) == ("REJECTED", "CIRCUIT_BREAKER_ACTIVE") and c["pending"] is False, c
+    assert tripped.circuit_open is True and c["id"] == "w1200-b", c
+    assert c["queue_depth"] == 0 and tripped.queue.qsize() == 0, ("the circuit-open path queued the task", c)
+    assert c["queue_basis"].startswith("put on no queue: this request's own scheduler found its quota threshold reached "
+                                       "and opened its circuit breaker, so the task was neither run nor queued"), c
+    again = asyncio.run(tripped.schedule_task({"id": "w1200-d"}, "free", queued=True))
+    assert (again["status"], again.get("reason")) == (c["status"], c.get("reason")), ("the open circuit answers two ways", again)
+    assert "NOT scheduled" in c["queue_basis"] and (
+        "nothing is pending" in c["queue_basis"]), c
+    assert "queued on this request's own in-process queue" not in c["queue_basis"], (
+        "the circuit-open path says the task was queued while it put nothing on the queue", c["queue_basis"])
+    under = CostAwareScheduler(monitor=type("_Under", (), {"get_current_usage": lambda self: {"api_quota_remaining": 0.9}})())
+    u = asyncio.run(under.schedule_task({"id": "w1200-c"}, "free", queued=True))
+    assert (u["status"], u["queue_depth"], u["queue_basis"], under.circuit_open) == ("QUEUED", 1, QUEUED_ON, False), u
+
+    #  Q3. the fabric carries the basis into its 'not executed' error; work that ran says nothing of a queue
+    from agentic_core.api import resource_fabric as rf
+    f = asyncio.run(rf._run_real_resource_handler("resource_optimizer", {"tier": "a-tier-w1200-does-not-declare"},
+                                                   "an objective", "science"))
+    assert f["error"] == f"not executed: QUEUED - {QUEUED_ON}" and f["allocation_status"] == "QUEUED", f
+    ran = post("standard")
+    assert ran["status"] == "SUCCESS" and not {"pending", "queue_depth", "queue_basis"} & set(ran), ran
+    fr = asyncio.run(rf._run_real_resource_handler("resource_optimizer", {"tier": "standard"}, "an objective", "science"))
+    assert "error" not in fr and "queue_basis" not in json.dumps(fr), fr
+
+    #  F1. FU-1086 says the instrument is built and the audit not yet calibrated or run
+    r86 = rows["FU-1086"]
+    assert (r86["slot"], r86["severity"], r86["owner_gated"], r86["source"], r86.get("tier")) == (
+        "P5.22", "high", False, "W747", 2), r86
+    assert r86["title"] == "The final audit's instrument is built (W970-W977); it is not yet calibrated or run", r86["title"]
+    assert not r86["title"].startswith("OWNER DECISION") and "no item that builds or runs it" not in r86["title"]
+    why = r86["why"]
+    assert "Read from code" not in why, "a row read from code says so in its title (test_w747)"
+    if r86["status"] == "open":
+        #  F2. the why before its RETITLED note: each property in its own words, the four rounds, what remains
+        assert why.count("RETITLED by W1200 (2026-11-22) from 'OWNER DECISION: the uncapped, census-partitioned final "
+                         "audit has no item that builds or runs it'") == 1, "the RETITLED note does not quote the old title"
+        head, kept = why.split("RETITLED by W1200", 1)
+        for prop in ("exactly one slice", "union of the slices", "no region capped", "failed or empty",
+                     "measured commit", "earlier ledgers", "both configurations"):
+            assert prop in head, ("FU-1086's why does not carry a property of P5.22's", prop)
+        for said in ("W970 built properties (1) and (2)", "W972 built (6)", "W973 built (3), (4), (5) and (7)",
+                     "W977 built the workflow", "on the Owner's machine (FU-1036)",
+                     "in December", "P2.40 and P2.41 close on it", "the audit has not run") + (
+                ("P5.10 clause 5, FU-993",) if rows["FU-993"]["status"] == "open" else ()):
+            assert said in head, ("FU-1086's why does not say", said)
+        for earlier in ("The Owner ruled on 2026-10-12 that the final audit is uncapped",
+                        "Recommended: charter it as its own item",
+                        "OWNER RULING 2026-11-22 (morning; the recommendation accepted): \"after Phase 5\" means after "
+                        "its build items close; the audit is then to run in December."):
+            assert earlier in kept, ("FU-1086's earlier words are not kept after its RETITLED note", earlier[:60])
+
+    #  F3. P5.22 records what W970-W977 built and what is not yet done
+    p522 = blocks["P5.22"].split("\n")
+    built = [ln for ln in p522 if ln.startswith("      BUILT")]
+    assert len(built) == 1 and built[0].startswith("      BUILT (W970–W977, 2026-11-13): "), built
+    at = p522.index(built[0])
+    assert at > next(n for n, ln in enumerate(p522) if ln.startswith("      (7) both configurations ran")), "BUILT is early"
+    assert at > next(n for n, ln in enumerate(p522) if ln.startswith("      OWNER RULING 2026-11-22 (morning")), (
+        "BUILT is not after the morning's ruling, which it cites as the ruling above")
+    spine = read("integration_tests/test_mvp_spine.py")
+    named = sorted(set(re.findall(r"\bW(\d{3,})\b", built[0])), key=int)
+    assert {"970", "972", "973", "977"} <= set(named), named
+    for n in ("970", "972", "973", "977"):
+        assert spine.count(f"\ndef test_w{n}_p522_") == 1, ("BUILT names a round with no P5.22 guard", n)
+    tracked = set(subprocess.run(["git", "ls-files"], cwd=root, capture_output=True, text=True).stdout.split("\n"))
+    files = re.findall(r"\b((?:scripts|docs)/[\w./-]+\.(?:py|js|json))\b", built[0])
+    assert {"scripts/audit_census_partition.py", "scripts/ledger_blobs.py", "scripts/audit_completeness.py",
+            "scripts/workflows/fidelity_audit_final.js"} <= set(files), files
+    for rel in files:
+        assert (root / rel).is_file() and rel in tracked, ("BUILT names a file the tree does not track", rel)
+    assert set(re.findall(r"\bFU-\d+\b", built[0])) <= {"FU-1086"}, (
+        "BUILT names a row other than FU-1086, which an item's text does not list", re.findall(r"\bFU-\d+\b", built[0]))
+    if not items["P5.22"]["done"]:
+        for said in ("the audit has not run", "in December, by the ruling above") + (
+                ("NOT YET: the calibration against planted defects (P5.10 clause 5), then the two runs, one in each "
+                 "configuration",) if rows["FU-993"]["status"] == "open" else ()):
+            assert said in built[0], ("P5.22's BUILT line does not say", said)
+    assert [(s, it["hold_problem"]) for s, it in items.items() if it["hold_problem"]] == []
+    assert all(it["held_until"] in items and it["held_until"] != s for s, it in items.items() if it["held_until"])

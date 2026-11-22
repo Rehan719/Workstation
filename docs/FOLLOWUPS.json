@@ -21725,8 +21725,8 @@
     },
     {
       "id": "FU-1086",
-      "title": "OWNER DECISION: the uncapped, census-partitioned final audit has no item that builds or runs it",
-      "why": "The Owner ruled on 2026-10-12 that the final audit is uncapped and census-partitioned, its instrument built and guarded in its own round and calibrated first, and run after Phase 5 and the authentication-readiness round. The ruling lives only as a sentence in P2.40's order, and P5.10's calibration clause is the only other trace; no item, acceptance clause or open row owns building or running it, and once P2.40 closes the sentence sits on a closed item. Recommended: charter it as its own item, run in both the floor and the local-model configuration, with seven properties each driven red by a planted fault: every census surface in exactly one slice or a stated overlap, the union equals the census, no region capped, a failed or empty region blocks completeness, the measured commit reported, earlier ledgers byte-identical. OWNER RULING 2026-11-22 (morning; the recommendation accepted): \"after Phase 5\" means after its build items close; the audit is then to run in December. The rows still waiting on the Owner (the letters and the second Care calibration) are to be listed in its record as open, and they carry into January without holding it back. Proposed by the round design, not ruled: the rows meant are the letter rows FU-1188 and FU-1283 while they are open, P5.17's FU-1067 if written permission has not come by 2026-12-15, and P5.15's FU-1831, which waits on the Owner's second calibration run before 2027-01-10.",
+      "title": "The final audit's instrument is built (W970-W977); it is not yet calibrated or run",
+      "why": "P5.22 is the item that builds and runs the final audit, chartered on the Owner's ruling of 2026-11-06 (W754), which accepted this row's recommendation. Its instrument is built and guarded, and the audit has not run: W970 built properties (1) and (2), every census surface in exactly one slice or the overlap stated, and the union of the slices equal to the census (scripts/audit_census_partition.py, with the slices in docs/AUDIT_SLICES.json); W972 built (6), earlier ledgers kept byte-identical, each edition pinned by its git blob (scripts/ledger_blobs.py); W973 built (3), (4), (5) and (7): no region capped, a failed or empty region blocking completeness, the measured commit reported, and both configurations run or the one that did not saying why (scripts/audit_completeness.py); and W977 built the workflow that gives each slice one assessor and one refuter, uncapped, in one named configuration (scripts/workflows/fidelity_audit_final.js). What remains: first the calibration against planted defects and false findings (P5.10 clause 5, FU-993); the local-model configuration, which runs on the Owner's machine (FU-1036); then a run in each configuration, after Phase 5's build items close and the sign-in readiness round, in December by the Owner's ruling of the morning of 2026-11-22 (below); P2.40 and P2.41 close on it. RETITLED by W1200 (2026-11-22) from 'OWNER DECISION: the uncapped, census-partitioned final audit has no item that builds or runs it', which the charter and W970, W972, W973 and W977 had made untrue; the row's earlier words, kept as they were: The Owner ruled on 2026-10-12 that the final audit is uncapped and census-partitioned, its instrument built and guarded in its own round and calibrated first, and run after Phase 5 and the authentication-readiness round. The ruling lives only as a sentence in P2.40's order, and P5.10's calibration clause is the only other trace; no item, acceptance clause or open row owns building or running it, and once P2.40 closes the sentence sits on a closed item. Recommended: charter it as its own item, run in both the floor and the local-model configuration, with seven properties each driven red by a planted fault: every census surface in exactly one slice or a stated overlap, the union equals the census, no region capped, a failed or empty region blocks completeness, the measured commit reported, earlier ledgers byte-identical. OWNER RULING 2026-11-22 (morning; the recommendation accepted): \"after Phase 5\" means after its build items close; the audit is then to run in December. The rows still waiting on the Owner (the letters and the second Care calibration) are to be listed in its record as open, and they carry into January without holding it back. Proposed by the round design, not ruled: the rows meant are the letter rows FU-1188 and FU-1283 while they are open, P5.17's FU-1067 if written permission has not come by 2026-12-15, and P5.15's FU-1831, which waits on the Owner's second calibration run before 2027-01-10.",
       "source": "W747",
       "found": "2026-10-16",
       "files": [
@@ -27814,10 +27814,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1200",
       "note": "",
-      "slot_source": "P5.22's hold; plan_followups.py is in a retired area"
+      "slot_source": "P5.22's hold; plan_followups.py is in a retired area",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1200: plan_items reads a hold from a line of an item's own block, ' HELD UNTIL P#.#:', never from prose, and plan_now gives each open item held_until and held (true while the named item is open) and next_unheld, the first open build item that is not held. PLAN NOW's Next line still opens with the next item in plan order (W469) and its riders; for a held item it says the hold, that its rows can be worked now while rows ride it, and that the item closes only on the named item, and no longer that it closes on its ACCEPT clause. The line after it names the first open build item a round can close, with its riders, and 'Then, in order' marks each held item. check() reports a hold that names no plan item or the item itself, a hold line in another form (one that starts 'held until P#' in any case among them), a second hold, and a cycle of holds over any number of steps. The plan carries HELD UNTIL P5.22 lines after P2.40's and P2.41's W786 lines and after P3.30's ACCEPT (5), each saying its rows can still be closed by rounds, and both plan documents are re-rendered: P2.40 is next, held until P5.22, and P3.32 is the first open build item a round can close. The Transformation page's Next line, which the plan left unchanged, is registered on P5.22 as a row of its own. test_w1200 holds it on a fixture plan and on the real one."
     },
     {
       "id": "FU-1875",
@@ -27832,9 +27835,12 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
-      "note": ""
+      "status": "done",
+      "closed_by": "W1200",
+      "note": "",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1200: test_w1200 holds the optimiser's statement that nothing drains its queue over the whole payload. The allocate route's handler, with an undeclared tier and with the declared queued tier, answers QUEUED with pending false, a queue depth of one and the basis that the task sits on this request's own in-process queue, which nothing drains and which is discarded with the response, the work NOT scheduled and nothing pending. The fabric's resource_optimizer stage carries that basis in its not-executed error, and a declared tier that runs answers SUCCESS with no pending, depth or basis. The circuit-open path put nothing on the queue (depth 0) while its basis said the task was queued there; the scheduler now answers REJECTED (CIRCUIT_BREAKER_ACTIVE) there, as its next call already did, and says it put the task on no queue, the work NOT scheduled and nothing pending, and test_w1200 holds that path, called directly with a monitor past its threshold."
     },
     {
       "id": "FU-1876",
@@ -28290,6 +28296,23 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P5.13 clause 1: every catalogue entry, rule and prompt that names an authority points at a row of the register (W1195d)"
+    },
+    {
+      "id": "FU-1901",
+      "title": "The Transformation page's Next line does not say that the next item is held until the final audit, nor name the first open build item a round can close",
+      "why": "Since W1200 (FU-1874), PLAN NOW in both plan documents says when the next item is held until another (P2.40, until P5.22), that its rows can be worked now while rows ride it, and which open build item a round can close first: plan_now gives each open item held_until and held, and gives next_unheld. The Transformation page draws its Next line from plan.next's slot, title and rider count alone (TransformationDashboard.tsx, the plan-next line, and its rendered test), so it shows P2.40 as next with its riders and says nothing of the hold. The plan for W1200 left the page unchanged. The fix: while plan.next.held, the line says HELD UNTIL plan.next.held_until and names plan.next_unheld with its riders, with its rendered test and the page's fixture.",
+      "source": "W1200 (found while building PLAN NOW's hold)",
+      "found": "2026-11-22",
+      "files": [
+        "apps/workstation-superapp/src/pages/TransformationDashboard.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.22",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.22's hold, which PLAN NOW says since W1200; the page's file is routed to no item"
     }
   ],
   "routes": [

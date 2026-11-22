@@ -16,17 +16,23 @@ class CostAwareScheduler:
         self.circuit_open = False
         self.usage_threshold = 0.80 # Alert at 80% usage
 
-    def _queue_disclosure(self) -> Dict[str, Any]:
+    def _queue_disclosure(self, put_on_queue: bool = True) -> Dict[str, Any]:
         """W492 (refutation) - "QUEUED" reads as "your task is pending and will run". It is not: this
         queue is an asyncio.Queue on THIS scheduler instance, the optimiser that owns it is constructed
         per request, and nothing anywhere calls get() on it. The task is recorded and then discarded with
-        the response. Said here rather than implied by a status word."""
+        the response. Said here rather than implied by a status word.
+        W1200 (FU-1875) - the circuit-open path puts nothing on the queue (its depth stays 0), so it answers
+        REJECTED and its basis says it put the task on no queue, not that the task was queued."""
         return {
             "pending": False,
             "queue_depth": self.queue.qsize(),
-            "queue_basis": ("queued on this request's own in-process queue, which nothing drains and "
-                            "which is discarded when the response returns - the work was NOT scheduled "
-                            "for later execution and nothing is pending"),
+            "queue_basis": (("queued on this request's own in-process queue, which nothing drains and "
+                             "which is discarded when the response returns - the work was NOT scheduled "
+                             "for later execution and nothing is pending") if put_on_queue else
+                            ("put on no queue: this request's own scheduler found its quota threshold reached "
+                             "and opened its circuit breaker, so the task was neither run nor queued and is "
+                             "discarded when the response returns - the work was NOT scheduled for later "
+                             "execution and nothing is pending")),
         }
 
     async def schedule_task(self, task: Dict[str, Any], tier: str,
@@ -50,7 +56,10 @@ class CostAwareScheduler:
                 if usage.get("api_quota_remaining", 1.0) < (1.0 - self.usage_threshold):
                     logger.warning(f"Scheduler: 80% Usage threshold reached. Activating circuit breaker.")
                     self.circuit_open = True
-                    return {"status": "QUEUED", "id": task.get("id"), **self._queue_disclosure()}
+                    #  W1200 (review) - REJECTED, as this scheduler's very next call already answers: the task was
+                    #  put on no queue, so the status does not say it was queued
+                    return {"status": "REJECTED", "reason": "CIRCUIT_BREAKER_ACTIVE", "id": task.get("id"),
+                            **self._queue_disclosure(put_on_queue=False)}
 
             # ARTICLE 310: Mandatory queueing for free-tier to ensure zero-cost compliance
             await self.queue.put(task)

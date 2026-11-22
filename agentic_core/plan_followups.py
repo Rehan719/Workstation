@@ -34,7 +34,11 @@ What check() enforces:
     the working tree AND be tracked by git (forward slashes, exact case) — the row has gone stale otherwise;
   · a malformed row is REPORTED and skipped, never raised, and never switches the other rules off;
   · each doc carries exactly one follow-up block and one PLAN NOW block, the prompt's inside the real
-    <delivery_plan> section, and each equals its render — the docs cannot drift from the plan or the register.
+    <delivery_plan> section, and each equals its render — the docs cannot drift from the plan or the register;
+  · W1200 (FU-1874) — a hold is a line of an item's own block, '      HELD UNTIL P#.#: …': the item closes only on
+    the named one, so while that is open PLAN NOW says so and names the first open build item a round can close;
+    a hold that names no plan item or the item itself, is not in that form, is an item's second, or closes a
+    cycle of holds, fails.
 
 CLI: scripts/followups.py (add · list · close · drop · reslot · route · routes · done · schedule · render · check).
 """
@@ -84,6 +88,12 @@ _DONE = re.compile(r"^\s*✅ DONE (W\d+)\b")
 # mark anywhere still counts, since nothing else on an item line uses one); the word 'done' inside the prose of an
 # item ('counted as done only when verified') is prose
 _DONE_MENTION = re.compile(r"^\s*[\[(\-–—\s]*(?:✅|\bdone\b(?!\s+when\b))|✅|\bDONE\s+W\d+\b", re.I)
+#  W1200 (FU-1874) - A HOLD IS READ FROM A LINE OF ITS OWN, never from prose: six spaces, HELD UNTIL, the item it
+#  waits on and a colon, inside the held item's block. Any other line there that starts HELD UNTIL is reported,
+#  and so is one that starts 'held until P#' in any case (a lower-case hold is still a hold mistyped). A line of
+#  prose that starts 'held until such a check ...' (P3.21's block) names no item and is not a hold.
+_HOLD = re.compile(r"^ {6}HELD UNTIL (P\d+\.\d+):(?:\s|$)")
+_HOLD_MENTION = re.compile(r"^\s*(?:(?-i:HELD UNTIL)\b|held until\s+P\d)", re.IGNORECASE)
 REQUIRED = ("id", "title", "why", "source", "found", "files", "severity", "owner_gated", "slot", "status")
 TEXT_FIELDS = ("id", "title", "why", "source", "found", "slot")
 
@@ -197,7 +207,8 @@ def _item_blocks(body: str) -> Dict[str, str]:
 
 def plan_items(prompt_text: str) -> List[Dict[str, Any]]:
     """The delivery plan's items IN PLAN ORDER, each with its done state — read from the plan itself,
-    so a newly added item or a new "✅ DONE W###" marker is seen without touching this module."""
+    so a newly added item or a new "✅ DONE W###" marker is seen without touching this module. W1200: each
+    item's hold (held_until) is read from a line of its own block, and a hold line in another form is reported."""
     body = delivery_plan_body(prompt_text)
     if body is None:
         return []
@@ -209,15 +220,30 @@ def plan_items(prompt_text: str) -> List[Dict[str, Any]]:
     # phase stays None - named in the basis, never assumed to be build work.
     _phase = None
     _phase_kind: Dict[str, Optional[str]] = {}
+    cur: Optional[Dict[str, Any]] = None             # W1200 - the item whose block this line is in
     for line in _without_blocks(body).splitlines():
         _ph = re.match(r"^PHASE (P\d+)\b(.*?)\r?$", line)
         if _ph:
             _phase = _ph.group(1)
             _k = re.search(r"delivered_by:\s*([a-z][a-z-]*)", _ph.group(2))
             _phase_kind[_phase] = _k.group(1) if _k else None
+            cur = None
             continue
         m = re.match(r"^ (P\d+\.\d+)\b(.*?)\r?$", line)
         if not m:
+            #  W1200 (FU-1874) - an item's block is its id line and the lines indented six under it, as _item_blocks
+            #  reads it. A hold is read only from a line of its own there; a mention in prose holds nothing
+            if cur is not None and _HOLD_MENTION.match(line):
+                _h = _HOLD.match(line)
+                if not _h:
+                    cur["hold_problem"] = cur["hold_problem"] or (
+                        "carries a hold line not in the form '      HELD UNTIL P#.#: …', so it holds nothing as written")
+                elif cur["held_until"]:
+                    cur["hold_problem"] = "carries a second hold line: an item is held until one item"
+                else:
+                    cur["held_until"] = _h.group(1)
+            elif cur is not None and not (line.startswith("      ") or not line.strip()):
+                cur = None
             continue
         rest = m.group(2).replace("️", "")           # a variation selector must not hide a marker
         done = _DONE.match(rest)                           # only right after the id — never a cross-reference
@@ -228,7 +254,10 @@ def plan_items(prompt_text: str) -> List[Dict[str, Any]]:
                       "done_by": done.group(1) if done else None,
                       "phase": _phase, "delivered_by": _phase_kind.get(_phase),
                       # said done in any other form or place on the line: reported, never read as open
-                      "malformed_done": (not done) and bool(_DONE_MENTION.search(rest))})
+                      "malformed_done": (not done) and bool(_DONE_MENTION.search(rest)),
+                      #  W1200 (FU-1874) - the item this one closes only on, from its block's hold line
+                      "held_until": None, "hold_problem": None})
+        cur = items[-1]
     return items
 
 
@@ -574,7 +603,14 @@ def plan_now(register: Any, prompt_text: str) -> Dict[str, Any]:
         _s = _r.get("slot") if isinstance(_r, dict) else None
         if _s:
             _ever[_s] = _ever.get(_s, 0) + 1
+    #  W1200 (FU-1874) - an item is HELD while the item its hold names is open: it closes only on that one, and its
+    #  rows can still be worked. next_unheld is the first open build item that is not held, the first a round can close
+    _open = _open_items(items)
+    _open_slots = {it["slot"] for it in _open}
     open_items = [{"slot": it["slot"], "title": it["title"],
+                   "held_until": it.get("held_until"),
+                   "held": bool(it.get("held_until")) and it["held_until"] != it["slot"]
+                   and it["held_until"] in _open_slots,
                    "followups": len(riding.get(it["slot"], [])),
                    "ever": _ever.get(it["slot"], 0),
                    "by_severity": {sev: sum(1 for r in riding.get(it["slot"], []) if r["severity"] == sev)
@@ -583,9 +619,11 @@ def plan_now(register: Any, prompt_text: str) -> Dict[str, Any]:
                    "open_priority": round(sum(r["priority"]["score"] for r in riding.get(it["slot"], [])), 1),
                    "top": [{"id": r["id"], "score": r["priority"]["score"], "area": r["priority"]["area"],
                             "tier": r["priority"]["tier"]} for r in riding.get(it["slot"], [])[:5]]}
-                  for it in _open_items(items)]
+                  for it in _open]
+    _build = {it["slot"] for it in items if it.get("delivered_by") == "build"}
     return {"readable": bool(items),
             "next": open_items[0] if open_items else None, "open_items": open_items, "phases": phases,
+            "next_unheld": next((o for o in open_items if o["slot"] in _build and not o["held"]), None),
             "done": sum(p["done"] for p in phases), "total": sum(p["total"] for p in phases),
             "followups": s["counts"], "unscheduled": [r["id"] for r in s["unscheduled"]],
             "priority": s["priority"]}
@@ -1412,6 +1450,27 @@ def _wrap(prefix: str, parts: List[str], indent: str = "    ", width: int = 112)
     return lines
 
 
+def _riders_said(it: Dict[str, Any], p: Dict[str, Any]) -> str:
+    """What rides an open item, as PLAN NOW says it; for a held item, the hold (W1200, FU-1874)."""
+    riders, ever = it["followups"], it["ever"]
+    if riders:
+        said = (f"{riders} follow-up{'s' if riders != 1 else ''} ride it"
+                + (f" ({ever} ever)." if ever != riders else "."))
+    elif ever:
+        said = (f"no OPEN follow-up rides it, and {ever} have — every row closed, which is "
+                "NOT the same as the item being done" + ("." if it.get("held") else ": it closes on its ACCEPT clause."))
+    else:
+        said = "no follow-up has ever ridden it, so it is UNEXAMINED rather than nearly done."
+    if it.get("held"):
+        #  W1200 - a held item does not close on its ACCEPT clause: it closes only on the item its hold names, whose
+        #  title is quoted without its trailing punctuation (P5.22's first sentence ends in a comma)
+        h = it["held_until"]
+        ht = next((o["title"] for o in p["open_items"] if o["slot"] == h), "").rstrip(" ,;:—–-")
+        said += (f" HELD UNTIL {h}" + (f" ({ht})" if ht else "") + ": "
+                 + ("its rows can be worked now; " if riders else "") + f"the item itself closes only on {h}.")
+    return said
+
+
 def render_plan_now(register: Any, prompt_text: str) -> str:
     """The PLAN NOW block both docs carry (plain text, LF). Every line is indented or starts with a word, so no line
     can ever be read as a plan item (" P1.13 …")."""
@@ -1426,15 +1485,13 @@ def render_plan_now(register: Any, prompt_text: str) -> str:
     elif nxt is None:
         out.append("  Next: every delivery-plan item is done.")
     else:
-        riders = nxt["followups"]
-        out.append(f"  Next: {nxt['slot']} {nxt['title']} — "
-                   + (f"{riders} follow-up{'s' if riders != 1 else ''} ride it"
-                      + (f" ({nxt['ever']} ever)." if nxt["ever"] != riders else ".")
-                      if riders else
-                      (f"no OPEN follow-up rides it, and {nxt['ever']} have — every row closed, which is "
-                       f"NOT the same as the item being done: it closes on its ACCEPT clause."
-                       if nxt["ever"] else
-                       "no follow-up has ever ridden it, so it is UNEXAMINED rather than nearly done.")))
+        out.append(f"  Next: {nxt['slot']} {nxt['title']} — " + _riders_said(nxt, p))
+        #  W1200 (FU-1874) - a held next item is where a round works, not what a round can close: the first open
+        #  build item that is not held is named apart, with its own riders
+        if nxt["held"]:
+            nu = p["next_unheld"]
+            out.append("  The first open build item a round can close: "
+                       + (f"{nu['slot']} — {_riders_said(nu, p)}" if nu else "none: every open build item is held."))
         # W549 (FU-336) — "open/ever", so a zero says WHICH zero it is: 0/0 is an item no row has ever
         # ridden (unexamined), and 0/4 is one whose rows all closed. An item closes on its BAR, so
         # neither zero means done — but a reader can no longer mistake the second for the first.
@@ -1451,7 +1508,8 @@ def render_plan_now(register: Any, prompt_text: str) -> str:
                     continue
                 _rf = ", ".join(str(x) for x in (_r.get("files") or [])[:3]) or "(no file prefix)"
                 out.append(f"    [{_rf}] retired with {_r.get('retired_with')} by {_r.get('retired_by')}")
-        rest = [f"{it['slot']} {it['followups']}/{it['ever']}" for it in p["open_items"][1:]]
+        rest = [f"{it['slot']} {it['followups']}/{it['ever']}" + (f" held until {it['held_until']}" if it["held"] else "")
+                for it in p["open_items"][1:]]
         if rest:
             out.extend(_wrap("  Then, in order (the follow-ups riding each): ", rest))
     if nxt is not None and nxt["top"]:
@@ -1627,6 +1685,28 @@ def check(register: Any, prompt_text: str, living_text: Optional[str] = None,
     for it in items:
         counts[it["slot"]] = counts.get(it["slot"], 0) + 1
     problems += [f"plan item {s} appears {n} times in the delivery plan" for s, n in counts.items() if n > 1]
+    #  W1200 (FU-1874) - a hold names a plan item other than its own, in its own line's form, once: a mistyped hold
+    #  would otherwise hold nothing and say nothing
+    for it in items:
+        if it.get("hold_problem"):
+            problems.append(f"plan item {it['slot']} {it['hold_problem']}")
+        if it.get("held_until") == it["slot"]:
+            problems.append(f"plan item {it['slot']} is held until itself — a hold names the item it waits on")
+        elif it.get("held_until") and it["held_until"] not in counts:
+            problems.append(f"plan item {it['slot']} is held until {it['held_until']}, which is not a delivery-plan "
+                            "item — a mistyped hold holds nothing")
+    #  W1200 (review) - holds that come back to the item they start from, over any number of steps: no item in the
+    #  cycle could ever close
+    _held_on = {it["slot"]: it["held_until"] for it in items
+                if it.get("held_until") and it["held_until"] != it["slot"]}
+    for it in items:
+        path, h = [it["slot"]], _held_on.get(it["slot"])
+        while h is not None and h not in path:
+            path.append(h)
+            h = _held_on.get(h)
+        if h == it["slot"]:
+            problems.append(f"plan item {it['slot']} is held in a cycle of holds ({' → '.join(path + [h])}): no "
+                            "item in it can ever close")
     by_slot = {i["slot"]: i for i in items}
 
     if not isinstance(register, dict) or not isinstance(register.get("items"), list):
