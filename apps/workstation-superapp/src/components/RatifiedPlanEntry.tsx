@@ -8,6 +8,8 @@ import { apiJson, errorMessage } from '../lib/api';
 type Shown = {
   document: string; sha256: string; ratified_on: string | null;
   changed_since: { on: string; what: string } | null;
+  //  W1193c: every change since ratification, oldest first; absent or null when the server could not read them
+  changes?: { on: string; what: string }[] | null;
   fields: Record<string, string>; aims: string[];
   objectives: { title: string; plan_item: string; kpi: string; measure_as_ratified: string }[];
   not_entered: string[]; canvas: string; can_enter: boolean; cannot_because: string | null;
@@ -55,7 +57,9 @@ export const RatifiedPlanEntry: React.FC<{ onEntered: () => void }> = ({ onEnter
         <div className="space-y-2 mt-2">
           <p data-testid="ratified-document" className="text-[10px] text-slate-400">
             {shown.document} · {shown.ratified_on ? `ratified by the Owner on ${shown.ratified_on}` : 'NOT ratified'}
-            {shown.changed_since ? ` · changed on ${shown.changed_since.on}: ${shown.changed_since.what}` : ''}
+            {Array.isArray(shown.changes)
+              ? shown.changes.map(c => ` · changed on ${c.on}: ${c.what}`).join('')
+              : ' · its changes since ratification could not be read'}
           </p>
           {Object.entries(shown.fields).map(([k, v]) => (
             <div key={k} className="p-2 rounded-lg bg-slate-950 border border-slate-900">

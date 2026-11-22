@@ -75,17 +75,22 @@ entered only when the Owner chooses a route, on the form that route requires.
 
 1. Which route suits the income expected in the first year, given Self Assessment for a sole trader and Corporation Tax for a company? [owner decision]
 2. When would VAT registration become required, and would registering early be worth it? [owner decision]
-3. How would the platform's fee, taken first in each cycle, and an entity's split be treated in real accounts if real money is ever switched on? [owner decision]
+3. How would the platform's fee, taken first in each cycle, and an entity's split be treated in real accounts if real money is ever switched on? And in what unit is the credit for the generation price held, which the Owner ruled on 2026-11-22 carries forward against later fees until it is used up, when each cycle's fee is taken from that cycle's own profit, with no loss carried from one cycle to the next? [owner decision]
 4. What records and returns would each route need in its first year, and what would they cost to keep? [owner decision]
 5. Would a later move from a sole trader to a company, or from a company to a CIC, carry a tax cost? [owner decision]
 
 ## Questions for a solicitor
 
 1. Which route suits a platform on which other entities are established and run, and what would that platform owe the people who use it? [owner decision]
-2. Would a CIC's asset lock and dividend cap allow the fee the Owner ruled on 2026-11-19, and the split it leaves? [owner decision]
+2. Would a CIC's asset lock and dividend cap allow the fee the Owner ruled on 2026-10-12 (P5.16 clause 3) and released for a made-up entity on 2026-11-19, and the split it leaves? [owner decision]
 3. How could a waqf-oriented endowment be held in the law of England and Wales, and which structure would carry it? [owner decision]
 4. Which parts of the work would need a regulated person, or an authorisation, before they are offered to anyone? [owner decision]
 5. Where may a person's data be kept, given that the release machine's free regions are in the United States? [owner decision]
+6. Who holds the copyright that LICENSE names ("Virtual Sovereign Business", which is not a legal person), what does the public Apache-2.0 grant already permit, what does a contributor grant with no agreement, and on what terms does a founder receive an entity repository? [owner decision]
+7. Would the capital fund, the profit shares or any valuation be a financial promotion or a collective investment scheme, and what would either require? [owner decision]
+8. For how long may each store that holds a person's data keep it, and how is a person's data to be erased when they ask, so that the Owner can approve a record of processing once this is answered? [owner decision]
+- Questions 6 and 7 were added on the Owner's ruling of 2026-11-22, for the one solicitor's engagement. [owner-defined, 2026-11-22]
+- Question 8 was added on the Owner's ruling of the morning of 2026-11-22 that the solicitor also be asked in writing about retention and erasure, and that the Owner approves a record of processing once the solicitor has answered. [owner-defined, 2026-11-22]
 
 ## Sources, each read on 2026-11-20
 

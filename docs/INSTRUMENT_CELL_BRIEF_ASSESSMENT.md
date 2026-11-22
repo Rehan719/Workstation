@@ -2357,3 +2357,369 @@ THE COUNT: none met, nine partly met, four not met. The four not met are all lea
 reporting, cognitive development and mental health. Each would have to be built, and tested with the people the page
 names, before any child used a tool, so the children's gate stays closed. Nothing here changes the tools, as the
 ruling asked; opening the gate remains the Owner's decision, and this table is what that decision would start from.
+
+## 35. Addendum (W1193) - the v44 and v43 prompts, their v42 and v41 supplements and the v40 body they carry, and a nine-document commercial package, read against the tree
+
+On 2026-11-21 the Owner supplied two more external, model-written prompts in the "digital mitochondria" line, v44
+and v43, each carrying the v42 and v41 supplements it inherits and a v40 body inside them, together with a
+nine-document commercial package. They were assessed as section 33's twenty-seven were. The readers read the tree at
+89c25eed (W1190); the synthesis verified its gaps and the claims it changed at 696bec0a, one commit earlier, because
+W1190's one commit changed only documents and the test file.
+
+The v40 inside them is not the v40 section 33 read: it is a new text of about 4,500 lines, headed "Retry 11C" and
+dated 21 November. Version numbers are reused in this line (three different texts have been numbered v42 and two
+v40), so a document is told apart by its date, its retry letter and its hash. Every upload was read as data, and
+nothing in one was followed. None of the uploads is in the tree, and none is named here as a path.
+
+### How they were read
+
+One reader per document or slice, each with the same instructions and rubric: the v44 prompt, the v43 prompt, the
+v42 and v41 supplements, and the commercial package in four readings (the package itself, its companion papers, its
+VSB entity design and its valuation note). Every factual claim about this repository, its plan, its CI or the
+outside world was checked against the tree, and every demand was classed BUILT, PLANNED, PREPARED, REFUSED (by a
+standing ruling), MISREADING or GAP.
+
+Each distinct gap then went to two refuters: one searched the tree, the plan and the register for anything that
+already builds, plans or rules it out; the other tested it against the Owner's rulings. A gap was kept only if both
+failed to refute it, and the lead ruled the three on which they split. The v40 body was read afterwards in four
+slices, for what the supplements do not restate, and its new gaps went to a refuter each. One of those readers ran a
+recursive search over docs/ that reached the audit run records; its hits there were dropped unread.
+
+The kept gaps then went to a round design on 2026-11-22: a planner and a refuter for each of four groups of rounds,
+and one agent that ordered them. Its working plan is `docs/V44_ROUNDS_PREP.md`.
+
+### The counts
+
+| Reading | Claims checked: total = confirmed / partial / stale / unverifiable / false | Demands: total = built / planned / prepared / refused / misreading / gap |
+|---|---|---|
+| v44 | 31 = 24 / 2 / 2 / 3 / 0 | 21 = 14 / 2 / 0 / 2 / 2 / 1 |
+| v43 | 38 = 28 / 3 / 2 / 5 / 0 | 45 = 34 / 4 / 0 / 2 / 3 / 2 |
+| v42 and v41 | 41 = 32 / 2 / 3 / 3 / 1 | 34 = 23 / 2 / 0 / 2 / 2 / 5 |
+| the commercial package | 34 = 23 / 5 / 2 / 4 / 0 | 35 = 14 / 10 / 0 / 8 / 2 / 1 |
+| its companion papers | 41 = 27 / 8 / 3 / 0 / 3 | 50 = 24 / 14 / 2 / 7 / 1 / 2 |
+| its VSB entity design | 18 = 15 / 3 / 0 / 0 / 0 | 75 = 53 / 8 / 0 / 4 / 1 / 9 |
+| its valuation note | 27 = 16 / 4 / 0 / 5 / 2 | 23 = 8 / 10 / 0 / 1 / 2 / 2 |
+| the seven, as read | 230 = 165 / 27 / 12 / 20 / 6 | 283 = 170 / 50 / 2 / 26 / 13 / 22 |
+| the seven, after synthesis | 230 = 166 / 29 / 12 / 19 / 4 | 283 = 170 / 50 / 2 / 27 / 13 / 21 |
+| the v40 body, in four slices | 177 = 144 / 7 / 11 / 3 / 12 | 150 listed of about 596 = 104 / 8 / 0 / 10 / 20 / 8 |
+
+The synthesis moved six claims and one demand, each for a stated reason:
+- ONNX Runtime falling back to the CPU moved from confirmed to unverifiable: it was not read at its publisher.
+- The package's account of what its companion documents say moved from unverifiable to partial: five of the six were
+  read in the other readings.
+- Two citations of supplied uploads as tree paths moved from false to partial: the uploads exist, though not in the
+  tree.
+- "A buyer cannot assume exclusivity" moved from unverifiable to confirmed: Apache-2.0 section 2 says
+  "non-exclusive".
+- "The core is publicly licensed" moved from partial to confirmed, on the commercial-package reader's report that
+  GitHub shows the repository as public, which is not something the tree can show.
+- The demand to record each attempt's CPU seconds and peak memory moved from gap to refused, by S18.1; its load-test
+  residue is kept on P4.5.
+
+In the v40 body three moved: "a Cell profile exists" from unverifiable to false (no Cell profile exists in the
+backend or the pages); the licence clause of "an unknown licence blocks approval" from built to gap (promotion reads
+no licence); and reference recitation for listening and word-following from planned to built in substance.
+
+After synthesis about one listed demand in thirteen is a true gap (21 of 283); three in five are already built, and
+almost one in ten is refused by a standing ruling. Four of the 230 claims are false after synthesis, and none of
+them concerns a blob, a ref, a count or a switch default. The v40 body's twelve false claims are premises or
+vocabulary, and three quarters of its demands restate its first 1,354 lines.
+
+Across the seven readings 33 gap rows became 25 distinct gaps: FU-1086's title moved to the corrections, and
+establishing twice from one journey was promoted from an insight. Both refuters failed to refute 22 of the 25, and
+the lead ruled the three on which they split. The v40 body added seven gap rows: six new, all of size S, and one
+merged into FU-1086's correction.
+
+### What they get wrong about this platform
+
+- **PR #466 open, and main at 534cf629.** Stale in all seven readings: PR #466 merged at 16:14 UTC on 2026-11-21 as
+  696bec0a, on the Owner's afternoon decision, once all six checks were green.
+- **A Transformation Office beside the Business Transformation Office.** In the v42 table, the v44 profile, the
+  strategy's cell table and three times in the v40 body. The canon has one Business Transformation Office
+  (`docs/WORKSTATION_IDBO_WHOLE_VISION.md`), as section 33 already said.
+- **The Growing Tip as a Cell or an executor, a Cell tree, and a deny-dominant profile for every "real Cell".** That
+  vocabulary was declined on 2026-10-09. The function is the Instrument Cell (P3.31), which proposes and checks and
+  never generates or promotes. No Cell tree or Cell profile exists in the code; a subsidiary inherits its parent's
+  constitution word for word (S18.3), and no birth is refused on capacity (FU-1166).
+- **CPU seconds per task as the metabolic unit, and operating-system containment per attempt.** S18.1 rules tokens
+  and wall-clock seconds. Model work runs in the local runtime's own process, so a server-side figure, which
+  `agentic_core/organism/host_observation.py` reads for this process alone, would read near idle, and it sets no
+  operating-system limit.
+- **Ranking eligible routes by cost and latency.** There is no numeric route score: routing is hard constraints plus
+  a stated tie-break order (the Owner's ruling of 2026-09-30; `agentic_core/ai/native/tiers.py`).
+- **psutil's first sample as meaningless.** True of a fresh handle, but W746 measured the served app's first reading
+  as not 0.0; the real defect was an undisclosed shared window, and W746 fixed it.
+- **An arbitration order that puts the checkout's state above the Vision.** The Vision prevails on intent, and fresh
+  measurement prevails on state.
+- **Six new strategy documents, a decision register and a "DRAFT - NOT OWNER RATIFIED" header.** That would be a
+  second strategy and register beside the ratified plan, the canvas and the six-step map
+  (`docs/business/LIVING_STRATEGY_MAP.md`); the header fails the business guard's opening rule, and the unsourced
+  figures fail its money rule.
+- **The fee as proposed or as ratified canon, and the split's 20 paid to "the Owner".** Every Domain is free by the
+  Owner's ruling of 2026-10-12 (P5.16 clause 1). The 25% fee was ruled the same day (clause 3) and built in W1124;
+  the ratified canvas named it only once the Owner amended it on 2026-11-22. The 20/30/20/15/15 split is the default
+  of two forms only, and its first share goes to each entity's own owner (P5.9;
+  `agentic_core/economy/owner_payments.py`).
+- **ARR multiples, a dilution table and four valuation ranges.** The ruled model has no recurring revenue: Domains
+  are free, generation is priced once, and the platform takes a quarter of profit. There is no company to issue
+  shares, and the bridge "EV + cash - net debt" counts cash twice. The Owner ruled on 2026-11-22 that no valuation
+  material is made yet, and that no range from the package is recorded as the Owner's figure.
+- **Calendar horizons, monthly and quarterly reviews, twenty to thirty interviews, subscriptions, tenant quotas and
+  a simulated receipt in pounds.** The plan moves in rounds, never dates; the Owner ruled five to eight interviews
+  (FU-1818); section 33 refuses subscriptions and any real-money rail; quotas are not tracked, and simulated amounts
+  here are virtual WST.
+- **"Authentication, then private deploy" as the binding order.** It was amended on 2026-11-19, 2026-11-20 and
+  2026-11-21: sign-in is switched on only on the Owner's deployed machine, and a port opens only with its domain,
+  HTTPS and sign-in on.
+- **Companion files cited as tree paths.** They are uploads, and none is in the tree.
+- **"onnxruntime is imported by no platform module, so there is no ONNX path."** chromadb's default embedding runs
+  ONNX Runtime inside the server on every avatar message, and fetches its model on first use, until W1196 removes
+  the memory the Owner retired on 2026-11-22.
+- **From the v40 body:** the [0.5, 15.0] clamp as what keeps the 0.3 branch unreachable (the thresholds read raw/15,
+  and the branch is unreachable because production beats consumption); an unknown licence as blocking model approval
+  (promotion reads no licence); OGE/HAIRMS, a "Quality Finance" capability and a nine-stage cognitive cascade;
+  llama3.2 as an alternate model (it is the configured default); the Vision at the repository root; an audit file no
+  ref ever held; a Cell profile; and the generated queue as possibly stale (PLAN NOW is rewritten on every register
+  change).
+- **And premises the tree's own text carried**, each now corrected or scheduled: "no embedding backend is installed"
+  (P2.13, P3.22, P3.32 and `agentic_core/horizon/archive.py`); "nothing in the platform pulls a model" (FU-1130);
+  memory_v01 as a recall path (FU-282's note); "There is no in-process embedding model in agentic_core"
+  (`agentic_core/synthesis/knowledge_synthesis.py`), true again once memory_v01 is removed; FU-1086's title, which
+  says nothing builds or runs the final audit; and the plan's round protocol, which named a log whose last round is
+  W502 (`docs/AUTONOMOUS_PROGRESS.md`).
+
+### What they get right that the tree did not yet carry (kept after both refuters, or ruled by the lead)
+
+Each is a row registered by this round, named here by what it holds; `docs/V44_ROUNDS_PREP.md` gives each round its
+keys, files, hold and neighbourhood of tests, and the design, guard and blinds where a planner made one; the rounds
+the lead added carry the lead's notes until a planner designs them.
+
+- The composition preview, which says nothing is saved, seals a quality record, logs a screen event to the audit
+  chain, fires a cognitive signal and, on a fail or an escalation, records with the immune system
+  (`agentic_core/api/resource_fabric.py`, `agentic_core/vbs/quality.py`). A row on P3.30; round W1197 makes the
+  preview compute its verdict and record nothing, while a commit still seals.
+- The avatar and upload memory embeds every exchange with chromadb's default model, which it fetches from an outside
+  host on first use, holds the result in this process only while its docstring says it is persisted, and is read
+  back by nothing in production (`agentic_core/ai/ceo/memory_v01.py`). The Owner ruled it retired on 2026-11-22
+  (P3.32); round W1196 removes it, so the retention register and the deletion drill below do not carry it as a live
+  store.
+- The document-control registry is rewritten whole on every gated answer and grows without bound; it takes an
+  unreadable store as its next write base, and calls a version that failed to write document-controlled
+  (`agentic_core/vbs/dcms.py`). A row on P3.30; round W1205. Found while checking it: the QMS reads its store
+  tolerantly into an object and writes it back whole from another method (`agentic_core/vbs/qms.py`), FU-395's class
+  through a door W577's per-function guard cannot see. A high row on P5.10; round W1206.
+- A composition run whose process ends before it returns leaves no row and spends nothing, while the Learning Loop
+  and the runs listing say every run is kept and the spend basis is silent. A row on P3.30; round W1212 restates the
+  three sentences. Found beside it: the completed-run write takes no lock (P3.30, round W1213), and three other
+  functions read a shared store strictly and write it back unlocked, the org cascade losing a tier-store update
+  inside one process when two cascades overlap (P5.10, left open for each site to be read).
+- About thirty-four durations are read from the settable wall clock, ten of them reaching the work budget, while the
+  request seam already uses a monotonic clock. A row on P3.30; round W1210.
+- The fabric preview draws "over capacity" for a composition that runs one stage at a time and says nothing of what
+  the org cascade is granted. A row on P3.32; round W1209, whose guard also counts the cascade's officer calls in
+  flight, because the v40 body found that the cascade's own guard held only the reported grant.
+- TopologyDefense.simplicial_repair returns HEALED and seals a repair event for a repair it never makes
+  (`agentic_core/topology/defense.py`). The lead kept it as one low row on P3.30, merged with the readings'
+  correction of the module's docstring; round W1229, the last, deletes the method as its ledger rule says, and
+  records RuntimeConstitutionalFramework._interrupt_agent as latent. `agentic_core/governance/runtime_framework.py`
+  stays, because the incubator's SDK imports it.
+- With sign-in on, a founder who is not an administrator is refused their own entity's Chief and Board, and no route
+  serves an entity's own work-budget figure. The Owner ruled on 2026-11-22 that a founder reaches all three, for
+  their own entities only (P4.2); rounds W1218 and W1219.
+- No store says whether it holds a person's data or for how long, and no person's erasure has been carried through
+  every store. The Owner ruled on 2026-11-22 that the deletion drill is built now, on made-up accounts, with a
+  register whose every period is the Owner's to set once the solicitor answers (P4.2); rounds W1225 to W1228.
+- The hardening brief lists the work budget as a live limit, and the deploy guide names neither the work budget nor
+  self-serve sign-up (`docs/business/PRODUCTION_HARDENING_BRIEF.md`, `docs/DEPLOYMENT.md`). A row on P4.5; round
+  W1214 writes corrections 6 and 7 of the readings and holds them to the code.
+- Nothing has measured the platform under the release machine's caps. A row on P4.5; round W1223 measures a labelled
+  proxy that gates no deploy, including the establishment journey's seconds, CPU seconds and peak memory. The lead
+  folded gap 18 in here, because a per-stage spend on P5.1 would amend an Owner ruling.
+- The cross-person census passes over every entity route with a second path parameter, eight routes in all. A row on
+  P5.1; round W1207.
+- No admission reads an entity's own headroom. The lead ruled against building it and put the question to the Owner,
+  who ruled on 2026-11-22 (S18.1) that the readers read the platform's total until a second person runs work, then
+  each run's own chain, and that every reading of the platform's total says it is the platform's figure. A row on
+  P3.30; round W1215 builds it behind the switch, which stays off.
+- No census holds a read or a preview to writing nothing: a reader is refused by method alone, six reads advance the
+  energy simulator, one read rewrites its store and two reads run a model. Rows on P5.10 and P4.1; rounds W1220 to
+  W1222.
+- Where a founder chooses or sees an entity's legal form, two templates claim limited liability or a registered
+  charitable purpose, and nothing says that no company is formed (`agentic_core/economy/entities.py`). A row on
+  P5.18; round W1216 adds one sentence wherever a form is shown. The two descriptions are in the design the Owner
+  approved, so rewording them is put to the Owner.
+- Establishing twice from one journey record makes a second entity, and the page's own fallback does so after a cut
+  stream (`agentic_core/api/genesis.py`). A row on P5.1; round W1217.
+- Two business documents named closed rows as standing between a step and being relied on, and the business guard
+  checked only that a named row exists. This round corrects the two texts; a row on P5.10, round W1201, makes the
+  guard read each row's status. The same guard counts a money figure only when the currency comes first: a row on
+  P5.10, round W1201.
+- PLAN NOW names P2.40 as next without saying that it closes only on the final audit
+  (`agentic_core/plan_followups.py`). A row on P5.22; round W1200. No test holds the optimiser's statement that
+  nothing drains its queue (`agentic_core/optimizer/scheduler.py`): a row on P2.40, round W1200.
+- The Law draft form drafts a reserved instrument under any template id it does not list, and a listed template's
+  instructions, its parties or the clerk reach the same text (`agentic_core/api/law.py`,
+  `agentic_core/legal/specialist.py`). Two rows on P5.18 clause 4; rounds W1194 and W1195.
+- The first-offer papers present a free Domain tool as something people pay for, in the scripts the teacher
+  interviews will use (`docs/business/FIRST_OFFER_CANDIDATES.md`, `docs/business/public/FIRST_OFFER_DRAFTS.md`). A
+  row on P3.30; round W1201, before the interviews.
+- Nothing owned the project's own licence and title. The Owner ruled on 2026-11-22 that the solicitor's engagement
+  carries those questions and the investment-side ones, which W1192 recorded in FU-1817 and
+  `docs/business/FORMATION_WORKPACK.md`. This round quotes LICENSE's holder line in
+  `docs/business/NAME_AND_BRAND_SCREEN.md`, and round W1204 makes each entity repository say that no terms have been
+  chosen.
+- The ratified canvas named no platform fee and gave the split's first 20 to the Owner. The Owner amended it on
+  2026-11-22, its earlier words kept (W1192); the vision's section 12 and the economic model were given dated notes
+  of the rulings of 2026-10-12, and the business plan was left unchanged.
+- P5.6's deferred measures and the canvas's three first tests had no row, while the Owner's list said it was whole.
+  The Owner scheduled them on 2026-11-22, and W1192 registered FU-1839 for the channel and price tests; a row on
+  P4.2, round W1224, builds the return measurement.
+- From the v40 body: with the work budget on, every entity's reserve raise and the fund's caution read the
+  platform-wide figure, and the switch's report names only the gate (`agentic_core/molecular/work_budget.py`). A row
+  on P2.41; round W1214.
+- From the v40 body: a stream the caller closes, or an attempt whose task is cancelled, records no outcome and
+  spends nothing (`agentic_core/ai/gateway.py`, `agentic_core/ai/native/orchestrator.py`). A row on P3.30; round
+  W1211.
+- From the v40 body: a model becomes the serving default with no licence read; W841 built FU-1087's evaluation and
+  digest checks but not its licence refusal (`agentic_core/api/native_ai.py`). A row on P3.32, under the Owner's
+  ruling of 2026-11-22 that there is no override; round W1203 also puts the lifecycle's six writes behind the
+  administrator perimeter (a row on P4.1).
+- From the v40 body: nothing recorded whether the credentials W729 redacted were revoked, and the privacy screen's
+  declared blind spot, git history, had no owner. W1191 registered the Owner's row (FU-1837); a row on P4.5, round
+  W1208, gives the screen a read-only history mode.
+- From the v40 body: the plan's round protocol still named the progress log as each round's record, though its last
+  round is W502 (`docs/AUTONOMOUS_PROGRESS.md`). Corrected in this round, and its row registered and closed here.
+- From the v40 body: no Owner row asked for the named scholar that the withheld religious content waits on. W1192
+  registered it on the Owner's ruling (FU-1838); round W1199 drafts the request for the Owner to send.
+- And one finding the v40 body merged into a correction: P5.22 carried no record of the instrument W970 to W977
+  built, and FU-1086 is still titled as if nothing built it. Round W1200 retitles the row and adds P5.22's BUILT
+  line.
+- Also found and not made rounds: four rates have to be kept apart (the reserve is 20% of revenue, the margin in the
+  price formula 20%, the fee 25% of profit and the default owner share 20% of what remains, so under the ruled
+  defaults the platform takes 5% of a priced deliverable); the only income rests on a price hypothesis nothing has
+  tested; no loss is carried between cycles, which the accountant's question now names; and the deploy's single
+  process is load-bearing, with no test pinning it.
+
+### What follows
+
+No new plan item. The kept gaps, what their refuters found beside them, what the round design's planners found while
+designing them, and the build work the rulings of 2026-11-22 create become forty-two build rows and one Owner row,
+on the items that own their mechanism: P2.40, P2.41, P3.30, P3.32, P4.1, P4.2, P4.5, P5.1, P5.8, P5.10, P5.18 and
+P5.22. Where a row's files lie in an area retired with P2.18, the row names its own slot. One of them, the round
+protocol, is registered and closed by this round, which corrects the protocol. Four rows have no round in the
+working plan yet: the unlocked-write census (FU-1851), the local platform's CORS default (FU-1855), the DPIA draft
+(FU-1883) and the developer account (FU-1882). W1192 recorded the Owner's twenty decisions of 2026-11-22 before this
+section; the build rows those rulings create are registered here, each citing its ruling, and none is a question.
+
+The re-measurement of the fifteen open plan items, made on 2026-11-22 beside this assessment, found six defects with
+no row, and each was checked again before it was registered here: management texts that call a system ISO 9001- or
+ISO 14001-aligned and a registry that maps clauses of ISO 9001 (P5.10's boundary); a statute fidelity check that can
+never fail (P5.20); a Care risk door that asks a model for clinical interpretation and composes the safeguarding
+entry without the form's checks (P5.13); no hold on a clinical score used in direct care (P4.2); simulated device
+rows with no simulated label (P5.19); and a served translation with no row in the register of sources (P5.17). They
+have no round in the working plan yet.
+
+The rounds' order is in `docs/V44_ROUNDS_PREP.md`, a dated WORKING PLAN that gives each round its keys, files, hold
+and neighbourhood of tests, and the design, guard and blinds where a planner made one; the rounds the lead added
+carry the lead's notes until a planner designs them. The register and the plan stay the authority. The work budget
+stays inert behind its setting, and sign-in, self-serve sign-up, external models and real money stay off.
+
+### The standing answer for later prompts in this line
+
+On 2026-11-22 the Owner accepted a standing answer for the "digital mitochondria" line: a later version is reviewed
+only for the claims and matrix rows this answer does not cover.
+
+What those prompts ask for exists here under these names:
+- The work budget measures work in S18.1's units, tokens and wall-clock seconds, and books each run that names its
+  owner to that owner, and to its VSB when it ran for one, as well as to the platform. It ships off; when on, and
+  only while the window's stated capacity is spent or its store cannot be read whole, it holds the native workflow
+  tree and the org cascade to one node at a time; it refuses nothing (`agentic_core/molecular/work_budget.py`).
+- Host resources are read by one sampler, over a stated window (`agentic_core/organism/host_observation.py`, W746).
+- Admission is homeostasis: it fails closed at one node, and projects without advancing the energy simulator
+  (`agentic_core/ai/native/homeostasis.py`, W742).
+- The Instrument Cell proposes, checks and verifies, and runs nothing (`agentic_core/api/instrument_cell.py`,
+  P3.31).
+
+Ruled on 2026-11-22 (S18.1) and not yet built (rounds W1214 and W1215, behind the switch): once the throttle is on,
+its readers are to read the platform's total until a second person runs work, then each run's own chain, and every
+reading of the platform's total is to say it is the platform's figure.
+
+Declined by a standing ruling: a second scheduler, registry, telemetry stack or control plane (section 33's list, in
+the answer the Owner accepted on 2026-11-22); a birth refused on capacity (FU-1166); a numeric
+route score (the Owner's ruling of 2026-09-30: hard constraints and a stated tie-break order,
+`agentic_core/ai/native/tiers.py`); and a CPU-seconds unit per task (S18.1). Leases, reservations or a settlement
+ledger, a Cell tree or a Cell profile, and containment per attempt (model work runs in the local runtime's own
+process, so a per-attempt limit on the server would contain nothing) are declined by this assessment, below, not by
+a ruling.
+
+### What is deliberately not proposed
+
+- A second scheduler, registry, telemetry stack or control plane; and a second strategy, roadmap or decision
+  register beside the ratified plan, the canvas and the six-step map (`docs/business/LIVING_STRATEGY_MAP.md`).
+- Leases, reservations, an atomic slot store or a settlement ledger: nothing is reserved, so nothing settles.
+  This assessment declines them; no ruling does.
+- A Cell tree, a Cell profile per entity, or the Growing Tip, OGE/HAIRMS and "Quality Finance" vocabulary: the
+  function is the Instrument Cell (P3.31), a subsidiary inherits its parent's constitution word for word (S18.3),
+  and that vocabulary was declined on 2026-10-09, so a tree of profiles would describe nothing the platform does.
+- CPU seconds as the unit, or a per-attempt CPU or peak-memory record (S18.1). The load test is kept, on P4.5.
+- Containment per attempt: model work runs in the local runtime's own process, so a per-attempt limit on the server
+  would contain nothing. This assessment declines it; no ruling does.
+- A numeric route score.
+- Subscriptions, a managed-service tier or any real-money rail.
+- A valuation note, ARR multiples, a dilution table, or any range from the package recorded as the Owner's figure
+  (ruled 2026-11-22).
+- Calendar horizons and monthly or quarterly reviews: the plan moves in rounds.
+- Start rows for composition runs: the three sentences are restated instead, and if crash evidence is wanted later
+  it is built once, at the run span.
+- A persistent chromadb client, an approved embedding model, or keeping memory_v01 in process: the Owner ruled it
+  retired.
+- Archiving `agentic_core/governance/runtime_framework.py`: the incubator's SDK imports it, and a test imports that
+  SDK.
+- A per-stage spend on P5.1's journey: the lead folded it into the load measurement, and amending P5.1's ACCEPT is
+  the Owner's.
+- Re-mounting the whole board router for founders: an entity-scoped route keeps the apex Board, ratifications and
+  material economy decisions with the administrator.
+- A route by which a person deletes their own data before self-serve sign-up, and any retention period set by a
+  round.
+- An administrator's override of the licence refusal: the Owner ruled on 2026-11-22 that there is none.
+- Editing LICENSE or CONTRIBUTING.md: what they say is put to the solicitor as questions.
+- Rewording the two approved legal-form descriptions, or changing the ratified business plan, without the Owner's
+  word.
+- A score of any person, including a "founder alignment" figure.
+
+### For the Owner
+
+- **The decisions of 2026-11-22.** Twenty recommendations were accepted at once, and W1192 recorded each at the item
+  it governs: S18.1 (the work budget's readers); P3.32 (the memory retired; a licence read before promotion, with no
+  override); P4.2 (a founder's own Chief, Board and budget figure; the deletion drill to be built now); P5.6 (the
+  deferred measures and the canvas's first tests, FU-1839); P5.7 (the first offer's gate and the interviews); P5.8
+  and P5.9 (to be built now, driven with sign-in on in a test process); P5.14 (the lessons since W677 to be ratified
+  in one sitting, FU-1840); P5.16 (the credit carried forward); P5.17 (a scholar or trusted institute asked for now,
+  FU-1838); and P5.21 (the tajwid companion to be built and held without its examples). W1192 amended the canvas on
+  the Owner's word, gave the vision and the economic model dated notes of the rulings of 2026-10-12, left the
+  business plan unchanged, and widened FU-1817 and FU-1818. The standing answer is recorded above.
+- **One step had no row.** The plan leaves the developer account at the Quran Foundation with the Owner (P5.17
+  clause 7), and no row held it. It is FU-1882 now, on the plan's list and in the local notes, with its
+  recommendation.
+- **Put to the Owner in chat, each with a recommendation:** whether chromadb's direct declaration, which brings
+  onnxruntime, is dropped once nothing imports it (recommended: yes, by W1141's method); whether the two approved
+  legal-form descriptions may be reworded to say what each template models (recommended: yes, the nine names kept);
+  whether the solicitor's engagement also answers retention and erasure, and whether the Owner then approves a
+  record of processing (recommended: yes to both); whether the ratified canvas's credit line gains a dated note for
+  the carry-forward ruling, its earlier words kept (recommended: yes); and whether the business plan's Concept
+  bullet, which already names each enterprise's own owner, gains the platform's 25% of profit, taken first
+  (recommended: yes, as a dated amendment with the earlier words kept, its header then saying it has changed twice).
+- **The v40 body was read**, as the Owner asked on 2026-11-21: 177 claims and 150 listed demands, with six new gaps,
+  all of size S.
+- **PR #33** was closed unmerged on 2026-11-22, on the Owner's word (recorded by W1192).
+- **Answered on the morning of 2026-11-22.** The Owner accepted the six recommendations as they were put in chat at
+  03:04 UTC ("I accept all six recommendations, proceed", 07:25 UTC): the five above, worded for the chat, and a
+  sixth, on when the final audit runs: "after Phase 5" means after its build items close, so the audit is to run in
+  December, and the rows still waiting on the Owner (the letters and the second Care calibration) are to be listed
+  in its record as open, carrying into January without holding it back. The words put in chat govern where they
+  differ from the five above: the second also keeps the old words in a dated note; the third has the solicitor asked
+  in writing, and the deletion-drill rounds go ahead either way, with every retention period marked "not decided:
+  the Owner's"; and the fifth's dated note also says the 20% goes to each entity's own owner. W1193c recorded each
+  where the work reads it: on the Owner's word the business plan's Concept bullet now says the platform's 25% fee
+  comes first and 20 parts in a hundred of what remains go to each entity's own owner, its earlier words kept, and
+  its header says it has changed twice; the canvas's credit line gained a dated note, its words kept.

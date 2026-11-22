@@ -65904,7 +65904,16 @@ def test_w725_the_ratified_documents_name_the_platform_and_claim_no_protection_t
         assert ("no mark or domain is held" in flat) or ("no mark has been applied for, and no domain is held" in flat), rel
         #  a ratified text was changed: the document says so, when, on whose word, and where
         opening = " ".join(text.split("\n## ", 1)[0].split())
-        assert f"Changed once since, with the Owner's word, on 2026-10-14: the line on the name, {where}." in opening, opening[-200:]
+        #  W1192: the canvas was changed a second time, on the Owner's word of 2026-11-22 (the platform's fee and
+        #  the owner's share). W1193c: on the Owner's word of the morning of 2026-11-22 the canvas changed a third
+        #  time (a dated note on the generation price's credit) and the business plan a second (the platform's fee
+        #  and the owner's share). The counts are held here and nowhere else
+        if rel.endswith("BUSINESS_MODEL_CANVAS.md"):
+            assert (f"Changed three times since, with the Owner's word: on 2026-10-14, the line on the name, {where}; "
+                    "on 2026-11-22, the platform's fee and the owner's share,") in opening, opening[-320:]
+        else:
+            assert (f"Changed twice since, with the Owner's word: on 2026-10-14, the line on the name, {where}; and on "
+                    "2026-11-22, the platform's fee and the owner's share, under Concept,") in opening, opening[-260:]
         assert "**Ratified by the Owner on 2026-10-13**" in opening
         #  nothing is claimed that is not held, and the stale sentence is gone
         low = flat.lower()
@@ -66074,6 +66083,12 @@ def test_w726_one_action_enters_the_ratified_plan_and_the_record_says_how(client
     #  1. THE DOCUMENT AS READ: the Owner's words, section for section; an unmeasured objective carries no measure
     shown = _rp.preview(root)
     assert shown["ratified_on"] == "2026-10-13" and shown["document_faults"] == [], shown["document_faults"]
+    #  W1193c: every change since ratification is read whole, oldest first, and the latest is the one said as
+    #  changed_since
+    assert shown["changes"][:2] == [{"on": "2026-10-14", "what": "the line on the name, under Risks"},
+                                    {"on": "2026-11-22", "what": "the platform's fee and the owner's share, "
+                                                                "under Concept, the earlier words kept beside it"}], shown["changes"]
+    assert shown["changed_since"] == shown["changes"][-1], shown["changed_since"]
     assert set(shown["fields"]) == {"executive_summary", "concept", "vision", "mission", "strategy"}
     assert all(len(v) > 80 for v in shown["fields"].values())
     assert "held privately" in shown["fields"]["mission"] and "is not published here" in shown["fields"]["mission"]
@@ -66098,6 +66113,33 @@ def test_w726_one_action_enters_the_ratified_plan_and_the_record_says_how(client
     assert made["ratified_on"] is None and any("ratified" in f for f in made["document_faults"]), made["document_faults"]
     (tmp / _rp.DOCUMENT).write_text(real.replace("## Vision", "## Outlook"), encoding="utf-8")
     assert any("'Vision'" in f for f in _rp.preview(tmp)["document_faults"])
+    #  W1193c: the change line read in each of its forms, and one that cannot be read whole said as unread, with a
+    #  document fault, never as a document that did not change
+    start = real.index("Changed ")
+    change_line = real[start:real.index(".\n", start) + 1]
+
+    def _read(said):
+        (tmp / _rp.DOCUMENT).write_text(real.replace(change_line, said), encoding="utf-8")
+        return _rp.preview(tmp)
+    got = _read("Changed once since, with the Owner's word, on 2026-10-14: the line on the name, under Risks.")
+    assert got["changes"] == [{"on": "2026-10-14", "what": "the line on the name, under Risks"}], got["changes"]
+    assert got["changed_since"] == got["changes"][0] and got["document_faults"] == [], got["document_faults"]
+    got = _read("Changed three times since, with the Owner's word: on 2026-10-14, A, under Risks; on 2026-11-22, B, "
+                "under Concept; and again on 2026-11-22, C, under Aims.")
+    assert [c["on"] for c in got["changes"]] == ["2026-10-14", "2026-11-22", "2026-11-22"], got["changes"]
+    assert got["changed_since"] == {"on": "2026-11-22", "what": "C, under Aims"} and got["document_faults"] == []
+    got = _read("Changed twice since, with the Owner's word: on 2026-10-14, A; and on 2026-11-22, the fee (e.g. 25%), "
+                "under Concept.")
+    assert got["changes"] and got["changes"][-1]["what"] == "the fee (e.g. 25%), under Concept", got["changes"]
+    got = _read("")
+    assert got["changes"] == [] and got["changed_since"] is None and got["document_faults"] == [], got["changes"]
+    for bad in ("Changed 2 times since, with the Owner's word: on 2026-10-14, A; and on 2026-11-22, B.",
+                "Changed twice since, with the Owner's word: on 2026-10-14 the line; and on 2026-11-22, B.",
+                "Changed three times since, with the Owner's word: on 2026-10-14, A; and on 2026-11-22, B.",
+                "Changed twice since, with the Owner's word: on 2026-11-22, A; and on 2026-10-14, B."):
+        got = _read(bad)
+        assert got["changes"] is None and got["changed_since"] is None, (bad, got["changes"])
+        assert any(f.startswith("the document's change line") for f in got["document_faults"]), (bad, got["document_faults"])
 
     #  3. SIGN-IN OFF: the preview says why not, and entering writes nothing
     assert auth_core.auth_enabled() is False
@@ -66149,6 +66191,9 @@ def test_w726_one_action_enters_the_ratified_plan_and_the_record_says_how(client
         assert len(mine) == len(shown["objectives"]) and all(not _bp.is_seeded_draft(o) for o in mine)
         stamp = plan["entered_from_ratified_document"]
         assert stamp["sha256"] == shown["sha256"] and stamp["ratified_on"] == "2026-10-13" and stamp["by_verified"] is True
+        #  W1193c: the stamp keeps every change since ratification beside the latest
+        assert stamp["changes_since_ratification"] == shown["changes"], stamp.get("changes_since_ratification")
+        assert [c["on"] for c in stamp["changes_since_ratification"]][:2] == ["2026-10-14", "2026-11-22"]
         assert stamp["entered_by"] == "w726-admin" and "was not typed field by field" in stamp["basis"]
         assert "has no place for it" in stamp["canvas"] and "Risks" in stamp["not_entered"]
         #  entering twice adds nothing twice and moves no timestamp
@@ -66182,6 +66227,10 @@ def test_w726_the_page_shows_the_preview_first_and_enters_only_what_was_shown():
     for drawn in ("{shown.not_entered.join(', ')}", "{shown.canvas}", "{shown.already_entered.basis}", "{refusal}",
                   "ratified by the Owner on ${shown.ratified_on}", "'NOT ratified'"):
         assert drawn in flat, drawn
+    #  W1193c: every change since ratification is drawn, not only the latest, and changes it could not read are
+    #  said as unread, never as no change
+    assert ("{Array.isArray(shown.changes) ? shown.changes.map(c => ` · changed on ${c.on}: ${c.what}`).join('') : "
+            "' · its changes since ratification could not be read'}") in flat, "the page draws one change, or none as unread"
     opening_src = _code_only((root / "apps/workstation-superapp/src/components/PlanOpening.tsx").read_text(encoding="utf-8"))
     assert "{scope === 'workstation' && <RatifiedPlanEntry onEntered={onSaved} />}" in " ".join(opening_src.split()), \
         "the entry is offered on a plan that is not the platform's own"
@@ -91137,6 +91186,10 @@ def test_w1105_fu399_the_ratified_plan_entry_is_rendered_previewed_first_and_ent
     lb = live.json()
     assert lb["can_enter"] is False and lb["cannot_because"] == off["body"]["cannot_because"]
     assert lb["document"] == off["body"]["document"] == "docs/business/BUSINESS_PLAN.md"
+    #  W1193c: the fixture was captured from the document as it stands, so an edit to the ratified document fails
+    #  here until the fixture is captured again; and the reader reads it as it did when it was captured
+    assert lb["sha256"] == off["body"]["sha256"], "the document changed after the fixture was captured: capture it again"
+    assert (lb["changes"], lb["changed_since"]) == (off["body"]["changes"], off["body"]["changed_since"]), lb["changes"]
     assert set(lb) - {"edited_since", "edited_since_basis"} == set(off["body"]) - {"edited_since", "edited_since_basis"}
     assert set(lb["fields"]) == set(admin["body"]["fields"])
 
@@ -92391,7 +92444,7 @@ def test_w1131_the_local_prompt_names_every_row_waiting_on_the_owner_and_keeps_o
     for frag in ("it may still be pushing to main-l1fsqo, so do not push there",
                  "a branch of your own", "open its own pull request", "Never push to main without me"):
         assert frag in flat, (frag, "the notes would let a local session push beside the cloud session")
-    for merged in ("#462", "#463", "#465"):   # W1178: #463 merged on 2026-11-20; W1187: #465 on 2026-11-21
+    for merged in ("#462", "#463", "#465", "#466"):   # W1178: #463 on 2026-11-20; W1187: #465, W1190: #466 on 2026-11-21
         assert f"Merge PR {merged}" not in notes and f"carried by **PR {merged}**" not in notes, (
             "a merged pull request is offered", merged)
 
@@ -92874,7 +92927,9 @@ def test_w1134_fu603_the_google_cloud_deploy_is_written_from_googles_pages_and_n
     data_dir = re.search(r"\bDATA_DIR=(\S+)", df).group(1)
     port = re.search(r"\bPORT=(\d+)", df).group(1)
     assert f'--volume="$MNT":{data_dir} ' in script, ("the records are not mounted where the image keeps them", data_dir)
-    assert f"--publish=80:{port} " in script, ("the platform's port is not the image's", port)
+    #  W1191: without a domain the platform's own port is published on the machine's 127.0.0.1 only
+    assert f"--publish=127.0.0.1:{port}:{port} " in script and f"--publish=80:{port}" not in script, (
+        "the platform's port is not the image's, or it is public", port)
     assert 'DISK="${WORKSTATION_DISK:-/dev/disk/by-id/google-' + disk["device-name"] + '}"' in script, (
         "the script looks for the data disk under another name than the steps give it")
     assert 'metadata instance/attributes/image-tag' in script and 'metadata project/project-id' in script
@@ -93289,7 +93344,9 @@ def test_w1140_fu1284_https_is_caddy_in_front_of_the_platform_and_no_one_signs_i
     lower, check = main.index("tr 'A-Z' 'a-z'"), main.index('! valid_domain "$domain"')
     pull, stop = main.index('docker pull "$CADDY_IMAGE"'), main.index("docker stop")
     assert lower < check < stop and pull < stop, "the domain is checked, or the front's image pulled, after the stop"
-    assert 'start_front "$image" "$tag" "$domain"' in main and "--publish=80:8000 " in main, main
+    #  W1191: the front takes the machine's own sign-in value, and without a domain no port is public
+    assert 'start_front "$image" "$tag" "$domain" "$auth"' in main and "--publish=127.0.0.1:8000:8000 " in main, main
+    assert "--publish=80:8000" not in main, main
 
     #  the steps, their prices and their pages
     sec = read("docs/DEPLOYMENT.md").split("## The Google Cloud deploy, step by step (P4.5)", 1)[1].split("\n## ", 1)[0]
@@ -93298,8 +93355,10 @@ def test_w1140_fu1284_https_is_caddy_in_front_of_the_platform_and_no_one_signs_i
     promote = [b for b in blocks if "gcloud compute addresses create" in b]
     assert promote == ["gcloud compute addresses create workstation-ip --addresses=EXTERNAL_IP --region=us-central1"], promote
     told = [b for b in blocks if "--metadata=domain=" in b]
+    #  W1191: the domain and sign-in are set together, on the machine
     assert len(told) == 1 and told[0] == ("gcloud compute instances add-metadata workstation --zone=us-central1-a "
-                                          "--metadata=domain=DOMAIN sudo google_metadata_script_runner startup"), told
+                                          "--metadata=domain=DOMAIN,auth-enabled=true "
+                                          "sudo google_metadata_script_runner startup"), told
     fw = [b for b in blocks if "gcloud compute firewall-rules create" in b]
     assert len(fw) == 1 and "--rules=tcp:80,tcp:443" in fw[0], fw
     assert "$0.025 an hour, about $18.25 a month [network-pricing]" in flat and round(0.025 * 730, 2) == 18.25
@@ -95424,7 +95483,8 @@ def test_w1164_the_owners_ten_decisions_of_2026_11_20_are_recorded_and_the_water
             "final audit has run (2026-12-31 at the latest)") in flat
     step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
     steps = re.findall(r"^   - (FU-\d+):", step5, re.M)
-    assert steps == ["FU-1165"], steps   # W1180: FU-1286 closed; W1188: FU-1054 closed on its first run
+    #  W1180: FU-1286 closed; W1188: FU-1054 closed on its first run; W1192: the lessons sitting joined, after it
+    assert steps[:1] == ["FU-1165"], steps
     assert all(reg[s]["status"] == "open" for s in steps), steps
     assert "register my two ventures, Atmospheric Harvest Solutions and Aerius Energy Harvest, fresh in the new books" \
            in " ".join(step5.split()), "step 5 does not carry the Owner's answer on the two ventures"
@@ -96535,11 +96595,12 @@ def test_w1177_fu1077_the_six_rows_refused_to_w1148_are_read_whole_at_their_publ
 
 
 def test_w1178_the_local_notes_name_the_open_pull_request_and_say_pr463_was_merged():
-    """W1178, brought up to date by W1187. PR #463 was merged on the evening of 2026-11-20, and PR #465 on the morning
-    of 2026-11-21, each by the cloud session at the Owner's request once all six checks were green; PR #466 was
-    opened for the later rounds. Held here:
-    1. the local-session notes offer no merged pull request: they name PR #466 as the one that carries the later
-       rounds, the one a local session watches for, and the one to merge, and say PR #463 and PR #465 were merged;
+    """W1178, brought up to date by W1187 and W1190. PR #463 was merged on the evening of 2026-11-20, PR #465 on the
+    morning of 2026-11-21 and PR #466 that afternoon, each by the cloud session once all six checks were green, on the
+    Owner's request or decision; the pull request opened after #466 carries the later rounds. Held here:
+    1. the local-session notes offer no merged pull request: they name the one opened after #466 as the one that
+       carries the later rounds, the one a local session watches for and the one to merge, and say PR #463, PR #465
+       and PR #466 were merged;
     2. the plan's list of what is with the Owner says PR #463 was merged and that PR #465 then carried the later
        rounds. (The notes' figures were brought up to the plan's in W1178; W1131's guard holds that they never say
        more than the plan.)"""
@@ -96547,14 +96608,17 @@ def test_w1178_the_local_notes_name_the_open_pull_request_and_say_pr463_was_merg
     root = Path(__file__).resolve().parents[1]
     notes = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
     flat = " ".join(notes.split())
-    for said in ("if the open pull request from main-l1fsqo (PR #466 from 2026-11-21) is merged,",
-                 "PR #463 (rounds W1119–W1175) on 2026-11-20 and PR #465 (rounds W1176–W1184) on 2026-11-21, each "
-                 "on your instruction",
-                 "Later rounds are on `main-l1fsqo`, carried by **PR #466**.",
-                 "Merge PR #466 when you are ready, or ask the cloud session to merge it once green"):
+    for said in ("if the open pull request from main-l1fsqo (the one opened after PR #466 was merged on 2026-11-21) is "
+                 "merged,",
+                 "PR #463 (rounds W1119–W1175) on 2026-11-20, and PR #465 (rounds W1176–W1184) and PR #466 (rounds "
+                 "W1185–W1189) on 2026-11-21, each on your instruction or decision",
+                 "Later rounds are on `main-l1fsqo`, carried by the pull request opened after #466 was merged.",
+                 "Merge the open pull request from `main-l1fsqo` when you are ready, or ask the cloud session to "
+                 "merge it once green"):
         assert said in flat, ("the notes do not say", said)
     for stale in ("Merge PR #463", "carried by **PR #463**", "(PR #463 on 2026-11-20) is merged", "Merge PR #465 ",
-                  "carried by **PR #465**", "(PR #465 from 2026-11-20) is merged"):
+                  "carried by **PR #465**", "(PR #465 from 2026-11-20) is merged", "Merge PR #466 ",
+                  "carried by **PR #466**", "(PR #466 from 2026-11-21) is merged"):
         assert stale not in flat, ("the notes still offer a merged pull request", stale)
 
     fp = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
@@ -96749,9 +96813,10 @@ def test_w1180_fu1286_is_closed_once_each_of_its_five_places_is_settled():
     step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
     #  W1184 - FU-1054's run joined step 5 once the row waited on the Owner's machine
     #  W1188 - FU-1054 closed on its first run, and its step left step 5
-    assert re.findall(r"^   - (FU-\d+):", step5, re.M) == ["FU-1165"] and "git rm -r --cached venv" not in step5
-    assert "The row in step 5: FU-1165, a step there." in flat and "FU-1286" not in flat.split(
-        "The row in step 5:", 1)[1].split(".", 1)[0]
+    #  W1192: the lessons sitting joined step 5 after FU-1165, so the summary names two rows
+    assert "FU-1286" not in re.findall(r"^   - (FU-\d+):", step5, re.M) and "git rm -r --cached venv" not in step5
+    assert "The rows in step 5: FU-1165 and " in flat and "FU-1286" not in flat.split(
+        "The rows in step 5:", 1)[1].split(".", 1)[0]
     assert ("**Settled on 2026-11-20:** the five places that named your Windows home folder (FU-1286, closed W1180)"
             in flat), "the notes do not say the row is closed"
     yours = flat.split("**Still yours:**", 1)[1].split("**Settled on 2026-11-20:**", 1)[0]
@@ -97916,8 +97981,8 @@ def test_w1187_the_owners_five_decisions_of_2026_11_21_are_recorded_and_the_cali
         client, tmp_path, monkeypatch):
     """W1187. The five recommendations the Owner accepted on the morning of 2026-11-21, each where the work reads it:
     1. PR #465 was merged once W1184 was green, by the cloud session at 534cf629 with all six checks green; PR #466
-       was opened for the later rounds, the local notes name it as the one to merge and say #465 was merged, and the
-       plan no longer says #465 carries the later rounds;
+       was opened for the later rounds and, as W1190 records, merged that afternoon, so the local notes say #465 and
+       #466 were merged and offer neither, and the plan no longer says #465 carries the later rounds;
     2. a calibration run committed to the tree is evidence for a person to read: the file holding it calibrates
        nothing, the run calibrates the reviewer only on the machine whose own record holds it, and whether a released
        machine counts it is part of release, the Owner's switch. Driven: with a results file holding a run that met the
@@ -97974,10 +98039,12 @@ def test_w1187_the_owners_five_decisions_of_2026_11_21_are_recorded_and_the_cali
                 in also["why"]), also["why"]
 
     #  1. the pull requests
-    assert ("PR #463 (rounds W1119–W1175) on 2026-11-20 and PR #465 (rounds W1176–W1184) on 2026-11-21, each on your "
-            "instruction; the cloud session merged #463 and #465 at your request, each with all six checks green.") in notes
-    assert "carried by **PR #466**." in notes and "Merge PR #466 when you are ready" in notes, "the notes' open PR"
-    assert "(PR #466 from 2026-11-21) is merged," in notes and "Merge PR #465 " not in notes
+    assert ("PR #463 (rounds W1119–W1175) on 2026-11-20, and PR #465 (rounds W1176–W1184) and PR #466 (rounds "
+            "W1185–W1189) on 2026-11-21, each on your instruction or decision; the cloud session merged #463, #465 "
+            "and #466, each with all six checks green.") in notes   # W1190: #466 merged that afternoon
+    #  W1190: PR #466 was merged on the afternoon of 2026-11-21, so the notes say so and no longer offer it
+    assert "PR #466 (rounds W1185–W1189) on 2026-11-21" in notes and "Merge PR #466 " not in notes, "the notes' PRs"
+    assert "(the one opened after PR #466 was merged on 2026-11-21) is merged," in notes and "Merge PR #465 " not in notes
     assert "PR #465 carries the later rounds" not in flat and "PR #465 then carried the later rounds" in flat
     still = " ".join(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0].split())
     assert ("(Five put on the morning of 2026-11-21 were accepted the same day, each as recommended: PR #465 merged once "
@@ -98250,14 +98317,16 @@ def test_w1188_fu1054_is_closed_on_the_care_reviewers_first_run_and_what_it_miss
     #  6. the local notes and the plan's list
     notes = (root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
     step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
-    assert "   - FU-1054:" not in step5 and re.findall(r"^   - (FU-\d+):", step5, re.M) == ["FU-1165"], step5[:300]
+    #  W1192: the lessons sitting joined step 5 after FU-1165
+    assert "   - FU-1054:" not in step5 and re.findall(r"^   - (FU-\d+):", step5, re.M)[:1] == ["FU-1165"], step5[:300]
     flat = " ".join(notes.split())
     for said in ("(FU-1054's step here was done on 2026-11-21 and the row is closed (W1188): the run, cal-8c7430765c, "
                  f"was committed from this machine (c657e2a7) and merged in the cloud session at {MERGE}.",
                  "It left five cases unanswered, so it calibrates nothing, and it did not meet the bar; the reviewer "
                  "stays uncalibrated.",
-                 f"what it missed is {miss['id']}, which the cloud session works on.)",
-                 "The row in step 5: FU-1165, a step there.",
+                 f"what it missed is {miss['id']}: the cloud session makes its three fixes, and the second run is "
+                 "made from this machine before 2027-01-10, with a larger local model, as I ruled that afternoon.)",  # W1190
+                 "The rows in step 5: FU-1165 and ",   # W1192: the lessons sitting joined step 5
                  "**Settled on 2026-11-21:** the Care reviewer's first calibration run (FU-1054, closed W1188), made on "
                  "your machine through the agent's own door with the local model (llama3.2): run cal-8c7430765c left "
                  f"five cases unanswered, caught {s['caught']} of {s['planted_cases']} planted cases and raised "
@@ -98428,3 +98497,2240 @@ def test_w1189_the_calibration_export_the_import_baseline_and_the_soak_report_wr
     for said in ("test_w1189 drives the export's writer and the baseline's, which the Windows CI job runs too.",
                  "the soak report of 2026-08-30 is left as committed", "no census can hold"):
         assert said in note, ("the close note does not say", said)
+
+
+def test_w1190_the_owners_six_decisions_of_the_afternoon_of_2026_11_21_are_recorded_where_the_work_reads_them():
+    """W1190. The six recommendations the Owner accepted on the afternoon of 2026-11-21, after the plan was measured,
+    each recorded in the accepted words inside the item it governs (between that item's line and the next item's),
+    in the plan's list of what is with the Owner, in the rows each bears on and in the local notes:
+    1. the release machine opens a port to the internet only once it has its domain, with HTTPS and sign-in on; its
+       startup script is to refuse otherwise (W1191 changes it; as W1190 found it, the script starts the platform
+       with sign-in off with or without a domain, reads no setting that could switch it on, and publishes port 80 with
+       no domain); sign-in is the Owner's switch, to be made in the machine's own settings, never in the tree; with no
+       domain the platform is to publish no port; the password and signing secret are kept on the machine; the domain
+       is bought before the first deploy, its A record still pointing at the machine first (P4.1, P4.5, FU-1289 and
+       its line in the list, and the notes, which put sign-in at the first deploy together with HTTPS);
+    2. the second calibration run is the Owner's, before 2027-01-10, with a larger local model (seven to eight
+       billion parameters such as llama3.1:8b if the machine has about 16 GB of memory), once the stricter reply form
+       (the misses row, found by its title), the agent's digest (FU-1821) and the re-read (FU-1820) have landed; the
+       bar does not move; the misses row closes on that run's results, pass or fail; and FU-1822, which changes what
+       the reviewer is shown, says (as a note, not a ruling) that it is settled before that run; and the notes give
+       the Owner the run, in what is still theirs and in step 5;
+    3. P5.15 closes when its clauses are built and its rows closed, calibrated or not;
+    4. PR #466 was merged by the cloud session once W1189's checks were green: the list says so, and the notes say it
+       merged and no longer offer it (test_w1178, test_w1187 and test_w1131 are brought up to date to match);
+    5. the four test-runner faults whose cause was never found (FU-417, FU-1071, FU-1072, FU-1085) each close as not
+       reproduced after twenty consecutive green CI runs, closed as performed_not_assessable with the runs named, and
+       reopen the day they recur; the parallel suite's stall (FU-301) is diagnosed instead;
+    6. the letters (FU-1188, FU-1283) are to be sent in the week from 2026-11-21, and if no written permission for
+       lawful recordings has come by 2026-12-15, P5.17 carries into January with FU-1067 open.
+    The list's paragraph names no row, as the morning's does, and no new sentence gives the Owner a gendered pronoun
+    (they, them and their where the Owner is named just before, as W1143 allows)."""
+    import json
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    R = "OWNER RULING 2026-11-21 (afternoon; the recommendation accepted)"
+    RS = "OWNER RULING 2026-11-21 (afternoon; the recommendations accepted)"
+    fable = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    notes = " ".join((root / "docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8").split())
+    reg = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+
+    def item(pid, nxt):
+        start = fable.index(f"\n {pid} ")
+        end = fable.index(f"\n {nxt} ", start)
+        return " ".join(fable[start:end].split())
+
+    def titled(start):
+        hits = [r for r in reg.values() if r["title"].startswith(start)]
+        assert len(hits) == 1, (start, [r["id"] for r in hits])
+        return hits[0]
+
+    miss = titled("The Care reviewer's first calibration run did not meet the bar")["id"]
+    said = []
+
+    def row_says(rid, s, slot):
+        r = reg[rid]
+        assert s in r["why"], (rid, "does not say", s[:100])
+        assert r["slot"] == slot, (rid, r["slot"], slot)
+        said.append(s)
+
+    #  1. the release machine, at P4.1, at P4.5, in FU-1289 and in its line of the list
+    p41 = item("P4.1", "P4.2")
+    s = (f"{R}: the release machine opens a port to the internet only once it has its domain, and then only with HTTPS "
+         "and sign-in on; its startup script is to refuse to open one otherwise (W1191 changes it: as W1190 found it, the "
+         "script starts the platform with sign-in off whether or not the machine has a domain, reads no setting that "
+         "could switch sign-in on, and publishes port 80 when the machine has no domain). Sign-in is the Owner's switch, "
+         "to be made in the machine's own settings, so no round switches it on in the tree; with no domain the platform "
+         "is to publish no port, and the Owner reaches it through an SSH tunnel. The password and the signing secret are "
+         "kept on the machine, never in the repository.")
+    assert s in p41, "P4.1 does not carry the ruling on the release machine"
+    assert p41.index("No round switches it on in the tree.") < p41.index(s), "the ruling is not after the evening's"
+    said.append(s)
+    p45 = item("P4.5", "P4.6")
+    s = (f"{R}: the domain (FU-1289) is bought before the first deploy, so that, with the startup script changed as "
+         "P4.1's ruling of the same day sets, the first request the platform answers from the internet comes over HTTPS "
+         "with sign-in on.")
+    assert s in p45, "P4.5 does not say the domain comes first"
+    said.append(s)
+    row_says("FU-1289", f" {R}: the domain is bought before the first deploy; with no domain the machine is to publish "
+                        "no port, the Owner reaching it through an SSH tunnel, so that, once the startup script is "
+                        "changed to match (P4.1), the machine's first answer to the internet comes over HTTPS with "
+                        "sign-in on. That replaces 'serves plain HTTP until it has one' above: the machine answers the "
+                        "internet only once its domain is set. Its A record still points at the machine's fixed address "
+                        "before the domain is set, since Caddy needs it for the certificate (step 12).", "OWNER")
+    still = " ".join(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0].split())
+    s = ("(docs/DEPLOYMENT.md, step 12). Ruled on the afternoon of 2026-11-21: it is bought before the first deploy, and "
+         "without it the machine is to publish no port and is reached only through an SSH tunnel (P4.1).")
+    assert s in still and "until then the machine serves plain HTTP and no person signs in" not in still, "FU-1289's line"
+    said.append(s)
+
+    #  2 and 3. the Care reviewer, at P5.15 and in its rows
+    p515 = item("P5.15", "P5.16")
+    s = (f"{RS}: the item closes when its clauses are built and its rows closed, whether or not the reviewer is "
+         "calibrated; a calibrated reviewer is not a precondition of the item. The second calibration run is the "
+         "Owner's, on their own machine, before 2027-01-10, once three things have landed: the stricter reply form "
+         f"({miss}), the agent's digest (FU-1821) and the re-read of the three rows four of the set's cases rely on "
+         "(FU-1820). It is run with a larger local model than the first run's, of seven to eight billion parameters "
+         "such as llama3.1:8b if the machine has about 16 GB of memory; the reviewer's reviews then run on that model, "
+         "and the bar does not move. If it fails too, the reviewer stays UNCALIBRATED and no round goes into "
+         f"calibrating it until a qualified person is engaged. {miss} closes on that run's results, pass or fail, as "
+         "FU-1054 closed on the first's.")
+    assert s in p515, "P5.15 does not carry the closing rule and the second run's terms"
+    said.append(s)
+    row_says(miss, f" {RS}: the second run is the Owner's, on their own machine, before 2027-01-10, once the reply form "
+                   "here, the agent's digest (FU-1821) and the re-read of FU-1820 have landed; it is run with a larger "
+                   "local model than the first run's, of seven to eight billion parameters such as llama3.1:8b if the "
+                   "Owner's machine has about 16 GB of memory, and the reviewer's reviews then run on that model; the "
+                   "bar does not move. If it fails too, the reviewer stays UNCALIBRATED and no round goes into "
+                   "calibrating it until a qualified person is engaged; P5.15 closes when its clauses are built and its "
+                   "rows closed, calibrated or not. This row closes on the second run's results, pass or fail, as "
+                   "FU-1054 closed on the first's.", "P5.15")
+    assert "make the reply's form harder to get wrong" in reg[miss]["why"], "the misses row lost its reply-form NEXT"
+    row_says("FU-1820", f" {R}: re-read before the Owner's second calibration run, which waits on it ({miss}).", "P5.15")
+    row_says("FU-1821", f" {R}: its digest is built before the Owner's second calibration run, which waits on it "
+                        f"({miss}).", "P5.15")
+    row_says("FU-1822", " W1190, a note and not a ruling: what the reviewer is shown is part of the agent's digest "
+                        f"(FU-1821), so this row is settled before the Owner's second calibration run ({miss}), or a "
+                        "pass on that run would stop counting when it lands.", "P5.15")
+    assert "OWNER RULING" not in reg["FU-1822"]["why"], "FU-1822's note is written as a ruling"
+
+    #  5. the four faults and the stall, at P5.1 and in the five rows
+    p51 = item("P5.1", "P5.2")
+    s = (f"{R}: FU-417, FU-1071, FU-1072 and FU-1085, the four test-runner faults whose cause was never found, each close "
+         "as not reproduced after twenty consecutive green CI runs, the close note naming the runs, and each reopens "
+         "the day it recurs. That replaces FU-417's instruction not to close it on another green suite. The register "
+         "has no 'not reproduced' kind of close, so each is closed as performed_not_assessable, its note beginning 'not "
+         "reproduced' and naming the runs. The parallel suite's stall (FU-301), seen about one run in three, is not "
+         "waited out: it is diagnosed.")
+    assert s in p51, "P5.1 does not carry the rule for the four faults"
+    said.append(s)
+    close = (f" {R}: this row closes as not reproduced after twenty consecutive green CI runs, its close note naming the "
+             "runs, and reopens the day it recurs")
+    for rid, tail in (("FU-417", "; that replaces the instruction above not to close it on another green suite."),
+                      ("FU-1071", "."), ("FU-1072", "; the bisection above is for a recurrence."), ("FU-1085", ".")):
+        row_says(rid, close + tail, "P5.1")
+    row_says("FU-301", f" {R}: this stall is diagnosed, not waited out: it happens about one run in three, so it is no "
+                       "fault seen once.", "P5.1")
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("followups_w1190", root / "scripts/followups.py")
+    fu = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(fu)
+    assert "performed_not_assessable" in fu.CLOSE_KINDS and "not_reproduced" not in fu.CLOSE_KINDS, (
+        "the close kind the ruling names is not the register's", sorted(fu.CLOSE_KINDS))
+
+    #  6. the letters and the listening test, at P5.17 and in the three rows
+    p517 = item("P5.17", "P5.18")
+    s = (f"{R}: the letters asking for written permission (FU-1188, FU-1283) are to be sent in the week from 2026-11-21. "
+         "If no written permission for lawful recordings has come by 2026-12-15, the item carries into January with "
+         "FU-1067 open: clause 3's private test is never run on recordings whose terms were not granted, and the item "
+         "does not close on a test that was not run.")
+    assert s in p517, "P5.17 does not carry the date the item carries over on"
+    said.append(s)
+    row_says("FU-1067", f" {R}: if no written permission for lawful recordings has come by 2026-12-15, this row stays "
+                        "open into January, and P5.17 with it; the test is never run on recordings whose terms were not "
+                        "granted.", "P5.17")
+    for rid in ("FU-1188", "FU-1283"):
+        row_says(rid, f" {R}: to be sent in the week from 2026-11-21, as drafted; if no written permission for lawful "
+                      "recordings has come by 2026-12-15, P5.17 carries into January with FU-1067 open.", "OWNER")
+
+    #  4 and all six: the list's paragraph, after the morning's, naming no row
+    para = still[still.index("(Six put on the afternoon of 2026-11-21"):]
+    para = para[:para.index(")", para.index("Each is recorded at the item it governs.")) + 1]
+    assert still.index("(Five put on the morning of 2026-11-21") < still.index(para), "the list's order"
+    for part in ("were accepted the same day, each as recommended:",
+                 "the release machine to open a port to the internet only with its domain, HTTPS and sign-in on, its "
+                 "startup script to refuse otherwise and to publish no port before the domain, sign-in being the Owner's "
+                 "switch, made in the machine's own settings and never in the tree;",
+                 "the Care reviewer's second calibration run to be the Owner's, before 2027-01-10, with a larger local "
+                 "model, once a stricter reply form, the agent's digest and the re-read of three rows have landed, the "
+                 "bar unchanged, the misses row closing on its results, pass or fail, and no further round spent "
+                 "calibrating the reviewer if it fails, until a qualified person is engaged;",
+                 "the Care review item to close when its clauses are built and its rows closed, calibrated or not;",
+                 "PR #466 to be merged by the cloud session once W1189's checks were green, as #465 was, which it was at "
+                 "696bec0a;",
+                 "the four test-runner faults whose cause was never found to close as not reproduced after twenty "
+                 "consecutive green CI runs, each reopening the day it recurs, and the parallel suite's stall to be "
+                 "diagnosed instead;",
+                 "and the letters to be sent in the week from 2026-11-21, the Quran platform item carrying into January "
+                 "with its listening test's row open if no written permission for lawful recordings has come by "
+                 "2026-12-15."):
+        assert part in para, ("the plan's list does not say", part[:80])
+    assert not re.search(r"\bFU-\d+\b", para), ("the list's paragraph names a row", re.findall(r"FU-\d+", para))
+    said.append(para)
+
+    #  the local notes: the rulings, the merged pull request, and what stays the Owner's
+    #  W1192: the notes were brought up to date again for the decisions of 2026-11-22 (W1191 had edited them too)
+    #  W1193: the notes were brought up to date again for the record round (the developer account, the answer);
+    #  a later round adding itself, or a later date, leaves this green (W1193c)
+    upd = re.search(r"Updated (20\d\d-\d\d-\d\d) \(([^)]*)\)\.", notes)
+    assert upd and upd.group(1) >= "2026-11-22" and "W1190" in upd.group(2).split(", "), "the notes' updated line"
+    for s in ("and that afternoon, six more taken as recommended: the release machine to open a port to the internet "
+              "only with its domain, HTTPS and sign-in on, the domain bought before the first deploy and sign-in your "
+              "switch; your second calibration run, with a larger local model (seven to eight billion parameters if "
+              "your machine has about 16 GB of memory), once the cloud session's three fixes have landed and before "
+              "2027-01-10; the Care review item to close when its clauses are built and its rows closed, calibrated or "
+              "not; PR #466 merged by the cloud session once W1189's checks were green; the four test-runner faults "
+              "whose cause was never found to close as not reproduced after twenty consecutive green CI runs; and your "
+              "letters to be sent in the week from 21 November, the Quran platform item carrying into January if no "
+              "written permission for recordings has come by 15 December).",
+              "PR #463 (rounds W1119–W1175) on 2026-11-20, and PR #465 (rounds W1176–W1184) and PR #466 (rounds "
+              "W1185–W1189) on 2026-11-21, each on your instruction or decision; the cloud session merged #463, #465 "
+              "and #466, each with all six checks green. Later rounds are on `main-l1fsqo`, carried by the pull request "
+              "opened after #466 was merged.",
+              "Much of that phase is ruled to come after sign-in (P4.1), which is your switch, made in the release "
+              "machine's own settings at its first deploy, together with its domain and HTTPS; the final audit runs "
+              "after the fifth phase and the sign-in readiness round.",
+              "Buying a domain for the release machine before the first deploy and pointing it at the machine's fixed "
+              "address (FU-1289): without it the machine is to publish no port (P4.1).",
+              "At the first deploy, setting the admin password on the release machine and switching sign-in on in its "
+              "own settings (P4.1; the setting W1191 adds), so that it answers from its first boot with its domain, "
+              "HTTPS and sign-in on; the password and the signing secret stay on the machine, never in the repository.",
+              "Your second calibration run of the Care reviewer, on your machine with a larger local model (seven to "
+              "eight billion parameters, such as llama3.1:8b, if your machine has about 16 GB of memory), when the cloud "
+              f"session says its three fixes have landed, and before 2027-01-10 ({miss}, P5.15).",
+              f"and what it missed is {miss}: the cloud session makes its three fixes, and the second run is made from "
+              "this machine before 2027-01-10, with a larger local model, as I ruled that afternoon.)",
+              "Sending the two permission letters in `docs/letters/` (FU-1188), in the week from 21 November.",
+              "(FU-1283), in the week from 21 November."):
+        assert s in notes, ("the local notes do not say", s[:90])
+        said.append(s)
+    for stale in ("which now proceeds without waiting on you", "Merge PR #466 ", "carried by **PR #466**",
+                  "(PR #466 from 2026-11-21) is merged", "which the cloud session works on.)",
+                  "once its domain and HTTPS are live"):
+        assert stale not in notes, ("the notes still say", stale)
+
+    #  no new sentence gives the Owner a gendered pronoun
+    for text in said:
+        assert not re.search(r"\b(he|him|his|she|her|hers)\b", text, re.I), ("a gendered pronoun", text[:90])
+
+
+def test_w1191_the_release_machine_serves_publicly_only_with_its_domain_https_and_sign_in_on(tmp_path, monkeypatch, capsys):
+    """W1191 (P4.5); the Owner's decision of 2026-11-21 (afternoon, 1 of 6), P4.1's ruling of 2026-11-20 and the Owner's
+    two decisions of the late evening of 2026-11-21. As W1134 and W1140 left it, the release machine with no domain ran
+    the platform on port 80 with sign-in off - an open platform on the public internet. Now it serves publicly only with
+    its domain, HTTPS and sign-in on, and without a domain publishes no public port. Reworked twice after the round's
+    reviews and checked once more. Held here:
+    S1. DRIVEN: the startup script, sourced as test_w1134 sources it, its main() and its front run with docker, the
+        metadata server and the host's firewall stood in for:
+        - no domain: the platform is published on the machine's 127.0.0.1 only (never 0.0.0.0, a bare port, -P or a
+          network of the host's), Caddy is not started, sign-in follows the metadata (off unset or false, on with
+          true) from exactly one setting, and the run is given CORS_ORIGINS for the tunnel's origin alone;
+        - the metadata's keys are listed once: a list, or a listed key, that cannot be read stops the script before
+          any docker call, and so does an auth-enabled that is neither true nor false, with a domain or without; the
+          script's own metadata(), driven once through a stand-in curl, stops when the list cannot be read although
+          every key would answer;
+        - a domain without sign-in on: nothing public starts, the refusal is logged in a sentence, and no docker
+          call is made at all;
+        - a domain with sign-in on: the front starts, the platform behind it with exactly one sign-in setting, true,
+          CORS_ORIGINS for the domain alone and no port of its own; and the front on its own refuses unless told true;
+    S2. nothing that deploys the release machine sets AUTH_ENABLED=true: there, sign-in comes only from the machine's
+        own metadata key auth-enabled. The tree's two sign-in harnesses and the HTTPS drill start a local platform with
+        it on, to test it. Walking the tracked tree, nothing else outside the tests sets it (a shell default and a
+        front told true included), no command sets the machine's auth-enabled to true outside the Markdown documents
+        and the records under docs/, where the guide gives the Owner the commands and the plan and register quote them,
+        and no config file sets ADMIN_PASSWORD or JWT_SECRET to a value; the tree's own settings say off;
+    S3. DRIVEN: the set-password command reads the users store strictly before core is imported, so a store that is
+        not there or cannot be read whole is refused and left byte for byte, in its own process as the guide runs it;
+        it reads the password twice, refuses a short or mismatched one, one given on the command line and an account
+        the store does not hold, stores only the hash, marked as set by the Owner, and keeps an account written while
+        the password was asked; and the production warning names the command, never ADMIN_PASSWORD;
+    S4. the guide says what is true now: the domain first; step 6's rule created at step 12; step 7 a plain SSH session
+        for the password and (the Owner accepted it on 2026-11-21) sign-in, then the tunnel on port 8800, and what
+        CORS_ORIGINS does and does not stop; where the secrets are; the uptime check only once step 12 is done; and step
+        12 creating the rule, checking the accounts (each one's name, role and creation time, never a hash, driven
+        here), setting the domain and sign-in together and sending the reader back to step 10; the steps keep their
+        numbers;
+    S5. the round's row is closed on P4.5 in the Owner's recorded words, W1190's quoted as W1190 recorded them; three
+        rows are left open on P4.1; the W729 credentials are an OWNER row of high severity, on the plan's Owner list
+        and in the local notes; FU-1289 and FU-1095, still open and the Owner's, each say in one sentence what W1191
+        changed, FU-1289's after the Owner's ruling W1190 recorded there and before the dated note of the late
+        evening; P4.1 carries that evening's ruling right after the ruling of 2026-11-20 and, last, that W1191 changed
+        the script; and the plan's list and the local notes say the domain and sign-in are set together."""
+    import json
+    import os
+    import pathlib
+    import re
+    import shutil
+    import subprocess
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")  # noqa: E731
+    script_path = root / "deploy" / "gcp" / "startup.sh"
+    raw = script_path.read_bytes()
+    assert b"\r" not in raw and "deploy/gcp/startup.sh text eol=lf" in read(".gitattributes").splitlines()
+    script = raw.decode("utf-8")
+    image = "us-central1-docker.pkg.dev/w1191-project/workstation/workstation:w1191-tag"
+
+    #  S1. THE STARTUP SCRIPT, DRIVEN
+    driver = r'''
+source "$1"
+docker() {
+    local a
+    for a in "$@"; do printf '%s\037' "$a"; done >> "$W1191_LOG"
+    printf '\n' >> "$W1191_LOG"
+    case "$1 ${2:-}" in "network inspect"|"image inspect") return 1 ;; esac
+    return 0
+}
+docker-credential-gcr() { return 0; }
+iptables() { return 0; }
+mount() { return 0; }
+chown() { return 0; }
+prepare_disk() { return 0; }
+if [ -z "${W1191_REAL_METADATA:-}" ]; then
+metadata() {
+    case "$1" in
+        project/project-id) echo w1191-project ;;
+        instance/attributes/image-tag) echo w1191-tag ;;
+        instance/attributes/)
+            [ "${W1191_FAIL:-}" = "list" ] && return 22
+            echo image-tag
+            [ -n "${W1191_DOMAIN:-}" ] && echo domain
+            [ -n "${W1191_AUTH:-}" ] && echo auth-enabled
+            echo startup-script
+            return 0 ;;
+        instance/attributes/domain)
+            [ "${W1191_FAIL:-}" = "domain" ] && return 22
+            [ -n "${W1191_DOMAIN:-}" ] || return 22
+            printf '%s' "$W1191_DOMAIN" ;;
+        instance/attributes/auth-enabled)
+            [ "${W1191_FAIL:-}" = "auth-enabled" ] && return 22
+            [ -n "${W1191_AUTH:-}" ] || return 22
+            printf '%s' "$W1191_AUTH" ;;
+        *) return 22 ;;
+    esac
+}
+fi
+if [ -n "${W1191_FRONT+set}" ]; then
+    start_front "$W1191_IMAGE" w1191-tag app.example.com ${W1191_FRONT:+"$W1191_FRONT"}
+else
+    main
+fi
+'''
+    bash = shutil.which("bash")
+    if sys.platform.startswith("linux"):
+        assert bash, "the round's own machine must drive the startup script"
+    if os.name != "nt" and bash:
+        boots = []
+        #  the metadata server, stood in for at curl itself: the list is refused, and every key would answer
+        stub_dir = tmp_path / "w1191-bin"
+        stub_dir.mkdir()
+        curl_log = tmp_path / "curl.log"
+        (stub_dir / "curl").write_text(
+            f"#!{bash}\n"
+            "for a in \"$@\"; do case \"$a\" in http://*) url=$a ;; esac; done\n"
+            "printf '%s\\n' \"$*\" >> \"$W1191_CURL_LOG\"\n"
+            "case \"${url:-}\" in\n"
+            "    */computeMetadata/v1/instance/attributes/) exit 22 ;;\n"
+            "    */computeMetadata/v1/project/project-id) printf '%s' w1191-project ;;\n"
+            "    */computeMetadata/v1/instance/attributes/image-tag) printf '%s' w1191-tag ;;\n"
+            "    */computeMetadata/v1/instance/attributes/domain) printf '%s' app.example.com ;;\n"
+            "    */computeMetadata/v1/instance/attributes/auth-enabled) printf '%s' true ;;\n"
+            "    *) exit 22 ;;\n"
+            "esac\n", encoding="utf-8")
+        os.chmod(stub_dir / "curl", 0o755)
+
+        def boot(domain=None, auth=None, fail=None, front=None, real=False):
+            log = tmp_path / f"docker-{len(boots)}.log"
+            env = {k: v for k, v in os.environ.items() if not k.startswith("W1191_")}
+            env.update(WORKSTATION_STARTUP_SOURCED="1", WORKSTATION_MNT=str(tmp_path / "mnt"), W1191_LOG=str(log),
+                       W1191_IMAGE=image)
+            env.update({k: v for k, v in (("W1191_DOMAIN", domain), ("W1191_AUTH", auth), ("W1191_FAIL", fail),
+                                          ("W1191_FRONT", front)) if v is not None})
+            if real:
+                env.update(W1191_REAL_METADATA="1", W1191_CURL_LOG=str(curl_log),
+                           PATH=str(stub_dir) + os.pathsep + env.get("PATH", ""))
+            r = subprocess.run([bash, "-c", driver, "bash", str(script_path)], capture_output=True, text=True,
+                               env=env, timeout=60, stdin=subprocess.DEVNULL)
+            calls = [ln.split("\x1f")[:-1] for ln in log.read_text(encoding="utf-8").splitlines()] if log.exists() else []
+            boots.append(calls)
+            return r, calls
+
+        def runs(calls):
+            return [c for c in calls if c[:1] == ["run"]]
+
+        def public(calls):
+            return [a for c in calls for a in c if "0.0.0.0" in a or re.fullmatch(r"(--publish=|-p)?(80|443|8000)(:\d+)?", a)]
+
+        def setting(run, name):       # every argument of the run that sets NAME, and any file of settings
+            return [a for a in run if name in a or a.startswith("--env-file")]
+
+        #  ...no domain: the machine's 127.0.0.1 only, sign-in from the metadata, the tunnel's origin, no Caddy
+        for auth, on in ((None, "false"), ("false", "false"), ("TRUE", "true")):
+            r, calls = boot(auth=auth)
+            assert r.returncode == 0, (auth, r.stdout[-600:], r.stderr[-600:])
+            (run,) = runs(calls)
+            assert run[1:4] == ["--name=workstation", "--restart=always", "--detach"] and run[-1] == image, run
+            assert [a for a in run if a.startswith(("--publish", "-p", "-P"))] == ["--publish=127.0.0.1:8000:8000"], run
+            assert not [a for a in run if a.startswith(("--network", "--net"))] and not public(calls), (auth, run)
+            assert setting(run, "AUTH_ENABLED") == [f"--env=AUTH_ENABLED={on}"], (auth, run)
+            assert setting(run, "CORS_ORIGINS") == ["--env=CORS_ORIGINS=http://localhost:8800"], (auth, run)
+            assert not [c for c in calls if any("caddy" in a and c[0] in ("run", "pull") for a in c)], calls
+            assert ["stop", "caddy", "workstation"] in calls and ["rm", "caddy", "workstation"] in calls, calls
+        #  ...what cannot be read, or is neither true nor false, stops the script before any docker call
+        for kw, sentence in ((dict(auth="yes"), "the machine's auth-enabled is neither true nor false: not started"),
+                             (dict(auth="true", fail="list"), "the machine's metadata could not be listed: not started"),
+                             (dict(auth="true", fail="auth-enabled"),
+                              "the machine's auth-enabled could not be read: not started"),
+                             (dict(domain="app.example.com", auth="true", fail="domain"),
+                              "the machine's domain could not be read: not started")):
+            r, calls = boot(**kw)
+            assert r.returncode == 1 and calls == [] and f"workstation-startup: {sentence}" in r.stdout, (
+                kw, r.stdout, calls)
+        #  ...and the script's own metadata(), through curl: the list refused stops it, though every key would answer
+        r, calls = boot(real=True)
+        asked = curl_log.read_text(encoding="utf-8").splitlines() if curl_log.exists() else []
+        assert r.returncode == 1 and calls == [], (r.stdout[-400:], r.stderr[-400:], calls)
+        assert "workstation-startup: the machine's metadata could not be listed: not started" in r.stdout, r.stdout
+        assert ("-fsS http://metadata.google.internal/computeMetadata/v1/instance/attributes/ -H Metadata-Flavor: "
+                "Google") in asked, ("the script's own metadata() did not ask the metadata server for the list", asked)
+        assert not [a for a in asked if a.split()[1].endswith(("/domain", "/auth-enabled"))], (
+            "a key was read although the list it belongs to was not", asked)
+        #  ...a domain without sign-in on, or with a value that is neither: refused, and no docker call at all
+        refused = ("the machine has a domain but its metadata does not turn sign-in on (auth-enabled=true): nothing public "
+                   "is started, and what is running, the front included if one runs, is left as it was")
+        for auth, sentence in ((None, refused), ("false", refused), ("yes", "the machine's auth-enabled is neither true "
+                               "nor false: not started, and the running platform is left as it was")):
+            r, calls = boot(domain="app.example.com", auth=auth)
+            assert r.returncode == 1 and f"workstation-startup: {sentence}" in r.stdout.splitlines(), (auth, r.stdout)
+            assert calls == [], (auth, calls)
+        r, calls = boot(domain="203.0.113.7", auth="true")
+        assert r.returncode == 1 and "is not a host name" in r.stdout and calls == [], (r.stdout, calls)
+        #  ...a domain with sign-in on: the front, the platform behind it with sign-in on and the domain's origin
+        r, calls = boot(domain="app.example.com", auth="true")
+        assert r.returncode == 0, (r.stdout[-600:], r.stderr[-600:])
+        platform, caddy = runs(calls)
+        assert "--name=workstation" in platform and "--network=workstation-front" in platform and platform[-1] == image
+        assert setting(platform, "AUTH_ENABLED") == ["--env=AUTH_ENABLED=true"], platform
+        assert setting(platform, "CORS_ORIGINS") == ["--env=CORS_ORIGINS=https://app.example.com"], platform
+        assert not [a for a in platform if a.startswith(("--publish", "-p", "-P"))] and not public([platform]), platform
+        assert "--name=caddy" in caddy and "--publish=80:80" in caddy and "--publish=443:443" in caddy, caddy
+        assert caddy[-6:] == ["caddy", "reverse-proxy", "--from", "app.example.com", "--to", "workstation:8000"], caddy
+        #  ...and the front on its own: told anything but true, or nothing, it starts nothing
+        for front in ("", "false", "TRUE"):
+            r, calls = boot(front=front)
+            assert r.returncode == 1 and calls == [] and "the front starts only with sign-in on" in r.stdout, (
+                front, r.stdout, calls)
+        r, calls = boot(front="true")
+        assert r.returncode == 0 and len(runs(calls)) == 2, (r.stdout[-400:], calls)
+        assert setting(runs(calls)[0], "AUTH_ENABLED") == ["--env=AUTH_ENABLED=true"], calls
+        assert len(boots) == 17, len(boots)
+    #  ...and read as code: one list, each key read only when listed, the value the metadata's, the front's own check
+    main = script.split("\nmain() {\n", 1)[1].split("\n}\n", 1)[0]
+    assert main.count("attrs=$(metadata instance/attributes/)") == 1 and "listed auth-enabled" in main, main[:400]
+    assert "auth-enabled 2>/dev/null" not in main and "domain 2>/dev/null" not in main, "a read's failure is hidden"
+    assert main.index("auth-enabled") < main.index("docker stop") and main.count('--env=AUTH_ENABLED="$auth"') == 1
+    assert 'start_front "$image" "$tag" "$domain" "$auth"' in main
+    front = script.split("start_front() {", 1)[1].split("\n}\n", 1)[0]
+    assert front.index('[ "${4:-}" != "true" ]') < front.index("docker ") and '--env=AUTH_ENABLED="$4" ' in front
+    assert '--env=CORS_ORIGINS="https://$3"' in front, front[:600]
+    assert 'start_front "$IMG" drill "$DOM" true ' in read("deploy/https_drill.sh"), "the drill's front is told false"
+    said_in_script = " ".join(script.replace("#", " ").split())
+    assert ("CORS_ORIGINS stops a page from another site reading its ordinary answers, not sending it requests"
+            in said_in_script), "the script's comment says CORS keeps the pages of other sites out"
+    assert ("Nothing that deploys the release machine turns sign-in on: the machine's own metadata does, the Owner's "
+            "switch (the Owner's ruling of 2026-11-21)") in said_in_script
+
+    #  S2. NOTHING THAT DEPLOYS THE RELEASE MACHINE SETS AUTH_ENABLED=true: there, sign-in comes only from the machine's
+    #  own metadata key auth-enabled. The tree's two sign-in harnesses and the HTTPS drill start a local platform with it
+    #  on, to test it; walking the tracked tree, no other file outside the tests sets it or calls the front, no command
+    #  sets the machine's auth-enabled to true outside the Markdown documents and the records under docs/, where the
+    #  guide gives the Owner the commands and the plan and register quote them, and no config file sets the password or
+    #  the signing secret
+    import ast
+    harnesses = {"scripts/run_auth_backend.py": "starts a local backend on 127.0.0.1 with sign-in on, to check it",
+                 "scripts/boot_signin_check_backend.py": "boots a backend in a throwaway store for the sign-in check",
+                 "deploy/https_drill.sh": ("starts the release front on this machine for the HTTPS drill, with sign-in "
+                                           "on, in a test process")}
+    skip = {".git", "node_modules", "data", "logs", "__pycache__", "dist", "build", ".venv", "venv", "fidelity_runs",
+            "_archive", ".pytest_cache", "integration_tests", "tests", "__tests__", "e2e", "test-results", "coverage"}
+    setting_on = re.compile(r"\bAUTH_ENABLED\b[\"']?\s*[=:]\s*[\"']?\s*true\b", re.I)
+    docker_env = re.compile(r"^\s*ENV\s+.*\bAUTH_ENABLED\s+[\"']?true\b", re.I | re.M)
+    key_value = re.compile(r"key:\s*[\"']?AUTH_ENABLED[\"']?\s*\n\s*value:\s*[\"']?true\b", re.I)
+    shell_default = re.compile(r"\$\{AUTH_ENABLED:?[-=]\s*[\"']?true\b", re.I)
+    switch_on = re.compile(r"--metadata(?:-from-file)?[= ]\S*\bauth-enabled=true\b", re.I)
+    front_true = re.compile(r"\bstart_front\b(?:\s+\S+){3}\s+[\"']?true\b")      # the front told that sign-in is on
+    front_call = re.compile(r"\bstart_front\b(?!\s*\(\s*\))")                     # any call of the front, not its definition
+    secret_set = re.compile(r"^[ \t]*(?:export[ \t]+|-[ \t]+[\"']?|ENV[ \t]+)?(?:ADMIN_PASSWORD|JWT_SECRET)"
+                            r"(?:[ \t]*[=:][ \t]*|[ \t]+)[\"']?[^\s\"'#$]", re.M)
+    secret_kv = re.compile(r"key:[ \t]*[\"']?(?:ADMIN_PASSWORD|JWT_SECRET)[\"']?[ \t]*\n[ \t]*value:")
+    secret_default = re.compile(r"\$\{(?:ADMIN_PASSWORD|JWT_SECRET):?[-=][^}\s]")
+    secret_flag = re.compile(r"(?:--env(?:=|[ \t]+)|-e[ \t]+)[\"']?(?:ADMIN_PASSWORD|JWT_SECRET)=[\"']?[^\s\"'$]")
+    secret_env = re.compile(r"^[ \t]*ENV[ \t].*\b(?:ADMIN_PASSWORD|JWT_SECRET)=[\"']?[^\s\"'$]", re.M)
+    secret_json = re.compile(r"\"(?:ADMIN_PASSWORD|JWT_SECRET)\"\s*:\s*\"[^\"$\s]")
+
+    def py_sets(src):
+        text = lambda n: isinstance(n, ast.Constant) and isinstance(n.value, str)  # noqa: E731
+        on = lambda n: text(n) and n.value.strip().lower() == "true"  # noqa: E731
+        named = lambda n: text(n) and n.value == "AUTH_ENABLED"  # noqa: E731
+        try:
+            tree = ast.parse(src)
+        except SyntaxError:
+            return False
+        for n in ast.walk(tree):
+            if isinstance(n, ast.Call) and ((len(n.args) >= 2 and named(n.args[0]) and on(n.args[1])) or any(
+                    k.arg == "AUTH_ENABLED" and on(k.value) for k in n.keywords)):
+                return True
+            if isinstance(n, ast.Dict) and any(k is not None and named(k) and on(v) for k, v in zip(n.keys, n.values)):
+                return True
+            if isinstance(n, ast.Assign) and on(n.value) and any(
+                    isinstance(t, ast.Subscript) and named(t.slice) for t in n.targets):
+                return True
+        return False
+
+    def uncommented(t):
+        return "\n".join("" if ln.lstrip().startswith("#") else ln.split(" #", 1)[0] for ln in t.splitlines())
+
+    #  the pattern for the front is the drill's call, and neither the release machine's own call nor the guide's words
+    assert len(front_true.findall(uncommented(read("deploy/https_drill.sh")))) == 1, "the drill's front is not told true"
+    for rel in ("deploy/gcp/startup.sh", "deploy/drill.sh", "docs/DEPLOYMENT.md"):
+        assert not front_true.search(uncommented(read(rel))), (rel, "would be read as telling the front sign-in is on")
+    listed = subprocess.run(["git", "-C", str(root), "ls-files", "-z"], capture_output=True)
+    tracked = [r for r in listed.stdout.decode("utf-8", "replace").split("\0") if r] if listed.returncode == 0 else []
+    assert tracked, ("the tracked files could not be listed, so nothing was scanned", listed.returncode)
+    sets, switches, secrets_set, scanned = set(), set(), set(), 0
+    for rel in tracked:
+        parts = rel.split("/")
+        if any(part in skip for part in parts[:-1]):
+            continue
+        fn = parts[-1]
+        p = root / rel
+        if (fn.startswith("test_") or fn.endswith("_test.py") or fn == "conftest.py" or ".test." in fn
+                or ".spec." in fn or fn.endswith(".fixture.json")):
+            continue
+        suf = p.suffix.lower()
+        if not (suf in (".py", ".sh", ".bash", ".env", ".yml", ".yaml", ".toml", ".ini", ".cfg", ".conf", ".json",
+                        ".ts", ".tsx", ".js", ".mjs", ".cjs", ".md", ".bat", ".cmd", ".ps1")
+                or fn.startswith((".env", "Dockerfile"))):
+            continue
+        try:
+            t = p.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        scanned += 1
+        if suf == ".py":
+            hit, switch = py_sets(t), bool(switch_on.search(t))
+        elif suf == ".md":            # the guide gives the Owner the switch's commands: they are the Owner's to run
+            hit = any(setting_on.search(uncommented(b)) for b in re.findall(r"```[a-z]*\n(.*?)```", t, re.S))
+            switch = False
+        elif suf == ".json":          # the register and the docs' records quote the guide's commands
+            hit = not rel.startswith("docs/") and bool(setting_on.search(t))
+            switch = not rel.startswith("docs/") and bool(switch_on.search(t))
+            if not rel.startswith("docs/") and secret_json.search(t):
+                secrets_set.add(rel)
+        elif suf in (".ts", ".tsx", ".js", ".mjs", ".cjs"):
+            code = re.sub(r"//[^\n]*", "", _slash_star_restored(re.sub(r"/\*.*?\*/", "", _slash_star_masked(t), flags=re.S)))
+            hit, switch = bool(setting_on.search(code)), bool(switch_on.search(code))
+        else:
+            u = uncommented(t)
+            hit = bool(setting_on.search(u) or docker_env.search(u) or key_value.search(u) or shell_default.search(u)
+                       or front_true.search(u) or (rel != "deploy/gcp/startup.sh" and front_call.search(u)))
+            switch = bool(switch_on.search(u))
+            if (secret_set.search(u) or secret_kv.search(u) or secret_default.search(u) or secret_flag.search(u)
+                    or secret_env.search(u)):
+                secrets_set.add(rel)
+        if hit:
+            sets.add(rel)
+        if switch:
+            switches.add(rel)
+    assert scanned > 500, ("the scan read almost nothing, so it would pass on an empty tree", scanned)
+    assert sets == set(harnesses), ("a file outside the tests turns sign-in on", sorted(sets - set(harnesses)),
+                                   "or a harness no longer does", sorted(set(harnesses) - sets))
+    assert not switches, ("a file in the tree sets the machine's own sign-in switch", sorted(switches))
+    assert not secrets_set, ("a config file in the tree sets ADMIN_PASSWORD or JWT_SECRET", sorted(secrets_set))
+    assert re.search(r"(?m)^AUTH_ENABLED=false\b", read(".env.example")), "the example environment turns sign-in on"
+    assert re.search(r'key: AUTH_ENABLED\n\s+value: "false"', read("render.yaml")), "the blueprint turns sign-in on"
+    for rel in ("agentic_core/auth/core.py", "agentic_core/config.py"):
+        assert 'os.getenv("AUTH_ENABLED", "false").lower() == "true"' in read(rel), (rel, "its default is not off")
+
+    #  S3. THE SET-PASSWORD COMMAND, DRIVEN: the store read whole first, two answers, only the hash kept
+    from agentic_core import config as _config
+    from agentic_core.auth import core
+    from agentic_core.auth import set_password as sp
+    store = tmp_path / "users.json"
+    monkeypatch.setattr(_config, "data_path", lambda *parts: tmp_path.joinpath(*parts))   # the store read first...
+    monkeypatch.setattr(core, "_USER_STORE", store)                                       # ...is the one written
+    assert _config.data_path("users.json") == store
+    stand_in = core._pwd_ctx.hash("w1191 a random stand-in password")
+    store.write_text(json.dumps({"admin": {"user_id": "w1191", "username": "admin", "hashed_password": stand_in,
+                                           "password_source": "random-unset", "role": "admin", "api_keys": []}}),
+                     encoding="utf-8")
+    password = "w1191 correct horse battery staple"
+
+    def answered(*given):
+        it = iter(given)
+        monkeypatch.setattr(sp.getpass, "getpass", lambda prompt="": next(it))
+
+    def refused(argv, said, *given, rc=1):
+        before = store.read_bytes() if store.exists() else None
+        answered(*given)
+        got = sp.main(argv)
+        out = capsys.readouterr()
+        assert got == rc and said in out.err, (argv[:1], got, out.err)
+        assert (store.read_bytes() if store.exists() else None) == before, (argv[:1], "the store changed")
+        assert not [g for g in (*given, *argv[1:]) if g and (g in out.out or g in out.err)], "a password was shown"
+    refused(["admin"], "the two passwords differ", password, password + "z")
+    refused(["admin"], "shorter than 12 characters", "w1191 short")
+    refused(["nobody"], "holds no account named 'nobody'")
+    refused(["admin", password], "usage:", rc=2)                 # never taken from the command line, nothing asked
+    #  ...set, while another writer adds an account between the first read and the write: the store is read again,
+    #  whole, under its lock, so that account is kept
+    asked, kept_hash = [], "w1191 another account's hash, kept as it was"
+
+    def racing(prompt=""):
+        asked.append(prompt)
+        if len(asked) == 2:
+            users = json.loads(store.read_text(encoding="utf-8"))
+            users["w1191-other"] = {"user_id": "w1191-other", "username": "w1191-other", "hashed_password": kept_hash,
+                                    "role": "user", "api_keys": []}
+            store.write_text(json.dumps(users), encoding="utf-8")
+        return password
+    monkeypatch.setattr(sp.getpass, "getpass", racing)
+    assert sp.main(["admin"]) == 0 and len(asked) == 2, asked
+    out = capsys.readouterr()
+    assert "The password for admin is set" in out.out and password not in out.out + out.err, out
+    users = json.loads(store.read_text(encoding="utf-8"))
+    admin = users["admin"]
+    assert core._pwd_ctx.verify(password, admin["hashed_password"]) and admin["password_source"] == "owner-set", admin
+    assert not core._pwd_ctx.verify("w1191 a random stand-in password", admin["hashed_password"])
+    assert users.get("w1191-other", {}).get("hashed_password") == kept_hash, (
+        "an account written while the password was asked was lost", sorted(users))
+    assert not [f for f in tmp_path.rglob("*") if f.is_file() and password.encode() in f.read_bytes()], (
+        "the password itself is kept in a file")
+    kept = store.read_bytes()
+    store.write_text('{"admin": {"username": "admin"', encoding="utf-8")
+    refused(["admin"], "the users store could not be read whole", password, password)
+    store.unlink()
+    refused(["admin"], "there is no users store", password, password)
+    assert not store.exists(), "the command made a users store"
+    store.write_bytes(kept)
+    #  ...and as the Owner runs it, as a module in its own process (no terminal, so getpass reads the input it is
+    #  given; a terminal is what `docker exec -it` gives the Owner): importing core there would replace a store it
+    #  could not read, so the command must refuse before it imports core
+    if os.name != "nt":
+        data = tmp_path / "w1191-data"
+        env = dict(os.environ, DATA_DIR=str(data), WORKSTATION_DATA_DIR=str(data), PYTHONPATH=str(root),
+                   WORKSTATION_UEG_PATH=str(data / "ueg.json"), PROJECTS_DIR=str(data / "projects"), AI_DISABLE_LOCAL="1")
+        for name in ("ADMIN_PASSWORD", "JWT_SECRET", "AUTH_ENABLED"):
+            env.pop(name, None)
+
+        def own_process(*argv, answers=f"{password}\n" * 2):
+            return subprocess.run([sys.executable, *argv], input=answers, capture_output=True, text=True, env=env,
+                                  cwd=str(root), timeout=120, start_new_session=True)
+        r = own_process("-m", "agentic_core.auth.set_password", "admin")
+        assert r.returncode == 1 and "there is no users store" in r.stderr, (r.returncode, r.stderr[-400:])
+        assert not (data / "users.json").exists(), "the command, or the import it makes, made a users store"
+        made = own_process("-c", "import agentic_core.auth.core")        # the platform's first boot makes it
+        assert made.returncode == 0 and (data / "users.json").exists(), made.stderr[-400:]
+        first_boot = (data / "users.json").read_bytes()
+        (data / "users.json").write_text('{"admin": {"username": "admin"', encoding="utf-8")
+        torn = (data / "users.json").read_bytes()
+        r = own_process("-m", "agentic_core.auth.set_password", "admin")
+        assert r.returncode == 1 and "could not be read whole" in r.stderr, (r.returncode, r.stderr[-400:])
+        assert (data / "users.json").read_bytes() == torn, "a store that could not be read was replaced"
+        (data / "users.json").write_bytes(first_boot)
+        r = own_process("-m", "agentic_core.auth.set_password", "admin")
+        assert r.returncode == 0 and password not in r.stdout + r.stderr, (r.returncode, r.stdout[-400:], r.stderr[-400:])
+        on_disk = json.loads((data / "users.json").read_text(encoding="utf-8"))["admin"]
+        assert core._pwd_ctx.verify(password, on_disk["hashed_password"]) and on_disk["password_source"] == "owner-set"
+        assert (data / "jwt_secret.key").exists(), "the signing secret is not where the guide says it is"
+        assert not [f for f in data.rglob("*") if f.is_file() and password.encode() in f.read_bytes()]
+    code = _code_only(read("agentic_core/auth/set_password.py").split('"""', 2)[2])
+    assert "getpass.getpass(" in code and "core._pwd_ctx.hash(first)" in code and "with core._users_mutation():" in code
+    assert code.index("_account(store, username)") < code.index("from agentic_core.auth import core"), (
+        "the store is not read whole before core is imported")
+    assert code.index("with core._users_mutation():") < code.index("_account(core._USER_STORE, username)") < code.index(
+        "core._save_users(users)"), "the store is not read again and written inside its lock"
+    for leak in ("print(first", "print(second", "environ", "getenv", "write_text", "logging", "open("):
+        assert leak not in code, ("the command can keep or show the password", leak)
+    #  ...and the production warning names the command, never the variable the release machine does not hold
+    with monkeypatch.context() as m:
+        m.setenv("ENVIRONMENT", "production")
+        m.setenv("AUTH_ENABLED", "true")
+        m.delenv("ADMIN_PASSWORD", raising=False)
+        warned = [w for w in _config.Settings().validate() if "admin" in w.lower()]
+    assert len(warned) == 1 and warned[0] == (
+        "Sign-in is on in production: the admin's password is the one set on the machine with `python -m "
+        "agentic_core.auth.set_password admin`; until it is set, the bootstrap admin's is random and no one is told "
+        "it."), warned
+    assert "ADMIN_PASSWORD" not in warned[0], warned
+
+    #  S4. THE GUIDE
+    sec = read("docs/DEPLOYMENT.md").split("## The Google Cloud deploy, step by step (P4.5)", 1)[1].split("\n## ", 1)[0]
+    flat = " ".join(sec.split())
+    numbers = [int(n) for n in re.findall(r"^\*\*Step (\d+)\. ", sec, re.M)]
+    assert numbers == list(range(1, 13)), ("the steps were renumbered", numbers)
+    steps = dict(zip(numbers, re.split(r"^\*\*Step \d+\. ", sec, flags=re.M)[1:]))
+    blocks = [" ".join(b.replace("\\\n", " ").split()) for b in re.findall(r"```bash\n(.*?)```", sec, re.S)]
+    users_cmd = ("sudo docker exec workstation python -c \"import json; [print(n, u.get('role'), u.get('created_at', "
+                 "'-')) for n, u in sorted(json.load(open('/app/data/users.json')).items())]\"")
+    for cmd in ("gcloud compute ssh workstation --zone=us-central1-a",
+                "gcloud compute ssh workstation --zone=us-central1-a -- -L 8800:127.0.0.1:8000",
+                "sudo docker exec -it workstation python -m agentic_core.auth.set_password admin",
+                "gcloud compute instances add-metadata workstation --zone=us-central1-a --metadata=auth-enabled=true "
+                "sudo google_metadata_script_runner startup", users_cmd):
+        assert blocks.count(cmd) == 1, ("the guide does not give this command once", cmd)
+    assert ("**Step 12. HTTPS, before anyone signs in other than the Owner: a fixed address, the Owner's domain, and "
+            "Caddy in front (FU-1284)**") in sec, "step 12's heading leaves out the Owner's sign-in through the tunnel"
+    head = " ".join(sec.split("**Step 1. ", 1)[0].split())
+    assert ("The domain comes first: it \"is bought before the first deploy\" (P4.5, the Owner's ruling of 2026-11-21 as "
+            "W1190 recorded it), and the machine is told it at step 12, together with sign-in (W1191).") in head, head[-400:]
+    six = " ".join(steps[6].split())
+    assert six.index("Run at step 12, just before the machine is given its domain (W1191): until then nothing needs it: "
+                     "the tunnel is SSH") < six.index("gcloud compute firewall-rules create"), six[:300]
+    seven = " ".join(steps[7].split())
+    origin_id = [r["id"] for r in json.loads(read("docs/FOLLOWUPS.json"))["items"] if r.get("title") == (
+        "With sign-in off, any page in the Owner's browser can act on the platform through the SSH tunnel: nothing "
+        "checks a request's Origin or Host")]
+    assert len(origin_id) == 1, origin_id
+    origin_id = origin_id[0]
+    from agentic_core.auth import core as _core_limits
+    assert (_core_limits.SIGNIN_FAILS_PER_NAME, _core_limits.ATTEMPT_WINDOW_S) == (5, 15 * 60), (
+        "the guide's five failed sign-ins for one name over 15 minutes is not what the sign-in route counts")
+    assert (root / "docs" / "PUBLIC_ROUTES.json").is_file(), "the guide names a record of the public routes the tree lacks"
+    for said in ("until step 12 the startup script publishes no public port", "http://localhost:8800",
+                 "NOT READ HERE: gcloud's ssh reference", "Port 8800, not 8000",
+                 "While the tunnel is open and sign-in is off, anything on the Owner's computer that opens the "
+                 "forwarded port acts as the platform's administrator", "(CORS_ORIGINS)",
+                 "(CORS_ORIGINS) stops a page from another site reading the platform's ordinary answers, not sending it "
+                 "requests: while sign-in is off the platform acts on those requests as for the administrator, making an "
+                 "account included, and its stream socket and a host name rebound to 127.0.0.1 on the Owner's computer, "
+                 "where the tunnel listens, are outside that setting.",
+                 "With sign-in on, every route except those docs/PUBLIC_ROUTES.json makes public on purpose acts only on "
+                 "a request that carries a token, which a page from another site does not hold.",
+                 "Such a page can still send failed sign-ins, and five for one name block that name's sign-in for up to "
+                 f"15 minutes; the stream socket still answers it ({origin_id}).",
+                 "`jwt_secret.key` under DATA_DIR", "Nothing sets it", "only its hash is stored",
+                 "The password is never kept in a file of its own; the signing secret's own file is on the data disk",
+                 "A users store that is not there, or cannot be read whole, is refused",
+                 "SIGN-IN, RIGHT AFTER (recommended, W1191)", "nothing that deploys the machine turns it on (P4.1)",
+                 "This is earlier than P4.1's ruling of 2026-11-20, which has sign-in switched on once the domain and "
+                 "HTTPS are live, and the Owner accepted it on 2026-11-21 (P4.1): the Owner may sign in through the "
+                 "tunnel before the domain, and no one else signs in until step 12.",
+                 "Through the tunnel the password crosses the internet only inside SSH."):
+        assert said in seven, ("step 7 does not say", said)
+    plain = seven.index("SSH session, with no tunnel yet: ```bash gcloud compute ssh workstation --zone=us-central1-a ```")
+    assert plain < seven.index("set_password admin") < seven.index("--metadata=auth-enabled=true") < seven.index(
+        "THEN THE TUNNEL, for the browser") < seven.index("-- -L 8800:127.0.0.1:8000"), (
+        "step 7's order: a plain SSH session, the password, sign-in, and only then the tunnel")
+    for gone in ("Only the Owner's signed-in SSH", "or a file of their own", "-L 8000:localhost:8000",
+                 "so a page from another site cannot read", "it is the Owner's to choose", "the tree never turns it on",
+                 "this guide's recommendation", "rebound to the machine are outside", "carries the admin's token"):
+        assert gone not in flat, ("the guide still says", gone)
+    ten = " ".join(steps[10].split())
+    assert ten.startswith("The uptime check") and "Set up once step 12 is done (W1191)" in ten and "protocol HTTPS" in ten
+    assert "protocol HTTP," not in ten and "the machine's address as the host" not in ten, ten[:400]
+    twelve = " ".join(steps[12].split())
+    for said in ("As steps 1 to 11 leave it, the machine publishes no public port",
+                 "but for the Owner, through that tunnel once step 7 has turned sign-in on (the Owner's ruling of "
+                 "2026-11-21, late evening), no person signs in (P4.1) until this step is done",
+                 "Create step 6's rule now", "GET /api/v1/auth/users lists them, admin-only once sign-in is on",
+                 "each with its role and the time it was made, never its password's hash",
+                 "It prints admin's line, and one for each account the Owner made. Any account the Owner did not make "
+                 "is a reason to stop, and one made before sign-in was turned on is the kind to distrust",
+                 "The data disk is restored from a snapshot taken before that account (step 9; the snapshots are daily, "
+                 "so on the first day there may be none)", "the platform starts again on a blank data disk",
+                 "what reached the forwarded port is found before a tunnel is opened again",
+                 "--metadata=domain=DOMAIN,auth-enabled=true", "a domain without sign-in on (auth-enabled=true): "
+                 "nothing public starts, and the running platform is left as it was",
+                 "the Owner's switch (the Owner's ruling of 2026-11-21), never by what deploys the machine (W1191)",
+                 "Then step 10: the uptime check over HTTPS on the domain, and its drill (FU-1095)."):
+        assert said in twelve, ("step 12 does not say", said)
+    assert "It prints ['admin']" not in twelve and "It prints one line, admin's." not in twelve
+    assert "hashed_password" not in users_cmd, "the accounts' check shows a hash"
+    assert twelve.index("Create step 6's rule now") < twelve.index("GET /api/v1/auth/users") < twelve.index(
+        "--metadata=domain=DOMAIN,auth-enabled=true"), "step 12's order: the rule, the accounts, then the domain"
+    #  ...and step 12's check of the accounts, run on a store as the guide runs it: a name, a role and when it was made
+    sample = tmp_path / "w1191-users.json"
+    sample.write_text(json.dumps({"admin": {"username": "admin", "role": "admin", "created_at": "2026-11-22T09:00:00Z",
+                                            "hashed_password": stand_in},
+                                  "w1191-other": {"username": "w1191-other", "role": "admin",
+                                                  "hashed_password": stand_in}}), encoding="utf-8")
+    snippet = users_cmd.split('python -c "', 1)[1][:-1].replace("/app/data/users.json", sample.as_posix())
+    shown = subprocess.run([sys.executable, "-c", snippet], capture_output=True, text=True, timeout=60)
+    assert shown.returncode == 0 and shown.stdout.splitlines() == ["admin admin 2026-11-22T09:00:00Z",
+                                                                   "w1191-other admin -"], (shown.stdout, shown.stderr)
+    assert stand_in not in shown.stdout + shown.stderr, "the accounts' check printed a password's hash"
+    for old in ("serves plain HTTP", "the machine serves plain HTTP at its address"):
+        assert old not in flat and old not in script, old
+
+    #  S5. THE REGISTER AND THE PLAN
+    rows = json.loads(read("docs/FOLLOWUPS.json"))["items"]
+    reg = {r.get("id"): r for r in rows}
+    plan = read("docs/FABLE_DELIVERY_PROMPT.md")
+    p41 = " ".join(plan[plan.index("\n P4.1 "):plan.index("\n P4.2 ")].split())
+    p45 = " ".join(plan[plan.index("\n P4.5 "):plan.index("\n P4.6 ")].split())
+    assert "is bought before the first deploy" in p45, "the guide quotes P4.5 in words it does not hold"
+
+    def titled(title):
+        hits = [r for r in rows if r.get("title") == title]
+        assert len(hits) == 1, (title, len(hits))
+        return hits[0]
+    done = titled("The release machine's startup script serves the platform to the whole internet on port 80 with "
+                  "sign-in off until a domain is set")
+    assert (done["status"], done["closed_by"], done["because"], done["slot"]) == ("done", "W1191", "built", "P4.5"), done
+    assert "--publish=80:8000" in done["why"] and "no auth required \u2014 all endpoints open" in done["why"]
+    assert "no auth required \u2014 all endpoints open" in read("agentic_core/auth/core.py"), "core.py's words moved"
+    assert ("the domain bought before the first deploy, so that the machine's first answer to the internet comes over "
+            "HTTPS with sign-in on") in done["why"] and "first boot" not in done["why"], done["why"][-600:]
+    #  ...W1190's words quoted as W1190 recorded them at P4.1, and none quoted that it did not record
+    for quoted in ("its startup script is to refuse to open one otherwise",
+                   "with no domain the platform is to publish no port, and the Owner reaches it through an SSH tunnel",
+                   "kept on the machine, never in the repository"):
+        assert f"\"{quoted}\"" in done["why"] and quoted in p41, ("not quoted as W1190 recorded it", quoted)
+    assert "without both" not in done["why"] and "no port opened" not in done["why"]
+    assert not re.search(r"never in the repo\b", done["why"]), "a word is quoted that W1190 did not record"
+    assert ("P4.1's ruling of 2026-11-20 stands with it: sign-in is switched on only on the Owner's private deployed "
+            "machine, once its domain and HTTPS are live") in done["why"]
+    assert ("On 2026-11-21 (late evening) the Owner accepted that its timing moves for the Owner's own sign-in only"
+            in done["why"]) and "the timing the Owner accepted on 2026-11-21" in done["close_note"], done["close_note"]
+    assert ("Without a domain it publishes no public port: the platform listens only on the machine's own "
+            "127.0.0.1:8000") in done["close_note"] and "is published on the machine's 127.0.0.1:8000 only" not in (
+        done["close_note"])
+    assert ("Nothing that deploys the release machine sets AUTH_ENABLED=true: there, sign-in comes only from the "
+            "machine's own metadata key auth-enabled; the tree's two sign-in harnesses and the HTTPS drill start a local "
+            "platform with it on, to test it.") in done["close_note"]
+    #  ...the three rows left open on P4.1
+    left = titled("A users store that cannot be read is replaced at boot by a new one that holds only the admin")
+    origin = titled("With sign-in off, any page in the Owner's browser can act on the platform through the SSH tunnel: "
+                    "nothing checks a request's Origin or Host")
+    remove = titled("No command removes an account from the users store, so an unwanted one is removed only by editing "
+                    "users.json by hand")
+    for r in (left, origin, remove):
+        assert (r["status"], r["slot"], bool(r.get("owner_gated"))) == ("open", "P4.1", False), r
+    for said in ("At every boot, importing agentic_core/auth/core.py runs _create_default_admin()", "read_json_strict",
+                 "create the admin only when the file does not exist"):
+        assert said in left["why"], ("the row left open does not say", said)
+    for said in ("Starlette's CORSMiddleware (0.52.1) runs the app for a simple request from any Origin",
+                 "parses a body sent with no Content-Type as JSON", "POST /api/v1/heartbeat/stop takes no body",
+                 "require_admin returns a stand-in admin", "Nothing checks the Host header",
+                 "/api/v154/ws/streams checks no Origin", "an Origin check on unsafe methods, a Host allowlist "
+                 "(localhost, 127.0.0.1 and the machine's domain) and an Origin check on /api/v154/ws/streams"):
+        assert said in origin["why"], ("the Origin row does not say", said)
+    assert f"that {left['id']} records" in remove["why"] and "under core._users_mutation()" in remove["why"], remove["why"]
+    #  ...the W729 credentials: an OWNER row of high severity, by provider and kind only, on the Owner's list and notes
+    owner = titled("OWNER: revoke at their providers the credentials W729 redacted from three archived files, which this "
+                   "public repository has held, most of them since March 2026, or confirm each is dead, and record the "
+                   "date")
+    assert (owner["status"], owner["slot"], owner.get("owner_gated"), owner["severity"]) == (
+        "open", "OWNER", True, "high"), owner
+    for said in ("W729 (50abf919, 2026-10-14) replaced real-looking values in three archived copies of one pasted text "
+                 "file", "\"The values are to be revoked at their providers by the Owner - redaction does not remove them "
+                 "from history\"", "No row ever recorded this", "the Owner's Stripe key roll of 2026-10-09 covers none of "
+                 "these values", "an AI provider key, a Google sign-in client secret, a Firebase key and a speech-to-text "
+                 "key", "two reCAPTCHA secrets and two sign-in token secrets", "two database addresses carrying a "
+                 "username and password, a database password and an e-mail password", "the key in the openQuran "
+                 "archive's .env", "\"The Owner rotates that key separately; the platform never reads it.\"",
+                 "read the repository host's secret-scanning alert list", "beside the Stripe line",
+                 "Added to the Owner's list at the Owner's request on 2026-11-21, to be done soon",
+                 "\"add to list of items for me, I will do this soon\"", "copies carrying most of the same values",
+                 "most of the repository's other branches still carry unredacted copies",
+                 "in the March copies those two lines hold earlier values that W729 never redacted, a Stripe live secret "
+                 "key and a Stripe webhook signing secret: revoke those too, or confirm they no longer work"):
+        assert said in owner["why"], ("the OWNER row does not say", said)
+    assert "carry them whole" not in owner["why"] and "copies carrying the same values" not in owner["why"]
+    assert "The Owner rotates that key separately; the platform never reads it." in reg["FU-268"]["note"]
+    still = " ".join(plan.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0].split())
+    entry = still.split(f"{owner['id']} (W1191): ", 1)
+    assert len(entry) == 2 and still.count(f"{owner['id']} (W1191): ") == 1, "the Owner's list does not name the row once"
+    for said in ("revoke at their providers the credentials W729 (2026-10-14) redacted", "a Stripe live secret key and "
+                 "a Stripe webhook signing secret: revoke those too, or confirm they no longer work",
+                 "Redaction does not remove the redacted values from history: the repository has held most of them since "
+                 "March 2026, and most of its other branches still carry unredacted copies. And the key in the openQuran "
+                 "archive's .env on your machine, which was never in the repository",
+                 "First read the repository host's secret-scanning alert list",
+                 "beside the Stripe line at the head of this list", "Added to your list at your request on 2026-11-21, "
+                 "to be done soon."):
+        assert said in entry[1][:2000], ("the Owner's list does not say", said)
+    assert still.index("FU-1818 (W1174):") < still.index(f"{owner['id']} (W1191):"), "the row's line is not after FU-1818's"
+    assert "(The Stripe key roll that stood here is DONE: the Owner rotated the keys and expired the old ones, 2026-10-09.)" in still
+    notes = " ".join(read("docs/RESUME_ON_MY_MACHINE.md").split())
+    yours = notes.split("**Still yours:**", 1)[1].split("**Settled on 2026-11-20:**", 1)[0]
+    assert (f"({owner['id']}; the plan's list names each by its kind)" in yours
+            and "Added to your list at your request on 2026-11-21, to be done soon." in yours), yours[-600:]
+    for said in ("two earlier Stripe values, a live secret key and a webhook signing secret, that the March copies hold "
+                 "and W729 never redacted", "the repository has held most of them since March 2026, and most of its other "
+                 "branches still carry unredacted copies", "the openQuran archive's .env on your machine, which was "
+                 "never in the repository"):
+        assert said in yours, ("the local notes do not say", said)
+    #  ...FU-1289 and FU-1095, still the Owner's, each say once what W1191 changed
+    ruling = "OWNER RULING 2026-11-21 (afternoon"          # the Owner's decision, as W1190 recorded it
+    changed_by = {
+        "FU-1289": (" W1191 changed the startup script to match: with no domain it publishes no public port: the platform "
+                    "listens only on the machine's own 127.0.0.1:8000, reached through an SSH tunnel (docs/DEPLOYMENT.md, "
+                    "step 7), and a domain starts the public front only when the machine's own metadata turns sign-in "
+                    "on, the two set together at step 12 (`--metadata=domain=DOMAIN,auth-enabled=true`)."),
+        "FU-1095": (" W1191 moved step 10 after step 12: until step 12 gives the machine its domain and turns sign-in on, "
+                    "the machine publishes no public port, so the outside check can only see it then; step 10 now has "
+                    "the Owner set it up after step 12, over HTTPS."),
+    }
+    for rid, said in changed_by.items():
+        why = reg[rid]["why"]
+        assert reg[rid]["status"] == "open" and reg[rid]["owner_gated"] is True, (rid, reg[rid]["status"])
+        assert why.count(said) == 1, (rid, "does not say once what W1191 changed")
+        assert "W1191 built it" not in why, (rid, "says W1191 built what is the Owner's")
+    assert reg["FU-1289"]["why"].find(ruling) != -1, "FU-1289 does not carry the Owner's ruling (W1190 lands first)"
+    assert reg["FU-1289"]["why"].rindex(ruling) < reg["FU-1289"]["why"].index(changed_by["FU-1289"]), (
+        "FU-1289 says what W1191 changed before the Owner's ruling")
+    assert reg["FU-1289"]["why"].endswith(changed_by["FU-1289"] + " Since the Owner's ruling of 2026-11-21 (late evening; "
+                                          "P4.1), the Owner may sign in through the SSH tunnel before the domain, and no "
+                                          "one else signs in until step 12."), "FU-1289 does not end with the dated note"
+    #  ...P4.1: the late evening's ruling right after the ruling of 2026-11-20, and W1191's sentence last
+    late = ("OWNER RULING 2026-11-21 (late evening; the recommendation accepted): on the release machine the Owner may "
+            "switch sign-in on at step 7, over SSH, before the domain, and sign in through the SSH tunnel. This moves the "
+            "timing of the 2026-11-20 ruling (\"once its domain and HTTPS are live\") for the Owner's own sign-in through "
+            "the tunnel only. No one else signs in until step 12, with the domain and HTTPS. The rest of that ruling "
+            "stands.")
+    assert p41.count(late) == 1, "P4.1 does not carry the Owner's ruling of the late evening of 2026-11-21"
+    assert ("stands in. No round switches it on in the tree. " + late) in p41, (
+        "the late evening's ruling is not right after the ruling of 2026-11-20 whose timing it moves")
+    changed = ("W1191 changed the startup script accordingly: with no domain it publishes no public port: the platform "
+               "listens only on the machine's own 127.0.0.1:8000, reached through an SSH tunnel; with one it starts the "
+               "public front only when the machine's own metadata turns sign-in on (auth-enabled=true), refusing "
+               "otherwise and leaving the running platform as it was; test_w1191 holds it.")
+    assert p41.count(changed) == 1 and ruling in p41, "P4.1 does not say once that W1191 changed the script"
+    assert p41.rindex(ruling) < p41.index(changed) and p41.index(late) < p41.index(changed), (
+        "P4.1 says W1191 changed the script before the Owner's rulings")
+    #  ...and the plan's list and the local notes say the domain and sign-in are set together
+    appended = "Since W1191 the domain and sign-in are set together (docs/DEPLOYMENT.md, step 12)."
+    assert " ".join(plan.split()).count("with FU-1095's uptime check and FU-1288's restore the day after. " + appended) == 1
+    assert ("the password and the signing secret stay on the machine, never in the repository. " + appended) in notes
+
+
+def test_w1192_the_owners_twenty_decisions_of_2026_11_22_are_recorded_where_the_work_reads_them():
+    """W1192. The twenty recommendations the Owner accepted in the early hours of 2026-11-22 ("I accept all your
+    recommendations, proceed"), each recorded in the accepted words where the work reads it, and each written as the
+    rule to be built where the work is not built. Held here:
+    1. P5.8: "built AFTER sign-in" reads as after the sign-in readiness work, whose thirteen rows, named here, are all
+       closed; the item is to be built now and driven with sign-in on in a test process only, and may start before
+       P5.1 and P5.2 close; clause 3 is to be built with no health field until a data protection impact assessment
+       the Owner and the solicitor review; real payroll stays behind P4.6;
+    2. P5.9: the same reading; it is to be built now and may start before P5.1, P5.2 and P5.8 close; invoices naming
+       outside parties wait;
+    3. P3.32: the avatar and upload memory is to be retired, beside what writes it today; a model is to be made the
+       default only with its licence read, no override, said as not built yet;
+    4. S18.1: the work budget's readers on the platform's total until a second person runs work, then each run's chain;
+    5. P4.2: a founder's own Chief, Board and budget figure with sign-in on, said as not built yet; the deletion drill now,
+       periods the Owner's;
+    6. the canvas, on the Owner's word: the 25% fee taken first and the split's 20 to each entity's own owner, a dated
+       amendment with the earlier words kept, the canvas saying it has changed twice (test_w725 brought up to date:
+       the business plan, which that word did not cover, still says it changed once); the vision's section 12 (CRLF
+       kept) and the economic model's sections 4 and 7 given dated records of the rulings of 2026-10-12 at each claim
+       site, the words above each kept;
+    7. FU-1817 and the workpack: the licence, title and investment-perimeter questions; the DPIA reviewed with the Owner;
+    8. P5.6, the metrics document and an OWNER row: the deferred measures and the canvas's first tests on the Owner's
+       list, three measures carried by the row and not yet scheduled;
+    9. FU-1818, P5.7, the interview guide and its notes template: both outputs, each labelled; the cost model and P5.7:
+       the seventh gate's bar and no valuation or investor-facing material yet;
+    10. P5.16 and the workpack: the generation credit carried forward, its unit put to the accountant;
+    11. PR #33 closed unmerged, in the local notes and the plan's list;
+    12. P5.17: a scholar or trusted institute to be asked for now, an OWNER row listed beside the letters, closing only
+        on a dated record of the engagement or a ruling, never on the roster;
+    13. P5.14: the lessons since W677 ratified in one sitting, an OWNER row of the Owner's machine whose step is in
+        step 5 of the local notes (test_w1164, test_w1180 and test_w1188 brought up to date); the 8-hour cycles replace
+        the three-stretch rule; the six working rules go into the method later;
+    14. P5.21: the tajwid companion to be built and held, its examples said as not available;
+    15. FU-1837: the revocation to be done that day; the cloud session may list stale branches for deletion, and no
+        branch is deleted or changed without the Owner's explicit word;
+    and the plan's list carries the twenty in one paragraph naming no row, its lines in order; the local notes carry
+    the twenty in one bullet, held whole, and their updated line (test_w1190 brought up to date); and none of these,
+    each read from the tree, gives the Owner a gendered pronoun: the three new rows' why, title, source and slot note,
+    the list's paragraph, step 5's new entry, the three new Still-yours bullets and the notes' bullet of the day."""
+    import json
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    R = "OWNER RULING 2026-11-22 (the recommendation accepted)"
+    RS = "OWNER RULING 2026-11-22 (the recommendations accepted)"
+    BRANCHES = ("The cloud session may list stale branches for deletion; no branch is deleted or changed without the "
+                "Owner's explicit word.")
+    PRONOUN = re.compile(r"\b(he|him|his|himself|she|her|hers|herself)\b", re.I)
+    flat = lambda t: " ".join(t.split())   # noqa: E731
+    read = lambda p: (root / p).read_text(encoding="utf-8")   # noqa: E731
+    fable = read("docs/FABLE_DELIVERY_PROMPT.md")
+    reg = {r["id"]: r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"]}
+
+    def no_pronoun(text, where):
+        hit = PRONOUN.search(text)
+        assert not hit, (where, "gives the Owner a gendered pronoun", text[max(0, hit.start() - 60):hit.end() + 20])
+
+    def item(pid, nxt):
+        start = fable.index(f"\n {pid} ")
+        return flat(fable[start:fable.index(f"\n {nxt} ", start)])
+
+    def holds(text, s, where):
+        assert s in text, (where, "does not say", s[:110])
+
+    def titled(start):
+        hits = [r for r in reg.values() if r["title"].startswith(start)]
+        assert len(hits) == 1, (start, [r["id"] for r in hits])
+        return hits[0]
+
+    #  the three new rows: open, the Owner's, each saying its ruling; each whole why read for a pronoun first
+    sch = titled("OWNER: ask a scholar or a trusted institute now to review what the religious tools hold back")
+    tst = titled("OWNER: after the first deploy, the channel test and the price test the canvas names first")
+    lsn = titled("OWNER: ratify, in one sitting, the batch of lessons derived since W677")
+    for row in (sch, tst, lsn):
+        for field in ("why", "title", "source", "slot_source"):
+            no_pronoun(row.get(field) or "", (row["id"], field))
+    for row, sev, parts in (
+            (sch, "medium", (f"{R}: ask a scholar or a trusted institute now.",
+                             "The request covers the withheld adult curriculum and tajweed items, P5.17 clause 4's "
+                             "attestation wording, and P5.21's tajwid rules, reflection prompts and approval pack.",
+                             "This row closes only with a dated plan record of the engagement, or with a ruling that "
+                             "defers it, never on the review store's roster.")),
+            (tst, "low", (f"{R}: they are on the Owner's list now, in this row.",
+                          "After the first deploy come the channel test (the group's leader is shown the product) and the "
+                          "price test (three to five would-be founders are shown the £99 as set and not charged, and "
+                          "nothing is sold), each the Owner's act.",
+                          "Learners across the platform, a person completing a task and time to a first useful output "
+                          "are carried by this row, not yet scheduled.")),
+            (lsn, "low", (f"{R}: the Owner ratifies the batch of lessons derived since W677 in one sitting; a local "
+                          "session on the Owner's machine lists each, adding it to the batch with a recommendation or "
+                          "stating why not.",
+                          "The 8-hour work cycles replace the rule that long stretches continue automatically at most "
+                          "three times before stopping for review"))):
+        assert (row["status"], row["slot"], row["owner_gated"], row["severity"]) == ("open", "OWNER", True, sev), row
+        assert row["source"].startswith("W1192 (the Owner's decisions of 2026-11-22"), row["source"]
+        for s in parts:
+            holds(row["why"], s, row["id"])
+    #  the scholar row ends at its rule: the roster is data a test can fill, so it gives no reason drawn from one
+    assert sch["why"].endswith("or with a ruling that defers it, never on the review store's roster."), sch["why"][-90:]
+    #  the lessons row asks only what the Owner accepted: no question of its own about section 27
+    assert "section 27" not in lsn["why"], "the lessons row carries a question the Owner was not asked"
+    assert lsn.get("slot_source", "").startswith("OWNER (the Owner's machine):"), lsn.get("slot_source")
+    S, T, L = sch["id"], tst["id"], lsn["id"]
+
+    #  the rows the day's rulings bear on, each after its earlier ruling
+    for rid, before, s in (
+            ("FU-1817", "OWNER RULING 2026-11-21 (the recommendations accepted)",
+             f" {RS}: the engagement also carries written questions on the project's licence and title - who holds the "
+             "copyright LICENSE names (\"Virtual Sovereign Business\", which is not a legal person), what the public "
+             "Apache-2.0 grant already permits, what a contributor grants with no agreement, and on what terms a founder "
+             "receives an entity repository - and on the investment-side perimeter: whether the capital fund, the profit "
+             "shares or any valuation would be a financial promotion or a collective investment scheme. Both are among "
+             "docs/business/FORMATION_WORKPACK.md's questions for a solicitor. It is also to review, with the Owner, the "
+             "data protection impact assessment a round is to draft before any health-related wellbeing entry (P5.8)."),
+            ("FU-1818", "RECOMMENDED (accepted 2026-11-20, evening)",
+             f" {RS}: at the end of each interview the teacher is shown the floor's output and the local model's output "
+             "on the same invented sample, each labelled with what served it, and the notes record which one the teacher "
+             "judged; the first offer's gate (the seventh investment gate) is evidenced when at least five interviews "
+             "are recorded in the notes template and the Owner's choice is recorded with its reasons."),
+            ("FU-1837", "Added to the Owner's list at the Owner's request on 2026-11-21, to be done soon",
+             f" {R}: the revocation is to be done on 2026-11-22, beginning with the repository host's secret-scanning "
+             f"alert list. {BRANCHES}")):
+        why = reg[rid]["why"]
+        holds(why, s, rid)
+        assert why.index(before) < why.index(s), (rid, "the day's ruling is not after the earlier one")
+        assert reg[rid]["status"] == "open", (rid, reg[rid]["status"])
+
+    #  each ruling at the item it governs, written as the rule to be built where the work is not built
+    s18 = flat(fable[fable.index("· S18.1 THE METABOLIC BUDGET'S UNIT"):fable.index("· S18.2 WHAT AN ENTITY MAY BE")])
+    holds(s18, f"{R}: once the throttle is switched on, admission and every other reader of the energy figure are to "
+               "read the platform's total until a second person runs work, and then each run's own chain (platform, "
+               "owner, VSB); every reading of the platform's total is to say it is the platform's figure.", "S18.1")
+    p332 = item("P3.32", "P4.1")
+    s = (f"{RS}: (1) the avatar and upload memory is to be retired; today memory_v01 (agentic_core/ai/ceo/memory_v01.py) "
+         "is written by the avatar chat and by uploads, read by no production caller and held in this process only, and "
+         "its first use fetches an 83 MB embedding model from an outside host; if conversation memory is wanted later, "
+         "it is to be built after sign-in, with a retention period and with no outside download. (2) A model is to be "
+         "made the serving default only when its licence text was read from the runtime; with no licence read, "
+         "promotion is to be refused, with no administrator override (not built yet: the route checks discovery, digest "
+         "and a recorded evaluation only).")
+    holds(p332, s, "P3.32")
+    assert p332.index(s) < p332.index("MILESTONE M3:"), "P3.32's ruling is not inside the item"
+    holds(item("P4.2", "P4.3"),
+          f"{RS}: (1) with sign-in on, a founder who is not an administrator may instruct their own entity's Chief, read "
+          "their entity's Board and see their entity's own work-budget figure, for the entities they own only (not built "
+          "yet: the Board's routes, the Chief's among them, require an administrator); scope \"workstation\", "
+          "ratifications (FU-012) and material economy decisions (FU-014) stay the Owner's; it is built "
+          "and driven in a test process before the invited stage. (2) A round builds the deletion drill now, on made-up "
+          "accounts, as a pre-flight of the invited stage, with a retention register listing each store as \"not "
+          "decided: the Owner's\"; the Owner sets the periods once FU-1817 answers; S18.6's retained record of a dead "
+          "entity is to keep its economics, with the person's identifying fields removed.", "P4.2")
+    holds(item("P5.6", "P5.7"),
+          f"{R}: what this item left for the Owner to schedule, and the canvas's three first tests, are put on the "
+          f"Owner's list now ({T}). The return measurement (one sign-in day per person) is built as a pre-flight of the "
+          "invited stage (P4.2). After the first deploy come the channel test (the group's leader is shown the product) "
+          "and the price test (three to five would-be founders are shown the £99 as set and not charged, and nothing is "
+          "sold), each the Owner's act. Learners across the platform, a person completing a task and time to a first "
+          "useful output are carried by that row, not yet scheduled.", "P5.6")
+    p57 = item("P5.7", "P5.8")
+    s = (f"{RS}: the seventh gate is evidenced when at least five interviews are recorded in the notes template and the "
+         "Owner's choice is recorded with its reasons; each interview ends by showing the floor's and the local model's "
+         "outputs, each labelled; no valuation or investor-facing material is made yet (FU-1818; "
+         "docs/business/COST_MODEL.md).")
+    holds(p57, s, "P5.7")
+    assert p57.index("OWNER RULING 2026-11-20 (evening; the recommendation accepted)") < p57.index(s), "P5.7's order"
+    p58 = item("P5.8", "P5.9")
+    s = (f"{RS}: \"built AFTER sign-in\" reads as after the sign-in readiness work, which is done: the thirteen rows of "
+         "P4.1's readiness round are all closed (the rows W1191 opened on P4.1 since are not the readiness round's). The "
+         "item is to be built now and driven with sign-in on in a test process only, as P5.18 and P5.19 were, and it may "
+         "start before P5.1 and P5.2 close. Clause 3 is to be built with no health field: health-related wellbeing "
+         "entries wait for a data protection impact assessment, which a round drafts for the Owner and the solicitor "
+         "(FU-1817) to review. Real payroll stays behind the real-money boundary (P4.6).")
+    holds(p58, s, "P5.8")
+    assert p58.index("so it is built AFTER sign-in.") < p58.index(s), "P5.8's ruling is not after its sequence"
+    #  the readiness round P5.8's reading names: its thirteen rows, each closed on P4.1
+    for rid in ("FU-845", "FU-846", "FU-847", "FU-848", "FU-849", "FU-850", "FU-1061", "FU-1062", "FU-1063", "FU-1089",
+                "FU-1120", "FU-1152", "FU-1171"):
+        assert (reg[rid]["slot"], reg[rid]["status"]) == ("P4.1", "done"), (rid, reg[rid]["slot"], reg[rid]["status"])
+    holds(item("P5.9", "P5.10"),
+          f"{R}: P5.8's reading of \"after sign-in\" holds here: this item is to be built now, driven with sign-in on in a "
+          "test process only, and may start before P5.1, P5.2 and P5.8 close. Invoices naming any party outside the "
+          "Owner's own registered entities still wait for sign-in on, as its BOUNDARY and ruling 6 of 2026-10-12 hold.",
+          "P5.9")
+    holds(item("P5.14", "P5.15"),
+          f"{R}: the Owner ratifies the batch of lessons derived since W677 in one sitting ({L}), a local session on the "
+          "Owner's machine listing each with a recommendation; the 8-hour work cycles (the Owner's instruction of "
+          "2026-11-10, extended on 2026-11-20 into December) replace \"long stretches continue automatically at most "
+          "three times before stopping for review\", each cycle's report being the review point; and the six rules of "
+          "how the work is done (above, as the 8-hour cycles amend the fifth) go into the method, in a later round of "
+          "this item.", "P5.14")
+    holds(item("P5.16", "P5.17"),
+          f"{R}: the £99 credit is to carry forward against later fees until it is used up, with no conversion while money "
+          "is virtual; the unit it is held in goes to the accountant (docs/business/FORMATION_WORKPACK.md, question 3 "
+          "for an accountant).", "P5.16")
+    holds(item("P5.17", "P5.18"),
+          f"{R}: clause 7's scholar is to be asked for now ({S}): the Owner is to ask a scholar or a trusted institute to "
+          "review the withheld adult curriculum and tajweed items, clause 4's attestation wording, and P5.21's tajwid "
+          "rules, reflection prompts and approval pack. The children's gate stays closed until P5.12's four learner-facing "
+          "headings are built and an independent safeguarding review is done (ruling of 2026-11-20). The row closes "
+          "only on a dated plan record of the engagement, or on a ruling that defers it, never on the review store's "
+          "roster.", "P5.17")
+    holds(item("P5.21", "P5.22"),
+          f"{R}: the TAJWID COMPANION is to be built and held with each rule's example shown as not available until a "
+          "recitation source's terms permit it; the item closes when its tools are built, the companion's examples not "
+          "waiting for it; the examples wait on the recordings request (FU-1283).", "P5.21")
+
+    #  the plan's list of what is with the Owner: the three new rows in their places, three rows' lines, the twenty
+    still = flat(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0])
+    for s in (f"{S} (W1192): ask a scholar or a trusted institute, as you ruled on 2026-11-22, to review the withheld "
+              "adult curriculum and tajweed items, the attestation wording of the Quran platform's teaching clause, and "
+              "the children's tools' tajwid rules, reflection prompts and approval pack. The children's gate stays closed "
+              "until the four learner-facing headings are built and an independent safeguarding review is done. The row "
+              "closes on a dated record of the engagement, or on a ruling that defers it.",
+              f"{T} (W1192): after the first deploy, the channel test (the group's leader is shown the product) and the "
+              "price test (three to five would-be founders are shown the £99 as set and not charged, and nothing is "
+              "sold), each your act, as you scheduled on 2026-11-22; the return measurement, built before the invited "
+              "stage (P4.2), is a round's. Learners across the platform, a person completing a task and time to a first "
+              "useful output are carried by this row, not yet scheduled.",
+              f"{L} (W1192): ratify, in one sitting, the batch of lessons derived since W677: a local session on your "
+              "machine lists each, from the assistant's notes there, with a recommendation (step 5 of "
+              "docs/RESUME_ON_MY_MACHINE.md). Ruled on 2026-11-22.",
+              "Ruled on 2026-11-22: it also carries written questions on the project's licence and title and on the "
+              "investment-side perimeter, and is to review with you the data protection impact assessment to be drafted "
+              "before any health-related wellbeing entry (P5.8).",
+              "Ruled on 2026-11-22: each interview ends by showing the floor's output and the local model's on the same "
+              "invented sample, each labelled with what served it, the notes recording which the teacher judged; the "
+              "first offer's gate is evidenced once at least five interviews are recorded and your choice is recorded "
+              "with its reasons.",
+              f"On 2026-11-22 you accepted doing it that day. {BRANCHES}"):
+        holds(still, s, "the plan's list")
+    assert still.index("FU-1283 (W1132):") < still.index(f"{S} (W1192):") < still.index("(The five places"), "the scholar"
+    assert (still.index("FU-1817 (W1174):") < still.index("Ruled on 2026-11-22: it also carries")
+            < still.index("FU-1818 (W1174):") < still.index("Ruled on 2026-11-22: each interview ends")
+            < still.index("FU-1837 (W1191):")), "a ruling of the day is not under its own row"
+    assert (still.index("FU-1837 (W1191):") < still.index("On 2026-11-22 you accepted doing it that day.")
+            < still.index(f"{T} (W1192):") < still.index(f"{L} (W1192):")
+            < still.index("(Ten put to the Owner on the afternoon of 2026-11-20")), "the lines after FU-1837"
+    para = still[still.index("(Twenty put in the early hours of 2026-11-22"):]
+    para = para[:para.index(".)", para.index("Each is recorded at the item it governs")) + 2]
+    no_pronoun(para, "the plan's list")
+    assert still.index("(Six put on the afternoon of 2026-11-21") < still.index(para), "the list's order"
+    for part in ("were accepted at once, each as recommended: the credentials W729 redacted to be revoked that day, no "
+                 "branch to be deleted or changed without the Owner's explicit word;",
+                 "an entity's people and its money (P5.8, P5.9) to be built now, driven with sign-in on in a test "
+                 "process, a person's own record of their week with no health field until a data protection impact "
+                 "assessment, and invoices naming outside parties and real payroll held;",
+                 "the avatar and upload memory to be retired; a model to be made the serving default only with its "
+                 "licence read, with no override;",
+                 "the work budget's readers on the platform's total until a second person runs work;",
+                 "a founder's own Chief, Board and budget figure with sign-in on, for their own entities only;",
+                 "a deletion drill to be built now, the retention periods the Owner's once the solicitor answers;",
+                 "the canvas amended on the Owner's word for the platform's fee and the owner's share, its earlier words "
+                 "kept (the vision's section 12 and the economic model's sections 4 and 7 were given dated records of the "
+                 "Owner's rulings of 2026-10-12, which that day's word did not cover);",
+                 "the solicitor's engagement to carry the licence, title and investment questions;",
+                 "the deferred measures and the canvas's first tests put on the Owner's list;",
+                 "a teacher shown both outputs at the end of an interview, labelled;",
+                 "the first offer's gate evidenced at five recorded interviews and the Owner's recorded choice;",
+                 "the generation credit to be carried forward against later fees; no valuation material yet; PR #33 "
+                 "closed unmerged; a scholar or trusted institute asked for now;",
+                 "the lessons since W677 ratified in one sitting, the 8-hour cycles replacing the three-stretch rule and "
+                 "the six working rules going into the method;",
+                 "and the tajwid companion to be built and held without its examples.",
+                 "the standing answer for the outside \"digital mitochondria\" prompts is to be recorded with the "
+                 "assessment's next section (a later round).)"):
+        assert part in para, ("the plan's list does not say", part[:80])
+    assert not re.search(r"\bFU-\d+\b", para), ("the list's paragraph names a row", re.findall(r"FU-\d+", para))
+
+    #  the canvas, amended on the Owner's word with its earlier words kept
+    canvas = flat(read("docs/business/BUSINESS_MODEL_CANVAS.md"))
+    #  W1193c: the canvas changed again on the Owner's word of the morning of 2026-11-22; its count is test_w725's
+    for s in ("on 2026-11-22, the platform's fee and the owner's share, in the one page and under Revenue, the earlier "
+              "words kept beside each",
+              "Each enterprise then pays the platform 25% of its profit first, and shares what remains by a fixed split "
+              "that includes its own owner, its own growth and charity [owner-defined: the vision, section 12; rulings "
+              "of 2026-10-12 and 2026-10-13; amended by the Owner on 2026-11-22]. Before 2026-11-22 this read: \"Each "
+              "enterprise then shares its profit by a fixed split that includes the Owner, its own growth and charity.\"",
+              "- After reserves, each enterprise pays the platform 25% of its profit first, for updates and maintenance, "
+              "and shares what remains, in parts of a hundred: its own owner 20, its own growth 30, a capital fund 20, the "
+              "projects of its users 15, and charity 15 [owner-defined: the vision, section 12; ruling of 2026-10-12; "
+              "amended by the Owner on 2026-11-22]. Before 2026-11-22 this read: \"Each enterprise shares what it can "
+              "distribute, in parts of a hundred: the Owner 20, its own growth 30, a capital fund 20, the projects of its "
+              "users 15, and charity 15, after reserves.\""):
+        holds(canvas, s, "the canvas")
+    assert "Changed once since" not in canvas, "the canvas still says it changed once"
+    #  the vision and the economic model: dated records of the rulings of 2026-10-12, the words above each kept
+    raw = (root / "docs/WORKSTATION_IDBO_WHOLE_VISION.md").read_bytes()
+    assert raw.count(b"\r\n") == raw.count(b"\n"), "the vision lost its CRLF line endings"
+    vision = raw.decode("utf-8")
+    s12 = flat(vision[vision.index("## 12. The Economic Organism"):vision.index("## 13. What the Output")])
+    rec = ("**Recorded 2026-11-22 (W1192), the words above kept:** by the Owner's rulings of 2026-10-12 (P5.16 clause 3; "
+           "P5.9, the payee is the entity's owner record), each generated entity pays the platform 25% of its profit "
+           "first, for updates and maintenance, ")
+    for s, after in ((rec + "and the adjustable profit share above, paid from what remains, goes to each entity's own "
+                      "owner.", "pays the Owner an adjustable profit share"),
+                     (rec + "after the Stage 0 reserves; the split above applies to what remains, and its first share "
+                      "(written \"Owner 20\" above) goes to each entity's own owner.", "**Owner 20 · Self-investment 30")):
+        holds(s12, s, "the vision")
+        assert after in s12 and s12.index(after) < s12.index(s), ("the vision's words are not kept above", after)
+    econ = read("docs/VSB_ECONOMIC_LEGAL_MODEL.md")
+    s4 = flat(econ[econ.index("## 4. Profit-Distribution Waterfall"):econ.index("## 5. Charitable-Giving")])
+    holds(s4, "> **Recorded 2026-11-22 (W1192), the words above kept:** by the Owner's rulings of 2026-10-12 (P5.16 "
+              "clause 3; P5.9, the payee is the entity's owner record), each generated entity pays the platform 25% of "
+              "its profit first, for updates and maintenance, after Stage 0; the stages above split what remains, and "
+              "the first share (Stage 1's 20%, the table's \"payment to you (the repo owner)\") goes to each entity's own "
+              "owner.", "the economic model's section 4")
+    assert "| **1** | **Owner payment** | **20%** |" in s4, "the economic model's table was not kept"
+    s7 = flat(econ[econ.index("## 7. Owner Payments (Stage 1)"):econ.index("## 8. Governance")])
+    holds(s7, "- **Recorded 2026-11-22 (W1192), the words above kept:** by the Owner's rulings of 2026-10-12 (P5.16 "
+              "clause 3; P5.9, the payee is the entity's owner record), the proportion above is paid from what remains "
+              "after the platform's 25% of each generated entity's profit, taken first, and it accrues to each entity's "
+              "own owner.", "the economic model's section 7")
+    assert "- An **adjustable** proportion of profit accrues to you, on a schedule you set" in s7, "section 7's words"
+
+    work = flat(read("docs/business/FORMATION_WORKPACK.md"))
+    for s in ("3. How would the platform's fee, taken first in each cycle, and an entity's split be treated in real "
+              "accounts if real money is ever switched on? And in what unit is the credit for the generation price held, "
+              "which the Owner ruled on 2026-11-22 carries forward against later fees until it is used up, "
+              #  W1193: the question also names the per-cycle fee, with no loss carried between cycles
+              "when each cycle's fee is taken from that cycle's own profit, with no loss carried from one "
+              "cycle to the next? [owner decision]",
+              "6. Who holds the copyright that LICENSE names (\"Virtual Sovereign Business\", which is not a legal "
+              "person), what does the public Apache-2.0 grant already permit, what does a contributor grant with no "
+              "agreement, and on what terms does a founder receive an entity repository? [owner decision]",
+              "7. Would the capital fund, the profit shares or any valuation be a financial promotion or a collective "
+              "investment scheme, and what would either require? [owner decision]",
+              "- Questions 6 and 7 were added on the Owner's ruling of 2026-11-22, for the one solicitor's engagement. "
+              "[owner-defined, 2026-11-22]"):
+        holds(work, s, "the workpack")
+    offer = flat(read("docs/business/FIRST_OFFER_CANDIDATES.md"))
+    for s in ("- Show nothing until the end, and then the floor's output and the local model's output on the same invented "
+              "sample, each labelled with what served it, asking \"What would you change before you used this?\" The "
+              "Owner ruled this on 2026-11-22; before that the guide showed only the floor's output. "
+              "[owner-defined, 2026-11-22]",
+              "- Which output the teacher judged, the floor's or the local model's, as each was labelled. "
+              "[owner-defined, 2026-11-22]"):
+        holds(offer, s, "the interview guide")
+    assert "and then only the floor's output on invented data" not in offer, "the guide still shows the floor's alone"
+    cost = flat(read("docs/business/COST_MODEL.md").split("## The seven investment gates", 1)[1])
+    for s in (f"- {R}: the first offer's gate is evidenced when at least five interviews are recorded in the notes "
+              "template and the Owner's choice of offer is recorded with its reasons. [owner-defined, 2026-11-22]",
+              f"- {R}: no valuation or investor-facing material is made until P5.1's measured walk, the interviews, the "
+              "first deploy, a chosen legal form and the solicitor's answer on the licence and title exist, and no range "
+              "from the outside commercial package the Owner supplied for assessment is ever recorded as the Owner's own "
+              "figure. [owner-defined, 2026-11-22]"):
+        holds(cost, s, "the cost model")
+    holds(flat(read("docs/business/METRICS_MEASURED.md")),
+          f"- On 2026-11-22 the Owner put the measures this document defers on their list (row {T}): the return "
+          "measurement (one sign-in day per person) is built before the invited stage of plan item P4.2; the channel and "
+          "price tests come after the first deploy, each the Owner's act; learners across the platform, a person "
+          "completing a task and time to a first useful output are carried by that row, not yet scheduled. "
+          "[owner-defined, 2026-11-22]", "the metrics document")
+
+    #  the local notes: the updated line, step 5, what is still the Owner's, PR #33 and the day's bullet, held whole
+    notes_raw = read("docs/RESUME_ON_MY_MACHINE.md")
+    notes = flat(notes_raw)
+    #  W1193: the record round edited the notes too; a later round adding itself, or a later date, leaves this green
+    upd = re.search(r"Updated (20\d\d-\d\d-\d\d) \(([^)]*)\)\.", notes)
+    assert upd and upd.group(1) >= "2026-11-22" and "W1192" in upd.group(2).split(", "), "the notes' updated line"
+    step5 = notes_raw.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
+    assert re.findall(r"^   - (FU-\d+):", step5, re.M) == ["FU-1165", L], re.findall(r"^   - (FU-\d+):", step5, re.M)
+    step = flat(f"- {L}:" + step5.split(f"   - {L}:", 1)[1].split("\n   (", 1)[0])
+    no_pronoun(step, "step 5")
+    assert step == (f"- {L}: as I ruled on 2026-11-22, read your notes on this machine and list each lesson derived since "
+                    "W677, the round it cites and your recommendation: add it to the batch, or say why not. I ratify the "
+                    "batch in one sitting; nothing enters the method until I have ratified the batch."), step
+    yours_raw = notes_raw.split("- **Still yours:**", 1)[1].split("- **Settled on 2026-11-20:**", 1)[0]
+    for start, whole in (
+            ("  - Asking a scholar", f"- Asking a scholar or a trusted institute to review what the religious tools "
+                                     f"hold back for one ({S}), as you ruled on 2026-11-22."),
+            ("  - After the first deploy,", "- After the first deploy, the channel test and the price test the canvas "
+                                            "names first, each your act; the same row carries three measures the "
+                                            f"metrics document defers, not yet scheduled ({T})."),
+            ("  - Ratifying in one sitting", f"- Ratifying in one sitting the lessons a local session lists from this "
+                                             f"machine's notes ({L}, step 5).")):
+        assert yours_raw.count(start) == 1, (start, yours_raw.count(start))
+        bullet = flat(yours_raw[yours_raw.index(start):].split("\n  - ", 1)[0].split("\n- **", 1)[0])
+        no_pronoun(bullet, "the notes' Still-yours list")
+        assert bullet == whole, ("the notes' Still-yours list", bullet[:120])
+    yours = flat(yours_raw)
+    for s in (f"The rows in step 5: FU-1165 and {L}, each a step there.",
+              "release, and where other people's data may be kept. As you ruled on 2026-11-22, it also carries written "
+              "questions on the project's licence and title and on the investment-side perimeter, and is to review with "
+              "you the data protection impact assessment to be drafted before any health-related wellbeing entry.",
+              "before the first offer is chosen (FU-1818). Each ends by showing both outputs, labelled, as you ruled on "
+              "2026-11-22.",
+              f"On 2026-11-22 you accepted doing it that day. {BRANCHES}"):
+        holds(yours, s, "the notes' Still-yours list")
+    assert (yours.index("(FU-1837;")
+            < yours.index("On 2026-11-22 you accepted doing it that day.") < yours.index("- Asking a scholar")
+            < yours.index("- After the first deploy,") < yours.index("- Ratifying in one sitting")), "the notes' order"
+    holds(notes, "carried by the pull request opened after #466 was merged. PR #33 (opened 2026-03-12, before the plan) "
+                 "was closed unmerged on 2026-11-22, on your word; its branch is left.", "the local notes")
+    assert notes_raw.count("- **Ruled on 2026-11-22:**") == 1, notes_raw.count("- **Ruled on 2026-11-22:**")
+    ruled = flat("- **Ruled on 2026-11-22:**" + notes_raw.split("- **Ruled on 2026-11-22:**", 1)[1].split("\n- **", 1)[0])
+    no_pronoun(ruled, "the notes' bullet of 2026-11-22")
+    assert ruled == (
+        "- **Ruled on 2026-11-22:** twenty recommendations, each taken as recommended: revoking the W729 credentials "
+        "that day, with no branch deleted or changed without your explicit word (FU-1837); an entity's people and its "
+        "money (P5.8, P5.9) to be built now and driven with sign-in on in a test process, a person's own record of their "
+        "week with no health field until a data protection impact assessment that you and the solicitor review, and "
+        "invoices naming outside parties and real payroll held; the avatar and upload memory to be retired; a model to "
+        "be made the serving default only with its licence read, with no override; the work budget's readers on the "
+        "platform's total until a second person runs work; a founder's own Chief, Board and budget figure with sign-in "
+        "on, for their own entities only; a deletion drill to be built now, the retention periods yours once the "
+        "solicitor answers; the canvas amended on your word for the platform's fee and the owner's share, its earlier "
+        "words kept (the vision's section 12 and the economic model's sections 4 and 7 were given dated records of your "
+        "rulings of 2026-10-12, which that day's word did not cover); the solicitor's engagement to "
+        f"carry the licence, title and investment questions (FU-1817); the deferred measures and the canvas's first "
+        f"tests put on your list ({T}); a teacher shown both outputs at the end of an interview, labelled, and the first "
+        f"offer's gate evidenced at five recorded interviews and your recorded choice (FU-1818); the generation credit to "
+        f"be carried forward against later fees; no valuation material yet; PR #33 closed unmerged; a scholar or trusted "
+        f"institute asked for now ({S}); the lessons since W677 ratified in one sitting ({L}, step 5), the 8-hour cycles "
+        "replacing the three-stretch rule and the six working rules going into the method; and the tajwid companion to "
+        "be built and held, its examples said as not available until a recording source permits them. The standing "
+        "answer for the outside \"digital mitochondria\" prompts is to be recorded with the assessment's next section "
+        "(a later round). W1193 recorded that standing answer in section 35 of "   # W1193: the answer is recorded
+        "docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md."), ruled[:200]
+    assert notes.index("- **Owner rulings in force:**") < notes.index("- **Ruled on 2026-11-22:**") < notes.index(
+        "- **Still yours:**"), "the notes' order"
+
+
+def test_w1193_section_35_and_the_rows_the_v44_assessment_keeps_are_recorded_and_its_working_plan_says_what_it_is():
+    """W1193, the assessment's record round. The Owner supplied the v44 and v43 prompts of the "digital mitochondria"
+    line, their v42 and v41 supplements, the v40 body they carry and a nine-document commercial package (2026-11-21);
+    they were read against the tree, every gap of the seven readings refuted twice and each of the v40 body's once,
+    and the rounds designed and refuted on 2026-11-22. W1192 recorded the Owner's twenty decisions of that day. Held
+    here:
+    - section 35 follows section 34, in section 33's parts, with the standing answer the Owner accepted for later
+      prompts in the line as its own part; each row of its count table sums to its total, the seven readings sum to
+      the row "as read", and the synthesis moves no total; it says the 21 of 283 and the four false claims and
+      restates no count line; every path it backticks is in the tree, and it names no upload and gives no one a
+      pronoun; the standing answer names the source of each decline a ruling makes (S18.1's is the CPU-seconds unit,
+      not containment per attempt) and says the S18.1 readers are not built yet, and the three declines no ruling
+      makes are among what is deliberately not proposed, with this assessment's reasons;
+    - the 49 rows it keeps follow W1192's last row: the bundle's 43, each naming its round or that it has none, the
+      round protocol's row closed as built here (the only row this round closes) and the Quran Foundation developer
+      account the one Owner row; and the six the completeness critic found, each on the item it names. No row is an
+      Owner question. While the developer account is open, its line is on the plan's list before the ten put to the
+      Owner on the afternoon of 2026-11-20 (and after W1192's FU-1840 line while that line is there), with its six
+      phrases, and it is in the local notes' Still-yours list; once a later round closes it, the list no longer
+      names it (W594's rule). A later round closing any of the 49 leaves this guard green;
+    - the corrections: the README's dated status (2026-11-22 or later, never behind 97 items done; the totals are
+      test_w1130's), its paragraph on the switches and a landed round's dated full-suite count; the workpack's
+      question 2 and 3; LICENSE's holder in the brand screen; the strategy map naming only open rows; the cost
+      model's sign-in cell and the credit carried forward; the vision's FU-448 sentence; the round protocol, the
+      progress log's head, the docs index, the living plan and the W557 probe saying the commit message is a round's
+      record and the log ends at W502; the plan's dated notes at P2.13, P3.22 and P3.26 naming the row that holds
+      what each found, and at P3.32 pointing to the working plan; six register rows' dated notes, each naming its
+      row; and the local notes' updated line and the standing answer's record;
+    - docs/V44_ROUNDS_PREP.md says it is a working plan, dated, with its honest-status table and a schedule from
+      W1194 to W1232 in order, each round's heading naming the rows whose source names that round, and every open
+      row with no round from W1194 on listed as one; it names no upload, session work file or credential setting,
+      gives no one a pronoun, carries nothing the privacy screen finds, has no "interview" in its name and is in no
+      row's files; and it does not say that W1192 or W1193 amended the business plan (W1193c amended it on the
+      Owner's word)."""
+    import json
+    import pathlib
+    import re
+    from agentic_core import privacy_exposure as _pe
+    from agentic_core import plan_followups as _fu
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda p: (root / p).read_text(encoding="utf-8")
+    flat = lambda t: " ".join(t.split())
+    pron = re.compile(r"\b(?:he|his|him|himself)\b", re.I)
+    home = re.compile(r"(?i)\b[a-z]:[\\/]+users[\\/]+[^\\/\s`'\"<>()|,;:*?]+|/root/|/home/[a-z]")
+    reg = json.loads(read("docs/FOLLOWUPS.json"))["items"]
+    rows = {r["id"]: r for r in reg}
+    plan = read("docs/FABLE_DELIVERY_PROMPT.md")
+    slots = {i["slot"] for i in _fu.plan_items(plan)}
+
+    #  1. SECTION 35, after 34, in section 33's parts and order
+    doc = read("docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md")
+    assert doc.count("\n## 35. Addendum (W1193)") == 1 and doc.index("\n## 34. ") < doc.index("\n## 35. ")
+    sec = doc.split("\n## 35. Addendum (W1193)", 1)[1]
+    assert "\n## 36." not in sec, "something follows section 35"
+    parts = ["### How they were read", "### The counts", "### What they get wrong about this platform",
+             "### What they get right that the tree did not yet carry", "### What follows",
+             "### The standing answer for later prompts in this line", "### What is deliberately not proposed",
+             "### For the Owner"]
+    at = [sec.index("\n" + p) for p in parts]
+    assert at == sorted(at), "section 35's parts are not in section 33's order"
+    s35 = flat(sec)
+    #  the count table: every row sums, the seven sum to "as read", and synthesis moves no total
+    table = re.findall(r"^\| ([^|]+?) \| (\d+) = (\d+) / (\d+) / (\d+) / (\d+) / (\d+) \| (?:(\d+)|(\d+) listed of about "
+                       r"\d+) = (\d+) / (\d+) / (\d+) / (\d+) / (\d+) / (\d+) \|$", sec, re.M)
+    assert len(table) == 10, len(table)
+    got = {}
+    for t in table:
+        name, claims, demands = t[0], [int(x) for x in t[1:7]], int(t[7] or t[8])
+        dparts = [int(x) for x in t[9:15]]
+        assert claims[0] == sum(claims[1:]), (name, "claims do not sum", claims)
+        assert demands == sum(dparts), (name, "demands do not sum", demands, dparts)
+        got[name] = (claims, [demands] + dparts)
+    seven = ["v44", "v43", "v42 and v41", "the commercial package", "its companion papers", "its VSB entity design",
+             "its valuation note"]
+    as_read, after = got["the seven, as read"], got["the seven, after synthesis"]
+    for k in range(6):
+        assert sum(got[n][0][k] for n in seven) == as_read[0][k], ("the seven's claims do not sum to as read", k)
+    for k in range(7):
+        assert sum(got[n][1][k] for n in seven) == as_read[1][k], ("the seven's demands do not sum to as read", k)
+    assert as_read[0][0] == after[0][0] == 230 and as_read[1][0] == after[1][0] == 283, "the synthesis moved a total"
+    assert after[0] == [230, 166, 29, 12, 19, 4] and after[1] == [283, 170, 50, 2, 27, 13, 21], after
+    assert got["the v40 body, in four slices"] == ([177, 144, 7, 11, 3, 12], [150, 104, 8, 0, 10, 20, 8])
+    assert "(21 of 283)" in s35 and "Four of the 230 claims are false after synthesis" in s35
+    #  the standing answer, as its own part
+    stand = flat(sec.split("### The standing answer for later prompts in this line", 1)[1].split("\n### ", 1)[0])
+    assert "On 2026-11-22 the Owner accepted a standing answer for the \"digital mitochondria\" line" in stand
+    assert "only for the claims and matrix rows this answer does not cover" in stand
+    for f in ("agentic_core/molecular/work_budget.py", "agentic_core/organism/host_observation.py",
+              "agentic_core/ai/native/homeostasis.py", "agentic_core/api/instrument_cell.py",
+              "agentic_core/ai/native/tiers.py"):
+        assert f"`{f}`" in stand and (root / f).exists(), f
+    declined = stand.split("Declined by a standing ruling:", 1)[1]
+    for d, source in (("a second scheduler, registry, telemetry stack or control plane", "section 33's list"),
+                      ("a birth refused on capacity (FU-1166)", "FU-1166"),
+                      ("a numeric route score", "the Owner's ruling of 2026-09-30"),
+                      ("a CPU-seconds unit per task (S18.1)", "(S18.1)")):
+        assert d in declined and source in declined, (d, "is not declined with its source")
+    #  S18.1 rules the unit and the inert throttle, and no ruling declines containment per attempt: it is this
+    #  assessment's decline, with its reason
+    assert declined.count(" Leases, reservations or a settlement ledger,") == 1, "the declines no ruling makes are not apart"
+    ruled, unruled = declined.split(" Leases, reservations or a settlement ledger,", 1)
+    assert "containment" not in ruled, "containment per attempt is said to be declined by a ruling"
+    assert ("containment per attempt (model work runs in the local runtime's own process, so a per-attempt limit on the "
+            "server would contain nothing) are declined by this assessment, below, not by a ruling.") in unruled
+    assert "not yet built (rounds W1214 and W1215, behind the switch)" in stand, "the S18.1 readers read as built"
+    assert "books each run that names its owner to that owner" in stand and "only while the window's stated capacity" in stand
+    notprop = flat(sec.split("### What is deliberately not proposed", 1)[1].split("\n### ", 1)[0])
+    for d in ("Leases, reservations, an atomic slot store or a settlement ledger: nothing is reserved, so nothing "
+              "settles. This assessment declines them; no ruling does.", "A Cell tree, a Cell profile per entity, or the "
+              "Growing Tip, OGE/HAIRMS and \"Quality Finance\" vocabulary: the function is the Instrument Cell (P3.31)",
+              "CPU seconds as the unit, or a per-attempt CPU or peak-memory record (S18.1). The load test is kept",
+              "Containment per attempt: model work runs in the local runtime's own process, so a per-attempt limit on "
+              "the server would contain nothing. This assessment declines it; no ruling does."):
+        assert d in notprop, (d[:50], "is not among what is deliberately not proposed, with its reason")
+    #  every backticked path is in the tree; no upload is named; nobody is given a pronoun; no home path
+    ticked = re.findall(r"`([^`\s]+)`", sec)
+    paths = [x for x in ticked if "/" in x or re.search(r"\.(?:py|json|md|sh|tsx|mjs)$", x)]
+    assert len(paths) >= 20 and all((root / p).exists() for p in paths), [p for p in paths if not (root / p).exists()]
+    assert not re.search(r"(?i)uploads?/|\.docx\b|\.pdf\b", sec) and not re.search(r"\bv4[0-4][\w-]*\.(?:md|txt)\b", sec), (
+        "an upload is named")
+    assert not pron.search(sec) and not home.search(sec)
+    assert "## 35." in doc and "THE COUNT:" not in sec, "section 35 restates section 34's count line"
+    #  the business plan is said as unamended, the five questions put in chat, the developer account a row
+    owner = flat(sec.split("### For the Owner", 1)[1])
+    assert "left the business plan unchanged" in owner and "the business plan was left unchanged" in s35
+    #  W1193c amended the business plan on the Owner's word; what stays false is that W1192 or W1193 did
+    assert not re.search(r"W119[23] amends the canvas, the business plan|W119[23] amended (?:the canvas, )?the "
+                         r"business plan|business plan (?:was|is) amended by W119[23]\b", s35)
+    asked = owner.split("Put to the Owner in chat, each with a recommendation:**", 1)[1].split("**The v40 body", 1)[0]
+    assert len(re.findall(r"\(recommended: yes", asked)) == 5, asked
+
+    #  2. THE ROWS: 49 after W1192's last, in order, each on its item, naming its round
+    mine = [r for r in reg if str(r.get("source", "")).startswith("W1193 (")]
+    assert len(mine) == 49, len(mine)
+    n0 = max(int(rows[i]["id"].split("-")[1]) for i in ("FU-1838", "FU-1839", "FU-1840")) + 1
+    assert [r["id"] for r in mine] == [f"FU-{n0 + i}" for i in range(49)], [r["id"] for r in mine][:3]
+    design = [r for r in mine if "section 35:" in r["source"]]
+    critic = [r for r in mine if "the completeness critic of the re-measurement" in r["source"]]
+    assert len(design) == 43 and len(critic) == 6 and mine == design + critic
+    for r in mine:
+        assert r["slot"] == "OWNER" or r["slot"] in slots, (r["id"], r["slot"])
+        assert r["severity"] in ("high", "medium", "low") and "its round: " in r["source"], r["id"]
+        assert not pron.search(r["title"] + r["why"]), r["id"]
+        assert not r["title"].startswith("OWNER DECISION"), ("an Owner question was registered", r["id"])
+        assert "V44_ROUNDS_PREP" not in " ".join(r.get("files") or []), r["id"]
+    gated = [r for r in mine if r["owner_gated"]]
+    assert len(gated) == 1 and gated[0]["slot"] == "OWNER", gated
+    acct = gated[0]
+    assert acct["title"].startswith("OWNER: open a developer account at the Quran Foundation") and "RECOMMENDED" in acct["why"]
+    assert acct["status"] == "open" or acct.get("closed_by") != "W1193", "the Owner's act was closed by this round"
+    proto = next(r for r in mine if r["title"].startswith("The plan's round protocol names docs/AUTONOMOUS_PROGRESS.md"))
+    assert (proto["status"], proto.get("closed_by"), proto.get("because")) == ("done", "W1193", "built"), proto["id"]
+    assert [r["id"] for r in mine if r.get("closed_by") == "W1193"] == [proto["id"]], "this round closed another row"
+    assert {r["slot"] for r in critic} == {"P5.10", "P5.20", "P5.13", "P4.2", "P5.19", "P5.17"}
+    high = [r for r in mine if r["severity"] == "high"]
+    assert len(high) == 1 and high[0]["slot"] == "P5.10" and high[0].get("slot_source"), high
+    #  while the developer account is open: its line on the plan's list before the ten of 2026-11-20, after W1192's
+    #  FU-1840 line while that line is there, and in the local notes' Still-yours list; once a later round closes it,
+    #  the list no longer names it (W594's rule), as test_w890 holds FU-1040
+    still = plan.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
+    notes = read("docs/RESUME_ON_MY_MACHINE.md")
+    if acct["status"] == "open":
+        at = still.index(f"{acct['id']} (W1193):")
+        assert at < still.index("(Ten put to the Owner on the afternoon of 2026-11-20"), "the account is not before the ten"
+        if "FU-1840 (W1192):" in still:
+            assert still.index("FU-1840 (W1192):") < at, "the account is not after W1192's lines"
+        line = flat(still[at:].split("(Ten put", 1)[0])
+        for s in ("developer account at the Quran Foundation", "P5.17 clause 7", "read its developer terms whole",
+                  "never in the repository", "the publisher's approval", "Recommended:"):
+            assert s in line, s
+        yours = notes.split("- **Still yours:**", 1)[1].split("\n- **", 1)[0]
+        bullet = [b for b in yours.split("\n  - ") if f"({acct['id']})" in b]
+        assert len(bullet) == 1 and "Quran Foundation" in bullet[0] and "never in the repository" in bullet[0], (
+            "the developer account is not one bullet of the notes' Still-yours list", bullet)
+    else:
+        assert acct["id"] not in still, "the closed developer account is still put to the Owner"
+    assert "W1193 recorded that standing answer in section 35" in flat(still)
+    nflat = flat(notes)
+    #  W1193c: a later round adding itself, or a later date, leaves this green
+    upd = re.search(r"Updated (20\d\d-\d\d-\d\d) \(([^)]*)\)\.", nflat)
+    assert upd and upd.group(1) >= "2026-11-22" and "W1193" in upd.group(2).split(", "), "the notes' updated line"
+    assert ("is to be recorded with the assessment's next section (a later round). W1193 recorded that standing answer "
+            "in section 35 of docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md.") in nflat, "the notes do not say it is recorded"
+
+    #  3. THE CORRECTIONS
+    rd = read("README.md")
+    rflat = flat(rd)
+    cm = re.search(r"\*\*[\d,]+ integration tests passing / \d+ skipped\*\* \(the full suite run before "
+                   r"W(\d+)'s commit, (\d{4}-\d{2}-\d{2});", rd)
+    assert cm and int(cm.group(1)) >= 1191 and cm.group(2) >= "2026-11-22", "the README's count predates this round"
+    #  the date and the lower bounds only: the totals are test_w1130's, which holds them to the plan's Done line
+    st = re.search(r"Where it stood on (\d{4}-\d{2}-\d{2}), from that generated block: \*\*(\d+) of (\d+) plan items "
+                   r"done\.\*\*", rd)
+    assert st and st.group(1) >= "2026-11-22" and int(st.group(2)) >= 97, "the README's dated status predates this round"
+    phase = dict(re.findall(r"^\| (P\d)[^|]* \| (\d+) of \d+ \| \d+ open \|$", rd, re.M))
+    assert int(phase["P4"]) >= 3 and int(phase["P5"]) >= 7, phase
+    for s in ("Three of them, external models (P4.3), managed Postgres (P4.4) and real money (P4.6), are done as dated "
+              "boundaries in the vision's section 18, with their switches off and nothing deployed.",
+              "(2026-11-20, evening)", "(2026-11-21)", "(2026-11-22)", "No round switches sign-in on in the tree.",
+              "`docs/AUTONOMOUS_PROGRESS.md` is the cycle log up to 2026-10-03"):
+        assert s in rflat, s
+    para = rflat.split("The fourth phase is the Owner's six switches:", 1)[1].split("the generated block is the current one.", 1)[0]
+    assert "Stripe" not in para and "(P4.3)" in para, "the roadmap's paragraph names a provider or drops a boundary"
+    work = flat(read("docs/business/FORMATION_WORKPACK.md"))
+    assert ("allow the fee the Owner ruled on 2026-10-12 (P5.16 clause 3) and released for a made-up entity on "
+            "2026-11-19, and the split it leaves? [owner decision]") in work
+    assert ("when each cycle's fee is taken from that cycle's own profit, with no loss carried from one cycle to the "
+            "next? [owner decision]") in work and "the fee the Owner ruled on 2026-11-19," not in work
+    brand = flat(read("docs/business/NAME_AND_BRAND_SCREEN.md").split("## 2. What the Owner holds", 1)[1].split("\n## ", 1)[0])
+    assert "Copyright 2026 Virtual Sovereign Business" in read("LICENSE")
+    assert ("\"Copyright 2026 Virtual Sovereign Business\"; no company or other legal form is held under that name, and "
+            "who holds the copyright is question 6 for a solicitor") in brand
+    assert "6. Who holds the copyright that LICENSE names" in work
+    smap = read("docs/business/LIVING_STRATEGY_MAP.md")
+    between = [b for b in smap.split("\n- ") if b.startswith("Between this step and being relied on")]
+    assert len(between) == 6, len(between)
+    named = [rid for b in between for rid in re.findall(r"row (FU-\d+)", b)]
+    assert named and all(rows[rid]["status"] == "open" for rid in named), [(r, rows[r]["status"]) for r in named]
+    assert "no open row in the register" in flat(between[5]) and {"FU-417", "FU-1072", "FU-1086"} <= set(named)
+    cost = read("docs/business/COST_MODEL.md")
+    cell = next(ln for ln in cost.splitlines() if ln.startswith("| P4.1 sign-in |"))
+    assert "`deploy/gcp/startup.sh`" in cell and "the readiness round's thirteen rows are closed" in cell and cell.endswith("| no |")
+    readiness = ("FU-845", "FU-846", "FU-847", "FU-848", "FU-849", "FU-850", "FU-1061", "FU-1062", "FU-1063", "FU-1089",
+                 "FU-1120", "FU-1152", "FU-1171")
+    assert all(rows[r]["slot"] == "P4.1" and rows[r]["status"] == "done" for r in readiness), "a readiness row is open"
+    cflat = flat(cost)
+    assert ("the price, once charged, is credited against the platform's fees as they fall due, from the first, and "
+            "carried forward until it is used up") in cflat and "[owner-defined, 2026-11-22]" in cflat
+    assert "the first share is reduced by the once-only price it was credited against" not in cflat
+    vision = flat(read("docs/WORKSTATION_IDBO_WHOLE_VISION.md"))
+    assert ("was FU-448: the Owner ruled on 2026-10-06 that the gate does not extend to the five research tools "
+            "(closed in W598), and on 2026-10-11 that what a model composes there is withheld until a named scholar "
+            "approves that exact text") in vision and "is FU-448, an open Owner decision" not in vision
+    assert rows["FU-448"]["status"] == "done" and rows["FU-448"]["closed_by"] == "W598"
+    assert (root / "docs/WORKSTATION_IDBO_WHOLE_VISION.md").read_bytes().count(b"\r\n") == \
+        (root / "docs/WORKSTATION_IDBO_WHOLE_VISION.md").read_bytes().count(b"\n"), "the vision's CRLF was lost"
+    #  the round protocol and every pointer to the progress log
+    log = read("docs/AUTONOMOUS_PROGRESS.md")
+    last = max(int(m) for m in re.findall(r"^#{2,3} W(\d+)\b", log, re.M))
+    assert last == 502 and "**Not written since W502**" in log.split("\n## ", 1)[0], last
+    pflat = flat(plan)
+    assert "`AUTONOMOUS_PROGRESS.md` (W1→W502, not written since)" in pflat and "(W1→W486)" not in pflat
+    assert "V6 RECORD — the commit message, which is the round's record" in pflat and "AUTONOMOUS_PROGRESS.md entry" not in pflat
+    assert ("the honest note in the commit message) → close the round's rows and mark a finished item DONE → commit "
+            "with a message") in pflat and "append to docs/AUTONOMOUS_PROGRESS.md" not in pflat
+    for rel in ("docs/README.md", "docs/WORKSTATION_IDBO_LIVING_PLAN.md"):
+        t = flat(read(rel))
+        assert "is the cycle log of rounds W1–W502, and each later round's record is its commit message" in t, rel
+        assert "the ongoing record is" not in t, rel
+    probe = read("scripts/_w557_probe.mjs").split("\n", 1)[0]
+    assert "HISTORY (W811, FU-924)" in probe and "W557" in probe and "its record is that round's commit message" in probe
+    #  the plan's dated notes: at P2.13, P3.22 and P3.26 each names the row that holds what it found; P3.32's points
+    #  to the working plan, because that item names no row
+    memory = next(r for r in design if r["title"].startswith("The avatar and upload memory the Owner ruled retired"))
+    archive = next(r for r in design if r["title"].startswith("The archive's search basis and the Horizon page say"))
+    p213 = flat(plan.split("\n P2.13 ", 1)[1].split("\n P2.14 ", 1)[0])
+    assert p213.count("CORRECTED W1193 (2026-11-22)") == 2 and f"its removal is row {memory['id']}" in p213
+    p322 = flat(plan.split("\n P3.22 ", 1)[1].split("\n P3.23 ", 1)[0])
+    assert "CORRECTED W1193 (2026-11-22), the words above kept: chromadb 1.5.5 and onnxruntime are installed" in p322
+    assert memory["id"] in p322 and archive["id"] in p322 and "neither of which exists here." in p322
+    p332 = flat(plan.split("\n P3.32 [", 1)[1].split("\n MILESTONE M3", 1)[0])
+    assert "CORRECTED W1193 (2026-11-22), the words of the plan kept: chromadb 1.5.5 and onnxruntime" in p332
+    assert "its removal is scheduled in docs/V44_ROUNDS_PREP.md" in p332 and not re.search(r"\bFU-\d+", p332)
+    p326 = flat(plan.split("\n P3.26 ", 1)[1].split("\n P3.27 ", 1)[0])
+    admission = next(r for r in design if r["title"].startswith("With the throttle on, admission and every reader"))
+    assert "FU-1116 closed at W839 on births alone" in p326 and f"building that is row {admission['id']}" in p326
+    #  the register's dated notes
+    by = lambda prefix: next(r for r in design if r["title"].startswith(prefix))
+    notes_said = {
+        "FU-282": ("note", [memory["id"], "no production reader"]),
+        "FU-1076": ("close_note", [by("A reserved instrument is drafted under any template id")["id"],
+                                   by("A reserved instrument asked for in a listed template")["id"]]),
+        "FU-1087": ("close_note", [by("A model is made the serving default with no licence read")["id"]]),
+        "FU-1130": ("note", [memory["id"], "all-MiniLM-L6-v2"]),
+        "FU-1262": ("close_note", [by("W1075's census passes over every entity route")["id"]]),
+        "FU-1817": ("why", [by("A handed-over entity repository says nothing about its terms")["id"],
+                            "RECOMMENDED (accepted 2026-11-20, evening)"]),
+    }
+    for rid, (field, said) in notes_said.items():
+        text = rows[rid][field]
+        tail = text.split(" W1193 (2026-11-22)", 1)[-1] if field == "why" else text.split("CORRECTED W1193 (2026-11-22):", 1)[-1]
+        assert "W1193 (2026-11-22)" in text, (rid, "has no dated note")
+        for s in said:
+            assert s in text, (rid, s)
+        assert not pron.search(tail), rid
+
+    #  4. THE WORKING PLAN
+    prep_path = root / "docs/V44_ROUNDS_PREP.md"
+    prep = prep_path.read_text(encoding="utf-8")
+    assert "interview" not in prep_path.name.lower(), "the working plan's name would read as an interview record"
+    head = flat(prep.split("\n## Honest status", 1)[0])
+    assert "A WORKING PLAN, not a claim the work is done" in head and "Dated 2026-11-22" in head
+    assert "stay the authority" in head
+    status = prep.split("## Honest status of this document", 1)[1].split("\n## ", 1)[0]
+    facts = [m.group(1) for m in re.finditer(r"^\| ([^|]+?) \| ", status, re.M)]
+    for f in ("Dated", "Read at", "Numbering", "The business plan", "Plans judged sound by their refuter",
+              "Rounds HELD on the Owner", "Rows the record round registered"):
+        assert f in facts, f
+    assert "moved the record round to W1193" in flat(status) and "W1192 amended only the ratified canvas" in flat(status)
+    sched = prep.split("## The schedule", 1)[1].split("\n## ", 1)[0]
+    rounds = [int(x) for x in re.findall(r"^\| W(\d{4}) \|", sched, re.M)]
+    assert rounds == list(range(1194, 1233)), rounds
+    heads = {int(m.group(1)): m.start() for m in re.finditer(r"^## W(\d{4}) - ", prep, re.M)}
+    assert sorted(heads) == rounds, "a scheduled round has no section of its own"
+    ends = sorted(heads.values()) + [prep.index("\n## Rows with no round in this schedule")]
+    for w, start in heads.items():
+        body = prep[start:ends[ends.index(start) + 1]]
+        listed = re.findall(r"^- (FU-\d+) \(", body.split("**Rows:**", 1)[1].split("\n\n**", 1)[0], re.M) \
+            if "**Rows:**\n" in body else []
+        for rid in listed:
+            assert rid in rows and f"W{w}" in rows[rid]["source"].split("its round: ", 1)[1], (w, rid)
+    for r in design:
+        rnd = [int(x) for x in re.findall(r"W(\d{4})", r["source"].split("its round: ", 1)[1])]
+        if rnd and rnd[0] >= 1194:
+            assert f"- {r['id']} (" in prep[heads[rnd[0]]:], (r["id"], "is not under its round")
+    pre = prep.split("\n## Rows with no round in this schedule", 1)[1].split("\n## ", 1)[0]
+    roundless = [r for r in mine if r["status"] == "open" and not any(
+        int(x) >= 1194 for x in re.findall(r"W(\d{4})", r["source"].split("its round: ", 1)[1]))]
+    for r in roundless:
+        assert f"- {r['id']} (" in pre, (r["id"], "a row with no round is not listed as one")
+    assert not pron.search(prep) and not home.search(prep), "the working plan gives a pronoun or names a home folder"
+    assert not re.search(r"/home/|/tmp/|/root/|scratchpad|\.claude/|docs/fidelity_runs/", prep)
+    work = re.compile(r"w\d{3,4}_(?:apply|test|notes)\.|msg\d+\.txt|cluster_[A-D]\.json|section35_inputs|"
+                      r"adjudication_v44|v40_synthesis")
+    assert not work.search(prep), ("the working plan names a session work file", work.search(prep).group(0))
+    assert not re.search(r"\b[A-Z][A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD)[A-Z0-9_]*\b", prep), "a credential setting"
+    assert not re.search(r"(?i)uploads?/[^\s]+|\.docx\b", prep), "an upload is named"
+    found = _pe.scan(root, files=[("docs/V44_ROUNDS_PREP.md", prep.encode("utf-8"))], markers=[])["findings"]
+    assert found == [], [(f["path"], f["line"], f["kind"]) for f in found]
+    assert not re.search(r"W119[23] amends the canvas, the business plan|W119[23] amended (?:the canvas, )?the "
+                         r"business plan|business plan (?:was|is) amended by W119[23]\b", prep)
+    assert "`docs/V44_ROUNDS_PREP.md`" in sec, "section 35 does not name its working plan"
+
+
+def test_w1193b_the_remaining_work_is_remeasured_with_every_open_item_and_the_rows_open_on_it():
+    """W1193b - docs/REMAINING_WORK_MEASURED.md is re-measured on 2026-11-22. test_w787 holds that it adds up and names
+    only plan items; this holds that it is a measurement of the plan and the register at the commit it names, and stays
+    true as the work moves on: each of the 22 items open at that commit has its section (an item chartered later is not
+    asked for); no item it shows was done before it was measured (an item closed later, by W1193c or any round after
+    W1193b, may stay until the next re-measurement); every row open on a plan item and registered up to the id the page
+    states is named on an item's open-rows line, whose count is its ids; where git holds the commit the page names, that
+    commit's register holds that id and none after it; P5.22's instrument is said as built (W970, W972, W973 and W977),
+    not as missing; the final audit's open question - whether 'after Phase 5' means its build items or every row, with
+    the 2026-12-31 deadline - is carried under P5.22's Owner part and in the timeline beneath the total, as a
+    recommendation and not a ruling (since W1193c, as the Owner's ruling of the morning of 2026-11-22, given after
+    the measurement); and the README and the local notes give this measurement's date and total.
+    Moving a row registered up to the stated id onto a plan item, or reopening one, changes what was measured: it needs
+    a re-measurement, and this test fails until one is made."""
+    import json
+    import pathlib
+    import re
+    import subprocess
+    doc = pathlib.Path("docs/REMAINING_WORK_MEASURED.md").read_text(encoding="utf-8")
+    plan = pathlib.Path("docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    reg = json.loads(pathlib.Path("docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    rows = reg["items"] if isinstance(reg, dict) else reg
+    head = re.match(r"# Remaining work, measured — 2026-11-22 \(HEAD ([0-9a-f]{7,})\)", doc)
+    assert head, doc[:80]
+    top = re.search(r"registered up to\s+FU-(\d+);", doc)
+    assert top, "the page does not say up to which row of the register it measured"
+    top = int(top.group(1))
+    parts = re.split(r"(?m)^## (P[1-5]\.\d+) — [^\n]*\n", doc)
+    sections = {parts[i]: parts[i + 1] for i in range(1, len(parts), 2)}
+    items = {}
+    for line in plan.split("\n"):
+        m = re.match(r"^ (P[1-5]\.\d+) (.*)", line)
+        if m and m.group(1) not in items:
+            items[m.group(1)] = m.group(2)
+    #  each item open at the measured commit has its section
+    measured = ["P2.40", "P2.41", "P3.30", "P3.32", "P4.1", "P4.2", "P4.5", "P5.1", "P5.2", "P5.8", "P5.9", "P5.10",
+                "P5.12", "P5.13", "P5.14", "P5.15", "P5.17", "P5.18", "P5.19", "P5.20", "P5.21", "P5.22"]
+    missing = [i for i in measured if i not in sections]
+    assert not missing, ("an item open at the measured commit has no measurement", missing)
+    #  no item shown was done before this measurement: a closing round after W1193b, its suffix read in order
+    for iid in sections:
+        assert iid in items, (iid, "is not a plan item")
+        if items[iid].startswith("✅ DONE"):
+            d = re.match(r"✅ DONE W(\d+)([a-z]?)", items[iid])
+            assert d and (int(d.group(1)), d.group(2)) > (1193, "b"), (
+                iid, "is measured as open but was done before", items[iid][:30])
+    #  every row open on a plan item, up to the stated id, is named on an open-rows line, and each count is its ids
+    named = set()
+    for iid, sec in sections.items():
+        line = re.search(r"^- \*\*Open rows:\*\* count: (\d+)(?: \(([^)\n]*)\))?$", sec, re.M)
+        assert line, (iid, "has no open-rows line")
+        listed = [x.strip() for x in (line.group(2) or "").split(",") if x.strip()]
+        assert int(line.group(1)) == len(listed), (iid, line.group(0))
+        named.update(listed)
+    unnamed = sorted(r["id"] for r in rows
+                     if r.get("status") == "open" and r.get("slot") in items and re.fullmatch(r"FU-\d+", r["id"])
+                     and int(r["id"][3:]) <= top and r["id"] not in named)
+    assert not unnamed, ("rows open on a plan item are not named on any open-rows line", unnamed)
+    #  where git holds the commit the page names, its register is the one measured: the stated id, and none after it
+    try:
+        shallow = subprocess.run(["git", "rev-parse", "--is-shallow-repository"], capture_output=True, text=True,
+                                 timeout=60)
+        have = subprocess.run(["git", "cat-file", "-e", f"{head.group(1)}^{{commit}}"], capture_output=True, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        shallow = have = None
+    if shallow is not None and shallow.returncode == 0:
+        if have.returncode == 0:
+            shown = subprocess.run(["git", "show", f"{head.group(1)}:docs/FOLLOWUPS.json"], capture_output=True,
+                                   timeout=120)
+            assert shown.returncode == 0, (head.group(1), "has no register")
+            then = json.loads(shown.stdout.decode("utf-8"))
+            ids_then = {r["id"] for r in (then["items"] if isinstance(then, dict) else then)}
+            assert f"FU-{top}" in ids_then and f"FU-{top + 1}" not in ids_then, (
+                head.group(1), "the commit the page names does not hold the register it measured")
+        else:
+            assert shallow.stdout.strip() == "true", (head.group(1), "the commit the page names is not in this repository")
+    #  P5.22's instrument is said as built, not as missing
+    assert "No such instrument exists" not in doc
+    assert ("Its instrument is built: W970, W972, W973 and W977" in sections.get("P5.22", "")
+            ), "P5.22's section does not say what built its instrument"
+    total = re.search(r"\*\*All open items: (\d+(?:\.\d+)?)–(\d+(?:\.\d+)?) rounds\*\*", doc)
+    assert total
+    #  the final audit's open question is carried in the reading's words, undecided, under P5.22's Owner part and in
+    #  the timeline beneath the total
+    q = "whether 'after Phase 5' means its build items or every row"
+    owner522 = sections.get("P5.22", "").split("- **Only the Owner can:**", 1)
+    assert len(owner522) == 2 and q in owner522[1], "P5.22's Owner part does not carry the final audit's question"
+    #  W1193c: the Owner ruled on the morning of 2026-11-22, after the measurement, as recommended; the page says
+    #  the ruling where it put the question, and no longer says it is open
+    ruled = ("OWNER RULING 2026-11-22 (morning; the recommendation accepted): 'after Phase 5' means after its "
+             "build items close")
+    assert ruled in owner522[1] and "not decided here" not in owner522[1], (
+        "P5.22's Owner part does not say the Owner's ruling")
+    #  read with its lines joined, so that a later round may fill the paragraph again
+    timeline = " ".join(doc[total.end():doc.index("\n## P", total.end())].split())
+    assert q in timeline and "2026-12-31" in timeline and ruled in timeline, (
+        "the timeline does not carry the final audit's question and its ruling")
+    assert "Recommended: its build items" not in timeline, "the timeline still leaves the question open"
+    #  the README and the local notes give this measurement (read with their lines joined, so that a later round may
+    #  fill a paragraph again)
+    readme = " ".join(pathlib.Path("README.md").read_text(encoding="utf-8").split())
+    assert (f"The remaining work, re-measured on 2026-11-22, is {total.group(1)}–{total.group(2)} rounds "
+            "(`docs/REMAINING_WORK_MEASURED.md`)." in readme), "the README does not give this measurement"
+    assert "214–392" not in readme, "the README still gives the measurement of 2026-11-10"
+    notes = " ".join(pathlib.Path("docs/RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8").split())
+    assert "docs/REMAINING_WORK_MEASURED.md (every open item, measured 2026-11-22)," in notes
+    assert (f"- **Measured remaining work,** on 2026-11-22: about {total.group(1)}–{total.group(2)} rounds across the"
+            in notes), "the local notes do not give this measurement"
+    assert "214–392" not in notes, "the local notes still give the measurement of 2026-11-10"
+
+
+def test_w1193c_the_owners_nine_decisions_of_the_morning_of_2026_11_22_are_recorded_where_the_work_reads_them():
+    """W1193c. The nine recommendations the Owner accepted on the morning of 2026-11-22: six put in chat at 03:04 UTC
+    ("I accept all six recommendations, proceed", 07:25 UTC) and three put at 07:32 UTC ("I accept all three
+    recommendations, proceed", 07:40 UTC). Each ruling sentence says what was accepted, in ruling tense where the work
+    is not built; what the round design adds follows it, marked "Proposed by the round design, not ruled". Held here:
+    1. P3.32: chromadb removed from the dependency list once the retired memory is removed (W1196), the same way the
+       unused streamlit, plotly and pandas packages were taken out, with a full test run on a fresh install; W1230 no
+       longer held; the declaration, the lock and the two re-checks only as the design's proposal; no row named;
+    2. P5.18 and FU-1868: the two legal-form descriptions reworded to say what each template models, the nine names
+       kept and the old words kept in a dated note; the example wordings and the note's place only as the design's
+       proposal; FU-1868 stays open until W1231 has landed;
+    3. FU-1817, P4.2, the workpack's question 8, the plan's list and the notes: the solicitor also asked in writing
+       about retention and erasure, and the Owner approving a record of processing once the solicitor has answered;
+       the deletion-drill rounds go ahead either way, every retention period marked "not decided: the Owner's";
+    4. the canvas, on the Owner's word: a dated note under block 5's credit line, the line kept as it was ratified, and
+       the change named in its opening (the count of changes is test_w725's);
+    5. the business plan, on the Owner's word: its Concept bullet says the platform's 25% fee comes first and 20 parts
+       in a hundred of what remains go to each entity's own owner, its earlier words kept, and its opening names the
+       change (the count is test_w725's; the reader reading every change, or saying it could not, and the entry's
+       stamp keeping them all are test_w726's; the entry's fixture being the document as it stands is test_w1105's);
+    6. P5.22 and FU-1086: "after Phase 5" means after its build items close; the audit then runs in December; the rows
+       still waiting on the Owner (the letters and the second Care calibration) listed in its record as open, carrying
+       into January without holding it back; which rows are meant only as the design's proposal (at P5.22 the letter
+       rows by id, the two rows of other items by their area);
+    7. P5.14: the three exchange lessons the Owner already ratified whose defects quote section 27's counts keep them,
+       as dated quotations of what was measured at the time; the totals stay in the assessment, beneath the RULED line;
+    8. PR #467: merged by the cloud session once W1193c has landed and CI is green, then a fresh pull request for the
+       build rounds - in the notes' step 1 while it names PR #467, their record of the pull requests, their Still-yours
+       list while its merge line is there, and the plan's list - in words that stay true once it is merged: no state of
+       the pull request is pinned;
+    9. FU-1837: the leaked keys revoked first, then the stale branches listed for the Owner to check, main,
+       main-l1fsqo, local-owner and anything else the Owner names kept, and none deleted without the Owner's explicit
+       word - in its why, its line on the plan's list and in the notes, each after W1192's sentence, which stays;
+    and the plan's list carries the nine in a paragraph of its own naming no row; the notes carry them in a bullet of
+    their own after W1192's, and their updated line names this round; the working plan's head says in which words the
+    six were accepted and its status rows, schedule rows and held lines say what the answers changed; section 35's For
+    the Owner says so once, still counting five put in chat; while docs/REMAINING_WORK_MEASURED.md is the measurement
+    of 2026-11-22 at a4b96954, it says each answer where it put the question, as given after it was measured; and none
+    of the new words gives anyone a gendered pronoun. A row's line on the plan's list or in the notes is held while the
+    row is open: a later round closing it may remove the line (W594's rule)."""
+    import json
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    RM = "OWNER RULING 2026-11-22 (morning; the recommendation accepted)"
+    PROP = "Proposed by the round design, not ruled:"
+    PRONOUN = re.compile(r"\b(he|him|his|himself|she|her|hers|herself)\b", re.I)
+    flat = lambda t: " ".join(t.split())   # noqa: E731
+    read = lambda p: (root / p).read_text(encoding="utf-8")   # noqa: E731
+    fable = read("docs/FABLE_DELIVERY_PROMPT.md")
+    reg = {r["id"]: r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"]}
+    said = []   # every passage this round wrote, read for a pronoun at the end
+    MARKED = "with every retention period marked \"not decided: the Owner's\""
+    FORMS = ("are to be reworded to say what each template models; the nine names are kept, and the old words are kept "
+             "in a dated note.")
+    FORMS_PROPOSED = (f"{PROP} wordings such as \"A template modelled on a private limited company's profit split\" and "
+                      "\"A template modelled on a charity's allocation: maximal charitable allocation\", and the dated "
+                      "note in section 2 of docs/VSB_ECONOMIC_LEGAL_MODEL.md.")
+    AUDIT = ("\"after Phase 5\" means after its build items close; the audit is then to run in December. The rows still "
+             "waiting on the Owner (the letters and the second Care calibration) are to be listed in its record as "
+             "open, and they carry into January without holding it back.")
+    BRANCH_YOU = ("you revoke the leaked keys first; then the cloud session lists the stale branches that hold them for "
+                  "you to check, keeping main, main-l1fsqo, local-owner and anything else you name, and deletes only on "
+                  "your explicit word.")
+
+    def holds(text, s, where):
+        assert s in text, (where, "does not say", s[:110])
+        said.append(s)
+
+    def item(pid, nxt):
+        start = fable.index(f"\n {pid} ")
+        return flat(fable[start:fable.index(f"\n {nxt} ", start)])
+
+    #  the four rows the rulings bear on: each gains its dated sentence after its earlier words
+    for rid, before, s in (
+            ("FU-1817", "W1193 (2026-11-22): the recommendation the Owner accepted for these questions",
+             f" {RM}: the solicitor is also to be asked in writing about retention and erasure, and the Owner is to "
+             "approve a record of processing once the solicitor has answered. The deletion-drill rounds go ahead either "
+             f"way, {MARKED}."),
+            ("FU-1868", "The only statement that an entity is no person in law is agreements.NOT_AN_ENTITY",
+             f" {RM}: the two template descriptions this row quotes {FORMS} Round W1231 (docs/V44_ROUNDS_PREP.md) "
+             f"builds it, and is no longer held. {FORMS_PROPOSED} W1193c: this row stays open until W1231 has landed, so "
+             "W1216 does not close it."),
+            ("FU-1086", "Recommended: charter it as its own item",
+             f" {RM}: {AUDIT} {PROP} the rows meant are the letter rows FU-1188 and FU-1283 while they are open, P5.17's "
+             "FU-1067 if written permission has not come by 2026-12-15, and P5.15's FU-1831, which waits on the Owner's "
+             "second calibration run before 2027-01-10."),
+            ("FU-1837", "The cloud session may list stale branches for deletion; no branch is deleted or changed without "
+                        "the Owner's explicit word.",
+             f" {RM}: the Owner revokes the leaked keys first; then the cloud session lists the stale branches that hold "
+             "them for the Owner to check, keeping main, main-l1fsqo, local-owner and anything else the Owner names, and "
+             "deletes only on the Owner's explicit word.")):
+        why = reg[rid]["why"]
+        holds(why, s, rid)
+        assert before in why, (rid, "the earlier words the ruling follows are gone")
+        assert why.index(before) < why.index(s), (rid, "the morning's ruling is not after the earlier words")
+    #  FU-1868 stays open until W1231 has landed: closed while the template still says it is a company, it is red here
+    if reg["FU-1868"]["status"] != "open":
+        entities = read("agentic_core/economy/entities.py")
+        code = "\n".join(ln for ln in entities.splitlines() if not ln.lstrip().startswith("#"))
+        assert "Default commercial company, limited liability." not in code, (
+            "FU-1868 was closed while the template still says it is a company")
+
+    #  each ruling at the item it governs, as the rule to be built, and what the design adds after it, marked so
+    p332 = item("P3.32", "P4.1")
+    r1 = (f"{RM}: once the retired memory is removed (W1196), chromadb, which nothing then uses, is to be removed from "
+          "the dependency list, the same way the unused streamlit, plotly and pandas packages were taken out, with a full "
+          "test run on a fresh install. Round W1230 (docs/V44_ROUNDS_PREP.md) builds it, and is no longer held. "
+          f"{PROP} the declaration removed is chromadb's in pyproject.toml, with onnxruntime, the extra runtime it pulls "
+          "in, if nothing else requires it; the lock is re-made and requirements.txt exported, as W1141 did; and "
+          "test_w583 L5's opentelemetry pins and test_w907's sympy rule are re-checked.")
+    holds(p332, r1, "P3.32")
+    assert ("OWNER RULING 2026-11-22 (the recommendations accepted): (1) the avatar and upload memory is to be retired"
+            in p332 and "MILESTONE M3:" in p332), "P3.32's earlier ruling or its milestone moved"
+    assert (p332.index("OWNER RULING 2026-11-22 (the recommendations accepted): (1) the avatar and upload memory is to be "
+                       "retired") < p332.index(r1) < p332.index("MILESTONE M3:")), "P3.32's ruling is not in its place"
+    assert not re.search(r"\bFU-\d+", p332.split("MILESTONE M3", 1)[0]), "P3.32 names a row"
+    p42 = item("P4.2", "P4.3")
+    r3 = (f"{RM}: the solicitor (the engagement of FU-1817) is also to be asked in writing about retention and erasure, "
+          "and the Owner is to approve a record of processing once the solicitor has answered. The deletion-drill rounds "
+          f"(W1225 to W1228, docs/V44_ROUNDS_PREP.md) go ahead either way, {MARKED}.")
+    holds(p42, r3, "P4.2")
+    assert "the Owner sets the periods once FU-1817 answers" in p42, "P4.2's earlier ruling moved"
+    assert p42.index("the Owner sets the periods once FU-1817 answers") < p42.index(r3), "P4.2's order"
+    p514 = item("P5.14", "P5.15")
+    r7 = (f"{RM}: the three exchange lessons the Owner already ratified whose defects quote section 27's counts "
+          "(M-EXCH-01, M-EXCH-02 and M-EXCH-04, in docs/DELIVERY_METHOD.json) keep them, as dated quotations of what was "
+          "measured at the time; the section 27 totals stay in the assessment, as the Owner ruled on 2026-10-12 (the "
+          "RULED line above).")
+    holds(p514, r7, "P5.14")
+    assert "RULED (OWNER 2026-10-12):" in p514 and "the totals of section 27 stay in the assessment." in p514, (
+        "P5.14's RULED line no longer keeps the section 27 totals in the assessment")
+    assert (p514.index("RULED (OWNER 2026-10-12):") < p514.index("the totals of section 27 stay in the assessment.")
+            < p514.index(r7)), "P5.14's ruling is not beneath the RULED line it cites"
+    lessons = {l["id"]: l for l in json.loads(read("docs/DELIVERY_METHOD.json"))["lessons"]}
+    for lid, count in (("M-EXCH-01", "of 1,229 messages the Owner typed"), ("M-EXCH-02", "ten of the Owner's messages"),
+                       ("M-EXCH-04", "52 of 56 decisions were accepted in one sentence")):
+        lesson = lessons.get(lid) or {}
+        assert lesson.get("group") == "exchange" and lesson.get("ratified"), (lid, "is not a ratified exchange lesson")
+        assert count in lesson["defect"], (lid, "no longer keeps the section 27 count its defect quotes")
+    s27 = flat(read("docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md").split("\n## 27. ", 1)[1].split("\n## 28. ", 1)[0])
+    for total in ("holding 1,229 messages typed by the Owner", "One word - \"proceed\" - is 301 of them",
+                  "52 were accepted as recommended in one sentence"):
+        assert total in s27, (total, "a section 27 total is no longer in the assessment")
+    p518 = item("P5.18", "P5.19")
+    r2 = (f"{RM}: clause 1's two legal-form descriptions, \"Default commercial company, limited liability\" and "
+          f"\"Registered charitable purpose\", {FORMS} Round W1231 (docs/V44_ROUNDS_PREP.md) builds it, and is no longer "
+          f"held. {FORMS_PROPOSED}")
+    holds(p518, r2, "P5.18")
+    assert "OWNER RULING 2026-11-21 (the recommendation accepted)" in p518, "P5.18's earlier ruling moved"
+    assert p518.index("OWNER RULING 2026-11-21 (the recommendation accepted)") < p518.index(r2), "P5.18's order"
+    p522 = item("P5.22", "COMPLETE")
+    r6 = (f"{RM}: {AUDIT} {PROP} the rows meant are the letter rows FU-1188 and FU-1283 while they are open, P5.17's row "
+          "for the private listening test if written permission has not come by 2026-12-15, and P5.15's row for the Care "
+          "reviewer's first calibration run, which waits on the Owner's second calibration run before 2027-01-10.")
+    holds(p522, r6, "P5.22")
+    assert "(7) both configurations ran" in p522, "P5.22's seventh property moved"
+    assert p522.index("(7) both configurations ran") < p522.index(r6), "P5.22's order"
+
+    #  the plan's list: FU-1817's and FU-1837's lines under their own entries while each row is open, and the nine
+    raw_list = fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
+    still = flat(raw_list)
+
+    def under(rid, head, prior, line):
+        if reg[rid]["status"] != "open":
+            return
+        holds(still, line, "the plan's list")
+        seg = still[still.index(head) + len(head):still.index(line)]
+        assert prior in seg and not re.search(r"FU-\d+ \(W\d+\):", seg), (rid, "the line is not under its own entry")
+
+    under("FU-1817", "FU-1817 (W1174):", "Ruled on 2026-11-22: it also carries written questions on the project's licence",
+          "Ruled on the morning of 2026-11-22: the solicitor is also to be asked in writing about retention and erasure, "
+          "and you are to approve a record of processing once the solicitor has answered; the deletion-drill rounds go "
+          f"ahead either way, {MARKED} (P4.2).")
+    under("FU-1837", "FU-1837 (W1191):", "On 2026-11-22 you accepted doing it that day. The cloud session may list stale "
+          "branches for deletion; no branch is deleted or changed without the Owner's explicit word.",
+          f"Ruled on the morning of 2026-11-22: {BRANCH_YOU}")
+    #  the nine, as a paragraph of its own: read from its opening to its closing ".)", so that a later round may change
+    #  its closing words or put a paragraph after it
+    opener = "(Six put in the early hours of 2026-11-22 and three put that morning"
+    assert still.count(opener) == 1, ("the list does not carry the nine once", still.count(opener))
+    i = raw_list.index("(Six put in the early hours of 2026-11-22")
+    nine = flat(raw_list[i:raw_list.index(".)\n", i) + 2])
+    assert "(Twenty put in the early hours of 2026-11-22" in still, "the list's paragraph of the early hours is gone"
+    assert nine.startswith(opener) and still.index("(Twenty put in the early hours of 2026-11-22") < still.index(opener)
+    for part in ("were accepted the same morning, each as recommended: chromadb to be removed from the dependency list "
+                 "once the retired memory is removed, the same way the unused streamlit, plotly and pandas packages were "
+                 "taken out, with a full test run on a fresh install;",
+                 "the two legal-form descriptions to be reworded to say what each template models, the nine names kept "
+                 "and the old words kept in a dated note;",
+                 "the solicitor also to be asked in writing about retention and erasure, the Owner approving a record of "
+                 "processing once the solicitor has answered, and the deletion-drill rounds going ahead either way, every "
+                 "retention period marked \"not decided: the Owner's\";",
+                 "the ratified canvas's credit line given a dated note for the carry-forward ruling, its old words kept;",
+                 "the business plan given the dated note the canvas was given for the platform's fee and the owner's "
+                 "share, saying the platform's 25% fee comes first and 20 parts in a hundred of what remains go to each "
+                 "entity's own owner, its old words kept;",
+                 "\"after Phase 5\" meaning after its build items close, so the final audit runs in December, the rows "
+                 "still waiting on the Owner (the letters and the second Care calibration) listed in its record as open "
+                 "and carrying into January without holding it back;",
+                 "the three exchange lessons the Owner already ratified to keep the section 27 counts their defects "
+                 "quote, as dated quotations of what was measured at the time, the section 27 totals staying in the "
+                 "assessment;",
+                 "PR #467 to be merged by the cloud session once W1193c has landed and CI is green, as #463, #465 and "
+                 "#466 were",
+                 "a fresh pull request then opened for the build rounds",
+                 "once the Owner has revoked the leaked keys, the two earlier Stripe values among them, the stale branches that "
+                 "hold them listed for the Owner to check, main, main-l1fsqo, local-owner and anything else the Owner "
+                 "names kept, and none deleted without the Owner's explicit word"):
+        assert part in nine, ("the list's paragraph does not say", part[:80])
+    assert not re.search(r"\bFU-\d+\b", nine), ("the list's paragraph names a row", re.findall(r"FU-\d+", nine))
+    said.append(nine)
+
+    #  the local notes: the updated line names this round; the nine in a bullet of their own, held whole; the lines
+    #  that say which pull request is meant, true before and after it is merged
+    notes_raw = read("docs/RESUME_ON_MY_MACHINE.md")
+    notes = flat(notes_raw)
+    upd = re.search(r"Updated (20\d\d-\d\d-\d\d) \(([^)]*)\)\.", notes)
+    assert upd and upd.group(1) >= "2026-11-22" and "W1193c" in upd.group(2).split(", "), "the notes' updated line"
+    head = "- **Ruled on the morning of 2026-11-22:**"
+    assert notes_raw.count(head) == 1, notes_raw.count(head)
+    ruled = flat(head + notes_raw.split(head, 1)[1].split("\n- **", 1)[0])
+    assert ruled == (
+        "- **Ruled on the morning of 2026-11-22:** six recommendations put in the early hours and three put that "
+        "morning, each taken as recommended: chromadb to be removed from the dependency list once the retired memory is "
+        "removed, the same way the unused streamlit, plotly and pandas packages were taken out, with a full test run on "
+        "a fresh install (round W1230, no longer held); the two legal-form descriptions to be reworded to say what each "
+        "template models, the nine names kept and the old words kept in a dated note (round W1231, no longer held); the "
+        "solicitor also to be asked in writing about retention and erasure, and you to approve a record of processing "
+        "once the solicitor has answered (FU-1817), the deletion-drill rounds going ahead either way, every retention "
+        "period marked \"not decided: the Owner's\"; the ratified canvas's credit line given a dated note for your "
+        "carry-forward ruling, its old words kept; the business plan given the dated note the canvas was given for the "
+        "platform's fee and the owner's share, saying the platform's 25% fee comes first and 20 parts in a hundred of "
+        "what remains go to each entity's own owner, its old words kept; \"after Phase 5\" meaning after its build items "
+        "close, so the final audit runs in December, the rows still waiting on you (the letters and the second Care "
+        "calibration) listed in its record as open and carrying into January without holding it back (FU-1086); the "
+        "three exchange lessons you already ratified to keep the section 27 counts their defects quote, as dated "
+        "quotations of what was measured at the time, the section 27 totals staying in the assessment; PR #467 to be "
+        "merged by the cloud session once W1193c has landed and CI is green, and a fresh pull request then opened for "
+        "the build rounds; and, once you have revoked the leaked keys, the two earlier Stripe values among them, the "
+        "stale branches that hold them listed for you to check, main, main-l1fsqo, local-owner and anything else you "
+        "name kept, and none deleted without your explicit word (FU-1837). W1193c recorded each where the work reads "
+        "it."), ruled[:200]
+    said.append(ruled)
+    assert "- **Ruled on 2026-11-22:**" in notes and "- **Still yours:**" in notes, "W1192's bullet or Still yours is gone"
+    assert notes.index("- **Ruled on 2026-11-22:**") < notes.index(head) < notes.index("- **Still yours:**"), "the order"
+    #  step 1 says which pull request it means; while that is PR #467, it says what happens once it is merged
+    step1 = flat(notes_raw.split("1. Sync first", 1)[1].split("\n2. Read, in this order", 1)[0])
+    m = re.search(r"The pull request this step means is PR #(\d+) until it is merged", step1)
+    assert m, "step 1 does not say which pull request it means"
+    if m.group(1) == "467":
+        holds(step1, "The pull request this step means is PR #467 until it is merged: on the morning of 2026-11-22 I told "
+                     "the cloud session to merge it once W1193c has landed and CI is green, as I did for #463, #465 and "
+                     "#466, and then to open a fresh one for the build rounds, which this step means from then on.",
+              "step 1")
+    git = flat(notes_raw.split("- **All work is in git.**", 1)[1].split("\n- **", 1)[0])
+    g = ("On the morning of 2026-11-22 you told the cloud session to merge the pull request opened after #466 was merged, "
+         "PR #467, once W1193c has landed and CI is green, as it merged #463, #465 and #466, and then to open a fresh "
+         "pull request for the build rounds, which carries the later rounds from then on")
+    holds(git, g, "the notes' record of the pull requests")
+    assert "PR #33" in git, "the notes' record of PR #33 is gone"
+    assert git.index("PR #33") < git.index(g), "the record of PR #467 is not after PR #33's"
+    yours_raw = notes_raw.split("- **Still yours:**", 1)[1].split("\n- **", 1)[0]
+    yours = flat(yours_raw)
+    merge_line = "Merge the open pull request from `main-l1fsqo`"
+    if merge_line in yours:      # a later round may reword or remove the merge line once the cycles end
+        merge = ("On the morning of 2026-11-22 you told it to merge PR #467 once W1193c has landed and CI is green; the "
+                 "fresh pull request it then opens carries the build rounds.")
+        holds(yours, merge, "the notes' Still-yours list")
+        assert yours.index(merge_line) < yours.index(merge), "the Still-yours merge line's order"
+    subs = [flat(b) for b in yours_raw.split("\n  - ")]
+    if reg["FU-1817"]["status"] == "open":
+        hits = [b for b in subs if b.startswith("One solicitor's engagement before anyone but you is invited (FU-1817)")]
+        holds(" ".join(hits), "before any health-related wellbeing entry. As you ruled on the morning of 2026-11-22, the "
+                              "solicitor is also to be asked in writing about retention and erasure, and you are to "
+                              "approve a record of processing once the solicitor has answered; the deletion-drill rounds "
+                              f"go ahead either way, {MARKED}.", "the notes' FU-1817 line")
+    if reg["FU-1837"]["status"] == "open":
+        hits = [b for b in subs if b.startswith("Revoking at their providers")]
+        holds(" ".join(hits), "The cloud session may list stale branches for deletion; no branch is deleted or changed "
+                              f"without the Owner's explicit word. Ruled on the morning of 2026-11-22: {BRANCH_YOU}",
+              "the notes' FU-1837 line")
+
+    #  the canvas, on the Owner's word: a dated note under block 5's credit line, which is kept as it was ratified
+    canvas_raw = read("docs/business/BUSINESS_MODEL_CANVAS.md")
+    holds(flat(canvas_raw.split("\n## ", 1)[0]), "on 2026-11-22, a dated note on the credit for the generation price, "
+          "under Revenue, the line it notes kept as it was", "the canvas's opening")
+    revenue = flat(canvas_raw.split("## 5. Revenue", 1)[1].split("\n## ", 1)[0])
+    credit = ("- GBP 99 once for generating an enterprise, credited against its first profit share, and waived for a "
+              "charitable or non-distributing one [owner-defined, 2026-10-13; the statement is at "
+              "`agentic_core/economy/generation_price.py`].")
+    note = ("- Noted on 2026-11-22, on the Owner's word, the line above kept as it was ratified: since 2026-11-22 the "
+            "credit carries forward against later fees until it is used up, with no conversion while money is virtual, "
+            "and the unit it is held in is a question for an accountant [owner-defined, 2026-11-22].")
+    assert revenue.count(credit) == 1, "the credit line is not kept as it was ratified"
+    holds(revenue, note, "the canvas's note on its credit line")
+    between = revenue[revenue.index(credit) + len(credit):revenue.index(note)]
+    assert all(b.startswith("Noted on") for b in between.split("- ") if b.strip()), "the note is not under its line"
+
+    #  the business plan, on the Owner's word: the Concept bullet amended, its earlier words kept
+    bplan_raw = read("docs/business/BUSINESS_PLAN.md")
+    holds(flat(bplan_raw.split("\n## ", 1)[0]), "on 2026-11-22, the platform's fee and the owner's share, under Concept, "
+          "the earlier words kept beside it", "the business plan's opening")
+    concept = flat(bplan_raw.split("\n## Concept\n", 1)[1].split("\n## ", 1)[0])
+    holds(concept, "- **Each enterprise is an economic organism**: it pays the platform 25% of its profit first, for "
+                   "updates and maintenance, and from what remains it pays its own owner 20 parts in a hundred, "
+                   "reinvests in itself and gives to causes, in virtual money until the Owner directs real rails "
+                   "[owner-defined: the vision, section 12; ruling of 2026-10-12; amended by the Owner on 2026-11-22]. "
+                   "Before 2026-11-22 this read: \"it pays its owner a share, reinvests in itself and gives to causes, in "
+                   "virtual money until the Owner directs real rails.\"", "the business plan's Concept")
+
+    #  the workpack: the eighth question for the one solicitor's engagement
+    sol = flat(read("docs/business/FORMATION_WORKPACK.md").split("## Questions for a solicitor", 1)[1].split("\n## ", 1)[0])
+    q8 = ("8. For how long may each store that holds a person's data keep it, and how is a person's data to be erased "
+          "when they ask, so that the Owner can approve a record of processing once this is answered?")
+    holds(sol, q8, "the workpack")
+    holds(sol, "- Question 8 was added on the Owner's ruling of the morning of 2026-11-22 that the solicitor also be asked "
+               "in writing about retention and erasure, and that the Owner approves a record of processing once the "
+               "solicitor has answered. [owner-defined, 2026-11-22]", "the workpack")
+    assert "7. Would the capital fund" in sol, "the workpack's seventh question is gone"
+    assert sol.index("7. Would the capital fund") < sol.index(q8), "the workpack's order"
+
+    #  the working plan: its head says in which words the six were accepted; its rows say what the answers changed
+    prep = read("docs/V44_ROUNDS_PREP.md")
+    holds(flat(prep.split("\n## Honest status", 1)[0]),
+          "ANSWERED ON THE MORNING OF 2026-11-22 (W1193c), the text below kept as it was written: the Owner accepted the "
+          "six recommendations as they were put in chat at 03:04 UTC (\"I accept all six recommendations, proceed\", "
+          "07:25 UTC): the five listed under What goes to the Owner in chat, worded for the chat, and a sixth, from the "
+          "re-measurement of the remaining work, on when the final audit runs. Where the words put in chat differ from "
+          "the five below, the words put in chat govern, and W1193c recorded those: chromadb is to be removed from the "
+          "dependency list once the retired memory is removed, the same way the unused streamlit, plotly and pandas "
+          "packages were taken out, with a full test run on a fresh install, and the re-checks of test_w583 L5 and "
+          "test_w907 stay this plan's notes, not the ruling; the two legal-form descriptions are to be reworded to say "
+          "what each template models, the nine names kept and the old words kept in a dated note, and the example "
+          "wordings and the note's place in section 2 stay this plan's proposal, not the ruling; and the business plan's "
+          "dated note also says that the 20% goes to each entity's own owner. The answers are recorded at P3.32 "
+          "(chromadb), P5.18 and FU-1868 (the two descriptions), P4.2 and FU-1817 (retention and erasure), in the canvas "
+          "(its credit line's note), in the business plan (the fee and the owner's share, under Concept) and at P5.22 "
+          "and FU-1086 (the final audit). W1230 (A3b) and W1231 (C5b) are no longer held on the Owner (W1230 still "
+          "follows W1196, W1231 W1216); W1193c made W1232's canvas note and the business plan's dated amendment, which "
+          "no round held, so W1232 is not to be built. W1200 is to keep FU-1086's ruling of the morning of 2026-11-22, "
+          "and P5.22's BUILT line is to say the audit runs in December; and W1216 leaves FU-1868 open, which W1231 "
+          "closes.", "the working plan's head")
+    ans = "Answered on the morning of 2026-11-22 (W1193c)"
+    for start, s in (
+            ("| The business plan | ", f"{ans}: on the Owner's word the business plan's Concept bullet gained a dated "
+             "note, its earlier words kept: the platform's 25% fee comes first, and 20 parts in a hundred of what remains "
+             "go to each entity's own owner."),
+            ("| Bundled schedule | ", f"{ans}: W1230 and W1231 are no longer held, and W1232 is not to be built "
+             "(W1193c made its note)."),
+            ("| Rounds HELD on the Owner | ", f"{ans}: none is held on the Owner now; W1230 still follows W1196 and W1231 "
+             "W1216, and W1232 is not built (W1193c made the note)."),
+            ("| Owner questions | ", f"{ans}: the Owner accepted them as put in chat, with a sixth on the final audit "
+             "(the note at the head says where the words differ)."),
+            ("| W1230 | A3b | HELD", f"{ans}: no longer held; still after W1196"),
+            ("| W1231 | C5b | HELD", f"{ans}: no longer held; still after W1216"),
+            ("| W1232 | CANVAS-CREDIT | HELD", f"{ans}. Not built: W1193c made the note"),
+            ("**Held on:** The Owner's answer to the chromadb question (in chat)", f"{ans}: no longer held; still after "
+             "W1196. The Owner's answer is recorded at P3.32."),
+            ("**Held on:** The Owner's answer to the template question (in chat)", f"{ans}: no longer held; still after "
+             "W1216. The Owner's answer is recorded at P5.18 and in FU-1868."),
+            ("**Held on:** The Owner's answer to the canvas question (in chat)", f"{ans}. Not built: W1193c made the "
+             "note."),
+            ("- A3 (UNSOUND): re-planned, not held.", f"{ans}: no longer held on the Owner; still after W1196."),
+            ("- D-CANVAS: superseded, not built.", f"{ans}: on the Owner's word the business plan's Concept bullet gained "
+             "a dated note, and W1193c made the canvas's credit note, so W1232 is not built."),
+            ("- Three planned OWNER rows are not registered.", f"{ans}: no longer held on the Owner; still after W1216."),
+            ("- HELD on the Owner: ", f"{ans}: none is held on the Owner now; W1230 still follows W1196 and W1231 W1216, "
+             "and W1232 is not built (W1193c made the note)."),
+            ("  - 13: W1192, with block 5's credit residue in W1232 (HELD).", f"{ans}: W1193c made the note, so W1232 is "
+             "not built."),
+            ("- The first row, closed as built. The OWNER row stays open.", f"{ans}: FU-1868 stays open until W1231 has "
+             "landed; W1216 does not close it."),
+            ("- docs/FABLE_DELIVERY_PROMPT.md and docs/FOLLOWUPS.json: A P5.18 UPDATED line for clause 1's sentence. "
+             "Close the first row.", f"{ans}: leave FU-1868 open; W1231 closes it."),
+            ("  Severity high, slot P5.22, source W747 and not gated: all kept. Then render.", f"{ans}: the why also keeps "
+             "FU-1086's ruling of the morning of 2026-11-22."),
+            ("- docs/FABLE_DELIVERY_PROMPT.md: P5.22, after ACCEPT (7): ", f"{ans}: the BUILT line is also to say the "
+             "audit runs in December.")):
+        lines = [ln for ln in prep.split("\n") if ln.startswith(start)]
+        assert len(lines) <= 1, (start, len(lines))
+        if lines:        # a later round may restate a row or a held line once its round is built
+            holds(lines[0], s, start)
+
+    #  section 35's For the Owner: the answer, once, after the five put in chat, whose count stays five
+    sec = read("docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md").split("\n## 35. Addendum (W1193)", 1)[1]
+    owner = flat(sec.split("### For the Owner", 1)[1])
+    line = ("- **Answered on the morning of 2026-11-22.** The Owner accepted the six recommendations as they were put in "
+            "chat at 03:04 UTC (\"I accept all six recommendations, proceed\", 07:25 UTC): the five above, worded for the "
+            "chat, and a sixth, on when the final audit runs: \"after Phase 5\" means after its build items close, so the "
+            "audit is to run in December, and the rows still waiting on the Owner (the letters and the second Care "
+            "calibration) are to be listed in its record as open, carrying into January without holding it back. The "
+            "words put in chat govern where they differ from the five above: the second also keeps the old words in a "
+            "dated note; the third has the solicitor asked in writing, and the deletion-drill rounds go ahead either "
+            "way, with every retention period marked \"not decided: the Owner's\"; and the fifth's dated note also says "
+            "the 20% goes to each entity's own owner. W1193c recorded each where the work reads it: on the Owner's word "
+            "the business plan's Concept bullet now says the platform's 25% fee comes first and 20 parts in a hundred of "
+            "what remains go to each entity's own owner, its earlier words kept, and its header says it has changed "
+            "twice; the canvas's credit line gained a dated note, its words kept.")
+    holds(owner, line, "section 35")
+    assert owner.count("**Answered on the morning of 2026-11-22.**") == 1, "section 35 says the answer more than once"
+    asked = owner.split("Put to the Owner in chat, each with a recommendation:**", 1)[1].split("**The v40 body", 1)[0]
+    assert "**The v40 body" in owner, "section 35's v40 line is gone"
+    assert len(re.findall(r"\(recommended: yes", asked)) == 5 and owner.index("**The v40 body") < owner.index(line)
+
+    #  the remaining-work page, while it is the measurement of 2026-11-22 at a4b96954: each answer where it put the
+    #  question, as given after it was measured
+    page = read("docs/REMAINING_WORK_MEASURED.md")
+    if page.startswith("# Remaining work, measured — 2026-11-22 (HEAD a4b96954)"):
+        after = "after this page was measured (recorded here by W1193c)"
+        ruled_audit = (f"{RM}: 'after Phase 5' means after its build items close, so the audit is to run in December, "
+                       "and the rows still waiting on the Owner (the letters and the second Care calibration) are to be "
+                       "listed in its record as open; they carry into January without holding it back.")
+        parts = re.split(r"(?m)^## (P[1-5]\.\d+) — [^\n]*\n", page)
+        sections = {parts[i]: flat(parts[i + 1]) for i in range(1, len(parts), 2)}
+        own = lambda iid: sections[iid].split("- **Only the Owner can:**", 1)[1]   # noqa: E731
+        holds(own("P5.22"), "The plan did not say whether 'after Phase 5' means its build items or every row. It was put "
+                            f"to the Owner on 2026-11-22 and ruled that morning, {after}: {ruled_audit}",
+              "P5.22's Owner part")
+        assert "not decided here" not in own("P5.22"), "P5.22's Owner part still leaves the question open"
+        top = flat(page.split("\n## P", 1)[0])
+        holds(top, "on P5.15, which waits on the Owner's second calibration run before 2027-01-10. It was put to the Owner "
+                   f"on 2026-11-22 and ruled that morning, {after}: {ruled_audit}", "the timeline")
+        assert "Recommended: its build items" not in top, "the timeline still leaves the question open"
+        holds(own("P5.14"), f"The section 27 counts question (A22) was answered on the morning of 2026-11-22, {after}: the "
+                            "three exchange lessons the Owner already ratified whose defects quote section 27's counts keep "
+                            "them, as dated quotations of what was measured at the time, and the section 27 totals stay in "
+                            "the assessment.", "P5.14's Owner part")
+        assert "(A22) stays open" not in page, "P5.14's Owner part still leaves A22 open"
+        holds(sections["P5.14"], "Put the two confirmations to the Owner at the round's end (A22, A27). A22 was answered "
+                                 f"on the morning of 2026-11-22, {after}.", "P5.14's piece")
+        holds(own("P2.40"), "is dropped once nothing imports it. The Owner answered yes on the morning of 2026-11-22, "
+                            f"{after}: W1230 is no longer held on the Owner (it still follows W1196), and it is not counted "
+                            "here.", "P2.40's Owner part")
+        holds(own("P5.18"), "The answer on the two approved legal-form descriptions, on which W1231 was HELD: the Owner "
+                            f"gave it on the morning of 2026-11-22, {after}, and it was yes: the two to be reworded to say what "
+                            "each template models, the nine names kept and the old words kept in a dated note.",
+              "P5.18's Owner part")
+        holds(own("P5.18"), "say what each template models. Since the Owner's answer of the morning of 2026-11-22 W1231 is "
+                            "no longer held on the Owner (it still follows W1216), and it is not counted here.",
+              "P5.18's held round")
+        holds(top, "(the ratified canvas's credit line) rides the Owner's list, not an item. The Owner answered all three "
+                   f"on the morning of 2026-11-22, {after}: W1230 and W1231 are no longer held on the Owner, and W1193c "
+                   "made W1232's canvas note in its place; none of the three is counted in this page's sizes.",
+              "the page's head")
+
+    #  nothing this round wrote gives anyone a gendered pronoun
+    for text in said:
+        hit = PRONOUN.search(text)
+        assert not hit, ("a gendered pronoun", text[max(0, hit.start() - 60):hit.end() + 20])

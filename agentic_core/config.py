@@ -72,8 +72,12 @@ class Settings:
         if self.is_production and not self.auth_enabled:
             issues.append("AUTH_ENABLED is false in production. Consider enabling JWT auth.")
         if self.is_production and self.auth_enabled and not self.admin_password:
-            issues.append("ADMIN_PASSWORD is unset with auth enabled in production — the bootstrap "
-                          "admin has a random password; set ADMIN_PASSWORD to claim it.")
+            #  W1191 - this told the operator to put the password in an environment variable, where the container's
+            #  configuration would show it: the release machine's password is set on the machine, read twice and
+            #  kept only as a hash (docs/DEPLOYMENT.md, step 7)
+            issues.append("Sign-in is on in production: the admin's password is the one set on the machine with "
+                          "`python -m agentic_core.auth.set_password admin`; until it is set, the bootstrap admin's is "
+                          "random and no one is told it.")
         return issues
 
 

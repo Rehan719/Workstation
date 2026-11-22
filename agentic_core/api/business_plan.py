@@ -956,6 +956,8 @@ async def ratified_enter(req: EnterRatifiedRequest, user: dict | None = Depends(
     plan["entered_from_ratified_document"] = {
         "document": shown["document"], "sha256": shown["sha256"], "ratified_on": shown["ratified_on"],
         "changed_since_ratification": shown["changed_since"],
+        #  W1193c: every change since ratification, oldest first, beside the latest (kept for its shape)
+        "changes_since_ratification": shown["changes"],
         "entered_at": (first or {}).get("entered_at") if (first or {}).get("sha256") == shown["sha256"] else ts,
         "entered_by": plan.get("owner"), "by_verified": True,
         "basis": (f"ratified by the Owner on {shown['ratified_on']}; entered from that document by one action "

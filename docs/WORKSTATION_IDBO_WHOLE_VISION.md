@@ -599,6 +599,11 @@ in users; donates intelligently to causes by real-world urgency (WATER · Orphan
 Dawah; 100%-donation-only). **Virtual/simulated money until the Owner directs real rails**; built to
 launch-ready standard. (Full design in `VSB_ECONOMIC_LEGAL_MODEL.md`.)
 
+**Recorded 2026-11-22 (W1192), the words above kept:** by the Owner's rulings of 2026-10-12 (P5.16
+clause 3; P5.9, the payee is the entity's owner record), each generated entity pays the platform 25% of
+its profit first, for updates and maintenance, and the adjustable profit share above, paid from what
+remains, goes to each entity's own owner.
+
 **Recorded W446 — what the Owner approved (2026-06-21, re-approved 2026-06-29; built W215–W221 and
 hardened through W442; `agentic_core/economy/entities.py`):** **nine selectable legal forms** (Sole
 Holder · Ltd · PLC · Trust · Waqf · Multinational Group · Non-profit · Charity · **Waqf-Ltd Hybrid,
@@ -611,6 +616,11 @@ Stripe real-money later behind compliance/KYC** (`REAL_MONEY_ENABLED` stays Fals
 flips it); the four causes with a **100%-donation-only screen** and Owner-set directives (inclusions /
 exclusions honoured); the live charity-signals seam **Owner-gated**; double-entry books with period
 close and CFO statements.
+
+**Recorded 2026-11-22 (W1192), the words above kept:** by the Owner's rulings of 2026-10-12 (P5.16
+clause 3; P5.9, the payee is the entity's owner record), each generated entity pays the platform 25% of
+its profit first, for updates and maintenance, after the Stage 0 reserves; the split above applies to
+what remains, and its first share (written "Owner 20" above) goes to each entity's own owner.
 
 ## 13. What the Output *is* (every deliverable is alive)
 
@@ -1734,8 +1744,10 @@ the exact text approved, so an edit afterwards falls back to withheld rather tha
 It replaced a mechanism that had the SHAPE of this audit and verified nothing — `QEPAuthoringReactor`
 approved on a trust score the CALLER supplied about itself, kept its queue in memory, and was consulted by
 nothing in the learner path. SCOPE: the gate covers the learner/curriculum path. Whether it should also
-cover the five Religion research tools is FU-448, an open Owner decision — those five already withhold on
-the floor and already refer the reader to a qualified scholar.*
+cover the five Religion research tools was FU-448: the Owner ruled on 2026-10-06 that the gate does not extend
+to the five research tools (closed in W598), and on 2026-10-11 that what a model composes there is withheld
+until a named scholar approves that exact text — those five already withhold on the floor and already refer
+the reader to a qualified scholar.*
 
 **A.12.4 Fitrah Spectrum — RULED 2026-10-05b: DEFERRED, and recorded as a BOUNDARY, not a backlog
 row.** The 99 aspects were never enumerated in any source. The ruling asked was whether it proceeds as a

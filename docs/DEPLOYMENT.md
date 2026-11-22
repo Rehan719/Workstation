@@ -205,6 +205,9 @@ WHAT IT COSTS, read at the pricing pages (the arithmetic is this round's, over a
 
 THE STEPS, run from the Workstation folder with gcloud signed in as the Owner
 
+The domain comes first: it "is bought before the first deploy" (P4.5, the Owner's ruling of 2026-11-21 as W1190
+recorded it), and the machine is told it at step 12, together with sign-in (W1191).
+
 **Step 1. A budget alert, before anything else** [budget-cli] [budgets]
 
 ```bash
@@ -264,6 +267,9 @@ here.
 
 **Step 6. The firewall rule: ports 80 and 443, to the machine tagged workstation** [firewall] [migrate]
 
+Run at step 12, just before the machine is given its domain (W1191): until then nothing needs it: the tunnel is
+SSH, and while the rule does not exist the network admits neither port from outside.
+
 ```bash
 gcloud compute firewall-rules create workstation-http --network=default --direction=ingress --action=allow \
     --target-tags=workstation --source-ranges=0.0.0.0/0 --rules=tcp:80,tcp:443
@@ -271,7 +277,8 @@ gcloud compute firewall-rules create workstation-http --network=default --direct
 
 Container-Optimized OS denies incoming traffic by default, so the startup script opens the machine's own firewall
 with the migration page's two rules [migrate]; this rule is what lets ports 80 and 443 in from outside, and the
-network's other rules are unchanged. Port 443 is answered once step 12 has given the machine its domain.
+network's other rules are unchanged. Ports 80 and 443 are answered once step 12 has given the machine its domain
+and turned sign-in on.
 
 **Step 7. The machine, its kept data disk and its startup script** [vm] [cos] [startup] [mount] [metadata] [cos-run]
 
@@ -290,7 +297,8 @@ beside this file and keeps Unix line endings on every checkout (`.gitattributes`
 bash. Compute Engine runs it as root at every boot [startup]. It formats the data disk only if the disk is blank,
 mounts it at /mnt/disks/data with the mount page's commands [mount], opens the host firewall, reads the project and
 the image's tag from the machine's metadata server [metadata], signs the registry in with `docker-credential-gcr`,
-which the OS carries [cos-run], and starts the platform with its records on the data disk. Its disk step was driven
+which the OS carries [cos-run], and starts the platform with its records on the data disk, on the machine's own
+127.0.0.1:8000 only: until step 12 the startup script publishes no public port (W1191). Its disk step was driven
 in this round on disk images: a blank disk is formatted once, a formatted one is kept byte for byte, and a disk
 holding anything else, a short one or a missing one is refused, untouched, and the platform is not started
 (test_w1134). The labels are the cost labels: a budget can be narrowed to them with --filter-labels [budget-cli].
@@ -303,6 +311,67 @@ that grant is what is missing. The script's output is read on the machine with
 gcloud compute disks add-resource-policies workstation-data --resource-policies=workstation-daily \
     --zone=us-central1-a
 ```
+
+UNTIL STEP 12 THE PLATFORM IS THE OWNER'S ALONE (W1191): without a domain the startup script publishes no public
+port, so the platform is reached only over SSH from the Owner's own computer, signed in to gcloud. First a plain
+SSH session, with no tunnel yet:
+
+```bash
+gcloud compute ssh workstation --zone=us-central1-a
+```
+
+THE SECRETS stay on the machine: never in the repository, the metadata, an environment variable left set or a log
+(W1191). The password is never kept in a file of its own; the signing secret's own file is on the data disk.
+- The secret that signs sign-in tokens is generated at the platform's first boot and kept on the data disk
+  (`jwt_secret.key` under DATA_DIR, `agentic_core/auth/core.py`). Nothing sets it, and the snapshots of step 5
+  keep it with the records.
+- The first account, admin, is made with a random password no one is told. In that session, before sign-in is
+  turned on, the Owner sets its password once:
+
+```bash
+sudo docker exec -it workstation python -m agentic_core.auth.set_password admin
+```
+
+  The password is read twice without being shown, refused when the two differ or it is shorter than 12
+  characters, and only its hash is stored, in the users store on the data disk
+  (`agentic_core/auth/set_password.py`). A users store that is not there, or cannot be read whole, is refused and
+  left as it was. The login then no longer takes ADMIN_PASSWORD for admin, so that variable is never set on the
+  machine.
+
+SIGN-IN, RIGHT AFTER (recommended, W1191): sign-in is the Owner's switch, the machine's own metadata key
+auth-enabled, and nothing that deploys the machine turns it on (P4.1). Turned on right after the password is set,
+before any tunnel is opened, it holds through the tunnel as it will at step 12:
+
+```bash
+gcloud compute instances add-metadata workstation --zone=us-central1-a --metadata=auth-enabled=true
+sudo google_metadata_script_runner startup
+```
+
+The first runs where gcloud is and the second in the SSH session, as in step 8; the script then starts the
+platform with sign-in on, still on the machine's own 127.0.0.1:8000 only. This is earlier than P4.1's ruling of
+2026-11-20, which has sign-in switched on once the domain and HTTPS are live, and the Owner accepted it on
+2026-11-21 (P4.1): the Owner may sign in through the tunnel before the domain, and no one else signs in until
+step 12. Through the tunnel the password crosses the internet only inside SSH.
+
+THEN THE TUNNEL, for the browser:
+
+```bash
+gcloud compute ssh workstation --zone=us-central1-a -- -L 8800:127.0.0.1:8000
+```
+
+and then http://localhost:8800 in the browser, for as long as that session stays open. NOT READ HERE: gcloud's ssh
+reference; the command hands ssh its own `-L`, which forwards the computer's port 8800 to the machine's
+127.0.0.1:8000, after `--`. Port 8800, not 8000: the Owner's computer serves its own local platform on 8000
+(`docker compose up`, above), and ssh opens the session even when it cannot take the port, so localhost:8000
+would be the local platform and not the release machine's. While the tunnel is open and sign-in is off, anything
+on the Owner's computer that opens the forwarded port acts as the platform's administrator. The setting the
+script gives the platform here (CORS_ORIGINS) stops a page from another site reading the platform's ordinary
+answers, not sending it requests: while sign-in is off the platform acts on those requests as for the
+administrator, making an account included, and its stream socket and a host name rebound to 127.0.0.1 on the
+Owner's computer, where the tunnel listens, are outside that setting. With sign-in on, every route except those
+docs/PUBLIC_ROUTES.json makes public on purpose acts only on a request that carries a token, which a page from
+another site does not hold. Such a page can still send failed sign-ins, and five for one name block that name's
+sign-in for up to 15 minutes; the stream socket still answers it (FU-1835).
 
 **Step 8. A release, and a rollback, are the same two commands** [startup] [vm]
 
@@ -337,10 +406,11 @@ together are past the free 30 GB-months [disk-pricing]. Drilled on this machine 
 
 **Step 10. The uptime check and its alert, from outside the machine (FU-1095)** [uptime]
 
-In the console: Monitoring, Uptime checks, Create uptime check; protocol HTTP, resource type URL, the machine's
-address as the host and /health as the path; once step 12 has given the machine its domain, protocol HTTPS and the
-domain as the host, since Caddy answers plain HTTP with a redirect. Then, in the page's words: "To be notified when an uptime check fails,
-create an alerting policy and configure notification channels for that policy"; the channel is the Owner's e-mail.
+Set up once step 12 is done (W1191): until then the machine publishes no public port, so a check from outside
+sees nothing. In the console: Monitoring, Uptime checks, Create uptime check; protocol HTTPS, resource type URL,
+the domain as the host and /health as the path, since Caddy answers plain HTTP with a redirect. Then, in the
+page's words: "To be notified when an uptime check fails, create an alerting policy and configure notification
+channels for that policy"; the channel is the Owner's e-mail.
 By default a notification is sent when at least two regions report the check failing for at least a minute [uptime].
 Then the drill FU-1095 asks for, with the Owner watching: on the machine, `docker stop workstation`; see the e-mail
 arrive; `docker start workstation`; see the alert clear.
@@ -368,14 +438,16 @@ can't be reused" [wif]. Only main, the release channel, may deploy. The workflow
 `workload_identity_provider` and `service_account` [wif]. NOT READ HERE: the roles the deploying service account
 needs, and whether a later version of that action is current.
 
-**Step 12. HTTPS, before anyone signs in: a fixed address, the Owner's domain, and Caddy in front (FU-1284)**
+**Step 12. HTTPS, before anyone signs in other than the Owner: a fixed address, the Owner's domain, and Caddy in front (FU-1284)**
 [static-promote] [network-pricing] [caddy-https] [caddy-proxy] [caddy-headers] [caddy-image] [le-challenges]
 [cos-fs] [managed-certs]
 
-As steps 1 to 11 leave it, the machine serves plain HTTP at its address, so what a person types would cross the
-internet unencrypted: no person signs in (P4.1) until this step is done and the domain answers over HTTPS. A
-publicly trusted certificate is for a domain: a host name qualifies only if it is "not an IP address"
-[caddy-https]. The domain is the Owner's to buy (FU-1289).
+As steps 1 to 11 leave it, the machine publishes no public port: the platform listens on the machine's own
+127.0.0.1 only, and the Owner reaches it through the SSH tunnel of step 7 (W1191). Nothing a person types crosses
+the internet unencrypted, and but for the Owner, through that tunnel once step 7 has turned sign-in on (the
+Owner's ruling of 2026-11-21, late evening), no person signs in (P4.1) until this step is done and the domain
+answers over HTTPS. A publicly trusted certificate is for a domain: a host name qualifies only if it is "not an
+IP address" [caddy-https]. The domain is the Owner's to buy (FU-1289), before the deploy.
 
 First the machine's address is made its own. The address step 7 gave the machine is ephemeral, and the domain must
 keep pointing at it. Promoting it keeps it, and "does not cause Google Cloud to drop packets sent to the VM"
@@ -392,16 +464,36 @@ attached to nothing is $0.01 an hour [network-pricing].
 
 Then, at the domain's DNS provider, an A record for the domain naming EXTERNAL_IP. Caddy obtains a certificate when
 "your domain's A/AAAA records point to your server", "ports `80` and `443` are open externally" and its data
-directory "is writeable and persistent" [caddy-https]. Then the machine is told its domain, and its startup script
-is run again as in step 8:
+directory "is writeable and persistent" [caddy-https]. Create step 6's rule now: from here on Caddy needs both
+ports, port 80 for the certificate's challenge.
+
+Before the domain is set, the accounts are checked (W1191). GET /api/v1/auth/users lists them, admin-only once
+sign-in is on; on the machine the same accounts are printed from the users store itself, each with its role and
+the time it was made, never its password's hash, with no sign-in and nothing typed:
 
 ```bash
-gcloud compute instances add-metadata workstation --zone=us-central1-a --metadata=domain=DOMAIN
+sudo docker exec workstation python -c "import json; [print(n, u.get('role'), u.get('created_at', '-')) for n, u in sorted(json.load(open('/app/data/users.json')).items())]"
+```
+
+It prints admin's line, and one for each account the Owner made. Any account the Owner did not make is a reason to
+stop, and one made before sign-in was turned on is the kind to distrust: while sign-in was off, the tunnel's port
+acted as the administrator for whatever reached it. Then the domain is not set. The data disk is restored from a
+snapshot taken before that
+account (step 9; the snapshots are daily, so on the first day there may be none), or, before any record matters,
+the platform starts again on a blank data disk; and what reached the forwarded port is found before a tunnel is
+opened again. Then, with the admin's password set (step 7), the machine is told its domain and that sign-in is
+on, together, and its startup script is run again as in step 8:
+
+```bash
+gcloud compute instances add-metadata workstation --zone=us-central1-a --metadata=domain=DOMAIN,auth-enabled=true
 sudo google_metadata_script_runner startup
 ```
 
-The script refuses a domain that is not a host name, an IP address included, and leaves the running platform as it
-was. Otherwise it starts the platform on a private Docker network with no port of its own, believing a forwarded
+The script refuses a domain that is not a host name, an IP address included, and a domain without sign-in on
+(auth-enabled=true): nothing public starts, and the running platform is left as it was. Sign-in is turned on by
+the machine's own metadata, the Owner's switch (the Owner's ruling of 2026-11-21), never by what deploys the
+machine (W1191); turned on at step 7, it is set again here with the domain. Otherwise it starts the platform, with
+sign-in on, on a private Docker network with no port of its own, believing a forwarded
 client address only from Caddy's fixed address, and starts Caddy, the official image pinned by its digest
 [caddy-image], on ports 80 and 443 in front of it with Caddy's own one-command reverse proxy, `caddy reverse-proxy
 --from DOMAIN --to workstation:8000` [caddy-proxy]. Caddy obtains the domain's certificate from a public
@@ -411,6 +503,8 @@ reverse proxy "sets or augments the `X-Forwarded-For` header field" and by defau
 brings for it, "to prevent spoofing" [caddy-headers]. Caddy keeps its certificates in a Docker volume on the boot
 disk: its data directory "must not be treated as a cache" [caddy-image], and on this OS /var/lib/docker is
 stateful, for the lifetime of the boot disk [cos-fs]. A new machine obtains a new certificate.
+
+Then step 10: the uptime check over HTTPS on the domain, and its drill (FU-1095).
 
 THE OTHER WAY, NOT TAKEN: a global external Application Load Balancer with a Google-managed certificate
 [managed-certs] needs a domain too, and its forwarding rule alone is $0.025 an hour, about $18.25 a month

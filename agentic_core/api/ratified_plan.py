@@ -8,7 +8,7 @@ of the Owner's, not typed field by field (Owner ruling 2026-10-14).
 import hashlib
 import pathlib
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
 DOCUMENT = "docs/business/BUSINESS_PLAN.md"
 #  product field -> the document's heading
@@ -63,6 +63,39 @@ def _prose(body: str) -> str:
     return "\n".join(lines)
 
 
+#  W1193c - the opening says each change since ratification: "Changed once since, with the Owner's word, on <date>:
+#  <what>." for one, and "Changed twice since, with the Owner's word: on <date>, <what>; and on <date>, <what>." for
+#  more. Every change is read, oldest first. A change line that cannot be read whole - not in that form, its count
+#  unlike the changes it lists, or its dates out of order - is said as unread, never as a document that did not change.
+_COUNTS = {"once": 1, "twice": 2, "three times": 3, "four times": 4, "five times": 5, "six times": 6,
+           "seven times": 7, "eight times": 8, "nine times": 9, "ten times": 10}
+_CHANGED = re.compile(r"Changed (once|twice|[a-z]+ times) since, with the Owner's word[,:] (.+?)\.(?=$| \*\*| [A-Z])")
+_ONE_CHANGE = re.compile(r"(?:and )?(?:again )?on (20\d\d-\d\d-\d\d)[,:] (.+)")
+
+
+def _changes(opening: str) -> Tuple[Optional[List[Dict[str, str]]], Optional[str]]:
+    """(changes, unread): each change since ratification, oldest first, and None; or None and why the change line
+    could not be read. An opening that names no change gives ([], None)."""
+    m = _CHANGED.search(opening)
+    rest = opening if m is None else opening[:m.start()] + opening[m.end():]
+    if re.search(r"(?i)\bchanged\b", rest):
+        said = re.search(r"(?i)[^.]*\bchanged\b[^.]*", rest)
+        return None, f"the document's change line could not be read: {said.group(0).strip()[:160]}"
+    if m is None:
+        return [], None
+    out = []
+    for part in m.group(2).split("; "):
+        e = _ONE_CHANGE.fullmatch(part.strip())
+        if e is None:
+            return None, f"the document's change line could not be read: {part.strip()[:160]}"
+        out.append({"on": e.group(1), "what": e.group(2)})
+    if _COUNTS.get(m.group(1)) != len(out):
+        return None, f"the document's change line says {m.group(1)} but lists {len(out)} change(s)"
+    if any(later["on"] < earlier["on"] for earlier, later in zip(out, out[1:])):
+        return None, "the document's change line does not list its changes oldest first"
+    return out, None
+
+
 def preview(root: pathlib.Path) -> Dict[str, Any]:
     raw = (root / DOCUMENT).read_bytes()
     text = raw.decode("utf-8").replace("\r\n", "\n")
@@ -84,16 +117,20 @@ def preview(root: pathlib.Path) -> Dict[str, Any]:
                                    "measure_as_ratified": cells[2],
                                    "timeline": "in rounds; no date is promised", "owner_role": "the Owner",
                                    "source": "ratified document"})
-    changed = re.search(r"Changed once since, with the Owner's word, on (20\d\d-\d\d-\d\d): ([^.]+)\.", opening)
+    changes, unread = _changes(opening)
     return {
         "document": DOCUMENT, "sha256": hashlib.sha256(raw).hexdigest(),
         "ratified_on": (m.group(1) if m and not draft else None),
-        "changed_since": ({"on": changed.group(1), "what": changed.group(2)} if changed else None),
+        #  W1193c: the latest change, as before, and every change since ratification, oldest first; both None
+        #  when the change line could not be read, which is then a document fault
+        "changed_since": (changes[-1] if changes else None),
+        "changes": changes,
         "fields": {f: _prose(secs.get(h, "")) for f, h in FIELDS},
         "aims": _bullets(secs.get("Aims", "")),
         "objectives": objectives,
         "not_entered": [h for h in NOT_ENTERED if h in secs],
         "canvas": CANVAS_NOTE,
         "document_faults": ([f"the document has no section headed '{h}'" for h in missing]
-                            + ([] if (m and not draft) else ["the document does not open by saying it is ratified, with a date"])),
+                            + ([] if (m and not draft) else ["the document does not open by saying it is ratified, with a date"])
+                            + ([unread] if unread else [])),
     }

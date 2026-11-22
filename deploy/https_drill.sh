@@ -38,7 +38,8 @@ seen() {    # the address the platform's access log gives for the request marked
 }
 
 t0=$(date +%s.%N)
-start_front "$IMG" drill "$DOM" >/dev/null || { echo "FRONT_START_FAILED"; exit 1; }
+#  the front starts only with sign-in on, its fourth argument (W1191); /health answers with sign-in on
+start_front "$IMG" drill "$DOM" true >/dev/null || { echo "FRONT_START_FAILED"; exit 1; }
 healthy || { echo "FRONT_NOT_HEALTHY"; docker logs --tail 20 caddy; exit 1; }
 echo "FRONT_TO_HEALTH_SECONDS=$(python3 -c "import time; print(round(time.time() - $t0, 1))")"
 echo "IMAGE=$IMG"

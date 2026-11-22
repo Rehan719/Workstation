@@ -4,8 +4,9 @@
 (`docs/WORKSTATION_IDBO_WHOLE_VISION.md`), the Owner's own canon, in the order the vision gives a plan:
 executive summary, concept, vision, mission, strategy, aims, objectives. A change to this text from here on
 needs the Owner's word. Ratifying it did not enter it into the product's own plan; the Owner enters that
-through the plan's own edit page (ruling of 2026-10-10). Changed once since, with the Owner's word, on
-2026-10-14: the line on the name, under Risks.
+through the plan's own edit page (ruling of 2026-10-10). Changed twice since, with the Owner's word: on
+2026-10-14, the line on the name, under Risks; and on 2026-11-22, the platform's fee and the owner's share,
+under Concept, the earlier words kept beside it.
 
 **How to read the tags.** Each statement ends with one tag: [owner-defined] the Owner said it, in the vision or
 in a ruling · [observed] true of the product today · [inference] reasoned, not measured · [hypothesis] to be
@@ -36,8 +37,11 @@ market.
 - **Concept to commercialisation**: one idea taken end to end into a living enterprise, with a board, a plan,
   books and a record of every change [owner-defined: the vision, section 4; observed in
   `agentic_core/api/change_control.py`].
-- **Each enterprise is an economic organism**: it pays its owner a share, reinvests in itself and gives to
-  causes, in virtual money until the Owner directs real rails [owner-defined: the vision, section 12].
+- **Each enterprise is an economic organism**: it pays the platform 25% of its profit first, for updates and
+  maintenance, and from what remains it pays its own owner 20 parts in a hundred, reinvests in itself and gives to
+  causes, in virtual money until the Owner directs real rails [owner-defined: the vision, section 12; ruling of
+  2026-10-12; amended by the Owner on 2026-11-22]. Before 2026-11-22 this read: "it pays its owner a share,
+  reinvests in itself and gives to causes, in virtual money until the Owner directs real rails."
 
 ## Vision
 

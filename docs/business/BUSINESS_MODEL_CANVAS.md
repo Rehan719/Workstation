@@ -3,8 +3,10 @@
 **Ratified by the Owner on 2026-10-13**, whole and without change. It is written from the whole vision
 (`docs/WORKSTATION_IDBO_WHOLE_VISION.md`), which is the Owner's own canon, so that it reads as one story.
 A change to this text from here on needs the Owner's word. Ratifying it did not enter it into the product's own
-plan; the Owner enters that through the plan's own edit page (ruling of 2026-10-10). Changed once since, with
-the Owner's word, on 2026-10-14: the line on the name, under Key resources.
+plan; the Owner enters that through the plan's own edit page (ruling of 2026-10-10). Changed three times since,
+with the Owner's word: on 2026-10-14, the line on the name, under Key resources; on 2026-11-22, the platform's
+fee and the owner's share, in the one page and under Revenue, the earlier words kept beside each; and again on
+2026-11-22, a dated note on the credit for the generation price, under Revenue, the line it notes kept as it was.
 
 **How to read the tags.** Each statement ends with one tag in square brackets:
 [owner-defined] the Owner said it, in the vision or in a ruling ·
@@ -23,9 +25,11 @@ It serves a person in **two ways**. A person can do their own work in a domain w
 person can take one idea all the way from concept to a living enterprise that runs itself
 [owner-defined: the vision, section 3A].
 
-The tools are free. A founder pays once when an enterprise is generated. Each enterprise then shares its
-profit by a fixed split that includes the Owner, its own growth and charity
-[owner-defined: the vision, section 12; ruling of 2026-10-13].
+The tools are free. A founder pays once when an enterprise is generated. Each enterprise then pays the platform
+25% of its profit first, and shares what remains by a fixed split that includes its own owner, its own growth
+and charity [owner-defined: the vision, section 12; rulings of 2026-10-12 and 2026-10-13; amended by the Owner
+on 2026-11-22]. Before 2026-11-22 this read: "Each enterprise then shares its profit by a fixed split that
+includes the Owner, its own growth and charity."
 
 Today it runs on the Owner's machine, with its own AI, in virtual money, with no users but the Owner
 [observed].
@@ -96,9 +100,15 @@ Today it runs on the Owner's machine, with its own AI, in virtual money, with no
 - GBP 99 once for generating an enterprise, credited against its first profit share, and waived for a
   charitable or non-distributing one [owner-defined, 2026-10-13; the statement is at
   `agentic_core/economy/generation_price.py`].
-- Each enterprise shares what it can distribute, in parts of a hundred: the Owner 20, its own growth 30, a
-  capital fund 20, the projects of its users 15, and charity 15, after reserves
-  [owner-defined: the vision, section 12].
+- Noted on 2026-11-22, on the Owner's word, the line above kept as it was ratified: since 2026-11-22 the credit
+  carries forward against later fees until it is used up, with no conversion while money is virtual, and the unit it
+  is held in is a question for an accountant [owner-defined, 2026-11-22].
+- After reserves, each enterprise pays the platform 25% of its profit first, for updates and maintenance, and
+  shares what remains, in parts of a hundred: its own owner 20, its own growth 30, a capital fund 20, the
+  projects of its users 15, and charity 15 [owner-defined: the vision, section 12; ruling of 2026-10-12;
+  amended by the Owner on 2026-11-22]. Before 2026-11-22 this read: "Each enterprise shares what it can
+  distribute, in parts of a hundred: the Owner 20, its own growth 30, a capital fund 20, the projects of its
+  users 15, and charity 15, after reserves."
 - All money is virtual until the Owner directs real rails, and nothing is charged before a reviewer's pass and
   a solicitor's view [owner-defined: the vision, section 12; ruling of 2026-10-13].
 - A founder will pay once for a governed enterprise [hypothesis]. *The test that would show it wrong:* of the

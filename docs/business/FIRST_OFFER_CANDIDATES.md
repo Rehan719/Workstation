@@ -56,7 +56,7 @@ do not lead, and a notes template. Nothing here has been put to a customer. No p
 - Ask what they did and what they used, not what they would do: "What did you use? What did it cost you in time?" [inference]
 - Ask what went wrong: "What part of it went wrong or took longest? What did you do about it?" [inference]
 - Ask who else was involved: "Who else had to see it or sign it off?" [inference]
-- Show nothing until the end, and then only the floor's output on invented data, asking "What would you change before you used this?" [inference]
+- Show nothing until the end, and then the floor's output and the local model's output on the same invented sample, each labelled with what served it, asking "What would you change before you used this?" The Owner ruled this on 2026-11-22; before that the guide showed only the floor's output. [owner-defined, 2026-11-22]
 - Close by asking who else has the same problem, and whether they may be contacted again. [inference]
 
 ## Willingness-to-pay questions that do not lead
@@ -73,4 +73,5 @@ do not lead, and a notes template. Nothing here has been put to a customer. No p
 - What it cost them, as they stated it, in time or money. [inference]
 - Who decides and who pays, as they described it. [inference]
 - What would make them stop using the tool, and what they would change first. [inference]
+- Which output the teacher judged, the floor's or the local model's, as each was labelled. [owner-defined, 2026-11-22]
 - Whether they agreed to be contacted again, recorded where the Owner keeps contacts, not here. [owner decision]

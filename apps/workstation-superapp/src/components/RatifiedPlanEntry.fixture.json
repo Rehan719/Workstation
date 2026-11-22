@@ -3,15 +3,25 @@
   "status": 200,
   "body": {
    "document": "docs/business/BUSINESS_PLAN.md",
-   "sha256": "535ea66d1697146b1ccb446f00517a7ba0f254b0ecad34ad6cbe0613089b94f0",
+   "sha256": "423613d23123cd1e693573b0a506ec7d9e39dbf5ea074be30e2ea2741d74a578",
    "ratified_on": "2026-10-13",
    "changed_since": {
-    "on": "2026-10-14",
-    "what": "the line on the name, under Risks"
+    "on": "2026-11-22",
+    "what": "the platform's fee and the owner's share, under Concept, the earlier words kept beside it"
    },
+   "changes": [
+    {
+     "on": "2026-10-14",
+     "what": "the line on the name, under Risks"
+    },
+    {
+     "on": "2026-11-22",
+     "what": "the platform's fee and the owner's share, under Concept, the earlier words kept beside it"
+    }
+   ],
    "fields": {
     "executive_summary": "- Workstation takes any person's challenge and, with its own AI, either helps them do the work themselves or builds them a living enterprise that delivers the solution and then runs itself [owner-defined: the vision, sections 1 and 3A].\n- It exists to give everyone the capability that only the largest organisations have had [owner-defined: the vision, section 14].\n- Today it runs on the Owner's machine, with a local model, in virtual money, with sign-in off, and with no users but the Owner and no income [observed].\n- The Owner works on it full time and prefers to start without cost [owner-defined, 2026-10-13].",
-    "concept": "- **Domain Working**: tools for a person's own work across six domains - Religion, Science, Education, Law, Employment and Career, and Care. The first people it is offered to are those using the Law, Employment and Career, and Education tools [owner-defined: the vision, section 3A; ruling of 2026-10-10].\n- **The Quran Education Platform** is the Religion domain's flagship and stays free [owner-defined: the vision, appendix A; ruling of 2026-10-10].\n- **Concept to commercialisation**: one idea taken end to end into a living enterprise, with a board, a plan, books and a record of every change [owner-defined: the vision, section 4; observed in `agentic_core/api/change_control.py`].\n- **Each enterprise is an economic organism**: it pays its owner a share, reinvests in itself and gives to causes, in virtual money until the Owner directs real rails [owner-defined: the vision, section 12].",
+    "concept": "- **Domain Working**: tools for a person's own work across six domains - Religion, Science, Education, Law, Employment and Career, and Care. The first people it is offered to are those using the Law, Employment and Career, and Education tools [owner-defined: the vision, section 3A; ruling of 2026-10-10].\n- **The Quran Education Platform** is the Religion domain's flagship and stays free [owner-defined: the vision, appendix A; ruling of 2026-10-10].\n- **Concept to commercialisation**: one idea taken end to end into a living enterprise, with a board, a plan, books and a record of every change [owner-defined: the vision, section 4; observed in `agentic_core/api/change_control.py`].\n- **Each enterprise is an economic organism**: it pays the platform 25% of its profit first, for updates and maintenance, and from what remains it pays its own owner 20 parts in a hundred, reinvests in itself and gives to causes, in virtual money until the Owner directs real rails [owner-defined: the vision, section 12; ruling of 2026-10-12; amended by the Owner on 2026-11-22]. Before 2026-11-22 this read: \"it pays its owner a share, reinvests in itself and gives to causes, in virtual money until the Owner directs real rails.\"",
     "vision": "- A living, AI-mediated platform that takes any person's challenge, in any realm or domain of life and work, designs the best solution, and establishes a living enterprise that delivers it and then runs, defends, heals, learns and grows itself in faithful service of the founder's intent, ethically, compliantly and for the benefit of all humanity [owner-defined: the vision, section 1, shortened here].",
     "mission": "- Democratise working, AI-mediate human work so it is safer and easier, and resolve the challenges people face in every domain, with ethics that bind the design: integrity, compassion, excellence, halal compliance, stewardship and beneficence [owner-defined: the vision, section 2].\n- The Owner has also stated a personal intention for this work. By the Owner's decision of 2026-10-13 it is held privately and is not published here [owner-defined].",
     "strategy": "The vision measures \"available to all\" by which switches the Owner has turned. They are turned in this order, each only by the Owner [owner-defined: the vision, section 14; the order ruled 2026-10-12]:\n1. Readiness on the Owner's machine: the register closed down and the final audit run [plan item P3.30].\n2. Sign-in on [plan item P4.1].\n3. A private deploy on one free small machine [plan item P4.5].\n4. Invited adults, then self-serve sign-up [plan item P4.2].\n5. Outside models, as accelerants only [plan item P4.3].\n6. Real money, last, after review [plan item P4.6].\nA managed database is left for later [deferred; plan item P4.4]."
@@ -104,15 +114,25 @@
   "status": 200,
   "body": {
    "document": "docs/business/BUSINESS_PLAN.md",
-   "sha256": "535ea66d1697146b1ccb446f00517a7ba0f254b0ecad34ad6cbe0613089b94f0",
+   "sha256": "423613d23123cd1e693573b0a506ec7d9e39dbf5ea074be30e2ea2741d74a578",
    "ratified_on": "2026-10-13",
    "changed_since": {
-    "on": "2026-10-14",
-    "what": "the line on the name, under Risks"
+    "on": "2026-11-22",
+    "what": "the platform's fee and the owner's share, under Concept, the earlier words kept beside it"
    },
+   "changes": [
+    {
+     "on": "2026-10-14",
+     "what": "the line on the name, under Risks"
+    },
+    {
+     "on": "2026-11-22",
+     "what": "the platform's fee and the owner's share, under Concept, the earlier words kept beside it"
+    }
+   ],
    "fields": {
     "executive_summary": "- Workstation takes any person's challenge and, with its own AI, either helps them do the work themselves or builds them a living enterprise that delivers the solution and then runs itself [owner-defined: the vision, sections 1 and 3A].\n- It exists to give everyone the capability that only the largest organisations have had [owner-defined: the vision, section 14].\n- Today it runs on the Owner's machine, with a local model, in virtual money, with sign-in off, and with no users but the Owner and no income [observed].\n- The Owner works on it full time and prefers to start without cost [owner-defined, 2026-10-13].",
-    "concept": "- **Domain Working**: tools for a person's own work across six domains - Religion, Science, Education, Law, Employment and Career, and Care. The first people it is offered to are those using the Law, Employment and Career, and Education tools [owner-defined: the vision, section 3A; ruling of 2026-10-10].\n- **The Quran Education Platform** is the Religion domain's flagship and stays free [owner-defined: the vision, appendix A; ruling of 2026-10-10].\n- **Concept to commercialisation**: one idea taken end to end into a living enterprise, with a board, a plan, books and a record of every change [owner-defined: the vision, section 4; observed in `agentic_core/api/change_control.py`].\n- **Each enterprise is an economic organism**: it pays its owner a share, reinvests in itself and gives to causes, in virtual money until the Owner directs real rails [owner-defined: the vision, section 12].",
+    "concept": "- **Domain Working**: tools for a person's own work across six domains - Religion, Science, Education, Law, Employment and Career, and Care. The first people it is offered to are those using the Law, Employment and Career, and Education tools [owner-defined: the vision, section 3A; ruling of 2026-10-10].\n- **The Quran Education Platform** is the Religion domain's flagship and stays free [owner-defined: the vision, appendix A; ruling of 2026-10-10].\n- **Concept to commercialisation**: one idea taken end to end into a living enterprise, with a board, a plan, books and a record of every change [owner-defined: the vision, section 4; observed in `agentic_core/api/change_control.py`].\n- **Each enterprise is an economic organism**: it pays the platform 25% of its profit first, for updates and maintenance, and from what remains it pays its own owner 20 parts in a hundred, reinvests in itself and gives to causes, in virtual money until the Owner directs real rails [owner-defined: the vision, section 12; ruling of 2026-10-12; amended by the Owner on 2026-11-22]. Before 2026-11-22 this read: \"it pays its owner a share, reinvests in itself and gives to causes, in virtual money until the Owner directs real rails.\"",
     "vision": "- A living, AI-mediated platform that takes any person's challenge, in any realm or domain of life and work, designs the best solution, and establishes a living enterprise that delivers it and then runs, defends, heals, learns and grows itself in faithful service of the founder's intent, ethically, compliantly and for the benefit of all humanity [owner-defined: the vision, section 1, shortened here].",
     "mission": "- Democratise working, AI-mediate human work so it is safer and easier, and resolve the challenges people face in every domain, with ethics that bind the design: integrity, compassion, excellence, halal compliance, stewardship and beneficence [owner-defined: the vision, section 2].\n- The Owner has also stated a personal intention for this work. By the Owner's decision of 2026-10-13 it is held privately and is not published here [owner-defined].",
     "strategy": "The vision measures \"available to all\" by which switches the Owner has turned. They are turned in this order, each only by the Owner [owner-defined: the vision, section 14; the order ruled 2026-10-12]:\n1. Readiness on the Owner's machine: the register closed down and the final audit run [plan item P3.30].\n2. Sign-in on [plan item P4.1].\n3. A private deploy on one free small machine [plan item P4.5].\n4. Invited adults, then self-serve sign-up [plan item P4.2].\n5. Outside models, as accelerants only [plan item P4.3].\n6. Real money, last, after review [plan item P4.6].\nA managed database is left for later [deferred; plan item P4.4]."
@@ -208,14 +228,24 @@
    "objectives_added": 6,
    "stamp": {
     "document": "docs/business/BUSINESS_PLAN.md",
-    "sha256": "535ea66d1697146b1ccb446f00517a7ba0f254b0ecad34ad6cbe0613089b94f0",
+    "sha256": "423613d23123cd1e693573b0a506ec7d9e39dbf5ea074be30e2ea2741d74a578",
     "ratified_on": "2026-10-13",
     "changed_since_ratification": {
-     "on": "2026-10-14",
-     "what": "the line on the name, under Risks"
+     "on": "2026-11-22",
+     "what": "the platform's fee and the owner's share, under Concept, the earlier words kept beside it"
     },
-    "entered_at": "2026-11-16T00:00:25Z",
-    "entered_by": "w1105-made-up-admin-4f23db",
+    "changes_since_ratification": [
+     {
+      "on": "2026-10-14",
+      "what": "the line on the name, under Risks"
+     },
+     {
+      "on": "2026-11-22",
+      "what": "the platform's fee and the owner's share, under Concept, the earlier words kept beside it"
+     }
+    ],
+    "entered_at": "2026-11-22T12:37:01Z",
+    "entered_by": "w1105-made-up-admin-1631ca",
     "by_verified": true,
     "basis": "ratified by the Owner on 2026-10-13; entered from that document by one action of the Owner's, on the Owner's instruction of 2026-10-14. The text was not typed field by field",
     "not_entered": [
@@ -229,7 +259,7 @@
    },
    "fields": {
     "executive_summary": "- Workstation takes any person's challenge and, with its own AI, either helps them do the work themselves or builds them a living enterprise that delivers the solution and then runs itself [owner-defined: the vision, sections 1 and 3A].\n- It exists to give everyone the capability that only the largest organisations have had [owner-defined: the vision, section 14].\n- Today it runs on the Owner's machine, with a local model, in virtual money, with sign-in off, and with no users but the Owner and no income [observed].\n- The Owner works on it full time and prefers to start without cost [owner-defined, 2026-10-13].",
-    "concept": "- **Domain Working**: tools for a person's own work across six domains - Religion, Science, Education, Law, Employment and Career, and Care. The first people it is offered to are those using the Law, Employment and Career, and Education tools [owner-defined: the vision, section 3A; ruling of 2026-10-10].\n- **The Quran Education Platform** is the Religion domain's flagship and stays free [owner-defined: the vision, appendix A; ruling of 2026-10-10].\n- **Concept to commercialisation**: one idea taken end to end into a living enterprise, with a board, a plan, books and a record of every change [owner-defined: the vision, section 4; observed in `agentic_core/api/change_control.py`].\n- **Each enterprise is an economic organism**: it pays its owner a share, reinvests in itself and gives to causes, in virtual money until the Owner directs real rails [owner-defined: the vision, section 12].",
+    "concept": "- **Domain Working**: tools for a person's own work across six domains - Religion, Science, Education, Law, Employment and Career, and Care. The first people it is offered to are those using the Law, Employment and Career, and Education tools [owner-defined: the vision, section 3A; ruling of 2026-10-10].\n- **The Quran Education Platform** is the Religion domain's flagship and stays free [owner-defined: the vision, appendix A; ruling of 2026-10-10].\n- **Concept to commercialisation**: one idea taken end to end into a living enterprise, with a board, a plan, books and a record of every change [owner-defined: the vision, section 4; observed in `agentic_core/api/change_control.py`].\n- **Each enterprise is an economic organism**: it pays the platform 25% of its profit first, for updates and maintenance, and from what remains it pays its own owner 20 parts in a hundred, reinvests in itself and gives to causes, in virtual money until the Owner directs real rails [owner-defined: the vision, section 12; ruling of 2026-10-12; amended by the Owner on 2026-11-22]. Before 2026-11-22 this read: \"it pays its owner a share, reinvests in itself and gives to causes, in virtual money until the Owner directs real rails.\"",
     "vision": "- A living, AI-mediated platform that takes any person's challenge, in any realm or domain of life and work, designs the best solution, and establishes a living enterprise that delivers it and then runs, defends, heals, learns and grows itself in faithful service of the founder's intent, ethically, compliantly and for the benefit of all humanity [owner-defined: the vision, section 1, shortened here].",
     "mission": "- Democratise working, AI-mediate human work so it is safer and easier, and resolve the challenges people face in every domain, with ethics that bind the design: integrity, compassion, excellence, halal compliance, stewardship and beneficence [owner-defined: the vision, section 2].\n- The Owner has also stated a personal intention for this work. By the Owner's decision of 2026-10-13 it is held privately and is not published here [owner-defined].",
     "strategy": "The vision measures \"available to all\" by which switches the Owner has turned. They are turned in this order, each only by the Owner [owner-defined: the vision, section 14; the order ruled 2026-10-12]:\n1. Readiness on the Owner's machine: the register closed down and the final audit run [plan item P3.30].\n2. Sign-in on [plan item P4.1].\n3. A private deploy on one free small machine [plan item P4.5].\n4. Invited adults, then self-serve sign-up [plan item P4.2].\n5. Outside models, as accelerants only [plan item P4.3].\n6. Real money, last, after review [plan item P4.6].\nA managed database is left for later [deferred; plan item P4.4]."
@@ -247,15 +277,25 @@
   "status": 200,
   "body": {
    "document": "docs/business/BUSINESS_PLAN.md",
-   "sha256": "535ea66d1697146b1ccb446f00517a7ba0f254b0ecad34ad6cbe0613089b94f0",
+   "sha256": "423613d23123cd1e693573b0a506ec7d9e39dbf5ea074be30e2ea2741d74a578",
    "ratified_on": "2026-10-13",
    "changed_since": {
-    "on": "2026-10-14",
-    "what": "the line on the name, under Risks"
+    "on": "2026-11-22",
+    "what": "the platform's fee and the owner's share, under Concept, the earlier words kept beside it"
    },
+   "changes": [
+    {
+     "on": "2026-10-14",
+     "what": "the line on the name, under Risks"
+    },
+    {
+     "on": "2026-11-22",
+     "what": "the platform's fee and the owner's share, under Concept, the earlier words kept beside it"
+    }
+   ],
    "fields": {
     "executive_summary": "- Workstation takes any person's challenge and, with its own AI, either helps them do the work themselves or builds them a living enterprise that delivers the solution and then runs itself [owner-defined: the vision, sections 1 and 3A].\n- It exists to give everyone the capability that only the largest organisations have had [owner-defined: the vision, section 14].\n- Today it runs on the Owner's machine, with a local model, in virtual money, with sign-in off, and with no users but the Owner and no income [observed].\n- The Owner works on it full time and prefers to start without cost [owner-defined, 2026-10-13].",
-    "concept": "- **Domain Working**: tools for a person's own work across six domains - Religion, Science, Education, Law, Employment and Career, and Care. The first people it is offered to are those using the Law, Employment and Career, and Education tools [owner-defined: the vision, section 3A; ruling of 2026-10-10].\n- **The Quran Education Platform** is the Religion domain's flagship and stays free [owner-defined: the vision, appendix A; ruling of 2026-10-10].\n- **Concept to commercialisation**: one idea taken end to end into a living enterprise, with a board, a plan, books and a record of every change [owner-defined: the vision, section 4; observed in `agentic_core/api/change_control.py`].\n- **Each enterprise is an economic organism**: it pays its owner a share, reinvests in itself and gives to causes, in virtual money until the Owner directs real rails [owner-defined: the vision, section 12].",
+    "concept": "- **Domain Working**: tools for a person's own work across six domains - Religion, Science, Education, Law, Employment and Career, and Care. The first people it is offered to are those using the Law, Employment and Career, and Education tools [owner-defined: the vision, section 3A; ruling of 2026-10-10].\n- **The Quran Education Platform** is the Religion domain's flagship and stays free [owner-defined: the vision, appendix A; ruling of 2026-10-10].\n- **Concept to commercialisation**: one idea taken end to end into a living enterprise, with a board, a plan, books and a record of every change [owner-defined: the vision, section 4; observed in `agentic_core/api/change_control.py`].\n- **Each enterprise is an economic organism**: it pays the platform 25% of its profit first, for updates and maintenance, and from what remains it pays its own owner 20 parts in a hundred, reinvests in itself and gives to causes, in virtual money until the Owner directs real rails [owner-defined: the vision, section 12; ruling of 2026-10-12; amended by the Owner on 2026-11-22]. Before 2026-11-22 this read: \"it pays its owner a share, reinvests in itself and gives to causes, in virtual money until the Owner directs real rails.\"",
     "vision": "- A living, AI-mediated platform that takes any person's challenge, in any realm or domain of life and work, designs the best solution, and establishes a living enterprise that delivers it and then runs, defends, heals, learns and grows itself in faithful service of the founder's intent, ethically, compliantly and for the benefit of all humanity [owner-defined: the vision, section 1, shortened here].",
     "mission": "- Democratise working, AI-mediate human work so it is safer and easier, and resolve the challenges people face in every domain, with ethics that bind the design: integrity, compassion, excellence, halal compliance, stewardship and beneficence [owner-defined: the vision, section 2].\n- The Owner has also stated a personal intention for this work. By the Owner's decision of 2026-10-13 it is held privately and is not published here [owner-defined].",
     "strategy": "The vision measures \"available to all\" by which switches the Owner has turned. They are turned in this order, each only by the Owner [owner-defined: the vision, section 14; the order ruled 2026-10-12]:\n1. Readiness on the Owner's machine: the register closed down and the final audit run [plan item P3.30].\n2. Sign-in on [plan item P4.1].\n3. A private deploy on one free small machine [plan item P4.5].\n4. Invited adults, then self-serve sign-up [plan item P4.2].\n5. Outside models, as accelerants only [plan item P4.3].\n6. Real money, last, after review [plan item P4.6].\nA managed database is left for later [deferred; plan item P4.4]."
@@ -337,14 +377,24 @@
    "cannot_because": null,
    "already_entered": {
     "document": "docs/business/BUSINESS_PLAN.md",
-    "sha256": "535ea66d1697146b1ccb446f00517a7ba0f254b0ecad34ad6cbe0613089b94f0",
+    "sha256": "423613d23123cd1e693573b0a506ec7d9e39dbf5ea074be30e2ea2741d74a578",
     "ratified_on": "2026-10-13",
     "changed_since_ratification": {
-     "on": "2026-10-14",
-     "what": "the line on the name, under Risks"
+     "on": "2026-11-22",
+     "what": "the platform's fee and the owner's share, under Concept, the earlier words kept beside it"
     },
-    "entered_at": "2026-11-16T00:00:25Z",
-    "entered_by": "w1105-made-up-admin-4f23db",
+    "changes_since_ratification": [
+     {
+      "on": "2026-10-14",
+      "what": "the line on the name, under Risks"
+     },
+     {
+      "on": "2026-11-22",
+      "what": "the platform's fee and the owner's share, under Concept, the earlier words kept beside it"
+     }
+    ],
+    "entered_at": "2026-11-22T12:37:01Z",
+    "entered_by": "w1105-made-up-admin-1631ca",
     "by_verified": true,
     "basis": "ratified by the Owner on 2026-10-13; entered from that document by one action of the Owner's, on the Owner's instruction of 2026-10-14. The text was not typed field by field",
     "not_entered": [
@@ -367,14 +417,24 @@
    "objectives_added": 0,
    "stamp": {
     "document": "docs/business/BUSINESS_PLAN.md",
-    "sha256": "535ea66d1697146b1ccb446f00517a7ba0f254b0ecad34ad6cbe0613089b94f0",
+    "sha256": "423613d23123cd1e693573b0a506ec7d9e39dbf5ea074be30e2ea2741d74a578",
     "ratified_on": "2026-10-13",
     "changed_since_ratification": {
-     "on": "2026-10-14",
-     "what": "the line on the name, under Risks"
+     "on": "2026-11-22",
+     "what": "the platform's fee and the owner's share, under Concept, the earlier words kept beside it"
     },
-    "entered_at": "2026-11-16T00:00:25Z",
-    "entered_by": "w1105-made-up-admin-4f23db",
+    "changes_since_ratification": [
+     {
+      "on": "2026-10-14",
+      "what": "the line on the name, under Risks"
+     },
+     {
+      "on": "2026-11-22",
+      "what": "the platform's fee and the owner's share, under Concept, the earlier words kept beside it"
+     }
+    ],
+    "entered_at": "2026-11-22T12:37:01Z",
+    "entered_by": "w1105-made-up-admin-1631ca",
     "by_verified": true,
     "basis": "ratified by the Owner on 2026-10-13; entered from that document by one action of the Owner's, on the Owner's instruction of 2026-10-14. The text was not typed field by field",
     "not_entered": [
@@ -388,7 +448,7 @@
    },
    "fields": {
     "executive_summary": "- Workstation takes any person's challenge and, with its own AI, either helps them do the work themselves or builds them a living enterprise that delivers the solution and then runs itself [owner-defined: the vision, sections 1 and 3A].\n- It exists to give everyone the capability that only the largest organisations have had [owner-defined: the vision, section 14].\n- Today it runs on the Owner's machine, with a local model, in virtual money, with sign-in off, and with no users but the Owner and no income [observed].\n- The Owner works on it full time and prefers to start without cost [owner-defined, 2026-10-13].",
-    "concept": "- **Domain Working**: tools for a person's own work across six domains - Religion, Science, Education, Law, Employment and Career, and Care. The first people it is offered to are those using the Law, Employment and Career, and Education tools [owner-defined: the vision, section 3A; ruling of 2026-10-10].\n- **The Quran Education Platform** is the Religion domain's flagship and stays free [owner-defined: the vision, appendix A; ruling of 2026-10-10].\n- **Concept to commercialisation**: one idea taken end to end into a living enterprise, with a board, a plan, books and a record of every change [owner-defined: the vision, section 4; observed in `agentic_core/api/change_control.py`].\n- **Each enterprise is an economic organism**: it pays its owner a share, reinvests in itself and gives to causes, in virtual money until the Owner directs real rails [owner-defined: the vision, section 12].",
+    "concept": "- **Domain Working**: tools for a person's own work across six domains - Religion, Science, Education, Law, Employment and Career, and Care. The first people it is offered to are those using the Law, Employment and Career, and Education tools [owner-defined: the vision, section 3A; ruling of 2026-10-10].\n- **The Quran Education Platform** is the Religion domain's flagship and stays free [owner-defined: the vision, appendix A; ruling of 2026-10-10].\n- **Concept to commercialisation**: one idea taken end to end into a living enterprise, with a board, a plan, books and a record of every change [owner-defined: the vision, section 4; observed in `agentic_core/api/change_control.py`].\n- **Each enterprise is an economic organism**: it pays the platform 25% of its profit first, for updates and maintenance, and from what remains it pays its own owner 20 parts in a hundred, reinvests in itself and gives to causes, in virtual money until the Owner directs real rails [owner-defined: the vision, section 12; ruling of 2026-10-12; amended by the Owner on 2026-11-22]. Before 2026-11-22 this read: \"it pays its owner a share, reinvests in itself and gives to causes, in virtual money until the Owner directs real rails.\"",
     "vision": "- A living, AI-mediated platform that takes any person's challenge, in any realm or domain of life and work, designs the best solution, and establishes a living enterprise that delivers it and then runs, defends, heals, learns and grows itself in faithful service of the founder's intent, ethically, compliantly and for the benefit of all humanity [owner-defined: the vision, section 1, shortened here].",
     "mission": "- Democratise working, AI-mediate human work so it is safer and easier, and resolve the challenges people face in every domain, with ethics that bind the design: integrity, compassion, excellence, halal compliance, stewardship and beneficence [owner-defined: the vision, section 2].\n- The Owner has also stated a personal intention for this work. By the Owner's decision of 2026-10-13 it is held privately and is not published here [owner-defined].",
     "strategy": "The vision measures \"available to all\" by which switches the Owner has turned. They are turned in this order, each only by the Owner [owner-defined: the vision, section 14; the order ruled 2026-10-12]:\n1. Readiness on the Owner's machine: the register closed down and the final audit run [plan item P3.30].\n2. Sign-in on [plan item P4.1].\n3. A private deploy on one free small machine [plan item P4.5].\n4. Invited adults, then self-serve sign-up [plan item P4.2].\n5. Outside models, as accelerants only [plan item P4.3].\n6. Real money, last, after review [plan item P4.6].\nA managed database is left for later [deferred; plan item P4.4]."
@@ -406,9 +466,9 @@
   "status": 200,
   "body": {
    "scope": "workstation",
-   "owner": "w1105-made-up-admin-4f23db",
+   "owner": "w1105-made-up-admin-1631ca",
    "executive_summary": "- Workstation takes any person's challenge and, with its own AI, either helps them do the work themselves or builds them a living enterprise that delivers the solution and then runs itself [owner-defined: the vision, sections 1 and 3A].\n- It exists to give everyone the capability that only the largest organisations have had [owner-defined: the vision, section 14].\n- Today it runs on the Owner's machine, with a local model, in virtual money, with sign-in off, and with no users but the Owner and no income [observed].\n- The Owner works on it full time and prefers to start without cost [owner-defined, 2026-10-13].",
-   "concept": "- **Domain Working**: tools for a person's own work across six domains - Religion, Science, Education, Law, Employment and Career, and Care. The first people it is offered to are those using the Law, Employment and Career, and Education tools [owner-defined: the vision, section 3A; ruling of 2026-10-10].\n- **The Quran Education Platform** is the Religion domain's flagship and stays free [owner-defined: the vision, appendix A; ruling of 2026-10-10].\n- **Concept to commercialisation**: one idea taken end to end into a living enterprise, with a board, a plan, books and a record of every change [owner-defined: the vision, section 4; observed in `agentic_core/api/change_control.py`].\n- **Each enterprise is an economic organism**: it pays its owner a share, reinvests in itself and gives to causes, in virtual money until the Owner directs real rails [owner-defined: the vision, section 12].",
+   "concept": "- **Domain Working**: tools for a person's own work across six domains - Religion, Science, Education, Law, Employment and Career, and Care. The first people it is offered to are those using the Law, Employment and Career, and Education tools [owner-defined: the vision, section 3A; ruling of 2026-10-10].\n- **The Quran Education Platform** is the Religion domain's flagship and stays free [owner-defined: the vision, appendix A; ruling of 2026-10-10].\n- **Concept to commercialisation**: one idea taken end to end into a living enterprise, with a board, a plan, books and a record of every change [owner-defined: the vision, section 4; observed in `agentic_core/api/change_control.py`].\n- **Each enterprise is an economic organism**: it pays the platform 25% of its profit first, for updates and maintenance, and from what remains it pays its own owner 20 parts in a hundred, reinvests in itself and gives to causes, in virtual money until the Owner directs real rails [owner-defined: the vision, section 12; ruling of 2026-10-12; amended by the Owner on 2026-11-22]. Before 2026-11-22 this read: \"it pays its owner a share, reinvests in itself and gives to causes, in virtual money until the Owner directs real rails.\"",
    "vision": "- A living, AI-mediated platform that takes any person's challenge, in any realm or domain of life and work, designs the best solution, and establishes a living enterprise that delivers it and then runs, defends, heals, learns and grows itself in faithful service of the founder's intent, ethically, compliantly and for the benefit of all humanity [owner-defined: the vision, section 1, shortened here].",
    "mission": "- Democratise working, AI-mediate human work so it is safer and easier, and resolve the challenges people face in every domain, with ethics that bind the design: integrity, compassion, excellence, halal compliance, stewardship and beneficence [owner-defined: the vision, section 2].\n- The Owner has also stated a personal intention for this work. By the Owner's decision of 2026-10-13 it is held privately and is not published here [owner-defined].",
    "strategy": "W1105 made up: a strategy edited by hand after the entry",
@@ -421,7 +481,7 @@
    ],
    "objectives": [
     {
-     "id": "obj-a101551e",
+     "id": "obj-e62582b0",
      "title": "Sign-in on, with every route asking who is calling or declared public",
      "kpi": "the perimeter register, `docs/PUBLIC_ROUTES.json`",
      "timeline": "in rounds; no date is promised",
@@ -432,10 +492,10 @@
      "source": "ratified document",
      "plan_item": "P4.1",
      "measure_as_ratified": "the perimeter register, `docs/PUBLIC_ROUTES.json`",
-     "created_at": "2026-11-16T00:00:25Z"
+     "created_at": "2026-11-22T12:37:01Z"
     },
     {
-     "id": "obj-412b9db4",
+     "id": "obj-c21b25d9",
      "title": "One person's journey measured end to end",
      "kpi": "",
      "timeline": "in rounds; no date is promised",
@@ -446,10 +506,10 @@
      "source": "ratified document",
      "plan_item": "P5.1",
      "measure_as_ratified": "NOT MEASURED - a kept journey test",
-     "created_at": "2026-11-16T00:00:25Z"
+     "created_at": "2026-11-22T12:37:01Z"
     },
     {
-     "id": "obj-0d3923bc",
+     "id": "obj-f1bf7d9f",
      "title": "A price derived from the books and never typed",
      "kpi": "",
      "timeline": "in rounds; no date is promised",
@@ -460,10 +520,10 @@
      "source": "ratified document",
      "plan_item": "P5.2",
      "measure_as_ratified": "NOT MEASURED",
-     "created_at": "2026-11-16T00:00:25Z"
+     "created_at": "2026-11-22T12:37:01Z"
     },
     {
-     "id": "obj-4e4817cb",
+     "id": "obj-883dc72d",
      "title": "What is not for sale, stated plainly",
      "kpi": "",
      "timeline": "in rounds; no date is promised",
@@ -474,10 +534,10 @@
      "source": "ratified document",
      "plan_item": "P5.5",
      "measure_as_ratified": "NOT MEASURED - a published statement",
-     "created_at": "2026-11-16T00:00:25Z"
+     "created_at": "2026-11-22T12:37:01Z"
     },
     {
-     "id": "obj-6d484e89",
+     "id": "obj-1e662322",
      "title": "A reviewed tool says the review it has reached",
      "kpi": "the review records, read at the call",
      "timeline": "in rounds; no date is promised",
@@ -488,10 +548,10 @@
      "source": "ratified document",
      "plan_item": "P5.15",
      "measure_as_ratified": "the review records, read at the call",
-     "created_at": "2026-11-16T00:00:25Z"
+     "created_at": "2026-11-22T12:37:01Z"
     },
     {
-     "id": "obj-ed002b3f",
+     "id": "obj-f72dfd2f",
      "title": "The open rows of the register closed",
      "kpi": "`docs/FOLLOWUPS.json`, counted at the call",
      "timeline": "in rounds; no date is promised",
@@ -502,10 +562,10 @@
      "source": "ratified document",
      "plan_item": "P3.30",
      "measure_as_ratified": "`docs/FOLLOWUPS.json`, counted at the call",
-     "created_at": "2026-11-16T00:00:25Z"
+     "created_at": "2026-11-22T12:37:01Z"
     }
    ],
-   "updated_at": "2026-11-16T00:00:25Z",
+   "updated_at": "2026-11-22T12:37:01Z",
    "provenance": {
     "field_sources": {
      "strategy": "owner_supplied",
@@ -522,15 +582,15 @@
    },
    "refreshes": [
     {
-     "id": "refresh-2860c707d8",
+     "id": "refresh-316e4238f5",
      "layer": "strategic",
-     "at": "2026-11-16T00:00:24Z",
+     "at": "2026-11-22T12:37:00Z",
      "trigger": "never_refreshed",
      "forced": false,
      "reason": "this layer has NEVER been refreshed, which is not the same as refreshed long ago - there is no previous quarterly refresh to measure from",
      "signal": null,
      "plan_field": "strategy",
-     "content": "[as of 2026-11-16 00:00 UTC] Strategic position derived from the plan itself: 0 aim(s) and 0 objective(s) on the roadmap; no vision is on record; no mission is on record.",
+     "content": "[as of 2026-11-22 12:37 UTC] Strategic position derived from the plan itself: 0 aim(s) and 0 objective(s) on the roadmap; no vision is on record; no mission is on record.",
      "replaced": null,
      "replaced_was_empty": true,
      "served_by": "deterministic-floor",
@@ -540,15 +600,15 @@
      "withheld_reason": null
     },
     {
-     "id": "refresh-f201c60562",
+     "id": "refresh-ea6e97eda6",
      "layer": "action_plan",
-     "at": "2026-11-16T00:00:24Z",
+     "at": "2026-11-22T12:37:00Z",
      "trigger": "never_refreshed",
      "forced": false,
      "reason": "this layer has NEVER been refreshed, which is not the same as refreshed long ago - there is no previous weekly refresh to measure from",
      "signal": null,
      "plan_field": "action_plan",
-     "content": "[as of 2026-11-16 00:00 UTC] Action position derived from the plan itself: 0 open objective(s), of which 0 record no progress at all; the roadmap carries no open objective.",
+     "content": "[as of 2026-11-22 12:37 UTC] Action position derived from the plan itself: 0 open objective(s), of which 0 record no progress at all; the roadmap carries no open objective.",
      "replaced": null,
      "replaced_was_empty": true,
      "served_by": "deterministic-floor",
@@ -558,32 +618,42 @@
      "withheld_reason": null
     }
    ],
-   "action_plan": "[as of 2026-11-16 00:00 UTC] Action position derived from the plan itself: 0 open objective(s), of which 0 record no progress at all; the roadmap carries no open objective.",
+   "action_plan": "[as of 2026-11-22 12:37 UTC] Action position derived from the plan itself: 0 open objective(s), of which 0 record no progress at all; the roadmap carries no open objective.",
    "owner_source": "the authenticated principal (a client-supplied owner is not trusted while auth is enabled)",
    "owner_edits": {
-    "executive_summary": "2026-11-16T00:00:25Z",
-    "concept": "2026-11-16T00:00:25Z",
-    "vision": "2026-11-16T00:00:25Z",
-    "mission": "2026-11-16T00:00:25Z",
-    "strategy": "2026-11-16T00:00:25Z"
+    "executive_summary": "2026-11-22T12:37:01Z",
+    "concept": "2026-11-22T12:37:01Z",
+    "vision": "2026-11-22T12:37:01Z",
+    "mission": "2026-11-22T12:37:01Z",
+    "strategy": "2026-11-22T12:37:01Z"
    },
    "owner_edits_by": {
-    "executive_summary": "w1105-made-up-admin-4f23db",
-    "concept": "w1105-made-up-admin-4f23db",
-    "vision": "w1105-made-up-admin-4f23db",
-    "mission": "w1105-made-up-admin-4f23db",
-    "strategy": "w1105-made-up-admin-4f23db"
+    "executive_summary": "w1105-made-up-admin-1631ca",
+    "concept": "w1105-made-up-admin-1631ca",
+    "vision": "w1105-made-up-admin-1631ca",
+    "mission": "w1105-made-up-admin-1631ca",
+    "strategy": "w1105-made-up-admin-1631ca"
    },
    "entered_from_ratified_document": {
     "document": "docs/business/BUSINESS_PLAN.md",
-    "sha256": "535ea66d1697146b1ccb446f00517a7ba0f254b0ecad34ad6cbe0613089b94f0",
+    "sha256": "423613d23123cd1e693573b0a506ec7d9e39dbf5ea074be30e2ea2741d74a578",
     "ratified_on": "2026-10-13",
     "changed_since_ratification": {
-     "on": "2026-10-14",
-     "what": "the line on the name, under Risks"
+     "on": "2026-11-22",
+     "what": "the platform's fee and the owner's share, under Concept, the earlier words kept beside it"
     },
-    "entered_at": "2026-11-16T00:00:25Z",
-    "entered_by": "w1105-made-up-admin-4f23db",
+    "changes_since_ratification": [
+     {
+      "on": "2026-10-14",
+      "what": "the line on the name, under Risks"
+     },
+     {
+      "on": "2026-11-22",
+      "what": "the platform's fee and the owner's share, under Concept, the earlier words kept beside it"
+     }
+    ],
+    "entered_at": "2026-11-22T12:37:01Z",
+    "entered_by": "w1105-made-up-admin-1631ca",
     "by_verified": true,
     "basis": "ratified by the Owner on 2026-10-13; entered from that document by one action of the Owner's, on the Owner's instruction of 2026-10-14. The text was not typed field by field",
     "not_entered": [
@@ -601,15 +671,25 @@
   "status": 200,
   "body": {
    "document": "docs/business/BUSINESS_PLAN.md",
-   "sha256": "535ea66d1697146b1ccb446f00517a7ba0f254b0ecad34ad6cbe0613089b94f0",
+   "sha256": "423613d23123cd1e693573b0a506ec7d9e39dbf5ea074be30e2ea2741d74a578",
    "ratified_on": "2026-10-13",
    "changed_since": {
-    "on": "2026-10-14",
-    "what": "the line on the name, under Risks"
+    "on": "2026-11-22",
+    "what": "the platform's fee and the owner's share, under Concept, the earlier words kept beside it"
    },
+   "changes": [
+    {
+     "on": "2026-10-14",
+     "what": "the line on the name, under Risks"
+    },
+    {
+     "on": "2026-11-22",
+     "what": "the platform's fee and the owner's share, under Concept, the earlier words kept beside it"
+    }
+   ],
    "fields": {
     "executive_summary": "- Workstation takes any person's challenge and, with its own AI, either helps them do the work themselves or builds them a living enterprise that delivers the solution and then runs itself [owner-defined: the vision, sections 1 and 3A].\n- It exists to give everyone the capability that only the largest organisations have had [owner-defined: the vision, section 14].\n- Today it runs on the Owner's machine, with a local model, in virtual money, with sign-in off, and with no users but the Owner and no income [observed].\n- The Owner works on it full time and prefers to start without cost [owner-defined, 2026-10-13].",
-    "concept": "- **Domain Working**: tools for a person's own work across six domains - Religion, Science, Education, Law, Employment and Career, and Care. The first people it is offered to are those using the Law, Employment and Career, and Education tools [owner-defined: the vision, section 3A; ruling of 2026-10-10].\n- **The Quran Education Platform** is the Religion domain's flagship and stays free [owner-defined: the vision, appendix A; ruling of 2026-10-10].\n- **Concept to commercialisation**: one idea taken end to end into a living enterprise, with a board, a plan, books and a record of every change [owner-defined: the vision, section 4; observed in `agentic_core/api/change_control.py`].\n- **Each enterprise is an economic organism**: it pays its owner a share, reinvests in itself and gives to causes, in virtual money until the Owner directs real rails [owner-defined: the vision, section 12].",
+    "concept": "- **Domain Working**: tools for a person's own work across six domains - Religion, Science, Education, Law, Employment and Career, and Care. The first people it is offered to are those using the Law, Employment and Career, and Education tools [owner-defined: the vision, section 3A; ruling of 2026-10-10].\n- **The Quran Education Platform** is the Religion domain's flagship and stays free [owner-defined: the vision, appendix A; ruling of 2026-10-10].\n- **Concept to commercialisation**: one idea taken end to end into a living enterprise, with a board, a plan, books and a record of every change [owner-defined: the vision, section 4; observed in `agentic_core/api/change_control.py`].\n- **Each enterprise is an economic organism**: it pays the platform 25% of its profit first, for updates and maintenance, and from what remains it pays its own owner 20 parts in a hundred, reinvests in itself and gives to causes, in virtual money until the Owner directs real rails [owner-defined: the vision, section 12; ruling of 2026-10-12; amended by the Owner on 2026-11-22]. Before 2026-11-22 this read: \"it pays its owner a share, reinvests in itself and gives to causes, in virtual money until the Owner directs real rails.\"",
     "vision": "- A living, AI-mediated platform that takes any person's challenge, in any realm or domain of life and work, designs the best solution, and establishes a living enterprise that delivers it and then runs, defends, heals, learns and grows itself in faithful service of the founder's intent, ethically, compliantly and for the benefit of all humanity [owner-defined: the vision, section 1, shortened here].",
     "mission": "- Democratise working, AI-mediate human work so it is safer and easier, and resolve the challenges people face in every domain, with ethics that bind the design: integrity, compassion, excellence, halal compliance, stewardship and beneficence [owner-defined: the vision, section 2].\n- The Owner has also stated a personal intention for this work. By the Owner's decision of 2026-10-13 it is held privately and is not published here [owner-defined].",
     "strategy": "The vision measures \"available to all\" by which switches the Owner has turned. They are turned in this order, each only by the Owner [owner-defined: the vision, section 14; the order ruled 2026-10-12]:\n1. Readiness on the Owner's machine: the register closed down and the final audit run [plan item P3.30].\n2. Sign-in on [plan item P4.1].\n3. A private deploy on one free small machine [plan item P4.5].\n4. Invited adults, then self-serve sign-up [plan item P4.2].\n5. Outside models, as accelerants only [plan item P4.3].\n6. Real money, last, after review [plan item P4.6].\nA managed database is left for later [deferred; plan item P4.4]."
@@ -691,14 +771,24 @@
    "cannot_because": null,
    "already_entered": {
     "document": "docs/business/BUSINESS_PLAN.md",
-    "sha256": "535ea66d1697146b1ccb446f00517a7ba0f254b0ecad34ad6cbe0613089b94f0",
+    "sha256": "423613d23123cd1e693573b0a506ec7d9e39dbf5ea074be30e2ea2741d74a578",
     "ratified_on": "2026-10-13",
     "changed_since_ratification": {
-     "on": "2026-10-14",
-     "what": "the line on the name, under Risks"
+     "on": "2026-11-22",
+     "what": "the platform's fee and the owner's share, under Concept, the earlier words kept beside it"
     },
-    "entered_at": "2026-11-16T00:00:25Z",
-    "entered_by": "w1105-made-up-admin-4f23db",
+    "changes_since_ratification": [
+     {
+      "on": "2026-10-14",
+      "what": "the line on the name, under Risks"
+     },
+     {
+      "on": "2026-11-22",
+      "what": "the platform's fee and the owner's share, under Concept, the earlier words kept beside it"
+     }
+    ],
+    "entered_at": "2026-11-22T12:37:01Z",
+    "entered_by": "w1105-made-up-admin-1631ca",
     "by_verified": true,
     "basis": "ratified by the Owner on 2026-10-13; entered from that document by one action of the Owner's, on the Owner's instruction of 2026-10-14. The text was not typed field by field",
     "not_entered": [
@@ -717,7 +807,7 @@
   }
  },
  "names": {
-  "admin": "w1105-made-up-admin-4f23db",
-  "user": "w1105-made-up-person-61b3f8"
+  "admin": "w1105-made-up-admin-1631ca",
+  "user": "w1105-made-up-person-0a402b"
  }
 }
