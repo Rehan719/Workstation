@@ -104702,3 +104702,212 @@ def test_w1203_a_model_becomes_the_default_only_when_an_administrator_promotes_a
     assert len(ops) == 1 and (ops[0]["status"], ops[0]["slot"], ops[0]["severity"]) == ("open", "P4.1", "medium"), (
         "the operations row W1203's security review found is not registered open", ops)
     assert ops[0]["source"].startswith("W1203"), ops[0]["source"]
+
+
+def test_w1209_the_fabric_preview_says_how_a_composition_runs_not_that_it_is_over_capacity(client, monkeypatch):
+    """FU-1842 (W1209, key A2), P3.32. The fabric preview's chip compared the resource count with the grant for four
+    parallel nodes (homeostasis.project(len(resolved))) and drew 'over capacity' in amber for five resources. But a
+    composition's stages run one after another and its real resources one at a time, and nothing caps or refuses
+    that; only the org cascade runs its C-Suite officer pairs at once, under a grant of its own. The preview now says
+    so: stage_concurrency 1 with its basis, and for a composition holding vsb_org_swarm the cascade's projected grant,
+    from the one formula the cascade runs on (swarm.cascade_demand). Held here:
+    1. five sequential resources, simulated through the route: stage_concurrency 1, cascade None, no
+       fits_current_capacity False and no admitted_max_parallel, a basis that names sequential execution, and the
+       organism carried from snapshot() (atp_can_fall a bool, test_p330_r6's leg E);
+    2. the same with the work budget's gate held: stage_concurrency still 1, nothing says over capacity, work_budget
+       holds True is carried, and the basis says a held budget changes nothing about a sequential run;
+    3. vsb_org_swarm with csuite_roles 'CSO,CFO,CTO': requested 3, demand 18, and the grant is homeostasis.assess(18,
+       3, read_only=True)'s, and 3 with the controller's answer fixed at 3 (never the resource count); with the
+       gate held, granted 1 and held_by_work_budget True; a placeholder roster is the cascade's default five, as the
+       run reads it; cascade_demand is the cascade's own formula;
+    4. every ATP simulator update made on this test's thread during the two previews is recorded, and there is none,
+       while a run's assess on the same thread is seen (the control);
+    5. POST /api/v1/swarm/cascade with five roles, the grant stubbed to 2 and gateway.query_meta replaced by a stub
+       that counts the C-Suite and CoE calls in flight with a 50 ms await: at most 2 in flight and exactly 2 at peak;
+       with a grant of 1, at most 1 (the merged insight: the cascade's concurrency is observed, not only reported);
+    6. the captured simulate answers in ResourceFabric.fixture.json carry only keys the live route gives, and the
+       stage keys and basis this round owns, equal to the route's;
+    7. the page draws 'stages run one at a time' and the cascade's grant, violet, with no 'over capacity', its
+       budget span says that in this composition the platform's budget holds only the org cascade, with
+       work_budget.basis inside test_w756's window, the fabric-budget-off block is kept, and the rendered test reads
+       the expected grant from the fixture."""
+    import asyncio
+    import inspect
+    import json
+    import pathlib
+    import threading
+    from agentic_core.ai.native import homeostasis as _hm
+    from agentic_core.api import resource_fabric as _rf
+    from agentic_core.api import swarm as _sw
+    from agentic_core.organism import biobus as _bb
+    root = pathlib.Path(__file__).resolve().parents[1]
+    rows = {r.get("id"): r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+            if isinstance(r, dict)}
+    r = rows["FU-1842"]
+    assert r["slot"] == "P3.32" and (r["status"] == "open" or (r["status"], r.get("closed_by"), r.get("because")) == (
+        "done", "W1209", "built")), (r["status"], r.get("closed_by"), r["slot"])
+    SEQ = ["bdp", "spi", "cognitive_cascade", "genesis", "compliance"]
+    CASC = {"resource_ids": ["vsb_org_swarm", "compliance"], "usage_area": "delivery",
+            "config": {"vsb_org_swarm": {"csuite_roles": "CSO,CFO,CTO"}}}
+    assert "vsb_org_swarm" not in SEQ and all(x in _rf._BY_ID for x in SEQ + CASC["resource_ids"])
+
+    def simulate(body):
+        got = client.post("/api/v1/resources/compose/simulate", json={"name": "w1209 preview", **body})
+        assert got.status_code == 200, got.text[:300]
+        return got.json()["model"]["organism_capacity"]
+
+    #  1. five sequential resources
+    oc = simulate({"resource_ids": SEQ, "usage_area": "synthesis"})
+    assert isinstance(oc, dict), ("the preview carried no capacity at all", oc)
+    assert oc.get("stage_concurrency") == 1 and oc.get("cascade", "absent") is None, (
+        "the preview does not say a composition runs one stage at a time", sorted(oc))
+    assert oc.get("fits_current_capacity") is not False and "admitted_max_parallel" not in oc, (
+        "the preview still compares the resource count with the grant for four parallel nodes", sorted(oc))
+    basis = oc["stage_concurrency_basis"]
+    assert "one after another" in basis and "one at a time" in basis and "nothing caps or refuses" in basis, basis
+    from agentic_core.api.instrument_cell import MAX_STAGES as _max
+    assert f"ceiling of {_max} stages" in basis and "the model ensemble asks its members in parallel" in basis, (
+        "the basis contradicts the stage ceiling, or calls the org cascade the only work run at once", basis)
+    assert isinstance(oc["organism"], dict) and isinstance(oc["organism"].get("atp_can_fall"), bool), oc["organism"]
+    assert oc["projected_posture"] == _hm.homeostasis.snapshot()["posture"], oc["projected_posture"]
+
+    #  2. the same with the work budget's gate held
+    held = {"enabled": True, "holds": True, "reason": "w1209: the window's capacity is spent",
+            "basis": "w1209: the work budget for this window is spent"}
+    with monkeypatch.context() as m:
+        m.setattr(_hm._work_budget, "gate", lambda *a, **k: dict(held))
+        oh = simulate({"resource_ids": SEQ, "usage_area": "synthesis"})
+        och = simulate(CASC)
+        assess_held = _hm.homeostasis.assess(demand_nodes=18, requested_parallel=3, read_only=True)
+    assert isinstance(oh.get("work_budget"), dict), ("the preview does not carry the work budget", oh.get("work_budget"))
+    assert oh["stage_concurrency"] == 1 and oh["work_budget"]["holds"] is True and "w1209" in oh["work_budget"]["basis"], oh
+    assert "over capacity" not in json.dumps(oh).lower() and oh.get("fits_current_capacity") is not False, oh
+    assert "a held work budget changes nothing about it" in oh["stage_concurrency_basis"], (
+        "the hold is drawn as limiting a sequential run", oh["stage_concurrency_basis"])
+
+    #  3. the org cascade: its request, its demand and its grant, the cascade's own formula
+    occ = simulate(CASC)
+    c = occ["cascade"]
+    assert isinstance(c, dict), ("a composition holding the org cascade says nothing of its grant", c)
+    assert set(c) == {"requested_parallel", "demand_nodes", "granted_parallel", "held_by_work_budget", "basis"}, sorted(c)
+    assert (c["requested_parallel"], c["demand_nodes"]) == (3, 18), c
+    want = _hm.homeostasis.assess(demand_nodes=18, requested_parallel=3, read_only=True)["max_parallel"]
+    assert c["granted_parallel"] == want and c["held_by_work_budget"] is False, (c, want)
+    assert "CSO, CFO, CTO" in c["basis"] and f"grants {want}" in c["basis"] and "granted now" in c["basis"], c["basis"]
+    assert occ["stage_concurrency"] == 1, occ
+    #  ...and with the controller's answer fixed at 3, the request (review W1209-4): the grant is the controller's,
+    #  never the resource count (CASC holds 2), whatever the organism grants in this run
+    _asked, _real_a = [], _hm.homeostasis.assess
+    with monkeypatch.context() as m:
+        m.setattr(_hm.homeostasis, "assess", lambda *a, **k: (_asked.append((k.get("demand_nodes"), k.get(
+            "requested_parallel"))), {**_real_a(*a, **{**k, "read_only": True}), "max_parallel": 3})[1])
+        fixed = simulate(CASC)["cascade"]
+    assert (18, 3) in _asked and fixed["granted_parallel"] == 3 and "grants 3" in fixed["basis"], (fixed, _asked)
+    hc = och["cascade"]
+    assert isinstance(hc, dict), hc
+    assert hc["granted_parallel"] == 1 == assess_held["max_parallel"] and hc["held_by_work_budget"] is True, hc
+    assert "one pair at a time" in hc["basis"] and "platform's work budget" in hc["basis"], hc["basis"]
+    #  a roster left at its placeholder is the cascade's default, as the run reads it (W495)
+    dflt = simulate({"resource_ids": ["vsb_org_swarm"], "usage_area": "delivery"})["cascade"]
+    assert (dflt["requested_parallel"], dflt["demand_nodes"]) == (4, 22), dflt
+    assert _sw.cascade_demand(["CSO", "CFO", "CTO"], []) == (["CSO", "CFO", "CTO"], 18, 3)
+    assert _sw.cascade_demand(None, None) == (["CSO", "CFO", "CTO", "COO", "CLO"], 22, 4)
+    assert _sw.cascade_demand(["CEO", "w1209-nobody"], ["A", "B", "C", "D"])[1:] == (25, 4)
+    _src = inspect.getsource(_sw.cascade_orchestration)
+    assert "cascade_demand(req.csuite_roles, req.coe_specialisms)" in _src and "3 + 2 * len(" not in _src, (
+        "the cascade does not run on the formula the preview projects")
+    assert "= homeostasis.project(" not in inspect.getsource(_rf._model_configuration), "the preview still projects a fit"
+
+    #  4. a preview advances nothing: every simulator update made on this thread during the two previews
+    _tid = threading.get_ident()
+    _atp = _bb._get_atp()
+    assert _atp is not None, "the ATP simulator is absent, so this leg cannot see an advance"
+    _seen = []
+    _upd = _atp.update
+    monkeypatch.setattr(_atp, "update", lambda *a, **k: (
+        _seen.append((threading.get_ident(), k.get("metabolic_load"))), _upd(*a, **k))[1])
+    _bb.biobus._atp_last_update = 0.0                       # the control is outside biobus's 1 s throttle
+    _hm.homeostasis.assess(demand_nodes=18, requested_parallel=3)
+    assert [s for s in _seen if s[0] == _tid], ("the control run did not reach the simulator, so the silence below "
+                                                "proves nothing", _seen)
+    _seen.clear()
+    for ids, area, cfg in ((SEQ, "synthesis", {}), (CASC["resource_ids"], CASC["usage_area"], CASC["config"])):
+        _bb.biobus._atp_last_update = 0.0                   # a preview that asked to advance would now really advance
+        _model = _rf._model_configuration(ids, area, cfg)[1]
+        assert isinstance(_model["organism_capacity"], dict), _model["organism_capacity"]
+    assert _model["organism_capacity"]["cascade"], "the cascade preview did not project, so its silence proves nothing"
+    mine = [s for s in _seen if s[0] == _tid]
+    assert mine == [], ("a preview advanced the shared ATP simulator", mine)
+
+    #  5. the cascade's concurrency, observed: the C-Suite and CoE calls in flight under a grant of 2, then 1
+    from agentic_core.ai.gateway import gateway as _gw
+    roles = ["CSO", "CFO", "CTO", "COO", "CLO"]
+    tier = {f"cascade_{x.lower()}" for x in roles} | {f"cascade_coe_{x.lower()}" for x in roles}
+    _real_assess = _hm.homeostasis.assess
+
+    def observed(grant):
+        flight = {"now": 0, "peak": 0, "calls": 0}
+
+        async def _meta(prompt, agent=None, **_k):
+            if agent in tier:
+                flight["now"] += 1
+                flight["calls"] += 1
+                flight["peak"] = max(flight["peak"], flight["now"])
+                try:
+                    await asyncio.sleep(0.05)
+                finally:
+                    flight["now"] -= 1
+            return {"output": f"w1209 stub answer for {agent}", "served_by": "native", "is_external": False}
+        with monkeypatch.context() as m:
+            m.setattr(_gw, "query_meta", _meta)
+            m.setattr(_hm.homeostasis, "assess", lambda *a, **k: {
+                **_real_assess(*a, **{**k, "read_only": True}), "max_parallel": grant})
+            got = client.post("/api/v1/swarm/cascade", json={"mission": "w1209 observed concurrency",
+                                                              "domain": "enterprise", "csuite_roles": roles})
+        assert got.status_code == 200, got.text[:300]
+        ha = got.json()["homeostasis_adaptation"]
+        assert ha["granted_parallel"] == grant and ha["demand_nodes_reported"] == 3 + 2 * 5 + 3 + 6, ha
+        assert flight["calls"] == 10, ("the stub did not see every officer and CoE call", flight)
+        return flight
+    two = observed(2)
+    assert two["peak"] == 2, ("with a grant of 2 the cascade did not run exactly 2 officer pairs at once", two)
+    one = observed(1)
+    assert one["peak"] == 1, ("with a grant of 1 the cascade ran officer pairs at once", one)
+
+    #  6. the captured simulate answers carry the live route's keys
+    page_dir = root / "apps/workstation-superapp/src/pages/synthesis"
+    fx = json.loads((page_dir / "ResourceFabric.fixture.json").read_text(encoding="utf-8"))
+    for key, live in (("simulate_sequential", oc), ("simulate_cascade", occ)):
+        cap = fx[key]["model"]["organism_capacity"]
+        #  (review W1209-5) the fixture's keys are the route's, so a key added later elsewhere stays green; the keys
+        #  this round owns are there and equal
+        assert set(cap) <= set(live) and set(cap["organism"]) <= set(live["organism"]), (key, "the fixture drifts")
+        assert {"stage_concurrency", "stage_concurrency_basis", "cascade"} <= set(cap), (key, sorted(cap))
+        assert cap["stage_concurrency"] == live["stage_concurrency"] == 1, key
+        assert cap["stage_concurrency_basis"] == live["stage_concurrency_basis"], (key, "the fixture's basis drifts")
+        assert set(fx[key]) <= set(client.post("/api/v1/resources/compose/simulate", json={
+            "name": "w1209 shape", "resource_ids": SEQ, "usage_area": "synthesis"}).json()), key
+    assert fx["simulate_sequential"]["model"]["organism_capacity"]["cascade"] is None
+    assert len(fx["simulate_sequential"]["model"]["pipeline"]) == 5
+    cc = fx["simulate_cascade"]["model"]["organism_capacity"]["cascade"]
+    assert set(cc) == set(c) and (cc["requested_parallel"], cc["demand_nodes"]) == (3, 18), cc
+
+    #  7. the page and its rendered test
+    page = _code_only((page_dir / "ResourceFabric.tsx").read_text(encoding="utf-8"))
+    chip = page.split("{sim.model.organism_capacity && (", 1)[1].split("{sim.model.organism_capacity?.organism &&", 1)[0]
+    assert "· stages run one at a time" in chip and "C-Suite pairs at once" in chip, chip[:400]
+    assert "over capacity" not in chip and "fits" not in chip and "admits" not in chip and "amber" not in chip, chip[:600]
+    assert "homeostatically governed at execution time" not in chip, "the tooltip still says the run is governed then"
+    assert "stage_concurrency_basis" in chip and "cascade.basis" in chip, "the tooltip does not say what governs the run"
+    assert "holds the run to one node at a time" not in chip, "the tooltip's energy clause still misstates the run"
+    _blk = page.split('data-testid="fabric-work-budget-reason"', 1)[1]
+    assert "work_budget.basis" in _blk[:200] and "the platform's work budget" in _blk[:120], _blk[:220]
+    assert "in this composition it holds only the org cascade" in _blk[:120], ("the span is not scoped to the "
+                                                                              "composition", _blk[:220])
+    assert "limits nothing" in page.split('data-testid="fabric-budget-off"', 1)[1][:200]
+    spec = (page_dir / "ResourceFabric.test.tsx").read_text(encoding="utf-8")
+    assert "const granted = casc.model.organism_capacity.cascade.granted_parallel;" in spec, (
+        "the rendered test does not read the expected grant from the capture")
+    assert "getByTestId('fabric-cascade-grant')" in spec and 'data-testid="fabric-cascade-grant"' in page
+    assert "findByTestId('fabric-capacity')" in spec and 'data-testid="fabric-capacity"' in page
+    assert ".not.toMatch(/over capacity|fits|admits/)" in spec

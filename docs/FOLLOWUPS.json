@@ -27219,10 +27219,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1209",
       "note": "",
-      "slot_source": "beside FU-1826 and FU-1829"
+      "slot_source": "beside FU-1826 and FU-1829",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1209: the fabric preview no longer compares the resource count with the grant for four parallel nodes (homeostasis.project(len(resolved))), so it no longer draws 'over capacity' in amber for a composition that runs one stage at a time. Its organism_capacity takes the posture, the organism and the work budget from homeostasis.snapshot(), read-only, and carries stage_concurrency 1 with a basis saying a composition's stages run one after another and its real resources one at a time, that no concurrency limit caps or refuses that sequence (only the declared ceiling of 12 stages bounds how many resources a run attempts), that a held work budget changes nothing about it, and that of its resources only the org cascade runs work at once under a concurrency grant (the model ensemble asks its members in parallel inside its one stage, ungoverned). For a composition holding vsb_org_swarm it carries the cascade's request, demand and grant: the grant comes from homeostasis.assess(demand, request, read_only=True), the roles are the resource's non-placeholder csuite_roles, and the demand and request come from swarm.cascade_demand, the formula cascade_orchestration now runs on. The basis says the grant is read now and can differ at the run. fits_current_capacity and admitted_max_parallel leave the payload; project() itself is unchanged. The chip reads '§8 capacity: {posture} · stages run one at a time', and for the cascade ' · the org cascade: up to {granted} C-Suite pairs at once', violet in both cases. The tooltip's energy clause and its last sentence say what governs the run, the work-budget span names the platform's work budget and says that in this composition it holds only the org cascade, and the budget-off block is kept. Two simulate answers captured from the live route are in ResourceFabric.fixture.json, and the rendered test draws the chip from them, reading the expected grant from the capture. test_w1209 holds it. Five sequential resources say stage_concurrency 1 and no fit, with and without a held budget. The cascade composition's request is 3, its demand 18, and its grant is assess(18, 3, read_only=True)'s, 3 with the controller's answer fixed at 3 (never the resource count), or 1 with the hold carried. No ATP simulator update is made on the test's thread by either preview. The cascade, driven with five roles and a stub that counts the C-Suite and CoE calls in flight, peaks at exactly 2 under a grant of 2 and at 1 under a grant of 1. The fixture carries only keys the live route gives, with the stage basis equal to the route's."
     },
     {
       "id": "FU-1843",

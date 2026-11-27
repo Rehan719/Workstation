@@ -598,6 +598,21 @@ async def accept_delivery(run_id: str, req: AcceptDeliveryRequest,
     return {"accepted": True, **rec}
 
 
+#  W1209 (FU-1842) - THE CASCADE'S DEMAND AND ITS REQUEST, SAID ONCE: the roles it engages (known C-Suite officers
+#  only, the CEO being the apex; when none is recognised, the default five), the honest demand of W278 (3 apex tiers +
+#  an officer and its CoE per role + the optional CoEs + BTO, build and catalogue + 6 appraisals) and the parallelism
+#  it asks the controller for (one officer pair per role, at most 4). cascade_orchestration runs on it, and the
+#  fabric's preview projects the cascade's grant from it, so the preview cannot project a formula the run does not use.
+_DEFAULT_CSUITE = ["CSO", "CFO", "CTO", "COO", "CLO"]
+
+
+def cascade_demand(csuite_roles, coe_specialisms) -> tuple:
+    """(roles, demand_nodes, requested_parallel) for a cascade asked for these C-Suite roles and CoE specialisms."""
+    roles = ([r for r in (csuite_roles or _DEFAULT_CSUITE) if r in _AGENTS and r != "CEO"] or list(_DEFAULT_CSUITE))[:9]
+    demand = 3 + 2 * len(roles) + len((coe_specialisms or [])[:3]) + 3 + 6
+    return roles, demand, min(4, len(roles))
+
+
 @router.post("/cascade")
 async def cascade_orchestration(req: CascadeRequest,
                                user: dict | None = Depends(get_current_user)):
@@ -658,13 +673,11 @@ async def cascade_orchestration(req: CascadeRequest,
     # officer+CoE pairs run CONCURRENTLY (bounded by the granted parallelism); under a protective
     # posture (granted 1) the run stays fully sequential — the organism's state genuinely shapes
     # how the organisation works. Fail-closed (W742): a controller that cannot answer grants 1, as below.
-    _DEFAULT_CSUITE = ["CSO", "CFO", "CTO", "COO", "CLO"]
-    _sel_probe = [r for r in (req.csuite_roles or _DEFAULT_CSUITE) if r in _AGENTS and r != "CEO"] or _DEFAULT_CSUITE
-    _honest_demand = 3 + 2 * len(_sel_probe[:9]) + len((req.coe_specialisms or [])[:3]) + 3 + 6
+    #  W1209 (FU-1842) - the roles, the demand and the request from cascade_demand, which the fabric preview reads too
+    _sel_probe, _honest_demand, _requested1209 = cascade_demand(req.csuite_roles, req.coe_specialisms)
     try:
         from agentic_core.ai.native.homeostasis import homeostasis
-        homeo = homeostasis.assess(demand_nodes=_honest_demand,
-                                   requested_parallel=min(4, len(_sel_probe[:9])))
+        homeo = homeostasis.assess(demand_nodes=_honest_demand, requested_parallel=_requested1209)
     except Exception:
         homeo = None
     _granted = max(1, int((homeo or {}).get("max_parallel", 1)))

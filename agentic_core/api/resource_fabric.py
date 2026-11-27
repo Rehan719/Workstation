@@ -3850,12 +3850,63 @@ def _model_configuration(resource_ids: List[str], usage_area: str,
         "incompatibilities": incompatibilities,
         "unset_params": unset,
     }
-    # §7→§8 — project the living organism's CURRENT capacity for this configuration's cognitive load, so the
-    # user designs with awareness of whether the organism can admit it now (read-only; the run is governed by
-    # §8 homeostasis at execution time). Best-effort, fail-soft.
+    # §7→§8 — the living organism's CURRENT state beside this configuration (read-only). Best-effort, fail-soft.
+    #  W1209 (FU-1842) - HOW THIS COMPOSITION RUNS, NOT WHETHER IT 'FITS'. This was homeostasis.project(len(resolved)):
+    #  the resource count against the grant for four parallel nodes, drawn 'over capacity' in amber for five
+    #  resources. But a composition's stages run one after another (the orchestrator assesses them with a request of
+    #  1 and awaits each) and its real resources one at a time (the run's loop awaits each); no concurrency limit caps
+    #  or refuses that sequence (MAX_STAGES bounds only how many resources a run attempts). No two stages or real
+    #  resources run at once. Of the composable resources, only the org cascade runs work at once under a grant of its
+    #  own (its C-Suite officer pairs), projected here from the formula the cascade runs on (swarm.cascade_demand) and
+    #  the roles the run would read. The model ensemble asks its up-to-five members in parallel inside its one stage,
+    #  and no grant governs that.
+    #  Read-only throughout (W742): snapshot() and assess(read_only=True) advance no ATP and fire no signal.
     try:
         from agentic_core.ai.native.homeostasis import homeostasis
-        model["organism_capacity"] = homeostasis.project(len(resolved))
+        from agentic_core.api.instrument_cell import MAX_STAGES as _max1209
+        _snap1209 = homeostasis.snapshot()
+        _cascade1209 = None
+        _org1209 = next((r for r in resolved if r["id"] == "vsb_org_swarm"), None)
+        if _org1209 is not None:
+            from agentic_core.api.swarm import cascade_demand
+            #  W495 (FU-123) - a value equal to its declared placeholder is not the user's design, as the run reads it
+            _declared1209 = (_BY_ID.get("vsb_org_swarm") or {}).get("reconfigurable_params") or {}
+            _set1209 = {k: v for k, v in (_org1209.get("config") or {}).items() if v != _declared1209.get(k)}
+
+            def _csv1209(v):
+                return [s.strip() for s in str(v).replace(";", ",").split(",") if s.strip()]
+            _roles, _demand, _requested = cascade_demand(_csv1209(_set1209.get("csuite_roles", "")),
+                                                         _csv1209(_set1209.get("coe_specialisms", "")))
+            _grant = homeostasis.assess(demand_nodes=_demand, requested_parallel=_requested, read_only=True)
+            _granted = max(1, int(_grant.get("max_parallel", 1)))
+            _held = bool((_grant.get("work_budget") or {}).get("holds"))
+            _cascade1209 = {
+                "requested_parallel": _requested,
+                "demand_nodes": _demand,
+                "granted_parallel": _granted,
+                "held_by_work_budget": _held,
+                "basis": (f"granted now, read without advancing anything: the org cascade asks for {_requested} "
+                          f"C-Suite officer pair(s) at once, one per role ({', '.join(_roles)}; at most 4), for a "
+                          f"demand of {_demand} nodes, and the controller grants {_granted}"
+                          + ("; the platform's work budget holds, so its officers run one pair at a time" if _held
+                             else "")
+                          + ". The grant is read again when the run starts and can differ by then (the immune "
+                            "posture, the platform's work budget, the circadian cycle)"),
+            }
+        model["organism_capacity"] = {
+            "projected_posture": _snap1209.get("posture"),
+            "organism": _snap1209.get("organism"),
+            "work_budget": _snap1209.get("work_budget"),
+            "stage_concurrency": 1,
+            "stage_concurrency_basis": (
+                "a composition's stages run one after another, and its real resources one at a time; for "
+                "concurrency nothing caps or refuses that sequence (only the declared ceiling of "
+                f"{_max1209} stages bounds how many resources a run attempts), and a held work budget changes "
+                "nothing about it. Of its resources, only the org cascade runs work at once under a concurrency "
+                "grant of its own (its C-Suite officer pairs); the model ensemble asks its members in parallel "
+                "inside its one stage, and no grant governs that"),
+            "cascade": _cascade1209,
+        }
     except Exception:
         model["organism_capacity"] = None
     return resolved, model
