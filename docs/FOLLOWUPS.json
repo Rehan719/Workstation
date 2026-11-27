@@ -27283,10 +27283,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1205",
       "note": "",
-      "slot_source": "P3.30, as FU-1297 was: the same whole-file ledger class"
+      "slot_source": "P3.30, as FU-1297 was: the same whole-file ledger class",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1205: the document-control store is dcms_ledger.jsonl, one JSON line per version (artifact_id, version, hash, actor, timestamp, the content capped at 16,000 characters or null, content_stored), appended in binary mode under store_lock with flush and fsync. An append that fails takes back only its own unfinished tail and raises; if that undo fails, the error says the version may be in the ledger and the instance refuses every later commit. No line written whole is rewritten. The registry in memory holds a stub per version with no content (200 versions: 1,455,855 resident bytes before, 120,705 after, by tracemalloc). The load, verify_artifact and get_audit_integrity read the file by one set of rules: a torn or unreadable line, a version out of order or repeated, or a content_stored flag that does not match its content refuses every commit with StoreUnavailable, saying how the Owner repairs the ledger. dcms_registry.json is carried in once behind a migration line naming its sha256 and counts, and kept untouched; one that cannot be read whole or is out of order stays the store, every commit refused; a marker records the ledger's creation, so a ledger that goes missing is refused, never carried in again. document_control_status says store_incomplete and writes_refused; assure_delivery and the workflow tree (agentic_core/ai/native/orchestrator.py, which keeps its QMS verdict) say a version that was not kept; the review-gate and review-decision routes (agentic_core/api/vsb.py) and POST /vbs/dcms/commit refuse with 503 and the reason and save nothing. The cascade's commits were already inside a try and are unchanged. The soak reads the ledger. Not detected, as before: a line rewritten with its hash, or the newest lines removed, since nothing outside the file anchors the ledger. test_w1205 holds each."
     },
     {
       "id": "FU-1846",

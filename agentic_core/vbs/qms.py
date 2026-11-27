@@ -377,10 +377,16 @@ class QualityManagementSystem:
         return h
 
     def document_control_status(self) -> Dict[str, Any]:
-        """The QMS's document-control posture — proves the DCMS is owned and operating under the QMS."""
+        """The QMS's document-control posture — proves the DCMS is owned and operating under the QMS.
+
+        W1205 (FU-1845) - when the DCMS ledger could not be read whole, store_incomplete says why (and how the Owner
+        repairs it) and writes_refused says no version is appended until it reads whole; registered_artifacts is
+        then what was read before the problem. Both are absent when the ledger was read whole."""
+        _why = getattr(self.dcms, "refusal", None)
         return {
             "owned_subsystem": "DCMS (Document Control Management System)",
             "controlled_documents": self.controlled_documents,
             "registered_artifacts": len(self.dcms.registry),
             "audit_integrity": self.dcms.get_audit_integrity(),
+            **({"store_incomplete": _why, "writes_refused": True} if _why else {}),
         }

@@ -5824,15 +5824,31 @@ def test_tamper_evidence_is_genuinely_evident(client):
     # restore a coherent head for later tests
     for i in range(2):
         loop.run_until_complete(ueg_ledger.log_event(f"w327t-restore-{i}", {"n": i}))
-    # DCMS — persistent, verifiable, honestly measured
-    from agentic_core.vbs.registry import dcms
-    loop.run_until_complete(dcms.commit_artifact("w327t-doc", {"body": "sealed"}, "test"))
-    va = dcms.verify_artifact("w327t-doc")
-    assert va["valid"] is True and va["versions"][0]["basis"] == "recomputed"
-    dcms.registry["w327t-doc"][0]["content"] = '{"body": "TAMPERED"}'
-    assert dcms.verify_artifact("w327t-doc")["valid"] is False
-    assert dcms.get_audit_integrity() < 1.0            # measured, never a constant
-    assert "w327t-doc" in type(dcms)("x").registry     # persists across instances
+    # DCMS — persistent, verifiable, honestly measured. W1205 (FU-1845): the store is the append-only ledger and
+    # memory holds no content, so the tamper is made to one line of the ledger FILE, on purpose, in an isolated data
+    # root: the suite's own ledger is not touched.
+    import pathlib as _pl327
+    import shutil as _sh327
+    import tempfile as _tf327
+    from agentic_core import config as _cfg327
+    from agentic_core.vbs.dcms import DocumentControlManagementSystem as _DC327
+    _was327, _iso327 = _cfg327.data_path, _tf327.mkdtemp(prefix="w327t-")
+    try:
+        _cfg327.data_path = lambda *parts: _pl327.Path(_iso327).joinpath(*parts)
+        dcms = _DC327("w327t")
+        loop.run_until_complete(dcms.commit_artifact("w327t-doc", {"body": "sealed"}, "test"))
+        va = dcms.verify_artifact("w327t-doc")
+        assert va["valid"] is True and va["versions"][0]["basis"] == "recomputed"
+        _led327 = _pl327.Path(dcms._store_path())
+        _rec327 = _json.loads(_led327.read_text(encoding="utf-8").splitlines()[0])
+        _rec327["content"] = '{"body": "TAMPERED"}'
+        _led327.write_text(_json.dumps(_rec327) + "\n", encoding="utf-8")
+        assert dcms.verify_artifact("w327t-doc")["valid"] is False
+        assert dcms.get_audit_integrity() < 1.0            # measured, never a constant
+        assert "w327t-doc" in type(dcms)("x").registry     # persists across instances
+    finally:
+        _cfg327.data_path = _was327
+        _sh327.rmtree(_iso327, ignore_errors=True)
 
 
 def test_marketplace_screened_and_birth_verdict_substance_aware(client):
@@ -104911,3 +104927,490 @@ def test_w1209_the_fabric_preview_says_how_a_composition_runs_not_that_it_is_ove
     assert "getByTestId('fabric-cascade-grant')" in spec and 'data-testid="fabric-cascade-grant"' in page
     assert "findByTestId('fabric-capacity')" in spec and 'data-testid="fabric-capacity"' in page
     assert ".not.toMatch(/over capacity|fits|admits/)" in spec
+
+
+def test_w1205_the_document_control_registry_appends_each_version_and_refuses_a_store_it_cannot_read_whole(
+        monkeypatch, tmp_path):
+    """FU-1845 (W1205), P3.30, as FU-1297 was. The document-control registry was one JSON file rewritten whole on every
+    gated answer under a bare except, with every version's content resident in memory; an unreadable store was loaded
+    as {} or its prefix and written back over the history; and a version that failed to write still read as
+    document-controlled. The store is now dcms_ledger.jsonl, one appended line per version. Held here, each on an
+    isolated data root unless it says otherwise:
+    L1. 300 commits of mixed sizes: each commit grows the file by exactly its own LF-ended record line, fsynced once,
+        in the same file (its inode does not change), the length this instance keeps is the file's (so no commit reads
+        the ledger again), the first commit makes its directory entry durable, and the bytes before each line, the
+        first kilobyte among them, never change;
+    L2. a fresh instance replays the same version counts for every id, holds no content, and verify_artifact is valid
+        for each, recomputed; two instances committing one artifact in turn give versions 1, 2, 3;
+    L3. with the last line torn: a new QMS's document_control_status says store_incomplete, writes_refused and how
+        the Owner repairs the ledger; commit_artifact raises StoreUnavailable, from the new instance and from the one
+        that wrote the lines; verify_artifact says the ledger cannot be read whole; and the file's bytes are
+        unchanged. A version out of order and a line that is not JSON are refused the same way;
+    L4. the reader raises PermissionError twice and then reads: the store loads whole. If it raises every time, the
+        load refuses and nothing is written;
+    L5. with the append forced to raise OSError, on the suite's own singletons: assure_delivery answers
+        document_controlled False with the reason, controlled_documents and the stubs do not move, and the ledger's
+        bytes are unchanged; the workflow tree keeps its governance and its QMS verdict and says the seal was not kept;
+    L6. a planted dcms_registry.json of 3 artifacts x 2 versions migrates: 6 versions verify, the ledger's first line
+        names the old file's sha256 and its counts, and after one more commit the old file is still byte-identical
+        and the migration line is there once; a second load carries nothing again. Refused, the old file kept: one
+        that cannot be read whole, one whose versions are out of order, and one whose migration could not be written
+        (the constructor still returns). A ledger that goes missing after it was created is refused, never carried in
+        again. A zero-byte old file is an empty registry. A ledger with fewer carried lines than its migration line
+        names is refused;
+    L7. after 300 commits of about 10 KB each, the stubs hold no content strings, in the instance that wrote them and
+        in a fresh one;
+    L8. one line's content tampered in the file: verify_artifact is invalid and get_audit_integrity is below 1.0, on
+        the instance that committed it; a content_stored flag flipped to hide a tamper, and a repeated line, each
+        make verify say the ledger cannot be read whole;
+    L9. the three direct callers with no try refuse with 503 and the reason and save nothing: the review gates, the
+        review decision (agentic_core/api/vsb.py) and POST /vbs/dcms/commit (vbs_systems.py); an append that could
+        not be taken back is said as maybe in the ledger, not as nothing appended;
+    L10. the soak reads dcms_ledger.jsonl, and no module but dcms.py writes or replaces the old registry;
+    L11. the register: FU-1845 is on P3.30, medium, open or closed by W1205 as built;
+    L12. an append that fails part way (a short write, then ENOSPC) or whose fsync fails takes back its own tail: the
+        bytes are unchanged, a fresh instance reads whole, and the next commit lands as the next version; one whose
+        undo fails too raises AppendNotUndone and refuses every later commit of that instance.
+
+    NOT HELD, as said in dcms.py: a line rewritten together with its hash, or the newest lines removed, still reads as
+    intact; nothing outside the file anchors it."""
+    import asyncio
+    import errno
+    import hashlib
+    import json
+    import os
+    import pathlib
+    import re
+    import stat
+    import pytest
+    from fastapi import HTTPException
+    from agentic_core import config as _cfg
+    from agentic_core.config import StoreUnavailable
+    from agentic_core.vbs import dcms as D
+    from agentic_core.vbs.qms import QualityManagementSystem
+    root = pathlib.Path(__file__).resolve().parents[1]
+    DC = D.DocumentControlManagementSystem
+    run = asyncio.run
+    sha3 = lambda s: hashlib.sha3_512(s.encode()).hexdigest()  # noqa: E731
+
+    def iso(m, name):
+        """A fresh data root for this leg, and the ledger's path in it."""
+        d = tmp_path / name
+        d.mkdir()
+        m.setattr(_cfg, "data_path", lambda *parts: d.joinpath(*parts))
+        return d, d / "dcms_ledger.jsonl"
+
+    def no_content(reg, where):
+        for aid, stubs in reg.items():
+            for s in stubs:
+                assert "content" not in s, (where, aid, "a stub holds its content")
+                assert not [v for v in s.values() if isinstance(v, str) and len(v) > 200], (where, aid, s.keys())
+
+    def versions(inst):
+        return {aid: [s["version"] for s in v] for aid, v in inst.registry.items()}
+
+    #  L1. APPEND ONLY: one line per commit, in the same file, the bytes before it unchanged
+    with monkeypatch.context() as m:
+        _d, led = iso(m, "l1")
+        fsynced = []
+        _fsync = os.fsync
+        m.setattr(os, "fsync", lambda fd: (fsynced.append(os.fstat(fd)), _fsync(fd))[1])
+        loads = []
+        _load = DC._load
+        m.setattr(DC, "_load", lambda self, *a, **k: (loads.append(1), _load(self, *a, **k))[1])
+        dc = DC("w1205")
+        sizes = (10, 300, 2_000, 9_000, 15_900, 17_000, 40)
+        first_kb, ino = None, None
+        for i in range(300):
+            before = led.read_bytes() if led.exists() else b""
+            content = {"i": i, "body": "x" * sizes[(i // 7) % len(sizes)]}
+            h = run(dc.commit_artifact(f"w1205-l1-{i % 7}", content, "w1205"))
+            after = led.read_bytes()
+            assert after[:len(before)] == before, (i, "L1: a commit changed bytes already written")
+            added = after[len(before):]
+            assert added.endswith(b"\n") and not added.endswith(b"\r\n") and added.count(b"\n") == 1, (
+                i, "L1: a commit added other than one LF-ended line")
+            assert dc._end == led.stat().st_size == len(after), (i, "L1: the instance's length is not the file's")
+            rec = json.loads(added)
+            payload = json.dumps(content, sort_keys=True, default=str)
+            assert (rec["artifact_id"], rec["version"], rec["hash"]) == (f"w1205-l1-{i % 7}", i // 7 + 1, h), (i, rec)
+            assert h == sha3(payload) and list(rec) == list(D.RECORD_KEYS), (i, list(rec))
+            assert rec["content_stored"] is (len(payload) <= 16000), (i, len(payload))
+            assert rec["content"] == (payload if len(payload) <= 16000 else None), i
+            first_kb = first_kb or (after[:1024] if len(after) >= 1024 else None)
+            assert first_kb is None or after[:1024] == first_kb, (i, "L1: the first kilobyte changed")
+            ino = ino or os.stat(led).st_ino
+            assert os.stat(led).st_ino == ino, (i, "L1: the ledger was replaced, not appended to")
+        on_ledger = [s for s in fsynced if (s.st_dev, s.st_ino) == (os.stat(led).st_dev, ino)]
+        assert len(on_ledger) == 300, ("L1: each append is fsynced once", len(on_ledger))
+        if os.name != "nt":
+            #  the ledger's new directory entry, then its marker's
+            assert sum(stat.S_ISDIR(s.st_mode) for s in fsynced) == 2, "L1: the new ledger's directory was not fsynced"
+        assert len(loads) == 1, ("L1: a single writer read its ledger again", len(loads))
+        assert led.read_bytes().count(b"\n") == 300
+        assert not (_d / "dcms_registry.json").exists(), "L1: the old registry was written"
+        counts = {aid: len(v) for aid, v in dc.registry.items()}
+
+    #  L2. A FRESH INSTANCE REPLAYS THE SAME VERSIONS, AND EACH VERIFIES BY RECOMPUTING
+    with monkeypatch.context() as m:
+        m.setattr(_cfg, "data_path", lambda *parts: (tmp_path / "l1").joinpath(*parts))
+        fresh = DC("w1205-fresh")
+        assert fresh._store_incomplete is None, fresh._store_incomplete
+        assert {aid: len(v) for aid, v in fresh.registry.items()} == counts == {f"w1205-l1-{k}": (300 - k + 6) // 7
+                                                                                for k in range(7)}, counts
+        assert [s["version"] for s in fresh.registry["w1205-l1-3"]] == list(range(1, counts["w1205-l1-3"] + 1))
+        assert fresh.registry == dc.registry, "L2: the replay differs from what was committed"
+        no_content(fresh.registry, "L2")
+        for aid in counts:
+            v = fresh.verify_artifact(aid)
+            assert v["valid"] is True and len(v["versions"]) == counts[aid], (aid, v.get("reason"))
+            assert {r["basis"].split(" ")[0] for r in v["versions"]} == {"recomputed", "hash_only"}, aid
+            assert v["unverifiable"] == sum(r["verified"] is None for r in v["versions"]) > 0, aid
+        assert fresh.get_audit_integrity() == 1.0
+        assert fresh.verify_artifact("w1205-never")["valid"] is False
+    with monkeypatch.context() as m:
+        _d, led = iso(m, "l2")
+        a, b = DC("w1205-a"), DC("w1205-b")
+        run(a.commit_artifact("w1205-aba", {"n": 1}, "a"))
+        run(b.commit_artifact("w1205-aba", {"n": 2}, "b"))
+        run(a.commit_artifact("w1205-aba", {"n": 3}, "a"))
+        assert [json.loads(ln)["version"] for ln in led.read_text(encoding="utf-8").splitlines()] == [1, 2, 3], (
+            "L2: an instance wrote on a version count that another instance had moved")
+        assert versions(DC("w1205")) == {"w1205-aba": [1, 2, 3]} and DC("w1205")._store_incomplete is None
+
+    #  L3. A TORN LAST LINE: SAID, REFUSED, THE BYTES KEPT
+    repair = "cuts it back to the end of its last complete line"
+    with monkeypatch.context() as m:
+        _d, led = iso(m, "l3")
+        writer = DC("w1205")
+        for i in range(3):
+            run(writer.commit_artifact(f"w1205-l3-{i}", {"i": i}, "w1205"))
+        led.write_bytes(led.read_bytes()[:-7])
+        torn = led.read_bytes()
+        q = QualityManagementSystem("w1205")
+        st = q.document_control_status()
+        assert st.get("writes_refused") is True and "torn" in (st.get("store_incomplete") or ""), st
+        assert repair in st["store_incomplete"] and "never rewrites, truncates or replaces a line it wrote whole" in (
+            st["store_incomplete"])
+        assert st["registered_artifacts"] == 2, ("L3: the versions before the torn line are read, and said", st)
+        for who, inst in (("a new instance", q.dcms), ("the instance that wrote it", writer)):
+            with pytest.raises(StoreUnavailable) as e:
+                run(inst.commit_artifact("w1205-l3-after", {"after": True}, "w1205"))
+            assert repair in str(e.value) and "nothing was written" in str(e.value), (who, str(e.value))
+            assert str(e.value).count("could not be read whole") == 1, (who, "L3: the refusal says itself twice")
+            assert led.read_bytes() == torn, (who, "L3: a refused commit changed the ledger")
+        for aid in ("w1205-l3-0", "w1205-l3-2"):
+            v = q.dcms.verify_artifact(aid)
+            assert v["valid"] is False and "cannot be read whole" in v.get("reason", ""), (aid, v)
+        with pytest.raises(StoreUnavailable):
+            run(q.control_document("w1205-l3-qms", {"x": 1}, "w1205"))
+        assert q.controlled_documents == 0 and led.read_bytes() == torn
+        #  repaired by hand (cut back to the last complete line), it is taken up without a restart
+        led.write_bytes(torn[:torn.rindex(b"\n") + 1])
+        run(writer.commit_artifact("w1205-l3-after", {"after": True}, "w1205"))
+        assert writer._store_incomplete is None and DC("w1205").registry.keys() >= {"w1205-l3-0", "w1205-l3-after"}
+    with monkeypatch.context() as m:
+        _d, led = iso(m, "l3b")
+        good = json.dumps({"artifact_id": "w1205-o", "version": 1, "hash": sha3("{}"), "actor": "t", "timestamp": 1,
+                           "content": "{}", "content_stored": True}) + "\n"
+        for bad, said in ((good.replace('"version": 1', '"version": 3'), "out of order"),
+                          ('{"artifact_id": "w1205-o", "versi\n', "not a JSON line")):
+            led.write_text(good + bad + good.replace("w1205-o", "w1205-p"), encoding="utf-8")
+            kept = led.read_bytes()
+            inst = DC("w1205")
+            assert said in (inst._store_incomplete or ""), (said, inst._store_incomplete)
+            assert {k: len(v) for k, v in inst.registry.items()} == {"w1205-o": 1}, (said, "L3: read past the problem")
+            assert inst.verify_artifact("w1205-p")["valid"] is False, (said, "L3: verify read past the problem")
+            with pytest.raises(StoreUnavailable):
+                run(inst.commit_artifact("w1205-o", {"n": 2}, "w1205"))
+            assert led.read_bytes() == kept, said
+
+    #  L4. A SHARING VIOLATION IS RETRIED; ONE THAT LASTS IS A REFUSAL
+    with monkeypatch.context() as m:
+        _d, led = iso(m, "l4")
+        run(DC("w1205").commit_artifact("w1205-l4", {"n": 1}, "w1205"))
+        run(DC("w1205").commit_artifact("w1205-l4", {"n": 2}, "w1205"))
+        kept = led.read_bytes()
+        calls = []
+        _open = D._open_raw
+
+        def twice(path):
+            calls.append(path)
+            if len(calls) <= 2:
+                raise PermissionError(13, "w1205: a sharing violation")
+            return _open(path)
+        m.setattr(D, "_open_raw", twice)
+        inst = DC("w1205")
+        assert inst._store_incomplete is None and len(inst.registry["w1205-l4"]) == 2, inst._store_incomplete
+        assert len(calls) >= 3, "L4: the reader was not retried"
+        m.setattr(D, "_open_raw", lambda path: (_ for _ in ()).throw(PermissionError(13, "w1205: held")))
+        stuck = DC("w1205")
+        assert "stayed locked" in (stuck._store_incomplete or "") and stuck.registry == {}, stuck._store_incomplete
+        with pytest.raises(StoreUnavailable):
+            run(stuck.commit_artifact("w1205-l4", {"n": 3}, "w1205"))
+        assert led.read_bytes() == kept, "L4: a ledger that could not be read was written"
+
+    #  L5. A FAILED APPEND IS NOT DOCUMENT CONTROL (the suite's own singletons, nothing written)
+    from agentic_core.vbs import quality as Q
+    from agentic_core.vbs.registry import dcms as _dcms, qms as _qms
+    assert _qms.dcms is _dcms
+    live = pathlib.Path(_dcms._store_path())
+    live_before = live.read_bytes() if live.exists() else None
+    key = "qms_record:delivery"
+    n_before, c_before = len(_dcms.registry.get(key) or []), _qms.controlled_documents
+
+    def full(path, data):
+        raise OSError(errno.ENOSPC, "w1205: no space left on device")
+    secs = ["Summary", "Plan", "Risks"]
+    body = "\n".join(f"## {s}\nA substantive paragraph about the w1205 delivery's {s.lower()}, " * 3 for s in secs)
+    with monkeypatch.context() as m:
+        m.setattr(D, "_append_bytes", full)
+        out = run(Q.assure_delivery(body, required_sections=secs, label="delivery", served_by={"local": 1}))
+        from agentic_core.ai.native.orchestrator import orchestrator as _orch
+        tree = run(_orch.orchestrate_tree("w1205 a made-up bakery's opening plan"))
+    qa = out["quality"]
+    assert qa["document_controlled"] is False and qa["quality_record_hash"] is None, qa.get("document_control_basis")
+    assert "no space left on device" in qa["document_control_basis"], qa["document_control_basis"]
+    assert qa["document_control_basis"].startswith("not kept:") and "qms_error" not in qa, qa
+    assert "/api/v1/vbs/qms/document-control" in qa["document_control_basis"]
+    assert _qms.controlled_documents == c_before and len(_dcms.registry.get(key) or []) == n_before
+    assert (live.read_bytes() if live.exists() else None) == live_before, "L5: a failed append changed the ledger"
+    gov = tree.get("governance") or {}
+    assert gov.get("governed_by", "").startswith("VBS QMS + DCMS") and "qms_passed" in gov and gov.get("qms_basis"), (
+        "L5: a seal that was not kept dropped the tree's governance and its QMS verdict", tree.get("governance"))
+    assert gov["dcms_hash"] is None and gov["dcms_version"] is None, gov
+    assert "no space left" in gov.get("dcms_basis", ""), gov
+    #  and with the append working again, the same delivery is document-controlled
+    ok = run(Q.assure_delivery(body, required_sections=secs, label="delivery", served_by={"local": 1}))["quality"]
+    assert ok["document_controlled"] is True and len(ok["quality_record_hash"]) == 128
+    assert _qms.controlled_documents == c_before + 1 and len(_dcms.registry[key]) == n_before + 1
+
+    #  L6. THE REGISTRY BEFORE W1205 IS CARRIED IN ONCE, AND KEPT
+    def plant(d, entries_of):
+        old = {}
+        for aid, vers in entries_of.items():
+            for v in vers:
+                p = json.dumps({"a": aid, "v": v}, sort_keys=True)
+                old.setdefault(aid, []).append({"version": v, "hash": sha3(p), "actor": "w1205",
+                                                "timestamp": 1700000000 + v, "content": p, "content_stored": True})
+        (d / "dcms_registry.json").write_text(json.dumps(old, indent=2), encoding="utf-8")
+        return (d / "dcms_registry.json").read_bytes()
+    with monkeypatch.context() as m:
+        d, led = iso(m, "l6")
+        old_bytes = plant(d, {f"w1205-old-{a}": (1, 2) for a in range(3)})
+        mig = DC("w1205")
+        assert mig._store_incomplete is None, mig._store_incomplete
+        assert {k: len(v) for k, v in mig.registry.items()} == {f"w1205-old-{a}": 2 for a in range(3)}
+        assert sum(r["verified"] is True for a in range(3)
+                   for r in mig.verify_artifact(f"w1205-old-{a}")["versions"]) == 6, "L6: 6 versions verify"
+        lines = led.read_text(encoding="utf-8").splitlines()
+        first = json.loads(lines[0])
+        assert first["kind"] == "migration" and first["from"] == "dcms_registry.json", first
+        assert (first["sha256"], first["artifacts"], first["versions"]) == (hashlib.sha256(old_bytes).hexdigest(),
+                                                                            3, 6), first
+        assert len(lines) == 7 and all(json.loads(ln).get("migrated") is True for ln in lines[1:])
+        run(mig.commit_artifact("w1205-old-0", {"a": 0, "v": 3}, "w1205"))
+        assert (d / "dcms_registry.json").read_bytes() == old_bytes, "L6: the old registry was rewritten"
+        lines = led.read_text(encoding="utf-8").splitlines()
+        assert len(lines) == 8 and sum('"kind": "migration"' in ln for ln in lines) == 1, lines[:2]
+        again = DC("w1205")
+        assert led.read_text(encoding="utf-8").splitlines() == lines, "L6: a second load carried it in again"
+        assert versions(again) == {"w1205-old-0": [1, 2, 3], "w1205-old-1": [1, 2], "w1205-old-2": [1, 2]}
+        assert again.migration and again.migration["sha256"] == first["sha256"] and again.get_audit_integrity() == 1.0
+        #  the ledger goes missing (moved aside here, its bytes kept): refused, never carried in again
+        kept_lines = led.read_bytes()
+        os.replace(led, d / "w1205-ledger-moved-aside.jsonl")
+        lost = DC("w1205")
+        assert "is missing" in (lost._store_incomplete or "") and not led.exists(), lost._store_incomplete
+        with pytest.raises(StoreUnavailable):
+            run(lost.commit_artifact("w1205-old-0", {"a": 0, "v": 4}, "w1205"))
+        with pytest.raises(StoreUnavailable):
+            run(again.commit_artifact("w1205-old-0", {"a": 0, "v": 4}, "w1205"))
+        assert not led.exists() and (d / "dcms_registry.json").read_bytes() == old_bytes
+        assert (d / "w1205-ledger-moved-aside.jsonl").read_bytes() == kept_lines
+    for name, write_old, said in (
+            ("l6b", lambda d: (d / "dcms_registry.json").write_text('{"w1205-x": [{"version": 1, "hash": "ab',
+                                                                      encoding="utf-8"), "stays the store"),
+            ("l6c", lambda d: plant(d, {"w1205-x": (2, 1)}), "not 1 to 2 in order")):
+        with monkeypatch.context() as m:
+            d, led = iso(m, name)
+            write_old(d)
+            old_bytes = (d / "dcms_registry.json").read_bytes()
+            bad = DC("w1205")
+            assert not led.exists(), (name, "L6: an old registry that could not be carried was carried")
+            assert said in (bad._store_incomplete or "") and "empty dcms_ledger.jsonl" in bad._store_incomplete, (
+                name, bad._store_incomplete)
+            with pytest.raises(StoreUnavailable):
+                run(bad.commit_artifact("w1205-x", {"n": 1}, "w1205"))
+            assert not led.exists() and (d / "dcms_registry.json").read_bytes() == old_bytes, name
+    with monkeypatch.context() as m:
+        d, led = iso(m, "l6d")
+        old_bytes = plant(d, {"w1205-y": (1,)})
+        _replace = os.replace
+
+        def no_room(src, dst, *a, **k):
+            if str(dst).endswith("dcms_ledger.jsonl"):
+                raise OSError(errno.ENOSPC, "w1205: no space left on device")
+            return _replace(src, dst, *a, **k)
+        m.setattr(os, "replace", no_room)
+        failed = DC("w1205")      # the constructor returns: the platform still imports
+        assert "could not be carried in" in (failed._store_incomplete or ""), failed._store_incomplete
+        assert sorted(p.name for p in d.iterdir()) == ["dcms_registry.json"], sorted(p.name for p in d.iterdir())
+        assert (d / "dcms_registry.json").read_bytes() == old_bytes
+    with monkeypatch.context() as m:
+        d, led = iso(m, "l6e")
+        (d / "dcms_registry.json").write_bytes(b"")
+        empty = DC("w1205")
+        assert empty._store_incomplete is None and empty.registry == {} and empty.migration["bytes"] == 0
+        assert (d / "dcms_registry.json").read_bytes() == b""
+    with monkeypatch.context() as m:
+        d, led = iso(m, "l6f")
+        rec = {"artifact_id": "w1205-z", "version": 1, "hash": sha3("{}"), "actor": "t", "timestamp": 1,
+               "content": "{}", "content_stored": True}
+        led.write_text("\n".join([json.dumps({"kind": "migration", "versions": 3}),
+                                  json.dumps({**rec, "migrated": True}),
+                                  json.dumps({**rec, "version": 2, "migrated": True}),
+                                  json.dumps({**rec, "artifact_id": "w1205-after"})]) + "\n", encoding="utf-8")
+        short = DC("w1205")
+        assert "carried 3 version(s), 2 carried line(s) follow it" in (short._store_incomplete or ""), (
+            short._store_incomplete)
+
+    #  L7. 300 VERSIONS OF ABOUT 10 KB: NO CONTENT IS RESIDENT
+    with monkeypatch.context() as m:
+        _d, led = iso(m, "l7")
+        big = DC("w1205")
+        for i in range(300):
+            run(big.commit_artifact(f"w1205-l7-{i % 5}", {"i": i, "body": "y" * 10_000}, "w1205"))
+        assert sum(len(v) for v in big.registry.values()) == 300 and led.stat().st_size > 3_000_000
+        no_content(big.registry, "L7, the writer")
+        no_content(DC("w1205").registry, "L7, a fresh instance")
+
+    #  L8. A TAMPERED LINE IN THE FILE IS CAUGHT, BY RECOMPUTING, ON THE INSTANCE THAT COMMITTED IT
+    with monkeypatch.context() as m:
+        _d, led = iso(m, "l8")
+        t = DC("w1205")
+        for i in range(4):
+            run(t.commit_artifact(f"w1205-l8-{i % 2}", {"i": i}, "w1205"))
+        assert t.verify_artifact("w1205-l8-1")["valid"] is True and t.get_audit_integrity() == 1.0
+        clean = led.read_text(encoding="utf-8").splitlines()
+        rec = json.loads(clean[1])
+        lines = list(clean)
+        lines[1] = json.dumps({**rec, "content": '{"i": "TAMPERED"}'})
+        led.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        v = t.verify_artifact("w1205-l8-1")
+        assert v["valid"] is False and [r["verified"] for r in v["versions"]] == [False, True], v
+        assert t.verify_artifact("w1205-l8-0")["valid"] is True
+        assert t.get_audit_integrity() == 0.75, t.get_audit_integrity()
+        for shape, lines in (
+                ("the flag flipped to hide a tamper", clean[:1] + [json.dumps({**rec, "content": '{"i": "T"}',
+                                                                               "content_stored": False})] + clean[2:]),
+                ("a repeated line", clean + [clean[1]])):
+            led.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            v = t.verify_artifact("w1205-l8-1")
+            assert v["valid"] is False and "cannot be read whole" in v.get("reason", ""), (shape, v)
+            assert t.get_audit_integrity() < 1.0, shape
+
+    #  L9. THE DIRECT CALLERS WITH NO TRY: 503 AND THE REASON, NOTHING SAVED
+    from agentic_core.api import vsb as _vsb
+    from agentic_core.api import vbs_systems as _vs
+    vid = "vsb-w1205-seal"
+    stage = _vsb._LIFECYCLE_STAGE_IDS[1]
+    rec_path = _vsb._vsb_path(vid)
+    rec_path.write_text(json.dumps({"vsb_id": vid, "name": "W1205 Made-up Seal Co", "owner_id": None,
+                                    "review_gates": {"stages": [stage], "decisions": {}}}), encoding="utf-8")
+
+    def undone(path, data):
+        raise D.AppendNotUndone("w1205: the append failed and its tail could not be taken back", 0)
+    try:
+        rec_before = rec_path.read_bytes()
+        live_before = live.read_bytes() if live.exists() else None
+        for failing, tail in ((full, "Nothing was"), (undone, "not confirmed durable")):
+            with monkeypatch.context() as m:
+                m.setattr(D, "_append_bytes", failing)
+                for what, call, lead in (
+                        ("the review gates", lambda: _vsb.set_review_gates(
+                            vid, _vsb.ReviewGatesRequest(stages=[stage, _vsb._LIFECYCLE_STAGE_IDS[2]]), None),
+                         "The review gates were NOT changed"),
+                        ("the review decision", lambda: _vsb.decide_review_gate(
+                            vid, stage, _vsb.GateDecisionRequest(decision="approve", note="w1205"), None),
+                         "The review decision was NOT recorded"),
+                        ("the commit route", lambda: _vs.dcms_commit(_vs.DCMSCommit(artifact_id="w1205-route",
+                                                                                    content={"n": 1})),
+                         "Version NOT committed")):
+                    with pytest.raises(HTTPException) as e:
+                        run(call())
+                    _dcms._unconfirmed = None      # the patched door set it on the singleton; nothing was written
+                    detail = str(e.value.detail)
+                    assert e.value.status_code == 503 and detail.startswith(lead), (what, e.value.status_code, detail)
+                    assert ("no space left on device" if failing is full else "could not be taken back") in detail, (
+                        what, detail)
+                    assert tail in detail, (what, "L9: the refusal says the wrong thing about the ledger", detail)
+                    if failing is undone and what == "the commit route":
+                        assert "Nothing was appended" not in detail, detail
+                    assert rec_path.read_bytes() == rec_before, (what, "L9: the entity was saved without its record")
+                    assert (live.read_bytes() if live.exists() else None) == live_before, what
+    finally:
+        rec_path.unlink(missing_ok=True)
+
+    #  L10. THE SOAK READS THE LEDGER; ONLY dcms.py WRITES OR REPLACES THE OLD REGISTRY
+    soak = (root / "scripts" / "soak_organism.py").read_text(encoding="utf-8")
+    assert '(dd / "dcms_ledger.jsonl")' in soak and "dcms_registry.json" not in soak
+    writes = re.compile(r"atomic_write_json|write_text|write_bytes|os\.replace|unlink|open\([^)]*['\"][wa]b?['\"]")
+    writers = sorted(p.relative_to(root).as_posix() for p in (root / "agentic_core").rglob("*.py")
+                     if "_archive" not in p.parts and any(
+                         "dcms_registry" in ln and writes.search(ln)
+                         for ln in p.read_text(encoding="utf-8", errors="replace").splitlines()))
+    assert writers == [], ("L10: a module writes or replaces the old registry", writers)
+    assert D.OLD_REGISTRY_NAME == "dcms_registry.json" and D.LEDGER_NAME == "dcms_ledger.jsonl"
+
+    #  L11. THE REGISTER
+    row = {r["id"]: r for r in json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+           if isinstance(r, dict) and "id" in r}["FU-1845"]
+    assert (row["slot"], row["severity"]) == ("P3.30", "medium"), row
+    assert (row["status"], row["closed_by"]) in (("open", None), ("done", "W1205")), (row["status"], row["closed_by"])
+
+    #  L12. A FAILED APPEND TAKES BACK ITS OWN TAIL, AND ONLY THAT
+    with monkeypatch.context() as m:
+        _d, led = iso(m, "l12")
+        w = DC("w1205")
+        for i in range(3):
+            run(w.commit_artifact("w1205-l12", {"i": i}, "w1205"))
+        _write, _fsync, _trunc = os.write, os.fsync, os.ftruncate
+        for case in ("a short write, then ENOSPC", "the fsync fails"):
+            kept, n = led.read_bytes(), len(w.registry["w1205-l12"])
+            calls = []
+            if case.startswith("a short"):
+                def write(fd, b):
+                    calls.append(1)
+                    if len(calls) == 1:
+                        return _write(fd, bytes(b)[:20])
+                    raise OSError(errno.ENOSPC, "w1205: no space left on device")
+                m.setattr(os, "write", write)
+            else:
+                def fsync(fd):
+                    calls.append(1)
+                    if len(calls) == 1:
+                        raise OSError(errno.EIO, "w1205: an I/O error")
+                    return _fsync(fd)
+                m.setattr(os, "fsync", fsync)
+            with pytest.raises(OSError):
+                run(w.commit_artifact("w1205-l12", {"failed": case}, "w1205"))
+            m.setattr(os, "write", _write)
+            m.setattr(os, "fsync", _fsync)
+            assert led.read_bytes() == kept, (case, "L12: a failed append left bytes in the ledger")
+            assert DC("w1205")._store_incomplete is None, (case, "L12: the ledger does not read whole")
+            run(w.commit_artifact("w1205-l12", {"after": case}, "w1205"))
+            assert versions(DC("w1205"))["w1205-l12"] == list(range(1, n + 2)), case
+        #  the undo fails too: said, and the instance refuses until it is restarted
+        m.setattr(os, "fsync", lambda fd: (_ for _ in ()).throw(OSError(errno.EIO, "w1205: an I/O error")))
+        m.setattr(os, "ftruncate", lambda fd, n: (_ for _ in ()).throw(OSError(errno.EIO, "w1205: no truncate")))
+        with pytest.raises(D.AppendNotUndone) as e:
+            run(w.commit_artifact("w1205-l12", {"unconfirmed": True}, "w1205"))
+        assert "may or may not be in the ledger" in str(e.value), str(e.value)
+        m.setattr(os, "fsync", _fsync)
+        m.setattr(os, "ftruncate", _trunc)
+        after_undo = led.read_bytes()
+        with pytest.raises(StoreUnavailable) as e:
+            run(w.commit_artifact("w1205-l12", {"next": True}, "w1205"))
+        assert "not confirmed durable" in str(e.value) and w.refusal, str(e.value)
+        assert led.read_bytes() == after_undo, "L12: a refused commit wrote"

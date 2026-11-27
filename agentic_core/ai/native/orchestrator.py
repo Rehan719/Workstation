@@ -865,15 +865,29 @@ class NativeOrchestrator:
             _all_floor = bool(results) and all((r or {}).get("served_by") == "native" for r in results.values())
             qms_passed = None if _all_floor else await qms.run_quality_gates(
                 {"coverage": coverage_proxy, "stubs_found": not final.strip()})
-            dcms_hash = await dcms.commit_artifact(f"tree:{(goal or '')[:48]}",
-                                                   {"goal": goal, "final": final[:2000], "nodes": len(nodes)}, "native.tree")
+            #  W1205 (FU-1845) - the seal has its own try: the DCMS ledger now refuses a commit it cannot keep and
+            #  lets a failed write raise, which would drop the whole governance, the QMS verdict with it. The
+            #  verdict is kept, and the record says the seal was not kept, and why.
+            from agentic_core.config import StoreUnavailable as _SU1205
+            _dcms_why = None
+            try:
+                dcms_hash = await dcms.commit_artifact(f"tree:{(goal or '')[:48]}",
+                                                       {"goal": goal, "final": final[:2000], "nodes": len(nodes)},
+                                                       "native.tree")
+            except (_SU1205, OSError) as _dc_exc:
+                dcms_hash = None
+                _dcms_why = ("not kept: the tree's record could not be written to the document-control ledger "
+                             f"({type(_dc_exc).__name__}: "
+                             f"{str(getattr(_dc_exc, 'problem', _dc_exc)).split('; to repair it')[0][:600]})")
             governance = {"governed_by": "VBS QMS + DCMS (owned, real)",
                           "qms_passed": (None if _all_floor else bool(qms_passed)),
                           "qms_basis": ("not assessable — every node floor-served; the length proxy cannot fail"
                                         if _all_floor else "QMS gate on the synthesis length/stub proxies"),
                           "qms_coverage_proxy": round(coverage_proxy, 3),
                           "dcms_hash": dcms_hash, "dcms_algo": "sha3_512",
-                          "dcms_version": len(dcms.registry.get(f"tree:{(goal or '')[:48]}", []))}
+                          "dcms_version": (len(dcms.registry.get(f"tree:{(goal or '')[:48]}", []))
+                                           if dcms_hash else None),
+                          **({"dcms_basis": _dcms_why} if _dcms_why else {})}
             _fire("reflex", "native.tree",
                   f"VBS governance: qms={'not assessable' if _all_floor else 'pass' if qms_passed else 'fail'}", 0.4)
         except Exception:

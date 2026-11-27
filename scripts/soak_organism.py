@@ -8,7 +8,7 @@ Establishes three living VSBs with distinct activity profiles:
   - "mixed":   occasional revenue
 
 Runs auto_compliance + auto_economy (+auto_ship) on a real cadence and samples every N beats:
-DCMS registry bytes · UEG event counts by class · per-entity repo git object counts · beat
+DCMS ledger bytes · UEG event counts by class · per-entity repo git object counts · beat
 wall-time · W327 recompute-and-verify duration. Writes an honest JSON report; fabricates nothing.
 
 Usage (isolated env, NEVER against real data):
@@ -82,8 +82,9 @@ async def soak(minutes: float, cadence: float) -> dict:
                 samples.append({
                     "beat": beat_n, "at": time.strftime("%H:%M:%S", time.gmtime()),
                     "beat_ms": beat_ms, "actions": beat.get("actions"),
-                    "dcms_bytes": (dd / "dcms_registry.json").stat().st_size
-                                  if (dd / "dcms_registry.json").exists() else 0,
+                    #  W1205 (FU-1845) - the document-control store is the append-only ledger
+                    "dcms_bytes": (dd / "dcms_ledger.jsonl").stat().st_size
+                                  if (dd / "dcms_ledger.jsonl").exists() else 0,
                     "ueg_events": sum(ueg_summary.values()), "ueg_by_type_top": dict(
                         sorted(ueg_summary.items(), key=lambda kv: -kv[1])[:6]),
                     "git_objects": {k: _git_objects(dd / "vsb_repos" / v)

@@ -314,8 +314,19 @@ class DCMSCommit(BaseModel):
 
 @router.post("/dcms/commit")
 async def dcms_commit(req: DCMSCommit):
-    """Commit + version an artifact with real SHA3-512 cryptographic hashing + an audit trail."""
-    h = await dcms.commit_artifact(req.artifact_id, req.content, req.actor)
+    """Commit + version an artifact with real SHA3-512 cryptographic hashing + an audit trail.
+
+    W1205 (FU-1845) - a version the ledger cannot keep (it could not be read whole, or the append failed) is
+    refused with 503 and the reason, never answered with a hash."""
+    from agentic_core.config import StoreUnavailable
+    from agentic_core.vbs.dcms import AppendNotUndone
+    try:
+        h = await dcms.commit_artifact(req.artifact_id, req.content, req.actor)
+    except (StoreUnavailable, OSError) as exc:
+        raise HTTPException(status_code=503, detail=(
+            f"Version NOT committed: the document-control ledger could not keep it ({type(exc).__name__}: "
+            f"{exc}). " + ("It may still be in the ledger: it was not confirmed durable."
+                            if isinstance(exc, AppendNotUndone) else "Nothing was appended."))) from exc
     versions = dcms.registry.get(req.artifact_id, [])
     return {"hash": h, "algo": "sha3_512", "version": len(versions),
             "audit_integrity": dcms.get_audit_integrity(), "real": True}
@@ -326,7 +337,8 @@ async def qms_document_control():
     """The QMS OWNS the DCMS (ISO 9001 §7.5): document control is a function of the QMS. This exposes the
     QMS's document-control posture — proving the DCMS is operated as the QMS's subsystem."""
     return {"qms_owns_dcms": qms.dcms is dcms, **qms.document_control_status(), "real": True,
-            "note": ("registered_artifacts and audit_integrity are PERSISTENT (dcms store); "
+            "note": ("registered_artifacts and audit_integrity are PERSISTENT (the dcms ledger, "
+                     "dcms_ledger.jsonl, appended one line per version); "
                      "controlled_documents is a per-process counter since start")}
 
 
