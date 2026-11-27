@@ -77569,15 +77569,22 @@ def test_w904_fu1095_failures_are_said_to_be_recorded_not_alerted_and_the_outsid
     assert "- Analytics / error monitoring" not in readme, "the README still lists error monitoring as simply not built"
     assert "failures are recorded, not alerted" in readme and "docs/DEPLOYMENT.md" in readme, readme[:200]
     dep = (root / "docs/DEPLOYMENT.md").read_text(encoding="utf-8")
-    sec = " ".join(dep.split("## Watching the first deploy: failures are recorded, not alerted", 1)[1]
+    #  W1234 - the heading says an outage is alerted, since the Owner set the check up and drove it (2026-11-22)
+    sec = " ".join(dep.split("## Watching the deploy: an outage is alerted, route failures are recorded", 1)[1]
                    .split("\n## ", 1)[0].split())
     for words in ("uptime check on `/health` from OUTSIDE the machine", "your own cloud account",
                   "with you watching", "returns a fixed body", "this platform sends nothing"):
         assert words in sec, ("the runbook's first-deploy section does not say", words)
-    assert dep.index("## Watching the first deploy") < dep.index("## Verify before deploy")
+    assert dep.index("## Watching the deploy") < dep.index("## Verify before deploy")
     fable = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
     owner_list = fable.split("THAT IS THE WHOLE LIST.", 1)[0]
-    assert "FU-1095 (W904)" in owner_list, "the uptime check is not on the Owner's list"
+    #  W1234 - on the Owner's list while the row is open; it closed once the check was set up and driven
+    import json as _j904
+    _r904 = next(r for r in _j904.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+                 if r["id"] == "FU-1095")
+    assert ("FU-1095 (W904)" in owner_list) == (_r904["status"] == "open"), (
+        "the uptime check's line on the Owner's list and its row disagree", _r904["status"])
+    assert _r904["status"] == "open" or _r904["closed_by"] == "W1234", _r904["closed_by"]
 
     #  /health's body is fixed: a recorded failure between two reads does not change it
     first = client.get("/health")
@@ -93597,9 +93604,12 @@ def test_w1140_fu1284_https_is_caddy_in_front_of_the_platform_and_no_one_signs_i
     rows = json.loads(read("docs/FOLLOWUPS.json"))["items"]
     owner = [r for r in rows if r.get("title") ==
              "OWNER: buy a domain for the release machine and point it at the machine's fixed address"]
-    assert len(owner) == 1 and owner[0]["owner_gated"] and owner[0]["status"] == "open", owner
+    #  W1234 - open until the Owner registered the domain on 2026-11-22; closed by W1234 since
+    assert len(owner) == 1 and owner[0]["owner_gated"] and (owner[0]["status"] == "open" or (
+        owner[0]["status"], owner[0]["closed_by"]) == ("done", "W1234")), owner
     oid = owner[0]["id"]
-    assert f"({oid})" in step12 and f"({oid})" in rec and f"{oid} (W1140):" in read("docs/FABLE_DELIVERY_PROMPT.md")
+    assert f"({oid}" in step12 and f"({oid})" in rec and (
+        f"{oid} (W1140):" in read("docs/FABLE_DELIVERY_PROMPT.md")) == (owner[0]["status"] == "open")
     assert f"({oid})" in read("docs/RESUME_ON_MY_MACHINE.md")
 
 
@@ -94421,11 +94431,18 @@ def test_w1153_p57_each_name_says_what_was_searched_and_each_public_claim_is_one
 
     #  2. what the Owner holds: what the tree says is not held is said as not held
     held = " ".join(doc.split("## 2. What the Owner holds", 1)[1].split("\n## ", 1)[0].split())
-    assert "No domain:" in held and "(row FU-1289)" in held and reg["FU-1289"]["status"] == "open", held
+    #  W1234 - the domain was registered on 2026-11-22: the screen says it is held once its row is closed
+    assert "(row FU-1289)" in held, held
+    if reg["FU-1289"]["status"] == "open":
+        assert "No domain:" in held, held
+    else:
+        assert "No domain:" not in held and "A domain, registered by the Owner on 2026-11-22" in held, held
     workpack = " ".join((root / "docs/business/FORMATION_WORKPACK.md").read_text(encoding="utf-8").split())
     assert "It chooses no route" in workpack and "No company or other legal form" in held
     deploy = " ".join((root / "docs/DEPLOYMENT.md").read_text(encoding="utf-8").split())
-    assert "Nothing here has been run against a Google account" in deploy and "No cloud project for the release yet" in held
+    #  W1234 - the runbook was written before anything ran, and the release machine has been deployed since
+    assert ("When this was written, nothing here had been run against a Google account" in deploy
+            and "The release machine, deployed in the Owner's cloud project" in held), held
     assert "with no mark applied for or registered for it" in held
     assert "not recorded in this repository, by design" in held
 
@@ -95665,7 +95682,8 @@ def test_w1164_the_owners_ten_decisions_of_2026_11_20_are_recorded_and_the_water
     for rid, n in (("FU-1188", 1), ("FU-1288", 1), ("FU-1289", 1), ("FU-1286", 5)):
         r = reg[rid]
         #  W1180 - FU-1286 closed once each of its five places was settled
-        assert r["status"] == ("done" if rid == "FU-1286" else "open") and r["owner_gated"] is True, rid
+        #  W1234 - FU-1289 closed once the Owner registered the domain (2026-11-22)
+        assert r["status"] == ("done" if rid in ("FU-1286", "FU-1289") else "open") and r["owner_gated"] is True, rid
         assert r["why"].count("RECOMMENDED (accepted 2026-11-20):") == n and "RECOMMENDED:" not in r["why"], rid
     assert "(ledger_v14_W639_375c5ffb.json), opened only on a go-ahead that names it. DONE W1175" \
            in reg["FU-1286"]["why"], "the audit record is not named"   # W1175
@@ -97022,8 +97040,9 @@ def test_w1180_fu1286_is_closed_once_each_of_its_five_places_is_settled():
     #  W1188 - FU-1054 closed on its first run, and its step left step 5
     #  W1192: the lessons sitting joined step 5 after FU-1165, so the summary names two rows
     assert "FU-1286" not in re.findall(r"^   - (FU-\d+):", step5, re.M) and "git rm -r --cached venv" not in step5
-    assert "The rows in step 5: FU-1165 and " in flat and "FU-1286" not in flat.split(
-        "The rows in step 5:", 1)[1].split(".", 1)[0]
+    #  W1234 - FU-1840 closed, so the summary names FU-1165 alone
+    assert re.search(r"The rows? in step 5: FU-1165", flat) and "FU-1286" not in flat.split(
+        " in step 5:", 1)[1].split(".", 1)[0]
     assert ("**Settled on 2026-11-20:** the five places that named your Windows home folder (FU-1286, closed W1180)"
             in flat), "the notes do not say the row is closed"
     yours = flat.split("**Still yours:**", 1)[1].split("**Settled on 2026-11-20:**", 1)[0]
@@ -98550,7 +98569,7 @@ def test_w1188_fu1054_is_closed_on_the_care_reviewers_first_run_and_what_it_miss
                  "stays uncalibrated.",
                  f"what it missed is {miss['id']}: the cloud session makes its three fixes, and the second run is "
                  "made from this machine before 2027-01-10, with a larger local model, as I ruled that afternoon.)",  # W1190
-                 "The rows in step 5: FU-1165 and ",   # W1192: the lessons sitting joined step 5
+                 " in step 5: FU-1165",   # W1192: the lessons sitting joined step 5; W1234: it left again
                  "**Settled on 2026-11-21:** the Care reviewer's first calibration run (FU-1054, closed W1188), made on "
                  "your machine through the agent's own door with the local model (llama3.2): run cal-8c7430765c left "
                  f"five cases unanswered, caught {s['caught']} of {s['planted_cases']} planted cases and raised "
@@ -98806,7 +98825,9 @@ def test_w1190_the_owners_six_decisions_of_the_afternoon_of_2026_11_21_are_recor
     still = " ".join(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0].split())
     s = ("(docs/DEPLOYMENT.md, step 12). Ruled on the afternoon of 2026-11-21: it is bought before the first deploy, and "
          "without it the machine is to publish no port and is reached only through an SSH tunnel (P4.1).")
-    assert s in still and "until then the machine serves plain HTTP and no person signs in" not in still, "FU-1289's line"
+    #  W1234 - the line stands while FU-1289 is open; the row closed once the domain was registered
+    assert (s in still or "FU-1289 (W1140):" not in still) and (
+        "until then the machine serves plain HTTP and no person signs in" not in still), "FU-1289's line"
     said.append(s)
 
     #  2 and 3. the Care reviewer, at P5.15 and in its rows
@@ -98925,8 +98946,9 @@ def test_w1190_the_owners_six_decisions_of_the_afternoon_of_2026_11_21_are_recor
               "Much of that phase is ruled to come after sign-in (P4.1), which is your switch, made in the release "
               "machine's own settings at its first deploy, together with its domain and HTTPS; the final audit runs "
               "after the fifth phase and the sign-in readiness round.",
-              "Buying a domain for the release machine before the first deploy and pointing it at the machine's fixed "
-              "address (FU-1289): without it the machine is to publish no port (P4.1).",
+              *(("Buying a domain for the release machine before the first deploy and pointing it at the machine's "
+                 "fixed address (FU-1289): without it the machine is to publish no port (P4.1).",)
+                if "FU-1289 (W1140):" in still else ()),     # W1234: the bullet left the notes when the row closed
               "At the first deploy, setting the admin password on the release machine and switching sign-in on in its "
               "own settings (P4.1; the setting W1191 adds), so that it answers from its first boot with its domain, "
               "HTTPS and sign-in on; the password and the signing secret stay on the machine, never in the repository.",
@@ -99570,8 +99592,10 @@ fi
     owner = titled("OWNER: revoke at their providers the credentials W729 redacted from three archived files, which this "
                    "public repository has held, most of them since March 2026, or confirm each is dead, and record the "
                    "date")
-    assert (owner["status"], owner["slot"], owner.get("owner_gated"), owner["severity"]) == (
-        "open", "OWNER", True, "high"), owner
+    #  W1234 - closed on the Owner's word of 2026-11-22 ("close it"): its lines left the list and the notes
+    O_OPEN = owner["status"] == "open"
+    assert (owner["status"] if O_OPEN or owner.get("closed_by") != "W1234" else "open", owner["slot"],
+            owner.get("owner_gated"), owner["severity"]) == ("open", "OWNER", True, "high"), owner
     for said in ("W729 (50abf919, 2026-10-14) replaced real-looking values in three archived copies of one pasted text "
                  "file", "\"The values are to be revoked at their providers by the Owner - redaction does not remove them "
                  "from history\"", "No row ever recorded this", "the Owner's Stripe key roll of 2026-10-09 covers none of "
@@ -99590,7 +99614,8 @@ fi
     assert "The Owner rotates that key separately; the platform never reads it." in reg["FU-268"]["note"]
     still = " ".join(plan.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0].split())
     entry = still.split(f"{owner['id']} (W1191): ", 1)
-    assert len(entry) == 2 and still.count(f"{owner['id']} (W1191): ") == 1, "the Owner's list does not name the row once"
+    assert (len(entry) == 2 and still.count(f"{owner['id']} (W1191): ") == 1) == O_OPEN, (
+        "the Owner's list names the row once while it is open, and not once it is closed")
     for said in ("revoke at their providers the credentials W729 (2026-10-14) redacted", "a Stripe live secret key and "
                  "a Stripe webhook signing secret: revoke those too, or confirm they no longer work",
                  "Redaction does not remove the redacted values from history: the repository has held most of them since "
@@ -99599,18 +99624,19 @@ fi
                  "First read the repository host's secret-scanning alert list",
                  "beside the Stripe line at the head of this list", "Added to your list at your request on 2026-11-21, "
                  "to be done soon."):
-        assert said in entry[1][:2000], ("the Owner's list does not say", said)
-    assert still.index("FU-1818 (W1174):") < still.index(f"{owner['id']} (W1191):"), "the row's line is not after FU-1818's"
+        assert not O_OPEN or said in entry[1][:2000], ("the Owner's list does not say", said)
+    assert not O_OPEN or still.index("FU-1818 (W1174):") < still.index(f"{owner['id']} (W1191):"), (
+        "the row's line is not after FU-1818's")
     assert "(The Stripe key roll that stood here is DONE: the Owner rotated the keys and expired the old ones, 2026-10-09.)" in still
     notes = " ".join(read("docs/RESUME_ON_MY_MACHINE.md").split())
     yours = notes.split("**Still yours:**", 1)[1].split("**Settled on 2026-11-20:**", 1)[0]
-    assert (f"({owner['id']}; the plan's list names each by its kind)" in yours
+    assert not O_OPEN or (f"({owner['id']}; the plan's list names each by its kind)" in yours
             and "Added to your list at your request on 2026-11-21, to be done soon." in yours), yours[-600:]
     for said in ("two earlier Stripe values, a live secret key and a webhook signing secret, that the March copies hold "
                  "and W729 never redacted", "the repository has held most of them since March 2026, and most of its other "
                  "branches still carry unredacted copies", "the openQuran archive's .env on your machine, which was "
                  "never in the repository"):
-        assert said in yours, ("the local notes do not say", said)
+        assert not O_OPEN or said in yours, ("the local notes do not say", said)
     #  ...FU-1289 and FU-1095, still the Owner's, each say once what W1191 changed
     ruling = "OWNER RULING 2026-11-21 (afternoon"          # the Owner's decision, as W1190 recorded it
     changed_by = {
@@ -99624,7 +99650,9 @@ fi
     }
     for rid, said in changed_by.items():
         why = reg[rid]["why"]
-        assert reg[rid]["status"] == "open" and reg[rid]["owner_gated"] is True, (rid, reg[rid]["status"])
+        #  W1234 - both closed on 2026-11-22, the Owner's acts
+        assert reg[rid]["status"] == "open" or reg[rid]["closed_by"] == "W1234", (rid, reg[rid]["status"])
+        assert reg[rid]["owner_gated"] is True, rid
         assert why.count(said) == 1, (rid, "does not say once what W1191 changed")
         assert "W1191 built it" not in why, (rid, "says W1191 built what is the Owner's")
     assert reg["FU-1289"]["why"].find(ruling) != -1, "FU-1289 does not carry the Owner's ruling (W1190 lands first)"
@@ -99651,7 +99679,8 @@ fi
         "P4.1 says W1191 changed the script before the Owner's rulings")
     #  ...and the plan's list and the local notes say the domain and sign-in are set together
     appended = "Since W1191 the domain and sign-in are set together (docs/DEPLOYMENT.md, step 12)."
-    assert " ".join(plan.split()).count("with FU-1095's uptime check and FU-1288's restore the day after. " + appended) == 1
+    assert " ".join(plan.split()).count("with FU-1095's uptime check and FU-1288's restore the day after. " + appended) == (
+        1 if reg["FU-1289"]["status"] == "open" else 0)     # W1234: FU-1289's line left the list when it closed
     assert ("the password and the signing secret stay on the machine, never in the repository. " + appended) in notes
 
 
@@ -99748,7 +99777,9 @@ def test_w1192_the_owners_twenty_decisions_of_2026_11_22_are_recorded_where_the_
                           "stating why not.",
                           "The 8-hour work cycles replace the rule that long stretches continue automatically at most "
                           "three times before stopping for review"))):
-        assert (row["status"], row["slot"], row["owner_gated"], row["severity"]) == ("open", "OWNER", True, sev), row
+        #  W1234 - the lessons row closed once the Owner ratified the batch (2026-11-22)
+        status = "open" if row is lsn and row["status"] == "done" and row["closed_by"] == "W1234" else row["status"]
+        assert (status, row["slot"], row["owner_gated"], row["severity"]) == ("open", "OWNER", True, sev), row
         assert row["source"].startswith("W1192 (the Owner's decisions of 2026-11-22"), row["source"]
         for s in parts:
             holds(row["why"], s, row["id"])
@@ -99758,6 +99789,8 @@ def test_w1192_the_owners_twenty_decisions_of_2026_11_22_are_recorded_where_the_
     assert "section 27" not in lsn["why"], "the lessons row carries a question the Owner was not asked"
     assert lsn.get("slot_source", "").startswith("OWNER (the Owner's machine):"), lsn.get("slot_source")
     S, T, L = sch["id"], tst["id"], lsn["id"]
+    L_OPEN = lsn["status"] == "open"       # W1234: closed once the Owner ratified the batch
+    C_OPEN = reg["FU-1837"]["status"] == "open"     # W1234: closed on the Owner's word of 2026-11-22
 
     #  the rows the day's rulings bear on, each after its earlier ruling
     for rid, before, s in (
@@ -99780,7 +99813,8 @@ def test_w1192_the_owners_twenty_decisions_of_2026_11_22_are_recorded_where_the_
         why = reg[rid]["why"]
         holds(why, s, rid)
         assert why.index(before) < why.index(s), (rid, "the day's ruling is not after the earlier one")
-        assert reg[rid]["status"] == "open", (rid, reg[rid]["status"])
+        assert reg[rid]["status"] == "open" or (rid == "FU-1837" and reg[rid]["closed_by"] == "W1234"), (
+            rid, reg[rid]["status"])     # W1234: FU-1837 closed on the Owner's word
 
     #  each ruling at the item it governs, written as the rule to be built where the work is not built
     s18 = flat(fable[fable.index("· S18.1 THE METABOLIC BUDGET'S UNIT"):fable.index("· S18.2 WHAT AN ENTITY MAY BE")])
@@ -99873,9 +99907,9 @@ def test_w1192_the_owners_twenty_decisions_of_2026_11_22_are_recorded_where_the_
               "sold), each your act, as you scheduled on 2026-11-22; the return measurement, built before the invited "
               "stage (P4.2), is a round's. Learners across the platform, a person completing a task and time to a first "
               "useful output are carried by this row, not yet scheduled.",
-              f"{L} (W1192): ratify, in one sitting, the batch of lessons derived since W677: a local session on your "
-              "machine lists each, from the assistant's notes there, with a recommendation (step 5 of "
-              "docs/RESUME_ON_MY_MACHINE.md). Ruled on 2026-11-22.",
+              *((f"{L} (W1192): ratify, in one sitting, the batch of lessons derived since W677: a local session on "
+                 "your machine lists each, from the assistant's notes there, with a recommendation (step 5 of "
+                 "docs/RESUME_ON_MY_MACHINE.md). Ruled on 2026-11-22.",) if L_OPEN else ()),
               "Ruled on 2026-11-22: it also carries written questions on the project's licence and title and on the "
               "investment-side perimeter, and is to review with you the data protection impact assessment to be drafted "
               "before any health-related wellbeing entry (P5.8).",
@@ -99883,14 +99917,14 @@ def test_w1192_the_owners_twenty_decisions_of_2026_11_22_are_recorded_where_the_
               "invented sample, each labelled with what served it, the notes recording which the teacher judged; the "
               "first offer's gate is evidenced once at least five interviews are recorded and your choice is recorded "
               "with its reasons.",
-              f"On 2026-11-22 you accepted doing it that day. {BRANCHES}"):
+              *((f"On 2026-11-22 you accepted doing it that day. {BRANCHES}",) if C_OPEN else ())):
         holds(still, s, "the plan's list")
     assert still.index("FU-1283 (W1132):") < still.index(f"{S} (W1192):") < still.index("(The five places"), "the scholar"
     assert (still.index("FU-1817 (W1174):") < still.index("Ruled on 2026-11-22: it also carries")
             < still.index("FU-1818 (W1174):") < still.index("Ruled on 2026-11-22: each interview ends")
-            < still.index("FU-1837 (W1191):")), "a ruling of the day is not under its own row"
-    assert (still.index("FU-1837 (W1191):") < still.index("On 2026-11-22 you accepted doing it that day.")
-            < still.index(f"{T} (W1192):") < still.index(f"{L} (W1192):")
+            < (still.index("FU-1837 (W1191):") if C_OPEN else len(still))), "a ruling of the day is not under its own row"
+    assert not C_OPEN or (still.index("FU-1837 (W1191):") < still.index("On 2026-11-22 you accepted doing it that day.")
+            < still.index(f"{T} (W1192):") < (still.index(f"{L} (W1192):") if L_OPEN else still.index(f"{T} (W1192):") + 1)
             < still.index("(Ten put to the Owner on the afternoon of 2026-11-20")), "the lines after FU-1837"
     para = still[still.index("(Twenty put in the early hours of 2026-11-22"):]
     para = para[:para.index(".)", para.index("Each is recorded at the item it governs")) + 2]
@@ -100015,10 +100049,11 @@ def test_w1192_the_owners_twenty_decisions_of_2026_11_22_are_recorded_where_the_
     upd = re.search(r"Updated (20\d\d-\d\d-\d\d) \(([^)]*)\)\.", notes)
     assert upd and upd.group(1) >= "2026-11-22" and "W1192" in upd.group(2).split(", "), "the notes' updated line"
     step5 = notes_raw.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
-    assert re.findall(r"^   - (FU-\d+):", step5, re.M) == ["FU-1165", L], re.findall(r"^   - (FU-\d+):", step5, re.M)
-    step = flat(f"- {L}:" + step5.split(f"   - {L}:", 1)[1].split("\n   (", 1)[0])
+    steps5 = re.findall(r"^   - (FU-\d+):", step5, re.M)
+    assert steps5[:1] == ["FU-1165"] and (L in steps5) == L_OPEN, steps5     # W1234: the lessons' step done
+    step = flat(f"- {L}:" + step5.split(f"   - {L}:", 1)[1].split("\n   (", 1)[0]) if L_OPEN else ""
     no_pronoun(step, "step 5")
-    assert step == (f"- {L}: as I ruled on 2026-11-22, read your notes on this machine and list each lesson derived since "
+    assert not L_OPEN or step == (f"- {L}: as I ruled on 2026-11-22, read your notes on this machine and list each lesson derived since "
                     "W677, the round it cites and your recommendation: add it to the batch, or say why not. I ratify the "
                     "batch in one sitting; nothing enters the method until I have ratified the batch."), step
     yours_raw = notes_raw.split("- **Still yours:**", 1)[1].split("- **Settled on 2026-11-20:**", 1)[0]
@@ -100028,24 +100063,25 @@ def test_w1192_the_owners_twenty_decisions_of_2026_11_22_are_recorded_where_the_
             ("  - After the first deploy,", "- After the first deploy, the channel test and the price test the canvas "
                                             "names first, each your act; the same row carries three measures the "
                                             f"metrics document defers, not yet scheduled ({T})."),
-            ("  - Ratifying in one sitting", f"- Ratifying in one sitting the lessons a local session lists from this "
-                                             f"machine's notes ({L}, step 5).")):
+            *((("  - Ratifying in one sitting", f"- Ratifying in one sitting the lessons a local session lists from "
+                                                f"this machine's notes ({L}, step 5)."),) if L_OPEN else ())):
         assert yours_raw.count(start) == 1, (start, yours_raw.count(start))
         bullet = flat(yours_raw[yours_raw.index(start):].split("\n  - ", 1)[0].split("\n- **", 1)[0])
         no_pronoun(bullet, "the notes' Still-yours list")
         assert bullet == whole, ("the notes' Still-yours list", bullet[:120])
     yours = flat(yours_raw)
-    for s in (f"The rows in step 5: FU-1165 and {L}, each a step there.",
+    for s in (f"The rows in step 5: FU-1165 and {L}, each a step there." if L_OPEN else "in step 5: FU-1165",
               "release, and where other people's data may be kept. As you ruled on 2026-11-22, it also carries written "
               "questions on the project's licence and title and on the investment-side perimeter, and is to review with "
               "you the data protection impact assessment to be drafted before any health-related wellbeing entry.",
               "before the first offer is chosen (FU-1818). Each ends by showing both outputs, labelled, as you ruled on "
               "2026-11-22.",
-              f"On 2026-11-22 you accepted doing it that day. {BRANCHES}"):
+              *((f"On 2026-11-22 you accepted doing it that day. {BRANCHES}",) if C_OPEN else ())):
         holds(yours, s, "the notes' Still-yours list")
-    assert (yours.index("(FU-1837;")
+    assert not C_OPEN or (yours.index("(FU-1837;")
             < yours.index("On 2026-11-22 you accepted doing it that day.") < yours.index("- Asking a scholar")
-            < yours.index("- After the first deploy,") < yours.index("- Ratifying in one sitting")), "the notes' order"
+            < yours.index("- After the first deploy,") < (yours.index("- Ratifying in one sitting") if L_OPEN else
+                                                        len(yours))), "the notes' order"
     holds(notes, "carried by the pull request opened after #466 was merged. PR #33 (opened 2026-03-12, before the plan) "
                  "was closed unmerged on 2026-11-22, on your word; its branch is left.", "the local notes")
     assert notes_raw.count("- **Ruled on 2026-11-22:**") == 1, notes_raw.count("- **Ruled on 2026-11-22:**")
@@ -107757,3 +107793,301 @@ def test_w1195b_p518_an_explicit_ask_for_a_reserved_instrument_is_refused_at_the
     studio_page = _code_only((pages / "synthesis" / "SynthesisStudio.tsx").read_text(encoding="utf-8"))
     assert "setError(`Failed (HTTP ${res.status}): ${axiosDetail({ response: { data: d } }, 'no reason given')}`);" in gen_page
     assert "setErrorMsg(`Generation failed for ${type}: ${errorMessage(e)}`);" in studio_page
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1234 - the Owner's reports of 2026-11-22: five of the Owner's rows closed, the credentials among them by kind
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+_W1234_OWNER_TITLES = {
+    "record": "OWNER: file the record of the batch of 27 lessons ratified on 2026-11-22",
+}
+_W1234_QF_TITLES = {
+    "repo": "The public repository is not checked for Quran Foundation content or raw API data",
+    "privacy": "The platform has no Privacy Policy or Terms of Use of its own to check against the Quran Foundation's",
+    "ai": "No use the platform makes of Quran Foundation content is checked against the developer terms' clause",
+}
+
+
+def test_w1234_the_owners_reports_of_2026_11_22_close_five_rows_record_the_credentials_by_kind_and_the_lessons():
+    """W1234 (records). The Owner reported in three reports on the night of 2026-11-22: the outside uptime check and
+    its drill, the domain, the decisions on 38 lessons, the Quran Foundation's terms read whole, the leaked credentials
+    checked by kind, and what was read for three letters. Held here:
+    1. FU-1095, FU-1289, FU-1840, FU-1882 and FU-1837 are closed by W1234 as built, each note saying what was done and
+       when; the plan's list of what is with the Owner and the local notes' Still-yours list no longer ask for them,
+       and the list's note of the five names no row (W594's rule);
+    2. README.md says route failures are recorded, not alerted, and an outage is; docs/DEPLOYMENT.md records the check
+       and its drill at step 10, the domain at step 12, and its opening no longer says nothing was run; the business
+       documents no longer hold FU-1095 or FU-1289 open, and the name and brand screen says the domain is held;
+    3. FU-1837 is closed on the Owner's word ("close it") with the dated check by kind from the Owner's reports in
+       its why, what the OneDrive Desktop held and what was done with it, the alerts all closed, and its close note
+       naming the two points left UNCONFIRMED and the recommendation to change a password that may be in use
+       elsewhere; the plan's list says so without naming the row, and the Stripe line at its head says the two
+       earlier Stripe values were checked; the credential history scan (W1208) and checking the stale branches stay
+       the Owner's, in the close note, on the plan's list and in the notes' Still-yours list;
+    4. one OWNER row, owner-gated and saying why it is the Owner's, is on the plan's list and in the notes while open:
+       the batch's record; no row is opened for what the Owner already did (the alerts, the local .env, the Recycle
+       Bins, the two retired keys). FU-1188, FU-1283 and FU-1838 carry what the Owner read on 2026-11-22,
+       institutional addresses only: the dataset letter is addressed to its four authors; the Complex's letter says its
+       site states no terms; the library's letter asks where each resource came from and who holds its rights, and the
+       two sources rows say what was read, still permitting nothing; and the scholar row, still open, names the College
+       chosen first;
+    5. three rows of P5.17, each saying why it is there, named by P5.17's dated record: the repository holds no
+       content or raw API data, a Privacy Policy and Terms of Use set against the packet, the uses against the AI
+       clause;
+    6. the terms row is read whole on 2026-11-22 at both pages: what it permits and forbids, and no longer that AI use
+       needs written consent;
+    7. 27 lessons are in the method, each carrying the ruling, a rule, a defect citing its round or date, how to apply
+       it and an enforcer that exists or the reason there is none; P5.14 records the ruling and the 11 not ratified,
+       each with its reason;
+    8. nothing this round wrote names the domain (whose name this guard never spells out whole), carries an e-mail
+       address but an institution's, or a setting's name, and no file it wrote names the domain anywhere."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    flat = lambda t: " ".join(t.split())   # noqa: E731
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")   # noqa: E731
+    reg = {r["id"]: r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"]}
+    fable = read("docs/FABLE_DELIVERY_PROMPT.md")
+    still = fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
+    fstill = flat(still)
+    notes = read("docs/RESUME_ON_MY_MACHINE.md")
+    yours = notes.split("- **Still yours:**", 1)[1].split("\n- **", 1)[0]
+
+    def titled(start):
+        rows = [r for r in reg.values() if r.get("title", "").startswith(start)]
+        assert len(rows) == 1, (start, [r["id"] for r in rows])
+        return rows[0]
+
+    owner = {k: titled(t) for k, t in _W1234_OWNER_TITLES.items()}
+    qf = {k: titled(t) for k, t in _W1234_QF_TITLES.items()}
+
+    #  1. the five rows closed, with their notes, and asked for nowhere
+    said = {
+        "FU-1095": ("every five minutes from five regions with the certificate checked", "stopped at 19:57:18 UTC",
+                    "the alert e-mail came at 20:10", "started at 20:11:44", "cleared came at 20:16",
+                    "/health answered 200 after"),
+        "FU-1289": ("renews on 2027-11-22", "its A record names the release machine's fixed address",
+                    "Let's Encrypt certificate, with sign-in on", "No personal detail of the registration is recorded"),
+        "FU-1840": ("listed 38 lessons", "ratified 27 and did not ratify 11, each with its reason",
+                    "The 11 and their reasons are recorded at P5.14", owner["record"]["id"]),
+        "FU-1882": ("last updated 2026-11-20", "whole that day", "the existing pre-production account is kept",
+                    "with no exception, where the row said written consent was needed", qf["repo"]["id"],
+                    qf["privacy"]["id"], qf["ai"]["id"]),
+        "FU-1837": ("the Owner replied close it", "Two points stay UNCONFIRMED", "(the Owner's words: can not recall)",
+                    "whose provider could not be identified and which is not confirmed revoked",
+                    "RECOMMENDED: if either password may be in use elsewhere, change it there."),
+    }
+    for rid, parts in said.items():
+        r = reg[rid]
+        assert (r["status"], r["closed_by"], r.get("because")) == ("done", "W1234", "built"), (rid, r["status"])
+        assert r["close_note"].startswith(("Done on 2026-11-22, the Owner's act", "Closed on the Owner's word on "
+                                           "2026-11-22")), (rid, r["close_note"][:80])
+        for s in parts:
+            assert s in r["close_note"], (rid, "its close note does not say", s)
+        assert rid not in still, (rid, "is still put to the Owner on the plan's list")
+        assert f"({rid})" not in yours and f"{rid}:" not in yours, (rid, "is still in the notes' Still-yours list")
+    note = fstill[fstill.index("(Five that stood here were settled on 2026-11-22 and are closed (W1234)"):]
+    note = note[:note.index(".)") + 2]
+    assert not re.search(r"\bFU-\d+", note), "the list's note of the five names a row"
+    for s in ("every five minutes from five regions", "renewing on 2027-11-22", "27 ratified and now in the method, 11 "
+              "not", "the existing pre-production account kept", "closed on your word (\"close it\")",
+              "with two left UNCONFIRMED", "if either password may be in use elsewhere, change it there"):
+        assert s in note, ("the list's note of the five does not say", s)
+    step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
+    assert "FU-1840's step here was done on 2026-11-22 and the row is closed (W1234)" in flat(step5), "step 5"
+    assert "- **Settled on 2026-11-22:** five rows, each closed in W1234" in notes
+
+    #  2. README, the runbook and the business documents
+    readme = flat(read("README.md"))
+    readme = readme[readme.index("- Analytics, and alerting"):readme.index("## Run locally")]
+    assert ("route failures are recorded, not alerted" in readme and "An outage is alerted: since 2026-11-22 an uptime "
+            "check from outside the release machine" in readme), "README.md's line on alerting"
+    assert "Analytics, and error alerting: failures are recorded, not alerted" not in readme
+    dep = read("docs/DEPLOYMENT.md")
+    s10 = flat(dep.split("**Step 10.", 1)[1].split("**Step 11.", 1)[0])
+    assert ("SET UP AND DRIVEN, 2026-11-22 (FU-1095, closed W1234): the uptime check reads https://DOMAIN/health every "
+            "five minutes from five regions") in s10 and "stopped at 19:57:18 UTC" in s10, "step 10's record"
+    s12 = flat(dep.split("**Step 12.", 1)[1].split("\n## ", 1)[0])
+    assert "The domain is the Owner's: it was registered on 2026-11-22 (FU-1289, closed W1234)." in s12, "step 12"
+    assert "DONE ON THE RELEASE MACHINE, 2026-11-22 (FU-1289, closed W1234)" in s12, "step 12's record"
+    assert "The domain is the Owner's to buy" not in dep and "Nothing here has been run against a Google account" not in dep
+    assert "## Watching the deploy: an outage is alerted, route failures are recorded\n" in dep
+    assert "so an outage on\nthe first deploy would reach no person" not in dep
+    for rel in ("docs/business/LIVING_STRATEGY_MAP.md", "docs/business/PRODUCTION_HARDENING_BRIEF.md",
+                "docs/business/NAME_AND_BRAND_SCREEN.md"):
+        t = read(rel)
+        assert "row FU-1095 (a failure on the first deployment reaches no person)" not in t, rel
+        assert "which is the Owner's to buy (row FU-1289)" not in t and "No domain:" not in t, rel
+    brand = flat(read("docs/business/NAME_AND_BRAND_SCREEN.md"))
+    assert "- A domain, registered by the Owner on 2026-11-22 and renewing on 2027-11-22" in brand, "the brand screen"
+    assert "No cloud project for the release yet" not in brand
+
+    #  3. FU-1837: closed on the Owner's word, checked by kind, its two UNCONFIRMED named
+    r37 = reg["FU-1837"]
+    why = r37["why"]
+    for s in ("THE OWNER'S CHECK, 2026-11-22 (night and late evening), by kind and never by value", "ALREADY DEAD: "
+              "the Stripe live secret key", "REVOKED OR ROTATED THAT DAY: the Stripe webhook signing secret", "ON THE "
+              "OWNER'S RECOLLECTION, NOT CHECKED INDEPENDENTLY: the e-mail password, changed on 2026-10-14", "NOTHING TO "
+              "REVOKE: the Redis address and the second MongoDB address", "a Google service-account key file whose key "
+              "was active with no expiry, now deleted at Google", "a classic GitHub token, dead", "the PC's Recycle Bin was "
+              "checked and holds no items", "is recorded as emptied on the Owner's word", "alerts 4, 6 and 7 were "
+              "closed as Revoked, so none is open", "blanked in both local .env files", "UNCONFIRMED, on two points: the "
+              "key in the openQuran archive's .env", "its provider is not identified and it is not confirmed revoked",
+              "whether the leaked database passwords", "word for word, was: can not recall", "Both stay UNCONFIRMED.",
+              "which the Owner retired rather than rotated", "deleted at Google, which can restore it for 30 days",
+              "the n8n value was the encryption key, not an API key"):
+        assert s in why, ("FU-1837's dated note does not say", s)
+    assert ("(On 2026-11-22 you checked the two earlier Stripe values the March copies hold and W729 never redacted: "
+            "the live secret key is dead") in fstill, "the Stripe line"
+    #  the two acts the rulings attached to the row stay the Owner's once it closes (W1193d's notes paragraph says the
+    #  Owner's acts stay on the Still-yours list): the history scan, and checking the stale branches. A round that
+    #  records the scan done changes these two lines on purpose.
+    assert ("The credential history scan (W1208) on a full mirror clone stays the Owner's act, later"
+            in r37["close_note"] and "neither is closed with this row" in r37["close_note"]), "FU-1837's close: the scan"
+    assert ("(The credential history scan (W1208) stays yours after the credentials' row closed on your word: run on "
+            "a full mirror clone") in fstill and "checking the stale branches the cloud session lists" in fstill, (
+        "the plan's list no longer keeps the history scan with the Owner")
+    assert "- Running the credential history scan (W1208) on a full mirror clone on this machine" in flat(yours) and (
+        "checking the stale branches the cloud session lists") in flat(yours), "the notes drop the history scan"
+
+    #  4. the OWNER row, on the list and in the notes while open
+    for k, r in owner.items():
+        assert (r["slot"], r["owner_gated"]) == ("OWNER", True) and r.get("slot_source", "").strip(), (r["id"], k)
+        assert r["source"].startswith("W1234 (the Owner's"), r["id"]
+        if r["status"] == "open":
+            assert f"{r['id']} (W1234):" in fstill, (r["id"], "is not on the plan's list")
+            assert r["id"] in flat(yours), (r["id"], "is not in the notes' Still-yours list")
+    assert not [r for r in reg.values() if r.get("source", "").startswith("W1234") and re.search(
+        r"Recycle Bin|secret-scanning alerts|rotate the live Google API key|local \.env", r.get("title", ""))], (
+        "a row for what the Owner did already")
+    #  the notes' summary of step 5 no longer names the lessons' row (FU-1165 may leave it later, on its own close)
+    summary5 = re.search(r"The rows? in step 5: ([^.]*)\.", flat(notes))
+    assert summary5 is None or "FU-1840" not in summary5.group(1), ("the notes' summary of step 5", summary5.group(0))
+    #  the letter rows: what the Owner read on 2026-11-22, institutional addresses only
+    for rid, s in (("FU-1188", "which would make the request public"), ("FU-1188", "info@qurancomplex.gov.sa"),
+                   ("FU-1188", "the letter goes to info@tarteel.ai"), ("FU-1188", "The MIT licence is not read as "
+                   "covering the data"), ("FU-1188", "So no permission can be read from the site"),
+                   ("FU-1283", "marks no corresponding author"), ("FU-1283", "CC BY 4.0 is the paper's licence"),
+                   ("FU-1838", "Cambridge Muslim College is to be asked first"),
+                   ("FU-1838", "the College has agreed to nothing, so the row stays open")):
+        assert s in reg[rid]["note"], (rid, "its note does not say", s)
+    assert reg["FU-1838"]["status"] == "open" or reg["FU-1838"].get("closed_by") != "W1234", "the scholar row closed"
+    #  the College chosen first is said under the row while it is open; its line leaves the list once the row closes
+    scholar = ""
+    if reg["FU-1838"]["status"] == "open":
+        assert "Chosen on 2026-11-22: Cambridge Muslim College is to be asked first" in fstill, "the scholar's line"
+        scholar = fstill[fstill.index("Chosen on 2026-11-22: Cambridge Muslim College"):]
+        scholar = scholar[:scholar.index("so the row stays open.") + len("so the row stays open.")]
+    letter = flat(read("docs/letters/QURANIC_AUDIO_DATASET_REQUEST.md"))
+    assert "corresponding author named" not in letter and "The paper marks no corresponding author" in letter
+    assert ("To: Raghad Salameh (Innopolis University), Mohamad Al Mdfaa (Skoltech University), Nursultan Askarbekuly "
+            "(Innopolis University) and Manuel Mazzara (Innopolis University)") in letter, "the letter's addressees"
+    assert not re.search(r"[\w.+-]+@[\w-]+\.[\w.-]+", letter), "the letter carries an address"
+    kfg = flat(read("docs/letters/KFGQPC_PERMISSION_REQUEST.md"))
+    assert "We have not been able to open the Complex's website" not in kfg and (
+        "We read the Complex's website on 22 November 2026. No page of it states terms for these uses") in kfg, "KFGQPC"
+    qul = flat(read("docs/letters/QUL_DATA_PERMISSION_REQUEST.md"))
+    assert "we do not read it as covering the data" in qul and ("where each of the resources above came from, and "
+                                                                "who holds its rights") in qul, "the QUL letter"
+    assert "It is not posted as a public GitHub issue" in qul
+    for t in (kfg, qul):
+        assert not re.search(r"[\w.+-]+@[\w-]+\.[\w.-]+", t), "a letter carries an address"
+    srcrows = {r["id"]: r for r in json.loads(read("docs/SOURCES.json"))["rows"]}
+    for rid, s in (("kfgqpc-recitations-fonts", "So no permission can be read from the site."),
+                   ("tarteel-qul-data", "the MIT licence is not read as covering it")):
+        r = srcrows[rid]
+        assert r["read_on"] == "2026-11-22" and r["permits"] == [] and s in r["says"], (rid, r.get("read_on"))
+    assert srcrows["kfgqpc-recitations-fonts"]["status"] == "current" and "NOT READ" not in srcrows[
+        "kfgqpc-recitations-fonts"]["says"]
+    assert "POST /api/v1/method/amendment" in owner["record"]["why"]
+
+    #  5. the three rows of P5.17, named by its dated record
+    p517 = flat(fable.split("\n P5.17 [", 1)[1].split("\n P5.18 [", 1)[0])
+    assert "THE OWNER'S WORD, 2026-11-22 (night): clause 7's developer account is settled." in p517
+    for k, r in qf.items():
+        assert r["slot"] == "P5.17" or r["status"] != "open", (r["id"], r["slot"])
+        assert r.get("slot_source", "").startswith("P5.17, clauses 6 and 7"), r["id"]
+        assert f"{r['id']} (" in p517, (r["id"], "is not named at P5.17")
+    assert "not Owner-gated" in qf["privacy"]["why"] and qf["privacy"]["owner_gated"] is False
+    assert "train, fine-tune, evaluate or develop AI models" in qf["ai"]["why"]
+
+    #  6. the terms row, read whole
+    src = json.loads(read("docs/SOURCES.json"))
+    row = next(r for r in src["rows"] if r["id"] == "quran-foundation-developer-terms")
+    assert row["read_on"] == "2026-11-22" and row["page"] == "https://api-docs.quran.foundation/legal/developer-terms/"
+    assert "https://api-docs.quran.foundation/legal/developer-privacy/" in row["read_by"] and "whole" in row["read_by"]
+    says = row["says"]
+    assert says.startswith("Shown as last updated 2026-11-20.") and "needs written consent" not in says
+    for s in ("using the content or user data to train, fine-tune, evaluate or develop AI models, with no exception",
+              "retrieval-augmented generation shown inside the app", "including in a public repository",
+              "Content Sync (re-synced every 7 days)", "offline or direct audio also credits the reciter",
+              "PRODUCTION: not in the terms", "deletion within 30 days (90 for backups)", "within 24 hours"):
+        assert s in says, ("the terms row does not say", s)
+    assert any("evaluate or develop AI models, with no exception" in f for f in row["forbids"]), row.get("forbids")
+    assert "the terms' full text" not in row["not_read"] and "privacy" not in row["not_read"], row["not_read"]
+
+    #  7. the lessons in the method, and the eleven at P5.14
+    method = json.loads(read("docs/DELIVERY_METHOD.json"))
+    ruled = "the Owner's ruling of 2026-11-22, as one batch"
+    batch = [l for l in method["lessons"] if l.get("ratified") == ruled]
+    assert len(batch) == 27, len(batch)
+    suite = read("integration_tests/test_mvp_spine.py")
+    for l in batch:
+        assert l["group"] in method["about"]["groups"] and l["rule"].strip() and l["apply"].strip(), l["id"]
+        assert re.match(r"(W\d{3,4}[a-z]?\b|After W757|20\d\d-\d\d-\d\d,)", l["defect"]), (l["id"], l["defect"][:40])
+        assert bool((l.get("enforced_by") or "").strip()) != bool((l.get("why_not_enforced") or "").strip()), l["id"]
+        for cited in re.findall(r"([A-Za-z0-9_./]+[.](?:py|json))", l.get("enforced_by") or ""):
+            assert (root / cited).is_file(), (l["id"], cited)
+        for test in re.findall(r"::(test_[a-z0-9_]+)", l.get("enforced_by") or ""):
+            assert f"\ndef {test}(" in suite, (l["id"], test)
+    assert len({l["id"] for l in method["lessons"]}) == len(method["lessons"]), "a lesson id is used twice"
+    p514 = flat(fable.split("\n P5.14 [", 1)[1].split("\n P5.15 [", 1)[0])
+    rec = p514[p514.index("OWNER RULING 2026-11-22 (night; the Owner's word \"Accept all\")"):]
+    for s in ("27 are ratified as one batch and 11 are not", "W707's no variable named page", "W727's exclusion of two "
+              "stalling tests", "W746's git add before registering rows", "(already M-VERIF-11)", "(already M-EXCH-07)",
+              "(a tool's quirk)", "(local housekeeping)", "(it belongs in that script's help)", "(already M-VERIF-02)",
+              "(its cause is not proven)", "M-DELIV-09", owner["record"]["id"], "in a later round of this item"):
+        assert s in rec, ("P5.14's record does not say", s)
+    for lid in ("M-VERIF-11", "M-EXCH-07", "M-VERIF-02", "M-DELIV-09"):
+        assert any(l["id"] == lid for l in method["lessons"]), (lid, "is named at P5.14 and is not in the method")
+
+    #  8. no domain, no address, no setting's name in what this round wrote. The domain's name is put together here
+    #  from two parts, so that this file never holds it whole.
+    stem = "workstation" + "idbo"
+    written = [why[why.index("THE OWNER'S CHECK, 2026-11-22"):]] + [reg[rid]["close_note"] for rid in said] + [
+        r["why"] for r in list(owner.values()) + list(qf.values())] + [reg[r]["note"] for r in ("FU-1188", "FU-1283",
+                                                                                             "FU-1838")]
+    #  the plan's list: the domain nowhere on it; the address check reads the lines this round wrote there
+    assert stem not in fstill.lower(), "the domain is named on the plan's list"
+    own_lines = [fstill[fstill.index(f"{r['id']} (W1234):"):] for r in owner.values() if r["status"] == "open"]
+    own_lines = [t[:t.index(".") + 1] for t in own_lines]
+    stripe = fstill[fstill.index("(On 2026-11-22 you checked the two earlier Stripe values"):]
+    stripe = stripe[:stripe.index(".)") + 2]
+    institutional = {"info@qurancomplex.gov.sa", "info@cambridgemuslimcollege.ac.uk", "info@tarteel.ai"}
+    #  the rest of what this round wrote: P5.17's record, the notes' lines, the two sources rows, the batch, the
+    #  plan's line on the history scan, and the new lines of the name and brand screen and the hardening brief
+    nflat = flat(notes)
+    between = lambda t, a, b: t[t.index(a):t.index(b, t.index(a)) + len(b)]   # noqa: E731
+    also = [p517[p517.index("THE OWNER'S WORD, 2026-11-22 (night)"):], flat(step5),
+            between(nflat, "- **Settled on 2026-11-22:**", "change it there."),
+            between(nflat, "- Running the credential history scan (W1208)", "your explicit word."),
+            between(fstill, "(The credential history scan (W1208) stays yours", "your explicit word.)"),
+            json.dumps(srcrows["kfgqpc-recitations-fonts"]), json.dumps(srcrows["tarteel-qul-data"]),
+            between(brand, "- A domain, registered by the Owner on 2026-11-22", "set up and driven on 2026-11-22"),
+            between(flat(read("docs/business/PRODUCTION_HARDENING_BRIEF.md")), "An outage reaches the Owner:",
+                    "(FU-1095, closed in W1234)")] + [
+        between(flat(yours), "- Filing the record of the 27 lessons", f"({r['id']}).") for r in owner.values()
+        if r["status"] == "open"]
+    for t in written + own_lines + also + [note, stripe, scholar, rec, readme, s10, s12, json.dumps(row),
+                                           json.dumps(batch), letter, kfg, qul]:
+        assert stem not in t.lower(), "the domain is named"
+        assert set(re.findall(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+", t)) <= institutional, "an address not an institution's"
+    for rel in ("README.md", "docs/DEPLOYMENT.md", "docs/RESUME_ON_MY_MACHINE.md", "docs/SOURCES.json",
+                "docs/DELIVERY_METHOD.json", "docs/business/LIVING_STRATEGY_MAP.md",
+                "docs/business/PRODUCTION_HARDENING_BRIEF.md", "docs/business/NAME_AND_BRAND_SCREEN.md",
+                "docs/letters/QURANIC_AUDIO_DATASET_REQUEST.md", "docs/letters/KFGQPC_PERMISSION_REQUEST.md",
+                "docs/letters/QUL_DATA_PERMISSION_REQUEST.md"):
+        assert stem not in read(rel).lower(), (rel, "names the domain")
+    for t in written + also:
+        assert not re.search(r"(?<![/.\w])[A-Z][A-Z0-9]+_[A-Z0-9_]+(?![\w.])", t), ("a setting's name", t[:80])

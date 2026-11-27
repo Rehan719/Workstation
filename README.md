@@ -39,9 +39,10 @@ Every deliverable is produced **in-house first** on Workstation's own native AI 
 - Real-money rails (the WST economy is **virtual/simulated only** — Stripe/KYC stay Owner-gated)
 - Database (file-based atomic JSON persistence — functional, not queryable at scale)
 - Native mobile app (entities ship a PWA scaffold, not a store app)
-- Analytics, and error alerting: failures are recorded, not alerted. Every route failure is recorded in the
-  outcome ledger and the event chain and shown on the Operations page; nothing sends one to anyone. The uptime
-  check for the first deploy is in `docs/DEPLOYMENT.md`
+- Analytics, and alerting on a failing route: route failures are recorded, not alerted. Every route failure is
+  recorded in the outcome ledger and the event chain and shown on the Operations page, and the platform sends
+  nothing. An outage is alerted: since 2026-11-22 an uptime check from outside the release machine reads
+  `/health` over HTTPS every five minutes and e-mails the Owner when it fails (`docs/DEPLOYMENT.md`, step 10)
 
 ## Run locally
 

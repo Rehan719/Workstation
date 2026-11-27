@@ -128,7 +128,9 @@ restore and the rollback on this machine. The project, the billing and the deplo
 ## The Google Cloud deploy, step by step (P4.5), read at Google's pages on 2026-11-20 (W1134)
 
 OWNER RULING 2026-11-20: the exact Google Cloud deploy steps are written here. The project, its billing and the
-deploy itself stay the Owner's. Nothing here has been run against a Google account: each command is copied from the
+deploy itself stay the Owner's. When this was written, nothing here had been run against a Google account; the
+release machine has since been deployed, and steps 10 and 12 were done by 2026-11-22 (each says so).
+Each command is copied from the
 Google page its step names, in the form that page gives it. A value in capitals (PROJECT_ID, PROJECT_NUMBER,
 BILLING_ACCOUNT, BUCKET_NAME, TAG and the like) is the Owner's to fill in. Where no page read here settles a point,
 the step says so.
@@ -424,6 +426,12 @@ By default a notification is sent when at least two regions report the check fai
 Then the drill FU-1095 asks for, with the Owner watching: on the machine, `docker stop workstation`; see the e-mail
 arrive; `docker start workstation`; see the alert clear.
 
+SET UP AND DRIVEN, 2026-11-22 (FU-1095, closed W1234): the uptime check reads https://DOMAIN/health every five
+minutes from five regions, with the certificate checked, and an alerting policy e-mails the Owner; both were set
+up that day from the cloud session. The Owner drove the drill: the platform was stopped at 19:57:18 UTC, the alert
+e-mail came at 20:10, the platform was started at 20:11:44, the e-mail that the alert had cleared came at 20:16,
+and /health answered 200 after.
+
 **Step 11. Later: deploys from GitHub, with no stored key** [wif]
 
 The first deploys are run by the Owner by hand, signed in as the Owner. When a workflow deploys, it signs in through
@@ -456,7 +464,7 @@ As steps 1 to 11 leave it, the machine publishes no public port: the platform li
 the internet unencrypted, and but for the Owner, through that tunnel once step 7 has turned sign-in on (the
 Owner's ruling of 2026-11-21, late evening), no person signs in (P4.1) until this step is done and the domain
 answers over HTTPS. A publicly trusted certificate is for a domain: a host name qualifies only if it is "not an
-IP address" [caddy-https]. The domain is the Owner's to buy (FU-1289), before the deploy.
+IP address" [caddy-https]. The domain is the Owner's: it was registered on 2026-11-22 (FU-1289, closed W1234).
 
 First the machine's address is made its own. The address step 7 gave the machine is ephemeral, and the domain must
 keep pointing at it. Promoting it keeps it, and "does not cause Google Cloud to drop packets sent to the VM"
@@ -538,6 +546,10 @@ stateful, for the lifetime of the boot disk [cos-fs]. A new machine obtains a ne
 
 Then step 10: the uptime check over HTTPS on the domain, and its drill (FU-1095).
 
+DONE ON THE RELEASE MACHINE, 2026-11-22 (FU-1289, closed W1234): the Owner's domain is registered and renews on
+2027-11-22, and its A record names the machine's fixed address; the machine answers on it over HTTPS with a Let's
+Encrypt certificate, with sign-in on.
+
 THE OTHER WAY, NOT TAKEN: a global external Application Load Balancer with a Google-managed certificate
 [managed-certs] needs a domain too, and its forwarding rule alone is $0.025 an hour, about $18.25 a month
 [network-pricing], against nothing more on the machine.
@@ -601,17 +613,18 @@ The payments rails (`agentic_core/api/v310/payments.py`) operate in modes
   the recommendation stands: **swap the local `.env` to a `sk_test_` key.** Never commit `.env` (it
   is gitignored), never set `STRIPE_LIVE_ENABLED`, and never deploy the live key to Render.
 
-## Watching the first deploy: failures are recorded, not alerted
+## Watching the deploy: an outage is alerted, route failures are recorded
 
 Every route failure is recorded in the outcome ledger (`agentic_core/api/operational_excellence.py`) and in the
-event chain, and shown on the Operations page (`/operations`). Nothing sends a failure to anyone, so an outage on
-the first deploy would reach no person (FU-1095). The smallest addition, for that deploy:
+event chain, and shown on the Operations page (`/operations`). The platform sends no failure to anyone. What
+reaches the Owner is an outage, through the smallest addition for the first deploy, set up and driven on
+2026-11-22 (step 10; FU-1095, closed W1234):
 
 1. An uptime check on `/health` from OUTSIDE the machine, in your own cloud account beside the billing alert,
    e-mailing you when it fails. A boot failure cannot report itself, so the check must not run on the machine it
    watches.
 2. Name it in the deploy dry run. Drive it once at the deploy, with you watching: stop the service, see the alert
-   arrive, start the service, see it clear.
+   arrive, start the service, see it clear. Driven on 2026-11-22 (step 10).
 3. `/health` returns a fixed body, so the check sees only a process that is dead or unreachable. A process that is
    up and failing its routes still answers it; those failures are read on the Operations page.
 

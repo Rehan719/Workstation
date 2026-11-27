@@ -26,7 +26,7 @@ and the open rows that stand between it and being relied on.
   nothing and says so, driven by test_lgc_path_an_appraisal_files_nothing_says_so_and_change_control_decides
   [observed].
 - Between this step and being relied on: row FU-1036 (every audit edition examined the floor-only configuration, which
-  is not what the Owner runs) and row FU-1095 (a failure on the first deployment reaches no person) [observed].
+  is not what the Owner runs) [observed].
 
 ## 2. Propose
 

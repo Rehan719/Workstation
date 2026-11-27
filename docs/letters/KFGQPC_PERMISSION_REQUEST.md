@@ -1,7 +1,8 @@
 # Letter: asking the King Fahd Glorious Qur'an Printing Complex for written permission to use its recitations and fonts
 
 DRAFTED FOR THE OWNER TO SEND (W948, FU-1066). Nothing has been sent. Fill in the lines in square brackets, read the
-letter through, and send it from your own address through the contact route the Complex gives on qurancomplex.gov.sa.
+letter through, and send it from your own address to the address in the footer of qurancomplex.gov.sa (FU-1188's
+note records it).
 If you would rather send it in Arabic, have a person translate it; this platform does not write it. Until a written
 answer granting permission is held, or a person has read the Complex's own terms and entered them, nothing from the
 Complex is used. The register of sources (docs/SOURCES.json, row kfgqpc-recitations-fonts) says it permits nothing
@@ -28,8 +29,9 @@ We would like to use, if you permit it:
    when it is played and not kept;
 2. the Complex's Qur'an fonts, to show the text as it is printed in the Madinah mushaf.
 
-We have not been able to open the Complex's website from our machine, so we have not read the terms that apply to
-either. We are asking before we use anything.
+We read the Complex's website on 22 November 2026. No page of it states terms for these uses: its fonts, its audio
+recitations and its developer platform are each marked as coming soon, and its footer reserves all rights. So we
+are asking for written permission before we use anything.
 
 If you permit it, please tell us:
 

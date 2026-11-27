@@ -21926,11 +21926,14 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1234",
       "note": "",
       "slot_source": "the deploy pre-flight is this item's",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done on 2026-11-22, the Owner's act, recorded in W1234 from the Owner's report: an uptime check on /health over HTTPS from outside the release machine, every five minutes from five regions with the certificate checked, and an alerting policy e-mailing the Owner, set up that day from the cloud session. The Owner drove the drill: the platform was stopped at 19:57:18 UTC, the alert e-mail came at 20:10, the platform was started at 20:11:44, the e-mail that the alert had cleared came at 20:16, and /health answered 200 after. README.md now says route failures are recorded, not alerted, and an outage is; docs/DEPLOYMENT.md records the check and its drill at step 10."
     },
     {
       "id": "FU-1096",
@@ -23954,7 +23957,7 @@
       "slot": "OWNER",
       "status": "open",
       "closed_by": null,
-      "note": "",
+      "note": "Read by the Owner on 2026-11-22, nothing sent or posted (W1234). The King Fahd Glorious Qur'an Printing Complex: its site now opens; https://qurancomplex.gov.sa/ and its four Mushaf product pages state no terms or permissions for its recitations or fonts; its terms, privacy, licence, copyright, fonts and developers paths answer 404; the footer reserves all rights to the Complex and marks the privacy policy as coming soon; its fonts, its audio recitations and its developer platform are each marked coming soon; the old fonts site redirects to the main site; and the footer gives info@qurancomplex.gov.sa. So no permission can be read from the site, and the letter asks for written permission first. The Quranic Universal Library: its code (https://github.com/TarteelAI/quranic-universal-library) is under the MIT licence, copyright Tarteel, Inc, which covers the software and its documentation, and its README states no licence for the data; its FAQ (https://qul.tarteel.ai/faq) says rights vary by resource; each of the 144 per-resource licence tabs checked (12 Mushaf layouts, 1 mutashabihat, 1 similar-ayah and 130 recitations) says it has no copyright information for the resource; and the terms at https://tarteel.ai/terms (updated 2026-11-03) do not mention it. The MIT licence is not read as covering the data, rights may sit with Mushaf publishers and reciters, and the letter asks where each resource came from and who holds its rights. QUL publishes no e-mail address of its own: the letter goes to info@tarteel.ai, Tarteel's public address, asking for it to reach the QUL maintainers, and Tarteel's community Discord, asking there for a private message, is the alternative. A public GitHub issue, which would make the request public, and the address for security reports are not used.",
       "slot_source": "FU-1066 says the two letters are drafted for the Owner to send",
       "tier": 2
     },
@@ -26112,7 +26115,7 @@
       "slot": "OWNER",
       "status": "open",
       "closed_by": null,
-      "note": ""
+      "note": "Read again by the Owner on 2026-11-22 (W1234): the paper (https://arxiv.org/html/2405.02675v1) lists four authors with institutional addresses and marks no corresponding author, so the letter is addressed to all four, its first author first: Raghad Salameh (Innopolis University), Mohamad Al Mdfaa (Skoltech University), Nursultan Askarbekuly (Innopolis University) and Manuel Mazzara (Innopolis University). CC BY 4.0 is the paper's licence; the dataset card (https://huggingface.co/datasets/RetaSy/quranic_audio_dataset) shows none for the recordings. No author's address is written in the tree."
     },
     {
       "id": "FU-1284",
@@ -26217,9 +26220,12 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
-      "note": ""
+      "status": "done",
+      "closed_by": "W1234",
+      "note": "",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done on 2026-11-22, the Owner's act, recorded in W1234 from the Owner's report: the domain is registered and renews on 2027-11-22, its A record names the release machine's fixed address, and the machine answers on it over HTTPS with a Let's Encrypt certificate, with sign-in on. No personal detail of the registration is recorded. docs/DEPLOYMENT.md (step 12) and the name and brand screen say so."
     },
     {
       "id": "FU-1290",
@@ -27131,16 +27137,19 @@
     {
       "id": "FU-1837",
       "title": "OWNER: revoke at their providers the credentials W729 redacted from three archived files, which this public repository has held, most of them since March 2026, or confirm each is dead, and record the date",
-      "why": "W729 (50abf919, 2026-10-14) replaced real-looking values in three archived copies of one pasted text file in the tree. Its message says \"The values are to be revoked at their providers by the Owner - redaction does not remove them from history\". No row ever recorded this, and the Owner's Stripe key roll of 2026-10-09 covers none of these values. What they are, by provider and kind only: an AI provider key, a Google sign-in client secret, a Firebase key and a speech-to-text key; two reCAPTCHA secrets and two sign-in token secrets; two database addresses carrying a username and password, a database password and an e-mail password. With them goes the key in the openQuran archive's .env on the Owner's machine, never in the repository, which FU-268's ruling (closed by W505) left to the Owner: \"The Owner rotates that key separately; the platform never reads it.\" Measured in W1191 by blob and by count, never by value: copies carrying most of the same values were uploaded to the repository on 2026-03-05, earlier than the June that W729's message gives, and most of the repository's other branches still carry unredacted copies, since W729 redacted only the tree's own copies; removing them there would not undo their exposure, which only revoking does. W729 also redacted two Stripe lines that held only templates; in the March copies those two lines hold earlier values that W729 never redacted, a Stripe live secret key and a Stripe webhook signing secret: revoke those too, or confirm they no longer work, since nothing records whether the key roll of 2026-10-09 retired them. The steps: read the repository host's secret-scanning alert list; revoke or rotate each item at its provider, or confirm that it no longer works; then tell the session the date, which a later round records beside the Stripe line at the head of the plan's Owner list. Added to the Owner's list at the Owner's request on 2026-11-21, to be done soon; in the Owner's words: \"add to list of items for me, I will do this soon\". OWNER RULING 2026-11-22 (the recommendation accepted): the revocation is to be done on 2026-11-22, beginning with the repository host's secret-scanning alert list. The cloud session may list stale branches for deletion; no branch is deleted or changed without the Owner's explicit word. OWNER RULING 2026-11-22 (morning; the recommendation accepted): the Owner revokes the leaked keys first; then the cloud session lists the stale branches that hold them for the Owner to check, keeping main, main-l1fsqo, local-owner and anything else the Owner names, and deletes only on the Owner's explicit word. W1208 (2026-11-22, FU-1864): the privacy screen's read-only history mode, python scripts/privacy_check.py --history, is a later step, after the repository host's secret-scanning alert list. Its full run is made on a mirror clone on the Owner's machine, since the cloud session's clone is shallow; it lists each credential still in history by kind, path and commit, never by value, and rewrites nothing. A finding there that these values already cover is recorded under this row, not as a new row.",
+      "why": "W729 (50abf919, 2026-10-14) replaced real-looking values in three archived copies of one pasted text file in the tree. Its message says \"The values are to be revoked at their providers by the Owner - redaction does not remove them from history\". No row ever recorded this, and the Owner's Stripe key roll of 2026-10-09 covers none of these values. What they are, by provider and kind only: an AI provider key, a Google sign-in client secret, a Firebase key and a speech-to-text key; two reCAPTCHA secrets and two sign-in token secrets; two database addresses carrying a username and password, a database password and an e-mail password. With them goes the key in the openQuran archive's .env on the Owner's machine, never in the repository, which FU-268's ruling (closed by W505) left to the Owner: \"The Owner rotates that key separately; the platform never reads it.\" Measured in W1191 by blob and by count, never by value: copies carrying most of the same values were uploaded to the repository on 2026-03-05, earlier than the June that W729's message gives, and most of the repository's other branches still carry unredacted copies, since W729 redacted only the tree's own copies; removing them there would not undo their exposure, which only revoking does. W729 also redacted two Stripe lines that held only templates; in the March copies those two lines hold earlier values that W729 never redacted, a Stripe live secret key and a Stripe webhook signing secret: revoke those too, or confirm they no longer work, since nothing records whether the key roll of 2026-10-09 retired them. The steps: read the repository host's secret-scanning alert list; revoke or rotate each item at its provider, or confirm that it no longer works; then tell the session the date, which a later round records beside the Stripe line at the head of the plan's Owner list. Added to the Owner's list at the Owner's request on 2026-11-21, to be done soon; in the Owner's words: \"add to list of items for me, I will do this soon\". OWNER RULING 2026-11-22 (the recommendation accepted): the revocation is to be done on 2026-11-22, beginning with the repository host's secret-scanning alert list. The cloud session may list stale branches for deletion; no branch is deleted or changed without the Owner's explicit word. OWNER RULING 2026-11-22 (morning; the recommendation accepted): the Owner revokes the leaked keys first; then the cloud session lists the stale branches that hold them for the Owner to check, keeping main, main-l1fsqo, local-owner and anything else the Owner names, and deletes only on the Owner's explicit word. W1208 (2026-11-22, FU-1864): the privacy screen's read-only history mode, python scripts/privacy_check.py --history, is a later step, after the repository host's secret-scanning alert list. Its full run is made on a mirror clone on the Owner's machine, since the cloud session's clone is shallow; it lists each credential still in history by kind, path and commit, never by value, and rewrites nothing. A finding there that these values already cover is recorded under this row, not as a new row. THE OWNER'S CHECK, 2026-11-22 (night and late evening), by kind and never by value, as the Owner reported it (W1234). ALREADY DEAD: the Stripe live secret key (the account's only secret key is the one created on 2026-10-09), the AI provider key (every key at the provider is revoked or expired), the Google sign-in client secret (the client's one secret was created on 14 October), the speech-to-text key (the provider holds no key) and the MongoDB Atlas address (its project has no database users). REVOKED OR ROTATED THAT DAY: the Stripe webhook signing secret, rolled, its endpoint disabled (whether the old secret stopped working at once was not visible); the Firebase key, created on 2025-01-16, deleted; the two reCAPTCHA values, their site deleted; and the two sign-in token secrets, replaced in the two local .env files git ignores (the live server never held them). ON THE OWNER'S RECOLLECTION, NOT CHECKED INDEPENDENTLY: the e-mail password, changed on 2026-10-14. NOTHING TO REVOKE: the Redis address and the second MongoDB address name local containers and carry no credentials. FOUND ON THE ONEDRIVE DESKTOP AND SETTLED THAT EVENING: a Google service-account key file whose key was active with no expiry, now deleted at Google; an older .env copy holding a classic GitHub token, dead, since the account holds no classic tokens; and a second .env copy, in an old git checkout, holding copies of a live Google API key and the n8n encryption key, which the Owner retired rather than rotated: the Google API key, created on 2026-03-16, is deleted at Google, which can restore it for 30 days, and no tracked code or configuration outside _archive and docs names its setting; the n8n value was the encryption key, not an API key, and since the Owner does not use n8n it was blanked, with no service to revoke it at. The three files are gone from the OneDrive Desktop: the PC's Recycle Bin was checked and holds no items, and the OneDrive online bin, which could not be checked, is recorded as emptied on the Owner's word. The repository host's secret-scanning alerts 4, 6 and 7 were closed as Revoked, so none is open; alerts 1, 2, 3 and 5, closed on 2026-03-05 as false positives although their values were real, are all dead or rotated. The dead AI provider and Stripe values were blanked in both local .env files git ignores. As a precaution the Owner deleted the one remaining Firebase browser key in the old Quran project, a possible match for the openQuran key, not a proven one. UNCONFIRMED, on two points: the key in the openQuran archive's .env, whose archive is no longer on the machine, in its Recycle Bin or in OneDrive, so its provider is not identified and it is not confirmed revoked; and whether the leaked database passwords (the database password, and the password in the Postgres address, which names a local container) were used anywhere else, to which the Owner's answer, word for word, was: can not recall. Both stay UNCONFIRMED.",
       "source": "W1191 (the Owner's request of 2026-11-21, late evening)",
       "found": "2026-11-22",
       "files": [],
       "severity": "high",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
-      "note": ""
+      "status": "done",
+      "closed_by": "W1234",
+      "note": "",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Closed on the Owner's word on 2026-11-22: asked whether to keep it open or close it, the Owner replied close it. Recorded in W1234, by kind and never by value; the dated check above says each: the leaked credentials were revoked, rotated or found dead, the OneDrive Desktop's files settled (the service-account key deleted at Google, the GitHub token dead, the three files gone), the live Google API key and the n8n encryption key retired, and the secret-scanning alerts all closed as Revoked. Two points stay UNCONFIRMED: whether the leaked database password or the password in the Postgres address was used anywhere else (the Owner's words: can not recall); and the key in the openQuran archive's .env, whose provider could not be identified and which is not confirmed revoked. The credential history scan (W1208) on a full mirror clone stays the Owner's act, later, as accepted on the evening of 2026-11-22, and so does checking the stale branches the cloud session lists as holding the leaked values; neither is closed with this row. RECOMMENDED: if either password may be in use elsewhere, change it there."
     },
     {
       "id": "FU-1838",
@@ -27154,7 +27163,7 @@
       "slot": "OWNER",
       "status": "open",
       "closed_by": null,
-      "note": ""
+      "note": "The Owner's choice of 2026-11-22 (W1234): Cambridge Muslim College is to be asked first; its contact page (https://www.cambridgemuslimcollege.ac.uk/about/contact/, read 2026-11-22) gives info@cambridgemuslimcollege.ac.uk. The Markfield Institute of Higher Education is the second candidate; Ebrahim College could not be verified. Neither page read mentions tajwid, and neither institute's scholarly fit has been assessed. Nothing has been sent and the College has agreed to nothing, so the row stays open."
     },
     {
       "id": "FU-1839",
@@ -27180,10 +27189,13 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1234",
       "note": "",
-      "slot_source": "OWNER (the Owner's machine): the lessons are in the assistant's notes on the Owner's machine, which the cloud session never sees"
+      "slot_source": "OWNER (the Owner's machine): the lessons are in the assistant's notes on the Owner's machine, which the cloud session never sees",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done on 2026-11-22, the Owner's act (the Owner's word: Accept all), recorded in W1234: a local session on the Owner's machine listed 38 lessons from the assistant's notes as derived since W677, and the Owner ratified 27 and did not ratify 11, each with its reason. The 27 are in the method as one batch, in docs/DELIVERY_METHOD.json (M-VERIF-14, M-VERIF-15, M-VERIF-16, M-EXEC-08, M-VERIF-17, M-EXEC-09, M-EXEC-10, M-EXEC-11, M-DIAG-07, M-EXEC-12, M-DELIV-09, M-VERIF-18, M-DELIV-10, M-VERIF-19, M-VERIF-20, M-EXEC-13, M-VERIF-21, M-DELIV-11, M-DELIV-12, M-VERIF-22, M-DELIV-13, M-SESS-13, M-SESS-14, M-EXCH-09, M-PREP-07, M-VERIF-23, M-EXCH-10), each carrying ratified: the Owner's ruling of 2026-11-22, as one batch. The 11 and their reasons are recorded at P5.14. So no lesson of those the local session listed cites a round later than the method's data without a stated reason, which is P5.14's ACCEPT for the notes. The 8-hour cycles and the six rules of how the work is done go in separately, as the Owner ruled. The record of the batch on the store that holds Change Control is FU-1907."
     },
     {
       "id": "FU-1841",
@@ -28015,9 +28027,12 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
-      "note": ""
+      "status": "done",
+      "closed_by": "W1234",
+      "note": "",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done on 2026-11-22, the Owner's act, recorded in W1234: the Owner read the developer terms (https://api-docs.quran.foundation/legal/developer-terms/, last updated 2026-11-20) and the developer privacy packet (https://api-docs.quran.foundation/legal/developer-privacy/) whole that day, and opened no new account: the existing pre-production account is kept, its credentials only on the Owner's machine (they worked on 2026-10-13 and have not been retested, so this row's words that the content paths were never called with real credentials are out of date). docs/SOURCES.json's row quran-foundation-developer-terms records what the terms permit and forbid, their caching, attribution and data terms and what they say of production, and corrects what it said of AI use: the terms forbid using the content or user data to train, fine-tune, evaluate or develop AI models, with no exception, where the row said written consent was needed. The three checks the reading leaves are rows of P5.17: FU-1908, FU-1909 and FU-1910."
     },
     {
       "id": "FU-1883",
@@ -28457,6 +28472,76 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P5.18 clause 4's ACCEPT: the reserved documents are refused through the route a person would use, and these are routes a person would use"
+    },
+    {
+      "id": "FU-1907",
+      "title": "OWNER: file the record of the batch of 27 lessons ratified on 2026-11-22 on the store that holds Change Control",
+      "why": "W1234 entered the 27 lessons the Owner ratified on 2026-11-22 into docs/DELIVERY_METHOD.json as one batch, each carrying ratified: the Owner's ruling of 2026-11-22, as one batch (FU-1840, closed W1234). The method says that the change record of such a batch is filed once for the whole batch, through POST /api/v1/method/amendment, on the store of whoever holds Change Control; the batch of 2026-10-13 was filed that way on the Owner's own store, with the Owner present. The step: on that store, file the 27 as the record of that ruling, with ruled_by set to it; the route refuses the whole batch, naming each fault, if a lesson in it does not carry the ruling.",
+      "source": "W1234 (the Owner's report of 2026-11-22, night; P5.14 clause 1)",
+      "found": "2026-11-27",
+      "files": [],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "OWNER (the Owner's store): the record is filed on the store that holds Change Control, not in the tree"
+    },
+    {
+      "id": "FU-1908",
+      "title": "The public repository is not checked for Quran Foundation content or raw API data, which the foundation's developer terms forbid redistributing",
+      "why": "The developer terms the Owner read whole on 2026-11-22 (last updated 2026-11-20; docs/SOURCES.json, row quran-foundation-developer-terms) forbid selling or redistributing the content, including in a public repository. This repository is public, and nothing has checked that it holds none of the foundation's content or raw API data: no text, translation, audio, timing or reflection fetched from it, and no saved answer of the API, in the code, the documents or a test's fixture. That the reading side writes nothing to disk (agentic_core/religious_domain/quran_foundation.py) is not a check of the tree. The check: search the tracked tree for the content the API serves and for saved API answers, record what was searched and what was found, by path, and say whether history was searched; anything found is taken out of the tree and named to the Owner, since history keeps it.",
+      "source": "W1234 (the Owner's reading of the Quran Foundation's developer terms, 2026-11-22)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/quran_foundation.py",
+        "docs/SOURCES.json"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.17, clauses 6 and 7: the foundation's terms and its developer account are this item's, and the router names no item for the Quran platform's files"
+    },
+    {
+      "id": "FU-1909",
+      "title": "The platform has no Privacy Policy or Terms of Use of its own to check against the Quran Foundation's developer privacy packet before real users get its content",
+      "why": "The developer privacy packet the Owner read whole on 2026-11-22 (https://api-docs.quran.foundation/legal/developer-privacy/) lists a public Privacy Policy and Terms of Use, a separate opt-in for religious data, token revocation, deletion within 30 days (90 for backups) and a breach reported within 24 hours. No page of the platform in the tree is a Privacy Policy or Terms of Use of its own (the Law tool's two templates of those names draft a document for a person), so nothing has set the live site against the packet before real users get this content. The check is a round's, so the row is not Owner-gated: a check is a measurement, which a round makes and reports (the Owner's ruling of 2026-10-12 on how the work is done). The round reads what the live site and the tree publish, sets each requirement of the packet against it, and records each as met, not met or not assessable. What a Privacy Policy or Terms of Use says, and publishing one, are the Owner's, since they are about people and public release (the same ruling): the round drafts, and the Owner decides.",
+      "source": "W1234 (the Owner's reading of the Quran Foundation's developer terms, 2026-11-22)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/quran_foundation.py",
+        "docs/SOURCES.json"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.17, clauses 6 and 7: the foundation's terms and its developer account are this item's, and the router names no item for the Quran platform's files"
+    },
+    {
+      "id": "FU-1910",
+      "title": "No use the platform makes of Quran Foundation content is checked against the developer terms' clause forbidding its use to train, fine-tune, evaluate or develop AI models",
+      "why": "The developer terms the Owner read whole on 2026-11-22 forbid using the foundation's content or user data to train, fine-tune, evaluate or develop AI models, with no exception; retrieval-augmented generation shown inside the app is permitted. The reading side's docstring says only that no model is trained on the content (agentic_core/religious_domain/quran_foundation.py), one of the four. Nothing has set the platform's own uses against the whole clause: for example a test, a calibration set, a baseline or a review that feeds the content to a model to evaluate or develop it, or a store of the content kept for that. The check: list every path by which the content reaches a model or a store, set each against the clause, refuse or remove any use it forbids, and make the module's docstring and the row's conditions name all four.",
+      "source": "W1234 (the Owner's reading of the Quran Foundation's developer terms, 2026-11-22)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/quran_foundation.py",
+        "agentic_core/religious_domain/api.py",
+        "docs/SOURCES.json"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.17, clauses 6 and 7: the foundation's terms and its developer account are this item's, and the router names no item for the Quran platform's files"
     }
   ],
   "routes": [
