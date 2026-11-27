@@ -104407,3 +104407,24 @@ def test_w1208b_the_control_character_path_is_made_in_the_index_not_on_disk():
     assert "(two / odd).write_text(" not in body, "the control-character path is written to disk again"
     assert '"update-index", "--add", "--cacheinfo", f"100644,{_blob},{odd}")' in body
     assert '_blob = git(two, "hash-object", "-w", "w1208b_blob.tmp")' in body and '(two / "w1208b_blob.tmp").unlink()' in body
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1203a - the bundle proposal says how many rows cite each file on every bundle it shows
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1203a_every_bundle_shown_says_how_many_rows_cite_its_files():
+    """W1203a. The per-file counts were written only for bundles of four files or fewer, so a larger register
+    hid them. Driven on synthetic rows: a bundle of six files must still show its counts, capped at four
+    with the rest counted."""
+    import importlib
+    pf = importlib.import_module("agentic_core.plan_followups")
+    src = open(pf.__file__, encoding="utf-8").read()
+    assert 'if x["files_count"] <= 4:' not in src, "the per-file counts are again shown only for small bundles"
+    rows = [{"id": "FU-9%02d" % i, "slot": "PX.1", "status": "open",
+             "files": ["a.py", "f%d.py" % i]} for i in range(6)]
+    comps = pf._components_of(rows)
+    assert len(comps) == 1 and len(comps[0]["rows"]) == 6, comps
+    bundle_line = [l for l in src.splitlines() if "rows citing each file: " in l]
+    assert bundle_line, "the renderer no longer writes the per-file counts"
+    assert 'f", and {_more} more" if _more > 0 else ""' in src, "files past the first four are not counted"
+    assert "key=lambda kv: (-kv[1], kv[0])" in src, "the most-cited files are not shown first"

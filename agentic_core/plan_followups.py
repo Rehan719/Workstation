@@ -1409,9 +1409,14 @@ def render_bundles(register: Any, prompt_text: str, top: int = 6) -> str:
         #  reported the figure that makes it checkable.
         line += f" \u00b7 thinnest file cited by {x['thinnest_file_rows']} row(s)"
         out.append(line)
-        if x["files_count"] <= 4:
+        #  W1203a - the per-file counts on EVERY bundle shown, the four most-cited files first, so limit (ii)
+        #  stays on the surface however large the bundles grow
+        if x["rows_per_file"]:
+            _rpf = sorted(x["rows_per_file"].items(), key=lambda kv: (-kv[1], kv[0]))
+            _more = len(_rpf) - 4
             out.append("      rows citing each file: "
-                       + ", ".join(f"{f} ({n})" for f, n in sorted(x["rows_per_file"].items())))
+                       + ", ".join(f"{f} ({n})" for f, n in _rpf[:4])
+                       + (f", and {_more} more" if _more > 0 else ""))
     out.append("  " + c["basis"])
     out.append("  CAP: " + b["cap_basis"] + ".")
     out.append("  COMBINING: " + combinable(b["bundles"][:top])["basis"] + ".")
