@@ -11,11 +11,19 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, List, Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
 from agentic_core.ai.native import orchestrator, registry
 from agentic_core.ai.native.model_resource import external_allowed
+from agentic_core.auth.core import require_admin
+
+#  W1203 (FU-1853, P4.1) - THE LIFECYCLE'S WRITES ARE AN ADMINISTRATOR'S. The router is mounted behind get_current_user
+#  (app_mvp.py), so with sign-in on any signed-in person could promote, retire, reinstate or evaluate a local model, or
+#  run or reproduce a baseline; the serving default governs the platform, which is the W505 perimeter's reason. Each of
+#  the six writes asks for require_admin; the reads stay behind get_current_user. With sign-in off require_admin is a
+#  synthetic admin, so nothing changes there.
+_ADMIN = [Depends(require_admin)]
 
 router = APIRouter(prefix="/api/v1/native-ai", tags=["native-ai-fabric"])
 
@@ -613,7 +621,7 @@ _EVAL_BASIS = ("a marker hit means the reply CONTAINS a marker string - it is no
                "compares a model's internal state.")
 
 
-@router.post("/lifecycle/evaluate")
+@router.post("/lifecycle/evaluate", dependencies=_ADMIN)
 async def evaluate_model(req: LifecycleModelRequest):
     """§6 (W276) — run a bounded, HONEST evaluation of a named local model: three small probes
     routed explicitly to it. Scored only on what genuinely happened (did the target actually
@@ -871,7 +879,7 @@ class BaselineRequest(BaseModel):
     tier: str = "native"
 
 
-@router.post("/baseline/run")
+@router.post("/baseline/run", dependencies=_ADMIN)
 async def run_baseline(req: BaselineRequest):
     """Run the behavioural baseline against ONE owned serving tier, now, because a person asked.
 
@@ -957,7 +965,7 @@ async def get_baseline(run_id: str):
     return rec
 
 
-@router.post("/baseline/{run_id}/reproduce")
+@router.post("/baseline/{run_id}/reproduce", dependencies=_ADMIN)
 async def reproduce_baseline(run_id: str):
     """Run a recorded baseline AGAIN from the versions it recorded, and say case by case whether the reply
     was the same. Refused - with nothing run - when it cannot be run from those versions: the case sets in
@@ -1039,8 +1047,10 @@ _EVIDENCE_SURFACES = {
     "/route": ("configuration", "which tier a request would be sent to, by rule"),
     "/models": ("configuration", "the local model names the runtime lists"),
     "/lifecycle": ("configuration", "the promoted default and retired names; its `evaluations` are behaviour records"),
-    "/lifecycle/promote": ("configuration", "a named model is made the default on a recorded evaluation of its build "
-                                            "on the pinned probe set (W841); the promotion itself measures nothing"),
+    "/lifecycle/promote": ("configuration", "a named model is made the default by an administrator on a recorded "
+                                            "evaluation of its build on the pinned probe set (W841) and on the licence "
+                                            "text the runtime holds for that build (W1203); the promotion itself "
+                                            "measures nothing"),
     "/lifecycle/retire": ("configuration", "a named model is removed from the active list"),
     "/lifecycle/reinstate": ("configuration", "a named model is returned to the active list"),
     "/lifecycle/installed": ("configuration", "what the local runtime reports it holds - name, digest, size, parameter size, quantisation, family, format, parameter count, capabilities and licence - read at call time"),
@@ -1268,7 +1278,7 @@ def _blocks_naming_a_model() -> Dict[str, Any]:
             "ruling": ("Owner, 2026-10-13: every surface means every router that names a model, counted per "
                        "router. The count above is what remains.")}
 
-@router.post("/lifecycle/promote")
+@router.post("/lifecycle/promote", dependencies=_ADMIN)
 @_states_level("/lifecycle/promote")
 async def promote_model(req: LifecycleModelRequest):
     """§6 (W276) — promote a DISCOVERED local model to the persisted serving default (the 'ollama'
@@ -1290,28 +1300,72 @@ async def promote_model(req: LifecycleModelRequest):
             f"Model '{req.model}' was not promoted: the local runtime reports no build digest for this name, so no "
             "evaluation can be tied to a build of it. A name is not a build."))
     _set_now = {"version": _EVAL_PROBE_SET_VERSION, "digest": _eval_probe_digest()}
-    st = _lifecycle_for_write()                              # W577 (FU-395)
-    _measured = [e for e in (st.get("evaluations") or []) if isinstance(e, dict) and e.get("model") == req.model
-                 and e.get("can_serve") is True and (e.get("control") or {}).get("marker_absent") is True
-                 and e.get("probe_set") == _set_now and (e.get("serving") or {}).get("identity") == _dg]
-    if not _measured:
-        raise HTTPException(status_code=409, detail=(
+
+    def _measured_on(rec):
+        return [e for e in (rec.get("evaluations") or []) if isinstance(e, dict) and e.get("model") == req.model
+                and e.get("can_serve") is True and (e.get("control") or {}).get("marker_absent") is True
+                and e.get("probe_set") == _set_now and (e.get("serving") or {}).get("identity") == _dg]
+
+    def _not_evaluated():
+        return HTTPException(status_code=409, detail=(
             f"Model '{req.model}' was not promoted: no evaluation of this build ({_dg[:23]}) on the pinned probe set "
             f"(version {_EVAL_PROBE_SET_VERSION}) that it served and whose control it passed is recorded. Run POST "
             "/api/v1/native-ai/lifecycle/evaluate for it, then promote."))
+    _before = _lifecycle_for_write()                         # W577 (FU-395)
+    if not _measured_on(_before):
+        raise _not_evaluated()
+    #  W1203 (FU-1852) - AND ON THE LICENCE TEXT THE RUNTIME HOLDS FOR THIS BUILD. The Owner ruled on 2026-11-22 that a
+    #  model is made the serving default only with its licence read, with no override: no override is built, and no
+    #  research lead's licence stands in for the runtime's text. A description that could not be read is refused on
+    #  its own words, never as 'no licence'. OLLAMA_MODEL, which the Owner sets on the machine, still names the
+    #  model served, if it is installed and not retired, when nothing is promoted. One /api/show call, off the event
+    #  loop; the build is read again after it, so a licence read from another build is never kept beside this digest.
+    import asyncio as _aio
+    from agentic_core.ai.native.model_resource import describe_installed_one
+    _desc = await _aio.to_thread(describe_installed_one, req.model)
+    _dg_now = local_model_digest(req.model)
+    if _dg_now != _dg:
+        raise HTTPException(status_code=409, detail=(
+            f"Model '{req.model}' was not promoted: the build under this name changed while its licence was read (it "
+            f"was {_dg[:23]}, and the runtime now reports {str(_dg_now)[:23]}). Evaluate the build installed now, then "
+            "promote."))
+    if _desc.get("show_read") is not True:
+        raise HTTPException(status_code=409, detail=(
+            f"Model '{req.model}' was not promoted: the local runtime's description of this build ({_dg[:23]}) could "
+            f"not be read, so whether the runtime holds licence text for it is not known ({_desc.get('show_basis')}). "
+            "Promote again once the runtime answers."))
+    _lic = _desc.get("licence")
+    if not (isinstance(_lic, dict) and _lic.get("sha256")):
+        raise HTTPException(status_code=409, detail=(
+            f"Model '{req.model}' was not promoted: the local runtime holds no licence text for this build "
+            f"({_dg[:23]}). The Owner ruled on 2026-11-22 that a model is made the serving default only with its "
+            "licence read, with no override. OLLAMA_MODEL, which the Owner sets on the machine, still names the "
+            "model served, if it is installed and not retired, when nothing is promoted."))
+    _licence = {"first_line": _lic.get("first_line"), "chars": _lic.get("chars"), "sha256": _lic.get("sha256")}
+    #  W1203 (review) - THE RECORD IS READ AGAIN AFTER THE AWAIT, and nothing is awaited from here to the save: a
+    #  retire, reinstate or evaluation saved while the licence was read is kept (W577), and the evaluation is checked
+    #  again on the record that is written
+    st = _lifecycle_for_write()                              # W1203 - read after the licence, written below
+    _measured = _measured_on(st)
+    if not _measured:
+        raise _not_evaluated()
     st["default_local"] = req.model
     st["default_local_digest"] = _dg
+    st["default_local_licence"] = _licence                  # W1203 (FU-1852) - the licence text it was promoted on
     st["default_local_evaluated_at"] = _measured[-1].get("at")
     st["retired"] = [m for m in (st.get("retired") or []) if m != req.model]
     save_lifecycle(st)
-    _ueg_lifecycle("promoted", req.model, {"digest": _dg, "evaluated_at": _measured[-1].get("at")})
+    _ueg_lifecycle("promoted", req.model, {"digest": _dg, "evaluated_at": _measured[-1].get("at"),
+                                           "licence_sha256": _licence["sha256"]})
     return {"promoted": req.model, "effective_default": req.model, "digest": _dg,
-            "evaluated_at": _measured[-1].get("at"),
+            "evaluated_at": _measured[-1].get("at"), "licence": _licence,
             "promoted_basis": (f"promoted on the evaluation of this build at {_measured[-1].get('at')} on the pinned "
-                               "probe set; it serves as the default only while the runtime reports this build")}
+                               "probe set and on the licence text the runtime holds for it (its first line, length "
+                               "and hash are kept, not a reading of what it permits); it serves as the default only "
+                               "while the runtime reports this build")}
 
 
-@router.post("/lifecycle/retire")
+@router.post("/lifecycle/retire", dependencies=_ADMIN)
 @_states_level("/lifecycle/retire")
 async def retire_model(req: LifecycleModelRequest):
     """§6 (W276) — retire a local model from the ACTIVE estate: default orchestration (ensemble,
@@ -1324,13 +1378,14 @@ async def retire_model(req: LifecycleModelRequest):
     if st.get("default_local") == req.model:
         st["default_local"] = None            # a retired model cannot stay the promoted default
         st.pop("default_local_digest", None)  # W841 (FU-1087) - nor its build
+        st.pop("default_local_licence", None)  # W1203 (FU-1852) - nor the licence it was promoted on
         st.pop("default_local_evaluated_at", None)
     save_lifecycle(st)
     _ueg_lifecycle("retired", req.model)
     return {"retired": st["retired"], "promoted_default": st.get("default_local")}
 
 
-@router.post("/lifecycle/reinstate")
+@router.post("/lifecycle/reinstate", dependencies=_ADMIN)
 @_states_level("/lifecycle/reinstate")
 async def reinstate_model(req: LifecycleModelRequest):
     """§6 (W276) — return a retired model to the active estate."""

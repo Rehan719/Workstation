@@ -73199,6 +73199,14 @@ def test_w841_a_model_is_made_the_serving_default_on_an_evaluation_of_that_build
     monkeypatch.setattr(_mr841, "local_models", lambda: ["w841-model"])
     digest = {"now": "sha256:w841aaaa"}
     monkeypatch.setattr(_mr841, "local_model_digest", lambda name: digest["now"] if name == "w841-model" else None)
+    #  W1203 (FU-1852) - promotion also reads the build's licence text from the runtime; this build's runtime holds
+    #  one (a made-up text), so the evaluated build is still promoted, on purpose
+    import hashlib as _h841
+    _lic841 = "W841 MADE-UP LICENCE TEXT\nA stand-in for what a runtime returns; it is no licence."
+    monkeypatch.setattr(_mr841, "describe_installed_one", lambda name: {
+        "name": name, "show_read": True, "show_basis": None, "licence": {
+            "first_line": "W841 MADE-UP LICENCE TEXT", "chars": len(_lic841),
+            "sha256": _h841.sha256(_lic841.encode("utf-8")).hexdigest()}})
     set_now = {"version": _na841._EVAL_PROBE_SET_VERSION, "digest": _na841._eval_probe_digest()}
 
     def _evaluation(identity, probe_set, can_serve=True, control_passed=True, at="2026-11-11T21:00:00Z"):
@@ -104428,3 +104436,269 @@ def test_w1203a_every_bundle_shown_says_how_many_rows_cite_its_files():
     assert bundle_line, "the renderer no longer writes the per-file counts"
     assert 'f", and {_more} more" if _more > 0 else ""' in src, "files past the first four are not counted"
     assert "key=lambda kv: (-kv[1], kv[0])" in src, "the most-cited files are not shown first"
+
+
+def test_w1203_a_model_becomes_the_default_only_when_an_administrator_promotes_an_evaluated_build_whose_licence_the_runtime_holds(
+        client, monkeypatch, tmp_path):
+    """FU-1852 (P3.32) and FU-1853 (P4.1), W1203. promote_model refused an undiscovered name, a build with no digest
+    and a build with no recorded evaluation, and then made the name the serving default with no licence read, though
+    the runtime's description of each build carries its licence text: FU-1087 proposed that refusal and W841 built the
+    other two. The Owner ruled on 2026-11-22 that a model is made the serving default only with its licence read, with
+    no override. And the native-ai router is mounted behind get_current_user only, so with sign-in on any signed-in
+    person could promote, retire, reinstate or evaluate a local model, or run or reproduce a baseline. Held here:
+    T1. describe_installed_one asks the runtime for ONE description (one POST /api/show, no list) and answers the
+        described fields describe_installed gives that model, parsed in the same place; a licence given as a list
+        holding anything but text ([null], [0]) or as blank text is no licence text; a description that fails, or is
+        over _DESCRIPTION_MAX_BYTES, is not read; with the local runtime disabled nothing is asked;
+    T2. on builds this test evaluates as W841's check requires (an evaluation on the pinned probe set that served and
+        passed its control): a runtime that holds no licence text for the build, or only [null], [0] or blank text,
+        gives 409 naming the missing licence text, citing the ruling and OLLAMA_MODEL, and nothing is promoted; a
+        description that cannot be read gives 409 saying so, which is not 'no licence'; a build that changes while its
+        licence is read gives 409; licence text held gives 200 with the licence's first line, length and the sha256 of
+        the runtime's own text, kept in the lifecycle record as default_local_licence, and retiring the build drops
+        it; a retire saved while a promotion reads its licence is kept, and the promotion too;
+    T3. the levels row says the promotion is an administrator's and rests on the licence text, and the page fixture's
+        captured row is the route's;
+    T4. DRIVEN WITH SIGN-IN ON, in this test process only: a signed-in user is refused (403) on each of the six writes
+        (/lifecycle/evaluate, /baseline/run, /baseline/{run_id}/reproduce, /lifecycle/promote, /lifecycle/retire,
+        /lifecycle/reinstate) and reads the lifecycle (200); an administrator reaches promote (409, not installed) and
+        reproduce (404, no such run); each write's route asks for require_admin and no lifecycle or baseline read does;
+    T5. the register: FU-1852 on P3.32 (low) and FU-1853 on P4.1 (medium), open or closed by W1203 as built; the row
+        the round's security review found (the operations routes that score a model) open on P4.1 (medium).
+    No model is downloaded and no runtime is asked: httpx's two functions answer for a host that cannot resolve."""
+    import asyncio
+    import hashlib
+    import json
+    import threading
+    import pathlib
+    import uuid
+    import httpx
+    import agentic_core.auth.core as _ac
+    from agentic_core.ai.native import model_resource as _mr
+    from agentic_core.api import native_ai as _na
+    assert _mr.external_allowed() is False, "an external provider is switched on in the tree"
+    root = pathlib.Path(__file__).resolve().parents[1]
+    pre = _na.router.prefix
+    base = "http://w1203-runtime.test:11434"
+    monkeypatch.setenv("OLLAMA_URL", base + "/api/generate")
+    monkeypatch.delenv("AI_DISABLE_LOCAL", raising=False)
+    monkeypatch.setattr(_mr, "_lifecycle_path", lambda *_a, **_k: tmp_path / "w1203_model_lifecycle.json")
+    for _cache in (_mr._OLLAMA_CACHE, _mr._MODELS_CACHE):
+        for _k in list(_cache):
+            monkeypatch.setitem(_cache, _k, _cache[_k])
+    assert _mr._ollama_base() == base
+
+    #  the runtime, made up: builds whose description carries a made-up licence text, none, or a malformed one
+    text = "W1203 MADE-UP LICENCE TEXT\n\nA stand-in for the text a runtime returns for a build; it is no licence.\n"
+    rt = {"show": {"w1203-model": {"license": text, "capabilities": ["completion"],
+                                   "model_info": {"general.parameter_count": 1234}},
+                   "w1203-bare:1b": {"model_info": {}},
+                   "w1203-listnull": {"license": [None]}, "w1203-listzero": {"license": [0]},
+                   "w1203-blank": {"license": "   \n\t "},
+                   "w1203-repull": {"license": text}, "w1203-race": {"license": text}},
+          "fail": set(), "during": {}}
+    calls = []
+
+    class _Resp:
+        def __init__(self, code, body):
+            self.status_code, self._body = code, body
+            self.content = json.dumps(body).encode("utf-8")
+
+        def json(self):
+            return self._body
+
+    def _get(url, *a, **k):
+        calls.append(("GET", str(url)))
+        if str(url) == base + "/api/tags":
+            return _Resp(200, {"models": [{"name": n, "model": n, "digest": "sha256:w1203-" + n} for n in rt["show"]]})
+        return _Resp(404, {})
+
+    def _post(url, *a, **k):
+        name = (k.get("json") or {}).get("model")
+        calls.append(("POST", str(url), name))
+        if name in rt["during"]:
+            rt["during"][name]()
+        if str(url) == base + "/api/show" and name in rt["show"] and name not in rt["fail"]:
+            return _Resp(200, json.loads(json.dumps(rt["show"][name])))
+        return _Resp(500, {"error": "w1203: not answering"})
+    monkeypatch.setattr(httpx, "get", _get)
+    monkeypatch.setattr(httpx, "post", _post)
+
+    #  T1. ONE DESCRIPTION, parsed where the installed list parses it
+    want = {"sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(), "chars": len(text),
+            "first_line": "W1203 MADE-UP LICENCE TEXT"}
+    one = _mr.describe_installed_one("w1203-model")
+    assert calls == [("POST", base + "/api/show", "w1203-model")], ("not one description, and no list", calls)
+    assert one["show_read"] is True and {k: one["licence"][k] for k in want} == want, one
+    listed = {m["name"]: m for m in _mr.describe_installed()["models"]}
+    for name in ("w1203-model", "w1203-bare:1b", "w1203-listnull", "w1203-blank"):
+        got = _mr.describe_installed_one(name)
+        assert {f: got[f] for f in ("licence", "parameter_count", "capabilities", "show_read", "show_basis")} == {
+            f: listed[name][f] for f in ("licence", "parameter_count", "capabilities", "show_read", "show_basis")}, (
+            name, got, listed[name])
+    assert _mr.describe_installed_one("w1203-bare:1b")["licence"] is None
+    for name in ("w1203-listnull", "w1203-listzero"):
+        got = _mr.describe_installed_one(name)
+        assert (got["show_read"], got["licence"]) == (True, None), ("a list holding no text is licence text", name, got)
+    got = _mr.describe_installed_one("w1203-blank")
+    assert (got["show_read"], got["licence"]) == (True, None), ("blank text is licence text, or not read", got)
+    rt["fail"].add("w1203-model")
+    failed = _mr.describe_installed_one("w1203-model")
+    assert failed["show_read"] is False and failed["licence"] is None and "could not be read" in failed["show_basis"]
+    rt["fail"].clear()
+    cap = _mr._DESCRIPTION_MAX_BYTES
+    monkeypatch.setattr(_mr, "_DESCRIPTION_MAX_BYTES", 64)
+    big = _mr.describe_installed_one("w1203-model")
+    assert big["show_read"] is False and big["licence"] is None and "over the 64" in big["show_basis"], big
+    monkeypatch.setattr(_mr, "_DESCRIPTION_MAX_BYTES", cap)
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")
+    n = len(calls)
+    off = _mr.describe_installed_one("w1203-model")
+    assert off["show_read"] is False and off["show_basis"].startswith("NOT READ") and len(calls) == n, off
+    monkeypatch.delenv("AI_DISABLE_LOCAL", raising=False)
+
+    #  T2. THE PROMOTION, on builds evaluated as W841's check requires: licence text held, or refused
+    dig = {name: "sha256:w1203-" + name for name in rt["show"]}
+    monkeypatch.setattr(_mr, "local_models", lambda: list(rt["show"]))
+    monkeypatch.setattr(_mr, "local_model_digest", lambda name: dig.get(name))
+    set_now = {"version": _na._EVAL_PROBE_SET_VERSION, "digest": _na._eval_probe_digest()}
+    st = _mr.lifecycle_state()
+    for name in rt["show"]:
+        st["evaluations"].append({"model": name, "can_serve": True, "control": {"marker_absent": True},
+                                  "probe_set": set_now, "serving": {"identity": _mr.local_model_digest(name)},
+                                  "at": "2026-11-22T12:00:00Z"})
+    _mr.save_lifecycle(st)
+
+    def promote(name, headers=None):
+        return client.post(pre + "/lifecycle/promote", json={"model": name}, headers=headers or {})
+    bare = promote("w1203-bare:1b")
+    assert bare.status_code == 409, ("a build with no licence text was promoted", bare.status_code, bare.text[:300])
+    said = bare.json()["detail"]
+    assert "holds no licence text for this build" in said, said
+    assert "The Owner ruled on 2026-11-22" in said and "with no override" in said and "OLLAMA_MODEL" in said, said
+    assert "if it is installed and not retired, when nothing is promoted" in said, said
+    assert _mr.lifecycle_state()["default_local"] is None and "default_local_licence" not in _mr.lifecycle_state()
+    for name in ("w1203-listnull", "w1203-listzero", "w1203-blank"):
+        got = promote(name)
+        assert got.status_code == 409 and "holds no licence text for this build" in got.json()["detail"], (
+            name, "a malformed or blank licence was taken as licence text", got.status_code, got.text[:200])
+    rt["during"]["w1203-repull"] = lambda: dig.__setitem__("w1203-repull", "sha256:w1203-pulled-again")
+    moved = promote("w1203-repull")
+    rt["during"].clear()
+    assert moved.status_code == 409 and "changed while its licence was read" in moved.json()["detail"], (
+        "a licence read from another build was kept beside this digest", moved.status_code, moved.text[:200])
+    dig["w1203-repull"] = "sha256:w1203-w1203-repull"
+    assert _mr.lifecycle_state()["default_local"] is None
+    rt["fail"].add("w1203-model")
+    unread = promote("w1203-model")
+    assert unread.status_code == 409, ("a build whose description was not read was promoted", unread.text[:300])
+    assert "could not be read" in unread.json()["detail"] and "is not known" in unread.json()["detail"], unread.text
+    assert "holds no licence text" not in unread.json()["detail"], "a description not read is said as no licence"
+    assert _mr.lifecycle_state()["default_local"] is None
+    rt["fail"].clear()
+    ok = promote("w1203-model")
+    assert ok.status_code == 200, ok.text[:300]
+    assert ok.json()["licence"] == want and ok.json()["digest"] == _mr.local_model_digest("w1203-model"), ok.json()
+    assert "licence text the runtime holds" in ok.json()["promoted_basis"], ok.json()["promoted_basis"]
+    kept = _mr.lifecycle_state()
+    assert (kept["default_local"], kept["default_local_licence"]) == ("w1203-model", want), kept
+    gone = client.post(pre + "/lifecycle/retire", json={"model": "w1203-model"})
+    assert gone.status_code == 200 and "default_local_licence" not in _mr.lifecycle_state(), gone.text[:200]
+    #  a retire saved while a promotion reads its licence is kept (the record is read again after the read)
+    in_read, release = threading.Event(), threading.Event()
+    rt["during"]["w1203-race"] = lambda: (in_read.set(), release.wait(10))
+
+    async def _race():
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=client.app), base_url="http://w1203.test") as ac:
+            task = asyncio.ensure_future(ac.post(pre + "/lifecycle/promote", json={"model": "w1203-race"}))
+            for _ in range(500):
+                if in_read.is_set():
+                    break
+                await asyncio.sleep(0.01)
+            try:
+                assert in_read.is_set(), "the promotion never read the licence"
+                ret = await ac.post(pre + "/lifecycle/retire", json={"model": "w1203-bare:1b"})
+            finally:
+                release.set()
+            return ret, await task
+    ret, raced = asyncio.run(_race())
+    rt["during"].clear()
+    assert ret.status_code == 200 and raced.status_code == 200, (ret.text[:200], raced.text[:200])
+    after = _mr.lifecycle_state()
+    assert "w1203-bare:1b" in after["retired"] and after["default_local"] == "w1203-race", (
+        "a retire saved while the licence was read was lost", after["retired"], after["default_local"])
+
+    #  T3. THE LEVELS ROW, and the page fixture's captured row is the route's
+    row = ("a named model is made the default by an administrator on a recorded evaluation of its build on the pinned "
+           "probe set (W841) and on the licence text the runtime holds for that build (W1203); the promotion itself "
+           "measures nothing")
+    assert _na._EVIDENCE_SURFACES["/lifecycle/promote"] == ("configuration", row)
+    live = [s for s in client.get(pre + "/evidence-levels").json()["surfaces"] if s["path"] == pre + "/lifecycle/promote"]
+    fx = json.loads((root / "apps/workstation-superapp/src/pages/developers/NativeAI.fixture.json").read_text(
+        encoding="utf-8"))["answers"][pre + "/evidence-levels"]["body"]["surfaces"]
+    assert [s for s in fx if s["path"] == pre + "/lifecycle/promote"] == live and live[0]["rests_on"] == row, live
+
+    #  T4. SIGN-IN ON, in this test process only: the writes are an administrator's, the reads a signed-in person's
+    writes = ["/lifecycle/evaluate", "/baseline/run", "/baseline/{run_id}/reproduce", "/lifecycle/promote",
+              "/lifecycle/retire", "/lifecycle/reinstate"]
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    users = _ac._load_users()
+    who = {}
+    for k, role in (("user", "user"), ("admin", "admin")):
+        name = f"w1203-{k}-{uuid.uuid4().hex[:6]}"
+        users[name] = {"username": name, "hashed_password": _ac._pwd_ctx.hash("pw12345678"), "role": role}
+        who[k] = name
+    _ac._save_users(users)
+    try:
+        H = {}
+        for k, name in who.items():
+            tok = client.post("/api/v1/auth/token", data={"username": name, "password": "pw12345678"})
+            assert tok.status_code == 200, tok.text[:200]
+            H[k] = {"Authorization": "Bearer " + tok.json()["access_token"]}
+        bodies = {"/lifecycle/evaluate": {"model": "w1203-model"}, "/baseline/run": {"tier": "native"},
+                  "/lifecycle/promote": {"model": "w1203-model"}, "/lifecycle/retire": {"model": "w1203-model"},
+                  "/lifecycle/reinstate": {"model": "w1203-model"}}
+        n, retired = len(calls), _mr.lifecycle_state()["retired"]
+        for path in writes:
+            url = pre + path.replace("{run_id}", "w1203-no-such-run")
+            got = client.post(url, json=bodies.get(path), headers=H["user"])
+            assert got.status_code == 403, (path, "a signed-in person who is not an administrator reached it",
+                                            got.status_code, got.text[:200])
+        assert len(calls) == n, ("a refused write asked the runtime", calls[n:])
+        assert _mr.lifecycle_state()["retired"] == retired, "a refused write changed the lifecycle record"
+        seen = client.get(pre + "/lifecycle", headers=H["user"])
+        assert seen.status_code == 200, ("a signed-in person cannot read the lifecycle", seen.text[:200])
+        far = promote("w1203-not-installed", headers=H["admin"])
+        assert far.status_code == 409 and "not discovered" in far.json()["detail"], far.text[:200]
+        none = client.post(pre + "/baseline/w1203-no-such-run/reproduce", headers=H["admin"])
+        assert none.status_code == 404, none.text[:200]
+    finally:
+        users = _ac._load_users()
+        for name in who.values():
+            users.pop(name, None)
+        _ac._save_users(users)
+    #  and by the routes themselves: each write asks for require_admin, and no lifecycle or baseline read does
+    held = set()
+    for r in _na.router.routes:
+        path, asks = r.path[len(pre):], [d.dependency for d in getattr(r, "dependencies", [])]
+        if path in writes:
+            assert _ac.require_admin in asks, (r.path, "a lifecycle write does not ask for require_admin", asks)
+            held.add(path)
+        elif "GET" in r.methods and path.startswith(("/lifecycle", "/baseline")):
+            assert _ac.require_admin not in asks, (r.path, "a lifecycle or baseline read asks for require_admin")
+    assert held == set(writes), held
+
+    #  T5. THE REGISTER
+    rows = {r.get("id"): r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+            if isinstance(r, dict)}
+    for rid, slot, sev in (("FU-1852", "P3.32", "low"), ("FU-1853", "P4.1", "medium")):
+        r = rows[rid]
+        assert (r["slot"], r["severity"]) == (slot, sev), (rid, r["slot"], r["severity"])
+        assert (r["status"], r.get("closed_by")) in (("open", None), ("done", "W1203")), (rid, r["status"])
+        if r["status"] == "done":
+            assert r.get("because") == "built", (rid, r.get("because"))
+    ops = [r for r in rows.values() if r.get("title", "").startswith(
+        "With sign-in on, any signed-in person can push the promoted local model behind the native floor")]
+    assert len(ops) == 1 and (ops[0]["status"], ops[0]["slot"], ops[0]["severity"]) == ("open", "P4.1", "medium"), (
+        "the operations row W1203's security review found is not registered open", ops)
+    assert ops[0]["source"].startswith("W1203"), ops[0]["source"]

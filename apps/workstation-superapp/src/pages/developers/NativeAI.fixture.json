@@ -391,7 +391,7 @@
      {
       "path": "/api/v1/native-ai/lifecycle/promote",
       "level": "configuration",
-      "rests_on": "a named model is made the default on a recorded evaluation of its build on the pinned probe set (W841); the promotion itself measures nothing",
+      "rests_on": "a named model is made the default by an administrator on a recorded evaluation of its build on the pinned probe set (W841) and on the licence text the runtime holds for that build (W1203); the promotion itself measures nothing",
       "stated_in_its_own_answer": true
      },
      {

@@ -27410,10 +27410,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1203",
       "note": "",
-      "slot_source": "P3.32, the licence half of model promotion, which FU-1087 rode"
+      "slot_source": "P3.32, the licence half of model promotion, which FU-1087 rode",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1203: promote_model (agentic_core/api/native_ai.py) reads this build's description from the runtime after the evaluation check, through describe_installed_one (agentic_core/ai/native/model_resource.py), one /api/show call parsed where describe_installed parses each model's description (a licence given as a list counts only when every item is text; a description over a stated size is said as not read), and then reads the build's digest again, refusing a build that changed during the read. A description that could not be read is refused with 409 on its own words, since whether the runtime holds licence text is then not known; a build whose runtime holds no licence text is refused with 409 that cites the Owner's ruling of 2026-11-22 (a model is made the serving default only with its licence read, with no override) and says that OLLAMA_MODEL, which the Owner sets on the machine, still names the model served, if it is installed and not retired, when nothing is promoted. No override is built and no research lead's licence stands in for the runtime's text. A promotion keeps default_local_licence (the text's first line, length and sha256) beside the build's digest and returns it, and retiring the default drops it. The lifecycle record is read again after the licence read and the evaluation checked on it, with nothing awaited before the write, so a retire or evaluation saved meanwhile is kept. The levels row for the promotion and the Native AI page's fixture say it rests on that licence text. test_w841's runtime holds a made-up licence text so its evaluated build is still promoted on purpose; test_w1203 holds each."
     },
     {
       "id": "FU-1853",
@@ -27428,10 +27431,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1203",
       "note": "",
-      "slot_source": "P4.1, the perimeter: its readiness instrument reads each route's mounted dependency"
+      "slot_source": "P4.1, the perimeter: its readiness instrument reads each route's mounted dependency",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1203: the six writes of the native-ai router (POST /lifecycle/evaluate, /baseline/run, /baseline/{run_id}/reproduce, /lifecycle/promote, /lifecycle/retire and /lifecycle/reinstate) each ask for require_admin, and its reads stay behind get_current_user, where the router is mounted (agentic_core/app_mvp.py). With sign-in off require_admin is a synthetic admin, so nothing changes there, and no switch is set in the tree. test_w1203, with sign-in on in its own test process only, refuses a signed-in user with 403 on each of the six, lets the user read the lifecycle, lets an administrator reach promote and reproduce, and reads each route's dependency. The round's security review found that the operations routes, which score rows a caller writes and ask for no administrator, still let a signed-in person change which model serves; that is registered open on P4.1, not built here."
     },
     {
       "id": "FU-1854",
@@ -28358,6 +28364,25 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P5.18 clause 4's ACCEPT: the reserved documents are refused through the route a person would use, and most ways a person asks for one are not an explicit ask in the words the screen knows"
+    },
+    {
+      "id": "FU-1904",
+      "title": "With sign-in on, any signed-in person can push the promoted local model behind the native floor, or clear its scored history: the operations routes score rows a caller writes and ask for no administrator",
+      "why": "Found in W1203's security review, driven in a test process with sign-in on and a user-role token: POST /api/v1/operations/record (agentic_core/api/operational_excellence.py:488) takes a row a caller writes, kind model_attempt with served_by ollama and success false, stamped reported_by caller (W672), and model_health (:389) scores rows by kind and never reads reported_by, so after five such rows _reorder_by_health (agentic_core/ai/native/orchestrator.py:254) puts the owned model behind the floor; POST /api/v1/operations/model-health/rebaseline (:603) clears a model's scored history. The router is mounted behind get_current_user only (agentic_core/app_mvp.py:609). The promoted default's record is not changed, but which model serves is. The fix: rebaseline behind require_admin, and model_health scoring only the rows the platform records itself (or /record refusing the kinds model_attempt and model_quality).",
+      "source": "W1203 (the round's security review, measured)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/api/operational_excellence.py",
+        "agentic_core/ai/native/orchestrator.py",
+        "agentic_core/app_mvp.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.1, the perimeter: a signed-in person changes which model serves through routes that ask for no administrator (W1203's security review)"
     }
   ],
   "routes": [
