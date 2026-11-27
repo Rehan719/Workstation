@@ -19965,9 +19965,12 @@ def test_w489_a_reading_is_measured_or_it_is_not_a_reading(client):
         assert sig.parameters["augment"].default is False, \
             f"gateway.{meth} still defaults to injecting cross-request recall"
     # the two conversational callers opt IN by name — the exception is explicit, not inherited
-    for p, why in ((root / "agentic_core/avatars/api.py", "avatar"),
-                   (root / "agentic_core/api/v138/ceo.py", "CEO chat")):
-        assert "augment=True" in p.read_text(encoding="utf-8"), f"the {why} lost its explicit opt-in"
+    #  W1241 (2026-11-27), ON PURPOSE: the CEO chat recalls only while its call cannot go to an external model, so its
+    #  opt-in is the name it computes for each call (augment=_recall1241), never the constant; the avatar's stays it
+    assert "augment=True" in (root / "agentic_core/avatars/api.py").read_text(encoding="utf-8"), \
+        "the avatar lost its explicit opt-in"
+    assert "augment=_recall1241," in (root / "agentic_core/api/v138/ceo.py").read_text(encoding="utf-8"), \
+        "the CEO chat lost its explicit opt-in"
     #  W593 — ASSERTED ON WHAT IS RENDERED, NOT ON THE FILE'S TEXT. These read engine.py as a string, and
     #  "not an analysis of the subject" vanished from the SOURCE when the f-string was reflowed across two
     #  literals ("not an analysis of " + "the subject") while the rendered sentence was unchanged. A guard
@@ -20505,7 +20508,11 @@ def test_w490_floor_served_output_says_so_wherever_it_goes(client):
                     for k in _n.keywords):
                 optin.append(p.name)
                 break
-    assert sorted(optin) == ["api.py", "ceo.py"], optin      # avatars/api.py and v138/ceo.py
+    #  W1241 (2026-11-27), ON PURPOSE: the CEO chat recalls only while its call cannot go to an external model, so its
+    #  opt-in is the name it computes for each call, never the constant; the avatar's stays the constant
+    assert sorted(optin) == ["api.py"], optin      # avatars/api.py
+    assert (root / "agentic_core/api/v138/ceo.py").read_text(encoding="utf-8").count("augment=_recall1241,") == 1, (
+        "the CEO chat's recall is no longer its own opt-in, computed for each call")
     # …and no docstring still describes recall as the ambient default each caller must switch off
     for p, stale in ((root / "agentic_core/ai/user_context.py", "every generation-class caller passes"),
                      (root / "agentic_core/avatars/api.py", "Every ship/persist caller sets augment=False"),
@@ -23005,7 +23012,9 @@ def test_w500_cross_request_recall_is_tenant_scoped_on_every_caller_that_keeps_i
             continue
         for _n, _l in enumerate(_p.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
             _code = _l.split("#", 1)[0]
-            if "augment=True" in _code:
+            #  W1241 (2026-11-27), ON PURPOSE: the CEO chat asks by the name it computes for each call, off for a call
+            #  that may go to an external model; the avatar asks by the constant
+            if "augment=True" in _code or "augment=_recall1241," in _code:
                 _sites.setdefault(_rel, []).append(_n)
     assert sorted(_sites) == ["agentic_core/api/v138/ceo.py", "agentic_core/avatars/api.py"], _sites
 
@@ -108854,7 +108863,9 @@ def test_w1239_with_no_model_connected_the_ceo_says_so_instead_of_showing_the_fl
         "a call a model can answer declares nothing, or not what it carries", _passed)
     assert code.count('    _CEO_DATA_CLASS = _class1239["data_class"]\n') == 1 and (
         "_class1239 = _ceo_call_class(list(facts.get(\"_domains\") or []) + [_scope_domain(scope)], full_prompt)" in code)
-    assert "        _class1239 = _ceo_call_class([], agenda)\n" in code
+    #  W1241 (2026-11-27), ON PURPOSE (W1241's second review): the meeting reads the agenda and the domains the chat
+    #  gives it (the domain of the entity whose scope it answers for), so it is kept as that chat's own call is
+    assert "        _class1239 = _ceo_call_class(list(domains or []), agenda)\n" in code
     for c in ast.walk(ast.parse(src)):
         if isinstance(c, ast.Call) and "prefer_external" in {k.arg for k in c.keywords}:
             assert "data_class" in {k.arg for k in c.keywords}, ("a call asks for an external model and declares nothing", c.lineno)
@@ -109127,3 +109138,236 @@ def test_w1240_without_a_model_the_ceo_recites_the_plans_open_items_as_stored_in
     assert "\nCOPY docs ./docs\n" in dockerfile.replace("\r\n", "\n"), "the image no longer copies docs/: the docstring is false"
     ignore = (root / ".dockerignore").read_text(encoding="utf-8").splitlines()
     assert not any(ln.strip() in ("docs", "docs/", "docs/*", "docs/**") for ln in ignore), "the build context leaves docs/ out"
+
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1241 - the AI CEO asks for an external model and declares what it sends; inert until the Owner turns it on
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1241_the_ceo_asks_for_an_external_model_and_declares_its_class_and_nothing_leaves_while_the_switch_is_off(client, monkeypatch):
+    """W1241. The Owner's rulings of 2026-11-22: the AI CEO on the release machine is to use an external small model
+    with the Owner's own key and a spend cap set at the provider, and the Board's directives and the workstation
+    business plan are copied from the Owner's machine to the release machine's data disk. Held here:
+    1. the one stream_meta call asks for an external model and declares person_entered, a class the platform names
+       and does not bar, so the class check lets it go to either provider;
+    2. with the switch off (as the suite runs) and a key set, no external client is built: the notice answers and
+       says the switch is off;
+    3. with the switch on in this test's environment only and a placeholder key, the provider serves: served_by names
+       it, the reply is its text, and the terminal frame says what was declared and that the check let it go;
+    4. with the switch on and no key, nothing is built and the notice says no provider's key is set;
+    5. a call that may go to an external model recalls no earlier interaction and is handed no minuted C-Suite debate:
+       with the switch on and a key set the gateway's recall is not asked for and the provider is sent no recalled
+       line and no minuted argument, and with the switch off, or no key, the chat recalls and is handed the debate as
+       before (W1241's review and second review);
+    6. the C-Suite meeting the chat calls reads the domain of the entity whose scope the chat answers for: it
+       declares person_entered at each of its six calls for a domain that is not kept, and nothing for religion,
+       care, education or a domain not read (W1241's second review);
+    7. the notice says the Owner has chosen the external way, and the chat's fixture is that answer; the switch is
+       read and never set in the module;
+    8. docs/DEPLOYMENT.md records both rulings in the Owner's words, that turning the switch on stays the Owner's act,
+       that the startup script passes no key or switch yet, and the copy of the two record files to the folder the
+       startup script mounts as the container's /app/data, owned by the image's user, with its check; it names no
+       model and no personal path, and sets no switch."""
+    import json
+    import os
+    import pathlib
+    import re
+    import anthropic as _an
+    from agentic_core.ai import data_class as _dc
+    from agentic_core.ai.gateway import gateway as _gw
+    from agentic_core.api import board as _board
+    from agentic_core.api import business_plan as _bp
+    from agentic_core.api.v138 import ceo as _ceo
+
+    #  1. what the call asks for and declares
+    assert _ceo._CEO_PREFERS_EXTERNAL is True and _ceo._CEO_DATA_CLASS == "person_entered"
+    assert "person_entered" in _dc.CLASSES and "person_entered" not in _dc.BARRED
+    for provider in ("anthropic", "openai"):
+        assert _dc.preflight(provider, _ceo._CEO_DATA_CLASS)["send"] is True, provider
+    src = pathlib.Path(_ceo.__file__).read_text(encoding="utf-8")
+    code = "\n".join(ln for ln in src.splitlines() if not ln.lstrip().startswith("#"))
+    assert code.count("gateway.stream_meta(") == 1
+    call = code[code.index("gateway.stream_meta("):]
+    call = call[:call.index("\n            if \"token\" in ev:")]
+    assert "prefer_external=_CEO_PREFERS_EXTERNAL," in call and "data_class=_CEO_DATA_CLASS)" in call, call
+    assert "augment=_recall1241," in call, call
+
+    built = []
+    sent = []          # what the provider was sent, each call's messages
+
+    class _FakeStream:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        @property
+        def text_stream(self):
+            async def _g():
+                for tk in ("W1241 ", "an external ", "reply."):
+                    yield tk
+            return _g()
+
+        async def get_final_message(self):
+            return None
+
+    class _FakeMessages:
+        def stream(self, *a, **k):
+            sent.append(str(k.get("messages")))
+            return _FakeStream()
+
+    class _FakeClient:
+        def __init__(self, *a, **k):
+            built.append(k.get("api_key"))
+            self.messages = _FakeMessages()
+
+    monkeypatch.setattr(_an, "AsyncAnthropic", _FakeClient)
+    monkeypatch.setattr(_board, "_load", lambda: [])
+    monkeypatch.setattr(_bp, "_load", lambda scope: {"objectives": []})
+    #  the person's recalled interactions, planted at the gateway's recall, so a call that recalls is seen to (W1241's
+    #  review): the planted line stands for an earlier call's stored prompt, a kept one's among them
+    import importlib
+    _gwm = importlib.import_module("agentic_core.ai.gateway")
+    recalled = []
+    asked_with = []    # the chat's prompt, each time the gateway's recall was asked for
+
+    def _recall(prompt, owner_id=None):
+        recalled.append(owner_id)
+        asked_with.append(prompt)
+        return f"{_gwm.RECALL_OPEN}\n- W1241-PLANTED-RECALL\n{_gwm.RECALL_CLOSE}\n\nUser: {prompt}"
+    monkeypatch.setattr(_gw, "_augment", _recall)
+    #  the C-Suite's minuted debate, planted in the meeting log, so a call handed it is seen to be (W1241's second
+    #  review): the planted argument stands for a kept meeting's minutes, which the log holds for every scope
+    monkeypatch.setattr(_ceo.meeting_log, "log", [{"agent": "CBO", "argument": "W1241-PLANTED-DEBATE", "stance": "",
+                                                   "served_by": "native", "at": "2026-11-27T00:00:00+00:00"}])
+
+    def frames():
+        r = client.post("/api/v138/ceo/chat", json={"message": "Hi", "context": []})
+        assert r.status_code == 200, r.text[:200]
+        fr = [json.loads(ln[6:]) for ln in r.text.splitlines() if ln.startswith("data: ")]
+        return fr, "".join(str(f.get("content") or "") for f in fr)
+
+    #  2. the switch off, a key set: nothing is built
+    assert os.getenv("AI_ALLOW_EXTERNAL", "false").lower() != "true", "this guard is run with the switch off"
+    monkeypatch.setattr(_gw, "anthropic_key", "w1241-placeholder-not-a-key")
+    monkeypatch.setattr(_gw, "openai_key", None)
+    fr, text = frames()
+    assert built == [], ("an external client was built with the switch off", built)
+    assert fr[-1]["served_by"] == "native" and fr[-1]["is_external"] is False
+    assert text.startswith("No AI model is connected on this server") and fr[-1]["no_model"]["basis"].endswith(
+        "; the external-AI switch is off"), fr[-1]["no_model"]
+    assert fr[-1]["data_class"]["declared"] == "person_entered" and fr[-1]["data_class"]["checks"] == [], fr[-1]["data_class"]
+    assert recalled, "with the switch off the chat no longer recalls its earlier interactions"
+    assert "W1241-PLANTED-DEBATE" in asked_with[-1], "with the switch off the chat is no longer handed the debate"
+
+    #  3. the switch on, in this test's environment only, and a placeholder key: the provider serves
+    monkeypatch.setenv("AI_ALLOW_EXTERNAL", "true")
+    from agentic_core.organism import self_healing as _sh
+    monkeypatch.setattr(_sh.self_healer, "is_open", lambda endpoint: False)   # no breaker left open by another test
+    recalled.clear()
+    fr, text = frames()
+    fin = fr[-1]
+    assert built == ["w1241-placeholder-not-a-key"], built
+    #  5. a call that may go out recalls nothing, so the provider is sent no earlier interaction
+    assert recalled == [], ("a call that may go to an external model asked for the person's recalled interactions",
+                            recalled)
+    assert sent and "W1241-PLANTED-RECALL" not in sent[-1], "the provider was sent a recalled interaction"
+    #  ... and no minuted argument from the meeting log, which the grounding says it was not handed (second review)
+    assert "W1241-PLANTED-DEBATE" not in sent[-1], "the provider was sent the C-Suite's minuted debate"
+    assert "not handed to a call that may go to an external model" in sent[-1], sent[-1][:400]
+    assert fin["served_by"] == "claude" and fin["is_external"] is True and "no_model" not in fin, fin
+    assert text == "W1241 an external reply.", text
+    assert [f["content"] for f in fr[:-1]] == ["W1241 ", "an external ", "reply."], "the reply is not streamed"
+    assert fin["data_class"]["declared"] == "person_entered" and fin["data_class"]["checks"][0]["provider"] == "anthropic"
+    assert fin["data_class"]["checks"][0]["send"] is True, fin["data_class"]
+    #  4. the switch on and no key: nothing is built, and the notice says why
+    built.clear()
+    monkeypatch.setattr(_gw, "anthropic_key", None)
+    fr, text = frames()
+    assert built == [] and fr[-1]["served_by"] == "native" and text.startswith("No AI model is connected")
+    assert fr[-1]["no_model"]["basis"].endswith(
+        "; the external-AI switch is on; this chat asks for an external model; no provider's key is set"), fr[-1]["no_model"]
+    assert recalled, "with no key set the call cannot go out, and the chat no longer recalls"
+    assert "W1241-PLANTED-DEBATE" in asked_with[-1], "with no key set the chat is no longer handed the debate"
+    monkeypatch.undo()
+    assert os.getenv("AI_ALLOW_EXTERNAL", "false").lower() != "true"
+
+    #  6. the C-Suite meeting the chat calls reads the domain of the entity whose scope it answers for (W1241's second
+    #  review): its six calls declare person_entered for a domain that is not kept, and nothing for one kept or not read
+    import asyncio
+    asked = []
+
+    async def _complete1241(prompt, **kw):
+        asked.append(kw.get("data_class", "not passed"))
+        return {"output": ""}           # nothing is minuted for an officer whose reply came back empty
+    monkeypatch.setattr(_ceo.orchestrator, "complete", _complete1241)
+    agenda = "W1241 made up: should the bakery cooperative buy a third van?"
+    for doms in ([""], ["religion"], ["care"], ["education"], [None]):
+        asyncio.run(_ceo.ToolRegistry().call_meeting(agenda, domains=doms))
+    assert asked == ["person_entered"] * 6 + [None] * 24, asked
+    assert 'tool_registry.call_tool("call_meeting", agenda=prompt, domains=[_scope_domain(scope)])' in code, (
+        "the chat calls the C-Suite meeting without the domain of the entity whose scope it answers for")
+    monkeypatch.undo()
+
+    #  7. the notice, and the switch never set in the module
+    assert ("The Owner has chosen the second (2026-11-22): this chat asks for an external model, and the gateway "
+            "tries one once the Owner's key is set and the Owner turns the switch on.") in _ceo._no_model_notice({}, False)
+    for setter in ('environ["AI_ALLOW_EXTERNAL"]', "environ['AI_ALLOW_EXTERNAL']", 'setenv("AI_ALLOW_EXTERNAL"',
+                   "putenv(", "AI_ALLOW_EXTERNAL="):
+        assert setter not in src, setter
+
+    #  the chat's fixture is the patched route's answer
+    root = pathlib.Path(__file__).resolve().parents[1]
+    fx = json.loads((root / "apps/workstation-superapp/src/pages/CEOChat.fixture.json").read_text(encoding="utf-8"))
+    fxf = [json.loads(ln[6:]) for ln in fx["stream"].splitlines() if ln.startswith("data: ")]
+    assert "The Owner has chosen the second (2026-11-22)" in "".join(str(f.get("content") or "") for f in fxf)
+    assert fxf[-1]["data_class"]["declared"] == "person_entered", fxf[-1].get("data_class")
+
+    #  8. docs/DEPLOYMENT.md
+    dep =(root / "docs/DEPLOYMENT.md").read_text(encoding="utf-8").replace("\r\n", "\n")
+    head = ("## The AI CEO on the release machine: its model and its records (the Owner's rulings of 2026-11-22)\n")
+    assert dep.count(head) == 1 and dep.index("## AI posture") < dep.index(head) < dep.index("## Backend (Render)\n")
+    sec = dep[dep.index(head):dep.index("## Backend (Render)\n")]
+    flat = " ".join(sec.split())
+    for need in ('the Owner answered in chat: "I want to go with your recommendations"',
+                 "**The model (OWNER RULING 2026-11-22).** The AI CEO is to use an external small model, with the "
+                 "Owner's own key and a spend cap the Owner sets at the provider.",
+                 "A call that carries a record of the religion, care or education domain, or text the "
+                 "religious-content screen flags, declares nothing and stays on the platform whatever the switch says",
+                 "The C-Suite meeting the chat calls, on a question that names a meeting or a debate, hands each of its "
+                 "six officers that question and no record; it declares nothing in the chat of an entity of those "
+                 "domains, or on a question the screen flags, as that chat's own call does, and each of its calls that "
+                 "may go out takes the class check and the hourly cap.",
+                 "A call that may go to an external model carries no recalled interaction. The chat recalls earlier "
+                 "interactions only while its call cannot go out (the switch off, no provider's key set, or nothing "
+                 "declared)",
+                 "Nor is such a call handed the C-Suite's minuted debate: the chat is handed it only while the switch "
+                 "is off or no provider's key is set",
+                 "The switch is off by default, and nothing in this repository turns it on. Turning it on is the "
+                 "Owner's act,",
+                 "NOT BUILT: `deploy/gcp/startup.sh` starts the platform with neither a provider's key nor the switch "
+                 "in its environment",
+                 "**The records (OWNER RULING 2026-11-22).**",
+                 "gcloud compute scp data/board_directives.json data/business_plans/workstation.json workstation:/tmp/ "
+                 "\\ --zone=us-central1-a",
+                 "sudo cp /tmp/board_directives.json /mnt/disks/data/board_directives.json",
+                 "sudo cp /tmp/workstation.json /mnt/disks/data/business_plans/workstation.json",
+                 "sudo chown 1000:1000 /mnt/disks/data/board_directives.json /mnt/disks/data/business_plans \\ "
+                 "/mnt/disks/data/business_plans/workstation.json",
+                 "docker restart workstation",
+                 'sudo cp -a "/mnt/disks/data/$f" "/mnt/disks/data/$f.before-copy"',
+                 "THE CHECK: open the AI CEO chat and ask anything. The chip under the reply reads \"handed N "
+                 "directives · M objectives\""):
+        assert need in flat, need
+    st = (root / "deploy/gcp/startup.sh").read_text(encoding="utf-8")
+    assert 'MNT="${WORKSTATION_MNT:-/mnt/disks/data}"' in st and '--volume="$MNT":/app/data' in st, (
+        "the startup script mounts the data disk elsewhere now: the copy step names the wrong folder")
+    assert 'chown 1000:1000 "$MNT"' in st, "the image's user is no longer uid 1000 in the startup script"
+    assert "ANTHROPIC_API_KEY" not in st and "AI_ALLOW_EXTERNAL" not in st, (
+        "the startup script now passes a key or the switch: the NOT BUILT line is false")
+    assert "data_path(\"board_directives.json\")" in (root / "agentic_core/api/board.py").read_text(encoding="utf-8")
+    assert "data_path(\"business_plans\")" in (root / "agentic_core/api/business_plan.py").read_text(encoding="utf-8")
+    for no in ("AI_ALLOW_EXTERNAL=", "/home/", "C:\\", "Users/", "~/"):
+        assert no not in sec, ("the section sets the switch or names a personal path", no)
+    assert not re.search(r"(?i)\b(claude-|gpt-|sonnet|haiku|opus)", sec), "the section names a model"

@@ -159,7 +159,7 @@ class ToolRegistry:
         available = list(self.tools.keys())
         return {"available_tools": available, "message": "New tools can be registered in the ToolRegistry class."}
 
-    async def call_meeting(self, agenda: str):
+    async def call_meeting(self, agenda: str, domains: Optional[List[Any]] = None):
         """Deliberate for real, or record nothing.
 
         W404 - this looped six officer titles and wrote
@@ -181,7 +181,11 @@ class ToolRegistry:
         agents = ["CEvO", "CGO", "CPEO", "CBO", "CoS", "CEnvO"]
         #  W1239 - what the meeting's calls declare, read once from the agenda every one of them carries: nothing, when
         #  it names religious content (the Owner's ruling 4 of 2026-11-27), else _CEO_DATA_CLASS
-        _class1239 = _ceo_call_class([], agenda)
+        #  W1241's second review - and from the domains it is given: the chat passes the domain of the entity whose
+        #  scope it answers for, as its own call reads it, so a meeting called from the chat of a religion, care or
+        #  education entity (or one whose record could not be read) declares nothing, as that chat's own call does.
+        #  The meeting hands its officers the agenda and no record.
+        _class1239 = _ceo_call_class(list(domains or []), agenda)
         posted, failed, floor_served = [], [], []
         for agent in agents:
             prompt = (f"You are the {agent} of an AI C-Suite. State your position on this agenda "
@@ -444,10 +448,12 @@ def _plan_items_recited(plan: Optional[Dict[str, Any]]) -> Optional[int]:
     return len(_slots)
 
 
-#  W1239 - WHETHER THE CHAT ASKS FOR AN EXTERNAL MODEL. It does not: the stream_meta call passes this value, and
-#  _model_for_this_call reads it, so the two cannot disagree. Whether a call goes out is the gateway's rules', which
-#  are the Owner's to rule on (W755); the switch (AI_ALLOW_EXTERNAL) is read, never set.
-_CEO_PREFERS_EXTERNAL = False
+#  W1239 - whether the chat asks for an external model: the stream_meta call passes this value, and
+#  _model_for_this_call reads it, so the two cannot disagree. The switch (AI_ALLOW_EXTERNAL) is read, never set.
+#  W1241 - IT ASKS (OWNER RULING 2026-11-22: an external small model, with the Owner's own key and a spend cap set at
+#  the provider). It changes nothing until the Owner acts: the switch is off by default, and no provider's key is set
+#  by this repository. What the call carries is declared below (_CEO_DATA_CLASS, W1239).
+_CEO_PREFERS_EXTERNAL = True
 #  W1239 - WHAT THE CHAT'S CALLS CARRY, DECLARED: the question typed (or the meeting's agenda), with the platform's
 #  instructions and records composed around it, which is person_entered (agentic_core/ai/data_class.py), a class that
 #  is not barred. A call that declares no class is never sent out (W899). A call that carries what stays on the
@@ -581,9 +587,9 @@ def _no_model_notice(facts: dict, recited: bool, kept: Optional[str] = None) -> 
             + f"What the CEO holds from its records: {held}.\n\n"
             "A model can be added in one of two ways, and each is the Owner's decision: a local model, run on a "
             "machine large enough to hold one, or an external model, used with the Owner's own key and the "
-            "external-AI switch turned on. This chat declares what it would send to an external model (the "
-            "question typed, with the platform's records composed around it); whether its call may go out is set by "
-            "the gateway's rules for external calls, which are the Owner's to rule on.\n")
+            "external-AI switch turned on. The Owner has chosen the second (2026-11-22): this chat asks for an "
+            "external model, and the gateway tries one once the Owner's key is set and the Owner turns the switch "
+            "on.\n")
     #  W1239 - a message that carries what stays on the platform says so, whatever the switch says (ruling 4)
     return said + (f"\nThis message stays on the platform whatever the external-AI switch says, so no external "
                    f"model is sent it: {kept}.\n" if kept else "")
@@ -619,7 +625,7 @@ def _ungrounded_sections(answer: str, facts: dict) -> list:
     return out
 
 
-def _ceo_grounding(prompt: str, scope: str, owner_id: Optional[str]) -> tuple:
+def _ceo_grounding(prompt: str, scope: str, owner_id: Optional[str], debate: bool = True) -> tuple:
     """W451 (P1.3, ledger 1.3) — the AI CEO answers from the §5 chain, not from a persona: the
     Board's directives for this scope, the living plan's adherence and phases, the scope's business
     plan, and the REAL C-Suite meeting log. Returns (grounding_text, facts) — facts travel in the
@@ -690,10 +696,16 @@ def _ceo_grounding(prompt: str, scope: str, owner_id: Optional[str]) -> tuple:
     facts["plan_items"] = _plan_items_recited(_plan1240)
     facts["plan_items_basis"] = _plan1240.get("basis") or f"unavailable: {_plan1240.get('reason')}"
     parts.append(f"## {PLAN_ITEMS_HEADING}\n" + "\n".join(_plan_item_lines(_plan1240)))
+    #  W1241's second review - debate is False for a call that may go to an external model: the log is not handed
+    #  then, and the grounding says so (generate_ceo_stream says why)
     try:
-        facts["debate_entries"] = len(meeting_log.log)
-        debate = meeting_log.get_recent_debate()
-        parts.append("## Recent C-Suite debate (real meeting log)\n" + (debate if debate and debate.strip() else "- none held yet"))
+        if not debate:
+            parts.append("## Recent C-Suite debate\n- not handed to a call that may go to an external model")
+        else:
+            facts["debate_entries"] = len(meeting_log.log)
+            _minuted1241 = meeting_log.get_recent_debate()
+            parts.append("## Recent C-Suite debate (real meeting log)\n"
+                         + (_minuted1241 if _minuted1241 and _minuted1241.strip() else "- none held yet"))
     except Exception:
         parts.append("## Recent C-Suite debate\n- unavailable")
     #  W593 (P2.20 a.iii) — THE GROUNDING IS CONTEXT, NOT A LIST OF SECTIONS TO WRITE. Every part above is
@@ -765,10 +777,18 @@ async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
         if "vitals" in low:
             tool_output = await tool_registry.call_tool("get_system_vitals")
         elif "meeting" in low or "debate" in low:
-            tool_output = await tool_registry.call_tool("call_meeting", agenda=prompt)
+            #  W1241's second review - the meeting reads the domain of the entity whose scope this chat answers for
+            tool_output = await tool_registry.call_tool("call_meeting", agenda=prompt, domains=[_scope_domain(scope)])
     except Exception:
         tool_output = None
-    grounding, facts = _ceo_grounding(prompt, scope, owner_id)
+    #  W1239 - whether a model can answer this chat (read here, before the grounding, since W1241's second review)
+    _model1239 = _model_for_this_call()
+    #  W1241's second review - NO MINUTED DEBATE ON A CALL THAT MAY GO OUT. The grounding hands the C-Suite's recent
+    #  debate only while no external model can be counted for this call (the switch off, or no provider's key set).
+    #  The meeting log is the platform's, one for every scope and every person, and it holds the minutes of meetings
+    #  kept on the platform (one called from the chat of a religion, care or education entity, or on an agenda the
+    #  screen flags), while the class below is read from this call's scope, the directives it is handed and its text.
+    grounding, facts = _ceo_grounding(prompt, scope, owner_id, debate=not _model1239["external"])
     full_prompt = (
         # W574 (M1 R3.7) — this said "the owner's digital-twin Chief". No twin model is trained
         # (§17.4 Mode 2 is planned, P3.4); the Chief is the Owner's standing charter and stored
@@ -797,8 +817,7 @@ async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
     #  W1239 - WITH NO MODEL UP, THE FLOOR'S FRAME IS NOT SHOWN. Its tokens are held; when the floor served, a fixed
     #  notice is streamed in their place, and served_by stays native (the amber badge). If a model served after all
     #  (a race with the check, or a rule that sends the call out without its asking), its held reply is shown whole.
-    #  With a model up nothing here changes.
-    _model1239 = _model_for_this_call()
+    #  With a model up nothing here changes. _model1239 is read above the grounding (W1241's second review).
     #  W1239 - WHAT THIS CALL DECLARES, read from what it carries (the Owner's ruling 4 of 2026-11-27). The name the
     #  stream_meta call passes is bound here, for this call only: the module's _CEO_DATA_CLASS when nothing it carries
     #  is kept on the platform, else None, which declares nothing, so no external provider is sent it. An external
@@ -807,8 +826,14 @@ async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
     _CEO_DATA_CLASS = _class1239["data_class"]
     _hold1239 = not (_model1239["local"] or (_model1239["external"] and _CEO_DATA_CLASS is not None))
     _held1239: list = []
+    #  W1241 - NO RECALL ON A CALL THAT MAY GO OUT (W1241's review). With recall on, the gateway puts the person's
+    #  recalled interactions before the prompt (gateway._augment), and what it recalls was stored from earlier calls,
+    #  a kept one's prompt among them (a call the floor served is stored as "User: <its prompt>"). The class above is
+    #  read from this call's own records and text alone, so the chat recalls only while its call cannot go to an
+    #  external model: the switch off, no provider's key set, or nothing declared.
+    _recall1241 = not (_model1239["external"] and _CEO_DATA_CLASS is not None)
     try:
-        async for ev in gateway.stream_meta(full_prompt, agent="ai-ceo", owner_id=owner_id, augment=True,
+        async for ev in gateway.stream_meta(full_prompt, agent="ai-ceo", owner_id=owner_id, augment=_recall1241,
                                             user_text=(prompt or None),     # W640 - the question typed
                                             prefer_external=_CEO_PREFERS_EXTERNAL,    # W1239 - the one value
                                             data_class=_CEO_DATA_CLASS):              # W1239 - what it carries

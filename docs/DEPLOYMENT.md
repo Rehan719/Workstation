@@ -17,6 +17,76 @@ present. **The backend boots and fully serves with no AI key at all.** External 
 is configured. Provenance (`served_by`, `is_external`) is reported throughout, and the Operational
 Excellence page (`/operations`) surfaces the in-house rate.
 
+## The AI CEO on the release machine: its model and its records (the Owner's rulings of 2026-11-22)
+
+The release machine holds no model, and its data disk starts empty, so the AI CEO chat (`/ceo`) has no model to
+answer with and no record to be handed: it says that no AI model is connected, and its footer counts 0 directives
+and 0 objectives (W1239). Two decisions were put to the Owner on 2026-11-22, each with a recommendation, and the
+Owner answered in chat: "I want to go with your recommendations".
+
+**The model (OWNER RULING 2026-11-22).** The AI CEO is to use an external small model, with the Owner's own key and
+a spend cap the Owner sets at the provider. The chat is ready for it (W1239, W1241), and nothing that runs changes
+until the Owner acts:
+- The chat asks the gateway for an external model, and declares what it sends as `person_entered`: the question
+  typed, with the Board's directives, the business plan and the plan's open items composed around it
+  (`agentic_core/ai/data_class.py`). That class is not barred, so the class check lets the call go. A call that
+  carries a record of the religion, care or education domain, or text the religious-content screen flags,
+  declares nothing and stays on the platform whatever the switch says (W1239, the Owner's ruling 4 of 2026-11-27).
+  The C-Suite meeting the chat calls, on a question that names a meeting or a debate, hands each of its six
+  officers that question and no record; it declares nothing in the chat of an entity of those domains, or on a
+  question the screen flags, as that chat's own call does, and each of its calls that may go out takes the class
+  check and the hourly cap.
+- A call that may go to an external model carries no recalled interaction. The chat recalls earlier interactions
+  only while its call cannot go out (the switch off, no provider's key set, or nothing declared), since what it
+  would recall was stored from earlier calls, those kept on the platform among them. Nor is such a call handed the
+  C-Suite's minuted debate: the chat is handed it only while the switch is off or no provider's key is set, since
+  the meeting log is one for every scope and every person, and holds the minutes of meetings kept on the platform.
+- The gateway sends it to a provider only when the external-AI switch, `AI_ALLOW_EXTERNAL`, is on and that
+  provider's key is set in the platform's environment. The switch is off by default, and nothing in this repository
+  turns it on. Turning it on is the Owner's act, as setting the key, choosing the model and setting the spend cap
+  at the provider are. This platform does not read the provider's cap; it keeps its own hourly cap on external
+  calls (W869), which is not the Owner's spend cap.
+- Until then the chat answers with its notice, and says the Owner has chosen this way.
+- NOT BUILT: `deploy/gcp/startup.sh` starts the platform with neither a provider's key nor the switch in its
+  environment, so on the release machine turning the model on also needs the startup script to pass them, kept on
+  the machine and out of the repository, the metadata and the logs, as the sign-in secret is (step 7). That is a
+  change still to make, and the Owner's to approve.
+
+**The records (OWNER RULING 2026-11-22).** The Board's directives and the workstation business plan held on the
+Owner's machine are copied to the release machine's data disk. The startup script mounts that disk at
+`/mnt/disks/data` and starts the platform with it as the container's `/app/data`, owned by the image's user, uid
+1000 (step 7). The platform keeps the directives in `board_directives.json` and the business plan for the
+workstation scope in `business_plans/workstation.json`, both under that folder. On the Owner's machine, from the
+folder that holds the platform, where gcloud is signed in as the Owner:
+
+```bash
+gcloud compute scp data/board_directives.json data/business_plans/workstation.json workstation:/tmp/ \
+    --zone=us-central1-a
+gcloud compute ssh workstation --zone=us-central1-a
+```
+
+Then, in that SSH session on the release machine. A file the release machine already holds is kept beside the
+copy first, so nothing it held is lost:
+
+```bash
+for f in board_directives.json business_plans/workstation.json; do
+    [ -e "/mnt/disks/data/$f" ] && sudo cp -a "/mnt/disks/data/$f" "/mnt/disks/data/$f.before-copy"
+done
+sudo mkdir -p /mnt/disks/data/business_plans
+sudo cp /tmp/board_directives.json /mnt/disks/data/board_directives.json
+sudo cp /tmp/workstation.json /mnt/disks/data/business_plans/workstation.json
+sudo chown 1000:1000 /mnt/disks/data/board_directives.json /mnt/disks/data/business_plans \
+    /mnt/disks/data/business_plans/workstation.json
+rm /tmp/board_directives.json /tmp/workstation.json
+docker restart workstation
+```
+
+THE CHECK: open the AI CEO chat and ask anything. The chip under the reply reads "handed N directives · M
+objectives", and N and M are the counts the same files give on the Owner's machine for the workstation scope,
+where they were 0 and 0 before. The copy is in the next daily snapshot of the data disk (step 5). The `gcloud
+compute scp` form is the one its own `--help` gives (an instance's file is named `INSTANCE:FILE`); Google's page
+for it was not read in this round, and the copy is not yet driven on the release machine.
+
 ## Backend (Render)
 
 1. Connect the repo; Render reads `render.yaml` (Blueprint) — Python web service,
