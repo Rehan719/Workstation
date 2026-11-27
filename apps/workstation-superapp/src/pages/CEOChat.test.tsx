@@ -11,6 +11,8 @@
 // - the avatar's colour said a mood read off the person's own words ("fail" turned it frustrated red).
 // W1238 - a reply is rendered as formatted text (components/RichText.tsx): the floor's reply shows its headings and
 // list items with no markdown marker left, and the badge and the grounding chip are as they were.
+// W1239 - with no model connected the route streams a fixed notice in place of the floor's frame (the fixture is
+// recaptured from the patched route), and the greeting no longer says a record is held.
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -122,6 +124,21 @@ describe('CEOChat, rendered against its route', () => {
     expect(screen.getByTestId('ceo-grounding-cited').textContent).toBe(
       'handed 0 directives · 0 objectives · the answer names 0 and 0 · scope workstation');
     expect(screen.queryAllByTestId('ceo-grounding-conflict')).toHaveLength(0);
+  });
+
+  it('says that no model is connected, and the greeting claims no record', async () => {
+    serve({ stream: captured.stream });
+    ask(captured.ask);
+    await waitFor(() => expect(screen.getAllByText('structured floor — not model analysis').length).toBeGreaterThan(0));
+    const box = lastMessage();
+    expect(box.textContent).toContain('No AI model is connected on this server, so this is not an answer to your question.');
+    expect(box.textContent).toContain('What the CEO holds from its records: none recorded on this server');
+    expect(box.textContent).toContain('each is the Owner\'s decision');
+    expect(box.textContent).not.toContain('Assessment');
+    expect(box.textContent).not.toContain('WITHHELD');
+    const greeting = screen.getAllByTestId('ceo-message')[0].textContent ?? '';
+    expect(greeting).toContain('which on a new server may be nothing');
+    expect(greeting).not.toContain('handed the record for this scope');
   });
 
   it('shows the person\'s own words as typed', async () => {

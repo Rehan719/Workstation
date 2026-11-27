@@ -41900,6 +41900,9 @@ def test_w593_p220a_the_floor_never_returns_its_own_text_as_the_users(client):
         "the embedded heading was STRIPPED rather than demoted, which loses real text from a real record",
         _g593b[:400])
 
+    #  W1239 (2026-11-22), ON PURPOSE: this leg is kept. The CEO's prompt still ends with these three sections, because
+    #  a model reads it; on a server with no model the frame the floor makes of them is no longer shown (the chat
+    #  streams a fixed notice in its place, test_w1239), so what is held here is the prompt, not what a reader sees.
     _full593 = ("You are the AI CEO.\n\n" + _g593b + "\n\nQuestion: How should we prioritise next "
                 "quarter?\n\nRespond with:\n## Assessment\n## Priorities\n## Next actions")
     assert _E._sections(_full593) == ["Assessment", "Priorities", "Next actions"], (
@@ -108681,3 +108684,309 @@ def test_w1238_the_ceo_reply_is_shown_as_formatted_text_through_one_shared_rende
     assert "  it('shows the person\\'s own words as typed', async () => {" in ct
     assert "'## Assessment'," in ct and "'- bakery cooperative', '- cooperative buy'," in ct, (
         "the floor reply the chat test renders no longer carries the floor's headings and items")
+
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1239 - with no model connected, the AI CEO says so in plain words instead of showing the floor's frame
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1239_with_no_model_connected_the_ceo_says_so_instead_of_showing_the_floors_frame(client, monkeypatch):
+    """W1239. Found on the live site (no model on the machine): asked "Hi" and "what are your priorities", the AI CEO
+    answered with the structured floor's frame ("## Assessment", the request's most frequent words, "WITHHELD — no
+    domain was declared"), which answered nothing that was asked, and the greeting said a record was held on a server
+    that holds none. Held here:
+    1. with the local model off (AI_DISABLE_LOCAL) and the external-AI switch off, "Hi" and "what are your priorities"
+       are each answered with the one fixed notice: no model is connected, so this is not an answer; what the CEO holds
+       (none recorded on this server, the counts 0 and 0); how a model is added, each way the Owner's decision. No
+       floor frame reaches the reader; served_by stays native and the terminal frame says no_model with its basis;
+    2. with records held, the notice gives their counts and the recital follows, saying the reply above is a notice;
+       a store that could not be read is said as not read, never as none recorded;
+    3. with a model up, the model's reply is streamed as before; if a model serves after the check said none, its
+       held reply is shown whole and no notice is;
+    4. the check reads ollama_up, local_models, the breaker and external_allowed, and counts an external model only
+       as far as this chat asks for one (the same value the stream_meta call passes) and a provider's key is set; the
+       chat's two calls a model can answer declare person_entered; the switch is read and never set;
+    5. the greeting claims no record; the chat's fixture is the patched route's answer and its rendered test reads
+       the notice; test_w593's prompt leg carries its dated note;
+    6. what stays on the platform (the Owner's ruling 4 of 2026-11-27: religion and care stay on the floor even with
+       the switch on): a call that carries a record of the religion, care or education domain (a handed-in
+       directive's, or the scope's entity's), a domain that could not be read, or text the religious-content screen
+       flags, declares nothing, at the stream_meta call and at the meeting's; the notice says no model here can
+       answer this message and why it stays, and the terminal frame says why nothing was declared; with the switch
+       on in this test's environment only, a key set and the chat asking, no external client is built for such a
+       message, while a plain question reaches the provider."""
+    import asyncio
+    import json
+    import os
+    import pathlib
+    import ast
+    from agentic_core.ai import data_class as _dc
+    from agentic_core.ai.gateway import ModelGateway, gateway as _gw
+    from agentic_core.ai.native import model_resource as _mr
+    from agentic_core.api import board as _board
+    from agentic_core.api import business_plan as _bp
+    from agentic_core.api.v138 import ceo as _ceo
+    from agentic_core.organism import self_healing as _sh
+
+    assert os.getenv("AI_DISABLE_LOCAL") == "1" and _mr.external_allowed() is False, (
+        "this guard is run with the local model off and the external-AI switch off, as the suite runs")
+
+    def frames(message):
+        r = client.post("/api/v138/ceo/chat", json={"message": message, "context": []})
+        assert r.status_code == 200, r.text[:200]
+        fr = [json.loads(ln[6:]) for ln in r.text.splitlines() if ln.startswith("data: ")]
+        return fr, "".join(str(f.get("content") or "") for f in fr)
+
+    NOT_AN_ANSWER = "No AI model is connected on this server, so this is not an answer to your question."
+    NONE_HELD = ("What the CEO holds from its records: none recorded on this server (no Board directive and no "
+                 "business-plan objective for this scope).")
+    HOW = ("A model can be added in one of two ways, and each is the Owner's decision: a local model, run on a "
+           "machine large enough to hold one, or an external model, used with the Owner's own key and the "
+           "external-AI switch turned on.")
+    #  1. a fresh server's stores: nothing held
+    monkeypatch.setattr(_board, "_load", lambda: [])
+    monkeypatch.setattr(_bp, "_load", lambda scope: {"objectives": []})
+    said = {}
+    for ask in ("Hi", "what are your priorities"):
+        fr, text = frames(ask)
+        fin = fr[-1]
+        assert text.startswith(NOT_AN_ANSWER + "\n\n" + NONE_HELD + "\n\n" + HOW), text[:600]
+        for frame_word in ("## Assessment", "## Priorities", "## Next actions", "WITHHELD — no domain",
+                           "Structured frame over the terms", "_[Workstation native structured engine"):
+            assert frame_word not in text, ("the floor's frame reached the reader", frame_word)
+        assert fin["done"] is True and fin["served_by"] == "native" and fin["is_external"] is False, fin
+        g = fin["grounding"]
+        assert (g["directives"], g["objectives"]) == (0, 0) and g["cited"] == {"directives": 0, "objectives": 0}, g
+        assert not any(k.startswith("_") for k in g), sorted(g)
+        assert fin["grounding_conflicts"] == []
+        assert fin["no_model"] == {"local": False, "external_for_this_call": False,
+                                   "basis": ("the local model is turned off on this server (AI_DISABLE_LOCAL); "
+                                             "the external-AI switch is off"),
+                                   "said": "a fixed notice in place of the structured floor's frame"}, fin["no_model"]
+        assert fin["data_class"]["declared"] == "person_entered" and fin["data_class"]["checks"] == [], fin["data_class"]
+        assert "- Latest Board instruction:" not in text and "- Objectives in the plan:" not in text, (
+            "a recital of records nothing handed")
+        said[ask] = text
+    assert said["Hi"] == said["what are your priorities"], "the notice is not one fixed text"
+
+    #  2. records held: the counts, then the recital; a store not read is said as not read
+    monkeypatch.setattr(_board, "_load", lambda: [{"kind": "board_directive",
+                                                   "instruction": "W1239 made up: hold the van purchase",
+                                                   "chief_directive": "W1239 made up: hold the van purchase"}])
+    monkeypatch.setattr(_bp, "_load", lambda scope: {"objectives": [{"title": "W1239 made up objective"}]})
+    fr, text = frames("Hi")
+    assert text.startswith(NOT_AN_ANSWER + "\n\nWhat the CEO holds from its records: 1 Board directive and 1 "
+                           "business-plan objective for this scope; what it was handed is quoted below as stored."), text[:400]
+    rec = text.split("\n\n## What the CEO was handed (quoted as stored, not answered from)\n", 1)[1]
+    assert rec.startswith("No model answered: the reply above is a fixed notice, so nothing in it was reasoned "
+                          "from these records."), rec[:200]
+    assert '- Latest Board instruction: "W1239 made up: hold the van purchase"' in rec and "W1239 made up objective" in rec
+    g = fr[-1]["grounding"]
+    assert g["recited"]["directives"] == 1 and g["recited"]["objectives"] == 1 and g["cited"] == {
+        "directives": 0, "objectives": 0}, g
+
+    def _unreadable():
+        raise OSError("W1239 made up: the store could not be read")
+    monkeypatch.setattr(_board, "_load", _unreadable)
+    monkeypatch.setattr(_bp, "_load", lambda scope: {"objectives": []})
+    _, text = frames("Hi")
+    assert ("What the CEO holds from its records: they could not all be read here (the Board's directives could not "
+            "be read), so what it holds is not known in full.") in text, text[:400]
+    assert "none recorded" not in text
+    monkeypatch.setattr(_board, "_load", lambda: [])
+
+    #  3. a model up: its reply, as before; a model that serves after the check said none: its reply, whole
+    async def fake_model(self, augmented):
+        for tk in ("W1239 ", "a model's ", "reply."):
+            yield tk
+    monkeypatch.setattr(ModelGateway, "_stream_owned_model", fake_model)
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "")
+    monkeypatch.setattr(_sh.self_healer, "is_open", lambda endpoint: False)
+    monkeypatch.setattr(_ceo, "_model_for_this_call", lambda: {"local": True, "external": False, "basis": "W1239 test"})
+    fr, text = frames("Hi")
+    assert text == "W1239 a model's reply." and fr[-1]["served_by"].startswith("ollama:") and "no_model" not in fr[-1]
+    assert [f["content"] for f in fr[:-1]] == ["W1239 ", "a model's ", "reply."], "a model's reply is not streamed"
+    monkeypatch.setattr(_ceo, "_model_for_this_call", lambda: {"local": False, "external": False, "basis": "W1239 test"})
+    fr, text = frames("Hi")
+    assert text == "W1239 a model's reply." and fr[-1]["served_by"].startswith("ollama:") and "no_model" not in fr[-1]
+    assert NOT_AN_ANSWER not in text
+    monkeypatch.undo()
+    assert os.getenv("AI_DISABLE_LOCAL") == "1"
+
+    #  4. the check itself, from the helpers; the switch is read, never set
+    m = _ceo._model_for_this_call()
+    assert (m["local"], m["external"]) == (False, False), m
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "")
+    monkeypatch.setattr(_mr, "ollama_up", lambda: True)
+    monkeypatch.setattr(_mr, "local_models", lambda: ["w1239-made-up"])
+    monkeypatch.setattr(_sh.self_healer, "is_open", lambda endpoint: False)
+    m = _ceo._model_for_this_call()
+    assert m["local"] is True and m["basis"].startswith("the local runtime lists 1 model(s)"), m
+    monkeypatch.setattr(_sh.self_healer, "is_open", lambda endpoint: endpoint == "ollama")
+    assert _ceo._model_for_this_call()["local"] is False
+    monkeypatch.setattr(_mr, "local_models", lambda: [])
+    assert _ceo._model_for_this_call()["basis"].startswith("the local runtime lists no model")
+    monkeypatch.setattr(_mr, "ollama_up", lambda: False)
+    assert _ceo._model_for_this_call()["basis"].startswith("no local model answered")
+    monkeypatch.setattr(_mr, "external_allowed", lambda: True)          # the helper's answer, not the switch
+    monkeypatch.setattr(_gw, "anthropic_key", None)
+    monkeypatch.setattr(_gw, "openai_key", None)
+    m = _ceo._model_for_this_call()
+    assert m["external"] is False and "; the external-AI switch is on; " in m["basis"] and m["basis"].endswith(
+        "; no provider's key is set"), ("an external model is counted with no key set", m)
+    monkeypatch.setattr(_gw, "anthropic_key", "w1239-placeholder-not-a-key")
+    m = _ceo._model_for_this_call()
+    assert m["external"] is _ceo._CEO_PREFERS_EXTERNAL and m["basis"].endswith("; a provider's key is set"), (
+        "an external model is counted beyond what this chat asks", m)
+    monkeypatch.undo()
+    src = pathlib.Path(_ceo.__file__).read_text(encoding="utf-8")
+    code = "\n".join(ln for ln in src.splitlines() if not ln.lstrip().startswith("#"))
+    assert code.count("gateway.stream_meta(") == 1 and code.count("prefer_external=_CEO_PREFERS_EXTERNAL,") == 1
+    assert "    external = _switch and _CEO_PREFERS_EXTERNAL and _keyed\n" in code
+    #  what the chat's calls carry is declared: person_entered, a class the platform names and does not bar, at the
+    #  stream_meta call (the name bound for its call from what it carries) and at the C-Suite meeting's call (the
+    #  class read from its agenda); every call here passing prefer_external declares one
+    assert _ceo._CEO_DATA_CLASS == "person_entered" and "person_entered" in _dc.CLASSES and "person_entered" not in _dc.BARRED
+    calls = [c for c in ast.walk(ast.parse(src)) if isinstance(c, ast.Call)
+             and getattr(c.func, "attr", "") in ("stream_meta", "complete")]
+    _passed = {c.func.attr: [ast.unparse(k.value) for k in c.keywords if k.arg == "data_class"] for c in calls}
+    assert len(calls) == 2 and _passed == {"stream_meta": ["_CEO_DATA_CLASS"], "complete": ["_class1239['data_class']"]}, (
+        "a call a model can answer declares nothing, or not what it carries", _passed)
+    assert code.count('    _CEO_DATA_CLASS = _class1239["data_class"]\n') == 1 and (
+        "_class1239 = _ceo_call_class(list(facts.get(\"_domains\") or []) + [_scope_domain(scope)], full_prompt)" in code)
+    assert "        _class1239 = _ceo_call_class([], agenda)\n" in code
+    for c in ast.walk(ast.parse(src)):
+        if isinstance(c, ast.Call) and "prefer_external" in {k.arg for k in c.keywords}:
+            assert "data_class" in {k.arg for k in c.keywords}, ("a call asks for an external model and declares nothing", c.lineno)
+            assert any(k.arg == "prefer_external" and isinstance(k.value, ast.Name)
+                       and k.value.id == "_CEO_PREFERS_EXTERNAL" for k in c.keywords), c.lineno
+    for dep in ("_mr.ollama_up()", "_mr.local_models()", '_sh.is_open("ollama")', "_mr.external_allowed()"):
+        assert dep in code, dep
+    for setter in ('environ["AI_ALLOW_EXTERNAL"]', "environ['AI_ALLOW_EXTERNAL']", 'setenv("AI_ALLOW_EXTERNAL"',
+                   "putenv("):
+        assert setter not in src, ("the CEO module sets the external-AI switch", setter)
+
+    #  5. the page, its fixture and its rendered test; the spine's prompt leg
+    pg = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages"
+    chat = (pg / "CEOChat.tsx").read_text(encoding="utf-8")
+    assert "handed the record for this scope" not in _code_only(chat), "the greeting claims a record again"
+    assert "I am handed whatever this scope\\'s records hold, which on a new server may be nothing" in chat
+    fx = json.loads((pg / "CEOChat.fixture.json").read_text(encoding="utf-8"))
+    fxf = [json.loads(ln[6:]) for ln in fx["stream"].splitlines() if ln.startswith("data: ")]
+    assert "".join(str(f.get("content") or "") for f in fxf).startswith(NOT_AN_ANSWER), "the fixture is the old frame"
+    assert fxf[-1].get("no_model", {}).get("local") is False and fxf[-1]["served_by"] == "native"
+    t = (pg / "CEOChat.test.tsx").read_text(encoding="utf-8")
+    s = t.index("  it('says that no model is connected, and the greeting claims no record', async () => {")
+    body = t[s:t.index("\n  });\n", s)]
+    for need in ("'No AI model is connected on this server, so this is not an answer to your question.'",
+                 "expect(box.textContent).not.toContain('WITHHELD');",
+                 "expect(greeting).not.toContain('handed the record for this scope');"):
+        assert need in body, need
+    sp = pathlib.Path(__file__).read_text(encoding="utf-8")
+    assert sp.count("\n    #  W1239 (2026-11-22), ON PURPOSE: this leg is kept. The CEO's prompt still ends with these "
+                    "three sections") == 1, "test_w593's prompt leg lost its dated note"
+
+    #  6. WHAT STAYS ON THE PLATFORM (the Owner's ruling 4 of 2026-11-27). The class, from the helper
+    plain = "W1239 made up: should the bakery cooperative buy a third van?"
+    sacred = "W1239 made up: how should the Quran school plan its year?"
+    ok = _ceo._ceo_call_class(["", "enterprise"], plain)
+    assert ok["data_class"] == "person_entered" and ok["kept"] is None and ok["basis"].startswith(
+        "declared person_entered: "), ok
+    for dom in ("religion", "care", "education"):
+        k = _ceo._ceo_call_class(["", dom], plain)
+        assert k["data_class"] is None and k["kept"].startswith(f"it carries records of the {dom} domain, and "), (dom, k)
+        assert k["basis"] == "nothing is declared, so no external provider is sent this call: " + k["kept"], k
+    k = _ceo._ceo_call_class(["", None], plain)
+    assert k["data_class"] is None and "could not be read" in k["kept"], ("a domain not read was counted as clear", k)
+    k = _ceo._ceo_call_class([""], plain, sacred)
+    assert k["data_class"] is None and k["kept"].startswith("what it carries names religious content (") and (
+        "quran" in k["kept"]), k
+    from agentic_core.api import vsb as _vsb
+    monkeypatch.setattr(_vsb, "_load_vsb", lambda vid: {"vsb_id": vid, "domain": "care"} if vid == "vsb-w1239-care"
+                        else None)
+    assert (_ceo._scope_domain("workstation"), _ceo._scope_domain("vsb-w1239-care")) == ("", "care")
+    monkeypatch.setattr(_board, "_load", lambda: [])
+    monkeypatch.setattr(_bp, "_load", lambda scope: {"objectives": []})
+
+    async def _drive(scope):
+        return [json.loads(c[6:]) for c in [x async for x in _ceo.generate_ceo_stream(plain, scope, None)]
+                if c.startswith("data: ")]
+    fin = asyncio.run(_drive("vsb-w1239-care"))[-1]
+    assert fin["data_class"]["declared"] is None and "records of the care domain" in fin["kept_on_platform"], (
+        "an entity's care domain was not read for what its scope's call may declare", fin)
+
+    #  through the route: a directive of the religion domain, and a question the screen flags
+    KEPT = "This message stays on the platform whatever the external-AI switch says, so no external model is sent it: "
+    NO_MODEL_HERE = "No AI model on this server can answer this message, so this is not an answer to your question.\n\n"
+    monkeypatch.setattr(_board, "_load", lambda: [{"kind": "board_directive", "domain": "religion",
+                                                   "instruction": "W1239 made up: hold the van purchase",
+                                                   "chief_directive": "W1239 made up: hold the van purchase"}])
+    fr, text = frames("Hi")
+    fin = fr[-1]
+    why = "it carries records of the religion domain, and religious content is not sent outside the platform"
+    assert text.startswith(NO_MODEL_HERE) and KEPT + why + "." in text and fin["served_by"] == "native", text[:1400]
+    assert fin["data_class"]["declared"] is None and fin["kept_on_platform"] == (
+        "nothing is declared, so no external provider is sent this call: " + why), fin
+    assert fin["no_model"]["basis"].endswith("; this call declares nothing: " + why), fin["no_model"]
+    monkeypatch.setattr(_board, "_load", lambda: [])
+    fr, text = frames(sacred)
+    assert fr[-1]["data_class"]["declared"] is None and "names religious content (" in fr[-1]["kept_on_platform"], fr[-1]
+    assert text.startswith(NO_MODEL_HERE) and KEPT + "what it carries names religious content (" in text, text[:1400]
+
+    #  the switch on, in this test's environment only, a placeholder key and the chat asking: nothing is built for
+    #  the message that stays, and the plain question reaches the provider (so the leg is not vacuous)
+    import anthropic as _an
+    built = []
+
+    class _FakeStream:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        @property
+        def text_stream(self):
+            async def _g():
+                for tk in ("W1239 ", "an external ", "reply."):
+                    yield tk
+            return _g()
+
+        async def get_final_message(self):
+            return None
+
+    class _FakeMessages:
+        def stream(self, *a, **k):
+            return _FakeStream()
+
+    class _FakeClient:
+        def __init__(self, *a, **k):
+            built.append(k.get("api_key"))
+            self.messages = _FakeMessages()
+
+    monkeypatch.setattr(_an, "AsyncAnthropic", _FakeClient)
+    monkeypatch.setenv("AI_ALLOW_EXTERNAL", "true")
+    monkeypatch.setattr(_gw, "anthropic_key", "w1239-placeholder-not-a-key")
+    monkeypatch.setattr(_gw, "openai_key", None)
+    monkeypatch.setattr(_sh.self_healer, "is_open", lambda endpoint: False)
+    monkeypatch.setattr(_ceo, "_CEO_PREFERS_EXTERNAL", True)
+    fr, text = frames(sacred)
+    assert built == [] and fr[-1]["served_by"] == "native" and fr[-1]["is_external"] is False, (built, fr[-1])
+    assert fr[-1]["data_class"]["declared"] is None and fr[-1]["data_class"]["checks"][0]["send"] is False, fr[-1]
+    assert text.startswith(NO_MODEL_HERE), ("the floor's frame was streamed for a message that stays", text[:300])
+    fr, text = frames(plain)
+    assert built == ["w1239-placeholder-not-a-key"] and fr[-1]["served_by"] == "claude", (built, fr[-1])
+    assert fr[-1]["data_class"]["declared"] == "person_entered" and text == "W1239 an external reply.", text[:300]
+
+    #  the C-Suite meeting: the class read from its agenda, at each of its six calls
+    asked = []
+
+    async def _complete1239(prompt, **kw):
+        asked.append(kw.get("data_class", "not passed"))
+        return {"output": ""}           # nothing is minuted for an officer whose reply came back empty
+    monkeypatch.setattr(_ceo.orchestrator, "complete", _complete1239)
+    asyncio.run(_ceo.ToolRegistry().call_meeting(plain))
+    asyncio.run(_ceo.ToolRegistry().call_meeting(sacred))
+    assert asked == ["person_entered"] * 6 + [None] * 6, asked
+    monkeypatch.undo()
+    assert os.getenv("AI_ALLOW_EXTERNAL", "false").lower() != "true", "the switch was left on"

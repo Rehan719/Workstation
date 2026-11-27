@@ -13,7 +13,9 @@ import { RichText } from '../components/RichText';   // W1238 - a reply is shown
 // grounding counted none. The card already said "grounded in 0 directives" beside three invented
 // bullets; a count a reader has to cross-check against prose is not a disclosure.
 type CeoMessage = { role: string; content: string; servedBy?: string | null; isExternal?: boolean; grounding?: any; groundingConflicts?: any[] };
-const GREETING = 'I am this enterprise\'s AI CEO, reporting to the Board. Ask me about priorities, the living plan, the business plan or the C-Suite — I am handed the record for this scope, and every answer says who served it and which records it actually names.';
+// W1239 - the greeting said "I am handed the record for this scope" on a server that holds none. It says the records
+// are handed when there are any, and that with no model connected the chat says so instead of answering.
+const GREETING = 'I am this enterprise\'s AI CEO, reporting to the Board. Ask me about priorities, the living plan, the business plan or the C-Suite. I am handed whatever this scope\'s records hold, which on a new server may be nothing, and every answer says who served it, how many records I was handed and which of them it names. When no AI model is connected, I say so instead of answering.';
 
 export const CEOChat: React.FC = () => {
   const navigate = useNavigate();
