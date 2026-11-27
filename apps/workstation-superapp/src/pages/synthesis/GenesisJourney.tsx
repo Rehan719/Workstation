@@ -75,6 +75,9 @@ interface JourneyResult {
   engines_used_basis?: string;
   deliverable: string;
   status: string;
+  //  W1242 - what the journey's calls declared, and the plain notice when no model answered any of them (null otherwise)
+  external_ai?: { data_class: string | null; may_leave: boolean; basis: string };
+  no_model?: { said: string; saved: string; how: string; all_calls_floor_served?: number } | null;
 }
 interface RepoManifest {
   // W574 (M1 R2.2) — count_basis states WHAT was counted (everything on disk bar .git and the
@@ -550,22 +553,24 @@ export const GenesisJourney: React.FC = () => {
     } catch { setError('Action failed — backend unreachable; nothing changed.'); }   // W344
   };
 
+  //  W1242b - every call floor-served: the fallback's frames are folded, each heading behind its own toggle
+  const fold = !!result?.no_model;
   const phases = result ? [
     { key: 'phase1', n: 1, icon: Lightbulb, label: 'Conceptualisation',
       blurb: 'Understand → analyse → optimal solution concept',
       body: (
         <div className="space-y-5">
           {/* W479 — one gateway prompt headed by six lenses, not six engines (FU-121 / refutation 3) */}
-          <Section icon={Brain} title="Cognitive lenses (one prompt, 6 lenses)" text={result.phase_1_conceptualisation.cognitive_cascade} />
-          <Section icon={Eye} title="MJM Assessment" text={result.phase_1_conceptualisation.mjm_assessment} />
-          <Section icon={Lightbulb} title="Optimal Solution Concept" text={result.phase_1_conceptualisation.concept} highlight />
+          <Section icon={Brain} title="Cognitive lenses (one prompt, 6 lenses)" text={result.phase_1_conceptualisation.cognitive_cascade} fold={fold} />
+          <Section icon={Eye} title="MJM Assessment" text={result.phase_1_conceptualisation.mjm_assessment} fold={fold} />
+          <Section icon={Lightbulb} title="Optimal Solution Concept" text={result.phase_1_conceptualisation.concept} highlight fold={fold} />
         </div>
       ) },
     { key: 'phase2', n: 2, icon: Layers, label: 'Design & Development',
       blurb: 'Concept → buildable solution design → a costed, checkable artefact',
       body: (
         <div className="space-y-5">
-          <PlainText text={result.phase_2_design_development} />
+          <PlainText text={result.phase_2_design_development} fold={fold} />
           {/* P3.1 — this card is labelled Design & DEVELOPMENT and showed only the design body, while
               the field behind it (phase_2_design_development) carries only design too. §4.6 Develop now
               runs as its own stage and produces a costed bill of materials whose pass/fail is its own
@@ -574,7 +579,7 @@ export const GenesisJourney: React.FC = () => {
           {result.stage_6_develop && (
             <div data-testid="genesis-develop">
               <p className="text-[10px] font-black uppercase tracking-widest text-highlight mb-2">§4.6 Develop — buildable artefact</p>
-              <PlainText text={result.stage_6_develop} />
+              <PlainText text={result.stage_6_develop} fold={fold} />
               {result.stage_verifications?.develop && (
                 <p data-testid="genesis-develop-verdict" className="text-[9px] text-slate-500 mt-2 leading-relaxed">
                   {result.stage_verifications.develop.verified === true
@@ -591,7 +596,7 @@ export const GenesisJourney: React.FC = () => {
       ) },
     { key: 'phase3', n: 3, icon: Rocket, label: 'Enterprise Commercialisation',
       blurb: 'Go-to-market + the user’s own living VSB',
-      body: <PlainText text={result.phase_3_commercialisation} /> },
+      body: <PlainText text={result.phase_3_commercialisation} fold={fold} /> },
   ] : [];
 
   return (
@@ -701,8 +706,12 @@ export const GenesisJourney: React.FC = () => {
                     {st.label}
                   </span>
                 )}
+                {/* W1242b - the stage's reason is kept whole, in a disclosure: plain words first */}
                 {result && (
-                  <p data-testid={`rail-why-${i + 1}`} className="text-[8px] text-slate-500 mt-1 leading-relaxed">{st.why}</p>
+                  <details className="mt-1">
+                    <summary className="text-[8px] font-black uppercase tracking-widest text-slate-600 cursor-pointer select-none">details</summary>
+                    <p data-testid={`rail-why-${i + 1}`} className="text-[8px] text-slate-500 mt-1 leading-relaxed">{st.why}</p>
+                  </details>
                 )}
               </div>
             );
@@ -804,6 +813,17 @@ export const GenesisJourney: React.FC = () => {
       {/* Result */}
       {result && (
         <div className="space-y-4">
+          {/* W1242b (the Owner's ruling of 2026-11-22) - NO MODEL ANSWERED: said first, in the route's own plain words:
+              that the steps wrote nothing, what was saved, and how a model is added */}
+          {result.no_model && (
+            <Card className="p-5 border-amber-500/40 bg-amber-500/5">
+              <div role="status" data-testid="genesis-no-model" className="space-y-2">
+                <p data-testid="genesis-no-model-said" className="text-sm font-bold text-amber-300 leading-relaxed">{result.no_model.said}</p>
+                <p data-testid="genesis-no-model-saved" className="text-xs text-slate-300 leading-relaxed">{result.no_model.saved}</p>
+                <p data-testid="genesis-no-model-how" className="text-xs text-slate-300 leading-relaxed">{result.no_model.how}</p>
+              </div>
+            </Card>
+          )}
           {result.product_source && (
             <p className="text-[10px] text-slate-500" data-testid="journey-product">
               Product: {result.product_label || result.product} — {result.product_source}
@@ -823,6 +843,9 @@ export const GenesisJourney: React.FC = () => {
               </Button>
             </div>
           </Card>
+          {/* W1242b - what served each call and the stage checks are kept whole, in one closed disclosure */}
+          <details data-testid="genesis-technical-details" className="space-y-4">
+            <summary className="text-[9px] font-black uppercase tracking-widest text-slate-500 cursor-pointer select-none">Details: what answered each call, and the stage checks</summary>
           {/* §6 × §10 (W436, v10 item 1a) — WHO SERVED THIS, above the results. The floor was
               disclosed on exactly one developer page while this journey showed a green "5/5
               verified" over floor-served output. The user must see what produced their result
@@ -878,6 +901,7 @@ export const GenesisJourney: React.FC = () => {
               </div>
             </Card>
           )}
+          </details>
           {phases.map(p => (
             <Card key={p.key} className="p-0 overflow-hidden border-slate-800/80">
               <button type="button" onClick={() => setOpen(open === p.key ? '' : p.key)}
@@ -910,7 +934,7 @@ export const GenesisJourney: React.FC = () => {
                   ? 'The structured floor served this stage, not a model: what follows is a frame built from your own words under the requested headings. No approach was found, researched or compared.'
                   : 'Best & latest approaches + innovative options across science · technology · business · operations · law — feeding the candidate solutions below.'}
               </p>
-              <PlainText text={result.stage_3_innovate_research} />
+              <PlainText text={result.stage_3_innovate_research} fold={fold} />
             </Card>
           )}
 
@@ -921,7 +945,10 @@ export const GenesisJourney: React.FC = () => {
                 <Layers size={15} className="text-aura" />
                 <h3 className="text-xs font-black uppercase tracking-widest text-aura">Model · Simulate · Optimise · Rank (§4.5)</h3>
               </div>
-              <p className="text-[10px] text-slate-500 mb-3">{result.stage_5_model_simulate_rank.method}</p>
+              <details data-testid="rank-method-details" className="mb-3">
+                <summary className="text-[9px] font-black uppercase tracking-widest text-slate-500 cursor-pointer select-none">Details: how the candidates were compared</summary>
+                <p className="text-[10px] text-slate-500 mt-1">{result.stage_5_model_simulate_rank.method}</p>
+              </details>
               {/* W436 (v10 item 1d) — when the three "alternatives" came back IDENTICAL, ranking
                   them is a comparison that never happened. W434 put the disclosure in the payload;
                   this renders it IN PLACE OF the ranked cards, which would otherwise imply three
@@ -986,6 +1013,8 @@ export const GenesisJourney: React.FC = () => {
               )}
               {/* W436 (v10 item 1b) — what this ranking measured and what it honestly could not,
                   rendered beside the scores rather than left in the payload. */}
+              <details data-testid="rank-measured-details" className="mt-1.5">
+                <summary className="text-[9px] font-black uppercase tracking-widest text-slate-500 cursor-pointer select-none">Details: what this comparison measured</summary>
               {result.stage_5_model_simulate_rank.honesty && (
                 <p className="text-[9px] text-slate-500 mt-1.5 leading-relaxed">{result.stage_5_model_simulate_rank.honesty}</p>
               )}
@@ -996,6 +1025,7 @@ export const GenesisJourney: React.FC = () => {
                     .map(([k, why]) => `${k} (${why})`).join(' · ')}.
                 </p>
               )}
+              </details>
             </Card>
           )}
 
@@ -1012,7 +1042,7 @@ export const GenesisJourney: React.FC = () => {
                   : 'Addresses deliverability, compliance (legal · regulatory · EHS · Sharia · ethical) and operability before commercialisation.'}
                 {' '}The §11 screen below reads the design and commercialisation text — a keyword and vocabulary screen, not a certification.
               </p>
-              <PlainText text={result.stage_7_operational_intelligence} />
+              <PlainText text={result.stage_7_operational_intelligence} fold={fold} />
             </Card>
           )}
 
@@ -1029,6 +1059,9 @@ export const GenesisJourney: React.FC = () => {
               </h3>
             </div>
             <p className="text-sm text-slate-300 leading-relaxed">{result.deliverable}</p>
+            {/* W1242b - the calls, the intent gate and the quality chips are kept whole, in one closed disclosure */}
+            <details data-testid="genesis-journey-details" className="mt-4">
+              <summary className="text-[9px] font-black uppercase tracking-widest text-slate-500 cursor-pointer select-none">Details: the calls this journey made, the intent gate and the quality checks</summary>
             {result.engines_used_basis && (
               <p className="text-[10px] text-slate-500 leading-relaxed mt-4" data-testid="journey-engines-basis">{result.engines_used_basis}</p>
             )}
@@ -1110,6 +1143,7 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                 )}
               </div>
             )}
+            </details>
 
             <div className="mt-5 pt-4 border-t border-highlight/20">
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">
@@ -1526,16 +1560,36 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const PlainText: React.FC<{ text: string }> = ({ text }) => (
-  <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{text}</p>
+//  W1242b - WHAT THE FALLBACK PRODUCED, FOLDED. With every call floor-served each stage's text is the fallback's frame
+//  of the founder's own words; it is shown only when asked for, each heading on its own, and never removed.
+const FloorFold: React.FC<{ fold?: boolean; children: React.ReactNode }> = ({ fold, children }) => {
+  const [shown, setShown] = useState(false);
+  if (!fold) return <>{children}</>;
+  return (
+    <div>
+      <button type="button" data-testid="floor-fold-toggle" aria-expanded={shown} onClick={() => setShown(s => !s)}
+        className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white underline underline-offset-2">
+        {shown ? 'Hide what the fallback produced' : 'Show what the fallback produced'}
+      </button>
+      {shown && <div data-testid="floor-fold-text" className="mt-2">{children}</div>}
+    </div>
+  );
+};
+
+const PlainText: React.FC<{ text: string; fold?: boolean }> = ({ text, fold }) => (
+  <FloorFold fold={fold}>
+    <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{text}</p>
+  </FloorFold>
 );
 
-const Section: React.FC<{ icon: React.ComponentType<any>; title: string; text: string; highlight?: boolean }> = ({ icon: Icon, title, text, highlight }) => (
+const Section: React.FC<{ icon: React.ComponentType<any>; title: string; text: string; highlight?: boolean; fold?: boolean }> = ({ icon: Icon, title, text, highlight, fold }) => (
   <div className={`p-4 rounded-xl border ${highlight ? 'border-highlight/30 bg-highlight/5' : 'border-slate-800 bg-slate-950'}`}>
     <div className="flex items-center gap-2 mb-2">
       <Icon size={13} className={highlight ? 'text-highlight' : 'text-slate-500'} />
       <p className={`text-[10px] font-black uppercase tracking-widest ${highlight ? 'text-highlight' : 'text-slate-400'}`}>{title}</p>
     </div>
-    <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{text}</p>
+    <FloorFold fold={fold}>
+      <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{text}</p>
+    </FloorFold>
   </div>
 );

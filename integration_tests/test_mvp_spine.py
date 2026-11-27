@@ -109689,3 +109689,76 @@ def test_w1242_with_the_switch_on_and_no_in_house_model_a_declared_call_tries_th
         assert _setter not in _t and 'environ["AI_ALLOW_' + 'EXTERNAL"] =' not in _t, (rel, "sets the Owner's switch")
     mine = spine[spine.index("\ndef test_w1242_"):]
     assert _setter not in mine, "this guard sets the Owner's switch"
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1242b - the Genesis page says first, in plain words, that no model answered; the fallback's frames are folded;
+#  the technical labels sit in closed disclosures
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1242b_genesis_says_first_that_no_model_answered_and_folds_what_the_fallback_produced(client):
+    """W1242b (the Owner's ruling of 2026-11-22, its second part). The Owner's genesis attempt of 2026-11-22 had all 14
+    calls floor-served, and the page printed six identical word-count lists under every lens and stage, with the
+    technical labels above them. Held here:
+    1. the page draws the route's no_model, its three sentences each in its own element, at the top of the result,
+       and draws nothing of it when the answer carries none;
+    2. every stage text the page prints (phase 1's three sections, design, develop, commercialisation, research and
+       operations) passes through the one fold, which opens on its own toggle per heading and is inert when nothing
+       is to be folded;
+    3. the technical labels are kept whole and sit inside a details disclosure: each rail tile's reason, the served and
+       stage-checks cards, the rank stage's method and measures, the completion card's calls, gate and chips;
+    4. the rendered test drives the notice, the fold and the disclosures, and the captured journey carries the
+       live route's no_model, field for field."""
+    import json
+    import pathlib
+    import re
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages/synthesis"
+    page = (src / "GenesisJourney.tsx").read_text(encoding="utf-8")
+    t = (src / "GenesisJourney.test.tsx").read_text(encoding="utf-8")
+    #  1. the notice: first in the result, the route's own words, and only when the route gave it
+    res = page[page.index("      {/* Result */}\n      {result && (\n        <div className=\"space-y-4\">\n"):]
+    first = res[:res.index("{result.product_source && (")]
+    assert "{result.no_model && (" in first, "the no-model notice is not the first thing in the result"
+    for k in ("said", "saved", "how"):
+        assert f'data-testid="genesis-no-model-{k}"' in first and f"{{result.no_model.{k}}}</p>" in first, k
+    assert "  no_model?: { said: string; saved: string; how: string; all_calls_floor_served?: number } | null;" in page
+    #  2. the fold: one component, every stage text through it, inert without no_model
+    assert "  const fold = !!result?.no_model;\n" in page
+    assert page.count("fold={fold}") == 10 and page.count("<PlainText text={") == 5 and page.count("<Section icon={") == 3
+    assert len(re.findall(r"<PlainText text=\{[^}]+\} fold=\{fold\} />", page)) == 5
+    fold = page[page.index("const FloorFold: React.FC"):page.index("const PlainText: React.FC")]
+    assert "  if (!fold) return <>{children}</>;" in fold and "{shown && <div data-testid=\"floor-fold-text\"" in fold
+    assert "'Show what the fallback produced'" in fold and "useState(false)" in fold
+    for comp in ("const PlainText: React.FC", "const Section: React.FC"):
+        body = page[page.index(comp):]
+        body = body[:body.index("\n);") + 3]
+        assert "<FloorFold fold={fold}>" in body and "whitespace-pre-wrap\">{text}</p>" in body, comp
+    #  3. the technical labels, each word kept, inside a disclosure
+    def inside_details(marker):
+        at = page.index(marker)
+        return page.rfind("<details", 0, at) > page.rfind("</details>", 0, at)
+    for marker in ("data-testid={`rail-why-${i + 1}`}", "What served this journey", "Stage checks — coverage and structure",
+                   "{result.stage_5_model_simulate_rank.method}</p>", "{result.stage_5_model_simulate_rank.honesty}</p>",
+                   "Not measured at selection time:", 'data-testid="journey-engines-basis"', 'data-testid="engines-used-basis"',
+                   'data-testid="journey-intent-gate"', "checkpoint {result.governance.checkpoint ?? '—'}",
+                   "qmsChip(result.quality_assurance.quality, 'Living-QMS gate:')"):
+        assert page.count(marker) == 1 and inside_details(marker), ("a technical label is not in a disclosure", marker)
+    for marker in ('data-testid="genesis-no-model"', 'data-testid="rank-not-alternatives"', 'data-testid={`rail-state-${i + 1}`}',
+                   'data-testid="journey-complete-heading"'):
+        assert not inside_details(marker), ("a plain label was moved into a disclosure", marker)
+    #  an `open` attribute anywhere in a disclosure's tag (bare, or open={true}), not only straight after `<details`
+    assert not re.search(r"<details\b[^>]*\sopen(?:=\{true\})?[\s/>]", page), "a disclosure opens itself"
+    #  4. the rendered test, and the captured journey against the live route
+    for name in ("a journey no model answered says so first, in plain words, and folds what the fallback produced",
+                 "a journey a model answered shows no notice and folds nothing"):
+        assert t.count(f"  it('{name}', async () => {{") == 1, name
+    assert "expect(screen.queryAllByTestId('floor-fold-text')).toHaveLength(0);" in t
+    assert "expect(d?.open).toBe(false);" in t
+    #  the served and checks cards and the rank stage's two disclosures are read closed too, not only the rail and the calls
+    assert "for (const id of ['rail-why-1', 'genesis-technical-details', 'rank-method-details', 'rank-measured-details'," in t
+    fx = json.loads((src / "GenesisJourney.fixture.json").read_text(encoding="utf-8"))
+    live = client.post("/api/v1/genesis/journey", json=fx["request"])
+    assert live.status_code == 200, live.text[:300]
+    nm, cap = live.json()["no_model"], fx["journey"]["no_model"]
+    assert nm and cap and set(cap) == set(nm), (cap, nm)
+    for k in sorted(nm):
+        assert cap[k] == nm[k], (k, cap[k], nm[k])

@@ -169,7 +169,7 @@
    "status": "allowed",
    "screened": "intent + domain",
    "content_screened": false,
-   "checkpoint": "CHK-1794566926344",
+   "checkpoint": "CHK-1795774168152",
    "node": "genesis-node",
    "scope": "intent + domain only — this gate screened the request's intent label against the prohibited list and its own constant attestation sentence. The delivery's content was NOT screened, so this verdict is not a judgement on what was produced."
   },
@@ -238,7 +238,7 @@
   "stages_verified": "0/0",
   "stages_floor_served": 6,
   "stages_note": "6 of 6 stages were served by the deterministic floor and are not assessable — the verification proxies cannot fail on floor output, so no verdict is claimed for them",
-  "journey_id": "jny-a1e32704e594",
+  "journey_id": "jny-9ec4f3d05e6c",
   "develop_artefact": {},
   "quality_assurance": {
    "quality": {
@@ -342,6 +342,24 @@
   "enterprise_established": false,
   "enterprise_operating": null,
   "enterprise_established_basis": "NO entity record was created: this journey did not establish an enterprise",
+  "external_ai": {
+   "data_class": "person_entered",
+   "may_leave": true,
+   "basis": "declared person_entered: the journey sends the founder's own business text with the platform's own prompts composed around it. An external provider is sent it only with the Owner's external-AI switch on, a provider's key set and no in-house model reachable, inside the hourly cap on external calls. The religious subject screen did not flag the problem, which is not a finding that it holds nothing religious: a screen can flag, never clear"
+  },
+  "no_model": {
+   "said": "No AI model is connected, so these steps could not write anything. What each step shows below is a fallback that repeats your own words under its headings.",
+   "saved": "What was saved: no entity was registered, because establishing one was not asked for, so your words are not kept as an enterprise. Establishing an entity from this journey registers one that keeps them.",
+   "how": "Adding a model is the Owner's decision. A local model run on this server is used first whenever one is up. With the Owner's external-AI switch on and a provider's key set, this journey uses that provider when no local model is running, inside the hourly cap on external calls.",
+   "all_calls_floor_served": 14,
+   "local_model_up": false,
+   "external_model_ready": false,
+   "external_ai": {
+    "data_class": "person_entered",
+    "may_leave": true,
+    "basis": "declared person_entered: the journey sends the founder's own business text with the platform's own prompts composed around it. An external provider is sent it only with the Owner's external-AI switch on, a provider's key set and no in-house model reachable, inside the hourly cap on external calls. The religious subject screen did not flag the problem, which is not a finding that it holds nothing religious: a screen can flag, never clear"
+   }
+  },
   "status": "complete"
  },
  "entity_types": {
