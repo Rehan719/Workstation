@@ -11695,7 +11695,7 @@
       "slot": "OWNER",
       "status": "done",
       "closed_by": "W640",
-      "note": "",
+      "note": "W1236 (2026-11-22): this row's title, \"no Qur'an translation edition is served\", is superseded by the rulings in its close note: one edition is served, Pickthall (1930), fetched from alquran.cloud. The title is kept as it was written.",
       "slot_source": "an Owner decision with no build work until it is taken; parked with the Owner's hand items",
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
@@ -21347,7 +21347,7 @@
     {
       "id": "FU-1067",
       "title": "The private test the Owner asked for before ruling on listening has not been run",
-      "why": "Ruled 2026-10-12: no ruling on whether the platform may listen to find a learner's place until clean-licence on-device models are tried on lawful recordings of ordinary reciters, measuring how often the place is found and how often it would mislead. It needs recordings the Owner supplies or approves; it cannot cover children. Done when the numbers and their limits are in the assessment and put to the Owner. OWNER RULING 2026-11-21 (afternoon; the recommendation accepted): if no written permission for lawful recordings has come by 2026-12-15, this row stays open into January, and P5.17 with it; the test is never run on recordings whose terms were not granted.",
+      "why": "Ruled 2026-10-12: no ruling on whether the platform may listen to find a learner's place until clean-licence on-device models are tried on lawful recordings of ordinary reciters, measuring how often the place is found and how often it would mislead. It needs recordings the Owner supplies or approves; it cannot cover children. Done when the numbers and their limits are in the assessment and put to the Owner. OWNER RULING 2026-11-21 (afternoon; the recommendation accepted): if no written permission for lawful recordings has come by 2026-12-15, this row stays open into January, and P5.17 with it; the test is never run on recordings whose terms were not granted. OWNER RULING 2026-11-22 (W1236, the QEP restart; the recommendation accepted): the test uses no Quran Foundation content, whose developer terms, read whole by the Owner on 2026-11-22, forbid using it to evaluate or develop AI models; Tanzil's text is considered only after its terms are read for research use, and that reading is recorded before any test.",
       "source": "W683 (the authentication-readiness round; assessment section 30)",
       "found": "2026-10-12",
       "files": [
@@ -27163,7 +27163,7 @@
       "slot": "OWNER",
       "status": "open",
       "closed_by": null,
-      "note": "The Owner's choice of 2026-11-22 (W1234): Cambridge Muslim College is to be asked first; its contact page (https://www.cambridgemuslimcollege.ac.uk/about/contact/, read 2026-11-22) gives info@cambridgemuslimcollege.ac.uk. The Markfield Institute of Higher Education is the second candidate; Ebrahim College could not be verified. Neither page read mentions tajwid, and neither institute's scholarly fit has been assessed. Nothing has been sent and the College has agreed to nothing, so the row stays open."
+      "note": "The Owner's choice of 2026-11-22 (W1234): Cambridge Muslim College is to be asked first; its contact page (https://www.cambridgemuslimcollege.ac.uk/about/contact/, read 2026-11-22) gives info@cambridgemuslimcollege.ac.uk. The Markfield Institute of Higher Education is the second candidate; Ebrahim College could not be verified. Neither page read mentions tajwid, and neither institute's scholarly fit has been assessed. Nothing has been sent and the College has agreed to nothing, so the row stays open. OWNER RULINGS 2026-11-22 (W1236, the QEP restart; the recommendations accepted): one engagement may cover several tracks, provided each approval is entered under the named person who gave it and that person is rostered for that track; and a hifz method source is reviewed, before any default portion is proposed, by the scholar or institute engaged under this row, recorded under a named person."
     },
     {
       "id": "FU-1839",
@@ -28714,6 +28714,289 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P3.30, as FU-1845 and FU-1297: a store written whole, in place, is that item's class"
+    },
+    {
+      "id": "FU-1921",
+      "title": "The Quran platform's answers do not carry each source's credit, register row and permits, or a stable passage id (restart round R1)",
+      "why": "The plan's round R1, Source facts and provenance in answers: Do the following: - Update the quran_foundation.py header (:13,16-18) to the 2026-11-22 terms. - Add Tanzil and Quran Academy credit, link and notice to _corpus_provenance (api.py:123-152) and to the provenance lines in QEPStudio.tsx:341-376. - Add the rights_holder/attribution, the register row id and its permits to every answer. - Stamp a stable passage id (edition, riwayah, surah:ayah) on cards, portions and review items, using one helper shared with the later lesson catalogue. - Add a provenance block to /learner/{uid}/export (api.py:970-985). - Add guards: a served edition with no register row fails, and any test, calibration or evaluation script that reads Quran Foundation text, timings or audio fails. It depends on: R0 (register rows). The check of every use of Quran Foundation content against the developer terms' clause on AI models is FU-1910's (W1234); this round's guard is the code half of it.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: R1",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/quran_foundation.py",
+        "agentic_core/religious_domain/api.py",
+        "apps/workstation-superapp/src/components/QEPStudio.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a first-release round of P5.17, the Quran platform's item; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1922",
+      "title": "Nothing records which edition, numbering, page and juz scheme and riwayah a passage is verified for, so a page or juz portion is not known to correspond (restart round R2)",
+      "why": "The plan's round R2, Edition, layout and coverage correspondence: Re-read the alquran.cloud terms and metadata docs at source, and record which layout its page and juz numbers follow. Then: - Add a correspondence record per edition: id, script, riwayah, numbering, page/juz scheme, and the register row each comes from. - Make every practice answer carry it. - Have page and juz portions answer 'boundaries not verified' until a permitted layout source is a register row. - Show the juz and page already returned by /ayah (api.py:613-614) beside the passage with their basis, plus a coverage line stating the Hafs counts used (api.py:77). It depends on: R1; the Owner decision on the layout source. OWNER RULING 2026-11-22 (the recommendation accepted): re-read the alquran.cloud terms and metadata first and accept it only if it states the 604-page Madinah layout; meanwhile page and juz portions stay settable but labelled not mapped; the QUL and KFGQPC letters (FU-1188) are pursued in parallel.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: R2",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/api.py",
+        "agentic_core/religious_domain/memorization/practice.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a first-release round of P5.17, the Quran platform's item; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1923",
+      "title": "Typed recall is reached only from the review card and similar verses have no practice step (restart round R3)",
+      "why": "The plan's round R3, Recall inside practice: Do the following: - Offer the typed-recall check from the hidden-verse card (HifzPractice.tsx:47-76), using the same server route and the same fetched reference, and say it measures written recall. Optionally alias it as /hifz/recall and keep the /tajweed/analyse path. - Add a similar-verse pair drill: show one verse, hide where each continues (a_continues/b_continues, api.py:1101-1127), reveal on request, judge nothing. - Hide the 'my teacher set this' option until P5.17 clause 4 exists, or keep it with its 'stated, not verified' label (per the Owner decision). It depends on: R1. OWNER RULING 2026-11-22 (the recommendation accepted): the self-declared my-teacher-set-this label is hidden until P5.17 clause 4 exists.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: R3",
+      "found": "2026-11-27",
+      "files": [
+        "apps/workstation-superapp/src/components/HifzPractice.tsx",
+        "apps/workstation-superapp/src/components/QEPStudio.tsx",
+        "agentic_core/religious_domain/api.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a first-release round of P5.17, the Quran platform's item; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1924",
+      "title": "No driven journey covers adult memorisation end to end at phone and desktop width, keyboard only (restart round R4)",
+      "why": "The plan's round R4, Adult memorisation driven journey, phone and desktop, keyboard: Extend the existing Playwright probes (scripts/browser_smoke.mjs:53-55,115; scripts/_w439_probe.mjs; package.json:13). Add one end-to-end journey: 1. find a valid passage; 2. show its edition and coverage; 3. hide the verse and try typed recall; 4. reveal the sourced text; 5. mark a trouble spot; 6. return to it from the due card. Add failure cases for an invalid reference (422), a missing verse and a source outage (503). Run it at 375px and at desktop width, keyboard-only, with an accessible-name check on each control. Add the coverage row qep-adult-memorisation-journey. It depends on: R2, R3.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: R4",
+      "found": "2026-11-27",
+      "files": [
+        "scripts/browser_smoke.mjs",
+        "docs/COVERAGE_REGISTER.json"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a first-release round of P5.17, the Quran platform's item; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1925",
+      "title": "Reference listening is offered only beside a review card and the player does not show the recitation's riwayah (restart round R5)",
+      "why": "The plan's round R5, Reference listening beside practice: Do the following: - Offer the listen control from the hidden-verse card as well as the review card. - Show the reciter's name and the publisher's stated riwayah (or 'not declared') beside the player, and make the credit name the reciter. - Check that timing compatibility uses the word text, not only the count, and say 'timings for a different text' when they differ. - Add a client-side playback-speed control for human audio only. The Quran Foundation stays in pre-production until the Owner decides on FU-1882. The Owner, or a run the Owner allows, does the real-credential pre-production check locally. It depends on: R1; the Owner's real-credential check. OWNER RULING 2026-11-22 (the recommendation accepted): the Owner runs the real-credential pre-production check locally; the credentials stay in the Owner's .env, and only the outcome is recorded. FU-1882 was closed by W1234, and the production decision the plan's words wait on was ruled the same day, OWNER RULING 2026-11-22 (decision 7; the recommendation accepted): accept the duties; build the consent and privacy round first, and the Owner signs off the Privacy Policy and Terms as publisher; then apply for production; until then, listening stays in pre-production only (the restart's later item (b)).",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: R5",
+      "found": "2026-11-27",
+      "files": [
+        "apps/workstation-superapp/src/components/QEPStudio.tsx",
+        "agentic_core/religious_domain/quran_foundation.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a first-release round of P5.17, the Quran platform's item; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1926",
+      "title": "No local record-and-replay exists beside the reference player (restart round R6, P5.17 clause 2)",
+      "why": "The plan's round R6, Local record and replay (P5.17 clause 2 slice): Build an on-device recorder beside the reference player: - explicit start, stop, replay and discard; - held in memory and never uploaded; - an on-device sound-level meter that offers the next-word button after a set silence, with no speech model. Narrow test_w717's banned list (integration_tests/test_mvp_spine.py:65724-65726) so capture is permitted in this component only. Add tests for microphone denied, discard, and no network call carrying audio. Add a guard that alternate paths (QEPReligionHub.tsx:99,114-185; /tajweed/analyse) carry the same provenance and no-score rules. It depends on: R5.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: R6",
+      "found": "2026-11-27",
+      "files": [
+        "apps/workstation-superapp/src/components/QEPStudio.tsx",
+        "apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a first-release round of P5.17, the Quran platform's item; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1927",
+      "title": "No named demo learner, content-role label or AI-assisted flag is carried on the Quran platform's answers (restart round R7)",
+      "why": "The plan's round R7, Evidence hygiene: demo data, content-role labels, AI-assisted flag: Do the following: - Reserve a named demo learner id whose answers carry demo: true and are excluded from any count. - Add a role label on every QEP response (scripture/translation/commentary/ai_assisted/teacher_note), with a guard test. - Add ai_assisted to POST /qep/curriculum (api.py:1513-1530), and render the approved-item label (sources, ai_assisted, reviewer, version) once anything is approved. It depends on: R1.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: R7",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/api.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a first-release round of P5.17, the Quran platform's item; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1928",
+      "title": "No practice history is kept as facts after sign-in (restart round R8)",
+      "why": "The plan's round R8, Practice history after sign-in (first-release tail): After sign-in, record practice events as facts: verse opened, revealed, returned to, trouble-spot reviewed. Each comes with a plain description of what the measure covers. Recall over time is stored as the Owner decides. It depends on: Sign-in on; the Owner decision on recall similarity. OWNER RULING 2026-11-22 (the recommendation accepted): after sign-in only factual events are stored (attempted, revealed, returned to); the written-recall similarity is shown at the moment of the check and not stored until the Owner rules.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: R8",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/api.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a first-release round of P5.17, the Quran platform's item; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1929",
+      "title": "The children's gate opens on sign-in and the pack's approval alone, with no dated Owner release record, and no tool's entry says what it receives and retains (restart later item a)",
+      "why": "The plan's later item (a), not first release: Children's gate hardening: a dated Owner release record as a third condition in children_tools_open() (approval_pack.py:250-262), plus receives/retains fields per tool, which reopens review. OWNER RULING 2026-11-22 (the recommendation accepted): the 2026-10-13 gate conditions (a named safeguarding lead, the regulator's children's-data code as a register row, then the Owner rules) stand beside the 2026-11-20 ones, and the dated Owner release record is added as a code condition so the gate cannot open on sign-in and pack approval alone.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: La",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/approval_pack.py",
+        "agentic_core/api/qep_children.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.21",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "OWNER RULING 2026-11-22 (W1236, the QEP restart): both sets of gate conditions stand and a dated Owner release record is added as a condition of the gate, which is P5.21 clause 3"
+    },
+    {
+      "id": "FU-1930",
+      "title": "No religious-data opt-in record exists, and the Owner's order of consent and privacy first, production approval after, is not built into the listening path (restart later item b)",
+      "why": "The plan's later item (b), not first release: Consent and privacy: a religious-data opt-in record, and Privacy Policy and Terms pages checked against the Quran Foundation packet, before production audio. The check of a Privacy Policy and Terms of Use against the developer privacy packet is FU-1909's (W1234); this row holds the religious-data opt-in record and the order the Owner ruled. OWNER RULING 2026-11-22 (the recommendation accepted): accept the duties; build the consent and privacy round first, and the Owner signs off the Privacy Policy and Terms as publisher; then apply for production; until then, listening stays in pre-production only.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: Lb",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/quran_foundation.py",
+        "docs/SOURCES.json"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a later item of the restart, not first release; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1931",
+      "title": "Account recovery is not in the sign-in readiness work (restart later item c)",
+      "why": "The plan's later item (c), not first release: Account recovery in sign-in readiness. OWNER RULING 2026-11-22 (the recommendation accepted): guardian relationships are held behind the children's gate, a separately governed link and not an RBAC role, and account recovery belongs in the sign-in readiness round.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: Lc",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/auth/core.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "OWNER RULING 2026-11-22 (W1236, the QEP restart): account recovery belongs in the sign-in readiness round, which is P4.1's"
+    },
+    {
+      "id": "FU-1932",
+      "title": "No lesson record schema or reviewer track exists for the Quran platform's curriculum (restart later item d)",
+      "why": "The plan's later item (d), not first release: Scholar roster tracks and the lesson record schema: author, objective, passage id, tradition, example or permitted audio, activity, versioned decisions; no content. OWNER RULING 2026-11-22 (the recommendation accepted): the lesson schema may come before curriculum content, with no content; the Owner names an author and chooses the texts to seek licences for, each a register row before its track opens; one engagement may cover several tracks, provided each approval is entered under the named person who gave it and that person is rostered for that track; every publishable lesson carries a versioned review decision.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: Ld",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/api/scholar_review.py",
+        "agentic_core/religious_domain/api.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a later item of the restart, not first release; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1933",
+      "title": "No offline pack exists, nor a high-contrast or reminder control (restart later item e)",
+      "why": "The plan's later item (e), not first release: Service-worker offline pack limited to Tanzil text and the learner's own record, plus high contrast and a notification/reminder control.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: Le",
+      "found": "2026-11-27",
+      "files": [
+        "apps/workstation-superapp/src/pages/Settings.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a later item of the restart, not first release; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1934",
+      "title": "No teaching circle, assignment, share record or private pinned note exists (restart later item f, P5.17 clause 4)",
+      "why": "The plan's later item (f), not first release: P5.17 clause 4 circle, assignment, completion fact, share record, private pinned note, practise again, after sign-in. OWNER RULING 2026-11-22 (the recommendation accepted): the Owner names the educator; the first stage is capped at one educator and one circle until it has been reviewed; a recording shared with a teacher is kept 30 days from sharing, deletable by the learner at any time and deleted automatically when the period ends, and is never Quran Foundation audio re-hosted.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: Lf",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/api.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a later item of the restart, not first release; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1935",
+      "title": "Adult private reflection is not a plan item yet (restart later item g)",
+      "why": "The plan's later item (g), not first release: Adult private reflection, after FU-1838. OWNER RULING 2026-11-22 (the recommendation accepted): admitted as a plan item after FU-1838; an adult's writing is stored only after sign-in, private to them, and exportable and deletable.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: Lg",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/api.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "OWNER RULING 2026-11-22 (W1236, the QEP restart): adult private reflection is admitted as a plan item after FU-1838; until it is chartered this row on P5.17, the Quran platform's item, holds it"
+    },
+    {
+      "id": "FU-1936",
+      "title": "A learner cannot read the lessons about the verse being practised (restart later item h)",
+      "why": "The plan's later item (h), not first release: Lessons-about-this-ayah read. That is, from the verse being practised a learner can open the approved lessons about that same verse, once lessons exist, as the restart asks: Link them through the same passage catalogue so a learner can move from practice to a lesson about the same āyah.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: Lh",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/api.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a later item of the restart, not first release; no route claims the Quran platform's files"
     }
   ],
   "routes": [

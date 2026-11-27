@@ -621,7 +621,7 @@
    "read_on": "2026-10-12",
    "read_by": "one research reader through a fetch that summarises the page; NOT re-read",
    "says": "Shown as last updated 14 June 2026. No key; a soft limit per address; caching encouraged. Credit Tanzil and Quran Academy, and name translators. Recitations are described as free for non-commercial redistribution. The reader's summary was inconsistent on commercial use.",
-   "not_read": "the page itself by a second reader - re-read before any audio from this source is used",
+   "not_read": "the page itself by a second reader - re-read before any audio from this source is used; and which mushaf layout its page and juz metadata follow (W1236: the Owner ruled on 2026-11-22 that alquran.cloud is accepted as the layout source only if its terms and metadata, re-read, state the 604-page Madinah layout)",
    "used_by": [
     "agentic_core/religious_domain/api.py"
    ],

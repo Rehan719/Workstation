@@ -108154,3 +108154,186 @@ def test_w1235_the_images_cmd_execs_uvicorn_so_docker_stop_ends_the_platform_on_
         assert r["status"] == "done" or (r["slot"] == "P3.30" and r.get("slot_source", "").startswith("P3.30")), r["id"]
         assert r["status"] == "done" or r.get("closed_by") is None, r["id"]
         assert "os.replace" in r["why"] and "atomic_write_json" in r["why"], r["id"]
+
+
+def test_w1236_the_owners_qep_restart_vision_and_its_24_rulings_are_recorded_where_the_work_reads_them():
+    """W1236 (records, R0): the Owner's QEP Restart Vision of 2026-11-22, and the 24 decisions put to the Owner that
+    day, which the Owner answered "I want to go with your recommendations". Held here:
+    - docs/QURAN_EDUCATION_PLATFORM_VISION.md opens with Part 0 (before Part I, with its ToC line): the dated note that
+      the restart is the Owner's and supersedes no ruling; the Owner's text from its title to the end of "Build from
+      Workstation", held whole by its SHA-256 and key lines verbatim (the markdown bold of the source kept); the local
+      source references as Owner-machine references, with no link and no home-folder path, and the Owner's closing
+      line whole; and "Decided by the Owner, 2026-11-22": 24 numbered entries, each an OWNER RULING 2026-11-22 in the
+      words put and accepted, with where it is recorded, and nothing in Part 0 left marked unresolved;
+    - the WHOLE_VISION: A.4a between A.4 and A.5, with decision 2 whole and FU-1838's closing condition; feature 15's
+      status corrected (export and deletion built by W852; five children's tools built and held), the earlier words
+      kept only inside the dated CORRECTED note, and both corrected sentences checked against the code; A.12.3's
+      extension with the 2026-10-05b words kept; a restart line under each of A.6's fifteen features;
+    - the plan: P5.17's restart paragraph and its rulings (the 30-day retention, the one-educator cap, the similarity
+      shown and not stored, the translators), P5.21's ruling (the gate's words kept, the release record a row, decision
+      11 in its words), and P3.11's dated note;
+    - the register: sixteen rows of W1236, one per round R1 to R8 and later item (a) to (h), each carrying its plan
+      text (a later round closing one leaves this green), the gate row naming the release record, each row a ruling
+      governs carrying it (the listening round R5 decision 7 as well); FU-1067's and FU-1838's rulings; and the
+      alquran.cloud row's not_read and the coverage row."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda p: (root / p).read_bytes().decode("utf-8").replace("\r\n", "\n")
+    flat = lambda t: " ".join(t.split())
+
+    #  1. PART 0, before Part I, with its ToC line and the dated note
+    qep = read("docs/QURAN_EDUCATION_PLATFORM_VISION.md")
+    head = "\n# Part 0 — Restart vision (2026-11-22) [OWNER]\n"
+    assert qep.count(head) == 1 and qep.index(head) < qep.index("\n# Part I — Provenance & Audit\n"), "Part 0 is not first"
+    assert "**Part 0 — Restart vision (2026-11-22) [OWNER]**\n- [" in qep.split("\n# Part I")[0], "no ToC line for Part 0"
+    part0 = qep.split(head, 1)[1].split("\n# Part I — Provenance & Audit\n", 1)[0]
+    p0 = flat(part0)
+    assert ("**Dated note, W1236 (2026-11-22).** The restart vision of 2026-11-22 is the Owner's" in p0 and
+            "It starts from the current Workstation implementation and its recorded rulings and supersedes no ruling. "
+            "Where its wording and a dated ruling differ, the ruling holds until the Owner rules again" in p0), \
+        "the dated note does not say the restart is the Owner's and supersedes no ruling"
+    #  the Owner's words, verbatim, the source's markdown bold kept
+    for said in ("QEP helps people **learn to read, recite and memorize, understand, and live the Quran**.",
+                 "QEP does **no automated recitation grading, pronunciation correction, mistake counting, or "
+                 "synthesized reading of the Quran**.",
+                 "Treat each as a distinct learning track with its own licensed sources and reviewer.",
+                 "| 3. Memorization | Portion plans, hidden-text and typed recall, similar-verse drills, and spaced "
+                 "review for trouble spots. | First release. |",
+                 "Children’s tools can be prepared for review while remaining gated.",
+                 "Local source review completed 22 November 2026."):
+        assert said in part0, ("the Owner's words are not in Part 0 verbatim", said[:60])
+    assert "\n## Quran Education Platform Restart Vision\n" in part0 and "\n### First release\n" in part0
+    #  ...and the whole of it as written, title to the end of "Build from Workstation", headings one level lower:
+    #  the SHA-256 of that block, so a word changed where no line above is checked is still caught
+    import hashlib
+    owner = "## Quran Education Platform Restart Vision\n" + part0.split(
+        "\n## Quran Education Platform Restart Vision\n", 1)[1].split(
+        "\n\n### Local source references (Owner-machine references, not links)\n", 1)[0]
+    assert hashlib.sha256(owner.encode("utf-8")).hexdigest() == \
+        "c615ddefa5fb0fc1206426bbca2e84cb77992a20226d4afb7d89e932f8ab6046", "the Owner's text in Part 0 is not as written"
+    assert part0.split("\n\n### Where each part is carried\n", 1)[0].rsplit("\n", 1)[1] == (
+        "Local source review completed 22 November 2026. Workstation implementation descriptions reflect static "
+        "inspection and dated records. Publisher terms and production readiness depend on the registered evidence and "
+        "release checks."), "the Owner's closing line is not kept whole before the map"
+    #  the local source references: named, never linked, no home-folder path
+    refs = part0.split("### Local source references (Owner-machine references, not links)", 1)[1].split("\n### ", 1)[0]
+    assert "](" not in refs and "../" not in refs and "Downloads/" not in refs and "github_repos" not in refs, refs[:300]
+    assert "AI Quran Recitation Checker" in refs and "On the Owner's machine" in refs
+    assert not re.search(r"(?i)\b[a-z]:[\\/]+users[\\/]|/home/|/root/|~[\\/]", part0), "Part 0 names a home folder"
+    #  the 24 rulings, each recorded where it governs; nothing unresolved
+    assert "Tensions recorded, not resolved" not in qep, "the tensions list is still there"
+    dec = part0.split("\n### Decided by the Owner, 2026-11-22\n", 1)[1]
+    assert '"I want to go with your recommendations"' in dec.split("\n1. ", 1)[0], "the Owner's word is not quoted"
+    entries = re.findall(r"^(\d+)\. \*\*(.+?)\*\* OWNER RULING 2026-11-22 \(the recommendation accepted\): (.+?) "
+                         r"\*Recorded at:\* (.+?)\.$", dec, re.M)
+    assert [int(e[0]) for e in entries] == list(range(1, 25)), [e[0] for e in entries]
+    for n, question, ruling, where in entries:
+        assert len(ruling) > 20 and where.strip(), n
+    #  every question and ruling in the words put to the Owner and accepted on 2026-11-22, none reworded: the
+    #  SHA-256 of the 24 (question, ruling) pairs, each question then its ruling, joined by newlines, as the
+    #  decisions were put that day
+    assert hashlib.sha256("\n".join(q + "\n" + r for _n, q, r, _w in entries).encode("utf-8")).hexdigest() == \
+        "e66cdcc1e5ea0affd5f6d0df76c330145d4c5ae5c1887c674669cb49837f0dc6", "a ruling in Part 0 is not the accepted words"
+    for word in ("unresolved", "not yet ruled", "PENDING", "not resolved", "open decision"):
+        assert word.lower() not in p0.lower(), ("Part 0 leaves an entry unresolved", word)
+    assert "Keep it inside goal 3 and Feature 10." in entries[0][2]
+    assert "30 days from sharing, deletable by the learner at any time" in entries[16][2]
+    #  the pointers elsewhere in the historical capture, the earlier words kept
+    assert "→ Restart statement (Owner, 2026-11-22): [Part 0](#part-0--restart-vision-2026-11-22-owner)" in qep
+    assert qep.count("> **Restart scope [OWNER 2026-11-22]**") == 15, "a feature header has no restart line"
+    assert "- Institutions can be billed based on seats or usage, with ethical pricing. *[Superseded by OWNER RULING " \
+           "2026-10-12, noted W1236 (2026-11-22), the earlier words kept" in qep
+
+    #  2. THE WHOLE VISION
+    vis = read("docs/WORKSTATION_IDBO_WHOLE_VISION.md")
+    a4a = "\n## A.4a Restart statement (Owner, 2026-11-22) · **[OWNER]**\n"
+    assert vis.count(a4a) == 1 and vis.index("\n## A.4 ") < vis.index(a4a) < vis.index("\n## A.5 "), "A.4a"
+    sec = flat(vis.split(a4a, 1)[1].split("\n## A.5 ", 1)[0])
+    assert "supersedes no ruling" in sec and "sits beside A.2" in sec and "dated Owner release record" in sec
+    #  decision 2 whole: beside A.2, and nothing withdrawn without an explicit ruling
+    assert "is not withdrawn, and nothing is withdrawn without an explicit ruling" in sec, "decision 2 is not whole"
+    #  FU-1838's own closing condition, both halves
+    assert "closes only with a dated plan record of that engagement, or with a ruling that defers it" in sec, "FU-1838"
+    f15 = flat(vis.split("**15 · Admin, Analytics & Platform Governance.**", 1)[1].split("**The shared area.**", 1)[0])
+    assert ("Learner export and deletion are built (W852, FU-1167): `GET /api/v1/qep/learner/{uid}/export` and "
+            "`DELETE /api/v1/qep/learner/{uid}`, each refused 409 while sign-in is off." in f15), "export and deletion"
+    assert "Five children's tools are built and held behind the approval pack's gate (P5.21;" in f15, "the five tools"
+    note = "*CORRECTED W1236 (2026-11-22), the earlier words kept:"
+    assert f15.count(note) == 1
+    before, kept = f15.split(note, 1)
+    assert "no children's tool is built" not in before and "or learner export and deletion exists" not in before, \
+        "feature 15 still says what is false"
+    assert ("\"No admin console, moderation, teacher or institutional analytics, embedding into another learning "
+            "platform, or learner export and deletion exists, and there is no Parental Insights dashboard: no parent "
+            "role exists, no children's tool is built, and the hub says its tools are for adults.\"" in kept), \
+        "the CORRECTED note does not keep the earlier words whole"
+    #  ...and the corrected sentences hold at the code
+    from agentic_core.religious_domain import approval_pack as _ap
+    assert len(_ap.CHILDREN_TOOLS) == 5, [t["id"] for t in _ap.CHILDREN_TOOLS]
+    from agentic_core.app_mvp import app as _app
+    _routes = {(m, getattr(r, "path", "")) for r in _app.routes for m in (getattr(r, "methods", None) or ())}
+    assert ("GET", "/api/v1/qep/learner/{uid}/export") in _routes and ("DELETE", "/api/v1/qep/learner/{uid}") in _routes
+    a123 = flat(vis.split("**A.12.3 Curriculum ownership and scholarly review", 1)[1].split("**A.12.4", 1)[0])
+    assert "A NAMED HUMAN SCHOLAR APPROVES AI-COMPOSED RELIGIOUS CONTENT BEFORE A LEARNER SEES IT" in flat(vis)
+    assert ("OWNER RULING 2026-11-22 (decisions 15 and 16; the recommendations accepted), the 2026-10-05b words above "
+            "kept:** the gate is extended from AI-composed religious content to every publishable religious lesson"
+            in a123), "A.12.3's extension"
+    a6 = vis.split("\n## A.6 ", 1)[1].split("\n## A.7 ", 1)[0]
+    assert a6.count("*Restart scope [OWNER 2026-11-22] (") == 15, "an A.6 feature has no restart line"
+
+    #  3. THE PLAN
+    plan = read("docs/FABLE_DELIVERY_PROMPT.md")
+    p517 = flat(plan.split(" P5.17 [chartered W683", 1)[1].split("\n P5.18 [chartered W711", 1)[0])
+    assert "THE OWNER'S RESTART VISION, 2026-11-22 (W1236)" in p517 and "supersedes no ruling" in p517
+    rul = p517.split("OWNER RULINGS 2026-11-22, THE QEP RESTART", 1)[1]
+    for said in ("a recording a learner shares is kept 30 days from sharing, deletable by the learner at any time and "
+                 "deleted automatically when the period ends",
+                 "the first stage is capped at one educator and one circle until it has been reviewed",
+                 "the written-recall similarity shown at the moment of the check and not stored until the Owner rules",
+                 "volunteer translators are for interface localisation only, for now",
+                 "the credentials staying in the Owner's .env and only the outcome recorded",
+                 "letter examples wait for a source whose row permits the use",
+                 "no automated pre-screening until the Owner rules on it explicitly, and a model is never the ruling "
+                 "of record",
+                 "\"Teachers are people the Owner names\"", "\"kept on the Owner's own machine during the invited "
+                 "stage\""):
+        assert said in rul, ("P5.17's rulings", said[:60])
+    p521 = flat(plan.split(" P5.21 [chartered W739", 1)[1].split("\n P5.22 [chartered W754", 1)[0])
+    assert ("Clause (3)'s words above, \"a children's tool opens only when sign-in is on AND the current pack is "
+            "approved\", are kept: the gate is to gain a third condition, a dated Owner release record" in p521)
+    assert "a guardian is a separately governed link, not an RBAC role" in p521, "decision 11 is not in its words at P5.21"
+    p311 = flat(plan.split(" P3.11 ✅ DONE W600", 1)[1].split("\n P3.12", 1)[0])
+    assert "[Superseded in part by OWNER RULING 2026-10-12, noted W1236 (2026-11-22)" in p311
+
+    #  4. THE REGISTERS
+    reg = [r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"] if isinstance(r, dict)]
+    mine = [r for r in reg if str(r.get("source", "")).startswith("W1236 ")]
+    keys = [r["source"].rsplit("its round: ", 1)[-1] for r in mine]
+    assert keys == ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8"] + ["L" + c for c in "abcdefgh"], keys
+    for r in mine:
+        assert r["status"] in ("open", "done") and r["slot"] in ("P5.17", "P5.21", "P4.1"), (r["id"], r["slot"])
+        k = r["source"].rsplit("its round: ", 1)[-1]
+        lead = f"The plan's round {k}," if k.startswith("R") else f"The plan's later item ({k[1]}), not first release:"
+        assert r["why"].startswith(lead) and len(r["why"]) > 150, (r["id"], r["why"][:80])
+    gate = mine[8]
+    assert gate["slot"] == "P5.21" and "dated Owner release record" in gate["why"], gate["why"][:200]
+    #  each row a ruling governs carries it, and the lesson-schema row carries decision 15 whole
+    by_key = {r["source"].rsplit("its round: ", 1)[-1]: r for r in mine}
+    for k in ("R2", "R3", "R5", "R8", "La", "Lb", "Lc", "Ld", "Lf", "Lg"):
+        assert "OWNER RULING 2026-11-22 (the recommendation accepted):" in by_key[k]["why"], (k, "no ruling")
+    assert ("one engagement may cover several tracks, provided each approval is entered under the named person who "
+            "gave it and that person is rostered for that track" in by_key["Ld"]["why"]), "decision 15 is not whole"
+    #  the listening round carries the production ruling its plan words wait on (FU-1882 is closed)
+    assert ("OWNER RULING 2026-11-22 (decision 7; the recommendation accepted): accept the duties" in by_key["R5"]["why"]
+            and "until then, listening stays in pre-production only" in by_key["R5"]["why"]), "R5 lacks decision 7"
+    rows = {r["id"]: r for r in reg}
+    assert "OWNER RULING 2026-11-22 (W1236, the QEP restart; the recommendation accepted): the test uses no Quran " \
+           "Foundation content" in rows["FU-1067"]["why"]
+    assert "one engagement may cover several tracks, provided each approval is entered under the named person" \
+           in rows["FU-1838"]["note"]
+    src = {r.get("id"): r for r in json.loads(read("docs/SOURCES.json"))["rows"]}
+    assert "which mushaf layout its page and juz metadata follow" in src["alquran-cloud-terms"]["not_read"]
+    cov = {r["id"]: r for r in json.loads(read("docs/COVERAGE_REGISTER.json"))["rows"]}
+    assert cov["qep-adult-memorisation-journey"]["domain"] == "Quran platform"

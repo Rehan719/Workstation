@@ -682,6 +682,14 @@
    "today": "nothing here; its design waits on a real marking scheme"
   },
   {
+   "id": "qep-adult-memorisation-journey",
+   "domain": "Quran platform",
+   "nation": "any - the sourced text and its practice are the same everywhere",
+   "subject": "The adult memorisation journey end to end: a valid passage found, its edition and coverage shown, recall tried, the sourced text revealed, a trouble spot returned to, at phone and desktop width with accessible controls",
+   "state": "nothing_built",
+   "today": "each step exists on its own; nothing drives them as one journey, and no run is made at phone width (the Owner's restart of 2026-11-22, its release evidence)"
+  },
+  {
    "id": "law-read-a-provision",
    "domain": "Law",
    "subject": "Reading one provision of an Act as its publisher gives it",
