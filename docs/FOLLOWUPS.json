@@ -27807,10 +27807,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1201",
       "note": "",
-      "slot_source": "P5.10 clause 1; integration_tests/ is a retired area"
+      "slot_source": "P5.10 clause 1; integration_tests/ is a retired area",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1201: _w703_faults, the guard every business document passes, now reads each row's status and each plan item's state from root/docs/FOLLOWUPS.json and the delivery plan, or from a register a test passes, so its sixteen call statements keep their arguments. (a) A bullet that begins 'Between this step and being relied on' names only open rows, a row it labels [owner decision] is slotted OWNER or owner-gated, and a plan item it names is not done. (b) A row a sentence or table cell calls open, still open, or the Owner's to rule or decide, is open. (c) A sentence or cell that says rows are, stay or remain open names at least one. A row named elsewhere, as evidence of what was built (METRICS_MEASURED.md's FU-1010, BUSINESS_PLAN.md's FU-1061), is not read for status, so the ratified documents are not edited. Every document under docs/business passes; W1193 had already restated the map and the cost model's P4.1 cell. test_w1201 plants each fault, labelled, and asserts each plant's own message; a done row cited as evidence, 'no open row' with no id and 'the register of open rows' stay clean; with a register copy in which the first open row the map's 'Between' lines name is done (FU-1095 today; the leg follows the map, so a round that closes that row and restates the map need not edit it), the map is a fault. A round that later closes a row a 'Between' line names (FU-417, FU-1072, FU-1036, FU-993, FU-1095, FU-1086) restates the map in that round."
     },
     {
       "id": "FU-1873",
@@ -27824,10 +27827,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1201",
       "note": "",
-      "slot_source": "P5.10 clause 2, a guard that holds its property over the whole document"
+      "slot_source": "P5.10 clause 2, a guard that holds its property over the whole document",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1201: one module-level pattern, _W703_MONEY, and its helper _w703_money count a money figure written before or after its number, with a multiplier, or in words: a code or symbol before a number; a number, with million, thousand, bn, m or k or none, then GBP, USD, EUR, pounds, dollars, euros, pence or sterling as a whole word, or a symbol after the number; and number words before pounds, dollars, euros or pence. 'GB' is not read as a currency. The rulings that let a figure stand are unchanged: the statement carries [owner-defined, or a provider's published price is marked SOURCED with its date and its pages (FU-1176). _w703_faults and test_w923's loop over the founder's guide both call _w703_money, so the guide's copy no longer keeps the currency-first pattern. No business document states money after its number or in words without a ruling; the cost model's ninety-nine pounds carries [owner-defined, 2026-10-13]. test_w1201 finds '750,000 GBP', '2.5 million pounds', 'two million pounds' and '5 €', each by its own message, and keeps '1 GB of memory' and the ruled amount in words clean."
     },
     {
       "id": "FU-1874",
@@ -27882,10 +27888,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1201",
       "note": "",
-      "slot_source": "P3.30, a document restated so it no longer claims what a ruling refutes; P5.7 and P5.16 are done"
+      "slot_source": "P3.30, a document restated so it no longer claims what a ruling refutes; P5.7 and P5.16 are done",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1201: the first-offer papers say the Domain tools are free, by the Owner's ruling of 2026-10-12 (plan item P5.16 clause 1), before FU-1818's interviews. FIRST_OFFER_CANDIDATES.md's 'How to read' says so and that the willingness-to-pay questions ask what a person spends today; its leading hypothesis says teachers will use the tool and come back to it, no longer that they will pay for it; its third refutation is a school that does not let its staff use a free outside tool; its first demand row is 'Would anyone use it again', NOT MEASURED in each column. The questions, W1192's guide that shows both outputs labelled, and the notes template are unchanged. FIRST_OFFER_DRAFTS.md asks whether teachers would come back and how often the need recurs, and answers 'What does it cost?' that nothing is charged for using a Domain tool and that the Owner's charges fall only on generating an enterprise (a price once, set and not yet charged) and on that enterprise's profit (a quarter, taken first), naming no amount; its :13 and the brand screen's register row and closing sentence say the same. P5.7 carries a dated note after W1192's ruling. test_w1201 holds that no sentence of the three papers pairs the tool with a money word unless a denial comes first, with the questions, the canvas's 'Nobody pays for a domain tool' and 'No school pays a licence for the tool' as controls and the brand screen's LICENSE bullet as a smoke check; test_w913 and test_w1151 read the new words."
     },
     {
       "id": "FU-1877",
@@ -27940,10 +27949,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1201",
       "note": "",
-      "slot_source": "the gate's guard; P5.7 is done"
+      "slot_source": "the gate's guard; P5.7 is done",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1201: test_w1126 computes the seventh investment gate with _w1201_first_offer_gate, to the Owner's ruling of 2026-11-22, and no longer reads any docs/ file named 'interview' as evidence. The gate is evidenced when at least five interviews are recorded, each a section '### Interview notes, YYYY-MM-DD' of a document under docs/business that fills every field of the notes template in FIRST_OFFER_CANDIDATES.md, one bullet each, and P5.7 carries a dated OWNER RULING that the first offer is a named candidate, with its reasons ('because'), dated on or after the fifth interview; when P5.7 records more than one such ruling, the latest dated is the one read. The cost model's bar is W1192's and is unchanged, and so are 'OWNER RULING 2026-11-19 (FU-1191)' and 'So no gate is evidenced today.' test_w1201 holds the template's seven fields and, on planted trees, that a file named 'interview' evidences nothing, five filled notes with a dated, reasoned choice evidence it, and four notes, a note missing a field, no choice, a choice with no reasons and a choice dated before the fifth interview do not, and of two dated choices the later is read; any real choice the Owner has recorded in P5.7 is taken out of the copied plan before the planted cases."
     },
     {
       "id": "FU-1880",

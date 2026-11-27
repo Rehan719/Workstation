@@ -64864,9 +64864,103 @@ _W963_PERSONAL = (
 _W963_PUBLIC = "DRAFT - NOT APPROVED FOR PUBLICATION"
 
 
-def _w703_faults(text, root, plan_slots, row_ids, routes=None, public=False):
+#  W1201 (FU-1873, P5.10 clause 2) - A MONEY FIGURE IS COUNTED BEFORE OR AFTER ITS NUMBER, WITH A MULTIPLIER, OR
+#  IN WORDS: a code or symbol before a number; a number, a multiplier or none, then a currency code or word, or a
+#  symbol after it; or number words before pounds, dollars, euros or pence. 'GB' is not a currency. The rulings that let a figure stand are unchanged: [owner-defined, or a
+#  provider's published price marked SOURCED (FU-1176). test_w923's loop calls _w703_money as well.
+_W703_NUMBER_WORD = (r"(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|"
+                     r"sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|"
+                     r"hundred|thousand|million|billion)")
+_W703_MONEY = (r"\b(?:GBP|USD|EUR)\s*\d|[£$€]\s*\d"
+               r"|\b\d[\d,]*(?:\.\d+)?\s*(?:(?:million|thousand|bn|m|k)\b\s*)?"
+               r"(?:GBP|USD|EUR|pounds?|dollars?|euros?|pence|sterling)\b"
+               r"|\b\d[\d,]*(?:\.\d+)?\s*[£$€]"
+               r"|\b" + _W703_NUMBER_WORD + r"(?:[\s-]+(?:and[\s-]+)?" + _W703_NUMBER_WORD + r")*\s+"
+               r"(?:pounds?|dollars?|euros?|pence)\b")
+
+
+def _w703_money(block):
+    """W1201 (FU-1873) - whether a statement states a money figure, before or after its number, with a multiplier, or
+    in words."""
+    import re
+    return bool(re.search(_W703_MONEY, block, re.I))
+
+
+#  W1201 (FU-1872, P5.10 clause 1) - WHAT A ROW'S STATUS AND A PLAN ITEM'S STATE ARE, read from the tree the document
+#  is in (root/docs/FOLLOWUPS.json and the delivery plan), or from a register a test passes; read once per file state
+_W703_STATE_CACHE = {}
+
+
+def _w703_state(root, register=None):
+    import json
+    import pathlib
+    from agentic_core import plan_followups as _pf
+    root = pathlib.Path(root)
+    out = []
+    for rel in ("docs/FOLLOWUPS.json", "docs/FABLE_DELIVERY_PROMPT.md"):
+        st = (root / rel).stat()
+        key = (str(root / rel), st.st_mtime_ns, st.st_size)
+        if key not in _W703_STATE_CACHE:
+            text = (root / rel).read_text(encoding="utf-8")
+            _W703_STATE_CACHE[key] = ({r["id"]: r for r in json.loads(text)["items"] if isinstance(r, dict)}
+                                      if rel.endswith(".json") else
+                                      {i["slot"] for i in _pf.plan_items(text) if i.get("done")})
+        out.append(_W703_STATE_CACHE[key])
+    rows, done = out
+    if register is not None:
+        rows = {r["id"]: r for r in register} if isinstance(register, list) else dict(register)
+    return rows, done
+
+
+_W703_BETWEEN = "Between this step and being relied on"
+_W703_CALLS_OPEN = r"\bopen\b|\bthe Owner['’]s to (?:rule|decide)\b"
+_W703_ROWS_OPEN = r"\brows\s+(?:are|stay|remain)\s+(?:still\s+)?open\b"
+
+
+def _w703_status_faults(text, root, register=None):
+    """W1201 (FU-1872) - (a) a 'Between this step and being relied on' bullet names only open rows, a row it labels
+    [owner decision is slotted OWNER or owner-gated, and a plan item it names is not done; (b) a row a sentence calls
+    open, still open, or the Owner's to rule or decide, is open; (c) a sentence or table cell that says rows are, stay
+    or remain open names at least one. A row named elsewhere, as evidence of what was built, is not read for status."""
+    import re
+    rows, done = _w703_state(root, register)
+    faults = []
+    body = text.split("\n## ", 1)[1] if "\n## " in text else ""
+    for block in re.split(r"\n(?=- |\d+\. )", body):
+        if not block.startswith("- " + _W703_BETWEEN):
+            continue
+        said = block.split("\n\n", 1)[0].split("\n## ", 1)[0]
+        for rid in dict.fromkeys(re.findall(r"\bFU-\d+\b", said)):
+            r = rows.get(rid)
+            if r is None:
+                continue
+            if r.get("status") != "open":
+                faults.append(f"a 'Between' line names row {rid}, which is {r.get('status')}, as standing between a "
+                              "step and being relied on")
+            if "[owner decision" in said and not (r.get("slot") == "OWNER" or r.get("owner_gated") is True):
+                faults.append(f"a 'Between' line labels row {rid} [owner decision], and it is neither slotted OWNER "
+                              "nor owner-gated")
+        for slot in dict.fromkeys(re.findall(r"plan item (P\d+\.\d+)", said)):
+            if slot in done:
+                faults.append(f"a 'Between' line names plan item {slot}, which is done")
+    for sentence in re.split(r"(?<=[.;!?])\s+|\n\s*\n|\n(?=- |\d+\. |#|\|)", text):
+        for cell in sentence.split("|"):
+            named = list(dict.fromkeys(re.findall(r"\bFU-\d+\b", cell)))
+            if named and re.search(_W703_CALLS_OPEN, cell, re.I):
+                for rid in named:
+                    r = rows.get(rid)
+                    if r is not None and r.get("status") != "open":
+                        faults.append(f"it calls row {rid} open, or the Owner's to rule, and it is "
+                                      f"{r.get('status')}: {cell.strip()[:70]}")
+            if re.search(_W703_ROWS_OPEN, cell, re.I) and not named:
+                faults.append(f"it says rows are open and names none: {cell.strip()[:70]}")
+    return faults
+
+
+def _w703_faults(text, root, plan_slots, row_ids, routes=None, public=False, register=None):
     """Every reason a business document cannot stand as written. Empty means none. `public`: the document is a
-    public-facing draft (W963: one under docs/business/public/)."""
+    public-facing draft (W963: one under docs/business/public/). W1201: a row's status and a plan item's state are
+    read from root/docs/FOLLOWUPS.json and the delivery plan, or from `register` (rows by id) when a test passes one."""
     import re
     labels = ("[observed", "[owner-defined", "[inference", "[hypothesis", "[deferred", "[owner decision")
     faults = []
@@ -64909,7 +65003,8 @@ def _w703_faults(text, root, plan_slots, row_ids, routes=None, public=False):
     for block in re.split(r"\n(?=- |\d+\. |\n)", text):
         _sourced = ("SOURCED" in block and re.search(r"\b20\d\d-\d\d-\d\d\b", block)
                     and ("https://" in block or "`docs/DEPLOYMENT.md`" in block))
-        if re.search(r"\b(GBP|USD|EUR)\s*\d|[£$€]\s*\d", block) and "[owner-defined" not in block and not _sourced:
+        #  W1201 (FU-1873) - the currency before or after the figure, with a multiplier, or the amount in words
+        if _w703_money(block) and "[owner-defined" not in block and not _sourced:
             faults.append(f"a money figure is stated with no ruling behind it: {block.strip()[:70]}")
     for line in text.splitlines():
         if re.search(r"\b\d[\d,]*\s+(users|customers|subscribers|learners)\b", line):
@@ -64926,6 +65021,8 @@ def _w703_faults(text, root, plan_slots, row_ids, routes=None, public=False):
         m = re.search(pat, text)
         if m:
             faults.append(f"it carries {what}: {m.group(0)[:40]}")
+    #  W1201 (FU-1872) - a row it says stands open, or between a step and being relied on, is open
+    faults += _w703_status_faults(text, root, register)
     #  a public-facing draft opens with its heading (P5.7 clause 4)
     if public and _W963_PUBLIC not in opening:
         faults.append(f"a public-facing draft does not open with {_W963_PUBLIC}")
@@ -77879,7 +77976,8 @@ def test_w913_fu806_three_first_offers_are_compared_on_their_evidence_and_the_in
         assert f"def {cited}_" in suite, (cited, "is cited as evidence and the suite holds no such test")
     rows = {ln.split("|")[1].strip(): [c.strip() for c in ln.split("|")[2:-1]]
             for ln in table.splitlines() if ln.startswith("| ") and not ln.startswith("| Criterion") and "---" not in ln}
-    for demand in ("Would anyone pay", "How often the need recurs", "What a person uses today"):
+    #  W1201 (FU-1876): the Domain tools are free (P5.16 clause 1), so the first demand row asks about use again
+    for demand in ("Would anyone use it again", "How often the need recurs", "What a person uses today"):
         assert rows.get(demand) == ["NOT MEASURED"] * 3, (demand, rows.get(demand), "no interview has measured it")
     assert len(rows) >= 8 and all(len(cells) == 3 and all(cells) for cells in rows.values()), rows
 
@@ -78683,7 +78781,7 @@ def test_w923_fu742_the_guides_price_section_is_put_to_the_owner_with_the_recomm
     assert f"waits on your decision in row {row['id']}" not in guide and "stays open for it" not in guide
     assert f"as the Owner ruled on 2026-11-19 in row {row['id']}. [owner-defined, 2026-11-19]" in guide
     for _blk in re.split(r"\n(?=- |\d+\. |\n)", guide):
-        if re.search(r"[£$€]\s*\d|\b(GBP|USD|EUR)\s*\d", _blk):
+        if _w703_money(_blk):   # W1201 (FU-1873): the figure by the business guard's own pattern
             assert "SOURCED" in _blk and "2026-11-20" in _blk and "`docs/DEPLOYMENT.md`" in _blk, _blk[:120]
 
 
@@ -92218,7 +92316,9 @@ def test_w1126_fu1280_the_cost_model_marks_each_of_the_seven_gates_from_what_the
     - P4.4: the plan records it deferred by the Owner; P4.5: the dry run's rows are done (W1137) and no deploy is
       recorded: the Owner's first restore at the deploy (FU-1288) is open;
     - P4.6: REAL_MONEY_ENABLED is False;
-    - the first offer: no interview is recorded in the tree.
+    - the first offer (W1201, FU-1879): by the Owner's ruling of 2026-11-22, evidenced only at five interviews
+      recorded in the notes template and the Owner's choice recorded with its date and reasons, never by a file
+      named 'interview' (_w1201_first_offer_gate).
     A gate whose state changes fails this until its row is marked again."""
     import json
     import pathlib
@@ -92230,7 +92330,8 @@ def test_w1126_fu1280_the_cost_model_marks_each_of_the_seven_gates_from_what_the
     reg = {r["id"]: r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"]}
     flat = " ".join(read("docs/FABLE_DELIVERY_PROMPT.md").split())
     p44 = flat[flat.index(" P4.4 ✅ DONE W1174 Managed Postgres"):flat.index(" P4.5 Production deploy")]   # W1174
-    interviews = [p for p in (root / "docs").rglob("*") if p.is_file() and re.search(r"interview", p.name, re.I)]
+    #  W1201 (FU-1879) - the seventh gate is the Owner's bar of 2026-11-22, read from the notes recorded and P5.7
+    first_offer = _w1201_first_offer_gate(root)
     met = {
         "P4.1 sign-in": 'os.getenv("AUTH_ENABLED", "false")' not in auth
                         or not re.search(r'key: AUTH_ENABLED\n\s+value: "false"', read("render.yaml")),
@@ -92242,7 +92343,7 @@ def test_w1126_fu1280_the_cost_model_marks_each_of_the_seven_gates_from_what_the
         "P4.5 production deploy": (reg["FU-603"]["status"] == "done" and reg["FU-1156"]["status"] == "done"
                                    and reg["FU-1288"]["status"] == "done"),
         "P4.6 real money": _op.REAL_MONEY_ENABLED is not False,
-        "A first offer the interviews support": bool(interviews),
+        "A first offer the interviews support": first_offer["met"],
     }
     gates = read("docs/business/COST_MODEL.md").split("## The seven investment gates", 1)[1]
     rows = dict(re.findall(r"^\| (.+?) \| .+? \| (yes|no) \|$", gates, re.M))
@@ -94187,7 +94288,8 @@ def test_w1151_fu809_each_public_draft_is_headed_and_every_claim_names_a_test_th
     - each of the six pieces is a section whose heading carries DRAFT - NOT APPROVED FOR PUBLICATION;
     - every test a claim names is one this suite defines and one that runs without an outside model (not _ai_only);
     - the drafts are built from the leading hypothesis the first-offer comparison still states (candidate C);
-    - the demonstration uses invented material only, the outreach drafts are marked NOT SENT, and no price is set."""
+    - the demonstration uses invented material only, the outreach drafts are marked NOT SENT, and the cost answer
+      says the Domain tools are free, by plan item P5.16 (W1201, FU-1876)."""
     import pathlib
     import re
     import json
@@ -94226,7 +94328,9 @@ def test_w1151_fu809_each_public_draft_is_headed_and_every_claim_names_a_test_th
     outreach = doc.split("## 6. Outreach templates", 1)[1].split("\n## ", 1)[0]
     drafts = [l for l in outreach.splitlines() if l.startswith("- ")]
     assert len(drafts) >= 2 and all("DRAFT, NOT SENT" in l for l in drafts), drafts
-    assert "No price is set" in flat
+    #  W1201 (FU-1876): the cost answer says the Domain tools are free, never that a price may come
+    assert "Nothing is charged for using a Domain tool: the Domain tools are free" in flat and "plan item P5.16" in flat
+    assert "No price is set" not in flat and "a price is the Owner's to set" not in flat
     assert reg["FU-809"]["slot"] == "P5.7"
 
 
@@ -106101,3 +106205,369 @@ def test_w1202_fu1835_through_the_tunnel_no_page_from_another_origin_or_host_act
             "FU-1835 was closed, and not by this round as built", fu["status"], fu.get("closed_by"))
         assert not indexed.stdout.strip(), (
             "the guard is in git's index and FU-1835 is still open: the round's close step did not run")
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1201 - BEFORE THE TEACHER INTERVIEWS, THE FIRST-OFFER PAPERS SAY THE DOMAIN TOOL IS FREE (FU-1876, P3.30); THE
+#  SEVENTH GATE READS THE OWNER'S BAR (FU-1879); THE BUSINESS GUARD READS ROW STATUS AND COUNTS MONEY HOWEVER IT IS
+#  WRITTEN (FU-1872, FU-1873, P5.10).
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1201 (FU-1876) - A SENTENCE THAT PAIRS THE TOOL WITH A MONEY WORD presents a free Domain tool as bought. It stands
+#  only when a denial ('no', 'not', 'never', 'nobody', 'none') or 'free' comes before its first money word; 'would'
+#  does not make it a denial. The word lists are kept narrow, so that P5.7's own questions ('What do you pay now ...?')
+#  and the canvas's 'Nobody pays for a domain tool' stand.
+_W1201_TOOL = (r"\b(?:the|this) tool\b|\blesson-plan tool\b|\ba tool that drafts\b|\bcandidates? [ABC]\b"
+               r"|\bdomain tools?\b|\bthe offer\b")
+_W1201_MONEY_WORD = (r"\b(?:pay|pays|paid|paying|buy|buys|bought|buying|price|prices|priced|pricing|licen[cs]es?"
+                     r"|subscriptions?)\b")
+_W1201_EXEMPT = ("no", "not", "never", "nobody", "none", "free")
+
+
+def _w1201_priced(text):
+    """The sentences (and table cells) of a text that pair a reference to the tool with a money word, no denial or
+    'free' coming before the first money word."""
+    import re
+    out = []
+    for sentence in re.split(r"(?<=[.;!?])\s+|\n\s*\n|\n(?=- |\d+\. |#|\|)", text):
+        for cell in sentence.split("|"):
+            s = " ".join(cell.split())
+            m = re.search(_W1201_MONEY_WORD, s, re.I)
+            if not m or not re.search(_W1201_TOOL, s, re.I):
+                continue
+            if re.search(r"\b(?:" + "|".join(_W1201_EXEMPT) + r")\b", s[:m.start()], re.I):
+                continue
+            out.append(s)
+    return out
+
+
+#  W1201 (FU-1879) - THE SEVENTH GATE, AS THE OWNER RULED ON 2026-11-22: evidenced when at least five interviews are
+#  recorded in the notes template and the Owner's choice of offer is recorded with its reasons. An interview is
+#  recorded as a section '### Interview notes, YYYY-MM-DD' of a document under docs/business/ that fills every field
+#  of the template in FIRST_OFFER_CANDIDATES.md, one bullet each, '- <the field's opening words>: <what was said>'.
+#  The choice is a dated ruling in P5.7's block: 'OWNER RULING YYYY-MM-DD ...: the first offer is candidate X ...
+#  because ...', dated on or after the fifth interview; when P5.7 records more than one, the latest dated is the
+#  Owner's choice (review R1). A file named 'interview' is evidence of nothing.
+def _w1201_first_offer_gate(root):
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _pf
+    root = pathlib.Path(root)
+    cand = (root / "docs/business/FIRST_OFFER_CANDIDATES.md").read_text(encoding="utf-8")
+    template = cand.split("\n## Notes template\n", 1)[1].split("\n## ", 1)[0]
+    fields = [b.split(",", 1)[0].strip() for b in re.findall(r"^- (.+)$", template, re.M)]
+    notes = []
+    for d in sorted((root / "docs/business").rglob("*.md")):
+        text = d.read_text(encoding="utf-8")
+        for m in re.finditer(r"^### Interview notes, (20\d\d-\d\d-\d\d)\n(.*?)(?=^#|\Z)", text, re.M | re.S):
+            said = {}
+            for b in re.findall(r"^- (.+)$", m.group(2), re.M):
+                k, _, v = b.partition(":")
+                said[k.strip()] = re.sub(r"\[[^\]]*\]", "", v).strip()
+            if all(said.get(f) for f in fields):
+                notes.append(m.group(1))
+    notes.sort()
+    plan = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    p57 = " ".join(_pf._item_blocks(_pf.delivery_plan_body(plan) or plan).get("P5.7", "").split())
+    rulings = sorted((m.group(1), m.group(2)) for m in re.finditer(
+        r"OWNER RULING (20\d\d-\d\d-\d\d)\b[^:]*: the first offer is candidate ([ABC])\b[^.]*?"
+        r"\bbecause\b\s*\S", p57))
+    choice = rulings[-1] if rulings else None
+    met = len(notes) >= 5 and bool(choice) and all(choice[0] >= d for d in notes[:5])
+    return {"fields": fields, "notes": len(notes), "dates": notes, "choice": choice, "met": met}
+
+
+def test_w1201_the_first_offer_papers_say_the_domain_tool_is_free_and_ask_only_what_a_person_spends_today():
+    """FU-1876 (W1201), P3.30. The first-offer papers presented a free Domain tool as something people pay for, and the
+    drafts' cost answer said a price may come, against P5.16 clause 1 (2026-10-12): every Domain is free, for
+    individuals and for institutions. Held here, before FU-1818's interviews use the papers:
+    1. the leading hypothesis says no pay, paid, buy, bought, price, licence or subscription;
+    2. no comparison criterion asks whether anyone would pay or buy, and the three demand rows are NOT MEASURED x3;
+       the candidates paper says the Domain tools are free and that its questions ask what a person spends today;
+    3. the drafts' cost answer says nothing is charged for using a Domain tool, by plan item P5.16 and the ruling of
+       2026-10-12, and that the Owner's charges fall only on generating an enterprise (set and not yet charged) and on
+       its profit (taken first); no draft says a price may come or names the price and the buyer, and the brand
+       screen's register no longer does;
+    4. no sentence of the three papers pairs the tool with a money word unless a denial or 'free' comes first, and
+       'would' is no denial: a planted priced sentence is found, P5.7's questions, the canvas's 'Nobody pays for a
+       domain tool' and the brand screen's LICENSE bullet are not;
+    5. P5.7 carries the dated note, naming P5.16 clause 1 and what a person spends today, after W1192's ruling;
+    6. the first-offer row (found by its title) is closed by this round as built."""
+    import json
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _pf
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda p: (root / p).read_text(encoding="utf-8")
+    cand, drafts, brand = (read("docs/business/FIRST_OFFER_CANDIDATES.md"), read("docs/business/public/FIRST_OFFER_DRAFTS.md"),
+                           read("docs/business/NAME_AND_BRAND_SCREEN.md"))
+
+    def section(text, title):
+        return text.split(f"\n## {title}\n", 1)[1].split("\n## ", 1)[0]
+
+    #  1. the leading hypothesis asks for no payment
+    lead = section(cand, "The leading hypothesis")
+    said = re.findall(r"\b(?:pay|paid|buy|bought|price|licence|subscription)\w*", lead, re.I)
+    assert not said, ("L1: the leading hypothesis has the tool bought", said)
+    assert "Teachers and tutors who plan lessons against a named framework will use a tool that drafts" in lead, (
+        "L1: the hypothesis W1151's drafts are built from is not the one leading")
+
+    #  2. no criterion asks for payment; the demand rows are not measured; the paper says the tools are free
+    table = section(cand, "The comparison")
+    rows = {ln.split("|")[1].strip(): [c.strip() for c in ln.split("|")[2:-1]]
+            for ln in table.splitlines() if ln.startswith("| ") and not ln.startswith("| Criterion") and "---" not in ln}
+    asks = [c for c in rows if re.search(r"\b(?:pay|paid|buy|bought|price)\w*", c, re.I)]
+    assert not asks, ("L2: a criterion asks whether anyone would pay", asks)
+    for demand in ("Would anyone use it again", "How often the need recurs", "What a person uses today"):
+        assert rows.get(demand) == ["NOT MEASURED"] * 3, ("L2: a demand row is not NOT MEASURED x3", demand, rows.get(demand))
+    how = " ".join(section(cand, "How to read this document").split())
+    assert ("The Domain tools are free, for individuals and for institutions, by the Owner's ruling (plan item P5.16), so "
+            "the willingness-to-pay questions below ask what a person spends today") in how, (
+        "L2: the candidates paper does not say the Domain tools are free")
+
+    #  3. the drafts' cost answer: free, by P5.16 of 2026-10-12, and the Owner's two charges, naming no amount
+    dflat, bflat = " ".join(drafts.split()), " ".join(brand.split())
+    qa = section(drafts, "5. Questions and answers — DRAFT - NOT APPROVED FOR PUBLICATION")
+    cost = [ln for ln in qa.splitlines() if ln.startswith("- What does it cost?")]
+    assert len(cost) == 1, ("L3: the drafts have no single cost answer", cost)
+    cost = cost[0]
+    for words in ("Nothing is charged for using a Domain tool: the Domain tools are free, for individuals and for "
+                  "institutions", "the Owner's ruling of 2026-10-12 (plan item P5.16)",
+                  "The Owner's charges fall only on generating an enterprise, a price paid once that is set and not yet "
+                  "charged", "and on the profit of an enterprise generated here, a quarter of it taken first"):
+        assert words in cost, ("L3: the cost answer does not say", words)
+    assert not re.search(r"\d", cost.split("[owner-defined", 1)[0].replace("2026-10-12", "").replace("P5.16", "")), (
+        "L3: the cost answer names an amount", cost)
+    for gone in ("No price is set", "a price is the Owner's to set", "the price and the buyer", "whether anyone would pay",
+                 "who would buy it", "No price, customer"):
+        assert gone not in dflat, ("L3: the drafts still say", gone)
+    assert ("no amount is named for any charge: the Domain tools are free, and the Owner's charges fall only on "
+            "generating an enterprise and on its profit") in dflat, "L3: the drafts' :13 does not say what is charged"
+    for gone in ("the price and the buyer", "about a customer, a price"):
+        assert gone not in bflat, ("L3: the brand screen still says", gone)
+    assert ("| Whether teachers would use it again, and how often the need recurs, are not measured | "
+            "`docs/business/FIRST_OFFER_CANDIDATES.md` | 2, 3 |") in brand, "L3: the brand screen's register row"
+    assert ("what the drafts say of cost is that the Domain tools are free and that the Owner's charges fall only on "
+            "generating an enterprise and on its profit; they name no amount for any charge") in bflat, (
+        "L3: the brand screen's closing sentence does not say what the drafts say of cost")
+
+    #  4. no sentence pairs the tool with a money word unless a denial comes first; driven both ways
+    for name, text in (("candidates", cand), ("drafts", drafts), ("brand screen", brand)):
+        assert _w1201_priced(text) == [], ("L4: a sentence pairs the tool with a money word", name, _w1201_priced(text))
+    planted = ("- A school would buy a licence for the lesson-plan tool. [hypothesis]",
+               "- Teachers and tutors will use, and pay for, a tool that drafts the plan. [hypothesis]",
+               "- Candidate C is priced per school. [hypothesis]",
+               "- A school pays a licence for the tool. [hypothesis]")
+    for p in planted:
+        assert _w1201_priced(p), ("L4: a priced sentence passes", p)
+    canvas = " ".join(read("docs/business/BUSINESS_MODEL_CANVAS.md").split())
+    assert "Nobody pays for a domain tool [owner-defined, 2026-10-13]" in canvas, "L4: the canvas's control moved"
+    wtp = [ln[2:] for ln in section(cand, "Willingness-to-pay questions that do not lead").splitlines() if ln.startswith("- ")]
+    controls = ("What do you pay now, in money or in time, for the way you do this?",
+                "When did you last pay for a tool for this kind of work?", "Nobody pays for a domain tool",
+                "No school pays a licence for the tool.", *wtp)
+    for c in controls:
+        assert _w1201_priced(c) == [], ("L4: a control is flagged: the rule is over-broad", c)
+    #  a smoke check, not a control (review R3): the brand screen's LICENSE bullet names no tool, so it is never flagged
+    licence = [ln for ln in brand.splitlines() if ln.startswith("- The project's licence names its copyright holder")]
+    assert len(licence) == 1 and _w1201_priced(licence[0]) == [], ("L4: the LICENSE bullet (a smoke check)", licence)
+
+    #  5. P5.7's dated note, after W1192's ruling there
+    plan = read("docs/FABLE_DELIVERY_PROMPT.md")
+    p57 = " ".join(_pf._item_blocks(_pf.delivery_plan_body(plan) or plan)["P5.7"].split())
+    note = ("W1201 (a note, not a ruling): P5.16 clause 1, ruled on 2026-10-12, the day after this item was chartered, "
+            "makes every Domain free for individuals and institutions, so clause (1)'s willingness-to-pay questions ask "
+            "what a person spends today and never price the tool; the first-offer papers say so.")
+    assert p57.count(note) == 1, "L5: P5.7 does not carry the dated note"
+    assert p57.index("OWNER RULING 2026-11-22 (the recommendations accepted): the seventh gate") < p57.index(note), (
+        "L5: P5.7's note is not after W1192's ruling")
+
+    #  6. the first-offer row, found by its title, closed by this round as built
+    reg = json.loads(read("docs/FOLLOWUPS.json"))["items"]
+    row = [r for r in reg if r.get("title") == ("The first-offer papers present a free Domain tool as something people "
+                                                "pay for, and the drafts' cost answer says a price may come")]
+    assert len(row) == 1 and row[0]["slot"] == "P3.30", ("L6: the first-offer row is not found by its title", len(row))
+    r = row[0]
+    assert (r["status"], r.get("closed_by"), r.get("because")) == ("done", "W1201", "built"), (
+        "L6: the first-offer row is not closed by this round as built", r["status"], r.get("closed_by"))
+    assert r.get("close_note", "").startswith("Built in W1201: "), ("L6: its close note", r.get("close_note", "")[:80])
+
+
+def test_w1201_p510_a_business_document_calls_open_only_a_row_that_is_open_and_its_money_is_counted_however_written():
+    """FU-1872 and FU-1873 (W1201), P5.10. The business documents' guard (_w703_faults) checked only that a named row
+    exists, and counted money only with the currency first. It now reads each row's status and each plan item's state
+    from root/docs/FOLLOWUPS.json and the plan, or from a register a test passes. Held here:
+    1. every document under docs/business passes the extended guard against the real register;
+    2. each fault planted in a good fixture is found, by its own message: a 'Between' line naming a done row, one
+       labelling an ungated row [owner decision], a cell saying the readiness round's rows are open with none named,
+       a sentence calling a done row open, a 'Between' line naming a done plan item, and money written with its
+       currency after the number, with a multiplier, in words, and with a symbol after the number;
+    3. a done row cited as evidence, an amount in words the Owner defined, 'no open row' with no id, 1 GB of memory
+       and 'the register of open rows' stay clean;
+    4. with a register copy in which the first open row the map's 'Between' lines name (FU-1095 today) is done, the
+       map is a fault, and with the real register
+       it is not;
+    5. test_w923's loop calls _w703_money, which finds '750,000 GBP' and 'two million pounds'."""
+    import copy
+    import inspect
+    import json
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _fu
+    from agentic_core.app_mvp import app as _app1201
+    root = pathlib.Path(__file__).resolve().parents[1]
+    plan_slots = {i["slot"] for i in _fu.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))}
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    row_ids = {r["id"] for r in reg}
+    routes = {(m, r.path) for r in _app1201.routes for m in (getattr(r, "methods", None) or ())}
+
+    #  1. every business document, against the real register
+    docs = sorted((root / "docs/business").rglob("*.md"))
+    assert len(docs) >= 10, docs
+    for d in docs:
+        got = _w703_faults(d.read_text(encoding="utf-8"), root, plan_slots, row_ids, routes, d.parent.name == "public")
+        assert got == [], ("L1: a business document cannot stand", d.name, got)
+
+    #  2. each plant found by its own message, against a register the test passes (independent of the real one)
+    fake = {"FU-849": {"id": "FU-849", "status": "done", "slot": "P4.1", "owner_gated": False},
+            "FU-1086": {"id": "FU-1086", "status": "open", "slot": "P5.22", "owner_gated": False},
+            "FU-1010": {"id": "FU-1010", "status": "done", "slot": "P5.9", "owner_gated": False}}
+    good = "# T\n\n**DRAFT until the Owner ratifies it.**\n\n## One\n\n- A true thing [observed: `docs/FOLLOWUPS.json`].\n"
+
+    def faults(text):
+        return _w703_faults(text, root, plan_slots, set(fake), routes, register=fake)
+
+    assert faults(good) == [], faults(good)
+    planted = {
+        "- Between this step and being relied on: row FU-849 (a planted row) [observed: `docs/FOLLOWUPS.json`].":
+            "a 'Between' line names row FU-849, which is done, as standing between a step and being relied on",
+        "- Between this step and being relied on: row FU-1086, the final audit still to be run [owner decision].":
+            "a 'Between' line labels row FU-1086 [owner decision], and it is neither slotted OWNER nor owner-gated",
+        "| P4.1 sign-in | the readiness round's rows are open | no |":
+            "it says rows are open and names none: the readiness round's rows are open",
+        "- Row FU-849 is open [observed].":
+            "it calls row FU-849 open, or the Owner's to rule, and it is done: - Row FU-849 is open [observed].",
+        "- Between this step and being relied on: plan item P5.6 [observed: `docs/FOLLOWUPS.json`].":
+            "a 'Between' line names plan item P5.6, which is done",
+        "- Pre-money 750,000 GBP [hypothesis].":
+            "a money figure is stated with no ruling behind it: - Pre-money 750,000 GBP [hypothesis].",
+        "- It is valued at 2.5 million pounds [observed].":
+            "a money figure is stated with no ruling behind it: - It is valued at 2.5 million pounds [observed].",
+        "- Worth two million pounds [inference].":
+            "a money figure is stated with no ruling behind it: - Worth two million pounds [inference].",
+        "- It costs 5 € a month [observed].":
+            "a money figure is stated with no ruling behind it: - It costs 5 € a month [observed].",
+    }
+    for plant, message in planted.items():
+        got = faults(good + plant + "\n")
+        assert got == [message], ("L2: the plant is not found by its own rule", plant, got)
+
+    #  3. what stays clean
+    for clean in ("- Revenue is recorded (row FU-1010, built in W881) [observed].",
+                  "- The price is ninety-nine pounds [owner-defined, 2026-10-13].",
+                  "- Between this step and being relied on: no open row stands between it and being relied on "
+                  "[observed: `docs/FOLLOWUPS.json`].",
+                  "- The machine has 1 GB of memory [observed].",
+                  "- The register of open rows is kept [observed]."):
+        assert faults(good + clean + "\n") == [], ("L3: a rule is over-broad", clean, faults(good + clean + "\n"))
+
+    #  4. the register a test passes is the one read
+    smap = (root / "docs/business/LIVING_STRATEGY_MAP.md").read_text(encoding="utf-8")
+    assert _w703_faults(smap, root, plan_slots, row_ids, routes) == [], "L4: the map does not stand on the real register"
+    #  the row is chosen from the map (review R2): the first open row a 'Between' line names; if none does, one is planted
+    status = {r["id"]: r.get("status") for r in reg}
+    between = [b for b in re.split(r"\n(?=- |\d+\. )", smap) if b.startswith("- Between this step and being relied on")]
+    named = [rid for b in between for rid in re.findall(r"\bFU-\d+\b", b) if status.get(rid) == "open"]
+    if not named:
+        rid = next(r["id"] for r in reg if r.get("status") == "open" and r.get("slot") != "OWNER")
+        smap += f"\n- Between this step and being relied on: row {rid} [observed: `docs/FOLLOWUPS.json`].\n"
+        named = [rid]
+    closed = copy.deepcopy(reg)
+    for r in closed:
+        if r["id"] == named[0]:
+            r["status"] = "done"
+    got = _w703_faults(smap, root, plan_slots, row_ids, routes, register=closed)
+    assert (f"a 'Between' line names row {named[0]}, which is done, as standing between a step and being relied on"
+            in got), ("L4: the status rule ignores the register it is given", named[0], got)
+
+    #  5. the guide's loop calls the one money pattern
+    src = inspect.getsource(test_w923_fu742_the_guides_price_section_is_put_to_the_owner_with_the_recommendation)
+    assert "if _w703_money(_blk):" in src and r"[£$€]\s*\d|\b(GBP|USD|EUR)\s*\d" not in src, (
+        "L5: the guide's copy keeps the currency-first pattern")
+    assert _w703_money("Pre-money 750,000 GBP") and _w703_money("Worth two million pounds"), "L5: _w703_money"
+    assert not _w703_money("The machine has 1 GB of memory"), "L5: _w703_money reads GB as a currency"
+
+
+def test_w1201_p510_the_seventh_gate_reads_the_owners_bar_of_five_recorded_interviews_and_the_owners_choice(tmp_path):
+    """FU-1879 (W1201), P5.10. test_w1126 computed the seventh investment gate as evidenced when any file under docs/
+    was named 'interview'. The Owner ruled on 2026-11-22 (FU-1818; P5.7; COST_MODEL.md): at least five interviews
+    recorded in the notes template, and the Owner's choice recorded with its reasons. Held here:
+    1. test_w1126 computes the gate with _w1201_first_offer_gate and no longer reads file names;
+    2. on this tree the gate is as the cost model marks it, and its fields are the notes template's;
+    3. on a planted tree: a file named 'interview' evidences nothing; five filled notes and a dated choice with its
+       reasons evidence it; four notes, a note missing a field, no choice, a choice with no reasons, and a choice
+       dated before the fifth interview do not; of two dated choices, the later is the one read."""
+    import inspect
+    import pathlib
+    import re
+    import shutil
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    #  1. test_w1126 reads the Owner's bar
+    src = inspect.getsource(test_w1126_fu1280_the_cost_model_marks_each_of_the_seven_gates_from_what_the_tree_shows)
+    assert "first_offer = _w1201_first_offer_gate(root)" in src and '"A first offer the interviews support": first_offer["met"]' in src, (
+        "G1: test_w1126 does not compute the gate from the Owner's bar")
+    assert "p.name" not in src and 'rglob("*")' not in src, "G1: test_w1126 still reads file names"
+
+    #  2. this tree
+    gate = _w1201_first_offer_gate(root)
+    assert gate["fields"] == ["Date", "The last instance", "What it cost them", "Who decides and who pays",
+                              "What would make them stop using the tool", "Which output the teacher judged",
+                              "Whether they agreed to be contacted again"], ("G2: the notes template's fields", gate["fields"])
+    cost = (root / "docs/business/COST_MODEL.md").read_text(encoding="utf-8").split("## The seven investment gates", 1)[1]
+    mark = re.search(r"^\| A first offer the interviews support \| .+? \| (yes|no) \|$", cost, re.M)
+    assert mark and mark.group(1) == ("yes" if gate["met"] else "no"), ("G2: the cost model's mark", gate)
+
+    #  3. a planted tree
+    plan = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    end = "\n P5.8 [chartered W672"
+    assert plan.count(end) == 1
+    #  review R1: any real choice the Owner has recorded in P5.7 is taken out of the copy, so the planted cases read
+    #  only what they plant
+    a, b = plan.index("\n P5.7 "), plan.index(end)
+    plan = plan[:a] + re.sub(r"OWNER RULING 20\d\d-\d\d-\d\d\b[^:]*:\s+the\s+first\s+offer\s+is\s+candidate\s+[ABC]\b.*?\.(?=\s)",
+                             "", plan[a:b], flags=re.S) + plan[b:]
+    assert not re.search(r"the\s+first\s+offer\s+is\s+candidate", plan[a:plan.index(end)]), "G3: a real choice is left in the copy"
+
+    def tree(name, n_notes, ruling=None, drop_field=None, interview_file=False):
+        t = tmp_path / name
+        (t / "docs/business").mkdir(parents=True)
+        shutil.copy(root / "docs/business/FIRST_OFFER_CANDIDATES.md", t / "docs/business/FIRST_OFFER_CANDIDATES.md")
+        body = ["# Interview notes\n"]
+        for i in range(n_notes):
+            body.append(f"\n### Interview notes, 2027-01-{10 + i:02d}\n\n")
+            for f in gate["fields"]:
+                if i == 0 and f == drop_field:
+                    continue
+                body.append(f"- {f}: an invented answer {i} [inference]\n")
+        (t / "docs/business/INTERVIEW_NOTES_W1201.md").write_text("".join(body), encoding="utf-8")
+        if interview_file:
+            (t / "docs/interview_plan.txt").write_text("a file named interview\n", encoding="utf-8")
+        p = plan if ruling is None else plan.replace(end, "\n      " + ruling + end)
+        (t / "docs/FABLE_DELIVERY_PROMPT.md").write_text(p, encoding="utf-8")
+        return _w1201_first_offer_gate(t)
+
+    chose = "OWNER RULING 2027-01-20: the first offer is candidate C, because the five interviews said so."
+    assert not tree("named", 0, interview_file=True)["met"], "G3: a file named 'interview' evidences the gate"
+    five = tree("five", 5, chose)
+    assert five["met"] and five["notes"] == 5 and five["choice"] == ("2027-01-20", "C"), ("G3: five and a choice", five)
+    assert not tree("four", 4, chose)["met"], "G3: four interviews evidence the gate"
+    short = tree("short", 5, chose, drop_field="Which output the teacher judged")
+    assert short["notes"] == 4 and not short["met"], ("G3: a note missing a field is counted", short)
+    assert not tree("nochoice", 5)["met"], "G3: no recorded choice evidences the gate"
+    assert not tree("noreason", 5, "OWNER RULING 2027-01-20: the first offer is candidate C.")["met"], (
+        "G3: a choice with no reasons evidences the gate")
+    assert not tree("early", 5, chose.replace("2027-01-20", "2027-01-12"))["met"], (
+        "G3: a choice dated before the fifth interview evidences the gate")
+    later = tree("later", 5, chose.replace("candidate C", "candidate A") + "\n      "
+                 + chose.replace("2027-01-20", "2027-01-25"))
+    assert later["met"] and later["choice"] == ("2027-01-25", "C"), ("G3: the latest dated choice is not the one read", later)

@@ -57,10 +57,10 @@ beside it, and the numbered sections of the drafts that make it.
 | A plan needs a subject, a topic and a level; feedback needs the work, the task, the level and the subject | test_education_feedback_contract | 2 |
 | Every teaching route refuses a religious subject | test_w659_every_teaching_route_refuses_a_religious_subject | 2, 5 |
 | Every test the drafts name runs on the platform's own engine, without an outside model | test_w1151_fu809_each_public_draft_is_headed_and_every_claim_names_a_test_that_runs_without_an_outside_model | 3 |
-| Demand, the price and the buyer are not measured | `docs/business/FIRST_OFFER_CANDIDATES.md` | 2, 3 |
+| Whether teachers would use it again, and how often the need recurs, are not measured | `docs/business/FIRST_OFFER_CANDIDATES.md` | 2, 3 |
 
 - The suite fails when a draft cites evidence this register does not list, or cites it in a section the register does not name, and when a row's evidence is cited nowhere (test_w1153). [observed]
-- No claim in the drafts is about a customer, a price, a partner or an endorsement, because there is none. [observed: `docs/business/public/FIRST_OFFER_DRAFTS.md`]
+- No claim in the drafts is about a customer, a partner or an endorsement, because there is none; what the drafts say of cost is that the Domain tools are free and that the Owner's charges fall only on generating an enterprise and on its profit; they name no amount for any charge. [observed: `docs/business/public/FIRST_OFFER_DRAFTS.md`]
 - The register covers what the public drafts claim. What the product's own pages say is held by the plan's truth passes (plan item P2.40) and the final audit (plan item P5.22), not by this document. [observed]
 
 ## What this document does not do
