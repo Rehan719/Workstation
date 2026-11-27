@@ -86,6 +86,12 @@ async def native_status():
     active = order[0] if order else "native"
     is_real_model = active != "native"
     active_row = next((r for r in resources if r["name"] == active), None)
+    #  W1242c - WHAT SERVES NEXT, BY WHAT A CALL DECLARES (W1242, the Owner's ruling of 2026-11-22). `active_model` is
+    #  the registry's head and keeps that meaning: the form tools' serving sentence reads it, and a domain tool
+    #  declares no class, so the floor answers it. With the switch on, a key set and no in-house model, a call that
+    #  declares a class that may leave is served by the external provider first; next_to_serve says both.
+    from agentic_core.ai.native.orchestrator import next_to_serve as _next_to_serve
+    _next1242c = _next_to_serve(order)
     # §6 (W323) — MEASURED serving mode beside the prediction: the selection head can list a model
     # that keeps failing while the floor actually serves — `mode` now follows what the learning
     # loop MEASURED on the most recent recorded work, never just the optimistic prediction.
@@ -113,6 +119,7 @@ async def native_status():
         "selection_order": order,
         "active_model": active,
         "active_model_label": (active_row or {}).get("model", active),
+        "next_to_serve": _next1242c,               # W1242c - by what a call declares, read now, nothing called
         "is_real_model": is_real_model,
         "mode": mode_measured if mode_measured != "unmeasured" else mode_predicted,
         "mode_predicted": mode_predicted,
@@ -1603,10 +1610,18 @@ async def native_complete(req: CompleteRequest):
                 #  shape-complete with the orchestrator's reply: a refusal ran no model, so nothing counted
                 "model_tokens": None, "model_tokens_basis": REFUSED_TOKENS_BASIS}
     from agentic_core.ai import data_class as _dc899
-    with _dc899.declared(req.data_class or "person_entered"):          # W899 (FU-610) - what the prompt carries
+    #  W1242c (the Owner's ruling of 2026-11-22: religious content is not sent outside the platform) - the console
+    #  declares the class its caller names, person_entered when none, and nothing when the religious-content screen
+    #  flags the prompt: since W1242 a declared call can leave with the switch on and no in-house model, whether or not
+    #  it asks. A flagged prompt is served on the platform and the answer says why (kept_in); nothing is refused
+    from agentic_core.religious_domain.subject_screen import class_unless_religious as _cur1242c
+    _cls1242c = _cur1242c(req.data_class or "person_entered", req.prompt)
+    with _dc899.declared(_cls1242c["data_class"]):          # W899 (FU-610) - what the prompt carries
         res = await orchestrator.complete(req.prompt, agent=req.agent, timeout=req.timeout,
                                           prefer_external=req.prefer_external, prefer=req.model,
                                           user_text=(req.prompt or None))   # W651 (FU-675) - the console's own text
+    if _cls1242c["kept_in"]:
+        res["kept_in"] = _cls1242c["kept_in"]          # W1242c - why no call of it left the platform
     res["governance_checkpoint"] = console_post_gate(req.agent, res.get("output", ""))
     return res
 
@@ -1650,9 +1665,16 @@ async def native_swarm(req: SwarmRequest):
     #  P3.30 (ledger v16 R4.17) - the context field is what the person typed on this console; the stage
     #  instructions may be the page's defaults and are not passed as theirs
     from agentic_core.ai import data_class as _dc899
-    with _dc899.declared("person_entered"):                            # W899 (FU-610) - what the stages carry
+    #  W1242c - the stages carry the context and their own instructions: nothing is declared when the
+    #  religious-content screen flags any of them, so no call of the run leaves the platform, and the answer says why
+    from agentic_core.religious_domain.subject_screen import class_unless_religious as _cur1242c
+    _cls1242c = _cur1242c("person_entered", req.context,
+                          *[f"{s.get('role')}: {s.get('instruction')}" for s in stages])
+    with _dc899.declared(_cls1242c["data_class"]):                    # W899 (FU-610) - what the stages carry
         res = await orchestrator.swarm(req.agent, stages, context=req.context, prefer_external=req.prefer_external,
                                        user_text=((req.context or "").strip() or None))
+    if _cls1242c["kept_in"]:
+        res["kept_in"] = _cls1242c["kept_in"]          # W1242c - why no call of it left the platform
     res["governance_checkpoint"] = console_post_gate(req.agent, str(res.get("final") or ""))
     return res
 
@@ -2001,10 +2023,16 @@ async def native_tree(req: TreeRequest):
         return {"goal": req.goal, "nodes": [], "refused": True,
                 "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
     from agentic_core.ai import data_class as _dc899
-    with _dc899.declared("person_entered"):                            # W899 (FU-610) - what the nodes carry
+    #  W1242c - the nodes carry the goal and the context: nothing is declared when the religious-content screen flags
+    #  either, so no node of the tree leaves the platform, and the answer says why
+    from agentic_core.religious_domain.subject_screen import class_unless_religious as _cur1242c
+    _cls1242c = _cur1242c("person_entered", req.goal, req.context)
+    with _dc899.declared(_cls1242c["data_class"]):                    # W899 (FU-610) - what the nodes carry
         res = await orchestrator.orchestrate_tree(
             req.goal, context=req.context, max_parallel=req.max_parallel,
             prefer_external=req.prefer_external, timeout=req.timeout,
             user_text=(req.goal or None))   # W803 (FU-983 R4[7]) - the goal the person typed
+    if _cls1242c["kept_in"]:
+        res["kept_in"] = _cls1242c["kept_in"]          # W1242c - why no call of it left the platform
     res["governance_checkpoint"] = console_post_gate("tree", str(res.get("final") or ""))
     return res

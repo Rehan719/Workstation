@@ -19,7 +19,7 @@ type Outcome = 'answered' | 'unreachable' | 'no reason';
 const reply = (a: Answer) => ({ ok: a.status < 400, status: a.status, statusText: '', json: async () => a.body });
 
 //  each read as its route answered it; each action's outcomes, in the order it is pressed
-function serve(o: { statusFailed?: boolean; complete?: Outcome[]; swarm?: Outcome; tree?: Outcome } = {}) {
+function serve(o: { statusFailed?: boolean; complete?: Outcome[]; swarm?: Outcome; tree?: Outcome; status?: unknown } = {}) {
   const complete = [...(o.complete ?? ['answered'])];
   const posted: unknown[] = [];
   const outcome = (x: Outcome | undefined, answered: Answer | null) => {
@@ -29,7 +29,9 @@ function serve(o: { statusFailed?: boolean; complete?: Outcome[]; swarm?: Outcom
   };
   vi.stubGlobal('fetch', vi.fn(async (url: string, init?: { method?: string; body?: string }) => {
     if ((init?.method ?? 'GET') === 'GET') {
-      const a = o.statusFailed && url === '/api/v1/native-ai/status' ? captured.status_failed : answers[url];
+      //  W1242c - a status answer changed the way the server changes it, when a test gives one
+      const a = o.statusFailed && url === '/api/v1/native-ai/status' ? captured.status_failed
+        : o.status && url === '/api/v1/native-ai/status' ? { status: 200, body: o.status } : answers[url];
       return a ? reply(a) : reply({ status: 404, body: { detail: `not served here: ${url}` } });
     }
     posted.push([url, JSON.parse(init?.body ?? 'null')]);
@@ -52,6 +54,30 @@ describe('NativeAI, rendered against its routes\' own answers', () => {
     render(<NativeAI />);
     expect(await screen.findByText('Deterministic floor active')).toBeTruthy();
     expect(screen.queryByTestId('native-status-error')).toBeNull();
+  });
+
+  // W1242c - next to serve, by what a call declares, in the route's own words: the floor for both on the captured
+  // status, and, with the switch on, a key set and no local model, the external provider for a declared call
+  it('says next to serve by what a call declares, in the route\'s own words', async () => {
+    const st = JSON.parse(JSON.stringify(answers['/api/v1/native-ai/status'].body));
+    const next = st.next_to_serve;
+    expect([next.declared_class.resource, next.no_class.resource]).toEqual(['native', 'native']);
+    serve();
+    render(<NativeAI />);
+    await waitFor(() => expect(screen.getByTestId('native-status-next-declared').textContent).toBe(
+      `Next to serve a call that declares what it carries: native — ${next.declared_class.basis}.`));
+    expect(screen.getByTestId('native-status-next-undeclared').textContent).toBe(
+      `Next to serve a call that declares nothing: native — ${next.no_class.basis}.`);
+  });
+
+  it('with an external provider next for a declared call, says it beside the floor for an undeclared one', async () => {
+    const st = JSON.parse(JSON.stringify(answers['/api/v1/native-ai/status'].body));
+    st.next_to_serve.declared_class = { resource: 'anthropic', is_model: true, basis: 'w1242c: the switch is on and no local model is reachable' };
+    serve({ status: st });
+    render(<NativeAI />);
+    await waitFor(() => expect(screen.getByTestId('native-status-next-declared').textContent).toBe(
+      'Next to serve a call that declares what it carries: anthropic — w1242c: the switch is on and no local model is reachable.'));
+    expect(screen.getByTestId('native-status-next-undeclared').textContent).toContain('Next to serve a call that declares nothing: native — ');
   });
 
   it('a failed read of the fabric\'s status says the route\'s own reason', async () => {

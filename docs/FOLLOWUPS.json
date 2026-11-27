@@ -29067,6 +29067,24 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P4.2, the Owner's ruling of 2026-11-22 (W1242): what an invited person meets on a server with no model, and what a journey's calls may carry out, are settled before the invited stage opens"
+    },
+    {
+      "id": "FU-1941",
+      "title": "The saved profile the gateway puts before every prompt is read by no religious-content screen, so with the external switch on a Genesis journey or the AI CEO chat can carry it out",
+      "why": "MEASURED W1242c (its review of 2026-11-27): with the Owner's external switch on and no in-house model reachable, a call that declares a class that may leave is sent out (W1242). Genesis screens the problem and what an establishment carries, and the AI CEO what it sends (W1242c, W1239), each before its call. The gateway then puts the person's own saved profile before the prompt (agentic_core/ai/user_context.py, applied in gateway.query_meta and gateway.stream_meta): under sign-in for the caller it names, and in single-user mode for every call, since the one profile is read under \"default\" (user_context.profile_owner). That text is not screened, so a profile that names religious content leaves with every declared Genesis journey call and AI CEO chat once the switch is on. The Owner's ruling of 2026-11-22 keeps religious content on the platform, and ruling 3 of 2026-11-27 turns the switch on after W1242, W1242c and W1258 are deployed. The profile needs the religious-content screen where the gateway adds it, and a call whose profile it flags needs to declare nothing and say why. The AI CEO's recalled lines are already kept off a call that may go out (W1241).",
+      "source": "W1242c (its review of 2026-11-27)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/ai/gateway.py",
+        "agentic_core/ai/user_context.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P4.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.2, the Owner's ruling of 2026-11-22 and ruling 3 of 2026-11-27 (W1242c): what a call that may leave carries is settled before the external switch is turned on"
     }
   ],
   "routes": [

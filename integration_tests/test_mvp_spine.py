@@ -109677,7 +109677,10 @@ def test_w1242_with_the_switch_on_and_no_in_house_model_a_declared_call_tries_th
     assert "OWNER RULING 2026-11-22 (W1242)" in rows["FU-1124"]["note"] and rows["FU-1124"]["close_note"].startswith(
         "Owner ruling 2026-11-06 option (a)"), rows["FU-1124"]
     titles = [r["title"] for r in reg["items"] if "W1242" in str(r.get("source"))]
-    assert len(titles) == 4 and sum("says no plain no-model notice" in t for t in titles) == 3, titles
+    #  CHANGED ON PURPOSE by W1242c (2026-11-27): its own row, the saved profile the gateway puts before every prompt
+    #  (source "W1242c (its review of 2026-11-27)"), is a fifth row whose source names W1242
+    assert len(titles) == 5 and sum("says no plain no-model notice" in t for t in titles) == 3, titles
+    assert sum(t.startswith("The saved profile the gateway puts before every prompt") for t in titles) == 1, titles
     spine = pathlib.Path(__file__).read_text(encoding="utf-8")
     w755 = spine[spine.index("\ndef test_w755_fu1124_a_stream_reaches_an_external_only_when_asked("):]
     w755 = w755[:w755.index("\ndef ", 10)]
@@ -109717,9 +109720,11 @@ def test_w1242b_genesis_says_first_that_no_model_answered_and_folds_what_the_fal
     #  1. the notice: first in the result, the route's own words, and only when the route gave it
     res = page[page.index("      {/* Result */}\n      {result && (\n        <div className=\"space-y-4\">\n"):]
     first = res[:res.index("{result.product_source && (")]
-    assert "{result.no_model && (" in first, "the no-model notice is not the first thing in the result"
+    #  CHANGED ON PURPOSE by W1242c: the notice is the establishment's once an entity is established, the journey's before
+    assert "{notice && (" in first, "the no-model notice is not the first thing in the result"
+    assert "  const notice = vsb && 'no_model' in vsb ? vsb.no_model : result?.no_model;\n" in page
     for k in ("said", "saved", "how"):
-        assert f'data-testid="genesis-no-model-{k}"' in first and f"{{result.no_model.{k}}}</p>" in first, k
+        assert f'data-testid="genesis-no-model-{k}"' in first and f"{{notice.{k}}}</p>" in first, k
     assert "  no_model?: { said: string; saved: string; how: string; all_calls_floor_served?: number } | null;" in page
     #  2. the fold: one component, every stage text through it, inert without no_model
     assert "  const fold = !!result?.no_model;\n" in page
@@ -109762,3 +109767,323 @@ def test_w1242b_genesis_says_first_that_no_model_answered_and_folds_what_the_fal
     assert nm and cap and set(cap) == set(nm), (cap, nm)
     for k in sorted(nm):
         assert cap[k] == nm[k], (k, cap[k], nm[k])
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1242c - religious content under any domain stays on the platform; the two-step establish says when no model
+#  answered; the Native AI status says what serves next by what a call declares
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1242c_religious_content_stays_in_under_any_domain_and_the_status_says_what_serves_next(client, monkeypatch):
+    """W1242c, after W1242 and W1242b (the Owner's ruling of 2026-11-22). Held here:
+    1. the screen for an external call flags the Owner's own genesis attempt of 2026-11-22 under every domain, each
+       term the brief named in its usual spellings, and Arabic-script text; it flags none of the near misses, which are
+       declared person_entered; the curriculum screen is not widened by it; and a flagged journey still runs, on the
+       platform, with nothing sent and the reason said;
+    1b. the same attempt in English (the name of God), letters with marks over or under them, the one-word spellings
+       and the religious-ruling screen's faith terms are flagged too; Arabic script is shown with plain abjad letters;
+    2. the two-step establish, blocking and streamed, carries the no-model notice naming the entity it registered,
+       read from the platform's own record of the journey; an establishment whose journey a model answered carries none;
+    2b. with the switch on, nothing is declared for: an establishment whose concept (or name, design, research...)
+       the screen flags, on both paths, its notice saying why; the native-AI console's completion, swarm and tree; the
+       resource fabric's composition run, ad-hoc cascade and orchestrator stage; a care entity's own cascade, by its
+       domain; each answer says why. The same calls with plain text, and a science entity's cascade, go out, so the
+       screen and the domain are what keep them in. The AI CEO's class reads this screen; the saved profile the
+       gateway adds is registered as a row;
+    3. the status says what serves next by what a call declares: with the switch on (replaced here, never set), a
+       placeholder key and no local model, a declared call's is the external provider and an undeclared call's the
+       floor, while active_model and is_real_model, which the form tools' sentence reads, stay the floor's; a full
+       hourly cap or the switch off gives the floor; a local model up is next for both;
+    4. the two pages print what the routes say, and their captured answers are the live routes'."""
+    import asyncio
+    import importlib
+    import json
+    import pathlib
+    import sys
+    import time
+    import types
+    from agentic_core.api import genesis as _gen
+    from agentic_core.religious_domain import subject_screen as _ss
+    from agentic_core.taxonomy import DOMAINS
+    _o = importlib.import_module("agentic_core.ai.native.orchestrator")     # the MODULE (W734's note)
+    _mr = importlib.import_module("agentic_core.ai.native.model_resource")
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+
+    #  4 (first, before anything is replaced). THE CAPTURED ANSWERS ARE THE LIVE ROUTES'
+    nfx = json.loads((src / "pages/developers/NativeAI.fixture.json").read_text(encoding="utf-8"))
+    live_next = client.get("/api/v1/native-ai/status").json()["next_to_serve"]
+    cap_next = nfx["answers"]["/api/v1/native-ai/status"]["body"]["next_to_serve"]
+    assert {k: cap_next[k] for k in ("declared_class", "no_class", "basis")} == {
+        k: live_next[k] for k in ("declared_class", "no_class", "basis")}, (cap_next, live_next)
+    gfx = json.loads((src / "pages/synthesis/GenesisJourney.fixture.json").read_text(encoding="utf-8"))
+    est_cap = gfx["establish"]
+
+    #  1. THE SCREEN. The Owner's attempt of 2026-11-22, as its page showed it: the subject and the fallback's word list
+    attempt = ("Subject: AI mediated Working to seek love and pleasure of Allah SWT (domain: religion).\n"
+               "- mediated working\n- pleasure allah\n- working seek\n- seek love\n- allah swt")
+    for dom in tuple(DOMAINS) + ("enterprise", ""):
+        jc = _gen.journey_data_class(dom, attempt)
+        assert jc["data_class"] is None and jc["may_leave"] is False, ("the Owner's attempt may leave under", dom, jc)
+    assert "names religious content (allah)" in _gen.journey_data_class("science", attempt)["basis"]
+    #    the same attempt in English names God: kept in under every domain too (the religious-ruling screen's terms)
+    attempt_en = attempt.replace("Allah SWT", "God").replace("allah", "god")
+    for dom in tuple(DOMAINS) + ("enterprise", ""):
+        assert _gen.journey_data_class(dom, attempt_en)["data_class"] is None, ("the attempt in English may leave", dom)
+    assert "names religious content (god)" in _gen.journey_data_class("science", attempt_en)["basis"]
+    for text, term in (("All\u0101h's mercy", "allah"), ("the Qur\u02be\u0101n and its tafs\u012br", "qur'an"),
+                       ("\u1e24ad\u012bth for children", "hadith"), ("InshaAllah we open in May", "inshaallah"),
+                       ("a zakat calculator", "zakat"), ("prayer times on the shop screen", "prayer"),
+                       ("a Ramadan meal box", "ramadan"), ("a theology reading group", "theology"),
+                       ("prayer reminders for salah", "salah"), ("a salat timetable", "salat"),
+                       ("a du'a journal", "du'a"), ("a du’a journal", "du'a"), ("duaa cards", "duaa"),
+                       ("Quran study notes", "quran"), ("Qur'an study notes", "qur'an"), ("Qur’an circle", "qur'an"),
+                       ("Koran translations", "koran"), ("Quranic Arabic classes", "quranic"),
+                       ("a surah of the week", "surah"), ("an ayah a day", "ayah"), ("ayat on the wall", "ayat"),
+                       ("hadiths for children", "hadith"), ("a hadeeth reader", "hadeeth"), ("sunnah foods", "sunnah"),
+                       ("tafsir notes", "tafsir"), ("tafseer notes", "tafseer"), ("tajwid lessons", "tajwid"),
+                       ("tajweed lessons", "tajweed"), ("the fiqh of trade", "fiqh"), ("a fatwa archive", "fatwa"),
+                       ("fatawa on loans", "fatawa"), ("inshallah we open in May", "inshallah"),
+                       ("the Islamic calendar", "islamic"), ("a sharia board", "sharia"),
+                       ("the pleasure of Allaah", "allaah"), ("Subhanahu wa Ta'ala", "subhanahu"),
+                       ("Allah Subhanahu wa Ta’ala", "ta'ala"), ("a Bible study group's rota", "bible"),
+                       ("Torah portion reminders", "torah"), ("a psalm for each week", "psalm")):
+        r = _ss.screen_religious_content(text)
+        assert r["flagged"] is True and term in r["matched"], (text, term, r)
+    #    Arabic script, whatever it says: four plain abjad letters stand in, and no scripture is typed here
+    _abjad = chr(0x627) + chr(0x628) + chr(0x62C) + chr(0x62F)
+    ar = _ss.screen_religious_content("a sign that reads " + _abjad)
+    assert ar["flagged"] is True and ar["arabic_script"] is True and "Arabic-script" in ar["names"], ar
+    near = ("Arabic script tutoring for adults", "Allahabad mango exporters", "Islamabad courier service",
+            "a salad bar for office workers", "dual-fuel boiler servicing", "a Salahuddin Road bakery",
+            "Surat textile exporters", "a halal butcher's delivery rota", "a fatigue study for night nurses",
+            "ayahuasca research summaries", "a sundial makers' cooperative", "Godalming furniture removals",
+            "an intermittent fasting meal planner", "a religious discrimination claim at work",
+            "an eID card reader for a council", "a Church Road bakery's rota", "Biblio bookshop stock counts")
+    for text in near:
+        r = _ss.screen_religious_content(text)
+        assert r["flagged"] is False and r["matched"] == [], ("a near miss was flagged", text, r)
+        assert _gen.journey_data_class("science", text)["data_class"] == "person_entered", text
+    #    the curriculum screen, which refuses, is not widened: it still does not hold the name of God
+    assert _ss.screen_subject(attempt)["flagged"] is False, "the curriculum screen was widened"
+    assert set(_ss.RELIGIOUS_SUBJECT_TERMS) <= set(_ss.RELIGIOUS_CONTENT_TERMS)
+    ssrc = (root / "agentic_core/religious_domain/subject_screen.py").read_text(encoding="utf-8")
+    assert "#  WHERE THE LIST CAME FROM:" in ssrc and "no scholar has reviewed them" in ssrc
+    assert "screen_religious_content(problem)" in (root / "agentic_core/api/genesis.py").read_text(encoding="utf-8")
+    #    a flagged journey still runs, on the platform: switch on, a placeholder key, a fake client that records calls
+    sent = []
+
+    class _Messages:
+        async def create(self, **kw):
+            sent.append("query")
+            return types.SimpleNamespace(content=[types.SimpleNamespace(text="w1242c external reply.")], usage=None)
+
+    class _Anthropic:
+        def __init__(self, api_key=None, **_k):
+            self.messages = _Messages()
+    fa = types.ModuleType("anthropic")
+    fa.AsyncAnthropic = _Anthropic
+    monkeypatch.setitem(sys.modules, "anthropic", fa)
+    switch = {"on": True}
+    monkeypatch.setattr(_mr, "external_allowed", lambda: switch["on"])     # the Owner's switch, never set here
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "w1242c-placeholder-not-a-key")   # this test's environment only
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setenv("EXTERNAL_MAX_CALLS_PER_HOUR", "100")
+    monkeypatch.setattr(_o.NativeOrchestrator, "_external_calls", [])
+    monkeypatch.setattr(_o, "_reorder_by_health", lambda order: order)
+    monkeypatch.setattr(_o, "_breaker_open", lambda name: False)
+    r = client.post("/api/v1/genesis/journey", json={"problem": attempt, "domain": "science"})
+    assert r.status_code == 200, r.text[:300]
+    jf = r.json()
+    assert sent == [] and set(jf["ai_provenance"]["served_by"]) == {"native"}, (sent, jf["ai_provenance"]["served_by"])
+    assert jf["external_ai"]["data_class"] is None and "names religious content (allah)" in jf["no_model"]["how"], jf
+
+    #  2. THE TWO-STEP ESTABLISH carries the notice, naming the entity, from the journey's own record
+    switch["on"] = False
+    j = client.post("/api/v1/genesis/journey", json={"problem": "w1242c: a tool library's loans and returns",
+                                                     "domain": "science"}).json()
+    body = {"problem": "w1242c: a tool library's loans and returns", "domain": "science", "realm": "enterprise",
+            "concept": j["phase_1_conceptualisation"]["concept"], "design": j["phase_2_design_development"],
+            "commercialisation": j["phase_3_commercialisation"], "journey_id": j["journey_id"],
+            "ai_provenance": {"served_by": {"ollama:w1242c-claimed": 14}}}        # the record wins over this claim
+    #    (2026-11-27) the platform's own record of the journey keys its section 11 verdicts by framework id
+    #    ("sharia_halal"): the chosen candidate is read by its values, so that id keeps no establishment in, and words
+    #    in the candidate are still read
+    _cand = ((_gen._read_journey(j["journey_id"]) or {}).get("candidates") or [{}])[0]
+    assert "sharia_halal" in str(_cand), ("the record keys no verdict by that id; this leg reads nothing", _cand)
+    assert _gen._carried_flagged1242c(_gen.EstablishRequest(problem="w1242c: a van rota", selected_candidate=_cand)) is None
+    assert _gen._carried_flagged1242c(_gen.EstablishRequest(problem="w1242c: a van rota", selected_candidate={
+        **_cand, "approach": "a weekly tafsir circle's rota"}))["matched"] == ["tafsir"]
+    #    (the review of 2026-11-27) only the section 11 ids are passed over, and only as keys: a key a caller wrote
+    #    is still read
+    assert _gen._carried_flagged1242c(_gen.EstablishRequest(problem="w1242c: a van rota", selected_candidate={
+        **_cand, "tafsir circle": "weekly"}))["matched"] == ["tafsir"]
+    #    and the candidate the named journey's record gives is read before the blocking route declares its calls,
+    #    which is before _apply_journey_record puts it in place of the caller's
+    _held_rec = {"journey_id": "jny-w1242cheld0", "candidates": [{**_cand, "approach": "a weekly tafsir circle's rota"}]}
+    with pytest.MonkeyPatch.context() as _m:
+        _m.setattr(_gen, "_read_journey", lambda jid: _held_rec if jid == _held_rec["journey_id"] else None)
+        assert _gen._carried_flagged1242c(_gen.EstablishRequest(
+            problem="w1242c: a van rota", journey_id=_held_rec["journey_id"]))["matched"] == ["tafsir"]
+        assert _gen._carried_flagged1242c(_gen.EstablishRequest(
+            problem="w1242c: a van rota", journey_id="jny-w1242cnone0")) is None
+    e = client.post("/api/v1/genesis/establish", json=body)
+    assert e.status_code == 200, e.text[:300]
+    en = e.json()
+    nm = en["no_model"]
+    assert nm and nm["said"] == j["no_model"]["said"] and nm["how"] == j["no_model"]["how"], (nm, j["no_model"])
+    assert nm["saved"].startswith(f"What was saved: your own words, in the entity {en['vsb_id']}, which is registered"), nm
+    assert nm["all_calls_floor_served"] == j["ai_provenance"]["served_by"]["native"], nm
+    s = client.post("/api/v1/genesis/establish/stream", json=body)
+    assert s.status_code == 200, s.text[:300]
+    frames = [json.loads(ln[6:]) for ln in s.text.splitlines() if ln.startswith("data: ")]
+    done = [f for f in frames if f.get("stage") == "complete"][-1]["data"]
+    assert done["no_model"]["saved"].startswith(f"What was saved: your own words, in the entity {done['vsb_id']}, "), done
+    assert done["no_model"]["said"] == nm["said"] and done["no_model"]["how"] == nm["how"]
+    served = client.post("/api/v1/genesis/establish", json={**body, "journey_id": ""})    # no record: the claim stands
+    assert served.status_code == 200 and served.json()["no_model"] is None, served.json().get("no_model")
+    one = client.post("/api/v1/genesis/establish", json={**body, "journey_id": "", "ai_provenance": {"served_by": "native"}})
+    assert one.status_code == 200 and one.json()["no_model"]["saved"].startswith(
+        f"What was saved: your own words, in the entity {one.json()['vsb_id']}"), one.text[:300]   # one server, as a string
+    #    the captured establishment says the same, for its own entity
+    assert est_cap["no_model"]["said"] == nm["said"] and est_cap["no_model"]["how"] == nm["how"]
+    assert est_cap["no_model"]["saved"] == nm["saved"].replace(en["vsb_id"], est_cap["vsb_id"]), est_cap["no_model"]
+
+    #  2b. WHAT ELSE IS SCREENED (the review of 2026-11-27). The AI CEO's class reads this screen (W1239 looks for it),
+    #      so the Owner's attempt keeps its calls in, which the curriculum screen alone would not
+    from agentic_core.ai import data_class as _dc
+    from agentic_core.ai import gateway as _g
+    from agentic_core.api import resource_fabric as _rf
+    from agentic_core.api.v138 import ceo as _ceo
+    from agentic_core.organism.self_healing import self_healer as _sh
+    k = _ceo._ceo_call_class([""], attempt)
+    assert k["data_class"] is None and "allah" in k["kept"], ("the AI CEO does not read the religious-content screen", k)
+    #    an establishment's other texts: the class of its calls, and of its stream's body, reads them too
+    gsrc = (root / "agentic_core/api/genesis.py").read_text(encoding="utf-8")
+    assert "    _stream = _kept_in_stream1242c(_stream, req)\n" in gsrc
+    assert gsrc.count("_establish_class1242c(journey_data_class(req.domain, req.problem") == 2
+
+    async def _now():
+        yield _dc.current()
+
+    async def _drain(agen):
+        return [x async for x in agen]
+    _held = _gen.EstablishRequest(problem="w1242c: a van rota", research="notes from the hadith circle")
+    _open = _gen.EstablishRequest(problem="w1242c: a van rota", research="notes from the drivers' meeting")
+    assert asyncio.run(_drain(_gen._within_class(_gen._kept_in_stream1242c(_now, _held)(), "person_entered"))) == [None]
+    assert asyncio.run(_drain(_gen._within_class(_gen._kept_in_stream1242c(_now, _open)(), "person_entered"))) == [
+        "person_entered"] and _dc.current() is None
+    #    with the switch on (replaced here, never set), a placeholder key and no local model
+    monkeypatch.setattr(_sh, "is_open", lambda endpoint, *_a, **_k: False)
+    monkeypatch.setattr(_sh, "record_failure", lambda endpoint, *_a, **_k: None)
+    monkeypatch.setattr(_sh, "record_success", lambda endpoint, *_a, **_k: None)
+    monkeypatch.setattr(_g.gateway, "anthropic_key", "w1242c-placeholder-not-a-key")
+    monkeypatch.setattr(_g.gateway, "openai_key", None)
+    switch["on"] = True
+    plain = "w1242c: name one risk of a late delivery"
+    est = {"problem": "w1242c: a tool library's loans and returns", "domain": "science", "ship_output": False,
+           "ai_provenance": {"served_by": "native"}}
+    sent.clear()
+    kept = client.post("/api/v1/genesis/establish", json={**est, "concept": "a weekly tafsir circle's rota"})
+    assert kept.status_code == 200 and sent == [], ("an establishment whose concept names religious content left", sent)
+    assert "carries beside its problem names religious content (tafsir)" in kept.json()["no_model"]["how"], kept.json()
+    #    the native-AI console: what the screen flags declares nothing and says why; a plain prompt is declared
+    c1 = client.post("/api/v1/native-ai/complete", json={"prompt": attempt})
+    assert c1.status_code == 200 and sent == [], ("the console sent religious content out", sent)
+    assert c1.json()["data_class"]["declared"] is None and "names religious content (allah)" in c1.json()["kept_in"], c1.json()
+    for path, body in (("/api/v1/native-ai/swarm", {"context": attempt}), ("/api/v1/native-ai/tree", {"goal": attempt}),
+                       ("/api/v1/resources/swarm/run", {"context": attempt, "stages": [
+                           {"role": "analyst", "instruction": "w1242c: summarise the brief"}]})):
+        rr = client.post(path, json=body)
+        assert rr.status_code == 200 and sent == [], (path, "sent religious content out", sent, rr.text[:300])
+        assert "names religious content (allah)" in rr.json().get("kept_in", ""), (path, rr.text[:300])
+    #    the resource fabric: a composition's run and its orchestrator stage, the same way
+    comp = client.post("/api/v1/resources/compose", json={"name": "w1242c-rig", "resource_ids": ["bdp"],
+                                                          "usage_area": "synthesis"}).json()
+    cr = client.post(f"/api/v1/resources/compositions/{comp['id']}/run", json={"objective": attempt})
+    assert cr.status_code == 200 and sent == [], ("a composition's run sent religious content out", sent, cr.text[:300])
+    assert "names religious content (allah)" in cr.json().get("kept_in", ""), cr.text[:300]
+    f1 = asyncio.run(_rf._run_real_resource("native_orchestrator", {"prompt": attempt}, "w1242c: a van rota", "science"))
+    assert sent == [] and "names religious content (allah)" in (f1 or {}).get("kept_in", ""), (sent, f1)
+    #    an entity's own cascade (Genesis gives each one, its mission and domain as the context) declares nothing when
+    #    the entity's domain is kept on the platform, whatever its text says: no word screen reads a care matter
+    _care = client.post("/api/v1/genesis/establish", json={**est, "domain": "care",
+                                                           "problem": "w1242c: a weekly visiting rota"})
+    assert _care.status_code == 200 and sent == [], ("a care establishment left the platform", sent, _care.text[:300])
+    _care_cid = client.get(f"/api/v1/vsb/{_care.json()['vsb_id']}").json()["native_swarm"]["cascade_id"]
+    _care_run = client.post("/api/v1/resources/swarm/run", json={"swarm_id": _care_cid})
+    assert _care_run.status_code == 200 and sent == [], ("a care entity's cascade left the platform", sent)
+    assert "an entity of the care domain, and care and health material is not sent" in _care_run.json().get(
+        "kept_in", ""), _care_run.text[:300]
+    assert _rf._KEPT_DOMAINS1242C.keys() >= {"religion", "care", "education"}
+    #    and what the screen does not flag is declared, so these are the screen's doing: each goes out
+    c2 = client.post("/api/v1/native-ai/complete", json={"prompt": plain})
+    assert c2.status_code == 200 and sent == ["query"] and "kept_in" not in c2.json(), (sent, c2.json().get("kept_in"))
+    assert c2.json()["data_class"]["declared"] == "person_entered", c2.json()["data_class"]
+    sent.clear()
+    f2 = asyncio.run(_rf._run_real_resource("native_orchestrator", {"prompt": plain}, "w1242c: a van rota", "science"))
+    assert sent == ["query"] and "kept_in" not in (f2 or {}), (sent, f2)
+    sent.clear()
+    went = client.post("/api/v1/genesis/establish", json={**est, "concept": "a tool library's loan desk"})
+    assert went.status_code == 200 and sent, ("a plain establishment did not reach the provider", sent)
+    assert "carries beside its problem" not in went.json()["no_model"]["how"], went.json()["no_model"]
+    sent.clear()
+    #    the cascade of that science entity is declared and goes out: the care entity's was kept in by its domain
+    _sci_cid = client.get(f"/api/v1/vsb/{went.json()['vsb_id']}").json()["native_swarm"]["cascade_id"]
+    _sci_run = client.post("/api/v1/resources/swarm/run", json={"swarm_id": _sci_cid})
+    assert _sci_run.status_code == 200 and sent and "kept_in" not in _sci_run.json(), (sent, _sci_run.text[:300])
+    sent.clear()
+    #    no call that can leave declares person_entered over text the screen has not read
+    for rel in ("agentic_core/api/native_ai.py", "agentic_core/api/resource_fabric.py"):
+        _src = (root / rel).read_text(encoding="utf-8")
+        assert 'declared("person_entered")' not in _src and _src.count('with _dc899.declared(_cls1242c["data_class"])') == 3, rel
+    #    the gap left, registered: the saved profile the gateway puts before every prompt is read by no screen
+    _reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    _mine = [r for r in _reg["items"] if isinstance(r, dict) and str(r.get("title") or "").startswith(
+        "The saved profile the gateway puts before every prompt is read by no religious-content screen")]
+    assert len(_mine) == 1 and (_mine[0].get("status") != "open" or _mine[0].get("slot") == "P4.2"), _mine
+
+    #  3. THE STATUS: what serves next, by what a call declares
+    def status():
+        return client.get("/api/v1/native-ai/status").json()
+    switch["on"] = True
+    st = status()
+    nx = st["next_to_serve"]
+    assert (nx["declared_class"]["resource"], nx["no_class"]["resource"]) == ("anthropic", "native"), nx
+    assert nx["declared_class"]["is_model"] is True and "W1242" in nx["declared_class"]["basis"], nx
+    assert (st["active_model"], st["is_real_model"]) == ("native", False), (
+        "the registry's head changed meaning: the form tools' serving sentence would claim a model for a call the "
+        "floor answers", st["active_model"], st["is_real_model"])
+    monkeypatch.setenv("EXTERNAL_MAX_CALLS_PER_HOUR", "1")
+    _o.NativeOrchestrator._external_calls = [time.time()]
+    assert status()["next_to_serve"]["declared_class"]["resource"] == "native", "a full hourly cap still named the provider"
+    monkeypatch.setenv("EXTERNAL_MAX_CALLS_PER_HOUR", "100")
+    _o.NativeOrchestrator._external_calls = []
+    switch["on"] = False
+    assert status()["next_to_serve"]["declared_class"]["resource"] == "native", "the switch off still named the provider"
+    switch["on"] = True
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "")
+    monkeypatch.setattr(_mr, "ollama_up", lambda: True)
+    monkeypatch.setattr(_mr, "local_models", lambda: [])
+    nl = status()["next_to_serve"]
+    assert (nl["declared_class"]["resource"], nl["no_class"]["resource"]) == ("ollama", "ollama"), nl
+    assert sent == [], ("the status called a provider", sent)
+
+    #  4. THE PAGES print what the routes say
+    page = (src / "pages/developers/NativeAI.tsx").read_text(encoding="utf-8")
+    for tid, field in (("native-status-next-declared", "declared_class"), ("native-status-next-undeclared", "no_class")):
+        assert f'data-testid="{tid}"' in page and f"{{status.next_to_serve.{field}.resource}} — " \
+            f"{{status.next_to_serve.{field}.basis}}." in page, tid
+    nt = (src / "pages/developers/NativeAI.test.tsx").read_text(encoding="utf-8")
+    for name in ("says next to serve by what a call declares, in the route\\'s own words",
+                 "with an external provider next for a declared call, says it beside the floor for an undeclared one"):
+        assert nt.count(f"  it('{name}', async () => {{") == 1, name
+    gp = (src / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
+    assert "  const notice = vsb && 'no_model' in vsb ? vsb.no_model : result?.no_model;\n" in gp
+    gt = (src / "pages/synthesis/GenesisJourney.test.tsx").read_text(encoding="utf-8")
+    assert gt.count("  it('after a two-step establish the notice names the entity that keeps the founder\\'s words', "
+                    "async () => {") == 1
+    assert "if (url === '/api/v1/genesis/establish' && init?.method === 'POST') return reply(200, captured.establish);" in gt
+    _setter = "setenv(" + '"AI_ALLOW_' + 'EXTERNAL"'
+    spine = pathlib.Path(__file__).read_text(encoding="utf-8")
+    assert _setter not in spine[spine.index("\ndef test_w1242c_"):], "this guard sets the Owner's switch"

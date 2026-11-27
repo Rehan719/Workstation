@@ -169,7 +169,7 @@
    "status": "allowed",
    "screened": "intent + domain",
    "content_screened": false,
-   "checkpoint": "CHK-1795774168152",
+   "checkpoint": "CHK-1795777503520",
    "node": "genesis-node",
    "scope": "intent + domain only — this gate screened the request's intent label against the prohibited list and its own constant attestation sentence. The delivery's content was NOT screened, so this verdict is not a judgement on what was produced."
   },
@@ -238,7 +238,7 @@
   "stages_verified": "0/0",
   "stages_floor_served": 6,
   "stages_note": "6 of 6 stages were served by the deterministic floor and are not assessable — the verification proxies cannot fail on floor output, so no verdict is claimed for them",
-  "journey_id": "jny-9ec4f3d05e6c",
+  "journey_id": "jny-80806891f71c",
   "develop_artefact": {},
   "quality_assurance": {
    "quality": {
@@ -345,7 +345,7 @@
   "external_ai": {
    "data_class": "person_entered",
    "may_leave": true,
-   "basis": "declared person_entered: the journey sends the founder's own business text with the platform's own prompts composed around it. An external provider is sent it only with the Owner's external-AI switch on, a provider's key set and no in-house model reachable, inside the hourly cap on external calls. The religious subject screen did not flag the problem, which is not a finding that it holds nothing religious: a screen can flag, never clear"
+   "basis": "declared person_entered: the journey sends the founder's own business text with the platform's own prompts composed around it. An external provider is sent it only with the Owner's external-AI switch on, a provider's key set and no in-house model reachable, inside the hourly cap on external calls. The religious-content screen did not flag the problem, which is not a finding that it holds nothing religious: a screen can flag, never clear"
   },
   "no_model": {
    "said": "No AI model is connected, so these steps could not write anything. What each step shows below is a fallback that repeats your own words under its headings.",
@@ -357,7 +357,7 @@
    "external_ai": {
     "data_class": "person_entered",
     "may_leave": true,
-    "basis": "declared person_entered: the journey sends the founder's own business text with the platform's own prompts composed around it. An external provider is sent it only with the Owner's external-AI switch on, a provider's key set and no in-house model reachable, inside the hourly cap on external calls. The religious subject screen did not flag the problem, which is not a finding that it holds nothing religious: a screen can flag, never clear"
+    "basis": "declared person_entered: the journey sends the founder's own business text with the platform's own prompts composed around it. An external provider is sent it only with the Owner's external-AI switch on, a provider's key set and no in-house model reachable, inside the hourly cap on external calls. The religious-content screen did not flag the problem, which is not a finding that it holds nothing religious: a screen can flag, never clear"
    }
   },
   "status": "complete"
@@ -537,5 +537,101 @@
   ],
   "not_charged_basis": "nothing is charged for generating an entity. It will not be until each of these exists: a named reviewer's pass on what is generated; a solicitor's view on whether a founder buying this is a consumer; the real-money switch, which is the Owner's. 0 of 3 exist today",
   "this_answer_charges": false
+ },
+ "establish": {
+  "vsb_id": "vsb-07b2b0599a",
+  "living": {
+   "autonomous_operation": "registered on the living roster — autonomous economy cycles are OFF (the heartbeat's Self-run lever is off); enable Self-run and start the heartbeat on the Heartbeat page for the organism to tend this VSB",
+   "autonomous_cycles": false,
+   "virtual": true
+  },
+  "name": "Neighbourhood Tool Libraries",
+  "name_source": "slug",
+  "name_pending": true,
+  "body_pending": {
+   "concept": true,
+   "design": true,
+   "commercialisation": true,
+   "operations": true
+  },
+  "body_absent": {
+   "concept": false,
+   "design": false,
+   "commercialisation": false,
+   "operations": false
+  },
+  "status": "body pending",
+  "status_basis": "4 body section(s) still await the owned model: commercialisation, concept, design, operations",
+  "operating_means": null,
+  "dashboard": "/api/v1/vsb/vsb-07b2b0599a",
+  "governance": {
+   "status": "allowed",
+   "screened": "intent + domain",
+   "content_screened": false,
+   "checkpoint": "CHK-1795777503735",
+   "scope": "intent + domain only — this gate screened the request's intent label against the prohibited list and its own constant attestation sentence. The delivery's content was NOT screened, so this verdict is not a judgement on what was produced."
+  },
+  "initial_ship": {
+   "shipped": false,
+   "deferred": "name pending",
+   "reason": "the founder names the enterprise before its body ships — POST /api/v1/vsb/vsb-07b2b0599a/name"
+  },
+  "birth_vitals": {
+   "capacity_at_birth": {
+    "consulted": true,
+    "enforced": false,
+    "carrying_capacity": null,
+    "entities_measured": 0,
+    "over_capacity": null,
+    "capacity_basis": "UNMEASURED - no run this window was attributed to an entity, so no per-entity demand is measured and no carrying capacity is derived; it is never set by hand",
+    "basis": "the derived carrying capacity, read at this birth and recorded on it. Nothing is refused over it: whether a birth may be refused over capacity is the Owner's decision, and the S18.1 switch does not reach births"
+   },
+   "first_screen": {
+    "vsb_id": "vsb-07b2b0599a",
+    "overall": "review",
+    "regression": false,
+    "side_effects_failed": []
+   },
+   "first_cycle": {
+    "vsb_id": "vsb-07b2b0599a",
+    "name": "Neighbourhood Tool Libraries",
+    "cycle": 1,
+    "outcome": "ran",
+    "cycle_ran": true,
+    "distributable_wst": 0.0,
+    "revenue_events_consumed": 0,
+    "revenue_recognised_wst": 0.0,
+    "revenue_basis": "no_activity_maintenance_cycle",
+    "governance": "passed",
+    "governance_coverage": {
+     "status": "passed",
+     "gate": "policy_pre_gate(sync)",
+     "screened": "intent_label",
+     "coverage_limit": "matches tokens inside an intent LABEL after normalising separators and case. A free-prose sentence of intent is NOT reliably screened here: `allowed: True` from this gate means no prohibited token was found in the label, never that the action was understood and cleared.",
+     "label_screened": "economy_distribution",
+     "at": "2026-11-27T11:05:04Z"
+    },
+    "driven_by": {
+     "identity": "establishment",
+     "kind": "establishment",
+     "levers": [],
+     "basis": "the first cycle an establishment runs for the entity it has just created, on its founder's request"
+    }
+   }
+  },
+  "deliverable": "VSB IDBO entity registered and persisted — body pending; it is not yet a living, operating enterprise",
+  "no_model": {
+   "said": "No AI model is connected, so these steps could not write anything. What each step shows below is a fallback that repeats your own words under its headings.",
+   "saved": "What was saved: your own words, in the entity vsb-07b2b0599a, which is registered with its body pending: the sections a model would write wait for one.",
+   "how": "Adding a model is the Owner's decision. A local model run on this server is used first whenever one is up. With the Owner's external-AI switch on and a provider's key set, this journey uses that provider when no local model is running, inside the hourly cap on external calls.",
+   "all_calls_floor_served": 14,
+   "local_model_up": false,
+   "external_model_ready": false,
+   "external_ai": {
+    "data_class": "person_entered",
+    "may_leave": true,
+    "basis": "declared person_entered: the journey sends the founder's own business text with the platform's own prompts composed around it. An external provider is sent it only with the Owner's external-AI switch on, a provider's key set and no in-house model reachable, inside the hourly cap on external calls. The religious-content screen did not flag the problem, which is not a finding that it holds nothing religious: a screen can flag, never clear"
+   }
+  }
  }
 }

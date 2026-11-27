@@ -30,6 +30,10 @@ function serve(edit?: (j: any) => void) {
     if (url === '/api/v1/genesis/journey' && init?.method === 'POST') return reply(200, journey);
     if (url === '/api/v1/economy/entity-types') return reply(200, captured.entity_types);
     if (url === '/api/v1/genesis/price') return reply(200, captured.price);          // the price panel's own read
+    //  W1242c - the two-step establish: the stream is refused here, so the page takes the blocking establish, as it does
+    //  on any stream failure, and is answered as the route answered the capture
+    if (url === '/api/v1/genesis/establish/stream') return reply(503, { detail: 'the establish stream is not served here' });
+    if (url === '/api/v1/genesis/establish' && init?.method === 'POST') return reply(200, captured.establish);
     return reply(200, {});
   }));
   return journey;
@@ -190,6 +194,20 @@ describe('GenesisJourney, the stage rail and the rank stage, rendered', () => {
     }
     expect(within(screen.getByTestId('genesis-technical-details')).getByText(/0\/0 verified/)).toBeTruthy();
     expect(screen.getByTestId('journey-intent-gate').textContent).toContain(`checkpoint ${j.governance.checkpoint}`);
+  });
+
+  // W1242c - once the journey is established in a second step, the notice is the establishment's: it names the entity
+  it('after a two-step establish the notice names the entity that keeps the founder\'s words', async () => {
+    const j = serve();
+    await runJourney();
+    expect(screen.getByTestId('genesis-no-model-saved').textContent).toBe(j.no_model.saved);
+    const est = captured.establish;
+    expect(est.no_model.saved.startsWith(`What was saved: your own words, in the entity ${est.vsb_id}, which is registered`)).toBe(true);
+    fireEvent.click(screen.getByText('Establish VSB IDBO Entity'));
+    await waitFor(() => expect(screen.getByTestId('genesis-no-model-saved').textContent).toBe(est.no_model.saved));
+    expect(screen.getByTestId('genesis-no-model-said').textContent).toBe(est.no_model.said);
+    expect(screen.getByTestId('genesis-no-model-how').textContent).toBe(est.no_model.how);
+    expect(screen.getAllByTestId('genesis-no-model')).toHaveLength(1);
   });
 
   it('a journey a model answered shows no notice and folds nothing', async () => {

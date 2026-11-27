@@ -58,18 +58,21 @@ def journey_data_class(domain: Any, problem: Any) -> Dict[str, Any]:
         return {"data_class": None, "may_leave": False,
                 "basis": f"nothing is declared, so no call of this journey leaves the platform: its domain is {d}, "
                          f"and {_KEPT_IN_DOMAINS[d]}"}
-    from agentic_core.religious_domain.subject_screen import screen_subject
-    _scr = screen_subject(problem)
+    #  W1242c - the screen for an external call (subject_screen.screen_religious_content, its list's sources beside
+    #  it): the name of God, scripture, practice and Arabic-script text, whatever the domain. It refuses nothing.
+    #  The curriculum screen W1242 read here does not hold the name of God, so the Owner's own attempt of 2026-11-22
+    #  was kept in only by its domain.
+    from agentic_core.religious_domain.subject_screen import screen_religious_content
+    _scr = screen_religious_content(problem)
     if _scr.get("flagged"):
         return {"data_class": None, "may_leave": False,
-                "basis": ("nothing is declared, so no call of this journey leaves the platform: the problem names "
-                          f"religious teaching ({', '.join(list(_scr.get('matched') or [])[:3])}), and religious "
-                          "content is not sent outside the platform")}
+                "basis": ("nothing is declared, so no call of this journey leaves the platform: the problem "
+                          + str(_scr.get("names")) + ", and religious content is not sent outside the platform")}
     return {"data_class": "person_entered", "may_leave": True,
             "basis": ("declared person_entered: the journey sends the founder's own business text with the "
                       "platform's own prompts composed around it. An external provider is sent it only with the "
                       "Owner's external-AI switch on, a provider's key set and no in-house model reachable, inside "
-                      "the hourly cap on external calls. The religious subject screen did not flag the problem, "
+                      "the hourly cap on external calls. The religious-content screen did not flag the problem, "
                       "which is not a finding that it holds nothing religious: a screen can flag, never clear")}
 
 
@@ -82,7 +85,14 @@ def _declares_journey_class(fn):
         req = kwargs.get("req", args[0] if args else None)
         with _dc1242.declared(journey_data_class(getattr(req, "domain", None),
                                                  getattr(req, "problem", None))["data_class"]):
-            return await fn(*args, **kwargs)
+            #  W1242c - and nothing is declared over an establishment whose request carries, beside its problem, what
+            #  the religious-content screen flags (_CARRIED_TEXTS1242C); the mark is undone as the route returns
+            _tok1242c = _dc1242._DECLARED.set(None) if _carried_flagged1242c(req) else None
+            try:
+                return await fn(*args, **kwargs)
+            finally:
+                if _tok1242c is not None:
+                    _dc1242._DECLARED.reset(_tok1242c)
     return _inner
 
 
@@ -101,11 +111,122 @@ async def _within_class(agen, data_class):
                 pass
 
 
+#  W1242c - WHAT AN ESTABLISHMENT CARRIES BESIDE ITS PROBLEM. journey_data_class reads the domain and the problem. An
+#  establish request also carries the founder's name, the concept, design and commercialisation, the research, the
+#  operations and the chosen candidate; the establishment's own calls and the shipped body's prompts send them (the
+#  website's carry the concept, vsb.generate_vsb_website), and a caller may have written any of them. When the
+#  religious-content screen flags one, nothing is declared for the establishment's calls, on the blocking path and the
+#  stream, and the establishment's no-model notice says why.
+_CARRIED_TEXTS1242C = ("name", "concept", "design", "commercialisation", "research", "operations",
+                       "selected_candidate")
+
+
+def _framework_ids1242c() -> frozenset:
+    """W1242c - the section 11 screen's own framework ids (compliance._FRAMEWORKS), the platform's names for its
+    checks; a record keys its verdicts by them."""
+    try:
+        from agentic_core.api.compliance import _FRAMEWORKS
+        return frozenset(str(f.get("id")) for f in _FRAMEWORKS if isinstance(f, dict))
+    except Exception:                              # no list read: no key is passed over
+        return frozenset()
+
+
+def _carried_words1242c(value: Any) -> list:
+    """W1242c (its pin fix of 2026-11-27, and its review) - the words a carried field holds: a text as it is, and a
+    record's keys and values. The chosen candidate is a record, and the platform's own record of a journey keys its
+    section 11 screen's verdicts by framework id ("sharia_halal"); read whole, that id was taken for religious
+    content, so every two-step establishment that named its journey was kept in. Only those ids are passed over, and
+    only as keys: any other key is read, because a caller may have written it, and a value is always read."""
+    if isinstance(value, dict):
+        _ids = _framework_ids1242c()
+        return [w for k, v in value.items()
+                for w in (([] if str(k) in _ids else [str(k)]) + _carried_words1242c(v))]
+    if isinstance(value, (list, tuple)):
+        return [w for v in value for w in _carried_words1242c(v)]
+    return [] if value is None or value == "" or isinstance(value, bool) else [value]
+
+
+def _carried_flagged1242c(req: Any) -> Any:
+    """W1242c - the screen's record when it flags what an establish request carries beside its problem, else None.
+    Only an establish request is read: a journey's own calls send none of these texts. A flagged reading is kept on
+    the request (2026-11-27): the route reads it before its calls, and then puts a pending stub in place of each body
+    field a floor served (_resolve_body_fields), so a later reading, the notice's, would no longer see what was sent.
+    A reading that flags nothing is not kept: a later one may see the journey's own record (_apply_journey_record)."""
+    if not isinstance(req, EstablishRequest):
+        return None
+    if req.__dict__.get("_w1242c_carried"):
+        return req.__dict__["_w1242c_carried"]
+    scr = _carried_screened1242c(req)
+    if scr:
+        req.__dict__["_w1242c_carried"] = scr
+    return scr
+
+
+def _record_candidate1242c(req: Any) -> Any:
+    """W1242c (its review of 2026-11-27) - the candidate the platform's own record of the named journey gives, as
+    _apply_journey_record picks it, read without changing the request. The blocking route declares its calls before
+    that record replaces the caller's candidate, so the screen reads the record's too; once the record is applied the
+    request's own candidate is the record's, and nothing more is read here."""
+    if req.__dict__.get("_w668_evidence_source"):
+        return None
+    rec = _read_journey(getattr(req, "journey_id", "") or "")
+    if not isinstance(rec, dict):
+        return None
+    cands = [c for c in (rec.get("candidates") or []) if isinstance(c, dict)]
+    want = (req.selected_candidate or {}).get("id") if isinstance(req.selected_candidate, dict) else None
+    return next((c for c in cands if want is not None and c.get("id") == want), cands[0] if cands else None)
+
+
+def _carried_screened1242c(req: Any) -> Any:
+    """W1242c - the screen's reading of what the request carries beside its problem, once (_carried_flagged1242c):
+    its own texts, and the candidate the record of the journey it names gives (_record_candidate1242c)."""
+    texts = [t for f in _CARRIED_TEXTS1242C for t in _carried_words1242c(getattr(req, f, None))]
+    texts += _carried_words1242c(_record_candidate1242c(req))
+    if not texts:
+        return None
+    from agentic_core.religious_domain.subject_screen import screen_religious_content
+    scr = screen_religious_content(*texts)
+    return scr if scr.get("flagged") else None
+
+
+def _establish_class1242c(cls: Dict[str, Any], req: Any) -> Dict[str, Any]:
+    """W1242c - the class an establishment's calls declare: the journey's (its domain and problem), or nothing when
+    the screen flags what else the request carries."""
+    scr = _carried_flagged1242c(req) if cls.get("data_class") else None
+    if not scr:
+        return cls
+    return {"data_class": None, "may_leave": False,
+            "basis": ("nothing is declared, so no call of this establishment leaves the platform: what the request "
+                      "carries beside its problem " + str(scr.get("names")) + ", and religious content is not sent "
+                      "outside the platform")}
+
+
+def _kept_in_stream1242c(stream_fn, req: Any):
+    """W1242c - the establish stream's body, with nothing declared over it when the screen flags what the request
+    carries beside its problem. It runs inside _within_class, which puts the journey's class in force where the
+    stream runs; this mark is set inside that one and undone before it."""
+    async def _kept():
+        _tok = _dc1242._DECLARED.set(None) if _carried_flagged1242c(req) else None
+        try:
+            async for _x in stream_fn():
+                yield _x
+        finally:
+            if _tok is not None:
+                try:
+                    _dc1242._DECLARED.reset(_tok)
+                except ValueError:                 # a close from another context never held the mark
+                    pass
+    return _kept
+
+
 def _no_model_notice(provenance: Dict[str, Any], established_vsb: Any, cls: Dict[str, Any]) -> Any:
     """W1242 - WHAT THE JOURNEY SAYS WHEN NO MODEL ANSWERED ANY CALL, in plain words: that the steps wrote nothing,
     what was saved, and how a model is added. None when any call was answered by a model (or none was served)."""
     import os as _os
     sb = (provenance or {}).get("served_by") or {}
+    #  W1242c - on the two-step establish the provenance is the caller's when no journey record is named, and a caller
+    #  may name its one server as a string ("native"), as vbs.quality.floor_served reads it; any other shape names none
+    sb = {sb: 1} if isinstance(sb, str) else (sb if isinstance(sb, dict) else {})
     if [k for k, n in sb.items() if n and k != "native"] or not sb.get("native"):
         return None
     from agentic_core.ai.native import model_resource as _mr
@@ -1882,6 +2003,11 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         "initial_ship": initial_ship,   # §4 (W302) — the body shipped at birth (or honestly not)
         "birth_vitals": birth_vitals,   # §3×§8×§12 (W309) — first screen + first cycle at birth
         "deliverable": _deliverable_line(entity),   # W631 (FU-552)
+        #  W1242c - the two-step path says it too: when no model answered any call of the journey this entity was
+        #  established from (the platform's own record of it when the request names one), the plain notice, naming the
+        #  entity that now keeps the founder's words
+        "no_model": _no_model_notice(req.ai_provenance or {}, {"vsb_id": vsb_id, "body_pending": body_pending},
+                                     _establish_class1242c(journey_data_class(req.domain, req.problem), req)),
     }
 
 
@@ -2124,8 +2250,13 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
             # parity with the blocking path — the UI badge must reflect the REAL gate outcome
             "governance": entity["governance"],
             "deliverable": _deliverable_line(entity),   # W631 (FU-552)
+            #  W1242c - the streamed answer carries the same notice as the blocking one
+            "no_model": _no_model_notice(req.ai_provenance or {}, {"vsb_id": vsb_id, "body_pending": body_pending},
+                                         _establish_class1242c(journey_data_class(req.domain, req.problem), req)),
         })
 
+    #  W1242c - and nothing is declared over its body when the screen flags what the request carries beside its problem
+    _stream = _kept_in_stream1242c(_stream, req)
     #  W1242 - the stream's calls carry the class its request declares, declared where the stream runs
     return StreamingResponse(_within_class(_stream(), journey_data_class(req.domain, req.problem)["data_class"]),
                              media_type="text/event-stream",

@@ -2097,7 +2097,11 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
             if _halt651:
                 return _halt651
             from agentic_core.ai import data_class as _dc899
-            with _dc899.declared("person_entered"):    # W899 (FU-610) - what a person typed or saved in a design
+            #  W1242c - nothing is declared when the religious-content screen flags the stage's prompt or the run's
+            #  objective, so the stage is served on the platform, and its row says why
+            from agentic_core.religious_domain.subject_screen import class_unless_religious as _cur1242c
+            _cls1242c = _cur1242c("person_entered", cfg.get("prompt"), objective)
+            with _dc899.declared(_cls1242c["data_class"]):    # W899 (FU-610) - what a person typed or saved in a design
                 res = await orchestrator.complete(str(cfg.get("prompt") or objective),
                                                   agent=str(cfg.get("agent") or "fabric-composition"),
                                                   prefer_external=bool(cfg.get("prefer_external", False)),
@@ -2108,7 +2112,8 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
             return {**_reply_evidence(res.get('served_by')), "resource": "native_orchestrator", "ran": "/api/v1/native-ai/complete",
                     "governance_checkpoint": _stage_checkpoint(_agent651, res.get("output")),
                     "served_by": res.get("served_by"), "is_external": res.get("is_external"),
-                    "output": (res.get("output") or "")[:600]}
+                    "output": (res.get("output") or "")[:600],
+                    **({"kept_in": _cls1242c["kept_in"]} if _cls1242c["kept_in"] else {})}   # W1242c - why it stayed
         if rid == "native_ensemble":
             from agentic_core.ai.native import orchestrator
             #  W836 - the gates its siblings run: the declared /native-ai/ensemble route gates, and so does the
@@ -3009,10 +3014,17 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                 **({"specification": _refused_spec} if _spec is not None else {}),
                 "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
     from agentic_core.ai import data_class as _dc899
-    with _dc899.declared("person_entered"):            # W899 (FU-610) - what the composition's stages carry
+    #  W1242c - the stages carry the objective and their own instructions (the resources' configured parameters among
+    #  them): nothing is declared when the religious-content screen flags any of them, so no stage leaves the platform
+    from agentic_core.religious_domain.subject_screen import class_unless_religious as _cur1242c
+    _cls1242c = _cur1242c("person_entered", objective,
+                          *[f"{s.get('role')}: {s.get('instruction')}" for s in stages])
+    with _dc899.declared(_cls1242c["data_class"]):            # W899 (FU-610) - what the composition's stages carry
         res = await orchestrator.swarm("composition-run", stages, context=objective,
                                        prefer_external=req.prefer_external, timeout=req.timeout,
                                        user_text=(req.objective or None))   # W640 - the objective the person typed
+    if _cls1242c["kept_in"]:
+        res["kept_in"] = _cls1242c["kept_in"]          # W1242c - why no call of it left the platform
     _gov_checkpoint = console_post_gate("composition-run", str(res.get("final") or ""))
     # §10/§8 — the combined run is gated by the living QMS + document-controlled under the QMS
     qa = await assure_delivery(res.get("final", ""), [r["name"] for r in comp["resources"]],
@@ -3677,6 +3689,18 @@ async def delete_swarm(sid: str, user: dict | None = Depends(get_current_user)):
     return {"deleted": sid, "remaining": len(keep)}
 
 
+#  W1242c (its review; the Owner's ruling 4 of 2026-11-27) - THE DOMAINS WHOSE ENTITY'S CASCADE DECLARES NOTHING, each
+#  with why: those Genesis keeps on the platform, with the two names the AI CEO also reads (W1239). Education is here
+#  whatever an education journey may later be ticked for: a cascade's run carries no person's confirmation
+_KEPT_DOMAINS1242C = {
+    "religion": "religious content is not sent outside the platform",
+    "religious": "religious content is not sent outside the platform",
+    "care": "care and health material is not sent outside the platform",
+    "health": "care and health material is not sent outside the platform",
+    "education": "education material may carry children's data, which is not sent outside the platform",
+}
+
+
 @router.post("/swarm/run")
 @spans_run("swarm_run")            # W847 (FU-1121) - the stages' model attempts inside are held
 async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_current_user)):
@@ -3738,10 +3762,37 @@ async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_curren
     #  own rule, W640). What they typed for THIS run is `req.context`, and that is what the floor is told is
     #  theirs; with none typed it is told nothing was said.
     from agentic_core.ai import data_class as _dc899
-    with _dc899.declared("person_entered"):            # W899 (FU-610) - what the saved swarm's stages carry
+    #  W1242c - the stages carry the context (a saved cascade's own text and the entity's grounding among it) and their
+    #  own instructions: nothing is declared when the religious-content screen flags any of them, and the answer says why
+    from agentic_core.religious_domain.subject_screen import class_unless_religious as _cur1242c
+    _cls1242c = _cur1242c("person_entered", context,
+                          *[f"{s.get('role')}: {s.get('instruction')}" for s in stages])
+    #  W1242c (its review; the Owner's ruling 4 of 2026-11-27: religion and care stay on the platform, and so does
+    #  children's education) - A CASCADE BOUND TO AN ENTITY RUNS THAT ENTITY'S WORK. Genesis gives every entity one,
+    #  with its mission and domain as the context, and kept a religion, care or education journey on the platform by
+    #  its domain alone, which no word screen reads. So nothing is declared when the bound entity's domain is one of
+    #  those, or its record could not be read, and the answer says why (as the AI CEO reads an entity's domain, W1239)
+    if run_vsb_id and _cls1242c["data_class"]:
+        try:
+            from agentic_core.api.vsb import _load_vsb as _dom_load1242c
+            _v1242c = _dom_load1242c(run_vsb_id)
+            _dom1242c = str(_v1242c.get("domain") or "").strip().lower() if isinstance(_v1242c, dict) else None
+        except Exception:                          # noqa: BLE001 - a record not read is not known to be clear
+            _dom1242c = None
+        _why1242c = (_KEPT_DOMAINS1242C.get(_dom1242c) if _dom1242c is not None else
+                     "the record of the entity it belongs to could not be read, so it is kept on the platform")
+        if _why1242c:
+            _cls1242c = {"data_class": None,
+                         "kept_in": ("nothing was declared, so no call of this request was sent outside the platform: "
+                                     + (f"the cascade belongs to an entity of the {_dom1242c} domain, and {_why1242c}"
+                                        if _dom1242c else _why1242c)
+                                     + ". It was served on the platform; nothing was refused")}
+    with _dc899.declared(_cls1242c["data_class"]):            # W899 (FU-610) - what the saved swarm's stages carry
         res = await orchestrator.swarm(req.agent, stages, context=context,
                                        prefer_external=req.prefer_external, timeout=req.timeout,
                                        user_text=((req.context or "").strip() or None))
+    if _cls1242c["kept_in"]:
+        res["kept_in"] = _cls1242c["kept_in"]          # W1242c - why no call of it left the platform
     res["governance_checkpoint"] = console_post_gate(req.agent, str(res.get("final") or ""))
     _ms = int((time.perf_counter() - _t0) * 1000)
     # W509 (FU-009) — what genuinely served each stage, and what each stage ASKED for. A stage whose

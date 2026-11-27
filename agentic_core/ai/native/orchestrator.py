@@ -332,6 +332,60 @@ def _external_before_floor(order: List[str]) -> List[str]:
     return rest[:at] + ext + rest[at:]
 
 
+def _external_budget_left() -> bool:
+    """W1242c - whether the hourly external cap (W335) has room now. Read only: nothing is counted against it."""
+    cap = int(os.getenv("EXTERNAL_MAX_CALLS_PER_HOUR", "60"))
+    now = time.time()
+    return len([t for t in NativeOrchestrator._external_calls if now - t < 3600]) < cap
+
+
+def next_to_serve(order: Optional[List[str]] = None) -> Dict[str, Any]:
+    """W1242c - WHAT THE QUERY PATH SERVES NEXT, BY WHAT A CALL DECLARES, read from the registry's order now; nothing is
+    called. The order is _complete's for a call that does not ask (prefer_external): the registry's, by recorded
+    health (W380), then with the allowed externals before the floor when no in-house model is reachable (W1242). A
+    resource whose breaker is open is passed over, as _complete passes it; an external is passed over when the hourly
+    cap is full. A call that declares no class is never sent out (W899), so its externals are passed over too.
+    The stream path reads its own breaker for the local model ("ollama"), so on it the answer can differ."""
+    base = list(order) if order is not None else registry.select()
+    ordered = _reorder_by_health(base)
+    declared_order = _external_before_floor(ordered)
+
+    def _first(seq: List[str], may_leave: bool) -> str:
+        for n in seq:
+            if n == "native":
+                return n
+            if n in ("anthropic", "openai"):
+                if may_leave and not _breaker_open(n) and _external_budget_left():
+                    return n
+                continue
+            if not _breaker_open(n):
+                return n
+        return "native"
+
+    d, u = _first(declared_order, True), _first(ordered, False)
+    if d in ("anthropic", "openai"):
+        d_why = (f"{d} is tried first: the Owner's external-AI switch is on, its key is set and no in-house model is "
+                 "reachable (W1242, the Owner's ruling of 2026-11-22), inside the hourly cap on external calls; the "
+                 "deterministic floor answers if it fails")
+    elif d == "native":
+        d_why = ("the deterministic floor serves it: no in-house model is reachable, and no external provider may be "
+                 "used now (the switch is off, no key is set, its breaker is open or the hourly cap is full)")
+    else:
+        d_why = f"{d} is tried first: an in-house model is reachable, and it is tried before any external provider"
+    u_why = ((f"{u} is tried first: an in-house model is reachable" if u != "native" else
+              "the deterministic floor serves it: no in-house model is reachable")
+             + ", and a call that declares no class is never sent outside the platform")
+    return {"declared_class": {"resource": d, "is_model": d != "native",
+                               "basis": "a call that declares a class that may leave (ai/data_class.py): " + d_why},
+            "no_class": {"resource": u, "is_model": u != "native",
+                         "basis": "a call that declares no class: " + u_why},
+            "order_declared_class": declared_order, "order_no_class": [n for n in ordered
+                                                                       if n not in ("anthropic", "openai")],
+            "basis": ("read now from the registry's order, the recorded health, the breakers and the hourly cap, on the "
+                      "query path; nothing was called, so a resource listed here can still fail, and then the next "
+                      "one, and last the floor, answers")}
+
+
 # ── W506 (P2.8(1)) — which EXTRA branches a goal or concept calls for ─────────────────────────
 #
 # These rules were inline in `_plan_tree` and the Genesis journey, which runs six FIXED stages, could not

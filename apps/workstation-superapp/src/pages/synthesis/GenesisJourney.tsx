@@ -243,7 +243,9 @@ export const GenesisJourney: React.FC = () => {
     status?: string; status_basis?: string; operating_means?: string | null;
     // W573 (M1 R2.0) — the entity has always said whether anything actually tends it; the page just
     // never read it, and ticked "Operate" from the existence of a repo instead.
-    living?: { autonomous_cycles?: boolean; autonomous_operation?: string } } | null>(null);
+    living?: { autonomous_cycles?: boolean; autonomous_operation?: string };
+    // W1242c - the establishment's own no-model notice, naming the entity that keeps the founder's words
+    no_model?: JourneyResult['no_model'] } | null>(null);
   // W450 (P1.2) — the founder names the enterprise: optionally before the journey, or on the newborn card
   const [enterpriseName, setEnterpriseName] = useState('');
   const [naming, setNaming] = useState(false);
@@ -555,6 +557,9 @@ export const GenesisJourney: React.FC = () => {
 
   //  W1242b - every call floor-served: the fallback's frames are folded, each heading behind its own toggle
   const fold = !!result?.no_model;
+  //  W1242c - once an entity is established, the notice is the establishment's: it names the entity, where the
+  //  journey's said none was registered
+  const notice = vsb && 'no_model' in vsb ? vsb.no_model : result?.no_model;
   const phases = result ? [
     { key: 'phase1', n: 1, icon: Lightbulb, label: 'Conceptualisation',
       blurb: 'Understand → analyse → optimal solution concept',
@@ -815,12 +820,12 @@ export const GenesisJourney: React.FC = () => {
         <div className="space-y-4">
           {/* W1242b (the Owner's ruling of 2026-11-22) - NO MODEL ANSWERED: said first, in the route's own plain words:
               that the steps wrote nothing, what was saved, and how a model is added */}
-          {result.no_model && (
+          {notice && (
             <Card className="p-5 border-amber-500/40 bg-amber-500/5">
               <div role="status" data-testid="genesis-no-model" className="space-y-2">
-                <p data-testid="genesis-no-model-said" className="text-sm font-bold text-amber-300 leading-relaxed">{result.no_model.said}</p>
-                <p data-testid="genesis-no-model-saved" className="text-xs text-slate-300 leading-relaxed">{result.no_model.saved}</p>
-                <p data-testid="genesis-no-model-how" className="text-xs text-slate-300 leading-relaxed">{result.no_model.how}</p>
+                <p data-testid="genesis-no-model-said" className="text-sm font-bold text-amber-300 leading-relaxed">{notice.said}</p>
+                <p data-testid="genesis-no-model-saved" className="text-xs text-slate-300 leading-relaxed">{notice.saved}</p>
+                <p data-testid="genesis-no-model-how" className="text-xs text-slate-300 leading-relaxed">{notice.how}</p>
               </div>
             </Card>
           )}
