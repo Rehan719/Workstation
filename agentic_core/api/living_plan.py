@@ -180,8 +180,9 @@ def get_followups():
     agentic_core/plan_followups.py). `integrity` is the same check the suite enforces — a problem is
     reported here rather than hidden, and a register this code cannot read or check is reported too,
     never a 500. A plain `def`: the check runs `git ls-files`, which must not block the event loop. The
-    docs are not copied into the runtime image, so a deployed backend says the register is unavailable
-    instead of inventing an empty one."""
+    image copies docs/ (the Dockerfile's COPY docs ./docs; .dockerignore leaves out only docs/fidelity_runs/), so a
+    deployed backend reads the register; a plan doc missing from this server's files is said as unavailable,
+    never as an empty register (W1240: this said the docs are not copied into the image)."""
     from agentic_core import plan_followups as fu
     base = {"register": "docs/FOLLOWUPS.json"}
     try:
@@ -191,7 +192,7 @@ def get_followups():
     except FileNotFoundError as exc:
         return {**base, "available": False,
                 "reason": f"{Path(str(exc.filename)).name if exc.filename else 'a plan doc'} is not readable here "
-                          "(missing) — the docs are not shipped in the runtime image"}
+                          "(missing from this server's files)"}
     except OSError as exc:
         return {**base, "available": False,
                 "reason": f"{Path(str(exc.filename)).name if exc.filename else 'a plan doc'} could not be read "

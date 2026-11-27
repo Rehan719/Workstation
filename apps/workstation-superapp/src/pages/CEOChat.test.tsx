@@ -13,6 +13,7 @@
 // list items with no markdown marker left, and the badge and the grounding chip are as they were.
 // W1239 - with no model connected the route streams a fixed notice in place of the floor's frame (the fixture is
 // recaptured from the patched route), and the greeting no longer says a record is held.
+// W1240 - after the notice the plan's open items are recited as stored, and the grounding chip counts them.
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -139,6 +140,18 @@ describe('CEOChat, rendered against its route', () => {
     const greeting = screen.getAllByTestId('ceo-message')[0].textContent ?? '';
     expect(greeting).toContain('which on a new server may be nothing');
     expect(greeting).not.toContain('handed the record for this scope');
+  });
+
+  it('recites the plan\'s open items after the notice, and the chip counts them', async () => {
+    serve({ stream: captured.stream });
+    ask(captured.ask);
+    await waitFor(() => expect(screen.getAllByText('structured floor — not model analysis').length).toBeGreaterThan(0));
+    const box = lastMessage();
+    expect(within(box).getByRole('heading', { name: 'Plan\'s open items, quoted as stored, in the plan\'s own order' })).toBeTruthy();
+    const done = captured.stream.split('\n').filter(l => l.startsWith('data: ')).map(l => JSON.parse(l.slice(6))).at(-1);
+    const n = done.grounding.recited.plan_items;
+    expect(n).toBeGreaterThan(0);
+    expect(screen.getByTestId('ceo-grounding-cited').textContent).toContain(` · the plan's items recited: ${n}`);
   });
 
   it('shows the person\'s own words as typed', async () => {

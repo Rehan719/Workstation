@@ -108990,3 +108990,140 @@ def test_w1239_with_no_model_connected_the_ceo_says_so_instead_of_showing_the_fl
     assert asked == ["person_entered"] * 6 + [None] * 6, asked
     monkeypatch.undo()
     assert os.getenv("AI_ALLOW_EXTERNAL", "false").lower() != "true", "the switch was left on"
+
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1240 - without a model, the AI CEO recites the plan's open items as stored, in the plan's own order
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1240_without_a_model_the_ceo_recites_the_plans_open_items_as_stored_in_the_plans_order(client, monkeypatch, tmp_path):
+    """W1240. Asked "what are your priorities" with no model, the AI CEO had nothing to say about the delivery plan:
+    none of its open items was in the grounding, though the image holds docs/. Held here:
+    1. on the floor, "what are your priorities" is followed by the recital "Plan's open items, quoted as stored, in
+       the plan's own order": the next unheld build item, then the first five open items, each with the slot, title
+       and hold plan_followups.plan_now gives for the same files, in that order, nothing ranked;
+    2. grounding.plan_items and grounding.recited.plan_items count them; grounding.cited still counts only the
+       directives and objectives the reply named, so a plan item in an answer is never counted as cited;
+    3. the read is cached on the two files' modification times and sizes, and read again when either changes; a
+       hold is said only while the item it names is open;
+    4. a missing plan doc is said as unavailable with its reason, never as an empty list, and counted as null;
+    5. the chip says the count; the page's fixture is the patched route's answer; living_plan's docstring no longer
+       says the docs are not copied into the image, which the Dockerfile does."""
+    import json
+    import os
+    import pathlib
+    from agentic_core import plan_followups as _fu
+    from agentic_core.api import board as _board
+    from agentic_core.api import business_plan as _bp
+    from agentic_core.api.v138 import ceo as _ceo
+
+    monkeypatch.setattr(_board, "_load", lambda: [])
+    monkeypatch.setattr(_bp, "_load", lambda scope: {"objectives": []})
+
+    def frames(message):
+        r = client.post("/api/v138/ceo/chat", json={"message": message, "context": []})
+        assert r.status_code == 200, r.text[:200]
+        fr = [json.loads(ln[6:]) for ln in r.text.splitlines() if ln.startswith("data: ")]
+        return fr, "".join(str(f.get("content") or "") for f in fr)
+
+    HEAD = "\n### Plan's open items, quoted as stored, in the plan's own order\n"
+    #  1. the recital, against the plan's own reader over the same files
+    now = _fu.plan_now(_fu.load(_fu.REGISTER), _fu.read_doc(_fu.PROMPT))
+    assert now["readable"] and now["next_unheld"] and len(now["open_items"]) >= 5, "the plan has too little to recite"
+    fr, text = frames("what are your priorities")
+    fin = fr[-1]
+    assert fin["served_by"] == "native" and text.startswith("No AI model is connected on this server"), text[:200]
+    assert text.count(HEAD) == 1, text[-1500:]
+    lines = text.split(HEAD, 1)[1].rstrip("\n").split("\n")
+
+    def q(it):
+        t = " ".join(str(it["title"] or "").split())
+        return f'{it["slot"]} "{t}"' if t else f"{it['slot']} (its line names no title)"
+    nu = now["next_unheld"]
+    assert lines[0] == f"- next unheld build item: {q(nu)}", (lines[0], nu["slot"], nu["title"])
+    first = now["open_items"][:5]
+    assert lines[1] == f"- the first 5 of {len(now['open_items'])} open items:", lines[1]
+    want = [f"- {q(o)}" + (f" (held until {o['held_until']})" if o["held"] else "") for o in first]
+    assert lines[2:] == want, ("the open items are not the plan's first five, in its order, as stored", lines[2:], want)
+    g = fin["grounding"]
+    n = len({o["slot"] for o in first} | {nu["slot"]})
+    assert g["plan_items"] == n and g["recited"]["plan_items"] == n, g
+    assert "in the plan's own order" in g["plan_items_basis"] and "nothing is ranked" in g["plan_items_basis"]
+    assert "none is ranked" in g["recited_basis"], g["recited_basis"]
+    #  the grounding the model would be handed carries the same lines, in label form
+    grounding, facts = _ceo._ceo_grounding("what are your priorities", "workstation", None)
+    assert "Plan's open items, quoted as stored, in the plan's own order:\n" + "\n".join(lines) in grounding, grounding[-1200:]
+
+    #  2. cited stays apart from recited
+    assert set(g["cited"]) == {"directives", "objectives"}, g["cited"]
+    c = _ceo._cited(f"- {q(nu)} is first", facts)
+    assert set(c["cited"]) == {"directives", "objectives"} and c["cited"] == {"directives": 0, "objectives": 0}, c
+    reply_only = text.split("\n\n## What the CEO was handed", 1)[0]
+    assert nu["title"][:20] not in reply_only, "a plan item is in the reply itself, so the recital is not apart"
+
+    #  3. the cache: one read for unchanged files, a new one when a file changes
+    calls = []
+    real = _fu.plan_now
+    monkeypatch.setattr(_fu, "plan_now", lambda reg, prompt: (calls.append(1), real(reg, prompt))[1])
+    _ceo._PLAN_ITEMS_CACHE.update(key=None, value=None)
+    a = _ceo._plan_open_items()
+    b = _ceo._plan_open_items()
+    assert len(calls) == 1 and a is b and a["available"], ("the 3 MB register is read again for unchanged files", calls)
+    reg_copy, prompt_copy = tmp_path / "FOLLOWUPS.json", tmp_path / "FABLE_DELIVERY_PROMPT.md"
+    reg_copy.write_bytes(_fu.REGISTER.read_bytes())
+    prompt_copy.write_bytes(_fu.PROMPT.read_bytes())
+    monkeypatch.setattr(_fu, "REGISTER", reg_copy)
+    monkeypatch.setattr(_fu, "PROMPT", prompt_copy)
+    _ceo._plan_open_items()
+    assert len(calls) == 2, "another pair of files was answered from the cache"
+    _ceo._plan_open_items()
+    assert len(calls) == 2
+    prompt_copy.write_bytes(prompt_copy.read_bytes() + b"\n")
+    os.utime(prompt_copy, ns=(prompt_copy.stat().st_atime_ns, prompt_copy.stat().st_mtime_ns + 10_000_000))
+    _ceo._plan_open_items()
+    assert len(calls) == 3, "a changed plan was answered from the cache"
+    #     a hold is said only while the item it names is open, as plan_now decides (the live plan holds no other case)
+    monkeypatch.setattr(_fu, "plan_now", lambda reg, prompt: {
+        "readable": True, "next_unheld": None,
+        "open_items": [{"slot": "P9.1", "title": "W1240 made up", "held_until": "P9.2", "held": False}]})
+    _ceo._PLAN_ITEMS_CACHE.update(key=None, value=None)
+    made = _ceo._plan_open_items()
+    assert made["open_items"] == [{"slot": "P9.1", "title": "W1240 made up", "held_until": None}], made
+    assert _ceo._plan_item_lines(made) == [
+        "- next unheld build item: none (every open build item is held, or none is open)",
+        "- the first 1 of 1 open items:", '- P9.1 "W1240 made up"'], _ceo._plan_item_lines(made)
+
+    #  4. a missing plan doc: unavailable, with its reason, never an empty list
+    monkeypatch.setattr(_fu, "PROMPT", tmp_path / "docs-missing" / "FABLE_DELIVERY_PROMPT.md")
+    gone = _ceo._plan_open_items()
+    assert gone == {"available": False, "reason": "FABLE_DELIVERY_PROMPT.md is not in this server's files"}, gone
+    fr, text = frames("what are your priorities")
+    assert HEAD + "- unavailable: FABLE_DELIVERY_PROMPT.md is not in this server's files\n" in text, text[-600:]
+    assert "next unheld build item" not in text and "open items:" not in text
+    g = fr[-1]["grounding"]
+    assert g["plan_items"] is None and g["recited"]["plan_items"] is None, g
+    assert g["plan_items_basis"] == "unavailable: FABLE_DELIVERY_PROMPT.md is not in this server's files", g
+    monkeypatch.undo()
+    _ceo._PLAN_ITEMS_CACHE.update(key=None, value=None)
+
+    #  5. the chip, the fixture, the docstring
+    root = pathlib.Path(__file__).resolve().parents[1]
+    pg = root / "apps/workstation-superapp/src/pages"
+    chat = _code_only((pg / "CEOChat.tsx").read_text(encoding="utf-8"))
+    assert ("{m.grounding.recited && m.grounding.recited.plan_items !== undefined ? (m.grounding.recited.plan_items === "
+            "null ? ' · the plan\\'s items: unavailable' : ` · the plan's items recited: ${m.grounding.recited.plan_items}`) "
+            ": ''}") in chat
+    assert "m.grounding.recited ?" in chat
+    fx = json.loads((pg / "CEOChat.fixture.json").read_text(encoding="utf-8"))
+    fxf = [json.loads(ln[6:]) for ln in fx["stream"].splitlines() if ln.startswith("data: ")]
+    assert HEAD in "".join(str(f.get("content") or "") for f in fxf) and fxf[-1]["grounding"]["recited"]["plan_items"] > 0
+    t = (pg / "CEOChat.test.tsx").read_text(encoding="utf-8")
+    assert "  it('recites the plan\\'s open items after the notice, and the chip counts them', async () => {" in t
+    lp = (root / "agentic_core/api/living_plan.py").read_text(encoding="utf-8")
+    doc = lp[lp.index("def get_followups():"):lp.index("from agentic_core import plan_followups as fu", lp.index("def get_followups():"))]
+    assert "not copied into the runtime image" not in " ".join(doc.split()) and "not shipped in the runtime image" not in lp
+    assert "image copies docs/ (the Dockerfile's COPY docs ./docs;" in doc
+    dockerfile = (root / "Dockerfile").read_text(encoding="utf-8")
+    assert "\nCOPY docs ./docs\n" in dockerfile.replace("\r\n", "\n"), "the image no longer copies docs/: the docstring is false"
+    ignore = (root / ".dockerignore").read_text(encoding="utf-8").splitlines()
+    assert not any(ln.strip() in ("docs", "docs/", "docs/*", "docs/**") for ln in ignore), "the build context leaves docs/ out"

@@ -352,7 +352,8 @@ def _floor_recital(facts: dict, notice: bool = False) -> str:
     _said = [" ".join(str(t).split()) for t in facts.get("_instruction_texts") or [] if str(t).strip()]
     dirs = _said or [" ".join(str(t).split()) for t in facts.get("_directive_texts") or [] if str(t).strip()]
     objs = [" ".join(str(t).split()) for t in facts.get("_objective_titles") or [] if str(t).strip()]
-    if not dirs and not objs:
+    _plan1240 = facts.get("_plan_items")          # W1240 - the plan's open items, or why they are unavailable
+    if not dirs and not objs and not _plan1240:
         return ""
     #  W1239 - with no model up, the reply above is the fixed notice and not the floor's frame, and the line says so
     lines = ["", "", "## What the CEO was handed (quoted as stored, not answered from)",
@@ -363,7 +364,84 @@ def _floor_recital(facts: dict, notice: bool = False) -> str:
         lines.append(f'- Latest Board instruction: "{dirs[0]}"')
     if objs:
         lines.append("- Objectives in the plan: " + "; ".join(objs))
+    if _plan1240:
+        lines += ["", f"### {PLAN_ITEMS_HEADING}"] + _plan_item_lines(_plan1240)
     return "\n".join(lines) + "\n"
+
+
+#  W1240 - THE PLAN'S OPEN ITEMS, AS ITS READER GIVES THEM. plan_followups.plan_now is the reader GET /api/v1/plan/
+#  followups uses; it is run over the register (about 3 MB) and the delivery plan, so its answer is kept until either
+#  file's modification time or size changes. Nothing is ranked or composed here: the next unheld build item and the
+#  first open items are taken in the plan's own order, with the slot, title and hold the reader gives each.
+_PLAN_ITEMS_SHOWN = 5
+_PLAN_ITEMS_CACHE: Dict[str, Any] = {"key": None, "value": None}
+PLAN_ITEMS_HEADING = "Plan's open items, quoted as stored, in the plan's own order"
+
+
+def _plan_open_items() -> Dict[str, Any]:
+    """W1240 - {available: True, next_unheld, open_items, open_total, basis}, or {available: False, reason}.
+
+    next_unheld is plan_now's next_unheld (the first open build item no hold keeps open), as {slot, title}; open_items
+    are the first _PLAN_ITEMS_SHOWN of plan_now's open_items, each {slot, title, held_until} (held_until only while the
+    item it names is open). A missing file or an unreadable plan is said as unavailable, never as an empty list."""
+    from agentic_core import plan_followups as _fu
+    try:
+        _key = tuple((str(p), p.stat().st_mtime_ns, p.stat().st_size) for p in (_fu.REGISTER, _fu.PROMPT))
+    except OSError as exc:
+        _name = os.path.basename(str(exc.filename or "")) or "a plan document"
+        return {"available": False,
+                "reason": (f"{_name} is not in this server's files" if isinstance(exc, FileNotFoundError) else
+                           f"{_name} could not be read ({exc.strerror or type(exc).__name__})")}
+    if _PLAN_ITEMS_CACHE["key"] == _key:
+        return _PLAN_ITEMS_CACHE["value"]
+    try:
+        _now = _fu.plan_now(_fu.load(_fu.REGISTER), _fu.read_doc(_fu.PROMPT))
+    except Exception as exc:                                  # noqa: BLE001 - said as unavailable, with why
+        _value: Dict[str, Any] = {"available": False,
+                                  "reason": f"the plan could not be read ({type(exc).__name__}: {str(exc)[:120]})"}
+    else:
+        if not _now.get("readable"):
+            _value = {"available": False, "reason": "the delivery plan holds no item its reader can read"}
+        else:
+            _nu = _now.get("next_unheld")
+            _value = {"available": True,
+                      "next_unheld": {"slot": _nu["slot"], "title": _nu["title"]} if _nu else None,
+                      "open_items": [{"slot": o["slot"], "title": o["title"],
+                                      "held_until": o["held_until"] if o.get("held") else None}
+                                     for o in (_now.get("open_items") or [])[:_PLAN_ITEMS_SHOWN]],
+                      "open_total": len(_now.get("open_items") or []),
+                      "basis": ("read with plan_followups.plan_now from docs/FOLLOWUPS.json and "
+                                "docs/FABLE_DELIVERY_PROMPT.md, in the plan's own order; each title as that reader "
+                                "gives it (the item's line without a leading bracketed note, to its first sentence, "
+                                "at most 110 characters); nothing is ranked")}
+    _PLAN_ITEMS_CACHE.update(key=_key, value=_value)
+    return _value
+
+
+def _plan_item_lines(plan: Dict[str, Any]) -> List[str]:
+    """W1240 - the plan's items as "- " lines, quoted as stored: the next unheld build item, then the first open items."""
+    if not plan.get("available"):
+        return [f"- unavailable: {plan.get('reason')}"]
+    def _q(it):
+        _t = " ".join(str(it.get("title") or "").split())
+        return f'{it["slot"]} "{_t}"' if _t else f"{it['slot']} (its line names no title)"
+    out = [f"- next unheld build item: {_q(plan['next_unheld'])}" if plan.get("next_unheld") else
+           "- next unheld build item: none (every open build item is held, or none is open)"]
+    _shown = plan.get("open_items") or []
+    out.append(f"- the first {len(_shown)} of {plan.get('open_total', len(_shown))} open items:")
+    for it in _shown:
+        out.append(f"- {_q(it)}" + (f" (held until {it['held_until']})" if it.get("held_until") else ""))
+    return out
+
+
+def _plan_items_recited(plan: Optional[Dict[str, Any]]) -> Optional[int]:
+    """W1240 - how many distinct plan items the lines quote; None when the plan was unavailable."""
+    if not plan or not plan.get("available"):
+        return None
+    _slots = {it["slot"] for it in plan.get("open_items") or []}
+    if plan.get("next_unheld"):
+        _slots.add(plan["next_unheld"]["slot"])
+    return len(_slots)
 
 
 #  W1239 - WHETHER THE CHAT ASKS FOR AN EXTERNAL MODEL. It does not: the stream_meta call passes this value, and
@@ -606,6 +684,12 @@ def _ceo_grounding(prompt: str, scope: str, owner_id: Optional[str]) -> tuple:
     except Exception:
         parts.append("## Business plan\n- unavailable")
         facts["_unread"] = list(facts.get("_unread") or []) + ["the business plan"]        # W1239 - not "none"
+    #  W1240 - the plan's open items, quoted as stored, in the plan's own order (or why they are unavailable)
+    _plan1240 = _plan_open_items()
+    facts["_plan_items"] = _plan1240
+    facts["plan_items"] = _plan_items_recited(_plan1240)
+    facts["plan_items_basis"] = _plan1240.get("basis") or f"unavailable: {_plan1240.get('reason')}"
+    parts.append(f"## {PLAN_ITEMS_HEADING}\n" + "\n".join(_plan_item_lines(_plan1240)))
     try:
         facts["debate_entries"] = len(meeting_log.log)
         debate = meeting_log.get_recent_debate()
@@ -752,10 +836,13 @@ async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
                     _grounding801["recited"] = {"directives": 1 if (facts.get("_instruction_texts")
                                                                      or facts.get("_directive_texts")) else 0,
                                                 "objectives": len([t for t in facts.get("_objective_titles") or []
-                                                                   if str(t).strip()])}
+                                                                   if str(t).strip()]),
+                                                #  W1240 - the plan's items quoted; null when they were unavailable
+                                                "plan_items": _plan_items_recited(facts.get("_plan_items"))}
                     _grounding801["recited_basis"] = ("quoted as stored after the floor's reply; a recited record "
                                                       "was not answered from, and `cited` counts only what the "
-                                                      "reply itself named")
+                                                      "reply itself named. The plan's open items are quoted from the "
+                                                      "plan's reader in the plan's own order; none is ranked")
                 yield "data: " + json.dumps({**_reply_evidence(ev.get('served_by')), 
                     "content": "", "done": True,
                     "served_by": ev.get("served_by"), "is_external": bool(ev.get("is_external")),
