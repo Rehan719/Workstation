@@ -3,7 +3,7 @@
 When you want to continue locally, open Claude Code (Claude Opus 5.5) **in your local clone** (`~\Workstation`)
 and paste the block below as your first message. Nothing else is needed.
 
-Updated 2026-11-22 (W1131, W1164, W1184, W1187, W1188, W1190, W1191, W1192, W1193, W1193b, W1193c). The cloud session works in 8-hour cycles into December, until the plan's
+Updated 2026-11-22 (W1131, W1164, W1184, W1187, W1188, W1190, W1191, W1192, W1193, W1193b, W1193c, W1199). The cloud session works in 8-hour cycles into December, until the plan's
 build items are closed and the final audit has run (2026-12-31 at the latest), and pushes to `main-l1fsqo`. While
 it runs, the local session works on a branch of its own (step 1), so the two never push to the same branch.
 
@@ -191,6 +191,9 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
     deletes only on your explicit word.
   - Asking a scholar or a trusted institute to review what the religious tools hold back for one (FU-1838), as you
     ruled on 2026-11-22.
+  - Sending the request to a scholar or a trusted institute, drafted in `docs/letters/SCHOLAR_REVIEW_REQUEST.md`
+    (FU-1838): it names no one, so fill in whom it goes to and your name and address, read it through, and
+    send it from your own address.
   - After the first deploy, the channel test and the price test the canvas names first, each your act; the same
     row carries three measures the metrics document defers, not yet scheduled (FU-1839).
   - Ratifying in one sitting the lessons a local session lists from this machine's notes (FU-1840, step 5).

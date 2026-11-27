@@ -106813,3 +106813,105 @@ print("RESULT" + json.dumps(out))
     p332 = flat(plan.split("\n P3.32 [", 1)[1].split("\n MILESTONE M3", 1)[0])
     assert "W1196 (2026-11-22), built: the avatar and upload memory is removed, as ruled above." in p332
     assert not re.search(r"\bFU-\d+", p332), "P3.32 names a row"
+
+
+def test_w1199_the_scholar_request_is_drafted_for_the_owner_offers_a_scholar_or_an_institute_and_names_what_is_withheld():
+    """FU-1838 (W1199; OWNER, P5.17 clause 7). The Owner accepted on 2026-11-22 that a scholar or a trusted institute
+    is to be asked now, and W1192 registered the row; no request was drafted, so the Owner had nothing to send. The
+    request is drafted in docs/letters/SCHOLAR_REVIEW_REQUEST.md for the Owner to send, and names no one. The row stays
+    open: it closes on a dated plan record of the engagement, or on a ruling that defers it. Held here:
+    1. the letter is there, drafted for the Owner and sent by no one, with the Owner's name and address and the
+       addressee left to fill in, and it offers the review to a scholar or a trusted institute, naming none;
+    2. it names what is withheld now: the adult curriculum, tajweed and translation items (A.12.3), the five religion
+       research tools' composed answers, contributions a person submits, a teacher's attestation wording (P5.17
+       clause 4) and P5.21's approval pack, whose gate stays closed until P5.12's four learner-facing headings are
+       built and an independent safeguarding review is done; and it says what an approval is: it binds the exact
+       text, nothing is shown before it, the platform composes no Quran Arabic, scores no recitation, keeps children
+       out of the tools open today, never approves by its own AI, and asks no endorsement;
+    3. it holds no Arabic-script character, no fee (a whole word), no personal detail of _W963_PERSONAL's kinds, no
+       person named by an honorific of this domain and no gendered pronoun;
+    4. the scholar row, found by its title, names the letter in its why before its closing rule and recommends sending
+       it as drafted, open (or closed later on the Owner's dated engagement); the plan's list names the letter after
+       the row's W1192 line; and the local notes'
+       Still-yours list names the row and the letter."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    flat = lambda t: " ".join(t.split())   # noqa: E731
+    path = "docs/letters/SCHOLAR_REVIEW_REQUEST.md"
+
+    #  1. THE LETTER: drafted for the Owner, sent by no one, naming no one
+    assert (root / path).is_file(), (path, "is not there")
+    raw = (root / path).read_bytes()
+    assert b"\r" not in raw, "the letter is not stored LF"
+    letter = raw.decode("utf-8")
+    text = flat(letter)
+    for frag in ("DRAFTED FOR THE OWNER TO SEND", "Nothing has been sent", "[your name]", "[your address]",
+                 "To: [the scholar or institute]", "Dear [the scholar or institute],",
+                 "I would like to ask a scholar or a trusted institute to review",
+                 "this draft names no scholar and no institute"):
+        assert frag in text, ("the letter does not say", frag)
+    head = text.split("---", 1)[0]
+    assert "(W1199, FU-1838)" in head and "send it from your own address" in head, head[:300]
+
+    #  2. WHAT IS WITHHELD NOW, AND WHAT AN APPROVAL IS
+    for frag in ("The adult curriculum and tajweed items (A.12.3).",
+                 #  W692 (A.12.3): a model's translation of teaching text is withheld like a lesson (qep_intelligence)
+                 "a tajweed lesson and a translation of non-Arabic teaching text; each is held back",
+                 #  a person's contribution waits for a rostered scholar too (reactor/religion/qep_authoring)
+                 "Contributions a person submits, such as tafsir annotations. Each is queued and shown to no learner",
+                 "The composed answers of the five religion research tools.",
+                 "The wording of a teacher's own attestation (P5.17 clause 4).",
+                 "The children's tools and their approval pack (P5.21).",
+                 "The children's gate stays closed until P5.12's four learner-facing headings are built and an "
+                 "independent safeguarding review is done"):
+        assert frag in text, ("the letter does not name", frag)
+    for frag in ("An approval binds the exact text approved.", "Nothing is shown before it is approved",
+                 "The platform never composes, generates or changes it.",
+                 "Recitation is never scored, graded or corrected by the platform",
+                 "The Quran and religion tools open today are for adults, and children do not use them. Separate "
+                 "children's tools are built and held", "It never approves, never releases and never changes a text",
+                 "Nothing in this letter asks you to endorse the platform"):
+        assert frag in text, ("the letter does not say", frag)
+
+    #  3. NO SCRIPTURE, NO FEE, NO PERSONAL DETAIL, NO PRONOUN
+    arabic = re.compile("[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff\ufb50-\ufdff\ufe70-\ufeff]")
+    hit = arabic.search(letter)
+    assert hit is None, ("the letter holds Arabic script", letter[max(0, hit.start() - 40):hit.end() + 10])
+    fee = re.search(r"(?i)\bfee\b", letter)
+    assert fee is None, ("the letter speaks of a fee", letter[max(0, fee.start() - 60):fee.end() + 20])
+    for what, pat in _W963_PERSONAL:
+        m = re.search(pat, letter)
+        assert m is None, ("the letter carries " + what, m.group(0))
+    #  the honorifics this domain names a scholar by, beside _W963_PERSONAL's Mr, Mrs, Ms, Miss and Dr
+    titled = re.search(r"\b(?:Shaykh|Sheikh|Shaikh|Imam|Ustadh|Ustadha|Prof(?:essor)?|Mufti|Mawlana|Maulana|Hafiz|"
+                       r"Qari)\.?\s+[A-Z]", letter)
+    assert titled is None, ("the letter names a person by an honorific", titled and titled.group(0))
+    gendered = re.search(r"\b(he|him|his|himself|she|her|hers|herself)\b", letter, re.I)
+    assert gendered is None, ("the letter gives someone a gendered pronoun", gendered.group(0))
+
+    #  4. THE ROW, THE PLAN'S LIST AND THE LOCAL NOTES, each naming the letter
+    reg = json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    rows = [r for r in reg if r.get("title", "").startswith(
+        "OWNER: ask a scholar or a trusted institute now to review what the religious tools hold back")]
+    assert len(rows) == 1, [r["id"] for r in rows]
+    row = rows[0]
+    rid, why = row["id"], row["why"]
+    #  open until the Owner's dated engagement or a ruling that defers it; the round that closes the row keeps the
+    #  letter's path in its why and adds test_w1199 to its K
+    assert row["status"] in ("open", "done") and (row["slot"], row["owner_gated"]) == ("OWNER", True), (
+        rid, row["status"], "FU-1838 closes only on the Owner's dated engagement or a ruling that defers it")
+    assert f"W1199 drafted the request for the Owner to send, in {path}:" in why, (rid, "its why does not name the letter")
+    assert "RECOMMENDED: send it as drafted" in why, (rid, "its why does not recommend sending it")
+    assert why.index(path) < why.index("This row closes only with a dated plan record"), (rid, "the closing rule moved")
+    fable = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    still = flat(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0])
+    line = still[still.index(f"{rid} (W1192):"):].split("(The five places", 1)[0]
+    assert f"The request is drafted in {path} (W1199)." in line, ("the plan's list does not name the letter", line[-300:])
+    assert "Recommended: send it as drafted" in line, line[-300:]
+    notes = (root / "docs" / "RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    yours = notes.split("- **Still yours:**", 1)[1].split("\n- **", 1)[0]
+    bullets = [flat(b) for b in yours.split("\n  - ") if f"`{path}`" in b]
+    assert len(bullets) == 1 and f"({rid})" in bullets[0], ("the local notes do not name the row and the letter", bullets)
+    assert bullets[0].startswith("Sending the request to a scholar or a trusted institute"), bullets[0][:120]
