@@ -63628,8 +63628,10 @@ def test_w691_a_reviewer_agent_is_calibrated_by_its_recorded_run_and_never_by_a_
     #  THE SET IN THE TREE says it cannot be run yet, so NO agent is calibrated - and a run on it is refused
     the_set = cal.load_set("care")
     assert the_set and len(the_set["cases"]) == 16   # W1099: computed
-    #  W1122: its last two sources were read on 2026-11-19, so it can be run from that day and could not before
-    assert cal.runnable(the_set, on="2026-11-15")["runnable"] is False and cal.runnable(the_set, on="2026-11-19")["runnable"] is True
+    #  W1122: its last two sources were read on 2026-11-19, so it could not be run before that day. W1195d: it
+    #  can be run from its window's first day, the latest read of a row its cases rely on (FU-1820)
+    assert cal.runnable(the_set, on="2026-11-15")["runnable"] is False and cal.runnable(
+        the_set, on=cal.runnable_window(the_set)["from"])["runnable"] is True
     assert sum(1 for c in the_set["cases"] if c.get("planted")) == 10
     runs = tmp_path / "review_calibration_runs.json"
     monkeypatch.setattr(cal, "_runs_path", lambda: runs)
@@ -65606,14 +65608,21 @@ def test_w714_a_deed_is_held_until_a_qualified_person_has_read_the_schedule(clie
         assert r.status_code == 409, (tid, r.status_code, r.text[:200])
         d = r.json()["detail"]
         assert isinstance(d, str) and "is held and is not generated here" in d and "Schedule 2" in d, d
-        assert "says nothing about whether" in d and "A solicitor can prepare one" in d and "Nothing here is legal advice" in d, d
+        #  W1194 (review m6) changed this on purpose: the reason no longer says who may prepare one; the refusal
+        #  says where help from a person is
+        assert "says nothing about whether" in d and "For help from a person, see" in d and "Nothing here is legal advice" in d, d
     assert sent == [], "a prompt was sent for a held deed"
-    #  2. the hold is on the kind, never on a substring: an ordinary template still generates
+    #  2. the hold is on the kind, never on a substring: an ordinary template still generates.
+    #     W1194 (P5.18 clause 4) changed this leg on purpose: the draft form drafts only the templates it lists, so
+    #     'indeed_agreement', which it does not list, is refused as unlisted (404) - and still not as held, which is
+    #     the property this leg holds. One prompt is sent, for nda, where two were.
     for tid in ("nda", "indeed_agreement"):
         assert _sp.held_for_a_qualified_read(tid) is False, tid
-        r = client.post("/api/v1/law/generate", json={"template_id": tid})
-        assert r.status_code == 200 and r.json()["document"] == "w714 captured", (tid, r.text[:200])
-    assert sent == ["law_generator", "law_generator"], sent
+    r = client.post("/api/v1/law/generate", json={"template_id": "nda"})
+    assert r.status_code == 200 and r.json()["document"] == "w714 captured", r.text[:200]
+    r = client.post("/api/v1/law/generate", json={"template_id": "indeed_agreement"})
+    assert r.status_code == 404 and "is held and is not generated here" not in r.json()["detail"], r.text[:300]
+    assert sent == ["law_generator"], sent
     #  3. the list says which it refuses and why, beside the rows
     held = client.get("/api/v1/law/templates").json()["held"]
     assert held["templates"] == ["partnership_deed"] and held["reason"] == _sp.HELD_REASON, held
@@ -67171,8 +67180,9 @@ def test_w747_the_external_prompts_review_is_recorded_and_its_gaps_are_registere
     #  each gap that survived is an open row, with its slot, entered by this round
     reg = {r["title"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
     expected = [
-        #  W754 - ruled 2026-11-06: the row left OWNER for P5.22, the item that builds and runs the final audit
-        ('OWNER DECISION: the uncapped, census-partitioned final audit has no item that builds or runs it', 'P5.22'),
+        #  W754 - ruled 2026-11-06: the row left OWNER for P5.22, the item that builds and runs the final audit;
+        #  W1200 retitled it to say what remains, once W970, W972, W973 and W977 had built the instrument
+        ("The final audit's instrument is built (W970-W977); it is not yet calibrated or run", 'P5.22'),
         ('HYPOTHESIS: a model is made the serving default after one check, that it is installed', 'P3.32'),
         ("The Owner's ruled routing tie-break order is encoded nowhere, so the ruling cannot fail", 'P4.3'),
         ('HYPOTHESIS: sign-in and signup have no limit on attempts', 'P4.1'),
@@ -67192,9 +67202,12 @@ def test_w747_the_external_prompts_review_is_recorded_and_its_gaps_are_registere
         r = reg.get(title)
         assert r is not None, ("a surviving gap is not in the register", title)
         assert r["source"] == "W747" and r["slot"] == slot, (title, r.get("source"), r.get("slot"))
-    #  W754 - the Owner ruled it, so it is ungated and rides the item chartered for it
+    #  W754 - the Owner ruled it (2026-11-06), so it is ungated and rides the item chartered for it. W1200: its title
+    #  no longer opens OWNER DECISION, since the Owner has ruled and W970-W977 built the instrument; it must never
+    #  again say that nothing builds or runs the audit
     ruled = [reg[t] for t, s in expected if s == "P5.22"]
-    assert len(ruled) == 1 and not ruled[0].get("owner_gated") and ruled[0]["title"].startswith("OWNER DECISION:"), ruled
+    assert len(ruled) == 1 and not ruled[0].get("owner_gated") and (
+        "no item that builds or runs it" not in ruled[0]["title"]), ruled
     #  a row read from code says so in its title until it is driven
     for title, _slot in expected:
         if "Read from code" in reg[title]["why"]:
@@ -76728,21 +76741,26 @@ def test_w892_no_caller_sleeps_holding_the_limiters_lock_and_the_lock_belongs_to
     assert seen["loop_blocked_s"] < 0.6, ("the caller's wait blocked the event loop", seen)
 
     # 2. three callers at once are spaced a slot apart: none is let through in another's slot
+    #  W1207b - caller k is not let through before k slots have passed: sorted, the k-th wake is at least k tenths
+    #  of a second after the start, less 0.03, so lateness passes and an early pass does not. The gaps between wakes
+    #  were asserted, and on Windows, where the clock and the event loop tick at about 15.6 ms, one caller woken late
+    #  shrank the next gap below 0.07 with no slot shared (PR #469: 0.109, 0.25, 0.312). The limiter keeps no slot
+    #  per caller, so the wake is read, with perf_counter (W1210's clock for a duration), from a start read before
+    #  the bucket is drained. The limiter's _last stays on its own clock.
     lim = _gw892._RateLimiter(600)                      # a slot every tenth of a second
+    t0 = time.perf_counter()
     lim._tokens, lim._last = 0.0, time.monotonic()
     done = []
 
     async def _three_at_once():
-        t0 = time.monotonic()
-
         async def _call():
             await lim.acquire()
-            done.append(time.monotonic() - t0)
+            done.append(time.perf_counter() - t0)
         await asyncio.gather(_call(), _call(), _call())
     asyncio.run(_three_at_once())
     done.sort()
     assert lim.stats()["waited"] == 3 and lim.stats()["calls"] == 3, lim.stats()
-    assert done[1] - done[0] >= 0.07 and done[2] - done[1] >= 0.07, ("two callers were let through in one slot", done)
+    assert all(done[k - 1] >= k * 0.1 - 0.03 for k in (1, 2, 3)), ("two callers were let through in one slot", done)
 
     # 3. the lock belongs to no event loop: two threads, each with its own loop, contend for one limiter
     lim = _gw892._RateLimiter(600)
@@ -90594,9 +90612,10 @@ def test_w1096_fu1272_the_decisions_the_one_list_names_are_held_by_their_own_rou
 
 
 def test_w1097_fu1274_every_route_the_entity_walk_passes_over_is_named_and_held(client, monkeypatch):
-    """FU-1274 (W1097). W1075's walk drives every route that takes an entity's id as a second person, and passes over
-    every route whose path names something else, so an entity named in such a route's body was never driven: that is
-    how the curate route passed it (FU-1271). Held here:
+    """FU-1274 (W1097). W1075's walk drives as a second person every route whose path names only entities, other
+    than its streams, and passes over every route whose path names something else, so an entity named in such a
+    route's body was never driven: that is how the curate route passed it (FU-1271). A route whose path names an
+    entity and something else is driven as a second person by test_w1207 (FU-1858). Held here:
     - every route the walk passes over that names an entity in its query or its body is named, with the test that
       holds it, so a new one is said rather than taken as held;
     - each of the four this test holds is driven as the second person against the first person's entity and
@@ -90762,8 +90781,10 @@ def test_w1099_fu1054_the_care_calibration_set_is_written_out_and_run_only_when_
     - whether a set can be run is computed, and every rule drives it: a case not written out, a planted case with no
       `from`, a row not in the register, a row in another status, a current row not read within the review period
       of the run's date or read after it, and a part the row says was NOT READ - and each reason is said;
-    - on 2026-11-15 the set cannot be run: its four cases that rely on NEWS2's chart (C03, C10, K02) and on NICE
-      NG97 (K06) rely on reads made on 2026-11-19, after that day (W1122); from 2026-11-19 it can be run;
+    - on 2026-11-15 the set cannot be run: its eight cases that rely on a current row rely on reads made after
+      that day, NEWS2's chart (C03, C10, K02) and NICE NG97 (K06) on 2026-11-19 (W1122), and the children's
+      route (C02, K01), the MUST terms (C07) and NICE NG249 (K03) when they were read again (W1195d); from its
+      window's first day it can be run;
     - the calibration route records a run only on a date the set can be run, and refuses one on the tree's set with
       those reasons, writing nothing; a flag in a set's file decides nothing either way."""
     import datetime as _dt
@@ -90785,14 +90806,18 @@ def test_w1099_fu1054_the_care_calibration_set_is_written_out_and_run_only_when_
             assert c.get("must_flag") and len(str(c.get("from") or "")) > 40, (cid, c.get("from"))
         assert isinstance(c.get("relies_on"), list), cid
     assert "NICE NG97" in cases["K06"]["shown"]["standard"] and "verified against clinical guidance" in cases["C08"]["described_before"]
-    #  W1122: the two causes outside this machine were read on 2026-11-19, so on that day the set can be run, and
-    #  on 2026-11-15 it could not: its four cases that rely on them rely on reads made after that date
-    assert cal.runnable(raw, on="2026-11-19") == {"runnable": True, "on": "2026-11-19", "why_not": []}
+    #  W1122: the two causes outside this machine were read on 2026-11-19; W1195d: three more rows were read again
+    #  since (FU-1820), so the set can be run from its window's first day, the latest of those reads, and on
+    #  2026-11-15 it could not: its eight cases that rely on a current row rely on reads made after that date
+    day = cal.runnable_window(raw)["from"]
+    assert cal.runnable(raw, on=day) == {"runnable": True, "on": day, "why_not": []}
     on = cal.runnable(raw, on="2026-11-15")
     late = "which was not read within the register's 90-day review period before 2026-11-15"
     assert on["runnable"] is False and sorted(on["why_not"]) == sorted([
-        f"C03 relies on rcp-news2, {late}", f"C10 relies on rcp-news2, {late}", f"K02 relies on rcp-news2, {late}",
-        f"K06 relies on nice-ng97, {late}"]), on["why_not"]
+        f"C02 relies on gov-report-child-abuse, {late}", f"C03 relies on rcp-news2, {late}",
+        f"C07 relies on bapen-must-toolkit, {late}", f"C10 relies on rcp-news2, {late}",
+        f"K01 relies on gov-report-child-abuse, {late}", f"K02 relies on rcp-news2, {late}",
+        f"K03 relies on nice-ng249, {late}", f"K06 relies on nice-ng97, {late}"]), on["why_not"]
 
     #  ...and the route refuses a run on it with those reasons, writing nothing; no agent is calibrated on it
     runs = tmp_path / "review_calibration_runs.json"
@@ -90804,7 +90829,8 @@ def test_w1099_fu1054_the_care_calibration_set_is_written_out_and_run_only_when_
         "Not recorded: the calibration set cannot be run on 2026-11-15: " + "; ".join(on["why_not"]) + "."), refused.text[:400]
     assert not runs.exists(), "a refused run wrote the store"
     now = cal.calibration_of("w1099-reviewer")
-    #  W1122: read on today's date - the set can be run from 2026-11-19 until a source passes its review period
+    #  W1122: read on today's date - the set can be run from its window's first day (W1195d) until a source
+    #  passes its review period
     assert now["calibrated"] is False and ("cannot be run yet" in now["why_not"] if cal.runnable(raw)["runnable"] is False
                                            else now["why_not"] == "this agent has never been run on the calibration set"), now
 
@@ -91055,7 +91081,7 @@ def test_w1102_fu399_the_tier_of_review_is_rendered_where_it_is_read_with_an_unc
     #  W1183 - the tier's sentence now says the reviewer's calibration, which turns on whether the set can be run on
     #  the day: the capture's day is pinned, as the capture pinned it
     from agentic_core.api import _review_calibration as _cal1102
-    monkeypatch.setattr(_cal1102, "_today", lambda: _dt.date(2026, 11, 21))
+    monkeypatch.setattr(_cal1102, "_today", lambda: _dt.date(2026, 11, 22))
     pages = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "domains"
     fx = json.loads((pages / "CareHub.fixture.json").read_text(encoding="utf-8"))
     today = _dt.date.today().isoformat()
@@ -91908,7 +91934,8 @@ def test_w1122_fu1054_the_calibration_sets_last_two_sources_are_read_and_its_six
     - every band of Chart 1 and every threshold of Chart 2 is the one the tree's NEWS2 scoring applies, at each
       boundary the chart draws;
     - the sixteenth case is the dementia entry as the tools route gives it now, citing NG97 with the date it was
-      read; the set can be run on 2026-11-19 and could not be on 2026-11-15, before the reads."""
+      read; nothing W1122 read is a reason the set cannot be run on 2026-11-19, both were reasons on 2026-11-15,
+      before the reads, and the set can be run from its window's first day (W1195d)."""
     import json
     from pathlib import Path
     from agentic_core.api import _review_calibration as cal
@@ -91953,7 +91980,14 @@ def test_w1122_fu1054_the_calibration_sets_last_two_sources_are_read_and_its_six
         "sources": [{k: s[k] for k in ("id", "status", "page", "read_on", "read")} for s in e["sources"]]}
     assert keep(k06["shown"]) == keep(live), (keep(k06["shown"]), keep(live))
     assert "NICE NG97" in live["standard"] and "2026-11-19" in live["standard"] and live["sources"][0]["read"] is True
-    assert cal.runnable(the_set, on="2026-11-19")["runnable"] is True and cal.runnable(the_set, on="2026-11-15")["runnable"] is False
+    #  W1195d: three more rows were read again since (FU-1820), so 2026-11-19 is before the window: what W1122 read
+    #  is no reason on that day, both were reasons before it, and the set can be run from the window's first day
+    w1122 = ("rcp-news2", "nice-ng97")
+    assert not [x for x in cal.runnable(the_set, on="2026-11-19")["why_not"] if any(r in x for r in w1122)]
+    before = cal.runnable(the_set, on="2026-11-15")
+    assert before["runnable"] is False and all(any(r in x for x in before["why_not"]) for r in w1122), (
+        before["why_not"])
+    assert cal.runnable(the_set, on=cal.runnable_window(the_set)["from"])["runnable"] is True
 
 
 def test_w1123_fu1279_a_price_is_the_declared_cost_by_the_ruled_formula_and_the_waterfall_splits_what_it_leaves(client):
@@ -93565,6 +93599,8 @@ def test_w1143_no_document_a_round_wrote_gives_the_owner_a_pronoun_the_owner_has
                                             r"|his\\s+|her\\s+|their\\s+)", "'took his own life'"],
         "scripts/blinds_p212_routes.json": [r"|his\\s+|her\\s+|their\\s+)"],
         "apps/workstation-superapp/src/lib/i18n.tsx": ["'fa', 'he']"],
+        #  W1195 - the reserved-instrument screen's determiners, a regex: it gives no person a pronoun
+        "agentic_core/legal/specialist.py": ["|our|his|her|their|"],
         #  W1160 - the publisher's data file for article 7 of the Scotland Order 1994, kept word for word: its
         #  description of the Order, as the publisher gives it
         "integration_tests/fixtures/statute_order_article_unapplied.xml": [
@@ -97103,7 +97139,7 @@ def test_w1183_fu1054_the_care_reviewers_calibration_is_said_where_its_reviews_a
     from agentic_core.ai.native import orchestrator
     root = Path(__file__).resolve().parents[1]
     src = root / "apps" / "workstation-superapp" / "src"
-    D0 = _dt.date(2026, 11, 21)                      # the capture's day, a day the tree's set can be run
+    D0 = _dt.date(2026, 11, 22)                      # the capture's day, a day the tree's set can be run
     monkeypatch.setattr(cal, "_today", lambda: D0)
     runs = tmp_path / "review_calibration_runs.json"
     monkeypatch.setattr(cal, "_runs_path", lambda: runs)
@@ -97305,7 +97341,7 @@ def test_w1183_fu1054_the_care_reviewers_calibration_is_said_where_its_reviews_a
     t3 = client.get("/api/v1/review/tier/care_risk_assess").json()
     assert (t3["agent_rates"]["agent"], t3["agent_rates"]["caught"]) == ("care-reviewer", 2), t3["agent_rates"]
     assert [s["agent"] for s in t3["agent_calibrations"]] == ["care-reviewer", "w1183-other"], t3["agent_calibrations"]
-    assert ("; w1183-other's calibration: its latest run, on 2026-11-21 with ollama:w1183-made-up (w1183-stand-in, build "
+    assert (f"; w1183-other's calibration: its latest run, on {D0.isoformat()} with ollama:w1183-made-up (w1183-stand-in, build "
             "w1183standin), did not meet the bar") in t3["basis"], t3["basis"]
     assert "; care-reviewer's calibration:" not in t3["basis"], "a calibrated agent is said after the uncalibrated label"
     #  ...and a review by the same agent in a discipline with no set is said for that discipline only
@@ -97643,7 +97679,7 @@ def test_w1185_fu1823_every_care_tool_says_its_tier_in_one_place_and_the_child_c
     from agentic_core.api.review_options import tool_at
     root = Path(__file__).resolve().parents[1]
     src = root / "apps" / "workstation-superapp" / "src"
-    D0 = _dt.date(2026, 11, 21)                      # the capture's day, as W1183's captures pinned it
+    D0 = _dt.date(2026, 11, 22)                      # the capture's day, as W1183's captures pinned it
     monkeypatch.setattr(cal, "_today", lambda: D0)
     monkeypatch.setattr(cal, "_runs_path", lambda: tmp_path / "w1185_calibration_runs.json")
     monkeypatch.setattr(rt, "_path", lambda: tmp_path / "w1185_review_tier_records.json")
@@ -98293,7 +98329,10 @@ def test_w1188_fu1054_is_closed_on_the_care_reviewers_first_run_and_what_it_miss
                  "check_results finds nothing wrong with it."):
         assert said in note, ("the close note does not say", said)
     _w = cal.runnable_window(the_set)
-    assert _w and f"while the set can be run (through {_w['through']} as the register stands)" in note, note[:300]
+    #  W1195d (FU-1820) - the close note is FU-1054's history as written on 2026-11-21, when the set could be run
+    #  through 2027-01-10; the three rows read again since moved the window on, so the note is held to its own
+    #  words, and the window is read below
+    assert _w and "while the set can be run (through 2027-01-10 as the register stands)" in note, note[:300]
     m = re.search(r"What it missed is (FU-\d+)\.$", note)
     assert m, note[-160:]
     miss = reg[m.group(1)]
@@ -102355,3 +102394,2037 @@ def test_w1195c_p515_a_run_is_held_to_what_its_reviewer_is_shown_and_a_reply_in_
              reg["FU-1819"]["why"], p515.split("UPDATED 2026-11-22 (W1195c)", 1)[1]]
     assert [m_.group(0) for t_ in texts for m_ in [re.search(r"\b(?:he|his|him|himself)\b", t_, re.I)] if m_] == []
     assert hashlib.sha256(tracked.read_bytes()).hexdigest() == before, "the tracked results file was written"
+
+
+def test_w1204_an_entity_repository_says_no_terms_have_been_chosen_and_the_generation_credit_carries_forward(client):
+    """FU-1880 and FU-1881 (W1204), P3.30. What the Owner ruled on 2026-11-22 is said where it is read. D-TERMS: the
+    Owner accepted that, until the solicitor answers (FU-1817), each entity repository's README says no terms have been
+    chosen, and a handed-over repository said nothing about its terms. D-CREDIT: the Owner ruled at P5.16 that the
+    generation credit carries forward against later fees until it is used up, with no conversion while money is
+    virtual, where the price's answer, which the price panel draws, said it came off the first share of profit and the
+    cycle's fee said the first fee. W1193c gave the ratified canvas's credit line its dated note (test_w1193c holds it);
+    this round writes no note. Held here:
+    T1. the README the repository builder writes, for a made-up record in no store, ends with its Terms section, said
+        once: no terms and no licence chosen, nothing in it granting a licence until terms are chosen, and the terms on
+        which a founder receives an entity repository a solicitor's question, not yet answered; no file of the set is
+        a licence file, and the README names no licence;
+    T2. DRIVEN: a made-up entity established through Genesis, its repository generated by the route, carries the same
+        section in the README the platform serves and in the archive a founder downloads, and holds no licence file;
+    T3. the price's answer, read from the route both ways, says the credit in the ruling's words from the module's one
+        rule: once charged, credited against the platform's fees as they fall due, from the first, and carried forward
+        until it is used up, with no conversion while money is virtual, the unit it is held in an accountant's
+        question; the field credited_against_first_profit_share keeps its name and its values (true; false when the
+        price is waived);
+    T4. the cycle's fee says the same rule from the same constant and credits nothing, since nothing is charged, as
+        driven through a cycle of that entity;
+    T5. no backend module, page or page fixture says the credit comes off the first share of profit or the first fee:
+        the price module's docstring keeps the 2026-10-13 ruling, as ruled, and carries the 2026-11-22 one after it;
+    T6. the fixtures the price panel, the Genesis journey page and the two fee pages render are the routes' answers
+        now: GenerationPrice.fixture.json both ways and GenesisJourney.fixture.json's price whole, and every captured
+        fee's credit; the panel draws credit_basis under that field;
+    T7. the register: FU-1880 and FU-1881 are on P3.30, low, open or closed by W1204 as built."""
+    import ast
+    import io
+    import json
+    import pathlib
+    import re
+    import zipfile
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")  # noqa: E731
+    from agentic_core.api import vsb as _vsb
+    from agentic_core.economy import generation_price as gp
+    from agentic_core.economy import metabolism as _met
+    from agentic_core.economy import owner_payments as _op
+    assert _op.REAL_MONEY_ENABLED is False, "the real-money switch is on in the tree - that is the Owner's alone"
+
+    #  T1. THE README THE BUILDER WRITES, for a made-up record in no store
+    terms = ("## Terms\nNo terms have been chosen for this repository, and no licence has been chosen for it. Until "
+             "terms are chosen, nothing in it grants a licence. The terms on which a founder receives an entity "
+             "repository are a question for a solicitor, not yet answered.\n")
+    licence_file = re.compile(r"(?i)(?:^|/)(?:licen[cs]e|copying|unlicen[cs]e)(?:[.-][\w.]*)?$")
+    licence_named = re.compile(r"(?i)\b(?:apache|gpl|lgpl|agpl|bsd|mpl|creative commons|cc[ -]by\w*|cc0|"
+                               r"mit licen[cs]e|licensed under|copyright|all rights reserved)\b|©")
+
+    def holds_terms(readme, where):
+        assert readme.endswith("none is a built or running app)\n\n" + terms), (where, readme[-600:])
+        assert readme.count("## Terms") == 1 and readme.count("No terms have been chosen") == 1, where
+        assert licence_named.search(readme) is None, (where, "names a licence", licence_named.search(readme).group(0))
+    files = _vsb._build_repo_files({"vsb_id": "vsb-w1204", "name": "W1204 Made-up Bakery", "challenge": "w1204 probe",
+                                    "status": "registered - not operating"})
+    holds_terms(files["README.md"], "the builder's README")
+    #  every path is checked for a licence file; the licence names are read in the README, where terms are said
+    assert not [p for p in files if licence_file.search(p)], ("the builder writes a licence file", sorted(files))
+
+    #  T2. DRIVEN: a made-up entity, its repository generated by the route, served and downloaded
+    est = client.post("/api/v1/genesis/establish", json={"problem": "w1204 a made-up repair cafe for a village hall",
+                                                         "name": "W1204 Repair Cafe", "owner_id": "pytest",
+                                                         "ship_output": False})
+    assert est.status_code == 200, est.text[:300]
+    vid = est.json()["vsb_id"]
+    m = client.post(f"/api/v1/vsb/{vid}/repo")
+    assert m.status_code == 200, m.text[:300]
+    tree = m.json()["tree"]
+    assert "README.md" in tree and not [p for p in tree if licence_file.search(p)], tree
+    served = client.get(f"/api/v1/vsb/{vid}/repo/file", params={"path": "README.md"})
+    assert served.status_code == 200, served.text[:200]
+    holds_terms(served.content.decode("utf-8"), "the README the platform serves")
+    z = client.get(f"/api/v1/vsb/{vid}/repo/zip")
+    assert z.status_code == 200 and z.headers.get("X-Repo-Missing") == "none", (z.status_code, z.headers)
+    archive = zipfile.ZipFile(io.BytesIO(z.content))
+    assert not [n for n in archive.namelist() if licence_file.search(n)], archive.namelist()
+    holds_terms(archive.read("README.md").decode("utf-8"), "the README a founder downloads")
+
+    #  T3. THE PRICE'S ANSWER, both ways, from the module's one rule
+    rule = ("credited against the platform's fees as they fall due, from the first, and carried forward until it is "
+            "used up, with no conversion while money is virtual")
+    assert (gp.CREDIT_RULE, gp.CREDIT_RULED_ON) == (rule, "2026-11-22"), (gp.CREDIT_RULE, gp.CREDIT_RULED_ON)
+    said = (f"the price, once charged, is {rule} (ruled by the Owner on 2026-11-22); the unit the credit is held in is a "
+            "question for an accountant")
+    r1, r2 = client.get("/api/v1/genesis/price"), client.get("/api/v1/genesis/price?non_distributing=true")
+    assert r1.status_code == r2.status_code == 200, (r1.text[:200], r2.text[:200])
+    standing, waived = r1.json(), r2.json()
+    assert (standing["credit_basis"], standing["credited_against_first_profit_share"], standing["waived"]) == (
+        said, True, False), standing["credit_basis"]
+    assert (waived["credit_basis"], waived["credited_against_first_profit_share"], waived["waived"]) == (
+        said, False, True), waived["credit_basis"]
+
+    #  T4. THE CYCLE'S FEE, from the same constant, credits nothing: nothing is charged
+    fee_said = (f"the price of generating an entity ({gp.PRICE_GBP} pounds, P5.16 clause 2), once it has been charged, is "
+                f"{rule} (ruled by the Owner on 2026-11-22). It has not been charged: nothing is charged for generating "
+                f"an entity until 3 things exist, and 0 of them exist today. Nothing is credited")
+    credit = {"applied_wst": 0.0, "basis": fee_said}
+    assert _met._generation_credit() == credit, _met._generation_credit()
+    cyc = client.post("/api/v1/economy/cycle", json={"vsb_id": vid, "revenue": 1000, "costs": 200})
+    assert cyc.status_code == 200, cyc.text[:300]
+    fee = (cyc.json().get("cycle") or cyc.json())["platform_fee"]
+    assert fee["credit"] == credit and fee["fee_wst"] > 0, fee
+    msrc = (root / "agentic_core/economy/metabolism.py").read_text(encoding="utf-8")
+    body = msrc.split("\ndef _generation_credit(", 1)[1].split("\ndef ", 1)[0]
+    assert "from .generation_price import CREDIT_RULE, CREDIT_RULED_ON, PRICE_GBP, conditions_met" in body
+    assert body.count("{CREDIT_RULE}") == 1 and "carried forward" not in body.split('"""', 2)[2], (
+        "the cycle's fee writes the rule again instead of taking the price module's")
+
+    #  T5. NO MODULE, PAGE OR FIXTURE SAYS THE OLD RULE; the price module's docstring keeps 2026-10-13 and adds 2026-11-22
+    #  tied to the credit: "the first share" is also Stage 1's owner share, which this leg says nothing about
+    old = re.compile(r"(?i)(?:taken off|credited against|comes? off) the first (?:share of (?:the )?profit|profit share|fee)")
+    gsrc = (root / "agentic_core/economy/generation_price.py").read_text(encoding="utf-8")
+    doc = ast.get_docstring(ast.parse(gsrc))
+    flatdoc = " ".join(doc.split())
+    kept = "OWNER RULING 2026-10-13, from comparable prices read at their publishers' pages: ninety-nine pounds, once, " \
+           "credited against the first profit share;"
+    ruled = ("OWNER RULING 2026-11-22 (P5.16, the recommendation accepted): the credit is to carry forward against later "
+             "fees until it is used up, with no conversion while money is virtual; the unit it is held in goes to the "
+             "accountant (docs/business/FORMATION_WORKPACK.md, question 3 for an accountant).")
+    assert flatdoc.count(kept) == 1 and flatdoc.count(ruled) == 1 and flatdoc.index(kept) < flatdoc.index(ruled), doc
+    said_old = []
+    for f in sorted((root / "agentic_core").rglob("*.py")):
+        if "__pycache__" in f.parts:
+            continue
+        text = f.read_text(encoding="utf-8", errors="replace")
+        if f.name == "generation_price.py" and f.parent.name == "economy":
+            text = text.replace(doc, "", 1)                     # the 2026-10-13 ruling, kept in the docstring as ruled
+        said_old += [(f.relative_to(root).as_posix(), mo.group(0)) for mo in old.finditer(text)]
+    src = root / "apps/workstation-superapp/src"
+    for f in sorted([*src.rglob("*.tsx"), *src.rglob("*.ts"), *src.rglob("*.json")]):
+        if "node_modules" not in f.parts:
+            text = f.read_text(encoding="utf-8", errors="replace")
+            said_old += [(f.relative_to(root).as_posix(), mo.group(0)) for mo in old.finditer(text)]
+    assert said_old == [], ("the credit is still said to come off the first share or the first fee", said_old[:6])
+
+    #  T6. THE FIXTURES ARE THE ROUTES' ANSWERS NOW
+    fx = json.loads((src / "components/GenerationPrice.fixture.json").read_text(encoding="utf-8"))
+    assert (fx["standing"]["body"], fx["non_distributing"]["body"]) == (standing, waived), "capture the price again"
+    journey = json.loads((src / "pages/synthesis/GenesisJourney.fixture.json").read_text(encoding="utf-8"))
+    assert journey["price"] == standing, "the price the Genesis journey page's panel is served is not the route's"
+
+    def credits(node):
+        if isinstance(node, dict):
+            if "applied_wst" in node and "basis" in node:
+                yield node
+            for v in node.values():
+                yield from credits(v)
+        elif isinstance(node, list):
+            for v in node:
+                yield from credits(v)
+    for page, n in (("VSBEconomy.fee.fixture.json", 2), ("VSBCockpit.fee.fixture.json", 1)):
+        found = list(credits(json.loads((src / "pages/enterprise" / page).read_text(encoding="utf-8"))))
+        assert found == [credit] * n, (page, found)
+    panel = (src / "components/GenerationPrice.tsx").read_text(encoding="utf-8")
+    at = panel.index("{price.credited_against_first_profit_share && (")
+    assert panel.count("{price.credit_basis}.") == 1 and at < panel.index("{price.credit_basis}.") < at + 200, panel[at:at + 300]
+
+    #  T7. THE REGISTER: the two rows, open until the round's close step closes them as built
+    reg = {r.get("id"): r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"] if isinstance(r, dict)}
+    for rid, words in (("FU-1880", "says no terms have been chosen"), ("FU-1881", "carries forward against later fees")):
+        r = reg[rid]
+        assert (r["slot"], r["severity"], bool(r.get("owner_gated"))) == ("P3.30", "low", False) and words in r["title"], r
+        assert r["status"] == "open" or (r["status"], r.get("closed_by"), r.get("because")) == ("done", "W1204", "built"), (
+            rid, r["status"], r.get("closed_by"), r.get("because"))
+
+
+def test_w1207_the_archive_index_uses_no_embedding_and_every_entity_route_with_a_second_path_parameter_answers_a_second_person_as_no_entity(
+        client, monkeypatch, tmp_path):
+    """FU-1844 (W1207, key A4), P3.30; and FU-1858 (W1207, key B4), P5.1.
+    A4. The archive's search basis and the Horizon page said no embedding backend is installed, while chromadb and its
+    ONNX runtime are (requirements.txt). What is true is that this index computes no embedding, and that is what they
+    say now: the basis says this index uses no embedding model, and the page draws `embeddings: none used by this
+    index` with the server's basis beside it. Held here:
+    A1. a scan of a made-up inbox, read back through GET /api/v1/horizon/archive: no embedding backend, 'no embedding'
+        in the search basis and nothing said about what is installed; the search's own basis still says it is not
+        semantic recall and claims nothing installed either;
+    A2. no .py module under agentic_core and no .ts, .tsx, .js, .jsx or .json file of the app under
+        apps/workstation-superapp/src carries the old words, read also where a sentence is split across lines (a
+        Python string carried on, a comment's next line);
+    A3. the captured fixtures the rendered tests serve carry the live manifest's search basis;
+    A4. the page draws the new words in the testid test_w599 reads, its rendered test expects them and the server's
+        basis beside them, and P3.22 of the plan carries the dated note, its clause's words kept, as do the
+        rows of docs/HORIZON_INTEGRATION.md and docs/NATIVE_AI_FABRIC_ROADMAP.md that said the surface reports
+        `embeddings: none installed`.
+    B4. W1075's census skips every route with a path parameter that is not an entity's, so the eight entity routes with
+    a second path parameter were driven for no second person with sign-in on. Held here, with sign-in on in this
+    process and two made-up people:
+    B1. the census of the class: the mounted routes with an entity path parameter and another path parameter are
+        exactly HELD's eight, each named with the test that holds it, and each of those tests is in the suite;
+    B2. the first person establishes an entity, generates its website, web app and phone app, attaches a specialist,
+        produces a deliverable, writes its design section and gates the design stage; each of the eight, and the phone
+        app's trailing-slash address, is driven as the second person with values the route accepts and a body that
+        passes validation, and answers exactly as an id that names no entity does (status and normalised body), never
+        with the first person's canary or name;
+    B3. nothing of the first person's changed under the second person's calls: the specialist still holds a place,
+        no signature is recorded, the design gate has no decision and the design section is the first person's;
+    B4. the first person is answered last, as the positive control: 200 on every one, the generated pages carrying
+        the canary, and each write recorded;
+    B5. no call in the test answered 500."""
+    import datetime as dt
+    import json
+    import pathlib
+    import re
+    import uuid
+    from fastapi.routing import APIRoute
+    import agentic_core.auth.core as _ac
+    from agentic_core.api import entity_specialists as _es
+    from agentic_core.api import vsb as _vs
+    from agentic_core.horizon import archive as _ar
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")  # noqa: E731
+    rows = {r.get("id"): r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"] if isinstance(r, dict)}
+    for rid, slot in (("FU-1844", "P3.30"), ("FU-1858", "P5.1")):
+        r = rows[rid]
+        assert r["slot"] == slot and (r["status"] == "open" or (r["status"], r.get("closed_by"), r.get("because")) == (
+            "done", "W1207", "built")), (rid, r["status"], r.get("closed_by"), r["slot"])
+
+    #  A1. the manifest a scan writes, read back through the route, and the search's own basis
+    box = tmp_path / "w1207-inbox"
+    box.mkdir()
+    (box / "w1207-note.md").write_text("# a made-up note\nthe w1207lexical word, read into the index\n", encoding="utf-8")
+    monkeypatch.setattr(_ar, "_inbox", lambda: str(box))
+    monkeypatch.setattr(_ar, "_store", lambda: tmp_path / "w1207-asset_index.json")
+    scanned = client.post("/api/v1/horizon/archive/scan")
+    assert scanned.status_code == 200 and scanned.json()["counts"]["INDEXED"] == 1, scanned.text[:300]
+    got = client.get("/api/v1/horizon/archive")
+    assert got.status_code == 200, got.text[:300]
+    man = got.json()["manifest"]
+    basis = man["search_basis"]
+    assert man["embedding_backend"] is None and "no embedding" in basis.lower(), basis
+    assert "installed" not in basis.lower(), ("the search basis says what is installed, not what this index uses", basis)
+    assert "this index uses no embedding model" in basis and "not semantic recall" in basis, basis
+    hit = client.get("/api/v1/horizon/archive/search", params={"term": "w1207lexical"})
+    assert hit.status_code == 200 and hit.json()["passages_matched"] == 1, hit.text[:300]
+    assert hit.json()["embedding_backend"] is None and "not semantic recall" in hit.json()["basis"], hit.json()["basis"]
+    assert "installed" not in hit.json()["basis"].lower(), hit.json()["basis"]
+
+    #  A2. the old words nowhere in the backend or the app, read also across a line break
+    OLD = ("no embedding backend installed", "embedding backend installed", "no embeddings are installed",
+           "embeddings: none installed", "'none installed'")   # the old drawn words and the page's old literal
+
+    def joined(text):
+        """The text as one line: a Python string carried on to the next line, and a comment's next line, joined."""
+        t = re.sub(r"([\"'])\s*\n\s*(?:f|r|b|rb|fr)?\1", " ", text)
+        t = re.sub(r"\n\s*(?://+|#+|\*+(?!/))?", " ", t)
+        return " ".join(t.split()).lower()
+    src = root / "apps/workstation-superapp/src"
+    scanned_files = sorted((root / "agentic_core").rglob("*.py")) + sorted(
+        p for p in src.rglob("*") if p.suffix in (".ts", ".tsx", ".js", ".jsx", ".json") and "node_modules" not in p.parts)
+    assert len(scanned_files) > 500, len(scanned_files)
+    said = sorted({(p.relative_to(root).as_posix(), w) for p in scanned_files
+                   for w in OLD if w in joined(p.read_text(encoding="utf-8", errors="replace"))})
+    assert said == [], ("a module or the app still says what is installed, not what this index uses", said)
+
+    #  A3. the fixtures the rendered tests serve carry the live manifest's basis
+    page_dir, comp_dir = src / "pages/governance", src / "components"
+    fx_page = json.loads((page_dir / "HorizonCompanion.fixture.json").read_text(encoding="utf-8"))
+    fx_panel = json.loads((comp_dir / "ArchiveSearchPanel.fixture.json").read_text(encoding="utf-8"))
+    assert fx_page["archive_scanned"]["manifest"]["search_basis"] == basis, "HorizonCompanion.fixture.json is stale"
+    assert fx_panel["scan"]["body"]["search_basis"] == basis == scanned.json()["search_basis"], (
+        "ArchiveSearchPanel.fixture.json is stale")
+
+    #  A4. the page, its rendered test and the plan's dated note
+    page = (page_dir / "HorizonCompanion.tsx").read_text(encoding="utf-8")
+    assert page.count('data-testid="horizon-archive-embeddings"') == 1
+    assert "? 'none used by this index' : String(archive.manifest.embedding_backend)}" in page
+    spec = (page_dir / "HorizonCompanion.test.tsx").read_text(encoding="utf-8")
+    assert ("expect(within(panel).getByTestId('horizon-archive-embeddings').textContent).toBe('embeddings: none used "
+            "by this index');") in spec
+    assert "expect(within(panel).getByTestId('horizon-archive-embeddings-basis').textContent).toBe(m.search_basis);" in spec
+    plan = read("docs/FABLE_DELIVERY_PROMPT.md")
+    p322 = " ".join(plan.split("\n P3.22 ", 1)[1].split("\n P3.23 ", 1)[0].split())
+    assert "the surface states `embeddings: none installed` rather than implying semantic recall" in p322
+    assert ("W1207 (2026-11-22), built (row FU-1844): the archive's search basis says that this index uses no embedding "
+            "model, and the Horizon page draws `embeddings: none used by this index` with that basis beside it") in p322
+    note = ("W1207 (2026-11-22, FU-1844): the surface draws `embeddings: none used by this index`; chromadb and "
+            "onnxruntime are installed for another module (FU-1843), so this index, not the machine, uses no embedding.")
+    for rel, row_words in (("docs/HORIZON_INTEGRATION.md", "reports `embeddings: none installed` rather than implying"),
+                           ("docs/NATIVE_AI_FABRIC_ROADMAP.md", "report `embeddings: none installed`, and never imply"),
+                           ("docs/NATIVE_AI_FABRIC_ROADMAP.md", "`embeddings: none installed` stated rather than implied.")):
+        row = [ln for ln in read(rel).splitlines() if row_words in ln]
+        assert len(row) == 1 and row[0].count(note) == 1, (rel, row_words, "the row does not carry W1207's dated note")
+
+    #  B1. THE CENSUS OF THE CLASS W1075's walk passes over: an entity path parameter beside another one
+    ENTITY = {"vsb_id", "entity_id", "twin_id", "scope", "vid", "from_vsb", "to_vsb", "parent_id", "target_vsb",
+              "vsb", "entity", "parent_vsb", "child_vsb", "source_vsb", "target_id", "client_vsb", "provider_vsb"}
+
+    def entityish(n):
+        return n in ENTITY or "vsb" in n or n.endswith("entity_id")
+    mounted, mixed = set(), set()
+    for route in client.app.routes:
+        if not isinstance(route, APIRoute):
+            continue
+        mounted.update((m, route.path) for m in (route.methods or ()))
+        pn = [p.name for p in route.dependant.path_params]
+        if [n for n in pn if entityish(n)] and [n for n in pn if not entityish(n)]:
+            mixed.update((m, route.path) for m in (route.methods or ()))
+    V, ES = "/api/v1/vsb/{vsb_id}", "/api/v1/entity-specialists/{vsb_id}/{specialist_id}"
+    HELD = {("GET", V + "/website/page/{name}"): ("test_w1207",),
+            ("GET", V + "/webapp/page/{name}"): ("test_w1207",),
+            ("GET", V + "/mobile/page/{name}"): ("test_w1207",),
+            ("POST", V + "/body/{section}"): ("test_w1207",),
+            ("GET", V + "/review-gates/{stage}"): ("test_w1207",),
+            ("POST", V + "/review-gates/{stage}/decision"): ("test_w1207",),
+            ("POST", ES + "/retire"): ("test_w1207",),
+            ("POST", ES + "/sign"): ("test_w934", "test_w1207")}
+    assert mixed == set(HELD), ("an entity route with a second path parameter is not named with the test that holds "
+                                "it, or a named one is gone", sorted(mixed ^ set(HELD)))
+    suite = pathlib.Path(__file__).read_text(encoding="utf-8")
+    assert all(f"\ndef {t}_" in suite for ts in HELD.values() for t in ts), "a test named for a route is not in the suite"
+    SLASH = ("GET", V + "/mobile/page/")                 # the phone app's own address: no second parameter, same handler
+    assert SLASH in mounted and SLASH not in mixed
+
+    #  B2. two made-up people, sign-in on in this process; the roster and the signatures in stores of this test's own
+    monkeypatch.setattr(_es, "_path", lambda: tmp_path / "w1207-entity_specialists.json")
+    monkeypatch.setattr(_es, "_signed_path", lambda: tmp_path / "w1207-entity_signatures.json")
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    tag, canary = uuid.uuid4().hex[:6], uuid.uuid4().hex[:12]
+    who = {k: f"w1207-{k}-{tag}" for k in ("one", "two")}
+    users = _ac._load_users()
+    for name in who.values():
+        users[name] = {"user_id": name, "username": name, "hashed_password": _ac._pwd_ctx.hash("pw12345678"),
+                       "role": "user", "created_at": "2026-11-22T00:00:00Z", "api_keys": []}
+    _ac._save_users(users)
+    H = {}
+    for k, name in who.items():
+        tok = client.post("/api/v1/auth/token", data={"username": name, "password": "pw12345678"})
+        assert tok.status_code == 200, tok.text[:200]
+        H[k] = {"Authorization": "Bearer " + tok.json()["access_token"]}
+    seen = []
+
+    def post(path, k, body=None):
+        r = client.post(path, headers=H[k], json=body)
+        seen.append(("POST", path, k, r.status_code))
+        return r
+    est = post("/api/v1/genesis/establish", "one", {"problem": f"w1207 canary mission {canary}", "ship_output": False,
+                                                    "name": f"W1207 Canary {canary}"})
+    assert est.status_code == 200, est.text[:300]
+    vid, missing = est.json()["vsb_id"], f"w1207-no-entity-{tag}"
+    for kind in ("website", "webapp", "mobile"):                   # before the gate, which holds the generators
+        r = post(f"/api/v1/vsb/{vid}/{kind}", "one")
+        assert r.status_code == 200, (kind, r.status_code, r.text[:300])
+    day = lambda n: (dt.date.today() + dt.timedelta(days=n)).isoformat()   # noqa: E731
+    spec_r = post(f"/api/v1/entity-specialists/{vid}", "one", {
+        "name": "A. Example (a made-up record)", "discipline": _es.DISCIPLINES[0], "credential_as_stated":
+        "stated for this test", "reviews": "the entity's reports", "lapses_on": day(200)})
+    assert spec_r.status_code == 200, spec_r.text[:300]
+    sid = spec_r.json()["specialist"]["specialist_id"]
+    made = post("/api/v1/deliverables/produce", "one", {"vsb_id": vid, "type": "report", "title": f"W1207 report {canary}",
+                                                       "brief": "w1207 a made-up report to be signed"})
+    assert made.status_code == 200, made.text[:300]
+    did = made.json()["id"]
+    ours = f"w1207 the first person's own design section {canary}"
+    assert post(f"/api/v1/vsb/{vid}/body/design", "one", {"text": ours}).status_code == 200
+    gated = post(f"/api/v1/vsb/{vid}/review-gates", "one", {"stages": ["design"]})
+    assert gated.status_code == 200 and gated.json()["stages"] == ["design"], gated.text[:300]
+    later = "w1207 a made-up design section, written last"
+    signing = {"deliverable_id": did, "reviewed": "the report's recommendations", "date": day(0), "lapses_on": day(100)}
+    DRIVE = {("GET", V + "/website/page/{name}"): ({"name": "index"}, None),
+             ("GET", V + "/webapp/page/{name}"): ({"name": "index"}, None),
+             ("GET", V + "/mobile/page/{name}"): ({"name": "index"}, None),
+             ("GET", V + "/review-gates/{stage}"): ({"stage": "design"}, None),
+             ("POST", V + "/body/{section}"): ({"section": "design"}, {"text": later}),
+             ("POST", ES + "/sign"): ({"specialist_id": sid}, signing),
+             ("POST", V + "/review-gates/{stage}/decision"): ({"stage": "design"}, {"decision": "approve"}),
+             ("POST", ES + "/retire"): ({"specialist_id": sid}, {"reason": "w1207 a made-up reason"})}
+    assert set(DRIVE) == set(HELD), "a held route is not driven"
+    DRIVE = {SLASH: ({}, None), **DRIVE}            # the writes last, so the owner's approve and retire come last
+    VOLATILE = re.compile(r'"(timestamp|generated_at|read_at|checked_at|measured_at|at|now|ts|elapsed_ms|duration_ms|'
+                          r'took_ms|run_id|request_id|id|session_id|transformation_id|cca_id)"\s*:\s*'
+                          r'("[^"]*"|-?[0-9.eE+-]+|null)')
+
+    def norm(text, eid):                            # W1075's: the id and the per-call fields read out of the answer
+        return VOLATILE.sub(r'"\1": "~"', text.replace(eid, "<ID>"))
+
+    def call(key, eid, k):
+        (method, tmpl), (fills, body) = key, DRIVE[key]
+        path = tmpl.replace("{vsb_id}", eid)
+        for n, v in fills.items():
+            path = path.replace("{" + n + "}", v)
+        r = client.request(method, path, headers=H[k], json=body)
+        seen.append((method, path, k, r.status_code))
+        return r
+    wrong = []
+    for key in DRIVE:
+        r2, rm = call(key, vid, "two"), call(key, missing, "two")
+        if (r2.status_code, norm(r2.text, vid)) != (rm.status_code, norm(rm.text, missing)):
+            wrong.append((key, "another person's entity", r2.status_code, r2.text[:160], "no entity", rm.status_code,
+                          rm.text[:160]))
+        elif r2.status_code < 400:
+            wrong.append((key, "answered the second person", r2.status_code, r2.text[:160]))
+        if canary in r2.text or who["one"] in r2.text:
+            wrong.append((key, "the second person was answered with the first person's canary or name"))
+    assert wrong == [], wrong
+
+    #  B3. nothing of the first person's changed under the second person's calls
+    rec = _vs._load_vsb(vid)
+    assert not ((rec.get("review_gates") or {}).get("decisions") or {}).get("design"), rec.get("review_gates")
+    assert (rec.get("genesis_blueprint") or {}).get("design") == ours, "the second person wrote the design section"
+    roster = client.get(f"/api/v1/entity-specialists/{vid}", headers=H["one"]).json()
+    assert [s["specialist_id"] for s in roster["active"]] == [sid] and roster["retired"] == [], roster
+    assert not _es._read_signed().get(vid), "a signature was recorded for the second person"
+
+    #  B4. THE POSITIVE CONTROL, last: the first person is answered on each, and each write is recorded
+    for key in DRIVE:
+        r = call(key, vid, "one")
+        assert r.status_code == 200, (key, r.status_code, r.text[:300])
+        if "/page/" in key[1]:
+            assert canary in r.text, (key, "the generated page does not carry the canary the second person's legs read")
+    rec = _vs._load_vsb(vid)
+    assert rec["genesis_blueprint"]["design"] == later and rec["review_gates"]["decisions"]["design"]["decision"] == "approve"
+    assert rec["review_gates"]["decisions"]["design"]["decided_by"] == who["one"]
+    signed = _es._read_signed().get(vid) or []
+    assert [(s["specialist_id"], s["entered_by"]) for s in signed] == [(sid, who["one"])], signed
+    assert [s["specialist_id"] for s in client.get(f"/api/v1/entity-specialists/{vid}",
+                                                   headers=H["one"]).json()["retired"]] == [sid]
+
+    #  B5. no call in the test answered 500
+    assert not [c for c in seen if c[3] >= 500], [c for c in seen if c[3] >= 500]
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1195d (FU-1820, P5.15) - the three rows four of the Care calibration cases rely on are read again at their
+#  publishers, so the set can be run through 2027-02-17 as the register stood then, and the captures are taken again
+#  inside the new window.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1195d_fu1820_the_three_rows_four_cases_rely_on_are_read_again_and_the_captures_are_taken_in_the_new_window(
+        client, tmp_path, monkeypatch):
+    """FU-1820, as the Owner ruled on 2026-11-21: the three rows are read again before the second calibration run.
+    gov-report-child-abuse (cases C02 and K01), bapen-must-toolkit (C07, and C08 by its NOT READ part) and nice-ng249
+    (K03) were read on 2026-10-12, and the register's review period is 90 days, so from 2027-01-11 the set could not be
+    run and no agent could be calibrated on it. Held here:
+    1. each row was read again at its publisher's page, whole and not through a summary, and says so with the day; it
+       keeps its first read, the date C02, K01 and K03 print, and what it said was not read, and the re-read adds no
+       NOT READ part;
+    2. each re-read holds, in the page's words, what its cases rely on: the children's route at the local council and
+       999 at immediate risk (C02, K01), free non-commercial use and the commercial licence (C07), recommendation 1.1.1
+       and the guideline's date (K03); and the reuse terms each page states that the row never recorded: GOV.UK's Open
+       Government Licence, the wording BAPEN requires wherever MUST is used, and NICE's terms;
+    3. the window is worked out from the register: from the latest read of a current row a case relies on (the re-read
+       day or later) through the earliest such read plus the review period (2027-02-17 as the register stood at
+       W1195d), so past 2027-01-10, where it lapsed before; the set can be run at both ends, and on the day after the
+       end exactly the cases whose rows lapse first are named; on 2026-11-21 (the old capture day) the three rows'
+       cases are named; on 2026-11-15 every case whose relies_on names a current row is named;
+    4. the set is the one the first run was made on: its content is unchanged and its digest is the run's;
+    5. through the routes: the agent's door runs the set on the window's first and last days, its reviewer shown each
+       re-read row with its first read, and refuses it on the day after the end with the cases whose rows lapsed,
+       asking no model and keeping nothing; the calibration route, on the machine that holds the first run, gives its
+       rates and the window on its last day, and from the day after says the set cannot be run and gives none;
+    6. every captured reviewer statement carries the window as it stands and none the old one; the Care page's list of
+       tools gives the two re-read rows their day, every row as the register holds it; the made-up run was made on the
+       day test_w1183, test_w1185 and test_w1102 pin, the three pin one day, and the set can be run on it;
+    7. FU-1820 is closed by this round as built, its close note naming the row it registered: the typed copies of the
+       old read date, on P5.13 with its slot_source; FU-1831 and P5.15 say the re-read is done, and the ruled date,
+       before 2027-01-10, is unchanged."""
+    import datetime as _dt
+    import hashlib
+    import importlib
+    import json
+    import re
+    from pathlib import Path
+    from agentic_core.api import _review_calibration as cal
+    from agentic_core.api import care_reviewer as cr
+    from agentic_core.ai.native import model_resource as mr
+    from agentic_core.ai.native import orchestrator
+    root = Path(__file__).resolve().parents[1]
+    src = root / "apps" / "workstation-superapp" / "src"
+    one = _dt.timedelta(days=1)
+    TYPED = ("Five Care texts type a source row's read date instead of reading it from the register, so a "
+             "re-read leaves them saying the earlier date")
+    #  each row, the round that first read it, and the cases that rely on it (C08 by the MUST row's NOT READ part)
+    THREE = {"gov-report-child-abuse": ("W677", ("C02", "K01")), "bapen-must-toolkit": ("W678", ("C07", "C08")),
+             "nice-ng249": ("W676", ("K03",))}
+    NOT_READ = {"gov-report-child-abuse": ["the local-authority pages it links to"],
+                "bapen-must-toolkit": ["the tool's own scoring pages"], "nice-ng249": []}
+    reg = json.loads((root / "docs" / "SOURCES.json").read_text(encoding="utf-8"))
+    rows = {r["id"]: r for r in reg["rows"]}
+    assert int(reg["review_days"]) == 90, reg["review_days"]
+
+    #  1. each row read again, its first read and what was not read kept
+    again = {}
+    for rid, (first_round, _cases) in THREE.items():
+        r = rows[rid]
+        assert r["status"] == "current" and _dt.date.fromisoformat(r["read_on"]) > _dt.date(2026, 11, 19), (
+            rid, r["status"], r["read_on"])
+        assert r["read_by"].startswith(f"round {first_round}, in a browser; read again by round W1195d, "), (
+            rid, r["read_by"])
+        assert "read whole" in r["read_by"] and "not through a summary" in r["read_by"], (rid, "a summary said as a read")
+        mark = f"READ AGAIN {r['read_on']} (W1195d): "
+        first = f"FIRST READ 2026-10-12 ({first_round}). "
+        assert r["says"].count(first) == 1 and r["says"].count(mark) == 1, (rid, r["says"][:300])
+        assert r["says"].index(first) < r["says"].index(mark), (rid, "the re-read is said before the first read")
+        assert cal._not_read(r) == NOT_READ[rid] and r["says"].count("NOT READ:") == len(NOT_READ[rid]), (
+            rid, cal._not_read(r))
+        #  the page's words, its curly apostrophes and quotation marks read as straight ones
+        again[rid] = " ".join(r["says"].split(mark, 1)[1].replace("’", "'").replace("‘", "'").split())
+
+    #  2. each re-read holds, in the page's words, what its cases rely on, and the reuse terms the row never recorded
+    the_set = cal.load_set("care")
+    cases = {c["id"]: c for c in the_set["cases"]}
+    route = ("contact the children's social care team at the child's local council, or call 999 if the child is at "
+             "immediate risk (read at https://www.gov.uk/report-child-abuse on 2026-10-12)")
+    for cid in ("C02", "K01"):
+        assert route in cases[cid]["shown"]["guidance"], (cid, "the case no longer shows the children's route")
+    g = again["gov-report-child-abuse"]
+    for said in ("contact the children's social care team at their local council.'",
+                 "'Call 999 if the child is at immediate risk.'", "no notice that it is withdrawn",
+                 "'All content is available under the Open Government Licence v3.0, except where otherwise stated'"):
+        assert said in g, ("the children's re-read does not say", said, g[:400])
+    assert "for non-commercial purposes only" in cases["C07"]["planted"], cases["C07"]["planted"]
+    b = again["bapen-must-toolkit"]
+    for said in ("'The 'MUST' is freely available to use for non-commercial purposes.'",
+                 "permission must be sought, a licence agreement signed & a licence fee paid",
+                 "copies of adapted and commercial materials go to the BAPEN Office",
+                 "'The 'Malnutrition Universal Screening Tool' ('MUST') is reproduced here with the kind permission of "
+                 "BAPEN (British Association for Parenteral and Enteral Nutrition).'"):
+        assert said in b, ("the MUST re-read does not say", said, b[:400])
+    #  C08 is shown the MUST row, and its planted defect rests on the part the row says was not read
+    c08 = cr.as_text(cases["C08"]["shown"])
+    assert "bapen-must-toolkit" in cr.rows_for(c08, rows, cases["C08"].get("relies_on")) and (
+        cases["C08"]["must_flag"] == "unread described as read"), "C08 is no longer shown the MUST row"
+    rec = "do not use falls risk prediction tools to predict a person's risk of falling"
+    assert rec in cases["K03"]["shown"]["detail"], "K03 no longer shows recommendation 1.1.1"
+    n = again["nice-ng249"]
+    for said in ("'Reference number: NG249'", "'Published: 29 April 2025'", "no notice that it is withdrawn or replaced",
+                 "recommendation 1.1.1 reads: 'Do not use falls risk prediction tools to predict a person's risk of "
+                 "falling.'", "Do not distribute or publish any material from this site without first obtaining "
+                 "NICE's permission."):
+        assert said in n, ("the NICE re-read does not say", said, n[:400])
+    assert (rows["nice-cg161"]["status"], rows["nice-cg161"]["replaced_by"]) == ("replaced", "nice-ng249")
+
+    #  3. the window, worked out from the register: a later re-read of any row moves it, and this leg follows
+    D = max(_dt.date.fromisoformat(rows[rid]["read_on"]) for rid in THREE)
+    current = sorted({(c["id"], n["row"]) for c in the_set["cases"] for n in c.get("relies_on") or []
+                      if n.get("status") == "current" and rows[n["row"]]["status"] == "current"})
+    reads = {rid: _dt.date.fromisoformat(rows[rid]["read_on"]) for _, rid in current}
+    start, end = max(reads.values()), min(reads.values()) + _dt.timedelta(days=int(reg["review_days"]))
+    w = cal.runnable_window(the_set)
+    assert w == {"from": start.isoformat(), "through": end.isoformat()} and start >= D, (w, start, end)
+    assert end > _dt.date(2027, 1, 10), ("the set lapses where it did before the re-read", end)
+    for day in (start, end):
+        assert cal.runnable(the_set, on=day)["runnable"] is True, (day, cal.runnable(the_set, on=day)["why_not"])
+
+    def named(day):
+        return sorted(x.split(",")[0] for x in cal.runnable(the_set, on=day)["why_not"])
+    after = end + one
+    lapsed = sorted(f"{cid} relies on {rid}" for cid, rid in current if reads[rid] + _dt.timedelta(
+        days=int(reg["review_days"])) < after)
+    assert lapsed and named(after.isoformat()) == lapsed, (named(after.isoformat()), lapsed)
+    assert {f"{cid} relies on {rid}" for cid, rid in current if rid in THREE} <= set(named("2026-11-21")), (
+        named("2026-11-21"))
+    assert [x.split(" ")[0] for x in named("2026-11-15")] == sorted(cid for cid, _ in current), named("2026-11-15")
+
+    #  4. the set is the one the first run was made on (its content, read as JSON, so line endings do not count)
+    content = json.loads((root / "docs" / "CARE_REVIEW_CALIBRATION.json").read_text(encoding="utf-8"))
+    assert hashlib.sha256(json.dumps(content, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest() == (
+        "4f322991c9bbe34d3383f02ab1b8764a6d4098d958815336f33147a2542f5e2b"), (
+        "the calibration set changed: it is frozen, and a change to it is the Owner's")
+    doc = json.loads((root / cal.RESULTS["care"]).read_text(encoding="utf-8"))
+    run1 = next(r for r in doc["runs"] if r["run_id"] == "cal-8c7430765c")
+    assert (the_set["version"], cal.set_digest(the_set)) == (run1["set_version"], run1["set_digest"]), "the set moved"
+
+    #  5. through the routes: the agent's door, with a stand-in model, its identity and its context
+    IDENT = {"model": "w1195d-stand-in", "build_digest": "1195d" + "0" * 59, "processor": None,
+             "basis": "a stand-in made up for W1195d: no model ran"}
+    monkeypatch.setattr(importlib.import_module("agentic_core.ai.gateway"), "served_identity_of", lambda sb: dict(IDENT))
+    monkeypatch.setattr(mr, "context_given", lambda sb: {"model": IDENT["model"], "context_length": 1 << 20,
+                                                         "basis": "a stand-in made up for W1195d: no runtime was asked"})
+    said_by_case, shown = {c["id"]: ("FLAG: none" if not c.get("planted") else f"FLAG: {c['must_flag']}")
+                           for c in the_set["cases"]}, {}
+
+    async def _stand_in(prompt, agent="assistant", **kw):
+        hit = [c["id"] for c in the_set["cases"] if c.get("shown") and cr.as_text(c["shown"]) in prompt]
+        assert len(hit) == 1, hit
+        shown.setdefault(hit[0], []).append(prompt)
+        return {"output": said_by_case[hit[0]], "served_by": "ollama:w1195d-stand-in"}
+    monkeypatch.setattr(orchestrator, "complete", _stand_in)
+    runs = tmp_path / "w1195d_runs.json"
+    monkeypatch.setattr(cal, "_runs_path", lambda: runs)
+    for day in (start, end):
+        monkeypatch.setattr(cal, "_today", lambda day=day: day)
+        r = client.post("/api/v1/review/calibration/agent-run", json={"discipline": "care", "date": day.isoformat()})
+        assert r.status_code == 200 and r.json()["not_answered"] == [], (day, r.text[:400])
+        kept = json.loads(runs.read_text(encoding="utf-8"))[-1]
+        assert kept["date"] == day.isoformat() and kept["door"] == cal.AGENT_DOOR, kept["date"]
+    #  ...its reviewer shown each re-read row with its first read, the date the clean cases print
+    for cid, rid in (("K01", "gov-report-child-abuse"), ("C07", "bapen-must-toolkit"), ("K03", "nice-ng249")):
+        row = cr._row_said(rows[rid])
+        assert all(row in p for p in shown[cid]) and "FIRST READ 2026-10-12" in row and "READ AGAIN" in row, (cid, rid)
+    n_kept, n_asked = len(json.loads(runs.read_text(encoding="utf-8"))), sum(len(v) for v in shown.values())
+    late = after
+    monkeypatch.setattr(cal, "_today", lambda: late)
+    r = client.post("/api/v1/review/calibration/agent-run", json={"discipline": "care", "date": late.isoformat()})
+    assert r.status_code == 409 and r.json()["detail"].startswith(
+        f"Not run: the calibration set cannot be run on {late.isoformat()}: "), r.text[:400]
+    assert sorted(x.split(",")[0] for x in r.json()["detail"].split(f"{late.isoformat()}: ", 1)[1].rstrip(".").split(
+        "; ")) == lapsed, r.json()["detail"]
+    assert (len(json.loads(runs.read_text(encoding="utf-8"))), sum(len(v) for v in shown.values())) == (
+        n_kept, n_asked), "a model was asked, or a run kept, on a day the set cannot be run"
+    #  ...and the calibration route, on the machine whose own record holds the first run
+    store = tmp_path / "w1195d_first_run.json"
+    store.write_text(json.dumps([{k: v for k, v in run1.items() if k != "score"}]), encoding="utf-8")
+    monkeypatch.setattr(cal, "_runs_path", lambda: store)
+    for day in (end, late):
+        monkeypatch.setattr(cal, "_today", lambda day=day: day)
+        got = client.get("/api/v1/review/calibration/care-reviewer").json()
+        assert got["today"] == day.isoformat() and got["window"] == w == got["statement"]["set"]["window"], (day, got)
+        if day < late:
+            assert (got["reason"], got["caught"], got["planted_cases"], got["false_alarms"], got["clean_cases"]) == (
+                "not_answered", 5, 10, 4, 6), (day, got["reason"])
+            assert got["statement"]["rates"]["caught"] == 5 and got["statement"]["set"]["runnable_today"] is True
+        else:
+            assert got["reason"] == "set_cannot_run" and got.get("caught") is None, (day, got)
+            assert got["statement"]["rates"] is None and got["statement"]["set"]["runnable_today"] is False
+
+    #  6. the captures carry the window as it stands; the Care tools' rows are read now; the three tests pin one day
+    def windows(x, at=""):
+        if isinstance(x, dict):
+            if isinstance(x.get("set"), dict) and "window" in x["set"]:
+                yield at, x["set"]["window"]
+            for k, v in x.items():
+                yield from windows(v, f"{at}/{k}")
+        elif isinstance(x, list):
+            for i, v in enumerate(x):
+                yield from windows(v, f"{at}[{i}]")
+    seen = 0
+    for rel in ("pages/domains/CareHub.fixture.json", "components/DomainTool.fixture.json"):
+        text = (src / rel).read_text(encoding="utf-8")
+        assert '"through": "2027-01-10"' not in text, (rel, "a capture still carries the window before the re-read")
+        for at, got in windows(json.loads(text)):
+            assert got == w, (rel, at, got, w)
+            seen += 1
+    assert seen >= 10, ("the reviewer statements W1183 and W1185 captured are not all there", seen)
+    fx = json.loads((src / "pages/domains/CareHub.fixture.json").read_text(encoding="utf-8"))
+    for t in fx["tools"]["tools"]:
+        for s in t["sources"]:
+            row = rows.get(s["id"]) or {}
+            assert (s["status"], s.get("page"), s["read_on"]) == (row.get("status"), row.get("page"), row.get(
+                "read_on")), (t["id"], s["id"], "the Care page's list of tools is not the register as it stands")
+    said = {s["id"]: s for t in fx["tools"]["tools"] for s in t["sources"]}
+    for rid in ("bapen-must-toolkit", "nice-ng249"):
+        assert f"its publisher's page was read on {rows[rid]['read_on']}" in said[rid]["status_said"], said[rid]
+    ran = fx["review_risk_made_up_run"]["reviewer"]["run"]["date"]
+    assert f"its latest run, on {ran} with " in fx["review_risk_made_up_run"]["reviewer"]["basis"], (
+        "the made-up run's sentence is of another day")
+    spine = Path(__file__).read_text(encoding="utf-8")
+
+    def body(name):
+        return spine.split(f"\ndef {name}(", 1)[1].split("\ndef test_", 1)[0]
+    pins = []
+    day_re = r"_dt\.date\((\d{4}), (\d{1,2}), (\d{1,2})\)"
+    for name, pat in (
+            ("test_w1183_fu1054_the_care_reviewers_calibration_is_said_where_its_reviews_are_read_and_only_its_own_run_counts",
+             r"\n    D0 = " + day_re + r" +# the capture's day"),
+            ("test_w1185_fu1823_every_care_tool_says_its_tier_in_one_place_and_the_child_concern_answer_carries_its_tier",
+             r"\n    D0 = " + day_re + r" +# the capture's day"),
+            ("test_w1102_fu399_the_tier_of_review_is_rendered_where_it_is_read_with_an_uncalibrated_agents_label",
+             r'monkeypatch\.setattr\(_cal1102, "_today", lambda: ' + day_re + r"\)")):
+        found = re.findall(pat, body(name))
+        assert len(found) == 1, (name, "pins no capture day, or more than one", found)
+        pins.append(_dt.date(*(int(x) for x in found[0])).isoformat())
+    assert len(set(pins)) == 1 and pins[0] == ran, ("the three tests and the made-up run are not of one day", pins, ran)
+    assert w["from"] <= ran <= w["through"] and cal.runnable(the_set, on=ran)["runnable"] is True, (ran, w)
+
+    #  7. the register and the plan
+    items = {r["id"]: r for r in json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    typed = [r for r in items.values() if r.get("title") == TYPED]
+    #  open, or closed by a later round that fixes it (as W1195c's guard reads its rows)
+    assert len(typed) == 1 and (typed[0]["slot"], typed[0]["severity"]) == ("P5.13", "low") and (
+        typed[0]["status"] == "open" or typed[0].get("closed_by") not in (None, "W1195d")), (
+        [(r["id"], r["slot"], r["status"]) for r in typed])
+    assert typed[0]["source"].startswith("W1195d") and (typed[0].get("slot_source") or "").startswith(
+        "P5.13 clause 1: "), (typed[0]["id"], "names no source or slot_source")
+    for said in ("CHILDRENS_ROUTE", "FALLS_RETIRED", "WITHHELD_ON_TERMS", "the dementia entry's standard",
+                 "C02, K01, K03 and K06", "frozen", f"beside its row read on {rows['bapen-must-toolkit']['read_on']}"):
+        assert said in typed[0]["why"], ("the typed copies' row does not say", said)
+    fu = items["FU-1820"]
+    assert fu["title"].startswith("The Care calibration set cannot be run after 2027-01-10") and fu["slot"] == "P5.15"
+    assert (fu["status"], fu.get("closed_by"), fu.get("because")) == ("done", "W1195d", "built"), (
+        fu["status"], fu.get("closed_by"))
+    for said in (f"on {D.isoformat()}, each page once, whole and not through a summary",
+                 "bapen-must-toolkit (C07, and C08 by its NOT READ part)", "through 2027-02-17 as the register stands",
+                 f"The Care texts that type these rows' read dates are {typed[0]['id']}.", "test_w1188"):
+        assert said in fu["close_note"], ("FU-1820's close note does not say", said)
+    miss = items["FU-1831"]
+    note = miss["why"].split(" W1195d, a note: ", 1)
+    #  FU-1831 closes on the second run's results, by a later round; never by this one
+    assert (miss["status"] == "open" or miss.get("closed_by") not in (None, "W1195d")) and len(note) == 2, (
+        "FU-1831 does not say the re-read is done", miss["why"][-300:])
+    for said in (D.isoformat(), "2027-02-17", "The ruled date, before 2027-01-10, is unchanged.",
+                 "whether the run waits on it is the Owner's to say"):
+        assert said in note[1], ("FU-1831's note does not say", said, note[1][:400])
+    assert "the second run is the Owner's, on their own machine, before 2027-01-10" in miss["why"], "the ruled date moved"
+    plan = " ".join((root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8").split())
+    p515 = plan.split(" P5.15 [chartered W679", 1)[1].split(" P5.16 ", 1)[0]
+    line = re.findall(r"UPDATED \d{4}-\d{2}-\d{2} \(W1195d\): (.*)", p515)
+    assert len(line) == 1 and D.isoformat() in line[0] and "2027-02-17" in line[0], p515[-700:]
+    assert "The ruled date, before 2027-01-10, is unchanged." in line[0] and "before 2027-01-10" in p515.split(
+        "(W1195d)", 1)[0], "P5.15 no longer gives the ruled date"
+
+
+def test_w1200_plan_now_says_an_item_held_for_the_final_audit_a_queued_allocation_says_nothing_drains_it_and_fu1086_says_what_remains():
+    """W1200 (C3, C4, D-FU1086): the plan says what is held and what was built. FU-1874 (P5.22) and FU-1875 (P2.40)
+    are closed by this round, as built, through its close step; FU-1086 stays open on P5.22 until the audit has run.
+    Held here:
+    H1. a fixture plan of two build items held until a third, an owner-switch item, a free build item whose prose
+        says HELD UNTIL mid-line, a hold line under a milestone line (no item's), and the named item last, whose
+        first sentence ends in a comma. plan_now gives each open item held_until and held, and next_unheld is the
+        free build item, never the owner-switch item. The Next line opens with the first held item, says its riders,
+        that its rows can be worked now and that it closes only on the named item, whose title is quoted without the
+        comma, and not that it closes on its ACCEPT clause; the line after it names the free build item as the first
+        open build item a round can close, with its riders; 'Then, in order' marks the second held item and no free
+        one;
+    H2. the same fixture with the named item marked done: nothing is held and nothing is said held, and the block is
+        what it was before holds were read;
+    H3. a held item with no open rider says only that it closes on the named item, an unexamined one still says
+        UNEXAMINED, and when every open build item is held the line says none can close;
+    H4. check() reports a hold naming no plan item, the item itself, a hold line in another form (no colon, five
+        spaces, lower case), a second hold, and a cycle of holds of two items and of three; the fixture's mentions in
+        prose are not holds and are not reported, a line that starts 'held until such' among them;
+    H5. the real plan: while P5.22 is open, P2.40, P2.41 and P3.30 each, while open, carry one hold line naming P5.22
+        in their own block, P2.40's and P2.41's right after their W786 lines, and are held; both documents' PLAN NOW
+        blocks are the render, and while the next item is held their Next line says the hold and the next line names
+        next_unheld, the first open build item not held; FU-1874 is open on P5.22 or closed by W1200 as built; the row
+        this round registered (the Transformation page's Next line) is on P5.22, low, while open;
+    Q1. the handler of POST /api/v1/optimizer/allocate (test_w492 drives its HTTP door), with an undeclared tier and
+        with the declared queued tier, answers QUEUED with pending False, a queue depth of one and the basis that
+        nothing drains the queue, the work NOT scheduled and nothing pending; so does the scheduler called directly
+        with no monitor;
+    Q2. the scheduler called with a monitor past its threshold answers REJECTED (CIRCUIT_BREAKER_ACTIVE), as its next
+        call already did, with pending False, puts nothing on the queue (depth 0) and says so: its basis opens 'put on
+        no queue' and says the task was neither run nor queued, NOT scheduled and nothing pending, and never that it
+        was queued;
+    Q3. the fabric's resource_optimizer stage with an undeclared tier is not executed, and its error carries the
+        basis; a declared tier that runs answers SUCCESS with no pending, queue depth or basis, through the handler
+        and the fabric; FU-1875 is open on P2.40 or closed by W1200 as built;
+    F1. FU-1086 is open on P5.22, high, not gated, source W747, tier 2, its title the new one: it says the instrument
+        is built and is not yet calibrated or run, and neither opens OWNER DECISION nor says no item builds or runs it;
+    F2. its why, before its RETITLED note, carries each of P5.22's seven properties by its own words ('no region
+        capped', not 'uncapped'), names the four rounds and what remains (P5.10 clause 5, FU-993, FU-1036, December,
+        P2.40 and P2.41); the note quotes the old title, and the earlier words follow it, the Owner's ruling of the
+        morning of 2026-11-22 among them; it never says 'Read from code'; 'P5.10 clause 5, FU-993' is required only
+        while FU-993 is open;
+    F3. P5.22's block has one BUILT line, after property (7) and after the morning's ruling: it names at least W970,
+        W972, W973 and W977, each with a P5.22 guard in this file, every file it names is tracked, it says the audit
+        has not run and runs in December, and while FU-993 is open that the calibration is NOT YET done, and it names
+        no FU id but FU-1086; and no item of the real plan carries a hold problem (test_w462 holds the whole check)."""
+    import asyncio
+    import json
+    import re
+    import subprocess
+    from pathlib import Path
+    from agentic_core import plan_followups as fu
+    root = Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")  # noqa: E731
+
+    #  H1. A FIXTURE PLAN: P8.1 and P8.2 held until P10.2, P9.1 an owner switch, P10.1 free, P10.2 the named item last
+    fixture = "\n".join([
+        "<delivery_plan>",
+        "PHASE P8 — HELD WORK (delivered_by: build)",
+        " P8.1 [chartered W1200] THE FIRST HELD ITEM. Its rows can be worked now.",
+        "      UPDATED 2026-11-22 (W1200): a line of its block before its hold.",
+        "      HELD UNTIL P10.2: this item closes only on P10.2.",
+        " P8.2 THE SECOND HELD ITEM",
+        "      HELD UNTIL P10.2: so does this one.",
+        "PHASE P9 — THE OWNER'S HAND (delivered_by: owner-switch)",
+        " P9.1 AN OWNER SWITCH",
+        "PHASE P10 — MORE WORK (delivered_by: build)",
+        " P10.1 A FREE BUILD ITEM. Its first line says HELD UNTIL P8.2: in its prose, which holds nothing.",
+        "      A line of its block says, mid-sentence, HELD UNTIL P8.1: and that holds nothing either, and the next",
+        "      held until such a check runs, which names no item, is prose and holds nothing.",
+        " MILESTONE M10: a milestone line, which ends the free item's block.",
+        "      HELD UNTIL P8.2: under a milestone line, this is no item's hold.",
+        " P10.2 THE NAMED ITEM — AUDITED LAST,",
+        "</delivery_plan>", ""])
+
+    def row(rid, slot, status="open"):
+        return {"id": rid, "title": f"a made-up row {rid}", "why": "w1200", "source": "W1200", "found": "2026-11-22",
+                "files": [], "severity": "low", "owner_gated": False, "slot": slot, "status": status,
+                "closed_by": "W1200" if status == "done" else None, "note": ""}
+    fx_reg = {"items": [row("FU-9201", "P8.1"), row("FU-9202", "P8.1", "done"), row("FU-9203", "P9.1"),
+                        row("FU-9204", "P10.1"), row("FU-9205", "P10.1", "done")], "routes": []}
+    hold = " HELD UNTIL P10.2 (THE NAMED ITEM — AUDITED LAST): "
+
+    def lines_of(text):
+        out = text.splitlines()
+        nxt = [ln for ln in out if ln.startswith("  Next: ")]
+        assert len(nxt) == 1, out
+        first = [ln for ln in out if ln.startswith("  The first open build item a round can close: ")]
+        then = " ".join(" ".join(out).split("  Then, in order (the follow-ups riding each): ", 1)[1].split("  Done:")[0]
+                        .split("  Highest priority")[0].split())
+        return nxt[0], first, [part.strip() for part in then.split(" · ")]
+    p = fu.plan_now(fx_reg, fixture)
+    by = {o["slot"]: o for o in p["open_items"]}
+    assert [(s, by[s]["held_until"], by[s]["held"]) for s in ("P8.1", "P8.2", "P9.1", "P10.1", "P10.2")] == [
+        ("P8.1", "P10.2", True), ("P8.2", "P10.2", True), ("P9.1", None, False), ("P10.1", None, False),
+        ("P10.2", None, False)], "the holds were read wrongly: from prose, from the wrong block, or not at all"
+    assert p["next"]["slot"] == "P8.1" and p["next_unheld"]["slot"] == "P10.1", (
+        "the first open build item not held is not the free build item", p["next"]["slot"], p["next_unheld"])
+    nxt, first, then = lines_of(fu.render_plan_now(fx_reg, fixture))
+    assert nxt == ("  Next: P8.1 THE FIRST HELD ITEM — 1 follow-up ride it (2 ever)." + hold
+                   + "its rows can be worked now; the item itself closes only on P10.2."), nxt
+    assert "closes on its ACCEPT clause" not in nxt, "a held item is still said to close on its ACCEPT clause"
+    assert first == ["  The first open build item a round can close: P10.1 — 1 follow-up ride it (2 ever)."], first
+    assert then == ["P8.2 0/0 held until P10.2", "P9.1 1/1", "P10.1 1/2", "P10.2 0/0"], (
+        "'Then, in order' does not mark each held item, or marks a free one", then)
+    assert not any(re.match(r"^ P\d+\.\d+", ln) for ln in fu.render_plan_now(fx_reg, fixture).splitlines())
+
+    #  H2. the named item done: the holds are history and hold nothing
+    named_done = fixture.replace(" P10.2 THE NAMED ITEM", " P10.2 ✅ DONE W1200 THE NAMED ITEM", 1)
+    pd = fu.plan_now(fx_reg, named_done)
+    assert not any(o["held"] for o in pd["open_items"]) and pd["next_unheld"]["slot"] == "P8.1", (
+        "an item is held whatever state the named item is in")
+    rendered_done = fu.render_plan_now(fx_reg, named_done)
+    nxt, first, then = lines_of(rendered_done)
+    assert nxt == "  Next: P8.1 THE FIRST HELD ITEM — 1 follow-up ride it (2 ever)." and first == [], (nxt, first)
+    assert "HELD UNTIL" not in rendered_done and "held until" not in rendered_done, rendered_done
+
+    #  H3. a held item with no open rider; an unexamined held item; every open build item held
+    no_rider = {"items": [dict(r, status="done", closed_by="W1200") if r["id"] == "FU-9201" else r
+                          for r in fx_reg["items"]], "routes": []}
+    nxt, first, _ = lines_of(fu.render_plan_now(no_rider, fixture))
+    assert nxt == ("  Next: P8.1 THE FIRST HELD ITEM — no OPEN follow-up rides it, and 2 have — every row closed, which "
+                   "is NOT the same as the item being done." + hold + "the item itself closes only on P10.2."), nxt
+    unexamined = fixture.replace(" P8.1 [chartered W1200]", " P8.1 ✅ DONE W1200 [chartered W1200]", 1)
+    nxt, first, then = lines_of(fu.render_plan_now({"items": [], "routes": []}, unexamined))
+    assert nxt == ("  Next: P8.2 THE SECOND HELD ITEM — no follow-up has ever ridden it, so it is UNEXAMINED rather than "
+                   "nearly done." + hold + "the item itself closes only on P10.2."), nxt
+    all_held = "\n".join(["<delivery_plan>", "PHASE P8 — HELD WORK (delivered_by: build)", " P8.1 A HELD ITEM",
+                          "      HELD UNTIL P9.1: it closes only on the switch.",
+                          "PHASE P9 — THE OWNER'S HAND (delivered_by: owner-switch)", " P9.1 AN OWNER SWITCH",
+                          "</delivery_plan>", ""])
+    nxt, first, _ = lines_of(fu.render_plan_now({"items": [], "routes": []}, all_held))
+    assert first == ["  The first open build item a round can close: none: every open build item is held."], first
+
+    #  H4. a mistyped hold is reported, never silently holding nothing; prose is not a hold
+    def hold_problems(text):
+        return [s for s in fu.check({"items": [], "routes": []}, text)
+                if s.startswith("plan item") and ("hold" in s or "held until" in s)]
+    assert hold_problems(fixture) == [], hold_problems(fixture)
+    bad = {"names no plan item": (fixture.replace("HELD UNTIL P10.2: so does", "HELD UNTIL P99.9: so does", 1),
+                                  "plan item P8.2 is held until P99.9, which is not a delivery-plan item"),
+           "names itself": (fixture.replace("HELD UNTIL P10.2: so does", "HELD UNTIL P8.2: so does", 1),
+                            "plan item P8.2 is held until itself"),
+           "has no colon": (fixture.replace("HELD UNTIL P10.2: so does", "HELD UNTIL P10.2 so does", 1),
+                            "plan item P8.2 carries a hold line not in the form"),
+           "has five spaces": (fixture.replace("      HELD UNTIL P10.2: so does", "     HELD UNTIL P10.2: so does", 1),
+                               "plan item P8.2 carries a hold line not in the form"),
+           "is a second": (fixture.replace("      HELD UNTIL P10.2: so does this one.",
+                                           "      HELD UNTIL P10.2: so does this one.\n      HELD UNTIL P9.1: again.", 1),
+                           "plan item P8.2 carries a second hold line"),
+           "is lower case": (fixture.replace("      HELD UNTIL P10.2: so does", "      held until P10.2: so does", 1),
+                             "plan item P8.2 carries a hold line not in the form"),
+           "is a cycle of two": (fixture.replace("HELD UNTIL P10.2: this item closes only on P10.2.",
+                                                 "HELD UNTIL P8.2: this item closes only on P8.2.", 1)
+                                 .replace("HELD UNTIL P10.2: so does", "HELD UNTIL P8.1: so does", 1),
+                                 "plan item P8.1 is held in a cycle of holds (P8.1 → P8.2 → P8.1)"),
+           "is a cycle of three": (fixture.replace("HELD UNTIL P10.2: this item closes only on P10.2.",
+                                                   "HELD UNTIL P8.2: this item closes only on P8.2.", 1)
+                                   .replace(" P10.2 THE NAMED ITEM — AUDITED LAST,",
+                                            " P10.2 THE NAMED ITEM — AUDITED LAST,\n      HELD UNTIL P8.1: back to the first.", 1),
+                                   "plan item P8.1 is held in a cycle of holds (P8.1 → P8.2 → P10.2 → P8.1)")}
+    for case, (text, said) in bad.items():
+        assert text != fixture and any(s.startswith(said) for s in hold_problems(text)), (case, hold_problems(text))
+
+    #  H5. THE REAL PLAN AND REGISTER
+    fable = read("docs/FABLE_DELIVERY_PROMPT.md")
+    living = (root / "docs/WORKSTATION_IDBO_LIVING_PLAN.md").read_bytes().decode("utf-8")
+    reg = json.loads(read("docs/FOLLOWUPS.json"))
+    rows = {r["id"]: r for r in reg["items"]}
+    #  the row this round registered: the Transformation page's Next line says nothing of the hold
+    page = [r for r in reg["items"] if r["title"].startswith("The Transformation page's Next line does not say that the "
+                                                                "next item is held until the final audit")]
+    assert len(page) == 1 and page[0]["files"] == ["apps/workstation-superapp/src/pages/TransformationDashboard.tsx"]
+    if page[0]["status"] == "open":
+        assert (page[0]["slot"], page[0]["severity"], page[0]["owner_gated"]) == ("P5.22", "low", False), page[0]
+    items = {i["slot"]: i for i in fu.plan_items(fable)}
+    blocks = fu._item_blocks(fu.delivery_plan_body(fable))
+    lines = fable.split("\n")
+    real = fu.plan_now(reg, fable)
+    held = {o["slot"]: o for o in real["open_items"]}
+    if not items["P5.22"]["done"]:
+        for slot, says in (("P2.40", "this item closes only on the final audit"),
+                           ("P2.41", "this item closes only on the final audit"),
+                           ("P3.30", "ACCEPT (5)'s re-run of M3 with M1 and M2 is the final audit")):
+            if items[slot]["done"]:
+                continue
+            mine = [ln for ln in blocks[slot].split("\n") if ln.startswith("      HELD UNTIL ")]
+            assert len(mine) == 1 and mine[0].startswith(f"      HELD UNTIL P5.22: {says}"), (slot, mine)
+            assert "its rows can still be closed by rounds." in mine[0], (slot, "does not say its rows can be worked")
+            assert items[slot]["held_until"] == "P5.22" and held[slot]["held"], (slot, held[slot])
+            if slot != "P3.30":         # test_w786 pins i+1; the hold is i+2
+                i = next(n for n, ln in enumerate(lines) if ln.startswith(f" {slot} [MILESTONE M"))
+                assert lines[i + 1].startswith("      UPDATED 2026-11-10 (W786)") and lines[i + 2] == mine[0], slot
+    now = fu.render_plan_now(reg, fable)
+    assert fu._block(fable, fu.PLAN_BEGIN, fu.PLAN_END) == now == fu._block(living, fu.PLAN_BEGIN, fu.PLAN_END), (
+        "a plan document was not re-rendered")
+    nx = real["next"]
+    if not items["P2.40"]["done"] and not items["P5.22"]["done"]:
+        assert nx["slot"] == "P2.40" and nx["held"] and nx["held_until"] == "P5.22", nx
+    if nx and nx["held"]:
+        line = next(ln for ln in now.splitlines() if ln.startswith(f"  Next: {nx['slot']} "))
+        assert f"HELD UNTIL {nx['held_until']} (" in line and line.endswith(
+            f"the item itself closes only on {nx['held_until']}."), line
+        assert "closes on its ACCEPT clause" not in line and (("its rows can be worked now" in line) == bool(nx["followups"]))
+        if nx["held_until"] == "P5.22":
+            assert "HELD UNTIL P5.22 (THE FINAL AUDIT — UNCAPPED): " in line, line
+        nu = real["next_unheld"]
+        assert nu and items[nu["slot"]]["delivered_by"] == "build" and not nu["held"], nu
+        before = real["open_items"][:[o["slot"] for o in real["open_items"]].index(nu["slot"])]
+        assert all(o["held"] or items[o["slot"]]["delivered_by"] != "build" for o in before), before
+        assert f"\n  The first open build item a round can close: {nu['slot']} — " in now, now[:900]
+    for rid, slot in (("FU-1874", "P5.22"), ("FU-1875", "P2.40")):
+        r = rows[rid]
+        assert r["slot"] == slot and not r["owner_gated"], r
+        if r["status"] != "open":
+            assert (r["status"], r.get("closed_by"), r.get("because")) == ("done", "W1200", "built"), (rid, r["status"])
+
+    #  Q1. THE OPTIMISER'S QUEUE: an undeclared tier and the declared queued tier, through the route
+    from agentic_core.api.optimizer import AllocateRequest, allocate
+    from agentic_core.optimizer.scheduler import CostAwareScheduler
+
+    def post(tier):     # the route's own handler, as POST /api/v1/optimizer/allocate calls it
+        return asyncio.run(allocate(AllocateRequest(domain="science", requirements={"CPU": 2, "RAM": 512}, tier=tier)))
+    QUEUED_ON = ("queued on this request's own in-process queue, which nothing drains and which is discarded when the "
+                 "response returns - the work was NOT scheduled for later execution and nothing is pending")
+    for tier in ("a-tier-w1200-does-not-declare", "free"):
+        al = post(tier)
+        assert al["status"] == "QUEUED" and al["tier_recognised"] is (tier == "free"), al
+        assert al["pending"] is False and al["queue_depth"] == 1 and al["queue_basis"] == QUEUED_ON, al
+        assert "nothing drains" in al["queue_basis"] and "NOT scheduled" in al["queue_basis"], al["queue_basis"]
+    direct = CostAwareScheduler()
+    q = asyncio.run(direct.schedule_task({"id": "w1200-a"}, "free", queued=True))
+    assert (q["status"], q["pending"], q["queue_depth"], q["queue_basis"], direct.queue.qsize()) == (
+        "QUEUED", False, 1, QUEUED_ON, 1), q
+
+    #  Q2. the circuit-open path: past the threshold nothing is put on the queue, and the basis says so
+    class _PastThreshold:
+        def get_current_usage(self):
+            return {"api_quota_remaining": 0.05}
+    tripped = CostAwareScheduler(monitor=_PastThreshold())
+    c = asyncio.run(tripped.schedule_task({"id": "w1200-b"}, "free", queued=True))
+    assert (c["status"], c.get("reason")) == ("REJECTED", "CIRCUIT_BREAKER_ACTIVE") and c["pending"] is False, c
+    assert tripped.circuit_open is True and c["id"] == "w1200-b", c
+    assert c["queue_depth"] == 0 and tripped.queue.qsize() == 0, ("the circuit-open path queued the task", c)
+    assert c["queue_basis"].startswith("put on no queue: this request's own scheduler found its quota threshold reached "
+                                       "and opened its circuit breaker, so the task was neither run nor queued"), c
+    again = asyncio.run(tripped.schedule_task({"id": "w1200-d"}, "free", queued=True))
+    assert (again["status"], again.get("reason")) == (c["status"], c.get("reason")), ("the open circuit answers two ways", again)
+    assert "NOT scheduled" in c["queue_basis"] and (
+        "nothing is pending" in c["queue_basis"]), c
+    assert "queued on this request's own in-process queue" not in c["queue_basis"], (
+        "the circuit-open path says the task was queued while it put nothing on the queue", c["queue_basis"])
+    under = CostAwareScheduler(monitor=type("_Under", (), {"get_current_usage": lambda self: {"api_quota_remaining": 0.9}})())
+    u = asyncio.run(under.schedule_task({"id": "w1200-c"}, "free", queued=True))
+    assert (u["status"], u["queue_depth"], u["queue_basis"], under.circuit_open) == ("QUEUED", 1, QUEUED_ON, False), u
+
+    #  Q3. the fabric carries the basis into its 'not executed' error; work that ran says nothing of a queue
+    from agentic_core.api import resource_fabric as rf
+    f = asyncio.run(rf._run_real_resource_handler("resource_optimizer", {"tier": "a-tier-w1200-does-not-declare"},
+                                                   "an objective", "science"))
+    assert f["error"] == f"not executed: QUEUED - {QUEUED_ON}" and f["allocation_status"] == "QUEUED", f
+    ran = post("standard")
+    assert ran["status"] == "SUCCESS" and not {"pending", "queue_depth", "queue_basis"} & set(ran), ran
+    fr = asyncio.run(rf._run_real_resource_handler("resource_optimizer", {"tier": "standard"}, "an objective", "science"))
+    assert "error" not in fr and "queue_basis" not in json.dumps(fr), fr
+
+    #  F1. FU-1086 says the instrument is built and the audit not yet calibrated or run
+    r86 = rows["FU-1086"]
+    assert (r86["slot"], r86["severity"], r86["owner_gated"], r86["source"], r86.get("tier")) == (
+        "P5.22", "high", False, "W747", 2), r86
+    assert r86["title"] == "The final audit's instrument is built (W970-W977); it is not yet calibrated or run", r86["title"]
+    assert not r86["title"].startswith("OWNER DECISION") and "no item that builds or runs it" not in r86["title"]
+    why = r86["why"]
+    assert "Read from code" not in why, "a row read from code says so in its title (test_w747)"
+    if r86["status"] == "open":
+        #  F2. the why before its RETITLED note: each property in its own words, the four rounds, what remains
+        assert why.count("RETITLED by W1200 (2026-11-22) from 'OWNER DECISION: the uncapped, census-partitioned final "
+                         "audit has no item that builds or runs it'") == 1, "the RETITLED note does not quote the old title"
+        head, kept = why.split("RETITLED by W1200", 1)
+        for prop in ("exactly one slice", "union of the slices", "no region capped", "failed or empty",
+                     "measured commit", "earlier ledgers", "both configurations"):
+            assert prop in head, ("FU-1086's why does not carry a property of P5.22's", prop)
+        for said in ("W970 built properties (1) and (2)", "W972 built (6)", "W973 built (3), (4), (5) and (7)",
+                     "W977 built the workflow", "on the Owner's machine (FU-1036)",
+                     "in December", "P2.40 and P2.41 close on it", "the audit has not run") + (
+                ("P5.10 clause 5, FU-993",) if rows["FU-993"]["status"] == "open" else ()):
+            assert said in head, ("FU-1086's why does not say", said)
+        for earlier in ("The Owner ruled on 2026-10-12 that the final audit is uncapped",
+                        "Recommended: charter it as its own item",
+                        "OWNER RULING 2026-11-22 (morning; the recommendation accepted): \"after Phase 5\" means after "
+                        "its build items close; the audit is then to run in December."):
+            assert earlier in kept, ("FU-1086's earlier words are not kept after its RETITLED note", earlier[:60])
+
+    #  F3. P5.22 records what W970-W977 built and what is not yet done
+    p522 = blocks["P5.22"].split("\n")
+    built = [ln for ln in p522 if ln.startswith("      BUILT")]
+    assert len(built) == 1 and built[0].startswith("      BUILT (W970–W977, 2026-11-13): "), built
+    at = p522.index(built[0])
+    assert at > next(n for n, ln in enumerate(p522) if ln.startswith("      (7) both configurations ran")), "BUILT is early"
+    assert at > next(n for n, ln in enumerate(p522) if ln.startswith("      OWNER RULING 2026-11-22 (morning")), (
+        "BUILT is not after the morning's ruling, which it cites as the ruling above")
+    spine = read("integration_tests/test_mvp_spine.py")
+    named = sorted(set(re.findall(r"\bW(\d{3,})\b", built[0])), key=int)
+    assert {"970", "972", "973", "977"} <= set(named), named
+    for n in ("970", "972", "973", "977"):
+        assert spine.count(f"\ndef test_w{n}_p522_") == 1, ("BUILT names a round with no P5.22 guard", n)
+    tracked = set(subprocess.run(["git", "ls-files"], cwd=root, capture_output=True, text=True).stdout.split("\n"))
+    files = re.findall(r"\b((?:scripts|docs)/[\w./-]+\.(?:py|js|json))\b", built[0])
+    assert {"scripts/audit_census_partition.py", "scripts/ledger_blobs.py", "scripts/audit_completeness.py",
+            "scripts/workflows/fidelity_audit_final.js"} <= set(files), files
+    for rel in files:
+        assert (root / rel).is_file() and rel in tracked, ("BUILT names a file the tree does not track", rel)
+    assert set(re.findall(r"\bFU-\d+\b", built[0])) <= {"FU-1086"}, (
+        "BUILT names a row other than FU-1086, which an item's text does not list", re.findall(r"\bFU-\d+\b", built[0]))
+    if not items["P5.22"]["done"]:
+        for said in ("the audit has not run", "in December, by the ruling above") + (
+                ("NOT YET: the calibration against planted defects (P5.10 clause 5), then the two runs, one in each "
+                 "configuration",) if rows["FU-993"]["status"] == "open" else ()):
+            assert said in built[0], ("P5.22's BUILT line does not say", said)
+    assert [(s, it["hold_problem"]) for s, it in items.items() if it["hold_problem"]] == []
+    assert all(it["held_until"] in items and it["held_until"] != s for s, it in items.items() if it["held_until"])
+
+
+def test_w1207b_the_limiter_leg_of_w892_asserts_the_slot_given_not_the_gap_between_wakes():
+    """W1207b: test_w892's leg 2 failed on PR #469's Windows job with ('two callers were let through in one slot',
+    [0.109, 0.25, 0.312]): it asserted the gaps between wake times, and one caller woken late on a clock and an event
+    loop that tick at about 15.6 ms shrank the next gap below 0.07 with no slot shared. Held on the leg's source:
+    L1. the start and each wake are read with time.perf_counter, the start before the bucket is drained; the only
+        time.monotonic in the leg sets the limiter's own _last;
+    L2. no difference of two wake times is asserted;
+    L3. the assert that carries the message, run on its own: the Windows job's wakes, wakes on time and late wakes
+        pass; two callers in one slot, a first caller let through at once and any wake more than 0.03 before its
+        slot fail;
+    L4. the stats assert is kept."""
+    import ast
+    import pathlib
+    import textwrap
+
+    src = (pathlib.Path(__file__).resolve().parent / "test_mvp_spine.py").read_text(encoding="utf-8")
+    fn = src.split("\ndef test_w892_no_caller_sleeps_holding_the_limiters_lock", 1)[1].split("\ndef ", 1)[0]
+    leg = fn.split("    # 2. three callers at once", 1)[1].split("    # 3. the lock", 1)[0]
+    tree = ast.parse(textwrap.dedent("    # 2." + leg))
+
+    def _is(node, mod, attr):
+        return (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == attr
+                and isinstance(node.func.value, ast.Name) and node.func.value.id == mod)
+
+    # L1. the clock
+    starts = [n for n in ast.walk(tree) if isinstance(n, ast.Assign) and any(isinstance(x, ast.Name) and x.id == "t0"
+                                                                            for x in n.targets)]
+    assert len(starts) == 1 and _is(starts[0].value, "time", "perf_counter"), (
+        "L1: the leg's start is not one read of time.perf_counter", [ast.unparse(s) for s in starts])
+    drain = [n for n in tree.body if isinstance(n, ast.Assign) and "lim._last" in ast.unparse(n)]
+    assert len(drain) == 1 and tree.body.index(drain[0]) > tree.body.index(starts[0]), (
+        "L1: the start is not read before the bucket is drained")
+    wakes = [n for n in ast.walk(tree) if isinstance(n, ast.Call) and ast.unparse(n.func) == "done.append"]
+    assert len(wakes) == 1 and isinstance(wakes[0].args[0], ast.BinOp) and _is(wakes[0].args[0].left, "time",
+                                                                               "perf_counter"), (
+        "L1: a wake is not read with time.perf_counter", [ast.unparse(w) for w in wakes])
+    mono = [n for n in ast.walk(tree) if _is(n, "time", "monotonic")]
+    assert len(mono) == 1 and mono[0] in list(ast.walk(drain[0])), (
+        "L1: the leg reads time.monotonic for something other than the limiter's own _last", len(mono))
+
+    # L2. no gap between wakes
+    gaps = [ast.unparse(n) for n in ast.walk(tree) if isinstance(n, ast.BinOp) and isinstance(n.op, ast.Sub)
+            and all(isinstance(s, ast.Subscript) and ast.unparse(s.value) == "done" for s in (n.left, n.right))]
+    assert not gaps, ("L2: the leg still asserts a gap between two wakes", gaps)
+
+    # L3. the slot assert, run on its own
+    msg = "two callers were let through in one slot"
+    slot = [n for n in ast.walk(tree) if isinstance(n, ast.Assert) and n.msg is not None and msg in ast.unparse(n.msg)]
+    assert len(slot) == 1, ("L3: the leg has no single assert carrying its message", len(slot))
+    ns: dict = {}
+    exec(compile("def _slot(done):\n    " + ast.unparse(slot[0]) + "\n", "w892_leg2", "exec"), ns)
+
+    def _passes(done):
+        try:
+            ns["_slot"](sorted(done))
+        except AssertionError:
+            return False
+        return True
+    for done in ([0.10900000000003729, 0.25, 0.3120000000000118], [0.1, 0.2, 0.3], [0.071, 0.171, 0.271],
+                 [0.15, 0.4, 0.55]):
+        assert _passes(done), ("L3: wakes on time or late fail the leg", done)
+    for done, why in (([0.1, 0.2, 0.2], "two callers in one slot"), ([0.1, 0.1, 0.3], "two callers in one slot"),
+                      ([0.0, 0.1, 0.2], "a first caller let through at once"),
+                      ([0.06, 0.2, 0.3], "a first wake early"), ([0.1, 0.16, 0.3], "a second wake early"),
+                      ([0.1, 0.2, 0.26], "a third wake early")):
+        assert not _passes(done), ("L3: the leg lets an early pass through", why, done)
+
+    # L4. the stats assert is kept
+    assert any(isinstance(n, ast.Assert) and ast.unparse(n) == ast.unparse(ast.parse(
+        "assert lim.stats()['waited'] == 3 and lim.stats()['calls'] == 3, lim.stats()").body[0])
+        for n in tree.body), "L4: the leg's stats assert is gone or changed"
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1194 (P5.18 clause 4) - the Law draft form drafts only the templates it lists; any other id, a reserved
+#  instrument among them, is refused before anything is composed and routed to where help from a person is.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1194_p518_an_unlisted_template_id_is_refused_at_the_draft_form_before_anything_is_composed(client, monkeypatch):
+    """P5.18 clause 4 (W1194): "an instrument of transfer or charge of land, an instrument for land registration, a
+    contract for the sale or other disposition of land beyond a short lease, and a deed for registration are reserved
+    to authorised persons and are refused and routed". POST /api/v1/law/generate composed any id it did not list from
+    a generic prompt, so 'tr1' or 'contract_for_sale_of_land' was drafted by the floor or a model; only a deed was
+    held (W714). Held here:
+    0. the reserved sentence is the register of sources' row lsa-2007-sch2 - its name, page, the day it was read,
+       whose reading it was (this platform's, not a qualified person's) and what it did not read, never its summary -
+       with the four kinds in the clause's words, what the draft form refuses, where help is (the list of where help
+       is, by its place on the page) and, last, that nothing here is legal advice; it says preparing these is a
+       reserved instrument activity, names no one as entitled, never says what the platform never does, and never
+       ends with the clerk's own statement;
+    1. each reserved kind posted as a template id is refused with 404 before any prompt is sent, saying the templates
+       the generator drafts and the reserved sentence;
+    2. an ordinary id it does not list, or a made-up one, is refused the same way and never as held, and the unlisted
+       sentence says nothing of what the id is; the deed hold keeps W714's reason, which no longer says who may
+       prepare a deed, and says where help is;
+    3. every listed template that is neither filing-shaped nor held still drafts, those with no prompt of their own
+       among them;
+    4. the fabric's form meets the route's own refusal, and nothing is offered as its output;
+    5. the templates answer carries the reserved block beside the held one, read from the register when asked, with
+       the help route for API readers: another reading is followed by the list and the refusal alike, and a register
+       that cannot be read is said as unread;
+    6. the sentence names no Act that resolves against no held source, and says what was not read;
+    7. the coverage register's row routes to where help is and is guarded by this test; the checker refuses a guard
+       that is not a test in the suite, and a guard named by a row that is not a refusal;
+    8. P5.18 says the draft form's template-id door is closed and the draft form still holds a deed, names this
+       guard and says what is still open."""
+    import asyncio
+    import importlib.util
+    import inspect
+    import pathlib
+
+    import agentic_core.api.law as _law
+    from agentic_core.api import resource_fabric as _fab
+    from agentic_core.legal import authorities as _au, specialist as _sp, time_limits as _tl
+    root = pathlib.Path(__file__).resolve().parents[1]
+    me = inspect.currentframe().f_code.co_name
+    row = _tl._register()["lsa-2007-sch2"]
+    sent = []
+
+    async def _capture(prompt, agent, **kw):
+        sent.append(agent)
+        return "w1194 captured", {"served_by": "native", "floor_note": "w1194: captured, nothing composed"}
+    monkeypatch.setattr(_law, "ai_text", _capture)
+
+    #  0. the sentence is the row's, said whole, and never its summary
+    reason = _sp.reserved_reason()
+    by = row["read_by"].split(",")[0].strip()
+    assert by.startswith("round W"), row["read_by"]
+    for part in (row["names"][0], row["page"], row["read_on"], "not read: " + row["not_read"],
+                 f"read by this platform ({by}), not by a qualified person, at {row['page']} on {row['read_on']}",
+                 #  W1195 says the draft form and the clerk refuse an explicit ask as well; the door stays
+                 "and the draft form any template id it does not list. ",
+                 "For help from a person, see the list of where help is ('Where to get help from a person' on the Law "
+                 "page, and the support page).", *_sp.RESERVED_INSTRUMENTS):
+        assert part in reason, (part, reason)
+    assert reason.startswith("Preparing any of these four documents is a reserved instrument activity: "), reason
+    assert reason.endswith(" Nothing here is legal advice."), reason       # never the clerk's statement (review M4)
+    for never in ("othing here composes", "A solicitor can", "GET /api/v1/law/help", "reserved to authorised persons",
+                  "as a clerk would"):
+        assert never not in reason, (never, reason)
+    assert _sp.RESERVED_INSTRUMENTS == (
+        "an instrument of transfer or charge of land", "an instrument for land registration",
+        "a contract for the sale or other disposition of land beyond a short lease", "a deed for registration")
+    assert row["says"][:60] not in reason, "the row's summary is shown"
+    drafted = [t for t in _law._TEMPLATES if t["id"] not in _sp.FILING_SHAPED and not _sp.held_for_a_qualified_read(t["id"])]
+    #  at least the seven drafted today: a later round may list another (review G6)
+    assert [t["id"] for t in _law.drafted_templates()] == [t["id"] for t in drafted] and len(drafted) >= 7, drafted
+
+    #  1. each reserved kind posted as an id is refused, before anything is composed
+    for tid in ("transfer_of_registered_land", "tr1", "legal_charge_over_land", "contract_for_sale_of_land",
+                "land_registry_application"):
+        r = client.post("/api/v1/law/generate", json={"template_id": tid, "parties": {"a": "A Person"},
+                                                      "custom_instructions": "w1194"})
+        assert r.status_code == 404, (tid, r.status_code, r.text[:200])
+        d = r.json()["detail"]
+        assert d.startswith(f"'{tid}' is not a template this generator drafts") and reason in d, d
+        assert f"It drafts only these {len(drafted)}: " in d and all(t["name"] in d for t in drafted), d
+    assert sent == [], ("a prompt was sent for an id the generator does not list", sent)
+
+    #  2. any id it does not list, the same way and never as held; the unlisted sentence says nothing of the id's kind
+    for tid in ("indeed_agreement", "w1194_made_up"):
+        assert _sp.held_for_a_qualified_read(tid) is False, tid
+        r = client.post("/api/v1/law/generate", json={"template_id": tid})
+        assert r.status_code == 404 and reason in r.json()["detail"], (tid, r.status_code, r.text[:200])
+        d = r.json()["detail"]
+        assert "is held and is not generated here" not in d and "reserved" not in d.split(reason)[0], d
+    assert sent == []
+    #  the deed hold (W714) keeps its own reason, which no longer says who may prepare one (review m6), and says where
+    #  help is (review R6)
+    assert "A solicitor can" not in _sp.HELD_REASON and _sp.HELD_REASON.endswith("deed is reserved."), _sp.HELD_REASON
+    r = client.post("/api/v1/law/generate", json={"template_id": "partnership_deed"})
+    assert r.status_code == 409 and _sp.HELD_REASON in r.json()["detail"], r.text[:300]
+    assert f"For help from a person, see {_sp.HELP_PLACES}. Nothing here is legal advice." in r.json()["detail"], r.text
+    assert sent == []
+
+    #  3. every listed template the generator drafts still drafts, those with no prompt of their own among them
+    no_prompt = [t["id"] for t in drafted if t["id"] not in _law._TEMPLATE_PROMPTS]
+    assert no_prompt, "every drafted template has a prompt of its own, so this leg could not tell the list from them"
+    for t in drafted:
+        r = client.post("/api/v1/law/generate", json={"template_id": t["id"]})
+        assert r.status_code == 200 and r.json()["document"] == "w1194 captured", (t["id"], r.text[:200])
+    assert sent == ["law_generator"] * len(drafted), sent
+
+    #  4. the fabric's form: the route's own refusal, and no output
+    g = asyncio.new_event_loop().run_until_complete(
+        _fab._run_real_resource_handler("form_law_generate", {"template_id": "tr1"}, "objective", "general"))
+    p = client.post("/api/v1/law/generate", json={"template_id": "tr1"})
+    assert g["refused"] is True and g["status"] == p.status_code == 404 and g["detail"] == p.json()["detail"], g
+    assert g["output"] is None and len(sent) == len(drafted), (g, sent)
+
+    #  5. the templates answer: the reserved block beside the held one, read from the register when asked
+    tpl = client.get("/api/v1/law/templates").json()
+    res = tpl["reserved"]
+    assert res["kinds"] == list(_sp.RESERVED_INSTRUMENTS) and res["reason"] == reason, res
+    assert res["help_route"] == "GET /api/v1/law/help" and res["source"]["read_by"] == row["read_by"], res
+    assert (res["source"]["id"], res["source"]["read"], res["source"]["read_on"], res["source"]["not_read"]) == (
+        "lsa-2007-sch2", True, row["read_on"], row["not_read"]), res["source"]
+    assert tpl["held"]["templates"] == ["partnership_deed"] and tpl["held"]["reason"] == _sp.HELD_REASON, tpl["held"]
+    real = _tl._register
+
+    def _reread():
+        rows = real()
+        rows["lsa-2007-sch2"] = {**rows["lsa-2007-sch2"], "read_on": "2031-01-02"}
+        return rows
+    monkeypatch.setattr(_tl, "_register", _reread)
+    again = client.get("/api/v1/law/templates").json()["reserved"]
+    assert " on 2031-01-02; not read: " in again["reason"] and again["source"]["read_on"] == "2031-01-02", again
+    assert " on 2031-01-02; not read: " in client.post("/api/v1/law/generate", json={"template_id": "tr1"}).json()["detail"]
+    monkeypatch.setattr(_tl, "_register", lambda: None)
+    unread = client.get("/api/v1/law/templates").json()["reserved"]
+    assert unread["source"] == {"id": "lsa-2007-sch2", "read": False, "basis": "the register of sources could not be read"}
+    assert "lsa-2007-sch2: the register of sources could not be read, so the reading this rests on is not shown" in \
+        unread["reason"] and row["read_on"] not in unread["reason"], unread["reason"]
+    monkeypatch.setattr(_tl, "_register", real)
+    assert sent == ["law_generator"] * len(drafted), sent
+
+    #  6. no Act named that resolves against no held source; what was not read is said
+    shown, named = _au.screen(reason)
+    assert shown == reason and named["withheld"] == [] and named["shown"], named
+    assert "; not read: " + row["not_read"] + ")" in reason, reason
+
+    #  7. the coverage register's row, and the checker's new field
+    _s = importlib.util.spec_from_file_location("w1194_coverage_register", root / "scripts" / "coverage_register.py")
+    cov = importlib.util.module_from_spec(_s)
+    _s.loader.exec_module(cov)
+    reg = cov.load()
+    crow = next(r for r in reg["rows"] if r["id"] == "law-reserved-instruments")
+    assert (crow["domain"], crow["state"]) == ("Law", "route_only") and me in crow["guarded_by"], crow
+    assert all(p in crow["subject"] for p in _sp.RESERVED_INSTRUMENTS), crow["subject"]      # the clause's four (PW7)
+    assert crow["route"] in _tl._register() and "driven_by" not in crow, crow
+    assert cov.check(reg)["problems"] == [], cov.check(reg)["problems"]
+    base = {"domain": "D", "subject": "s", "nation": "England", "today": "t"}
+    bad = {"rows": [{**base, "id": "x", "state": "route_only", "route": "r", "guarded_by": "test_not_there"},
+                    {**base, "id": "y", "state": "frame", "guarded_by": "test_real_one"},
+                    {**base, "id": "z", "state": "excluded", "excluded_by": "a ruling", "guarded_by": "test_real_one"},
+                    {**base, "id": "w", "state": "route_only", "route": "r", "guarded_by": ["test_real_one"]},
+                    {**base, "id": "v", "state": "route_only", "route": "r", "guarded_by": ["test_real_one", "test_gone"]},
+                    {**base, "id": "u", "state": "route_only", "route": "r", "guarded_by": 5}]}
+    got = cov.check(bad, {"test_real_one"})["problems"]
+    assert got == ["x: is guarded by test_not_there, which is not a test in the suite",
+                   "y: is 'frame' and names a guard - only a refusal (route_only or excluded) is guarded",
+                   "v: is guarded by test_gone, which is not a test in the suite",
+                   "u: names its guard as neither a test nor a list of tests"], got
+
+    #  8. P5.18 says the draft form's template-id door is closed (review m1), names this guard and says what is open
+    plan = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    p518 = " ".join(plan.split("\n P5.18 [chartered W711", 1)[1].split("\n P5.19 [chartered W711", 1)[0].split())
+    assert "UPDATED 2026-11-22 (W1194): the draft form's template-id door is closed." in p518, p518[-900:]
+    assert "the draft form still holds a deed (W714)" in p518, p518[-900:]
+    assert f"row law-reserved-instruments is guarded by {me}." in p518, p518[-900:]
+    assert "Still open: the instructions and parties of a listed template, and the label the clerk stores" in p518
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1195 (P5.18 clause 4, its ACCEPT) - an explicit ask to prepare a reserved instrument, in the words the screen
+#  knows, is refused at the draft form and the clerk, before anything is composed or stored; a mention never is.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1195_p518_an_explicit_ask_for_a_reserved_instrument_is_refused_at_the_draft_form_and_the_clerk(client, monkeypatch):
+    """P5.18 clause 4 and its ACCEPT: "the reserved documents are refused through the route a person would use". On the
+    Law page that route is a listed template with typed parties and instructions: after W1194 those words still reached
+    the composer, so a service agreement with "draft the TR1 for my flat" was composed, and the clerk stored an
+    artefact under 'tr1_transfer'. The second review's red team found the word screen first built here recognised 7 of
+    50 blind reserved asks while refusing 16 of 20 property-sector ordinary drafts, so the screen reads only an explicit
+    ask. Held here:
+    1. the screen agrees with its labelled phrasings (scripts/screen_phrasings.py's RESERVED) but for its stated limits
+       (RESERVED_LIMITS: every "for" phrasing that is not an explicit ask in the words it knows), each held to the
+       opposite of its label so a fix shows; the clause's own four and every kind's own name, asked for, are read,
+       each kind as itself; a word alone, asked for or not, is never read; reserved_match says the words that asked, as
+       typed, and reserved_kind keeps its answer; RESERVED_SCREEN says what is read, that a mention is not refused,
+       that most ways of asking are missed, the paragraph 5(1)(c) scope it does not read, and the other generators;
+    2. each phrasing it is for, but its stated limits, as a listed template's instructions, is refused with 409 before
+       any prompt is sent, saying what the screen read, where, and what it took it as asking for, then the reason;
+    3. each phrasing it is not for drafts, and its answer says the screen read no ask, which is not a clearance;
+    4. each party label and each party value is read on its own - a tab or a nested value as well - and the
+       jurisdiction, for an explicit ask, a mention in a party drafting; an address that shares a form's letters
+       drafts; a field of 100,000 characters is answered in under two seconds, an ask at its end read, and one that
+       is an ask in every sentence asking for nothing drafted; the fabric's
+       form meets the route's own refusal;
+    5. the clerk holds an id that names a deed, as the draft form does, refuses an id that names a reserved document,
+       saying what it read, and stores nothing; nda, witness_statement and et1_claim still assemble;
+    6. the coverage register's row is guarded by this test after W1194's, its subject names the clause's four, its
+       today the measured figures, and P5.18 says the two doors are screened for an explicit ask only and that the
+       ACCEPT is not met;
+    7. the gap this round found and the screen it should have had are rows of their own, open on P5.18: the
+       Generator, the Synthesis Studio's /generate and /stream and the fabric's Generator compose the words the draft
+       form refuses, seen by a recorder on the composer each goes through or by a composed answer, and while any does
+       the gap stays open and the screen's sentence and the coverage row name that route as not screened;
+    8. the templates answer says what the screen reads; the Law page draws the reserved line beside the held one from
+       the captured answer, which is the route's own, as is the captured refusal; its rendered test reads the line and
+       drives the refusal through the Draft tab."""
+    import asyncio
+    import importlib.util
+    import inspect
+    import json
+    import pathlib
+    import re
+    import time
+
+    import agentic_core.api.law as _law
+    from agentic_core.api import resource_fabric as _fab
+    from agentic_core.config import read_json_strict
+    from agentic_core.legal import specialist as _sp
+    root = pathlib.Path(__file__).resolve().parents[1]
+    me = inspect.currentframe().f_code.co_name
+    g1194 = "test_w1194_p518_an_unlisted_template_id_is_refused_at_the_draft_form_before_anything_is_composed"
+    sent = []
+
+    async def _capture(prompt, agent, **kw):
+        sent.append(prompt)
+        return "w1195 captured", {"served_by": "native", "floor_note": "w1195: captured, nothing composed"}
+    monkeypatch.setattr(_law, "ai_text", _capture)
+    reason = _sp.reserved_reason()
+    assert reason.startswith("Preparing any of these four documents is a reserved instrument activity: "), reason
+    assert (" The Law draft form and the clerk refuse a request whose words the screen reads as asking to prepare one of "
+            "them, and the draft form any template id it does not list. ") in reason and \
+        reason.endswith(" Nothing here is legal advice."), reason
+
+    #  1. the screen and its labelled phrasings, and its stated limits
+    spec = importlib.util.spec_from_file_location("_sp1195", root / "scripts" / "screen_phrasings.py")
+    drv = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(drv)
+    labels, limits = dict(drv.RESERVED), drv.RESERVED_LIMITS
+    assert len(labels) == len(drv.RESERVED), "a phrasing is labelled twice"
+    fors = [t for t, lab in drv.RESERVED if lab == "for"]
+    nots = [t for t, lab in drv.RESERVED if lab == "not-for"]
+    assert len(fors) >= 120 and len(nots) >= 120 and len(drv.RESERVED) == len(fors) + len(nots), (len(fors), len(nots))
+    assert limits and set(limits) <= set(fors) and all(isinstance(w, str) and w for w in limits.values()), limits
+    wrong = [(lab, t) for t, lab in drv.RESERVED if (_sp.reserved_kind(t) is not None) != (lab == "for") and t not in limits]
+    assert not wrong, ("the screen and its labelled list disagree", wrong)
+    held = [t for t in limits if (_sp.reserved_kind(t) is not None) == (labels[t] == "for")]
+    assert not held, ("a stated limit the screen now agrees with: take it off the list", held)
+    for said in ("The screen reads only an explicit ask to prepare one of the reserved documents, in the words it knows",
+                 "A mention with no ask word is not refused, but a request about one of these documents, phrased as an "
+                 "ask (\"I need my TR1 checked by a solicitor\"), can still be refused: the screen reads words, not what "
+                 "is asked for.",
+                 "the one ask the screen reads with no ask word", "It misses most other ways of asking: a request it does not "
+                 "read as one, whatever it asks for, is drafted as before, and that is not a clearance.",
+                 "Schedule 2 paragraph 5(1)(c), as this platform read it, also reaches any other instrument relating to "
+                 "real or personal estate, or to court proceedings",
+                 "the draft form and the clerk hold a template whose id names a deed all the same",
+                 "Whether this platform may prepare any of these is a question for the solicitor whose reading of the "
+                 "Law pages comes before any public release."):
+        assert said in _sp.RESERVED_SCREEN, ("the screen's sentence does not say", said)
+    assert _sp.held_for_a_qualified_read("partnership_deed") and _sp.held_for_a_qualified_read("ip_assignment_deed")
+    kinds = [k["id"] for k in _sp.RESERVED_KINDS]
+    assert kinds == ["transfer_or_charge", "land_registration", "sale_of_land", "lease_by_deed"], kinds
+    assert {_sp.reserved_kind(t)["id"] for t in fors if t not in limits} == set(kinds), "a kind no labelled phrasing reaches"
+    for k in _sp.RESERVED_KINDS:          # each kind's own name, asked for, is read as itself under the clause's words
+        m = _sp.reserved_match("Please draft " + k["said"])
+        assert m and m["id"] == k["id"] and m["clause"] in _sp.RESERVED_INSTRUMENTS, (k["said"], m)
+    for phrase in _sp.RESERVED_INSTRUMENTS:   # and so is each of the clause's own four, asked for (review R2)
+        assert _sp.reserved_kind("draft " + phrase) is not None, ("the clause's own words are not read", phrase)
+    for t in fors:
+        m = _sp.reserved_match(t)
+        if m:
+            assert m["words"] and m["words"] in " ".join(t.split()) and m["clause"] in _sp.RESERVED_INSTRUMENTS, (t, m)
+            assert _sp.reserved_kind(t) == {"id": m["id"], "said": m["said"]}, t
+    #  the words that asked are quoted as typed, never folded (second review m4)
+    assert _sp.reserved_match("Please DRAFT the TR1 for my flat")["words"] == "Please DRAFT the TR1"
+    #  ... from the ask's own first word, never the word before it or past the please (the final check, F5)
+    for said, words in (("Hello, please draft the TR1", "please draft the TR1"), ("TR1 pls thanks", "TR1 pls"),
+                        ("I am not asking for it, so please draft the TR1 anyway.", "please draft the TR1"),
+                        ("We are a busy firm, please draft the TR1", "please draft the TR1")):
+        assert _sp.reserved_match(said)["words"] == words, (said, _sp.reserved_match(said))
+    #  only a listed id reaches the draft form's screen, which no longer reads it: none may name a reserved document
+    #  (the final check, F4)
+    named = [x["id"] for x in _law._TEMPLATES if _sp.reserved_match(x["id"], as_id=True)]
+    assert not named, ("a listed template id names a reserved document, and the draft form does not read ids", named)
+    for word in ("property", "land", "house", "flat", "mortgage", "transfer", "lease", "deed", "charge", "registry",
+                 "title", "gift", "sale", "easement", "tenancy", "form"):
+        for asked in (word, "draft the " + word):
+            assert _sp.reserved_kind(asked) is None, ("a word alone is read", asked)
+    drv_src = _code_only((root / "scripts" / "screen_phrasings.py").read_text(encoding="utf-8"))
+    assert 'results.append(_table("legal.reserved", RESERVED, lambda t: _specialist.reserved_kind(t) is not None))' in drv_src
+
+    #  2. each phrasing it is for, as a listed template's instructions: refused before anything is composed
+    for t in fors:
+        if t in limits:
+            continue
+        r = client.post("/api/v1/law/generate", json={"template_id": "service_agreement", "custom_instructions": t})
+        assert r.status_code == 409, (t, r.status_code, r.text[:200])
+        d, m = r.json()["detail"], _sp.reserved_match(t)
+        assert d.startswith(f"'service_agreement' is not drafted: the words \"{m['words']}\" in the instructions were "
+                            f"read as asking to prepare {m['said']}, which would fall under \"{m['clause']}\", one of the reserved "
+                            "documents, so nothing was composed. The screen reads words, not what a document is. ") and \
+            d.endswith(reason), d
+    assert sent == [], ("a prompt was sent for an explicit ask for a reserved document", len(sent))
+
+    #  3. each phrasing it is not for drafts, and the answer says that reading no ask is not a clearance
+    for t in nots:
+        r = client.post("/api/v1/law/generate", json={"template_id": "service_agreement", "custom_instructions": t})
+        assert r.status_code == 200 and r.json()["document"] == "w1195 captured", (t, r.status_code, r.text[:200])
+        assert r.json()["reserved_screen"] == {
+            "recognised": False, "coverage": _sp.RESERVED_SCREEN,
+            "basis": "the screen read no explicit ask to prepare one of the reserved documents, which is not a "
+                     "clearance"}, r.json()["reserved_screen"]
+    assert len(sent) == len(nots) and all(t in p for t, p in zip(nots, sent)), "a phrasing it is not for was not drafted"
+
+    #  4. each party label and value on its own (review R5), and the jurisdiction, for an explicit ask; a field of any
+    #     length read in time; the fabric's form, the same refusal
+    n = len(sent)
+    for body, where in (({"parties": {"party_a": "Alpha Ltd", "note": "please draft the TR1 for my flat"}}, "the parties"),
+                        ({"parties": {"please draft a contract for the sale of my house": "yes"}}, "the parties"),
+                        ({"parties": {"subject": "draft a transfer of my house"}}, "the parties"),
+                        ({"parties": {"subject": "draft a legal\tcharge"}}, "the parties"),
+                        ({"parties": {"details": {"note": ["draft a transfer of my house to my son"]}}}, "the parties"),
+                        ({"jurisdiction": "draft a 10 year lease of the shop"}, "the jurisdiction field")):
+        r = client.post("/api/v1/law/generate", json={"template_id": "nda", **body})
+        d = r.json()["detail"] if r.status_code == 409 else ""
+        assert d.startswith("'nda' is not drafted: the words \"") and f"\" in {where} were read as asking to prepare " in d, (
+            body, r.status_code, r.text[:200])
+    assert len(sent) == n, "a prompt was sent for parties or a jurisdiction that ask for a reserved document"
+    for parties in ({"party_a": "Kernow Ltd, Lemon Street, Truro TR1 2LS"},
+                    {"lender": "Penbury Home Finance Ltd - the CH1 legal charge over our flat"}):
+        r = client.post("/api/v1/law/generate", json={"template_id": "nda", "parties": parties})
+        assert r.status_code == 200, ("a mention or an address in the parties read as an ask", parties, r.text[:200])
+    assert len(sent) == n + 2
+    n = len(sent)
+    for text, status in (("A letter to the agent. " * 4400 + "Draft the TR1 for my flat.", 409),
+                         (("We share your details with lenders to arrange a mortgage on your home. " * 1400)[:100000], 200),
+                         (("Do it. " * 14286)[:100000], 200)):     # an ask in every sentence
+        t0 = time.monotonic()
+        r = client.post("/api/v1/law/generate", json={"template_id": "service_agreement", "custom_instructions": text})
+        took = time.monotonic() - t0
+        assert len(text) >= 99000 and r.status_code == status and took < 2.0, (len(text), r.status_code, took)
+    assert len(sent) == n + 2, "the long ask was drafted, or a long ordinary request was refused"
+    n = len(sent)
+    asked = {"template_id": "nda", "custom_instructions": "draft the TR1 for my flat"}
+    g = asyncio.new_event_loop().run_until_complete(
+        _fab._run_real_resource_handler("form_law_generate", asked, "objective", "general"))
+    p = client.post("/api/v1/law/generate", json=asked)
+    assert g["refused"] is True and g["status"] == p.status_code == 409 and g["detail"] == p.json()["detail"], g
+    assert g["output"] is None and len(sent) == n, (g, len(sent))
+
+    #  5. the clerk: an id that names a deed is held, an id that names a reserved document is refused, nothing stored
+    def _stored():
+        return len(read_json_strict(_sp._store(), missing={"artefacts": {}}, expect=dict).get("artefacts", {}))
+    before = _stored()
+    for tid in ("tr1_transfer", "contract_for_sale_of_land", "legal_charge", "first_registration", "transfer_of_equity",
+                "sale_contract"):           # the last two named only as an id: a label, not a request
+        r = client.post("/api/v1/law/matter/assemble", json={"template_id": tid})
+        assert r.status_code == 409, (tid, r.status_code, r.text[:200])
+        d, m = r.json()["detail"], _sp.reserved_match(tid, as_id=True)
+        assert d.startswith(f"'{tid}' is not assembled: the words \"{m['words']}\" in the template id it was "
+                            f"given were read as naming {m['said']}, which would fall under \"{m['clause']}\""), d
+        assert "so nothing was stored. " in d and d.endswith(reason), d
+    for tid in ("partnership_deed", "lease_deed", "deed_of_trust", "transfer_deed"):  # held first, as the draft form
+        #  holds a deed (second review S5)
+        r = client.post("/api/v1/law/matter/assemble", json={"template_id": tid})
+        assert r.status_code == 409 and r.json()["detail"] == (
+            f"'{tid}' is held and is not assembled here: {_sp.HELD_REASON} For help from a person, see "
+            f"{_sp.HELP_PLACES}. Nothing here is legal advice."), (tid, r.status_code, r.text[:300])
+    assert _stored() == before, "an artefact was stored under an id that names a reserved document or a deed"
+    for tid in ("nda", "witness_statement", "et1_claim"):
+        r = client.post("/api/v1/law/matter/assemble", json={"template_id": tid})
+        assert r.status_code == 200 and r.json()["template_id"] == tid, (tid, r.status_code, r.text[:200])
+    assert _stored() == before + 3
+
+    #  6. the coverage register's row, and the plan (a later round may add its guard and its round after these)
+    cov = {r["id"]: r for r in json.loads((root / "docs" / "COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    crow = cov["law-reserved-instruments"]
+    assert crow["guarded_by"][:2] == [g1194, me], crow
+    assert crow["state"] == "route_only" and "(W1194, W1195" in crow["today"], crow
+    assert all(p in crow["subject"] for p in _sp.RESERVED_INSTRUMENTS), crow["subject"]
+    for said in ("are read for an explicit ask to prepare one of the reserved documents", "which is not a clearance",
+                 "a request or an id it reads so is refused before anything is composed or stored",
+                 "a mention with no ask word is not refused, but a request about one of the documents phrased as an ask",
+                 "the screen misses most other ways of asking", "This screen's own figures are in-sample",
+                 "Out of sample, the final check's 80 ordinary drafts and 15 explicit asks",
+                 "Measured on 2026-11-22: on the red team's 120 blind cases the word screen this replaced recognised 7 "
+                 "of 50 reserved asks"):
+        assert said in crow["today"], said
+    plan = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    p518 = " ".join(plan.split("\n P5.18 [chartered W711", 1)[1].split("\n P5.19 [chartered W711", 1)[0].split())
+    #  W1195's own line, up to any later round's (second review G9)
+    line = p518.split("UPDATED 2026-11-22 (W1195): ", 1)[1].split(" UPDATED ", 1)[0]
+    assert line.startswith("the two doors W1194 left open, a listed template's words and the clerk's template id, are "
+                           "screened for an explicit ask only."), line[:200]
+    assert f"The row law-reserved-instruments is guarded as well by {me}." in line, line[-600:]
+    assert "the screen misses most other ways of asking" in line and "P5.18 clause 4's ACCEPT is not met by W1195" in line
+    assert "which are not screened" in line, line
+    #  its number of stated limits, whatever a later round makes it (second review G5)
+    assert re.search(r"Its phrasings and its \d+ stated limits are labelled in scripts/screen_phrasings\.py", line), line
+    assert "doors are closed" not in line and "othing here composes" not in p518, line
+
+    #  7. the gap and the screen this round should have had, rows of their own; the other free-text generators compose
+    #     the words the draft form refuses. A route composes when a recorder on the composer it goes through saw the
+    #     words, or when it answered with text
+    ask = "Draft the TR1 transfer of my flat to my son"
+    r = client.post("/api/v1/law/generate", json={"template_id": "nda", "custom_instructions": ask})
+    assert r.status_code == 409 and len(sent) == n, (r.status_code, r.text[:200], len(sent))
+    rows = json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    gap = [x for x in rows if x["title"].startswith(
+        "A reserved instrument asked for in another free-text generator's words is composed, among them")]
+    asks = [x for x in rows if x["title"].startswith("A reserved document asked for in other words is drafted")]
+    assert len(gap) == 1 and len(asks) == 1, ("each is not one row of the register", [x["id"] for x in gap + asks])
+    gap, asks = gap[0], asks[0]
+    for x in (gap, asks):
+        assert (x["slot"], x["severity"], x["owner_gated"]) == ("P5.18", "medium", False), x
+        assert x["source"].startswith("W1195 (") and x.get("closed_by") != "W1195", ("this round closed its row", x)
+    assert gap["files"] == ["agentic_core/api/products.py", "agentic_core/synthesis/api.py"], gap["files"]
+    for said in ("At least three other free-text generators compose a reserved instrument when asked, among them",
+                 "POST /api/v1/generator/produce", "POST /api/v1/synthesis/generate", "POST /api/v1/synthesis/stream",
+                 "POST /api/v1/native-ai/complete", "was refused with 409 by POST /api/v1/law/generate",
+                 "is retired (W672, STUDIO_SYNTHESISE_RETIRED at :271) and answers 410 before composing",
+                 "test_w1195 holds this row open on the Generator, the Synthesis Studio and the fabric's Generator",
+                 "THE WORK: first a census of every free-text composer a page reaches", "legal/specialist.reserved_match",
+                 "scripts/screen_phrasings.py (RESERVED)", "never the Law draft form's sentence as it stands",
+                 "keeping among them for the rest"):
+        assert said in gap["why"], ("the gap's why does not say", said)
+    for said in ("recognised 7 of 50 reserved asks", "none of the 70 or the 20", "is not met by",
+                 "THE WORK: a reading of what a request asks for", gap["id"]):
+        assert said in asks["why"], ("the ask row's why does not say", said)
+    assert (f"is {asks['id']}, and the platform's other free-text generators, which are not screened, are {gap['id']}; "
+            "both are registered here and left for a later round.") in line, line[-900:]
+    from agentic_core.ai.gateway import ModelGateway as _gw
+    from agentic_core.ai.native.orchestrator import NativeOrchestrator as _orch
+    heard = []
+    _complete, _query, _stream = _orch.complete, _gw.query_meta, _gw.stream_meta
+
+    def _asked(prompt, kw):
+        return ask in str(prompt) or ask in str(kw.get("user_text") or "")
+
+    async def _hear_complete(self, prompt, *a, **kw):
+        if _asked(prompt, kw):
+            heard.append("complete")
+        return await _complete(self, prompt, *a, **kw)
+
+    async def _hear_query(self, prompt, *a, **kw):
+        if _asked(prompt, kw):
+            heard.append("query_meta")
+        return await _query(self, prompt, *a, **kw)
+
+    async def _hear_stream(self, prompt, *a, **kw):
+        if _asked(prompt, kw):
+            heard.append("stream_meta")
+        async for ev in _stream(self, prompt, *a, **kw):
+            yield ev
+    monkeypatch.setattr(_orch, "complete", _hear_complete)
+    monkeypatch.setattr(_gw, "query_meta", _hear_query)
+    monkeypatch.setattr(_gw, "stream_meta", _hear_stream)
+
+    def _composes(call):
+        was = len(heard)
+        text = call()
+        return len(heard) > was or bool(text)
+    composing = []
+    if _composes(lambda: (lambda g: g.status_code == 200 and (g.json().get("output") or "").strip())(
+            client.post("/api/v1/generator/produce", json={"artefact_type": "content", "spec": ask}))):
+        composing.append("POST /api/v1/generator/produce")
+    if _composes(lambda: (lambda s: s.status_code == 200 and (s.json().get("content") or "").strip())(
+            client.post("/api/v1/synthesis/generate", json={"content_ids": [], "output_type": "report",
+                                                            "instructions": ask}))):
+        composing.append("POST /api/v1/synthesis/generate")
+
+    def _streamed():
+        with client.stream("POST", "/api/v1/synthesis/stream",
+                           json={"content_ids": [], "output_type": "report", "instructions": ask}) as st:
+            frames = [ln for ln in "".join(st.iter_text()).splitlines() if ln.startswith("data: ") and '"token"' in ln]
+        return st.status_code == 200 and frames
+    if _composes(_streamed):
+        composing.append("/stream")
+    if _composes(lambda: (asyncio.new_event_loop().run_until_complete(_fab._run_real_resource_handler(
+            "generator", {"artefact_type": "content", "spec": ask}, ask, "general")) or {}).get("output")):
+        composing.append("POST /api/v1/generator/produce")       # the fabric's Artefact Generator runs run_generator
+    if composing:     # while any composes them, the register and what the page says never call the gap closed
+        assert gap["status"] == "open", (gap["id"], gap["status"], composing)
+        for said in (_sp.RESERVED_SCREEN, crow["today"]):
+            assert "other free-text generators are not screened, among them" in said, said
+            assert all(c in said for c in composing), (composing, said)
+
+    #  8. the templates answer, the Law page, its captured answers and its rendered test (read through _code_only)
+    tpl = client.get("/api/v1/law/templates").json()
+    assert tpl["reserved"]["screen_basis"] == _sp.RESERVED_SCREEN and tpl["reserved"]["reason"] == reason, tpl["reserved"]
+    src = root / "apps" / "workstation-superapp" / "src" / "pages" / "domains"
+    fx = json.loads((src / "LawHub.fixture.json").read_text(encoding="utf-8"))
+    assert fx["templates"] == tpl, ("the Law page's captured templates answer is not the route's: capture it again from "
+                                    "GET /api/v1/law/templates on an isolated store with no model",
+                                    sorted(k for k in set(fx["templates"]) | set(tpl) if fx["templates"].get(k) != tpl.get(k)))
+    ref = fx["generate_refused"]
+    r = client.post("/api/v1/law/generate", json=ref["request"])
+    assert (r.status_code, r.json()["detail"]) == (ref["status"], ref["detail"]) and ref["status"] == 409, (
+        "the Law page's captured refusal is not the route's", r.status_code)
+    assert ref["request"]["template_id"] in {x["id"] for x in tpl["templates"]}, ref["request"]
+    page = _code_only((src / "LawHub.tsx").read_text(encoding="utf-8"))
+    for line in ("setTemplatesReserved(d?.reserved ?? null);",
+                 '<span className="block text-[10px] text-amber-400 mt-1" data-testid="law-templates-reserved">',
+                 "{templatesReserved!.reason} {templatesReserved!.screen_basis ?? ''}",
+                 "and which is held and which documents this form refuses are not known."):
+        assert line in page, ("the Law page no longer draws this", line)
+    assert (page.index('data-testid="law-templates-held"') < page.index('data-testid="law-templates-reserved"')
+            < page.index('data-testid="law-templates-note"')), "the reserved line is not beside the held one"
+    vt = _code_only((src / "LawHub.test.tsx").read_text(encoding="utf-8"))
+    for line in ("it('the reserved documents are said on the draft tab, with what the screen of a request reads'",
+                 "await waitFor(() => expect(screen.getByTestId('law-templates-reserved').textContent).toContain(reserved.reason));",
+                 "expect(screen.getByTestId('law-templates-reserved').textContent).toContain(reserved.screen_basis);",
+                 "it('a reserved document asked for in a listed template\\'s words is refused, in the route\\'s own words'",
+                 "const refusal = captured.generate_refused;",
+                 "expect(await screen.findByText(refusal.detail)).toBeTruthy();",
+                 "expect(post.mock.calls[0][0]).toBe('/api/v1/law/generate');"):
+        assert line in vt, ("the rendered test no longer reads this", line)
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1233 - with sign-in on, a signed-out visitor at / is sent to the sign-in page, not shown the Command Center
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1233_a_signed_out_visitor_is_sent_to_the_sign_in_page_not_shown_the_shell():
+    """W1233. Found on the live site with sign-in on: a visitor with no token at / saw the Command Center shell
+    ("Welcome, Founder", the avatar box, "Failed (HTTP 401)" banners, every API call answered 401) instead of
+    the sign-in page. installAuth()'s on401 redirected only when a token was held, so a visitor who never signed in
+    was never sent to /login. Held here:
+    1. on401 no longer asks for a token: a 401 from an /api call that is not a sign-in call (/auth/) sends the page to
+       /login unless it is /login already, clearing a held token first; both the fetch and the axios path take that
+       one filter;
+    2. sendSignedOutToLogin(), the boot probe, reads whoami() and redirects only an 'anonymous' session away from a
+       page that is not /login; 'auth-off' and 'unknown' never redirect, and no next address is added (the login page
+       reads none);
+    3. App.tsx calls the probe at module level right after installAuth();
+    4. lib/auth.test.ts drives each case, and still imports whoami as W930's guard reads it."""
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    auth = _code_only((src / "lib/auth.ts").read_text(encoding="utf-8")) + "\n"
+    #  1. on401: no token asked for, a held one cleared, the login page exempt
+    on = auth[auth.index("  const on401 = () => {"):]
+    on = on[:on.index("\n  };\n") + 5]
+    assert "getToken() &&" not in on, "on401 redirects only a session that held a token"
+    assert "    if (window.location.pathname !== '/login') {" in on and "      if (getToken()) clearToken();" in on
+    assert on.count("window.location.assign('/login');") == 1
+    assert "  const fires401 = (url: string) => url.startsWith('/api') && !url.includes('/auth/');" in auth
+    assert "if (err?.response?.status === 401 && fires401(String(err?.config?.url ?? ''))) on401();" in auth
+    assert "if (res.status === 401 && fires401(url)) on401();" in auth
+    assert auth.count("on401();") == 2, "a 401 reaches on401 by some path that is not filtered"
+    #  2. the boot probe redirects on 'anonymous' alone
+    pr = auth[auth.index("export async function sendSignedOutToLogin(): Promise<void> {"):]
+    pr = pr[:pr.index("\n}\n") + 3]
+    assert "  const who = await whoami();" in pr
+    assert "    if (getToken()) clearToken();" in pr, "the probe leaves a token the server no longer takes"
+    assert "  if (who.mode === 'anonymous' && window.location.pathname !== '/login') {" in pr
+    assert pr.count("window.location.assign('/login');") == 1 and "auth-off" not in pr and "unknown" not in pr
+    assert "next" not in pr, "the probe adds a next address the login page does not read"
+    login = (src / "pages/Login.tsx").read_text(encoding="utf-8")
+    assert "get('next')" not in login and "'next'" not in login, (
+        "the login page now reads a next address: the probe may keep the address the visitor asked for")
+    #  3. App.tsx: the probe runs at boot, after the token layer is installed
+    app = _code_only((src / "App.tsx").read_text(encoding="utf-8"))
+    assert "import { installAuth, sendSignedOutToLogin } from './lib/auth';" in app
+    assert app.count("\nvoid sendSignedOutToLogin();\n") == 1 and app.count("\ninstallAuth();\n") == 1
+    assert app.index("\ninstallAuth();\n") < app.index("\nvoid sendSignedOutToLogin();\n") < app.index("function App()")
+    #  4. the rendered test
+    t = (src / "lib/auth.test.ts").read_text(encoding="utf-8")
+    assert "import { whoami } from './auth';" in t
+    for name in ("sends an anonymous visitor at / to /login", "leaves an anonymous visitor on /login where they are",
+                 "never redirects with sign-in off",
+                 "never redirects a session that is not known: a refusal or an unreachable server",
+                 "sends a visitor with no token to /login on a 401 from an /api data call",
+                 "does not redirect on a 401 from a sign-in call"):
+        assert t.count(f"  it('{name}', async () => {{") == 1, name
+    def body(name):
+        s = t.index(f"  it('{name}', async () => {{")
+        return t[s:t.index("\n  });\n", s)]
+    for name in ("sends an anonymous visitor at / to /login",
+                 "sends a visitor with no token to /login on a 401 from an /api data call"):
+        assert "expect(assign).toHaveBeenCalledWith('/login');" in body(name), name
+    for name in ("leaves an anonymous visitor on /login where they are", "never redirects with sign-in off",
+                 "never redirects a session that is not known: a refusal or an unreachable server",
+                 "does not redirect on a 401 from a sign-in call"):
+        assert "expect(assign).not.toHaveBeenCalled();" in body(name), name
+
+
+def test_w1208_the_privacy_screen_reads_history_for_credentials_and_says_where_its_walk_stopped(tmp_path, monkeypatch,
+                                                                                                capsys):
+    """FU-1864 (W1208, design key B9), P4.5. The privacy screen read only the current tree, and its report hard-coded
+    history_scanned False, so a credential removed from the tree in an earlier round was reported nowhere. The history
+    mode reads every blob in history once and whole, for credentials, and only reads. Every repository here is a
+    temporary one, and every value is a made-up one built at run time. Held here:
+    H1. HISTORY IS READ: commit 1 adds notes/k.txt holding a key-shaped value and commit 2 removes it. The tree scan
+        finds nothing; scan_history finds one credential finding, naming commit 1, notes/k.txt and line 2. A file
+        renamed after the value came in is dated to the commit that brought it, at its first path, with every path it
+        had. A value across the edge of a reading window is found once, at its line. The walk changes nothing: every
+        file under .git is byte for byte the same after it and the CLI. A refs option it does not walk is refused
+        before git runs, and a blob git cannot read stops the walk;
+    H2. NO VALUE TRAVELS: no eight-character piece of a value is in the report's JSON or the CLI's output;
+    H3. COVERAGE IS SAID: the full walk says history was scanned, with its refs, its commit and blob counts, and that
+        it covers the refs the clone holds. On a --depth 1 clone made over file:// (git ignores --depth on a plain
+        path), the report says it was not, and its basis names the boundary commit; a shallow clone whose boundary
+        holds the value names that commit as where the walk stopped. A grafts file makes the walk partial; a replace
+        ref hides nothing; a partial clone is refused, and nothing is fetched into it;
+    H4. ALLOWANCES BY COMMIT: an entry (commit, path, kind, line) with a reason allows only that finding, one of two in
+        the same blob; one with no reason or no line, another commit, path, kind or line, or an abbreviation under
+        seven digits is not honoured; load_allowed reads nothing from the history file, so a history allowance clears
+        nothing in the tree;
+    H5. THE CLI: --history exits 1 with the finding, 0 once it is allowed, 2 with 'examined nothing' on a repository
+        with no commits, 2 when it could not run (git missing included), and 2 on a shallow clone, said as partial; a
+        path with control characters is printed escaped. The default mode is unchanged: the tree report and its 'NOT
+        SCANNED: git history was NOT scanned' line (test_w732's pins);
+    H6. THE TREE AND THE REGISTER: config/privacy_history_allow.json holds an allowed list in its format, each entry
+        honoured; the runbook's step 6 says the mode reads and changes nothing, a shallow clone stops it, and the full
+        run is on a mirror clone; FU-1837 names the history run as a later step, after the host's secret-scanning alert
+        list, and no row is registered for it; FU-1864 is on P4.5, low, open or closed by W1208 as built."""
+    import hashlib
+    import importlib.util
+    import json
+    import pathlib
+    import random
+    import re
+    import string
+    import subprocess
+    from agentic_core import privacy_exposure as pe
+    root = pathlib.Path(__file__).resolve().parents[1]
+    monkeypatch.setenv("WORKSTATION_PRIVATE_MARKERS", str(tmp_path / "no_marker_list_here.txt"))
+
+    def git(repo, *a):
+        r = subprocess.run(["git", "-C", str(repo), "-c", "user.email=w1208@example.invalid", "-c", "user.name=w1208",
+                            "-c", "commit.gpgsign=false", "-c", "init.defaultBranch=main", *a],
+                           capture_output=True, text=True)
+        assert r.returncode == 0, (a[:3], r.stderr[-400:])
+        return r.stdout.strip()
+
+    def commit(repo, msg):
+        git(repo, "commit", "-q", "--no-verify", "-m", msg)
+        return git(repo, "rev-parse", "HEAD")
+
+    def snapshot(repo):
+        """Every file under .git, by its bytes: the walk is to leave each as it was."""
+        return {str(p.relative_to(repo)): hashlib.sha256(p.read_bytes()).hexdigest()
+                for p in sorted((repo / ".git").rglob("*")) if p.is_file()}
+
+    #  made-up, obviously fake keys of the Google API key's shape, built here so no file holds one whole
+    rng = random.Random(1208)
+
+    def fake():
+        return "AIza" + "FAKEw1208" + "".join(rng.choice(string.ascii_letters + string.digits) for _ in range(26))
+    value, other, third = fake(), fake(), fake()
+    assert [f["kind"] for f in pe.scan_one("v.txt", value.encode())] == ["credential"], "the made-up value is no key"
+    pieces = [v[i:i + 8] for v in (value, other, third) for i in range(len(v) - 7)]
+
+    def leaks(text):
+        return [p for p in pieces if p in text]
+
+    def fresh(name):
+        repo = tmp_path / name
+        repo.mkdir()
+        git(repo, "init", "-q")
+        return repo
+
+    repo = fresh("repo")
+    (repo / "notes").mkdir()
+    (repo / "notes" / "k.txt").write_text(f"x\nkey={value}\n", encoding="utf-8")
+    (repo / "notes" / "readme.txt").write_text("nothing private here\n", encoding="utf-8")
+    git(repo, "add", "notes")
+    c1 = commit(repo, "one")
+    git(repo, "rm", "-q", "notes/k.txt")
+    c2 = commit(repo, "two")
+    git(repo, "branch", "early", c1)
+    git(repo, "config", "uploadpack.allowFilter", "true")
+
+    #  H1. HISTORY IS READ, and nothing is written
+    tree = pe.scan(repo)
+    assert tree["findings"] == [] and tree["files_read"] == 1 and tree["history_scanned"] is False, tree["findings"]
+    before = snapshot(repo)
+    h = pe.scan_history(repo)
+    assert [(f["commit"], f["path"], f["paths"], f["kind"], f["line"], f["at_boundary"]) for f in h["findings"]] == [
+        (c1, "notes/k.txt", ["notes/k.txt"], "credential", 2, False)], [(f["commit"], f["path"]) for f in h["findings"]]
+    assert h["findings"][0]["what"] == "a Google API key" and h["count"] == 1 and h["allowed_count"] == 0
+    assert h["checked"] == ["credential"] and "credential" not in h["not_checked"], h["checked"]
+    assert snapshot(repo) == before, "the history walk changed the repository"
+    #     a rename after the value came in: dated to the commit that brought it, at its first path
+    moved = fresh("moved")
+    (moved / "a").mkdir()
+    (moved / "a" / "k.txt").write_text(f"key={value}\n", encoding="utf-8")
+    git(moved, "add", "a")
+    m1 = commit(moved, "in")
+    git(moved, "mv", "a/k.txt", "a/z.txt")
+    commit(moved, "renamed")
+    mv = pe.scan_history(moved)
+    assert [(f["commit"], f["path"], f["paths"]) for f in mv["findings"]] == [
+        (m1, "a/k.txt", ["a/k.txt", "a/z.txt"])], [(f["commit"], f["path"]) for f in mv["findings"]]
+    #     a value across a reading window's edge is read, once, at its own line
+    big = fresh("big")
+    (big / "big.txt").write_text(("p" * 9 + "\n") * 99 + f"key={value}\n" + ("q" * 9 + "\n") * 30, encoding="utf-8")
+    git(big, "add", "big.txt")
+    b1 = commit(big, "big")
+    monkeypatch.setattr(pe, "HISTORY_WINDOW", 100)
+    monkeypatch.setattr(pe, "HISTORY_OVERLAP", 60)
+    w = pe.scan_history(big)
+    assert [(f["commit"], f["line"]) for f in w["findings"]] == [(b1, 100)], [(f["line"]) for f in w["findings"]]
+    monkeypatch.undo()
+    monkeypatch.setenv("WORKSTATION_PRIVATE_MARKERS", str(tmp_path / "no_marker_list_here.txt"))
+    #     a refs option it does not walk is refused before git runs; a blob git cannot read stops the walk
+    for bad_refs in ("--output=" + str(tmp_path / "written.txt"), "--not", ""):
+        try:
+            pe.scan_history(repo, refs=bad_refs)
+            raise AssertionError(("a refs option was walked", bad_refs[:9]))
+        except RuntimeError:
+            pass
+    assert not (tmp_path / "written.txt").exists(), "a refs option wrote a file"
+    try:
+        list(pe._blobs_scanned(repo, ["0" * 40]))
+        raise AssertionError("a blob git could not read was passed over")
+    except RuntimeError:
+        pass
+
+    #  H2. NO VALUE TRAVELS
+    assert leaks(json.dumps(h)) == [] and leaks(json.dumps(tree)) == [], "a report carries a piece of the value"
+    assert leaks(json.dumps(mv)) == [] and leaks(json.dumps(w)) == []
+
+    #  H3. COVERAGE IS SAID: the full walk ...
+    assert (h["history_scanned"], h["shallow"], h["boundary_commits"], h["refs"]) == (True, False, [], ["--all"]), h
+    assert (h["commits_walked"], h["blobs_read"], h["grafted"]) == (2, 2, False), (h["commits_walked"], h["blobs_read"])
+    assert ("git history was scanned for credentials" in h["history_basis"] and "--all" in h["history_basis"]
+            and "2 commit(s), 2 distinct blob(s)" in h["history_basis"]), h["history_basis"]
+    assert "the refs this clone holds" in h["history_basis"] and "mirror clone" in h["history_basis"]
+    assert "changes no commit, ref, object or file" in h["read_only"]
+    #     ... and a --depth 1 clone over file://, checked to be shallow (on a plain path git would clone it whole)
+    shallow = tmp_path / "shallow"
+    git(tmp_path, "clone", "-q", "--depth", "1", repo.resolve().as_uri(), str(shallow))
+    assert git(shallow, "rev-parse", "--is-shallow-repository") == "true", "the clone is not shallow"
+    s = pe.scan_history(shallow)
+    assert (s["history_scanned"], s["shallow"], s["boundary_commits"], s["findings"]) == (False, True, [c2], []), s
+    assert "NOT scanned in full" in s["history_basis"] and c2[:12] in s["history_basis"], s["history_basis"]
+    assert "never a pass" in s["history_basis"] and s["commits_walked"] == 1, s["history_basis"]
+    early = tmp_path / "early"
+    git(tmp_path, "clone", "-q", "--depth", "1", "--branch", "early", repo.resolve().as_uri(), str(early))
+    e = pe.scan_history(early)
+    assert [(f["commit"], f["path"], f["at_boundary"]) for f in e["findings"]] == [(c1, "notes/k.txt", True)], e
+    assert e["history_scanned"] is False and c1[:12] in e["history_basis"], e["history_basis"]
+    #     a partial clone is refused, and nothing is fetched into it
+    partial = tmp_path / "partial"
+    git(tmp_path, "clone", "-q", "--filter=blob:none", "--no-checkout", repo.resolve().as_uri(), str(partial))
+    held = snapshot(partial)
+    try:
+        pe.scan_history(partial)
+        raise AssertionError("a partial clone was walked")
+    except RuntimeError as exc:
+        assert "partial clone" in str(exc), str(exc)
+    assert snapshot(partial) == held, "reading a partial clone fetched into it"
+
+    #  H4. ALLOWANCES BY COMMIT, path, kind and line, each with a reason
+    cfg = repo / "config"
+    cfg.mkdir()
+
+    def allow_file(where, *entries):
+        (where / "config").mkdir(exist_ok=True)
+        (where / "config" / "privacy_history_allow.json").write_text(json.dumps({"allowed": list(entries)}),
+                                                                     encoding="utf-8")
+        return pe.load_history_allowed(where)
+
+    why = "a made-up value this guard plants"
+    entry = {"commit": c1, "path": "notes/k.txt", "kind": "credential", "line": 2, "reason": why}
+    assert allow_file(repo, entry) == [(c1, "notes/k.txt", "credential", 2)]
+    ok = pe.scan_history(repo, allowed=pe.load_history_allowed(repo))
+    assert (ok["findings"], ok["allowed_count"], ok["count"]) == ([], 1, 0), ok["findings"]
+    assert pe.scan_history(repo, allowed=allow_file(repo, dict(entry, commit=c1[:7])))["findings"] == []
+    for bad in (dict(entry, reason=""), dict(entry, reason="  "), {k: v for k, v in entry.items() if k != "reason"},
+                {k: v for k, v in entry.items() if k != "line"}, dict(entry, line=0), dict(entry, line="2"),
+                dict(entry, line=True), dict(entry, commit=c1[:6])):
+        assert allow_file(repo, bad) == [], ("an allowance that should not be honoured was read", sorted(bad))
+    for wrong in (dict(entry, commit=c2), dict(entry, path="notes/other.txt"), dict(entry, kind="case_number"),
+                  dict(entry, line=1)):
+        got = pe.scan_history(repo, allowed=allow_file(repo, wrong))
+        assert len(got["findings"]) == 1 and got["allowed_count"] == 0, ("an allowance cleared another finding",
+                                                                         sorted(wrong))
+    #     two values in one blob: an allowance for one leaves the other; a path with control characters is kept whole
+    two = fresh("two")
+    (two / "demo.txt").write_text(f"a={other}\nx\nb={third}\n", encoding="utf-8")
+    odd = "odd\x1b[2J\nname.txt"
+    #  W1208b - the control-character path is made in git's index, never on disk: Windows refuses such a
+    #  file name, and the scan reads history, not the work tree
+    git(two, "add", "-A")
+    (two / "w1208b_blob.tmp").write_text(f"k={value}\n", encoding="utf-8")
+    _blob = git(two, "hash-object", "-w", "w1208b_blob.tmp")
+    (two / "w1208b_blob.tmp").unlink()
+    git(two, "-c", "core.protectNTFS=false", "update-index", "--add", "--cacheinfo", f"100644,{_blob},{odd}")
+    t1 = commit(two, "two values")
+    got = pe.scan_history(two, allowed=allow_file(two, {"commit": t1, "path": "demo.txt", "kind": "credential",
+                                                        "line": 1, "reason": why}))
+    assert sorted((f["path"], f["line"]) for f in got["findings"]) == [("demo.txt", 3), (odd, 1)], got["findings"]
+    assert got["allowed_count"] == 1 and leaks(json.dumps(got)) == []
+    #     the tree's allowances are the tree's alone: a history allowance clears nothing there
+    (cfg / "privacy_allow.json").write_text(json.dumps([{"path": "tree.txt", "kind": "credential",
+                                                         "reason": "a tree fixture"}]), encoding="utf-8")
+    allow_file(repo, entry)
+    assert pe.load_allowed(repo) == [("tree.txt", "credential")], pe.load_allowed(repo)
+    planted = pe.scan(repo, files=[("notes/k.txt", f"key={value}\n".encode())], allowed=pe.load_allowed(repo))
+    assert [(f["path"], f["kind"]) for f in planted["findings"]] == [("notes/k.txt", "credential")], planted["findings"]
+
+    #  H5. THE CLI, driven against the temporary repositories
+    spec = importlib.util.spec_from_file_location("_w1208_pc", root / "scripts" / "privacy_check.py")
+    pc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pc)
+
+    def run(where, *argv):
+        monkeypatch.setattr(pc, "ROOT", where)
+        rc = pc.main(list(argv))
+        return rc, capsys.readouterr().out
+
+    (cfg / "privacy_history_allow.json").unlink()
+    rc, out = run(repo, "--history")
+    assert rc == 1 and f"credential         {c1[:12]} notes/k.txt:2" in out and "STOP:" in out, (rc, out[-600:])
+    assert "git history was scanned for credentials" in out and "READ-ONLY:" in out, out[-600:]
+    assert leaks(out) == [], "the CLI's output carries a piece of the value"
+    allow_file(repo, entry)
+    rc, out = run(repo, "--history")
+    assert rc == 0 and "0 finding(s) over 2 blob(s) in 2 commit(s)" in out and "1 allowed" in out, (rc, out[-600:])
+    rc, out = run(shallow, "--history")
+    assert rc == 2 and "PARTIAL:" in out and "not a pass" in out and c2[:12] in out, (rc, out[-600:])
+    rc, out = run(early, "--history")
+    assert rc == 1 and "the walk stopped at this commit" in out and leaks(out) == [], (rc, out[-600:])
+    rc, out = run(two, "--history")
+    assert rc == 1 and "odd\\x1b[2J\\x0aname.txt:1" in out and "\x1b" not in out and leaks(out) == [], (rc, out[-600:])
+    rc, out = run(partial, "--history")
+    assert rc == 2 and "COULD NOT RUN" in out and "partial clone" in out, (rc, out[-400:])
+    empty = fresh("empty")
+    rc, out = run(empty, "--history")
+    assert rc == 2 and "PRIVACY CHECK REFUSING: examined nothing" in out, (rc, out)
+    rc, out = run(tmp_path / "no_repo_here", "--history")
+    assert rc == 2 and "COULD NOT RUN" in out, (rc, out)
+    rc, out = run(repo, "--history", "--staged")
+    assert rc == 2 and "COULD NOT RUN" in out, (rc, out)
+    #     the default mode is as it was: the tree, and history said as not scanned
+    assert snapshot(repo) == before, "the CLI changed the repository"
+    rc, out = run(repo)
+    assert rc == 0 and "privacy check: 0 finding(s) over 1 tracked file(s)" in out, (rc, out)
+    assert "NOT SCANNED: git history was NOT scanned" in out, out
+
+    #  H3 (continued). A replace ref hides nothing; a grafts file makes the walk partial
+    clean = git(repo, "commit-tree", git(repo, "rev-parse", f"{c2}^{{tree}}"), "-m", "clean")
+    git(repo, "replace", c1, clean)
+    rp = pe.scan_history(repo)
+    assert [(f["commit"], f["path"]) for f in rp["findings"]] == [(c1, "notes/k.txt")], "a replace ref hid a commit"
+    assert rp["replace_refs_ignored"] == 1 and rp["history_scanned"] is True, rp["history_basis"]
+    git(repo, "replace", "-d", c1)
+    (repo / ".git" / "info").mkdir(exist_ok=True)
+    (repo / ".git" / "info" / "grafts").write_text(c2 + "\n", encoding="utf-8")
+    gr = pe.scan_history(repo)
+    assert gr["grafted"] is True and gr["history_scanned"] is False, gr["history_basis"]
+    assert "grafts file" in gr["history_basis"] and "never a pass" in gr["history_basis"], gr["history_basis"]
+    rc, out = run(repo, "--history")
+    assert rc in (1, 2) and rc != 0, (rc, out[-400:])
+    (repo / ".git" / "info" / "grafts").unlink()
+    #     git missing: could not run, exit 2, never the exit of a finding
+    (tmp_path / "no_bin").mkdir()
+    monkeypatch.setenv("PATH", str(tmp_path / "no_bin"))
+    rc, out = run(repo, "--history")
+    assert rc == 2 and "COULD NOT RUN" in out, (rc, out[-300:])
+    monkeypatch.undo()
+
+    #  H6. THE TREE AND THE REGISTER
+    doc = json.loads((root / "config" / "privacy_history_allow.json").read_text(encoding="utf-8"))
+    assert isinstance(doc.get("allowed"), list), "the history allowances are not a list"
+    for ent in doc["allowed"]:
+        assert (isinstance(ent, dict) and pe._COMMIT_ID.fullmatch(str(ent.get("commit", ""))) and ent.get("path")
+                and ent.get("kind") in pe.HISTORY_KINDS and isinstance(ent.get("line"), int) and ent["line"] >= 1
+                and str(ent.get("reason") or "").strip()), ("an allowance is not in the file's format", sorted(ent))
+    assert len(pe.load_history_allowed(root)) == len(doc["allowed"]), "a written allowance is not honoured"
+    assert all(w in doc["about"] for w in ("commit", "path", "kind", "line", "reason", "not honoured")), doc["about"]
+    flat = lambda t: " ".join(t.split())  # noqa: E731
+    book = flat((root / pe.RUNBOOK).read_text(encoding="utf-8").split("6. **History:**", 1)[1].split("\n7. ", 1)[0])
+    assert ("`python scripts/privacy_check.py --history` reads every blob in history for credentials and changes "
+            "nothing (no commit, ref or file); on a shallow clone it names the boundary commits it stopped at and is "
+            "never a pass") in book and "`git clone --mirror`" in book, book
+    reg = {r["id"]: r for r in json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    why = flat(reg["FU-1837"]["why"])
+    said = ("W1208 (2026-11-22, FU-1864): the privacy screen's read-only history mode, python scripts/privacy_check.py "
+            "--history, is a later step, after the repository host's secret-scanning alert list.")
+    assert said in why and why.index("beginning with the repository host's secret-scanning alert list") < why.index(
+        said), "FU-1837 does not name the history run as a later step"
+    assert "A finding there that these values already cover is recorded under this row, not as a new row." in why
+    assert reg["FU-1837"]["status"] == "open" or reg["FU-1837"].get("closed_by") != "W1208", "the Owner's row closed"
+    assert not [r["id"] for r in reg.values() if str(r.get("source", "")).startswith("W1208")], "W1208 registered a row"
+    fu = reg["FU-1864"]
+    assert (fu["slot"], fu["severity"]) == ("P4.5", "low"), (fu["slot"], fu["severity"])
+    assert fu["status"] == "open" or (fu["status"], fu.get("closed_by"), fu.get("because")) == (
+        "done", "W1208", "built"), (fu["status"], fu.get("closed_by"))
+    assert not re.search(r"\b(he|his|him|she|her|hers)\b", doc["about"] + book + said, re.I)
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1208b - test_w1208 never writes a file whose name Windows refuses
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1208b_the_control_character_path_is_made_in_the_index_not_on_disk():
+    """W1208b. test_w1208 failed on Windows writing "odd\\x1b[2J\\nname.txt" to disk; the leg now enters that path in
+    git's index from a blob, so no file with a control character in its name is written anywhere."""
+    import pathlib
+    src = pathlib.Path(__file__).read_text(encoding="utf-8")
+    body = src[src.index("def test_w1208_the_privacy_screen_reads_history"):]
+    body = body[:body.index("\ndef test_", 10)]
+    assert "(two / odd).write_text(" not in body, "the control-character path is written to disk again"
+    assert '"update-index", "--add", "--cacheinfo", f"100644,{_blob},{odd}")' in body
+    assert '_blob = git(two, "hash-object", "-w", "w1208b_blob.tmp")' in body and '(two / "w1208b_blob.tmp").unlink()' in body
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1203a - the bundle proposal says how many rows cite each file on every bundle it shows
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1203a_every_bundle_shown_says_how_many_rows_cite_its_files():
+    """W1203a. The per-file counts were written only for bundles of four files or fewer, so a larger register
+    hid them. Driven on synthetic rows: a bundle of six files must still show its counts, capped at four
+    with the rest counted."""
+    import importlib
+    pf = importlib.import_module("agentic_core.plan_followups")
+    src = open(pf.__file__, encoding="utf-8").read()
+    assert 'if x["files_count"] <= 4:' not in src, "the per-file counts are again shown only for small bundles"
+    rows = [{"id": "FU-9%02d" % i, "slot": "PX.1", "status": "open",
+             "files": ["a.py", "f%d.py" % i]} for i in range(6)]
+    comps = pf._components_of(rows)
+    assert len(comps) == 1 and len(comps[0]["rows"]) == 6, comps
+    bundle_line = [l for l in src.splitlines() if "rows citing each file: " in l]
+    assert bundle_line, "the renderer no longer writes the per-file counts"
+    assert 'f", and {_more} more" if _more > 0 else ""' in src, "files past the first four are not counted"
+    assert "key=lambda kv: (-kv[1], kv[0])" in src, "the most-cited files are not shown first"

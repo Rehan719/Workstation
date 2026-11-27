@@ -55,9 +55,9 @@
    ],
    "status": "current",
    "page": "https://www.nice.org.uk/guidance/ng249/chapter/Recommendations",
-   "read_on": "2026-10-12",
-   "read_by": "round W676, in a browser",
-   "says": "Published 29 April 2025. Recommendation 1.1.1: do not use falls risk prediction tools to predict a person's risk of falling."
+   "read_on": "2026-11-22",
+   "read_by": "round W676, in a browser; read again by round W1195d, the institute's page read whole, not through a summary",
+   "says": "Published 29 April 2025. Recommendation 1.1.1: do not use falls risk prediction tools to predict a person's risk of falling. FIRST READ 2026-10-12 (W676). READ AGAIN 2026-11-22 (W1195d): the page gives 'Reference number: NG249' and 'Published: 29 April 2025', with no notice that it is withdrawn or replaced; recommendation 1.1.1 reads: 'Do not use falls risk prediction tools to predict a person's risk of falling.' Its reuse terms, in the page's metadata (DC.Rights.Copyright): 'All content on this site is NICE copyright unless otherwise stated. You can download material for private research, study or in-house use only. Do not distribute or publish any material from this site without first obtaining NICE's permission. Where Crown copyright applies, see the Office of Public Sector Information (formerly HMSO) website for information.'"
   },
   {
    "id": "rcp-news2",
@@ -197,9 +197,9 @@
    ],
    "status": "current",
    "page": "https://www.bapen.org.uk/must-and-self-screening/must-toolkit/",
-   "read_on": "2026-10-12",
-   "read_by": "round W678, in a browser",
-   "says": "Freely available for non-commercial purposes; adapting it needs copyright permission; for commercial purposes permission must be sought, a licence agreement signed and a licence fee paid. NOT READ: the tool's own scoring pages."
+   "read_on": "2026-11-22",
+   "read_by": "round W678, in a browser; read again by round W1195d, the owner's page read whole, not through a summary",
+   "says": "Freely available for non-commercial purposes; adapting it needs copyright permission; for commercial purposes permission must be sought, a licence agreement signed and a licence fee paid. NOT READ: the tool's own scoring pages. FIRST READ 2026-10-12 (W678). READ AGAIN 2026-11-22 (W1195d): 'The ‘MUST’ is freely available to use for non-commercial purposes.' 'If ‘MUST’ is to be used for commercial purposes permission must be sought, a licence agreement signed & a licence fee paid before original artwork is provided by BAPEN.' Not recorded before: copies of adapted and commercial materials go to the BAPEN Office, and wherever ‘MUST’ is used, in print or online, this wording must appear, with a pointer to www.bapen.org.uk: 'The ‘Malnutrition Universal Screening Tool’ (‘MUST’) is reproduced here with the kind permission of BAPEN (British Association for Parenteral and Enteral Nutrition).'"
   },
   {
    "id": "waterlow-terms",
@@ -228,9 +228,9 @@
    ],
    "status": "current",
    "page": "https://www.gov.uk/report-child-abuse",
-   "read_on": "2026-10-12",
-   "read_by": "round W677, in a browser",
-   "says": "The route for a concern about a child, as printed by the safeguarding tool. NOT READ: the local-authority pages it links to."
+   "read_on": "2026-11-22",
+   "read_by": "round W677, in a browser; read again by round W1195d, the page itself read whole at GOV.UK, not through a summary",
+   "says": "The route for a concern about a child, as printed by the safeguarding tool. NOT READ: the local-authority pages it links to. FIRST READ 2026-10-12 (W677). READ AGAIN 2026-11-22 (W1195d): 'If you’re worried that a child or young person is at risk or is being abused contact the children’s social care team at their local council.' 'Call 999 if the child is at immediate risk.' The page's metadata gives it as first published 23 September 2014, last publicly updated 18 March 2015 and changed on 13 November 2026; it carries no notice that it is withdrawn. Its reuse terms, in its footer: 'All content is available under the Open Government Licence v3.0, except where otherwise stated' and '© Crown copyright'."
   },
   {
    "id": "lsa-2007-s12",

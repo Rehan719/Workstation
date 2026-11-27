@@ -93,7 +93,7 @@
     "python-pptx": true
    },
    "embedding_backend": null,
-   "search_basis": "search is this platform's OWN LEXICAL index — exact token matching, no embedding, no stemming and no synonyms. There is no embedding backend installed, so this is not semantic recall and must not be read as it",
+   "search_basis": "search is this platform's OWN LEXICAL index — exact token matching, no embedding, no stemming and no synonyms; this index uses no embedding model, so it is not semantic recall and must not be read as it",
    "counts_basis": "2 indexed, 1 not read, 1 excluded, 4 listed in total. Every listed file carries exactly one state and the three counts sum to the total — a file in no state would be a file this manifest had lost",
    "locality_basis": "this index is LOCAL DATA under the data directory. It is never committed and nothing in this module sends it anywhere"
   }

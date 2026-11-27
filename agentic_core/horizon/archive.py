@@ -26,9 +26,11 @@ SECRETS ARE EXCLUDED BY RULE, BEFORE ANYTHING IS READ — not filtered out of th
 order matters: a rule applied after reading has already loaded the secret into memory and into whatever
 the reader did next.
 
-SEARCH IS THIS PLATFORM'S OWN LEXICAL INDEX. There is no embedding backend installed and the surface says
-so, because "search" over a token index is a different promise from semantic recall, and a user who
-expects the second from a surface offering the first will conclude their file was not indexed.
+SEARCH IS THIS PLATFORM'S OWN LEXICAL INDEX — exact token matching, no embedding, no stemming and no
+synonyms; this index uses no embedding model, so it is not semantic recall, and the surface says so,
+because "search" over a token index is a different promise from semantic recall, and a user who
+expects the second from a surface offering the first will conclude their file was not indexed. What
+is said is what this index uses, never what the machine has installed (W1207, P3.30).
 
 THE INDEX IS LOCAL DATA: it lives under the data directory, it is never committed, and nothing in this
 module sends it anywhere.
@@ -250,8 +252,8 @@ def scan() -> Dict[str, Any]:
         "extractors": {pkg: extractor_available(pkg) for pkg in sorted(set(_NEEDS_EXTRACTOR.values()))},
         "embedding_backend": None,
         "search_basis": ("search is this platform's OWN LEXICAL index — exact token matching, no "
-                         "embedding, no stemming and no synonyms. There is no embedding backend "
-                         "installed, so this is not semantic recall and must not be read as it"),
+                         "embedding, no stemming and no synonyms; this index uses no embedding model, "
+                         "so it is not semantic recall and must not be read as it"),
         "counts_basis": (f"{counts[INDEXED]} indexed, {counts[NOT_READ]} not read, {counts[EXCLUDED]} "
                          f"excluded, {len(files)} listed in total. Every listed file carries exactly one "
                          f"state and the three counts sum to the total — a file in no state would be a "

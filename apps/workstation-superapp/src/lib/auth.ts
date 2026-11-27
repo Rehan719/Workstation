@@ -39,14 +39,18 @@ export function installAuth(): void {
   installed = true;
   // §14 (W317) — the documented 401→/login redirect is REAL now: a session that expires (or a
   // token that was revoked) lands the user on the login page instead of an app full of silently
-  // failing calls. Only fires for a session that HELD a token — auth-off mode (no token) never
-  // redirects; the login page itself is exempt so its own error text keeps working.
+  // failing calls. The login page itself is exempt so its own error text keeps working.
+  // W1233 - it fires on a 401 from an /api call whether or not a token was held, and clears a held one first. It
+  // used to fire only for a session that held a token, so a visitor who never signed in was shown the Command
+  // Center with every read failing (HTTP 401) instead of the sign-in page. Sign-in calls (/auth/ in the url) never
+  // fire it, on either path. Auth-off mode never answers 401, so it never redirects.
   const on401 = () => {
-    if (getToken() && window.location.pathname !== '/login') {
-      clearToken();
+    if (window.location.pathname !== '/login') {
+      if (getToken()) clearToken();
       window.location.assign('/login');
     }
   };
+  const fires401 = (url: string) => url.startsWith('/api') && !url.includes('/auth/');
   axios.interceptors.request.use(cfg => {
     const t = getToken();
     if (t && (cfg.url ?? '').startsWith('/api')) {
@@ -58,7 +62,7 @@ export function installAuth(): void {
   axios.interceptors.response.use(
     r => r,
     err => {
-      if (err?.response?.status === 401) on401();
+      if (err?.response?.status === 401 && fires401(String(err?.config?.url ?? ''))) on401();
       return Promise.reject(err);
     },
   );
@@ -71,7 +75,7 @@ export function installAuth(): void {
       init.headers = { ...(init.headers as Record<string, string> ?? {}), Authorization: `Bearer ${t}` };
     }
     const res = await origFetch(input, init);
-    if (res.status === 401 && url.startsWith('/api') && !url.includes('/auth/')) on401();
+    if (res.status === 401 && fires401(url)) on401();
     return res;
   };
 }
@@ -103,4 +107,17 @@ export async function whoami(): Promise<WhoAmI> {
   if (u?.username) return { mode: 'authenticated', username: u.username, role: u.role };
   if (d?.auth_enabled === false) return { mode: 'auth-off' };
   return { mode: 'unknown', basis: 'the session answer named no user and did not say sign-in is off' };
+}
+
+/** W1233 - the boot probe: a signed-out visitor is sent to the sign-in page before the shell's reads fail one by
+ *  one. Only 'anonymous' (the server answered 401) redirects, and never from /login itself: 'auth-off' needs no
+ *  sign-in, and 'unknown' (a refusal or an unreachable server) is not known to be signed out, so the page stays and
+ *  says why. A token still held is one the server no longer takes, so it is cleared. The login page reads no next
+ *  address, so none is added. */
+export async function sendSignedOutToLogin(): Promise<void> {
+  const who = await whoami();
+  if (who.mode === 'anonymous' && window.location.pathname !== '/login') {
+    if (getToken()) clearToken();
+    window.location.assign('/login');
+  }
 }

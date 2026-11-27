@@ -81,6 +81,12 @@ _TEMPLATE_PROMPTS: dict[str, str] = {
 }
 
 
+def drafted_templates() -> list:
+    """W1194 - the listed templates this generator drafts: not the filing-shaped (the clerk's) and not the held."""
+    from agentic_core.legal.specialist import FILING_SHAPED as _fs, held_for_a_qualified_read as _held
+    return [t for t in _TEMPLATES if t["id"] not in _fs and not _held(t["id"])]
+
+
 class ParticularSpec(BaseModel):
     """P3.30 (ledger v16 R5.12) - ONE PARTICULAR: what it is called and the words a bundle line must carry.
     The field was an untyped list, so a particular sent as plain text reached the specialist's `.get()` and
@@ -104,6 +110,17 @@ async def matter_assemble(req: AssembleRequest, user: dict | None = Depends(get_
     the one named folder (with its document and line), or is a BLANK; every authority is resolved against the
     corpus or refused; a filing-shaped artefact is a draft until the Owner approves it. Not legal advice."""
     from agentic_core.legal import specialist
+    #  W1195 (P5.18 clause 4) - the clerk stores an artefact under the id it is given. An id that names a deed is held,
+    #  as the draft form holds it (W714; second review S5), and an id that names one of the reserved documents is
+    #  refused, before anything is assembled or stored, saying what the screen read
+    if specialist.held_for_a_qualified_read(req.template_id):
+        raise HTTPException(status_code=409, detail=(
+            f"'{req.template_id}' is held and is not assembled here: {specialist.HELD_REASON} "
+            f"For help from a person, see {specialist.HELP_PLACES}. Nothing here is legal advice."))
+    _kind = specialist.reserved_match(req.template_id, as_id=True)
+    if _kind:
+        raise HTTPException(status_code=409, detail=specialist.reserved_refusal(
+            req.template_id, "the template id it was given", _kind, act="assembled", kept="stored", reading="as naming"))
     #  the specialist is handed the plain dicts it has always read; its code is unchanged
     return specialist.assemble(req.template_id, [p.model_dump() for p in req.particulars], req.authorities)
 
@@ -131,9 +148,15 @@ async def matter_bundle():
 async def list_templates():
     """Return available legal document templates."""
     from agentic_core.legal.specialist import HELD_REASON as _held_reason, held_for_a_qualified_read as _held
+    from agentic_core.legal import specialist as _sp1194
     return {"templates": _TEMPLATES, "total": len(_TEMPLATES),
             #  W714 - which of these the generator refuses, and why, said beside the list and not inside a row
             "held": {"templates": [t["id"] for t in _TEMPLATES if _held(t["id"])], "reason": _held_reason},
+            #  W1194 (P5.18 clause 4) - the reserved documents, read from the register of sources when asked
+            "reserved": {"kinds": list(_sp1194.RESERVED_INSTRUMENTS), "reason": _sp1194.reserved_reason(),
+                         "source": _sp1194.reserved_source(), "help_route": _sp1194.HELP_ROUTE,
+                         #  W1195 - what the screen of a request's words reads, and that it clears nothing
+                         "screen_basis": _sp1194.RESERVED_SCREEN},
             #  Each template's own `jurisdiction` says what that template is FOR, which is legitimately
             #  per-template. THE MATTER's jurisdiction is a different fact with one home and a basis,
             #  published here so a reader can see which is which and where the second came from.
@@ -396,10 +419,44 @@ async def generate_document(req: GenerateRequest):
     #  W714 (OWNER RULING 2026-10-13) - a deed is held until a qualified person has read the Schedule. Refused
     #  here, before anything is composed, so the page and the resource runner receive the same answer.
     from agentic_core.legal.specialist import HELD_REASON as _held_reason, held_for_a_qualified_read as _held
+    from agentic_core.legal.specialist import HELP_PLACES as _help1194
     if _held(req.template_id):
+        #  W1194 (review R6) - the hold says where help is, as the reserved refusal does; its reason is W714's
         raise HTTPException(status_code=409, detail=(
             f"'{req.template_id}' is held and is not generated here: {_held_reason} "
-            f"Nothing here is legal advice."))
+            f"For help from a person, see {_help1194}. Nothing here is legal advice."))
+    #  W1194 (P5.18 clause 4) - THE DRAFT FORM DRAFTS ONLY THE TEMPLATES IT LISTS. Any other id was composed from
+    #  the generic prompt below, so a land transfer or a contract for the sale of land,
+    #  was drafted though preparing it is a reserved instrument activity. Refused here, before any prompt is
+    #  built, with the templates it drafts and, apart, the reserved documents - never that the id is one of those.
+    if req.template_id not in {t["id"] for t in _TEMPLATES}:
+        from agentic_core.legal.specialist import reserved_reason as _reserved, unlisted_reason as _unlisted
+        _drafted = [t["name"] for t in drafted_templates()]
+        raise HTTPException(status_code=404, detail=f"{_unlisted(req.template_id, _drafted)} {_reserved()}")
+    #  W1195 (P5.18 clause 4, its ACCEPT) - A LISTED TEMPLATE'S WORDS, READ FOR AN EXPLICIT ASK. The parties, the
+    #  instructions and the jurisdiction all reach the composer; a request the screen reads as an explicit ask to
+    #  prepare one of the reserved documents is refused here, before any prompt is built, saying what it read. Each
+    #  party label and each value is read on its own, flattened (review R5). Only a listed id gets here, and none
+    #  names one of the reserved documents, so the id is not read again.
+    from agentic_core.legal import specialist as _sp1195
+
+    def _flat1195(v):
+        if isinstance(v, dict):
+            for _k, _x in v.items():
+                yield str(_k)
+                yield from _flat1195(_x)
+        elif isinstance(v, (list, tuple)):
+            for _x in v:
+                yield from _flat1195(_x)
+        elif v is not None:
+            yield str(v)
+    _read1195 = [("the parties", _w) for _w in _flat1195(req.parties or {})]
+    _read1195 += [("the instructions", req.custom_instructions), ("the jurisdiction field", req.jurisdiction)]
+    for _where, _words in _read1195:
+        _kind = _sp1195.reserved_match(_words)
+        if _kind:
+            raise HTTPException(status_code=409, detail=_sp1195.reserved_refusal(req.template_id, _where, _kind))
+    #  a listed template with no prompt of its own drafts from the generic one (W1194: only a listed id gets here)
     base_prompt = _TEMPLATE_PROMPTS.get(
         req.template_id,
         f"Draft a comprehensive {req.template_id.replace('_', ' ')} agreement under {req.jurisdiction} law. "
@@ -440,6 +497,10 @@ async def generate_document(req: GenerateRequest):
         "jurisdiction": req.jurisdiction,
         "document": document,
         "authorities": _named1170,                       # W1170
+        #  W1195 - the screen read no explicit ask for one of the reserved documents; that clears nothing
+        "reserved_screen": {"recognised": False, "coverage": _sp1195.RESERVED_SCREEN,
+                            "basis": "the screen read no explicit ask to prepare one of the reserved documents, which "
+                                     "is not a clearance"},
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": disclaimer_for(provenance, _DRAFT_CLAIM, _DRAFT_SAFETY),

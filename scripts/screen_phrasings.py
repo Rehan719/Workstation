@@ -184,6 +184,660 @@ BOUNDARY = [
     ('what rights do tenants have when a landlord wants to evict?'                    , 'not-for'),
 ]
 
+#  ── SCREEN 7: legal.specialist.reserved_kind — an explicit ask to prepare a document whose preparation is a reserved
+#  instrument activity (W1195, P5.18 clause 4) ─────────────────────────────────────────────────────────────────────────
+#  Purpose, from the module: read, in the words of a draft request, an explicit ask - a drafting verb, "I need", "can
+#  you", "the document is", "... please" - to prepare a form TR1, TP1, AS1, CH1, AP1 or FR1, a transfer deed or a
+#  transfer of a house, a flat or land, a legal charge or a mortgage deed, a contract for the sale of land, or a lease
+#  of land for more than three years, and refuse it before anything is composed. A mention without an ask is NOT what
+#  it is for: over-routing one refuses a person a draft the platform does give. The list is in-sample: W1195's first
+#  54, then the phrasings of the first review, the independent corpus and the second review, labelled before the
+#  explicit-ask screen was written, then measured against it. RESERVED_LIMITS are the "for" phrasings the screen does
+#  not read - each one a way of asking it misses, with its reason - held by test_w1195 to the opposite of their label,
+#  so a pattern that comes to agree with one shows. The second review's red team measured the word screen this
+#  replaced on 120 blind cases: it recognised 7 of 50 reserved asks and refused 16 of 20 property-sector drafts.
+RESERVED = [
+    #  W1195's own (54)
+    ('draft the TR1 for my flat'                                          , 'for'),
+    ('prepare a transfer of my house to my daughter'                      , 'for'),
+    ('a transfer of registered land from me to my brother'                , 'for'),
+    ('transfer the freehold of 12 High Street to the buyer'               , 'for'),
+    ('a transfer of equity in our house so my partner is added'           , 'for'),
+    ('a TP1 transfer of part of my garden'                                , 'for'),
+    ('write a legal charge over the property to secure the loan'          , 'for'),
+    ('a mortgage deed over the flat'                                      , 'for'),
+    ('a charge on my home in favour of my brother'                        , 'for'),
+    ('fill in the AP1 to register the transfer'                           , 'for'),
+    ('an application to HM Land Registry to register my lease'            , 'for'),
+    ('complete the Land Registry form for first registration'             , 'for'),
+    ('a contract for the sale of my house'                                , 'for'),
+    ('the sale contract for the flat I am selling'                        , 'for'),
+    ('an agreement to sell the land behind my garden'                     , 'for'),
+    ('a property purchase agreement for the cottage'                      , 'for'),
+    ('a 99-year lease of the flat, made as a deed'                        , 'for'),
+    ('a lease deed for the shop'                                          , 'for'),
+    ('a deed of gift of my house to my son'                               , 'for'),
+    ('a disposition of the land to the council'                           , 'for'),
+    ('a 125-year lease of the flat to the tenant'                         , 'for'),
+    ('a lease of the shop for ten years'                                  , 'for'),
+    ('a long lease of the maisonette'                                     , 'for'),
+    ('a conveyance of the field to the farmer'                            , 'for'),
+    ('register the mortgage on our home'                                  , 'for'),
+    ('apply to the Land Registry to change the register'                  , 'for'),
+    ('draft the paperwork so that my son owns our place'                  , 'for'),
+    ('service agreement for a property management firm'                   , 'not-for'),
+    ('NDA about a land survey project'                                    , 'not-for'),
+    ('privacy policy for a lettings agency website'                       , 'not-for'),
+    ('employment contract for an estate agent'                            , 'not-for'),
+    ('terms of service for a house cleaning business'                     , 'not-for'),
+    ('an IP assignment of the photographs of the flat'                    , 'not-for'),
+    ('a data processing agreement with a mortgage broker'                 , 'not-for'),
+    ('a transfer of shares in my company'                                 , 'not-for'),
+    ('a contract for the sale of goods'                                   , 'not-for'),
+    ('a cleaning contract for the house'                                  , 'not-for'),
+    ('charge a late payment fee in the service agreement'                 , 'not-for'),
+    ('terms of service for a flat-sharing app'                            , 'not-for'),
+    ('employment contract for a land surveyor'                            , 'not-for'),
+    ('NDA with the buyer of my business'                                  , 'not-for'),
+    ('a licence to use the hall for one evening'                          , 'not-for'),
+    ('service agreement to register domain names for clients'             , 'not-for'),
+    ('privacy policy saying how we transfer personal data abroad'         , 'not-for'),
+    ('an employment contract with a mortgage adviser'                     , 'not-for'),
+    ('terms of service for a home insurance comparison site'              , 'not-for'),
+    ('an NDA covering the property portfolio data'                        , 'not-for'),
+    ('a 5 year lease of office equipment'                                 , 'not-for'),
+    ('a six-month tenancy agreement for a room'                           , 'not-for'),
+    ("a transfer of the shop's stock to the new owner"                    , 'not-for'),
+    ('a contract for the sale of the business and its goodwill'           , 'not-for'),
+    ('a lease of a car for three years'                                   , 'not-for'),
+    ('a contract for the conveyance of goods by sea'                      , 'not-for'),
+    ('privacy policy for a firm that files documents with the Land Registry', 'not-for'),
+    #  the clause's own four, and the screen's four kinds in their own words (R2, PW7)
+    ('an instrument of transfer or charge of land'                        , 'for'),
+    ('an instrument for land registration'                                , 'for'),
+    ('a contract for the sale or other disposition of land beyond a short lease', 'for'),
+    ('a deed for registration'                                            , 'for'),
+    ('a transfer, charge or mortgage of land, a house or a flat'          , 'for'),
+    ('a Land Registry application or form'                                , 'for'),
+    ('a sale or other disposition of land, a house or a flat, or a contract for one', 'for'),
+    ('a lease that is a deed'                                             , 'for'),
+    #  R2: the clause's words, varied
+    ('an instrument of charge of land'                                    , 'for'),
+    ('a charge of land'                                                   , 'for'),
+    ('an instrument of transfer or charge of the house'                   , 'for'),
+    #  R3: a form's code as people write it
+    ('draft a TR 1 for my flat'                                           , 'for'),
+    ('draft a TR-1 for my flat'                                           , 'for'),
+    ('a TP 1 for part of the garden'                                      , 'for'),
+    ('complete AP 1'                                                      , 'for'),
+    ('a CH 1 form'                                                        , 'for'),
+    ('fill in two TR1s'                                                   , 'for'),
+    ('tr_1'                                                               , 'for'),
+    ('TR1'                                                                , 'for'),
+    ('tr1_transfer'                                                       , 'for'),
+    ('ＴＲ１ for my flat'                                     , 'for'),
+    ('LAND REGİSTRY application'                                     , 'for'),
+    #  R3: legal charges, registered titles, a title or ownership of a place, an address
+    ('draft legal charges over the two flats'                             , 'for'),
+    ('Transfer of whole of registered title(s)'                           , 'for'),
+    ('transfer of part of registered title'                               , 'for'),
+    ('assent of whole of registered title'                                , 'for'),
+    ('transfer title to the flat'                                         , 'for'),
+    ('transfer the title of my flat to my son'                            , 'for'),
+    ('transfer ownership of my house to my son'                           , 'for'),
+    ('a contract for the sale of 12 High Street'                          , 'for'),
+    ('transfer of title to 12 Acacia Avenue'                              , 'for'),
+    ('transfer_of_whole'                                                  , 'for'),
+    ('legal_charges'                                                      , 'for'),
+    #  R3: a garage, a car park, an office or a unit let by a lease
+    ('a lease of the garage for 5 years'                                  , 'for'),
+    ('a lease of the car park for ten years'                              , 'for'),
+    ('a 10-year lease of the office'                                      , 'for'),
+    ('a lease of the offices for 10 years'                                , 'for'),
+    ('a lease of the unit for 6 years'                                    , 'for'),
+    #  R3: the place written first
+    ('draft a land transfer to my son'                                    , 'for'),
+    ('a property transfer to my daughter'                                 , 'for'),
+    ('a house transfer form'                                              , 'for'),
+    ('sale of land contract'                                              , 'for'),
+    ('land_transfer'                                                      , 'for'),
+    ('property_transfer'                                                  , 'for'),
+    #  R3: an assent, a conveyance
+    ('an assent of the house to the beneficiary'                          , 'for'),
+    ('draft an assent'                                                    , 'for'),
+    ('assent'                                                             , 'for'),
+    ('draft a conveyance to my son'                                       , 'for'),
+    ('a conveyance of land'                                               , 'for'),
+    ('conveyance'                                                         , 'for'),
+    #  R3: a lease whose term comes before the place, or no place for a term that is always land
+    ('a lease of 6 years for my shop'                                     , 'for'),
+    ('a lease for 6 years of my shop'                                     , 'for'),
+    ('seven-year lease of the shop'                                       , 'for'),
+    ('a lease for a term of 21 years of the flat'                         , 'for'),
+    ('a 999 year lease'                                                   , 'for'),
+    ('lease of the flat for 3.5 years'                                    , 'for'),
+    ('lease of the shop for 3 years and 6 months'                         , 'for'),
+    ('lease of 6 years'                                                   , 'for'),
+    ('seven-year lease'                                                   , 'for'),
+    ('a lease for a term of 21 years'                                     , 'for'),
+    #  R4, PW6: property in its land sense
+    ('a contract for the sale of the property'                            , 'for'),
+    ('transfer the property to my son'                                    , 'for'),
+    ('a mortgage over the property'                                       , 'for'),
+    ('a charge on the property to secure the loan'                        , 'for'),
+    ('register the property in my name'                                   , 'for'),
+    ('transfer of the property at 12 High Street to my son'               , 'for'),
+    ('a mortgage of the property'                                         , 'for'),
+    ('a charge over property owned by the company'                        , 'for'),
+    #  PW3: other dispositions of land
+    ('gift of land to my son'                                             , 'for'),
+    ('gift my house to my daughter'                                       , 'for'),
+    ('assign the lease of my shop to the buyer'                           , 'for'),
+    ('an assignment of the lease of the shop'                             , 'for'),
+    ('surrender of the lease of the flat'                                 , 'for'),
+    ('grant a right of way over my land'                                  , 'for'),
+    ('an easement deed for the right of way over the field'               , 'for'),
+    ('a tenancy agreement for my house for 5 years'                       , 'for'),
+    #  PW1, PW3: more of the same words, asked plainly
+    ('sign over the farm to my brother'                                   , 'for'),
+    ('a deed of variation of the mortgage'                                , 'for'),
+    ('an option to purchase the land'                                     , 'for'),
+    #  R1: a postcode in an address, and a code used as a label
+    ('Acme Ltd, 1 Foregate Street, Chester CH1 1HB'                       , 'not-for'),
+    ('Kernow Ltd, Lemon Street, Truro TR1 2LS'                            , 'not-for'),
+    ('Truro TR2 4AB'                                                      , 'not-for'),
+    ('Truro TR3 6AA'                                                      , 'not-for'),
+    ('Truro TR4 8QX'                                                      , 'not-for'),
+    ('Jane Doe, St Agnes TR5 0AA'                                         , 'not-for'),
+    ('The Supplier shall meet functional requirements FR1 to FR12 of the specification', 'not-for'),
+    ('service levels: FR1 (uptime 99.9%), FR2 (response in 4 hours)'     , 'not-for'),
+    ('include the disciplinary procedure from Ch1 of the staff handbook'  , 'not-for'),
+    ('action points AP1 and AP2 from the kick-off meeting are deliverables', 'not-for'),
+    ('milestones TP1 to TP3 as in the project plan'                       , 'not-for'),
+    ('the dataset DS1 is confidential information'                        , 'not-for'),
+    ('test reports TR1-TR5 are confidential'                              , 'not-for'),
+    #  R4, PW6: property in other senses - goods, rights, details, plans
+    ('transfer of property in the goods passes on delivery'               , 'not-for'),
+    ('terms of service: the transfer of property in the goods takes place on delivery', 'not-for'),
+    ('transfer of the property rights in the software'                    , 'not-for'),
+    ('transfer of property rights'                                        , 'not-for'),
+    ('include a clause on transfer of property and risk'                  , 'not-for'),
+    ('Transfer of property: property in the goods passes on full payment' , 'not-for'),
+    ('transfer of the property in the stock to the buyer on delivery'     , 'not-for'),
+    ('the customer may not transfer the property hired to anyone else'    , 'not-for'),
+    ('a clause on the transfer of property developed under this agreement', 'not-for'),
+    ('the assignor agrees to the transfer of all property in the works'   , 'not-for'),
+    ('transfer of property in the hired equipment never passes to the hirer', 'not-for'),
+    ('a clause on retention of title and transfer of property'            , 'not-for'),
+    ('transfer of title to the goods passes on delivery'                  , 'not-for'),
+    ('an intellectual property transfer agreement'                        , 'not-for'),
+    ('we register the property details with the deposit scheme'           , 'not-for'),
+    ('an NDA about the transfer of the building plans'                    , 'not-for'),
+    #  R4: a mention of land in an ordinary document, not the document asked for
+    ('a confidentiality agreement for the purchase of the property at 12 High Street', 'not-for'),
+    ('privacy policy for an estate agent that prepares sale agreements for properties', 'not-for'),
+    ('data processing agreement: the processor handles client data for the transfer of the property', 'not-for'),
+    ('service agreement for a surveyor to survey the land before the transfer of the land', 'not-for'),
+    ("relocation assistance: a contribution to the mortgage on the employee's home", 'not-for'),
+    ('privacy policy for a conveyancing firm that submits applications to the Land Registry', 'not-for'),
+    ('a loan agreement with no charge on the property'                    , 'not-for'),
+    ('the caretaker is in charge of the building'                         , 'not-for'),
+    ('the person in charge of the shop'                                   , 'not-for'),
+    #  R3: the words the narrowing keeps out
+    ('a charge on the unit price'                                         , 'not-for'),
+    ('the employee may be asked to transfer offices'                      , 'not-for'),
+    ('with the prior written assent of the Supplier'                      , 'not-for'),
+    ('a charge of a flat fee per month'                                   , 'not-for'),
+    #  shares, and an instrument of transfer of anything but land
+    ('an instrument of transfer of the shares'                            , 'not-for'),
+    ('instruments of transfer of shares in the company'                   , 'not-for'),
+    ('a stock transfer form for my shares'                                , 'not-for'),
+    #  the other dispositions' words, used of something else
+    ('a gift of garden furniture to the school'                           , 'not-for'),
+    ('assign the lease of the van to the buyer'                           , 'not-for'),
+    ('grant a right of access to the data'                                , 'not-for'),
+    ('a tenancy agreement for my house for 6 months'                      , 'not-for'),
+    ('an option to purchase more licences'                                , 'not-for'),
+    ('sign over the rights to the song'                                   , 'not-for'),
+    ('a deed of variation of the employment contract'                     , 'not-for'),
+    ('register the trade mark in my name'                                 , 'not-for'),
+    #  the compound nouns a place word heads, and a code used as a label in a specification
+    ('terms of service for a gift shop'                                   , 'not-for'),
+    ('arrange the transfer home after the trip'                           , 'not-for'),
+    ('transfer of the premises licence to the new owner'                  , 'not-for'),
+    ('transfer of farm machinery to the buyer'                            , 'not-for'),
+    ('complete the FR1 requirements before go-live'                       , 'not-for'),
+    ('send the DS1 dataset to the client'                                 , 'not-for'),
+    ('see the Ch1 of the staff handbook'                                  , 'not-for'),
+    ('a firm filing documents with the Land Registry for its clients'     , 'not-for'),
+    #  from the independent corpus (screen_corpus, written blind to the patterns): the phrasings its first measure
+    #  missed or over-read, each kept as the corpus labelled it, trimmed where a sentence ran on
+    ("I want to sign the house over to my son now while I'm still well." , 'for'),
+    ('Can you just do the TR1 for the sale?'                              , 'for'),
+    ('I just need a TR 1 drawn up, transfer of whole from my mum into my name', 'for'),
+    ('I need to assign the lease of my caf\u00e9 to the couple buying the business', 'for'),
+    ("We'd like a declaration of trust over the house, signed as a deed"  , 'for'),
+    ("Draw up a transfer of part (the TP1) - I'm selling the bottom 20 metres of my garden", 'for'),
+    ("I've agreed to buy the paddock next to my house from the farmer, subject to planning. Can you draw up the "
+     "conditional contract?"                                              , 'for'),
+    ('What I actually need now is the agreement to sell them the freehold of the shop', 'for'),
+    ("I'm subletting the top floor of my office to another firm for four years from January", 'for'),
+    ("The freeholder has agreed to extend my flat's lease from 68 years to 158 years", 'for'),
+    ('Draft a farm business tenancy of the 40 acres at Glanrhyd to my nephew for a fixed term of 6 years', 'for'),
+    ('I need an agreement for lease for a 12-year lease of the new unit'  , 'for'),
+    ('Jordan Pellingham, my partner, coming onto the title of 7 Quillfeather Close, Swindon SN3 4QD by a transfer of '
+     'equity'                                                             , 'for'),
+    ('Kittiwake & Crumb Coffee Ltd, taking a 15-year lease of the caf\u00e9 unit from me', 'for'),
+    ('Idris Carrow, my neighbour, who is to be granted a right of way by deed across my field', 'for'),
+    ('Hollins & Daughter Builders Ltd, getting an option to purchase the yard and two acres', 'for'),
+    ('Mr and Mrs Odukoya next door, buying the strip at the side of my garden by TP1', 'for'),
+    ('Me (Daniel Okafor-Reid), seller of 41 Tansyfield Drive, Ipswich IP4 6TZ - contract for sale to exchange next '
+     'month'                                                              , 'for'),
+    ('Caerwen Valley Homes Ltd, buyer of the building plot under the land contract', 'for'),
+    ('Fernleigh Design Studio LLP, subtenant of the second floor under a 7-year underlease', 'for'),
+    ('Noah Pendry-Vaughan, my grandson, who is getting the holiday cottage in Tenby by deed of gift', 'for'),
+    ("England and Wales; it's registered land so the AP1 has to go in to Land Reg", 'for'),
+    ('England and Wales - option for a developer to buy our paddock'      , 'for'),
+    ('England & Wales \u2013 assignment of the shop lease, 11 years still to run', 'for'),
+    ('commercial_lease_10yr_deed'                                         , 'for'),
+    ('fr1_first_registration'                                             , 'for'),
+    ("As part of the package the employer contributes to the mortgage on the employee's home", 'not-for'),
+    #  where the guards on a form's code bear the load: a code beside the Land Registry with a postcode after it,
+    #  and a drafting verb before a range of labels
+    ('our office near the Land Registry is at 3 Lemon Street, Truro TR1 2LS', 'not-for'),
+    ('complete FR1 to FR12 of the specification before go-live'          , 'not-for'),
+    #  from the corpus's edge cases: those its blind measure missed or over-read, and a postcode beside a code;
+    #  the two the screen cannot read are its stated limits (pronouns in two of them taken out)
+    ("Can you do the Form TR1 for 12 Wrenmoor Terrace, Truro TR1 3QH? I'm giving the house to my sister.", 'for'),
+    ('Lease of the yard behind the garage to Corvane Logistics Ltd for 5\u20137 years, rent \u00a39,000 a year', 'for'),
+    ('Draft a \u201ctransfer of part\u201d for the strip of garden I\u2019m selling to next door', 'for'),
+    ("An NDA for our talks with the buyer first, and then the TR1 once we've agreed a price.", 'for'),
+    ('Help me register my title to the cottage my nan left me'           , 'for'),
+    ('A deed of variation to our 125-year flat lease so we can keep a dog', 'for'),
+    ('Outgoing tenant (surrendering the 20-year lease)'                   , 'for'),
+    ('England & Wales \u2013 once signed please send it to the Land Registry to be registered', 'for'),
+    ('Call it a licence to occupy, but the tenant will have the whole shop for five years at \u00a3800 a month',
+     'for'),
+    ("It's not a mortgage, but if the loan isn't paid back by June 2028 the flat becomes mine - write that up as a "
+     'simple loan agreement'                                              , 'for'),
+    ('This is not a transfer of land \u2013 just a one-way NDA before I show the buyer my accounts.', 'not-for'),
+    ("A power of attorney so my son can sign the TR1 for me while I'm working in Dubai.", 'not-for'),
+    ('A letter to the lender asking them to send the DS1 now the mortgage is paid off', 'not-for'),
+    ("A letter to my neighbour asking if they'd agree to a deed of easement for the shared drive", 'not-for'),
+    ('Wealdmere Estates Ltd, our landlord under the 5-year lease of the office', 'not-for'),
+    ("Draft a loan agreement for the money I'm lending my brother. Don't do the charge on the flat - our solicitor "
+     'is doing that'                                                      , 'not-for'),
+    ('A deed of variation to our office cleaning contract - the fee goes up from April', 'not-for'),
+    ('Each partner gets a right of first refusal before any partner sells their share in the business', 'not-for'),
+    #  a long term with no place named (the limits above), and a long lease of goods
+    ('a lease for 15 years'                                               , 'for'),
+    ('extend the lease to 125 years'                                      , 'for'),
+    ('extend my lease by 90 years'                                        , 'for'),
+    ('a vehicle lease for 21 years'                                       , 'not-for'),
+    ('a lease of the server rack for 15 years'                            , 'not-for'),
+    ('lease the server rack to us for 25 years'                           , 'not-for'),
+    ('a 20 year lease of the aircraft'                                    , 'not-for'),
+    ('a 15-year lease of our fleet of vans'                               , 'not-for'),
+    ('a lease of the artwork to the gallery for 15 years'                 , 'not-for'),
+    #  W1195's second review: the screen reads only an explicit ask (a drafting verb, "I need", "can you", "the document is",
+    #  "... please") for a document it names; these are asks of each kind, the format characters it must read through,
+    #  and ordinary drafts that mention one without asking for it - the red team's twenty property-sector probes among them
+    ('Please draft a legal charge over my flat'                           , 'for'),
+    ('Can you prepare the TR1 for the sale of my house?'                  , 'for'),
+    ('We need a 10 year lease of the shop'                                , 'for'),
+    ('Draft a contract for the sale of the land at Northfield Farm'       , 'for'),
+    ('The document is a TR1'                                              , 'for'),
+    ('Draft it as a legal charge over the house'                          , 'for'),
+    ('TP1 please'                                                         , 'for'),
+    ('Need a TR1 for the flat'                                            , 'for'),
+    ('Please fill in the AP1 for the flat'                                , 'for'),
+    ('Draft a trans\u200bfer of my house to my daughter'                  , 'for'),
+    ('Please draft the mort\u00adgage deed for the flat'                   , 'for'),
+    ('Duties: Draft TR1s and AP1s under supervision'                      , 'not-for'),
+    ('Can you draft an NDA, not a TR1?'                                   , 'not-for'),
+    ('Please draft the job description for a conveyancing assistant who will prepare TR1s.', 'not-for'),
+    ('Draft an NDA for Truro TR1 2LS Ltd'                                 , 'not-for'),
+    ('Do not, please, draft the TR1 - the solicitor is doing it', 'not-for'),
+    ('Please draft an NDA, Truro TR1 2LS', 'not-for'),
+    ('Please draft the TR1 to TR5 checklist', 'not-for'),
+    ('Please draft the TR1 requirements memo', 'not-for'),
+    ('Please DRAFT the TR1 for my flat', 'for'),
+    ('Please draft a clause on the transfer of the property in the goods', 'not-for'),
+    ('Please prepare a checklist on the transfer of your home for new clients', 'not-for'),
+    ("Conveyancing executive. Duties include drafting TR1s and TP1s and lodging AP1 applications with HM Land Registry under a solicitor's supervision.", 'not-for'),
+    ('Land Registry caseworker: registering leases and charges and processing first registrations.', 'not-for'),
+    ("Staff benefits include a discounted mortgage on your home through the bank's staff scheme.", 'not-for'),
+    ('Mortgage underwriter: assesses applications for mortgages on residential properties.', 'not-for'),
+    ('Relocation package: we pay reasonable legal fees on the sale of your house and the purchase of your new home.', 'not-for'),
+    ('Commercial property manager for our portfolio of shops let on 15 to 25 year leases; rent reviews and service charges.', 'not-for'),
+    ('We share your details with lenders to arrange a mortgage on your home.', 'not-for'),
+    ('We use your data to prepare the contract for the sale of your property and to register the transfer at HM Land Registry.', 'not-for'),
+    ('We are not a party to any contract for the sale of a property advertised on the site.', 'not-for'),
+    ('Software that lets conveyancers prepare TR1 and AP1 forms and submit them to HM Land Registry.', 'not-for'),
+    ('The processor handles title registers, transfer deeds and mortgage deeds for our clients.', 'not-for'),
+    ('Customer data includes the property address, the mortgage on the property, and income.', 'not-for'),
+    ('NDA while we negotiate the sale contract for the farm.', 'not-for'),
+    ("DPA with our block management software provider covering leaseholders' data (the flats are held on 125-year leases).", 'not-for'),
+    ("We hold leaseholders' names, contact details and the terms of their 999-year leases.", 'not-for'),
+    ("Collect ground rent and service charges under the flats' 125 year leases.", 'not-for'),
+    ('Packing and removal services on completion day of the sale of your house.', 'not-for'),
+    ('RICS valuation of the property for the mortgage lender before exchange of contracts.', 'not-for'),
+    ('Our app reminds landlords when a tenancy agreement for their flat ends; most are for 6 or 12 months, some for 5 years.', 'not-for'),
+    ('Assign the IP in our lettings app, including the module that drafts tenancy agreements and the TR1 autofill tool.', 'not-for'),
+    #  a request that opens by asking for a document the clause leaves out (a letter, an email, a power of attorney,
+    #  a will), and a later ask of its own after it
+    ('Will you draft the TR1 for my flat?'                                , 'for'),
+    ('My will leaves the house to my son; draft the transfer of the house now', 'for'),
+    ('Draft an email to the agent, then the transfer of the flat to my son', 'for'),
+    ('A letter to the buyer enclosing the TR1 for the flat, and draft the TR1 too', 'for'),
+    ('Please draft a letter to my buyer and the TR1 for my flat'          , 'for'),
+    ('A letter to the lender asking them to release the charge and send the DS1', 'not-for'),
+    ('Draft my will leaving the house to my daughter'                     , 'not-for'),
+    #  the final check of 2026-11-22: its near-pattern ordinary drafts and the requests about a document it named, labelled
+    #  before the fixes they led to (an unreserved document's noun ends the reach; a code that modifies another noun;
+    #  please only at a sentence's end), and two asks the fixes must still read
+    ('Draft an NDA. I need the TR1 copies we hold kept confidential.', 'not-for'),
+    ('Please prepare an NDA; we need a TR1 checklist excluded from confidential information.', 'not-for'),
+    ('Prepare an employment contract. I need a conveyancer who can do TR1s and TP1s unsupervised.', 'not-for'),
+    ('Draft terms of business. We need clients to send us their TR1 within 5 days.', 'not-for'),
+    ('Draft an SLA. The document is a service agreement for TR1 courier collections.', 'not-for'),
+    ('TR1 please be careful: these forms are confidential under this NDA.', 'not-for'),
+    ('Please draft an NDA covering the TR1, TP1 and AP1 templates in our precedent bank.', 'not-for'),
+    ('Write terms for our app that lets solicitors complete the AP1 online themselves.', 'not-for'),
+    ('Prepare a privacy policy: we keep a copy of each legal charge our lender clients send us.', 'not-for'),
+    ('Draft a referral agreement. Then do a short schedule listing the mortgage deed fees we pass through.', 'not-for'),
+    ('We would like you to draft a confidentiality clause about the transfer deed bundle.', 'not-for'),
+    ('Please put together a DPA; the processor stores scanned legal charges and TR1 forms.', 'not-for'),
+    ('Draft an employment contract for a lettings manager; she will prepare a lease of the flats as part of her job.', 'not-for'),
+    ('Can you draft a cease and desist letter? They are using our TR1 guide video without permission.', 'not-for'),
+    ('Help me draft a service agreement for a surveyor who will check the lease of the shop for ten years of repair history.', 'not-for'),
+    ('Mention the mortgage deed please, as it secures the loan.', 'not-for'),
+    ('Include a clause noting the existing legal charge please.', 'not-for'),
+    ('Draft a summary of the mortgage deed for the board.', 'not-for'),
+    ('I need a copy of my TR1.', 'not-for'),
+    ('Prepare notes on the legal charge.', 'not-for'),
+    ('Complete the checklist on the transfer of the house our solicitor handled.', 'not-for'),
+    ('Draft an NDA covering the transfer of the flat negotiations.', 'not-for'),
+    ('Make it cover the legal charge over our warehouse in the security clause.', 'not-for'),
+    ('Our software is great. Please draft the TR1 for my flat.', 'for'),
+    ('Hello, please draft the TR1', 'for'),
+    ('Draft a loan agreement. Then do a final read of the legal charge wording for the client.', 'not-for'),
+    ('Draft an NDA. We need the TR1 kept confidential too.', 'not-for'),
+    ('Please draft a TR1 checklist for new starters.', 'not-for'),
+    ('In this training module please draft a TR1 for the practice flat.', 'not-for'),
+    ("Please write up our response to the TR1 query from the buyer's solicitor.", 'not-for'),
+    ('Please draft the Truro TR1 2LS office welcome pack.', 'not-for'),
+    ('Please draft the transfer of property in the goods on delivery.', 'not-for'),
+    ('Please write up how the transfer of your flat works, for our website.', 'not-for'),
+]
+
+#  The screen's stated limits: each a labelled phrasing the screen does not agree with, and why. test_w1195 holds each
+#  to that, so a pattern that comes to agree with one shows, and holds every other phrasing to its label.
+RESERVED_LIMITS = {
+    'a transfer of registered land from me to my brother':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'transfer the freehold of 12 High Street to the buyer':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a transfer of equity in our house so my partner is added':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'a TP1 transfer of part of my garden':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'a mortgage deed over the flat':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'a charge on my home in favour of my brother':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'an application to HM Land Registry to register my lease':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a contract for the sale of my house':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'the sale contract for the flat I am selling':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'an agreement to sell the land behind my garden':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a property purchase agreement for the cottage':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a 99-year lease of the flat, made as a deed':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'a lease deed for the shop':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a deed of gift of my house to my son':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'a disposition of the land to the council':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a 125-year lease of the flat to the tenant':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'a lease of the shop for ten years':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'a long lease of the maisonette':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a conveyance of the field to the farmer':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'register the mortgage on our home':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'apply to the Land Registry to change the register':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'draft the paperwork so that my son owns our place':
+        'it asks in words the screen reads as an ask, but for a document the screen does not read as one of the four',
+    'an instrument of transfer or charge of land':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'an instrument for land registration':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'a contract for the sale or other disposition of land beyond a short lease':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'a deed for registration':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'a transfer, charge or mortgage of land, a house or a flat':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a Land Registry application or form':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a sale or other disposition of land, a house or a flat, or a contract for one':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a lease that is a deed':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'an instrument of charge of land':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'a charge of land':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'an instrument of transfer or charge of the house':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a TP 1 for part of the garden':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'a CH 1 form':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'tr_1':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'TR1':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'tr1_transfer':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'ＴＲ１ for my flat':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'LAND REGİSTRY application':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'Transfer of whole of registered title(s)':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'transfer of part of registered title':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'assent of whole of registered title':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'transfer title to the flat':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'transfer the title of my flat to my son':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'transfer ownership of my house to my son':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a contract for the sale of 12 High Street':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'transfer of title to 12 Acacia Avenue':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'transfer_of_whole':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'legal_charges':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'a lease of the garage for 5 years':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'a lease of the car park for ten years':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a 10-year lease of the office':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'a lease of the offices for 10 years':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'a lease of the unit for 6 years':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'a property transfer to my daughter':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a house transfer form':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'sale of land contract':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'land_transfer':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'property_transfer':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'an assent of the house to the beneficiary':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'draft an assent':
+        'it asks in words the screen reads as an ask, but for a document the screen does not read as one of the four',
+    'assent':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'draft a conveyance to my son':
+        'it asks in words the screen reads as an ask, but for a document the screen does not read as one of the four',
+    'a conveyance of land':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'conveyance':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a lease of 6 years for my shop':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a lease for 6 years of my shop':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'seven-year lease of the shop':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'a lease for a term of 21 years of the flat':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'a 999 year lease':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'lease of the flat for 3.5 years':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'lease of the shop for 3 years and 6 months':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'lease of 6 years':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'seven-year lease':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a lease for a term of 21 years':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a contract for the sale of the property':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'transfer the property to my son':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a mortgage over the property':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'a charge on the property to secure the loan':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'register the property in my name':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'transfer of the property at 12 High Street to my son':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'a mortgage of the property':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a charge over property owned by the company':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'gift of land to my son':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'gift my house to my daughter':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'assign the lease of my shop to the buyer':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'an assignment of the lease of the shop':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'surrender of the lease of the flat':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'grant a right of way over my land':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'an easement deed for the right of way over the field':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a tenancy agreement for my house for 5 years':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'sign over the farm to my brother':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'a deed of variation of the mortgage':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'an option to purchase the land':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    "I want to sign the house over to my son now while I'm still well.":
+        'it asks in words the screen reads as an ask, but for a document the screen does not read as one of the four',
+    'I need to assign the lease of my café to the couple buying the business':
+        'it asks in words the screen reads as an ask, but for a document the screen does not read as one of the four',
+    "We'd like a declaration of trust over the house, signed as a deed":
+        'it asks in words the screen reads as an ask, but for a document the screen does not read as one of the four',
+    "I've agreed to buy the paddock next to my house from the farmer, subject to planning. Can you draw up the conditional contract?":
+        'it asks in words the screen reads as an ask, but for a document the screen does not read as one of the four',
+    'What I actually need now is the agreement to sell them the freehold of the shop':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    "I'm subletting the top floor of my office to another firm for four years from January":
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    "The freeholder has agreed to extend my flat's lease from 68 years to 158 years":
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'I need an agreement for lease for a 12-year lease of the new unit':
+        "the ask and the document are too far apart, or a word between them ends the ask's reach",
+    'Jordan Pellingham, my partner, coming onto the title of 7 Quillfeather Close, Swindon SN3 4QD by a transfer of equity':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'Kittiwake & Crumb Coffee Ltd, taking a 15-year lease of the café unit from me':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'Idris Carrow, my neighbour, who is to be granted a right of way by deed across my field':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'Hollins & Daughter Builders Ltd, getting an option to purchase the yard and two acres':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'Mr and Mrs Odukoya next door, buying the strip at the side of my garden by TP1':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'Me (Daniel Okafor-Reid), seller of 41 Tansyfield Drive, Ipswich IP4 6TZ - contract for sale to exchange next month':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'Caerwen Valley Homes Ltd, buyer of the building plot under the land contract':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'Fernleigh Design Studio LLP, subtenant of the second floor under a 7-year underlease':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'Noah Pendry-Vaughan, my grandson, who is getting the holiday cottage in Tenby by deed of gift':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    "England and Wales; it's registered land so the AP1 has to go in to Land Reg":
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'England and Wales - option for a developer to buy our paddock':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'England & Wales – assignment of the shop lease, 11 years still to run':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'commercial_lease_10yr_deed':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'fr1_first_registration':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'Lease of the yard behind the garage to Corvane Logistics Ltd for 5–7 years, rent £9,000 a year':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    "An NDA for our talks with the buyer first, and then the TR1 once we've agreed a price.":
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'Help me register my title to the cottage my nan left me':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'A deed of variation to our 125-year flat lease so we can keep a dog':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'Outgoing tenant (surrendering the 20-year lease)':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'England & Wales – once signed please send it to the Land Registry to be registered':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'Call it a licence to occupy, but the tenant will have the whole shop for five years at £800 a month':
+        'a lease called a licence: the screen reads the words a request uses, not what the agreement is in law',
+    "It's not a mortgage, but if the loan isn't paid back by June 2028 the flat becomes mine - write that up as a simple loan agreement":
+        'a security over land written without any word for one',
+    'a lease for 15 years':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'extend the lease to 125 years':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'extend my lease by 90 years':
+        'it asks in words the screen does not know, for a document named in words it does not read',
+    'Draft an email to the agent, then the transfer of the flat to my son':
+        "the ask and the document are too far apart, or a word between them ends the ask's reach",
+    'A letter to the buyer enclosing the TR1 for the flat, and draft the TR1 too':
+        'it names one of the documents but does not ask for it in the words the screen reads as an ask',
+    'Please draft a letter to my buyer and the TR1 for my flat':
+        "the ask and the document are too far apart, or a word between them ends the ask's reach",
+}
+
 
 def _table(name, rows, fn):
     #  W809 (FU-1154) - a table of no phrasing measures no screen; "0/0 as intended" would read as a pass
@@ -233,6 +887,8 @@ def main():
     results.append(_table("legal.own_case", OWN_CASE, _own_case.recognises))
     from agentic_core.legal import boundaries as _boundaries  # W1167 (P5.11 clause 7) - the sixth screen
     results.append(_table("legal.boundaries", BOUNDARY, lambda t: _boundaries.recognises(t) is not None))
+    from agentic_core.legal import specialist as _specialist  # W1195 (P5.18 clause 4) - the seventh screen
+    results.append(_table("legal.reserved", RESERVED, lambda t: _specialist.reserved_kind(t) is not None))
 
     print()
     print("=" * 84)
@@ -248,7 +904,7 @@ def main():
             print(f"     FLAGGED SOMETHING IT IS NOT FOR: {x}")
         total_missed += len(missed)
     print()
-    print(f"  TOTAL MISSED ACROSS THE SIX SCREENS: {total_missed}")
+    print(f"  TOTAL MISSED ACROSS THE SEVEN SCREENS: {total_missed}")
     return 0
 
 

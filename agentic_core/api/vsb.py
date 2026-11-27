@@ -159,6 +159,15 @@ def _autonomy_phrase(vsb: dict) -> str:
             }.get(st, f"{st or 'status not derived'}: not yet operating on its own")
 
 
+#  W1204 (FU-1880) - THE TERMS A HANDED-OVER REPOSITORY CARRIES: none yet. The Owner accepted on 2026-11-22 that,
+#  until the solicitor answers (FU-1817; question 6 for a solicitor in docs/business/FORMATION_WORKPACK.md), each
+#  entity repository's README says no terms have been chosen. No licence file is written and no licence is named.
+_REPO_TERMS = ("## Terms\n"
+               "No terms have been chosen for this repository, and no licence has been chosen for it. Until "
+               "terms are chosen, nothing in it grants a licence. The terms on which a founder receives an "
+               "entity repository are a question for a solicitor, not yet answered.\n")
+
+
 def _build_repo_files(vsb: dict) -> dict:
     """Build the bespoke repo file-set (path -> content) from REAL VSB entity data."""
     name = vsb.get("name") or vsb.get("vsb_id")
@@ -199,7 +208,8 @@ def _build_repo_files(vsb: dict) -> dict:
         # asserting the answer that happened to be wrong.
         "- `web/`, `webapp/`, `mobile/` — integrated Website / Web app / Phone app "
         "(see `integrated_surfaces` in `manifest.json` for which are generated and which are "
-        "still scaffolds; none is a built or running app)\n")
+        "still scaffolds; none is a built or running app)\n"
+        "\n" + _REPO_TERMS)                  # W1204 (FU-1880) - the repository's terms, said last
     # §8 (W310) — the §13 body EXPRESSES the genome: applied (CCA-approved) mutations are part of
     # the entity's shipped identity, not just a hidden record field.
     _mut = vsb.get("applied_mutations") or []

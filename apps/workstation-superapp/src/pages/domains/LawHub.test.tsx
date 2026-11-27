@@ -159,4 +159,37 @@ describe('LawHub, rendered against the Law routes\' own answers', () => {
     const held = captured.templates.held;
     await waitFor(() => expect(screen.getByTestId('law-templates-held').textContent).toContain(held.reason));
   });
+
+  // W1195 (P5.18 clause 4) - the reserved documents, beside the held line, with what the screen reads
+  it('the reserved documents are said on the draft tab, with what the screen of a request reads', async () => {
+    serve();
+    mount();
+    fireEvent.click(await screen.findByRole('button', { name: 'Draft' }));
+    const reserved = captured.templates.reserved;
+    await waitFor(() => expect(screen.getByTestId('law-templates-reserved').textContent).toContain(reserved.reason));
+    expect(screen.getByTestId('law-templates-reserved').textContent).toContain(reserved.screen_basis);
+  });
+
+  // W1195 (review PW5) - the person's half of 'refused through the route a person would use': words typed on the
+  // Draft tab are posted, the route refuses them (its own answer, captured by a real POST), and the page says the
+  // route's reason whole, never a status or a guess
+  it('a reserved document asked for in a listed template\'s words is refused, in the route\'s own words', async () => {
+    serve();
+    const refusal = captured.generate_refused;
+    const post = vi.spyOn(axios, 'post').mockRejectedValue(
+      { response: { status: refusal.status, data: { detail: refusal.detail } } } as never);
+    mount();
+    fireEvent.click(await screen.findByRole('button', { name: 'Draft' }));
+    const asked = refusal.request;
+    fireEvent.change(await screen.findByLabelText('Template'), { target: { value: asked.template_id } });
+    fireEvent.change(screen.getByLabelText('Parties (key: value per line)'),
+      { target: { value: Object.entries(asked.parties).map(([k, v]) => `${k}: ${v}`).join('\n') } });
+    fireEvent.change(screen.getByLabelText('Custom instructions (optional)'), { target: { value: asked.custom_instructions } });
+    fireEvent.click(screen.getByRole('button', { name: /Draft document/ }));
+    expect(await screen.findByText(refusal.detail)).toBeTruthy();
+    expect(post.mock.calls[0][0]).toBe('/api/v1/law/generate');
+    const body = post.mock.calls[0][1] as { template_id: string; parties: unknown; custom_instructions: string };
+    expect([body.template_id, body.parties, body.custom_instructions]).toEqual(
+      [asked.template_id, asked.parties, asked.custom_instructions]);
+  });
 });

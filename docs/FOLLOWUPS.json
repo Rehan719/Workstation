@@ -21725,8 +21725,8 @@
     },
     {
       "id": "FU-1086",
-      "title": "OWNER DECISION: the uncapped, census-partitioned final audit has no item that builds or runs it",
-      "why": "The Owner ruled on 2026-10-12 that the final audit is uncapped and census-partitioned, its instrument built and guarded in its own round and calibrated first, and run after Phase 5 and the authentication-readiness round. The ruling lives only as a sentence in P2.40's order, and P5.10's calibration clause is the only other trace; no item, acceptance clause or open row owns building or running it, and once P2.40 closes the sentence sits on a closed item. Recommended: charter it as its own item, run in both the floor and the local-model configuration, with seven properties each driven red by a planted fault: every census surface in exactly one slice or a stated overlap, the union equals the census, no region capped, a failed or empty region blocks completeness, the measured commit reported, earlier ledgers byte-identical. OWNER RULING 2026-11-22 (morning; the recommendation accepted): \"after Phase 5\" means after its build items close; the audit is then to run in December. The rows still waiting on the Owner (the letters and the second Care calibration) are to be listed in its record as open, and they carry into January without holding it back. Proposed by the round design, not ruled: the rows meant are the letter rows FU-1188 and FU-1283 while they are open, P5.17's FU-1067 if written permission has not come by 2026-12-15, and P5.15's FU-1831, which waits on the Owner's second calibration run before 2027-01-10.",
+      "title": "The final audit's instrument is built (W970-W977); it is not yet calibrated or run",
+      "why": "P5.22 is the item that builds and runs the final audit, chartered on the Owner's ruling of 2026-11-06 (W754), which accepted this row's recommendation. Its instrument is built and guarded, and the audit has not run: W970 built properties (1) and (2), every census surface in exactly one slice or the overlap stated, and the union of the slices equal to the census (scripts/audit_census_partition.py, with the slices in docs/AUDIT_SLICES.json); W972 built (6), earlier ledgers kept byte-identical, each edition pinned by its git blob (scripts/ledger_blobs.py); W973 built (3), (4), (5) and (7): no region capped, a failed or empty region blocking completeness, the measured commit reported, and both configurations run or the one that did not saying why (scripts/audit_completeness.py); and W977 built the workflow that gives each slice one assessor and one refuter, uncapped, in one named configuration (scripts/workflows/fidelity_audit_final.js). What remains: first the calibration against planted defects and false findings (P5.10 clause 5, FU-993); the local-model configuration, which runs on the Owner's machine (FU-1036); then a run in each configuration, after Phase 5's build items close and the sign-in readiness round, in December by the Owner's ruling of the morning of 2026-11-22 (below); P2.40 and P2.41 close on it. RETITLED by W1200 (2026-11-22) from 'OWNER DECISION: the uncapped, census-partitioned final audit has no item that builds or runs it', which the charter and W970, W972, W973 and W977 had made untrue; the row's earlier words, kept as they were: The Owner ruled on 2026-10-12 that the final audit is uncapped and census-partitioned, its instrument built and guarded in its own round and calibrated first, and run after Phase 5 and the authentication-readiness round. The ruling lives only as a sentence in P2.40's order, and P5.10's calibration clause is the only other trace; no item, acceptance clause or open row owns building or running it, and once P2.40 closes the sentence sits on a closed item. Recommended: charter it as its own item, run in both the floor and the local-model configuration, with seven properties each driven red by a planted fault: every census surface in exactly one slice or a stated overlap, the union equals the census, no region capped, a failed or empty region blocks completeness, the measured commit reported, earlier ledgers byte-identical. OWNER RULING 2026-11-22 (morning; the recommendation accepted): \"after Phase 5\" means after its build items close; the audit is then to run in December. The rows still waiting on the Owner (the letters and the second Care calibration) are to be listed in its record as open, and they carry into January without holding it back. Proposed by the round design, not ruled: the rows meant are the letter rows FU-1188 and FU-1283 while they are open, P5.17's FU-1067 if written permission has not come by 2026-12-15, and P5.15's FU-1831, which waits on the Owner's second calibration run before 2027-01-10.",
       "source": "W747",
       "found": "2026-10-16",
       "files": [
@@ -26812,10 +26812,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.15",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1195d",
       "note": "",
-      "slot_source": "P5.15: what the cloud can still do for it once FU-1054 waits on the Owner's machine (FU-1054's plan, W1184)"
+      "slot_source": "P5.15: what the cloud can still do for it once FU-1054 waits on the Owner's machine (FU-1054's plan, W1184)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1195d: the three rows four of the set's cases rely on were read again at their publishers on 2026-11-22, each page once, whole and not through a summary: gov-report-child-abuse (C02, K01), bapen-must-toolkit (C07, and C08 by its NOT READ part) and nice-ng249 (K03). Each page still says what its cases rely on. Each row keeps its first read, 2026-10-12, the date C02, K01 and K03 print, and says what was read again in the page's own words, with the reuse terms the page states that the row had not recorded: GOV.UK's Open Government Licence, the wording BAPEN requires wherever MUST is used, and NICE's terms in its page's metadata. The set is unchanged: its digest is the one cal-8c7430765c was made on. It can now be run from 2026-11-22 through 2027-02-17 as the register stands, where it could not be run after 2027-01-10 before; from the day after 2027-02-17, rcp-news2 and nice-ng97, read on 2026-11-19, lapse. The captures test_w1183, test_w1185 and test_w1102 compare were taken again on 2026-11-22, the Care page's list of tools with them, and the three tests pin that day; test_w691, test_w1099 and test_w1122 read the window's first day, and test_w1188 holds FU-1054's close note to its own words. The Care texts that type these rows' read dates are FU-1900. test_w1195d holds it, through the agent's door and the calibration route too."
     },
     {
       "id": "FU-1821",
@@ -27009,7 +27012,7 @@
     {
       "id": "FU-1831",
       "title": "The Care reviewer's first calibration run did not meet the bar: five planted cases missed and four clean ones flagged",
-      "why": "Run cal-8c7430765c, made on the Owner's machine on 2026-11-21 with llama3.2 served by ollama on the CPU, caught 5 of 10 planted cases (C04, C06, C07, C09 and C10) and flagged 4 of 6 clean ones (K01, K02, K04 and K05; K03 alone passed), against a bar of every planted case and at most one false alarm in six. Five cases (C01, C02, C03, C08 and K06) were answered with a bare 'FLAG:' line and the reasons as bullets beneath it, a form the reviewer does not read, so they were not reviewed and the run calibrates nothing; had the bullets been read, C01 would have been caught and K06 would have been a false alarm, 6 of 10 and 5 of 6, still below the bar. C05 was flagged, but not for its own reason. C06, counted caught, answered 'FLAG: none' and seven of the set's reasons in the same reply. The model named 'professional role claimed' on 15 of the 16 cases and flagged all nine reasons on K01, a clean case, so even its catches are weak evidence of a review. NEXT: before a second run, record what the reviewer is shown (FU-1821's digest of its prompt), so a run says which prompt it was made with, and make the reply's form harder to get wrong (a bare 'FLAG:' line with bullets beneath it; 'FLAG: none' beside reasons) without changing the set's cases or checklist; then a second run is the Owner's machine's to make, with a larger local model if one fits that machine. Nothing here moves the bar, and no line in another form is counted. OWNER RULING 2026-11-21 (afternoon; the recommendations accepted): the second run is the Owner's, on their own machine, before 2027-01-10, once the reply form here, the agent's digest (FU-1821) and the re-read of FU-1820 have landed; it is run with a larger local model than the first run's, of seven to eight billion parameters such as llama3.1:8b if the Owner's machine has about 16 GB of memory, and the reviewer's reviews then run on that model; the bar does not move. If it fails too, the reviewer stays UNCALIBRATED and no round goes into calibrating it until a qualified person is engaged; P5.15 closes when its clauses are built and its rows closed, calibrated or not. This row closes on the second run's results, pass or fail, as FU-1054 closed on the first's. W1195c, a note and not a ruling: the reply's form and the agent's digest are built (FU-1821, closed by W1195c). The reviewer's prompt states the one form. A reply in another form, such as a bare 'FLAG:' line with the reasons beneath it or 'FLAG: none' beside reasons, has no line read as a flag, is not reviewed, and the run keeps what put it out of the form; a run records the digest of what its reviewer was shown. Read that way, as its record shows, the first run would have had seven cases out of the form: C01, C02, C03, C08 and K06, C04 (a reason beside a sentence of prose) and C06. A run that leaves any case not answered in the one form calibrates nothing, whatever the meets_bar of its exported score says, since such a case is counted there as not flagged; the statement's reason decides. A run through the agent's door now starts only when the context the local runtime reports for its model holds the longest prompt the set sends and the reply that flags each of the set's reasons once, counted as bytes (no token is shorter than a byte, so the figure is a bound, not the prompt's size), so no prompt is cut to fit; with Ollama the context is set with OLLAMA_CONTEXT_LENGTH. The bar did not move. W1195c built two of the three things the Owner's ruling of 2026-11-21 names for the second run; the third it names is FU-1820's re-read. The second run's step goes into step 5 of the local notes in a later round, once the Owner has answered whether the run also waits for FU-1822.",
+      "why": "Run cal-8c7430765c, made on the Owner's machine on 2026-11-21 with llama3.2 served by ollama on the CPU, caught 5 of 10 planted cases (C04, C06, C07, C09 and C10) and flagged 4 of 6 clean ones (K01, K02, K04 and K05; K03 alone passed), against a bar of every planted case and at most one false alarm in six. Five cases (C01, C02, C03, C08 and K06) were answered with a bare 'FLAG:' line and the reasons as bullets beneath it, a form the reviewer does not read, so they were not reviewed and the run calibrates nothing; had the bullets been read, C01 would have been caught and K06 would have been a false alarm, 6 of 10 and 5 of 6, still below the bar. C05 was flagged, but not for its own reason. C06, counted caught, answered 'FLAG: none' and seven of the set's reasons in the same reply. The model named 'professional role claimed' on 15 of the 16 cases and flagged all nine reasons on K01, a clean case, so even its catches are weak evidence of a review. NEXT: before a second run, record what the reviewer is shown (FU-1821's digest of its prompt), so a run says which prompt it was made with, and make the reply's form harder to get wrong (a bare 'FLAG:' line with bullets beneath it; 'FLAG: none' beside reasons) without changing the set's cases or checklist; then a second run is the Owner's machine's to make, with a larger local model if one fits that machine. Nothing here moves the bar, and no line in another form is counted. OWNER RULING 2026-11-21 (afternoon; the recommendations accepted): the second run is the Owner's, on their own machine, before 2027-01-10, once the reply form here, the agent's digest (FU-1821) and the re-read of FU-1820 have landed; it is run with a larger local model than the first run's, of seven to eight billion parameters such as llama3.1:8b if the Owner's machine has about 16 GB of memory, and the reviewer's reviews then run on that model; the bar does not move. If it fails too, the reviewer stays UNCALIBRATED and no round goes into calibrating it until a qualified person is engaged; P5.15 closes when its clauses are built and its rows closed, calibrated or not. This row closes on the second run's results, pass or fail, as FU-1054 closed on the first's. W1195c, a note and not a ruling: the reply's form and the agent's digest are built (FU-1821, closed by W1195c). The reviewer's prompt states the one form. A reply in another form, such as a bare 'FLAG:' line with the reasons beneath it or 'FLAG: none' beside reasons, has no line read as a flag, is not reviewed, and the run keeps what put it out of the form; a run records the digest of what its reviewer was shown. Read that way, as its record shows, the first run would have had seven cases out of the form: C01, C02, C03, C08 and K06, C04 (a reason beside a sentence of prose) and C06. A run that leaves any case not answered in the one form calibrates nothing, whatever the meets_bar of its exported score says, since such a case is counted there as not flagged; the statement's reason decides. A run through the agent's door now starts only when the context the local runtime reports for its model holds the longest prompt the set sends and the reply that flags each of the set's reasons once, counted as bytes (no token is shorter than a byte, so the figure is a bound, not the prompt's size), so no prompt is cut to fit; with Ollama the context is set with OLLAMA_CONTEXT_LENGTH. The bar did not move. W1195c built two of the three things the Owner's ruling of 2026-11-21 names for the second run; the third it names is FU-1820's re-read. The second run's step goes into step 5 of the local notes in a later round, once the Owner has answered whether the run also waits for FU-1822. W1195d, a note: the re-read FU-1820 asked for is done. gov-report-child-abuse, bapen-must-toolkit and nice-ng249 were read again at their publishers on 2026-11-22, each page whole and not through a summary, and each still says what the cases that rely on it rely on, so the set can be run from 2026-11-22 through 2027-02-17 as the register stands. The ruled date, before 2027-01-10, is unchanged. FU-1822 is still open, and W1190's note says it is settled before the second run; whether the run waits on it is the Owner's to say, so the second run's step is not yet in step 5 of the local notes.",
       "source": "W1188 (FU-1054's first run, cal-8c7430765c, made on the Owner's machine on 2026-11-21; the Owner's ruling of that morning that its misses become a row)",
       "found": "2026-11-21",
       "files": [
@@ -27125,7 +27128,7 @@
     {
       "id": "FU-1837",
       "title": "OWNER: revoke at their providers the credentials W729 redacted from three archived files, which this public repository has held, most of them since March 2026, or confirm each is dead, and record the date",
-      "why": "W729 (50abf919, 2026-10-14) replaced real-looking values in three archived copies of one pasted text file in the tree. Its message says \"The values are to be revoked at their providers by the Owner - redaction does not remove them from history\". No row ever recorded this, and the Owner's Stripe key roll of 2026-10-09 covers none of these values. What they are, by provider and kind only: an AI provider key, a Google sign-in client secret, a Firebase key and a speech-to-text key; two reCAPTCHA secrets and two sign-in token secrets; two database addresses carrying a username and password, a database password and an e-mail password. With them goes the key in the openQuran archive's .env on the Owner's machine, never in the repository, which FU-268's ruling (closed by W505) left to the Owner: \"The Owner rotates that key separately; the platform never reads it.\" Measured in W1191 by blob and by count, never by value: copies carrying most of the same values were uploaded to the repository on 2026-03-05, earlier than the June that W729's message gives, and most of the repository's other branches still carry unredacted copies, since W729 redacted only the tree's own copies; removing them there would not undo their exposure, which only revoking does. W729 also redacted two Stripe lines that held only templates; in the March copies those two lines hold earlier values that W729 never redacted, a Stripe live secret key and a Stripe webhook signing secret: revoke those too, or confirm they no longer work, since nothing records whether the key roll of 2026-10-09 retired them. The steps: read the repository host's secret-scanning alert list; revoke or rotate each item at its provider, or confirm that it no longer works; then tell the session the date, which a later round records beside the Stripe line at the head of the plan's Owner list. Added to the Owner's list at the Owner's request on 2026-11-21, to be done soon; in the Owner's words: \"add to list of items for me, I will do this soon\". OWNER RULING 2026-11-22 (the recommendation accepted): the revocation is to be done on 2026-11-22, beginning with the repository host's secret-scanning alert list. The cloud session may list stale branches for deletion; no branch is deleted or changed without the Owner's explicit word. OWNER RULING 2026-11-22 (morning; the recommendation accepted): the Owner revokes the leaked keys first; then the cloud session lists the stale branches that hold them for the Owner to check, keeping main, main-l1fsqo, local-owner and anything else the Owner names, and deletes only on the Owner's explicit word.",
+      "why": "W729 (50abf919, 2026-10-14) replaced real-looking values in three archived copies of one pasted text file in the tree. Its message says \"The values are to be revoked at their providers by the Owner - redaction does not remove them from history\". No row ever recorded this, and the Owner's Stripe key roll of 2026-10-09 covers none of these values. What they are, by provider and kind only: an AI provider key, a Google sign-in client secret, a Firebase key and a speech-to-text key; two reCAPTCHA secrets and two sign-in token secrets; two database addresses carrying a username and password, a database password and an e-mail password. With them goes the key in the openQuran archive's .env on the Owner's machine, never in the repository, which FU-268's ruling (closed by W505) left to the Owner: \"The Owner rotates that key separately; the platform never reads it.\" Measured in W1191 by blob and by count, never by value: copies carrying most of the same values were uploaded to the repository on 2026-03-05, earlier than the June that W729's message gives, and most of the repository's other branches still carry unredacted copies, since W729 redacted only the tree's own copies; removing them there would not undo their exposure, which only revoking does. W729 also redacted two Stripe lines that held only templates; in the March copies those two lines hold earlier values that W729 never redacted, a Stripe live secret key and a Stripe webhook signing secret: revoke those too, or confirm they no longer work, since nothing records whether the key roll of 2026-10-09 retired them. The steps: read the repository host's secret-scanning alert list; revoke or rotate each item at its provider, or confirm that it no longer works; then tell the session the date, which a later round records beside the Stripe line at the head of the plan's Owner list. Added to the Owner's list at the Owner's request on 2026-11-21, to be done soon; in the Owner's words: \"add to list of items for me, I will do this soon\". OWNER RULING 2026-11-22 (the recommendation accepted): the revocation is to be done on 2026-11-22, beginning with the repository host's secret-scanning alert list. The cloud session may list stale branches for deletion; no branch is deleted or changed without the Owner's explicit word. OWNER RULING 2026-11-22 (morning; the recommendation accepted): the Owner revokes the leaked keys first; then the cloud session lists the stale branches that hold them for the Owner to check, keeping main, main-l1fsqo, local-owner and anything else the Owner names, and deletes only on the Owner's explicit word. W1208 (2026-11-22, FU-1864): the privacy screen's read-only history mode, python scripts/privacy_check.py --history, is a later step, after the repository host's secret-scanning alert list. Its full run is made on a mirror clone on the Owner's machine, since the cloud session's clone is shallow; it lists each credential still in history by kind, path and commit, never by value, and rewrites nothing. A finding there that these values already cover is recorded under this row, not as a new row.",
       "source": "W1191 (the Owner's request of 2026-11-21, late evening)",
       "found": "2026-11-22",
       "files": [],
@@ -27251,10 +27254,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1207",
       "note": "",
-      "slot_source": "P3.30: a DOC_OVERCLAIM restated, under its ACCEPT (1)"
+      "slot_source": "P3.30: a DOC_OVERCLAIM restated, under its ACCEPT (1)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1207: the archive's module docstring and its manifest's search_basis say that this index uses no embedding model, so it is not semantic recall, and no longer that no embedding backend is installed (chromadb and onnxruntime are installed, for another module, FU-1843); embedding_backend stays None and search()'s own basis is unchanged. The Horizon page draws 'embeddings: none used by this index' in the element test_w599 reads, with the server's basis beside it; the comment at that element, the panel's section comment and the comment that quoted P3.22's clause across two lines are restated; its rendered test expects the new words; both captured fixtures carry the live manifest's basis; ArchiveSearchPanel's comment says this index uses no embedding; and P3.22 of the plan carries a dated note, its clause's words kept, as do the rows of docs/HORIZON_INTEGRATION.md and docs/NATIVE_AI_FABRIC_ROADMAP.md that told the surface to report the old words. test_w1207 holds it: a scan of a made-up inbox, read back through the route, says no embedding and nothing about what is installed; no .py module under agentic_core and no .ts, .tsx, .js, .jsx or .json file of the app carries the old words, read also across a line break; the fixtures equal the live manifest; and the page, its rendered test and the dated notes carry the new words."
     },
     {
       "id": "FU-1845",
@@ -27517,10 +27523,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1207",
       "note": "",
-      "slot_source": "P5.1, beside FU-1262, FU-1263 and FU-1274, whose census this extends"
+      "slot_source": "P5.1, beside FU-1262, FU-1263 and FU-1274, whose census this extends",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1207: test_w1207 holds the class W1075's census passes over. The mounted routes with an entity path parameter beside another path parameter are exactly eight, each named with the test that holds it (the signature with test_w934 too): the website, web app and phone app pages, the body section, the review gate's status and its decision, and a specialist's retirement and signature. With sign-in on in a test process, the first of two made-up people establishes an entity, generates its website, web app and phone app, attaches a specialist, produces a deliverable, writes its design section and gates the design stage. Each of the eight, and the phone app's trailing-slash address, driven as the second person with values the route accepts and a body that passes validation, answers exactly as an id that names no entity (status and normalised body), never with the first person's canary or name, and changes nothing of the first person's: the specialist still holds a place, no signature is recorded, the design gate has no decision and the design section is the first person's. The first person is answered on each, last, as the positive control, and no call answers 500. No handler answered the second person past its access check, so none changed. test_w1097's docstring names the class test_w1207 now holds."
     },
     {
       "id": "FU-1859",
@@ -27624,10 +27633,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P4.5",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1208",
       "note": "",
-      "slot_source": "it rides the deploy's pre-flights; history never ships in the image"
+      "slot_source": "it rides the deploy's pre-flights; history never ships in the image",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1208: agentic_core/privacy_exposure.py has scan_history, which walks every local ref with git rev-list --objects and reads each distinct blob once and whole through git cat-file --batch, in overlapping windows, for the credential kind only. Each finding names the commit that introduced the blob (the first, oldest first by ancestry, that adds it at any path, so a rename or copy is not taken for its introduction), the path it has there, every path it is added at, the kind and the line, never the value, from one git log --raw -z pass read NUL by NUL. history_scanned is True only when the walk read a commit and a blob and is whole (not shallow, no grafts file, no single-branch fetch), with history_basis naming the refs, the commit and blob counts and that only the refs the clone holds are covered; otherwise it stays False and says why, naming a shallow clone's boundary commits. A partial clone is refused, since reading it would fetch; every git command only reads, with no replace refs, no lazy fetch, no prompt and a time limit. Allowances are by commit, path, kind and line with a reason, each for one finding, in config/privacy_history_allow.json (an empty list, its format in its about); load_allowed and scan() are unchanged. scripts/privacy_check.py --history exits 1 on a finding, 0 on none over a whole walk, and 2 when it could not run (git missing included), examined nothing or the walk is partial (said as partial, never a pass), and prints paths escaped. The mode never rewrites history. The runbook's step 6 says so and puts the full run on a mirror clone; FU-1837 names the history run as a later step after the host's secret-scanning alert list, a full-clone finding those values cover recorded under FU-1837. test_w1208 holds the walk, the dating across a rename, the windows, the coverage (shallow, grafts, replace refs, a partial clone), the allowances, the exit codes, the escaped paths and that nothing under .git changes, in temporary repositories with made-up keys. The full-clone run is for a session on the Owner's machine."
     },
     {
       "id": "FU-1865",
@@ -27658,10 +27670,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1194",
       "note": "",
-      "slot_source": "P5.18 clause 4"
+      "slot_source": "P5.18 clause 4",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1194: the Law draft form drafts only the templates it lists. An id it does not list, an instrument of transfer or charge of land or a contract for the sale of land among them, is refused with 404 after the filing-shaped and deed checks and before any prompt is built. The answer says the templates the generator drafts and, in a sentence of its own that never says what the id is, that preparing any of the four reserved documents is a reserved instrument activity, and that the Law draft form refuses any template id it does not list and lists none of these (W1195, chained right after, rewrote that sentence to add its screen: the Law draft form and the clerk refuse a request whose words the screen reads as asking to prepare one of them, and the draft form any template id it does not list). That sentence is read when asked from the register of sources' row lsa-2007-sch2: its name, page and the day it was read, that the reading was this platform's and not a qualified person's, and what it did not read, never its summary. It says where help is (the list of where help is: 'Where to get help from a person' on the Law page, and the support page), then that nothing here is legal advice. The fabric's form meets the same refusal. The draft form still holds a deed (W714): its reason no longer says who may prepare one, and its refusal now says where help is. GET /api/v1/law/templates says the reserved kinds beside the held deed, with the help route for API readers. The coverage register's row law-reserved-instruments, its subject the clause's four, routes to where help is and names test_w1194 as its guard, a field the checker now reads. The instructions and parties of a listed template and the clerk's label are the row W1193 registered for W1195. test_w1194 holds it, with thirty-five blinds."
     },
     {
       "id": "FU-1867",
@@ -27677,10 +27692,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1195",
       "note": "",
-      "slot_source": "P5.18 clause 4, and its ACCEPT that a refusal comes through the route a person would use"
+      "slot_source": "P5.18 clause 4, and its ACCEPT that a refusal comes through the route a person would use",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1195: at the Law draft form and the clerk, an explicit ask to prepare a reserved instrument, in the words the screen knows, is refused before anything is composed or stored. The draft form reads each party label and each party value of a listed template on its own, its instructions and its jurisdiction; the clerk reads the template id it is given for the document it names, and holds an id that names a deed, as the draft form does. An ask is a drafting verb standing as one, I need or I want, the document is, or - the one ask with no ask word - a document named at its sentence's start and then please, the please ending the sentence or followed by thanks, asap or by ('TP1 please'); the documents are the forms TR1, TP1, AS1, CH1, AP1 or FR1, a transfer deed or a transfer of a house, a flat or land, a legal charge or a mortgage deed, a contract for the sale of land, a lease of land for more than three years, and the clause's own words. The ask's reach ends at a word that turns to another subject or at the first noun of a document it does not reserve (an NDA, an agreement, a letter, a schedule, a summary, a copy). A request read so is refused with 409: the words, in that field, were read as asking to prepare the kind, with the clause's words it would fall under, never saying the person's document is reserved. A mention with no ask word is not refused, but a request about one of the documents phrased as an ask ('I need my TR1 checked by a solicitor') can be: the screen reads words, not what is asked for. The screen gives up recall for precision because the word screen first built here recognised 7 of the red team's 50 blind reserved asks and refused 16 of 20 property-sector drafts: in-sample, the cases seen while it was written, through the draft form it now refuses 1 of those 50 and none of the 70 ordinary or 20 property-sector drafts, and on the corpus written for this round, which it was fixed against, 27 of 87 reserved asks and none of 116 ordinary requests; out of sample, on the final check's 80 ordinary drafts and 15 explicit asks, none of the 80 is refused and all 15 are read, and precision on unseen requests written near its patterns is not measured. Most other ways of asking are drafted, which is not a clearance, so P5.18 clause 4's ACCEPT is not met. A screen that reads what a request asks for is registered as an open row on P5.18, and so are the platform's other free-text generators, which are not screened. Paragraph 5(1)(c)'s other instruments are not read, a question for the solicitor whose reading of the Law pages comes before any public release. Its 332 phrasings and its 131 stated limits are labelled in scripts/screen_phrasings.py, the seventh screen there. A field of 100,000 characters is read in well under a second. The Law page says the reserved documents beside the held deed, and its rendered test drives the refusal through the Draft tab. test_w1195 holds it, with eighty-three blinds and four on the rendered test."
     },
     {
       "id": "FU-1868",
@@ -27805,10 +27823,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1200",
       "note": "",
-      "slot_source": "P5.22's hold; plan_followups.py is in a retired area"
+      "slot_source": "P5.22's hold; plan_followups.py is in a retired area",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1200: plan_items reads a hold from a line of an item's own block, ' HELD UNTIL P#.#:', never from prose, and plan_now gives each open item held_until and held (true while the named item is open) and next_unheld, the first open build item that is not held. PLAN NOW's Next line still opens with the next item in plan order (W469) and its riders; for a held item it says the hold, that its rows can be worked now while rows ride it, and that the item closes only on the named item, and no longer that it closes on its ACCEPT clause. The line after it names the first open build item a round can close, with its riders, and 'Then, in order' marks each held item. check() reports a hold that names no plan item or the item itself, a hold line in another form (one that starts 'held until P#' in any case among them), a second hold, and a cycle of holds over any number of steps. The plan carries HELD UNTIL P5.22 lines after P2.40's and P2.41's W786 lines and after P3.30's ACCEPT (5), each saying its rows can still be closed by rounds, and both plan documents are re-rendered: P2.40 is next, held until P5.22, and P3.32 is the first open build item a round can close. The Transformation page's Next line, which the plan left unchanged, is registered on P5.22 as a row of its own. test_w1200 holds it on a fixture plan and on the real one."
     },
     {
       "id": "FU-1875",
@@ -27823,9 +27844,12 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
-      "note": ""
+      "status": "done",
+      "closed_by": "W1200",
+      "note": "",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1200: test_w1200 holds the optimiser's statement that nothing drains its queue over the whole payload. The allocate route's handler, with an undeclared tier and with the declared queued tier, answers QUEUED with pending false, a queue depth of one and the basis that the task sits on this request's own in-process queue, which nothing drains and which is discarded with the response, the work NOT scheduled and nothing pending. The fabric's resource_optimizer stage carries that basis in its not-executed error, and a declared tier that runs answers SUCCESS with no pending, depth or basis. The circuit-open path put nothing on the queue (depth 0) while its basis said the task was queued there; the scheduler now answers REJECTED (CIRCUIT_BREAKER_ACTIVE) there, as its next call already did, and says it put the task on no queue, the work NOT scheduled and nothing pending, and test_w1200 holds that path, called directly with a monitor past its threshold."
     },
     {
       "id": "FU-1876",
@@ -27915,10 +27939,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1204",
       "note": "",
-      "slot_source": "P5.4, the handover, is done"
+      "slot_source": "P5.4, the handover, is done",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1204: the README the repository builder writes (agentic_core/api/vsb.py, _build_repo_files) ends with a Terms section, so a handed-over entity repository says that no terms and no licence have been chosen for it, that until terms are chosen nothing in it grants a licence, and that the terms on which a founder receives an entity repository are a question for a solicitor, not yet answered (FU-1817; question 6 for a solicitor in docs/business/FORMATION_WORKPACK.md). No licence file is written and no licence is named. test_w1204 builds the README for a made-up record and drives a made-up entity's repository through the route, reading the README the platform serves and the one in the archive a founder downloads."
     },
     {
       "id": "FU-1881",
@@ -27934,10 +27961,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1204",
       "note": "",
-      "slot_source": "P5.16 is done"
+      "slot_source": "P5.16 is done",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1204: agentic_core/economy/generation_price.py holds the credit's rule once (CREDIT_RULE, ruled on 2026-11-22): once charged, the price is credited against the platform's fees as they fall due, from the first, and carried forward until it is used up, with no conversion while money is virtual. The price's answer says it in credit_basis, which the price panel draws, with the unit the credit is held in a question for an accountant; the cycle's fee (agentic_core/economy/metabolism.py) says it from the same constant and credits nothing, since nothing is charged. The module's docstring keeps the ruling of 2026-10-13 and gives the ruling of 2026-11-22 after it. The flag and the field credited_against_first_profit_share keep their names, which the panel and three guards read. The price panel's fixture, the Genesis journey's captured price and the economy page's and the cockpit's captured fees carry the routes' new words, and no backend module, page or page fixture says the credit comes off the first share of profit or the first fee, beyond the 2026-10-13 ruling the price module's docstring keeps as ruled. W1193c gave the ratified canvas's credit line its dated note; this round wrote none. test_w1204 holds each."
     },
     {
       "id": "FU-1882",
@@ -28257,6 +28287,77 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P5.15: clause 3, an agent's rates are shown beside its reviews, and clause 2's record; the governance Review tab is where its reviews are listed and recorded (W1195c)"
+    },
+    {
+      "id": "FU-1900",
+      "title": "Five Care texts type a source row's read date instead of reading it from the register, so a re-read leaves them saying the earlier date",
+      "why": "agentic_core/api/care.py types CHILDRENS_ROUTE, '(read at https://www.gov.uk/report-child-abuse on 2026-10-12)', the MUST entry's standard, '(read at its owner's page, 2026-10-12)', and the dementia entry's standard, '(read at its publisher's page, 2026-11-19)'; agentic_core/care/scoring.py types FALLS_RETIRED (the page, its words, read_on 2026-10-12 and read_by) and WITHHELD_ON_TERMS['must'] (the page, its terms and read_on 2026-10-12). Each copies a row of docs/SOURCES.json instead of reading it, against P5.13 clause 1. W1195d read three of those rows again on 2026-11-22 and kept each row's first read in it, so the texts are still true; but the Care page's list of tools now shows the MUST entry's standard saying 2026-10-12 beside its row read on 2026-11-22, and a row whose words change would leave the texts as they are. Cases C02, K01, K03 and K06 of the calibration set copy these texts as the tree answered at W1099 and W1122, and the set is frozen, so a fix leaves the cases as they are, and test_w1122's comparison of K06 with the live entry changes on purpose to leave out the read date. NEXT: the page, the date and the words are read from the rows when the answer is made, as the tools route already reads them (_sources_now), saying the latest read; the safeguarding text keeps its words and its 999 line first. Low: every typed text is still true, and no route a person is sent to changes.",
+      "source": "W1195d (recording FU-1820's re-read)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/api/care.py",
+        "agentic_core/care/scoring.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.13",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.13 clause 1: every catalogue entry, rule and prompt that names an authority points at a row of the register (W1195d)"
+    },
+    {
+      "id": "FU-1901",
+      "title": "The Transformation page's Next line does not say that the next item is held until the final audit, nor name the first open build item a round can close",
+      "why": "Since W1200 (FU-1874), PLAN NOW in both plan documents says when the next item is held until another (P2.40, until P5.22), that its rows can be worked now while rows ride it, and which open build item a round can close first: plan_now gives each open item held_until and held, and gives next_unheld. The Transformation page draws its Next line from plan.next's slot, title and rider count alone (TransformationDashboard.tsx, the plan-next line, and its rendered test), so it shows P2.40 as next with its riders and says nothing of the hold. The plan for W1200 left the page unchanged. The fix: while plan.next.held, the line says HELD UNTIL plan.next.held_until and names plan.next_unheld with its riders, with its rendered test and the page's fixture.",
+      "source": "W1200 (found while building PLAN NOW's hold)",
+      "found": "2026-11-22",
+      "files": [
+        "apps/workstation-superapp/src/pages/TransformationDashboard.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.22",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.22's hold, which PLAN NOW says since W1200; the page's file is routed to no item"
+    },
+    {
+      "id": "FU-1902",
+      "title": "A reserved instrument asked for in another free-text generator's words is composed, among them the Generator's and the Synthesis Studio's: none reads a request for the four kinds",
+      "why": "P5.18 clause 4's ACCEPT says the reserved documents are refused through the route a person would use. W1195 screens the words of the Law draft form and of the clerk only, and only for an explicit ask. At least three other free-text generators compose a reserved instrument when asked, among them: the Generator, POST /api/v1/generator/produce (agentic_core/api/products.py:270), whose free 'spec' run_generator (:253) sends to the composer, reached from the Generator page (pages/developers/Generator.tsx:63) and from a fabric composition that runs the Artefact Generator (api/resource_fabric.py:2225); the Synthesis Studio, POST /api/v1/synthesis/generate and POST /api/v1/synthesis/stream (agentic_core/synthesis/api.py:487 and :496), whose free 'instructions' are read only for a faith ruling (W659's refuse_faith_ruling), reached from the Synthesis Studio page (pages/synthesis/SynthesisStudio.tsx:263-277); and the in-house completion, POST /api/v1/native-ai/complete (agentic_core/api/native_ai.py:1536), reached from the Native AI page and the in-house assistant panel (pages/developers/NativeAI.tsx:615, components/NativeAgentPanel.tsx:109). Probed on the tree W1195 built, with no model, the floor answering: 'Draft the TR1 transfer of my flat to my son' was refused with 409 by POST /api/v1/law/generate and answered 200 with composed text by the Generator, by both Synthesis Studio routes and by the in-house completion. The Human Synthesis Studio's cascade, POST /api/v1/studio/synthesise (agentic_core/api/synthesis_studio.py:278), is retired (W672, STUDIO_SYNTHESISE_RETIRED at :271) and answers 410 before composing; its kept code reads the challenge for none of the four, so restoring it needs the screen first. Medium, as FU-1867 was: the same harm, reached from pages a person uses. test_w1195 holds this row open on the Generator, the Synthesis Studio and the fabric's Generator; the census may give the in-house completion and the other conversational routes a row of their own. THE WORK: first a census of every free-text composer a page reaches (W1195b's design is taking it); then, in each, W1195's screen over the route's free words - legal/specialist.reserved_match, which reads only an explicit ask and says the words that asked (reserved_kind gives the kind alone), its phrasings labelled in scripts/screen_phrasings.py (RESERVED) - refusing before anything is composed or saved, with a sentence that names the route that refused and the reserved documents (from reserved_match and reserved_source_said; the reserved reason, W1194's in W1195's words, to take the door's name), never the Law draft form's sentence as it stands: in run_generator, so that a composition running the Generator meets the same refusal, and beside W659's ruling check in the Synthesis Studio's routes, before the stream starts; then the Law page's screen_basis and the coverage row law-reserved-instruments say which are screened, keeping among them for the rest.",
+      "source": "W1195 (found while P5.18 clause 4's screen of a request's words was built, design key C7; left for a later round)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/api/products.py",
+        "agentic_core/synthesis/api.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.18 clause 4's ACCEPT: the reserved documents are refused through the route a person would use, and other free-text generators' routes, among them the Generator's and the Synthesis Studio's, are such routes"
+    },
+    {
+      "id": "FU-1903",
+      "title": "A reserved document asked for in other words is drafted: the screen reads only an explicit ask in the words it knows, not what a request asks for",
+      "why": "W1195's screen reads only an explicit ask to prepare one of the reserved documents, in the words it knows (a drafting verb, I need, can you, please or the document is, asking for a form TR1, TP1, AS1, CH1, AP1 or FR1, a transfer deed or a transfer of a house, a flat or land, a legal charge or a mortgage deed, a contract for the sale of land, or a lease of land for more than three years), because the word screen it replaced did not generalise: on the second review's red team's 120 blind cases (2026-11-22) it recognised 7 of 50 reserved asks (7 of the 40 in scope) and refused 2 of 70 ordinary drafts and 16 of 20 property-sector ones, and a field of 1,000 sentences opening 'A letter' answered 500. The explicit-ask screen's figures are in-sample, the cases seen while it was written: through the draft form it refuses 1 of the red team's 50 and none of the 70 or the 20; 10 of the 50 are refused before it reads them (an unlisted id, or a held or filing-shaped template) and 39 are drafted; on the corpus written for this round (2026-11-22, kept outside the tree), which it was fixed against, it recognises 27 of 87 reserved asks and refuses none of 116 ordinary requests; on its labelled list it reads 33 of 164 asks, every other one a stated limit. Out of sample, the final check's 80 ordinary drafts and 15 explicit asks: none of the 80 refused, all 15 read; precision on unseen requests written near its patterns is not measured. So most reserved documents asked for in other words - 'put the house into both our names', 'sign the farm over to my son', 'the paperwork for the sale', a declaration of trust, an easement, a surrender - are drafted, and P5.18 clause 4's ACCEPT is not met by W1195. Medium, as FU-1867 was. THE WORK: a reading of what a request asks for - the document it wants made, whatever its words - that refuses a reserved document asked for at every door (the draft form, the clerk, and the free-text generators of FU-1902) without refusing a mention, measured blind on a new set written by someone who has not seen it, with precision on ordinary drafts held at none refused and the figure said where the coverage row and P5.18 say what is screened; until then the explicit-ask screen stands, with its stated limits.",
+      "source": "W1195 (registered when the second review's red team measured the word screen on blind cases, design key C7; left for a later round)",
+      "found": "2026-11-22",
+      "files": [
+        "agentic_core/legal/specialist.py",
+        "scripts/screen_phrasings.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.18 clause 4's ACCEPT: the reserved documents are refused through the route a person would use, and most ways a person asks for one are not an explicit ask in the words the screen knows"
     }
   ],
   "routes": [

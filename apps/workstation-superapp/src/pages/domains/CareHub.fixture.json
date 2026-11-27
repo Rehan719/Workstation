@@ -17,11 +17,11 @@
       ],
       "status": "current",
       "page": "https://www.rcp.ac.uk/resources/national-early-warning-score-news-2/",
-      "read_on": "2026-10-12",
+      "read_on": "2026-11-19",
       "read": true,
       "recently_checked": true,
       "replaced_by": null,
-      "status_said": "current; its publisher's page was read on 2026-10-12, within the 90-day review period"
+      "status_said": "current; its publisher's page was read on 2026-11-19, within the 90-day review period"
      }
     ]
    },
@@ -40,11 +40,11 @@
       ],
       "status": "current",
       "page": "https://www.bapen.org.uk/must-and-self-screening/must-toolkit/",
-      "read_on": "2026-10-12",
+      "read_on": "2026-11-22",
       "read": true,
       "recently_checked": true,
       "replaced_by": null,
-      "status_said": "current; its publisher's page was read on 2026-10-12, within the 90-day review period"
+      "status_said": "current; its publisher's page was read on 2026-11-22, within the 90-day review period"
      }
     ]
    },
@@ -97,11 +97,11 @@
       ],
       "status": "current",
       "page": "https://www.nice.org.uk/guidance/ng249/chapter/Recommendations",
-      "read_on": "2026-10-12",
+      "read_on": "2026-11-22",
       "read": true,
       "recently_checked": true,
       "replaced_by": null,
-      "status_said": "current; its publisher's page was read on 2026-10-12, within the 90-day review period"
+      "status_said": "current; its publisher's page was read on 2026-11-22, within the 90-day review period"
      }
     ]
    },
@@ -110,20 +110,20 @@
     "name": "Dementia Care Planning",
     "type": "care_plan",
     "does": "frame",
-    "standard": "NICE NG97 (named only: not read at its publisher's page)",
+    "standard": "NICE NG97, Dementia: assessment, management and support for people living with dementia and their carers (read at its publisher's page, 2026-11-19)",
     "sources": [
      {
       "id": "nice-ng97",
       "names": [
        "NICE NG97"
       ],
-      "status": "named_not_read",
-      "page": null,
-      "read_on": null,
-      "read": false,
-      "recently_checked": null,
+      "status": "current",
+      "page": "https://www.nice.org.uk/guidance/ng97",
+      "read_on": "2026-11-19",
+      "read": true,
+      "recently_checked": true,
       "replaced_by": null,
-      "status_said": "named only: not read at its publisher's page"
+      "status_said": "current; its publisher's page was read on 2026-11-19, within the 90-day review period"
      }
     ]
    },
@@ -371,8 +371,8 @@
     "clean": 6,
     "runnable_today": true,
     "window": {
-     "from": "2026-11-19",
-     "through": "2027-01-10"
+     "from": "2026-11-22",
+     "through": "2027-02-17"
     }
    }
   }
@@ -419,8 +419,8 @@
     "clean": 6,
     "runnable_today": true,
     "window": {
-     "from": "2026-11-19",
-     "through": "2027-01-10"
+     "from": "2026-11-22",
+     "through": "2027-02-17"
     }
    }
   }
@@ -737,8 +737,8 @@
       "clean": 6,
       "runnable_today": true,
       "window": {
-       "from": "2026-11-19",
-       "through": "2027-01-10"
+       "from": "2026-11-22",
+       "through": "2027-02-17"
       }
      }
     }
@@ -776,14 +776,14 @@
     "clean": 6,
     "runnable_today": true,
     "window": {
-     "from": "2026-11-19",
-     "through": "2027-01-10"
+     "from": "2026-11-22",
+     "through": "2027-02-17"
     }
    }
   }
  },
  "handover_uncalibrated": {
-  "handover_id": "2b08ade9e4",
+  "handover_id": "9909e8d7e4",
   "handover_type": "SBAR",
   "handover": "_[Workstation native structured engine — owned, no external dependency]_\n\n## Understanding\nThe request concerns: fell at 0300 w-care 84F (domain: care).\n\n## Terms most frequent in the text you wrote\n_Extracted by counting words and adjacent pairs — not an analysis of the subject. Counted over the text the calling tool identified as yours, and over nothing else._\n- fell\n- w-care\n\n## Native approach\nWorkstation composes a structured response from its own process-intelligence and knowledge for the agent 'care_handover', framing the request above rather than analysing it.\n\n## Next steps\n- Validate the structured outputs above against the stated objective.\n- Route richer generation to a model resource (local-first; external only if enabled).\n- Iterate via the orchestrator's cascade for care; record outcomes to memory/UEG.",
   "disclaimer": "Composed by the native floor, not by a model: a structured frame, with nothing generated, reasoned or interpreted by AI. It has not been reviewed by anyone, has not been sent to or received by anyone, and is not a clinical record. The person handing over remains responsible for every word.",
@@ -848,8 +848,8 @@
        "clean": 6,
        "runnable_today": true,
        "window": {
-        "from": "2026-11-19",
-        "through": "2027-01-10"
+        "from": "2026-11-22",
+        "through": "2027-02-17"
        }
       }
      }
@@ -874,7 +874,7 @@
     "quality_record_hash": "71763ad2905acc2c35ff4088416b04cb03dd90eaa22ef33f8b13765e334be0d729ed733fd817d3b485fedaa381c40c785aa0d3780833c70c2e9f90e7424b49c2"
    }
   },
-  "generated_at": "2026-11-21T03:22:17Z"
+  "generated_at": "2026-11-22T18:33:20Z"
  },
  "review_risk_made_up_run": {
   "endpoint": "/api/v1/care/risk-assess",
@@ -907,7 +907,7 @@
    "known": true,
    "reason": "below_bar",
    "label": "Uncalibrated",
-   "basis": "its latest run, on 2026-11-21 with ollama:w1183-stand-in (w1183-stand-in, build w1183standin), did not meet the bar (every planted case flagged for its reason, and at most 1 false alarm in 6 clean cases)",
+   "basis": "its latest run, on 2026-11-22 with ollama:w1183-stand-in (w1183-stand-in, build w1183standin), did not meet the bar (every planted case flagged for its reason, and at most 1 false alarm in 6 clean cases)",
    "rates": {
     "caught": 9,
     "planted_cases": 10,
@@ -918,8 +918,8 @@
     "basis": "catch rate: 9 of 10 planted case(s) flagged for their own reason; false-alarm rate: 1 of 6 clean case(s) flagged"
    },
    "run": {
-    "run_id": "cal-2b65c7b1a6",
-    "date": "2026-11-21",
+    "run_id": "cal-10b1405eb6",
+    "date": "2026-11-22",
     "model": "ollama:w1183-stand-in",
     "served_identity": {
      "model": "w1183-stand-in",
@@ -937,8 +937,8 @@
     "clean": 6,
     "runnable_today": true,
     "window": {
-     "from": "2026-11-19",
-     "through": "2027-01-10"
+     "from": "2026-11-22",
+     "through": "2027-02-17"
     }
    }
   }
@@ -985,8 +985,8 @@
     "clean": 6,
     "runnable_today": true,
     "window": {
-     "from": "2026-11-19",
-     "through": "2027-01-10"
+     "from": "2026-11-22",
+     "through": "2027-02-17"
     }
    }
   }
@@ -1033,14 +1033,14 @@
     "clean": 6,
     "runnable_today": true,
     "window": {
-     "from": "2026-11-19",
-     "through": "2027-01-10"
+     "from": "2026-11-22",
+     "through": "2027-02-17"
     }
    }
   }
  },
  "safeguarding_child": {
-  "triage_id": "ca3119fa35",
+  "triage_id": "3b3e3e4fbb",
   "setting": "community",
   "jurisdiction": "England (Care Act 2014)",
   "concern_about": "a child or young person",
@@ -1068,7 +1068,7 @@
     "basis": "no review of this tool is recorded: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed"
    }
   },
-  "generated_at": "2026-11-21T13:00:44Z",
+  "generated_at": "2026-11-22T18:33:20Z",
   "disclaimer": "If a child is in immediate danger, call 999."
  }
 }

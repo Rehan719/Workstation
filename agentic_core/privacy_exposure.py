@@ -18,6 +18,11 @@ FIVE KINDS are looked for:
 A SCREEN MAY REFUSE, NEVER CLEAR (W483). A scan that read no marker list says the marker kind was NOT CHECKED;
 it never reports the tree clear of the Owner's names because it had none to look for. Findings carry the path,
 the line and the kind - never the matched text.
+
+HISTORY IS READ, NEVER REWRITTEN (W1208, FU-1864). scan() reads the files as they are now. scan_history() reads
+every blob reachable from the refs once, for the credential kind only, and names the commit that introduced each
+finding. It only reads. Its report says history was scanned only when the clone is not shallow and the walk
+read something; on a shallow clone it names the boundary commits the walk stopped at, which is never a pass.
 """
 from __future__ import annotations
 
@@ -202,8 +207,8 @@ def scan(root: pathlib.Path, files: Optional[List[Tuple[str, bytes]]] = None,
                               f"no private marker list was read ({marker_file()}), so the Owner's own names and "
                               "markers were NOT looked for - this is not a finding that none are present"),
         #  W732 - WHAT THIS REPORT IS ABOUT. It reads files as they are now. A file removed from the tree is still
-        #  in the repository's history, which no door here reads, so the report says so: a zero is never more
-        #  than its coverage (a screen may refuse, never clear).
+        #  in the repository's history, which this scan does not read (scan_history does, W1208), so the report
+        #  says so: a zero is never more than its coverage (a screen may refuse, never clear).
         "scope": ("every file tracked in the working tree, as it is now" if whole_tree
                   else "only the files handed to the scan (the commit hook hands it the staged content)"),
         "history_scanned": False,
@@ -216,6 +221,279 @@ def scan(root: pathlib.Path, files: Optional[List[Tuple[str, bytes]]] = None,
         "count": len(findings),
         "by_kind": {k: sum(1 for f in findings if f["kind"] == k) for k in KINDS},
         "basis": (f"{len(findings)} finding(s) over {len(files)} file(s); each is reported by path, line and kind, "
+                  "never by the matched text"),
+    }
+
+
+#  W1208 (FU-1864, P4.5) - THE HISTORY MODE. scan() reads the files as they are now; a credential removed from the
+#  tree in an earlier round is still in earlier commits. scan_history() reads them, and only reads: it runs git
+#  rev-parse, config, rev-list, cat-file and log, and changes no commit, ref, object or file. Rewriting history is the
+#  Owner's decision (OWNER RULING 2026-10-14) and is never done here; a read is not a rewrite. Revoking a credential
+#  it finds is the Owner's, at the provider (runbook step 3; the values W729 redacted are FU-1837's).
+HISTORY_ALLOW = "config/privacy_history_allow.json"
+HISTORY_KINDS = ("credential",)
+_COMMIT_ID = re.compile(r"[0-9a-f]{7,64}")
+_OBJECT_ID = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
+_REF_SETS = ("--all", "--branches", "--tags", "--remotes")
+#  every blob is read whole, in windows that overlap by more than the longest shape the screen looks for
+HISTORY_WINDOW = 1 << 20
+HISTORY_OVERLAP = 8192
+HISTORY_TIMEOUT = 3600          # seconds for any one git command; one that runs longer is said as not completed
+#  no prompt for a password, no fetch of a missing object, and no replace ref standing in for a commit
+_GIT_ENV = {"GIT_TERMINAL_PROMPT": "0", "GIT_NO_LAZY_FETCH": "1", "GIT_NO_REPLACE_OBJECTS": "1"}
+HISTORY_READ_ONLY = ("this mode only reads: it runs git rev-parse, config, rev-list, cat-file and log, with no "
+                     "lazy fetch, no replace refs and no prompt, and changes no commit, ref, object or file; history "
+                     "is never rewritten here, which is the Owner's decision")
+
+
+def load_history_allowed(root: pathlib.Path) -> List[Tuple[str, str, str, int]]:
+    """Allowed history findings, by (commit, path, kind, line), each with a reason, from
+    config/privacy_history_allow.json (its "allowed" list; the file's "about" says the format). The commit is the one
+    a finding names (a full id or an abbreviation of at least seven hex digits) and the path the one it names there.
+    Each entry allows that one finding only. An entry without a reason or a line is not honoured. load_allowed never
+    reads this file, so an allowance here clears nothing in the tree, and one in config/privacy_allow.json clears
+    nothing in history."""
+    import json
+    try:
+        doc = json.loads((root / HISTORY_ALLOW).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    rows = doc.get("allowed") if isinstance(doc, dict) else doc
+    out: List[Tuple[str, str, str, int]] = []
+    for r in rows if isinstance(rows, list) else []:
+        if not isinstance(r, dict):
+            continue
+        commit = str(r.get("commit") or "").strip().lower()
+        line = r.get("line")
+        if (_COMMIT_ID.fullmatch(commit) and r.get("path") and r.get("kind") in KINDS
+                and isinstance(line, int) and not isinstance(line, bool) and line >= 1
+                and str(r.get("reason") or "").strip()):
+            out.append((commit, str(r["path"]), str(r["kind"]), line))
+    return out
+
+
+def _git_env() -> Dict[str, str]:
+    return dict(os.environ, **_GIT_ENV)
+
+
+def _git_read(root: pathlib.Path, *args: str, data: Optional[bytes] = None) -> subprocess.CompletedProcess:
+    """One read-only git command in ROOT; no optional lock is taken, and any failure to run is a RuntimeError."""
+    try:
+        return subprocess.run(["git", "--no-optional-locks", "--no-replace-objects", "-C", str(root), *args],
+                              capture_output=True, input=data, stdin=None if data is not None else subprocess.DEVNULL,
+                              env=_git_env(), timeout=HISTORY_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(f"git {args[0]} ran longer than {HISTORY_TIMEOUT} seconds, so the walk did not complete")
+    except (OSError, ValueError) as exc:
+        raise RuntimeError(f"git could not be run ({type(exc).__name__}), so no history was read")
+
+
+def _scan_blob(path: str, stream, size: int) -> List[Tuple[int, str]]:
+    """(line, what) for each credential in one blob of SIZE bytes read from STREAM, read whole in windows of
+    HISTORY_WINDOW bytes that overlap by HISTORY_OVERLAP, so a value across a window's edge is still found."""
+    hits = set()
+    tail, nl_seen, left = b"", 0, size
+    while True:
+        chunk = stream.read(min(left, HISTORY_WINDOW)) if left else b""
+        if left and not chunk:
+            raise RuntimeError("git stopped while reading a blob, so the walk did not complete")
+        left -= len(chunk)
+        window = tail + chunk
+        before = nl_seen - tail.count(b"\n")
+        for f in scan_one(path, window):
+            if f["kind"] in HISTORY_KINDS:
+                hits.add((before + f["line"], f["what"]))
+        nl_seen += chunk.count(b"\n")
+        tail = window[-HISTORY_OVERLAP:] if HISTORY_OVERLAP else b""
+        if not left:
+            return sorted(hits)
+
+
+def _blobs_scanned(root: pathlib.Path, blobs: List[str]):
+    """Each distinct blob once, through one `git cat-file --batch`: (blob, [(line, what)])."""
+    try:
+        proc = subprocess.Popen(["git", "--no-optional-locks", "--no-replace-objects", "-C", str(root), "cat-file",
+                                 "--batch"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                stderr=subprocess.DEVNULL, env=_git_env())
+    except (OSError, ValueError) as exc:
+        raise RuntimeError(f"git could not be run ({type(exc).__name__}), so no history was read")
+    try:
+        for sha in blobs:
+            proc.stdin.write(sha.encode("ascii") + b"\n")
+            proc.stdin.flush()
+            head = proc.stdout.readline().split()
+            if len(head) != 3 or head[1] != b"blob" or head[0] != sha.encode("ascii"):
+                raise RuntimeError(f"git could not read blob {sha[:12]}, so the walk did not complete")
+            hits = _scan_blob("", proc.stdout, int(head[2]))
+            if proc.stdout.read(1) != b"\n":
+                raise RuntimeError(f"git's reading of blob {sha[:12]} ended out of step, so the walk did not complete")
+            yield sha, hits
+    except (OSError, ValueError) as exc:
+        raise RuntimeError(f"git's reading of the blobs failed ({type(exc).__name__}), so the walk did not complete")
+    finally:
+        for pipe in (proc.stdin, proc.stdout):
+            try:
+                pipe.close()
+            except OSError:
+                pass
+        proc.wait()
+
+
+def _attributed(root: pathlib.Path, ref_args: List[str], targets) -> Dict[str, Dict]:
+    """For each blob in TARGETS: the first commit, oldest first by ancestry, whose change adds it at any path (the
+    commit that introduced it, a rename or copy counted where the value first came in), the path it has there, and
+    every path it is ever added at. One `git log --raw -z` pass over the walk, read NUL by NUL, so a path is never
+    split or quoted."""
+    want = set(targets)
+    out: Dict[str, Dict] = {}
+    if not want:
+        return out
+    lg = _git_read(root, "log", *ref_args, "--topo-order", "--reverse", "-m", "--no-renames", "--raw",
+                   "--no-abbrev", "-z", "--format=COMMIT %H", "--")
+    if lg.returncode != 0:
+        raise RuntimeError("git could not list the history's changes, so the findings could not be dated")
+    commit, meta = None, None
+    for tok in lg.stdout.split(b"\0"):
+        if meta is not None:        # a path always follows its change line, whatever it holds
+            new, status = meta
+            if status in (b"A", b"M", b"T") and new in want:
+                path = tok.decode("utf-8", "surrogateescape")
+                row = out.setdefault(new, {"commit": commit, "path": path, "paths": []})
+                if path not in row["paths"]:
+                    row["paths"].append(path)
+            meta = None
+            continue
+        tok = tok.lstrip(b"\n")
+        if tok.startswith(b"COMMIT "):
+            commit = tok[7:].decode("ascii", "replace")
+        elif tok.startswith(b":"):
+            part = tok.split()
+            meta = (part[3].decode("ascii", "replace"), part[4][:1]) if len(part) >= 5 else (None, b"")
+    return out
+
+
+def _config_set(root: pathlib.Path, *args: str) -> bool:
+    r = _git_read(root, "config", *args)
+    return r.returncode == 0 and bool(r.stdout.strip())
+
+
+def scan_history(root: pathlib.Path, refs="--all", allowed: Iterable[Tuple[str, str, str, int]] = ()) -> Dict:
+    """Read every blob reachable from REFS (default every local ref) ONCE and WHOLE, for the credential kind only.
+    Each finding names the commit that introduced the blob, the path it has there, every path it is added at, the
+    kind and the line - never the matched text. history_scanned is True only when the walk read at least one commit
+    and one blob and is whole: not a shallow clone, no grafts file, no single-branch fetch. Otherwise it stays False
+    and the report says why, naming the boundary commits of a shallow clone. A partial clone is refused, since
+    reading it would fetch. Allowances are by (commit, path, kind, line) with a reason (load_history_allowed), each
+    for one finding. Raises RuntimeError when git cannot read the repository or the walk does not complete."""
+    ref_args = [refs] if isinstance(refs, str) else list(refs)
+    for a in ref_args:
+        if not a or (a.startswith("-") and a not in _REF_SETS):
+            raise RuntimeError(f"{a!r} is not a set of refs the history mode walks, so nothing was read")
+    allow = [(c.lower(), p, k, n) for c, p, k, n in allowed]
+    top = _git_read(root, "rev-parse", "--is-shallow-repository")
+    if top.returncode != 0:
+        raise RuntimeError("git could not read this repository, so no history was read")
+    #  a partial clone fetches each blob it lacks when it is read: refused, so the mode never writes or calls out
+    pack = _git_read(root, "rev-parse", "--git-path", "objects/pack")
+    pdir = pathlib.Path(pack.stdout.decode("utf-8", "replace").strip())
+    pdir = pdir if pdir.is_absolute() else root / pdir
+    if (_config_set(root, "--get", "extensions.partialclone")
+            or _config_set(root, "--get-regexp", r"^remote\..*\.promisor$")
+            or (pdir.is_dir() and any(p.suffix == ".promisor" for p in pdir.iterdir()))):
+        raise RuntimeError("this is a partial clone: blobs it does not hold would be fetched when read, so no history "
+                           "was read; make a full clone, or a mirror clone, and run it there")
+    shallow = top.stdout.decode("utf-8", "replace").strip() == "true"
+
+    def git_path(name):
+        p = pathlib.Path(_git_read(root, "rev-parse", "--git-path", name).stdout.decode("utf-8", "replace").strip())
+        return p if p.is_absolute() else root / p
+    boundary: List[str] = []
+    if shallow:
+        try:
+            boundary = sorted(x.strip() for x in git_path("shallow").read_text(encoding="utf-8").splitlines()
+                              if x.strip())
+        except OSError:
+            raise RuntimeError("this clone is shallow and its boundary could not be read, so no history was read")
+    grafted = git_path("info/grafts").is_file()
+    fetch = _git_read(root, "config", "--get-regexp", r"^remote\..*\.fetch$").stdout.decode("utf-8", "replace")
+    single = sorted({ln.split(None, 1)[0].split(".")[1] for ln in fetch.splitlines()
+                     if ln.strip() and "*" not in ln and ln.count(".") >= 2})
+    replaced = _git_read(root, "for-each-ref", "--format=%(refname)", "refs/replace/").stdout.split()
+    commits = _git_read(root, "rev-list", *ref_args, "--")
+    objects = _git_read(root, "rev-list", "--objects", "--no-object-names", *ref_args, "--")
+    if commits.returncode != 0 or objects.returncode != 0:
+        raise RuntimeError(f"git could not walk {' '.join(ref_args)}, so no history was read")
+    n_commits = len([x for x in commits.stdout.split(b"\n") if x.strip()])
+    kinds = _git_read(root, "cat-file", "--batch-check=%(objectname) %(objecttype)", data=objects.stdout)
+    if kinds.returncode != 0:
+        raise RuntimeError("git could not list the objects it walked, so no history was read")
+    blobs: List[str] = []
+    for ln in kinds.stdout.decode("ascii", "replace").split("\n"):
+        part = ln.split()
+        if len(part) == 2 and part[1] == "blob" and _OBJECT_ID.fullmatch(part[0]):
+            blobs.append(part[0])
+    hits: List[Tuple[str, int, str]] = []
+    n_read = 0
+    for sha, found in _blobs_scanned(root, blobs):
+        n_read += 1
+        hits += [(sha, line, what) for line, what in found]
+    where = _attributed(root, ref_args, {sha for sha, _l, _w in hits})
+    findings: List[Dict] = []
+    suppressed = 0
+    used = set()
+    for sha, line, what in hits:
+        at = where.get(sha) or {"commit": None, "path": "", "paths": []}
+        commit = at["commit"]
+        found = {"commit": commit, "path": at["path"], "paths": at["paths"], "kind": "credential", "line": line,
+                 "what": what, "blob": sha, "at_boundary": bool(commit and commit in boundary)}
+        match = [e for e in allow if e not in used and commit and commit.startswith(e[0]) and e[1] == found["path"]
+                 and e[2] == found["kind"] and e[3] == line]
+        if match:
+            used.add(match[0])
+            suppressed += 1
+            continue
+        findings.append(found)
+    walked = n_commits > 0 and n_read > 0
+    said = " ".join(ref_args)
+    why_partial = ([f"this clone is shallow, so the walk stopped at {len(boundary)} boundary commit(s) "
+                    f"({', '.join(b[:12] for b in boundary)})"] if shallow else [])
+    why_partial += (["a grafts file (info/grafts) cuts commits off from their parents, so the walk did not reach "
+                     "them"] if grafted else [])
+    why_partial += ([f"{len(single)} remote(s) fetch one branch only ({', '.join(single)}), so other branches were "
+                     "not fetched"] if single else [])
+    scope = ("the refs this clone holds; a commit only on the host, such as a pull request's head or one orphaned "
+             "there, is not read: a mirror clone fetches the host's pull request heads, and an orphaned commit is the "
+             "host's own secret scanning's")
+    if not walked:
+        basis = (f"git history was NOT scanned: the walk of {said} found {n_commits} commit(s) and {n_read} file(s) to "
+                 "read, so it examined nothing")
+    elif why_partial:
+        basis = (f"git history was NOT scanned in full: {'; '.join(why_partial)}, after {n_commits} commit(s) and "
+                 f"{n_read} distinct blob(s); what lies beyond was not read, so this is a partial reading and never a "
+                 f"pass, and the full walk is for a full clone. It covers {scope}")
+    else:
+        basis = (f"git history was scanned for credentials: every blob reachable from {said} was read once and whole "
+                 f"({n_commits} commit(s), {n_read} distinct blob(s)); the other kinds are read in the tree only. It "
+                 f"covers {scope}")
+    return {
+        "refs": ref_args,
+        "shallow": shallow,
+        "boundary_commits": boundary,
+        "grafted": grafted,
+        "single_branch_remotes": single,
+        "replace_refs_ignored": len(replaced),
+        "commits_walked": n_commits,
+        "blobs_read": n_read,
+        "checked": list(HISTORY_KINDS),
+        "not_checked": [k for k in KINDS if k not in HISTORY_KINDS],
+        "scope": f"every blob reachable from {said}, each read once and whole, for the credential kind only; {scope}",
+        "history_scanned": walked and not why_partial,
+        "history_basis": basis,
+        "read_only": HISTORY_READ_ONLY,
+        "findings": findings,
+        "count": len(findings),
+        "allowed_count": suppressed,
+        "basis": (f"{len(findings)} finding(s) over {n_read} blob(s); each is reported by commit, path, line and kind, "
                   "never by the matched text"),
     }
 

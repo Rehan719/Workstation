@@ -721,7 +721,7 @@
       "ruling": "OWNER RULING 2026-10-12 (P5.16 clause 3): each generated entity pays 25% of its profit for updates and maintenance, taken first; released for a made-up entity on 2026-11-19 (FU-1057)",
       "credit": {
        "applied_wst": 0.0,
-       "basis": "the price of generating an entity (99 pounds, P5.16 clause 2) is credited against the first fee once it has been charged. It has not been: nothing is charged for generating an entity until 3 things exist, and 0 of them exist today. Nothing is credited"
+       "basis": "the price of generating an entity (99 pounds, P5.16 clause 2), once it has been charged, is credited against the platform's fees as they fall due, from the first, and carried forward until it is used up, with no conversion while money is virtual (ruled by the Owner on 2026-11-22). It has not been charged: nothing is charged for generating an entity until 3 things exist, and 0 of them exist today. Nothing is credited"
       },
       "basis": "this is the apex, which pays no fee (P5.16 clause 4); its split applies to the whole profit"
      },
@@ -2148,7 +2148,7 @@
       "ruling": "OWNER RULING 2026-10-12 (P5.16 clause 3): each generated entity pays 25% of its profit for updates and maintenance, taken first; released for a made-up entity on 2026-11-19 (FU-1057)",
       "credit": {
        "applied_wst": 0.0,
-       "basis": "the price of generating an entity (99 pounds, P5.16 clause 2) is credited against the first fee once it has been charged. It has not been: nothing is charged for generating an entity until 3 things exist, and 0 of them exist today. Nothing is credited"
+       "basis": "the price of generating an entity (99 pounds, P5.16 clause 2), once it has been charged, is credited against the platform's fees as they fall due, from the first, and carried forward until it is used up, with no conversion while money is virtual (ruled by the Owner on 2026-11-22). It has not been charged: nothing is charged for generating an entity until 3 things exist, and 0 of them exist today. Nothing is credited"
       },
       "basis": "a quarter of this cycle's profit (7,000.00 WST) is 1,750.00 WST, taken first and posted as one line in this entity's books; the entity's own split applies to the 5,250.00 WST that remains; virtual WST"
      },
