@@ -1,12 +1,17 @@
 # Letter: asking the Quranic Universal Library for written permission to use its data
 
-DRAFTED FOR THE OWNER TO SEND (W948, FU-1066). Nothing has been sent. Fill in the lines in square brackets, read the
-letter through, and send it from your own address to Tarteel's public address, asking for it to reach the library's
-maintainers (FU-1188's note records the address; the alternative is Tarteel's community Discord, asking there for a
-private message). It is not posted as a public GitHub issue, and the address for security reports is not used.
-Until a written answer granting permission is held, nothing from the library is used. The register of sources
-(docs/SOURCES.json, row tarteel-qul-data) says the data permits nothing yet, and scripts/sources_check.py fails if any
-code reaches the library's address.
+DRAFTED FOR THE OWNER TO SEND (W948, FU-1066). SENT BY THE OWNER ON 2026-11-27, at 11:06:06 UK time, from the
+Owner's own address to Tarteel's public address (FU-1188's note records it), with no copy and no attachment (W1259).
+The e-mail was the text below the line with the Owner's name filled in and, after the greeting, the line asking for
+it to reach the library's maintainers; its body did not carry the To, From and Reply to lines, which stay here as
+the record of whom it went to, with the From and Reply to placeholders left as they were. The draft it was sent from
+was saved through a mail connector that stamps a header marking the drafts it creates as AI-generated, so the
+recipients may see that mark. No answer had arrived at the first check after sending, and FU-1188 stays open until a
+written answer is held; Tarteel's community Discord, asking there for a private message, stays the other route. It
+is not posted as a public GitHub issue, and the address for security reports is not used. Until a written answer
+granting permission is held, nothing from the library is used. The register of sources (docs/SOURCES.json, row
+tarteel-qul-data) says the data permits nothing yet, and scripts/sources_check.py fails if any code reaches the
+library's address.
 
 ---
 
@@ -17,6 +22,8 @@ Reply to: [your address]
 Subject: Permission to use Quranic Universal Library data in a learning platform
 
 Assalamu alaikum,
+
+Please could this message reach the maintainers of the Quranic Universal Library.
 
 I am writing for Workstation, a learning platform that is not yet open to the public. Its Quran tools help a person
 memorise and revise. They show the text of a verse as fetched from a named source, hide its words for recall practice,
@@ -47,3 +54,4 @@ We will credit the library as you ask, change none of the data, and stop using i
 With thanks,
 
 [your name]
+Workstation

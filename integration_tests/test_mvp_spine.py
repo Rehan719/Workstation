@@ -80624,8 +80624,9 @@ def test_w948_fu1066_each_quran_source_says_what_it_permits_one_not_to_be_used_i
     - the source check passes on the tree, and fails - naming the file - when code reaches a host of a source not
       to be used, or when a row with hosts does not say what it permits;
     - the method and marking-scheme sources are rows that say they were never read;
-    - the two letters are drafted for the Owner to send: each names what is asked, says nothing has been sent, and
-      carries no one's name or address, only the places to fill them in;
+    - the two letters are drafted for the Owner to send: each names what is asked, says nothing has been sent (or,
+      since W1259, that the Owner sent it on 2026-11-27), and carries no one's name or address, only the places
+      to fill them in;
     - the listening row is a journey driven by the test that exists;
     - the Owner's row to send them is open, gated and on the resume prompt's list."""
     import json
@@ -80673,7 +80674,9 @@ def test_w948_fu1066_each_quran_source_says_what_it_permits_one_not_to_be_used_i
     for name, asks in (("QUL_DATA_PERMISSION_REQUEST.md", ("page layouts", "similar-verse lists", "word timings")),
                        ("KFGQPC_PERMISSION_REQUEST.md", ("recitations", "fonts"))):
         letter = (root / "docs/letters" / name).read_text(encoding="utf-8")
-        assert "DRAFTED FOR THE OWNER TO SEND" in letter and "Nothing has been sent." in letter, name
+        #  W1259 - the Owner sent both on 2026-11-27: the header says so, and that nothing is used before an answer
+        assert "DRAFTED FOR THE OWNER TO SEND" in letter and ("Nothing has been sent." in letter or (
+            "SENT BY THE OWNER ON 2026-11-27" in letter and "Until a written answer" in letter)), name
         assert all(a in letter for a in asks), (name, asks)
         assert "[your name]" in letter and "[your address]" in letter, name
         assert not re.search(r"[\w.+-]+@[\w-]+\.[\w.]+", letter), ("a letter carries an address", name)
@@ -92674,8 +92677,8 @@ def test_w1132_fu1067_the_recordings_request_is_drafted_its_source_permits_nothi
     """FU-1067's next step (W1132; the Owner accepted the recommendation on 2026-11-20). The private test needs lawful
     recordings of ordinary adult reciters, and the closest dataset states no licence for its recordings and cannot
     rule children out. Held here:
-    - the letter is drafted for the Owner and sent by no one: it asks the licence, adult consent and a private test
-      that scores nothing, and promises no recording of a child;
+    - the letter is drafted for the Owner, and was sent by no one until the Owner sent it on 2026-11-27 (W1259): it
+      asks the licence, adult consent and a private test that scores nothing, and promises no recording of a child;
     - the dataset's row in the register of sources permits nothing, and names only the dataset's own address, which
       no code reaches;
     - an open, owner-gated row asks the Owner to send it, and both the plan's list and the local notes name it."""
@@ -92686,7 +92689,9 @@ def test_w1132_fu1067_the_recordings_request_is_drafted_its_source_permits_nothi
     root = pathlib.Path(__file__).resolve().parents[1]
     letter = (root / "docs" / "letters" / "QURANIC_AUDIO_DATASET_REQUEST.md").read_text(encoding="utf-8")
     flat = " ".join(letter.split())
-    for frag in ("DRAFTED FOR THE OWNER TO SEND", "Nothing has been sent", "[your name]", "[your address]",
+    #  W1259 - the Owner sent it on 2026-11-27: the header says so where it said nothing had been sent
+    _sent1132 = "SENT BY THE OWNER ON 2026-11-27" if "SENT BY THE OWNER ON" in flat else "Nothing has been sent"
+    for frag in ("DRAFTED FOR THE OWNER TO SEND", _sent1132, "[your name]", "[your address]",
                  "under what licence the recordings are offered", "whether every participant was an adult",
                  "It would score or grade no recording", "We will use no recording of a child",
                  "nothing from the dataset is downloaded or used"):
@@ -108455,3 +108460,136 @@ def test_w1237_after_a_sign_in_or_sign_out_made_in_the_page_the_sidebar_says_the
     assert fx["me_signed_out"]["status"] == 401 and fx["me_signed_in"]["status"] == 200
     assert fx["me_signed_in"]["body"]["username"] == "w1237-made-up-name"
     assert "access_token" not in raw, "the fixture keeps a token"
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1259 - the three permission letters the Owner sent on 2026-11-27, recorded; their two rows stay open
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1259_the_three_letters_say_they_were_sent_on_2026_11_27_and_their_rows_stay_open_until_an_answer():
+    """W1259 (records). The Owner sent the three permission letters from the Owner's own mail account on 2026-11-27,
+    with the text the cloud session gave and only the name filled in; no answer had come at the first check. Sending
+    is not permission. Held here:
+    1. each letter's header says it was sent by the Owner on 2026-11-27, at its time, from the Owner's own address,
+       and no longer that nothing has been sent; that no answer had arrived at the first check; and, as before, that
+       nothing from the source is used until a written answer is held;
+    2. each body is what was sent: the library's letter asks, first after the greeting, for it to reach the library's
+       maintainers; the dataset's greets its four authors by name; each ends with the name and Workstation; the From
+       and Reply to placeholders stay unfilled;
+    3. none of the three carries an e-mail address, and no letter document carries one but the two institutions';
+    4. FU-1188 and FU-1283 are open, owner-gated and slotted OWNER, each with its dated note of the send, and the
+       scholar row FU-1838 is still open;
+    5. the three sources rows still permit nothing, and their asides say the letter was sent;
+    6. the plan's list, the local notes and the name and brand screen say the letters were sent on 2026-11-27, each
+       under its own row, and the screen no longer says they are unsent; nothing new names the domain or gives the
+       Owner a gendered pronoun."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")   # noqa: E731
+    flat = lambda t: " ".join(t.split())   # noqa: E731
+    address = r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+"
+    stem = "workstation" + "idbo"   # the domain's stem, put together here so that this file never holds it whole
+
+    #  1-3. the three letters
+    letters = {"kfg": "KFGQPC_PERMISSION_REQUEST.md", "qul": "QUL_DATA_PERMISSION_REQUEST.md",
+               "qad": "QURANIC_AUDIO_DATASET_REQUEST.md"}
+    sent = {"kfg": ("11:05:08", "nothing from the Complex is used", None),
+            "qul": ("11:06:06", "nothing from the library is used",
+                    "Please could this message reach the maintainers of the Quranic Universal Library."),
+            "qad": ("11:05:27", "nothing from the dataset is downloaded or used",
+                    "Dear Raghad Salameh, Mohamad Al Mdfaa, Nursultan Askarbekuly and Manuel Mazzara,")}
+    new_sentences = []
+    for key, name in letters.items():
+        t = read(f"docs/letters/{name}")
+        head, sep, body = t.partition("\n\n---\n\n")
+        assert sep and t.count("\n\n---\n\n") == 1, (name, "the line between the header and the letter")
+        h = flat(head)
+        at, rule, added = sent[key]
+        assert "Nothing has been sent" not in t, (name, "the letter still says nothing has been sent")
+        said = f"SENT BY THE OWNER ON 2026-11-27, at {at} UK time, from the Owner's own address"
+        assert said in h, (name, "the header does not say when it was sent", h[:200])
+        assert "No answer had arrived at the first check after sending" in h, (name, "the first check")
+        assert ("FU-1188 stays open" if key != "qad" else "FU-1283 stays open") in h, (name, "its row")
+        assert "Until a written answer" in h and rule in h, (name, "the rule that nothing is used before an answer")
+        assert "stamps a header marking the drafts it creates as AI-generated" in h, (name, "the connector's mark")
+        new_sentences.append(h)
+        #  the body is what was sent
+        assert "From: [your name], for Workstation" in body and "Reply to: [your address]" in body, (
+            name, "a placeholder")
+        assert body.endswith("With thanks,\n\n[your name]\nWorkstation\n"), (name, "the letter's ending", body[-80:])
+        first = [ln for ln in body.split("Assalamu alaikum,", 1)[1].splitlines() if ln.strip()][0]
+        if added:
+            assert first == added, (name, "the line after the greeting is not the one sent", first)
+        else:
+            assert first.startswith("I am writing for Workstation"), (
+                name, "a line was added after the greeting", first)
+        assert not re.findall(address, t), (name, "a letter carries an e-mail address")
+        assert stem not in t.lower(), (name, "names the domain")
+    qad = flat(read("docs/letters/QURANIC_AUDIO_DATASET_REQUEST.md"))
+    assert ("To: Raghad Salameh (Innopolis University), Mohamad Al Mdfaa (Skoltech University), Nursultan Askarbekuly "
+            "(Innopolis University) and Manuel Mazzara (Innopolis University)") in qad, "the addressees"
+    assert "none was left out, and none is written here" in qad and "its first author first" in qad
+    institutional = {"info@qurancomplex.gov.sa", "info@tarteel.ai"}
+    for doc in sorted((root / "docs" / "letters").glob("*.md")):
+        found = set(re.findall(address, doc.read_text(encoding="utf-8")))
+        assert found <= institutional, (doc.name, "a letter document carries an address not an institution's", found)
+
+    #  4. the two rows stay open, each with its dated note; the scholar row is still held
+    reg = {r["id"]: r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"]}
+    notes_of = {
+        "FU-1188": ("2026-11-27: sent by the Owner (the letters to the King Fahd Complex and to the Quranic Universal "
+                    "Library, at 11:05:08 and 11:06:06 UK); no answer at the first check; open until a written answer "
+                    "is held."),
+        "FU-1283": ("2026-11-27: sent by the Owner (the request to the Quranic Audio Dataset's four authors, at "
+                    "11:05:27 UK); no answer at the first check; open until a written answer is held."),
+    }
+    for rid, line in notes_of.items():
+        r = reg[rid]
+        assert (r["status"], r["slot"], r["owner_gated"], r["closed_by"]) == ("open", "OWNER", True, None), (
+            rid, "sending is not permission: the row stays open until a written answer is held", r["status"])
+        assert r["note"].count(line) == 1, (rid, "its note does not carry the dated line of the send once")
+        assert set(re.findall(address, r["note"])) <= institutional, (rid, "an address not an institution's")
+    assert reg["FU-1838"]["status"] == "open", "the scholar row is held, as the Owner ruled"
+
+    #  5. the sources rows still permit nothing, and say the letter was sent
+    src = {r["id"]: r for r in json.loads(read("docs/SOURCES.json"))["rows"]}
+    for sid in ("kfgqpc-recitations-fonts", "tarteel-qul-data", "quranic-audio-dataset"):
+        assert src[sid]["permits"] == [], (sid, "a source permits something before a written answer is held")
+        assert "a letter was sent by the Owner on 2026-11-27, with no answer yet held" in src[sid]["not_read"], sid
+        assert "drafted for the Owner to send" not in src[sid]["not_read"], (sid, "still says the letter is to be sent")
+
+    #  6. the plan's list, the local notes and the brand screen
+    fable = read("docs/FABLE_DELIVERY_PROMPT.md")
+    fstill = flat(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0])
+    s1188 = ("SENT BY YOU ON 2026-11-27, from your own address: the Complex's letter at 11:05:08 and the library's at "
+             "11:06:06, UK time (W1259). No answer had come at the first check; the row stays open until a written "
+             "answer is held")
+    s1283 = ("SENT BY YOU ON 2026-11-27 at 11:05:27, UK time, from your own address to the paper's four authors, its "
+             "first author first, at the addresses its author block gives; none is written in the tree (W1259). No "
+             "answer had come at the first check; the row stays open until a written answer is held.")
+    for head, s in (("FU-1188 (W948): send the two letters", s1188),
+                    ("FU-1283 (W1132): send the request drafted", s1283)):
+        assert fstill.count(s) == 1 and fstill.count(head) == 1, (head, "the plan's list does not say it was sent")
+        between = fstill[fstill.index(head) + len(head):fstill.index(s)]
+        assert fstill.index(head) < fstill.index(s) and not re.search(r"FU-\d+ \(W\d+[a-z]?\):", between), (
+            head, "the sentence is not under its own row on the plan's list")
+        new_sentences.append(s)
+    notes = read("docs/RESUME_ON_MY_MACHINE.md")
+    yours = flat(notes.split("- **Still yours:**", 1)[1].split("\n- **", 1)[0])
+    for s in ("(FU-1188), in the week from 21 November. You sent both on 2026-11-27, at 11:05 and 11:06 UK time; no "
+              "answer had come at the first check, and the row stays open until a written answer is held.",
+              "(FU-1283), in the week from 21 November. You sent it on 2026-11-27, at 11:05 UK time, to the paper's "
+              "four authors; no answer had come at the first check, and the row stays open until a written answer is "
+              "held."):
+        assert s in yours, ("the local notes do not say it was sent", s[:60])
+        new_sentences.append(s)
+    brand = flat(read("docs/business/NAME_AND_BRAND_SCREEN.md").split("## 2. What the Owner holds", 1)[1].split(
+        "\n## ", 1)[0])
+    s = ("the three letters asking for more were sent by the Owner on 2026-11-27 and await written answers (rows "
+         "FU-1188 and FU-1283)")
+    assert s in brand and "drafted and unsent" not in brand, "the brand screen still says the letters are unsent"
+    new_sentences.append(s)
+    for t in new_sentences:
+        assert stem not in t.lower(), ("names the domain", t[:60])
+        assert not re.search(r"\b(he|him|his|she|her|hers)\b", t, re.I), ("a gendered pronoun", t[:80])

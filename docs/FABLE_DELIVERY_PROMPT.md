@@ -212,12 +212,18 @@ STILL WITH THE OWNER (the plan marks each "OWNER RULING" — do not choose for t
     Fahd Glorious Qur'an Printing Complex for its recitations and fonts. Fill in your name and address, read
     each through, and send it from your own address. Nothing from either is used until a written answer
     grants it. Recommended, and accepted on 2026-11-20: send both as drafted.
+    SENT BY YOU ON 2026-11-27, from your own address: the Complex's letter at 11:05:08 and the library's at
+    11:06:06, UK time (W1259). No answer had come at the first check; the row stays open until a written answer is
+    held, and nothing from either is used before then.
     FU-1283 (W1132): send the request drafted in docs/letters/QURANIC_AUDIO_DATASET_REQUEST.md to the authors of
     the Quranic Audio Dataset, the next step of FU-1067's private test. It asks the dataset's licence, whether
     every participant was an adult who consented to reuse, and whether recordings of adults may be used for a
     test that scores nothing. Fill in your name and address, read it through, and send it from your own
     address. Nothing from the dataset is downloaded or used until a written answer grants it. Recommended:
     send it as drafted.
+    SENT BY YOU ON 2026-11-27 at 11:05:27, UK time, from your own address to the paper's four authors, its first
+    author first, at the addresses its author block gives; none is written in the tree (W1259). No answer had come
+    at the first check; the row stays open until a written answer is held.
     FU-1838 (W1192): ask a scholar or a trusted institute, as you ruled on 2026-11-22, to review the withheld
     adult curriculum and tajweed items, the attestation wording of the Quran platform's teaching clause, and the
     children's tools' tajwid rules, reflection prompts and approval pack. The children's gate stays closed

@@ -38,7 +38,7 @@ document gives all three. A search of a register is not legal clearance, and not
 - A domain, registered by the Owner on 2026-11-22 and renewing on 2027-11-22: its A record names the release machine's fixed address, and the machine answers on it over HTTPS with sign-in on (row FU-1289). [observed: `docs/DEPLOYMENT.md`]
 - The release machine, deployed in the Owner's cloud project, whose billing is the Owner's: an uptime check from outside it e-mails the Owner when `/health` fails, set up and driven on 2026-11-22 (row FU-1095). [observed: `docs/DEPLOYMENT.md`]
 - The platform's source, in this repository, and the machine it runs on now, the Owner's own, with a local model. [observed: `docs/business/BUSINESS_MODEL_CANVAS.md`]
-- No permission beyond what each source's own terms grant: the register of sources records what each permits, and the three letters asking for more are drafted and unsent (rows FU-1188 and FU-1283). [observed: `docs/SOURCES.json`]
+- No permission beyond what each source's own terms grant: the register of sources records what each permits, and the three letters asking for more were sent by the Owner on 2026-11-27 and await written answers (rows FU-1188 and FU-1283). [observed: `docs/SOURCES.json`, `docs/FOLLOWUPS.json`]
 - Accounts, payment details and anything else the Owner holds are not recorded in this repository, by design: [the Owner lists them, outside the repository]. [owner decision]
 
 ## 3. Each public claim, with its evidence

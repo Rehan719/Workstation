@@ -161,8 +161,12 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
   - One line in `.env` on your machine for the legal matter's folder (step 3 of the prompt), if the local
     session has not added it.
   - Sending the two permission letters in `docs/letters/` (FU-1188), in the week from 21 November.
+    You sent both on 2026-11-27, at 11:05 and 11:06 UK time; no answer had come at the first check, and the row
+    stays open until a written answer is held.
   - Sending the request to the Quranic Audio Dataset's authors, also in `docs/letters/` (FU-1283), in the week
     from 21 November.
+    You sent it on 2026-11-27, at 11:05 UK time, to the paper's four authors; no answer had come at the first check,
+    and the row stays open until a written answer is held.
   - At the first deploy, restoring the data disk once from its snapshot, watching (FU-1288).
   - At the first deploy, setting the admin password on the release machine and switching sign-in on in its own
     settings (P4.1; the setting W1191 adds), so that it answers from its first boot with its domain, HTTPS and
