@@ -76885,7 +76885,9 @@ def test_w892_no_caller_sleeps_holding_the_limiters_lock_and_the_lock_belongs_to
 
     # 3. the lock belongs to no event loop: two threads, each with its own loop, contend for one limiter
     lim = _gw892._RateLimiter(600)
-    lim._tokens, lim._last = 0.0, time.monotonic()
+    #  W1206b - ten slots of debt (a second): a thread that starts a slot or more after the drain still waits
+    #  (PR #470, Windows: one call of six let through when the second thread started late)
+    lim._tokens, lim._last = -10.0, time.monotonic()
     errors = []
 
     def _a_loop_of_its_own():
@@ -106571,3 +106573,19 @@ def test_w1201_p510_the_seventh_gate_reads_the_owners_bar_of_five_recorded_inter
     later = tree("later", 5, chose.replace("candidate C", "candidate A") + "\n      "
                  + chose.replace("2027-01-20", "2027-01-25"))
     assert later["met"] and later["choice"] == ("2027-01-25", "C"), ("G3: the latest dated choice is not the one read", later)
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1206b - test_w892's two-thread leg does not depend on both threads starting within one slot
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1206b_the_two_thread_limiter_leg_starts_in_debt_so_a_late_thread_still_waits():
+    """W1206b. test_w892's third leg drained the limiter to zero, and on Windows a second thread started a slot late
+    found a token earned back (waited 5 of 6). The leg now starts ten slots in debt; its assertions are unchanged."""
+    import pathlib
+    src = pathlib.Path(__file__).read_text(encoding="utf-8")
+    body = src[src.index("def test_w892_no_caller_sleeps_holding_the_limiters_lock"):]
+    body = body[:body.index("\ndef test_", 10)]
+    leg3 = body[body.index("# 3. the lock belongs to no event loop"):]
+    assert "lim._tokens, lim._last = -10.0, time.monotonic()" in leg3, "the two-thread leg is not drained into debt"
+    assert "lim._tokens, lim._last = 0.0, time.monotonic()" not in leg3, "the two-thread leg drains to zero again"
+    assert 'lim.stats()["waited"] == 6' in leg3, "the waited count was loosened"
