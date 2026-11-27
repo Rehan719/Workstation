@@ -108337,3 +108337,121 @@ def test_w1236_the_owners_qep_restart_vision_and_its_24_rulings_are_recorded_whe
     assert "which mushaf layout its page and juz metadata follow" in src["alquran-cloud-terms"]["not_read"]
     cov = {r["id"]: r for r in json.loads(read("docs/COVERAGE_REGISTER.json"))["rows"]}
     assert cov["qep-adult-memorisation-journey"]["domain"] == "Quran platform"
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1237 - after a sign-in or a sign-out made in the page, the sidebar says the session as it now is
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1237_after_a_sign_in_or_sign_out_made_in_the_page_the_sidebar_says_the_session_as_it_now_is():
+    """W1237. Found on the live site by the Owner: after signing in, the sidebar's bottom-left still offered "Sign in".
+    The sidebar read whoami() once on mount, and the sign-in form signs in and calls nav('/') with no reload, so the
+    sidebar kept the signed-out answer; setToken and clearToken dispatch 'ws:identity', and nothing in the sidebar
+    listened. Held here:
+    1. lib/useIdentity.ts reads the session on mount, again on every 'ws:identity', and again on every 'storage'
+       event for the token or for a cleared store (a sign-in or a sign-out in another tab), removes both listeners
+       on unmount, never lets an earlier read's answer replace a later one, says "Reading the session…" while it
+       reads again, and waits for setToken to return before it asks (setToken dispatches before it stores the token);
+    2. setToken and clearToken still dispatch through _clearLocalUserData, setToken before it stores the token, as
+       the hook's comment says;
+    3. the sidebar reads the session through the hook and calls whoami() nowhere itself;
+    4. no other panel of the shell (components/layout/, App.tsx) reads the session itself;
+    5. Sidebar.test.tsx renders a sign-in and a sign-out with no remount, against a route answered by the token stored
+       when it is asked, and the hook's four other promises; the fixture keeps no token."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    #  1. the hook
+    hook = _code_only((src / "lib/useIdentity.ts").read_text(encoding="utf-8")) + "\n"
+    assert "import { whoami, type WhoAmI } from './auth';" in hook
+    assert hook.count("export function useIdentity(): WhoAmI | null {") == 1
+    eff = hook[hook.index("  useEffect(() => {"):]
+    eff = eff[:eff.index("\n  }, []);\n")]
+    assert eff.count("addEventListener(") == 2 and eff.count("removeEventListener(") == 2
+    assert "    window.addEventListener('ws:identity', onIdentity);" in eff, "the sidebar never hears a sign-in"
+    assert "    window.addEventListener('storage', onStorage);" in eff, "the sidebar never hears another tab's sign-in"
+    ret = eff[eff.index("    return () => {"):]
+    assert "      window.removeEventListener('ws:identity', onIdentity);" in ret, "the listener outlives the sidebar"
+    assert "      window.removeEventListener('storage', onStorage);" in ret, "the storage listener outlives the sidebar"
+    assert "      mounted = false;" in ret
+    st = eff[eff.index("    const onStorage = (e: StorageEvent) => {"):]
+    st = st[:st.index("\n    };") + 1]
+    assert "      if (e.key === TOKEN_KEY || e.key === null) onIdentity();" in st, (
+        "another tab's sign-in or sign-out is not heard, or every other key's change is read as one")
+    assert hook.count("const TOKEN_KEY = 'workstation_token';") == 1, "the hook listens for another key than auth.ts stores"
+    on = eff[eff.index("    const onIdentity = () => {"):]
+    on = on[:on.index("\n    };") + 1]
+    assert "      queueMicrotask(read);" in on and "read()" not in on, (
+        "the session is asked again before setToken has stored the token, and is answered 'anonymous'")
+    assert "      setIdentity(null);" in on, "the old answer stays on screen while the session is read again"
+    rd = eff[eff.index("    const read = () => {"):]
+    rd = rd[:rd.index("\n    };") + 1]
+    assert "      const n = ++asked;" in rd
+    assert "      const answered = (w: WhoAmI) => { if (mounted && n === asked) setIdentity(w); };" in rd, (
+        "an earlier read's answer can replace a later one")
+    assert "      whoami().then(answered).catch(e => answered({ mode: 'unknown', basis: String(e) }));" in rd
+    assert eff.count("\n    read();\n") == 1, "the session is not read on mount"
+    #  2. the dispatch the hook listens for, and the order its comment describes
+    auth = _code_only((src / "lib/auth.ts").read_text(encoding="utf-8"))
+    assert auth.count("window.dispatchEvent(new CustomEvent('ws:identity'));") == 1
+    assert "export const setToken = (t: string): void => { _clearLocalUserData(); localStorage.setItem(KEY, t); };" in auth, (
+        "setToken changed: the hook says it dispatches before it stores the token; make what it says true")
+    assert "export const clearToken = (): void => { localStorage.removeItem(KEY); _clearLocalUserData(); };" in auth
+    assert "const KEY = 'workstation_token';" in auth, "the rendered test stores the token under another key"
+    #  3. the sidebar
+    side = _code_only((src / "components/layout/Sidebar.tsx").read_text(encoding="utf-8"))
+    assert "import { useIdentity } from '../../lib/useIdentity';" in side
+    assert side.count("useIdentity()") == 1 and "  const identity = useIdentity();" in side
+    assert "whoami" not in side, "the sidebar reads the session itself, once"
+    #  4. no other panel of the shell reads the session itself
+    shell = [f for f in (src / "components/layout").glob("*.tsx") if not f.name.endswith(".test.tsx")] + [src / "App.tsx"]
+    assert len(shell) >= 6
+    for f in shell:
+        code = _code_only(f.read_text(encoding="utf-8"))
+        for call in ("whoami(", "getToken(", "/api/v1/auth/me"):
+            assert call not in code, (f.name, call, "a panel of the shell reads the session itself: read it through useIdentity")
+    #  5. the rendered test and its fixture
+    t = (src / "components/layout/Sidebar.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './Sidebar.fixture.json';" in t
+    assert "    const token = localStorage.getItem('workstation_token');" in t
+    assert "token === TOKEN ? captured.me_signed_in : captured.me_signed_out;" in t, (
+        "the route is not answered by the token stored when it is asked")
+    names = ('offers "Sign in" signed out, the name and "Sign out" once signed in, and "Sign in" again once signed out, '
+             'with no remount', "says the session is being read while it is read again",
+             "never lets an earlier answer replace a later one",
+             "reads the session again when another tab signs in or signs out, and not when another key changes",
+             "stops listening once unmounted")
+    for name in names:
+        assert t.count(f"  it('{name}', async () => {{") == 1, name
+
+    def body(name):
+        s = t.index(f"  it('{name}', async () => {{")
+        return t[s:t.index("\n  });\n", s)]
+    b = body(names[0])
+    for line in ("    act(() => setToken(TOKEN));", "    act(() => clearToken());",
+                 "    expect(container.querySelector('aside')).toBe(aside);",
+                 "    expect(asked).toEqual([null, TOKEN, null]);"):
+        assert line in b, (names[0], line)
+    assert b.index("setToken(TOKEN)") < b.index("expect(screen.getByText(NAME)).toBeInTheDocument();") < b.index("clearToken()")
+    assert b.rindex("expect(screen.queryByRole('button', { name: SIGN_OUT })).toBeNull();") > b.index("clearToken()")
+    assert "expect(screen.getByTestId('session-not-known').textContent).toBe('Reading the session…')" in body(names[1])
+    b = body(names[2])
+    assert b.index("await act(async () => first.letGo());") < b.rindex("expect(screen.getByRole('button', { name: SIGN_OUT })).toBeInTheDocument();")
+    b = body(names[3])
+    assert "setToken(" not in b and "clearToken(" not in b, "the other tab's sign-in is made through this tab's own event"
+    tab_in = "    act(() => { window.dispatchEvent(new StorageEvent('storage', { key: 'workstation_token', newValue: TOKEN })); });"
+    other = "    await act(async () => { window.dispatchEvent(new StorageEvent('storage', { key: 'ws_user_prefs_v1', newValue: null })); });"
+    cleared = "    act(() => { window.dispatchEvent(new StorageEvent('storage', { key: null })); });"
+    for line in (tab_in, other, cleared, "    expect(asked).toEqual([null, TOKEN, null]);"):
+        assert b.count(line) == 1, (names[3], line)
+    assert (b.index("    localStorage.setItem('workstation_token', TOKEN);") < b.index(tab_in) < b.index(other)
+            < b.index("    localStorage.clear();") < b.index(cleared) < b.index("    expect(asked).toEqual([null, TOKEN, null]);"))
+    b = body(names[4])
+    assert "expect(removed.mock.calls.filter(c => c[0] === 'ws:identity')).toHaveLength(1);" in b
+    assert "expect(removed.mock.calls.filter(c => c[0] === 'storage')).toHaveLength(1);" in b
+    assert b.index("    unmount();") < b.index("    await act(async () => setToken(TOKEN));") < b.index("    expect(asked).toEqual([null]);")
+    assert b.index("    unmount();") < b.index("new StorageEvent('storage'") < b.index("    expect(asked).toEqual([null]);")
+    raw = (src / "components/layout/Sidebar.fixture.json").read_text(encoding="utf-8")
+    fx = json.loads(raw)
+    assert fx["me_signed_out"]["status"] == 401 and fx["me_signed_in"]["status"] == 200
+    assert fx["me_signed_in"]["body"]["username"] == "w1237-made-up-name"
+    assert "access_token" not in raw, "the fixture keeps a token"

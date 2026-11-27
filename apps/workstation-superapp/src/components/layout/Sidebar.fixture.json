@@ -1,0 +1,32 @@
+{
+ "me_signed_out": {
+  "status": 401,
+  "body": {
+   "detail": "Not authenticated"
+  }
+ },
+ "signup": {
+  "status": 200,
+  "body": {
+   "status": "created",
+   "username": "w1237-made-up-name",
+   "role": "user"
+  }
+ },
+ "token": {
+  "status": 200,
+  "body": {
+   "token_type": "bearer"
+  }
+ },
+ "me_signed_in": {
+  "status": 200,
+  "body": {
+   "user_id": "98ed426c-12c3-4945-ad33-5f340ad72279",
+   "username": "w1237-made-up-name",
+   "role": "user",
+   "created_at": "2026-11-22T23:27:21Z",
+   "api_keys_count": 0
+  }
+ }
+}
