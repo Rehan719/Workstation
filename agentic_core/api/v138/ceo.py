@@ -8,7 +8,7 @@ import logging
 from typing import Dict, Any, List, Optional
 from agentic_core.store_paths import DATA_DIR
 from pydantic import BaseModel
-from agentic_core.ai.ceo.memory_v01 import memory_v01, meeting_log
+from agentic_core.ai.ceo.memory_v01 import meeting_log   # W1196 - the avatar and upload memory is retired
 from agentic_core.ai.native.orchestrator import orchestrator
 from agentic_core.layers.ueg import ueg
 from agentic_core.simulation.ese import get_ese_instance

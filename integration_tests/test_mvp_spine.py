@@ -5572,13 +5572,10 @@ def test_two_authenticated_users_memory_isolated(client, monkeypatch):
                memory.query_memory("saffron merger valuation talking points", owner_id="alice343"))
     assert all("KILIMANJARO" not in r for r in
                memory.query_memory("saffron merger valuation talking points", owner_id="bob343"))
-    from agentic_core.ai.ceo.memory_v01 import memory_v01
-    memory_v01.add_exchange("AVATAR[general]: my private board notes ORCHID-NINE", "ok",
-                            owner_id="alice343")
-    assert all("ORCHID-NINE" not in d for d in
-               memory_v01.query("private board notes", owner_id="bob343"))
-    assert any("ORCHID-NINE" in d for d in
-               memory_v01.query("private board notes", owner_id="alice343"))
+    # W1196 - the second store, memory_v01, is retired (the Owner's ruling of 2026-11-22): it holds no store to
+    # recall from, so VectorMemory above is the only cross-request recall this test can hold
+    import agentic_core.ai.ceo.memory_v01 as _m1196
+    assert not hasattr(_m1196, "memory_v01") and not hasattr(_m1196, "MemoryV01"), "the retired memory is back"
     # B ships a website — A's secret never reaches B's public surfaces
     est = client.post("/api/v1/genesis/establish", headers=B,
                       json={"problem": "b343 pottery cooperative", "ship_output": False, "name": "B343 Pottery"}).json()   # W450
@@ -22078,7 +22075,8 @@ def test_w495_a_figure_nothing_computed_is_not_a_measurement(client, monkeypatch
                 and ("=" in l or ":" in l.split("#")[0])], "a transcript lookup table is bound again"
     assert "def _pdf_docx_extractor(" in _ing
     assert 'status = "NOT_EXTRACTED"' in _ing and 'status = "NOT_TRANSCRIBED"' in _ing
-    assert 'if status == "EXTRACTED" and extracted_text.strip():' in _ing
+    #  W1196 - the extracted-only rule is read where it now lives: the memory write it guarded is retired
+    assert '"in_knowledge_base": bool(status == "EXTRACTED" and extracted_text.strip()),' in _ing
     for _f in ("status:", "extraction_method:", "extraction_basis:", "in_knowledge_base:"):
         assert _f in _ing, _f                      # declared on the model, or the key is stripped out
     import io as _io
@@ -27475,15 +27473,16 @@ def test_w507_fu167_a_removal_deletes_the_bytes_and_says_what_it_cannot_reach(cl
     MEASURED: the DELETE removed the registry ROW and nothing else, then answered `{"status": "DELETED"}`.
       · the uploaded bytes at DATA_DIR/uploads/{file_id}_{filename} stayed, and the row just removed was
         their only pointer — so they became unreachable and uncountable rather than merely kept;
-      · the extracted text stayed in memory_v01, the store the AI CEO and the avatars read, so a "deleted"
-        file's content could still be recalled into a generation.
+      · the extracted text stayed in memory_v01, the avatar and upload memory (no production caller read it;
+        the Owner retired it on 2026-11-22 and W1196 removed it).
 
     The Owner's FU-167 ruling ("keep refusing" on URL fetching) does not cover this half; it needed fixing
     whichever way egress was decided.
 
-    The bytes are now removed. The memory rows are NOT removable by file id, and the response says so rather
-    than claiming a deletion it did not perform — answering DELETED over a recallable copy is the same
-    over-claim one layer over.
+    The bytes are now removed. Since W1196 no memory store takes the text at upload, but a generation that read
+    the file kept its prompt in the interaction log and in VectorMemory, which are NOT removable by file id, and
+    the response says so rather than claiming a deletion it did not perform, or that nothing remains —
+    answering DELETED over a recallable copy is the same over-claim one layer over.
     """
     from agentic_core.ingestion.api import ingestion_manager
 
@@ -27512,6 +27511,8 @@ def test_w507_fu167_a_removal_deletes_the_bytes_and_says_what_it_cannot_reach(cl
         f"fixes")
     assert out["extracted_text_may_still_be_recalled"] is True, out
     assert "CANNOT be removed by file id" in out["what_remains"], out["what_remains"]
+    #  W1196 - what may remain is named where it is, and the retired memory is not named as holding it
+    assert "interaction log" in out["what_remains"] and "long-term" not in out["what_remains"], out["what_remains"]
     assert "overstate" in out["not_claimed"]
 
     # the row really is gone
@@ -38655,8 +38656,9 @@ def test_w583_p325_what_the_platform_records_when_it_fails(client, tmp_path):
         "that does not verify is not a record", _vj583)
 
     # ── L5. requirements.txt IS NOT EDITED BY THIS ITEM ───────────────────────────────────────────
-    #  The ruling's other half rested on a false premise (opentelemetry is Required-by chromadb, which is
-    #  LIVE on the recall path; requirements.txt is a 298-line LOCK that lists transitive deps by design).
+    #  The ruling's other half rested on a false premise (opentelemetry-api and -sdk are Required-by chromadb,
+    #  which pyproject.toml still declares, and -api by anthropic too; requirements.txt is a LOCK that lists
+    #  transitive deps by design). W1196 removed the memory that imported chromadb; the declaration stays.
     #  The item says so and excludes it, and the manifest question is a separate row with its own
     #  measurement — so the pins must still be there.
     _req583 = (_root583 / "requirements.txt").read_text(encoding="utf-8", errors="replace")
@@ -38665,7 +38667,7 @@ def test_w583_p325_what_the_platform_records_when_it_fails(client, tmp_path):
     for _pin583 in ("opentelemetry-api", "opentelemetry-sdk"):
         assert _re583.search(r"(?m)^" + _re583.escape(_pin583) + r"[=<>~\s]", _req583), (
             "a pin this item explicitly excludes was removed. `pip show` reports it Required-by chromadb, "
-            "which agentic_core/ai/ceo/memory_v01.py imports on the cross-request recall path, and a lock "
+            "which pyproject.toml still declares (and opentelemetry-api by anthropic), and a lock "
             "lists transitive dependencies BY DESIGN - removing one breaks the install rather than tidying "
             "it", _pin583)
 
@@ -76432,10 +76434,12 @@ def test_w885_with_sign_in_on_a_second_person_reaches_none_of_the_first_persons_
         assert legacy["file_id"] in [x["file_id"] for x in listed("admin").json()]
     finally:
         _ing885.ingestion_manager.registry.remove(legacy)
-    #  4. what the upload put into the shared memory is its sender's to recall, not every person's
-    from agentic_core.ai.ceo.memory_v01 import memory_v01 as _mem885
-    assert any(secret in m for m in _mem885.query(secret, owner_id=who["one"])), "the sender cannot recall it"
-    assert not any(secret in m for m in _mem885.query(secret, owner_id=who["two"])), "another person can recall it"
+    #  4. the upload writes no memory store: the avatar and upload memory it went into is retired (W1196), and the
+    #     recall memory gives the second person nothing of it
+    import agentic_core.ai.ceo.memory_v01 as _mem885
+    assert not hasattr(_mem885, "memory_v01"), "an upload's text has a retired memory to go into again"
+    from agentic_core.ai.memory import memory as _vm885
+    assert not any(secret in m for m in _vm885.query_memory(secret, owner_id=who["two"])), "another person can recall it"
     #  5. its owner deletes it
     assert client.delete(f"/api/v1/ingest/{fid}", headers=H["one"]).status_code == 200
     assert fid not in [x["file_id"] for x in listed("one").json()]
@@ -106589,3 +106593,223 @@ def test_w1206b_the_two_thread_limiter_leg_starts_in_debt_so_a_late_thread_still
     assert "lim._tokens, lim._last = -10.0, time.monotonic()" in leg3, "the two-thread leg is not drained into debt"
     assert "lim._tokens, lim._last = 0.0, time.monotonic()" not in leg3, "the two-thread leg drains to zero again"
     assert 'lim.stats()["waited"] == 6' in leg3, "the waited count was loosened"
+
+
+def test_w1196_the_avatar_and_upload_memory_is_retired_nothing_fetches_a_model_for_it_and_the_delete_answer_says_what_may_remain_elsewhere(tmp_path):
+    """W1196 (A3, FU-1843, P3.32). The Owner ruled on 2026-11-22 that the avatar and upload memory is retired: if
+    conversation memory is wanted later, it is built after sign-in, with a retention period and with no outside
+    download. memory_v01 was written by every avatar message and every extracted upload, read back by no production
+    caller, held in this process only while its docstring said it was persisted, and its first write fetched chromadb's
+    default embedding model from an outside host into the user's home (measured at HEAD: chromadb and onnxruntime
+    imported, ~/.cache/chroma made, chroma-onnx-models.s3.amazonaws.com tried). Held here:
+      A1. while pyproject.toml declares chromadb, chromadb and onnxruntime must be installed here, so the silence of
+          A4 is a measurement (an error, never a skip); once W1230 drops the declaration, A4's silence holds trivially;
+      A2. memory_v01.py holds no MemoryV01 and no instance of it, keeps the meeting log ceo.py uses, and its docstring
+          says the memory is retired, by whose ruling, and the ruling's reason;
+      A3. by the syntax tree, no module under agentic_core, scripts or products imports chromadb (by statement, or by
+          importlib.import_module or __import__ with a literal name), imports the retired memory, or calls add_exchange;
+      A4. in a child process whose HOME and USERPROFILE are an empty directory before anything is imported, with every
+          outside connection and lookup recorded and refused, the avatar chat route answers and a text upload is
+          extracted, and afterwards no outside connection or lookup was tried, no <HOME>/.cache/chroma exists, and
+          neither chromadb nor onnxruntime is in sys.modules;
+      A5. the delete answer for that upload is REMOVED and says what may remain elsewhere (the interaction log and
+          VectorMemory keep the prompt of a generation that read the file, and neither is reachable by file id), never
+          the retired long-term memory and never that nothing remains; a file with nothing extracted says no text
+          entered;
+      A6. the words that called memory_v01 a live store are gone from the files that said them, and the plan's three
+          dated lines are in place, P3.32's naming no row.
+    chromadb stays declared until W1230, so only its import is held, never its declaration."""
+    import ast
+    import importlib.util
+    import json
+    import os
+    import pathlib
+    import re
+    import subprocess
+    import sys
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    flat = lambda s: " ".join(s.split())
+
+    #  A1. the instrument can see what it measures: while chromadb is declared it must be installed, so its absence
+    #  from the child is a result (the review's F3: W1230 removes the declaration, and this leg then asks nothing)
+    _declared = re.search(r"(?m)^chromadb\s*=", (root / "pyproject.toml").read_text(encoding="utf-8"))
+    for _mod in (("chromadb", "onnxruntime") if _declared else ()):
+        if importlib.util.find_spec(_mod) is None:
+            raise AssertionError(f"{_mod} is not installed in this environment, so A4 would pass without measuring "
+                                 f"anything; this test needs the environment requirements.txt installs")
+
+    #  A2. the module keeps the meeting log and nothing of the retired memory
+    import agentic_core.ai.ceo.memory_v01 as M
+    assert not hasattr(M, "MemoryV01") and not hasattr(M, "memory_v01"), (
+        "memory_v01.py holds the retired avatar and upload memory again", [n for n in dir(M) if "emory" in n])
+    assert isinstance(getattr(M, "meeting_log", None), getattr(M, "MeetingLog", ())), "the meeting log ceo.py uses is gone"
+    doc = flat(M.__doc__ or "")
+    for _part in ("THE AVATAR AND UPLOAD MEMORY IS RETIRED", "as the Owner ruled on 2026-11-22 (P3.32)",
+                  "if conversation memory is wanted later, it is to be built after sign-in, with a retention period "
+                  "and with no outside download", "nothing fetches a model for it"):
+        assert _part in doc, ("memory_v01.py's docstring does not say why the memory is retired", _part)
+    assert "persisted" not in doc and "semantically searchable" not in doc, ("the docstring claims a kept memory", doc)
+
+    #  A3. the syntax tree: nothing imports chromadb, nothing imports the retired memory, nothing writes it
+    chroma, retired, writes = [], [], []
+    for top in ("agentic_core", "scripts", "products"):
+        for p in sorted((root / top).rglob("*.py")):
+            if "node_modules" in p.parts or "__pycache__" in p.parts:
+                continue
+            try:
+                tree = ast.parse(p.read_text(encoding="utf-8", errors="replace"))
+            except SyntaxError:
+                continue
+            rel = p.relative_to(root).as_posix()
+            #  the names this file binds to the retired module or its memory (the review's F7: add_exchange is flagged
+            #  only on such a receiver, so another function of that name elsewhere is not a write to the memory)
+            bound = {"memory_v01"}
+            for n in ast.walk(tree):
+                if isinstance(n, ast.ImportFrom) and n.module == "agentic_core.ai.ceo.memory_v01":
+                    bound |= {a.asname or a.name for a in n.names}
+                elif isinstance(n, ast.ImportFrom) and n.module == "agentic_core.ai.ceo":
+                    bound |= {a.asname or a.name for a in n.names if a.name == "memory_v01"}
+                elif isinstance(n, ast.Import):
+                    bound |= {a.asname for a in n.names if a.name == "agentic_core.ai.ceo.memory_v01" and a.asname}
+            for n in ast.walk(tree):
+                if isinstance(n, ast.Import):
+                    chroma += [(rel, n.lineno) for a in n.names if a.name.split(".")[0] == "chromadb"]
+                elif isinstance(n, ast.ImportFrom):
+                    if (n.module or "").split(".")[0] == "chromadb":
+                        chroma.append((rel, n.lineno))
+                    if n.module == "agentic_core.ai.ceo.memory_v01":
+                        retired += [(rel, n.lineno, a.name) for a in n.names if a.name not in ("meeting_log", "MeetingLog")]
+                elif isinstance(n, ast.Call):
+                    f = n.func
+                    name = f.attr if isinstance(f, ast.Attribute) else (f.id if isinstance(f, ast.Name) else "")
+                    if name in ("import_module", "__import__") and n.args and isinstance(n.args[0], ast.Constant) \
+                            and str(n.args[0].value).split(".")[0] == "chromadb":
+                        chroma.append((rel, n.lineno))
+                    if name == "add_exchange" and isinstance(f, ast.Attribute) and (
+                            (isinstance(f.value, ast.Name) and f.value.id in bound)
+                            or (isinstance(f.value, ast.Attribute) and f.value.attr in bound)):
+                        writes.append((rel, n.lineno))
+    assert not writes, ("a caller writes the retired avatar and upload memory", writes)
+    assert not chroma, ("a module imports chromadb, whose default embedding fetches a model from an outside host", chroma)
+    assert not retired, ("a module imports the retired memory from memory_v01.py", retired)
+
+    #  A4. a child process with an empty home: drive the avatar chat and an extracted upload, and record every outside
+    #  connection and lookup (refused, so nothing is downloaded whatever the tree does)
+    home = tmp_path / "home"
+    home.mkdir()
+    child = r'''
+import json, os, socket, sys
+sys.path.insert(0, %(root)r)
+_LOCAL = ("127.0.0.1", "::1", "localhost", "testserver", "0.0.0.0", "")
+tried = []
+_connect, _connect_ex, _gai, _cc = socket.socket.connect, socket.socket.connect_ex, socket.getaddrinfo, socket.create_connection
+def _host(a):
+    return str(a[0] if isinstance(a, tuple) and a else a)
+def connect(self, address):
+    tried.append(("connect", _host(address)))
+    if _host(address) not in _LOCAL:
+        raise ConnectionRefusedError("w1196: an outside connection was refused")
+    return _connect(self, address)
+def connect_ex(self, address):
+    tried.append(("connect_ex", _host(address)))
+    if _host(address) not in _LOCAL:
+        return 111
+    return _connect_ex(self, address)
+def getaddrinfo(host, *a, **k):
+    tried.append(("getaddrinfo", str(host)))
+    if host is not None and str(host) not in _LOCAL:
+        raise socket.gaierror("w1196: an outside lookup was refused")
+    return _gai(host, *a, **k)
+def create_connection(address, *a, **k):
+    tried.append(("create_connection", _host(address)))
+    if _host(address) not in _LOCAL:
+        raise ConnectionRefusedError("w1196: an outside connection was refused")
+    return _cc(address, *a, **k)
+socket.socket.connect, socket.socket.connect_ex = connect, connect_ex
+socket.getaddrinfo, socket.create_connection = getaddrinfo, create_connection
+from fastapi.testclient import TestClient
+from agentic_core.app_mvp import app
+out = {}
+with TestClient(app) as c:
+    r = c.post("/api/v1/avatar/chat", json={"message": "w1196 avatar marker", "context": "general"})
+    out["chat"] = [r.status_code, r.text[:300]]
+    u = c.post("/api/v1/ingest/", files={"file": ("w1196.txt", b"w1196 upload marker the platform can read", "text/plain")})
+    out["upload"] = [u.status_code, (u.json() or {}).get("status") if u.status_code == 200 else u.text[:300]]
+    out["delete"] = c.delete("/api/v1/ingest/" + u.json()["file_id"]).json() if u.status_code == 200 else None
+    b = c.post("/api/v1/ingest/", files={"file": ("w1196.bin", b"\x00\x01\x02binary", "application/octet-stream")})
+    out["delete_unread"] = c.delete("/api/v1/ingest/" + b.json()["file_id"]).json() if b.status_code == 200 else None
+    #  an unread row whose bytes are gone before its removal: the answer must not say the bytes were reached
+    from agentic_core.ingestion.api import ingestion_manager as _im
+    g = c.post("/api/v1/ingest/", files={"file": ("w1196-gone.bin", b"\x00\x01gone", "application/octet-stream")})
+    if g.status_code == 200:
+        _f = _im.upload_dir / (g.json()["file_id"] + "_w1196-gone.bin")
+        if _f.exists():
+            _f.unlink()
+        out["delete_gone"] = c.delete("/api/v1/ingest/" + g.json()["file_id"]).json()
+out["outside"] = [t for t in tried if t[1] not in _LOCAL]
+out["cache"] = os.path.exists(os.path.join(os.path.expanduser("~"), ".cache", "chroma"))
+out["home"] = os.path.expanduser("~")
+out["modules"] = sorted(m for m in ("chromadb", "onnxruntime") if m in sys.modules)
+print("RESULT" + json.dumps(out))
+''' % {"root": str(root)}
+    data = tmp_path / "data"
+    #  the review's F4: what A4 measures is the retired memory, never a deployment's providers or model host
+    env = {k: v for k, v in os.environ.items()
+           if k.upper() not in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY", "XDG_CACHE_HOME",
+                                "ANTHROPIC_API_KEY", "OPENAI_API_KEY", "OLLAMA_HOST")}
+    env.update({"AI_ALLOW_EXTERNAL": "false", "HOME": str(home), "USERPROFILE": str(home), "AUTH_ENABLED": "false", "AI_DISABLE_LOCAL": "1",
+                "PYTHONIOENCODING": "utf-8", "DATA_DIR": str(data), "WORKSTATION_DATA_DIR": str(data),
+                "PROJECTS_DIR": str(tmp_path / "projects"), "WORKSTATION_UEG_PATH": str(tmp_path / "ueg.jsonl")})
+    proc = subprocess.run([sys.executable, "-c", child], capture_output=True, timeout=600, env=env, cwd=str(root))
+    stdout = proc.stdout.decode("utf-8", "replace")
+    assert proc.returncode == 0, ("the child failed", proc.stderr.decode("utf-8", "replace")[-1500:])
+    marker = [ln for ln in stdout.splitlines() if ln.startswith("RESULT")]
+    assert marker, ("the child gave no result", stdout[-800:])
+    res = json.loads(marker[0][len("RESULT"):])
+    assert pathlib.Path(res["home"]).resolve() == home.resolve(), ("the child's home is not the empty one", res["home"])
+    #  the positive control: the two writers the memory had are driven, and the upload was really extracted
+    assert res["chat"][0] == 200, ("the avatar chat route did not answer, so A4 measured nothing", res["chat"])
+    assert res["upload"] == [200, "EXTRACTED"], ("the upload was not extracted, so A4 measured nothing", res["upload"])
+    assert not res["outside"], ("the avatar chat or the upload tried an outside host", res["outside"])
+    assert not res["cache"], "the avatar chat or the upload made <HOME>/.cache/chroma, where chromadb keeps its model"
+    assert not res["modules"], ("the avatar chat or the upload imported the embedding stack", res["modules"])
+
+    #  A5. the delete answer says what may remain elsewhere, and never that nothing remains
+    out = res["delete"]
+    assert out and out["status"] == "REMOVED" and out["extracted_text_may_still_be_recalled"] is True, out
+    wr, nc = flat(out["what_remains"]), flat(out["not_claimed"])
+    for _part in ("no memory store took this file's text at upload", "interaction log", "VectorMemory",
+                  "CANNOT be removed by file id"):
+        assert _part in wr, ("the delete answer does not say what may remain elsewhere", _part, wr)
+    assert "long-term" not in wr and not re.search(r"nothing (else )?remains", wr), (
+        "the delete answer names the retired memory or says that nothing remains", wr)
+    assert "interaction log" in nc and "overstate" in nc and "nothing remains" not in nc, nc
+    unread = res["delete_unread"]
+    assert unread and unread["extracted_text_may_still_be_recalled"] is False, unread
+    assert "no text entered" in unread["what_remains"], unread["what_remains"]
+    assert unread["uploaded_bytes_removed"] is True and "uploaded bytes are what this removal reached" in unread["what_remains"], unread
+    gone = res.get("delete_gone")
+    assert gone and gone["uploaded_bytes_removed"] is False, ("the removal with its bytes gone was not driven", gone)
+    assert "no uploaded bytes were found to remove" in gone["what_remains"] and \
+        "uploaded bytes are what" not in gone["what_remains"], (
+        "the delete answer says it reached bytes it did not remove", gone["what_remains"])
+    assert "the registry row is gone" in gone["not_claimed"] and "bytes are gone" not in gone["not_claimed"], gone["not_claimed"]
+
+    #  A6. the words that called it a live store are gone where they were said, and the plan's lines are in place
+    stale = {"agentic_core/avatars/api.py": ("`memory_v01` ChromaDB store",),
+             "agentic_core/ingestion/api.py": ("the store the AI CEO and the avatars read", "Long-term memory takes",
+                                               "AI's long-term memory"),
+             "agentic_core/ai/logger.py": ("VectorMemory + memory_v01",),
+             "scripts/purge_memory_contamination.py": ("unscoped memory_v01 collection",)}
+    for rel, words in stale.items():
+        text = flat((root / rel).read_text(encoding="utf-8"))
+        for w in words:
+            assert w not in text, (rel, "still calls the retired memory a live store", w)
+    plan = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    for slot, end in (("\n P2.13 ", "\n P2.14 "), ("\n P3.22 ", "\n P3.23 ")):
+        body = flat(plan.split(slot, 1)[1].split(end, 1)[0])
+        assert "W1196 (2026-11-22), built (row FU-1843): the avatar and upload memory is removed" in body, slot
+    p332 = flat(plan.split("\n P3.32 [", 1)[1].split("\n MILESTONE M3", 1)[0])
+    assert "W1196 (2026-11-22), built: the avatar and upload memory is removed, as ruled above." in p332
+    assert not re.search(r"\bFU-\d+", p332), "P3.32 names a row"

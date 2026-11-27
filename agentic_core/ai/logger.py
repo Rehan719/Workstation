@@ -14,7 +14,8 @@ class InteractionLogger:
         c.execute('''CREATE TABLE IF NOT EXISTS logs
                      (timestamp TEXT, agent TEXT, user_query TEXT, ai_response TEXT, feedback INTEGER)''')
         # §17.5 invariant 1 (W333) — the interaction log is the third tenant-blind store (parallel
-        # to VectorMemory + memory_v01); stamp the owning tenant so it is never a cross-tenant read
+        # to VectorMemory and to memory_v01, the avatar and upload memory the Owner retired on 2026-11-22,
+        # W1196); stamp the owning tenant so it is never a cross-tenant read
         # surface. Added idempotently to the existing table (older DBs gain the column, NULL = legacy).
         cols = {r[1] for r in c.execute("PRAGMA table_info(logs)").fetchall()}
         if "owner_id" not in cols:

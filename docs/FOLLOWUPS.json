@@ -27242,10 +27242,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1196",
       "note": "",
-      "slot_source": "the ruling's item; the word 'avatar' would otherwise route the row to P2.40"
+      "slot_source": "the ruling's item; the word 'avatar' would otherwise route the row to P2.40",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1196, as the retirement the Owner ruled on 2026-11-22 (P3.32): MemoryV01, its instance and the chromadb import are removed from agentic_core/ai/ceo/memory_v01.py, which keeps the C-Suite meeting log and says in its docstring what was retired and the ruling's reason (any later memory built after sign-in, with a retention period and no outside download); ceo.py imports meeting_log only; the avatar chat and the upload no longer write the retired memory (the avatar chat's call still goes to the gateway's interaction log and VectorMemory), and their imports are gone; the comments that called memory_v01 a live store are restated in avatars/api.py, ingestion/api.py, ai/logger.py and the purge script's note. The upload's delete answer stays REMOVED and says what may remain elsewhere: a generation that read the file kept its prompt in the interaction log and in VectorMemory, which cannot be removed by file id; it never says that nothing remains, and for a file with nothing extracted it names the uploaded bytes only when they were removed. chromadb stays declared until W1230, and no stored data was deleted. test_w1196 holds it: while pyproject.toml declares chromadb, chromadb and onnxruntime installed so the measurement is real; no MemoryV01; by the syntax tree no module under agentic_core, scripts or products imports chromadb or the retired memory or calls add_exchange; a child with an empty HOME and USERPROFILE and every outside connection refused drives the avatar chat and an extracted upload and tries no outside host, makes no ~/.cache/chroma and loads neither chromadb nor onnxruntime; the delete answer names the interaction log and VectorMemory; and the plan's dated lines at P2.13, P3.22 and P3.32 are in place. the answer for a row whose bytes were not removed says so; and fifteen blinds turn it red."
     },
     {
       "id": "FU-1844",
