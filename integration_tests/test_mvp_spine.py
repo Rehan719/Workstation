@@ -106915,3 +106915,222 @@ def test_w1199_the_scholar_request_is_drafted_for_the_owner_offers_a_scholar_or_
     bullets = [flat(b) for b in yours.split("\n  - ") if f"`{path}`" in b]
     assert len(bullets) == 1 and f"({rid})" in bullets[0], ("the local notes do not name the row and the letter", bullets)
     assert bullets[0].startswith("Sending the request to a scholar or a trusted institute"), bullets[0][:120]
+
+
+def test_w1193d_the_owners_decisions_of_the_evening_of_2026_11_22_are_recorded_where_the_work_reads_them():
+    """W1193d. The decisions put in chat on the evening of 2026-11-22, each with a recommendation, and accepted that
+    evening in the Owner's words "I want to go with all your recommendations, all items for me I will return to soon
+    keep collating proceed with rest". Each ruling sentence says what was accepted and no more; what the round design
+    adds follows it, marked "Proposed by the round design, not ruled". Held here:
+    D1. P5.2: a sale posts its declared cost, naming the receipt, unless that cost is already on the books; the sale
+        piece builds to it and is not built; after the price formula's ruling; the cost event only as proposed;
+    D2. P5.7: the teacher-interview record format W1201 defines is accepted and may be written into the notes
+        template, after W1201's note, with a note saying what the format is; nothing there reads as a choice of
+        first offer;
+    D3. P5.15: the second calibration run also waits for FU-1822, settled first, in 0.5-1 round, before 2027-01-10,
+        after W1195d's note; the notes' step only as proposed;
+    D4. the register: FU-1817 carries the two written questions (the partnership_deed template, kept held meanwhile;
+        NICE's terms on quoting NG249 1.1.1 verbatim, nothing changing now) after the morning's ruling; FU-1831 the
+        ruling of D3; FU-1822 a note that says it, with no "OWNER RULING" (test_w1190, test_w1195c); partnership_deed
+        held while FU-1817 is open;
+    D5. the plan's list: a line under FU-1817's, FU-1818's, FU-1837's and FU-1838's own entries while each row is open,
+        and the evening's decisions in a paragraph of their own after the morning's, naming no row;
+    D6. the local notes: their updated line names this round; the evening's bullet whole, after the morning's and
+        before Still yours; the Still-yours lines for the second run, FU-1817, the interviews, the history scan and the
+        scholar letter, while each row is open;
+    D7. while docs/REMAINING_WORK_MEASURED.md is the measurement of 2026-11-22 at a4b96954: P5.2's and P5.15's Owner
+        parts say the answer, as given after the page was measured;
+    D8. none of these texts gives the Owner a gendered pronoun."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    RM = "OWNER RULING 2026-11-22 (evening; the recommendation accepted)"
+    PROP = "Proposed by the round design, not ruled:"
+    WORDS = ("I want to go with all your recommendations, all items for me I will return to soon keep collating "
+             "proceed with rest")
+    SALE = "a sale posts its declared cost, naming the receipt, unless that cost is already on the books"
+    WAITS = ("the second Care calibration run also waits for FU-1822, which is settled first, in 0.5-1 round, before "
+             "2027-01-10")
+    said = []
+
+    def read(rel):
+        return (root / rel).read_text(encoding="utf-8")
+
+    def flat(t):
+        return " ".join(t.split())
+
+    def holds(text, part, where):
+        assert text.count(part) == 1, (where, "does not say once", part[:120], text.count(part))
+        said.append(part)
+
+    reg = {r["id"]: r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"]}
+    fable = read("docs/FABLE_DELIVERY_PROMPT.md")
+
+    def item(iid, nxt):
+        assert fable.count(f"\n {iid} ") == 1 and fable.count(f"\n {nxt} ") == 1, (iid, nxt, "the item heads")
+        return flat(fable.split(f"\n {iid} ", 1)[1].split(f"\n {nxt} ", 1)[0])
+
+    #  D1. P5.2
+    p52 = item("P5.2", "P5.3")
+    r2 = f"{RM}: {SALE}. P5.2's sale piece builds to this ruling; it is not built yet."
+    holds(p52, r2, "D1: P5.2")
+    assert p52.index("OWNER RULING 2026-11-19 (FU-1185): price = the declared cost") < p52.index(r2), "D1: P5.2's order"
+    prop2 = p52.split(r2, 1)[1]
+    assert prop2.lstrip().startswith(f"{PROP} the cost is posted as a cost event"), ("D1: the cost event is not "
+                                                                                    "marked as proposed", prop2[:120])
+    assert "cost event" not in r2 and "COMPLETION RECORD" not in p52 and "✅" not in fable.split("\n P5.2 ", 1)[1].split(
+        "\n", 1)[0], "D1: P5.2 is said as built"
+
+    #  D2. P5.7
+    p57 = item("P5.7", "P5.8")
+    r8 = f"{RM}: the teacher-interview record format W1201 defines is accepted; it may be written into the notes template."
+    holds(p57, r8, "D2: P5.7")
+    assert p57.index("W1201 (a note, not a ruling): P5.16 clause 1") < p57.index(r8), "D2: P5.7's order"
+    fmt = ("W1193d (a note, not a ruling): that format, as W1201's gate reads it, is one section headed \"### Interview "
+           "notes, \" and the interview's date (YYYY-MM-DD), in a document under docs/business/, with one line \"- \", a "
+           "field, \": \" and the answer for each field of the notes template in docs/business/FIRST_OFFER_CANDIDATES.md")
+    holds(p57, fmt, "D2: P5.7's note")
+    assert p57.index(r8) < p57.index(fmt) and "this round writes nothing into the template." in p57, "D2: the note"
+    assert not re.search(r"the\s+first\s+offer\s+is\s+candidate", p57.split(r8, 1)[1]), "D2: a choice of first offer"
+
+    #  D3. P5.15
+    p515 = item("P5.15", "P5.16")
+    r4 = (f"{RM}: the second calibration run also waits for FU-1822, whether the reviewer may be shown the NEWS2 table, "
+          "which is settled first, in 0.5-1 round, before 2027-01-10.")
+    holds(p515, r4, "D3: P5.15")
+    assert re.search(r"UPDATED \d{4}-\d{2}-\d{2} \(W1195d\):", p515) and p515.index("(W1195d):") < p515.index(r4), (
+        "D3: P5.15's ruling is not after W1195d's note")
+    assert p515.split(r4, 1)[1].lstrip().startswith(f"{PROP} the round that settles FU-1822 writes the second run's "
+                                                     "step into step 5 of the local notes"), "D3: the step not proposed"
+
+    #  D4. the register
+    f17, f31, f22 = reg["FU-1817"], reg["FU-1831"], reg["FU-1822"]
+    q = (f"{RM}: the Law page's partnership_deed template is added to this engagement as a written question, and it "
+         "stays held meanwhile; and NICE's terms on quoting NG249 1.1.1 verbatim are put to the solicitor here; nothing "
+         "changes now.")
+    holds(f17["why"], q, "D4: FU-1817")
+    assert f17["why"].index("OWNER RULING 2026-11-22 (morning; the recommendation accepted)") < f17["why"].index(q), (
+        "D4: FU-1817's order")
+    assert f17["why"].split(q, 1)[1].lstrip().startswith(PROP), "D4: FU-1817's question wording not marked proposed"
+    assert f17["status"] != "open" or (f17["slot"], f17["owner_gated"]) == ("OWNER", True), "D4: FU-1817 moved"
+    if f17["status"] == "open":
+        from agentic_core.legal import specialist as _sp
+        assert "partnership_deed" in _sp.HELD_FOR_A_QUALIFIED_READ, "D4: partnership_deed is not held meanwhile"
+    holds(f31["why"], f"{RM}: {WAITS}.", "D4: FU-1831")
+    assert f31["why"].index(" W1195d, a note: ") < f31["why"].index(f"{RM}: {WAITS}."), "D4: FU-1831's order"
+    n22 = ("W1193d, a note recording the Owner's ruling of the evening of 2026-11-22 (the recommendation accepted): the "
+           "second Care calibration run also waits for this row, which is settled first, in 0.5-1 round, before "
+           "2027-01-10.")
+    holds(f22["why"], n22, "D4: FU-1822")
+    assert "OWNER RULING" not in f22["why"] and f22["slot"] == "P5.15", "D4: FU-1822's note is written as a ruling"
+    assert f22["why"].split(n22, 1)[1].lstrip().startswith(PROP), "D4: FU-1822's round not marked proposed"
+
+    #  D5. the plan's list
+    raw_list = fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
+    still = flat(raw_list)
+
+    def under(rid, head, line):
+        if reg[rid]["status"] != "open":
+            return
+        holds(still, line, f"D5: the plan's list under {rid}")
+        seg = still[still.index(head) + len(head):still.index(line)]
+        assert not re.search(r"FU-\d+ \(W\d+\):", seg), (rid, "D5: the line is not under its own entry")
+
+    under("FU-1817", "FU-1817 (W1174):", "Ruled on the evening of 2026-11-22: two more written questions go to it: the "
+          "Law page's partnership_deed template, which stays held meanwhile, and NICE's terms on quoting NG249 1.1.1 "
+          "verbatim, with nothing changing now.")
+    under("FU-1818", "FU-1818 (W1174):", "Accepted on the evening of 2026-11-22: the interview record format W1201 "
+          "defines; it may be written into the notes template (P5.7).")
+    under("FU-1837", "FU-1837 (W1191):", "Accepted on the evening of 2026-11-22: you run the full-clone credential "
+          "history scan (W1208) on a mirror clone and rotate any value not yet rotated; that is your act, later.")
+    under("FU-1838", "FU-1838 (W1192):", "Accepted on the evening of 2026-11-22: you fill the blanks and send it as "
+          "drafted; that is your act, later.")
+    opener = "(Decisions put in chat on the evening of 2026-11-22, each with a recommendation, were accepted that evening"
+    assert still.count(opener) == 1, ("D5: the list does not carry the evening's paragraph once", still.count(opener))
+    i = raw_list.index("(Decisions put in chat on the evening of 2026-11-22")
+    para = flat(raw_list[i:raw_list.index(".)\n", i) + 2])
+    assert still.index("(Six put in the early hours of 2026-11-22 and three put that morning") < still.index(opener), (
+        "D5: the evening's paragraph is not after the morning's")
+    for part in (f"in the Owner's words \"{WORDS}\":",
+                 "a sale to post its declared cost, naming the receipt, unless that cost is already on the books (P5.2);",
+                 "the Law page's partnership_deed template added to the solicitor engagement as a written question, and "
+                 "kept held meanwhile;",
+                 "the second Care calibration run also to wait for the row on the NEWS2 table, settled first, in 0.5-1 "
+                 "round, before 2027-01-10;",
+                 "NICE's terms on quoting NG249 1.1.1 verbatim put to the solicitor, nothing changing now;",
+                 "the scholar letter's blanks filled and the letter sent as drafted, and the full-clone credential "
+                 "history scan run on a mirror clone, rotating any value not yet rotated, each the Owner's act, later;",
+                 "the teacher-interview record format W1201 defines accepted, which may be written into the notes "
+                 "template;",
+                 "and the Owner's own rows, to which the Owner will return.",
+                 "nothing on this list is closed by them.)"):
+        assert part in para, ("D5: the list's paragraph does not say", part[:80])
+    assert not re.search(r"\bFU-\d+\b", para), ("D5: the list's paragraph names a row", re.findall(r"FU-\d+", para))
+    said.append(para)
+
+    #  D6. the local notes
+    notes_raw = read("docs/RESUME_ON_MY_MACHINE.md")
+    notes = flat(notes_raw)
+    upd = re.search(r"Updated (20\d\d-\d\d-\d\d) \(([^)]*)\)\.", notes)
+    assert upd and upd.group(1) >= "2026-11-22" and "W1193d" in upd.group(2).split(", "), "D6: the notes' updated line"
+    head = "- **Ruled on the evening of 2026-11-22:**"
+    assert notes_raw.count(head) == 1, ("D6: the evening's bullet", notes_raw.count(head))
+    ruled = flat(head + notes_raw.split(head, 1)[1].split("\n- **", 1)[0])
+    assert ruled == (
+        f"- **Ruled on the evening of 2026-11-22:** the decisions put in chat that evening, each taken as recommended, in "
+        f"your words \"{WORDS}\": a sale to post its declared cost, naming the receipt, unless that cost is already on "
+        "the books (P5.2, whose sale piece builds to it); the Law page's partnership_deed template added to the "
+        "solicitor engagement (FU-1817) as a written question, and kept held meanwhile; the second Care calibration run "
+        "also to wait for FU-1822, settled first, in 0.5-1 round, before 2027-01-10; NICE's terms on quoting NG249 "
+        "1.1.1 verbatim put to the solicitor (FU-1817), nothing changing now; the scholar letter (W1199): you fill the "
+        "blanks and send it as drafted, your act, later; the full-clone credential history scan (W1208): you run it on "
+        "a mirror clone and rotate any value not yet rotated, your act, later; the teacher-interview record format W1201 "
+        "defines accepted, and it may be written into the notes template; and your own rows, which you will return to. "
+        "W1193d recorded each where the work reads it; your acts stay on the list below, and none is closed."), (
+        "D6: the evening's bullet", ruled[:200])
+    said.append(ruled)
+    assert notes.index("- **Ruled on the morning of 2026-11-22:**") < notes.index(head) < notes.index(
+        "- **Still yours:**"), "D6: the order"
+    yours_raw = notes_raw.split("- **Still yours:**", 1)[1].split("\n- **", 1)[0]
+    subs = [flat(b) for b in yours_raw.split("\n  - ")]
+
+    def line(rid, start, part):
+        if reg[rid]["status"] != "open":
+            return
+        hits = [b for b in subs if b.startswith(start)]
+        assert len(hits) == 1, ("D6: the notes' line", start, len(hits))
+        holds(hits[0], part, f"D6: the notes' {rid} line")
+
+    line("FU-1831", "Your second calibration run of the Care reviewer", "As you ruled on the evening of 2026-11-22, it "
+         "also waits for FU-1822 (whether the reviewer may be shown the NEWS2 table), settled first, in 0.5-1 round, "
+         "before 2027-01-10; the run's step is not yet in step 5.")
+    line("FU-1817", "One solicitor's engagement before anyone but you is invited (FU-1817)", "As you ruled on the "
+         "evening of 2026-11-22, two more written questions go to it: the Law page's partnership_deed template, which "
+         "stays held meanwhile, and NICE's terms on quoting NG249 1.1.1 verbatim, with nothing changing now.")
+    line("FU-1818", "Five to eight short interviews", "As you accepted on the evening of 2026-11-22, the interview "
+         "record format W1201 defines is accepted, and it may be written into the notes template.")
+    line("FU-1837", "Revoking at their providers", "As you accepted on the evening of 2026-11-22, you run the full-clone "
+         "credential history scan (W1208) on a mirror clone and rotate any value not yet rotated; that is your act, "
+         "later.")
+    line("FU-1838", "Sending the request to a scholar or a trusted institute", "As you accepted on the evening of "
+         "2026-11-22, you fill the blanks and send it as drafted; that is your act, later.")
+
+    #  D7. the remaining-work page, while it is the measurement of 2026-11-22 at a4b96954
+    page = read("docs/REMAINING_WORK_MEASURED.md")
+    if page.startswith("# Remaining work, measured — 2026-11-22 (HEAD a4b96954)"):
+        after = "after this page was measured (recorded here by W1193d)"
+        parts = re.split(r"(?m)^## (P[1-5]\.\d+) — [^\n]*\n", page)
+        sections = {parts[i]: flat(parts[i + 1]) for i in range(1, len(parts), 2)}
+        own = lambda iid: sections[iid].split("- **Only the Owner can:**", 1)[1]   # noqa: E731
+        holds(own("P5.2"), f"so that no cost is counted twice. The Owner answered on the evening of 2026-11-22, {after}: "
+                           f"{RM}: {SALE}.", "D7: P5.2's Owner part")
+        holds(own("P5.15"), "The second calibration run before 2027-01-10, with its results committed. The Owner ruled on "
+                            f"the evening of 2026-11-22, {after}: {RM}: {WAITS}.", "D7: P5.15's Owner part")
+
+    #  D8. no gendered pronoun in what is held here
+    word = re.compile(r"\b(he|his|him|himself|she|her|hers|herself)\b", re.I)
+    found = [m.group(0) for t in said + [p52.split(r2, 1)[1][:400], p57.split(r8, 1)[1][:700],
+                                          p515.split(r4, 1)[1][:300], f17["why"].split(q, 1)[1],
+                                          f22["why"].split(n22, 1)[1]] for m in [word.search(t)] if m]
+    assert found == [], ("D8: a gendered pronoun", found)
