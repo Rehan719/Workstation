@@ -249,7 +249,9 @@ _BREAK = frozenset(("for", "to", "so", "that", "which", "who", "whom", "whose", 
                     "without", "under", "from", "by", "if", "whether", "because", "after", "before", "until",
                     "explaining", "confirming", "chasing", "requesting", "telling", "saying", "while", "when", "where",
                     "once", "between", "against", "via", "using", "not", "never", "no", "except", "but", "instead",
-                    "rather", "than", "like", "such", "unlike", "."))
+                    "rather", "than", "like", "such", "unlike", ".",
+                    #  W1195b (its legal review, F1) - "a lesson on ...", "help understanding ..."
+                    "on", "help", "understanding", "understand", "explain", "explains"))
 #  an ask that is said, not made: a role's duties, a course, a tool, a negation
 _CUE = frozenset(("duties", "duty", "responsibilities", "responsibility", "responsible", "role", "roles", "job", "jobs",
                   "task", "tasks", "candidate", "candidates", "applicant", "applicants", "employee", "employees",
@@ -262,6 +264,30 @@ _NEG2 = frozenset((("don", "t"), ("do", "not"), ("does", "not"), ("doesn", "t"),
                    ("won", "t"), ("will", "not"), ("no", "need"), ("need", "not"), ("needn", "t"), ("shouldn", "t"),
                    ("should", "not"), ("can", "t"), ("isn", "t"), ("aren", "t")))
 _CUE_REACH = 12
+#  W1195b (its legal review, F1) - A RESERVED DOCUMENT NAMED AS ANOTHER DOCUMENT'S SUBJECT IS NOT ASKED FOR. "Prepare a
+#  TR1 explainer", "the TR1 summary", "a transfer deed FAQ", "a lesson on ...": the ask is for the explainer, the
+#  summary or the lesson. A document word just after the reserved one, or one met (with a course's, a role's or a
+#  tool's word) between the ask and the reserved one, ends the ask's reach, as a document the screen does not
+#  reserve does. 'form', 'transfer', 'deed' and 'of' are never such words, so "the TR1 form" and "the TR1 transfer of
+#  my flat" are still read
+_ADJUNCT = frozenset(("explainer", "explainers", "explanation", "explanations", "summary", "summaries", "guide",
+                      "guides", "faq", "faqs", "quiz", "quizzes", "lesson", "lessons", "letter", "letters", "cover",
+                      "checklist", "checklists", "slide", "slides", "script", "scripts", "infographic", "infographics",
+                      "tutorial", "tutorials", "glossary", "overview", "overviews", "chapter", "chapters", "article",
+                      "articles", "note", "notes", "walkthrough", "walkthroughs", "table", "tables", "blog", "post",
+                      "posts", "video", "videos", "presentation", "presentations", "handout", "handouts", "leaflet",
+                      "leaflets", "factsheet", "factsheets", "diagram", "diagrams", "newsletter", "newsletters",
+                      "essay", "essays", "paragraph", "paragraphs", "sheet", "sheets", "study", "studies", "entry",
+                      "entries", "page", "pages", "section", "sections", "comparison", "comparisons"))
+
+
+def _adjunct_after(f: str, end: int) -> bool:
+    """True when the word after a reserved document's name (past one 'form') is another document's, or a course's, a
+    role's or a tool's, so the name is that one's subject."""
+    words = f[end:].split(" ", 4)[1:4]
+    if words and words[0] in ("form", "forms"):
+        words = words[1:]
+    return bool(words) and (words[0] in _ADJUNCT or words[0] in _CUE)
 
 
 def _fold(text: Any) -> Tuple[str, List[int], List[Tuple[int, int]]]:
@@ -398,13 +424,16 @@ def reserved_match(text: Any, as_id: bool = False) -> Optional[Dict[str, str]]:
         pos = m.end()
         for _k in range(reach + 1):
             n = _NOUNS.match(f, pos)
-            if n:
+            if n and not _adjunct_after(f, n.end()):
                 return _hit(text, offs, spans, _NOUN_META, n, m.start())
             nxt = f.find(" ", pos + 1)
             w = f[pos + 1:nxt] if nxt >= 0 else ""
-            if w in _STOP and not bare:
+            #  W1195b - a reserved name another document is about, or a document or course word before it, ends the
+            #  reach as a document the screen does not reserve does
+            other = n is not None or w in _STOP or w in _ADJUNCT or w in _CUE
+            if other and not bare:
                 asked_other = True
-            if nxt < 0 or w in _BREAK or w in _STOP:
+            if n is not None or nxt < 0 or w in _BREAK or other:
                 break
             pos = nxt
     return None
@@ -416,14 +445,52 @@ def reserved_kind(text: Any) -> Optional[Dict[str, str]]:
     return {"id": m["id"], "said": m["said"]} if m else None
 
 
+#  W1195b (P5.18 clause 4, its ACCEPT) - THE SAME SCREEN AT FOUR MORE DOORS. The reserved reason says what the Law
+#  draft form and the clerk refuse, so a refusal at another door says first which route read the words and what it
+#  reads (review of W1195b's first design, F3)
+RESERVED_DOOR_SAID = {
+    "generator": ("The Generator (POST /api/v1/generator/produce) reads a request's specification, artefact type, "
+                  "format and domain, each on its own and together, with the screen the Law draft form and the clerk "
+                  "use."),
+    "studio": ("The Synthesis Studio (POST /api/v1/synthesis/generate and /stream) reads a request's instructions with "
+               "the screen the Law draft form and the clerk use, before a stream starts; it does not read the files, "
+               "nor the topic it takes from their names."),
+    "refine": ("A refine (POST /api/v1/refine) reads its instruction and the title it is given with the screen the Law "
+               "draft form and the clerk use; it does not read the draft being refined."),
+    "composition": ("A fabric composition's run (POST /api/v1/resources/compositions/{cid}/run) reads its objective "
+                    "(or, with none, its name), its usage area and each resource's settings and their names with the "
+                    "screen the Law draft form and the clerk use, before any stage is built."),
+}
+#  said once at every one of these doors, after what the screen read (W1195b's legal review, F5): the refusal is the
+#  only screen text the Generator's and the Synthesis Studio's pages show
+RESERVED_DOOR_LIMIT = "It misses most other ways of asking, so a request it does not refuse is not cleared."
+
+
 def reserved_refusal(template_id: Any, where: str, kind: Dict[str, str], act: str = "drafted",
-                     kept: str = "composed", reading: str = "as asking to prepare") -> str:
+                     kept: str = "composed", reading: str = "as asking to prepare", door: str = "") -> str:
     """The refusal of a request the screen read as asking for a reserved kind: what it read, in which field, what it
-    took it as asking for and the clause's words that would fall under; never that the person's document is one."""
+    took it as asking for and the clause's words that would fall under; never that the person's document is one.
+    W1195b - `door`, at a door other than the Law draft form and the clerk, is that route's own sentence
+    (RESERVED_DOOR_SAID), said after RESERVED_DOOR_LIMIT and before the reserved reason; without one the refusal
+    is as W1195 wrote it."""
     clause = kind.get("clause") or _KIND.get(kind.get("id"), {}).get("clause", "")
     return (f"'{template_id}' is not {act}: the words \"{kind.get('words') or ''}\" in {where} were read {reading} "
             f"{kind['said']}, which would fall under \"{clause}\", one of the reserved documents, so nothing was "
-            f"{kept}. The screen reads words, not what a document is. {reserved_reason()}")
+            f"{kept}. The screen reads words, not what a document is. {RESERVED_DOOR_LIMIT + ' ' + door + ' ' if door else ''}"
+            f"{reserved_reason()}")
+
+
+def refuse_reserved(subject: Any, fields: Any, door: str, act: str = "generated", kept: str = "composed") -> None:
+    """W1195b - raise 409 when the screen reads an explicit ask to prepare a reserved document in one of a route's
+    free fields, given as (where, words) pairs and read in order (the first that asks is the refusal's); return None
+    otherwise, which is NOT a clearance. `door` is a key of RESERVED_DOOR_SAID. Raised as an HTTPException, as
+    refuse_faith_ruling is, so a route places it before anything is composed, saved or streamed."""
+    for where, words in fields:
+        m = reserved_match(words) if words is not None else None
+        if m:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=409, detail=reserved_refusal(
+                subject, where, m, act=act, kept=kept, door=RESERVED_DOOR_SAID[door]))
 
 
 RESERVED_SCREEN = ("The screen reads only an explicit ask to prepare one of the reserved documents, in the words it "
@@ -447,10 +514,19 @@ RESERVED_SCREEN = ("The screen reads only an explicit ask to prepare one of the 
                    "assignment made as a deed, a partnership deed), and whether the clerk's own templates are "
                    "instruments relating to court proceedings has not been read; the draft form and the clerk hold a "
                    "template whose id names a deed all the same. Whether this platform may prepare any of these is a "
-                   "question for the solicitor whose reading of the Law pages comes before any public release. The "
-                   "platform's other free-text generators are not screened, among them the Generator page's POST "
-                   "/api/v1/generator/produce and the Synthesis Studio page's POST /api/v1/synthesis/generate and "
-                   "/stream.")
+                   "question for the solicitor whose reading of the Law pages comes before any public release. "
+                   #  W1195b - four more doors read the words, and the rest are named among them
+                   "The same screen reads, and refuses there before anything is composed or saved, the words of a "
+                   "request to the Generator (its specification, artefact type, format and domain, each on its own "
+                   "and together), the Synthesis Studio's instructions (not its files, nor the topic it takes from "
+                   "their names), the instruction to refine a tool's output and the title it is given (not the "
+                   "output being refined), and a fabric composition's objective (or, with none, its name), its usage "
+                   "area and each of its resources' settings and their names. A reserved document named as another "
+                   "document's subject (\"a TR1 explainer\", \"a lesson on a legal charge\") is not read as asked "
+                   "for. The platform's "
+                   "other free-text generators are not screened, among them the deliverables' POST "
+                   "/api/v1/deliverables/produce, the Application Studio's POST /api/v1/career/generate, the "
+                   "in-house assistant's POST /api/v1/native-ai/complete and the avatar's POST /api/v1/avatar/chat.")
 
 
 _CORPUS = pathlib.Path(__file__).resolve().parents[2] / "knowledge" / "Law" / "EmploymentTribunal"

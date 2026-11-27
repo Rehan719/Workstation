@@ -490,6 +490,11 @@ async def generate_synthesis(request: SynthesisRequest, user: dict | None = Depe
     #  W659 - the person's instructions, before anything is composed
     from agentic_core.religious_domain.composed_text import refuse_faith_ruling as _refuse_ruling659
     _refuse_ruling659(request.instructions, "synthesis request")
+    #  W1195b (P5.18 clause 4) - the instructions, read for an explicit ask to prepare a reserved document after the
+    #  ruling check and as it is: before anything is resolved, composed or saved
+    from agentic_core.legal import specialist as _sp1195b
+    _sp1195b.refuse_reserved(request.output_type, (("the instructions", request.instructions),), "studio",
+                             kept="composed or saved")
     return await synthesis_manager.generate_output(request, user if isinstance(user, dict) else None)
 
 
@@ -502,6 +507,11 @@ async def stream_synthesis(request: SynthesisRequest, user: dict | None = Depend
     #  W659 - refused HERE, before the generator exists: a refusal raised inside a stream arrives after a 200
     from agentic_core.religious_domain.composed_text import refuse_faith_ruling as _refuse_ruling659
     _refuse_ruling659(request.instructions, "synthesis request")
+    #  W1195b (P5.18 clause 4) - and for an explicit ask to prepare a reserved document, after the ruling check and
+    #  as it is: before the stream starts, since a refusal raised inside a stream arrives after a 200
+    from agentic_core.legal import specialist as _sp1195b
+    _sp1195b.refuse_reserved(request.output_type, (("the instructions", request.instructions),), "studio",
+                             kept="composed or saved")
     #  W1019 - A SIMULATION IS COMPOSED WHOLE. This route fell through to its markdown prompt for one and saved the
     #  reply as a .json file, so the studio's dashboard, which parses the simulation, drew nothing on the path the
     #  studio tries first, and the download was markdown under a .json name, without the provenance a parsed

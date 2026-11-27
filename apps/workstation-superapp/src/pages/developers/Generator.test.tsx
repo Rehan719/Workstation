@@ -24,10 +24,10 @@ function serve(reply: Reply) {
   }));
 }
 
-function generate() {
+function generate(spec = 'W1006 made up: a REST endpoint that validates and stores a user record') {
   render(<MemoryRouter><Generator /></MemoryRouter>);
   fireEvent.change(screen.getByLabelText('Artefact specification'), {
-    target: { value: 'W1006 made up: a REST endpoint that validates and stores a user record' } });
+    target: { value: spec } });
   fireEvent.click(screen.getByRole('button', { name: /Generate/ }));
 }
 
@@ -48,6 +48,16 @@ describe('Generator, rendered against the generator route\'s own answers', () =>
     serve(captured.refused);
     generate();
     expect(await screen.findByText('[ERROR] Failed (HTTP 422): spec: Field required')).toBeTruthy();
+  });
+
+  // W1195b (P5.18 clause 4) - an explicit ask for a reserved document is refused, and the page says the route's reason
+  // whole, where help is among it (Generator.fixture.json's `reserved`, captured by w1195b_probe.py)
+  it('an explicit ask for a reserved document is refused, and the page says the route\'s reason whole', async () => {
+    serve(captured.reserved);
+    generate('Draft the TR1 transfer of my flat to my son');
+    const reason = (captured.reserved.body as { detail: string }).detail;
+    expect(reason).toContain('For help from a person, see the list of where help is');
+    expect(await screen.findByText(`[ERROR] Failed (HTTP 409): ${reason}`)).toBeTruthy();
   });
 
   it('a run the server cannot be reached for is said as one', async () => {

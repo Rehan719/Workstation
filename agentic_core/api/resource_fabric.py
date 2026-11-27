@@ -2223,10 +2223,19 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
         if rid == "generator":
             # the §7 Generator: produce ONE targeted artefact in a chosen format on the native swarm.
             from agentic_core.api.products import run_generator
-            g = await run_generator(artefact_type=str(cfg.get("artefact_type") or "content"),
-                                    spec=str(cfg.get("spec") or objective), domain=domain,
-                                    fmt=str(cfg.get("format") or "markdown"),
-                                    prefer=str(cfg.get("model") or "auto"))
+            #  W1195b - the Generator's own refusal (an explicit ask for a reserved document in its words) is this
+            #  stage's, whole, with its status, and nothing is offered as output. Uncaught, it was the handler's
+            #  error, cut at 160 characters and counted as raised. A composition's run reads the same words (its
+            #  usage area, which is this stage's domain, among them) before any stage is built, so this is met by
+            #  an in-process call: the swarm cascade's fabric requisition, or a caller of this handler
+            try:
+                g = await run_generator(artefact_type=str(cfg.get("artefact_type") or "content"),
+                                        spec=str(cfg.get("spec") or objective), domain=domain,
+                                        fmt=str(cfg.get("format") or "markdown"),
+                                        prefer=str(cfg.get("model") or "auto"))
+            except HTTPException as _e1195b:
+                return {"resource": "generator", "ran": "/api/v1/generator/produce", "refused": True,
+                        "status": _e1195b.status_code, "detail": _e1195b.detail, "output": None}
             return {**_reply_evidence(g['served_by']), "resource": "generator", "ran": "/api/v1/generator/produce",
                     "artefact_type": g["artefact_type"], "format": g["format"],
                     "served_by": g["served_by"], "is_external": g["is_external"],
@@ -2469,6 +2478,10 @@ _OUTCOME_PHRASE = {
 _GATE_REFUSED_PHRASE = ("refused by the platform's constitutional gate before any resource was asked — nothing was "
                         "composed; the gate's reason is in `detail`")
 _FORM_NOT_COMPOSED_PHRASE = "answered by the form's own route: nothing was composed and no call served it"
+#  W1195b - a resource that is not a form, refused by its own route's rules (the Generator's reading of a reserved
+#  document asked for): it was not refused by "the form's own rules"
+_ROUTE_REFUSED_PHRASE = ("refused by its own route's rules before anything was composed — nothing was produced; "
+                         "the route's reason is in `detail`")
 _OUTCOME_FOR_KIND = {"status_read": "read", "query": "assessed", "blueprint": "specified", "narrative": "narrated",
                      "facility_run": "produced"}
 
@@ -2531,6 +2544,8 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
     #  registers gives it a word of its own, with the page's count and chip
     if outcome == "refused" and r.get("served_by") == _REFUSAL_GATE:
         r["outcome_phrase"] = r["kind_phrase"] = _GATE_REFUSED_PHRASE
+    elif outcome == "refused" and rid not in _FORM_BY_ID:        # W1195b - a route's own refusal, never a form's
+        r["outcome_phrase"] = r["kind_phrase"] = _ROUTE_REFUSED_PHRASE
     elif rid in _FORM_BY_ID and outcome == "produced" and r.get("served_by") == _FORM_NO_SERVER:
         r["outcome_phrase"] = r["kind_phrase"] = _FORM_NOT_COMPOSED_PHRASE
     r["invocation"] = "in_process"
@@ -2899,6 +2914,24 @@ async def run_composition(cid: str, req: RunCompositionRequest,
         if req.params:
             cfg.update(req.params.get(r["id"]) or {})
         return cfg
+
+    #  W1195b (P5.18 clause 4, its ACCEPT) - A COMPOSITION'S WORDS, READ FOR AN EXPLICIT ASK TO PREPARE A RESERVED
+    #  DOCUMENT BEFORE ANY STAGE IS BUILT. What reaches a composer below: the objective (or, with none, the default
+    #  objective made of the name and the usage area), the usage area again as every real resource's domain and the
+    #  org cascade's, and each resource's settings that differ from the declared placeholders, as "name=value" in
+    #  its stage. The Generator's own stage would read its words only after them. An ask W1195's screen reads is
+    #  refused here with 409, before anything runs, is composed or is recorded
+    from agentic_core.legal import specialist as _sp1195b
+    _words1195b = ([("the objective", req.objective)] if req.objective else
+                   [("the composition's name", comp.get("name"))])
+    _words1195b.append(("the composition's usage area", comp.get("usage_area")))
+    for _r1195b in comp.get("resources", []):
+        _decl1195b = (_BY_ID.get(_r1195b["id"]) or {}).get("reconfigurable_params") or {}
+        for _k, _v in _eff_cfg(_r1195b).items():
+            if _v != _decl1195b.get(_k):
+                _words1195b += [(f"the {_r1195b['id']} resource's {_k} setting", str(_v)),
+                                (f"the name of a setting of the {_r1195b['id']} resource", str(_k))]
+    _sp1195b.refuse_reserved(cid, _words1195b, "composition", act="run", kept="run or composed")
 
     stages: List[Dict[str, str]] = []
     for r in comp.get("resources", []):

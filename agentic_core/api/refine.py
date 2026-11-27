@@ -63,6 +63,15 @@ def _religious_reason(req: "RefineRequest", rewrite: str = ""):
 async def refine(req: RefineRequest):
     """Iteratively advance a previous output. Returns the FULL improved version (not just a diff) so
     the user can refine again on top of it."""
+    #  W1195b (P5.18 clause 4, its ACCEPT) - THE INSTRUCTION, READ FOR AN EXPLICIT ASK TO PREPARE A RESERVED DOCUMENT
+    #  BEFORE A DRAFT IS REWRITTEN. Every tool's result card posts here, the Law page's draft among them, so an
+    #  instruction the screen reads as asking to prepare a reserved document is refused before the draft is
+    #  rewritten; one it does not read is refined, which is not a clearance. The title it is given reaches the
+    #  prompt and is read too. The draft is not read: it is the platform's text or the person's own
+    from agentic_core.legal import specialist as _sp1195b
+    _sp1195b.refuse_reserved(req.context or "this output", (("the instruction", req.instruction),
+                                                          ("the title it was given", req.context)), "refine",
+                             act="refined")
     what = f" ({req.context})" if req.context else ""
     prompt = (
         f"You are refining an existing draft{what}. Apply the user's instruction and return the FULL "

@@ -107355,3 +107355,405 @@ def test_w1210_every_duration_is_read_from_the_monotonic_clock(client, monkeypat
     assert 0 <= att[-1]["duration_ms"] <= elapsed_ms + 50, (
         "the stream's attempt duration was read from the wall clock set back an hour", att[-1]["duration_ms"],
         elapsed_ms)
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1195b (P5.18 clause 4, its ACCEPT) - the screen W1195 built for the Law draft form and the clerk reads four
+#  more doors: the Generator, the Synthesis Studio, a refine and a fabric composition's run. Each refuses an explicit
+#  ask to prepare a reserved instrument before anything is composed or saved; an ordinary request never is.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1195b_p518_an_explicit_ask_for_a_reserved_instrument_is_refused_at_the_generator_the_studio_a_refine_and_a_composition(client, monkeypatch):
+    """P5.18 clause 4 and its ACCEPT: "the reserved documents are refused through the route a person would use".
+    W1195 screened the Law draft form and the clerk for an explicit ask, and registered the gap: the same words were
+    composed by the Generator, by both Synthesis Studio routes and by a composition running the Generator; a refine
+    (every tool's result card, the Law page's draft among them) and a composition's run composed them as well. Held
+    here (the route legs before the captured fixtures, so a blind on a refusal turns its own leg red):
+    1. each door's sentence names its route and what it reads, and the refusal says the screen misses most other ways
+       of asking; RESERVED_SCREEN says the four doors, what each does not read, that a reserved document named as
+       another document's subject is not read as asked for, and names the generators still unscreened;
+    2. the coverage row is guarded by this test after W1194's and W1195's and says the doors and the measured figures,
+       their sample said; P5.18 says it; the gap row W1195 registered is closed as built by this round; the routes left
+       are one row, every POST route it names mounted;
+    3. the doors' own labelled phrasings (the legal review's ordinary requests among them) agree with the screen but
+       for their stated limits, each held to the opposite of its label;
+    4. the Generator: each ask in its specification, artefact type, format or domain, or split across them, is refused
+       with 409 before any composer call, naming the field, the words, the door and the reason; each ordinary request
+       is composed;
+    5. the fabric: the Generator stage says the route's refusal as a refusal, whole, never a form's; a composition's
+       run reads its objective (or, with none, its name), its usage area whatever the objective, and each resource's
+       settings and their names before any stage is built, and records no run; an ordinary composition runs;
+    6. the Synthesis Studio: /generate and /stream refuse an ask before anything is composed, saved or streamed, W659's
+       ruling check first; an ordinary request is composed and streamed, and what it kept is removed;
+    7. refine: an ask in the instruction or the title is refused before any rewrite; an ordinary instruction refines;
+       the draft is not read (the stated limit);
+    8. the pages hold the routes' own refusals (their fixtures, captured by a real request) and their rendered tests
+       say each whole; the Law page's captured templates answer is the route's."""
+    import asyncio
+    import importlib.util
+    import inspect
+    import json
+    import pathlib
+    import re
+
+    import agentic_core.api.refine as _refine
+    from agentic_core.ai.gateway import ModelGateway as _gw
+    from agentic_core.ai.native.orchestrator import NativeOrchestrator as _orch
+    from agentic_core.api import resource_fabric as _fab
+    from agentic_core.gaas.v5 import horizon_guardrails as _hg
+    from agentic_core.legal import specialist as _sp
+    from agentic_core.synthesis import api as _syn
+    root = pathlib.Path(__file__).resolve().parents[1]
+    me = inspect.currentframe().f_code.co_name
+    g1194 = "test_w1194_p518_an_unlisted_template_id_is_refused_at_the_draft_form_before_anything_is_composed"
+    g1195 = "test_w1195_p518_an_explicit_ask_for_a_reserved_instrument_is_refused_at_the_draft_form_and_the_clerk"
+    ASK = "Draft the TR1 transfer of my flat to my son"
+    reason = _sp.reserved_reason()
+    help_said = "For help from a person, see the list of where help is"
+    assert help_said in reason and reason.endswith(" Nothing here is legal advice."), reason
+
+    #  1. each door's sentence, and what the screen's sentence says. A later door may be added (the rest row's THE
+    #     WORK): these four are held, not the list's length
+    door = _sp.RESERVED_DOOR_SAID
+    assert {"composition", "generator", "refine", "studio"} <= set(door), sorted(door)
+    assert _sp.RESERVED_DOOR_LIMIT == "It misses most other ways of asking, so a request it does not refuse is not cleared."
+    for k, said in (("generator", ("The Generator (POST /api/v1/generator/produce) reads a request's specification, "
+                                   "artefact type, format and domain, each on its own and together")),
+                    ("studio", ("The Synthesis Studio (POST /api/v1/synthesis/generate and /stream) reads a request's "
+                                "instructions", "before a stream starts; it does not read the files, nor the topic it "
+                                "takes from their names")),
+                    ("refine", ("A refine (POST /api/v1/refine) reads its instruction and the title it is given",
+                                "it does not read the draft")),
+                    ("composition", ("A fabric composition's run (POST /api/v1/resources/compositions/{cid}/run) reads "
+                                     "its objective (or, with none, its name), its usage area and each resource's "
+                                     "settings and their names", "before any stage is built"))):
+        for s in ((said,) if isinstance(said, str) else said):
+            assert s in door[k] and "with the screen the Law draft form and the clerk use" in door[k], (k, s)
+    for said in ("The same screen reads, and refuses there before anything is composed or saved, the words of a request "
+                 "to the Generator (its specification, artefact type, format and domain, each on its own and together), "
+                 "the Synthesis Studio's instructions (not its files, nor the topic it takes from their names), the "
+                 "instruction to refine a tool's output and the title it is given (not the output being refined), and a "
+                 "fabric composition's objective (or, with none, its name), its usage area and each of its resources' "
+                 "settings and their names.",
+                 "A reserved document named as another document's subject (\"a TR1 explainer\", \"a lesson on a legal "
+                 "charge\") is not read as asked for.",
+                 "The platform's other free-text generators are not screened, among them the deliverables' POST "
+                 "/api/v1/deliverables/produce", "the in-house assistant's POST /api/v1/native-ai/complete",
+                 "It misses most other ways of asking"):
+        assert said in _sp.RESERVED_SCREEN, ("the screen's sentence does not say", said)
+    tpl = client.get("/api/v1/law/templates").json()
+    assert tpl["reserved"]["screen_basis"] == _sp.RESERVED_SCREEN, tpl["reserved"]
+    #  a reserved name another document is about is not asked for; the reserved document itself still is
+    for t in ("Prepare a TR1 explainer for clients", "Create a lesson on a contract for the sale of land",
+              "Make the TR1 summary shorter", "Write the transfer of a flat chapter of my textbook",
+              "Write a TR1 form tutorial for paralegal students", "I need help understanding my TR1"):
+        assert _sp.reserved_match(t) is None, ("a document's subject read as asked for", t)
+    for t in ("Draft the TR1 form for my flat", ASK, "Please prepare a transfer deed for the cottage"):
+        assert _sp.reserved_match(t), ("the reserved document itself is no longer read", t)
+
+    #  2. the coverage row, the plan and the rows
+    spec = importlib.util.spec_from_file_location("_sp1195b", root / "scripts" / "screen_phrasings.py")
+    drv = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(drv)
+    lab = dict(drv.RESERVED_AT_DOORS)
+    lim = drv.RESERVED_AT_DOORS_LIMITS
+    d_fors = [t for t, x in drv.RESERVED_AT_DOORS if x == "for" and t not in lim]
+    d_nots = [t for t, x in drv.RESERVED_AT_DOORS if x == "not-for"]
+    drv_src = (root / "scripts" / "screen_phrasings.py").read_text(encoding="utf-8")
+    after = drv_src.split("#  W1195b's builder, after its legal review:", 1)[1].split("\n]\n", 1)[0]
+    review = after.split("#  W1195b's legal review: ordinary requests", 1)[1]
+    r_nots = [t for t in d_nots if repr(t) in review]
+    b_nots = [t for t in d_nots if repr(t) not in after]
+    assert len(r_nots) >= 30 and len(b_nots) >= 70 and len(d_nots) > len(r_nots) + len(b_nots), (len(r_nots), len(b_nots))
+    cov = {r["id"]: r for r in json.loads((root / "docs" / "COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    crow = cov["law-reserved-instruments"]
+    assert crow["guarded_by"][:3] == [g1194, g1195, me] and crow["state"] == "route_only", crow["guarded_by"]
+    assert "(W1194, W1195, W1195b" in crow["today"], crow["today"][-200:]
+    for said in ("the same screen reads the words of a request to the Generator's POST /api/v1/generator/produce (its "
+                 "specification, artefact type, format and domain, each on its own and together)",
+                 "POST /api/v1/refine (the instruction to refine a tool's output, the Law page's draft among them, and "
+                 "the title it is given; not the draft)", "its objective, or with none its name, its usage area, and "
+                 "each resource's settings and their names, before any stage is built",
+                 "each refusal naming its route and saying that the screen misses most other ways of asking",
+                 "the fabric's Generator stage, called in process, says the Generator's refusal as a refusal",
+                 "a reserved document named as another document's subject", "which is not a clearance",
+                 f"none of the builder's own {len(b_nots)} ordinary requests or requests about a document",
+                 "(out of sample, but not blind)", f"nor any of the legal review's {len(r_nots)} ordinary requests",
+                 "(labelled after it, so in-sample)", f"{len(d_fors)} of the builder's {len(d_fors) + len(lim)} explicit "
+                 "asks were read, a figure that is high because the builder had read the screen's patterns",
+                 "the recall that generalises is W1195's (27 of 87 on its corpus, in-sample; 1 of 50",
+                 "refuses none of 168 others", "the platform's other free-text generators are not screened, among them "
+                 "the deliverables"):
+        assert said in crow["today"], ("the coverage row does not say", said)
+    plan = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    p518 = " ".join(plan.split("\n P5.18 [chartered W711", 1)[1].split("\n P5.19 [chartered W711", 1)[0].split())
+    m = re.search(r"UPDATED \d{4}-\d{2}-\d{2} \(W1195b\): (.*?)(?= UPDATED |$)", p518)
+    assert m, p518[-800:]
+    line = m.group(1)
+    assert line.startswith("the screen W1195 built reads four more of the routes a person would use: "), line[:200]
+    rows = json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    gap = [x for x in rows if x["title"].startswith(
+        "A reserved instrument asked for in another free-text generator's words is composed, among them")]
+    rest = [x for x in rows if x["title"].startswith("A reserved instrument asked for in a free-text route W1195b does "
+                                                     "not screen is composed")]
+    assert len(gap) == 1 and len(rest) == 1, ([x["id"] for x in gap], [x["id"] for x in rest])
+    gap, rest = gap[0], rest[0]
+    #  closed by this round's apply, as built, so its id never depends on the chain's order
+    assert (gap["status"], gap.get("closed_by"), gap.get("because")) == ("done", "W1195b", "built"), (
+        "the gap row W1195 registered is not closed as built by this round", gap["status"], gap.get("closed_by"))
+    for said in ("Built in W1195b: the screen W1195 built for the Law draft form and the clerk reads four more of the "
+                 "routes a person would use", "P5.18 clause 4's ACCEPT is still not met",
+                 "that the screen misses most other ways of asking", "the recall that generalises is W1195's",
+                 "its usage area, which reaches every resource as its domain", "test_w1195b holds it"):
+        assert said in (gap.get("close_note") or ""), ("the gap row's close note does not say", said)
+    for said in ("is still not met", f"This closes {gap['id']}.", f"that is {rest['id']}, registered here",
+                 f"is guarded as well by {me}.", "the draft is not read", "before any stage is built",
+                 "after W659's ruling check and before a stream starts",
+                 "one it does not read is refined, which is not a clearance",
+                 f"none of {len(b_nots)} ordinary requests or requests about a document is refused and {len(d_fors)} of "
+                 f"{len(d_fors) + len(lim)} explicit asks are read, a recall that is high because the builder had read "
+                 "the patterns", "the recall that generalises is W1195's, 27 of 87 on its corpus and 1 of 50"):
+        assert said in line, ("P5.18's W1195b line does not say", said)
+    #  the rest row: open, or closed by a later round as its THE WORK asks
+    assert (rest["slot"], rest["severity"], rest["owner_gated"]) == ("P5.18", "medium", False), rest
+    assert rest["status"] == "open" or str(rest.get("closed_by") or "") > "W1195b", (rest["status"], rest.get("closed_by"))
+    assert rest["source"].startswith("W1195b (") and {"agentic_core/api/deliverables.py", "agentic_core/api/native_ai.py",
+                                                      "agentic_core/avatars/api.py"} <= set(rest["files"]), rest["files"]
+    for said in ("POST /api/v1/deliverables/produce", "POST /api/v1/career/generate", "once a document is recorded",
+                 "POST /api/v1/native-ai/complete", "POST /api/v1/avatar/chat", "POST /api/v138/ceo/chat",
+                 "POST /api/v1/support/ask", "the Authorship engine, POST /api/v1/intelligence/authorship",
+                 "found among the routes the app mounts", "retired and answer 410 before composing anything",
+                 "POST /api/v1/vsb/spawn (W695)", "Probed on the tree before W1195b's edits",
+                 "the other routes were read in the code, not probed", "legal/specialist.refuse_reserved",
+                 "W580's method", "for a conversational route, decide first", f"closing {gap['id']}"):
+        assert said in rest["why"], ("the row of the routes left does not say", said)
+    mounted = {re.sub(r"\{[^}]*\}", "{}", getattr(r, "path", "")) for r in client.app.routes
+               if "POST" in (getattr(r, "methods", None) or ())}
+    named = {re.sub(r"\{[^}]*\}", "{}", p).rstrip(".") for p in re.findall(r"POST (/api/[^\s,;()']+)", rest["why"])}
+    assert named and not sorted(named - mounted), ("the rest row names a POST route the app does not mount",
+                                                   sorted(named - mounted))
+
+    #  3. the doors' own labelled phrasings, and their stated limits
+    assert len(lab) == len(drv.RESERVED_AT_DOORS) >= 120 and set(lim) <= {t for t, x in drv.RESERVED_AT_DOORS if x == "for"}
+    wrong = [(x, t) for t, x in drv.RESERVED_AT_DOORS if (_sp.reserved_kind(t) is not None) != (x == "for") and t not in lim]
+    assert not wrong, ("the screen and the doors' labelled list disagree", wrong)
+    assert not [t for t in lim if _sp.reserved_kind(t) is not None], "a stated limit the screen now reads"
+    assert 'results.append(_table("legal.reserved at four more doors (W1195b)", RESERVED_AT_DOORS,' in _code_only(drv_src)
+    w_fors = [t for t, x in drv.RESERVED if x == "for" and t not in drv.RESERVED_LIMITS]
+    w_nots = [t for t, x in drv.RESERVED if x == "not-for"]
+
+    #  the composers, each a recorder: what a door sends is seen, and nothing is composed for real
+    heard = []
+
+    def _hear(name, prompt, kw):
+        heard.append((name, str(kw.get("user_text") or "") + " " + str(prompt)))
+
+    async def _complete(self, prompt, *a, **kw):
+        _hear("complete", prompt, kw)
+        return {"output": "w1195b composed", "served_by": "native", "is_external": False}
+
+    async def _query(self, prompt, *a, **kw):
+        _hear("query_meta", prompt, kw)
+        return {"output": "w1195b composed", "served_by": "native", "is_external": False}
+
+    async def _stream(self, prompt, *a, **kw):
+        _hear("stream_meta", prompt, kw)
+        yield {"token": "w1195b "}
+        yield {"token": "streamed"}
+        yield {"done": True, "served_by": "native", "is_external": False, "output": "w1195b streamed"}
+
+    async def _ai(prompt, agent, **kw):
+        _hear("ai_text", prompt, kw)
+        return "w1195b refined", {"served_by": "w1195b", "is_external": False}
+    monkeypatch.setattr(_orch, "complete", _complete)
+    monkeypatch.setattr(_gw, "query_meta", _query)
+    monkeypatch.setattr(_gw, "stream_meta", _stream)
+    monkeypatch.setattr(_refine, "ai_text", _ai)
+    #  the singletons as well: an earlier test that restored a method by assignment (`_orch.complete = _real`, as
+    #  test_w708 does) left the bound original in the instance's __dict__, which shadows a patch on the class, so the
+    #  doors would compose for real behind these recorders (the K run's 'an ordinary request refused')
+    from agentic_core.ai import gateway as _gwmod1195b
+    from agentic_core.ai.native.orchestrator import orchestrator as _orch_one
+
+    async def _complete_one(prompt, *a, **kw):
+        return await _complete(_orch_one, prompt, *a, **kw)
+
+    async def _query_one(prompt, *a, **kw):
+        return await _query(_gwmod1195b.gateway, prompt, *a, **kw)
+
+    def _stream_one(prompt, *a, **kw):
+        return _stream(_gwmod1195b.gateway, prompt, *a, **kw)
+    monkeypatch.setattr(_orch_one, "complete", _complete_one)
+    monkeypatch.setattr(_gwmod1195b.gateway, "query_meta", _query_one)
+    monkeypatch.setattr(_gwmod1195b.gateway, "stream_meta", _stream_one)
+
+    def _refused(r, subject, act, where, words, kept, k):
+        assert r.status_code == 409, (words, r.status_code, r.text[:200])
+        d, mm = r.json()["detail"], _sp.reserved_match(words)
+        assert d.startswith(f"'{subject}' is not {act}: the words \"{mm['words']}\" in {where} were read as asking to "
+                            f"prepare {mm['said']}, which would fall under \"{mm['clause']}\", one of the reserved "
+                            f"documents, so nothing was {kept}. The screen reads words, not what a document is. "
+                            f"{_sp.RESERVED_DOOR_LIMIT} {door[k]} ") and d.endswith(reason) and help_said in d, d
+        return d
+
+    #  4. the Generator: every field read, on its own and together, before any composer call; an ordinary request composed
+    for t in d_fors + w_fors:
+        _refused(client.post("/api/v1/generator/produce", json={"artefact_type": "content", "spec": t}),
+                 "content", "generated", "the specification", t, "composed", "generator")
+    for field, where in (("artefact_type", "the artefact type"), ("format", "the format"), ("domain", "the domain")):
+        r = client.post("/api/v1/generator/produce", json={"spec": "W1195b made up: a short note", field: ASK})
+        _refused(r, ASK if field == "artefact_type" else "content", "generated", where, ASK, "composed", "generator")
+    split = {"artefact_type": "content", "spec": "Please draft the", "format": "TR1 transfer of my flat", "domain": "general"}
+    assert not any(_sp.reserved_match(v) for v in split.values()), split
+    _refused(client.post("/api/v1/generator/produce", json=split), "content", "generated",
+             "the specification, artefact type, format and domain read together",
+             "Please draft the content TR1 transfer of my flat general", "composed", "generator")
+    assert heard == [], ("a composer was called for an explicit ask at the Generator", heard[:3])
+    for t in d_nots + w_nots:
+        r = client.post("/api/v1/generator/produce", json={"artefact_type": "content", "spec": t})
+        assert r.status_code == 200 and r.json()["output"] == "w1195b composed", ("an ordinary request refused", t, r.text[:200])
+    assert len(heard) == len(d_nots + w_nots) and all(t in h for t, (_n, h) in zip(d_nots + w_nots, heard)), len(heard)
+
+    #  5. the fabric: the Generator stage's refusal, said as a refusal; a composition's run reads its words first
+    heard.clear()
+    loop = asyncio.new_event_loop()
+    g = client.post("/api/v1/generator/produce", json={"artefact_type": "content", "spec": ASK, "domain": "general",
+                                                       "format": "markdown", "model": "auto"})
+    a = loop.run_until_complete(_fab._run_real_resource_handler("generator", {"spec": ASK}, "w1195b objective", "general"))
+    b = loop.run_until_complete(_fab._run_real_resource_handler("generator", {}, ASK, "general"))
+    c = loop.run_until_complete(_fab._run_real_resource("generator", {"spec": ASK}, "w1195b objective", "general"))
+    assert a["refused"] is True and a["status"] == 409 and a["output"] is None and a["detail"] == g.json()["detail"], a
+    assert "\" in the specification were read as asking to prepare " in b["detail"] and b["refused"] is True, b
+    assert (c["outcome"], c["outcome_phrase"], c["kind_phrase"], c["endpoint"]) == (
+        "refused", _fab._ROUTE_REFUSED_PHRASE, _fab._ROUTE_REFUSED_PHRASE, "/api/v1/generator/produce"), c
+    assert "the form's own rules" not in c["outcome_phrase"] and "error" not in c and heard == [], (c, heard)
+    ok = loop.run_until_complete(_fab._run_real_resource_handler("generator", {"spec": d_nots[0]}, "o", "general"))
+    assert ok.get("output") == "w1195b composed" and not ok.get("refused"), ok
+    made = []
+
+    def _compose(name, cfg, usage="synthesis"):
+        r = client.post("/api/v1/resources/compose", json={"name": name, "resource_ids": ["generator"],
+                                                           "usage_area": usage, "config": {"generator": cfg}})
+        assert r.status_code == 200, r.text[:300]
+        made.append(r.json()["id"])
+        return r.json()["id"]
+    runs0 = len(_fab._composition_runs_read()[0])
+    heard.clear()
+    cid = _compose("w1195b composition", {"spec": ASK})
+    _refused(client.post(f"/api/v1/resources/compositions/{cid}/run", json={"objective": "a short note for a team"}),
+             cid, "run", "the generator resource's spec setting", ASK, "run or composed", "composition")
+    cid2 = _compose("w1195b plain composition", {"spec": d_nots[1]})
+    _refused(client.post(f"/api/v1/resources/compositions/{cid2}/run", json={"objective": ASK}),
+             cid2, "run", "the objective", ASK, "run or composed", "composition")
+    _refused(client.post(f"/api/v1/resources/compositions/{cid2}/run", json={"params": {"generator": {"format": ASK}}}),
+             cid2, "run", "the generator resource's format setting", ASK, "run or composed", "composition")
+    #  a setting's name reaches its stage as "name=value", so it is read too (W1195b's legal review, F2)
+    _refused(client.post(f"/api/v1/resources/compositions/{cid2}/run", json={"objective": "a short note",
+                                                                             "params": {"generator": {ASK: "yes"}}}),
+             cid2, "run", "the name of a setting of the generator resource", ASK, "run or composed", "composition")
+    cid3 = _compose(ASK, {"spec": d_nots[2]})
+    _refused(client.post(f"/api/v1/resources/compositions/{cid3}/run", json={}),
+             cid3, "run", "the composition's name", ASK, "run or composed", "composition")
+    cid4 = _compose("w1195b composition by area", {"spec": d_nots[3]}, usage=ASK)
+    _refused(client.post(f"/api/v1/resources/compositions/{cid4}/run", json={}),
+             cid4, "run", "the composition's usage area", ASK, "run or composed", "composition")
+    #  the usage area reaches every resource as its domain, so it is read whatever the objective (review F1)
+    _refused(client.post(f"/api/v1/resources/compositions/{cid4}/run", json={"objective": "W1195b made up: a short note"}),
+             cid4, "run", "the composition's usage area", ASK, "run or composed", "composition")
+    assert heard == [] and len(_fab._composition_runs_read()[0]) == runs0, ("a refused composition ran or was recorded",
+                                                                            heard[:3])
+    #  the name is read only when no objective is sent: with one, the name reaches no stage (W1195b review F11)
+    r = client.post(f"/api/v1/resources/compositions/{cid3}/run", json={"objective": "W1195b made up: a short note"})
+    assert r.status_code == 200 and r.json().get("final"), (r.status_code, r.text[:300])
+    r = client.post(f"/api/v1/resources/compositions/{cid2}/run", json={"objective": d_nots[4]})
+    assert r.status_code == 200 and r.json().get("final"), (r.status_code, r.text[:300])
+    for x in made:
+        client.delete(f"/api/v1/resources/compositions/{x}")
+    assert not [x for x in made if client.get(f"/api/v1/resources/compositions/{x}").status_code == 200], made
+
+    #  6. the Synthesis Studio: /generate and /stream, after the ruling check, before anything is composed or saved
+    heard.clear()
+    hist = len(_syn.synthesis_manager.history)
+    files = sorted(p.name for p in _syn.synthesis_manager.output_dir.glob("*"))
+    for t in d_fors + w_fors[::4]:
+        _refused(client.post("/api/v1/synthesis/generate", json={"content_ids": [], "output_type": "report",
+                                                                  "instructions": t}),
+                 "report", "generated", "the instructions", t, "composed or saved", "studio")
+    for t in d_fors[::3] + w_fors[1::8]:
+        r = client.post("/api/v1/synthesis/stream", json={"content_ids": [], "output_type": "report", "instructions": t})
+        assert not r.headers.get("content-type", "").startswith("text/event-stream"), (t, r.headers.get("content-type"))
+        assert r.json()["detail"] == client.post("/api/v1/synthesis/generate", json={
+            "content_ids": [], "output_type": "report", "instructions": t}).json()["detail"], t
+        _refused(r, "report", "generated", "the instructions", t, "composed or saved", "studio")
+    assert heard == [] and len(_syn.synthesis_manager.history) == hist, ("the studio composed or kept an ask", heard[:3])
+    assert sorted(p.name for p in _syn.synthesis_manager.output_dir.glob("*")) == files, "the studio saved an ask"
+    both = "Draft the TR1 transfer of my flat to my son and give a fatwa on whether riba is haram in it"
+    assert _hg.religious_ruling_gate(both).get("matched") is True and _sp.reserved_match(both), both
+    for route in ("/api/v1/synthesis/generate", "/api/v1/synthesis/stream"):
+        r = client.post(route, json={"content_ids": [], "output_type": "report", "instructions": both})
+        assert r.status_code == 409 and isinstance(r.json()["detail"], dict) and r.json()["detail"].get("refused_by"), (
+            "the ruling check is no longer first", route, r.text[:200])
+    for t in d_nots:
+        r = client.post("/api/v1/synthesis/generate", json={"content_ids": [], "output_type": "report", "instructions": t})
+        assert r.status_code == 200 and (r.json().get("content") or "").strip(), ("an ordinary request refused", t, r.text[:200])
+    for t in d_nots[::6]:
+        with client.stream("POST", "/api/v1/synthesis/stream",
+                           json={"content_ids": [], "output_type": "report", "instructions": t}) as st:
+            body = "".join(st.iter_text())
+        assert st.status_code == 200 and st.headers["content-type"].startswith("text/event-stream"), (t, st.status_code)
+        assert '"token"' in body and '"done"' in body, (t, body[:200])
+    #  what the ordinary requests kept is removed, so no later test reads this leg's outputs
+    del _syn.synthesis_manager.history[hist:]
+    for p in _syn.synthesis_manager.output_dir.glob("*"):
+        if p.name not in files:
+            p.unlink()
+    assert sorted(p.name for p in _syn.synthesis_manager.output_dir.glob("*")) == files
+
+    #  7. refine: the instruction and the title read, the draft not
+    heard.clear()
+    draft = "W1195b made up: a short service agreement between two firms."
+    for t in d_fors + w_fors[2::4]:
+        _refused(client.post("/api/v1/refine", json={"previous": draft, "instruction": t,
+                                                     "context": "Legal Document Generator"}),
+                 "Legal Document Generator", "refined", "the instruction", t, "composed", "refine")
+    r = client.post("/api/v1/refine", json={"previous": draft, "instruction": ASK})
+    _refused(r, "this output", "refined", "the instruction", ASK, "composed", "refine")
+    r = client.post("/api/v1/refine", json={"previous": draft, "instruction": "Do what the title says, in full",
+                                            "context": ASK})
+    _refused(r, ASK, "refined", "the title it was given", ASK, "composed", "refine")
+    assert heard == [], ("a draft was rewritten for an explicit ask", heard[:3])
+    for t in d_nots:
+        r = client.post("/api/v1/refine", json={"previous": draft, "instruction": t})
+        assert r.status_code == 200 and r.json()["refined"], ("an ordinary instruction refused", t, r.text[:200])
+    r = client.post("/api/v1/refine", json={"previous": ASK, "instruction": "Make it shorter"})
+    assert r.status_code == 200, ("the stated limit: the draft being refined is not read", r.status_code)
+    assert len(heard) == len(d_nots) + 1
+
+    #  8. the pages: each fixture's refusal is the route's own, and each rendered test says it whole
+    pages = root / "apps" / "workstation-superapp" / "src" / "pages"
+    gfx = json.loads((pages / "developers" / "Generator.fixture.json").read_text(encoding="utf-8"))
+    sfx = json.loads((pages / "synthesis" / "SynthesisStudio.fixture.json").read_text(encoding="utf-8"))
+    lfx = json.loads((pages / "domains" / "LawHub.fixture.json").read_text(encoding="utf-8"))
+    s = client.post("/api/v1/synthesis/generate", json={"content_ids": [], "output_type": "report", "instructions": ASK})
+    assert gfx["reserved"] == {"status": g.status_code, "body": g.json()} and g.status_code == 409, (
+        "the Generator page's captured refusal is not the route's: take it again with w1195b_probe.py", g.status_code)
+    assert sfx["reserved"] == {"status": s.status_code, "body": s.json()} and s.status_code == 409, (
+        "the Synthesis Studio page's captured refusal is not the route's", s.status_code)
+    assert lfx["templates"] == tpl, "the Law page's captured templates answer is not the route's"
+    for d in (gfx["reserved"]["body"]["detail"], sfx["reserved"]["body"]["detail"]):
+        assert help_said in d and len(d) > 160, d
+    gvt = _code_only((pages / "developers" / "Generator.test.tsx").read_text(encoding="utf-8"))
+    svt = _code_only((pages / "synthesis" / "SynthesisStudio.test.tsx").read_text(encoding="utf-8"))
+    for line in ("it('an explicit ask for a reserved document is refused, and the page says the route\\'s reason whole'",
+                 "serve(captured.reserved);", "generate('Draft the TR1 transfer of my flat to my son');",
+                 "expect(reason).toContain('For help from a person, see the list of where help is');",
+                 "expect(await screen.findByText(`[ERROR] Failed (HTTP 409): ${reason}`)).toBeTruthy();"):
+        assert line in gvt, ("the Generator's rendered test no longer reads this", line)
+    for line in ("it('says a reserved document asked for by the route\\'s reason, whole'",
+                 "serve({ generate: { refused: captured.reserved.status, body: captured.reserved.body } });",
+                 "expect(reason).toContain('For help from a person, see the list of where help is');",
+                 "`Generation failed for report: Failed (HTTP 409): ${reason}`));"):
+        assert line in svt, ("the studio's rendered test no longer reads this", line)
+    gen_page = _code_only((pages / "developers" / "Generator.tsx").read_text(encoding="utf-8"))
+    studio_page = _code_only((pages / "synthesis" / "SynthesisStudio.tsx").read_text(encoding="utf-8"))
+    assert "setError(`Failed (HTTP ${res.status}): ${axiosDetail({ response: { data: d } }, 'no reason given')}`);" in gen_page
+    assert "setErrorMsg(`Generation failed for ${type}: ${errorMessage(e)}`);" in studio_page
