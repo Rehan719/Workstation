@@ -22581,7 +22581,7 @@
       "slot": "P4.3",
       "status": "done",
       "closed_by": "W755",
-      "note": "",
+      "note": "OWNER RULING 2026-11-22 (W1242), amending the ruling of 2026-11-06 recorded in slot_source and close_note above, which are kept: the Owner wrote, in chat, after the recommendations were put, \"I want to go with all your recommendations\". With the external switch on and no in-house model reachable, both the query and the stream path try the external provider before the floor; the in-house model is still tried first wherever one is up, except for a query that asks for an external (prefer_external, the native-AI console's and the resource fabric's own option), which still has the allowed externals ahead of it, as before; the W899 class check and the hourly cap still apply to every call. Built in W1242 (gateway.py, orchestrator.py, genesis.py).",
       "slot_source": "Owner ruling 2026-11-06 (W754): accepted as recommended: option (a), the in-house-first order, built in P4.3 before the switch flips",
       "tier": 3,
       "because": "built",
@@ -28997,6 +28997,76 @@
       "closed_by": null,
       "note": "",
       "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a later item of the restart, not first release; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1937",
+      "title": "Every AI caller but four (the Genesis journey, the AI CEO, the native-AI console, the resource fabric) declares no data class, so with the external switch on and no local model its calls still stay on the floor",
+      "why": "MEASURED W1242: with the Owner's ruling of 2026-11-22 an AI call tries an external provider before the floor when the switch is on and no in-house model is reachable, but only for a call that declares a class that may leave (agentic_core/ai/data_class.py). Four callers declare one: the Genesis journey (W1242, person_entered, except its religion, care and education domains and a problem the religious subject screen flags), the AI CEO's chat and C-Suite meeting (W1239), the native-AI console and the resource fabric (W899). No other caller of the gateway or the orchestrator declares a class: the synthesis studio (agentic_core/api/synthesis_studio.py), the forge (agentic_core/api/forge.py) and the domain tools (their one helper, ai_text in agentic_core/api/_ai_provenance.py) among them, so they stay on the floor and do not say that this is why. Each needs reading for what it sends: a studio that sends only the founder's own business text can declare person_entered; a domain tool that carries the legal matter (barred by the Owner's ruling of 2026-10-03c) or religious, health or children's material, which the Genesis journey keeps in, stays on the floor and says why.",
+      "source": "W1242 (the Owner's ruling of 2026-11-22)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/api/synthesis_studio.py",
+        "agentic_core/api/forge.py",
+        "agentic_core/api/_ai_provenance.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.2, the Owner's ruling of 2026-11-22 (W1242): what an invited person meets on a server with no model, and what a journey's calls may carry out, are settled before the invited stage opens"
+    },
+    {
+      "id": "FU-1938",
+      "title": "The synthesis studio says no plain no-model notice before what the fallback produced, when every call was floor-served",
+      "why": "MEASURED W1242 (the Owner's genesis attempt of 2026-11-22, all 14 calls floor-served, showed the fallback's repeated frames under every heading with the technical labels first): Genesis now says first, in plain words, that no model answered so the steps wrote nothing, what was saved and how a model is added; folds the fallback's frames behind a toggle; and moves the technical labels into a details disclosure (W1242, W1242b). The notice is the journey route's own (no_model) and the fold is the page's, so there was nothing small and shared to reuse; the AI CEO chat says its own (W1239). pages/synthesis/SynthesisStudio.tsx has no such notice: it holds no sentence saying that no model is connected. Its route would say when every call was floor-served, and the page say it plainly before the frames, the technical labels kept.",
+      "source": "W1242 (the Owner's ruling of 2026-11-22)",
+      "found": "2026-11-27",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/SynthesisStudio.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.2, the Owner's ruling of 2026-11-22 (W1242): what an invited person meets on a server with no model, and what a journey's calls may carry out, are settled before the invited stage opens"
+    },
+    {
+      "id": "FU-1939",
+      "title": "The forge pipeline says no plain no-model notice before what the fallback produced, when every call was floor-served",
+      "why": "MEASURED W1242 (the Owner's genesis attempt of 2026-11-22, all 14 calls floor-served, showed the fallback's repeated frames under every heading with the technical labels first): Genesis now says first, in plain words, that no model answered so the steps wrote nothing, what was saved and how a model is added; folds the fallback's frames behind a toggle; and moves the technical labels into a details disclosure (W1242, W1242b). The notice is the journey route's own (no_model) and the fold is the page's, so there was nothing small and shared to reuse; the AI CEO chat says its own (W1239). pages/developers/ForgePipeline.tsx has no such notice: it holds no sentence saying that no model is connected. Its route would say when every call was floor-served, and the page say it plainly before the frames, the technical labels kept.",
+      "source": "W1242 (the Owner's ruling of 2026-11-22)",
+      "found": "2026-11-27",
+      "files": [
+        "apps/workstation-superapp/src/pages/developers/ForgePipeline.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.2, the Owner's ruling of 2026-11-22 (W1242): what an invited person meets on a server with no model, and what a journey's calls may carry out, are settled before the invited stage opens"
+    },
+    {
+      "id": "FU-1940",
+      "title": "The domain tool form says no plain no-model notice before what the fallback produced, when every call was floor-served",
+      "why": "MEASURED W1242 (the Owner's genesis attempt of 2026-11-22, all 14 calls floor-served, showed the fallback's repeated frames under every heading with the technical labels first): Genesis now says first, in plain words, that no model answered so the steps wrote nothing, what was saved and how a model is added; folds the fallback's frames behind a toggle; and moves the technical labels into a details disclosure (W1242, W1242b). The notice is the journey route's own (no_model) and the fold is the page's, so there was nothing small and shared to reuse; the AI CEO chat says its own (W1239). components/DomainTool.tsx has no such notice: it holds no sentence saying that no model is connected. Its route would say when every call was floor-served, and the page say it plainly before the frames, the technical labels kept.",
+      "source": "W1242 (the Owner's ruling of 2026-11-22)",
+      "found": "2026-11-27",
+      "files": [
+        "apps/workstation-superapp/src/components/DomainTool.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.2, the Owner's ruling of 2026-11-22 (W1242): what an invited person meets on a server with no model, and what a journey's calls may carry out, are settled before the invited stage opens"
     }
   ],
   "routes": [

@@ -312,6 +312,26 @@ def _reorder_by_health(order: List[str]) -> List[str]:
     return head + tail + bad
 
 
+def _external_before_floor(order: List[str]) -> List[str]:
+    """W1242 (OWNER RULING 2026-11-22) - WITH NO IN-HOUSE MODEL REACHABLE, AN ALLOWED EXTERNAL IS TRIED BEFORE THE FLOOR.
+
+    The registry lists an external accelerant only with the Owner's switch on and its key set, after the floor, and
+    the floor always answers, so under the ruling of 2026-11-06 (W755) a call that did not ask (prefer_external)
+    never reached one. When no in-house model is reachable for this call - none is listed (local disabled, or the
+    runtime not answering with a model) or every listed one's breaker is open - the externals move to just before the
+    floor. With one reachable the order stands: the in-house model is tried first and the floor answers when it
+    fails. The class check (W899) and the hourly cap (W335) still run on every external attempt, in _run_model."""
+    ext = [n for n in order if n in ("anthropic", "openai")]
+    if not ext or "native" not in order:
+        return order
+    local = [n for n in order if n == "ollama" or n.startswith("ollama:")]
+    if any(not _breaker_open(n) for n in local):
+        return order
+    rest = [n for n in order if n not in ext]
+    at = rest.index("native")
+    return rest[:at] + ext + rest[at:]
+
+
 # ── W506 (P2.8(1)) — which EXTRA branches a goal or concept calls for ─────────────────────────
 #
 # These rules were inline in `_plan_tree` and the Genesis journey, which runs six FIXED stages, could not
@@ -401,6 +421,8 @@ class NativeOrchestrator:
             order = [f"ollama:{prefer.split(':', 1)[1]}", "native"]
         else:
             order = _reorder_by_health(registry.select(prefer_external=prefer_external))
+            if not prefer_external:                # W1242 (OWNER RULING 2026-11-22) - no in-house model: external next
+                order = _external_before_floor(order)
         tried: List[str] = []
         _fire("cognitive", f"native.{agent}", f"orchestrate: {prompt[:60]}", 0.5)
         for name in order:

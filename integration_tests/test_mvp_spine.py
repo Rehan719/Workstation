@@ -70119,7 +70119,13 @@ def test_w753_with_sign_in_on_the_signed_in_person_is_stamped(client, monkeypatc
 
 def test_w755_fu1124_a_stream_reaches_an_external_only_when_asked(monkeypatch):
     """W755 (FU-1124, Owner ruling 2026-11-06, option (a)): with the switch ON and a key set, a stream that does not
-    ask is answered in-house; only a caller passing prefer_external reaches the accelerant."""
+    ask is answered in-house; only a caller passing prefer_external reaches the accelerant.
+    CHANGED ON PURPOSE by W1242, citing the OWNER RULING of 2026-11-22 (the Owner wrote, in chat, after the
+    recommendations were put: "I want to go with all your recommendations"), which amends option (a): with the switch
+    on and no in-house model reachable (local disabled here), a stream tries the external before the floor whether or
+    not it asks. Its plain stream below declares no data class, so it is still not sent (W899), and that is now the
+    reason; a declared stream that does not ask reaches the provider; and an asking stream still does. The name is
+    kept, as the record of the 2026-11-06 ruling it was built for."""
     import asyncio
     import agentic_core.ai.gateway as _g
     monkeypatch.setenv("AI_ALLOW_EXTERNAL", "true")
@@ -70154,7 +70160,15 @@ def test_w755_fu1124_a_stream_reaches_an_external_only_when_asked(monkeypatch):
 
     _plain = _run()
     assert _plain[-1].get("is_external") is False and not _calls, (
-        "with the switch on, a stream that did not ask was served externally before the floor", _plain[-1], _calls)
+        "with the switch on, a stream that declared no class was served externally", _plain[-1], _calls)
+    assert "declared no data class" in _plain[-1]["data_class"]["checks"][0]["why"], (
+        "the undeclared stream was kept on the floor for some reason other than its missing class (W1242)",
+        _plain[-1]["data_class"])
+    _declared = _run(data_class="person_entered")       # W1242 (OWNER RULING 2026-11-22) - no ask, no local model
+    assert _calls == ["claude"] and _declared[-1].get("is_external") is True, (
+        "with the switch on and no local model, a declared stream that did not ask was not sent (W1242)",
+        _declared[-1].get("served_by"), _calls)
+    _calls.clear()
     _asked = _run(prefer_external=True, data_class="person_entered")     # W899 (FU-610) - what it carries
     assert _calls and _asked[-1].get("is_external") is True, (
         "a caller that asked for an external with the switch on was not served by one", _asked[-1], _calls)
@@ -109371,3 +109385,307 @@ def test_w1241_the_ceo_asks_for_an_external_model_and_declares_its_class_and_not
     for no in ("AI_ALLOW_EXTERNAL=", "/home/", "C:\\", "Users/", "~/"):
         assert no not in sec, ("the section sets the switch or names a personal path", no)
     assert not re.search(r"(?i)\b(claude-|gpt-|sonnet|haiku|opus)", sec), "the section names a model"
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1242 - OWNER RULING 2026-11-22: with the switch on and no in-house model reachable, a declared AI call tries the
+#  external provider before the floor, on the query and the stream path; and the Genesis journey declares its class
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1242_with_the_switch_on_and_no_in_house_model_a_declared_call_tries_the_external_before_the_floor(
+        client, monkeypatch):
+    """W1242. The Owner wrote on 2026-11-22, in chat, after the recommendations were put: "I want to go with all your
+    recommendations". It amends the ruling of 2026-11-06 (W755, FU-1124, option (a)), under which a caller had to pass
+    prefer_external and no product journey did. Driven IN THIS PROCESS ONLY: the Owner's switch is read through
+    model_resource.external_allowed, which this test replaces (it never sets AI_ALLOW_EXTERNAL); the key is a
+    placeholder in this test's environment; the provider is a fake client that records every call, so nothing is sent
+    anywhere. Held here:
+    1. with the switch off nothing external is attempted, on either path, a declared call with a key set included;
+    2. with the switch on and the local model disabled, a declared call that does not ask reaches the provider on the
+       stream and the query path; an undeclared call does not, nor does a barred class (the legal matter), each kept
+       on the floor with the check's reason; the hourly cap still bounds it; and with no key set nothing is sent;
+    3. with a local model up, it is used first on both paths, and when it fails the floor answers, not the provider;
+       with every local model's breaker open, or the local runtime not answering with a model, none is reachable,
+       and a declared call goes out on both paths;
+    4. the Genesis journey declares person_entered, except the religion, care and education domains and a problem
+       the religious subject screen flags; a declared journey reaches the provider, a kept one does not and says why,
+       and a journey every call of which was floor-served says, in plain words, that no model answered, what was
+       saved and how a model is added; the routes' decorator and the establish stream's wrapper put the class in
+       force where the calls run;
+    5. the dated OWNER RULING 2026-11-22 notes are where the 2026-11-06 ruling is recorded, the old words kept, and
+       test_w755 says why it changed; nothing in the three files sets the switch."""
+    import asyncio
+    import importlib
+    import pathlib
+    import sys
+    import time
+    import types
+    from agentic_core.ai import data_class as _dc
+    from agentic_core.ai import gateway as _g
+    from agentic_core.api import genesis as _gen
+    from agentic_core.organism.self_healing import self_healer as _sh
+    _o = importlib.import_module("agentic_core.ai.native.orchestrator")     # the MODULE (W734's note)
+    _mr = importlib.import_module("agentic_core.ai.native.model_resource")
+    root = pathlib.Path(__file__).resolve().parents[1]
+    sent = []
+
+    class _Stream:
+        def __init__(self, **kw):
+            sent.append("stream")
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc):
+            return False
+
+        @property
+        def text_stream(self):
+            async def _gen1():
+                for t in ("w1242 ", "external ", "reply."):
+                    yield t
+            return _gen1()
+
+        async def get_final_message(self):
+            return types.SimpleNamespace(usage=None)
+
+    class _Messages:
+        async def create(self, **kw):
+            sent.append("query")
+            return types.SimpleNamespace(content=[types.SimpleNamespace(text="w1242 external reply.")], usage=None)
+
+        def stream(self, **kw):
+            return _Stream(**kw)
+
+    class _Anthropic:
+        def __init__(self, api_key=None, **_k):
+            self.messages = _Messages()
+    fa = types.ModuleType("anthropic")
+    fa.AsyncAnthropic = _Anthropic
+    monkeypatch.setitem(sys.modules, "anthropic", fa)
+    switch = {"on": False}
+    monkeypatch.setattr(_mr, "external_allowed", lambda: switch["on"])      # the Owner's switch, never set here
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "w1242-placeholder-not-a-key")   # this test's environment only
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setenv("EXTERNAL_MAX_CALLS_PER_HOUR", "100")
+    monkeypatch.setattr(_o.NativeOrchestrator, "_external_calls", [])
+    monkeypatch.setattr(_o, "_reorder_by_health", lambda order: order)    # no earlier record decides the order
+    monkeypatch.setattr(_o, "_breaker_open", lambda name: False)
+    monkeypatch.setattr(_sh, "is_open", lambda endpoint, *_a, **_k: False)
+    monkeypatch.setattr(_sh, "record_failure", lambda endpoint, *_a, **_k: None)
+    monkeypatch.setattr(_sh, "record_success", lambda endpoint, *_a, **_k: None)
+    monkeypatch.setattr(_g.gateway, "anthropic_key", "w1242-placeholder-not-a-key")
+    monkeypatch.setattr(_g.gateway, "openai_key", None)
+
+    def stream(**kw):
+        async def _go():
+            return [ev async for ev in _g.gateway.stream_meta("w1242: name one risk", agent="w1242", **kw)]
+        return asyncio.run(_go())[-1]
+
+    _real_complete, _seen = _o.orchestrator.complete, []
+
+    async def _spy(prompt, **kw):                  # what the orchestrator tried, which query_meta does not return
+        _r = await _real_complete(prompt, **kw)
+        _seen.append(_r)
+        return _r
+    monkeypatch.setattr(_o.orchestrator, "complete", _spy)
+
+    def query(cls):
+        async def _go():
+            with _dc.declared(cls):
+                return await _g.gateway.query_meta("w1242: name one risk", agent="w1242")
+        _seen.clear()
+        _m = asyncio.run(_go())
+        assert len(_seen) == 1, ("the query did not reach the orchestrator once", len(_seen))
+        return {**_m, "resources_tried": _seen[0].get("resources_tried")}
+
+    #  1. THE SWITCH OFF: nothing external is attempted, a declared call with a key set included
+    s0, q0 = stream(data_class="person_entered"), query("person_entered")
+    assert sent == [] and s0["served_by"] == "native" and q0["served_by"] == "native", (sent, s0["served_by"], q0)
+    assert not any(t.startswith(("anthropic", "openai")) for t in q0.get("resources_tried") or []), q0
+    assert s0["data_class"]["external"] == "not attempted" and not s0["data_class"]["checks"], s0["data_class"]
+
+    #  2. THE SWITCH ON, the local model disabled: a declared call that does not ask goes out, on both paths
+    switch["on"] = True
+    s1 = stream(data_class="person_entered")
+    assert sent == ["stream"] and s1["served_by"] == "claude" and s1["is_external"] is True, (sent, s1["served_by"])
+    assert s1["data_class"]["declared"] == "person_entered" and s1["data_class"]["external"] == "sent", s1["data_class"]
+    q1 = query("person_entered")
+    assert sent == ["stream", "query"] and q1["served_by"] == "anthropic" and q1["is_external"] is True, (sent, q1)
+    #    an undeclared call does not, nor does a barred class; each is kept on the floor with the check's reason
+    sent.clear()
+    s2, q2 = stream(), query(None)
+    assert sent == [] and s2["served_by"] == "native" and q2["served_by"] == "native", (sent, s2["served_by"], q2)
+    assert "declared no data class" in s2["data_class"]["checks"][0]["why"], s2["data_class"]
+    assert any(t.startswith("anthropic (not sent: the call declared no data class") for t in q2["resources_tried"]), (
+        q2["resources_tried"])
+    s3, q3 = stream(data_class="legal_matter"), query("legal_matter")
+    assert sent == [] and s3["served_by"] == "native" and q3["served_by"] == "native", (sent, s3["served_by"], q3)
+    assert "2026-10-03c" in s3["data_class"]["checks"][0]["why"], s3["data_class"]
+    assert any("2026-10-03c" in t for t in q3["resources_tried"]), q3["resources_tried"]
+    #    the hourly cap still bounds it: a full window sends nothing, and the floor answers
+    monkeypatch.setenv("EXTERNAL_MAX_CALLS_PER_HOUR", "1")
+    _o.NativeOrchestrator._external_calls = [time.time()]
+    s4, q4 = stream(data_class="person_entered"), query("person_entered")
+    assert sent == [] and s4["served_by"] == "native" and q4["served_by"] == "native", (sent, s4["served_by"], q4)
+    assert any("hourly external budget reached (1/hour)" in t for t in q4["resources_tried"]), q4["resources_tried"]
+    monkeypatch.setenv("EXTERNAL_MAX_CALLS_PER_HOUR", "100")
+    _o.NativeOrchestrator._external_calls = []
+    #    no key set: nothing is sent on either path, the switch on and the class declared
+    monkeypatch.setattr(_g.gateway, "anthropic_key", None)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    s4k, q4k = stream(data_class="person_entered"), query("person_entered")
+    assert sent == [] and s4k["served_by"] == "native" and q4k["served_by"] == "native", (sent, s4k["served_by"], q4k)
+    monkeypatch.setattr(_g.gateway, "anthropic_key", "w1242-placeholder-not-a-key")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "w1242-placeholder-not-a-key")
+
+    #  3. A LOCAL MODEL UP is used first on both paths; when it fails, the floor answers and not the provider
+    _real = (_mr.ollama_up, _mr.local_models, _o.NativeOrchestrator._run_model, _g.ModelGateway._stream_owned_model)
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "")
+    monkeypatch.setattr(_mr, "ollama_up", lambda: True)
+    monkeypatch.setattr(_mr, "local_models", lambda: [])
+    local = {"ok": True}
+
+    async def _run_model(self, name, prompt, **_k):
+        if name.startswith("ollama"):
+            if not local["ok"]:
+                raise TimeoutError("w1242: the local model timed out")
+            return "w1242 local answer"
+        sent.append(f"query:{name}")
+        return "w1242 external reply."
+    monkeypatch.setattr(_o.NativeOrchestrator, "_run_model", _run_model)
+
+    async def _owned(self, augmented, **_k):
+        if not local["ok"]:
+            raise RuntimeError("w1242: the local model is down")
+        for t in ("w1242 ", "local ", "answer."):
+            yield t
+    monkeypatch.setattr(_g.ModelGateway, "_stream_owned_model", _owned)
+    assert _g.in_house_reachable() is True
+    q5, s5 = query("person_entered"), stream(data_class="person_entered")
+    assert q5["served_by"] == "ollama" and q5["resources_tried"][0] == "ollama", q5
+    assert s5["served_by"].startswith("ollama") and sent == [], (s5["served_by"], sent)
+    local["ok"] = False
+    q6, s6 = query("person_entered"), stream(data_class="person_entered")
+    assert sent == [] and q6["served_by"] == "native" and s6["served_by"] == "native", (sent, q6, s6["served_by"])
+    assert q6["resources_tried"] == ["ollama", "native"], q6["resources_tried"]
+    #    every local model's breaker open: none is reachable, so a declared call goes out on both paths
+    local["ok"] = True
+    monkeypatch.setattr(_sh, "is_open", lambda endpoint, *_a, **_k: endpoint == "ollama")
+    monkeypatch.setattr(_o, "_breaker_open", lambda name: name == "ollama" or name.startswith("ollama:"))
+    assert _g.in_house_reachable() is False
+    q7, s7 = query("person_entered"), stream(data_class="person_entered")
+    assert sent == ["query:anthropic", "stream"] and q7["served_by"] == "anthropic" and s7["served_by"] == "claude", (
+        sent, q7["resources_tried"], s7["served_by"])
+    sent.clear()
+    monkeypatch.setattr(_sh, "is_open", lambda endpoint, *_a, **_k: False)
+    monkeypatch.setattr(_o, "_breaker_open", lambda name: False)
+    #    the local runtime not answering with a model, the local model not turned off and no breaker open (a server
+    #    with no local model installed): none is reachable, so a declared call goes out on both paths, the stream's
+    #    after its local attempt fails
+    monkeypatch.setattr(_mr, "ollama_up", lambda: False)
+    local["ok"] = False
+    assert _g.in_house_reachable() is False, "a local runtime that does not answer was counted as reachable"
+    q8, s8 = query("person_entered"), stream(data_class="person_entered")
+    assert sent == ["query:anthropic", "stream"] and q8["served_by"] == "anthropic" and s8["served_by"] == "claude", (
+        sent, q8["resources_tried"], s8["served_by"])
+    sent.clear()
+    #    the orchestrator's own ordering, read directly: externals move before the floor only with no local model
+    assert _o._external_before_floor(["native", "anthropic", "openai"]) == ["anthropic", "openai", "native"]
+    assert _o._external_before_floor(["ollama", "native", "anthropic"]) == ["ollama", "native", "anthropic"]
+    #    the local model off again, and the real resources back, for the journeys below
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")
+    for _obj, _name, _was in ((_mr, "ollama_up", _real[0]), (_mr, "local_models", _real[1]),
+                              (_o.NativeOrchestrator, "_run_model", _real[2]),
+                              (_g.ModelGateway, "_stream_owned_model", _real[3])):
+        monkeypatch.setattr(_obj, _name, _was)
+
+    #  4. GENESIS declares what it carries, and says what a floor-served journey left
+    for dom, cls in (("science", "person_entered"), ("law", "person_entered"), ("employment", "person_entered"),
+                     ("religion", None), ("care", None), ("education", None)):
+        jc = _gen.journey_data_class(dom, "w1242: a delivery van for a bakery cooperative")
+        assert jc["data_class"] == cls and jc["may_leave"] is (cls is not None), (dom, jc)
+    assert "religious content is not sent outside the platform" in _gen.journey_data_class("religion", "x")["basis"]
+    assert "children's data" in _gen.journey_data_class("education", "x")["basis"]
+    _fl = _gen.journey_data_class("science", "w1242: an app for Quran memorisation classes")
+    assert _fl["data_class"] is None and "quran" in _fl["basis"], _fl
+
+    def journey(domain, problem):
+        r = client.post("/api/v1/genesis/journey", json={"problem": problem, "domain": domain})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()
+    sent.clear()
+    switch["on"] = True
+    jd = journey("science", "w1242: a delivery van rota for a bakery cooperative")
+    assert sent and set(sent) == {"query"}, ("a declared journey did not reach the provider", sent)
+    assert jd["ai_provenance"]["served_by"].get("anthropic", 0) >= 1 and jd["no_model"] is None, (
+        jd["ai_provenance"]["served_by"], jd["no_model"])
+    assert jd["external_ai"]["data_class"] == "person_entered", jd["external_ai"]
+    sent.clear()
+    jr = journey("religion", "w1242: a weekly study circle for a mosque")
+    assert sent == [] and set(jr["ai_provenance"]["served_by"]) == {"native"}, (sent, jr["ai_provenance"]["served_by"])
+    nm = jr["no_model"]
+    assert nm["said"].startswith("No AI model can be used for this journey: no local model is running, and this "
+                                 "journey's content is not sent to the external model set up on this server."), nm
+    assert nm["how"] == ("Adding a model is the Owner's decision. A local model run on this server would be used for "
+                         "this journey. An external model would not: " + jr["external_ai"]["basis"] + "."), nm
+    switch["on"] = False
+    jf = journey("science", "w1242: a delivery van rota for a bakery cooperative")
+    nf = jf["no_model"]
+    assert sent == [] and nf["said"] == ("No AI model is connected, so these steps could not write anything. What each "
+                                         "step shows below is a fallback that repeats your own words under its "
+                                         "headings."), nf
+    assert nf["saved"].startswith("What was saved: no entity was registered, because establishing one was not asked "
+                                  "for"), nf
+    assert nf["how"].startswith("Adding a model is the Owner's decision.") and "external-AI switch on" in nf["how"], nf
+    assert nf["all_calls_floor_served"] == jf["ai_provenance"]["served_by"]["native"], nf
+    #    the three routes declare it: the journey and the establish route by their decorator, the stream where it runs
+    gsrc = (root / "agentic_core/api/genesis.py").read_text(encoding="utf-8")
+    assert gsrc.count("\n@_declares_journey_class ") == 2 and (
+        '@router.post("/journey")\n@_declares_journey_class ' in gsrc
+        and '@router.post("/establish")\n@_declares_journey_class ' in gsrc), "a route runs its calls undeclared"
+    assert "StreamingResponse(_within_class(_stream(), journey_data_class(req.domain, req.problem)[\"data_class\"])," in gsrc
+    #    and the class is in force where the calls run: inside the decorated route, and inside the stream's body
+
+    async def _route_probe(req, user=None):
+        return _dc.current()
+    _probe = _gen._declares_journey_class(_route_probe)
+    assert asyncio.run(_probe(types.SimpleNamespace(domain="science", problem="w1242: a van rota"))) == "person_entered"
+    assert asyncio.run(_probe(req=types.SimpleNamespace(domain="care", problem="w1242: a van rota"))) is None
+
+    async def _stream_probe():
+        yield _dc.current()
+
+    async def _drain(agen):
+        return [x async for x in agen]
+    assert asyncio.run(_drain(_gen._within_class(_stream_probe(), "person_entered"))) == ["person_entered"]
+    assert asyncio.run(_drain(_gen._within_class(_stream_probe(), None))) == [None] and _dc.current() is None
+
+    #  5. THE RECORDS: the dated notes where the 2026-11-06 ruling is recorded, the old words kept
+    gw = (root / "agentic_core/ai/gateway.py").read_text(encoding="utf-8")
+    assert "OWNER RULING 2026-11-22 (W1242): the Owner wrote, in chat" in gw and "I want to go\n    with all your" in gw
+    assert ('"2. the external accelerants, ONLY when AI_ALLOW_EXTERNAL=true, a key is set AND the\n    caller asks '
+            '(prefer_external)') in gw, "the 2026-11-06 words are not kept in the class docstring"
+    assert "OWNER RULING 2026-11-22 (W1242) amends it" in gw and "a caller must also ask (prefer_external)" in gw
+    assert "if _switch1242 and (prefer_external or _no_in_house1242):" in gw
+    fab = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    _at = fab.index("    · FU-1124: option (a), the in-house-first order.")
+    assert fab.index("OWNER RULING 2026-11-22 (W1242), amending this one") - _at < 900, "the plan's note is not at FU-1124"
+    import json
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    rows = {r["id"]: r for r in reg["items"]}
+    assert "OWNER RULING 2026-11-22 (W1242)" in rows["FU-1124"]["note"] and rows["FU-1124"]["close_note"].startswith(
+        "Owner ruling 2026-11-06 option (a)"), rows["FU-1124"]
+    titles = [r["title"] for r in reg["items"] if "W1242" in str(r.get("source"))]
+    assert len(titles) == 4 and sum("says no plain no-model notice" in t for t in titles) == 3, titles
+    spine = pathlib.Path(__file__).read_text(encoding="utf-8")
+    w755 = spine[spine.index("\ndef test_w755_fu1124_a_stream_reaches_an_external_only_when_asked("):]
+    w755 = w755[:w755.index("\ndef ", 10)]
+    assert "CHANGED ON PURPOSE by W1242, citing the OWNER RULING of 2026-11-22" in w755
+    assert '_declared = _run(data_class="person_entered")' in w755
+    _setter = "setenv(" + '"AI_ALLOW_' + 'EXTERNAL"'
+    for rel in ("agentic_core/ai/gateway.py", "agentic_core/ai/native/orchestrator.py", "agentic_core/api/genesis.py"):
+        _t = (root / rel).read_text(encoding="utf-8")
+        assert _setter not in _t and 'environ["AI_ALLOW_' + 'EXTERNAL"] =' not in _t, (rel, "sets the Owner's switch")
+    mine = spine[spine.index("\ndef test_w1242_"):]
+    assert _setter not in mine, "this guard sets the Owner's switch"

@@ -23,6 +23,7 @@ from agentic_core.api._ai_provenance import reply_evidence as _reply_evidence   
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.ai import data_class as _dc1242       # W1242 - the class of what the journey sends, declared
 from agentic_core.auth.core import entity_owner_stamp, get_current_user, request_owner_id
 from agentic_core.api.intelligence import _ai_cognitive_prime_meta, _ai_mjm_lifecycle_meta, _usable, _selected_lenses
 from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
@@ -35,6 +36,115 @@ from agentic_core.taxonomy import is_realm as _is_realm
 from agentic_core.vbs.quality import assure_delivery
 
 router = APIRouter(prefix="/api/v1/genesis", tags=["genesis-journey"])
+
+
+#  W1242 (OWNER RULING 2026-11-22) - WHAT A JOURNEY'S CALLS CARRY, DECLARED, AND WHAT STAYS ON THE PLATFORM.
+#  With the Owner's external switch on and no in-house model reachable, a call is sent to an external provider only
+#  when it declares a class that may leave (ai/data_class.py). A journey sends the founder's own business text with
+#  the platform's prompts composed around it, which is person_entered. Three domains are kept in whatever the text
+#  says, and so is a problem the religious subject screen flags (a screen that can flag, never clear): they declare
+#  nothing, so their calls never go out, and the answer says why.
+_KEPT_IN_DOMAINS = {
+    "religion": "religious content is not sent outside the platform",
+    "care": "care and health material is not sent outside the platform",
+    "education": "education material may carry children's data, which is not sent outside the platform",
+}
+
+
+def journey_data_class(domain: Any, problem: Any) -> Dict[str, Any]:
+    """W1242 - the class a journey's calls declare, or None (nothing declared, so nothing leaves), and why."""
+    d = str(domain or "").strip().lower()
+    if d in _KEPT_IN_DOMAINS:
+        return {"data_class": None, "may_leave": False,
+                "basis": f"nothing is declared, so no call of this journey leaves the platform: its domain is {d}, "
+                         f"and {_KEPT_IN_DOMAINS[d]}"}
+    from agentic_core.religious_domain.subject_screen import screen_subject
+    _scr = screen_subject(problem)
+    if _scr.get("flagged"):
+        return {"data_class": None, "may_leave": False,
+                "basis": ("nothing is declared, so no call of this journey leaves the platform: the problem names "
+                          f"religious teaching ({', '.join(list(_scr.get('matched') or [])[:3])}), and religious "
+                          "content is not sent outside the platform")}
+    return {"data_class": "person_entered", "may_leave": True,
+            "basis": ("declared person_entered: the journey sends the founder's own business text with the "
+                      "platform's own prompts composed around it. An external provider is sent it only with the "
+                      "Owner's external-AI switch on, a provider's key set and no in-house model reachable, inside "
+                      "the hourly cap on external calls. The religious subject screen did not flag the problem, "
+                      "which is not a finding that it holds nothing religious: a screen can flag, never clear")}
+
+
+def _declares_journey_class(fn):
+    """W1242 - the route's calls run inside the class its request declares (journey_data_class)."""
+    import functools
+
+    @functools.wraps(fn)
+    async def _inner(*args, **kwargs):
+        req = kwargs.get("req", args[0] if args else None)
+        with _dc1242.declared(journey_data_class(getattr(req, "domain", None),
+                                                 getattr(req, "problem", None))["data_class"]):
+            return await fn(*args, **kwargs)
+    return _inner
+
+
+async def _within_class(agen, data_class):
+    """W1242 - the establish stream's body runs after its route has returned, so its calls are declared where it
+    runs. A close from another context never held the mark, so its reset is skipped there."""
+    _tok = _dc1242._DECLARED.set(data_class) if data_class else None
+    try:
+        async for _x in agen:
+            yield _x
+    finally:
+        if _tok is not None:
+            try:
+                _dc1242._DECLARED.reset(_tok)
+            except ValueError:
+                pass
+
+
+def _no_model_notice(provenance: Dict[str, Any], established_vsb: Any, cls: Dict[str, Any]) -> Any:
+    """W1242 - WHAT THE JOURNEY SAYS WHEN NO MODEL ANSWERED ANY CALL, in plain words: that the steps wrote nothing,
+    what was saved, and how a model is added. None when any call was answered by a model (or none was served)."""
+    import os as _os
+    sb = (provenance or {}).get("served_by") or {}
+    if [k for k, n in sb.items() if n and k != "native"] or not sb.get("native"):
+        return None
+    from agentic_core.ai.native import model_resource as _mr
+    _local = bool(_mr.ollama_up())
+    _ext = bool(_mr.external_allowed()) and bool(_os.getenv("ANTHROPIC_API_KEY") or _os.getenv("OPENAI_API_KEY"))
+    _kept = not cls.get("data_class")
+    if _local:
+        said = ("A local AI model is running on this server, but it answered none of this journey's calls, so these "
+                "steps could not write anything.")
+    elif _ext and _kept:
+        said = ("No AI model can be used for this journey: no local model is running, and this journey's content is "
+                "not sent to the external model set up on this server. So these steps could not write anything.")
+    elif _ext:
+        said = ("An external AI model is set up on this server, but it answered none of this journey's calls, so "
+                "these steps could not write anything.")
+    else:
+        said = "No AI model is connected, so these steps could not write anything."
+    said += " What each step shows below is a fallback that repeats your own words under its headings."
+    ev = established_vsb if isinstance(established_vsb, dict) else None
+    if ev and not ev.get("error") and ev.get("vsb_id"):
+        _pending = any(bool(v) for v in (ev.get("body_pending") or {}).values())
+        saved = (f"What was saved: your own words, in the entity {ev['vsb_id']}, which is registered"
+                 + (" with its body pending: the sections a model would write wait for one." if _pending else "."))
+    elif ev and ev.get("error"):
+        saved = (f"What was saved: no entity was registered ({str(ev.get('error'))[:200]}), so your words are not "
+                 "kept as an enterprise.")
+    else:
+        saved = ("What was saved: no entity was registered, because establishing one was not asked for, so your words "
+                 "are not kept as an enterprise. Establishing an entity from this journey registers one that keeps "
+                 "them.")
+    if _kept:
+        how = ("Adding a model is the Owner's decision. A local model run on this server would be used for this "
+               "journey. An external model would not: " + str(cls.get("basis") or "") + ".")
+    else:
+        how = ("Adding a model is the Owner's decision. A local model run on this server is used first whenever one "
+               "is up. With the Owner's external-AI switch on and a provider's key set, this journey uses that "
+               "provider when no local model is running, inside the hourly cap on external calls.")
+    return {"said": said, "saved": saved, "how": how, "all_calls_floor_served": int(sb.get("native") or 0),
+            "local_model_up": _local, "external_model_ready": _ext, "external_ai": cls}
 
 
 def _score_candidate(text: str, sections: List[str]) -> Dict[str, float]:
@@ -322,6 +432,7 @@ def _problem_detail(problem: str, limit: int = 3000) -> str:
 
 
 @router.post("/journey")
+@_declares_journey_class                  # W1242 - its calls carry the class the request declares
 async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_current_user)):
     """Run the full intelligently-autonomous Concept → Commercialisation cascade."""
 
@@ -1003,6 +1114,10 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
             ("NO entity record was created: establishing one was attempted and failed - see `established_vsb`"
              if established_vsb else
              "NO entity record was created: this journey did not establish an enterprise")),
+        #  W1242 (OWNER RULING 2026-11-22) - what the journey's calls declared, and why; and, when no model answered
+        #  any of them, the plain notice the page shows first
+        "external_ai": journey_data_class(req.domain, req.problem),
+        "no_model": _no_model_notice(provenance, established_vsb, journey_data_class(req.domain, req.problem)),
         # W485 — a journey whose every candidate was vetoed did not complete.
         "status": ("blocked_by_screen" if _blocked else "complete"),
         **({"blocked_by_screen": {
@@ -1477,6 +1592,7 @@ def _refuse_vetoed_candidate(req: "EstablishRequest") -> None:
 
 
 @router.post("/establish")
+@_declares_journey_class                  # W1242 - its calls carry the class the request declares
 async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(get_current_user)):
     """
     Instantiate a living VSB IDBO entity from a Genesis journey blueprint — the
@@ -2010,5 +2126,7 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
             "deliverable": _deliverable_line(entity),   # W631 (FU-552)
         })
 
-    return StreamingResponse(_stream(), media_type="text/event-stream",
+    #  W1242 - the stream's calls carry the class its request declares, declared where the stream runs
+    return StreamingResponse(_within_class(_stream(), journey_data_class(req.domain, req.problem)["data_class"]),
+                             media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
