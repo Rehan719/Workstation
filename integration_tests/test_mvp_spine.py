@@ -107134,3 +107134,224 @@ def test_w1193d_the_owners_decisions_of_the_evening_of_2026_11_22_are_recorded_w
                                           p515.split(r4, 1)[1][:300], f17["why"].split(q, 1)[1],
                                           f22["why"].split(n22, 1)[1]] for m in [word.search(t)] if m]
     assert found == [], ("D8: a gendered pronoun", found)
+
+
+def _w1210_wall_clock_durations(src, rel="<src>"):
+    """W1210's matcher: the subtractions in `src` that take a duration from the settable wall clock, as
+    (rel, line, shape, name). Shape a: a wall-clock read (time.time() under any alias, from-imports included) minus
+    a name bound to a wall-clock read in the same or an enclosing function, tuple assignments included. Shape b: a
+    wall-clock read minus one of the function's own parameters. Shape c: two clocks mixed, a wall-clock read minus a
+    name bound to a monotonic read (perf_counter or monotonic) in scope, or the reverse."""
+    import ast as _ast
+    tree = _ast.parse(src)
+    mods, wall_f, mono_f = set(), set(), set()
+    for n in _ast.walk(tree):
+        if isinstance(n, _ast.Import):
+            for a in n.names:
+                if a.name == "time":
+                    mods.add(a.asname or "time")
+        elif isinstance(n, _ast.ImportFrom) and n.module == "time" and not n.level:
+            for a in n.names:
+                if a.name == "time":
+                    wall_f.add(a.asname or "time")
+                elif a.name in ("perf_counter", "monotonic"):
+                    mono_f.add(a.asname or a.name)
+
+    def _read(e, attrs, names):
+        return isinstance(e, _ast.Call) and not e.args and (
+            (isinstance(e.func, _ast.Attribute) and e.func.attr in attrs and isinstance(e.func.value, _ast.Name)
+             and e.func.value.id in mods) or (isinstance(e.func, _ast.Name) and e.func.id in names))
+
+    def wall(e):
+        return _read(e, ("time",), wall_f)
+
+    def mono(e):
+        return _read(e, ("perf_counter", "monotonic"), mono_f)
+
+    def bound(fn, clock):
+        names = set()
+        for n in _ast.walk(fn):
+            if isinstance(n, (_ast.Assign, _ast.AnnAssign, _ast.NamedExpr)) and n.value is not None:
+                for t in (n.targets if isinstance(n, _ast.Assign) else [n.target]):
+                    if isinstance(t, _ast.Name) and clock(n.value):
+                        names.add(t.id)
+                    elif isinstance(t, (_ast.Tuple, _ast.List)) and isinstance(n.value, (_ast.Tuple, _ast.List)):
+                        names.update(a.id for a, b in zip(t.elts, n.value.elts)
+                                     if isinstance(a, _ast.Name) and clock(b))
+        return names
+    hits = []
+
+    def visit(node, w_names, m_names, params):
+        for ch in _ast.iter_child_nodes(node):
+            if isinstance(ch, (_ast.FunctionDef, _ast.AsyncFunctionDef, _ast.Lambda)):
+                own = {a.arg for a in ch.args.posonlyargs + ch.args.args + ch.args.kwonlyargs}
+                visit(ch, w_names | bound(ch, wall), m_names | bound(ch, mono), own)
+                continue
+            if isinstance(ch, _ast.BinOp) and isinstance(ch.op, _ast.Sub) and isinstance(ch.right, _ast.Name):
+                r = ch.right.id
+                if wall(ch.left) and r in params:
+                    hits.append((rel, ch.lineno, "b", r))
+                elif wall(ch.left) and r in w_names:
+                    hits.append((rel, ch.lineno, "a", r))
+                elif (wall(ch.left) and r in m_names) or (mono(ch.left) and r in w_names):
+                    hits.append((rel, ch.lineno, "c", r))
+            visit(ch, w_names, m_names, params)
+    visit(tree, set(), set(), set())
+    return hits
+
+
+def test_w1210_every_duration_is_read_from_the_monotonic_clock(client, monkeypatch, tmp_path):
+    """FU-1847 (W1210, key A7), P3.30. Thirty-four durations in twenty-two files were a wall-clock read minus a
+    wall-clock start: time.time() under any alias, in the same or an enclosing function, or (gateway.py's _record) a
+    start passed in. The wall clock can be set. A step back stored a negative duration, which record_outcome spends
+    as nothing (W742's max(0, ...)), and a step forward booked the jump as work; ten of them reach record_outcome and
+    so the work budget. Each is now read from time.perf_counter(), a monotonic clock, chosen over time.monotonic() on
+    host_observation.py's precedent (W746: on Windows before Python 3.13 monotonic() ticks in about 15.6 ms steps).
+    S18.1's 'wall-clock seconds' means seconds actually spent, which a monotonic clock measures. Stamps stay on the
+    wall clock, and so do the eight ages of stored stamps named below.
+
+    1 no subtraction in agentic_core (outside _archive) takes a duration from the wall clock (shapes a and b) or mixes
+      two clocks (shape c); the eight stored-stamp ages still read the wall clock, each named with its reason
+    2 the matcher flags a planted same-scope start, an aliased tuple start, a helper's parameter and a mixed pair,
+      and does not flag work_budget.py's window age, a cutoff or monitor.py's last-seen age
+    3 with resource_fabric's clock set back an hour at every read, a floor composition run through the route stores
+      a duration between 0 and the test's own elapsed time, and the work budget rose by exactly that duration
+    4 the same with the clock set forward an hour at every read: the duration is not an hour, nor is the spend
+    5 with gateway's clock set back, the stream's floor records a model_attempt row with a duration in those bounds
+    """
+    import asyncio as _aio
+    import pathlib as _pl
+    import time as _rt
+    from agentic_core.api import operational_excellence as _oe
+    from agentic_core.molecular import work_budget as _wb
+    from agentic_core.api import resource_fabric as _rf
+    import agentic_core.ai.gateway as _gwm
+
+    root = _pl.Path(__file__).resolve().parents[1]
+
+    #  1. NO DURATION IS READ FROM THE WALL CLOCK. The ages below are of stamps stored earlier (or of a file's mtime)
+    #     or cutoffs against them: those must be compared with the wall clock, so they stay on it.
+    KEPT = {
+        "agentic_core/mesh/health/monitor.py": ("diff = time.time() - last_seen",
+                                                "the age of a peer's stored last-seen stamp"),
+        "agentic_core/ai/native/orchestrator.py": ("time.time() - calendar.timegm(time.strptime(",
+                                                   "the age of a stored ISO stamp"),
+        "agentic_core/config.py": ("_time.time() - _os.path.getmtime(", "the age of a lock file's mtime"),
+        "agentic_core/api/organism_status.py": ("recent_cutoff = _time.time() - 30 * 86400",
+                                                "a cutoff against stored stamps"),
+        "agentic_core/api/products.py": ("(time.time() - cache_path.stat().st_mtime) < 3600",
+                                         "the age of a cache file's mtime"),
+        "agentic_core/api/economy.py": ("_time.time() - float(cl.get(\"at_epoch\") or 0)",
+                                        "the age of a stored settle-claim stamp"),
+        "agentic_core/gaas/v5/circuit_breaker_rl.py": ("cutoff = time.time() - self.window_seconds",
+                                                       "a cutoff against stored failure stamps"),
+        "agentic_core/molecular/work_budget.py": ("time.time() - float(rec.get(\"window_started\") or 0)",
+                                                  "the age of the budget window's stored start"),
+    }
+    found = []
+    for p in sorted((root / "agentic_core").rglob("*.py")):
+        rel = p.relative_to(root).as_posix()
+        if "/_archive/" in rel:
+            continue
+        found += _w1210_wall_clock_durations(p.read_bytes().decode("utf-8").replace("\r\n", "\n"), rel)
+    assert not found, ("a duration is read from the settable wall clock (or two clocks are mixed)", found)
+    for rel, (snippet, why) in KEPT.items():
+        assert snippet in (root / rel).read_bytes().decode("utf-8"), (
+            "a stored stamp's age left the wall clock, or moved: say so here", rel, why)
+    #  the sites this round moved: each file reads perf_counter, and the two readings of the avatar cycle stay two
+    rec = (root / "agentic_core/avatars/core/recirculation_orchestrator.py").read_text(encoding="utf-8")
+    assert '"cycle_id": f"cyc_{int(start_time * 1000)}"' in rec and "start_time = time.time()\n" in rec, (
+        "the cycle's name is no longer a wall-clock stamp")
+    assert "total_duration = time.perf_counter() - start_mono" in rec, "the cycle's duration is not monotonic"
+    for rel in ("ai/gateway.py", "api/resource_fabric.py", "api/swarm.py", "api/board.py", "api/deliverables.py",
+                "api/transformation_orchestration.py", "avatars/api.py", "api/native_ai.py"):
+        assert "perf_counter() - " in (root / "agentic_core" / rel).read_bytes().decode("utf-8"), rel
+
+    #  2. THE MATCHER IS NEITHER VACUOUS NOR WIDE ENOUGH TO FLAG A STORED AGE
+    planted = {
+        "same scope": ("import time\ndef f():\n    _t0 = time.time()\n    work()\n    d = time.time() - _t0\n", "a"),
+        "alias, tuple": ("import time as _time\ndef f():\n    _t0, x = _time.time(), 1\n"
+                         "    return (_time.time() - _t0) * 1000\n", "a"),
+        "enclosing": ("from time import time as now\ndef f():\n    s = now()\n    def g():\n"
+                      "        return now() - s\n    return g\n", "a"),
+        "helper": ("import time\ndef _r(t0):\n    return time.time() - t0\n", "b"),
+        "mixed": ("import time\ndef f():\n    s = time.time()\n    return time.perf_counter() - s\n", "c"),
+    }
+    for label, (src, shape) in planted.items():
+        h = _w1210_wall_clock_durations(src)
+        assert [x[2] for x in h] == [shape], ("the matcher missed a planted wall-clock duration", label, h)
+    for src in ("import time\ndef _load(rec):\n    if time.time() - float(rec.get('window_started') or 0) > 9:\n"
+                "        return 1\n",
+                "import time\ndef f(self):\n    cutoff = time.time() - self.window_seconds\n",
+                "import time\ndef rep(self, peer):\n    last_seen = self.beats.get(peer, 0)\n"
+                "    return time.time() - last_seen\n",
+                "import time\ndef f():\n    s = time.perf_counter()\n    return time.perf_counter() - s\n"):
+        assert _w1210_wall_clock_durations(src) == [], ("the matcher flags what is not a wall-clock duration", src)
+
+    class _SetClock:
+        """A module's `time` with a settable wall clock: every time() read is `step` seconds past the last one.
+        Every other attribute (perf_counter, monotonic, strftime, gmtime, sleep) is the real module's."""
+
+        def __init__(self, step):
+            self._step, self.reads = step, 0
+
+        def time(self):
+            self.reads += 1
+            return _rt.time() + self._step * self.reads
+
+        def __getattr__(self, k):
+            return getattr(_rt, k)
+
+    monkeypatch.setattr(_oe, "_STORE", tmp_path / "operations_outcomes.json", raising=False)
+    monkeypatch.setattr(_oe, "_BASELINE_STORE", tmp_path / "model_health_baselines.json", raising=False)
+    monkeypatch.setattr(_wb, "_store", lambda: tmp_path / "work_budget.json")
+    comp = client.post("/api/v1/resources/compose", json={
+        "name": "W1210 clock", "usage_area": "synthesis", "resource_ids": ["bdp"],
+        "config": {"bdp": {"challenge": "W1210 a shared tool library"}}})
+    assert comp.status_code == 200, comp.text[:300]
+    cid = comp.json()["id"]
+
+    def _run(step):
+        clock = _SetClock(step)
+        monkeypatch.setattr(_rf, "time", clock)
+        before = float(_wb.state()["seconds_spent"])
+        t0 = _rt.perf_counter()
+        r = client.post(f"/api/v1/resources/compositions/{cid}/run", json={"objective": "W1210 the clock"})
+        elapsed_ms = (_rt.perf_counter() - t0) * 1000
+        monkeypatch.setattr(_rf, "time", _rt)
+        assert r.status_code == 200 and not r.json().get("refused"), r.text[:300]
+        rows = [o for o in _oe._load() if o.get("kind") == "composition_run" and o.get("ref") == cid]
+        assert rows, "the run recorded no composition_run row to read"
+        return rows[-1], before, float(_wb.state()["seconds_spent"]), elapsed_ms, clock
+
+    #  3. THE CLOCK SET BACK: a duration within the run's own time, and spent
+    row, before, after, elapsed_ms, clock = _run(-3600)
+    assert 0 <= row["duration_ms"] <= elapsed_ms + 50, (
+        "the run's duration was read from the wall clock set back an hour", row["duration_ms"], elapsed_ms)
+    assert abs((after - before) - row["duration_ms"] / 1000.0) < 0.0015, (
+        "the work budget did not rise by the run's duration", before, after, row["duration_ms"], row.get("budget"))
+    assert str(row.get("budget", "")).startswith("spent"), row.get("budget")
+
+    #  4. THE CLOCK SET FORWARD: the jump is not booked as work
+    row, before, after, elapsed_ms, clock = _run(3600)
+    assert 0 <= row["duration_ms"] <= elapsed_ms + 50, (
+        "the run's duration was read from the wall clock set forward an hour", row["duration_ms"], elapsed_ms)
+    assert after - before < 3600 and abs((after - before) - row["duration_ms"] / 1000.0) < 0.0015, (
+        "the jump of the wall clock was spent as work", before, after, row["duration_ms"])
+
+    #  5. THE GATEWAY'S STREAM: the floor attempt's duration, with the gateway's clock set back
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")
+    monkeypatch.setattr(_gwm, "time", _SetClock(-3600))
+
+    async def _collect():
+        return [ev async for ev in _gwm.gateway.stream_meta("W1210 say hello", agent="w1210-clock", augment=False)]
+    t0 = _rt.perf_counter()
+    evs = _aio.run(_collect())
+    elapsed_ms = (_rt.perf_counter() - t0) * 1000
+    monkeypatch.setattr(_gwm, "time", _rt)
+    assert evs and evs[-1].get("done") is True and evs[-1].get("served_by") == "native", evs[-1:]
+    att = [o for o in _oe._load() if o.get("kind") == "model_attempt" and o.get("resource") == "stream:w1210-clock"]
+    assert att and att[-1]["served_by"] == "native", ("the stream's floor recorded no model_attempt row", att)
+    assert 0 <= att[-1]["duration_ms"] <= elapsed_ms + 50, (
+        "the stream's attempt duration was read from the wall clock set back an hour", att[-1]["duration_ms"],
+        elapsed_ms)

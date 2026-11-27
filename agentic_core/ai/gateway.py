@@ -760,6 +760,9 @@ class ModelGateway:
 
         # §6 (W323) — the STREAM path is on the same control plane as query_meta: circuit-breaker
         # gated, and every streamed serve RECORDS an outcome into the W275 learning loop.
+        #  W1210 (FU-1847) - t0 is a perf_counter reading taken where each attempt starts, and the duration
+        #  is read from the same clock: a monotonic one, so a wall clock set back or forward during an attempt
+        #  neither stores a negative duration (which spends nothing) nor books the jump as work
         def _record(served_by: str, is_external: bool, t0: float, ok: bool, tokens: int | None = None) -> None:
             #  W757 (FU-1123) - the immune sensor hears every streamed attempt, not only the floor: a serve is observed
             #  and a failed local or external attempt is recorded as ai_failure, as the query path's are
@@ -775,7 +778,7 @@ class ModelGateway:
                 from agentic_core.api.operational_excellence import record_outcome
                 record_outcome("model_attempt", f"stream:{agent}", served_by=served_by,
                                is_external=is_external,
-                               duration_ms=int((time.time() - t0) * 1000), success=ok,
+                               duration_ms=int((time.perf_counter() - t0) * 1000), success=ok,
                                tokens=tokens)        # W741 (S18.1) - one spend with the seconds
             except Exception:
                 pass
@@ -820,7 +823,7 @@ class ModelGateway:
         # 1 — the OWNED local model: genuine token-by-token streaming
         if (os.getenv("AI_DISABLE_LOCAL", "").lower() not in ("1", "true", "yes")
                 and not self_healer.is_open("ollama")):
-            _t0 = time.time()
+            _t0 = time.perf_counter()
             try:
                 full = ""
                 _count = None     # W741 (S18.1) - the zero-length CountedText the stream ends with, if any
@@ -857,7 +860,7 @@ class ModelGateway:
         if os.getenv("AI_ALLOW_EXTERNAL", "false").lower() == "true" and prefer_external:
             if (self.anthropic_key and not self_healer.is_open("claude") and _may_send899("anthropic")
                     and _external_budget_allows("anthropic")):      # W899 (FU-610) - the class first
-                _t0 = time.time()
+                _t0 = time.perf_counter()
                 try:
                     import anthropic
                     client = anthropic.AsyncAnthropic(api_key=self.anthropic_key)
@@ -889,7 +892,7 @@ class ModelGateway:
                     _record("claude", True, _t0, False)
             if (self.openai_key and not self_healer.is_open("openai") and _may_send899("openai")
                     and _external_budget_allows("openai")):         # W899 (FU-610) - the class first
-                _t0 = time.time()
+                _t0 = time.perf_counter()
                 try:
                     from openai import AsyncOpenAI
                     client = AsyncOpenAI(api_key=self.openai_key)
@@ -922,7 +925,7 @@ class ModelGateway:
                     _record("openai", True, _t0, False)
 
         # 3 — the native structured floor: guaranteed, honest, in-house (chunked stream shape)
-        _floor_t0 = time.time()
+        _floor_t0 = time.perf_counter()
         try:
             from agentic_core.ai.native import native_engine
             out = native_engine.generate(augmented, agent, user_text=user_text)

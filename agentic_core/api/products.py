@@ -122,7 +122,7 @@ async def reactor_run(req: ReactorRunRequest) -> StreamingResponse:
       {"done": true, "run_id": "...", "duration_ms": N, "served_by": "...", "is_external": bool}
       {"error": "..."}
     """
-    start = time.time()
+    start = time.perf_counter()
 
     async def stream() -> AsyncIterator[str]:
         try:
@@ -130,7 +130,7 @@ async def reactor_run(req: ReactorRunRequest) -> StreamingResponse:
             for chunk in _chunk_for_stream(sim["output"]):
                 safe = chunk.replace("\n", "\\n")
                 yield f'data: {{"token": {json.dumps(safe)}}}\n\n'
-            duration_ms = int((time.time() - start) * 1000)
+            duration_ms = int((time.perf_counter() - start) * 1000)
             yield (f'data: {{"done": true, "run_id": "{sim["run_id"]}", "duration_ms": {duration_ms}, '
                    f'"served_by": {json.dumps(sim["served_by"])}, "is_external": {json.dumps(sim["is_external"])}}}\n\n')
         except Exception as exc:
@@ -185,7 +185,7 @@ async def factory_produce(req: ProductionRequest) -> StreamingResponse:
     Stream production of a real AI-generated artefact — driven by the OWNED native swarm (§6).
     SSE format same as reactor/run (done event carries served_by / is_external provenance).
     """
-    start = time.time()
+    start = time.perf_counter()
 
     async def stream() -> AsyncIterator[str]:
         try:
@@ -207,7 +207,7 @@ async def factory_produce(req: ProductionRequest) -> StreamingResponse:
                 except Exception:
                     pass
 
-            duration_ms = int((time.time() - start) * 1000)
+            duration_ms = int((time.perf_counter() - start) * 1000)
             output_id = uuid.uuid4().hex
             yield (f'data: {{"done": true, "run_id": "{prod["run_id"]}", "output_id": "{output_id}", '
                    f'"duration_ms": {duration_ms}, "served_by": {json.dumps(prod["served_by"])}, '

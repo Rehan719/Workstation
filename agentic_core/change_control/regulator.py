@@ -18,7 +18,7 @@ class Regulator:
 
     async def repair(self, fault: Dict, tier: str = "HDR") -> Dict:
         """Execute specified DNA repair tier (BER, MMR, NER, HDR)."""
-        start_ts = time.time()
+        start_ts = time.perf_counter()
 
         repairs = {
             "BER": self._fix_point_mutation,
@@ -30,7 +30,7 @@ class Regulator:
         repair_func = repairs.get(tier, self._homology_recovery)
         res = await repair_func(fault)
 
-        latency = (time.time() - start_ts) * 1000
+        latency = (time.perf_counter() - start_ts) * 1000
         await self.ueg.log_minimisation_event("regulator_unified_repaired", {
             "tier": tier,
             "latency_ms": latency,

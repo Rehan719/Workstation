@@ -27335,10 +27335,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1210",
       "note": "",
-      "slot_source": "P3.30, as FU-1121; its avatars/ files would otherwise route it to P2.40"
+      "slot_source": "P3.30, as FU-1121; its avatars/ files would otherwise route it to P2.40",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1210: the 34 durations taken from the settable wall clock, in 22 files, are read from time.perf_counter(), start and end, with each file's own alias (34 ends and 33 starts edited; gateway.py's four attempt starts and the subtraction in _record among them, and native_ai.py's two probe timings, which the refutation added). perf_counter is a monotonic clock, chosen over time.monotonic() on host_observation.py's precedent (W746): on Windows before Python 3.13 monotonic() ticks in about 15.6 ms steps. recirculation_orchestrator.py takes two readings, the wall clock for cycle_id and perf_counter for the duration. created_at and every other stamp stays on the wall clock, and so do the eight ages of stored stamps or file times and the cutoffs against them (orchestrator.py, mesh/health/monitor.py, config.py, organism_status.py, products.py's cache age, economy.py, gaas/v5/circuit_breaker_rl.py, work_budget.py). S18.1's seconds actually spent are what a monotonic clock measures, so the ruling is untouched. test_w1210 holds it: a syntax-tree scan of agentic_core outside _archive finds no wall-clock duration (same or enclosing scope, aliases and tuples included, a helper's parameter, or two clocks mixed), and it found 34 before the round. The eight ages are named with their reasons. The scan flags planted shapes and leaves stored ages alone. With resource_fabric's clock moved an hour back, then forward, at every read, a floor composition run stores a duration within the test's own elapsed time and the work budget rises by exactly it. With gateway's clock moved back the stream's floor attempt row is within the same bounds."
     },
     {
       "id": "FU-1848",

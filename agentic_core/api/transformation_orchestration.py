@@ -158,7 +158,7 @@ async def orchestrate(req: OrchestrateRequest, user: dict | None = Depends(get_c
     #  own routes decide who reaches a scope (business_plan.caller_may_reach), and this is held to the same rule.
     from agentic_core.api.business_plan import _reach_or_404
     _reach_or_404(user, req.scope)
-    _t0 = time.time()
+    _t0 = time.perf_counter()
     signals = 0
     cascade: List[Dict[str, Any]] = []
 
@@ -610,7 +610,7 @@ async def orchestrate(req: OrchestrateRequest, user: dict | None = Depends(get_c
         record_outcome("transformation", "transformation_orchestrate",
                        served_by=(nc.get("served_by") or ["native"])[0],
                        is_external=bool(nc.get("any_external")),
-                       duration_ms=int((time.time() - _t0) * 1000),
+                       duration_ms=int((time.perf_counter() - _t0) * 1000),
                        # W481 (refutation) — `validated` is three-state: a NOT ASSESSABLE run is not a failure.
                        # Only a run with a verdict is filed; otherwise nothing is claimed either way.
                        # W495 (FU-125, S7.3) — `validated` is this run's verdict, so it is passed as

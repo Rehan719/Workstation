@@ -3456,7 +3456,7 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
 
     async def _stream():
         vsb_id = f"vsb-{uuid.uuid4().hex[:10]}"
-        started = time.time()
+        started = time.perf_counter()
 
         def _event(stage: str, label: str, content: str, data: dict = None) -> str:
             payload = {"stage": stage, "label": label, "content": content}
@@ -3707,7 +3707,7 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
             "cascade_analysis": _stored_cascade_record(cascade_result),     # P3.30 (R2.14)
             "mjm_result": mjm_result,
             "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "elapsed_seconds": round(time.time() - started, 2),
+            "elapsed_seconds": round(time.perf_counter() - started, 2),
         }
         # §3.3 invariant — every generated VSB carries its own Board + Chief (the Owner's standing
         # charter, not a trained twin — W492/FU-188),

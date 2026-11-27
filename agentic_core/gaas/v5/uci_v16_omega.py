@@ -142,10 +142,10 @@ class UnifiedConstitutionalInterceptorV16Omega:
                                       escalation=_escalation)
 
         # 2. Execute
-        start = time.time()
+        start = time.perf_counter()
         try:
             output = await self._run(action)
-            latency = (time.time() - start) * 1000.0
+            latency = (time.perf_counter() - start) * 1000.0
             self.circuit_breaker.record_event(success=True)
         except Exception as exc:
             self.circuit_breaker.record_event(success=False)

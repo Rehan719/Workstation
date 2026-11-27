@@ -2940,7 +2940,11 @@ async def run_composition(cid: str, req: RunCompositionRequest,
         for _st in stages:
             _st["instruction"] += f"\nObjective: {req.objective}"
     from agentic_core.ai.native import orchestrator
-    _t0 = time.time()
+    #  W1210 (FU-1847) - the run's duration is read from perf_counter, a monotonic clock (host_observation.py's
+    #  precedent: on Windows before Python 3.13 monotonic() ticks in ~15.6 ms steps), so a wall clock set back or
+    #  forward during the run neither stores a negative duration nor books the jump as work. Stamps stay on the
+    #  wall clock: created_at is still time.strftime over time.gmtime().
+    _t0 = time.perf_counter()
     #  W627 (FU-531) - a composition run passes the same constitutional pre-gate and checkpoint as /swarm
     from agentic_core.ai.gateway import console_pre_gate, console_post_gate
     _halt = console_pre_gate("composition-run")
@@ -2992,7 +2996,7 @@ async def run_composition(cid: str, req: RunCompositionRequest,
         record_outcome("composition_run", f"composition:{comp['name']}", served_by=served,
                        served_by_all=_all or None,
                        is_external=bool(res.get("any_external")),
-                       duration_ms=int((time.time() - _t0) * 1000),
+                       duration_ms=int((time.perf_counter() - _t0) * 1000),
                        # W495 (FU-125, S7.3) — a non-empty trace is not a quality verdict
                        success=bool(res.get("trace")),
                        quality_gate=(res.get("quality") or {}).get("qms_gate_passed"), ref=cid,
@@ -3072,10 +3076,10 @@ async def run_composition(cid: str, req: RunCompositionRequest,
     for r in comp.get("resources", []):
         if r["id"] == "vsb_org_swarm":
             continue
-        _r0 = time.time()
+        _r0 = time.perf_counter()
         rr = await _run_real_resource(r["id"], _eff_cfg(r), objective, domain)
         if rr is not None:
-            rr["duration_ms"] = int((time.time() - _r0) * 1000)
+            rr["duration_ms"] = int((time.perf_counter() - _r0) * 1000)
             real_runs.append(rr)
             #  W640 (P3.31 clause 6; OWNER ruled 2026-10-10: "yes, once, for resources that only read or
             #  compose; never for one that writes") — ONE DECLARED ALTERNATIVE, ONCE. Only a STATUS READ
@@ -3089,7 +3093,7 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                 _in_run = {x["id"] for x in comp.get("resources", [])}
                 _alts = [a for a in _equivalents(r["id"]) if a not in _in_run and a not in _READ_SIDE_EFFECTS]
                 if _alts:
-                    _a0 = time.time()
+                    _a0 = time.perf_counter()
                     #  W810 (FU-898) - THE STAND-IN'S OWN CONFIGURATION: it held none in this composition, so it runs
                     #  with what composing it would give it - its registered parameters and any per-run override for
                     #  it. An empty one was harmless only while every possible stand-in took none.
@@ -3097,7 +3101,7 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                                 **(((req.params or {}).get(_alts[0])) or {})}
                     _alt = await _run_real_resource(_alts[0], _alt_cfg, objective, domain)
                     if _alt is not None:
-                        _alt["duration_ms"] = int((time.time() - _a0) * 1000)
+                        _alt["duration_ms"] = int((time.perf_counter() - _a0) * 1000)
                         _alt["alternative_for"] = r["id"]
                         #  P3.31 (round 9) - THE LABEL TRAVELS WITH THE ROW. `alternative_for` is a field a
                         #  reader must know to look for; this is the sentence, and it is on the row in the
@@ -3250,7 +3254,7 @@ async def run_composition(cid: str, req: RunCompositionRequest,
             #  registry, and its hash was not kept on the run
             "quality_record_hash": qa["quality"].get("quality_record_hash"),
             "plan_binding": plan_binding,
-            "duration_ms": int((time.time() - _t0) * 1000),
+            "duration_ms": int((time.perf_counter() - _t0) * 1000),
             "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         })
         atomic_write_json(_cr_store, _cr[-100:])
@@ -3686,7 +3690,7 @@ async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_curren
             f"this cascade holds {len(stages)} stages and a run attempts at most {_max_stages} "
             f"({_max_basis}). Nothing was run."))
     from agentic_core.ai.native import orchestrator
-    _t0 = time.time()
+    _t0 = time.perf_counter()
     # W509 (FU-009) — the run's own identity, minted BEFORE the run so the outcome row, the ledger entry
     # and the response all cite the same one. Without it a cascade run could not be referred to at all.
     swarm_run_id = f"sr-{uuid.uuid4().hex[:8]}"
@@ -3706,7 +3710,7 @@ async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_curren
                                        prefer_external=req.prefer_external, timeout=req.timeout,
                                        user_text=((req.context or "").strip() or None))
     res["governance_checkpoint"] = console_post_gate(req.agent, str(res.get("final") or ""))
-    _ms = int((time.time() - _t0) * 1000)
+    _ms = int((time.perf_counter() - _t0) * 1000)
     # W509 (FU-009) — what genuinely served each stage, and what each stage ASKED for. A stage whose
     # request was not honoured is visible here rather than silently served by something else.
     _servers = [str(t.get("served_by")) for t in (res.get("trace") or []) if t.get("served_by")]

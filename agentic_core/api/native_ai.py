@@ -633,7 +633,7 @@ async def evaluate_model(req: LifecycleModelRequest):
     results = []
     served_target = 0
     for pid, prompt, marker in probes:
-        _p0 = _t.time()
+        _p0 = _t.perf_counter()
         r = await orchestrator.complete(prompt, agent=f"eval:{req.model}",
                                         prefer=f"ollama:{req.model}", timeout=20.0)
         on_target = r.get("served_by") == f"ollama:{req.model}"
@@ -643,7 +643,7 @@ async def evaluate_model(req: LifecycleModelRequest):
                         "structure_hit": marker.lower() in (r.get("output") or "").lower(),
                         #  P3.32 - THE REPLY IS KEPT, so a probe that missed can be re-read
                         **_reply_record(r.get("output")),
-                        "ms": int((_t.time() - _p0) * 1000)})
+                        "ms": int((_t.perf_counter() - _p0) * 1000)})
     can_serve = served_target == len(probes)
     score = (round(sum(1.0 for x in results if x["structure_hit"]) / len(results), 2)
              if can_serve else None)   # honest: no score when the target never served
@@ -829,7 +829,7 @@ async def _baseline_record(tier: str, held: Dict[str, Any], serving: Dict[str, A
     rows: List[Dict[str, Any]] = []
     for set_name, cases in (("public", _EVAL_PROBES), ("heldout", held["cases"])):
         for c in cases:
-            _p0 = _t.time()
+            _p0 = _t.perf_counter()
             r = await orchestrator.complete(c["prompt"], agent=f"baseline:{tier}", prefer=tier,
                                             timeout=_BASELINE_TIMEOUT_S)
             reply = r.get("output") or ""
@@ -848,7 +848,7 @@ async def _baseline_record(tier: str, held: Dict[str, Any], serving: Dict[str, A
                                           f"not read: {r.get('served_by')} answered this case, not {tier}, "
                                           f"so the reply says nothing about {tier}"),
                          **_reply_record(reply), **_withheld_if_repeats(set_name, c["prompt"], reply),
-                         "ms": int((_t.time() - _p0) * 1000)})
+                         "ms": int((_t.perf_counter() - _p0) * 1000)})
     counts = {"passed": sum(1 for x in rows if x["passed"] is True),
               "failed": sum(1 for x in rows if x["passed"] is False),
               "not_read": sum(1 for x in rows if x["passed"] is None)}

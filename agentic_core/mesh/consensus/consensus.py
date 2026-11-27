@@ -21,7 +21,7 @@ class MeshConsensus:
         2. COMMIT: Verify super-majority (2/3 + 1) agreement.
         """
         proposal_id = proposal.get("id", "unknown")
-        start_time = time.time()
+        start_time = time.perf_counter()
 
         # Phase 1: Pre-Commit Voting
         votes = await self._collect_votes(proposal, peers)
@@ -38,7 +38,7 @@ class MeshConsensus:
 
         decision = (agreed_weight / total_weight) >= 0.67 if total_weight > 0 else False
 
-        latency = (time.time() - start_time) * 1000
+        latency = (time.perf_counter() - start_time) * 1000
         await self.ueg.log_minimisation_event("consensus_decision", {
             "proposal_id": proposal_id,
             "decision": decision,

@@ -303,7 +303,7 @@ async def _ollama_vision(image_base64: str, message: str) -> Optional[str]:
     import time as _time
     ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
     model = os.getenv("OLLAMA_VISION_MODEL", "llava")
-    _t0, _ok, _tokens, out = _time.time(), False, None, None
+    _t0, _ok, _tokens, out = _time.perf_counter(), False, None, None
     try:
         async with httpx.AsyncClient(timeout=float(os.getenv("OLLAMA_VISION_TIMEOUT", "30"))) as client:
             r = await client.post(ollama_url, json={
@@ -325,7 +325,7 @@ async def _ollama_vision(image_base64: str, message: str) -> Optional[str]:
     try:
         from agentic_core.api.operational_excellence import record_outcome
         record_outcome("model_attempt", "avatar:vision", served_by=f"ollama:{model}", is_external=False,
-                       duration_ms=int((_time.time() - _t0) * 1000), success=_ok, tokens=_tokens)
+                       duration_ms=int((_time.perf_counter() - _t0) * 1000), success=_ok, tokens=_tokens)
     except Exception:
         pass
     return out

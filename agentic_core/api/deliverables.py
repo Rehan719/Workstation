@@ -283,7 +283,7 @@ async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_u
     if names_anothers_entity(req.vsb_id, user):
         raise HTTPException(status_code=404, detail=f"No entity {req.vsb_id} was found, so no deliverable was "
                                                     f"produced for it.")
-    _t0 = time.time()
+    _t0 = time.perf_counter()
     if req.content.strip():
         # §4.9 (W306) — verbatim ingest: output already produced elsewhere on the platform (a Genesis
         # journey, a domain-tool run) becomes a LIVING deliverable — carried verbatim (no regeneration,
@@ -308,7 +308,7 @@ async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_u
     else:
         gen = await _generate(req.type, req.title, req.brief, req.domain, req.vsb_id,
                               req.sections, realm=req.realm)
-    _dur = int((time.time() - _t0) * 1000)
+    _dur = int((time.perf_counter() - _t0) * 1000)
     # Continual operational delivery within the LIVING QMS: every produced deliverable is gated by the
     # OWNED QMS (real, stateful), held to the §10 Solution-Quality Bar, recorded within the §8 organism.
     _owner = request_owner_id(user if isinstance(user, dict) else None, "default")

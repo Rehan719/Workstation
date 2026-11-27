@@ -8,9 +8,9 @@ class MeshDiscovery:
     def __init__(self, peer_id, dht=None, ueg_logger=None):
         self.peer_id, self.dht, self.ueg = peer_id, dht, ueg_logger or VSBUEGLogger()
     async def discover_peers(self, topic, limit=10):
-        start = time.time()
+        start = time.perf_counter()
         await asyncio.sleep(0.01)
         peers = [PeerID(f"node_{i}") for i in range(1, limit + 1) if f"node_{i}" != str(self.peer_id)]
-        latency = (time.time() - start) * 1000
+        latency = (time.perf_counter() - start) * 1000
         await self.ueg.log_minimisation_event("peer_discovery", {"latency_ms": latency, "peer_count": len(peers)})
         return peers

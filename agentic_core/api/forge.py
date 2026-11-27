@@ -157,7 +157,7 @@ async def _execute(req: ForgeRunRequest) -> Dict[str, Any]:
             f"a Forge pipeline runs at most {_MAX_STAGES} stages and this one names {len(req.stages)}, so nothing "
             f"was run and nothing was stored. Send {_MAX_STAGES} or fewer."))
     run_id = f"forge-{uuid.uuid4().hex[:8]}"
-    start = time.time()
+    start = time.perf_counter()
     stage_ids = [s.type for s in req.stages] or list(_DEFAULT_PIPELINE)
     _pipeline_source = "requested" if req.stages else "default"
     #  W805 (FU-823) - BY POSITION, not by type: two stages of one type each keep their own configuration
@@ -259,7 +259,7 @@ async def _execute(req: ForgeRunRequest) -> Dict[str, Any]:
         "governance": governance,
         "ai_provenance": provenance,
         "reusable": True, "rerunnable": True,
-        "duration_ms": int((time.time() - start) * 1000),
+        "duration_ms": int((time.perf_counter() - start) * 1000),
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "next": "POST /api/v1/genesis/establish to commercialise this as a living VSB IDBO entity.",
     }

@@ -44,7 +44,7 @@ class MycelialBackbone:
         """UNREACHED (W440: zero callers) and NOT wire-ready — §4.5 archetype: the payload is
         ignored, an unregistered target still returns status "DELIVERED" (a constant), and the
         latency is a simulated sleep. Fix delivery semantics before ever wiring this."""
-        start_time = time.time()
+        start_time = time.perf_counter()
 
         if target in self.failures:
             # Dynamic rerouting logic
@@ -54,7 +54,7 @@ class MycelialBackbone:
         # Simulate transport latency
         await asyncio.sleep(0.04)
 
-        elapsed = (time.time() - start_time) * 1000
+        elapsed = (time.perf_counter() - start_time) * 1000
         self.latency_p95 = (self.latency_p95 * 0.9) + (elapsed * 0.1)
 
         logger.info(f"VSB: Message routed via {protocol.value} in {elapsed:.2f}ms")
