@@ -104283,8 +104283,13 @@ def test_w1208_the_privacy_screen_reads_history_for_credentials_and_says_where_i
     two = fresh("two")
     (two / "demo.txt").write_text(f"a={other}\nx\nb={third}\n", encoding="utf-8")
     odd = "odd\x1b[2J\nname.txt"
-    (two / odd).write_text(f"k={value}\n", encoding="utf-8")
+    #  W1208b - the control-character path is made in git's index, never on disk: Windows refuses such a
+    #  file name, and the scan reads history, not the work tree
     git(two, "add", "-A")
+    (two / "w1208b_blob.tmp").write_text(f"k={value}\n", encoding="utf-8")
+    _blob = git(two, "hash-object", "-w", "w1208b_blob.tmp")
+    (two / "w1208b_blob.tmp").unlink()
+    git(two, "-c", "core.protectNTFS=false", "update-index", "--add", "--cacheinfo", f"100644,{_blob},{odd}")
     t1 = commit(two, "two values")
     got = pe.scan_history(two, allowed=allow_file(two, {"commit": t1, "path": "demo.txt", "kind": "credential",
                                                         "line": 1, "reason": why}))
@@ -104387,3 +104392,18 @@ def test_w1208_the_privacy_screen_reads_history_for_credentials_and_says_where_i
     assert fu["status"] == "open" or (fu["status"], fu.get("closed_by"), fu.get("because")) == (
         "done", "W1208", "built"), (fu["status"], fu.get("closed_by"))
     assert not re.search(r"\b(he|his|him|she|her|hers)\b", doc["about"] + book + said, re.I)
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1208b - test_w1208 never writes a file whose name Windows refuses
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1208b_the_control_character_path_is_made_in_the_index_not_on_disk():
+    """W1208b. test_w1208 failed on Windows writing "odd\\x1b[2J\\nname.txt" to disk; the leg now enters that path in
+    git's index from a blob, so no file with a control character in its name is written anywhere."""
+    import pathlib
+    src = pathlib.Path(__file__).read_text(encoding="utf-8")
+    body = src[src.index("def test_w1208_the_privacy_screen_reads_history"):]
+    body = body[:body.index("\ndef test_", 10)]
+    assert "(two / odd).write_text(" not in body, "the control-character path is written to disk again"
+    assert '"update-index", "--add", "--cacheinfo", f"100644,{_blob},{odd}")' in body
+    assert '_blob = git(two, "hash-object", "-w", "w1208b_blob.tmp")' in body and '(two / "w1208b_blob.tmp").unlink()' in body
