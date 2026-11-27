@@ -399,9 +399,13 @@ async def record_nonconformance(req: NonConformanceRequest, user: dict | None = 
     #  W733 (FU-986) - THE NONCONFORMANCE IS KEPT: it opens a defect in the quality system's durable loop, owned
     #  by the caller, before anything is composed - so a model that fails cannot lose the record.
     from agentic_core.vbs.registry import qms as _qms
+    from agentic_core.vbs.qms import WRITES_REFUSED_BASIS as _QMS_WRITES_REFUSED1206
     _u = user if isinstance(user, dict) else None
     _defect = _qms.open_reported_defect(req.description, req.severity, req.organisation_name, req.vsb_id,
                                         owner_id=(_u or {}).get("username"))
+    #  W1206 (FU-1846) - a defect the QMS could not write (its store could not be read whole) is NOT stored, and
+    #  the answer says so; it exists only in this process's memory
+    _refused1206 = _defect.get("write_refused")
     # A draft CAPA (corrective and preventive action). No role is claimed in the prompt (Owner ruling 2026-10-11).
     prompt = (
         f"Draft a CAPA (corrective and preventive action) for this non-conformance:\n\n"
@@ -425,11 +429,15 @@ async def record_nonconformance(req: NonConformanceRequest, user: dict | None = 
         #  the sentence that stood here said the nonconformance was kept. Nothing keeps it: the id above is
         #  made for this answer and stored nowhere. What happened is a signal, and that is what is said.
         "immune_response": f"signalled as {error_type} to the immune sensor",
-        "stored": True,
+        "stored": not _refused1206,
         "defect": _defect,
-        "stored_basis": (f"STORED as defect {_defect['id']} in the quality system's defect loop, marked as reported "
-                         f"by a person: list it at GET /api/v1/vbs/qms/defects, then correct it and re-verify it "
-                         f"there. It is not a gate run, so the non-conformance rate does not move."),
+        "stored_basis": ((f"NOT STORED: the quality system's store could not be read whole, so nothing was "
+                          f"written ({_refused1206}). Defect {_defect['id']} exists only in this process's memory "
+                          f"and will not survive a restart. " + _QMS_WRITES_REFUSED1206) if _refused1206 else
+                         (f"STORED as defect {_defect['id']} in the quality system's defect loop, marked as "
+                          f"reported by a person: list it at GET /api/v1/vbs/qms/defects, then correct it and "
+                          f"re-verify it there. It is not a gate run, so the non-conformance rate does not move.")),
+        **({"writes_refused": True, "last_write_refused": _qms.last_write_refused} if _refused1206 else {}),
         "capa": capa,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }

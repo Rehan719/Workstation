@@ -27304,10 +27304,13 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P5.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1206",
       "note": "",
-      "slot_source": "P5.10 clause 1"
+      "slot_source": "P5.10 clause 1",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1206: QualityManagementSystem._save_state (agentic_core/vbs/qms.py) raises StoreUnavailable while the store could not be read whole, so the write is refused and the store keeps its bytes. Every writer saves through _save_or_refuse: the gate's verdict still returns, each defect writer's answer says write_refused, and last_write_refused records the reason, the writer and when. defect_summary, which the defects route returns, says writes_refused with its basis, including that the state is read once, at first use, so the refusal lasts until the platform is restarted with the store repaired. POST /mgmt/nonconformance (agentic_core/api/management_systems.py) answers stored False and NOT STORED when the defect's write was refused, and POST /vbs/qms/gate (agentic_core/api/vbs_systems.py) says a run it could not record was NOT recorded, each lifting writes_refused. test_w1206 holds the attribute door over agentic_core (a tolerant read bound into an attribute, directly or through a method's return, and written back from another method, unless the writer raises on the reason the read bound), bounded by planted positive and negative sources (an inverted guard, a local alias and an annotated binding among the positives), and holds that in the QMS every save goes through _save_or_refuse and only _save_state writes. The DCMS's instance was closed by W1205. The except-default loader of agentic_core/auth/core.py is a third door this matcher does not see: it is left to P4.1, where FU-1834 is open. FU-395 is not reopened: the register has no reopen and its ten write paths still hold."
     },
     {
       "id": "FU-1847",

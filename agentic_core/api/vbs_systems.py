@@ -60,6 +60,7 @@ async def qms_gate(req: QMSGate, user: dict | None = Depends(get_current_user)):
     #  ledger v17 (FU-936) - which of the two figures the caller actually sent. An empty body ran the rule at
     #  the model's defaults and the answer still spoke of "the figures you supplied".
     _sent936 = sorted(getattr(req, "model_fields_set", None) or [])
+    _sum1206 = qms.defect_summary()     # W1206 (FU-1846) - read once: what it says of the store is lifted whole
     _defaulted936 = sorted({"coverage", "stubs_found"} - set(_sent936))
     return {"passed": passed, "min_coverage": qms.min_coverage,
             "figures_supplied": _sent936, "figures_defaulted": _defaulted936,
@@ -68,13 +69,18 @@ async def qms_gate(req: QMSGate, user: dict | None = Depends(get_current_user)):
                 + (f"; taken from this route's defaults, not from any delivery: {', '.join(_defaulted936)} "
                    f"(coverage {req.coverage}, stubs_found {req.stubs_found})" if _defaulted936 else "")),
             "counted_in_rate": False,
-            "basis": ("a what-if gate over the coverage and stub figures you supplied — it is recorded "
-                      "separately and does not move the platform non-conformance rate"),
+            "basis": (("a what-if gate over the coverage and stub figures you supplied — its rule was run, and the "
+                       "run (and any what-if defect) was NOT recorded, because the quality system's store could "
+                       f"not be read whole ({(_sum1206.get('last_write_refused') or {}).get('reason')}); it does "
+                       "not move the platform non-conformance rate") if _sum1206.get("writes_refused") else
+                      ("a what-if gate over the coverage and stub figures you supplied — it is recorded "
+                       "separately and does not move the platform non-conformance rate")),
             "non_conformance_rate": qms.get_non_conformance_rate(),
             # W534 (FU-298) — the rate is printed HERE, so the disclosure has to be here. get_non_conformance_rate
             # returns a bare float and a float cannot carry a reason, which is why this reads the summary's.
-            **({k: qms.defect_summary()[k] for k in ("store_incomplete", "counts_are_incomplete")}
-               if "store_incomplete" in qms.defect_summary() else {}),
+            #  W1206 (FU-1846) - and that writes are refused, with the last refused write
+            **{k: _sum1206[k] for k in ("store_incomplete", "counts_are_incomplete", "writes_refused",
+                                       "writes_refused_basis", "last_write_refused") if k in _sum1206},
             #  ledger v17 (FU-936) - this flag answered the opposite of what the re-verify route below defines:
             #  there, a gate run on typed figures is NOT real and NOT measured. One definition, both routes.
             "real": False, "measured": False,

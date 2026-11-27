@@ -105414,3 +105414,319 @@ def test_w1205_the_document_control_registry_appends_each_version_and_refuses_a_
             run(w.commit_artifact("w1205-l12", {"next": True}, "w1205"))
         assert "not confirmed durable" in str(e.value) and w.refusal, str(e.value)
         assert led.read_bytes() == after_undo, "L12: a refused commit wrote"
+
+
+def test_w1206_a_store_read_tolerantly_into_an_object_is_never_written_back_from_it(monkeypatch, tmp_path):
+    """FU-1846 (W1206), P5.10 clause 1: a return of a closed class gets a guard at the mechanism. FU-395's class, a
+    tolerant read used as a write base, returned through an object attribute: the QMS fills self._state from
+    read_json_reported and _save_state wrote it whole from another method, whatever _store_unreadable said, which
+    W577's per-function guard cannot see. W1205 made the DCMS, the other instance, read strictly. Held here:
+    L1. a QualityManagementSystem on a truncated store, on an isolated data root: a failing gate still returns False;
+        the file's bytes are unchanged; defect_summary says the store is incomplete, that writes are refused, that the
+        refusal lasts until a restart with the store repaired, and the last refused write; each defect writer still
+        answers, saying write_refused, and writes nothing; POST /mgmt/nonconformance answers stored False and NOT
+        STORED, and POST /vbs/qms/gate says its run was NOT recorded, each with writes_refused. On a store read whole,
+        the same writes are made and the routes say stored and recorded;
+    L2. the attribute door, over agentic_core outside _archive: no class binds an attribute from a tolerant read,
+        directly or through its own method's return, and passes it to a writer, unless the writing method first
+        raises on the reason the read bound; in the QMS every save goes through _save_or_refuse, and only
+        _save_state writes;
+    L3. the matcher flags planted sources with HEAD's DCMS shape (through a method's return), HEAD's QMS shape (a
+        tuple bound directly), a cache loaded through a method, a writer guarded on another attribute, an inverted
+        guard, a write through a local alias and a binding by annotated assignment; it does not flag the guarded
+        shape this round builds, or the heartbeat's (a tolerant read of one store, a write of another);
+    L4. the register: FU-1846 is on P5.10, high, open or closed by W1206; its why names FU-1834 (auth/core.py's
+        except-default loader, a third door this matcher does not see, left to P4.1) and why FU-395 is not reopened;
+        FU-1834 is on P4.1."""
+    import ast
+    import asyncio
+    import json
+    import pathlib
+    import pytest
+    from agentic_core import config as _cfg
+    from agentic_core.config import StoreUnavailable
+    from agentic_core.vbs import qms as Qm
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    #  L1. THE QMS REFUSES ITS WRITE WHILE ITS STORE COULD NOT BE READ WHOLE
+    with monkeypatch.context() as m:
+        d = tmp_path / "l1"
+        d.mkdir()
+        m.setattr(_cfg, "data_path", lambda *parts: d.joinpath(*parts))
+        store = d / "qms_state_w1206.json"
+        store.write_text('{"gates_run": 4, "defects_total": 2, "defe', encoding="utf-8")
+        kept = store.read_bytes()
+        q = Qm.QualityManagementSystem("w1206")
+        assert asyncio.run(q.run_quality_gates({"coverage": 0.2, "stubs_found": True}, label="delivery")) is False
+        assert store.read_bytes() == kept, "the truncated store was written back with what could be read"
+        s = q.defect_summary()
+        assert s.get("store_incomplete") and s.get("counts_are_incomplete") is True, s
+        assert s.get("writes_refused") is True and s.get("writes_refused_basis") == Qm.WRITES_REFUSED_BASIS, s
+        assert "until the platform is restarted with the store repaired" in s["writes_refused_basis"]
+        assert "keeps its bytes" in s["writes_refused_basis"] and "lost when it ends" in s["writes_refused_basis"]
+        lw = s.get("last_write_refused") or {}
+        assert lw.get("writer") == "run_quality_gates" and "qms_state_w1206.json" in lw.get("reason", ""), lw
+        assert "nothing was written" in lw["reason"], lw
+        assert "THIS RATE IS INCOMPLETE" in s["rate_basis"], "W534's disclosure on reads is kept"
+        with pytest.raises(StoreUnavailable):
+            q._save_state()
+        dft = q.open_reported_defect("w1206 a reported nonconformance", "minor", vsb_id="vsb-w1206")
+        assert dft.get("write_refused") and dft["status"] == "open", dft
+        gate_dft = [x for x in q.defects if x.get("label") == "delivery"][0]
+        for writer, call in (
+                ("correct_defect", lambda: q.correct_defect(gate_dft["id"], "w1206 corrected")),
+                ("reverify_defect", lambda: q.reverify_defect(gate_dft["id"], {"coverage": 0.99})),
+                ("dispose_defect", lambda: q.dispose_defect(dft["id"], "not_reproducible", "w1206", "w1206", False))):
+            out = call()
+            assert out and out.get("write_refused"), (writer, out)
+            assert q.last_write_refused["writer"] == writer, (writer, q.last_write_refused)
+            assert store.read_bytes() == kept, (writer, "wrote over the store it could not read")
+        #  the two routes that answer what a write did
+        from agentic_core.api import management_systems as _ms
+        from agentic_core.api import vbs_systems as _vs
+        from agentic_core.vbs import registry as _reg
+
+        async def no_model(prompt, agent, said=None):
+            return "w1206: no model was run", {"served_by": "none"}
+        m.setattr(_ms, "_compose", no_model)
+
+        def routes(inst):
+            m.setattr(_reg, "qms", inst)
+            m.setattr(_vs, "qms", inst)
+            nc = asyncio.run(_ms.record_nonconformance(_ms.NonConformanceRequest(
+                organisation_name="W1206 Made-up Co", description="w1206 a reported nonconformance"), None))
+            gate = asyncio.run(_vs.qms_gate(_vs.QMSGate(coverage=0.2), None))
+            return nc, gate
+        nc, gate = routes(q)
+        assert nc["stored"] is False and nc["stored_basis"].startswith("NOT STORED") and nc.get("writes_refused"), nc
+        assert "will not survive a restart" in nc["stored_basis"] and "list it at" not in nc["stored_basis"], nc
+        assert nc["last_write_refused"]["writer"] == "open_reported_defect", nc
+        assert gate.get("writes_refused") is True and gate.get("last_write_refused"), gate
+        assert "was NOT recorded" in gate["basis"] and "recorded separately" not in gate["basis"], gate["basis"]
+        assert gate.get("store_incomplete") and gate.get("writes_refused_basis") == Qm.WRITES_REFUSED_BASIS, gate
+        assert store.read_bytes() == kept, "a route wrote over the store it could not read"
+        #  a store read whole is written as before, and says nothing of refusals
+        d2 = tmp_path / "l1-whole"
+        d2.mkdir()
+        m.setattr(_cfg, "data_path", lambda *parts: d2.joinpath(*parts))
+        w = Qm.QualityManagementSystem("w1206")
+        assert asyncio.run(w.run_quality_gates({"coverage": 0.2, "stubs_found": True}, label="delivery")) is False
+        on_disk = json.loads((d2 / "qms_state_w1206.json").read_text(encoding="utf-8"))
+        assert on_disk["gates_run"] == 1 and len(on_disk["defects"]) == 1, on_disk
+        r = w.open_reported_defect("w1206 whole", "minor")
+        assert "write_refused" not in r and w.last_write_refused is None
+        assert not {"writes_refused", "last_write_refused", "store_incomplete"} & set(w.defect_summary())
+        nc, gate = routes(w)
+        assert nc["stored"] is True and nc["stored_basis"].startswith("STORED as defect") and "writes_refused" not in nc
+        assert "recorded separately" in gate["basis"] and "writes_refused" not in gate, gate
+
+    #  L2 / L3. THE ATTRIBUTE DOOR
+    TOLERANT = {"read_json_reported", "load_json_tolerant"}
+    WRITERS = {"atomic_write_json", "save_lifecycle", "_save_fund"}       # test_w577's writers
+
+    def attribute_doors(src):
+        """(class, attribute, binding method, writing method) for each attribute a class binds from a tolerant read,
+        directly or through its own method's return, and passes to a writer (itself or through a local alias),
+        unless the writing method first raises on the reason the tolerant read bound (the reason itself, not its
+        negation)."""
+        def called(node):
+            f = node.func if isinstance(node, ast.Call) else None
+            return f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else None
+
+        def tolerant(node):
+            node = node.value if isinstance(node, ast.Subscript) else node
+            return isinstance(node, ast.Call) and called(node) in TOLERANT
+
+        def self_attr(node):
+            return (node.attr if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name)
+                    and node.value.id == "self" else None)
+
+        def assigns(fn):
+            """(targets, value) for every assignment in FN, annotated ones included."""
+            for a in ast.walk(fn):
+                if isinstance(a, ast.Assign):
+                    yield a.targets, a.value
+                elif isinstance(a, ast.AnnAssign) and a.value is not None:
+                    yield [a.target], a.value
+
+        def returns_tolerant(fn):
+            tainted = set()
+            for targets, value in assigns(fn):
+                if tolerant(value):
+                    for t in targets:
+                        if isinstance(t, ast.Name):
+                            tainted.add(t.id)
+                        elif isinstance(t, ast.Tuple) and t.elts and isinstance(t.elts[0], ast.Name):
+                            tainted.add(t.elts[0].id)
+            return any(isinstance(r, ast.Return) and r.value is not None
+                       and (tolerant(r.value) or {x.id for x in ast.walk(r.value) if isinstance(x, ast.Name)} & tainted)
+                       for r in ast.walk(fn))
+        found = []
+        for cls in [n for n in ast.walk(ast.parse(src)) if isinstance(n, ast.ClassDef)]:
+            methods = {f.name: f for f in cls.body if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef))}
+            via_methods = {n for n, f in methods.items() if returns_tolerant(f)}
+            bound, reasons = {}, set()
+            for name, fn in methods.items():
+                local_reasons = set()
+                for targets, value in assigns(fn):
+                    direct = tolerant(value)
+                    via = isinstance(value, ast.Call) and self_attr(value.func) in via_methods
+                    if not (direct or via):
+                        continue
+                    for t in targets:
+                        if isinstance(t, ast.Tuple) and t.elts:
+                            if self_attr(t.elts[0]):
+                                bound.setdefault(self_attr(t.elts[0]), name)
+                            if direct and len(t.elts) > 1:
+                                if self_attr(t.elts[1]):
+                                    reasons.add(self_attr(t.elts[1]))
+                                elif isinstance(t.elts[1], ast.Name):
+                                    local_reasons.add(t.elts[1].id)
+                        elif self_attr(t):
+                            bound.setdefault(self_attr(t), name)
+                for targets, value in assigns(fn):      # a reason carried onto the object through a local name
+                    if isinstance(value, ast.Name) and value.id in local_reasons:
+                        reasons.update(self_attr(t) for t in targets if self_attr(t))
+
+            def raises_on(test):
+                """The test is true when the reason is set: the reason itself, an 'is not None' on it, or an 'or'
+                or 'and' holding one of those; never its negation."""
+                if self_attr(test) in reasons:
+                    return True
+                if isinstance(test, ast.BoolOp):
+                    return any(raises_on(v) for v in test.values)
+                return (isinstance(test, ast.Compare) and self_attr(test.left) in reasons and len(test.ops) == 1
+                        and isinstance(test.ops[0], ast.IsNot) and isinstance(test.comparators[0], ast.Constant)
+                        and test.comparators[0].value is None)
+            for name, fn in methods.items():
+                aliases = {t.id: self_attr(value) for targets, value in assigns(fn) for t in targets
+                           if isinstance(t, ast.Name) and self_attr(value) in bound}
+                for c in ast.walk(fn):
+                    if not (isinstance(c, ast.Call) and called(c) in WRITERS):
+                        continue
+                    used = set()
+                    for arg in list(c.args) + [k.value for k in c.keywords]:
+                        for x in ast.walk(arg):
+                            if self_attr(x) in bound:
+                                used.add(self_attr(x))
+                            elif isinstance(x, ast.Name) and x.id in aliases:
+                                used.add(aliases[x.id])
+                    for attr in sorted(used):
+                        guarded = any(isinstance(n, ast.If) and n.lineno < c.lineno and raises_on(n.test)
+                                      and any(isinstance(b, ast.Raise) for s in n.body for b in ast.walk(s))
+                                      for n in ast.walk(fn))
+                        if not guarded:
+                            found.append((cls.name, attr, bound[attr], name))
+        return found
+
+    #  L2. over the tree
+    doors, scanned = [], 0
+    for p in sorted((root / "agentic_core").rglob("*.py")):
+        if "_archive" in p.parts:
+            continue
+        try:
+            got = attribute_doors(p.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        scanned += 1
+        doors += [(p.relative_to(root).as_posix(),) + g for g in got]
+    assert scanned > 300, ("the scan read too few modules to mean anything", scanned)
+    assert not doors, ("these classes read a store tolerantly into an attribute and write that attribute back from "
+                       "another method, so what the read could not recover is overwritten and lost (FU-395's class "
+                       "through the attribute door)", doors)
+
+    #  L3. the matcher, on planted sources: it is neither vacuous nor wide
+    dcms_head = '''
+class DocumentControlManagementSystem:
+    def __init__(self, config_path):
+        self.registry = self._load()
+    def _load(self):
+        try:
+            data, why = read_json_reported(self._store_path(), {})
+            data = data if isinstance(data, dict) else {}
+        except Exception as e:
+            data, why = {}, str(e)
+        self._store_incomplete = why
+        return data
+    def _persist(self):
+        try:
+            atomic_write_json(self._store_path(), self.registry)
+        except Exception:
+            pass
+'''
+    qms_head = '''
+class QualityManagementSystem:
+    def _load_state(self):
+        if self._state is None:
+            self._state, self._store_unreadable = read_json_reported(data_path(self._store_name), {})
+        return self._state
+    def _save_state(self):
+        if self._state is not None:
+            atomic_write_json(data_path(self._store_name), self._state)
+'''
+    qms_guarded = qms_head.replace(
+        "        if self._state is not None:\n            atomic_write_json",
+        "        if self._state is not None:\n            if self._store_unreadable:\n"
+        "                raise StoreUnavailable(data_path(self._store_name), self._store_unreadable)\n"
+        "            atomic_write_json")
+    guarded_elsewhere = qms_guarded.replace("            if self._store_unreadable:\n",
+                                            "            if self._dirty:\n")
+    cache = '''
+class Cache:
+    def _load_tolerant(self):
+        value, _why = read_json_reported(data_path("w1206_cache.json"), {})
+        return value
+    def __init__(self):
+        self.cache = self._load_tolerant()
+    def flush(self):
+        atomic_write_json(data_path("w1206_cache.json"), self.cache)
+'''
+    heartbeat = '''
+class OrganismHeartbeat:
+    def _compliance_beat(self):
+        self.history, self._history_why = read_json_reported(data_path("vsb_compliance_history.json"), {})
+        hist = self.history or {}
+        return sorted(hist)
+    def _save_autonomy(self):
+        payload = {"auto_ship": self.auto_ship}
+        atomic_write_json(self._autonomy_store(), payload)
+'''
+    inverted = qms_guarded.replace("            if self._store_unreadable:\n",
+                                   "            if not self._store_unreadable:\n")
+    alias = qms_head.replace("            atomic_write_json(data_path(self._store_name), self._state)",
+                             "            st = self._state\n"
+                             "            atomic_write_json(data_path(self._store_name), st)")
+    annotated = cache.replace("        self.cache = self._load_tolerant()",
+                              "        self.cache: dict = read_json_reported(data_path(\"w1206_cache.json\"), {})[0]")
+    assert attribute_doors(inverted) == [("QualityManagementSystem", "_state", "_load_state", "_save_state")]
+    assert attribute_doors(alias) == [("QualityManagementSystem", "_state", "_load_state", "_save_state")]
+    assert attribute_doors(annotated) == [("Cache", "cache", "__init__", "flush")]
+    assert attribute_doors(dcms_head) == [("DocumentControlManagementSystem", "registry", "__init__", "_persist")]
+    assert attribute_doors(qms_head) == [("QualityManagementSystem", "_state", "_load_state", "_save_state")]
+    assert attribute_doors(cache) == [("Cache", "cache", "__init__", "flush")]
+    assert attribute_doors(guarded_elsewhere) == [("QualityManagementSystem", "_state", "_load_state", "_save_state")]
+    assert attribute_doors(qms_guarded) == [], "the guarded writer this round builds is flagged"
+    assert attribute_doors(heartbeat) == [], "a tolerant read of one store and a write of another is flagged"
+    #  and the real QMS is the guarded shape, through the one writer every save passes
+    qtree = ast.parse((root / "agentic_core" / "vbs" / "qms.py").read_text(encoding="utf-8"))
+    qcls = next(n for n in qtree.body if isinstance(n, ast.ClassDef) and n.name == "QualityManagementSystem")
+    callers = {}
+    for fn in qcls.body:
+        if isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            for c in ast.walk(fn):
+                if isinstance(c, ast.Call):
+                    f = c.func
+                    nm = f.attr if isinstance(f, ast.Attribute) else f.id if isinstance(f, ast.Name) else None
+                    callers.setdefault(nm, []).append(fn.name)
+    assert callers.get("_save_state") == ["_save_or_refuse"], ("a save goes around the refusal", callers)
+    assert callers.get("atomic_write_json") == ["_save_state"], ("the QMS writes elsewhere", callers)
+    assert len(callers.get("_save_or_refuse", [])) >= 5, callers.get("_save_or_refuse")
+
+    #  L4. THE REGISTER
+    rows = {r["id"]: r for r in json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+            if isinstance(r, dict) and "id" in r}
+    row = rows["FU-1846"]
+    assert (row["slot"], row["severity"]) == ("P5.10", "high"), row
+    assert (row["status"], row["closed_by"]) in (("open", None), ("done", "W1206")), (row["status"], row["closed_by"])
+    assert "FU-1834" in row["why"] and "no reopen" in row["why"] and "FU-395" in row["why"], row["why"]
+    assert rows["FU-1834"]["slot"] == "P4.1" and "agentic_core/auth/core.py" in rows["FU-1834"]["files"]
