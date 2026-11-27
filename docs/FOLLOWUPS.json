@@ -27100,10 +27100,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1202",
       "note": "",
-      "slot_source": "P4.1: sign-in on, without which the tunnel's port acts as the administrator for any page in the Owner's browser (W1191's second review)"
+      "slot_source": "P4.1: sign-in on, without which the tunnel's port acts as the administrator for any page in the Owner's browser (W1191's second review)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1202: agentic_core/request_guard.py, a pure ASGI middleware made the outermost layer of agentic_core/app_mvp.py, acts only while WORKSTATION_PAGE_ORIGINS names origins, each exactly scheme://host[:port], a setting only deploy/gcp/startup.sh passes (http://localhost:8800 and http://127.0.0.1:8800 on the no-domain run, https://DOMAIN with WORKSTATION_SERVED_HOSTS=DOMAIN behind the front, and so the HTTPS drill's front). Unset or empty, it is off; set to an entry it cannot read, it is off and the log says so once, naming the entry, at startup or at the first request. So the Owner's own platform and the suite are unchanged (the local platform's row stays open). While on, it refuses a request of any method under a Host other than localhost, 127.0.0.1, ::1 or a served host (400, so a host name rebound to the machine is not served), and closes a stream socket under such a Host with 1008 before it is accepted; a POST, PUT, PATCH or DELETE whose Origin is not listed, null included, or that has no Origin but Sec-Fetch-Site: cross-site (403); a read under /api/ that the browser says a page of another site asked for without a link being followed, by an image or a fetch (Sec-Fetch-Site: cross-site, Sec-Fetch-Mode not navigate; 403); and a stream socket of an unlisted Origin, closed with 1008 before it is accepted. Nothing runs for a refused request, and the membrane does not observe it. It does not refuse a program, which sends no Origin and is stopped only by sign-in, nor a preflight, which CORS answers. A link followed from another site, and a read from a browser that sends no Sec-Fetch headers, still run: GET /api/v1/qep/adaptation/registry writes until W1220, and the forecasts and a change's impact make a gateway call, which W1202 registered as a row of their own on P4.1. Step 7 of docs/DEPLOYMENT.md says so. test_w1202 drives it through the real app."
     },
     {
       "id": "FU-1836",
@@ -28392,6 +28395,24 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P4.1, the perimeter: a signed-in person changes which model serves through routes that ask for no administrator (W1203's security review)"
+    },
+    {
+      "id": "FU-1905",
+      "title": "Three GET routes act when a link from another site is followed through the tunnel while sign-in is off: the forecasts make a gateway call and rewrite their cache, a change's impact makes a gateway call, and the adaptation registry saves its store",
+      "why": "Found in W1202's security review, by a scan of every mounted GET handler. W1202's request guard refuses a read under /api/ that the browser says a page of another site asked for without a link being followed (Sec-Fetch-Site cross-site, Sec-Fetch-Mode not navigate), so an image or a fetch no longer triggers one. A link followed from another site, and a browser that sends no Sec-Fetch headers, still reach them: GET /api/v1/intelligence/forecasts (agentic_core/api/products.py) calls gateway.query_meta and writes forecasts_cache.json when its cache is missing or more than an hour old; GET /api/v1/cca/impact/CCA_ID (agentic_core/api/change_control.py) calls gateway.query_meta for a change whose id is known; and GET /api/v1/qep/adaptation/registry saves its store (W1220 fixes that one). The rule: a GET calls no gateway and writes nothing, so a model call or a cache refresh is a POST, or a GET only reads a cache a POST refreshes.",
+      "source": "W1202 (the round's security review)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/api/products.py",
+        "agentic_core/api/change_control.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.1: sign-in off, through whose tunnel a link from another site still runs a read that acts (W1202's security review)"
     }
   ],
   "routes": [

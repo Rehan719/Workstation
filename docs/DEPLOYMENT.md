@@ -364,14 +364,23 @@ reference; the command hands ssh its own `-L`, which forwards the computer's por
 127.0.0.1:8000, after `--`. Port 8800, not 8000: the Owner's computer serves its own local platform on 8000
 (`docker compose up`, above), and ssh opens the session even when it cannot take the port, so localhost:8000
 would be the local platform and not the release machine's. While the tunnel is open and sign-in is off, anything
-on the Owner's computer that opens the forwarded port acts as the platform's administrator. The setting the
-script gives the platform here (CORS_ORIGINS) stops a page from another site reading the platform's ordinary
-answers, not sending it requests: while sign-in is off the platform acts on those requests as for the
-administrator, making an account included, and its stream socket and a host name rebound to 127.0.0.1 on the
-Owner's computer, where the tunnel listens, are outside that setting. With sign-in on, every route except those
-docs/PUBLIC_ROUTES.json makes public on purpose acts only on a request that carries a token, which a page from
-another site does not hold. Such a page can still send failed sign-ins, and five for one name block that name's
-sign-in for up to 15 minutes; the stream socket still answers it (FU-1835).
+on the Owner's computer that opens the forwarded port acts as the platform's administrator. The setting the script
+gives the platform here (CORS_ORIGINS) stops a page from another site reading the platform's ordinary answers; it
+does not stop the page's request. Since W1202 the platform also refuses a write or a stream socket from a page of
+any other origin, and any request whose host name is not localhost, 127.0.0.1 or the machine's domain, so a page in
+the browser cannot act through the tunnel either, by a host name rebound to 127.0.0.1 on the Owner's computer
+included. The script turns that check on with a setting the release machine alone is given: the tunnel's two origins
+in WORKSTATION_PAGE_ORIGINS, http://localhost:8800 and http://127.0.0.1:8800, so the page works opened either way,
+and behind the front the domain's, with the domain in WORKSTATION_SERVED_HOSTS. So the Owner's own local platform is
+not changed by it (FU-1855). A page of another site cannot have the browser read the platform's API by an image or a
+fetch either. A link followed from another site still opens, and its read still runs, though the page cannot read
+the answer, and three reads act when they run: GET /api/v1/qep/adaptation/registry saves its store, until W1220; GET
+/api/v1/intelligence/forecasts makes a gateway call and rewrites its cache, at most once an hour; and GET
+/api/v1/cca/impact/CCA_ID makes a gateway call for a change whose id is known (FU-1905). A program on the computer
+still acts, since it sends no Origin, which is why sign-in is turned on right after the password. With sign-in on,
+every route except those docs/PUBLIC_ROUTES.json makes public on purpose acts only on a request that carries a
+token, which a page from another site does not hold. A program can still send failed sign-ins, and five for one name
+block that name's sign-in for up to 15 minutes, and the stream socket answers a program that asks (FU-1835).
 
 **Step 8. A release, and a rollback, are the same two commands** [startup] [vm]
 

@@ -94,8 +94,11 @@ start_front() {    # IMAGE TAG DOMAIN SIGN-IN
     docker network inspect "$FRONT_NET" >/dev/null 2>&1 \
         || docker network create --subnet=172.30.0.0/24 --ip-range=172.30.0.128/25 --gateway=172.30.0.1 "$FRONT_NET" \
         || return 1
+    #  W1202 (FU-1835) - the platform behind the front refuses a write or a stream socket from a page of any origin
+    #  but the domain's, and any request whose host name is neither the domain nor the machine's own
     docker run --name=workstation --restart=always --detach --network="$FRONT_NET" \
         --env=FORWARDED_ALLOW_IPS="$FRONT_IP" --env=AUTH_ENABLED="$4" --env=CORS_ORIGINS="https://$3" \
+        --env=WORKSTATION_PAGE_ORIGINS="https://$3" --env=WORKSTATION_SERVED_HOSTS="$3" \
         --volume="$MNT":/app/data \
         --log-opt max-size=10m --log-opt max-file=3 \
         --label=app=workstation --label=image-tag="$2" \
@@ -181,9 +184,12 @@ main() {
     fi
     #  W1191 - NO DOMAIN, NO PUBLIC PORT: the platform listens on the machine's own 127.0.0.1 only, reached through
     #  an SSH tunnel from the Owner's port 8800 (docs/DEPLOYMENT.md, step 7). CORS_ORIGINS stops a page from another
-    #  site reading its ordinary answers, not sending it requests. Sign-in follows the metadata here too.
+    #  site reading its ordinary answers; WORKSTATION_PAGE_ORIGINS has the platform refuse a write or a stream socket
+    #  from a page of any other origin, and any host name but the machine's own (W1202). Sign-in follows the
+    #  metadata here too.
     docker run --name=workstation --restart=always --detach \
         --publish=127.0.0.1:8000:8000 --env=AUTH_ENABLED="$auth" --env=CORS_ORIGINS=http://localhost:8800 \
+        --env=WORKSTATION_PAGE_ORIGINS=http://localhost:8800,http://127.0.0.1:8800 \
         --volume="$MNT":/app/data \
         --log-opt max-size=10m --log-opt max-file=3 \
         --label=app=workstation --label=image-tag="$tag" \

@@ -98876,7 +98876,8 @@ def test_w1191_the_release_machine_serves_publicly_only_with_its_domain_https_an
         here), setting the domain and sign-in together and sending the reader back to step 10; the steps keep their
         numbers;
     S5. the round's row is closed on P4.5 in the Owner's recorded words, W1190's quoted as W1190 recorded them;
-        three rows are left open on P4.1 (FU-1836 since closed by W1198 as built); the W729 credentials are an OWNER
+        three rows are left open on P4.1 (FU-1836 since closed by W1198 as built, FU-1835 by W1202); the W729
+        credentials are an OWNER
         row of high severity, on the plan's Owner list and in the local notes; FU-1289 and FU-1095, still open and
         the Owner's, each say in one sentence what W1191 changed, FU-1289's after the Owner's ruling W1190 recorded
         there and before the dated note of the late evening; P4.1 carries that evening's ruling right after the
@@ -99061,8 +99062,10 @@ fi
     assert '--env=CORS_ORIGINS="https://$3"' in front, front[:600]
     assert 'start_front "$IMG" drill "$DOM" true ' in read("deploy/https_drill.sh"), "the drill's front is told false"
     said_in_script = " ".join(script.replace("#", " ").split())
-    assert ("CORS_ORIGINS stops a page from another site reading its ordinary answers, not sending it requests"
-            in said_in_script), "the script's comment says CORS keeps the pages of other sites out"
+    #  W1202 - the comment now says what the request guard's setting adds; changed on purpose
+    assert ("CORS_ORIGINS stops a page from another site reading its ordinary answers; WORKSTATION_PAGE_ORIGINS has "
+            "the platform refuse a write or a stream socket from a page of any other origin" in said_in_script), (
+        "the script's comment says CORS keeps the pages of other sites out")
     assert ("Nothing that deploys the release machine turns sign-in on: the machine's own metadata does, the Owner's "
             "switch (the Owner's ruling of 2026-11-21)") in said_in_script
 
@@ -99327,14 +99330,14 @@ fi
                  "NOT READ HERE: gcloud's ssh reference", "Port 8800, not 8000",
                  "While the tunnel is open and sign-in is off, anything on the Owner's computer that opens the "
                  "forwarded port acts as the platform's administrator", "(CORS_ORIGINS)",
-                 "(CORS_ORIGINS) stops a page from another site reading the platform's ordinary answers, not sending it "
-                 "requests: while sign-in is off the platform acts on those requests as for the administrator, making an "
-                 "account included, and its stream socket and a host name rebound to 127.0.0.1 on the Owner's computer, "
-                 "where the tunnel listens, are outside that setting.",
+                 #  W1202 - CORS's sentence and the failed sign-ins' are reworded on purpose: the request guard
+                 #  refuses a page of another origin, so what still acts is a program
+                 "(CORS_ORIGINS) stops a page from another site reading the platform's ordinary answers; it does not "
+                 "stop the page's request.",
                  "With sign-in on, every route except those docs/PUBLIC_ROUTES.json makes public on purpose acts only on "
                  "a request that carries a token, which a page from another site does not hold.",
-                 "Such a page can still send failed sign-ins, and five for one name block that name's sign-in for up to "
-                 f"15 minutes; the stream socket still answers it ({origin_id}).",
+                 "A program can still send failed sign-ins, and five for one name block that name's sign-in for up to "
+                 f"15 minutes, and the stream socket answers a program that asks ({origin_id}).",
                  "`jwt_secret.key` under DATA_DIR", "Nothing sets it", "only its hash is stored",
                  "The password is never kept in a file of its own; the signing secret's own file is on the data disk",
                  "A users store that is not there, or cannot be read whole, is refused",
@@ -99350,7 +99353,9 @@ fi
         "step 7's order: a plain SSH session, the password, sign-in, and only then the tunnel")
     for gone in ("Only the Owner's signed-in SSH", "or a file of their own", "-L 8000:localhost:8000",
                  "so a page from another site cannot read", "it is the Owner's to choose", "the tree never turns it on",
-                 "this guide's recommendation", "rebound to the machine are outside", "carries the admin's token"):
+                 "this guide's recommendation", "rebound to the machine are outside", "carries the admin's token",
+                 "while sign-in is off the platform acts on those requests as for the administrator",
+                 "Such a page can still send failed sign-ins"):
         assert gone not in flat, ("the guide still says", gone)
     ten = " ".join(steps[10].split())
     assert ten.startswith("The uptime check") and "Set up once step 12 is done (W1191)" in ten and "protocol HTTPS" in ten
@@ -99435,6 +99440,10 @@ fi
         if r is remove and r["status"] == "done":        # W1198 closed it as built; test_w1198 holds the command
             assert (r.get("closed_by"), r.get("because"), r["slot"], bool(r.get("owner_gated"))) == (
                 "W1198", "built", "P4.1", False), r
+            continue
+        if r is origin and r["status"] == "done":        # W1202 closed it as built; test_w1202 holds the guard
+            assert (r.get("closed_by"), r.get("because"), r["slot"], bool(r.get("owner_gated"))) == (
+                "W1202", "built", "P4.1", False), r
             continue
         assert (r["status"], r["slot"], bool(r.get("owner_gated"))) == ("open", "P4.1", False), r
     for said in ("At every boot, importing agentic_core/auth/core.py runs _create_default_admin()", "read_json_strict",
@@ -105730,3 +105739,365 @@ class OrganismHeartbeat:
     assert (row["status"], row["closed_by"]) in (("open", None), ("done", "W1206")), (row["status"], row["closed_by"])
     assert "FU-1834" in row["why"] and "no reopen" in row["why"] and "FU-395" in row["why"], row["why"]
     assert rows["FU-1834"]["slot"] == "P4.1" and "agentic_core/auth/core.py" in rows["FU-1834"]["files"]
+
+
+def test_w1202_fu1835_through_the_tunnel_no_page_from_another_origin_or_host_acts_on_the_platform(
+        client, tmp_path, monkeypatch, caplog):
+    """FU-1835 (W1202), P4.1. CORS_ORIGINS stopped a page from reading the release machine's answers, not from acting
+    on it: with sign-in off, any page in the Owner's browser acted through step 7's tunnel as the administrator, by a
+    simple POST, by the stream socket, or by a host name rebound to 127.0.0.1. agentic_core/request_guard.py is now
+    the outermost layer of the app, and acts only where the release machine names its page origins. Held here, through
+    the real app with sign-in off (heartbeat stop patched, a made-up users store):
+    G1. off by default: with neither setting, with CORS_ORIGINS as a .env made from the old .env.example set it (its
+        own comment), empty, or an explicit list, with WORKSTATION_PAGE_ORIGINS empty, and with it holding an entry that
+        is not scheme://host[:port] (the old comment, a path, a bare host, a served host with a port), a POST with
+        Origin http://evil.example and Host testserver reaches the stop, GET /health answers, and an entry not read
+        says so in the log, naming it, at startup too (the lifespan);
+    G2. the tunnel's own page acts: WORKSTATION_PAGE_ORIGINS as the startup script gives it (http://localhost:8800 and
+        http://127.0.0.1:8800), a client on http://localhost:8800: /health answers, also for Host 127.0.0.1:8000 and
+        [::1]:8000, and the POST runs the stop once from the page opened either way;
+    G3. another site cannot act: a POST, PUT, PATCH or DELETE with Origin http://evil.example, with Origin null, with
+        the tunnel's host on another port, and with no Origin but Sec-Fetch-Site: cross-site answers 403 with the
+        sentence; the stop never runs; a refused request is not observed by the membrane; a preflight runs; a read
+        under /api/ that a page of another site has the browser make (Sec-Fetch-Site: cross-site, any mode but
+        navigate) is refused and does not run, while a link followed from another site, a read outside /api/ and a
+        read with no Sec-Fetch headers still run, as the module says;
+    G4. the registration exploit: POST /api/v1/auth/register with Origin http://evil.example and a JSON body sent with
+        no Content-Type answers 403 and the users store's bytes are unchanged, where the guard with its setting empty
+        does not answer the same request;
+    G5. a program is not a page: the POST with no Origin and no Sec-Fetch-Site reaches the stop;
+    G6. DNS rebinding: GET /api/v1/auth/users with Host evil.example:8800 answers 400 and names no account, and a POST
+        with the tunnel's own Origin under that Host is refused too;
+    G7. the stream socket: with Origin http://evil.example it is closed with 1008 before it is accepted, with the
+        tunnel's origin it is accepted, and with Host evil.example it is closed with 1008;
+    G8. behind the front (https://app.example.com, served host app.example.com): /health answers for that Host and for
+        localhost:8000, the image's health check; the domain's page acts, its default port written or not; the
+        tunnel's origin and another Host are refused. A split deployment (pages from app.example.com, the backend
+        served as api.example.com) serves its own host and refuses the page's;
+    G9. the guard is the app's outermost layer, added once after the CORS middleware and _horizon_observe; the startup
+        script passes the page's origins on both runs (the tunnel's two) and the served host behind the front, and no
+        other file that deploys or configures the platform sets either setting; the drill measures a page's write through the front;
+        .env.example leaves both unset and CORS_ORIGINS empty; the module states what it does not refuse;
+    G10. the guide and the row: step 7 says a page of another origin cannot act through the tunnel and a program
+        still can, W1191's sentence about programs stands, its old sentence that the platform acts on a page's
+        requests is gone, and the reads that still run are stated with the row registered for them, open on P4.1;
+        FU-1835 is open until the round's close step and then closed by W1202 as built; the local platform's row stays
+        open."""
+    import asyncio
+    import json
+    import logging
+    import pathlib
+    import re
+    import subprocess
+    import pytest
+    from dotenv import dotenv_values
+    from starlette.testclient import TestClient
+    from starlette.websockets import WebSocketDisconnect
+    from agentic_core import app_mvp as _app
+    from agentic_core import request_guard as rg
+    from agentic_core.auth import core
+    from agentic_core.horizon import membrane as _membrane
+    from agentic_core.organism import heartbeat as _hb_mod
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")  # noqa: E731
+    PAGE, HOSTS = "WORKSTATION_PAGE_ORIGINS", "WORKSTATION_SERVED_HOSTS"
+    assert (rg.PAGE_ORIGINS_VAR, rg.SERVED_HOSTS_VAR) == (PAGE, HOSTS)
+    monkeypatch.setenv("AUTH_ENABLED", "false")
+    monkeypatch.delenv(PAGE, raising=False)
+    monkeypatch.delenv(HOSTS, raising=False)
+    monkeypatch.setattr(rg, "_STATE_CACHE", {})
+    monkeypatch.setattr(rg, "_SAID_OFF", set())
+    stops = []
+    monkeypatch.setattr(_hb_mod.heartbeat, "stop", lambda: stops.append(1))
+    observed = []
+    real_observe = _membrane.observe_request
+    monkeypatch.setattr(_membrane, "observe_request",
+                        lambda method, path, **kw: (observed.append((method, path)), real_observe(method, path, **kw)))
+    store = tmp_path / "users.json"
+    store.write_text(json.dumps({"admin": {"user_id": "w1202-admin", "username": "admin", "role": "admin",
+                                           "hashed_password": "w1202-not-a-hash", "created_at": "2026-11-22T10:00:00Z",
+                                           "api_keys": []}}), encoding="utf-8")
+    monkeypatch.setattr(core, "_USER_STORE", store)
+    EVIL = {"Origin": "http://evil.example"}
+    STOP = "/api/v1/heartbeat/stop"
+
+    def stop_runs(c, headers, what):
+        stops.clear()
+        got = c.post(STOP, headers=headers)
+        assert got.status_code == 200 and stops == [1], (what, "did not reach the stop", got.status_code, got.text[:200])
+
+    def refused(got, status, what):
+        assert got.status_code == status, (what, "was not refused", got.status_code, got.text[:200])
+        body = got.json()
+        assert body.get("refused_by") == "W1202 request guard (FU-1835)" and body["detail"].startswith("Refused: "), (
+            what, body)
+        assert body["detail"].endswith("(W1202).") and ("ran" in body["detail"]), (what, body["detail"])
+        return body["detail"]
+
+    def stop_refused(c, headers, what, method="POST"):
+        stops.clear()
+        observed.clear()
+        detail = refused(c.request(method, STOP, headers=headers), 403, what)
+        assert stops == [], (what, "ran the stop although it was refused")
+        assert not [o for o in observed if o[1] == STOP], (what, "a refused request was observed by the membrane")
+        return detail
+
+    #  G1. OFF BY DEFAULT, and off for anything but an exact list, saying so
+    old_line = "CORS_ORIGINS=                    # your frontend URL(s), e.g. https://your-app.vercel.app\n"
+    old_value = dotenv_values(stream=__import__("io").StringIO(old_line))["CORS_ORIGINS"]
+    assert old_value.startswith("# your frontend URL(s)"), ("the old .env.example line is not read as its comment",
+                                                             old_value)
+    for cors in (None, old_value, "", "http://localhost:5173"):
+        if cors is None:
+            monkeypatch.delenv("CORS_ORIGINS", raising=False)
+        else:
+            monkeypatch.setenv("CORS_ORIGINS", cors)
+        assert not rg.guard_state().on, ("the guard acts without its own setting", cors)
+        stop_runs(client, EVIL, ("guard off, CORS_ORIGINS", cors))
+        assert client.get("/health", headers=EVIL).status_code == 200
+    monkeypatch.delenv("CORS_ORIGINS", raising=False)
+    caplog.set_level(logging.WARNING, logger="workstation.request_guard")
+    for page, hosts in (("", ""), ("  ", ""), (old_value, ""), ("http://localhost:8800/", ""), ("localhost:8800", ""),
+                        ("http://localhost:8800,", ""), ("ftp://localhost:8800", ""), ("null", ""),
+                        ("http://localhost:8800", "app.example.com:443"), ("http://localhost:8800", "https://a.example")):
+        monkeypatch.setenv(PAGE, page)
+        monkeypatch.setenv(HOSTS, hosts)
+        state = rg.guard_state()
+        assert not state.on, ("the guard acts on a setting it could not read", page, hosts)
+        stop_runs(client, EVIL, ("guard off", page, hosts))
+        if page.strip():
+            assert state.reason and ("not scheme://host[:port]" in state.reason or "not a host name" in state.reason), (
+                page, hosts, state.reason)
+            said = [r.getMessage() for r in caplog.records if r.name == "workstation.request_guard"]
+            assert [m for m in said if "the request guard is OFF" in m and (page.strip() in m or hosts in m)], (
+                "the log does not say the guard is off, naming the entry", page, hosts, said[-3:])
+    monkeypatch.delenv(HOSTS, raising=False)
+    #  ...and an entry it cannot read is said at startup, when the lifespan passes through, before any request
+    monkeypatch.setenv(PAGE, "w1202-not-an-origin")
+    started = []
+
+    async def _inner(scope, receive, send):
+        started.append(scope["type"])
+    caplog.clear()
+    asyncio.run(rg.OriginHostGuard(_inner)({"type": "lifespan"}, None, None))
+    assert started == ["lifespan"], "the lifespan did not pass through"
+    assert [r for r in caplog.records if "the request guard is OFF" in r.getMessage() and "w1202-not-an-origin" in
+            r.getMessage()], "an unreadable setting is not said at startup"
+
+    #  G2. THE TUNNEL'S OWN PAGE ACTS, opened as localhost or as 127.0.0.1 (the startup script's two origins)
+    TUNNEL = "http://localhost:8800,http://127.0.0.1:8800"
+    monkeypatch.setenv(PAGE, TUNNEL)
+    assert rg.guard_state().on and rg.guard_state().origins == ("http://localhost:8800", "http://127.0.0.1:8800")
+    tunnel = TestClient(_app.app, base_url="http://localhost:8800")
+    assert tunnel.get("/health").status_code == 200, "the tunnel's host is refused"
+    for host in ("127.0.0.1:8000", "[::1]:8000", "localhost", "LOCALHOST:8800"):
+        assert tunnel.get("/health", headers={"Host": host}).status_code == 200, ("the machine's own host is refused",
+                                                                                  host)
+    stop_runs(tunnel, {"Origin": "http://localhost:8800"}, "the tunnel's own page")
+    stop_runs(tunnel, {"Origin": "http://127.0.0.1:8800", "Host": "127.0.0.1:8800"}, "the tunnel's page opened as 127.0.0.1")
+
+    #  G3. ANOTHER SITE CANNOT ACT
+    detail = stop_refused(tunnel, EVIL, "a page of another site")
+    assert "'http://evil.example'" in detail and "http://localhost:8800" in detail, detail
+    for headers, what in ((EVIL, "a page of another site"), ({"Origin": "null"}, "a page whose Origin is null"),
+                          ({"Origin": "http://localhost:8801"}, "the tunnel's host on another port"),
+                          ({"Sec-Fetch-Site": "cross-site"}, "a page of another site that sent no Origin")):
+        for method in ("POST", "PUT", "PATCH", "DELETE"):
+            stop_refused(tunnel, headers, (what, method), method=method)
+    #  ...a read under /api/ that a page of another site has the browser make, by an image or a fetch, is refused;
+    #  a link followed from another site still opens, and so does a read outside /api/ (the security review)
+    READ = "/api/v1/auth/status"
+    for mode in ("no-cors", "cors", "same-origin", ""):
+        observed.clear()
+        hdrs = {**EVIL, "Sec-Fetch-Site": "cross-site", **({"Sec-Fetch-Mode": mode} if mode else {})}
+        refused(tunnel.get(READ, headers=hdrs), 403, ("a page of another site's read", mode))
+        assert not [o for o in observed if o[1] == READ], ("a refused read ran", mode)
+    assert tunnel.get(READ, headers={"Sec-Fetch-Site": "cross-site", "Sec-Fetch-Mode": "navigate"}).status_code == 200, (
+        "a link followed from another site is refused")
+    assert tunnel.get(READ, headers={"Sec-Fetch-Site": "same-origin", "Sec-Fetch-Mode": "cors"}).status_code == 200, (
+        "the tunnel's own page cannot read")
+    assert tunnel.get("/health", headers={**EVIL, "Sec-Fetch-Site": "cross-site"}).status_code == 200, (
+        "a read outside /api/ is refused, which the module does not say")
+    assert tunnel.get(READ, headers=EVIL).status_code == 200, (
+        "a read from a browser that sends no Sec-Fetch headers is refused, which the module says it is not")
+    pre = tunnel.options(STOP, headers={**EVIL, "Access-Control-Request-Method": "POST"})
+    assert "refused_by" not in pre.text and stops == [], ("a preflight is refused or runs the handler", pre.text[:200])
+
+    #  G4. THE REGISTRATION EXPLOIT: a simple request with a JSON body and no Content-Type
+    sent = json.dumps({"username": "w1202-stranger", "password": "w1202 a made-up password", "role": "admin"})
+    before = store.read_bytes()
+    got = tunnel.post("/api/v1/auth/register", content=sent.encode("utf-8"), headers=EVIL)
+    assert "content-type" not in {k.lower() for k in got.request.headers}, got.request.headers
+    refused(got, 403, "a page's registration")
+    assert store.read_bytes() == before, "the refused registration changed the users store"
+    monkeypatch.setenv(PAGE, "")                         # ...where the guard off does not answer the same request
+    made = tunnel.post("/api/v1/auth/register", content=sent.encode("utf-8"), headers=EVIL)
+    assert "refused_by" not in made.text, ("the leg could not fail: the guard answers with its setting empty",
+                                           made.status_code, made.text[:200])
+    store.write_bytes(before)                            # whatever the route itself did with it
+    monkeypatch.setenv(PAGE, TUNNEL)
+
+    #  G5. A PROGRAM IS NOT A PAGE
+    stop_runs(tunnel, {}, "a program, which sends no Origin")
+    stop_runs(tunnel, {"Sec-Fetch-Site": "same-origin"}, "the tunnel's page without an Origin")
+
+    #  G6. DNS REBINDING: a host name pointed at the machine is refused, reads included
+    rebound = refused(tunnel.get("/api/v1/auth/users", headers={"Host": "evil.example:8800"}), 400, "a rebound read")
+    assert "admin" not in rebound and "'evil.example:8800'" in rebound and "localhost" in rebound, rebound
+    assert tunnel.get("/api/v1/auth/users").json()["total"] == 1, "the control read does not list the made-up account"
+    stops.clear()
+    refused(tunnel.post(STOP, headers={"Host": "evil.example:8800", "Origin": "http://localhost:8800"}), 400,
+            "a rebound write")
+    assert stops == []
+
+    #  G7. THE STREAM SOCKET
+    sock = "ws://localhost:8800/api/v154/ws/streams"
+    with pytest.raises(WebSocketDisconnect) as closed:
+        with tunnel.websocket_connect(sock, headers={"origin": "http://evil.example"}):
+            pass
+    assert closed.value.code == 1008, ("a page of another site opened the stream socket", closed.value.code)
+    with tunnel.websocket_connect(sock, headers={"origin": "http://localhost:8800"}) as ws:
+        assert ws is not None
+    with pytest.raises(WebSocketDisconnect) as closed:
+        with tunnel.websocket_connect("ws://evil.example/api/v154/ws/streams",
+                                      headers={"origin": "http://localhost:8800"}):
+            pass
+    assert closed.value.code == 1008, ("a rebound host opened the stream socket", closed.value.code)
+
+    #  G8. BEHIND THE FRONT, and a split deployment
+    monkeypatch.setenv(PAGE, "https://app.example.com")
+    monkeypatch.setenv(HOSTS, "app.example.com")
+    front = TestClient(_app.app, base_url="https://app.example.com")
+    assert front.get("/health").status_code == 200, "the domain is refused"
+    assert front.get("/health", headers={"Host": "localhost:8000"}).status_code == 200, "the image's health check is refused"
+    stop_runs(front, {"Origin": "https://app.example.com"}, "the domain's own page")
+    stop_runs(front, {"Origin": "https://APP.example.com:443"}, "the domain's own page, its default port written")
+    stop_refused(front, {"Origin": "http://localhost:8800"}, "the tunnel's origin on a run that names only the domain")
+    stop_refused(front, {"Origin": "http://app.example.com"}, "the domain's origin over plain HTTP")
+    refused(front.get("/health", headers={"Host": "evil.example"}), 400, "another host behind the front")
+    monkeypatch.setenv(HOSTS, "api.example.com")
+    split = TestClient(_app.app, base_url="https://api.example.com")
+    assert split.get("/health").status_code == 200, "a split deployment's own host is refused"
+    stop_runs(split, {"Origin": "https://app.example.com"}, "a split deployment's page")
+    refused(split.get("/health", headers={"Host": "app.example.com"}), 400, "the page's host, which this backend is not")
+    monkeypatch.delenv(PAGE)
+    monkeypatch.delenv(HOSTS)
+
+    #  G9. THE CODE: the outermost layer, the script's two runs, the drill, .env.example and the module's own words
+    assert _app.app.user_middleware[0].cls is rg.OriginHostGuard, ("the guard is not the outermost layer",
+                                                                   [m.cls for m in _app.app.user_middleware])
+    assert sum(m.cls is rg.OriginHostGuard for m in _app.app.user_middleware) == 1
+    src = read("agentic_core/app_mvp.py")
+    assert src.index("app.add_middleware(\n    CORSMiddleware") < src.index("async def _horizon_observe") < src.index(
+        "app.add_middleware(_OriginHostGuard)"), "the guard is not added after both layers"
+    assert "so the membrane does not observe it" in " ".join(src.replace("#", " ").split())
+    script = read("deploy/gcp/startup.sh")
+    main = script.split("\nmain() {\n", 1)[1].split("\n}\n", 1)[0]
+    no_domain = " ".join(main.split("#  W1191 - NO DOMAIN, NO PUBLIC PORT", 1)[1].replace("\\\n", " ").split())
+    for flag in ("--env=CORS_ORIGINS=http://localhost:8800 ",
+                 "--env=WORKSTATION_PAGE_ORIGINS=http://localhost:8800,http://127.0.0.1:8800 "):
+        assert flag in no_domain, (flag, no_domain[:600])
+    assert HOSTS not in no_domain, "the no-domain run serves a host name besides the machine's own"
+    front_fn = " ".join(script.split("start_front() {", 1)[1].split("\n}\n", 1)[0].replace("\\\n", " ").split())
+    assert ('--env=CORS_ORIGINS="https://$3" --env=WORKSTATION_PAGE_ORIGINS="https://$3" '
+            '--env=WORKSTATION_SERVED_HOSTS="$3" ') in front_fn, front_fn[:900]
+    assert front_fn.count("WORKSTATION_PAGE_ORIGINS") == 1 and script.count("--env=WORKSTATION_PAGE_ORIGINS") == 2
+    drill = read("deploy/https_drill.sh")
+    assert '. "$HERE/gcp/startup.sh"' in drill and 'start_front "$IMG" drill "$DOM" true ' in drill
+    for said in ("FOREIGN_PAGE_WRITE=$(get -o /dev/null -w '%{http_code}' -X POST -H 'Origin: https://evil.example'",
+                 "OWN_PAGE_WRITE=$(get -o /dev/null -w '%{http_code}' -X POST -H \"Origin: https://$DOM\"",
+                 "THE PAGE'S ORIGIN (W1202)"):
+        assert said in drill, ("the drill does not measure", said)
+    listed = subprocess.run(["git", "-C", str(root), "ls-files"], capture_output=True, text=True)
+    assert listed.returncode == 0, listed.stderr[-300:]
+    setter = re.compile(r"\b(WORKSTATION_PAGE_ORIGINS|WORKSTATION_SERVED_HOSTS)\s*[=:]\s*\S")
+    sets = []
+    for rel in set(listed.stdout.split()):              # what deploys or configures a platform: not code, tests or docs
+        if rel.startswith(("integration_tests/", "docs/", "_archive/", "apps/")) or rel.endswith((
+                ".md", ".py", ".ts", ".tsx", ".js", ".json", ".txt", ".lock", ".html", ".css")):
+            continue
+        p = root / rel
+        if not p.is_file() or p.is_symlink() or p.stat().st_size > 2_000_000:
+            continue
+        try:
+            text = p.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        if setter.search(" ".join(ln for ln in text.splitlines() if not ln.lstrip().startswith("#"))):
+            sets.append(rel)
+    assert sets == ["deploy/gcp/startup.sh"], ("a file other than the startup script sets the guard's settings", sets)
+    env = dotenv_values(root / ".env.example")
+    assert env.get("CORS_ORIGINS") == "" and PAGE not in env and HOSTS not in env, {k: env.get(k) for k in (
+        "CORS_ORIGINS", PAGE, HOSTS)}
+    assert not rg.guard_state(env).on, "a .env made from .env.example turns the guard on"
+    assert "# WORKSTATION_PAGE_ORIGINS and WORKSTATION_SERVED_HOSTS turn on the release machine's request guard" in read(
+        ".env.example")
+    module = " ".join(read("agentic_core/request_guard.py").split())
+    for said in ("a request with no Origin: a program", "a preflight (OPTIONS)",
+                 "a page's cross-site GET still runs, though the page cannot read its answer, when it is a link followed "
+                 "from another site or comes from a browser that sends no Sec-Fetch headers",
+                 "GET /api/v1/qep/adaptation/registry saves its store when it is read, until W1220",
+                 "GET /api/v1/intelligence/forecasts makes a gateway call and rewrites its cache, at most once an hour",
+                 "GET /api/v1/cca/impact/{cca_id} makes a gateway call for a change whose id is known",
+                 "a stream socket under such a Host is closed with code 1008 before it is accepted, with no sentence",
+                 "Unset or empty, the guard is off, in silence",
+                 "It is never keyed on CORS_ORIGINS", "the membrane, which observes only what reaches the app, does "
+                 "not observe it", "a split deployment"):
+        assert said in module, ("the module does not say", said)
+
+    #  G10. THE GUIDE AND THE ROWS
+    sec = read("docs/DEPLOYMENT.md").split("## The Google Cloud deploy, step by step (P4.5)", 1)[1].split("\n## ", 1)[0]
+    seven = " ".join(re.split(r"^\*\*Step \d+\. ", sec, flags=re.M)[7].split())
+    rows = {r.get("id"): r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"] if isinstance(r, dict)}
+    local = [r for r in rows.values() if r.get("title", "").startswith("With CORS_ORIGINS unset, or set by a .env "
+                                                                         "copied from .env.example, the Owner's own")]
+    assert len(local) == 1 and local[0]["status"] == "open", ("the local platform's row is not open", local)
+    reads = [r for r in rows.values() if r.get("title", "").startswith("Three GET routes act when a link from another "
+                                                                         "site is followed through the tunnel")]
+    assert len(reads) == 1 and (reads[0]["status"], reads[0]["slot"], reads[0]["severity"]) == ("open", "P4.1", "low"), (
+        "the reads' row is not registered open on P4.1, low", reads)
+    for said in ("GET /api/v1/intelligence/forecasts", "GET /api/v1/cca/impact/CCA_ID", "a GET calls no gateway and "
+                 "writes nothing", "Sec-Fetch-Mode not navigate"):
+        assert said in reads[0]["why"], ("the reads' row does not say", said)
+    for said in ("(CORS_ORIGINS) stops a page from another site reading the platform's ordinary answers; it does not "
+                 "stop the page's request.",
+                 "Since W1202 the platform also refuses a write or a stream socket from a page of any other origin, and "
+                 "any request whose host name is not localhost, 127.0.0.1 or the machine's domain, so a page in the "
+                 "browser cannot act through the tunnel either",
+                 "a setting the release machine alone is given: the tunnel's two origins in WORKSTATION_PAGE_ORIGINS, "
+                 "http://localhost:8800 and http://127.0.0.1:8800, so the page works opened either way",
+                 f"So the Owner's own local platform is not changed by it ({local[0]['id']}).",
+                 "A page of another site cannot have the browser read the platform's API by an image or a fetch either.",
+                 "A link followed from another site still opens, and its read still runs, though the page cannot read "
+                 "the answer, and three reads act when they run: GET /api/v1/qep/adaptation/registry saves its store, "
+                 "until W1220; GET /api/v1/intelligence/forecasts makes a gateway call and rewrites its cache, at most "
+                 "once an hour; and GET /api/v1/cca/impact/CCA_ID makes a gateway call for a change whose id is known "
+                 f"({reads[0]['id']}).",
+                 "A program on the computer still acts, since it sends no Origin, which is why sign-in is turned on "
+                 "right after the password.",
+                 "While the tunnel is open and sign-in is off, anything on the Owner's computer that opens the "
+                 "forwarded port acts as the platform's administrator.",
+                 "A program can still send failed sign-ins, and five for one name block that name's sign-in for up to "
+                 "15 minutes, and the stream socket answers a program that asks (FU-1835)."):
+        assert said in seven, ("step 7 does not say", said)
+    for gone in ("while sign-in is off the platform acts on those requests as for the administrator, making an account "
+                 "included, and its stream socket and a host name rebound to 127.0.0.1 on the Owner's computer, where "
+                 "the tunnel listens, are outside that setting", "Such a page can still send failed sign-ins",
+                 "the stream socket still answers it"):
+        assert gone not in seven, ("step 7 still says", gone)
+    fu = rows["FU-1835"]
+    assert (fu["title"], fu["slot"]) == ("With sign-in off, any page in the Owner's browser can act on the platform "
+                                         "through the SSH tunnel: nothing checks a request's Origin or Host", "P4.1")
+    indexed = subprocess.run(["git", "-C", str(root), "ls-files", "--", "agentic_core/request_guard.py"],
+                             capture_output=True, text=True)
+    assert indexed.returncode == 0, indexed.stderr[-300:]
+    if (fu["status"], fu.get("closed_by"), fu.get("because")) == ("done", "W1202", "built"):
+        note = fu.get("close_note") or ""
+        for said in ("Built in W1202: ", "agentic_core/request_guard.py", "WORKSTATION_PAGE_ORIGINS", "1008",
+                     "a program", "a preflight", "until W1220"):
+            assert said in note, ("FU-1835's close note does not say", said, note[:300])
+    else:
+        assert fu["status"] == "open" and not fu.get("closed_by"), (
+            "FU-1835 was closed, and not by this round as built", fu["status"], fu.get("closed_by"))
+        assert not indexed.stdout.strip(), (
+            "the guard is in git's index and FU-1835 is still open: the round's close step did not run")

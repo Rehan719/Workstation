@@ -7,6 +7,8 @@
 #   HTTPS: the platform answers through Caddy, HTTP is redirected to HTTPS, and the platform has no port of its own.
 #   THE CLIENT'S ADDRESS: the platform logs the address Caddy saw a request come from, and does not believe a forwarded
 #            address the caller wrote itself; started without the setting, it logs Caddy's own address instead.
+#   THE PAGE'S ORIGIN (W1202): a write from a page of another origin is refused (403), and one from the domain's own
+#            page reaches sign-in (401: the front has sign-in on).
 # Prints one KEY=VALUE line per measurement.
 set -u
 IMG=${1:?platform image}
@@ -56,6 +58,11 @@ get -o /dev/null -H 'X-Forwarded-For: 203.0.113.7' "https://$DOM/health?drill=fo
 sleep 1
 echo "PLATFORM_SAW=$(seen plain)"
 echo "PLATFORM_SAW_WITH_A_FORGED_HEADER=$(seen forged)"
+#  W1202: start_front gives the platform the domain's origin, so a page of another origin cannot write through it
+echo "FOREIGN_PAGE_WRITE=$(get -o /dev/null -w '%{http_code}' -X POST -H 'Origin: https://evil.example' \
+  "https://$DOM/api/v1/heartbeat/stop")"
+echo "OWN_PAGE_WRITE=$(get -o /dev/null -w '%{http_code}' -X POST -H "Origin: https://$DOM" \
+  "https://$DOM/api/v1/heartbeat/stop")"
 
 #  the control: the same platform on the same network, started without the setting
 docker rm -f workstation >/dev/null
