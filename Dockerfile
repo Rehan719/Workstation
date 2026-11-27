@@ -70,4 +70,7 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=45s \
     CMD python -c "import os, urllib.request; urllib.request.urlopen('http://localhost:%s/health' % os.environ.get('PORT', '8000'), timeout=4)" || exit 1
 
-CMD ["sh", "-c", "uvicorn agentic_core.app_mvp:app --host 0.0.0.0 --port ${PORT}"]
+# W1235 - exec: sh expands ${PORT} and then becomes uvicorn, so uvicorn is PID 1 and takes the SIGTERM
+# `docker stop` sends. Without it sh was PID 1, passed nothing on, and Docker killed the container after
+# ten seconds (exit 137, FU-1095's drill on 2026-11-22).
+CMD ["sh", "-c", "exec uvicorn agentic_core.app_mvp:app --host 0.0.0.0 --port ${PORT}"]

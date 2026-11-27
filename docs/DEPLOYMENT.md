@@ -432,6 +432,13 @@ up that day from the cloud session. The Owner drove the drill: the platform was 
 e-mail came at 20:10, the platform was started at 20:11:44, the e-mail that the alert had cleared came at 20:16,
 and /health answered 200 after.
 
+`docker stop workstation` in that drill ended the container with exit 137: it was killed when Docker's ten
+seconds ran out, because the image's CMD ran uvicorn under `sh -c` and sh, as PID 1, passed the SIGTERM on to
+nothing. Since W1235 the CMD execs uvicorn, so uvicorn is PID 1 and shuts down on SIGTERM. Not yet run on the
+machine: at the next deploy, `docker stop workstation` should end with exit 0, within seconds (`docker inspect
+--format '{{.State.ExitCode}}' workstation` says which). A request still running at ten seconds is still
+killed.
+
 **Step 11. Later: deploys from GitHub, with no stored key** [wif]
 
 The first deploys are run by the Owner by hand, signed in as the Owner. When a workflow deploys, it signs in through

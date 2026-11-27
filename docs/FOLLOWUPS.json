@@ -28542,6 +28542,178 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P5.17, clauses 6 and 7: the foundation's terms and its developer account are this item's, and the router names no item for the Quran platform's files"
+    },
+    {
+      "id": "FU-1911",
+      "title": "docker stop kills the platform's container after ten seconds, exit 137: the image's CMD runs uvicorn under sh -c, and sh as PID 1 does not pass SIGTERM on",
+      "why": "Found by the Owner on 2026-11-22 in FU-1095's drill on the release machine: docker stop ended the platform with exit 137, killed, not stopped on SIGTERM within Docker's ten seconds. The Dockerfile's CMD was sh -c with uvicorn inside it, so sh was PID 1 and uvicorn never received the signal. The fix is exec inside the sh -c, keeping the PORT expansion; every other way the tree starts the container uses the image's CMD.",
+      "source": "W1235 (the Owner's drill of 2026-11-22, FU-1095)",
+      "found": "2026-11-27",
+      "files": [
+        "Dockerfile"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.40",
+      "status": "done",
+      "closed_by": "W1235",
+      "note": "",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1235: the Dockerfile's CMD is now sh -c with exec uvicorn, so sh expands PORT and is replaced by uvicorn, which runs as PID 1 and takes the SIGTERM docker stop sends. The startup script's two docker runs, both drills and both compose files start the platform with the image's CMD, so nothing else changed. Not run here, since this environment has no Docker daemon: at the next deploy docker stop should end with exit 0 within seconds, which docs/DEPLOYMENT.md (step 10) says. agentic_core/app_mvp.py has no shutdown handler, and its two background loops are asyncio tasks; a request still running at ten seconds is still killed. test_w1235 holds the CMD."
+    },
+    {
+      "id": "FU-1912",
+      "title": "A store in agentic_core/ueg/ueg_manager.py is written in place, so a kill or a crash mid-write can leave it truncated",
+      "why": "Found in W1235, from a search of agentic_core for JSON stores written without a temporary file and os.replace, after FU-1095's drill showed the container killed by docker stop on 2026-11-22: UEGManager._save writes meta/ueg_graph.json, the knowledge graph, with open(path, 'w') and json.dump. A write in place truncates the file first, so a process killed or crashing before the write ends leaves the store partly written, and the next read fails or reads less. agentic_core/config.py's atomic_write_json writes a temporary file in the same folder and puts it in place with os.replace, and most stores use it. The fix: write this file's stores through it, or the same pattern, and refuse a store that cannot be read whole rather than replace it. W1235's exec makes a graceful stop finish requests in flight; it does not make these writes safe against a kill or a crash.",
+      "source": "W1235 (a search of agentic_core for stores written in place)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/ueg/ueg_manager.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, as FU-1845 and FU-1297: a store written whole, in place, is that item's class"
+    },
+    {
+      "id": "FU-1913",
+      "title": "A store in agentic_core/api/integration_surface.py is written in place, so a kill or a crash mid-write can leave it truncated",
+      "why": "Found in W1235, from a search of agentic_core for JSON stores written without a temporary file and os.replace, after FU-1095's drill showed the container killed by docker stop on 2026-11-22: the activity log of each user (activity_<user>.json) and the bounty submissions are written back whole with write_text. A write in place truncates the file first, so a process killed or crashing before the write ends leaves the store partly written, and the next read fails or reads less. agentic_core/config.py's atomic_write_json writes a temporary file in the same folder and puts it in place with os.replace, and most stores use it. The fix: write this file's stores through it, or the same pattern, and refuse a store that cannot be read whole rather than replace it. W1235's exec makes a graceful stop finish requests in flight; it does not make these writes safe against a kill or a crash.",
+      "source": "W1235 (a search of agentic_core for stores written in place)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/api/integration_surface.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, as FU-1845 and FU-1297: a store written whole, in place, is that item's class"
+    },
+    {
+      "id": "FU-1914",
+      "title": "A store in agentic_core/api/digital_twin.py is written in place, so a kill or a crash mid-write can leave it truncated",
+      "why": "Found in W1235, from a search of agentic_core for JSON stores written without a temporary file and os.replace, after FU-1095's drill showed the container killed by docker stop on 2026-11-22: _save_twin writes each twin model's file with write_text. A write in place truncates the file first, so a process killed or crashing before the write ends leaves the store partly written, and the next read fails or reads less. agentic_core/config.py's atomic_write_json writes a temporary file in the same folder and puts it in place with os.replace, and most stores use it. The fix: write this file's stores through it, or the same pattern, and refuse a store that cannot be read whole rather than replace it. W1235's exec makes a graceful stop finish requests in flight; it does not make these writes safe against a kill or a crash.",
+      "source": "W1235 (a search of agentic_core for stores written in place)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/api/digital_twin.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, as FU-1845 and FU-1297: a store written whole, in place, is that item's class"
+    },
+    {
+      "id": "FU-1915",
+      "title": "A store in agentic_core/api/sovereign_evolution.py is written in place, so a kill or a crash mid-write can leave it truncated",
+      "why": "Found in W1235, from a search of agentic_core for JSON stores written without a temporary file and os.replace, after FU-1095's drill showed the container killed by docker stop on 2026-11-22: _save_roadmap writes the evolution roadmap with write_text. A write in place truncates the file first, so a process killed or crashing before the write ends leaves the store partly written, and the next read fails or reads less. agentic_core/config.py's atomic_write_json writes a temporary file in the same folder and puts it in place with os.replace, and most stores use it. The fix: write this file's stores through it, or the same pattern, and refuse a store that cannot be read whole rather than replace it. W1235's exec makes a graceful stop finish requests in flight; it does not make these writes safe against a kill or a crash.",
+      "source": "W1235 (a search of agentic_core for stores written in place)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/api/sovereign_evolution.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, as FU-1845 and FU-1297: a store written whole, in place, is that item's class"
+    },
+    {
+      "id": "FU-1916",
+      "title": "A store in agentic_core/api/vsb.py is written in place, so a kill or a crash mid-write can leave it truncated",
+      "why": "Found in W1235, from a search of agentic_core for JSON stores written without a temporary file and os.replace, after FU-1095's drill showed the container killed by docker stop on 2026-11-22: an entity repository's versions.json hash chain, its website, web app, phone app and unified ship manifests and the stale mark on its ship.json are written with write_text. A write in place truncates the file first, so a process killed or crashing before the write ends leaves the store partly written, and the next read fails or reads less. agentic_core/config.py's atomic_write_json writes a temporary file in the same folder and puts it in place with os.replace, and most stores use it. The fix: write this file's stores through it, or the same pattern, and refuse a store that cannot be read whole rather than replace it. W1235's exec makes a graceful stop finish requests in flight; it does not make these writes safe against a kill or a crash.",
+      "source": "W1235 (a search of agentic_core for stores written in place)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, as FU-1845 and FU-1297: a store written whole, in place, is that item's class"
+    },
+    {
+      "id": "FU-1917",
+      "title": "A store in agentic_core/api/transformation_orchestration.py is written in place, so a kill or a crash mid-write can leave it truncated",
+      "why": "Found in W1235, from a search of agentic_core for JSON stores written without a temporary file and os.replace, after FU-1095's drill showed the container killed by docker stop on 2026-11-22: _save_run writes each transformation run's record with write_text. A write in place truncates the file first, so a process killed or crashing before the write ends leaves the store partly written, and the next read fails or reads less. agentic_core/config.py's atomic_write_json writes a temporary file in the same folder and puts it in place with os.replace, and most stores use it. The fix: write this file's stores through it, or the same pattern, and refuse a store that cannot be read whole rather than replace it. W1235's exec makes a graceful stop finish requests in flight; it does not make these writes safe against a kill or a crash.",
+      "source": "W1235 (a search of agentic_core for stores written in place)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/api/transformation_orchestration.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, as FU-1845 and FU-1297: a store written whole, in place, is that item's class"
+    },
+    {
+      "id": "FU-1918",
+      "title": "A store in agentic_core/ingestion/api.py is written in place, so a kill or a crash mid-write can leave it truncated",
+      "why": "Found in W1235, from a search of agentic_core for JSON stores written without a temporary file and os.replace, after FU-1095's drill showed the container killed by docker stop on 2026-11-22: _save_registry writes the ingestion registry with open(path, 'w') and json.dump. A write in place truncates the file first, so a process killed or crashing before the write ends leaves the store partly written, and the next read fails or reads less. agentic_core/config.py's atomic_write_json writes a temporary file in the same folder and puts it in place with os.replace, and most stores use it. The fix: write this file's stores through it, or the same pattern, and refuse a store that cannot be read whole rather than replace it. W1235's exec makes a graceful stop finish requests in flight; it does not make these writes safe against a kill or a crash.",
+      "source": "W1235 (a search of agentic_core for stores written in place)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/ingestion/api.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, as FU-1845 and FU-1297: a store written whole, in place, is that item's class"
+    },
+    {
+      "id": "FU-1919",
+      "title": "A store in agentic_core/projects/api.py is written in place, so a kill or a crash mid-write can leave it truncated",
+      "why": "Found in W1235, from a search of agentic_core for JSON stores written without a temporary file and os.replace, after FU-1095's drill showed the container killed by docker stop on 2026-11-22: _save writes each project's record, and _save_proposal each governance proposal, with write_text and model_dump_json. A write in place truncates the file first, so a process killed or crashing before the write ends leaves the store partly written, and the next read fails or reads less. agentic_core/config.py's atomic_write_json writes a temporary file in the same folder and puts it in place with os.replace, and most stores use it. The fix: write this file's stores through it, or the same pattern, and refuse a store that cannot be read whole rather than replace it. W1235's exec makes a graceful stop finish requests in flight; it does not make these writes safe against a kill or a crash.",
+      "source": "W1235 (a search of agentic_core for stores written in place)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/projects/api.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, as FU-1845 and FU-1297: a store written whole, in place, is that item's class"
+    },
+    {
+      "id": "FU-1920",
+      "title": "A store in agentic_core/api/v290/realms.py is written in place, so a kill or a crash mid-write can leave it truncated",
+      "why": "Found in W1235, from a search of agentic_core for JSON stores written without a temporary file and os.replace, after FU-1095's drill showed the container killed by docker stop on 2026-11-22: create_realm_v2 writes each realm's file with write_text, and discover_realms_v2 passes over a file it cannot read without saying so. A write in place truncates the file first, so a process killed or crashing before the write ends leaves the store partly written, and the next read fails or reads less. agentic_core/config.py's atomic_write_json writes a temporary file in the same folder and puts it in place with os.replace, and most stores use it. The fix: write this file's stores through it, or the same pattern, and refuse a store that cannot be read whole rather than replace it. W1235's exec makes a graceful stop finish requests in flight; it does not make these writes safe against a kill or a crash.",
+      "source": "W1235 (a search of agentic_core for stores written in place)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/api/v290/realms.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, as FU-1845 and FU-1297: a store written whole, in place, is that item's class"
     }
   ],
   "routes": [

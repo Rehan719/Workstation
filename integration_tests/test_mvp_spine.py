@@ -108091,3 +108091,66 @@ def test_w1234_the_owners_reports_of_2026_11_22_close_five_rows_record_the_crede
         assert stem not in read(rel).lower(), (rel, "names the domain")
     for t in written + also:
         assert not re.search(r"(?<![/.\w])[A-Z][A-Z0-9]+_[A-Z0-9_]+(?![\w.])", t), ("a setting's name", t[:80])
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1235 - the platform's container stops on SIGTERM: the image's CMD execs uvicorn, so uvicorn is PID 1
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1235_the_images_cmd_execs_uvicorn_so_docker_stop_ends_the_platform_on_sigterm():
+    """W1235. In FU-1095's drill on 2026-11-22 `docker stop` ended the platform's container with exit 137: the
+    Dockerfile's CMD ran uvicorn under `sh -c`, sh was PID 1 and passed SIGTERM to nothing, so Docker killed it after
+    ten seconds. Held here:
+    1. the image's last instruction is the CMD that execs uvicorn inside `sh -c`, so ${PORT} is still expanded and
+       uvicorn replaces the shell; no other CMD or ENTRYPOINT starts the platform without exec;
+    2. every other start of the image in the tree, the startup script's runs, both drills and both compose files,
+       uses the image's CMD: none names uvicorn, a command or an entrypoint (render.yaml's service builds no image);
+    3. the graceful shutdown's row is closed by W1235 as built, and step 10 of the runbook says the live check is the
+       next deploy's, exit 0 within seconds;
+    4. each JSON store W1235 found written in place has its own open row on P3.30 (or one a later round closed),
+       naming its file, and that file is in the tree."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    flat = lambda t: " ".join(t.split())   # noqa: E731
+    docker = (root / "Dockerfile").read_text(encoding="utf-8")
+    code = [ln for ln in docker.splitlines() if ln.strip() and not ln.lstrip().startswith("#")]
+    #  1. the CMD, exec form inside sh -c
+    assert code[-1] == 'CMD ["sh", "-c", "exec uvicorn agentic_core.app_mvp:app --host 0.0.0.0 --port ${PORT}"]', code[-1]
+    starts = [ln for ln in code if re.match(r"(CMD|ENTRYPOINT)\b", ln) and "uvicorn" in ln]
+    assert starts == [code[-1]], ("another instruction starts the platform", starts)
+    assert not re.search(r"^ENTRYPOINT\b", docker, re.M), "an ENTRYPOINT would put a process before uvicorn"
+    #  2. every other start of the image uses its CMD
+    for rel in ("docker-compose.yml", "docker-compose.prod.yml", "deploy/gcp/startup.sh", "deploy/drill.sh",
+                "deploy/https_drill.sh"):
+        t = (root / rel).read_text(encoding="utf-8")
+        assert "uvicorn" not in t, (rel, "starts uvicorn itself")
+        assert not re.search(r"^\s*(command|entrypoint)\s*:", t, re.M) and "--entrypoint uvicorn" not in t, rel
+    run = (root / "deploy/gcp/startup.sh").read_text(encoding="utf-8")
+    assert len(re.findall(r"docker run --name=workstation ", run)) == 2
+    #  3. the row and the runbook
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    shut = [r for r in reg if r.get("title", "").startswith("docker stop kills the platform's container after ten seconds")]
+    assert len(shut) == 1 and (shut[0]["status"], shut[0]["closed_by"], shut[0]["because"]) == ("done", "W1235", "built")
+    assert "exit 0 within seconds" in shut[0]["close_note"] and "no Docker daemon" in shut[0]["close_note"]
+    dep = flat((root / "docs/DEPLOYMENT.md").read_text(encoding="utf-8"))
+    s10 = dep.split("**Step 10.", 1)[1].split("**Step 11.", 1)[0]
+    for s in ("`docker stop workstation` in that drill ended the container with exit 137",
+              "Since W1235 the CMD execs uvicorn, so uvicorn is PID 1 and shuts down on SIGTERM.",
+              "at the next deploy, `docker stop workstation` should end with exit 0, within seconds"):
+        assert s in s10, ("step 10 does not say", s)
+    #  4. the stores written in place, a row each
+    stores = [r for r in reg if r.get("source", "").startswith("W1235 (a search of agentic_core for stores written")]
+    files = sorted(f for r in stores for f in r["files"])
+    assert files == sorted(["agentic_core/ueg/ueg_manager.py", "agentic_core/api/integration_surface.py",
+                            "agentic_core/api/digital_twin.py", "agentic_core/api/sovereign_evolution.py",
+                            "agentic_core/api/vsb.py", "agentic_core/api/transformation_orchestration.py",
+                            "agentic_core/ingestion/api.py", "agentic_core/projects/api.py",
+                            "agentic_core/api/v290/realms.py"]), files
+    for r in stores:
+        assert len(r["files"]) == 1 and (root / r["files"][0]).is_file(), r["id"]
+        assert r["title"] == (f"A store in {r['files'][0]} is written in place, so a kill or a crash mid-write can "
+                              "leave it truncated"), r["id"]
+        assert r["status"] == "done" or (r["slot"] == "P3.30" and r.get("slot_source", "").startswith("P3.30")), r["id"]
+        assert r["status"] == "done" or r.get("closed_by") is None, r["id"]
+        assert "os.replace" in r["why"] and "atomic_write_json" in r["why"], r["id"]
