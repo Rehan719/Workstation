@@ -4,37 +4,14 @@ import { useT } from '../../lib/i18n';
 import { useNavigate } from 'react-router-dom';
 import { ArrowUp, Compass, ImagePlus, Loader2, Trash2, Volume2, VolumeX } from 'lucide-react';
 import type { UseAvatarSessionReturn } from '../../hooks/useAvatarSession';
+import { renderRichText } from '../RichText';   // W1238 - the one renderer, shared with the AI CEO chat
 
 interface ConversationPanelProps {
   avatar: UseAvatarSessionReturn;
 }
 
-// Minimal, dependency-free "rich text" renderer: supports **bold**, `inline
-// code`, and "- " bullet lines. Real formatting (not literal markdown syntax
-// left in raw text) without pulling in a markdown library.
-function renderRichText(text: string): React.ReactNode {
-  return text.split('\n').map((line, li) => {
-    const trimmed = line.trimStart();
-    const isBullet = trimmed.startsWith('- ');
-    const content = isBullet ? trimmed.slice(2) : line;
-    const parts = content.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).filter(Boolean);
-    const rendered = parts.map((part, pi) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={pi} className="font-bold text-white">{part.slice(2, -2)}</strong>;
-      }
-      if (part.startsWith('`') && part.endsWith('`')) {
-        return <code key={pi} className="px-1 py-0.5 rounded bg-black/30 text-aura font-mono text-[11px]">{part.slice(1, -1)}</code>;
-      }
-      return <React.Fragment key={pi}>{part}</React.Fragment>;
-    });
-    return (
-      <div key={li} className={isBullet ? 'flex gap-2 pl-1' : ''}>
-        {isBullet && <span className="text-aura">•</span>}
-        <span>{rendered}</span>
-      </div>
-    );
-  });
-}
+// W1238 - the reply's text is rendered by components/RichText.tsx (headings, lists, bold, code, italics, lines),
+// shared with the AI CEO chat. This file's own renderer, which covered bold, code and bullets only, is removed.
 
 /**
  * Footer-center conversation panel — the real, scrollable, rich-text user

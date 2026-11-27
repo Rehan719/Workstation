@@ -5,6 +5,7 @@ import { Send, Bot, User, ThumbsUp, ThumbsDown, MoreHorizontal, X, WifiOff, Refr
 import { useNavigate } from 'react-router-dom';
 import { provenanceBadge } from '../lib/api';
 import { refusalOf } from '../lib/stream';   // W1024 - a refused answer, said by its status and reason
+import { RichText } from '../components/RichText';   // W1238 - a reply is shown as formatted text, not raw markdown
 
 // W451 (P1.3) — the CEO answers from the owned fabric, grounded in the Board + living plan; the pill
 // and every assistant message say WHO served it (amber on the floor). No persona, no roleplay copy.
@@ -273,12 +274,14 @@ export const CEOChat: React.FC = () => {
                   {m.role === 'user' ? <User size={24} /> : <Bot size={24} />}
                 </div>
                 <div className="space-y-3">
-                   <div className={`p-6 rounded-[2rem] text-sm font-bold leading-relaxed shadow-xl ${
+                   <div data-testid="ceo-message" className={`p-6 rounded-[2rem] text-sm font-bold leading-relaxed shadow-xl ${
                      m.role === 'user'
                        ? 'bg-highlight/10 border border-highlight/20 text-white rounded-tr-none'
                        : 'bg-surface/80 border border-white/10 text-slate-200 rounded-tl-none'
                    }`}>
-                     {m.content}
+                     {/* W1238 - a reply is rendered as formatted text: printed as {m.content}, the floor's frame reached the
+                         reader as raw markdown. A person's own words are shown as typed. */}
+                     {m.role === 'assistant' ? <RichText text={m.content} /> : m.content}
                    </div>
                    {m.role === 'assistant' && m.servedBy !== undefined && (() => { const b = provenanceBadge(m.servedBy, m.isExternal); return (
                      <div className="flex flex-wrap items-center gap-2 ml-2">

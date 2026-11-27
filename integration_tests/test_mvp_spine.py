@@ -108593,3 +108593,91 @@ def test_w1259_the_three_letters_say_they_were_sent_on_2026_11_27_and_their_rows
     for t in new_sentences:
         assert stem not in t.lower(), ("names the domain", t[:60])
         assert not re.search(r"\b(he|him|his|she|her|hers)\b", t, re.I), ("a gendered pronoun", t[:80])
+
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1238 - the AI CEO's reply is shown as formatted text, through one renderer shared with the conversation panel
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1238_the_ceo_reply_is_shown_as_formatted_text_through_one_shared_renderer():
+    """W1238. Found on the live site: the AI CEO chat printed its reply as plain text ({m.content}), so the structured
+    floor's frame reached the reader as raw markdown ("## Assessment", "- term", "_[...]_"). The footer's conversation
+    panel had a renderer of its own (bold, inline code and bullets). Held here:
+    1. components/RichText.tsx is the one renderer: headings ("# " to "###### "), "- " items as one list, bold, inline
+       code, italics that open and close only beside a non-letter (so a name's underscores are kept), a line per line
+       and one gap per run of empty lines; it builds React elements, sets no raw HTML and makes no link; a line is
+       read in one pass (an opener never rescans past where an earlier scan found no closer), and a value that is not
+       a string is read as its text;
+    2. no other file in the app defines a renderRichText of its own; the conversation panel renders through it;
+    3. the CEO chat renders an assistant message through it and shows a person's own words as typed, in the element
+       marked ceo-message; neither page sets raw HTML;
+    4. the rendered tests: RichText.test.tsx holds each rule, a link shown as typed, a long line of unpaired markers
+       read in time and a value that is not a string; CEOChat.test.tsx renders the floor's reply (headings, list items,
+       no marker left, the badge and the grounding chip as they were) and the person's words as typed."""
+    import pathlib
+    import re
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    rt = _code_only((src / "components/RichText.tsx").read_text(encoding="utf-8"))
+    #  1. the renderer's rules
+    for need in ("export function inlineParts(line: string): InlinePart[] {",
+                 "export function renderRichText(text: string): React.ReactNode[] {",
+                 "export const RichText: React.FC<{ text: string }> = ({ text }) => <>{renderRichText(text)}</>;",
+                 "const HEADING = /^(#{1,6}) +(.*)$/;",
+                 "const HEADING_TAG = ['h3', 'h4', 'h5', 'h6', 'h6', 'h6'] as const;",
+                 "    if (lead.startsWith('- ')) { items.push(lead.slice(2)); continue; }",
+                 "    if (!lead) { endList(); gap = out.length > 0; continue; }",
+                 "const isWordChar = (ch: string | undefined): boolean => !!ch && /[\\p{L}\\p{N}]/u.test(ch);",
+                 "    } else if (line[i] === '_' && !isWordChar(line[i - 1]) && line[i + 1] !== undefined && line[i + 1] !== ' ' && line[i + 1] !== '_') {",
+                 "        if (line[j] === '_' && line[j - 1] !== ' ' && !isWordChar(line[j + 1])) { end = j; break; }",
+                 "  let noCloser = line.length;", "      for (let j = i + 2; j < noCloser; j++) {",
+                 "      if (end < 0) noCloser = Math.min(noCloser, i + 2);",
+                 "  for (const raw of String(text ?? '').split('\\n')) {",
+                 "    if (p.kind === 'em') return <em key={k} className=\"italic\">{p.text}</em>;",
+                 "    if (p.kind === 'bold') return <strong key={k} className=\"font-bold text-white\">{p.text}</strong>;",
+                 "<ul key={`ul${out.length}`} className=\"space-y-0.5\">",
+                 "    out.push(<p key={`p${out.length}`}>{inline(line)}</p>);"):
+        assert need in rt, need
+    for raw in ("dangerouslySetInnerHTML", "innerHTML", "__html", "DOMParser", "insertAdjacentHTML"):
+        assert raw not in rt, ("the renderer sets raw HTML", raw)
+    for link in ("href", "<a ", "<a>", "createElement('a'", 'createElement("a"'):
+        assert link not in rt, ("the renderer makes a link out of a reply's text", link)
+    #  2. one renderer in the app
+    defs = sorted(p.relative_to(src).as_posix() for p in src.rglob("*.tsx")
+                  if re.search(r"\b(function|const)\s+renderRichText\b", p.read_text(encoding="utf-8")))
+    assert defs == ["components/RichText.tsx"], ("a renderer of its own beside the shared one", defs)
+    cp = _code_only((src / "components/avatar/ConversationPanel.tsx").read_text(encoding="utf-8"))
+    assert "import { renderRichText } from '../RichText';" in cp and cp.count("{renderRichText(m.content)}") == 1
+    #  3. the CEO chat
+    chat = _code_only((src / "pages/CEOChat.tsx").read_text(encoding="utf-8"))
+    assert "import { RichText } from '../components/RichText';" in chat
+    assert chat.count("{m.role === 'assistant' ? <RichText text={m.content} /> : m.content}") == 1
+    assert "\n                     {m.content}\n" not in chat, "the chat prints a reply as plain text again"
+    assert chat.count('<div data-testid="ceo-message" className=') == 1
+    for page in (chat, cp):
+        assert "dangerouslySetInnerHTML" not in page and "innerHTML" not in page
+    #  4. the rendered tests
+    t = (src / "components/RichText.test.tsx").read_text(encoding="utf-8")
+    for name in ("renders a heading for a \"## \" line and a list for \"- \" lines, with no marker left",
+                 "gives each heading level its own element and keeps a line with no space after the hashes as a line",
+                 "renders bold, inline code and italics, and keeps the underscores of a name",
+                 "keeps each line apart, and a run of empty lines is one gap",
+                 "shows markup in a reply as text and never as HTML",
+                 "makes no link, so a link a reply carries is shown as typed and cannot be followed",
+                 "reads a long line of markers with no partner in one pass, so no reply can stall the page",
+                 "shows a value that is not a string as its text instead of failing"):
+        assert t.count(f"  it('{name}', () => {{") == 1, name
+    assert "expect(box.querySelector('a, [href]')).toBeNull();" in t and "expect(took).toBeLessThan(1000);" in t
+    ct = (src / "pages/CEOChat.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './CEOChat.fixture.json';" in ct and "<CEOChat />" in ct
+    s = ct.index("  it('renders the floor\\'s reply as formatted text: headings and list items, no marker left, the chips as they were', async () => {")
+    body = ct[s:ct.index("\n  });\n", s)]
+    for need in ("serve({ stream: FLOOR_STREAM });",
+                 "expect(within(box).getAllByRole('heading').map(h => h.textContent)).toEqual(['Assessment', 'Priorities', 'Next actions']);",
+                 "expect(within(box).getAllByRole('listitem').length).toBe(13);",
+                 "expect(box.textContent).not.toContain('##');", "expect(box.textContent).not.toContain('_[');",
+                 "expect(el.textContent?.startsWith('- ')).toBe(false);",
+                 "'handed 0 directives · 0 objectives · the answer names 0 and 0 · scope workstation');"):
+        assert need in body, need
+    assert "  it('shows the person\\'s own words as typed', async () => {" in ct
+    assert "'## Assessment'," in ct and "'- bakery cooperative', '- cooperative buy'," in ct, (
+        "the floor reply the chat test renders no longer carries the floor's headings and items")
