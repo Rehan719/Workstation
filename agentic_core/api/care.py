@@ -135,9 +135,11 @@ async def list_tools():
     try:
         tools, review = _sources_now(_TOOLS)
     except Exception as e:                      # noqa: BLE001 - said to the reader, never swallowed
+        #  W1251 - in words, never the exception's class name: the live Care page said "(FileNotFoundError)"
+        from agentic_core.api.registers import NEXT_STEP, unread_said
         raise HTTPException(status_code=503, detail=(
-            f"The register of sources could not be read ({type(e).__name__}), so no tool's standard is shown as "
-            f"standing. Nothing is shown in its place.")) from None
+            f"The register of sources could not be read: {unread_said(e)}, so no tool's standard is shown as "
+            f"standing. Nothing is shown in its place. {NEXT_STEP}")) from None
     return {"tools": tools, "total": len(tools), "review_days": review,
             "sources_basis": ("Each tool's sources are rows of the one register of sources (GET "
                               "/api/v1/registers/sources), read now: each row's status, the date its publisher's "

@@ -110087,3 +110087,265 @@ def test_w1242c_religious_content_stays_in_under_any_domain_and_the_status_says_
     _setter = "setenv(" + '"AI_ALLOW_' + 'EXTERNAL"'
     spine = pathlib.Path(__file__).read_text(encoding="utf-8")
     assert _setter not in spine[spine.index("\ndef test_w1242c_"):], "this guard sets the Owner's switch"
+
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1251 - every file a route loads at runtime is in the image, or is said in words where it is not
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1251_every_file_a_route_loads_at_runtime_is_in_the_image_or_is_said_in_words(client, monkeypatch, tmp_path):
+    """W1251. The Owner's live test of image 34dd9709: GET /api/v1/care/tools answered 503 "The register of sources
+    could not be read (FileNotFoundError)". registers._script loads scripts/<name>.py by path and the Dockerfile copied
+    no scripts/, so every route that loads one failed there. Held here, from the Dockerfile and the code, so that a load
+    added without a copy fails:
+    - the image's COPY set is read from the Dockerfile's last stage with .dockerignore, and every _script("...") call in
+      agentic_core names a script the image holds at the same path, or one registers.NOT_IN_THE_IMAGE names with its
+      reason; every script the image copies is one a route loads; no file is loaded by path anywhere but _script;
+    - each copied check imports only what the image holds and loads no file by path, and every file it reads (its
+      ROOT-relative constants, the register's scan places and the files its rows name) is held or named;
+    - loading a check leaves the serving process's environment and sys.path as they were (auth_perimeter sets
+      AI_DISABLE_LOCAL and WORKSTATION_DRIVE for its own command line);
+    - driven on a root holding what the image holds of these: the coverage answer says the suite's tests were not
+      checked, the sources answer names the places it did not read, and the Care catalogue answers;
+    - driven on a root with no scripts: the four routes refuse with 503 in words that say what is missing and what to
+      do next, never an exception's class name; a submitted commitment records NOT MEASURED in words."""
+    import ast
+    import fnmatch
+    import json as _json
+    import pathlib
+    import re
+    import shutil
+    import sys
+    import agentic_core.api.registers as _regs
+    from agentic_core.api.change_control import CAPACITY_NOT_HELD, CAPACITY_UNREAD
+    root = pathlib.Path(__file__).resolve().parents[1]
+    real_root = _regs._ROOT
+    class_name = re.compile(r"\b[A-Z][A-Za-z]*(?:Error|Exception)\b")
+
+    #  1. THE IMAGE'S COPY SET: what the last stage copies from the build context, and where it lands under /app
+    df = (root / "Dockerfile").read_text(encoding="utf-8")
+    stage = df.split("\nFROM ")[-1]
+    assert stage.startswith("python:"), "the Dockerfile's last stage is not the Python image that runs"
+    assert re.findall(r"(?m)^WORKDIR\s+(\S+)", stage) == ["/app"], "the image does not run from /app"
+    ignored = {ln.strip().rstrip("/") for ln in (root / ".dockerignore").read_text(encoding="utf-8").splitlines()
+               if ln.strip() and not ln.lstrip().startswith("#")}
+
+    def _norm(p):
+        p = p[len("/app/"):] if p.startswith("/app/") else ("" if p in ("/app", ".", "./") else p)
+        while p.startswith("./"):
+            p = p[2:]
+        return p.rstrip("/")
+    copies = []                                     # (source, where it lands, "file" | "dir")
+    for ln in stage.splitlines():
+        m = re.match(r"^COPY\s+(?!--from)(.+)$", ln.strip())
+        if not m:
+            continue
+        parts = [p for p in m.group(1).split() if not p.startswith("--")]
+        dest = _norm(parts[-1])
+        into = parts[-1].endswith("/") or len(parts) > 2 or dest == ""       # "." is the working folder itself
+        for s in map(_norm, parts[:-1]):
+            if (root / s).is_dir():
+                copies.append((s, dest, "dir"))
+            else:
+                copies.append((s, (dest + "/" if dest else "") + s.rsplit("/", 1)[-1] if into else dest, "file"))
+    assert copies, "no COPY line of the last stage was read, so nothing was examined"
+
+    def _ignored(rel):
+        segs = rel.split("/")
+        heads = ["/".join(segs[:i]) for i in range(1, len(segs) + 1)]
+        return any(any(fnmatch.fnmatch(s, p[3:]) for s in segs) if p.startswith("**/")
+                   else any(fnmatch.fnmatch(h, p) for h in heads) for p in ignored)
+
+    def held(rel):
+        """The file or folder `rel` of this tree is in the image, at the same path under /app."""
+        rel = _norm(rel)
+        return not _ignored(rel) and any(
+            (k == "file" and rel == s and to == s) or (k == "dir" and to == s and (rel == s or rel.startswith(s + "/")))
+            for s, to, k in copies)
+    assert held("agentic_core/app_mvp.py") and held("docs/SOURCES.json") and held("config")
+    assert not held("integration_tests/test_mvp_spine.py") and not held("docs/fidelity_runs/x.json"), \
+        "the reading of .dockerignore leaves nothing out, so a file it keeps out would be read as held"
+
+    #  2. EVERY LOAD OF A FILE BY PATH IN agentic_core: only registers._script, and each of its names held or said
+    loaders = {"spec_from_file_location", "SourceFileLoader", "run_path", "exec_module", "load_source"}
+
+    def _fname(call):
+        return call.func.id if isinstance(call.func, ast.Name) else (
+            call.func.attr if isinstance(call.func, ast.Attribute) else "")
+    calls, elsewhere, examined = {}, [], 0
+    for f in sorted((root / "agentic_core").rglob("*.py")):
+        if "__pycache__" in f.parts:
+            continue
+        rel = f.relative_to(root).as_posix()
+        text = f.read_text(encoding="utf-8")
+        examined += 1
+        if not any(k in text for k in ("_script", *loaders)):
+            continue
+        tree = ast.parse(text, filename=rel)
+        names, allowed = set(), set()
+        if rel == "agentic_core/api/registers.py":
+            fn = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "_script"]
+            assert len(fn) == 1, "registers.py no longer defines the one loader _script"
+            names, allowed = {"_script"}, {id(n) for n in ast.walk(fn[0])}
+        for n in ast.walk(tree):
+            if isinstance(n, ast.ImportFrom) and n.module == "agentic_core.api.registers":
+                names |= {a.asname or a.name for a in n.names if a.name == "_script"}
+        for n in ast.walk(tree):
+            if not isinstance(n, ast.Call):
+                continue
+            if _fname(n) in loaders and id(n) not in allowed:
+                elsewhere.append(f"{rel}:{n.lineno} {_fname(n)}")
+            if (isinstance(n.func, ast.Name) and n.func.id in names) or (
+                    isinstance(n.func, ast.Attribute) and n.func.attr == "_script"):
+                a = n.args[0] if n.args else None
+                if isinstance(a, ast.Constant) and isinstance(a.value, str):
+                    calls.setdefault(f"scripts/{a.value}.py", []).append(f"{rel}:{n.lineno}")
+                else:
+                    elsewhere.append(f"{rel}:{n.lineno} _script with a name this test cannot read")
+    assert examined > 100, ("the scan read almost nothing, so it shows nothing", examined)
+    assert elsewhere == [], ("a file is loaded by path outside registers._script, so whether the image holds it is "
+                             "not checked", elsewhere)
+    assert {"scripts/sources_check.py", "scripts/coverage_register.py", "scripts/auth_perimeter.py",
+            "scripts/session_forecast.py"} <= set(calls), ("a route's load of a script was not found", sorted(calls))
+    for rel, where in sorted(calls.items()):
+        assert (root / rel).is_file(), (rel, where, "a route loads a script the tree does not hold")
+        assert held(rel) or rel in _regs.NOT_IN_THE_IMAGE, (
+            rel, where, "a route loads a script the image does not copy, and nothing says what the route does without it")
+    for rel, why in _regs.NOT_IN_THE_IMAGE.items():
+        assert (root / rel).exists() and not held(rel) and why.strip(), (
+            rel, "is named as not in the image, and the image holds it or the tree does not")
+    copied_scripts = sorted({s for s, _, _ in copies if s == "scripts" or s.startswith("scripts/")})
+    assert copied_scripts and set(copied_scripts) <= set(calls), (
+        "the image copies a script no route loads, or copies none", copied_scripts)
+
+    #  3. WHAT EACH COPIED CHECK IMPORTS AND READS is in the image, or is said by its route where it is not
+    stdlib, reads = set(sys.stdlib_module_names), set()
+    for rel in copied_scripts:
+        text = (root / rel).read_text(encoding="utf-8")
+        assert "ROOT = pathlib.Path(__file__).resolve().parents[1]" in text, (rel, "its ROOT is not the folder above it")
+        tree = ast.parse(text, filename=rel)
+        for n in ast.walk(tree):
+            if isinstance(n, ast.Call):
+                assert _fname(n) not in loaders, (rel, n.lineno, "a copied check loads a file by path of its own")
+            tops = ([a.name.split(".")[0] for a in n.names] if isinstance(n, ast.Import) else
+                    [(n.module or "").split(".")[0]] if isinstance(n, ast.ImportFrom) and not n.level else [])
+            for top in tops:
+                local = any((root / x).exists() for x in (top, f"{top}.py", f"scripts/{top}.py"))
+                assert top in stdlib or top == "__future__" or held(top) or not local, (
+                    rel, top, "a copied check imports a module of this tree that the image does not hold")
+        for n in tree.body:
+            if isinstance(n, ast.Assign) and len(n.targets) == 1 and isinstance(n.targets[0], ast.Name):
+                parts, v = [], n.value
+                while (isinstance(v, ast.BinOp) and isinstance(v.op, ast.Div) and isinstance(v.right, ast.Constant)
+                       and isinstance(v.right.value, str)):
+                    parts.insert(0, v.right.value)
+                    v = v.left
+                if parts and isinstance(v, ast.Name) and v.id == "ROOT":
+                    reads.add("/".join(parts))
+    sc = _regs._script("sources_check")
+    reg = sc.load()
+    reads |= {p["dir"] for p in reg.get("scan") or []} | {p for p, _ in sc.REACH_PLACES}
+    reads |= {u for r in reg["rows"] for u in r.get("used_by") or []}
+    assert {"docs/SOURCES.json", "docs/COVERAGE_REGISTER.json", "docs/PUBLIC_ROUTES.json", "agentic_core",
+            "integration_tests/test_mvp_spine.py", "apps/workstation-superapp/src"} <= reads, sorted(reads)
+    for rel in sorted(reads):
+        assert held(rel) or rel in _regs.NOT_IN_THE_IMAGE, (
+            rel, "a copied check reads what the image does not hold, and nothing says what its route does without it")
+
+    #  3b. LOADING A CHECK CHANGES NOTHING IN THE SERVING PROCESS. auth_perimeter sets AI_DISABLE_LOCAL and
+    #      WORKSTATION_DRIVE for its own command line when it is imported; on the image that would switch the local model
+    #      off and mark the platform as not the Owner's own process. Driven on a probe script, then on the real one.
+    import os
+    probe = tmp_path / "probe"
+    (probe / "scripts").mkdir(parents=True)
+    (probe / "scripts/w1251_probe.py").write_text(
+        'import os, sys\nos.environ["W1251_ADDED"] = "by the script"\nos.environ["W1251_KEPT"] = "changed by the script"\n'
+        'sys.path.insert(0, "w1251-not-a-folder")\nLOADED = True\n', encoding="utf-8")
+    with monkeypatch.context() as mp:
+        mp.setenv("W1251_KEPT", "as it was")
+        for k in ("AI_DISABLE_LOCAL", "WORKSTATION_DRIVE", "W1251_ADDED"):
+            mp.delenv(k, raising=False)
+        env_before, path_before = dict(os.environ), list(sys.path)
+        mp.setattr(_regs, "_ROOT", probe)
+        assert _regs._script("w1251_probe").LOADED is True
+        mp.setattr(_regs, "_ROOT", real_root)
+        assert _regs._script("auth_perimeter").verdict([], False) == 0
+        assert dict(os.environ) == env_before and sys.path == path_before, (
+            "loading a script left its own set-up in the serving process",
+            {k: os.environ.get(k) for k in ("AI_DISABLE_LOCAL", "WORKSTATION_DRIVE", "W1251_ADDED", "W1251_KEPT")})
+
+    #  4. DRIVEN ON WHAT THE IMAGE HOLDS OF THESE: no suite, no page source - each answers and says what it did not read
+    img = tmp_path / "image"
+    for rel in [s for s in copied_scripts if s.endswith(".py")] + ["docs/SOURCES.json", "docs/COVERAGE_REGISTER.json"]:
+        (img / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(root / rel, img / rel)
+    monkeypatch.setattr(_regs, "_ROOT", img)
+    cov = client.get("/api/v1/registers/coverage")
+    assert cov.status_code == 200, ("the coverage answer needs the test suite, which the image does not hold", cov.text[:300])
+    c = cov.json()
+    real_rows = _json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]
+    assert c["tests_checked"] is False and c["tests_said"] == _regs.TESTS_NOT_CHECKED, c.get("tests_said")
+    assert len(c["rows"]) == len(real_rows) and c["problems"] == [], c["problems"][:5]
+    src = client.get("/api/v1/registers/sources")
+    assert src.status_code == 200, src.text[:300]
+    chk = src.json()["check"]
+    assert chk["places_not_held"] == ["agentic_core", "apps/workstation-superapp/src"], chk["places_not_held"]
+    assert chk["places_said"].startswith("This installation does not hold agentic_core and apps/workstation-superapp/src, "
+                                         "so no name written there was read here."), chk["places_said"]
+    care = client.get("/api/v1/care/tools")
+    assert care.status_code == 200 and care.json()["tools"], care.text[:300]
+    #  ... and where the tree holds them, nothing is said as unread
+    monkeypatch.setattr(_regs, "_ROOT", real_root)
+    c = client.get("/api/v1/registers/coverage").json()
+    assert c["tests_checked"] is True and c["tests_said"] is None, c.get("tests_said")
+    chk = client.get("/api/v1/registers/sources").json()["check"]
+    assert chk["places_not_held"] == [] and chk["places_said"] is None, chk["places_not_held"]
+
+    #  5. DRIVEN WITH NO SCRIPT: each route says which file is missing and what to do, never a class name
+    bare = tmp_path / "bare"
+    bare.mkdir()
+    monkeypatch.setattr(_regs, "_ROOT", bare)
+    for path, script, opens in (("/api/v1/registers/sources", "sources_check", "The register of sources could not be read: "),
+                                ("/api/v1/registers/coverage", "coverage_register", "The coverage register could not be read: "),
+                                ("/api/v1/registers/perimeter", "auth_perimeter", "The perimeter could not be measured: "),
+                                ("/api/v1/care/tools", "sources_check", "The register of sources could not be read: ")):
+        r = client.get(path)
+        assert r.status_code == 503, (path, r.status_code, r.text[:200])
+        said = r.json()["detail"]
+        assert said.startswith(opens + f"this installation does not hold scripts/{script}.py, which this answer runs"), \
+            (path, said)
+        assert said.endswith(" " + _regs.NEXT_STEP) and not class_name.search(said), (path, said)
+    #  a register the script reads and the installation does not hold is named by its place in the tree
+    half = tmp_path / "half"
+    (half / "scripts").mkdir(parents=True)
+    shutil.copyfile(root / "scripts/sources_check.py", half / "scripts/sources_check.py")
+    monkeypatch.setattr(_regs, "_ROOT", half)
+    r = client.get("/api/v1/registers/sources")
+    assert r.status_code == 503 and ("this installation does not hold docs/SOURCES.json, which this answer reads"
+                                     in r.json()["detail"]), r.text[:300]
+    for e in (OSError("w1251"), ValueError("w1251"), RuntimeError("w1251"),
+              FileNotFoundError(2, "No such file or directory", "/elsewhere/w1251/SOURCES.json")):
+        said = _regs.unread_said(e)
+        assert said and not class_name.search(said) and "/elsewhere" not in said, (e, said)
+
+    #  6. A COMMITMENT SUBMITTED WITHOUT THE ROUND HISTORY: NOT MEASURED, in words, and the submission stands
+    monkeypatch.setattr(_regs, "_ROOT", bare)
+    body = {"title": "w1251 a commitment with no round history", "description": "w1251: the capacity said in words",
+            "committed_rounds": 1, "commitment_basis": "one round, to read how the record says an unmeasured pace"}
+    sub = client.post("/api/v1/cca/submit", json=body)
+    assert sub.status_code == 200, sub.text[:300]
+    com = sub.json()["commitment"]
+    assert com["capacity_at_submit"] is None and com["capacity_basis"] == CAPACITY_NOT_HELD, com
+    assert CAPACITY_NOT_HELD.startswith("NOT MEASURED: ") and not class_name.search(CAPACITY_NOT_HELD + CAPACITY_UNREAD)
+
+    class _History:
+        @staticmethod
+        def round_durations():
+            raise KeyError("w1251: a history in another shape")
+    monkeypatch.setattr(_regs, "_script", lambda name: _History)
+    sub = client.post("/api/v1/cca/submit", json=body)
+    assert sub.status_code == 200, sub.text[:300]
+    assert sub.json()["commitment"]["capacity_basis"] == CAPACITY_UNREAD, sub.json()["commitment"]
+    monkeypatch.setattr(_regs, "_ROOT", real_root)
+    for rel in ("agentic_core/api/registers.py", "agentic_core/api/care.py"):
+        assert "type(e).__name__" not in (root / rel).read_text(encoding="utf-8"), (rel, "a refusal names its class")

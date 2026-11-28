@@ -748,9 +748,14 @@ def _record_variance(change: dict, now: str, outcome: str) -> None:
         f"figure is derived and names what it divided by")
 
 
-#  W581 (FU-313) — the repo root, for the measured round history the commitment is made against.
-#  agentic_core/api/change_control.py -> parents[2] is the checkout.
-_ROOT_FOR_FORECAST = Path(__file__).resolve().parents[2]
+#  W581 (FU-313) - the measured round history a commitment is made against comes from scripts/session_forecast.py.
+#  W1251 - it loads through the one loader of scripts (agentic_core/api/registers.py::_script). The image does not
+#  hold it, on purpose: it reads git's commit history, which the image does not hold either. Where it is absent or
+#  cannot be read, the capacity is NOT MEASURED, in words a person reading the record can follow.
+CAPACITY_NOT_HELD = ("NOT MEASURED: this installation does not hold the history of past rounds, so how long a "
+                     "round takes was not measured. The commitment is recorded as it was given.")
+CAPACITY_UNREAD = ("NOT MEASURED: the history of past rounds could not be read, so how long a round takes was not "
+                   "measured. The commitment is recorded as it was given.")
 
 
 def _measured_phrase658(ctx: dict) -> str:
@@ -1013,27 +1018,23 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
         #  THE CAPACITY IS MEASURED, not declared, and says so. It is the platform's own observed round
         #  length from its commit history, which is what makes a promise in ROUNDS mean anything.
         _capacity, _cap_basis = None, None
+        #  W1251 - through the one loader of scripts, which says a script this installation does not hold as that
+        from agentic_core.api.registers import NotHeld, _script
         try:
-            import importlib.util as _ilu313
-            _sf313 = _ROOT_FOR_FORECAST / "scripts" / "session_forecast.py"
-            if _sf313.exists():
-                _spec313 = _ilu313.spec_from_file_location("_sf313", _sf313)
-                _mod313 = _ilu313.module_from_spec(_spec313)
-                _spec313.loader.exec_module(_mod313)
-                _d313 = _mod313.round_durations()
-                if _d313.get("assessable"):
-                    _capacity = {"median_hours_per_round": _d313.get("median_h"),
-                                 "p25_hours": _d313.get("p25_h"), "p75_hours": _d313.get("p75_h"),
-                                 "rounds_measured": _d313.get("n")}
-                    _cap_basis = str(_d313.get("basis") or "")[:300]
-                else:
-                    _cap_basis = ("NOT MEASURED: " + str(_d313.get("basis") or "the forecaster could "
-                                  "not assess the round history")[:260])
+            _mod313 = _script("session_forecast")
+            _d313 = _mod313.round_durations()
+            if _d313.get("assessable"):
+                _capacity = {"median_hours_per_round": _d313.get("median_h"),
+                             "p25_hours": _d313.get("p25_h"), "p75_hours": _d313.get("p75_h"),
+                             "rounds_measured": _d313.get("n")}
+                _cap_basis = str(_d313.get("basis") or "")[:300]
             else:
-                _cap_basis = "NOT MEASURED: the round-history forecaster is not present in this checkout"
-        except Exception as _exc313:
-            _cap_basis = (f"NOT MEASURED: the round history could not be read "
-                          f"({_exc313.__class__.__name__})")
+                _cap_basis = ("NOT MEASURED: " + str(_d313.get("basis") or "the forecaster could "
+                              "not assess the round history")[:260])
+        except NotHeld:
+            _cap_basis = CAPACITY_NOT_HELD
+        except Exception:                       # noqa: BLE001 - said on the record, never by its class name
+            _cap_basis = CAPACITY_UNREAD
         _commitment = {
             "committed_rounds": req.committed_rounds,
             "confidence": req.confidence,
