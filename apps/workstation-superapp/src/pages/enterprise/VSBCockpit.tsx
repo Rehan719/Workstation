@@ -15,6 +15,7 @@ import { getPrefs } from '../../lib/userPrefs';
 import { domainLabel } from '../../lib/taxonomy';                 // P3.30 (ledger v16 R5.7)
 import { EntitySpecialists } from '../../components/EntitySpecialists';   // W933 (P5.15 clause 6, FU-1178)
 import { EntityWorkReview } from '../../components/EntityWorkReview';     // W935 (P5.15 clauses 5-6, FU-1178)
+import { converseDraft, dropDraft, keepDraft, takeDraft } from '../../lib/drafts';   // W1253 - Converse keeps what is written
 
 // The VSB Enterprise Cockpit — interact with a generated living VSB IDBO Enterprise: its
 // organisational structure, the Chief's digital twin + Board, the living business plan
@@ -195,6 +196,7 @@ export const VSBCockpit: React.FC = () => {
   const [chatInput, setChatInput] = useState('');
   const [chatting, setChatting] = useState(false);
   const [chatErr, setChatErr] = useState('');   // W1052 - a reply that did not come, said beside the input
+  const [keptMsg, setKeptMsg] = useState('');   // W1253 - what was being written to this entity, put back in the box
   const [pendingImage, setPendingImage] = useState<{ b64: string; name: string } | null>(null);
   const [chatLang, setChatLang] = useState('');   // '' = English; otherwise respond in this language
   const [ledger, setLedger] = useState<Dict | null>(null);
@@ -250,7 +252,9 @@ export const VSBCockpit: React.FC = () => {
       setVsbsState('ready');
       // Honour a ?vsb=<id> deep-link (e.g. "Open in Cockpit" from the Spawn Studio); else prefer an established VSB.
       const want = new URLSearchParams(window.location.search).get('vsb');
-      const chosen = (want && ents.find(e => e.vsb_id === want)) || ents.find(e => e.has_board) || ents[0];
+      //  W1253 - with no ?vsb=, the entity whose Converse message is kept comes first: a sign-in returns to it
+      const chosen = (want && ents.find(e => e.vsb_id === want)) || ents.find(e => !!takeDraft(converseDraft(e.vsb_id)))
+        || ents.find(e => e.has_board) || ents[0];
       if (chosen) setSelected(chosen.vsb_id);
     }).catch((e: unknown) => { setVsbsErr(errorMessage(e)); setVsbsState('error'); });
     axios.get('/api/v1/mgmt/standards').then(r => setStandards(r.data.standards || [])).catch(noteRead('the management standards'));
@@ -656,6 +660,14 @@ export const VSBCockpit: React.FC = () => {
     try { window.speechSynthesis.cancel(); window.speechSynthesis.speak(new SpeechSynthesisUtterance(text.slice(0, 600))); } catch { silenceIsRight('reading a reply aloud is an optional browser feature; the reply is on the page')(); }
   };
 
+  //  W1253 - the Converse box holds what was being written to the entity on screen: kept in this tab as it is typed,
+  //  put back when that entity opens again (after a sign-in, a reload or a visit elsewhere), dropped once a reply came
+  useEffect(() => {
+    const kept = selected ? takeDraft(converseDraft(selected)) : '';
+    setKeptMsg(kept);
+    setChatInput(kept);
+  }, [selected]);
+
   const sendChat = async (override?: string) => {
     const msg = (override ?? chatInput).trim();
     if ((!msg && !pendingImage) || chatting || !selected) return;
@@ -672,6 +684,7 @@ export const VSBCockpit: React.FC = () => {
                                image_understood: r.data.image_understood, image_served_by: r.data.image_served_by, image_is_external: r.data.image_is_external,
                                image_status: r.data.image_status, attached_requested: Boolean(pendingImage),
                                language_requested: r.data.language ?? null, language_honoured: r.data.language ?? null }]);
+      dropDraft(converseDraft(selected), msg);   // W1253 - the message has done its work: a reply came
       speak(reply);
     } catch (e: unknown) {
       //  W1052 - said as the failure it was, beside the input: it was put in the conversation in the avatar's own voice,
@@ -2042,7 +2055,7 @@ export const VSBCockpit: React.FC = () => {
                 </div>
               )}
               <div className="flex items-center gap-2">
-                <input aria-label="Message the VSB" value={chatInput} onChange={e => setChatInput(e.target.value)}
+                <input aria-label="Message the VSB" value={chatInput} onChange={e => { setChatInput(e.target.value); keepDraft(converseDraft(selected), e.target.value); }}
                   onKeyDown={e => { if (e.key === 'Enter') sendChat(); }}
                   placeholder={listening ? 'Listening…' : 'Ask about this enterprise…'}
                   className="flex-1 text-xs bg-slate-950 border border-slate-900 rounded-xl p-3 text-slate-300" />
@@ -2077,6 +2090,13 @@ export const VSBCockpit: React.FC = () => {
                 </Button>
               </div>
               {chatErr && <p role="alert" data-testid="cockpit-chat-error" className="text-[10px] font-bold text-vital">{chatErr}</p>}
+              {/* W1253 - what was being written to this enterprise before is back in the box, and said so */}
+              {keptMsg && chatInput === keptMsg && (
+                <p role="status" data-testid="cockpit-draft-restored" className="text-[10px] font-semibold text-sky-300">
+                  What you were writing to this enterprise before is back in the box. It is kept in this browser tab until a
+                  reply comes. Press Send when you are ready.
+                </p>
+              )}
               <p className="text-[9px] text-slate-600">Voice (browser-native, in-house) + image (analysed in-house by a local Ollama vision model, with honest provenance) — no external service required.</p>
             </Card>
           )}

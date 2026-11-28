@@ -6,6 +6,7 @@ import { refusalOf } from '../../lib/stream';   // W1025 - a refusal by its reas
 import { ReadFailures, useReadFailures, silenceIsRight } from '../../components/ReadFailures';   // W928
 import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS, PRODUCTS, PRODUCT_LABELS } from '../../lib/taxonomy';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { GENESIS_DRAFT, dropDraft, keepDraft, takeDraft } from '../../lib/drafts';   // W1253 - the idea box keeps what is typed
 import { saveOutput } from '../../lib/outputHistory';
 import { openExport } from '../../lib/download';
 import { Card, Button } from '@workstation/ui';
@@ -206,6 +207,9 @@ export const GenesisJourney: React.FC = () => {
   const [sp] = useSearchParams();   // seedable from a domain tool (offering 1 -> offering 2, §3A)
   // W303 - the bridge carries the user's actual WORK PRODUCT (not a truncated input slice):
   // a sessionStorage seed written by DomainTool / My Work is folded into the problem once.
+  //  W1253 - the idea typed here before (before a sign-in, a reload or a visit elsewhere), kept in this tab for the
+  //  account signed in; a seed handed from another page, or ?problem=, comes first
+  const [keptIdea] = useState<string>(() => takeDraft(GENESIS_DRAFT));
   const [problem, setProblem] = useState<string>(() => {
     const sid = sp.get('seed');
     if (sid) {
@@ -218,8 +222,9 @@ export const GenesisJourney: React.FC = () => {
           : base;
       }
     }
-    return sp.get('problem') || '';
+    return sp.get('problem') || keptIdea;
   });
+  useEffect(() => { keepDraft(GENESIS_DRAFT, problem); }, [problem]);   // W1253 - kept as it is typed, dictated or attached
   // W806 (FU-837) - a withheld answer is said, so a journey seeded from the question alone does not read as a full seed
   const [seedWithheld] = useState<string>(() => {
     const sid = sp.get('seed');
@@ -308,6 +313,7 @@ export const GenesisJourney: React.FC = () => {
       if (!res.ok) { setError(await refusalOf(res)); setRunning(false); return; }   // W1025
       const data = await res.json();
       setResult(data);
+      dropDraft(GENESIS_DRAFT, problem);   // W1253 - the idea has done its work: the journey ran
       if (data?.established_vsb && !data.established_vsb.error) setVsb(data.established_vsb);   // one-call living enterprise
       // W303 - the My Work claim is TRUE now: every Genesis journey persists automatically.
       try {
@@ -735,6 +741,13 @@ export const GenesisJourney: React.FC = () => {
             rows={4}
             className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-highlight/50 resize-none"
           />
+          {/* W1253 - the idea typed here before is back in the box, and said so */}
+          {keptIdea && problem === keptIdea && !result && (
+            <p role="status" data-testid="genesis-draft-restored" className="mt-2 text-[10px] text-sky-300 font-semibold leading-relaxed">
+              What you typed here before is back in the box. It is kept in this browser tab until the journey runs. Run it
+              when you are ready, or clear the box to start again.
+            </p>
+          )}
           {seedWithheld && (
             <p role="status" data-testid="genesis-seed-withheld" className="mt-2 text-[10px] text-amber-400 font-semibold leading-relaxed">
               The domain tool's answer was withheld, so this journey starts from your question only: {seedWithheld}

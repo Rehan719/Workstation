@@ -104242,34 +104242,37 @@ def test_w1233_a_signed_out_visitor_is_sent_to_the_sign_in_page_not_shown_the_sh
        /login unless it is /login already, clearing a held token first; both the fetch and the axios path take that
        one filter;
     2. sendSignedOutToLogin(), the boot probe, reads whoami() and redirects only an 'anonymous' session away from a
-       page that is not /login; 'auth-off' and 'unknown' never redirect, and no next address is added (the login page
-       reads none);
+       page that is not /login; 'auth-off' and 'unknown' never redirect;
     3. App.tsx calls the probe at module level right after installAuth();
+    W1253 changed legs 1 and 2 on purpose: a 401 is first renewed once (test_w1253), the page goes to the sign-in page
+    through goToSignIn alone, and the address the visitor asked for goes with them as ?next=, which the sign-in page
+    now reads as a path on this site only.
     4. lib/auth.test.ts drives each case, and still imports whoami as W930's guard reads it."""
     import pathlib
     src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
     auth = _code_only((src / "lib/auth.ts").read_text(encoding="utf-8")) + "\n"
-    #  1. on401: no token asked for, a held one cleared, the login page exempt
-    on = auth[auth.index("  const on401 = () => {"):]
-    on = on[:on.index("\n  };\n") + 5]
-    assert "getToken() &&" not in on, "on401 redirects only a session that held a token"
-    assert "    if (window.location.pathname !== '/login') {" in on and "      if (getToken()) clearToken();" in on
-    assert on.count("window.location.assign('/login');") == 1
-    assert "  const fires401 = (url: string) => url.startsWith('/api') && !url.includes('/auth/');" in auth
-    assert "if (err?.response?.status === 401 && fires401(String(err?.config?.url ?? ''))) on401();" in auth
-    assert "if (res.status === 401 && fires401(url)) on401();" in auth
-    assert auth.count("on401();") == 2, "a 401 reaches on401 by some path that is not filtered"
+    #  1. a 401 nothing renewed goes to the sign-in page whether or not a token was held, through one filter on either
+    #  path, clearing a held token first, the login page exempt (W1253: through goToSignIn, the one way there)
+    go = auth[auth.index("export function goToSignIn(ended: boolean): void {"):]
+    go = go[:go.index("\n}\n") + 3]
+    assert "  if (window.location.pathname === '/login') return;" in go
+    assert "  if (getToken() || getRefreshToken()) clearToken();" in go
+    assert go.count("window.location.assign(signInAddress(ended));") == 1
+    assert auth.count("window.location.assign(") == 1, "the page is sent somewhere by a way that is not goToSignIn"
+    assert "const fires401 = (url: string) => url.startsWith('/api') && !url.includes('/auth/');" in auth
+    e401 = auth[auth.index("function ended401(sentWith: string | null | undefined, url: string): void {"):]
+    e401 = e401[:e401.index("\n}\n") + 3]
+    assert "  if (!fires401(url) || getToken() !== (sentWith ?? null)) return;" in e401 and "getToken() &&" not in e401
+    assert auth.count("goToSignIn(") == 3, "the sign-in page is reached by a way that is not filtered"
     #  2. the boot probe redirects on 'anonymous' alone
     pr = auth[auth.index("export async function sendSignedOutToLogin(): Promise<void> {"):]
     pr = pr[:pr.index("\n}\n") + 3]
     assert "  const who = await whoami();" in pr
-    assert "    if (getToken()) clearToken();" in pr, "the probe leaves a token the server no longer takes"
-    assert "  if (who.mode === 'anonymous' && window.location.pathname !== '/login') {" in pr
-    assert pr.count("window.location.assign('/login');") == 1 and "auth-off" not in pr and "unknown" not in pr
-    assert "next" not in pr, "the probe adds a next address the login page does not read"
-    login = (src / "pages/Login.tsx").read_text(encoding="utf-8")
-    assert "get('next')" not in login and "'next'" not in login, (
-        "the login page now reads a next address: the probe may keep the address the visitor asked for")
+    assert "  if (who.mode === 'anonymous') goToSignIn(!!(getToken() || getRefreshToken()));" in pr
+    assert "auth-off" not in pr and "unknown" not in pr
+    login = _code_only((src / "pages/Login.tsx").read_text(encoding="utf-8"))
+    assert "const back = returnPath(sp.get('next'));" in login and "nav(back);" in login, (
+        "the sign-in page no longer sends the person back to the page they asked for")
     #  3. App.tsx: the probe runs at boot, after the token layer is installed
     app = _code_only((src / "App.tsx").read_text(encoding="utf-8"))
     assert "import { installAuth, sendSignedOutToLogin } from './lib/auth';" in app
@@ -110349,3 +110352,211 @@ def test_w1251_every_file_a_route_loads_at_runtime_is_in_the_image_or_is_said_in
     monkeypatch.setattr(_regs, "_ROOT", real_root)
     for rel in ("agentic_core/api/registers.py", "agentic_core/api/care.py"):
         assert "type(e).__name__" not in (root / rel).read_text(encoding="utf-8"), (rel, "a refusal names its class")
+
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1253 - a session that runs out is renewed in place; one that cannot be goes to sign in, saying so, and back
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1253_a_session_that_runs_out_is_renewed_once_and_one_that_cannot_be_says_so_and_keeps_what_was_typed(
+        client, tmp_path, monkeypatch):
+    """W1253. Found on the live site by the Owner (finding 3 of 2026-11-27): sessions last 60 minutes
+    (ACCESS_TOKEN_TTL); on expiry the page cleared the token and jumped to /login with no message, and unsaved input
+    was lost. The sign-in route hands out a refresh token beside the access token, and the page never kept it.
+    Held here:
+    1. THE ROUTES' CONTRACT, the one the page renews on, through the real routes on a made-up store (sign-in stays as
+       it is set): the sign-in answers both tokens and expires_in; POST /api/v1/auth/refresh takes { refresh_token }
+       with no bearer and answers a new pair for the same account (sub, uid, kind); an access token that has run out
+       is refused 401 by the decoder every bearer passes first, which is the 401 the page renews on; a refresh token
+       that has run out, or a value that is no token, is refused 401, and an access token 400;
+    2. lib/auth.ts keeps the refresh token (cleared at every change of who is signed in), renews a 401 once with it
+       through one shared exchange sent past the token layer, sends the call again once (an axios call marked so),
+       renews no route that hands out tokens, never sends the refresh token as the bearer, and only when the renewal
+       fails goes to the sign-in page with ?session=ended and ?next=, read back as a path on this site only;
+    3. the sign-in page keeps the refresh token, says the session ended in plain words, and sends the person back;
+    4. lib/drafts.ts keeps a box's text in this tab for the account that typed it, never shows it to another, and
+       drops it once used; Genesis's idea box and the cockpit's Converse box use it;
+    5. the rendered tests drive each of these."""
+    import inspect
+    import json
+    import pathlib
+
+    import pytest
+    from fastapi import HTTPException
+
+    from agentic_core.auth import core
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+
+    #  1. THE ROUTES' CONTRACT
+    store = tmp_path / "users.json"
+    monkeypatch.setattr(core, "_USER_STORE", store)
+    monkeypatch.setattr(core, "_ATTEMPTS", {})          # failed sign-ins other tests counted are not this test's
+    password = "w1253 a made-up password"
+    store.write_text(json.dumps({"w1253-made-up": {
+        "user_id": "w1253-made-up-id", "username": "w1253-made-up", "hashed_password": core._pwd_ctx.hash(password),
+        "role": "user", "created_at": "2026-11-27T10:00:00Z", "api_keys": []}}), encoding="utf-8")
+    got = client.post("/api/v1/auth/token", data={"username": "w1253-made-up", "password": password})
+    assert got.status_code == 200, got.text[:200]
+    first = got.json()
+    assert first["access_token"] and first["refresh_token"] and first["expires_in"] == core._ACCESS_TTL * 60, first
+    assert set(core.RefreshRequest.model_fields) == {"refresh_token"}, "the page sends { refresh_token } and no more"
+    assert {"access_token", "refresh_token", "expires_in"} <= set(core.TokenResponse.model_fields)
+    again = client.post("/api/v1/auth/refresh", json={"refresh_token": first["refresh_token"]})   # no bearer
+    assert again.status_code == 200, again.text[:200]
+    for tok, kind in ((again.json()["access_token"], "access"), (again.json()["refresh_token"], "refresh")):
+        claims = core._decode_token(tok)
+        assert (claims.get("sub"), claims.get("uid"), claims.get("type")) == ("w1253-made-up", "w1253-made-up-id", kind)
+    who = core._get_user("w1253-made-up")
+    with pytest.raises(HTTPException) as ran_out:
+        core._decode_token(core._make_token(core._claims(who, "access"), -1))
+    assert ran_out.value.status_code == 401 and ran_out.value.headers == {"WWW-Authenticate": "Bearer"}
+    gcu = inspect.getsource(core.get_current_user)
+    assert gcu.index("payload = _decode_token(token)") < gcu.index('if payload.get("type") != "access":'), (
+        "a bearer that has run out is not refused 401 before anything else is read")
+    old = core._make_token(core._claims(who, "refresh"), -1)
+    assert client.post("/api/v1/auth/refresh", json={"refresh_token": old}).status_code == 401
+    assert client.post("/api/v1/auth/refresh", json={"refresh_token": "w1253-not-a-token"}).status_code == 401
+    assert client.post("/api/v1/auth/refresh", json={"refresh_token": first["access_token"]}).status_code == 400
+
+    #  2. THE TOKEN LAYER
+    auth = _code_only((src / "lib/auth.ts").read_text(encoding="utf-8")) + "\n"
+    assert "const REFRESH_KEY = 'workstation_refresh';" in auth
+    assert "  try {\n    localStorage.removeItem(REFRESH_KEY);\n    localStorage.removeItem('ws_output_history_v1');" in auth, (
+        "the last sign-in's refresh token outlives a change of who is signed in")
+    assert "export const setToken = (t: string): void => { _clearLocalUserData(); localStorage.setItem(KEY, t); };" in auth
+    ex = auth[auth.index("async function exchange(): Promise<string | null> {"):]
+    ex = ex[:ex.index("\n}\n") + 3]
+    assert "    r = await sendRaw('/api/v1/auth/refresh', {" in ex and "body: JSON.stringify({ refresh_token: held })," in ex
+    assert "  if (getRefreshToken() !== held || getToken() !== from) return null;" in ex, (
+        "a renewal's answer is stored over a sign-in or a sign-out made while it was out")
+    assert "  localStorage.setItem(KEY, d.access_token);\n  setRefreshToken(d.refresh_token ?? held);" in ex
+    assert "setToken(" not in ex, "a renewal clears the person's own data as a change of who is signed in would"
+    rt = auth[auth.index("async function retryToken(sentWith: string | null | undefined, url: string): Promise<string | null> {"):]
+    rt = rt[:rt.index("\n}\n") + 3]
+    for need in ("  if (!sentWith || handsOutTokens(url)) return null;",
+                 "  if (renewed && renewed.from === sentWith && now === renewed.to) return now;",
+                 "  if (now !== sentWith) return null;",
+                 "  if (!renewing) renewing = exchange().finally(() => { renewing = null; });"):
+        assert need in rt, ("concurrent 401s do not share one renewal, or one is renewed that should not be", need)
+    assert ("  ['/api/v1/auth/token', '/api/v1/auth/refresh', '/api/v1/auth/signup'].includes(url.split('?')[0]);"
+            in auth), "a route that hands out tokens is renewed"
+    ia = auth[auth.index("export function installAuth(): void {"):]
+    ia = ia[:ia.index("\n}\n") + 3]
+    fw = ia[ia.index("  window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {"):]
+    assert fw.count("await origFetch(") == 2 and "    const second = await origFetch(spare, {" in fw, (
+        "the call is sent again through the token layer, which could renew it again: a loop")
+    assert "await window.fetch(" not in auth and "    if (second.status === 401) ended401(fresh, url);" in fw
+    assert "    if (!cfg || cfg._w1253Again) return null;" in ia and "    cfg._w1253Again = true;\n    return axios.request(cfg);" in ia, (
+        "an axios call sent again is not marked, so its 401 is renewed again: a loop")
+    assert ia.count("const second = await again(cfg, url);") == 2, "axios's two ways of answering a 401 are not both renewed"
+    assert "    (cfg as typeof cfg & Sent)._w1253SentWith = t;" in ia
+    for line in auth.splitlines():
+        if "Bearer" in line:
+            assert "efresh" not in line and "held" not in line, ("the refresh token is sent as the bearer", line)
+    sa = auth[auth.index("export function signInAddress(ended: boolean): string {"):]
+    sa = sa[:sa.index("\n}\n") + 3]
+    assert "  if (ended) q.set('session', 'ended');" in sa and "  if (back !== '/') q.set('next', back);" in sa
+    rp = auth[auth.index("export function returnPath(raw: string | null | undefined): string {"):]
+    rp = rp[:rp.index("\n}\n") + 3]
+    for need in (r"  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) return '/';",
+                 "  if ([...raw].some(c => c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127)) return '/';",
+                 "  try { u = new URL(raw, origin); } catch { return '/'; }",
+                 r"  if (u.origin !== origin || path.startsWith('//') || u.pathname.replace(/\/+$/, '') === '/login') return '/';"):
+        assert need in rp, ("the address a sign-in returns to may be on another site", need)
+
+    #  3. THE SIGN-IN PAGE
+    page = (src / "pages/Login.tsx").read_text(encoding="utf-8")
+    login = _code_only(page)
+    assert "import { clearToken, returnPath, setRefreshToken, setToken, whoami, WhoAmI } from '../lib/auth';" in login
+    assert "      setToken(d.access_token);\n      setRefreshToken(d.refresh_token);" in login, "the refresh token is not kept"
+    assert "const back = returnPath(sp.get('next'));" in login and "nav(back);" in login and "nav('/')" not in login
+    assert "  const ended = sp.get('session') === 'ended';" in login and "{ended && who?.mode !== 'authenticated' && (" in login
+    flat = " ".join(page.split())
+    assert 'data-testid="session-ended"' in page and "Your session ended. Sign in again to carry on.</p>" in flat
+    assert ("Once you are signed in you will go back to the page you were on. What you were typing in the Genesis idea "
+            "box or in an enterprise's Converse box is still there.") in flat
+
+    #  4. WHAT WAS TYPED
+    dr = _code_only((src / "lib/drafts.ts").read_text(encoding="utf-8"))
+    for need in ("const PREFIX = 'ws_draft_';", "export const GENESIS_DRAFT = 'genesis-idea';",
+                 "export const converseDraft = (vsbId: string): string => `cockpit-converse:${vsbId}`;",
+                 "    const uid = claims?.uid ?? claims?.sub;",
+                 "    if (by === null || !text.trim()) { sessionStorage.removeItem(PREFIX + key); return false; }",
+                 "    sessionStorage.setItem(PREFIX + key, JSON.stringify({ by, text }));",
+                 "    if (by !== null && kept?.by === by && typeof kept?.text === 'string') return kept.text;\n"
+                 "    sessionStorage.removeItem(PREFIX + key);",
+                 "      if (typeof kept?.text !== 'string' || kept.text.trim() !== sent.trim()) return false;"):
+        assert need in dr, ("a draft is kept, shown or dropped other than for the account that typed it", need)
+    assert "localStorage" not in dr and "fetch(" not in dr and "silenceIsRight" not in dr
+    gj = _code_only((src / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
+    for need in ("import { GENESIS_DRAFT, dropDraft, keepDraft, takeDraft } from '../../lib/drafts';",
+                 "  const [keptIdea] = useState<string>(() => takeDraft(GENESIS_DRAFT));",
+                 "  useEffect(() => { keepDraft(GENESIS_DRAFT, problem); }, [problem]);",
+                 "      setResult(data);\n      dropDraft(GENESIS_DRAFT, problem);",
+                 "{keptIdea && problem === keptIdea && !result && (", 'data-testid="genesis-draft-restored"'):
+        assert need in gj, ("Genesis's idea box does not keep what was typed", need)
+    assert gj.index("const seed = readGenesisSeed(sid);") < gj.index("    return sp.get('problem') || keptIdea;"), (
+        "a seed handed from another page no longer comes before the kept idea")
+    ck = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8"))
+    for need in ("import { converseDraft, dropDraft, keepDraft, takeDraft } from '../../lib/drafts';",
+                 "    const kept = selected ? takeDraft(converseDraft(selected)) : '';\n    setKeptMsg(kept);\n    setChatInput(kept);\n  }, [selected]);",
+                 "onChange={e => { setChatInput(e.target.value); keepDraft(converseDraft(selected), e.target.value); }}",
+                 "|| ents.find(e => !!takeDraft(converseDraft(e.vsb_id)))",
+                 "{keptMsg && chatInput === keptMsg && (", 'data-testid="cockpit-draft-restored"'):
+        assert need in ck, ("the Converse box does not keep what was written", need)
+    sc = ck[ck.index("  const sendChat = async (override?: string) => {"):]
+    sc = sc[:sc.index("\n  };\n")]
+    assert (sc.index("const r = await axios.post('/api/v1/avatar/chat', body);")
+            < sc.index("dropDraft(converseDraft(selected), msg);") < sc.index("} catch (e: unknown) {")), (
+        "the message is let go before a reply came")
+
+    #  5. THE RENDERED TESTS
+    tests = {
+        "lib/session.test.ts": (
+            "renews a 401 once with the stored refresh token and sends the call again, and the person stays on the page",
+            "shares one renewal among 401s that come together, and sends one that comes after it with the token it gave",
+            "sends the person to sign in once when the renewal is refused, saying the session ended and where they were, and sends nothing again",
+            "never sends a call a third time: one refused again after the renewal sends the person to sign in",
+            "renews an axios call that axios throws for on a 401, the same way and once",
+            "renews an axios call whose caller takes every status, the same way and once",
+            "never sends an axios call a third time, and sends the person to sign in once",
+            "renews nothing for a route that hands out tokens: its 401 is its answer, and the page stays",
+            "the boot probe renews a session that ran out, and sends one it could not renew to sign in, saying it ended",
+            "the sign-in page is never sent back to an address on another site, nor to itself"),
+        "lib/drafts.test.ts": (
+            "keeps a box\\'s text for the account signed in, and gives it back to that account only",
+            "never shows one account\\'s text to another: it is dropped unread",
+            "keeps text with sign-in off, keeps nothing for a box left empty, and nothing under a sign-in it cannot read",
+            "is dropped once used, but not when the box was changed while the work was out"),
+        "pages/Login.session.test.tsx": (
+            "says the session ended, keeps both tokens the sign-in hands out, and sends the person back to their page",
+            "never follows an address on another site: the sign-in lands on the home page, and nothing says a session ended",
+            "says a session ended with no page to go back to only as that"),
+        "pages/synthesis/GenesisJourney.draft.test.tsx": (
+            "puts the idea back when the page opens again, says so, and lets it go once the journey ran",
+            "never shows one account\\'s idea to another: it is dropped unread",
+            "keeps the idea when the session ends as the journey is sent, and puts it back once the same person signs in again"),
+        "pages/enterprise/VSBCockpit.draft.test.tsx": (
+            "puts the message back when the enterprise opens again, says so, and lets it go once a reply came",
+            "keeps a message no reply came for, and never shows it to another account: it is dropped unread"),
+    }
+    text = {rel: (src / rel).read_text(encoding="utf-8") for rel in tests}
+    for rel, names in tests.items():
+        assert text[rel].count("\n  it('") == len(names), (rel, text[rel].count("\n  it('"))
+        for name in names:
+            assert text[rel].count(f"\n  it('{name}', ") == 1, (rel, name)
+    st = text["lib/session.test.ts"]
+    for need in ("expect(calls.map(c => c.url)).toEqual([DATA, RENEW, DATA]);",
+                 "expect(JSON.parse(String(calls[1].body))).toEqual({ refresh_token: REFRESH });",
+                 "expect(calls.filter(c => c.url === RENEW)).toHaveLength(1);",
+                 "expect(assign).toHaveBeenCalledWith('/login?session=ended&next=%2Fgenesis%3Fdomain%3Dscience');",
+                 "expect(assign).toHaveBeenCalledWith('/login?session=ended&next=%2Fmy-work');",
+                 "'/.//elsewhere', 'javascript:void(0)'"):
+        assert need in st, need
+    assert "import captured from './Login.fixture.json';" in text["pages/Login.session.test.tsx"]
+    assert "<Route" not in text["pages/Login.session.test.tsx"], (
+        "the sign-in page's test defines a route of its own: App.tsx is the one file that does (test_w499)")
+    assert "import captured from './GenesisJourney.fixture.json';" in text["pages/synthesis/GenesisJourney.draft.test.tsx"]
+    assert "installAuth();" in text["pages/synthesis/GenesisJourney.draft.test.tsx"], (
+        "the case where a session ends as the journey is sent no longer runs through the real token layer")
+    assert "import captured from './VSBCockpit.chat.fixture.json';" in text["pages/enterprise/VSBCockpit.draft.test.tsx"]
